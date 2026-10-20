@@ -14,7 +14,7 @@ Requirements for the scaffold milestone. Each maps to a roadmap phase. "Real" me
 - [x] **FOUND-03**: Package versions are centrally managed (`Directory.Packages.props`) and every project restores with committed `packages.lock.json` files; CI restores with `--locked-mode`.
 - [x] **FOUND-04**: `.editorconfig` is the single formatting/analyzer rule source and `dotnet format --verify-no-changes` passes on the committed tree.
 - [ ] **FOUND-05**: A GitHub Actions CI workflow runs restore (locked), build (warnings as errors), tests, format verification, `dotnet list package --vulnerable`, and `podman-compose config` validation on every push/PR; a separate macOS job builds the MAUI head only when the `maui` workload is installable.
-- [ ] **FOUND-06**: `OmpOS.Contracts` defines Session, Message, SessionStatus, IntentEnvelope, IntentKind, Diagnostic, UiBlock variants, StreamEvent (with monotonic `Seq`), SandboxDescriptor, SandboxStatus, WorkflowRun, WorkflowRunStatus, OmpOSError/ErrorCode and ContractVersion once, with System.Text.Json source-generated serialization; no other project redefines these shapes.
+- [x] **FOUND-06**: `OmpOS.Contracts` defines Session, Message, SessionStatus, IntentEnvelope, IntentKind, Diagnostic, UiBlock variants, StreamEvent (with monotonic `Seq`), SandboxDescriptor, SandboxStatus, WorkflowRun, WorkflowRunStatus, OmpOSError/ErrorCode and ContractVersion once, with System.Text.Json source-generated serialization; no other project redefines these shapes.
 - [ ] **FOUND-07**: An architecture test (ArchUnitNET) fails the build when any project references a higher layer (L0 Contracts → L1 Parser/Harness.Abstractions/Sandbox.Abstractions → L2 Harness/Sandbox/Sessions/Workflows → L3 Api/Worker → L4 apps) or when anything other than tests references `OmpOS.Api`.
 - [ ] **FOUND-08**: A `compose.yaml` validated by `podman-compose config` defines the local dependency stack (Temporal dev server via `temporalio/temporal` CLI image with `server start-dev`); no Docker-only tooling exists in the repo.
 - [ ] **FOUND-09**: Repository documentation skeleton exists: `README.md` (bootstrap/run/test), `CONTRIBUTING.md`, `docs/architecture.md`, `docs/decisions/ADR-0001-monorepo-layout.md`, `docs/decisions/ADR-0002-surface-technology.md`, `docs/open-questions.md`, `docs/runbooks/local-dev.md`, `docs/runbooks/sandbox.md`.
@@ -138,7 +138,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-03 | Phase 1 | Complete |
 | FOUND-04 | Phase 1 | Complete |
 | FOUND-05 | Phase 1 | Pending |
-| FOUND-06 | Phase 1 | Pending |
+| FOUND-06 | Phase 1 | Complete |
 | FOUND-07 | Phase 1 | Pending |
 | FOUND-08 | Phase 1 | Pending |
 | FOUND-09 | Phase 1 | Pending |

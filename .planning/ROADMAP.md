@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Plans**: TBD
 - [x] 01-01-PLAN.md
-- [ ] 01-02-PLAN.md
+- [x] 01-02-PLAN.md
 - [ ] 01-03-PLAN.md
 
 **UI hint**: no
@@ -105,7 +105,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5. Within Phase 2 the r
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/3 | In Progress | - |
+| 1. Foundation | 2/3 | In Progress | - |
 | 2. Core | 0/TBD | Not started | - |
 | 3. Platform | 0/TBD | Not started | - |
 | 4. Surfaces | 0/TBD | Not started | - |

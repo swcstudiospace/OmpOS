@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v0.9.1
 current_phase: 1
 current_phase_name: Foundation
-current_plan: 2
+current_plan: 3
 status: executing
-stopped_at: Completed 1-01-PLAN.md
-last_updated: "2026-10-20T05:53:55.795Z"
+stopped_at: Completed 1-02-PLAN.md
+last_updated: "2026-10-20T06:09:13.525Z"
 last_activity: 2026-10-20
 last_activity_desc: Roadmap created (5 phases, 49/49 v1 requirements mapped)
-state_head: d0e154511aa93ea2bc1ee62bc0f2e0c11e5f4e5b
+state_head: aeda59855a19c77f6aad196aa1a740d72e2e3e66
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 ## Current Position
 
 Phase: 1 (Foundation) — EXECUTING
-Current Plan: 2
+Current Plan: 3
 Total Plans in Phase: 3
 Status: Ready to execute
 Last activity: 2026-10-20 — Roadmap created (5 phases, 49/49 v1 requirements mapped)
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 1 P01 | 12 min | 4 tasks | 114 files |
+| Phase 1-foundation P02 | 11 min | 3 tasks | 45 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Recent decisions affecting current work:
 - [Platform]: Temporal optional behind `Workflows:Enabled` with `DirectSessionRunner` default; vendor sandbox providers (OpenShell, agentOS, Railway Swarm, attested enclave) are interface-conforming stubs with owner-tagged open questions — no invented vendor calls.
 - [Phase 1]: Blazor package versions in CPM; Web entry uses ConfigureAwait(false) under latest-all — Template-inline versions conflict with CPM; template await trips CA2007/MA0004
 - [Phase 1]: bootstrap.sh keeps dotnet test step as-is despite exit 1 on empty test set — Plan-directed: no masking flags; plan 01-02 test projects resolve it
+- [Phase 1]: 01-02: A2uiSurfaceBlock kind is a2ui-surface; bare a2ui stays unknown
+- [Phase 1]: 01-02: OmpOSError is a sealed record; contract collections are read-only interfaces; semver asserted via Version.TryParse
 
 ### Pending Todos
 
@@ -96,6 +99,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T05:53:34.994Z
-Stopped at: Completed 1-01-PLAN.md
+Last session: 2026-10-20T06:09:13.488Z
+Stopped at: Completed 1-02-PLAN.md
 Resume file: None
