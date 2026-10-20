@@ -1,18 +1,18 @@
 ---
 gsd_state_version: "1.0"
 milestone: v0.9.1
-current_phase: 1
-current_phase_name: Foundation
-current_plan: 3
-status: verifying
-stopped_at: Completed 1-03-PLAN.md
-last_updated: "2026-10-20T06:26:48.253Z"
+current_phase: 2
+current_phase_name: Core
+current_plan: 0
+status: executing
+stopped_at: Phase 1 closed (SECURED, nyquist-compliant, closure committed)
+last_updated: "2026-10-20T08:10:00.000Z"
 last_activity: 2026-10-20
-last_activity_desc: Roadmap created (5 phases, 49/49 v1 requirements mapped)
+last_activity_desc: Phase 1 closure complete; starting Phase 2 research
 state_head: 82db6d1eb0bf5b6763711f5cedd595172ee0b6a6
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
   completed_plans: 3
 ---
@@ -98,7 +98,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
-| *(none)* | | | | |
+| Verification | Remote CI run green (push + PR jobs on GitHub; local gates pass, no remote configured yet). Resume: verify on first ship PR run | deferred-human | 2026-10-20 | v0.9.1 |
+| Verification | macOS MAUI head build job (excluded from Linux slnf; local host is Linux). Resume: verify on first CI run on a macOS runner | deferred-human | 2026-10-20 | v0.9.1 |
 
 ## Session Continuity
 
