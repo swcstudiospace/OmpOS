@@ -13,7 +13,7 @@ public sealed class ContractVersionTests
     {
         Version.TryParse(ContractVersion.Current, out var version).ShouldBeTrue();
         version.ShouldNotBeNull();
-        version.Build.ShouldBeGreaterThanOrEqualTo(0);
+        ContractVersion.Current.Split('.').Length.ShouldBe(3);
         version.Revision.ShouldBe(-1);
     }
 
