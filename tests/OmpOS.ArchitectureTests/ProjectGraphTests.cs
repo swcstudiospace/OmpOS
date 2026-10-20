@@ -9,7 +9,7 @@ namespace OmpOS.ArchitectureTests;
 /// </summary>
 public sealed class ProjectGraphTests
 {
-    private static readonly string[] ProcessSpawningAssemblies = ["OmpOS.Harness.Acp", "OmpOS.Harness.Rpc"];
+    private static readonly string[] ProcessSpawningAssemblies = ["OmpOS.Harness.Acp", "OmpOS.Harness.Rpc", "OmpOS.Sandbox"];
 
     [Fact]
     public void ProjectGraph_RejectsUpwardReference()
