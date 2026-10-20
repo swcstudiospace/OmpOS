@@ -27,5 +27,8 @@
     <Project Path="tests/OmpOS.Harness.ContractTests/OmpOS.Harness.ContractTests.csproj" />
     <Project Path="tests/OmpOS.Parser.Tests/OmpOS.Parser.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.InMemory.Tests/OmpOS.Harness.InMemory.Tests.csproj" />
+    <Project Path="tests/OmpOS.Harness.Acp.Tests/OmpOS.Harness.Acp.Tests.csproj" />
+    <Project Path="tests/OmpOS.Harness.Rpc.Tests/OmpOS.Harness.Rpc.Tests.csproj" />
+    <Project Path="tests/OmpOS.Sessions.Tests/OmpOS.Sessions.Tests.csproj" />
   </Folder>
 </Solution>

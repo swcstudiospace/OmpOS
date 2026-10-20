@@ -22,7 +22,10 @@
             "tests/OmpOS.Parser.Tests/OmpOS.Parser.Tests.csproj",
             "tests/OmpOS.Harness.ContractTests/OmpOS.Harness.ContractTests.csproj",
             "tests/OmpOS.Harness.InMemory.Tests/OmpOS.Harness.InMemory.Tests.csproj",
-            "tests/OmpOS.ArchitectureTests/OmpOS.ArchitectureTests.csproj"
+            "tests/OmpOS.ArchitectureTests/OmpOS.ArchitectureTests.csproj",
+            "tests/OmpOS.Harness.Acp.Tests/OmpOS.Harness.Acp.Tests.csproj",
+            "tests/OmpOS.Harness.Rpc.Tests/OmpOS.Harness.Rpc.Tests.csproj",
+            "tests/OmpOS.Sessions.Tests/OmpOS.Sessions.Tests.csproj"
         ]
     }
 }
