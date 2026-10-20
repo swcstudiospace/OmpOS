@@ -25,6 +25,8 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
     steps:
+      # Action tags verified 2026-10-20 against the GitHub releases API:
+      # checkout v7.0.1, setup-dotnet v6.0.0, upload-artifact v7.0.2, gitleaks-action v3.0.0.
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
