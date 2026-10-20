@@ -773,7 +773,7 @@ Every command and expected output below was exercised on the probe solution with
 | A9 | STJ default `MaxDepth` 64 bounds `JsonDocument.ParseValue` in the converter | Security | Add explicit `JsonSerializerOptions.MaxDepth` if needed |
 | A10 | Versions in STACK.md for packages not re-verified today (Markdig, DiffPlex, OpenApi, Temporalio, OpenTelemetry, bunit, Verify.XunitV3) | Standard Stack | Only matters when a later phase references them; executor restores and adjusts per D-04 |
 
-## Open Questions
+## Open Questions (RESOLVED — all 4 adopted by the plans, 2026-10-20)
 
 1. **Does the Linear/GitHub org need a gitleaks licence?**
    - What we know: README says a free key is required for organization-owned repos, not personal ones.
@@ -784,6 +784,12 @@ Every command and expected output below was exercised on the probe solution with
    - Recommendation (discretion): keep it on and write one record per file — it is the convention the rest of the analyzer set assumes.
 3. **`/data` vs `/home/temporal` volume path** — see A2; recommend `/home/temporal/temporal.db` and record the deviation from D-05's literal path in ADR-0001/runbook.
 4. **Where does `CI=true` come from on the dev box?** Not in shell rc files; probably the agent harness. Executors must assume locked mode locally and relock with `--force-evaluate`.
+
+**Adopted dispositions (all 4 carried into the plans):**
+1. Gitleaks licence — adopted: `GITLEAKS_LICENSE` wired as an org-repo secret with a fail-fast message otherwise (plan 01-03 CI task); seeded in `docs/open-questions.md`.
+2. MA0048 — adopted: kept on, one record per file (plan 01-02 GREEN task; REFACTOR confirms MA0048 stays enabled).
+3. Temporal volume path — adopted: `/home/temporal/temporal.db` with the deviation from D-05's literal path recorded in ADR-0001 and the local-dev runbook (plan 01-03 docs task).
+4. `CI=true` provenance — adopted: executors assume locked mode locally and relock with `--force-evaluate` (plan 01-01 bootstrap task, plan 01-02 REFACTOR task).
 
 ## Sources
 
