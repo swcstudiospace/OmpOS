@@ -315,19 +315,30 @@
         "type": "Project"
       },
       "ompos.harness.abstractions": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Contracts": "[1.0.0, )"
+        }
       },
       "ompos.harness.acp": {
         "type": "Project"
       },
       "ompos.harness.inmemory": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Contracts": "[1.0.0, )",
+          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+        }
       },
       "ompos.harness.rpc": {
         "type": "Project"
       },
       "ompos.parser": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
+          "OmpOS.Contracts": "[1.0.0, )"
+        }
       },
       "ompos.sandbox": {
         "type": "Project"
