@@ -9,10 +9,10 @@ Requirements for the scaffold milestone. Each maps to a roadmap phase. "Real" me
 
 ### Foundation
 
-- [ ] **FOUND-01**: Developer can build and test the whole Linux-buildable solution from a clean clone with one documented command (`./bootstrap.sh`), which installs/uses the pinned .NET 10 SDK via `global.json` and exits non-zero on any failure.
-- [ ] **FOUND-02**: Every project compiles with nullable reference types, `TreatWarningsAsErrors`, .NET analyzers at `AnalysisLevel` latest, deterministic builds and `ContinuousIntegrationBuild` in CI, enforced from `Directory.Build.props`.
-- [ ] **FOUND-03**: Package versions are centrally managed (`Directory.Packages.props`) and every project restores with committed `packages.lock.json` files; CI restores with `--locked-mode`.
-- [ ] **FOUND-04**: `.editorconfig` is the single formatting/analyzer rule source and `dotnet format --verify-no-changes` passes on the committed tree.
+- [x] **FOUND-01**: Developer can build and test the whole Linux-buildable solution from a clean clone with one documented command (`./bootstrap.sh`), which installs/uses the pinned .NET 10 SDK via `global.json` and exits non-zero on any failure.
+- [x] **FOUND-02**: Every project compiles with nullable reference types, `TreatWarningsAsErrors`, .NET analyzers at `AnalysisLevel` latest, deterministic builds and `ContinuousIntegrationBuild` in CI, enforced from `Directory.Build.props`.
+- [x] **FOUND-03**: Package versions are centrally managed (`Directory.Packages.props`) and every project restores with committed `packages.lock.json` files; CI restores with `--locked-mode`.
+- [x] **FOUND-04**: `.editorconfig` is the single formatting/analyzer rule source and `dotnet format --verify-no-changes` passes on the committed tree.
 - [ ] **FOUND-05**: A GitHub Actions CI workflow runs restore (locked), build (warnings as errors), tests, format verification, `dotnet list package --vulnerable`, and `podman-compose config` validation on every push/PR; a separate macOS job builds the MAUI head only when the `maui` workload is installable.
 - [ ] **FOUND-06**: `OmpOS.Contracts` defines Session, Message, SessionStatus, IntentEnvelope, IntentKind, Diagnostic, UiBlock variants, StreamEvent (with monotonic `Seq`), SandboxDescriptor, SandboxStatus, WorkflowRun, WorkflowRunStatus, OmpOSError/ErrorCode and ContractVersion once, with System.Text.Json source-generated serialization; no other project redefines these shapes.
 - [ ] **FOUND-07**: An architecture test (ArchUnitNET) fails the build when any project references a higher layer (L0 Contracts → L1 Parser/Harness.Abstractions/Sandbox.Abstractions → L2 Harness/Sandbox/Sessions/Workflows → L3 Api/Worker → L4 apps) or when anything other than tests references `OmpOS.Api`.
@@ -133,10 +133,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 1 | Pending |
-| FOUND-02 | Phase 1 | Pending |
-| FOUND-03 | Phase 1 | Pending |
-| FOUND-04 | Phase 1 | Pending |
+| FOUND-01 | Phase 1 | Complete |
+| FOUND-02 | Phase 1 | Complete |
+| FOUND-03 | Phase 1 | Complete |
+| FOUND-04 | Phase 1 | Complete |
 | FOUND-05 | Phase 1 | Pending |
 | FOUND-06 | Phase 1 | Pending |
 | FOUND-07 | Phase 1 | Pending |
