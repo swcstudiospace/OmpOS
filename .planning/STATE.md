@@ -4,17 +4,17 @@ milestone: v0.9.1
 current_phase: 1
 current_phase_name: Foundation
 current_plan: 3
-status: executing
-stopped_at: Completed 1-02-PLAN.md
-last_updated: "2026-10-20T06:09:13.525Z"
+status: verifying
+stopped_at: Completed 1-03-PLAN.md
+last_updated: "2026-10-20T06:26:48.253Z"
 last_activity: 2026-10-20
 last_activity_desc: Roadmap created (5 phases, 49/49 v1 requirements mapped)
-state_head: aeda59855a19c77f6aad196aa1a740d72e2e3e66
+state_head: 82db6d1eb0bf5b6763711f5cedd595172ee0b6a6
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 Phase: 1 (Foundation) — EXECUTING
 Current Plan: 3
 Total Plans in Phase: 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-20 — Roadmap created (5 phases, 49/49 v1 requirements mapped)
 
 Progress: [░░░░░░░░░░] 0%
@@ -60,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 |------|----------|-------|-------|
 | Phase 1 P01 | 12 min | 4 tasks | 114 files |
 | Phase 1-foundation P02 | 11 min | 3 tasks | 45 files |
+| Phase 1-foundation P03 | 13 min | 3 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,8 @@ Recent decisions affecting current work:
 - [Phase 1]: bootstrap.sh keeps dotnet test step as-is despite exit 1 on empty test set — Plan-directed: no masking flags; plan 01-02 test projects resolve it
 - [Phase 1]: 01-02: A2uiSurfaceBlock kind is a2ui-surface; bare a2ui stays unknown
 - [Phase 1]: 01-02: OmpOSError is a sealed record; contract collections are read-only interfaces; semver asserted via Version.TryParse
+- [Phase 1]: ArchUnitNET rules take Assembly objects: the string overload of ResideInAssembly compares full assembly names, so short names match nothing — Probed short and full names (both fail to match); object overloads evaluate over real object sets for both positive and negative rules
+- [Phase 1]: open-questions.md seeded with 26 owned rows (14 research gaps, 4 research extras, 8 ultrathink ambiguities transcribed from dispatch context) — Q1-Q8 text is not locatable in the repo; dispatch context provided the eight items with resolved defaults
 
 ### Pending Todos
 
@@ -99,6 +102,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T06:09:13.488Z
-Stopped at: Completed 1-02-PLAN.md
+Last session: 2026-10-20T06:26:48.224Z
+Stopped at: Completed 1-03-PLAN.md
 Resume file: None
