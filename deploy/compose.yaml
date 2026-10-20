@@ -7,8 +7,8 @@ services:
     container_name: ompos-temporal
     command: server start-dev --ip 0.0.0.0 --db-filename /home/temporal/temporal.db
     ports:
-      - "7233:7233" # gRPC frontend
-      - "8233:8233" # Web UI
+      - "127.0.0.1:7233:7233" # gRPC frontend
+      - "127.0.0.1:8233:8233" # Web UI
     volumes:
       - temporal-data:/home/temporal # image user `temporal` (uid 1000) owns this path
     healthcheck:
