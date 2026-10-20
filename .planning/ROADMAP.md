@@ -15,7 +15,7 @@ OmpOS goes from an empty repository to a scaffolded, verifiable full-stack agent
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Foundation** - Monorepo layout, solution, shared contracts, analyzers/formatter, locked CPM, CI, podman compose, docs skeleton + ADR-0001/0002
-- [ ] **Phase 2: Core** - Prompt parser, ACP harness (abstractions, state machine, in-memory adapter, real ACP v1 + omp RPC clients, WebSocket stub), session orchestration, SSE streaming API, platform foundations/security
+- [x] **Phase 2: Core** - Prompt parser, ACP harness (abstractions, state machine, in-memory adapter, real ACP v1 + omp RPC clients, WebSocket stub), session orchestration, SSE streaming API, platform foundations/security
 - [ ] **Phase 3: Platform** - Sandbox provider abstraction + fake/local podman-compose providers + vendor stubs; durable workflows (direct runner + Temporal worker behind flag)
 - [ ] **Phase 4: Surfaces** - Shared Razor Class Library chat surface with Generative UI renderer, Blazor WASM web head on Vercel, MAUI Blazor Hybrid desktop/mobile head, vertical slice end-to-end against the in-memory adapter
 - [ ] **Phase 5: Verify & Handoff** - Clean-clone bootstrap test, full test/architecture run, docs finalised, open questions populated, implemented-vs-stubbed-vs-deferred report
