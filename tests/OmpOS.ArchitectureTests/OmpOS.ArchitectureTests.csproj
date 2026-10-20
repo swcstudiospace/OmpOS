@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/OmpOS.Contracts/OmpOS.Contracts.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Parser/OmpOS.Parser.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Rpc/OmpOS.Harness.Rpc.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Sessions/OmpOS.Sessions.csproj" />
+    <ProjectReference Include="../../src/OmpOS.GenUi/OmpOS.GenUi.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Sandbox/OmpOS.Sandbox.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Workflows/OmpOS.Workflows.csproj" />
+    <ProjectReference Include="../../src/OmpOS.UI/OmpOS.UI.csproj" />
+    <ProjectReference Include="../../services/OmpOS.Api/OmpOS.Api.csproj" />
+    <ProjectReference Include="../../services/OmpOS.Workflows.Worker/OmpOS.Workflows.Worker.csproj" />
+    <ProjectReference Include="../../apps/OmpOS.Web/OmpOS.Web.csproj" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="TngTech.ArchUnitNET.xUnitV3" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+</Project>

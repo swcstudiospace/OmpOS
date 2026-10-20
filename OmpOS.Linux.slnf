@@ -17,7 +17,8 @@
             "services/OmpOS.Api/OmpOS.Api.csproj",
             "services/OmpOS.Workflows.Worker/OmpOS.Workflows.Worker.csproj",
             "apps/OmpOS.Web/OmpOS.Web.csproj",
-            "tests/OmpOS.Contracts.Tests/OmpOS.Contracts.Tests.csproj"
+            "tests/OmpOS.Contracts.Tests/OmpOS.Contracts.Tests.csproj",
+            "tests/OmpOS.ArchitectureTests/OmpOS.ArchitectureTests.csproj"
         ]
     }
 }

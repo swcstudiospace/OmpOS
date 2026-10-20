@@ -21,6 +21,7 @@
     <Project Path="src/OmpOS.Workflows/OmpOS.Workflows.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/OmpOS.ArchitectureTests/OmpOS.ArchitectureTests.csproj" />
     <Project Path="tests/OmpOS.Contracts.Tests/OmpOS.Contracts.Tests.csproj" />
   </Folder>
 </Solution>
