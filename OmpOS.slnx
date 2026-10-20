@@ -23,5 +23,9 @@
   <Folder Name="/tests/">
     <Project Path="tests/OmpOS.ArchitectureTests/OmpOS.ArchitectureTests.csproj" />
     <Project Path="tests/OmpOS.Contracts.Tests/OmpOS.Contracts.Tests.csproj" />
+    <Project Path="tests/OmpOS.Harness.Abstractions.Tests/OmpOS.Harness.Abstractions.Tests.csproj" />
+    <Project Path="tests/OmpOS.Harness.ContractTests/OmpOS.Harness.ContractTests.csproj" />
+    <Project Path="tests/OmpOS.Parser.Tests/OmpOS.Parser.Tests.csproj" />
+    <Project Path="tests/OmpOS.Harness.InMemory.Tests/OmpOS.Harness.InMemory.Tests.csproj" />
   </Folder>
 </Solution>
