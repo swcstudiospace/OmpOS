@@ -2,7 +2,14 @@
     "solution": {
         "path": "OmpOS.slnx",
         "projects": [
-            "src/OmpOS.Contracts/OmpOS.Contracts.csproj"
+            "src/OmpOS.Contracts/OmpOS.Contracts.csproj",
+            "src/OmpOS.Parser/OmpOS.Parser.csproj",
+            "src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj",
+            "src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj",
+            "src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj",
+            "src/OmpOS.Harness.Rpc/OmpOS.Harness.Rpc.csproj",
+            "src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj",
+            "src/OmpOS.Sessions/OmpOS.Sessions.csproj"
         ]
     }
 }

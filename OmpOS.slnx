@@ -1,5 +1,12 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/OmpOS.Contracts/OmpOS.Contracts.csproj" />
+    <Project Path="src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
+    <Project Path="src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
+    <Project Path="src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj" />
+    <Project Path="src/OmpOS.Harness.Rpc/OmpOS.Harness.Rpc.csproj" />
+    <Project Path="src/OmpOS.Parser/OmpOS.Parser.csproj" />
+    <Project Path="src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj" />
+    <Project Path="src/OmpOS.Sessions/OmpOS.Sessions.csproj" />
   </Folder>
 </Solution>
