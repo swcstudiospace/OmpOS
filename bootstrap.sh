@@ -13,8 +13,12 @@ export DOTNET_NOLOGO=1 DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 if [ ! -d "$DOTNET_ROOT/sdk/$SDK_VERSION" ]; then
   echo "Installing .NET SDK $SDK_VERSION into $DOTNET_ROOT"
-  curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
-  bash /tmp/dotnet-install.sh --jsonfile global.json --install-dir "$DOTNET_ROOT"
+  # Integrity gap: dotnet-install.sh is fetched without a checksum pin (no verified
+  # digest is available). Not yet recorded in docs/open-questions.md.
+  INSTALLER_DIR="$(mktemp -d)"
+  trap 'rm -rf "$INSTALLER_DIR"' EXIT
+  curl -fsSL https://dot.net/v1/dotnet-install.sh -o "$INSTALLER_DIR/dotnet-install.sh"
+  bash "$INSTALLER_DIR/dotnet-install.sh" --jsonfile global.json --install-dir "$DOTNET_ROOT"
 fi
 
 dotnet --version
