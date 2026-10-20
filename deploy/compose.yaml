@@ -1,0 +1,22 @@
+# OmpOS local dependency stack (podman-compose 1.6.0+). The ONLY supported invocation:
+#   podman-compose --profile workflows up
+# No `version:` key (Compose Spec), no runtime-specific extensions.
+services:
+  temporal:
+    image: docker.io/temporalio/temporal:1.9.1
+    container_name: ompos-temporal
+    command: server start-dev --ip 0.0.0.0 --db-filename /home/temporal/temporal.db
+    ports:
+      - "7233:7233" # gRPC frontend
+      - "8233:8233" # Web UI
+    volumes:
+      - temporal-data:/home/temporal # image user `temporal` (uid 1000) owns this path
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    profiles: ["workflows"]
+volumes:
+  temporal-data:

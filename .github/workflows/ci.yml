@@ -1,0 +1,87 @@
+# OmpOS CI (Phase 1, decision D-05).
+# Mirrors bootstrap.sh, then adds the audit, scan, and compose gates.
+# Podman is the only container runtime referenced here; Docker is not used.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - run: dotnet restore OmpOS.Linux.slnf --locked-mode
+      - run: dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
+      - run: dotnet test OmpOS.Linux.slnf -c Release --no-build --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: test-results
+          path: TestResults
+      - run: dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
+      - name: Vulnerable packages (list exits 0 even on findings, so the parse is the gate)
+        run: |
+          dotnet list OmpOS.Linux.slnf package --vulnerable --include-transitive --format json > vuln.json
+          python3 - <<'PY'
+          import json
+          import sys
+          document = json.load(open("vuln.json"))
+          hits = [
+              package
+              for project in document["projects"]
+              for framework in project.get("frameworks", [])
+              for key in ("topLevelPackages", "transitivePackages")
+              for package in framework.get(key, [])
+              if package.get("vulnerabilities")
+          ]
+          print(json.dumps(hits, indent=1))
+          sys.exit(1 if hits else 0)
+          PY
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+      - name: Validate compose (podman-compose needs the podman binary and the profile)
+        run: |
+          pipx install podman-compose==1.6.0
+          podman-compose --profile workflows -f deploy/compose.yaml config --services | grep -qx temporal
+          podman-compose --profile workflows -f deploy/compose.yaml config -q
+
+  shells:
+    runs-on: macos-15
+    needs: build-test
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: MAUI head (only when the project exists)
+        if: hashFiles('apps/OmpOS.App/OmpOS.App.csproj') != ''
+        run: |
+          dotnet workload install maui
+          dotnet restore apps/OmpOS.App/OmpOS.App.csproj --locked-mode
+          dotnet build apps/OmpOS.App/OmpOS.App.csproj -c Release --no-restore -warnaserror
