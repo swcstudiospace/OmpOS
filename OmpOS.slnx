@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OmpOS.Contracts/OmpOS.Contracts.csproj" />
+  </Folder>
+</Solution>

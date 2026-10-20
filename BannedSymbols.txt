@@ -1,0 +1,4 @@
+N:Newtonsoft.Json;Do not use Newtonsoft.Json; use System.Text.Json with source generation instead
+P:System.Threading.Tasks.Task`1.Result;Do not block on Task.Result; use await instead
+M:System.Threading.Tasks.Task.Wait();Do not block on Task.Wait; use await instead
+M:System.Diagnostics.Process.Start(System.String);Do not spawn processes via the string overload; route process execution through the harness instead

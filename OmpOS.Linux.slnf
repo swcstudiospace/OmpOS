@@ -1,0 +1,8 @@
+{
+    "solution": {
+        "path": "OmpOS.slnx",
+        "projects": [
+            "src/OmpOS.Contracts/OmpOS.Contracts.csproj"
+        ]
+    }
+}

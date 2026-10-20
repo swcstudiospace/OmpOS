@@ -1,0 +1,1 @@
+T:System.Diagnostics.Process;Do not spawn processes outside the harness and sandbox layers; see ADR-0001
