@@ -1,0 +1,38 @@
+{
+  "contract": "1.0.0",
+  "flavor": "core",
+  "milestone": "v0.9.1",
+  "phases": [
+    {
+      "number": "1",
+      "name": "Foundation",
+      "status": "in_progress"
+    },
+    {
+      "number": "2",
+      "name": "Core",
+      "status": "pending"
+    },
+    {
+      "number": "3",
+      "name": "Platform",
+      "status": "pending"
+    },
+    {
+      "number": "4",
+      "name": "Surfaces",
+      "status": "pending"
+    },
+    {
+      "number": "5",
+      "name": "Verify & Handoff",
+      "status": "pending"
+    }
+  ],
+  "next": {
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step (verify)",
+    "reason": "Phase 1 of 5 · ready to verify"
+  },
+  "updated_at": "2026-10-20T06:26:35.613Z"
+}

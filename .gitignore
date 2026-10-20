@@ -485,3 +485,6 @@ $RECYCLE.BIN/
 .env
 *.user
 TestResults/
+
+# GSD runtime artifacts (regenerated)
+.planning/intel/
