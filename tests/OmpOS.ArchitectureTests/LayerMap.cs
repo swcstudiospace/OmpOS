@@ -32,11 +32,15 @@ internal static class LayerMap
 
     /// <summary>
     /// Explicit allow-list for same-layer edges (D-02): Sessions may use GenUi,
-    /// and the UI razor library may use GenUi. Every other same-layer edge is a violation.
+    /// and the UI razor library may use GenUi, and the catch-all parser may use the
+    /// harness and sandbox abstraction types. Every other same-layer edge is a violation.
     /// </summary>
     public static readonly IReadOnlySet<(string From, string To)> SameLayerAllowed = new HashSet<(string, string)>
     {
         ("OmpOS.Sessions", "OmpOS.GenUi"),
         ("OmpOS.UI", "OmpOS.GenUi"),
+        // intentional: the catch-all parser feeds the harness via abstraction types (Phase 2 D-01)
+        ("OmpOS.Parser", "OmpOS.Harness.Abstractions"),
+        ("OmpOS.Parser", "OmpOS.Sandbox.Abstractions"),
     };
 }
