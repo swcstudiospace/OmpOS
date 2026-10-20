@@ -16,7 +16,8 @@
             "src/OmpOS.UI/OmpOS.UI.csproj",
             "services/OmpOS.Api/OmpOS.Api.csproj",
             "services/OmpOS.Workflows.Worker/OmpOS.Workflows.Worker.csproj",
-            "apps/OmpOS.Web/OmpOS.Web.csproj"
+            "apps/OmpOS.Web/OmpOS.Web.csproj",
+            "tests/OmpOS.Contracts.Tests/OmpOS.Contracts.Tests.csproj"
         ]
     }
 }

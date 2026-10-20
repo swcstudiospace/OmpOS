@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-using OmpOS.Contracts;
 using Shouldly;
 using Xunit;
 
@@ -11,9 +9,12 @@ namespace OmpOS.Contracts.Tests;
 public sealed class ContractVersionTests
 {
     [Fact]
-    public void CurrentMatchesSemver()
+    public void CurrentIsThreePartSemver()
     {
-        Regex.IsMatch(ContractVersion.Current, @"^\d+\.\d+\.\d+$").ShouldBeTrue();
+        Version.TryParse(ContractVersion.Current, out var version).ShouldBeTrue();
+        version.ShouldNotBeNull();
+        version.Build.ShouldBeGreaterThanOrEqualTo(0);
+        version.Revision.ShouldBe(-1);
     }
 
     [Fact]
