@@ -44,6 +44,34 @@ public sealed class RepoHygieneTests
         offenders.ShouldBeEmpty();
     }
 
+    [Fact]
+    public void RepoHygiene_DocsSkeletonExists()
+    {
+        var repoRoot = ProjectGraphChecker.FindRepoRoot();
+        string[] docs =
+        [
+            "README.md",
+            "CONTRIBUTING.md",
+            "docs/architecture.md",
+            "docs/decisions/ADR-0001-monorepo-layout.md",
+            "docs/decisions/ADR-0002-surface-technology.md",
+            "docs/open-questions.md",
+            "docs/runbooks/local-dev.md",
+            "docs/runbooks/sandbox.md",
+        ];
+        foreach (var doc in docs)
+        {
+            var info = new FileInfo(Path.Combine(repoRoot, doc));
+            info.Exists.ShouldBeTrue($"expected {doc} to exist");
+            info.Length.ShouldBeGreaterThan(400, $"{doc} must exceed 400 bytes");
+        }
+
+        var questions = File.ReadAllLines(Path.Combine(repoRoot, "docs/open-questions.md"));
+        questions.Any(static line => string.Equals(line, "| ID | Question | Why it matters | Default taken | Owner | Status |", StringComparison.Ordinal)).ShouldBeTrue("open-questions.md must contain the exact header row");
+        var rows = questions.Where(static line => line.Length > 0 && line[0] == '|' && line.Contains("ompos-maintainers", StringComparison.Ordinal)).ToList();
+        rows.Count.ShouldBeGreaterThanOrEqualTo(20);
+    }
+
     private static bool ContainsDockerWord(string line)
     {
         var index = line.IndexOf("docker", StringComparison.OrdinalIgnoreCase);
