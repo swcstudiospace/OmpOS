@@ -35,17 +35,23 @@ public sealed class UiBlockConverter : JsonConverter<UiBlock>
         ArgumentNullException.ThrowIfNull(options);
         using var doc = JsonDocument.ParseValue(ref reader);
         var root = doc.RootElement;
-        string? kind = root.TryGetProperty(Discriminator, out var kindElement) && kindElement.ValueKind == JsonValueKind.String
-            ? kindElement.GetString()
-            : null;
+        // A non-object root (array, string, number, true/false, null) has no
+        // discriminator and must degrade to UnknownBlock, never throw.
+        string? kind = root.ValueKind == JsonValueKind.Object
+            && root.TryGetProperty(Discriminator, out var kindElement)
+            && kindElement.ValueKind == JsonValueKind.String
+                ? kindElement.GetString()
+                : null;
         if (kind is not null && KindToType.TryGetValue(kind, out var type) && type != typeof(UnknownBlock))
         {
             return (UiBlock?)root.Deserialize(options.GetTypeInfo(type));
         }
 
-        var id = root.TryGetProperty("id", out var idElement) && idElement.ValueKind == JsonValueKind.String
-            ? idElement.GetString() ?? string.Empty
-            : string.Empty;
+        var id = root.ValueKind == JsonValueKind.Object
+            && root.TryGetProperty("id", out var idElement)
+            && idElement.ValueKind == JsonValueKind.String
+                ? idElement.GetString() ?? string.Empty
+                : string.Empty;
         return new UnknownBlock { Id = id, OriginalKind = kind, Raw = root.Clone() };
     }
 

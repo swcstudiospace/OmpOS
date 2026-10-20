@@ -71,4 +71,27 @@ public sealed class StreamEventJsonTests
         var payload = back.Payload.ShouldBeOfType<UnknownPayload>();
         payload.OriginalKind.ShouldBeNull();
     }
+
+    [Theory]
+    [InlineData("""[]""")]
+    [InlineData("""[1,2,3]""")]
+    [InlineData("\"not-an-object\"")]
+    [InlineData("""42""")]
+    [InlineData("""true""")]
+    public void NonObjectRootDegradesToUnknown(string rootJson)
+    {
+        var back = JsonSerializer.Deserialize(rootJson, OmpOsJsonContext.Default.StreamEventPayload);
+
+        var payload = back.ShouldBeOfType<UnknownPayload>();
+        payload.OriginalKind.ShouldBeNull();
+        payload.Raw.GetRawText().ShouldBe(rootJson);
+    }
+
+    [Fact]
+    public void NullTopLevelPayloadDeserializesToNullWithoutThrowing()
+    {
+        // STJ default null handling: the converter is not invoked for a null
+        // token; the reference deserializes to null. Must not throw.
+        JsonSerializer.Deserialize("null", OmpOsJsonContext.Default.StreamEventPayload).ShouldBeNull();
+    }
 }

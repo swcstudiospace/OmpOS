@@ -78,4 +78,28 @@ public sealed class UiBlockJsonTests
 
         Should.Throw<JsonException>(() => JsonSerializer.Deserialize(json, OmpOsJsonContext.Default.UiBlock));
     }
+
+    [Theory]
+    [InlineData("""[]""")]
+    [InlineData("""[{"kind":"markdown"}]""")]
+    [InlineData("\"not-an-object\"")]
+    [InlineData("""7""")]
+    [InlineData("""false""")]
+    public void NonObjectRootDegradesToUnknown(string rootJson)
+    {
+        var back = JsonSerializer.Deserialize(rootJson, OmpOsJsonContext.Default.UiBlock);
+
+        var block = back.ShouldBeOfType<UnknownBlock>();
+        block.OriginalKind.ShouldBeNull();
+        block.Id.ShouldBeEmpty();
+        block.Raw.GetRawText().ShouldBe(rootJson);
+    }
+
+    [Fact]
+    public void NullTopLevelBlockDeserializesToNullWithoutThrowing()
+    {
+        // STJ default null handling: the converter is not invoked for a null
+        // token; the reference deserializes to null. Must not throw.
+        JsonSerializer.Deserialize("null", OmpOsJsonContext.Default.UiBlock).ShouldBeNull();
+    }
 }
