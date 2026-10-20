@@ -9,7 +9,14 @@
             "src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj",
             "src/OmpOS.Harness.Rpc/OmpOS.Harness.Rpc.csproj",
             "src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj",
-            "src/OmpOS.Sessions/OmpOS.Sessions.csproj"
+            "src/OmpOS.Sessions/OmpOS.Sessions.csproj",
+            "src/OmpOS.GenUi/OmpOS.GenUi.csproj",
+            "src/OmpOS.Sandbox/OmpOS.Sandbox.csproj",
+            "src/OmpOS.Workflows/OmpOS.Workflows.csproj",
+            "src/OmpOS.UI/OmpOS.UI.csproj",
+            "services/OmpOS.Api/OmpOS.Api.csproj",
+            "services/OmpOS.Workflows.Worker/OmpOS.Workflows.Worker.csproj",
+            "apps/OmpOS.Web/OmpOS.Web.csproj"
         ]
     }
 }

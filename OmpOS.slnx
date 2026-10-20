@@ -1,12 +1,23 @@
 <Solution>
+  <Folder Name="/apps/">
+    <Project Path="apps/OmpOS.Web/OmpOS.Web.csproj" />
+  </Folder>
+  <Folder Name="/services/">
+    <Project Path="services/OmpOS.Api/OmpOS.Api.csproj" />
+    <Project Path="services/OmpOS.Workflows.Worker/OmpOS.Workflows.Worker.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/OmpOS.Contracts/OmpOS.Contracts.csproj" />
+    <Project Path="src/OmpOS.GenUi/OmpOS.GenUi.csproj" />
     <Project Path="src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
     <Project Path="src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
     <Project Path="src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj" />
     <Project Path="src/OmpOS.Harness.Rpc/OmpOS.Harness.Rpc.csproj" />
     <Project Path="src/OmpOS.Parser/OmpOS.Parser.csproj" />
     <Project Path="src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj" />
+    <Project Path="src/OmpOS.Sandbox/OmpOS.Sandbox.csproj" />
     <Project Path="src/OmpOS.Sessions/OmpOS.Sessions.csproj" />
+    <Project Path="src/OmpOS.UI/OmpOS.UI.csproj" />
+    <Project Path="src/OmpOS.Workflows/OmpOS.Workflows.csproj" />
   </Folder>
 </Solution>
