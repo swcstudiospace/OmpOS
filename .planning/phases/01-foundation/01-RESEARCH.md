@@ -249,6 +249,9 @@ D-04 lists NSubstitute 6.2.0, Markdig 1.4.2, DiffPlex 1.9.0, Microsoft.AspNetCor
 | Microsoft.CodeAnalysis.BannedApiAnalyzers | NuGet | 6+ yrs | 49.1 M | github.com/dotnet/roslyn (verified) | OK | Approved |
 | Microsoft.Testing.Extensions.TrxReport | NuGet | 2024+ | 23.9 M | github.com/microsoft/testfx (verified) | OK | Approved |
 | podman-compose | PyPI | 1.x since 2023 | n/a | github.com/containers/podman-compose | OK | Approved |
+| Microsoft.AspNetCore.Components.Web | NuGet | 10.0.13 (latest stable, verified 2026-10-20) | n/a | github.com/dotnet/dotnet (nuspec authors: Microsoft, projectUrl asp.net) | OK | Approved (same publisher and repo as the approved ASP.NET Core 10 packages) |
+| Microsoft.AspNetCore.Components.WebAssembly | NuGet | 10.0.13 (latest stable, verified 2026-10-20) | n/a | github.com/dotnet/dotnet (nuspec authors: Microsoft, projectUrl asp.net) | OK | Approved (same publisher and repo as the approved ASP.NET Core 10 packages) |
+| Microsoft.AspNetCore.Components.WebAssembly.DevServer | NuGet | 10.0.13 (latest stable, verified 2026-10-20) | n/a | github.com/dotnet/dotnet (nuspec authors: Microsoft, projectUrl asp.net) | OK | Approved (same publisher and repo as the approved ASP.NET Core 10 packages) |
 
 **Packages removed due to [SLOP] verdict:** none
 **Packages flagged as suspicious [SUS]:** none
