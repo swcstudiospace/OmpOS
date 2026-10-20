@@ -147,18 +147,18 @@ public static class HarnessEventProjection
                 });
 
             case ToolCallUpdateKind when TryString(raw, "callId", out var updateId) && TryString(raw, "status", out var status):
-            {
-                var index = FindToolCall(state.Blocks, updateId);
-                if (index < 0)
                 {
-                    return AddBlock(state, "unknown", id => Unrecognized(id, unknown));
-                }
+                    var index = FindToolCall(state.Blocks, updateId);
+                    if (index < 0)
+                    {
+                        return AddBlock(state, "unknown", id => Unrecognized(id, unknown));
+                    }
 
-                var existing = (ToolCallBlock)state.Blocks[index];
-                var updated = new List<UiBlock>(state.Blocks);
-                updated[index] = existing with { Status = status };
-                return state with { Blocks = updated };
-            }
+                    var existing = (ToolCallBlock)state.Blocks[index];
+                    var updated = new List<UiBlock>(state.Blocks);
+                    updated[index] = existing with { Status = status };
+                    return state with { Blocks = updated };
+                }
 
             case PermissionRequestKind when TryString(raw, "callId", out var permissionId) && TryString(raw, "name", out var permissionName):
                 return AddBlock(state, "permission", _ => new PermissionBlock

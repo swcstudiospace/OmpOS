@@ -1,8 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using OmpOS.Contracts.Intents;
 using OmpOS.Parser.Recognizers;
 using Shouldly;
-using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
 namespace OmpOS.Parser.Tests;
