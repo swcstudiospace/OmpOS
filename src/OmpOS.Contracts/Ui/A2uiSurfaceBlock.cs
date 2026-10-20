@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace OmpOS.Contracts.Ui;
 
 /// <summary>
-/// An A2UI v0.9.1 surface block (kind "a2ui").
+/// An A2UI v0.9.1 surface block (kind "a2ui-surface").
 /// </summary>
 public sealed record A2uiSurfaceBlock : UiBlock
 {
