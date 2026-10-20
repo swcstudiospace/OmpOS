@@ -23,7 +23,6 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Phase 1: Foundation
 **Goal**: A developer can clone the repo, run one command, and get a green, warning-free, locked, formatted build of a monorepo whose shared contracts and layer direction are enforced mechanically
-**Mode:** mvp
 **Depends on**: Nothing (first phase)
 **Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04, FOUND-05, FOUND-06, FOUND-07, FOUND-08, FOUND-09
 **Success Criteria** (what must be TRUE):
@@ -37,7 +36,6 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Phase 2: Core
 **Goal**: Any prompt string becomes exactly one IntentEnvelope, runs through a typed ACP/RPC harness with an explicit state machine and a scripted in-memory adapter, lands in an append-only sequence-numbered session log, and streams out of a secured, observable API as resumable Server-Sent Events
-**Mode:** mvp
 **Depends on**: Phase 1
 **Requirements**: PARSE-01, PARSE-02, PARSE-03, PARSE-04, HARN-01, HARN-02, HARN-03, HARN-04, HARN-05, HARN-06, SESS-01, SESS-02, SESS-03, API-01, API-02, API-03, OPS-01, OPS-02, OPS-03, OPS-04
 **Success Criteria** (what must be TRUE):
@@ -51,7 +49,6 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Phase 3: Platform
 **Goal**: A session run can be placed inside an operator-controlled isolation boundary and executed durably — a fake and a local podman-compose sandbox provider work for real, every vendor boundary is an honest interface-conforming stub, and the provision → run → collect → teardown workflow runs in-process by default or on a Temporal worker behind a flag
-**Mode:** mvp
 **Depends on**: Phase 2
 **Requirements**: SBOX-01, SBOX-02, SBOX-03, SBOX-04, SBOX-05, WFLW-01, WFLW-02, WFLW-03
 **Success Criteria** (what must be TRUE):
@@ -64,7 +61,6 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Phase 4: Surfaces
 **Goal**: A prompt typed into the web, desktop or mobile surface renders as live, accessible Generative UI blocks streamed from the backend — the full vertical slice runs in a real browser against the in-memory adapter with no omp, Temporal, Railway or cloud credential
-**Mode:** mvp
 **Depends on**: Phase 2 (scripted adapter + SSE API); Phase 3 for the readiness/workflow wiring the shells display
 **Requirements**: UI-01, UI-02, UI-03, UI-04, WEB-01, WEB-02, DESK-01, MOB-01, SHELL-01
 **Success Criteria** (what must be TRUE):
@@ -78,7 +74,6 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Phase 5: Verify & Handoff
 **Goal**: The scaffold is proven from a clean clone, every test and architecture check is green, the documentation is complete and honest, and the handoff report states exactly what is implemented, stubbed and deferred against the ultrathink acceptance criteria
-**Mode:** mvp
 **Depends on**: Phase 4
 **Requirements**: VERIFY-01, VERIFY-02, VERIFY-03
 **Success Criteria** (what must be TRUE):
