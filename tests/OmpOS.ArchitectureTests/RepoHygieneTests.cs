@@ -1,4 +1,5 @@
 using Shouldly;
+using System.Diagnostics;
 using Xunit;
 
 namespace OmpOS.ArchitectureTests;
@@ -15,6 +16,8 @@ public sealed class RepoHygieneTests
         "docker is not used",
         "docker is unsupported",
     ];
+
+    private static readonly string[] AllowedDockerArtifactPaths = [];
 
     [Fact]
     public void RepoHygiene_NoDockerTooling()
@@ -40,6 +43,31 @@ public sealed class RepoHygieneTests
                 }
             }
         }
+
+        offenders.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void NoDockerfileOrComposeFileNamed()
+    {
+        var repoRoot = ProjectGraphChecker.FindRepoRoot();
+        using var git = Process.Start(new ProcessStartInfo("git")
+        {
+            WorkingDirectory = repoRoot,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            ArgumentList = { "ls-files" },
+        }) ?? throw new InvalidOperationException("could not start git");
+        var tracked = git.StandardOutput.ReadToEnd();
+        git.WaitForExit();
+        git.ExitCode.ShouldBe(0, "git ls-files must succeed to enumerate tracked files");
+
+        var offenders = tracked
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Where(path => Path.GetFileName(path).StartsWith("Dockerfile", StringComparison.OrdinalIgnoreCase)
+                || Path.GetFileName(path).StartsWith("docker-compose", StringComparison.OrdinalIgnoreCase))
+            .Where(path => !AllowedDockerArtifactPaths.Contains(path, StringComparer.Ordinal))
+            .ToList();
 
         offenders.ShouldBeEmpty();
     }
@@ -74,6 +102,11 @@ public sealed class RepoHygieneTests
 
     private static bool ContainsDockerWord(string line)
     {
+        if (line.Contains("dockerfile", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
         var index = line.IndexOf("docker", StringComparison.OrdinalIgnoreCase);
         while (index >= 0)
         {
