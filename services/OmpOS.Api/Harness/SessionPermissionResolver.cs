@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using OmpOS.Contracts.Streaming;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Sessions;
 
@@ -11,9 +12,10 @@ namespace OmpOS.Api.Harness;
 /// through <see cref="SessionService.WaitForDecisionAsync"/>, for at most the decision timeout.
 /// </summary>
 /// <remarks>
-/// Only an allow decision grants. A deny, a lapsed or cancelled wait, a request that never registers, and any failure all return
-/// <see cref="PermissionDecision.Deny"/>. The request identifier is <c>{runId}:{RequestId ?? CallId}</c>, the identifier that
-/// <c>SessionRunActivities</c> registers for the same request.
+/// Only an allow decision grants. A deny, a lapsed or cancelled wait, and any failure all return <see cref="PermissionDecision.Deny"/>.
+/// A request that no run registers within the registration bound is stored and denied before the agent is answered, so it is never
+/// left pending. The request identifier is <c>{runId}:{RequestId ?? CallId}</c>, the identifier that <c>SessionRunActivities</c>
+/// registers for the same request.
 /// </remarks>
 internal sealed class SessionPermissionResolver : IPermissionResolver
 {
@@ -79,6 +81,7 @@ internal sealed class SessionPermissionResolver : IPermissionResolver
         {
             if (!await WaitForRegistrationAsync(requestId, cancellationToken).ConfigureAwait(false))
             {
+                await SettleUnregisteredAsync(request, requestId).ConfigureAwait(false);
                 return PermissionDecision.Deny;
             }
 
@@ -116,5 +119,60 @@ internal sealed class SessionPermissionResolver : IPermissionResolver
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Settles a request that no run registered within the registration bound. The request is stored and denied before the
+    /// agent is answered, so it is not pending and a later decision is refused. A run that registers the same request meanwhile
+    /// has it denied here. A DiagnosticEvent in the session log records the reason when a request was settled.
+    /// </summary>
+    private async Task SettleUnregisteredAsync(PermissionRequestEvent request, string requestId)
+    {
+        try
+        {
+            await _sessions.RequestToolApprovalAsync(_sessionId, requestId, request.Name, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (SessionException)
+        {
+            // The run registered the request first, or no prompt is running. The denial below settles any pending request.
+        }
+
+        try
+        {
+            await _sessions.ResolveToolApprovalAsync(_sessionId, requestId, approved: false, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (SessionException)
+        {
+            // Nothing is pending under this identifier, so there was no request to settle and no reason to record.
+            return;
+        }
+
+        await RecordUnregisteredDiagnosticAsync(requestId).ConfigureAwait(false);
+    }
+
+    /// <summary>Appends a DiagnosticEvent with the reason to the session log, in the turn the request was settled.</summary>
+    private async Task RecordUnregisteredDiagnosticAsync(string requestId)
+    {
+        var session = await _repository.GetAsync(_sessionId, CancellationToken.None).ConfigureAwait(false);
+        if (session is null || session.Events.Count == 0)
+        {
+            return;
+        }
+
+        var denial = session.Events[^1];
+        await _repository.AppendAsync(
+            _sessionId,
+            new StreamEvent
+            {
+                Seq = 0,
+                SessionId = _sessionId,
+                CorrelationId = denial.CorrelationId,
+                Timestamp = TimeProvider.System.GetUtcNow(),
+                Payload = new DiagnosticPayload
+                {
+                    Message = $"Permission request '{requestId}' was not registered within the registration bound; it is denied.",
+                },
+            },
+            CancellationToken.None).ConfigureAwait(false);
     }
 }

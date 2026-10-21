@@ -220,7 +220,20 @@ public sealed class SessionRunActivities : ISessionRunActivities
     /// </summary>
     private async Task AwaitToolApprovalAsync(SessionRunInput input, string requestId, string toolName, CancellationToken cancellationToken)
     {
-        await _sessions.RequestToolApprovalAsync(input.SessionId, requestId, toolName, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _sessions.RequestToolApprovalAsync(input.SessionId, requestId, toolName, cancellationToken).ConfigureAwait(false);
+        }
+        catch (SessionException)
+        {
+            // Registration is refused when the request is already stored: the resolver settled it at the registration bound, or is
+            // settling it now. The run neither registers nor decides it again, and the wait below reads the stored decision.
+            // A refusal for any other reason is rethrown.
+            if (await _repository.GetToolApprovalAsync(input.SessionId, requestId, cancellationToken).ConfigureAwait(false) is null)
+            {
+                throw;
+            }
+        }
         _observer.SessionChanged(input.SessionId);
         _ = await _sessions.WaitForDecisionAsync(input.SessionId, requestId, _toolApprovalTimeout, cancellationToken).ConfigureAwait(false);
         _observer.SessionChanged(input.SessionId);

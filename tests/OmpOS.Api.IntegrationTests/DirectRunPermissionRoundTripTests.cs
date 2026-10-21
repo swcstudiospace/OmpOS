@@ -8,11 +8,13 @@ using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using OmpOS.Api.Harness;
 using OmpOS.Api.Options;
+using OmpOS.Contracts.Errors;
 using OmpOS.Contracts.Sessions;
 using OmpOS.Contracts.Streaming;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.Acp;
 using OmpOS.Sessions;
+using OmpOS.Workflows;
 using Shouldly;
 using Xunit;
 
@@ -224,6 +226,113 @@ public sealed class DirectRunPermissionRoundTripTests
 
         OptionOf(await peer.Answered.Task.WaitAsync(WaitLimit, ct).ConfigureAwait(true)).ShouldBe(RejectOptionId);
         (await repository.GetToolApprovalAsync(stored.Id, PermissionRequestKey(RunId), ct).ConfigureAwait(true)).ShouldBeNull();
+    }
+
+    /// <summary>
+    /// A request that no run registers within the registration bound is settled before the agent is answered. It is stored as
+    /// denied, so it is not pending, and a DiagnosticEvent records the reason. The agent gets a reject, and a later allow is refused.
+    /// </summary>
+    [Fact]
+    public async Task UnregisteredRequestIsSettledRejectedAtRegistrationBound()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var sessions = new SessionService(repository, TimeProvider.System);
+        var stored = await sessions.CreateAsync("owner", ct).ConfigureAwait(true);
+        await sessions.SubmitPromptAsync(stored.Id, "run", ct).ConfigureAwait(true);
+        var requestId = PermissionRequestKey(RunId);
+        var peer = new PeerScript();
+        var resolver = new SessionPermissionResolver(repository, sessions, stored.Id, RunId, DecisionTimeout, TimeSpan.FromMilliseconds(200));
+
+        _ = await PromptAsync(peer, resolver, ct).ConfigureAwait(true);
+
+        OptionOf(await peer.Answered.Task.WaitAsync(WaitLimit, ct).ConfigureAwait(true)).ShouldBe(RejectOptionId);
+        var record = await repository.GetToolApprovalAsync(stored.Id, requestId, ct).ConfigureAwait(true);
+        record.ShouldNotBeNull().Decision.ShouldBe(PermissionDecision.Deny);
+        var session = (await repository.GetAsync(stored.Id, ct).ConfigureAwait(true)).ShouldNotBeNull();
+        session.Status.ShouldBe(SessionStatus.Running);
+        session.Events.Select(static evt => evt.Payload).OfType<DiagnosticPayload>().ShouldHaveSingleItem().Message.ShouldContain("registration bound");
+
+        var late = await Should.ThrowAsync<SessionException>(() => sessions.ResolveToolApprovalAsync(stored.Id, requestId, true, ct)).ConfigureAwait(true);
+        late.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
+        (await repository.GetToolApprovalAsync(stored.Id, requestId, ct).ConfigureAwait(true)).ShouldNotBeNull().Decision.ShouldBe(PermissionDecision.Deny);
+    }
+
+    /// <summary>
+    /// A run whose permission request is registered after the resolver settled it as denied at the registration bound. The
+    /// registration is refused, the run does not fail, and the turn ends through the normal path with one denial in the log.
+    /// </summary>
+    [Fact]
+    public async Task LateRegistrationOfSettledRequestEndsRunWithOneDenial()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = new ScriptedRunSession(new PermissionRequestEvent("call-1", ToolTitle, "{}", PermissionRequestId.ToString(CultureInfo.InvariantCulture)));
+        using var factory = new OmpApiFactory(configureServices: services => services.AddSingleton<IHarnessSessionFactory>(new ScriptedRunFactory(harness)));
+        var container = factory.Services;
+        var sessions = container.GetRequiredService<SessionService>();
+        var repository = container.GetRequiredService<ISessionRepository>();
+        var stored = await sessions.CreateAsync("owner", ct).ConfigureAwait(true);
+        await sessions.SubmitPromptAsync(stored.Id, "run", ct).ConfigureAwait(true);
+
+        // The ACP resolver settles the request at the registration bound, before the run registers it.
+        var resolver = new SessionPermissionResolver(repository, sessions, stored.Id, RunId, DecisionTimeout, TimeSpan.FromMilliseconds(200));
+        _ = await resolver.ResolveAsync(new PermissionRequestEvent("call-1", ToolTitle, "{}", PermissionRequestId.ToString(CultureInfo.InvariantCulture)), ct).ConfigureAwait(true);
+
+        var input = new SessionRunInput
+        {
+            RunId = RunId,
+            SessionId = stored.Id,
+            SandboxId = "sandbox-late",
+            CorrelationId = $"{stored.Id}/turn-1",
+            Prompt = "run",
+            ResumeFromSeq = 0,
+            IdempotencyKey = "key-late",
+        };
+        _ = await container.GetRequiredService<ISessionRunActivities>().RunPromptAsync(input, static _ => { }, ct).ConfigureAwait(true);
+
+        var session = (await repository.GetAsync(stored.Id, ct).ConfigureAwait(true)).ShouldNotBeNull();
+        session.Status.ShouldBe(SessionStatus.Completed);
+        EventKinds(session).Count(static kind => string.Equals(kind, "tool_approval_denied", StringComparison.Ordinal)).ShouldBe(1);
+    }
+
+    /// <summary>A harness session that asks for one permission and then completes its turn. The run is its only consumer.</summary>
+    private sealed class ScriptedRunSession(PermissionRequestEvent request) : IOmpSession
+    {
+        /// <inheritdoc />
+        public Task CreateAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        /// <inheritdoc />
+        public Task ResumeAsync(string sessionId, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        /// <inheritdoc />
+        public async IAsyncEnumerable<HarnessEvent> SubmitPromptAsync(string prompt, PromptOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return request;
+            yield return new CompletedEvent("end_turn");
+        }
+
+        /// <inheritdoc />
+        public Task CancelAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        /// <inheritdoc />
+        public HarnessState State => HarnessState.Ready;
+
+        /// <inheritdoc />
+        public IReadOnlyDictionary<string, string> AdvertisedCapabilities { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        /// <inheritdoc />
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    /// <summary>Hands every run the same scripted harness session.</summary>
+    private sealed class ScriptedRunFactory(IOmpSession session) : IHarnessSessionFactory
+    {
+        /// <inheritdoc />
+        public IOmpSession CreateSession(string prompt) => session;
+
+        /// <inheritdoc />
+        public IOmpSession CreateSession(string prompt, string sessionId, string runId) => session;
     }
 
     /// <summary>Builds the API with the ACP harness factory over the scripted peer. The default policy admits execute requests.</summary>
