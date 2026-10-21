@@ -15,6 +15,15 @@
         "tags": [
           "SessionEndpoints"
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Created",
@@ -143,6 +152,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "202": {
             "description": "Accepted",
@@ -262,6 +281,19 @@
   },
   "components": {
     "schemas": {
+      "CreateSessionRequest": {
+        "type": "object",
+        "properties": {
+          "ownerId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the owning principal identifier, or null to use the ambient principal."
+          }
+        },
+        "description": "Request body for `POST /sessions`. The owner defaults to the ambient principal when omitted."
+      },
       "Message": {
         "required": [
           "role",
@@ -354,6 +386,19 @@
           }
         },
         "description": "Response body for an accepted `POST /sessions/{id}/prompts` (HTTP 202)."
+      },
+      "PromptRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the prompt text. Required, non-empty, within the configured length limit."
+          }
+        },
+        "description": "Request body for `POST /sessions/{id}/prompts`."
       },
       "Session": {
         "required": [
