@@ -95,7 +95,7 @@ Reference variables use the shape `${{SERVICE.VARIABLE}}`, resolved by Railway a
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://greptimedb.railway.internal:4000/v1/otlp` | Yes when `otlp` | Read by the .NET OpenTelemetry SDK. The private path is unverified (Q-HOST-PRIVNET). |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | Yes when `otlp` | |
 | `OTEL_EXPORTER_OTLP_HEADERS` | `Authorization=<Basic credential>,X-Greptime-DB-Name=public,X-Greptime-Pipeline-Name=greptime_trace_v1` | Yes, secret | The only OTLP header variable. Set it in the hosting environment; the Authorization value is never committed. Traces are rejected with `400 Pipeline is required for this API` without the pipeline header, so do not use `OTEL_EXPORTER_OTLP_TRACES_HEADERS` (it was not applied in the local smoke). See [smoke evidence, finding 1](evidence/smoke-backend-local-2026-10-21.md). `X-Greptime-DB-Name=public` comes from the 2026-10-21 orchestrator decision; the smoke file records only the pipeline header [INFERENCE]. |
-| `Harness__Adapter` | `Acp` | Yes | Production refuses `InMemory` at startup (`HarnessAdapterSelectionTests`). The hosted value is `Acp`; the ACP adapter needs an omp runtime, which no deployed image contains (HOST-04 open). |
+| `Harness__Adapter` | `Acp` | Yes | Production refuses `InMemory` at startup (`HarnessAdapterSelectionTests`). The hosted value is `Acp`. The ACP adapter needs an omp runtime: the API image now contains one (`/usr/local/bin/omp`, see "Known blockers and gaps" item 2). No model credential is deployed (HOST-04 open). |
 | `OmpOS__Debug__LogPrompts` | `false` | No | `true` writes prompt bodies to logs. Keep `false` when hosted. |
 | `Api__Cors__Origins__0` (and `__1`, ...) | Unset | Owner decision | An empty list denies all cross-origin traffic. Set only after the Vercel origin mechanism is decided (Q-VERCEL-CSP). |
 | `Api__MaxPromptLength` | Default `64000` | No | |
@@ -135,7 +135,7 @@ Each step says whether it has been verified. Steps not yet verified are marked "
 | Q-HOST-GREPTIME-AUTH | Basic auth credential rotation for GreptimeDB. | Open (platform) |
 | Q-DATA-TSDB-VERSION | TimescaleDB 2.13 versus a newer version for the hypertable DDL. | Open (ompos-maintainers) |
 | Q-LOCAL-PARITY | Local compose gap: no TLS and no PostGIS locally. | Open (ompos-maintainers) |
-| Q-HOST-RUNTIME | Real omp runtime, sandbox provider, and model credential for the hosted API (HOST-04). | Open (ompos-maintainers) |
+| Q-HOST-RUNTIME | Real omp runtime, sandbox provider, and model credential for the hosted API (HOST-04). | Open (ompos-maintainers), narrowed. The omp runtime is in the image (pinned; "Known blockers and gaps" item 2). The sandbox provider and the model credential remain open. |
 
 Decided, not open: worker placement is none.
 
@@ -144,12 +144,13 @@ Decided, not open: worker placement is none.
 - Local smoke, 2026-10-21: [smoke-backend-local-2026-10-21.md](evidence/smoke-backend-local-2026-10-21.md). It ran the Release `OmpOS.Api` binary in Production mode against local stand-ins (TimescaleDB 2.13.1, Dragonfly v1.27.1, GreptimeDB v1.1.4). It covered health, the session and prompt flow, idempotency, lease release, reaper settlement, restart durability, and traces and metrics in GreptimeDB.
 - Its finding 1 sets the OTLP header rule in the table above. Its finding 2 (a startup failure aborts with SIGABRT, exit 134) applies on Railway too.
 - Not verified by the smoke: Railway private networking over IPv6, TLS on the TimescaleDB template, GreptimeDB Basic authentication, and the deployed image. Only the Railway deploy verifies these.
+- Image smoke, 2026-10-21 on this host (podman 4.9.3, Ubuntu 24.04): `podman build -f deploy/api.Containerfile -t ompos-api:local .` exited 0. `podman run --rm --user 10001:10001 --entrypoint /bin/sh ompos-api:local -c 'id -u && omp --version'` printed `10001` and `omp/18.12.5`. The runbook smoke (`PORT=8080`, `ASPNETCORE_ENVIRONMENT=Development`, InMemory harness and stores; host port 18080) returned 200 for `/health/ready` and `/health/live`, and the container ran as uid 10001. This verifies the image only. The deployed image, Railway private networking and a model run remain unverified.
 - Known limits KL-01 to KL-07 are listed in [open-questions.md](../open-questions.md). None is fixed by this change.
 
 ## Known blockers and gaps
 
 1. The API requires an OIDC bearer token (OD-03, decided autonomously 2026-10-21). No identity provider authority is configured yet, so the API is not exposed publicly.
-2. The hosted API is configured for the ACP harness (`Harness__Adapter=Acp`); Production refuses the in-memory adapter at startup. No deployed image contains omp, no sandbox provider is wired to the hosted path, and no model credential is deployed (HOST-04 stays open).
+2. The hosted API is configured for the ACP harness (`Harness__Adapter=Acp`); Production refuses the in-memory adapter at startup. The API image now contains an omp runtime, installed as `/usr/local/bin/omp`: Bun `1.4.3` (`bun-linux-x64.zip`, SHA-256 `3e730528d89775f03f87f05c06787c4df4099d0a37f3f252e7b829cb23816e18`, from the release's `SHASUMS256.txt`) and `@oh-my-pi/pi-coding-agent` `18.12.5` (npm integrity `sha512-MZxW8b5bM2OMwRQzz5j0JQp6nsCXS0gHmwxSpbotWcNt6dpi1Sr1nMABjseHkPk3sFEXdGpSGJgfHmROxSASJA==`, checked before extraction). The omp package ships no lockfile, so its transitive dependencies are not frozen; `bun install` resolves them at image build time. Image build and `omp --version` as uid 10001 were verified locally on 2026-10-21 (see Verification); the deployed image is not verified. No model credential is deployed, and no sandbox provider is wired to the hosted path. HOST-04 criterion 2 still needs a deploy, OD-03, and a model credential.
 3. Private-path reachability of GreptimeDB and Dragonfly is unverified (Q-HOST-PRIVNET).
 4. The Dragonfly image is unpinned (Q-HOST-DFLY-PIN).
 5. Nothing has been deployed to Railway. The production image builds with podman locally (verified), but no Railway service or deploy exists while deploys are paused.
