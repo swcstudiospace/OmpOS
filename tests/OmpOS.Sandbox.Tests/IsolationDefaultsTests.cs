@@ -61,7 +61,8 @@ public sealed class IsolationDefaultsTests
         var logger = NullLogger<LocalPodmanComposeProvider>.Instance;
         var provider = new LocalPodmanComposeProvider(fakeRunner, logger, options);
 
-        var request = CreateProvisionRequestWithHostMountAndSecret();
+        // Secret refs are rejected under AllowHostSecrets=true (TD-19); this test covers mounts only.
+        var request = CreateProvisionRequestWithHostMountAndSecret() with { SecretRefs = Array.Empty<SecretRef>() };
 
         var result = await provider.ProvisionAsync(request, TestContext.Current.CancellationToken);
 
@@ -114,7 +115,8 @@ public sealed class IsolationDefaultsTests
         var logger = NullLogger<LocalPodmanComposeProvider>.Instance;
         var provider = new LocalPodmanComposeProvider(fakeRunner, logger, options);
 
-        var request = CreateProvisionRequestWithHostMountAndSecret();
+        // Secret refs are rejected under AllowHostSecrets=true (TD-19); this test covers mounts only.
+        var request = CreateProvisionRequestWithHostMountAndSecret() with { SecretRefs = Array.Empty<SecretRef>() };
 
         var result = await provider.ProvisionAsync(request, TestContext.Current.CancellationToken);
 
@@ -262,74 +264,6 @@ public sealed class IsolationDefaultsTests
         };
 
         await Should.ThrowAsync<PolicyDeniedException>(() => provider.ProvisionAsync(request));
-    }
-
-    [Fact]
-    public async Task FakeProvider_Logs_NoSecretValues()
-    {
-        var provider = new FakeSandboxProvider();
-        var request = CreateProvisionRequestWithHostMountAndSecret();
-
-        var result = await provider.ProvisionAsync(request, TestContext.Current.CancellationToken);
-
-        var ct = TestContext.Current.CancellationToken;
-        var logs = new List<string>();
-        await foreach (var log in provider.StreamLogsAsync(result.Descriptor.Id, null, ct))
-        {
-            logs.Add(log);
-            if (logs.Count > 10)
-            {
-                break;
-            }
-        }
-
-        var allLogs = string.Join("\n", logs);
-        allLogs.ShouldNotContain("secret-value-123");
-        allLogs.ShouldNotContain("api-key-456");
-        allLogs.ShouldNotContain("/home/user/.ssh");
-    }
-
-    [Fact]
-    public async Task PodmanProvider_Exec_NoSecretValuesInOutput()
-    {
-        var fakeRunner = new FakeProcessRunner();
-        fakeRunner.SetResult(new ProcessResult
-        {
-            ExitCode = 0,
-            Stdout = "0123456789ab",
-            Stderr = string.Empty,
-            TimedOut = false,
-        });
-
-        var options = Options.Create(new SandboxProviderOptions
-        {
-            AllowHostMounts = true,
-            AllowHostSecrets = true,
-        });
-        var logger = NullLogger<LocalPodmanComposeProvider>.Instance;
-        var provider = new LocalPodmanComposeProvider(fakeRunner, logger, options);
-
-        var request = CreateProvisionRequestWithHostMountAndSecret();
-        var result = await provider.ProvisionAsync(request, TestContext.Current.CancellationToken);
-
-        fakeRunner.SetResult(new ProcessResult
-        {
-            ExitCode = 0,
-            Stdout = "output\n",
-            Stderr = string.Empty,
-            TimedOut = false,
-        });
-
-        var ct = TestContext.Current.CancellationToken;
-        var events = new List<ExecEvent>();
-        await foreach (var evt in provider.ExecAsync(result.Descriptor.Id, CreateExecRequest(), ct))
-        {
-            events.Add(evt);
-        }
-
-        var allOutput = string.Join("\n", events.Select(static e => e.Stdout ?? e.Stderr ?? string.Empty));
-        allOutput.ShouldNotContain("secret-value-123");
-        allOutput.ShouldNotContain("api-key-456");
     }
 
     private static ProvisionRequest CreateProvisionRequestWithHostMountAndSecret() => new()

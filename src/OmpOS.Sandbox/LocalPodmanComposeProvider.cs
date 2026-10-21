@@ -137,13 +137,18 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
 
         var projectName = $"ompos-{sandboxId}";
         var composeFile = Path.Combine(Path.GetTempPath(), $"{projectName}.yaml");
-        var secretName = PodmanSandboxCredential.SecretNameFor(sandboxId);
+        // Only PerSandboxCredentials=true issues a credential. A null name means no secret is created, attached or removed.
+        string? secretName = _options.PerSandboxCredentials ? PodmanSandboxCredential.SecretNameFor(sandboxId) : null;
         var secretCreated = false;
 
         try
         {
-            await CreateCredentialSecretAsync(sandboxId, secretName, cancellationToken).ConfigureAwait(false);
-            secretCreated = true;
+            if (secretName is not null)
+            {
+                await CreateCredentialSecretAsync(sandboxId, secretName, cancellationToken).ConfigureAwait(false);
+                secretCreated = true;
+            }
+
             return await ProvisionCoreAsync(sandboxId, projectName, composeFile, secretName, request, cancellationToken).ConfigureAwait(false);
         }
         catch (SandboxException)
@@ -160,11 +165,11 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         }
     }
 
-    private async Task CleanupFailedProvisionAsync(string projectName, string composeFile, string secretName, bool secretCreated)
+    private async Task CleanupFailedProvisionAsync(string projectName, string composeFile, string? secretName, bool secretCreated)
     {
         // Compose down runs first: podman refuses to remove a secret that a container still uses.
         await TeardownPartialAsync(projectName, composeFile).ConfigureAwait(false);
-        if (secretCreated)
+        if (secretCreated && secretName is not null)
         {
             await RemoveCredentialSecretBestEffortAsync(secretName).ConfigureAwait(false);
         }
@@ -251,9 +256,9 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         Timeout = timeout,
     };
 
-    private async Task<PodmanSandbox> ProvisionCoreAsync(string sandboxId, string projectName, string composeFile, string secretName, ProvisionRequest request, CancellationToken cancellationToken)
+    private async Task<PodmanSandbox> ProvisionCoreAsync(string sandboxId, string projectName, string composeFile, string? secretName, ProvisionRequest request, CancellationToken cancellationToken)
     {
-        await WriteComposeFileAsync(composeFile, sandboxId, projectName, request, cancellationToken).ConfigureAwait(false);
+        await WriteComposeFileAsync(composeFile, sandboxId, projectName, secretName, request, cancellationToken).ConfigureAwait(false);
         await BringUpAsync(projectName, composeFile, request.Timeout, cancellationToken).ConfigureAwait(false);
         var containerId = await LookupContainerIdAsync(request.SessionId, sandboxId, cancellationToken).ConfigureAwait(false);
 
@@ -451,7 +456,10 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
 
         // The credential secret is removed only after down succeeded: podman refuses to remove a secret that a
         // container still uses. A failed removal keeps the record so a retry re-runs down and then removal.
-        await RemoveCredentialSecretAsync(sandboxId, sandbox.SecretName, cancellationToken).ConfigureAwait(false);
+        if (sandbox.SecretName is not null)
+        {
+            await RemoveCredentialSecretAsync(sandboxId, sandbox.SecretName, cancellationToken).ConfigureAwait(false);
+        }
 
         // Success: local state and registry entry go away together. On failure both are
         // retained so lifecycle retries can re-run down with the same compose file.
@@ -489,9 +497,9 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         };
     }
 
-    private async Task WriteComposeFileAsync(string composeFile, string sandboxId, string projectName, ProvisionRequest request, CancellationToken cancellationToken)
+    private async Task WriteComposeFileAsync(string composeFile, string sandboxId, string projectName, string? secretName, ProvisionRequest request, CancellationToken cancellationToken)
     {
-        var composeContent = GenerateComposeFile(sandboxId, projectName, request);
+        var composeContent = GenerateComposeFile(sandboxId, projectName, secretName, request);
         await File.WriteAllTextAsync(composeFile, composeContent, cancellationToken).ConfigureAwait(false);
     }
 
@@ -641,6 +649,11 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
             }
         }
 
+        if (request.SecretRefs.Count > 0)
+        {
+            throw new NotAvailableException("Secret references are not delivered by the local podman provider (TD-19); remove SecretRefs or use per-sandbox credentials.");
+        }
+
         if (_options.OutboundNetworkDefaultDeny && request.NetworkPolicy.OutboundDefault == OutboundDefault.Allow)
         {
             throw new PolicyDeniedException("network-default-deny", "Outbound default allow requires explicit configuration");
@@ -709,7 +722,7 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         }
     }
 
-    private string GenerateComposeFile(string sandboxId, string projectName, ProvisionRequest request)
+    private string GenerateComposeFile(string sandboxId, string projectName, string? secretName, ProvisionRequest request)
     {
         var document = new ComposeDocument();
         var service = new ComposeService
@@ -749,7 +762,10 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
 
         var composeDocument = JsonSerializer.SerializeToNode(document, SandboxJsonContext.Default.ComposeDocument) as JsonObject
             ?? throw new InvalidOperationException("Compose document did not serialize to a JSON object.");
-        PodmanSandboxCredential.AttachCredentialSecret(composeDocument, SandboxServiceName, PodmanSandboxCredential.SecretNameFor(sandboxId));
+        if (secretName is not null)
+        {
+            PodmanSandboxCredential.AttachCredentialSecret(composeDocument, SandboxServiceName, secretName);
+        }
         return composeDocument.ToJsonString();
     }
 
@@ -775,7 +791,7 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
 
         public required string ComposeFile { get; init; }
 
-        public required string SecretName { get; init; }
+        public required string? SecretName { get; init; }
 
         public required string ContainerId { get; init; }
 
