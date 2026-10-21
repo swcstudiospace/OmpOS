@@ -8,7 +8,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>The awaiting-approval state renders only from the server session status, with no approval action (UI-02).</summary>
-public sealed class ApprovalStateTests : BunitContext
+public sealed class ApprovalStateTests : UiTestContext
 {
     /// <summary>Marking approval enters the state with its announcement and no stop or retry affordance.</summary>
     [Fact]

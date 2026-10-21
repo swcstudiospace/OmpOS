@@ -1,5 +1,8 @@
 @namespace OmpOS.UI.Components
 @using OmpOS.GenUi
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime JS
 <section class="ompos-session" id="ompos-conversation" aria-label="Session" tabindex="-1">
     <a class="ompos-skip-link" href="#ompos-conversation">Skip to conversation</a>
     <div class="ompos-announcement" aria-live="polite">@Announcement</div>
@@ -45,9 +48,9 @@
         {
             <button type="button" class="ompos-btn" aria-label="Retry failed operation" @onclick="() => OnRetry.InvokeAsync()">Retry</button>
         }
-        @if (AutoScrollPaused)
+        @if (ShowJumpToLatest)
         {
-            <button type="button" class="ompos-btn ompos-icon-btn" aria-label="Jump to latest" @onclick="() => OnJumpToLatest.InvokeAsync()">↓</button>
+            <button type="button" class="ompos-btn ompos-icon-btn" aria-label="Jump to latest" @onclick="JumpToLatestAsync">↓</button>
         }
     }
 </section>
@@ -80,4 +83,77 @@
     /// <summary>Gets the callback invoked when the jump-to-latest control is activated.</summary>
     [Parameter]
     public EventCallback OnJumpToLatest { get; set; }
+
+    /// <summary>Gets the callback invoked when the viewport crosses the bottom edge: true when the user scrolled up, false when they returned to the latest output.</summary>
+    [Parameter]
+    public EventCallback<bool> AutoScrollPausedChanged { get; set; }
+
+    private const string ScrollModulePath = "./_content/OmpOS.UI/scripts/ompos-scroll.js";
+
+    private IJSObjectReference? _scrollModule;
+    private DotNetObjectReference<SessionView>? _self;
+    private int _observerToken;
+    private bool _scrolledUp;
+
+    private bool ShowJumpToLatest => AutoScrollPaused || _scrolledUp;
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _scrollModule = await JS.InvokeAsync<IJSObjectReference>("import", ScrollModulePath);
+            _self = DotNetObjectReference.Create(this);
+            _observerToken = await _scrollModule.InvokeAsync<int>("observe", _self);
+        }
+
+        if (_scrollModule is not null && !ShowJumpToLatest)
+        {
+            await _scrollModule.InvokeVoidAsync("scrollToEnd");
+        }
+    }
+
+    /// <summary>Called by ompos-scroll.js when the viewport crosses the bottom edge.</summary>
+    /// <param name="scrolledUp">True when the user scrolled away from the latest output.</param>
+    [JSInvokable("ReportScrollPosition")]
+    public async Task ReportScrollPositionAsync(bool scrolledUp)
+    {
+        if (_scrolledUp == scrolledUp)
+        {
+            return;
+        }
+
+        _scrolledUp = scrolledUp;
+        await InvokeAsync(StateHasChanged);
+        await AutoScrollPausedChanged.InvokeAsync(scrolledUp);
+    }
+
+    private async Task JumpToLatestAsync()
+    {
+        _scrolledUp = false;
+        await OnJumpToLatest.InvokeAsync();
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        if (_scrollModule is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _scrollModule.InvokeVoidAsync("unobserve", _observerToken);
+            await _scrollModule.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the scroll listener went with it.
+        }
+        finally
+        {
+            _self?.Dispose();
+        }
+    }
 }

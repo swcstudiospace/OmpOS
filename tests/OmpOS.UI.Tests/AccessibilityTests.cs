@@ -8,7 +8,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>Keyboard, labeling, live-region, and stylesheet accessibility assertions (UI-03).</summary>
-public sealed class AccessibilityTests : BunitContext
+public sealed class AccessibilityTests : UiTestContext
 {
     /// <summary>Enter sends the draft; Shift+Enter does not send.</summary>
     [Theory]

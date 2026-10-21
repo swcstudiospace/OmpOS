@@ -12,7 +12,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>Lifecycle transitions, stop/retry affordances, and the scroll-pause flag (UI-02).</summary>
-public sealed class StreamingStateTests : BunitContext
+public sealed class StreamingStateTests : UiTestContext
 {
     private const string SessionId = "s-1";
     private const string CorrelationId = "s-1/turn-1";

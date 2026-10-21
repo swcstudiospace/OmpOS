@@ -34,7 +34,8 @@
 
     private async Task Send()
     {
-        if (string.IsNullOrWhiteSpace(_draft))
+        // While a response streams the parent refuses the send, so the draft must stay in place.
+        if (IsStreaming || string.IsNullOrWhiteSpace(_draft))
         {
             return;
         }
