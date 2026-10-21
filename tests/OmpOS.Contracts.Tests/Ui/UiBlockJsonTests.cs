@@ -95,6 +95,35 @@ public sealed class UiBlockJsonTests
         block.Raw.GetRawText().ShouldBe(rootJson);
     }
 
+    [Theory]
+    [InlineData("""[1,"two",null]""")]
+    [InlineData("\"scalar\"")]
+    [InlineData("""42""")]
+    [InlineData("""true""")]
+    [InlineData("""null""")]
+    public void UnknownBlockWritesEveryNonUndefinedRawKindVerbatim(string rawJson)
+    {
+        using var doc = JsonDocument.Parse(rawJson);
+        var block = new UnknownBlock { Id = "b-raw", Raw = doc.RootElement.Clone() };
+
+        JsonSerializer.Serialize<UiBlock>(block, OmpOsJsonContext.Default.UiBlock).ShouldBe(rawJson);
+    }
+
+    [Theory]
+    [InlineData("""[1,"two",null]""")]
+    [InlineData("\"scalar\"")]
+    [InlineData("""42""")]
+    [InlineData("""true""")]
+    public void NonObjectRawSurvivesWriteThenReadRoundTrip(string rawJson)
+    {
+        using var doc = JsonDocument.Parse(rawJson);
+        var block = new UnknownBlock { Id = "b-raw", Raw = doc.RootElement.Clone() };
+        var written = JsonSerializer.Serialize<UiBlock>(block, OmpOsJsonContext.Default.UiBlock);
+
+        var back = JsonSerializer.Deserialize(written, OmpOsJsonContext.Default.UiBlock).ShouldBeOfType<UnknownBlock>();
+        back.Raw.GetRawText().ShouldBe(rawJson);
+    }
+
     [Fact]
     public void NullTopLevelBlockDeserializesToNullWithoutThrowing()
     {

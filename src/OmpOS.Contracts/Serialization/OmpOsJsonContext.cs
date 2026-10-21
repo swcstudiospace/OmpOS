@@ -42,6 +42,7 @@ namespace OmpOS.Contracts.Serialization;
 [JsonSerializable(typeof(TextDeltaPayload))]
 [JsonSerializable(typeof(UiBlockPayload))]
 [JsonSerializable(typeof(ErrorPayload))]
+[JsonSerializable(typeof(DiagnosticPayload))]
 [JsonSerializable(typeof(CompletedPayload))]
 [JsonSerializable(typeof(UnknownPayload))]
 [JsonSerializable(typeof(SandboxDescriptor))]

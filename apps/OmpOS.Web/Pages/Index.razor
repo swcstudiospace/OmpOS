@@ -23,7 +23,8 @@
                      Announcement="@_viewModel.Announcement"
                      OnStop="StopStreaming"
                      OnRetry="RetryAsync"
-                     OnJumpToLatest="JumpToLatest" />
+                     OnJumpToLatest="JumpToLatest"
+                     AutoScrollPausedChanged="OnAutoScrollPausedChanged" />
         <Composer IsStreaming="_streaming" OnSend="SendAsync" OnStop="StopStreaming" />
     </div>
 </div>
@@ -151,26 +152,32 @@
         }
     }
 
-    private async Task SendAsync(string prompt)
+    private async Task<bool> SendAsync(string prompt)
     {
         if (_selectedId is null || _streaming)
         {
-            return;
+            return false;
         }
 
+        var sessionId = _selectedId;
+        // Set before the first await, so a second Enter cannot start a concurrent send while this one is submitting.
+        _streaming = true;
         _error = null;
         _lastPrompt = prompt;
         try
         {
-            await Api.SubmitPromptAsync(_selectedId, prompt).ConfigureAwait(true);
+            await Api.SubmitPromptAsync(sessionId, prompt).ConfigureAwait(true);
         }
         catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
         {
+            _streaming = false;
             _error = $"Could not send the message: {ex.Message}";
-            return;
+            return false;
         }
 
-        await StreamFromAsync().ConfigureAwait(true);
+        // The host accepted the send: the reply streams in the background, so the composer can clear its draft now.
+        _ = StreamFromAsync(sessionId);
+        return true;
     }
 
     private async Task RetryAsync()
@@ -193,19 +200,24 @@
         _viewModel.ResumeAutoScroll();
     }
 
-    private async Task StreamFromAsync()
+    private void OnAutoScrollPausedChanged(bool paused)
     {
-        var sessionId = _selectedId;
-        if (sessionId is null)
+        if (paused)
         {
-            return;
+            _viewModel.PauseAutoScroll();
         }
+        else
+        {
+            _viewModel.ResumeAutoScroll();
+        }
+    }
 
+    private async Task StreamFromAsync(string sessionId)
+    {
         StopStreaming();
         _streamCts?.Dispose();
-        _streamCts = new CancellationTokenSource();
-        var token = _streamCts.Token;
-        _streaming = true;
+        var cts = _streamCts = new CancellationTokenSource();
+        var token = cts.Token;
         try
         {
             // The cursor is exclusive (the last event this session delivered). The SSE client takes the first Seq to
@@ -240,7 +252,11 @@
         }
         finally
         {
-            _streaming = false;
+            // A stream replaced by a newer send must not clear the flag the newer stream holds.
+            if (ReferenceEquals(_streamCts, cts))
+            {
+                _streaming = false;
+            }
         }
     }
 

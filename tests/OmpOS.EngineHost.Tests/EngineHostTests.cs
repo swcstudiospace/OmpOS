@@ -58,28 +58,89 @@ public sealed class EngineHostTests
 
     /// <summary>
     /// The remote host streams events 1..5 and survives the connection drop. <c>ReconnectAsync</c> fetches the
-    /// missed events 6..12 (the replay overlaps Seq 5 to prove de-duplication) and holds them; the next prompt
-    /// delivers each exactly once, before its own reply.
+    /// missed events 6..12 (the replay overlaps Seq 5 to prove de-duplication) and holds them. <c>TakeHeldEvents</c>
+    /// hands them out in Seq order straight after the resume, without waiting for a prompt.
     /// </summary>
     [Fact]
-    public async Task RemoteResumeHoldsMissedEventsExactlyOnceForNextPrompt()
+    public async Task ResumeHoldsMissedEventsUntilTakenInSeqOrder()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var handler = new ScriptedApiHandler();
+        using var http = ClientFor(handler);
+        var host = new RemoteEngineHost(http);
+        var raised = 0;
+        host.MissedEventsHeld += (_, _) => raised++;
+
+        var seen = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
+        seen.Count.ShouldBe(5);
+
+        await host.ReconnectAsync(ct);
+        raised.ShouldBe(1);
+
+        var missed = host.TakeHeldEvents();
+        missed.OfType<TextDeltaEvent>().Select(static evt => evt.Text).ShouldBe(["t6", "t7", "t8", "t9", "t10", "t11"]);
+        missed[^1].ShouldBeOfType<CompletedEvent>().Reason.ShouldBe("end_turn");
+        missed.Count.ShouldBe(7);
+        host.TakeHeldEvents().ShouldBeEmpty();
+    }
+
+    /// <summary>Events handed out by <c>TakeHeldEvents</c> are not delivered again by the next prompt.</summary>
+    [Fact]
+    public async Task NextPromptDoesNotRedeliverTakenMissedEvents()
     {
         var ct = TestContext.Current.CancellationToken;
         using var handler = new ScriptedApiHandler();
         using var http = ClientFor(handler);
         var host = new RemoteEngineHost(http);
 
-        var seen = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
-        seen.Count.ShouldBe(5);
-
+        _ = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
         await host.ReconnectAsync(ct);
-        seen.AddRange(await CollectAsync(host.SubmitPromptAsync("next prompt", new PromptOptions(), ct)));
+        host.TakeHeldEvents().Count.ShouldBe(7);
 
-        var texts = seen.OfType<TextDeltaEvent>().Select(static evt => evt.Text).ToArray();
-        texts.ShouldBe(["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10", "t11"]);
-        seen.OfType<CompletedEvent>().Select(static evt => evt.Reason).ShouldBe(["end_turn"]);
-        seen.Count.ShouldBe(12);
+        var next = await CollectAsync(host.SubmitPromptAsync("next prompt", new PromptOptions(), ct));
+
+        next.ShouldBeEmpty();
         handler.ResumePositions.ShouldBe(["5", "12"]);
+    }
+
+    /// <summary>An <c>error</c> ends the turn: a completion frame that follows it on the wire is never delivered.</summary>
+    [Fact]
+    public async Task ErrorEndsTurnAndTrailingCompletionIsNotDelivered()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var handler = new SingleTurnHandler(
+            "id: 1\nevent: text_delta\ndata: {\"kind\":\"text_delta\",\"delta\":\"a\"}\n\n",
+            "id: 2\nevent: error\ndata: {\"kind\":\"error\",\"message\":\"boom\",\"retryable\":false}\n\n",
+            "id: 3\nevent: completed\ndata: {\"kind\":\"completed\",\"reason\":\"end_turn\"}\n\n");
+        using var http = ClientFor(handler);
+        var host = new RemoteEngineHost(http);
+
+        var seen = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
+
+        seen.Count.ShouldBe(2);
+        seen[0].ShouldBeOfType<TextDeltaEvent>().Text.ShouldBe("a");
+        seen[1].ShouldBe(new ErrorEvent("boom", false));
+    }
+
+    /// <summary>A diagnostic is non-terminal: the turn continues past it and the diagnostic is delivered in order.</summary>
+    [Fact]
+    public async Task DiagnosticDoesNotEndTurn()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var handler = new SingleTurnHandler(
+            "id: 1\nevent: text_delta\ndata: {\"kind\":\"text_delta\",\"delta\":\"a\"}\n\n",
+            "id: 2\nevent: diagnostic\ndata: {\"kind\":\"diagnostic\",\"message\":\"slow decode\"}\n\n",
+            "id: 3\nevent: text_delta\ndata: {\"kind\":\"text_delta\",\"delta\":\"b\"}\n\n",
+            "id: 4\nevent: completed\ndata: {\"kind\":\"completed\",\"reason\":\"end_turn\"}\n\n");
+        using var http = ClientFor(handler);
+        var host = new RemoteEngineHost(http);
+
+        var seen = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
+
+        seen.Count.ShouldBe(4);
+        seen[1].ShouldBe(new DiagnosticEvent("slow decode"));
+        seen[2].ShouldBe(new TextDeltaEvent("b"));
+        seen[3].ShouldBe(new CompletedEvent("end_turn"));
     }
 
     /// <summary>
@@ -354,6 +415,41 @@ public sealed class EngineHostTests
                     }
                 }
 
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(string.Concat(frames), Encoding.UTF8, "text/event-stream"),
+                });
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        }
+    }
+
+    /// <summary>One scripted turn: creates the session, accepts the prompt, and serves the given SSE frames in order.</summary>
+    private sealed class SingleTurnHandler(params string[] frames) : HttpMessageHandler
+    {
+        /// <inheritdoc />
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            if (request.Method == HttpMethod.Post && string.Equals(path, "/sessions", StringComparison.Ordinal))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created)
+                {
+                    Content = new StringContent("""{"id":"sess-1","ownerId":"local-dev"}""", Encoding.UTF8, "application/json"),
+                });
+            }
+
+            if (request.Method == HttpMethod.Post && string.Equals(path, "/sessions/sess-1/prompts", StringComparison.Ordinal))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)
+                {
+                    Content = new StringContent("""{"sessionId":"sess-1","status":"accepted"}""", Encoding.UTF8, "application/json"),
+                });
+            }
+
+            if (request.Method == HttpMethod.Get && string.Equals(path, "/sessions/sess-1/events", StringComparison.Ordinal))
+            {
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = new StringContent(string.Concat(frames), Encoding.UTF8, "text/event-stream"),

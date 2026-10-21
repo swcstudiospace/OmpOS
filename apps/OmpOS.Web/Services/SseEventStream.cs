@@ -306,6 +306,12 @@ internal sealed class SseEventStream
             return false;
         }
 
+        if (payload is DiagnosticPayload)
+        {
+            // Non-terminal, and the web UI has no notice path: the frame is consumed (its seq is tracked) but never shown.
+            return false;
+        }
+
         evt = new StreamEvent
         {
             Seq = seq,

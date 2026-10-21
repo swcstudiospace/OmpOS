@@ -15,8 +15,8 @@ namespace OmpOS.EngineHost;
 /// over HTTP (<c>POST /sessions</c>, <c>POST /sessions/{id}/prompts</c>) and events stream back over
 /// the resumable SSE endpoint (<c>GET /sessions/{id}/events</c>). A transport drop ends the stream
 /// without throwing. Every stream starts after the delivered cursor (exclusive, sent as <c>?since=</c> and
-/// <c>Last-Event-ID</c>) and de-duplicates by Seq. <see cref="ReconnectAsync"/> fetches missed events and holds them
-/// for the next prompt, which delivers them before its own reply.
+/// <c>Last-Event-ID</c>) and de-duplicates by Seq. <see cref="ReconnectAsync"/> fetches missed events and holds them until
+/// <see cref="TakeHeldEvents"/> takes them; the next prompt delivers any still held before its own reply.
 /// </summary>
 public sealed class RemoteEngineHost : IEngineHost
 {
@@ -86,9 +86,9 @@ public sealed class RemoteEngineHost : IEngineHost
     }
 
     /// <summary>
-    /// Fetches the session's events after the delivered cursor (exclusive) and holds them, in Seq order, for the
-    /// next <see cref="SubmitPromptAsync"/>, which delivers them before its own reply. Nothing is dropped: the cursor
-    /// moves only when a consumer receives an event.
+    /// Fetches the events after the delivered cursor (exclusive) and holds them, in Seq order. Raises <see cref="MissedEventsHeld"/>
+    /// so the consumer can render them with <see cref="TakeHeldEvents"/>. <see cref="SubmitPromptAsync"/> delivers any still held before its own reply.
+    /// Nothing is dropped: the cursor moves only when a consumer receives an event.
     /// </summary>
     /// <param name="cancellationToken">Cancels the fetch.</param>
     /// <returns>A task that completes when the fetch ends (terminal event, server close, or transport drop).</returns>
@@ -107,6 +107,28 @@ public sealed class RemoteEngineHost : IEngineHost
         }
 
         return HoldMissedAsync(sessionId, ResumePosition(), cancellationToken);
+    }
+
+    /// <summary>
+    /// Raised once per <see cref="ReconnectAsync"/> that held at least one missed event, on the thread that completed the fetch.
+    /// Subscribers call <see cref="TakeHeldEvents"/> to render the events.
+    /// </summary>
+    public event EventHandler? MissedEventsHeld;
+
+    /// <summary>
+    /// Returns and clears the events held by the last resume, in Seq order. The delivered cursor moves to the last one returned,
+    /// so each missed event is handed out exactly once.
+    /// </summary>
+    /// <returns>The held events, oldest first; empty when none are held.</returns>
+    public IReadOnlyList<HarnessEvent> TakeHeldEvents()
+    {
+        var taken = new List<HarnessEvent>();
+        while (TakeHeld() is { } held)
+        {
+            taken.Add(held);
+        }
+
+        return taken;
     }
 
     /// <inheritdoc />
@@ -335,15 +357,28 @@ public sealed class RemoteEngineHost : IEngineHost
     /// <summary>Fetches the events after <paramref name="resumeFrom"/> and holds them for the next prompt.</summary>
     private async Task HoldMissedAsync(string sessionId, long? resumeFrom, CancellationToken cancellationToken)
     {
-        await foreach (var (seq, evt) in StreamAsync(sessionId, resumeFrom, cancellationToken).ConfigureAwait(false))
+        var held = false;
+        try
         {
-            lock (_gate)
+            await foreach (var (seq, evt) in StreamAsync(sessionId, resumeFrom, cancellationToken).ConfigureAwait(false))
             {
-                _held.Enqueue((seq, evt));
-                if (seq is long accepted)
+                lock (_gate)
                 {
-                    _highWater = Math.Max(_highWater, accepted);
+                    _held.Enqueue((seq, evt));
+                    if (seq is long accepted)
+                    {
+                        _highWater = Math.Max(_highWater, accepted);
+                    }
                 }
+
+                held = true;
+            }
+        }
+        finally
+        {
+            if (held)
+            {
+                MissedEventsHeld?.Invoke(this, EventArgs.Empty);
             }
         }
     }
@@ -405,6 +440,7 @@ public sealed class RemoteEngineHost : IEngineHost
         TextDeltaPayload text => new TextDeltaEvent(text.Delta),
         CompletedPayload completed => new CompletedEvent(completed.Reason),
         ErrorPayload error => new ErrorEvent(error.Message, error.Retryable),
+        DiagnosticPayload diagnostic => new DiagnosticEvent(diagnostic.Message),
         UiBlockPayload block => new UiBlockEvent(block.Block),
         UnknownPayload unknown => MapUnknown(unknown),
         _ => null,

@@ -109,15 +109,29 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
 
     private async Task<IOmpSession> EnsureSessionAsync(CancellationToken cancellationToken)
     {
+        if (TryGetLiveSession() is { } live)
+        {
+            return live;
+        }
+
+        var fresh = await CreateSessionAsync(cancellationToken).ConfigureAwait(false);
+        return await InstallSessionAsync(fresh).ConfigureAwait(false);
+    }
+
+    /// <summary>Returns the bound session when it can still serve a prompt; throws once the host is disposed.</summary>
+    private IOmpSession? TryGetLiveSession()
+    {
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            if (_session is not null && _session.State is not HarnessState.Faulted and not HarnessState.Disposed)
-            {
-                return _session;
-            }
+            return _session is not null && _session.State is not HarnessState.Faulted and not HarnessState.Disposed
+                ? _session
+                : null;
         }
+    }
 
+    private async Task<IOmpSession> CreateSessionAsync(CancellationToken cancellationToken)
+    {
         var fresh = _sessionFactory();
         try
         {
@@ -129,6 +143,12 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
             throw;
         }
 
+        return fresh;
+    }
+
+    /// <summary>Binds a fresh session unless a concurrent caller bound a live one first, and disposes whatever is displaced or lost.</summary>
+    private async Task<IOmpSession> InstallSessionAsync(IOmpSession fresh)
+    {
         IOmpSession winner;
         IOmpSession? loser = null;
         IOmpSession? replaced = null;

@@ -61,7 +61,7 @@ public sealed class UiBlockConverter : JsonConverter<UiBlock>
         ArgumentNullException.ThrowIfNull(writer);
         ArgumentNullException.ThrowIfNull(value);
         ArgumentNullException.ThrowIfNull(options);
-        if (value is UnknownBlock { Raw.ValueKind: JsonValueKind.Object } unknown)
+        if (value is UnknownBlock { Raw.ValueKind: not JsonValueKind.Undefined } unknown)
         {
             unknown.Raw.WriteTo(writer);
             return;

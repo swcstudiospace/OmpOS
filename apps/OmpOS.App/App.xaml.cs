@@ -38,7 +38,7 @@ public partial class App : Application
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         try
         {
-            // Missed events are held by the host and reach the session before the next prompt's reply.
+            // The fetch holds the missed events and raises MissedEventsHeld; SessionHost renders them via TakeHeldEvents.
             await remote.ReconnectAsync(timeout.Token).ConfigureAwait(true);
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException or InvalidOperationException)
