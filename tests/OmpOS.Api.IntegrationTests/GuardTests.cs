@@ -106,6 +106,9 @@ public sealed class GuardTests
     [Fact]
     public async Task Trace_EndToEndSpansShareTraceId()
     {
+        const string harnessSpan = "harness.run";
+        const string promptSpan = "POST /sessions/{id}/prompts";
+        var traceId = ActivityTraceId.CreateRandom();
         var seen = new ConcurrentBag<(string Source, string Name, ActivityTraceId TraceId)>();
         using var listener = new ActivityListener
         {
@@ -119,6 +122,9 @@ public sealed class GuardTests
 
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
+
+        // Every request carries this test's trace id, so spans that other tests record in the same process cannot join it.
+        client.DefaultRequestHeaders.Add("traceparent", $"00-{traceId}-{ActivitySpanId.CreateRandom()}-01");
         var testToken = TestContext.Current.CancellationToken;
         var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
@@ -128,18 +134,21 @@ public sealed class GuardTests
         var events = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken).ConfigureAwait(true);
         events.ShouldNotBeEmpty("the stream must terminate so the background span stops");
 
-        // The run span stops after teardown, which can finish after the terminal event reached the client, so wait for it.
-        var runSpanDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(15);
-        while (!seen.Any(static record => string.Equals(record.Name, "harness.run", StringComparison.Ordinal)) && DateTime.UtcNow < runSpanDeadline)
+        // The request span and the run span stop after the response and teardown, which can finish after the client reads the terminal event, so wait for both.
+        var spanDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(15);
+        while ((!HasSpan(seen, traceId, harnessSpan) || !HasSpan(seen, traceId, promptSpan)) && DateTime.UtcNow < spanDeadline)
         {
             await Task.Delay(TimeSpan.FromMilliseconds(20), testToken).ConfigureAwait(true);
         }
 
-        var group = seen.GroupBy(static record => record.TraceId).FirstOrDefault(static traces => traces.Any(static record => string.Equals(record.Name, "harness.run", StringComparison.Ordinal)));
-        group.ShouldNotBeNull("the harness run must share a trace with the request");
-        group!.Any(static record => string.Equals(record.Name, "POST /sessions/{id}/prompts", StringComparison.Ordinal)).ShouldBeTrue();
-        group.Count().ShouldBeGreaterThanOrEqualTo(3, "server, endpoint, and harness spans share one trace");
+        var names = seen.Where(record => record.TraceId == traceId).Select(static record => record.Name).ToArray();
+        HasSpan(seen, traceId, harnessSpan).ShouldBeTrue("the harness run must share the request's trace");
+        HasSpan(seen, traceId, promptSpan).ShouldBeTrue("the endpoint span must share the request's trace");
+        names.Length.ShouldBeGreaterThanOrEqualTo(3, "server, endpoint, and harness spans share one trace");
     }
+
+    private static bool HasSpan(IEnumerable<(string Source, string Name, ActivityTraceId TraceId)> spans, ActivityTraceId traceId, string name) =>
+        spans.Any(record => record.TraceId == traceId && string.Equals(record.Name, name, StringComparison.Ordinal));
 
     private static string Flatten(Exception exception)
     {
