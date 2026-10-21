@@ -137,51 +137,51 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-02 | Phase 1 | Complete |
 | FOUND-03 | Phase 1 | Complete |
 | FOUND-04 | Phase 1 | Complete |
-| FOUND-05 | Phase 1 | Complete |
+| FOUND-05 | Phase 1 | Complete (definition; remote CI run human-pending) |
 | FOUND-06 | Phase 1 | Complete |
 | FOUND-07 | Phase 1 | Complete |
-| FOUND-08 | Phase 1 | Complete |
+| FOUND-08 | Phase 1 | Complete (static; binary compose run human-pending) |
 | FOUND-09 | Phase 1 | Complete |
-| PARSE-01 | Phase 2 | Pending |
-| PARSE-02 | Phase 2 | Pending |
-| PARSE-03 | Phase 2 | Pending |
-| PARSE-04 | Phase 2 | Pending |
-| HARN-01 | Phase 2 | Pending |
-| HARN-02 | Phase 2 | Pending |
-| HARN-03 | Phase 2 | Pending |
-| HARN-04 | Phase 2 | Pending |
-| HARN-05 | Phase 2 | Pending |
-| HARN-06 | Phase 2 | Pending |
-| SESS-01 | Phase 2 | Pending |
-| SESS-02 | Phase 2 | Pending |
-| SESS-03 | Phase 2 | Pending |
-| API-01 | Phase 2 | Pending |
-| API-02 | Phase 2 | Pending |
-| API-03 | Phase 2 | Pending |
-| OPS-01 | Phase 2 | Pending |
-| OPS-02 | Phase 2 | Pending |
-| OPS-03 | Phase 2 | Pending |
-| OPS-04 | Phase 2 | Pending |
-| SBOX-01 | Phase 3 | Pending |
-| SBOX-02 | Phase 3 | Pending |
-| SBOX-03 | Phase 3 | Pending |
-| SBOX-04 | Phase 3 | Pending |
-| SBOX-05 | Phase 3 | Pending |
-| WFLW-01 | Phase 3 | Pending |
-| WFLW-02 | Phase 3 | Pending |
-| WFLW-03 | Phase 3 | Pending |
-| UI-01 | Phase 4 | Pending |
-| UI-02 | Phase 4 | Pending |
-| UI-03 | Phase 4 | Pending |
-| UI-04 | Phase 4 | Pending |
-| WEB-01 | Phase 4 | Pending |
-| WEB-02 | Phase 4 | Pending |
-| DESK-01 | Phase 4 | Pending |
-| MOB-01 | Phase 4 | Pending |
-| SHELL-01 | Phase 4 | Pending |
-| VERIFY-01 | Phase 5 | Pending |
-| VERIFY-02 | Phase 5 | Pending |
-| VERIFY-03 | Phase 5 | Pending |
+| PARSE-01 | Phase 2 | Complete |
+| PARSE-02 | Phase 2 | Complete |
+| PARSE-03 | Phase 2 | Complete |
+| PARSE-04 | Phase 2 | Complete |
+| HARN-01 | Phase 2 | Complete |
+| HARN-02 | Phase 2 | Complete |
+| HARN-03 | Phase 2 | Complete |
+| HARN-04 | Phase 2 | Partial — interactive approval deferred (Q-HARN-PERMISSION); replay + live smoke verified |
+| HARN-05 | Phase 2 | Complete |
+| HARN-06 | Phase 2 | Complete (bounded stub, as specified) |
+| SESS-01 | Phase 2 | Complete |
+| SESS-02 | Phase 2 | Complete |
+| SESS-03 | Phase 2 | Complete |
+| API-01 | Phase 2 | Complete |
+| API-02 | Phase 2 | Complete |
+| API-03 | Phase 2 | Complete |
+| OPS-01 | Phase 2 | Complete |
+| OPS-02 | Phase 2 | Complete |
+| OPS-03 | Phase 2 | Complete |
+| OPS-04 | Phase 2 | Complete (dev-only principal; public deploy blocked until auth provider exists) |
+| SBOX-01 | Phase 3 | Complete |
+| SBOX-02 | Phase 3 | Complete |
+| SBOX-03 | Phase 3 | Complete |
+| SBOX-04 | Phase 3 | Complete (stubs by design; all four throw NotAvailable, enclave Unverified) |
+| SBOX-05 | Phase 3 | Complete (settings explicit; per-sandbox issuance deferred — Q-SB-CREDENTIALS) |
+| WFLW-01 | Phase 3 | Partial — direct runner wired and verified; Temporal worker composition deferred (Q-SB-WORKER-COMPOSE) |
+| WFLW-02 | Phase 3 | Complete (worker host + replay fixture + TCP readiness probe) |
+| WFLW-03 | Phase 3 | Complete |
+| UI-01 | Phase 4 | Complete |
+| UI-02 | Phase 4 | Complete |
+| UI-03 | Phase 4 | Complete (bUnit + axe-core 4.14.0 run recorded: 0 violations) |
+| UI-04 | Phase 4 | Complete |
+| WEB-01 | Phase 4 | Complete (browser smoke + screenshot) |
+| WEB-02 | Phase 4 | Partial — live Vercel deploy outstanding (config verified by VercelConfigTests) |
+| DESK-01 | Phase 4 | Partial — MAUI binaries human-deferred (macOS); host logic tested |
+| MOB-01 | Phase 4 | Partial — MAUI binaries human-deferred (macOS); remote-only path tested |
+| SHELL-01 | Phase 4 | Partial — filter exclusion + README scope verified; macOS CI run outstanding |
+| VERIFY-01 | Phase 5 | Pending — clean-clone run not yet recorded |
+| VERIFY-02 | Phase 5 | Complete (open questions populated; RepoHygieneTests enforces TODO linkage) |
+| VERIFY-03 | Phase 5 | Complete (docs/handoff.md maps AC_1..AC_11 with evidence) |
 
 **Coverage:**
 - v1 requirements: 49 total

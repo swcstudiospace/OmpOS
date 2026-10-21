@@ -14,11 +14,11 @@ OmpOS goes from an empty repository to a scaffolded, verifiable full-stack agent
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Monorepo layout, solution, shared contracts, analyzers/formatter, locked CPM, CI, podman compose, docs skeleton + ADR-0001/0002
-- [x] **Phase 2: Core** - Prompt parser, ACP harness (abstractions, state machine, in-memory adapter, real ACP v1 + omp RPC clients, WebSocket stub), session orchestration, SSE streaming API, platform foundations/security
-- [ ] **Phase 3: Platform** - Sandbox provider abstraction + fake/local podman-compose providers + vendor stubs; durable workflows (direct runner + Temporal worker behind flag)
-- [ ] **Phase 4: Surfaces** - Shared Razor Class Library chat surface with Generative UI renderer, Blazor WASM web head on Vercel, MAUI Blazor Hybrid desktop/mobile head, vertical slice end-to-end against the in-memory adapter
-- [ ] **Phase 5: Verify & Handoff** - Clean-clone bootstrap test, full test/architecture run, docs finalised, open questions populated, implemented-vs-stubbed-vs-deferred report
+- [x] **Phase 1: Foundation** - Monorepo layout, solution, shared contracts, analyzers/formatter, locked CPM, CI, podman compose, docs skeleton + ADR-0001/0002 — complete (human-deferred: remote CI run, binary compose run)
+- [x] **Phase 2: Core** - Prompt parser, ACP harness (abstractions, state machine, in-memory adapter, real ACP v1 + omp RPC clients, WebSocket stub), session orchestration, SSE streaming API, platform foundations/security — complete (deferred: interactive approval, Q-HARN-PERMISSION)
+- [x] **Phase 3: Platform** - Sandbox provider abstraction + fake/local podman-compose providers + vendor stubs; durable workflows (direct runner + Temporal worker behind flag) — complete (deferred: worker composition Q-SB-WORKER-COMPOSE, direct-path retry Q-WF-RETRY, credential issuance Q-SB-CREDENTIALS)
+- [x] **Phase 4: Surfaces** - Shared Razor Class Library chat surface with Generative UI renderer, Blazor WASM web head on Vercel, MAUI Blazor Hybrid desktop/mobile head, vertical slice end-to-end against the in-memory adapter — complete for RCL + web head (human-deferred: MAUI binaries on macOS; outstanding: live Vercel deploy WEB-02)
+- [ ] **Phase 5: Verify & Handoff** - Clean-clone bootstrap test, full test/architecture run, docs finalised, open questions populated, implemented-vs-stubbed-vs-deferred report — in progress (VERIFY-01 pending clean-clone run)
 
 ## Phase Details
 
@@ -105,11 +105,11 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5. Within Phase 2 the r
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 3/3 | In Progress | - |
-| 2. Core | 0/TBD | Not started | - |
-| 3. Platform | 0/TBD | Not started | - |
-| 4. Surfaces | 0/TBD | Not started | - |
-| 5. Verify & Handoff | 0/TBD | Not started | - |
+| 1. Foundation | 3/3 | Complete (human-deferred: remote CI run, binary compose run) | 2026-10-20 |
+| 2. Core | complete | Complete (deferred: interactive approval Q-HARN-PERMISSION) | 2026-10-21 |
+| 3. Platform | complete | Complete (deferred: Q-SB-WORKER-COMPOSE, Q-WF-RETRY, Q-SB-CREDENTIALS) | 2026-10-21 |
+| 4. Surfaces | complete | Complete for RCL + web head (human-deferred: MAUI binaries; outstanding: WEB-02 live deploy) | 2026-10-21 |
+| 5. Verify & Handoff | in progress | In progress — VERIFY-01 pending clean-clone run | - |
 
 ---
 *Roadmap created: 2026-10-20*

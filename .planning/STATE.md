@@ -1,18 +1,18 @@
 ---
 gsd_state_version: "1.0"
 milestone: v0.9.1
-current_phase: 3
-current_phase_name: Platform
-current_plan: 0
-status: researching
-stopped_at: Phase 2 complete (all gates green, 267 tests, nyquist-compliant)
-last_updated: "2026-10-20T11:30:00.000Z"
+current_phase: 5
+current_phase_name: Verify & Handoff
+current_plan: 1
+status: in_progress
+stopped_at: Phase 5 verify pass done; next step clean-clone bootstrap, then milestone audit
+last_updated: "2026-10-20T12:00:00.000Z"
 last_activity: 2026-10-20
-last_activity_desc: Phase 2 complete; starting Phase 3 research
+last_activity_desc: Phase 2 reopened; executing plan 02-06 (API host, OPS)
 state_head: 82db6d1eb0bf5b6763711f5cedd595172ee0b6a6
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 1
   total_plans: 3
   completed_plans: 3
 ---
@@ -28,13 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 
 ## Current Position
 
-Phase: 1 (Foundation) — EXECUTING
-Current Plan: 3
-Total Plans in Phase: 3
-Status: Phase complete — ready for verification
-Last activity: 2026-10-20 — Roadmap created (5 phases, 49/49 v1 requirements mapped)
-
-Progress: [░░░░░░░░░░] 0%
+Milestone v0.9.1, Phase 5 (Verify & Handoff) in progress. Phases 1–4 complete
+(MAUI binaries human-deferred to macOS; WEB-02 live deploy outstanding).
+Next step: dated clean-clone `./bootstrap.sh` run recorded in
+`docs/runbooks/local-dev.md` (VERIFY-01), then milestone audit.
 
 ## Performance Metrics
 
