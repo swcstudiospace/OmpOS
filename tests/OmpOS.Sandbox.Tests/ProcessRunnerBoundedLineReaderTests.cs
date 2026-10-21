@@ -21,7 +21,7 @@ public sealed class ProcessRunnerBoundedLineReaderTests
             _chunks = new Queue<string>(chunks);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken)
+        public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default)
         {
             if (_chunks.Count == 0)
             {
@@ -66,7 +66,7 @@ public sealed class ProcessRunnerBoundedLineReaderTests
         lines[0].ShouldBe("a");
         lines[1].ShouldBe("b");
         lines[2].ShouldBe("c");
-        lines.ShouldAllSatisfy(static line => line.Contains('\r').ShouldBeFalse());
+        lines.ShouldAllBe(static line => !line.Contains('\r'));
     }
 
     /// <summary>
