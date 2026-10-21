@@ -17,7 +17,7 @@ public sealed class PodmanFollowedLogsRegressionTests
     public async Task FollowedLogs_LineIsDeliveredWhileTheStreamIsStillOpen()
     {
         var runner = new FakeProcessRunner();
-        runner.SetResult(PodmanTestData.Ok("container-id-123"));
+        runner.SetResult(PodmanTestData.Ok("0123456789ab"));
         var provider = PodmanTestData.CreateProvider(runner);
         var ct = TestContext.Current.CancellationToken;
         var provisioned = await provider.ProvisionAsync(PodmanTestData.CreateRequest(), ct);

@@ -431,20 +431,29 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(static id => id.Length > 0)
             .ToList();
-        if (ids.Count != 1 || ids[0].Any(char.IsWhiteSpace))
+        if (ids.Count != 1)
         {
             throw new ProvisionTimeoutException($"Container lookup for sandbox {sandboxId} returned {ids.Count} containers; expected exactly one");
+        }
+
+        if (!IsValidContainerId(ids[0]))
+        {
+            throw new ProvisionTimeoutException($"Container lookup for sandbox {sandboxId} returned an invalid container id; expected 12 to 64 lowercase hex characters");
         }
 
         return ids[0];
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Design",
-        "CA1031:Do not catch general exception types",
-        Justification = "Compose-file deletion is best-effort cleanup on failure paths; a cleanup failure must never mask the in-flight provisioning or teardown error.")]
+    private static bool IsValidContainerId(string id)
+    {
+        return id.Length is >= 12 and <= 64
+            && id.All(static c => c is (>= '0' and <= '9') or (>= 'a' and <= 'f'));
+    }
+
     private void DeleteComposeFile(string composeFile)
     {
+        // Best-effort cleanup on failure paths: only I/O and permission failures are tolerated so a
+        // cleanup failure never masks the in-flight provisioning or teardown error.
         try
         {
             if (File.Exists(composeFile))
@@ -452,7 +461,11 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
                 File.Delete(composeFile);
             }
         }
-        catch (Exception ex)
+        catch (IOException ex)
+        {
+            ComposeCleanupFailed(_logger, composeFile, ex);
+        }
+        catch (UnauthorizedAccessException ex)
         {
             ComposeCleanupFailed(_logger, composeFile, ex);
         }
@@ -462,20 +475,19 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
     {
         if (!IsSafeId(request.SessionId))
         {
-            throw new PolicyDeniedException("session-id", $"Invalid SessionId '{request.SessionId}': allowed characters are letters, digits, '.', '_' and '-' (max 128).");
+            throw new PolicyDeniedException("session-id", $"Invalid SessionId '{request.SessionId}': allowed characters are ASCII letters, digits, '.', '_' and '-' (max 128).");
         }
 
         if (!IsSafeId(request.IdempotencyKey))
         {
-            throw new PolicyDeniedException("idempotency-key", "Invalid IdempotencyKey: allowed characters are letters, digits, '.', '_' and '-' (max 128).");
+            throw new PolicyDeniedException("idempotency-key", "Invalid IdempotencyKey: allowed characters are ASCII letters, digits, '.', '_' and '-' (max 128).");
         }
     }
 
     private static bool IsSafeId(string value)
     {
-        return value.Length > 0
-            && value.Length <= 128
-            && value.All(static c => char.IsLetterOrDigit(c) || c is '.' or '_' or '-');
+        return value.Length is > 0 and <= 128
+            && value.All(static c => c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '.' or '_' or '-');
     }
 
     private void ValidateIsolationDefaults(ProvisionRequest request)

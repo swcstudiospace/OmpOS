@@ -24,7 +24,7 @@ public sealed class NetworkPolicyRule
     public string Action { get; set; } = string.Empty;
 
     /// <summary>
-    /// Returns the rule as a YAML flow mapping (e.g. <c>{destination: example.com, port: "443", ...}</c>).
+    /// Returns the rule as a YAML flow mapping (e.g. <c>{destination: example.com, port: 443, ...}</c>).
     /// </summary>
     /// <returns>The rule rendered as a single-line YAML mapping.</returns>
     public override string ToString()

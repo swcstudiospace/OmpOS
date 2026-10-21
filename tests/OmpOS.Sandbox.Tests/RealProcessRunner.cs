@@ -39,12 +39,12 @@ internal sealed class RealProcessRunner : IProcessRunner
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "which",
-                    Arguments = command,
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                 },
             };
+            process.StartInfo.ArgumentList.Add(command);
             process.Start();
             await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
             return process.ExitCode == 0;

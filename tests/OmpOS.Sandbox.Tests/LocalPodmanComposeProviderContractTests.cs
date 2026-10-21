@@ -20,7 +20,7 @@ public sealed class LocalPodmanComposeProviderContractTests : SandboxProviderCon
         _fakeRunner.SetResult(new ProcessResult
         {
             ExitCode = 0,
-            Stdout = "container-id-123",
+            Stdout = "0123456789ab",
             Stderr = string.Empty,
             TimedOut = false,
         });

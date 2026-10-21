@@ -19,7 +19,7 @@ public sealed class PodmanExecSettingsRegressionTests
     public async Task Exec_AppliesWorkdirAndEnvironmentInsideTheContainer()
     {
         var runner = new FakeProcessRunner();
-        runner.SetResult(PodmanTestData.Ok("container-id-123"));
+        runner.SetResult(PodmanTestData.Ok("0123456789ab"));
         var provider = PodmanTestData.CreateProvider(runner);
         var ct = TestContext.Current.CancellationToken;
         var provisioned = await provider.ProvisionAsync(PodmanTestData.CreateRequest(), ct);
@@ -43,7 +43,7 @@ public sealed class PodmanExecSettingsRegressionTests
         execSpec.Environment["GREETING"].ShouldBe("hello there");
 
         var argv = execSpec.Argv.ToList();
-        var containerIndex = argv.IndexOf("container-id-123");
+        var containerIndex = argv.IndexOf("0123456789ab");
         containerIndex.ShouldBeGreaterThan(0);
 
         var flags = argv.Take(containerIndex).ToList();
@@ -66,7 +66,7 @@ public sealed class PodmanExecSettingsRegressionTests
     {
         const string secretValue = "s3cr3t-value-42";
         var runner = new FakeProcessRunner();
-        runner.SetResult(PodmanTestData.Ok("container-id-123"));
+        runner.SetResult(PodmanTestData.Ok("0123456789ab"));
         var provider = PodmanTestData.CreateProvider(runner);
         var ct = TestContext.Current.CancellationToken;
         var provisioned = await provider.ProvisionAsync(PodmanTestData.CreateRequest(), ct);

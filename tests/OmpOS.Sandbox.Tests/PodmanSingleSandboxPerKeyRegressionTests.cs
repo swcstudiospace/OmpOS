@@ -16,7 +16,7 @@ public sealed class PodmanSingleSandboxPerKeyRegressionTests
     public async Task OverlappingProvisionsWithOneKey_CreateExactlyOneSandbox()
     {
         var runner = new FakeProcessRunner();
-        runner.SetResult(PodmanTestData.Ok("container-id-123"));
+        runner.SetResult(PodmanTestData.Ok("0123456789ab"));
 
         // Hold the owner inside `up` until the overlapping call has been issued.
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -47,7 +47,7 @@ public sealed class PodmanSingleSandboxPerKeyRegressionTests
         runner.EnqueueResults(
             new ProcessResult { ExitCode = 1, Stdout = string.Empty, Stderr = "container failed to start", TimedOut = false },
             PodmanTestData.Ok());
-        runner.SetResult(PodmanTestData.Ok("container-id-123"));
+        runner.SetResult(PodmanTestData.Ok("0123456789ab"));
 
         var provider = PodmanTestData.CreateProvider(runner);
         var ct = TestContext.Current.CancellationToken;
