@@ -32,6 +32,7 @@
             "tests/OmpOS.Coordination.Tests/OmpOS.Coordination.Tests.csproj",
             "tests/OmpOS.Sessions.Tests/OmpOS.Sessions.Tests.csproj",
             "tests/OmpOS.Sessions.Postgres.Tests/OmpOS.Sessions.Postgres.Tests.csproj",
+            "tests/OmpOS.Sessions.Postgres.Probe/OmpOS.Sessions.Postgres.Probe.csproj",
             "tests/OmpOS.SessionRuns.Tests/OmpOS.SessionRuns.Tests.csproj",
             "tests/OmpOS.Sandbox.Tests/OmpOS.Sandbox.Tests.csproj",
             "tests/OmpOS.Workflows.Tests/OmpOS.Workflows.Tests.csproj",

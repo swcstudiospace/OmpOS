@@ -6,6 +6,7 @@
     <ProjectReference Include="../../src/OmpOS.Sessions/OmpOS.Sessions.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sessions.Postgres/OmpOS.Sessions.Postgres.csproj" />
     <ProjectReference Include="../OmpOS.Sessions.Tests/OmpOS.Sessions.Tests.csproj" />
+    <ProjectReference Include="../OmpOS.Sessions.Postgres.Probe/OmpOS.Sessions.Postgres.Probe.csproj" />
     <PackageReference Include="Npgsql" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />

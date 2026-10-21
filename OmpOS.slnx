@@ -37,6 +37,7 @@
     <Project Path="tests/OmpOS.Harness.Rpc.Tests/OmpOS.Harness.Rpc.Tests.csproj" />
     <Project Path="tests/OmpOS.Sessions.Tests/OmpOS.Sessions.Tests.csproj" />
     <Project Path="tests/OmpOS.Sessions.Postgres.Tests/OmpOS.Sessions.Postgres.Tests.csproj" />
+    <Project Path="tests/OmpOS.Sessions.Postgres.Probe/OmpOS.Sessions.Postgres.Probe.csproj" />
     <Project Path="tests/OmpOS.SessionRuns.Tests/OmpOS.SessionRuns.Tests.csproj" />
     <Project Path="tests/OmpOS.Sandbox.Tests/OmpOS.Sandbox.Tests.csproj" />
     <Project Path="tests/OmpOS.UI.Tests/OmpOS.UI.Tests.csproj" />

@@ -256,6 +256,17 @@
           "OmpOS.Sessions": "[1.0.0, )"
         }
       },
+      "ompos.sessions.postgres.probe": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Configuration": "[10.0.13, )",
+          "Microsoft.Extensions.DependencyInjection": "[10.0.13, )",
+          "Npgsql": "[10.0.3, )",
+          "OmpOS.Contracts": "[1.0.0, )",
+          "OmpOS.Sessions": "[1.0.0, )",
+          "OmpOS.Sessions.Postgres": "[1.0.0, )"
+        }
+      },
       "ompos.sessions.tests": {
         "type": "Project",
         "dependencies": {
