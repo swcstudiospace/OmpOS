@@ -32,6 +32,16 @@ internal sealed class FakeProcessRunner : IProcessRunner
     public Func<ProcessSpec, Exception?>? ThrowForSpec { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional gate. When it returns a task for a spec, RunAsync waits for that task before completing.
+    /// </summary>
+    public Func<ProcessSpec, Task?>? PauseFor { get; set; }
+
+    /// <summary>
+    /// Gets or sets the lines a streamed spec yields. Required before StreamStdoutLinesAsync is called.
+    /// </summary>
+    public Func<ProcessSpec, IAsyncEnumerable<string>>? StreamFor { get; set; }
+
+    /// <summary>
     /// Sets the result to return.
     /// </summary>
     public void SetResult(ProcessResult result) => _result = result;
@@ -49,20 +59,29 @@ internal sealed class FakeProcessRunner : IProcessRunner
     }
 
     /// <inheritdoc />
-    public Task<ProcessResult> RunAsync(ProcessSpec spec, CancellationToken cancellationToken = default)
+    public async Task<ProcessResult> RunAsync(ProcessSpec spec, CancellationToken cancellationToken = default)
     {
         LastSpec = spec;
         _specs.Add(spec);
+        if (PauseFor?.Invoke(spec) is { } pause)
+        {
+            await pause.ConfigureAwait(false);
+        }
+
         if (ThrowForSpec?.Invoke(spec) is Exception failure)
         {
-            return Task.FromException<ProcessResult>(failure);
+            throw failure;
         }
 
-        if (_queuedResults.TryDequeue(out var queued))
-        {
-            return Task.FromResult(queued);
-        }
+        return _queuedResults.TryDequeue(out var queued) ? queued : _result;
+    }
 
-        return Task.FromResult(_result);
+    /// <inheritdoc />
+    public IAsyncEnumerable<string> StreamStdoutLinesAsync(ProcessSpec spec, CancellationToken cancellationToken = default)
+    {
+        LastSpec = spec;
+        _specs.Add(spec);
+        var stream = StreamFor ?? throw new InvalidOperationException("No stream is configured for this fake runner.");
+        return stream(spec);
     }
 }

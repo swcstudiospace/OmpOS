@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace OmpOS.Sandbox;
 
@@ -56,6 +57,51 @@ public sealed class ProcessRunner : IProcessRunner
         return await ExecuteAsync(process, spec, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
+    public async IAsyncEnumerable<string> StreamStdoutLinesAsync(ProcessSpec spec, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(spec);
+        if (spec.Argv.Count == 0)
+        {
+            throw new ArgumentException("ProcessSpec.Argv must contain at least the executable.", nameof(spec));
+        }
+
+        using var process = CreateProcess(spec);
+        process.Start();
+        var stderrTask = ReadCappedAsync(process.StandardError, cancellationToken);
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(spec.Timeout);
+        try
+        {
+            while (true)
+            {
+                string? line;
+                try
+                {
+                    line = await process.StandardOutput.ReadLineAsync(timeoutCts.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    // spec.Timeout elapsed: stop following; the finally block terminates the tree.
+                    break;
+                }
+
+                if (line is null)
+                {
+                    break;
+                }
+
+                yield return line;
+            }
+        }
+        finally
+        {
+            // Runs on end of output, timeout, caller cancellation and early disposal by the consumer.
+            KillTreeBestEffort(process);
+            ObserveAbandoned(stderrTask);
+        }
+    }
+
     /// <summary>
     /// Computes the bounded post-exit pipe-drain budget from the process timeout.
     /// </summary>
@@ -101,20 +147,38 @@ public sealed class ProcessRunner : IProcessRunner
     {
         var stdoutTask = ReadCappedAsync(process.StandardOutput, cancellationToken);
         var stderrTask = ReadCappedAsync(process.StandardError, cancellationToken);
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(spec.Timeout);
         try
         {
-            await process.WaitForExitAsync(timeoutCts.Token).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            // spec.Timeout elapsed (not caller cancellation): kill the whole tree and
-            // abandon the pipes. Never await a pipe after the process is gone.
-            return await HandleExitTimeoutAsync(process, stdoutTask, stderrTask, cancellationToken).ConfigureAwait(false);
-        }
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(spec.Timeout);
+            try
+            {
+                await process.WaitForExitAsync(timeoutCts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // spec.Timeout elapsed (not caller cancellation): kill the whole tree and
+                // abandon the pipes. Never await a pipe after the process is gone.
+                return await HandleExitTimeoutAsync(process, stdoutTask, stderrTask, cancellationToken).ConfigureAwait(false);
+            }
 
-        return await DrainAsync(process, stdoutTask, stderrTask, DrainBudget(spec.Timeout), cancellationToken).ConfigureAwait(false);
+            return await DrainAsync(process, stdoutTask, stderrTask, DrainBudget(spec.Timeout), cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Caller cancellation must not leave the child running: kill and reap the tree,
+            // abandon the pipes, then rethrow.
+            await CancelChildAsync(process, stdoutTask, stderrTask).ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    private static async Task CancelChildAsync(Process process, Task<(string Output, bool Truncated)> stdoutTask, Task<(string Output, bool Truncated)> stderrTask)
+    {
+        KillTreeBestEffort(process);
+        await WaitForExitBestEffortAsync(process, CancellationToken.None).ConfigureAwait(false);
+        ObserveAbandoned(stdoutTask);
+        ObserveAbandoned(stderrTask);
     }
 
     private static async Task<ProcessResult> HandleExitTimeoutAsync(Process process, Task<(string Output, bool Truncated)> stdoutTask, Task<(string Output, bool Truncated)> stderrTask, CancellationToken cancellationToken)

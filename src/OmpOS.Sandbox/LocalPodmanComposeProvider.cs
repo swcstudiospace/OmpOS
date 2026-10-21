@@ -27,16 +27,17 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
             LogLevel.Debug,
             new EventId(2, "ComposeUpFailed"),
             "podman-compose up failed for project {ProjectName} (exit {ExitCode})");
-    private static readonly Action<ILogger, string, Exception?> PartialTeardownFailed =
-        LoggerMessage.Define<string>(
+    private static readonly Action<ILogger, string, string, Exception?> PartialTeardownFailed =
+        LoggerMessage.Define<string, string>(
             LogLevel.Warning,
             new EventId(3, "PartialTeardownFailed"),
-            "Best-effort partial teardown failed for project {ProjectName}");
+            "Best-effort partial teardown failed for project {ProjectName} ({Reason}); containers labelled ompos.project={ProjectName} may remain");
 
     private readonly IProcessRunner _processRunner;
     private readonly ILogger<LocalPodmanComposeProvider> _logger;
     private readonly SandboxProviderOptions _options;
     private readonly ConcurrentDictionary<string, PodmanSandbox> _sandboxes = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, Task<PodmanSandbox>> _provisionsByKey = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LocalPodmanComposeProvider"/> class.
@@ -65,10 +66,6 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
     public SandboxCapability Capabilities { get; }
 
     /// <inheritdoc />
-    [SuppressMessage(
-        "Design",
-        "CA1031:Do not catch general exception types",
-        Justification = "Provisioning must clean up the compose file on any failure and surface a single typed ProvisionTimeoutException; typed SandboxExceptions pass through untouched.")]
     public async Task<ProvisionResult> ProvisionAsync(ProvisionRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -76,16 +73,49 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         ValidateRequestIds(request);
         ValidateIsolationDefaults(request);
 
-        var existing = FindByIdempotencyKey(request.IdempotencyKey);
-        if (existing is not null)
+        // The key is reserved before the first await, so overlapping calls with one IdempotencyKey either
+        // become the owner or await the owner's single outcome. Only the owner reports NewlyProvisioned.
+        var reservation = new TaskCompletionSource<PodmanSandbox>(TaskCreationOptions.RunContinuationsAsynchronously);
+        while (!_provisionsByKey.TryAdd(request.IdempotencyKey, reservation.Task))
         {
-            return new ProvisionResult
+            if (_provisionsByKey.TryGetValue(request.IdempotencyKey, out var inFlight))
             {
-                Descriptor = existing.Descriptor,
-                NewlyProvisioned = false,
-            };
+                var shared = await inFlight.WaitAsync(cancellationToken).ConfigureAwait(false);
+                return new ProvisionResult
+                {
+                    Descriptor = shared.Descriptor,
+                    NewlyProvisioned = false,
+                };
+            }
         }
 
+        PodmanSandbox sandbox;
+        try
+        {
+            sandbox = await CreateSandboxAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            // Release the key so a retry can provision again, and hand the same failure to every waiter.
+            _provisionsByKey.TryRemove(request.IdempotencyKey, out _);
+            reservation.SetException(ex);
+            throw;
+        }
+
+        reservation.SetResult(sandbox);
+        return new ProvisionResult
+        {
+            Descriptor = sandbox.Descriptor,
+            NewlyProvisioned = true,
+        };
+    }
+
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Provisioning must clean up the compose file on any failure and surface a single typed ProvisionTimeoutException; typed SandboxExceptions pass through untouched.")]
+    private async Task<PodmanSandbox> CreateSandboxAsync(ProvisionRequest request, CancellationToken cancellationToken)
+    {
         var sandboxId = $"podman-{Guid.NewGuid().ToString("N")[..12]}";
         var projectName = $"ompos-{sandboxId}";
         var composeFile = Path.Combine(Path.GetTempPath(), $"{projectName}.yaml");
@@ -111,7 +141,7 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         }
     }
 
-    private async Task<ProvisionResult> ProvisionCoreAsync(string sandboxId, string projectName, string composeFile, ProvisionRequest request, CancellationToken cancellationToken)
+    private async Task<PodmanSandbox> ProvisionCoreAsync(string sandboxId, string projectName, string composeFile, ProvisionRequest request, CancellationToken cancellationToken)
     {
         await WriteComposeFileAsync(composeFile, sandboxId, projectName, request, cancellationToken).ConfigureAwait(false);
         await BringUpAsync(projectName, composeFile, request.Timeout, cancellationToken).ConfigureAwait(false);
@@ -131,12 +161,7 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         };
 
         _sandboxes.TryAdd(sandboxId, sandbox);
-
-        return new ProvisionResult
-        {
-            Descriptor = sandbox.Descriptor,
-            NewlyProvisioned = true,
-        };
+        return sandbox;
     }
 
     /// <inheritdoc />
@@ -171,14 +196,28 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
             argv.Add("-t");
         }
 
+        // Workdir and environment are applied inside the container by podman exec. The host podman
+        // process keeps its own environment and working directory.
+        if (!string.IsNullOrEmpty(request.WorkingDirectory))
+        {
+            argv.Add("--workdir");
+            argv.Add(request.WorkingDirectory);
+        }
+
+        foreach (var (name, value) in request.Environment)
+        {
+            argv.Add("--env");
+            argv.Add($"{name}={value}");
+        }
+
         argv.Add(sandbox.ContainerId);
         argv.AddRange(request.Argv);
 
         var result = await _processRunner.RunAsync(new ProcessSpec
         {
             Argv = argv,
-            WorkingDirectory = request.WorkingDirectory,
-            Environment = request.Environment,
+            WorkingDirectory = "/",
+            Environment = new Dictionary<string, string>(StringComparer.Ordinal),
             Timeout = request.Timeout,
         }, cancellationToken).ConfigureAwait(false);
 
@@ -224,22 +263,34 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
 
         argv.Add(sandbox.ContainerId);
 
-        var result = await _processRunner.RunAsync(new ProcessSpec
+        var spec = new ProcessSpec
         {
             Argv = argv,
             WorkingDirectory = "/",
             Environment = new Dictionary<string, string>(StringComparer.Ordinal),
             Timeout = follow ? TimeSpan.FromHours(1) : TimeSpan.FromSeconds(30),
-        }, cancellationToken).ConfigureAwait(false);
+        };
 
-        foreach (var line in result.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        if (follow)
         {
-            yield return line;
+            // Lines are yielded as podman writes them; waiting for exit would starve a live follow.
+            await foreach (var line in _processRunner.StreamStdoutLinesAsync(spec, cancellationToken).ConfigureAwait(false))
+            {
+                yield return line;
+            }
+
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
+            }
         }
-
-        if (follow && !cancellationToken.IsCancellationRequested)
+        else
         {
-            await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
+            var result = await _processRunner.RunAsync(spec, cancellationToken).ConfigureAwait(false);
+            foreach (var line in result.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                yield return line;
+            }
         }
     }
 
@@ -287,11 +338,7 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         // retained so lifecycle retries can re-run down with the same compose file.
         DeleteComposeFile(sandbox.ComposeFile);
         _sandboxes.TryRemove(sandboxId, out _);
-    }
-
-    private PodmanSandbox? FindByIdempotencyKey(string idempotencyKey)
-    {
-        return _sandboxes.Values.FirstOrDefault(s => string.Equals(s.IdempotencyKey, idempotencyKey, StringComparison.Ordinal));
+        _provisionsByKey.TryRemove(sandbox.IdempotencyKey, out _);
     }
 
     private static SandboxDescriptor CreateDescriptor(string sandboxId, string projectName, ProvisionRequest request)
@@ -492,19 +539,28 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
-            await _processRunner.RunAsync(new ProcessSpec
+            var result = await _processRunner.RunAsync(new ProcessSpec
             {
                 Argv = ["podman-compose", "-p", projectName, "-f", composeFile, "down", "-v"],
                 WorkingDirectory = Path.GetDirectoryName(composeFile) ?? "/",
                 Environment = new Dictionary<string, string>(StringComparer.Ordinal),
                 Timeout = TimeSpan.FromMinutes(2),
             }, cts.Token).ConfigureAwait(false);
+
+            if (result.TimedOut)
+            {
+                PartialTeardownFailed(_logger, projectName, "timed out", null);
+            }
+            else if (result.ExitCode != 0)
+            {
+                PartialTeardownFailed(_logger, projectName, $"exit {result.ExitCode.ToString(CultureInfo.InvariantCulture)}", null);
+            }
         }
         catch (Exception ex)
         {
             // Best-effort: never mask the in-flight provisioning failure, including on
             // cancellation. The compose file is still deleted by the caller.
-            PartialTeardownFailed(_logger, projectName, ex);
+            PartialTeardownFailed(_logger, projectName, "runner failed", ex);
         }
     }
 

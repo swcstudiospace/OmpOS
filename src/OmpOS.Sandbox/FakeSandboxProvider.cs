@@ -16,6 +16,7 @@ public sealed class FakeSandboxProvider : ISandboxProvider
     private readonly FakeSandboxProviderOptions _options;
     private int _provisionFailCount;
     private int _teardownFailCount;
+    private readonly object _provisionLock = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FakeSandboxProvider"/> class.
@@ -69,51 +70,54 @@ public sealed class FakeSandboxProvider : ISandboxProvider
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var existing = FindByIdempotencyKey(request.IdempotencyKey);
-        if (existing is not null)
+        // Lookup and insert share one lock, so overlapping calls with the same key cannot both create a sandbox.
+        lock (_provisionLock)
         {
+            var existing = FindByIdempotencyKey(request.IdempotencyKey);
+            if (existing is not null)
+            {
+                return Task.FromResult(new ProvisionResult
+                {
+                    Descriptor = existing.Descriptor,
+                    NewlyProvisioned = false,
+                });
+            }
+
+            if (request.Timeout <= TimeSpan.Zero)
+            {
+                throw new ProvisionTimeoutException("Timeout must be positive");
+            }
+
+            if (_provisionFailCount > 0)
+            {
+                _provisionFailCount--;
+                throw new ProvisionTimeoutException("Injected provision failure");
+            }
+
+            var sandboxId = $"fake-{Guid.NewGuid():N}";
+            var sandbox = new FakeSandbox
+            {
+                Id = sandboxId,
+                IdempotencyKey = request.IdempotencyKey,
+                SessionId = request.SessionId,
+                Descriptor = CreateDescriptor(sandboxId, request),
+                Spec = request.Spec,
+                Status = SandboxStatus.Ready,
+                Logs = new List<string> { $"Sandbox {sandboxId} provisioned" },
+            };
+
+            _sandboxes.TryAdd(sandboxId, sandbox);
+            if (_options.FailAfterPartial)
+            {
+                throw new ProvisionTimeoutException("Injected failure after partial provision");
+            }
+
             return Task.FromResult(new ProvisionResult
             {
-                Descriptor = existing.Descriptor,
-                NewlyProvisioned = false,
+                Descriptor = sandbox.Descriptor,
+                NewlyProvisioned = true,
             });
         }
-
-        if (request.Timeout <= TimeSpan.Zero)
-        {
-            throw new ProvisionTimeoutException("Timeout must be positive");
-        }
-
-        if (_provisionFailCount > 0)
-        {
-            _provisionFailCount--;
-            throw new ProvisionTimeoutException("Injected provision failure");
-        }
-
-        var sandboxId = $"fake-{Guid.NewGuid():N}";
-        var sandbox = new FakeSandbox
-        {
-            Id = sandboxId,
-            IdempotencyKey = request.IdempotencyKey,
-            SessionId = request.SessionId,
-            Descriptor = CreateDescriptor(sandboxId, request),
-            Spec = request.Spec,
-            Status = SandboxStatus.Ready,
-            Logs = new List<string> { $"Sandbox {sandboxId} provisioned" },
-        };
-
-        if (_options.FailAfterPartial)
-        {
-            _sandboxes.TryAdd(sandboxId, sandbox);
-            throw new ProvisionTimeoutException("Injected failure after partial provision");
-        }
-
-        _sandboxes.TryAdd(sandboxId, sandbox);
-        return Task.FromResult(new ProvisionResult
-        {
-            Descriptor = sandbox.Descriptor,
-            NewlyProvisioned = true,
-        });
     }
 
     /// <inheritdoc />

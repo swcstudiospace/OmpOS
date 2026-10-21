@@ -21,6 +21,12 @@ internal sealed class RealProcessRunner : IProcessRunner
         return Inner.RunAsync(spec, cancellationToken);
     }
 
+    /// <inheritdoc />
+    public IAsyncEnumerable<string> StreamStdoutLinesAsync(ProcessSpec spec, CancellationToken cancellationToken = default)
+    {
+        return Inner.StreamStdoutLinesAsync(spec, cancellationToken);
+    }
+
     /// <summary>
     /// Checks whether a command exists on PATH.
     /// </summary>

@@ -78,14 +78,13 @@ public abstract class SandboxProviderContractTests<TProvider>
         {
             var ct = TestContext.Current.CancellationToken;
             var request = CreateProvisionRequest();
-            var request2 = request with { SessionId = "different-session" };
 
-            var result1 = await provider.ProvisionAsync(request, ct);
-            var result2 = await provider.ProvisionAsync(request2, ct);
+            // Eight overlapping calls with one key, each on its own thread: exactly one sandbox may be created.
+            var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(i =>
+                Task.Run(() => provider.ProvisionAsync(request with { SessionId = $"session-{i}" }, ct), ct)));
 
-            result1.Descriptor.Id.ShouldBe(result2.Descriptor.Id);
-            result1.NewlyProvisioned.ShouldBeTrue();
-            result2.NewlyProvisioned.ShouldBeFalse();
+            results.Select(r => r.Descriptor.Id).Distinct().Count().ShouldBe(1);
+            results.Count(r => r.NewlyProvisioned).ShouldBe(1);
         }
         finally
         {
