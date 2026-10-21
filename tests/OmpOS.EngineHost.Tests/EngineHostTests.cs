@@ -254,28 +254,35 @@ public sealed class EngineHostTests
         }
 
         handler.LabelledGets.ShouldBe(1);
-        await using var live = host.SubmitPromptAsync("next", new PromptOptions(), ct).GetAsyncEnumerator(ct);
-        var liveNext = live.MoveNextAsync();
-        liveNext.IsCompleted.ShouldBeFalse();
-        handler.PromptPosts.ShouldBe(1);
+        var live = host.SubmitPromptAsync("next", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        try
+        {
+            var liveNext = live.MoveNextAsync();
+            liveNext.IsCompleted.ShouldBeFalse();
+            handler.PromptPosts.ShouldBe(1);
 
-        handler.Release();
-        await hold.ConfigureAwait(true);
-        raised.ShouldBe(1);
+            handler.Release();
+            await hold.ConfigureAwait(true);
+            raised.ShouldBe(1);
 
-        var held = host.TakeHeldEvents();
-        held.OfType<TextDeltaEvent>().Select(static evt => evt.Text).ShouldBe(["t6", "t7", "t8", "t9", "t10", "t11"]);
-        held[^1].ShouldBeOfType<CompletedEvent>().Reason.ShouldBe("end_turn");
-        held.Count.ShouldBe(7);
+            var held = host.TakeHeldEvents();
+            held.OfType<TextDeltaEvent>().Select(static evt => evt.Text).ShouldBe(["t6", "t7", "t8", "t9", "t10", "t11"]);
+            held[^1].ShouldBeOfType<CompletedEvent>().Reason.ShouldBe("end_turn");
+            held.Count.ShouldBe(7);
 
-        (await liveNext).ShouldBeTrue();
-        live.Current.ShouldBeOfType<TextDeltaEvent>().Text.ShouldBe("live13");
-        (await live.MoveNextAsync()).ShouldBeTrue();
-        live.Current.ShouldBeOfType<CompletedEvent>().Reason.ShouldBe("end_turn");
-        (await live.MoveNextAsync()).ShouldBeFalse();
+            (await liveNext.ConfigureAwait(true)).ShouldBeTrue();
+            live.Current.ShouldBeOfType<TextDeltaEvent>().Text.ShouldBe("live13");
+            (await live.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
+            live.Current.ShouldBeOfType<CompletedEvent>().Reason.ShouldBe("end_turn");
+            (await live.MoveNextAsync().ConfigureAwait(true)).ShouldBeFalse();
 
-        handler.PromptPosts.ShouldBe(2);
-        host.TakeHeldEvents().ShouldBeEmpty();
+            handler.PromptPosts.ShouldBe(2);
+            host.TakeHeldEvents().ShouldBeEmpty();
+        }
+        finally
+        {
+            await live.DisposeAsync().ConfigureAwait(true);
+        }
     }
 
     /// <summary>A faulted engine that the host replaces is disposed; the replacement serves the next prompt.</summary>
