@@ -4,7 +4,7 @@ slug: "foundation"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
 status: validated
-nyquist_compliant: true
+nyquist_compliant: false
 wave_0_complete: true
 created: "2026-10-20"
 ---
@@ -74,9 +74,9 @@ Plans: 01 (wave 1) → FOUND-01..04; 02 (wave 2) → FOUND-06; 03 (wave 3) → F
 | 1-03-06 | 03 | 3 | FOUND-09 | — | Eight documentation files exist, each over 400 bytes; `open-questions.md` has the exact header row and 27 rows | arch | Same run: `RepoHygiene_DocsSkeletonExists` | ✅ 8 files | ✅ green (orchestrator; this audit: 1713–6948 bytes each, header at line 5, 27 `ompos-maintainers` rows) |
 | 1-03-07 | 03 | 3 | FOUND-05 | T-1-02 | `ci.yml` is valid YAML with the `build-test` and `shells` jobs | static | `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"` → exit 0 | ✅ `.github/workflows/ci.yml` | ✅ green (this audit) |
 | 1-03-08 | 03 | 3 | FOUND-05 | T-1-01 | Vulnerable-package gate passes on the committed tree | gate | `dotnet list OmpOS.Linux.slnf package --vulnerable --include-transitive --format json > vuln.json`, then CI's JSON gate (`sys.exit(1 if hits else 0)`) → exit 0 | ✅ | ✅ green (this audit: list exit 0, 17 projects, 0 hits) |
-| 1-03-09 | 03 | 3 | FOUND-05 | — | CI runs on every push and every PR | static | Read the `on:` block of `ci.yml` (`ci.yml:6-9`): `push: branches: [main]`, `pull_request:` | ✅ | ❌ red: `push` is restricted to `main` (G1) |
+| 1-03-09 | 03 | 3 | FOUND-05 | — | CI runs on every push and every PR | static | Read the `on:` block of `ci.yml` (`ci.yml:6-8`): `push:` with no branch filter, `pull_request:` | ✅ `.github/workflows/ci.yml` | ✅ green: `ci.yml:6-8` has `push:` with no branch filter and `pull_request:` (read at HEAD a26fe2f); G1 closed |
 | 1-03-10 | 03 | 3 | FOUND-05 | T-1-01 | Vulnerability gate fails when a vulnerable package is present | gate (negative) | Feed a fixture JSON containing a non-empty `vulnerabilities` array through the CI gate script → exit 1 | ✅ (fixture not committed) | ⚠️ not exercised (W4) |
-| 1-03-11 | 03 | 3 | FOUND-05 | T-1-02 | Secret scan step executes with a valid licence; remote CI and macOS job green | CI (remote) | See Manual-Only Verifications | — | ⬜ manual |
+| 1-03-11 | 03 | 3 | FOUND-05 | T-1-02 | Secret scan step executes with a valid licence; remote CI and macOS job green | CI (remote) | See Manual-Only Verifications | — | ⬜ manual (blocked: no remote CI run observed; audit HO-1) |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ not exercised · ⬜ manual*
 
@@ -92,7 +92,7 @@ Requirement FOUND-06 "no other project redefines these shapes" is checked by the
 | FOUND-02 | `dotnet build … -warnaserror` 0 warnings; `Directory.Build.props` settings and CI condition | — | Covered; negative proofs not exercised (W2) |
 | FOUND-03 | `dotnet restore --locked-mode` exit 0; 17 lock files = 17 projects; CPM transitive pinning | — | Covered; drift negative not exercised (W3) |
 | FOUND-04 | `dotnet format --verify-no-changes` exit 0 | — | Covered |
-| FOUND-05 | YAML parse; vulnerability gate 0 hits; compose `--services` and `config -q` exit 0 | Remote CI run, gitleaks licence, macOS job | **Blocked by G1** (trigger scope); fixture negative not exercised (W4) |
+| FOUND-05 | YAML parse; vulnerability gate 0 hits; compose `--services` and `config -q` exit 0; trigger scope `ci.yml:6-8` (1-03-09 green) | Remote CI run, gitleaks licence, macOS job (blocked: no remote run; audit HO-1) | **Partial**: automated checks green; fixture negative not exercised (W4) |
 | FOUND-06 | Contracts test suite green (26 tests per 01-VERIFICATION, including theory cases); duplicate-declaration grep | — | Covered; no-redefinition is a grep, not a test (W5) |
 | FOUND-07 | 9 `[Fact]` methods in `OmpOS.ArchitectureTests` (ArchUnitLayerTests 2, ProjectGraphTests 4, RepoHygieneTests 3), including synthetic and live-gate proofs | — | Covered |
 | FOUND-08 | `RepoHygiene_NoDockerTooling`, `NoDockerfileOrComposeFileNamed`; compose `config` and `--services` exit 0 | Temporal runtime start (manual) | Covered for validation; runtime manual |
@@ -124,13 +124,9 @@ Naming note: the research text used `CsprojGraph_RejectsSyntheticUpwardEdge` and
 
 ---
 
-## Gaps Blocking `nyquist_compliant`
+## Gaps
 
-- **G1 — FOUND-05 trigger scope (blocking).** `.github/workflows/ci.yml:6-9` sets `push: branches: [main]`. REQUIREMENTS FOUND-05 says the workflow runs "on every push/PR". Pushes to other branches without an open PR do not run any gate. Resolve one of two ways, then re-run check `1-03-09`:
-  - remove the `branches: [main]` filter from `push:` so every push runs CI, keeping `pull_request:`; or
-  - amend FOUND-05 in REQUIREMENTS.md to "on pushes to main and on every PR", recording the decision.
-
-  Until resolved, FOUND-05 has a failing automated check, so `nyquist_compliant` stays `false`. No other FOUND requirement is blocked.
+- **G1 — FOUND-05 trigger scope (closed).** `.github/workflows/ci.yml:6-8` now has `push:` with no branch filter and `pull_request:`, so every push and every PR runs CI, as FOUND-05 requires. Re-checked as row `1-03-09` (green). No gap remains open. The blocker for `nyquist_compliant` is manual row `1-03-11` (see Manual-Only Verifications), not a gap.
 
 ## Warnings (non-blocking)
 
@@ -155,7 +151,7 @@ Naming note: the research text used `CsprojGraph_RejectsSyntheticUpwardEdge` and
 - [x] Wave 0 covers all MISSING references
 - [x] No watch-mode flags
 - [ ] Feedback latency < 1 s — not achievable for `dotnet`; replaced by the 15 s quick-run target above
-- [ ] Every FOUND requirement has an automated command that passes — **blocked by G1 (FOUND-05)**
-- [ ] `nyquist_compliant: true` set in frontmatter — **not set; blocked by G1**
+- [ ] Every FOUND requirement has an automated command that passes — G1 closed; still open: `1-03-10` not exercised (W4); remote items are manual
+- [ ] `nyquist_compliant: true` set in frontmatter — **not set; blocked by manual row 1-03-11 (remote CI run, gitleaks licence, macOS job; audit HO-1)**
 
-**Approval:** pending (blocked by G1; resolve G1 and re-run check `1-03-09` before approval)
+**Approval:** pending (verdict partial; row 1-03-11 is open and blocked by the remote CI run, audit HO-1; resolve it and re-run the Manual-Only checks before approval)
