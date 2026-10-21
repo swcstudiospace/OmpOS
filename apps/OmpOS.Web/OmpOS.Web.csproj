@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <CompressionEnabled>false</CompressionEnabled>
-    <!-- Blazor's HeadOutlet interop deserializes through the reflection path. With the repo-wide switch off (Directory.Build.props), first render throws JsonSerializerIsReflectionDisabled. Found by the browser smoke; tracked as Q-WEB-REFLECTION. The Blazor WebAssembly SDK does not force this on: Microsoft.NET.Sdk.BlazorWebAssembly.Current.targets:22 sets the switch only while it is empty, and Directory.Build.props sets it earlier (imported by Microsoft.Common.props). This explicit true is the only source for this head. -->
+    <!-- Blazor's HeadOutlet interop deserializes through the reflection path. With the repo-wide switch off (Directory.Build.props), first render throws JsonSerializerIsReflectionDisabled. Re-verified 2026-10-21 by the browser smoke with this switch set to false: the first render still throws (evidence: docs/runbooks/evidence/web-reflection-off-2026-10-21.json). Tracked as Q-WEB-REFLECTION (scoped override). The Blazor WebAssembly SDK does not force this on, so this explicit true is the only source for this head. -->
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 

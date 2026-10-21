@@ -13,6 +13,7 @@
 <PageTitle>OmpOS</PageTitle>
 
 <div class="ompos-shell">
+    <a class="ompos-skip-link" href="#ompos-conversation">Skip to conversation</a>
     <ConversationList Conversations="_conversations" SelectedId="_selectedId" OnSelected="SelectSessionAsync" />
     <div class="ompos-main">
         <button type="button" class="ompos-btn" aria-label="New conversation" @onclick="NewSessionAsync">+ New</button>

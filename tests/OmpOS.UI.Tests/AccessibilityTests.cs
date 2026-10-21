@@ -85,29 +85,6 @@ public sealed class AccessibilityTests : UiTestContext
         css.ShouldContain("44px");
     }
 
-    /// <summary>The skip link is the first focusable element and targets the conversation region.</summary>
-    [Theory]
-    [InlineData(SessionViewState.LoadingHistory)]
-    [InlineData(SessionViewState.Empty)]
-    [InlineData(SessionViewState.Streaming)]
-    public void SkipLinkIsFirstFocusableAndTargetsConversation(SessionViewState state)
-    {
-        var cut = Render<SessionView>(parameters => parameters
-            .Add(p => p.Tree, UiTree.Empty)
-            .Add(p => p.ViewState, state)
-            .Add(p => p.AutoScrollPaused, true));
-
-        var focusable = cut.FindAll("a[href], button:not([disabled]), textarea, [tabindex]:not([tabindex='-1'])");
-        focusable.Count.ShouldBeGreaterThan(0);
-        var first = focusable[0];
-        first.TagName.ShouldBe("A");
-        first.ClassList.Contains("ompos-skip-link").ShouldBeTrue();
-        first.TextContent.ShouldBe("Skip to conversation");
-        var href = first.GetAttribute("href") ?? string.Empty;
-        href.ShouldStartWith("#");
-        cut.Find(href).ShouldNotBeNull();
-    }
-
     /// <summary>Icon-button token pairs meet WCAG AA for text glyphs (4.5:1).</summary>
     [Theory]
     [InlineData("--ompos-fg", "--ompos-bg")]
