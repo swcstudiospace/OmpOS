@@ -1,37 +1,33 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.9.1
-status: Awaiting next milestone
-stopped_at: Phase 5 verify pass done; next step clean-clone bootstrap, then milestone audit
-last_updated: "2026-10-21T03:46:02.272Z"
+milestone: v0.9.2
+milestone_name: Hardening and hosted API
+status: planning
+last_updated: "2026-10-21T10:22:28.524Z"
 last_activity: 2026-10-21
-last_activity_desc: Milestone v0.9.1 completed and archived
-state_head: fcaba9702ac380d66c23de7307b3d8d680d290e7
 progress:
-  total_phases: 5
-  completed_phases: 4
-  total_plans: 15
-  completed_plans: 15
-current_phase: 5
-current_phase_name: Verify & Handoff
-current_plan: 1
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-20)
+See: .planning/PROJECT.md (updated 2026-10-21)
 
 **Core value:** A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
-**Current focus:** Phase 1 — Foundation
+**Current focus:** Milestone v0.9.2 — Hardening and hosted API (requirements defined; roadmap pending)
 
 ## Current Position
 
-Phase: Milestone v0.9.1 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-10-21 — Milestone v0.9.1 completed and archived
+Status: Defining requirements
+Last activity: 2026-10-21 — Milestone v0.9.2 started
 
 ## Performance Metrics
 
@@ -106,4 +102,4 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Create the v0.9.2 roadmap from .planning/REQUIREMENTS.md (gsd-roadmapper), then plan the first phase

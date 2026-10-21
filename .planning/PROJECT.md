@@ -8,6 +8,18 @@ OmpOS is a chat-style agent workspace — a Grok Chat / Cursor Agent–class cli
 
 A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
 
+## Current Milestone: v0.9.2 Hardening and hosted API
+
+**Goal:** Close every v0.9.1 audit tech-debt item, the owner-deferred items OD-1 to OD-13, the human-only items HO-2 to HO-4 that run on this host, and the hosting path (Railway API, Vercel web, Temporal Cloud) once the owner decides the sign-in method.
+
+**Target features:**
+- Tech debt programmed into phases, not parked (supersedes owner decision 7 in docs/handoff.md)
+- Owner-deferred items OD-1 to OD-13: interactive approval, Temporal worker wiring, auth provider, sandbox vendor stubs, transports, reflection, AC enumeration
+- Human-only items HO-2, HO-3, HO-4 run and recorded on this host (podman-compose, podman smoke test, Temporal replay)
+- Hosting: Railway API, Vercel web with production API origin, Temporal Cloud; gated on the owner's sign-in decision
+- Mac builds: iOS and MacCatalyst builds on macOS, desktop and mobile spot-checks
+- Records and evidence: BR-1 gate execution, clean-clone re-record, Nyquist validation, milestone re-audit
+
 ## Requirements
 
 ### Validated
@@ -16,23 +28,12 @@ A prompt typed on any surface becomes an omp session whose streamed events rende
 
 ### Active
 
-- [ ] Monorepo at `~/src/repos/ompos/` builds from a clean clone with one documented bootstrap command, zero analyzer warnings (warnings-as-errors, nullable, deterministic builds, locked restore).
-- [ ] Shared contracts project is the single source of truth for Session, Message, IntentEnvelope, UiBlock, StreamEvent (sequence-numbered), SandboxDescriptor, WorkflowRun, error types and state enums; no surface redefines them.
-- [ ] Catch-all prompt parser: every input yields exactly one IntentEnvelope via ordered recognizers (slash commands, @mentions/file refs, structured directives, omp magic keywords, plain chat) terminating in an unremovable fallback; never throws; byte-for-byte raw text preserved; documented max length.
-- [ ] ACP harness: typed C# client for ACP v1 (JSON-RPC 2.0 over stdio, `omp acp`) and omp's native RPC JSONL protocol (`omp --mode rpc`), behind transport/session/event abstractions with an explicit state machine, typed failure modes, and a deterministic scripted in-memory adapter.
-- [ ] Session orchestration: append-only event log with monotonic sequence numbers, repository interface with in-memory implementation, one-active-prompt-per-session rejection, SessionStatus exposed through contracts.
-- [ ] Backend streaming endpoint (SSE) forwarding harness events with sequence numbers so clients resume after a dropped connection; duplicate events de-duplicated client-side.
-- [ ] Sandbox provider abstraction (provision/attach/exec/stream logs/snapshot/teardown; timeouts; idempotency keys; TTL + orphan reaper; retried teardown) with a fake provider, a local podman-compose provider, and interface-conforming stubs for Railway, agentOS, OpenShell and the attested-enclave (dTEE) boundary — no invented vendor calls.
-- [ ] Durable workflow layer: `ISessionRunWorkflow` + activities (provision → run prompt → collect → teardown), Temporal .NET worker host behind a config flag, direct in-process runner when disabled.
-- [ ] Vertical slice: a prompt typed in the web surface → parser → session → in-memory omp adapter → streamed events → Generative UI blocks rendered, with no omp, Temporal, Railway or cloud credential required.
-- [ ] Shared chat surface (Razor Class Library): conversation list, session view with streamed messages, composer, block renderer (markdown, code, tool-call card with status, file-diff placeholder, error, A2UI surface, unknown-block fallback); streaming UX (stop/cancel, partial output preserved, retry, scroll-lock); accessibility baseline (keyboard, focus rings, labels, contrast, reduced motion, live region, touch targets).
-- [ ] Web shell: Blazor WebAssembly, static publish deployable to Vercel, environment-driven API base URL, security headers in hosting config.
-- [ ] Desktop/mobile shells: .NET MAUI Blazor Hybrid head sharing the RCL; desktop targets host the harness in-process and spawn omp over stdio; mobile targets consume the backend only and reconnect with sequence resume.
-- [ ] Platform foundations: CI (restore locked, build warnaserror, test, format verify, vulnerability audit, podman-compose config validation, workload-gated shells job), .editorconfig + analyzers + formatter, layered typed configuration that fails fast with readable messages, `.env.example` documenting every variable, structured logging with end-to-end correlation IDs and default redaction, liveness/readiness endpoints reflecting harness/persistence/workflow state, OpenAPI document, CORS locked to configured origins, pluggable rate limiter.
-- [ ] Security posture: boundary validation and payload limits, user text never concatenated into control messages, tool-approval policy hook (deny-by-policy default) mapped to ACP `session/request_permission`, no host paths/secrets mounted into sandboxes by default, explicit outbound network policy, lockfiles committed.
-- [ ] Tests: unit tests per project, abstract contract-test fixtures for harness/sandbox/workflow/repository that fakes and future real implementations must pass, failure-mode tests, SSE resume/dedup integration test, architecture test enforcing dependency direction.
-- [ ] Docs: `docs/architecture.md`, ADRs under `docs/decisions/`, `docs/open-questions.md` (every unverified external fact with owner), `docs/runbooks/local-dev.md`, `docs/runbooks/sandbox.md`; README with bootstrap/run/test; CONTRIBUTING.
-- [ ] Final report distinguishing implemented vs stubbed vs deferred.
+- [ ] Tech debt: every v0.9.1 audit tech-debt item closed (REQUIREMENTS.md group TD)
+- [ ] Owner-deferred items OD-1 to OD-13 programmed and closed (group OD)
+- [ ] Human-only items HO-2, HO-3, HO-4 run and recorded on this host (group HO)
+- [ ] Hosting path: Railway API, Vercel web, Temporal Cloud, after the owner decides sign-in (group HOST)
+- [ ] Mac builds and desktop/mobile spot-checks on a macOS host (group MAC)
+- [ ] Records and evidence refreshed: BR-1 gate run, clean-clone re-record, Nyquist validation, milestone re-audit (group REC)
 
 ### Out of Scope
 
@@ -104,4 +105,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-20 after initialization*
+*Last updated: 2026-10-21 after starting milestone v0.9.2*
