@@ -83,7 +83,7 @@ public abstract class SandboxProviderContractTests<TProvider>
             var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(i =>
                 Task.Run(() => provider.ProvisionAsync(request with { SessionId = $"session-{i}" }, ct), ct)));
 
-            results.Select(r => r.Descriptor.Id).Distinct().Count().ShouldBe(1);
+            results.Select(r => r.Descriptor.Id).Distinct(StringComparer.Ordinal).Count().ShouldBe(1);
             results.Count(r => r.NewlyProvisioned).ShouldBe(1);
         }
         finally

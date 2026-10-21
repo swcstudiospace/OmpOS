@@ -31,7 +31,7 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         LoggerMessage.Define<string, string>(
             LogLevel.Warning,
             new EventId(3, "PartialTeardownFailed"),
-            "Best-effort partial teardown failed for project {ProjectName} ({Reason}); containers labelled ompos.project={ProjectName} may remain");
+            "Best-effort partial teardown failed for project {ProjectName} ({Reason}); containers labelled with the ompos.project label may remain");
 
     private readonly IProcessRunner _processRunner;
     private readonly ILogger<LocalPodmanComposeProvider> _logger;
@@ -204,10 +204,14 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
             argv.Add(request.WorkingDirectory);
         }
 
+        // podman takes the value of a bare NAME from the environment of the podman process itself, so
+        // VALUE is passed through ProcessSpec.Environment and never appears in argv (visible to ps).
+        var childEnvironment = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var (name, value) in request.Environment)
         {
             argv.Add("--env");
-            argv.Add($"{name}={value}");
+            argv.Add(name);
+            childEnvironment[name] = value;
         }
 
         argv.Add(sandbox.ContainerId);
@@ -217,7 +221,7 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         {
             Argv = argv,
             WorkingDirectory = "/",
-            Environment = new Dictionary<string, string>(StringComparer.Ordinal),
+            Environment = childEnvironment,
             Timeout = request.Timeout,
         }, cancellationToken).ConfigureAwait(false);
 

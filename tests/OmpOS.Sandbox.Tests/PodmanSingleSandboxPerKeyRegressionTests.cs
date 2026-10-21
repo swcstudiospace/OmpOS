@@ -32,7 +32,7 @@ public sealed class PodmanSingleSandboxPerKeyRegressionTests
 
         var results = await Task.WhenAll(owner, overlapping);
 
-        results.Select(static r => r.Descriptor.Id).Distinct().Count().ShouldBe(1);
+        results.Select(static r => r.Descriptor.Id).Distinct(StringComparer.Ordinal).Count().ShouldBe(1);
         results.Count(static r => r.NewlyProvisioned).ShouldBe(1);
         runner.Specs.Count(static s => PodmanTestData.HasArgument(s, "up")).ShouldBe(1);
     }

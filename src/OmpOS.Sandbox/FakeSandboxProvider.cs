@@ -16,7 +16,7 @@ public sealed class FakeSandboxProvider : ISandboxProvider
     private readonly FakeSandboxProviderOptions _options;
     private int _provisionFailCount;
     private int _teardownFailCount;
-    private readonly object _provisionLock = new();
+    private readonly Lock _provisionLock = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FakeSandboxProvider"/> class.
