@@ -7,12 +7,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
-    <PackageReference Include="Markdig" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../OmpOS.Contracts/OmpOS.Contracts.csproj" />
     <ProjectReference Include="../OmpOS.GenUi/OmpOS.GenUi.csproj" />
+    <ProjectReference Include="../OmpOS.Presentation/OmpOS.Presentation.csproj" />
   </ItemGroup>
 
 </Project>

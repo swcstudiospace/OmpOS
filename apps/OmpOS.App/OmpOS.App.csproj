@@ -42,6 +42,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/OmpOS.UI/OmpOS.UI.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Presentation/OmpOS.Presentation.csproj" />
     <ProjectReference Include="../../src/OmpOS.EngineHost/OmpOS.EngineHost.csproj" />
   </ItemGroup>
 

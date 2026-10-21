@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using Markdig;
 using OmpOS.GenUi;
 
-namespace OmpOS.UI.Services;
+namespace OmpOS.Presentation.Services;
 
 /// <summary>
 /// Renders markdown to sanitized HTML for <c>MarkupString</c> output.

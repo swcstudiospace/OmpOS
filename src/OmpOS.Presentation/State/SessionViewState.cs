@@ -1,4 +1,4 @@
-namespace OmpOS.UI;
+namespace OmpOS.Presentation.State;
 
 /// <summary>
 /// The streaming lifecycle state of one chat session view (UI-02).

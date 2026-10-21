@@ -1,7 +1,7 @@
 using OmpOS.Contracts.Streaming;
 using OmpOS.GenUi;
 
-namespace OmpOS.UI.State;
+namespace OmpOS.Presentation.State;
 
 /// <summary>
 /// The presentation state behind <c>SessionView</c>: the folded <see cref="UiTree"/>,

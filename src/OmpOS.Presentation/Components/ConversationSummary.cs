@@ -1,4 +1,4 @@
-namespace OmpOS.UI.Components;
+namespace OmpOS.Presentation.Components;
 
 /// <summary>
 /// One row in the conversation list.

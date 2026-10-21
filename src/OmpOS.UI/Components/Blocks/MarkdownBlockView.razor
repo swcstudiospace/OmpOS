@@ -1,6 +1,6 @@
 @namespace OmpOS.UI.Components.Blocks
 @using OmpOS.Contracts.Ui
-@using OmpOS.UI.Services
+@using OmpOS.Presentation.Services
 <div class="ompos-block ompos-markdown">@((MarkupString)MarkdownRenderer.ToHtml(Block.Markdown))</div>
 
 @code {

@@ -1,8 +1,8 @@
 using Bunit;
 using Microsoft.AspNetCore.Components;
 using OmpOS.Contracts.Ui;
+using OmpOS.Presentation.Services;
 using OmpOS.UI.Components.Blocks;
-using OmpOS.UI.Services;
 using Shouldly;
 using Xunit;
 
