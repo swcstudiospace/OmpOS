@@ -20,7 +20,7 @@ public sealed class RailwaySwarmProviderTests
     private const string VerifiedEndpoint = "https://backboard.railway.com/graphql/v2";
 
     [Fact]
-    public async Task ProvisionAsync_RefusesEvenWhenConfigured_WithoutSendingRequest()
+    public async Task ProvisionAsync_FailsClosedNamingSandboxCreateWithoutSendingRequest()
     {
         using var handler = new FakeRailwayHandler(() => throw new InvalidOperationException("provision must not reach the API"));
         using var client = new HttpClient(handler);
@@ -29,7 +29,63 @@ public sealed class RailwaySwarmProviderTests
         var ex = await Should.ThrowAsync<NotAvailableException>(
             () => provider.ProvisionAsync(CreateProvisionRequest(), TestContext.Current.CancellationToken));
 
-        ex.Reason.ShouldContain("egress");
+        ex.Reason.ShouldContain("sandboxCreate");
+        handler.Requests.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task AttachAsync_FailsClosedWithoutSendingRequest()
+    {
+        using var handler = new FakeRailwayHandler(() => throw new InvalidOperationException("attach must not reach the API"));
+        using var client = new HttpClient(handler);
+        var provider = new RailwaySwarmProvider(client, Token);
+
+        var ex = await Should.ThrowAsync<NotAvailableException>(
+            () => provider.AttachAsync(SandboxId, TestContext.Current.CancellationToken));
+
+        ex.Reason.ShouldContain("attach");
+        handler.Requests.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task ExecAsync_FailsClosedNamingSandboxExecWithoutSendingRequest()
+    {
+        using var handler = new FakeRailwayHandler(() => throw new InvalidOperationException("exec must not reach the API"));
+        using var client = new HttpClient(handler);
+        var provider = new RailwaySwarmProvider(client, Token);
+
+        var ex = await Should.ThrowAsync<NotAvailableException>(
+            () => provider.ExecAsync(SandboxId, CreateExecRequest()).FirstAsync().AsTask());
+
+        ex.Reason.ShouldContain("sandboxExec");
+        handler.Requests.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task StreamLogsAsync_FailsClosedNamingDeploymentLogsWithoutSendingRequest()
+    {
+        using var handler = new FakeRailwayHandler(() => throw new InvalidOperationException("logs must not reach the API"));
+        using var client = new HttpClient(handler);
+        var provider = new RailwaySwarmProvider(client, Token);
+
+        var ex = await Should.ThrowAsync<NotAvailableException>(
+            () => provider.StreamLogsAsync(SandboxId, new LogCursor { Position = 0, Follow = true }).FirstAsync().AsTask());
+
+        ex.Reason.ShouldContain("deploymentLogs");
+        handler.Requests.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task SnapshotAsync_FailsClosedNamingSandboxCheckpointCreateWithoutSendingRequest()
+    {
+        using var handler = new FakeRailwayHandler(() => throw new InvalidOperationException("snapshot must not reach the API"));
+        using var client = new HttpClient(handler);
+        var provider = new RailwaySwarmProvider(client, Token);
+
+        var ex = await Should.ThrowAsync<NotAvailableException>(
+            () => provider.SnapshotAsync(SandboxId, TestContext.Current.CancellationToken));
+
+        ex.Reason.ShouldContain("sandboxCheckpointCreate");
         handler.Requests.ShouldBeEmpty();
     }
 
@@ -66,6 +122,22 @@ public sealed class RailwaySwarmProviderTests
         ex.SandboxId.ShouldBe(SandboxId);
         ex.Attempts.ShouldBe(1);
         ex.Message.ShouldContain("Not Authorized");
+    }
+
+    [Fact]
+    public async Task TeardownAsync_ServerEchoedTokenIsRedactedFromException()
+    {
+        using var handler = new FakeRailwayHandler(() => Json(
+            HttpStatusCode.OK,
+            $$"""{"errors":[{"message":"invalid token {{Token}}"}],"data":null}"""));
+        using var client = new HttpClient(handler);
+        var provider = new RailwaySwarmProvider(client, Token);
+
+        var ex = await Should.ThrowAsync<TeardownFailedException>(
+            () => provider.TeardownAsync(SandboxId, TestContext.Current.CancellationToken));
+
+        ex.Message.ShouldContain("invalid token");
+        ex.Message.ShouldNotContain(Token);
     }
 
     [Theory]
@@ -190,6 +262,15 @@ public sealed class RailwaySwarmProviderTests
             Environment = new Dictionary<string, string>(StringComparer.Ordinal),
             Limits = null,
         },
+    };
+
+    private static ExecRequest CreateExecRequest() => new()
+    {
+        Argv = new[] { "echo", "hello" },
+        WorkingDirectory = "/workspace",
+        Environment = new Dictionary<string, string>(StringComparer.Ordinal),
+        Timeout = TimeSpan.FromSeconds(30),
+        Tty = false,
     };
 
     private sealed record CapturedRequest(Uri? Uri, string? Authorization, string Body);

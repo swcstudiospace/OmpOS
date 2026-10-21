@@ -14,8 +14,11 @@ namespace OmpOS.Sandbox;
 /// agentOS sandbox provider over the hosted agentOS HTTP API (https://rivet.dev/agentos/docs/hosted-api/).
 /// Verified calls: <c>PUT /actors?namespace=</c> (create or get a VM by key), <c>DELETE /actors/{id}?namespace=</c>
 /// (destroy; 404 means already gone), and <c>POST /gateway/{id}/action/v1.{group}.{action}</c> for
-/// <c>v1.vm.status</c>, <c>v1.config.patch</c> (guest environment) and <c>v1.process.run</c> (argv with captured stdio).
+/// <c>v1.vm.status</c>, <c>v1.config.set</c> (network permission <c>deny</c>), <c>v1.config.patch</c> (guest environment)
+/// and <c>v1.process.run</c> (argv with captured stdio). <c>ExecRequest.Timeout</c> bounds the client HTTP call only;
+/// the documented process.run input has no timeout field.
 /// A request field without a verified mapping fails with <see cref="NotAvailableException"/> before any call is sent.
+/// With PerSandboxCredentials set, provisioning fails closed before any request: the hosted provisioning request has no documented secrets field.
 /// Open question: Q-SB-AGENTOS.
 /// </summary>
 public sealed class AgentOsProvider : ISandboxProvider
@@ -26,15 +29,18 @@ public sealed class AgentOsProvider : ISandboxProvider
     private const string TokenHeader = "x-rivet-token";
     private const string StatusAction = "v1.vm.status";
     private const string ConfigPatchAction = "v1.config.patch";
+    private const string ConfigSetAction = "v1.config.set";
+    private const string DenyNetwork = "deny";
     private const string RunAction = "v1.process.run";
-    private const string SnapshotNotSupported = "agentOS hosted API has no snapshot action (Q-SB-AGENTOS)";
-    private const string LogsNotMapped = "agentOS output.read byte encoding over HTTP is not verified (Q-SB-AGENTOS)";
+    private const string SnapshotNotSupported = "agentOS hosted API has no VM snapshot action; filesystem.export is a root-filesystem snapshot whose bytes the hosted JSON encoding cannot carry (Q-SB-AGENTOS)";
+    private const string LogsNotMapped = "agentOS output.read returns process output as bytes; the hosted JSON encoding cannot carry raw bytes and no other encoding is documented (Q-SB-AGENTOS)";
     private static readonly TimeSpan ControlTimeout = TimeSpan.FromSeconds(30);
 
     private readonly HttpClient _http;
     private readonly Uri _endpoint;
     private readonly string _namespace;
     private readonly string _secretToken;
+    private readonly bool _perSandboxCredentialsRequested;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AgentOsProvider"/> class.
@@ -43,7 +49,8 @@ public sealed class AgentOsProvider : ISandboxProvider
     /// <param name="endpoint">Hosted API base URL, for example <c>https://api.rivet.dev</c>.</param>
     /// <param name="namespaceName">Rivet namespace that owns the VMs.</param>
     /// <param name="secretToken">Namespace secret token (<c>sk_</c>), sent as bearer for control-plane calls and as <c>x-rivet-token</c> for actions.</param>
-    public AgentOsProvider(HttpClient httpClient, Uri endpoint, string namespaceName, string secretToken)
+    /// <param name="options">Optional. When set with PerSandboxCredentials true, provisioning fails closed before any request. Null or PerSandboxCredentials false leaves provisioning unchanged.</param>
+    public AgentOsProvider(HttpClient httpClient, Uri endpoint, string namespaceName, string secretToken, SandboxProviderOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
         ArgumentNullException.ThrowIfNull(endpoint);
@@ -58,6 +65,7 @@ public sealed class AgentOsProvider : ISandboxProvider
         _endpoint = new Uri(endpoint.AbsoluteUri.TrimEnd('/') + "/", UriKind.Absolute);
         _namespace = namespaceName;
         _secretToken = secretToken;
+        _perSandboxCredentialsRequested = options?.PerSandboxCredentials ?? false;
         Capabilities = new SandboxCapability
         {
             Isolation = Isolation.Process,
@@ -75,6 +83,7 @@ public sealed class AgentOsProvider : ISandboxProvider
     public async Task<ProvisionResult> ProvisionAsync(ProvisionRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        RequireCredentialFailClosed();
         RequireProvisionMapped(request);
         try
         {
@@ -189,6 +198,9 @@ public sealed class AgentOsProvider : ISandboxProvider
             ?? throw new NotAvailableException("agentOS provisioning response has no actor_id");
         var created = ReadBool(Member(json, "created"))
             ?? throw new NotAvailableException("agentOS provisioning response has no created flag");
+        // config.set replaces the complete config, so it runs before the environment patch.
+        await DenyNetworkAsync(actorId, request.Timeout, cancellationToken).ConfigureAwait(false);
+
         if (request.Spec.Environment.Count > 0)
         {
             await PatchEnvironmentAsync(actorId, request.Spec.Environment, request.Timeout, cancellationToken).ConfigureAwait(false);
@@ -207,6 +219,15 @@ public sealed class AgentOsProvider : ISandboxProvider
 
         var input = new JsonObject { ["patch"] = new JsonObject { ["environment"] = variables } };
         await ActionAsync(actorId, ConfigPatchAction, input, timeout, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task DenyNetworkAsync(string actorId, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        var input = new JsonObject
+        {
+            ["config"] = new JsonObject { ["permissions"] = new JsonObject { ["network"] = DenyNetwork } },
+        };
+        await ActionAsync(actorId, ConfigSetAction, input, timeout, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<JsonNode?> ActionAsync(string sandboxId, string action, JsonNode? input, TimeSpan timeout, CancellationToken cancellationToken)
@@ -288,42 +309,55 @@ public sealed class AgentOsProvider : ISandboxProvider
 
         if (request.Isolation != Isolation.Process)
         {
-            throw Unmapped("isolation other than process");
+            throw Unmapped("isolation other than process", "hosted VMs are process-isolated and no isolation selector is documented");
         }
 
-        if (request.NetworkPolicy.OutboundDefault != OutboundDefault.Deny || request.NetworkPolicy.Rules.Count > 0)
+        if (request.NetworkPolicy.OutboundDefault != OutboundDefault.Deny)
         {
-            throw Unmapped("outbound network policy");
+            throw Unmapped("allow-by-default outbound policy", "the documented default is the sidecar allowlist and no allow-all equivalent is documented");
+        }
+
+        if (request.NetworkPolicy.Rules.Count > 0)
+        {
+            throw Unmapped("outbound network rules", "NetworkRule (destination, port, protocol, action) has no documented permission pattern or operation mapping");
         }
 
         if (request.Mounts.Count > 0)
         {
-            throw Unmapped("mounts");
+            throw Unmapped("mounts", "hosted filesystem.mounts accepts only the registry backend {type: durable}; host bind paths are rejected and no read-only field is documented");
         }
 
         if (request.SecretRefs.Count > 0)
         {
-            throw Unmapped("secret references");
+            throw Unmapped("secret references", "no secret field is documented for hosted config; config.environment is the only documented variable channel");
         }
 
         if (request.Spec.Image.Length > 0)
         {
-            throw Unmapped("image selection (hosted VMs are prebuilt actors)");
+            throw Unmapped("image selection", "hosted VMs are prebuilt agentOS actors and no image field is documented");
         }
 
         if (request.Spec.Command.Count > 0)
         {
-            throw Unmapped("provisioning command");
+            throw Unmapped("provisioning command", "no create-time command field is documented; process.spawn has no documented sandbox lifetime");
         }
 
         if (request.Spec.WorkingDirectory.Length > 0)
         {
-            throw Unmapped("provisioning working directory");
+            throw Unmapped("provisioning working directory", "no create-time working directory field is documented");
         }
 
         if (request.Spec.Limits is not null)
         {
-            throw Unmapped("resource limits");
+            throw Unmapped("resource limits", "limits.resources.maxProcesses has no documented relation to a pids limit, and no memory-bytes or CPU-core field is documented");
+        }
+    }
+
+    private void RequireCredentialFailClosed()
+    {
+        if (_perSandboxCredentialsRequested)
+        {
+            throw Unmapped("per-sandbox credentials", "no secrets field is documented on provisioning, and config.environment is VM-wide so it cannot carry a per-sandbox credential");
         }
     }
 
@@ -341,22 +375,22 @@ public sealed class AgentOsProvider : ISandboxProvider
 
         if (request.WorkingDirectory.Length > 0)
         {
-            throw Unmapped("per-exec working directory");
+            throw Unmapped("per-exec working directory", "v1.process.run input is command, args and options.captureStdio; no cwd field is documented");
         }
 
         if (request.Environment.Count > 0)
         {
-            throw Unmapped("per-exec environment");
+            throw Unmapped("per-exec environment", "v1.process.run has no documented env field; environment is VM-wide through config.environment");
         }
 
         if (request.Tty)
         {
-            throw Unmapped("TTY allocation");
+            throw Unmapped("TTY allocation", "v1.process.run has no PTY option; PTY is documented only for v1.terminal.open");
         }
     }
 
-    private static NotAvailableException Unmapped(string field) =>
-        new($"agentOS hosted API has no verified mapping for {field} (Q-SB-AGENTOS)");
+    private static NotAvailableException Unmapped(string field, string missingFact) =>
+        new($"agentOS hosted API has no verified mapping for {field}: {missingFact} (Q-SB-AGENTOS)");
 
     private static NotAvailableException Rejected(string operation, HttpStatusCode status) =>
         new($"agentOS {operation} failed: HTTP {(int)status}");

@@ -10,33 +10,44 @@ namespace OmpOS.Sandbox;
 
 /// <summary>
 /// Railway sandbox provider over the Railway public GraphQL API.
-/// Verified against docs.railway.com/integrations/api: endpoint
-/// <c>https://backboard.railway.com/graphql/v2</c>, Bearer authentication for account and
-/// workspace tokens, and the <c>serviceDelete</c> mutation. Only teardown is implemented.
-/// Provisioning is refused because Railway services offer no egress control, so the
-/// default-deny outbound policy (SBOX-05) cannot be enforced. Attach, exec, logs and snapshot
-/// have no verified API contract. Open question Q-SB-RAILWAY stays open with this blocker.
+/// Endpoint <c>https://backboard.railway.com/graphql/v2</c> and Bearer authentication are verified
+/// against docs.railway.com/integrations/api. The schema was introspected for Q-SB-RAILWAY:
+/// <c>Mutation.serviceDelete(environmentId: String, id: String!): Boolean!</c> is the only operation
+/// this provider calls. Provisioning, exec, logs and snapshot each name a schema operation, but none
+/// can be called with the inputs the abstraction supplies, so each fails closed with a
+/// <see cref="NotAvailableException"/> that names the blocking fact. Attach has no schema operation
+/// and fails closed the same way.
 /// </summary>
 public sealed class RailwaySwarmProvider : ISandboxProvider
 {
-    private const string EgressReason =
-        "Railway services cannot enforce default-deny outbound networking (SBOX-05); the public API exposes no egress control (Q-SB-RAILWAY)";
-    private const string AttachReason = "Railway public API documents no attach operation (Q-SB-RAILWAY)";
-    private const string ExecReason = "Railway public API documents no exec operation (Q-SB-RAILWAY)";
-    private const string LogsReason = "Railway log streaming is documented only as WebSocket subscriptions and is unverified (Q-SB-RAILWAY)";
-    private const string SnapshotReason = "Railway public API documents no sandbox snapshot operation (Q-SB-RAILWAY)";
+    private const string ProvisionReason =
+        "sandboxCreate(input: SandboxCreateInput!) is in the schema but cannot be called: no Railway environmentId is configured, SandboxCreateInput has no image or command field, and no verified default-deny egress policy maps to NetworkPolicy.DefaultDeny (Q-SB-RAILWAY)";
+    private const string AttachReason =
+        "no Railway attach operation exists in the introspected schema; Query.sandbox(environmentId, id) needs an environmentId that is not configured (Q-SB-RAILWAY)";
+    private const string ExecReason =
+        "sandboxExec(command: String!, environmentId: String!, id: String!, timeoutSec: Int) is in the schema but cannot be called: no Railway environmentId is configured, and ExecRequest argv, working directory, environment and TTY have no verified mapping to its single command string (Q-SB-RAILWAY)";
+    private const string LogsReason =
+        "deploymentLogs(deploymentId: String!, ...) is in the schema but cannot be called: the Sandbox type exposes no deployment identifier to map sandboxId to, and LogCursor has no verified mapping to its startDate or limit arguments (Q-SB-RAILWAY)";
+    private const string SnapshotReason =
+        "sandboxCheckpointCreate(environmentId: String!, name: String!, sandboxId: String!) is in the schema but cannot be called: no Railway environmentId is configured, and it returns a checkpoint reference (id, key), not the snapshot bytes SnapshotResult requires (Q-SB-RAILWAY)";
+    private const string CredentialReason =
+        "per-sandbox credentials cannot be issued: no verified Railway provisioning path exists because sandboxCreate cannot be called with the configured inputs, and SandboxCreateInput has no secret field (Q-SB-RAILWAY)";
     private const string ServiceDeleteQuery = "mutation serviceDelete($id: String!) { serviceDelete(id: $id) }";
+    private const string RedactedToken = "[REDACTED]";
 
     private static readonly Uri GraphQlEndpoint = new("https://backboard.railway.com/graphql/v2");
 
     private readonly (HttpClient Client, string Token)? _account;
+    private readonly bool _perSandboxCredentialsRequested;
 
     /// <summary>
     /// Initializes an unconfigured provider. Teardown is a no-op because this provider has no
     /// Railway credentials and therefore cannot have created a service.
     /// </summary>
-    public RailwaySwarmProvider()
+    /// <param name="options">Optional. When set with PerSandboxCredentials true, provisioning fails closed before any request. Null or PerSandboxCredentials false leaves provisioning unchanged.</param>
+    public RailwaySwarmProvider(SandboxProviderOptions? options = null)
     {
+        _perSandboxCredentialsRequested = options?.PerSandboxCredentials ?? false;
         Capabilities = new SandboxCapability
         {
             Isolation = Isolation.Container,
@@ -52,8 +63,9 @@ public sealed class RailwaySwarmProvider : ISandboxProvider
     /// </summary>
     /// <param name="httpClient">The client used for Railway requests. Its lifetime belongs to the caller.</param>
     /// <param name="apiToken">An account or workspace API token, sent as a Bearer token.</param>
-    public RailwaySwarmProvider(HttpClient httpClient, string apiToken)
-        : this()
+    /// <param name="options">Optional. When set with PerSandboxCredentials true, provisioning fails closed before any request. Null or PerSandboxCredentials false leaves provisioning unchanged.</param>
+    public RailwaySwarmProvider(HttpClient httpClient, string apiToken, SandboxProviderOptions? options = null)
+        : this(options)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
         ArgumentException.ThrowIfNullOrWhiteSpace(apiToken);
@@ -64,31 +76,35 @@ public sealed class RailwaySwarmProvider : ISandboxProvider
     public SandboxCapability Capabilities { get; }
 
     /// <inheritdoc />
-    /// <exception cref="NotAvailableException">Always. Default-deny egress cannot be enforced on Railway.</exception>
+    /// <exception cref="NotAvailableException">Always. The schema operation cannot be called with the request's inputs, and no per-sandbox credential can be issued.</exception>
     public Task<ProvisionResult> ProvisionAsync(ProvisionRequest request, CancellationToken cancellationToken = default)
     {
-        throw new NotAvailableException(EgressReason);
+        throw new NotAvailableException(_perSandboxCredentialsRequested ? CredentialReason : ProvisionReason);
     }
 
     /// <inheritdoc />
+    /// <exception cref="NotAvailableException">Always. No Railway attach operation exists in the schema.</exception>
     public Task AttachAsync(string sandboxId, CancellationToken cancellationToken = default)
     {
         throw new NotAvailableException(AttachReason);
     }
 
     /// <inheritdoc />
+    /// <exception cref="NotAvailableException">Always. The <c>sandboxExec</c> inputs cannot be mapped from the request.</exception>
     public IAsyncEnumerable<ExecEvent> ExecAsync(string sandboxId, ExecRequest request, CancellationToken cancellationToken = default)
     {
         throw new NotAvailableException(ExecReason);
     }
 
     /// <inheritdoc />
+    /// <exception cref="NotAvailableException">Always. The sandbox cannot be mapped to a deployment for <c>deploymentLogs</c>.</exception>
     public IAsyncEnumerable<string> StreamLogsAsync(string sandboxId, LogCursor? cursor = null, CancellationToken cancellationToken = default)
     {
         throw new NotAvailableException(LogsReason);
     }
 
     /// <inheritdoc />
+    /// <exception cref="NotAvailableException">Always. <c>sandboxCheckpointCreate</c> returns a reference, not snapshot bytes.</exception>
     public Task<SnapshotResult> SnapshotAsync(string sandboxId, CancellationToken cancellationToken = default)
     {
         throw new NotAvailableException(SnapshotReason);
@@ -96,9 +112,11 @@ public sealed class RailwaySwarmProvider : ISandboxProvider
 
     /// <summary>
     /// Deletes the Railway service named by <paramref name="sandboxId"/> through the
-    /// <c>serviceDelete</c> mutation. An unconfigured provider completes without a request.
-    /// A service that no longer exists is reported as a <see cref="TeardownFailedException"/>:
-    /// the public API documents no not-found error code, so NotFound-as-success is not verified.
+    /// <c>serviceDelete</c> mutation. The schema declares its return type as <c>Boolean!</c>, so
+    /// success is <c>data.serviceDelete</c> equal to <c>true</c>. An unconfigured provider completes
+    /// without a request. A service that no longer exists is reported as a
+    /// <see cref="TeardownFailedException"/>: the public API documents no not-found error code, so
+    /// NotFound-as-success is not verified.
     /// </summary>
     /// <param name="sandboxId">The Railway service identifier.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -131,7 +149,7 @@ public sealed class RailwaySwarmProvider : ISandboxProvider
             throw new TeardownFailedException(sandboxId, 1, "Railway serviceDelete request failed", ex);
         }
 
-        EnsureServiceDeleted(sandboxId, statusCode, payload);
+        EnsureServiceDeleted(sandboxId, token, statusCode, payload);
     }
 
     private static HttpRequestMessage BuildServiceDeleteRequest(string token, string sandboxId)
@@ -149,7 +167,7 @@ public sealed class RailwaySwarmProvider : ISandboxProvider
         return request;
     }
 
-    private static void EnsureServiceDeleted(string sandboxId, int statusCode, string payload)
+    private static void EnsureServiceDeleted(string sandboxId, string token, int statusCode, string payload)
     {
         if (statusCode is < 200 or >= 300)
         {
@@ -159,7 +177,8 @@ public sealed class RailwaySwarmProvider : ISandboxProvider
         var document = ParseDocument(sandboxId, payload);
         if (document["errors"] is JsonArray { Count: > 0 } errors)
         {
-            throw new TeardownFailedException(sandboxId, 1, $"Railway serviceDelete GraphQL error: {FirstErrorMessage(errors)}");
+            var message = Redact(FirstErrorMessage(errors), token);
+            throw new TeardownFailedException(sandboxId, 1, $"Railway serviceDelete GraphQL error: {message}");
         }
 
         if (document["data"] is JsonObject data
@@ -198,4 +217,8 @@ public sealed class RailwaySwarmProvider : ISandboxProvider
 
         return text ?? "no message";
     }
+
+    // Server-supplied text is untrusted: remove any echo of the credential before it reaches an exception.
+    private static string Redact(string text, string token) =>
+        text.Replace(token, RedactedToken, StringComparison.Ordinal);
 }

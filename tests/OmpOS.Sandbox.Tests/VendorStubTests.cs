@@ -92,7 +92,8 @@ public sealed class VendorStubTests
         result.Descriptor.Id.ShouldBe("vm-1");
         result.NewlyProvisioned.ShouldBeTrue();
         result.Descriptor.Labels["ompos.idempotency"].ShouldBe(request.IdempotencyKey);
-        var call = handler.Requests.ShouldHaveSingleItem();
+        handler.Requests.Count.ShouldBe(2);
+        var call = handler.Requests[0];
         call.Method.ShouldBe(HttpMethod.Put);
         call.Target.ShouldBe("/actors?namespace=ns-test");
         call.BearerToken.ShouldBe(SecretToken);
@@ -134,8 +135,8 @@ public sealed class VendorStubTests
 
         await provider.ProvisionAsync(request, TestContext.Current.CancellationToken);
 
-        handler.Requests.Count.ShouldBe(2);
-        var patch = handler.Requests[1];
+        handler.Requests.Count.ShouldBe(3);
+        var patch = handler.Requests[2];
         patch.Method.ShouldBe(HttpMethod.Post);
         patch.Target.ShouldBe("/gateway/vm-1/action/v1.config.patch");
         patch.RivetToken.ShouldBe(SecretToken);
