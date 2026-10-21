@@ -27,6 +27,7 @@ public sealed class NewConversationButtonTests : BunitContext
         using var sseHttp = new HttpClient(sseHandler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
         Services.AddSingleton(new ApiSessionClient(apiHttp));
         Services.AddSingleton(new SseEventStream(sseHttp));
+        JSInterop.Mode = JSRuntimeMode.Loose;
         var cut = Render<OmpOS.Web.Pages.Index>();
         cut.WaitForAssertion(() => cut.Find("button.ompos-btn").ShouldNotBeNull());
 
