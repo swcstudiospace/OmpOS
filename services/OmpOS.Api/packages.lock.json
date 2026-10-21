@@ -159,6 +159,16 @@
           "OmpOS.Contracts": "[1.0.0, )"
         }
       },
+      "ompos.sessionruns": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Contracts": "[1.0.0, )",
+          "OmpOS.Harness.Abstractions": "[1.0.0, )",
+          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
+          "OmpOS.Sessions": "[1.0.0, )",
+          "OmpOS.Workflows": "[1.0.0, )"
+        }
+      },
       "ompos.sessions": {
         "type": "Project",
         "dependencies": {
@@ -166,11 +176,26 @@
           "OmpOS.Harness.Abstractions": "[1.0.0, )"
         }
       },
+      "ompos.sessions.postgres": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "OmpOS.Contracts": "[1.0.0, )",
+          "OmpOS.Harness.Abstractions": "[1.0.0, )",
+          "OmpOS.Sessions": "[1.0.0, )"
+        }
+      },
       "ompos.workflows": {
         "type": "Project",
         "dependencies": {
           "OmpOS.Contracts": "[1.0.0, )"
         }
+      },
+      "Npgsql": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w=="
       },
       "YamlDotNet": {
         "type": "CentralTransitive",

@@ -1,7 +1,12 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Npgsql;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.Rpc;
 using OmpOS.Sandbox;
 using OmpOS.Sandbox.Abstractions;
+using OmpOS.SessionRuns;
+using OmpOS.Sessions;
+using OmpOS.Sessions.Postgres;
 using Temporalio.Client;
 using Temporalio.Common;
 using Temporalio.Extensions.Hosting;
@@ -30,6 +35,9 @@ internal static class WorkerHostConfiguration
 
     /// <summary>The configuration key that selects the harness adapter whose session factory the host must register.</summary>
     internal const string HarnessAdapterKey = "Harness:Adapter";
+
+    /// <summary>The configuration key that names the PostgreSQL connection string of the session log the worker shares with the API.</summary>
+    internal const string SessionStoreKey = "Sessions:Postgres:ConnectionString";
 
     /// <summary>The only harness adapter the worker composes: the omp RPC client.</summary>
     private const string RpcAdapter = "rpc";
@@ -93,15 +101,15 @@ internal static class WorkerHostConfiguration
     }
 
     /// <summary>
-    /// Selects the sandbox provider and harness adapter from configuration, then registers the Temporal client and
-    /// hosted session-run worker.
+    /// Selects the sandbox provider and harness adapter from configuration, opens the session store the worker shares with
+    /// the API, then registers the Temporal client and hosted session-run worker.
     /// </summary>
     /// <param name="services">The service collection to populate.</param>
     /// <param name="configuration">The application configuration.</param>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the worker is disabled, when <c>Sandbox:Provider</c> is missing or unsupported, or when
     /// <c>Harness:Adapter</c> is missing or unsupported, or when <c>Harness:OmpPath</c> or <c>Harness:Cwd</c> is missing
-    /// for the <c>rpc</c> adapter.
+    /// for the <c>rpc</c> adapter, or when <c>Sessions:Postgres:ConnectionString</c> is missing or blank.
     /// </exception>
     internal static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
@@ -111,6 +119,7 @@ internal static class WorkerHostConfiguration
         RequireEnabled(options);
         RegisterSandboxProvider(services, configuration[SandboxProviderKey]);
         RegisterHarnessAdapter(services, configuration);
+        services.AddPostgresSessionStore(configuration);
         ConfigureServices(services, options);
     }
 
@@ -118,7 +127,7 @@ internal static class WorkerHostConfiguration
     /// <param name="services">The service collection to populate.</param>
     /// <param name="options">The validated worker options.</param>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the worker is disabled, the address is empty, or no sandbox provider or harness session factory is
+    /// Thrown when the worker is disabled, the address is empty, or no sandbox provider, harness session factory or session store is
     /// registered.
     /// </exception>
     internal static void ConfigureServices(IServiceCollection services, WorkerOptions options)
@@ -128,11 +137,15 @@ internal static class WorkerHostConfiguration
         RequireEnabled(options);
         ValidateOptions(options);
 
-        // The composed activities need the host to register a sandbox provider and a harness
-        // session factory. A missing registration fails startup; no stand-in activities are registered.
+        // The session-run activities need the host to register a sandbox provider, a harness session factory and a session
+        // store. A missing registration fails startup; no stand-in or in-memory store is ever registered.
         RequireRegistration<ISandboxProvider>(services, SandboxProviderKey, "a sandbox provider");
         RequireRegistration<IHarnessSessionFactory>(services, HarnessAdapterKey, "a harness session factory");
-        services.AddSingleton<ISessionRunActivities, ComposedSessionRunActivities>();
+        RequireRegistration<ISessionRepository>(services, SessionStoreKey, "a session store");
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<SessionService>();
+        services.AddSingleton<ISessionRunObserver, NullSessionRunObserver>();
+        services.AddSingleton<ISessionRunActivities, SessionRunActivities>();
         services.AddTemporalClient(clientOptions =>
         {
             clientOptions.TargetHost = options.Address;
@@ -219,6 +232,17 @@ internal static class WorkerHostConfiguration
             Cwd = RequireRpcSetting(configuration, CwdKey),
         });
         services.AddSingleton<IHarnessSessionFactory>(new RpcHarnessSessionFactory(client));
+    }
+
+    /// <summary>Creates the session log schema when it is missing. Runs once at startup, before the Temporal worker starts.</summary>
+    /// <param name="services">The host's service provider, which holds the session store's data source.</param>
+    /// <param name="cancellationToken">Cancels the schema creation.</param>
+    /// <returns>A task that completes when the schema exists.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when no session store is registered.</exception>
+    internal static Task EnsureSessionSchemaAsync(IServiceProvider services, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        return PostgresSessionSchema.EnsureCreatedAsync(services.GetRequiredService<NpgsqlDataSource>(), cancellationToken);
     }
 
     /// <summary>Reads a setting the rpc adapter needs, failing when it is missing or blank.</summary>

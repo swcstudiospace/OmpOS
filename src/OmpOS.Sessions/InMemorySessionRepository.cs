@@ -3,12 +3,15 @@ using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using OmpOS.Contracts.Sessions;
 using OmpOS.Contracts.Streaming;
+using OmpOS.Harness.Abstractions;
 
 namespace OmpOS.Sessions;
 
 /// <summary>
 /// Thread-safe in-memory <see cref="ISessionRepository"/>. Each session has its own lock, so appends to
 /// different sessions never contend, and appends to one session are serialized, which makes Seq assignment atomic.
+/// Each session also has an exclusive lock for <see cref="LockSessionAsync"/>, separate from the data lock so a holder
+/// of the session lock can call every other member without deadlock.
 /// </summary>
 public sealed class InMemorySessionRepository : ISessionRepository
 {
@@ -129,6 +132,95 @@ public sealed class InMemorySessionRepository : ISessionRepository
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// The lock needs no saved session: an entry is created on demand for the identifier. An entry without a saved header
+    /// does not count as an existing session (see <see cref="GetAsync"/>).
+    /// </remarks>
+    public async Task<IAsyncDisposable> LockSessionAsync(string sessionId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(sessionId);
+
+        var entry = _sessions.GetOrAdd(sessionId, static _ => new Entry());
+        await entry.Exclusive.WaitAsync(cancellationToken).ConfigureAwait(false);
+        return new ExclusiveLease(entry.Exclusive);
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="ArgumentException">The approval belongs to a different session.</exception>
+    /// <exception cref="KeyNotFoundException">No session has the given identifier.</exception>
+    public Task<bool> TryAddToolApprovalAsync(string sessionId, ToolApprovalRecord approval, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(sessionId);
+        ArgumentNullException.ThrowIfNull(approval);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!string.Equals(approval.SessionId, sessionId, StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                $"Tool approval '{approval.RequestId}' belongs to session '{approval.SessionId}', not to '{sessionId}'.",
+                nameof(approval));
+        }
+
+        var entry = Find(sessionId);
+        lock (entry.Gate)
+        {
+            if (entry.Approvals.ContainsKey(approval.RequestId))
+            {
+                return Task.FromResult(false);
+            }
+
+            entry.Approvals.Add(approval.RequestId, approval);
+            return Task.FromResult(true);
+        }
+    }
+
+    /// <inheritdoc />
+    public Task<ToolApprovalRecord?> GetToolApprovalAsync(string sessionId, string requestId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(sessionId);
+        ArgumentNullException.ThrowIfNull(requestId);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!_sessions.TryGetValue(sessionId, out var entry))
+        {
+            return Task.FromResult<ToolApprovalRecord?>(null);
+        }
+
+        lock (entry.Gate)
+        {
+            return Task.FromResult<ToolApprovalRecord?>(entry.Approvals.GetValueOrDefault(requestId));
+        }
+    }
+
+    /// <inheritdoc />
+    public Task<bool> TryDecideToolApprovalAsync(
+        string sessionId,
+        string requestId,
+        PermissionDecision decision,
+        DateTimeOffset decidedAt,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(sessionId);
+        ArgumentNullException.ThrowIfNull(requestId);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!_sessions.TryGetValue(sessionId, out var entry))
+        {
+            return Task.FromResult(false);
+        }
+
+        lock (entry.Gate)
+        {
+            if (!entry.Approvals.TryGetValue(requestId, out var record) || record.Decision is not null)
+            {
+                return Task.FromResult(false);
+            }
+
+            entry.Approvals[requestId] = record with { Decision = decision, DecidedAt = decidedAt };
+            return Task.FromResult(true);
+        }
+    }
+
     private ImmutableList<StreamEvent> Snapshot(string sessionId)
     {
         var entry = Find(sessionId);
@@ -161,10 +253,33 @@ public sealed class InMemorySessionRepository : ISessionRepository
         /// <summary>The lock serializing every read and write of this session.</summary>
         public object Gate { get; } = new();
 
+        /// <summary>The exclusive session lock taken by <see cref="LockSessionAsync"/>. Held across awaits, so it is not <see cref="Gate"/>.</summary>
+        public SemaphoreSlim Exclusive { get; } = new(1, 1);
+
         /// <summary>The saved session header, or <see langword="null"/> until the first save completes. Its <see cref="Session.Events"/> is always empty.</summary>
         public Session? Header { get; set; }
 
         /// <summary>The append-only event log, ordered by Seq.</summary>
         public ImmutableList<StreamEvent> Log { get; set; } = ImmutableList<StreamEvent>.Empty;
+
+        /// <summary>The tool approvals of this session, keyed by request identifier and guarded by <see cref="Gate"/>.</summary>
+        public Dictionary<string, ToolApprovalRecord> Approvals { get; } = new(StringComparer.Ordinal);
+    }
+
+    /// <summary>Releases one session lock exactly once, however many times it is disposed.</summary>
+    private sealed class ExclusiveLease(SemaphoreSlim exclusive) : IAsyncDisposable
+    {
+        private int _released;
+
+        /// <inheritdoc />
+        public ValueTask DisposeAsync()
+        {
+            if (Interlocked.Exchange(ref _released, 1) == 0)
+            {
+                exclusive.Release();
+            }
+
+            return ValueTask.CompletedTask;
+        }
     }
 }

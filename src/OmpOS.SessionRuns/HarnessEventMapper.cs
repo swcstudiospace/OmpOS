@@ -4,7 +4,7 @@ using OmpOS.Contracts.Streaming;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Sessions;
 
-namespace OmpOS.Api.Harness;
+namespace OmpOS.SessionRuns;
 
 /// <summary>
 /// Maps harness stream events onto session-log payloads. Mirrors the session projection's

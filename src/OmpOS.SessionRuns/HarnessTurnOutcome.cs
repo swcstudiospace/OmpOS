@@ -1,6 +1,6 @@
 using OmpOS.Contracts.Sessions;
 
-namespace OmpOS.Api.Harness;
+namespace OmpOS.SessionRuns;
 
 /// <summary>Decides how a harness turn settles from the completion the harness reports.</summary>
 internal static class HarnessTurnOutcome

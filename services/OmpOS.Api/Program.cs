@@ -9,6 +9,7 @@ using OmpOS.Api.Metrics;
 using OmpOS.Api.Middleware;
 using OmpOS.Api.OpenApi;
 using OmpOS.Api.Options;
+using OmpOS.Api.Persistence;
 using OmpOS.Api.Security;
 using OmpOS.Api.Serialization;
 using OmpOS.Api.Services;
@@ -20,6 +21,7 @@ using OmpOS.Harness.Abstractions;
 using OmpOS.Parser;
 using OmpOS.Sandbox;
 using OmpOS.Sandbox.Abstractions;
+using OmpOS.SessionRuns;
 using OmpOS.Sessions;
 using OmpOS.Workflows;
 using OpenTelemetry.Metrics;
@@ -56,7 +58,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 // Session state and prompt execution (in-memory adapter; no model calls).
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
+builder.Services.AddApiSessionStore(builder.Configuration);
 builder.Services.AddSingleton<SessionService>();
 builder.Services.AddOmpParser();
 builder.Services.AddSingleton<SessionRegistry>();
@@ -69,7 +71,8 @@ builder.Services.AddSingleton<PromptRunner>();
 // runs in-process through DirectSessionRunner with an in-memory fake sandbox, exactly as before. Resolution-time
 // selection keeps configuration added after host construction (for example by test hosts) authoritative.
 builder.Services.AddSingleton<ISandboxProvider, FakeSandboxProvider>();
-builder.Services.AddSingleton<ISessionRunActivities, ApiSessionRunActivities>();
+builder.Services.AddSingleton<ISessionRunObserver, ApiSessionRunObserver>();
+builder.Services.AddSingleton<ISessionRunActivities, SessionRunActivities>();
 builder.Services.AddSingleton<ISessionRunWorkflow, DirectSessionRunner>();
 builder.Services.AddSingleton<DirectSessionRunDispatcher>();
 builder.Services.AddSingleton<ITemporalWorkflowStarter, TemporalWorkflowStarter>();

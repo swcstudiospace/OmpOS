@@ -29,11 +29,12 @@ public sealed class ToolApprovalEndpointTests
         using var factory = ApprovalFactory();
         using var client = factory.CreateClient();
         var id = await StartAwaitingApprovalAsync(client, ct);
+        var requestId = await PendingRequestIdAsync(client, id, ct);
 
         string[] bodies = ["not json", string.Empty, "{}", "[]", "{\"decision\":\"maybe\"}", "{\"decision\":true}", "{\"decision\":\"allow\",\"extra\":1}", "{\"decision\":\"allow\",\"decision\":\"allow\"}"];
         foreach (var body in bodies)
         {
-            using var response = await PostDecisionAsync(client, id, RequestId, body, JsonType, ct);
+            using var response = await PostDecisionAsync(client, id, requestId, body, JsonType, ct);
             response.StatusCode.ShouldBe(HttpStatusCode.BadRequest, $"body: {body}");
         }
 
@@ -49,8 +50,9 @@ public sealed class ToolApprovalEndpointTests
         using var factory = ApprovalFactory();
         using var client = factory.CreateClient();
         var id = await StartAwaitingApprovalAsync(client, ct);
+        var requestId = await PendingRequestIdAsync(client, id, ct);
 
-        using var response = await PostDecisionAsync(client, id, RequestId, "{\"decision\":\"deny\"}", "text/plain", ct);
+        using var response = await PostDecisionAsync(client, id, requestId, "{\"decision\":\"deny\"}", "text/plain", ct);
 
         response.StatusCode.ShouldBe(HttpStatusCode.UnsupportedMediaType);
     }
@@ -63,8 +65,9 @@ public sealed class ToolApprovalEndpointTests
         using var factory = ApprovalFactory();
         using var client = factory.CreateClient();
         var id = await StartAwaitingApprovalAsync(client, ct);
+        var requestId = await PendingRequestIdAsync(client, id, ct);
 
-        using (var forbidden = await PostDecisionAsync(client, id, RequestId, "{\"decision\":\"allow\"}", JsonType, ct))
+        using (var forbidden = await PostDecisionAsync(client, id, requestId, "{\"decision\":\"allow\"}", JsonType, ct))
         {
             forbidden.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         }
@@ -72,7 +75,7 @@ public sealed class ToolApprovalEndpointTests
         var stillAwaiting = await SessionClient.ReadSessionAsync(client, id, ct);
         stillAwaiting.Status.ShouldBe(SessionStatus.AwaitingToolApproval);
 
-        using var denied = await PostDecisionAsync(client, id, RequestId, "{\"decision\":\"deny\"}", JsonType, ct);
+        using var denied = await PostDecisionAsync(client, id, requestId, "{\"decision\":\"deny\"}", JsonType, ct);
         denied.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
@@ -84,8 +87,9 @@ public sealed class ToolApprovalEndpointTests
         using var factory = ApprovalFactory();
         using var client = factory.CreateClient();
         var id = await StartAwaitingApprovalAsync(client, ct);
+        var requestId = await PendingRequestIdAsync(client, id, ct);
 
-        using (var denied = await PostDecisionAsync(client, id, RequestId, "{\"decision\":\"deny\"}", JsonType, ct))
+        using (var denied = await PostDecisionAsync(client, id, requestId, "{\"decision\":\"deny\"}", JsonType, ct))
         {
             denied.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         }
@@ -97,7 +101,7 @@ public sealed class ToolApprovalEndpointTests
         EventKinds(stored).ShouldContain("tool_approval_requested", StringComparer.Ordinal);
         EventKinds(stored).ShouldContain("tool_approval_denied", StringComparer.Ordinal);
 
-        using var repeat = await PostDecisionAsync(client, id, RequestId, "{\"decision\":\"deny\"}", JsonType, ct);
+        using var repeat = await PostDecisionAsync(client, id, requestId, "{\"decision\":\"deny\"}", JsonType, ct);
         repeat.StatusCode.ShouldBe(HttpStatusCode.Conflict);
     }
 
@@ -207,6 +211,35 @@ public sealed class ToolApprovalEndpointTests
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
         _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.AwaitingToolApproval, SettleTimeout, ct).ConfigureAwait(false);
         return id;
+    }
+
+    /// <summary>
+    /// Reads the identifier of the pending tool approval from the session event log, as a UI does. The session status is
+    /// saved before the request event is appended, so this waits until that single event is present.
+    /// </summary>
+    private static async Task<string> PendingRequestIdAsync(HttpClient client, string sessionId, CancellationToken ct)
+    {
+        using var timeoutSource = new CancellationTokenSource(SettleTimeout);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(timeoutSource.Token, ct);
+        var cancellationToken = linked.Token;
+        UnknownPayload[] requests = [];
+        while (requests.Length == 0)
+        {
+            var session = await SessionClient.ReadSessionAsync(client, sessionId, cancellationToken).ConfigureAwait(false);
+            requests = session.Events
+                .Select(static evt => evt.Payload)
+                .OfType<UnknownPayload>()
+                .Where(static payload => string.Equals(payload.OriginalKind, "tool_approval_requested", StringComparison.Ordinal))
+                .ToArray();
+            if (requests.Length == 0)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        requests.Length.ShouldBe(1, $"session '{sessionId}' must log exactly one tool_approval_requested event");
+        var requestId = requests[0].Raw.GetProperty("requestId").GetString();
+        return requestId.ShouldNotBeNull();
     }
 
     private static async Task<HttpResponseMessage> PostDecisionAsync(

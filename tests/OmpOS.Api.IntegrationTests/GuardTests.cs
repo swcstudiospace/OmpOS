@@ -69,6 +69,7 @@ public sealed class GuardTests
         {
             ["Workflows:Enabled"] = "true",
             ["Workflows:Address"] = "127.0.0.1:1",
+            [PostgresTestDatabase.ConnectionStringKey] = PostgresTestDatabase.ConnectionString(),
         });
         using var client = factory.CreateClient();
 

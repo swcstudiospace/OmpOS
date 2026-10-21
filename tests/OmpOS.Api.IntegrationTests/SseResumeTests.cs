@@ -1,7 +1,10 @@
 using System.Globalization;
 using System.Net;
 using Microsoft.Extensions.DependencyInjection;
+using OmpOS.Api.Sse;
+using OmpOS.Contracts.Streaming;
 using OmpOS.Harness.Abstractions;
+using OmpOS.Sessions;
 using Shouldly;
 using Xunit;
 
@@ -76,5 +79,42 @@ public sealed class SseResumeTests
         using var response = await client.GetAsync(new Uri("/sessions/does-not-exist/events", UriKind.Relative), TestContext.Current.CancellationToken);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    /// <summary>
+    /// An append that reaches the log without a local notify is delivered to a waiting stream by its poll. Another process
+    /// appends this way, so the poll is what carries a cross-process append to the stream.
+    /// </summary>
+    [Fact]
+    public async Task AppendWithoutLocalNotify_IsDeliveredByPoll()
+    {
+        using var factory = new OmpApiFactory();
+        using var client = factory.CreateClient();
+        var testToken = TestContext.Current.CancellationToken;
+        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var streamer = factory.Services.GetRequiredService<SessionEventStreamer>();
+        var repository = factory.Services.GetRequiredService<ISessionRepository>();
+
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(testToken);
+        budget.CancelAfter(TimeSpan.FromSeconds(10));
+        var token = budget.Token;
+
+        await using var enumerator = streamer.SubscribeAsync(id, 0, token).GetAsyncEnumerator(token);
+        var delivered = enumerator.MoveNextAsync().AsTask();
+
+        // Let the subscriber finish its first read and settle into its wait before the append.
+        await Task.Delay(TimeSpan.FromMilliseconds(250), token);
+        var evt = new StreamEvent
+        {
+            Seq = 0,
+            SessionId = id,
+            CorrelationId = id,
+            Timestamp = DateTimeOffset.UtcNow,
+            Payload = new TextDeltaPayload { Delta = "polled" },
+        };
+        await repository.AppendAsync(id, evt, token);
+
+        (await delivered.WaitAsync(token)).ShouldBeTrue();
+        enumerator.Current.Payload.ShouldBeOfType<TextDeltaPayload>().Delta.ShouldBe("polled");
     }
 }

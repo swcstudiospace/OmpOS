@@ -10,6 +10,8 @@
     <ProjectReference Include="../../src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj" />
     <ProjectReference Include="../../src/OmpOS.EngineHost/OmpOS.EngineHost.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sessions/OmpOS.Sessions.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Sessions.Postgres/OmpOS.Sessions.Postgres.csproj" />
+    <ProjectReference Include="../../src/OmpOS.SessionRuns/OmpOS.SessionRuns.csproj" />
     <ProjectReference Include="../../src/OmpOS.GenUi/OmpOS.GenUi.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sandbox/OmpOS.Sandbox.csproj" />
     <ProjectReference Include="../../src/OmpOS.Workflows/OmpOS.Workflows.csproj" />

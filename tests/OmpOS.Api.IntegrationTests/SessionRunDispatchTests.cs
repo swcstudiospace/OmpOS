@@ -79,7 +79,7 @@ public sealed class SessionRunDispatchTests
     {
         var starter = new RecordingTemporalStarter();
         using var factory = new OmpApiFactory(
-            EnabledConfig(TaskQueue),
+            WithDatabase(EnabledConfig(TaskQueue)),
             configureServices: services => services.AddSingleton<ITemporalWorkflowStarter>(starter));
         var dispatcher = factory.Services.GetRequiredService<ISessionRunDispatcher>();
         dispatcher.ShouldBeOfType<TemporalSessionRunDispatcher>();
@@ -143,6 +143,20 @@ public sealed class SessionRunDispatchTests
         Flatten(caught).ShouldContain("Workflows:Address");
     }
 
+    /// <summary>Verifies enabled workflows without Sessions:Postgres:ConnectionString fail startup naming that key.</summary>
+    [Fact]
+    public void WorkflowsEnabledWithoutConnectionString_FailsStartupNamingKey()
+    {
+        using var factory = new OmpApiFactory(EnabledConfig(TaskQueue));
+
+        var caught = Assert.ThrowsAny<Exception>(() =>
+        {
+            using var client = factory.CreateClient();
+        });
+
+        Flatten(caught).ShouldContain(PostgresTestDatabase.ConnectionStringKey);
+    }
+
     /// <summary>Verifies a blank Workflows:Address fails startup naming the key.</summary>
     /// <param name="address">The blank address value.</param>
     [Theory]
@@ -173,6 +187,15 @@ public sealed class SessionRunDispatchTests
             ["Workflows:Address"] = "temporal.test:7233",
             ["Workflows:TaskQueue"] = taskQueue,
         };
+    }
+
+    /// <summary>Adds the test PostgreSQL connection string to a configuration that enables workflows.</summary>
+    /// <param name="config">The configuration overrides.</param>
+    /// <returns>The same overrides with the connection string set.</returns>
+    private static Dictionary<string, string?> WithDatabase(Dictionary<string, string?> config)
+    {
+        config[PostgresTestDatabase.ConnectionStringKey] = PostgresTestDatabase.ConnectionString();
+        return config;
     }
 
     /// <summary>Builds a run input for the given session and idempotency key.</summary>

@@ -7,6 +7,7 @@ using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.Rpc;
 using OmpOS.Sandbox;
 using OmpOS.Sandbox.Abstractions;
+using OmpOS.Sessions;
 using OmpOS.Workflows.Worker;
 using Temporalio.Client;
 using Temporalio.Extensions.Hosting;
@@ -92,6 +93,8 @@ public sealed class WorkerHostTests
         var services = new ServiceCollection();
         services.AddSingleton<ISandboxProvider>(new StubSandboxProvider());
         services.AddSingleton<IHarnessSessionFactory>(new StubHarnessSessionFactory());
+        services.AddSingleton<ISessionRepository>(new InMemorySessionRepository());
+        services.AddLogging();
         var options = new WorkerOptions
         {
             Enabled = true,

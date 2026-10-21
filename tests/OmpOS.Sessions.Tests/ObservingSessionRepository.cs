@@ -1,5 +1,6 @@
 using OmpOS.Contracts.Sessions;
 using OmpOS.Contracts.Streaming;
+using OmpOS.Harness.Abstractions;
 
 namespace OmpOS.Sessions.Tests;
 
@@ -38,4 +39,25 @@ internal sealed class ObservingSessionRepository : ISessionRepository
     /// <inheritdoc />
     public IAsyncEnumerable<StreamEvent> ListFromSeqAsync(string sessionId, long fromSeq, CancellationToken cancellationToken) =>
         _inner.ListFromSeqAsync(sessionId, fromSeq, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IAsyncDisposable> LockSessionAsync(string sessionId, CancellationToken cancellationToken) =>
+        _inner.LockSessionAsync(sessionId, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> TryAddToolApprovalAsync(string sessionId, ToolApprovalRecord approval, CancellationToken cancellationToken) =>
+        _inner.TryAddToolApprovalAsync(sessionId, approval, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<ToolApprovalRecord?> GetToolApprovalAsync(string sessionId, string requestId, CancellationToken cancellationToken) =>
+        _inner.GetToolApprovalAsync(sessionId, requestId, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> TryDecideToolApprovalAsync(
+        string sessionId,
+        string requestId,
+        PermissionDecision decision,
+        DateTimeOffset decidedAt,
+        CancellationToken cancellationToken) =>
+        _inner.TryDecideToolApprovalAsync(sessionId, requestId, decision, decidedAt, cancellationToken);
 }

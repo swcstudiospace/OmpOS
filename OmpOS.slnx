@@ -19,6 +19,8 @@
     <Project Path="src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj" />
     <Project Path="src/OmpOS.Sandbox/OmpOS.Sandbox.csproj" />
     <Project Path="src/OmpOS.Sessions/OmpOS.Sessions.csproj" />
+    <Project Path="src/OmpOS.Sessions.Postgres/OmpOS.Sessions.Postgres.csproj" />
+    <Project Path="src/OmpOS.SessionRuns/OmpOS.SessionRuns.csproj" />
     <Project Path="src/OmpOS.UI/OmpOS.UI.csproj" />
     <Project Path="src/OmpOS.Workflows/OmpOS.Workflows.csproj" />
   </Folder>
@@ -32,6 +34,8 @@
     <Project Path="tests/OmpOS.Harness.Acp.Tests/OmpOS.Harness.Acp.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Rpc.Tests/OmpOS.Harness.Rpc.Tests.csproj" />
     <Project Path="tests/OmpOS.Sessions.Tests/OmpOS.Sessions.Tests.csproj" />
+    <Project Path="tests/OmpOS.Sessions.Postgres.Tests/OmpOS.Sessions.Postgres.Tests.csproj" />
+    <Project Path="tests/OmpOS.SessionRuns.Tests/OmpOS.SessionRuns.Tests.csproj" />
     <Project Path="tests/OmpOS.Sandbox.Tests/OmpOS.Sandbox.Tests.csproj" />
     <Project Path="tests/OmpOS.UI.Tests/OmpOS.UI.Tests.csproj" />
     <Project Path="tests/OmpOS.Web.Tests/OmpOS.Web.Tests.csproj" />

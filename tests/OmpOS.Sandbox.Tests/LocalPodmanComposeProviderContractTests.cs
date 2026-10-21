@@ -147,7 +147,11 @@ public sealed class LocalPodmanComposeProviderContractTests : SandboxProviderCon
         {
             Argv = ["podman-compose", "-f", composePath, "--profile", "workflows", "config"],
             WorkingDirectory = Path.GetDirectoryName(composePath)!,
-            Environment = new Dictionary<string, string>(StringComparer.Ordinal),
+            Environment = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                // Config-only run: this value only satisfies the required variable and never starts a container.
+                ["OMPOS_POSTGRES_PASSWORD"] = Guid.NewGuid().ToString("N"),
+            },
             Timeout = TimeSpan.FromSeconds(60),
         }, ct);
 

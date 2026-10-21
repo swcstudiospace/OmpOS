@@ -73,6 +73,26 @@ public sealed class ToolApprovalTests
         EventKinds(resumed).ShouldContain("tool_approval_denied", StringComparer.Ordinal);
     }
 
+    /// <summary>A refused approval leaves the stored request pending: no decision is recorded until a denial arrives.</summary>
+    [Fact]
+    public async Task CeilingRefusalLeavesRecordPendingInStore()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await RunningSessionAsync(service, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, RequestId, Tool, ct).ConfigureAwait(true);
+
+        await Should.ThrowAsync<UnauthorizedAccessException>(() =>
+            service.ResolveToolApprovalAsync(session.Id, RequestId, approved: true, ct)).ConfigureAwait(true);
+
+        var record = await repository.GetToolApprovalAsync(session.Id, RequestId, ct).ConfigureAwait(true);
+        record.ShouldNotBeNull();
+        record.ToolName.ShouldBe(Tool);
+        record.GrantableTools.ShouldBeEmpty();
+        record.Decision.ShouldBeNull();
+    }
+
     /// <summary>A denial after a denial, or an allow after a denial, is refused: the request was decided once.</summary>
     [Fact]
     public async Task DecisionAfterDenialIsRefused()
@@ -90,6 +110,22 @@ public sealed class ToolApprovalTests
         var allow = await Should.ThrowAsync<SessionException>(() =>
             service.ResolveToolApprovalAsync(session.Id, RequestId, approved: true, ct)).ConfigureAwait(true);
         allow.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
+    }
+
+    /// <summary>A decided request keeps its identifier: a later request under the same identifier is refused.</summary>
+    [Fact]
+    public async Task RequestIdCannotBeReusedAfterDecision()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var service = NewService(new InMemorySessionRepository());
+        var session = await RunningSessionAsync(service, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, RequestId, Tool, ct, GrantBash).ConfigureAwait(true);
+        await service.ResolveToolApprovalAsync(session.Id, RequestId, approved: true, ct).ConfigureAwait(true);
+
+        var reuse = await Should.ThrowAsync<SessionException>(() =>
+            service.RequestToolApprovalAsync(session.Id, RequestId, Tool, ct, GrantBash)).ConfigureAwait(true);
+
+        reuse.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
     }
 
     /// <summary>A decision for an id that was never requested is refused while the session awaits approval.</summary>
@@ -141,7 +177,7 @@ public sealed class ToolApprovalTests
         error.Error.Code.ShouldBe(ErrorCode.SessionNotFound);
     }
 
-    /// <summary>A request that no decision reaches within the timeout is denied, and the session resumes its prompt.</summary>
+    /// <summary>A request that no decision reaches within the timeout is denied, recorded as decided, and the session resumes its prompt.</summary>
     [Fact]
     public async Task RequestWithoutDecisionIsDeniedWhenTimeoutElapses()
     {
@@ -158,6 +194,9 @@ public sealed class ToolApprovalTests
         stored.ShouldNotBeNull();
         stored.Status.ShouldBe(SessionStatus.Running);
         EventKinds(stored).ShouldContain("tool_approval_denied", StringComparer.Ordinal);
+        var record = await repository.GetToolApprovalAsync(session.Id, RequestId, ct).ConfigureAwait(true);
+        record.ShouldNotBeNull();
+        record.Decision.ShouldBe(PermissionDecision.Deny);
 
         var late = await Should.ThrowAsync<SessionException>(() =>
             service.ResolveToolApprovalAsync(session.Id, RequestId, approved: true, ct)).ConfigureAwait(true);
@@ -197,6 +236,60 @@ public sealed class ToolApprovalTests
             service.WaitForDecisionAsync(session.Id, RequestId, LongWait, ct)).ConfigureAwait(true);
 
         error.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
+    }
+
+    /// <summary>A wait for a request that was already decided returns that decision at once.</summary>
+    [Fact]
+    public async Task WaitForAlreadyDecidedRequestReturnsThatDecision()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var service = NewService(new InMemorySessionRepository());
+        var session = await RunningSessionAsync(service, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, RequestId, Tool, ct, GrantBash).ConfigureAwait(true);
+        await service.ResolveToolApprovalAsync(session.Id, RequestId, approved: false, ct).ConfigureAwait(true);
+
+        var decision = await service.WaitForDecisionAsync(session.Id, RequestId, LongWait, ct).ConfigureAwait(true);
+
+        decision.ShouldBe(PermissionDecision.Deny);
+    }
+
+    /// <summary>A decision recorded directly in the store, outside any service call, wakes a waiter by polling.</summary>
+    [Fact]
+    public async Task DecisionRecordedOutsideServiceIsObservedByPolling()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await RunningSessionAsync(service, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, RequestId, Tool, ct, GrantBash).ConfigureAwait(true);
+
+        var waiting = service.WaitForDecisionAsync(session.Id, RequestId, LongWait, ct);
+        (await repository.TryDecideToolApprovalAsync(session.Id, RequestId, PermissionDecision.Allow, Now, ct).ConfigureAwait(true)).ShouldBeTrue();
+
+        (await waiting.ConfigureAwait(true)).ShouldBe(PermissionDecision.Allow);
+    }
+
+    /// <summary>A decision recorded through a second service over the same store reaches the waiter on the first: the routed path.</summary>
+    [Fact]
+    public async Task ApprovalResolvedThroughSecondServiceReachesWaiter()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var runner = NewService(repository);
+        var endpoint = NewService(repository);
+        var session = await RunningSessionAsync(runner, ct).ConfigureAwait(true);
+        await runner.RequestToolApprovalAsync(session.Id, RequestId, Tool, ct, GrantBash).ConfigureAwait(true);
+
+        var waiting = runner.WaitForDecisionAsync(session.Id, RequestId, LongWait, ct);
+        await endpoint.ResolveToolApprovalAsync(session.Id, RequestId, approved: true, ct).ConfigureAwait(true);
+
+        (await waiting.ConfigureAwait(true)).ShouldBe(PermissionDecision.Allow);
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Status.ShouldBe(SessionStatus.Running);
+        var record = await repository.GetToolApprovalAsync(session.Id, RequestId, ct).ConfigureAwait(true);
+        record.ShouldNotBeNull();
+        record.Decision.ShouldBe(PermissionDecision.Allow);
     }
 
     private static SessionService NewService(ISessionRepository repository) =>

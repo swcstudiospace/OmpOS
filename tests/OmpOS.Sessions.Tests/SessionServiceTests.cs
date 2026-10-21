@@ -508,6 +508,54 @@ public sealed class SessionServiceTests
         repository.SettledSaveTerminalFlags.ToArray().ShouldBe([true]);
     }
 
+    /// <summary>A second service over the same store sees the prompt the first one started and rejects it with PromptInFlight.</summary>
+    [Fact]
+    public async Task SecondServiceInstanceRejectsPromptStartedByFirst()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var first = NewService(repository);
+        var second = NewService(repository);
+        var session = await first.CreateAsync("dev", ct).ConfigureAwait(true);
+        await first.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+
+        var error = await Should.ThrowAsync<SessionException>(() =>
+            second.SubmitPromptAsync(session.Id, "second", ct)).ConfigureAwait(true);
+
+        error.Error.Code.ShouldBe(ErrorCode.PromptInFlight);
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Messages.Select(static message => message.Content).ShouldBe(["first"]);
+    }
+
+    /// <summary>Concurrent prompts through two service instances over one store admit exactly one prompt per session, every round.</summary>
+    [Fact]
+    public async Task ConcurrentPromptsAcrossServiceInstancesAdmitExactlyOne()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var services = new[] { NewService(repository), NewService(repository) };
+
+        for (var round = 0; round < 20; round++)
+        {
+            var session = await services[0].CreateAsync("dev", ct).ConfigureAwait(true);
+            var outcomes = await Task.WhenAll(Enumerable.Range(0, 10).Select(i => Task.Run(async () =>
+            {
+                try
+                {
+                    await services[i % 2].SubmitPromptAsync(session.Id, $"prompt {i}", ct).ConfigureAwait(false);
+                    return true;
+                }
+                catch (SessionException ex) when (ex.Error.Code == ErrorCode.PromptInFlight)
+                {
+                    return false;
+                }
+            }, ct))).ConfigureAwait(true);
+
+            outcomes.Count(static admitted => admitted).ShouldBe(1);
+        }
+    }
+
     private static SessionService NewService(ISessionRepository repository) =>
         new(repository, new FixedTimeProvider(Now));
 

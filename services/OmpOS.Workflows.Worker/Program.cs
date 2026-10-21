@@ -28,6 +28,7 @@ internal static class Program
         WorkerHostConfiguration.ConfigureServices(builder.Services, builder.Configuration);
 
         var host = builder.Build();
+        await WorkerHostConfiguration.EnsureSessionSchemaAsync(host.Services, CancellationToken.None).ConfigureAwait(false);
         await host.RunAsync().ConfigureAwait(false);
 
         return 0;

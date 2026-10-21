@@ -1,8 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using OmpOS.Api.Harness;
-using OmpOS.Api.Metrics;
-using OmpOS.Api.Sse;
+using Microsoft.Extensions.Logging;
 using OmpOS.Contracts.Sandboxes;
 using OmpOS.Contracts.Sessions;
 using OmpOS.Contracts.Streaming;
@@ -11,31 +9,35 @@ using OmpOS.Sandbox.Abstractions;
 using OmpOS.Sessions;
 using OmpOS.Workflows;
 
-namespace OmpOS.Api.Workflows;
+namespace OmpOS.SessionRuns;
 
 /// <summary>
-/// The API's <see cref="ISessionRunActivities"/> implementation (WFLW-01).
+/// The session-run activities (WFLW-01, OD-02): the single implementation of a prompt run, used by the API's direct path
+/// and by the Temporal worker.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The API is the composition root: this type lives here (not in <c>OmpOS.Workflows</c>) so the
-/// workflow assembly never references <see cref="SessionService"/> or the API. Each prompt is one
-/// run: provision a sandbox through <see cref="ISandboxProvider"/>, run the prompt through the
-/// existing session-service path (same harness stream, same log appends, same SSE fan-out),
-/// collect the result, and tear down. <see cref="DirectSessionRunner"/> guarantees teardown runs
-/// in a <c>finally</c>, including when the prompt run fails.
+/// Each prompt is one run: provision a sandbox through <see cref="ISandboxProvider"/>, run the prompt through
+/// <see cref="IHarnessSessionFactory"/>, append every mapped harness event to the session log through
+/// <see cref="ISessionRepository"/>, settle the turn through <see cref="SessionService"/>, and tear the sandbox down.
+/// Every log write and settlement goes through the store, so a run executed in one process is observed by readers in any
+/// other process that shares the store.
 /// </para>
 /// <para>
-/// Provisioned sandbox ids are tracked per idempotency key because the provider assigns the
-/// sandbox id at provision time; teardown resolves it from that mapping.
+/// A permission request is routed into the store-backed tool approval. The run waits for its decision for at most the
+/// approval timeout (five minutes); a request that no decision reaches is denied, so the default outcome is deny.
+/// </para>
+/// <para>
+/// Provisioned sandbox ids are tracked per idempotency key because the provider assigns the sandbox id at
+/// provision time; teardown resolves it from that mapping.
 /// </para>
 /// </remarks>
-internal sealed class ApiSessionRunActivities : ISessionRunActivities
+public sealed class SessionRunActivities : ISessionRunActivities
 {
     private static readonly TimeSpan ProvisionTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>How long a routed permission request waits for its decision before the session service denies it.</summary>
-    private static readonly TimeSpan ToolApprovalTimeout = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan DefaultToolApprovalTimeout = TimeSpan.FromMinutes(5);
 
     private static readonly Action<ILogger, string, string, Exception?> SettleSkipped =
         LoggerMessage.Define<string, string>(
@@ -54,37 +56,69 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
     private readonly IHarnessSessionFactory _factory;
     private readonly ISessionRepository _repository;
     private readonly SessionService _sessions;
-    private readonly SessionEventStreamer _streamer;
     private readonly TimeProvider _time;
-    private readonly ApiMetrics _metrics;
-    private readonly ILogger<ApiSessionRunActivities> _logger;
+    private readonly ISessionRunObserver _observer;
+    private readonly TimeSpan _toolApprovalTimeout;
+    private readonly ILogger<SessionRunActivities> _logger;
 
-    /// <summary>Initializes a new instance of the <see cref="ApiSessionRunActivities"/> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="SessionRunActivities"/> class.</summary>
     /// <param name="sandbox">The sandbox provider (the fake in the default configuration).</param>
     /// <param name="factory">The harness session factory.</param>
     /// <param name="repository">The session store.</param>
-    /// <param name="sessions">The session service (admission and completion rules).</param>
-    /// <param name="streamer">The SSE broadcaster.</param>
+    /// <param name="sessions">The session service (admission, approval and completion rules).</param>
     /// <param name="timeProvider">The clock.</param>
-    /// <param name="metrics">The API metrics.</param>
+    /// <param name="observer">Receives the log-changed and provisioning signals of the hosting process.</param>
     /// <param name="logger">The logger.</param>
-    public ApiSessionRunActivities(
+    public SessionRunActivities(
         ISandboxProvider sandbox,
         IHarnessSessionFactory factory,
         ISessionRepository repository,
         SessionService sessions,
-        SessionEventStreamer streamer,
         TimeProvider timeProvider,
-        ApiMetrics metrics,
-        ILogger<ApiSessionRunActivities> logger)
+        ISessionRunObserver observer,
+        ILogger<SessionRunActivities> logger)
+        : this(sandbox, factory, repository, sessions, timeProvider, observer, logger, DefaultToolApprovalTimeout)
     {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="SessionRunActivities"/> class with an explicit approval timeout.</summary>
+    /// <param name="sandbox">The sandbox provider.</param>
+    /// <param name="factory">The harness session factory.</param>
+    /// <param name="repository">The session store.</param>
+    /// <param name="sessions">The session service.</param>
+    /// <param name="timeProvider">The clock.</param>
+    /// <param name="observer">The run observer.</param>
+    /// <param name="logger">The logger.</param>
+    /// <param name="toolApprovalTimeout">How long a routed permission request waits for its decision. Must be positive.</param>
+    internal SessionRunActivities(
+        ISandboxProvider sandbox,
+        IHarnessSessionFactory factory,
+        ISessionRepository repository,
+        SessionService sessions,
+        TimeProvider timeProvider,
+        ISessionRunObserver observer,
+        ILogger<SessionRunActivities> logger,
+        TimeSpan toolApprovalTimeout)
+    {
+        ArgumentNullException.ThrowIfNull(sandbox);
+        ArgumentNullException.ThrowIfNull(factory);
+        ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(sessions);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(observer);
+        ArgumentNullException.ThrowIfNull(logger);
+        if (toolApprovalTimeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(toolApprovalTimeout), toolApprovalTimeout, "The tool approval timeout must be positive.");
+        }
+
         _sandbox = sandbox;
         _factory = factory;
         _repository = repository;
         _sessions = sessions;
-        _streamer = streamer;
         _time = timeProvider;
-        _metrics = metrics;
+        _observer = observer;
+        _toolApprovalTimeout = toolApprovalTimeout;
         _logger = logger;
     }
 
@@ -114,7 +148,7 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
 
         var result = await _sandbox.ProvisionAsync(request, cancellationToken).ConfigureAwait(false);
         _sandboxIds[input.IdempotencyKey] = result.Descriptor.Id;
-        _metrics.RecordSandboxProvision(stopwatch.Elapsed.TotalMilliseconds);
+        _observer.SandboxProvisioned(stopwatch.Elapsed.TotalMilliseconds);
         return result.Descriptor;
     }
 
@@ -142,9 +176,12 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
                         break;
                     }
 
-                    if (evt is PermissionRequestEvent { RequestId: { } requestId } permission)
+                    if (evt is PermissionRequestEvent permission)
                     {
                         // The request is held in approval and the run waits for its decision; no other event streams meanwhile.
+                        // The store keeps request identifiers unique per session for its whole life, so the run scopes its identifier
+                        // to the run: a call identifier reused by a later turn cannot collide with an earlier request.
+                        var requestId = $"{input.RunId}:{permission.RequestId ?? permission.CallId}";
                         await AwaitToolApprovalAsync(input, requestId, permission.Name, cancellationToken).ConfigureAwait(false);
                         continue;
                     }
@@ -158,7 +195,7 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
 
             var final = HarnessTurnOutcome.SettledStatus(stopReason, sawError);
             await _sessions.RecordCompletionAsync(input.SessionId, final, CancellationToken.None, stopReason).ConfigureAwait(false);
-            _streamer.Notify(input.SessionId);
+            _observer.SessionChanged(input.SessionId);
         }
         catch (OperationCanceledException)
         {
@@ -178,15 +215,15 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
     }
 
     /// <summary>
-    /// Routes a permission request into the session's tool approval and waits for its decision on this direct path. A request
-    /// that no decision reaches within <see cref="ToolApprovalTimeout"/> is denied by the session service.
+    /// Routes a permission request into the session's store-backed tool approval and waits for its decision. A request that
+    /// no decision reaches within the approval timeout is denied by the session service.
     /// </summary>
     private async Task AwaitToolApprovalAsync(SessionRunInput input, string requestId, string toolName, CancellationToken cancellationToken)
     {
         await _sessions.RequestToolApprovalAsync(input.SessionId, requestId, toolName, cancellationToken).ConfigureAwait(false);
-        _streamer.Notify(input.SessionId);
-        await _sessions.WaitForDecisionAsync(input.SessionId, requestId, ToolApprovalTimeout, cancellationToken).ConfigureAwait(false);
-        _streamer.Notify(input.SessionId);
+        _observer.SessionChanged(input.SessionId);
+        _ = await _sessions.WaitForDecisionAsync(input.SessionId, requestId, _toolApprovalTimeout, cancellationToken).ConfigureAwait(false);
+        _observer.SessionChanged(input.SessionId);
     }
 
     /// <inheritdoc />
@@ -217,7 +254,7 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
             Payload = payload,
         };
         await _repository.AppendAsync(sessionId, evt, cancellationToken).ConfigureAwait(false);
-        _streamer.Notify(sessionId);
+        _observer.SessionChanged(sessionId);
     }
 
     private async Task SettleAsync(string sessionId, SessionStatus final)
@@ -225,7 +262,7 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
         try
         {
             await _sessions.RecordCompletionAsync(sessionId, final, CancellationToken.None).ConfigureAwait(false);
-            _streamer.Notify(sessionId);
+            _observer.SessionChanged(sessionId);
         }
         catch (SessionException ex)
         {

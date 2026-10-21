@@ -4,5 +4,6 @@ namespace OmpOS.Sessions.Tests;
 public sealed class InMemoryRepositoryFixture : SessionRepositoryContractTests<InMemorySessionRepository>
 {
     /// <inheritdoc />
-    protected override InMemorySessionRepository CreateRepository() => new();
+    protected override Task<InMemorySessionRepository> CreateRepositoryAsync(CancellationToken cancellationToken) =>
+        Task.FromResult(new InMemorySessionRepository());
 }

@@ -19,6 +19,9 @@
     <ProjectReference Include="..\..\src\OmpOS.Harness.Abstractions\OmpOS.Harness.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\OmpOS.Sandbox\OmpOS.Sandbox.csproj" />
     <ProjectReference Include="..\..\src\OmpOS.Harness.Rpc\OmpOS.Harness.Rpc.csproj" />
+    <ProjectReference Include="..\..\src\OmpOS.Sessions\OmpOS.Sessions.csproj" />
+    <ProjectReference Include="..\..\src\OmpOS.Sessions.Postgres\OmpOS.Sessions.Postgres.csproj" />
+    <ProjectReference Include="..\..\src\OmpOS.SessionRuns\OmpOS.SessionRuns.csproj" />
   </ItemGroup>
 
   <ItemGroup>

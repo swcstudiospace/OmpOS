@@ -21,6 +21,8 @@ internal static class LayerMap
         ["OmpOS.Harness.InMemory"] = 2,
         ["OmpOS.EngineHost"] = 3,
         ["OmpOS.Sessions"] = 2,
+        ["OmpOS.Sessions.Postgres"] = 2,
+        ["OmpOS.SessionRuns"] = 2,
         ["OmpOS.GenUi"] = 2,
         ["OmpOS.Sandbox"] = 2,
         ["OmpOS.Workflows"] = 2,
@@ -33,13 +35,17 @@ internal static class LayerMap
 
     /// <summary>
     /// Explicit allow-list for same-layer edges (D-02): Sessions may use GenUi,
-    /// and the UI razor library may use GenUi, and the catch-all parser may use the
+    /// the UI razor library may use GenUi, the Postgres store and the shared session-run activities may use
+    /// Sessions (and the run activities Workflows), and the catch-all parser may use the
     /// harness and sandbox abstraction types. Every other same-layer edge is a violation.
     /// </summary>
     public static readonly IReadOnlySet<(string From, string To)> SameLayerAllowed = new HashSet<(string, string)>
     {
         ("OmpOS.Sessions", "OmpOS.GenUi"),
         ("OmpOS.UI", "OmpOS.GenUi"),
+        ("OmpOS.Sessions.Postgres", "OmpOS.Sessions"),
+        ("OmpOS.SessionRuns", "OmpOS.Sessions"),
+        ("OmpOS.SessionRuns", "OmpOS.Workflows"),
         // intentional: the catch-all parser feeds the harness via abstraction types (Phase 2 D-01)
         ("OmpOS.Parser", "OmpOS.Harness.Abstractions"),
         ("OmpOS.Parser", "OmpOS.Sandbox.Abstractions"),

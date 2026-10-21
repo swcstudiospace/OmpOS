@@ -1,10 +1,11 @@
 using OmpOS.Contracts.Sessions;
 using OmpOS.Contracts.Streaming;
+using OmpOS.Harness.Abstractions;
 
 namespace OmpOS.Sessions;
 
 /// <summary>
-/// Storage for sessions and their append-only, Seq-numbered stream-event log (SESS-01).
+/// Storage for sessions, their append-only, Seq-numbered stream-event log (SESS-01), and their tool approvals.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -13,7 +14,8 @@ namespace OmpOS.Sessions;
 /// Within one session Seq is strictly monotonic with no gaps and no duplicates, including under concurrent appends.
 /// </para>
 /// <para>
-/// Implementations must be safe for concurrent use from multiple tasks.
+/// Implementations must be safe for concurrent use from multiple tasks. A durable implementation shared by several
+/// processes must also honour <see cref="LockSessionAsync"/> across those processes.
 /// </para>
 /// </remarks>
 public interface ISessionRepository
@@ -54,4 +56,46 @@ public interface ISessionRepository
     /// <returns>The matching events. Empty when <paramref name="fromSeq"/> is past the end of the log.</returns>
     /// <exception cref="KeyNotFoundException">No session has the given identifier (raised on first enumeration).</exception>
     IAsyncEnumerable<StreamEvent> ListFromSeqAsync(string sessionId, long fromSeq, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Acquires the exclusive lock of one session. The lock is held across processes until the returned value is disposed.
+    /// </summary>
+    /// <remarks>
+    /// The lock is keyed by the session identifier, so it can be taken for an identifier that has no saved session yet.
+    /// It is not reentrant: a holder must not request the same session's lock again. Waiters are admitted one at a time.
+    /// Disposing the returned value releases the lock; disposing it again has no further effect.
+    /// </remarks>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="cancellationToken">Cancels the wait for the lock.</param>
+    /// <returns>A disposable that releases the lock.</returns>
+    Task<IAsyncDisposable> LockSessionAsync(string sessionId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Adds a pending tool approval to a session. Request identifiers are unique per session for its whole life:
+    /// a decided request keeps its identifier, so the identifier cannot be added again.
+    /// </summary>
+    /// <param name="sessionId">The owning session identifier. Must equal <see cref="ToolApprovalRecord.SessionId"/> of <paramref name="approval"/>.</param>
+    /// <param name="approval">The request to store. Its decision must be null (pending).</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns><see langword="true"/> when the request was added; <see langword="false"/> when the session already holds a request with that identifier.</returns>
+    /// <exception cref="KeyNotFoundException">No session has the given identifier.</exception>
+    Task<bool> TryAddToolApprovalAsync(string sessionId, ToolApprovalRecord approval, CancellationToken cancellationToken);
+
+    /// <summary>Gets a tool approval by request identifier.</summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="requestId">The request identifier.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns>The request, pending or decided, or <see langword="null"/> when the session or the request does not exist.</returns>
+    Task<ToolApprovalRecord?> GetToolApprovalAsync(string sessionId, string requestId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sets the decision of a pending tool approval. The first decision wins: a request is decided at most once.
+    /// </summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="requestId">The request identifier.</param>
+    /// <param name="decision">The decision to record.</param>
+    /// <param name="decidedAt">When the decision was made.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns><see langword="true"/> only when the request exists, is pending, and this call set its decision; <see langword="false"/> otherwise.</returns>
+    Task<bool> TryDecideToolApprovalAsync(string sessionId, string requestId, PermissionDecision decision, DateTimeOffset decidedAt, CancellationToken cancellationToken);
 }

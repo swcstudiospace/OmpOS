@@ -447,7 +447,9 @@
           "OmpOS.Parser": "[1.0.0, )",
           "OmpOS.Sandbox": "[1.0.0, )",
           "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
+          "OmpOS.SessionRuns": "[1.0.0, )",
           "OmpOS.Sessions": "[1.0.0, )",
+          "OmpOS.Sessions.Postgres": "[1.0.0, )",
           "OmpOS.Workflows": "[1.0.0, )",
           "OpenTelemetry": "[1.20.0, )",
           "OpenTelemetry.Exporter.Console": "[1.20.0, )",
@@ -524,11 +526,33 @@
           "OmpOS.Contracts": "[1.0.0, )"
         }
       },
+      "ompos.sessionruns": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
+          "OmpOS.Contracts": "[1.0.0, )",
+          "OmpOS.Harness.Abstractions": "[1.0.0, )",
+          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
+          "OmpOS.Sessions": "[1.0.0, )",
+          "OmpOS.Workflows": "[1.0.0, )"
+        }
+      },
       "ompos.sessions": {
         "type": "Project",
         "dependencies": {
           "OmpOS.Contracts": "[1.0.0, )",
           "OmpOS.Harness.Abstractions": "[1.0.0, )"
+        }
+      },
+      "ompos.sessions.postgres": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "[10.0.13, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
+          "Npgsql": "[10.0.3, )",
+          "OmpOS.Contracts": "[1.0.0, )",
+          "OmpOS.Harness.Abstractions": "[1.0.0, )",
+          "OmpOS.Sessions": "[1.0.0, )"
         }
       },
       "ompos.ui": {
@@ -562,6 +586,9 @@
           "OmpOS.Harness.Rpc": "[1.0.0, )",
           "OmpOS.Sandbox": "[1.0.0, )",
           "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
+          "OmpOS.SessionRuns": "[1.0.0, )",
+          "OmpOS.Sessions": "[1.0.0, )",
+          "OmpOS.Sessions.Postgres": "[1.0.0, )",
           "OmpOS.Workflows": "[1.0.0, )",
           "Temporalio": "[1.20.0, )",
           "Temporalio.Extensions.Hosting": "[1.20.0, )"
@@ -824,6 +851,15 @@
         "requested": "[2.5.1, )",
         "resolved": "2.5.1",
         "contentHash": "FAMaFFWnULW+hDHMb40Qzhcgz9cAU2/EtgRCBNX/DdQoKo0sPG2EiY+w7bQdl/BgHnf/DbpXLbf5Xy0o15M8NA=="
+      },
+      "Npgsql": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
+        }
       },
       "OpenTelemetry": {
         "type": "CentralTransitive",
