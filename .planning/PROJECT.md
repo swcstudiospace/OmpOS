@@ -2,7 +2,7 @@
 
 ## What This Is
 
-OmpOS is a chat-style agent workspace — a Grok Chat / Cursor Agent–class client whose engine is **omp** rather than Cursor. It orchestrates omp sessions and renders their streamed output as **Generative UI** (structured, interactive blocks, not plain text). It is a **Desktop ACP Harness built in C#** that grows into one full-stack product: a Blazor WebAssembly web app hosted on Vercel, .NET MAUI Blazor Hybrid native shells for macOS/Windows/iOS/Android, and a unified ASP.NET Core API on Railway. Temporal is removed (2026-10-21, see docs/handoff.md "Temporal removal and Railway topology"): there is no worker, and session runs execute in-process in the API through `DirectSessionRunner`. Sandboxed agent execution follows the layering Rivet agentOS → NVIDIA OpenShell on podman → attested-enclave boundary.
+OmpOS is a chat-style agent workspace — a Grok Chat / Cursor Agent–class client whose engine is **omp** rather than Cursor. It orchestrates omp sessions and renders their streamed output as **Generative UI** (structured, interactive blocks, not plain text). It is a **Desktop ACP Harness built in C#** that grows into one full-stack product: a Blazor WebAssembly web head hosted on Vercel (Avalonia.Browser failed gate G-WEB on Avalonia 12.1.4; ADR-0004), Avalonia UI native shells for Windows, macOS, Linux, iOS and Android, and a unified ASP.NET Core API on Railway. Temporal is removed (2026-10-21, see docs/handoff.md "Temporal removal and Railway topology"): there is no worker, and session runs execute in-process in the API through `DirectSessionRunner`. Sandboxed agent execution follows the layering Rivet agentOS → NVIDIA OpenShell on podman → attested-enclave boundary.
 
 ## Core Value
 
@@ -61,13 +61,13 @@ A prompt typed on any surface becomes an omp session whose streamed events rende
 
 ## Constraints
 
-- **Tech stack**: C# for backend, harness, parser, sandbox, workflows and all UI (Blazor RCL shared by Blazor WASM and MAUI Blazor Hybrid) — user's explicit "built using C#"; one UI codebase avoids drift.
+- **Tech stack**: C# for backend, harness, parser, sandbox, workflows and all native UI in Avalonia UI (ADR-0004) for Windows, macOS, Linux, iOS and Android; the web head stays Blazor WebAssembly on the shared presentation layer until gate G-WEB passes; the .NET MAUI head retires after parity (v0.10.0 Phases 20 to 25) — user's explicit "built using C#"; the shared presentation layer bounds drift between the Avalonia heads and the Blazor web head (ADR-0004).
 - **Container runtime**: podman-compose / podman only; any OCI build file must build with podman — user requirement; Docker tooling must not be emitted.
 - **No invented vendor facts**: package names, versions, APIs and routes only when verified at scaffold time; everything else is an interface + stub + entry in `docs/open-questions.md` with an owner.
 - **Strictness**: nullable, warnings-as-errors, analyzers, deterministic builds, central package management with committed lockfiles, formatter in CI, no TODO without owner + open-question link.
 - **Secrets**: nothing committed; `.env.example` documents every variable; startup fails fast on missing required config.
 - **Hosting split**: Vercel serves only the static Blazor WASM publish output; the API and sandbox control plane run on Railway, and there is no worker service since Temporal was removed on 2026-10-21 (docs/handoff.md) (Vercel cannot run long-lived .NET services).
-- **Dev box limits**: MAUI heads are unverifiable on Linux → excluded from the default solution filter and built in a macOS CI job; honest reporting of what was and was not built locally.
+- **Dev box limits**: on this Linux host the Avalonia desktop head builds with warnings as errors and its AT-SPI2 accessibility tree is readable under Xvfb (spike 2026-10-21); the Blazor WebAssembly browser publish builds with the wasm-tools workload (installed on this host), while Avalonia.Browser fails G-WEB on Avalonia 12.1.4; Android builds need the Android SDK (not installed here); iOS and macOS packaging need the Mac channel; honest reporting of what was and was not built locally.
 - **Scope discipline**: structure, wiring, contracts, foundations and one vertical slice — not the full product.
 - **Protocol fidelity**: ACP v1 (stable) and omp RPC protocol v1/v2 framing as documented in the installed omp; v2 ACP draft is out of scope.
 
@@ -75,8 +75,8 @@ A prompt typed on any surface becomes an omp session whose streamed events rende
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Web surface = Blazor WebAssembly (static) on Vercel, not a TypeScript client | User chose it (HITL q1); keeps a single C# UI codebase; static publish is Vercel-hostable | — Pending |
-| Native shells = .NET MAUI Blazor Hybrid (macOS/Windows + iOS/Android) sharing the RCL | User chose it (HITL q2); official Microsoft pattern (`maui-blazor-web`); built in macOS CI job because Linux cannot build MAUI heads | — Pending |
+| Web surface = Blazor WebAssembly (static) on Vercel, not a TypeScript client | Superseded in part by ADR-0004 (2026-10-21). Original rationale: User chose it (HITL q1); keeps one C# codebase for the five native heads; the web head is Blazor over the shared presentation layer (ADR-0004); static publish is Vercel-hostable | — Pending |
+| Native shells = Avalonia UI heads (ADR-0004); the MAUI Blazor Hybrid head retires after parity (v0.10.0 Phase 25) | Superseded in part by ADR-0004 (2026-10-21). Original rationale: User chose it (HITL q2); official Microsoft pattern (`maui-blazor-web`); built in macOS CI job because Linux cannot build MAUI heads | — Pending |
 | Engine integration = custom C# ACP v1 client (`omp acp`, JSON-RPC/stdio) **and** omp RPC JSONL client (`omp --mode rpc`) | Verified from installed omp docs; user asked for custom components; both protocols give full control (ACP for portability, RPC for omp-native features) | — Pending |
 | Backend → client streaming = Server-Sent Events with `id:` = sequence number | Works through Railway/Vercel edges without sticky sessions; `Last-Event-ID` maps directly to resume-from-sequence; HttpClient streaming works in WASM and MAUI | — Pending |
 | Generative UI = own `UiBlock` contract (markdown, code, tool-call, diff placeholder, error, unknown) plus an `a2ui` block carrying A2UI v0.9.1 payloads rendered by a catalog-bound Blazor renderer | Covers the required minimum deterministically; adopts the open standard for rich generated surfaces without inventing one | — Pending |
@@ -87,6 +87,7 @@ A prompt typed on any surface becomes an omp session whose streamed events rende
 | Single dev principal with reserved `OwnerId` on Session; auth boundary as middleware with no-op provider | HITL q4 default; keeps multi-user possible without building auth providers | — Pending |
 | Monorepo layout `src/ services/ apps/ tests/ docs/` with numbered dependency layers asserted by an architecture test | Enforces apps → services → libraries → contracts direction mechanically | — Pending |
 | `.planning/` committed, no GSD branching (`git.branching_strategy: none`) | Greenfield repo; ultrathink-ship owns the PR/branch flow | — Pending |
+| Avalonia for the five native heads; web head stays Blazor WebAssembly (G-WEB failed on Avalonia 12.1.4); MAUI head retires after parity; Razor library stays for the web head | Accepted 2026-10-21 (ADR-0004): MAUI supports Android, iOS, Mac Catalyst and Windows only (no Linux or browser target); Avalonia 12.1.4 (MIT) covers all six targets; Avalonia.Browser failed G-WEB on 12.1.4, so the web head stays Blazor WebAssembly | Accepted 2026-10-21, amended: web stays Blazor WebAssembly after G-WEB failed |
 
 ## Evolution
 

@@ -100,8 +100,8 @@ Gate for every HOST requirement: owner decision on the sign-in method (OD-03).
 
 ### Mac Builds (MAC)
 
-- [ ] **MAC-01**: `apps/OmpOS.App` builds for `net10.0-ios` with warnings as errors on a macOS host with Xcode 27.1. Source: audit HO-6; handoff decision 5 and "Before any public deployment" item 3; `docs/open-questions.md:23` (OQ-17).
-- [ ] **MAC-02**: `apps/OmpOS.App` builds for `net10.0-maccatalyst` with warnings as errors on the same macOS host. Source: audit HO-6; handoff "Before any public deployment" item 3.
+- [ ] **MAC-01**: `apps/OmpOS.App` builds for `net10.0-ios` with warnings as errors on a macOS host with Xcode 27.1. Source: audit HO-6; handoff decision 5 and "Before any public deployment" item 3; `docs/open-questions.md:23` (OQ-17). **Superseded 2026-10-21 (ADR-0004):** replaced by XP-05 (iOS) and XP-04 (macOS) in v0.10.0.
+- [ ] **MAC-02**: `apps/OmpOS.App` builds for `net10.0-maccatalyst` with warnings as errors on the same macOS host. Source: audit HO-6; handoff "Before any public deployment" item 3. **Superseded 2026-10-21 (ADR-0004):** replaced by XP-05 (iOS) and XP-04 (macOS) in v0.10.0.
 - [ ] **MAC-03**: The macOS CI `shells` job (`.github/workflows/ci.yml:74-88`) runs green on a macOS runner and records DESK-01, MOB-01 and SHELL-01 evidence; they stay Partial until it does. Source: audit HO-6; handoff decision 5; `docs/open-questions.md:23` (OQ-17).
 - [ ] **MAC-04**: Runtime spot-check on the macOS build: desktop streams against the remote backend; mobile resumes remote-only and never spawns a process. Source: handoff "Before any public deployment" item 3 (verify line).
 
@@ -137,3 +137,152 @@ Filled by the roadmap.
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
+
+## Cross-platform UI and ADE harness (planned, ADR-0004)
+
+Status: planned for v0.10.0 (XP) and v0.11.0 (ADE). Not counted in v0.9.2 completion. G-WEB failed 2026-10-21 on Avalonia 12.1.4; see ADR-0004.
+
+Source: ADR-0004 (accepted 2026-10-21; reversible through gate G-WEB); `docs/plans/ade-harness-plan.md`. Platform routes for XP-02 to XP-06 are in the matrix in `docs/plans/ade-harness-plan.md`.
+
+### Cross-platform UI (XP, v0.10.0)
+
+- [ ] **XP-01**: One Avalonia UI codebase for Windows, macOS, Linux, iOS and Android; the web head stays Blazor WebAssembly on the shared presentation layer until gate G-WEB passes (ADR-0004).
+  - Acceptance: the Windows, macOS, Linux, iOS and Android heads are built from one Avalonia UI solution. The web head stays Blazor WebAssembly on the shared presentation layer until G-WEB passes. `apps/OmpOS.App` (MAUI) is deleted only in the cutover commit, after every XP-10 parity test is green. `src/OmpOS.UI` (RCL) stays until the web head moves.
+  - Verification: CI builds the five Avalonia heads from the one solution. An architecture test in `tests/OmpOS.ArchitectureTests` fails if any project references `Microsoft.Maui` after the MAUI cutover. The XP-10 parity run is green before the MAUI deletion commit.
+- [ ] **XP-02**: Linux desktop head on X11 (default) and Wayland (native backend opt-in from Avalonia 12.1.0, otherwise XWayland); control tree exposed through AT-SPI2.
+  - Acceptance: the head starts under an X11 session by default, under a Wayland session with the native backend opted in (Avalonia 12.1.0 or later), and under XWayland otherwise. The AT-SPI2 tree exposes the prompt input, send control and transcript with a role and a name each.
+  - Verification: platform route per the matrix in `docs/plans/ade-harness-plan.md` (Linux, Tier 1 distributions). Run the head under X11 and Wayland sessions. Query the AT-SPI2 tree with a script or Accerciser and record role and name for the three controls.
+- [ ] **XP-03**: Windows head builds for net10.0-windows on Windows 11 24H2 (Tier 1); UI Automation exposes names and roles.
+  - Acceptance: the head builds for `net10.0-windows` with warnings as errors and starts on Windows 11 24H2. The UI Automation tree exposes the prompt input, send control and transcript with a name and a control type each.
+  - Verification: platform route per the matrix in `docs/plans/ade-harness-plan.md` (Windows 11 24H2 runner). Inspect or a UIA client script records Name and ControlType for the three controls.
+- [ ] **XP-04**: macOS head builds on macOS 26 (Tier 1); NSAccessibility exposes names and roles.
+  - Acceptance: the macOS head builds on macOS 26 with warnings as errors. NSAccessibility exposes the prompt input, send control and transcript with a name and a role each. It replaces the superseded MAUI macOS build (v0.9.2 phase 15).
+  - Verification: platform route per the matrix in `docs/plans/ade-harness-plan.md` (macOS 26 host, Phase 22). Accessibility Inspector records role and name for the three controls. Signing and notarization are Mac-channel items under XP-11.
+- [ ] **XP-05**: iOS head builds for net10.0-ios on iOS/iPadOS 26 (Tier 1); UIAccessibility exposes names and roles; runtime and signing need the Mac channel.
+  - Acceptance: the iOS head builds for `net10.0-ios` with warnings as errors on macOS with Xcode 27.1. UIAccessibility exposes labels and roles for the prompt input, send control and transcript. It replaces the superseded MAUI iOS build (v0.9.2 phase 16).
+  - Verification: platform route per the matrix in `docs/plans/ade-harness-plan.md` (Phase 24). The compile runs in CI on macOS. Runtime on iOS/iPadOS 26 and signing are Mac-channel items under XP-11 and are human-gated.
+- [ ] **XP-06**: Android head builds for net10.0-android on Android 16 (Tier 1); AccessibilityNodeInfo exposes names and roles.
+  - Acceptance: the Android head builds for `net10.0-android` with warnings as errors. On an Android 16 device or emulator, AccessibilityNodeInfo exposes text or content description and a class name for the prompt input, send control and transcript.
+  - Verification: platform route per the matrix in `docs/plans/ade-harness-plan.md`. The build runs in CI. On Android 16 a `uiautomator dump` records the text or content-description and class of the three controls.
+- [ ] **XP-07**: Web head: Blazor WebAssembly (existing) renders the shared presentation layer; Avalonia.Browser adoption is gated by G-WEB.
+  - Acceptance: the Blazor web head keeps its axe and CSP checks, and the shared presentation layer has parity tests. Avalonia.Browser is adopted only after G-WEB passes.
+  - Verification: the axe run on the Blazor web head runs in CI, together with its CSP checks. G-WEB is re-measured on each Avalonia release, and each measurement is recorded under `docs/runbooks/evidence/avalonia-spike-2026-10-21/`.
+- [ ] **XP-08**: Accessibility baseline on every head: keyboard operation of every control, visible focus, accessible names, text contrast of at least 4.5:1, reduced motion respected.
+  - Acceptance: every control on every head is reachable and operable by keyboard alone. Every focusable control shows a visible focus indicator. Every control has an accessible name. Body text contrast is at least 4.5:1 against its background. With the reduced-motion setting on, non-essential animation is off.
+  - Verification: automated keyboard traversal and contrast tests in the Avalonia test suite, run against the design tokens. Per-head keyboard run and screen-reader check recorded in the phase evidence for XP-02 to XP-07.
+- [ ] **XP-09**: Plugin harness host contracts in the contracts layer: plugins contribute commands, panels, tools and agent modes; contract tests run in the gate.
+  - Acceptance: the contracts layer defines plugin contribution types for commands, panels, tools and agent modes, with no UI framework reference. An in-process sample plugin registers one contribution of each kind and the host lists all four.
+  - Verification: contract tests in `tests/OmpOS.Contracts.Tests` run in the CI gate. An architecture test asserts that the contracts layer does not reference Avalonia, MAUI or `OmpOS.UI`.
+- [ ] **XP-10**: Parity before removal: each feature of the MAUI head has an Avalonia test before `apps/OmpOS.App` is removed. The Razor component library stays until the web head moves.
+  - Acceptance: a parity list names every feature of `apps/OmpOS.App`, with one Avalonia test per feature. No feature row lacks a test. `apps/OmpOS.App` is removed only after the whole parity list is green. `src/OmpOS.UI` is not removed by this item.
+  - Verification: the parity list is reviewed row by row against the page and component inventory of `apps/OmpOS.App`. The Avalonia parity run is green in CI before the removal commit, and that commit is the only one that deletes `apps/OmpOS.App`.
+- [ ] **XP-11**: Mac-channel items are listed separately with their verification route (signing, notarization, device runs).
+  - Acceptance: a separate list names each Mac-channel item (iOS and macOS signing, notarization, iOS and macOS device runs). Each entry gives its verification route, the macOS host required (Xcode 27.1 for iOS), and the human who runs it. No Mac-channel item is marked done from a non-Mac run.
+  - Verification: review of the list against XP-04 and XP-05 and the superseded MAC-01 to MAC-04 entries. A human sign-off line is recorded when each Mac run completes.
+
+### ADE harness (ADE, v0.11.0)
+
+- [ ] **ADE-01**: Session chat with streamed generative UI blocks (parity with the current heads).
+  - Acceptance: a prompt sent from the Avalonia head streams its events into the transcript as generative UI blocks. The block types match those the current RCL and MAUI heads render. After a reconnect the stream resumes from the last Seq without duplicate blocks.
+  - Verification: Avalonia tests drive a fixture event stream through the head and assert the rendered block for each block type. Parity test compares the output with the recorded output of the current heads.
+- [ ] **ADE-02**: Tool approvals in the run UI, routed through the ACP permission bridge.
+  - Acceptance: a pending ACP `session/request_permission` appears in the run UI with the tool name and arguments. Approve and deny send the decision through the permission bridge (OD-01). With no decision, the request is denied by policy. An approval can only deny earlier, never allow.
+  - Verification: integration test with a fake ACP transport emits `session/request_permission`. A UI test asserts the approval control. Tests assert the bridge receives the chosen decision and that a timeout produces deny.
+- [ ] **ADE-03**: Steering and follow-up prompts while a run is active.
+  - Acceptance: while a run is active the composer accepts a steering message, which is delivered to the active run, and a follow-up, which is queued and dispatched after the run completes. The run UI shows which kind is pending.
+  - Verification: test with a fake active run. Assert the steering message reaches the run input channel and the follow-up is dispatched only after the completion event, in that order.
+- [ ] **ADE-04**: Side chats and transcript search.
+  - Acceptance: a side chat opens from a session without adding messages to the main transcript. Transcript search returns every case-insensitive match in the current session, and selecting a match jumps to it.
+  - Verification: unit tests of the search function on a fixed transcript fixture, asserting match count and order. UI test asserting side-chat messages do not appear in the main transcript.
+- [ ] **ADE-05**: Agents window: parallel runs with status, filter and open or close.
+  - Acceptance: the Agents window lists runs with a status of running, completed, failed or cancelled. It filters by status and opens or closes a run view. Closing a view does not stop the run. Two runs execute concurrently without sharing transcript state.
+  - Verification: tests with two concurrent fake runs. Assert status transitions, filter results, and that closing a view leaves the run state unchanged.
+- [ ] **ADE-06**: Git worktree isolation per agent run.
+  - Acceptance: each agent run executes in its own git worktree under a path the operator controls. Two runs on one repository never share a working directory. Changes stay inside the worktree, and the main checkout is unchanged by a run.
+  - Verification: integration test on a temporary git repository. Start two runs, write a file in each, and assert separate worktrees (`git worktree list`) and an unchanged main checkout.
+- [ ] **ADE-07**: Cloud agent runs on the hosted API, with status and reviewable output.
+  - Acceptance: a run started in cloud mode executes through the hosted API (`services/OmpOS.Api`). Its status moves through queued, running and completed. After completion the diff and transcript are retrievable for review.
+  - Verification: API integration test on the API test host starts a cloud run, polls status until completed, and fetches the output. The test asserts the diff is present in the output.
+- [ ] **ADE-08**: Remote control and notifications from another device.
+  - Acceptance: a second device lists active runs, sends a prompt or an approval, and receives a notification when a run needs approval or completes. Remote endpoints reject unauthenticated requests. Authentication uses the sign-in method chosen under OD-03.
+  - Verification: API test asserts unauthenticated remote calls are rejected. End-to-end test asserts a second client receives the completion notification. This item is gated by the OD-03 decision.
+- [ ] **ADE-09**: Code editor: syntax highlighting, tabs and find.
+  - Acceptance: the editor opens workspace files in tabs. It highlights C#, TypeScript, JSON, YAML and Markdown. Find shows the match count and moves between matches.
+  - Verification: Avalonia UI tests open two files in tabs, assert the find match count on a fixture, and assert highlight tokens for each listed language.
+- [ ] **ADE-10**: Workspace file tree and open folder.
+  - Acceptance: opening a folder sets the workspace root used for runs. The file tree loads children when a directory is expanded and is fully keyboard navigable.
+  - Verification: test on a fixture directory asserts the children of an expanded node. Test asserts that run dispatch uses the opened folder as its workspace root.
+- [ ] **ADE-11**: Diff review with accept and reject per hunk.
+  - Acceptance: a run's changes are shown as hunks. Accepting a hunk keeps it, rejecting a hunk reverts only that hunk. After all decisions the file equals the accepted hunks applied to the original.
+  - Verification: test on a fixture repository with a two-hunk change. Accept one hunk and reject the other, then assert the file content equals the expected result.
+- [ ] **ADE-12**: Inline edit on a selection.
+  - Acceptance: invoking inline edit on a selection sends the selected text and the instruction to the agent. The response replaces only the selected range, and only after the user accepts it. Undo restores the original text.
+  - Verification: unit test of range replacement on a fixture buffer. UI test asserts a rejected response leaves the buffer unchanged.
+- [ ] **ADE-13**: Inline completion backed by a configured model provider.
+  - Acceptance: with a model provider configured, a suggestion appears at the caret and accepting it inserts the text. Without a configured provider, completion is off and no request is sent.
+  - Verification: test with a stub provider endpoint asserts a request is sent only when a provider is configured. Accept and dismiss behaviour is asserted in a UI test.
+- [ ] **ADE-14**: Integrated terminal; commands need approval; auto-run is opt-in.
+  - Acceptance: the terminal starts in the workspace directory. Each command needs approval. Auto-run is off by default and is enabled only by explicit configuration. A declined command is not executed.
+  - Verification: tests with a fake process runner assert that a command with default settings stays pending until approved, that auto-run executes without a prompt only when enabled, and that a declined command never spawns a process.
+- [ ] **ADE-15**: Embedded browser pane and design mode (select an element and send it as context).
+  - Acceptance: the browser pane loads a URL in an embedded web view. Design mode selects a DOM element and sends its selector, an HTML excerpt and its bounding box to the active session as context.
+  - Verification: UI test on a local fixture page selects an element and asserts the context payload contains the selector and bounding box. The web view route is in the matrix in `docs/plans/ade-harness-plan.md`.
+- [ ] **ADE-16**: MCP client: stdio and HTTP servers, a tool registry, enable and disable per session.
+  - Acceptance: a stdio MCP server and an HTTP MCP server each register tools in one tool registry. Tools can be enabled or disabled per session. A disabled tool is not offered to the model.
+  - Verification: integration tests with a fixture stdio server and a local HTTP fixture server. Assert the session tool list before and after a disable.
+- [ ] **ADE-17**: Rules, skills and custom agent modes loaded from project files.
+  - Acceptance: rule files, skill files and mode definitions in the project directory load into session context. A custom mode appears in the mode picker. A malformed file is reported as a diagnostic and skipped without failing the session.
+  - Verification: loader tests on a fixture project directory that includes one malformed file. Assert the loaded set and the diagnostic.
+- [ ] **ADE-18**: Codebase search: text and regex first, semantic index later.
+  - Acceptance: text and regex search over the workspace returns file, line and match for each hit. An invalid regex is reported as an error. A semantic index is not part of this milestone.
+  - Verification: unit tests on a fixture tree assert match count, file, and line. A test asserts an invalid regex yields an error result.
+- [ ] **ADE-19**: Environment setup file for agent runs.
+  - Acceptance: a setup file at the workspace root runs before an agent run starts. Its environment variables are visible to the run. A failing setup step marks the run failed before the agent starts.
+  - Verification: integration test with a fixture setup file asserts the variable is visible inside the run. A second test with a failing step asserts the run is marked failed and no agent process starts.
+- [ ] **ADE-20**: Export chats and runs to Markdown; usage history.
+  - Acceptance: a chat or run exports to a Markdown file with its messages in order and a heading for each block. Usage history lists runs with date, model and token counts, and totals per period.
+  - Verification: export of a fixture transcript is compared with a golden Markdown file. Usage history totals are asserted against fixture runs.
+- [ ] **ADE-21**: VS Code extension compatibility: planned for a later milestone (v0.11.0 Phase 30), after XP-09 ships.
+  - Acceptance: no extension compatibility code ships in Phases 26 to 29. In Phase 30 the extension host consumes the XP-09 contracts and ships only after the XP-09 contract tests are green.
+  - Verification: Phase 30 plan review confirms the dependency on XP-09. The XP-09 contract tests are green before any extension work is merged.
+- [ ] **ADE-22**: Admin, analytics and team controls: planned for a later milestone (v0.11.0 Phase 30).
+  - Acceptance: team members have roles that gate admin actions, and a non-admin cannot perform one. Analytics show run counts and usage per team. Admin actions are recorded. Nothing ships before Phase 30.
+  - Verification: Phase 30 authorization tests deny non-admin admin actions. Analytics totals are asserted against fixture data. The recording of admin actions is asserted in a test.
+
+### Traceability
+
+| REQ-ID | Phase | Milestone |
+|--------|-------|-----------|
+| XP-01 | 20, 25 | v0.10.0 Cross-platform UI |
+| XP-02 | 22 | v0.10.0 Cross-platform UI |
+| XP-03 | 22 | v0.10.0 Cross-platform UI |
+| XP-04 | 22 | v0.10.0 Cross-platform UI |
+| XP-05 | 24 | v0.10.0 Cross-platform UI |
+| XP-06 | 24 | v0.10.0 Cross-platform UI |
+| XP-07 | 23 | v0.10.0 Cross-platform UI |
+| XP-08 | 20 | v0.10.0 Cross-platform UI |
+| XP-09 | 20 | v0.10.0 Cross-platform UI |
+| XP-10 | 21, 25 | v0.10.0 Cross-platform UI |
+| XP-11 | 22, 24 | v0.10.0 Cross-platform UI |
+| ADE-01 | 21 | v0.10.0 Cross-platform UI (parity surface) |
+| ADE-02 | 21 | v0.10.0 Cross-platform UI (parity surface) |
+| ADE-03 | 21 | v0.10.0 Cross-platform UI (parity surface) |
+| ADE-04 | 26 | v0.11.0 ADE harness |
+| ADE-05 | 26 | v0.11.0 ADE harness |
+| ADE-06 | 26 | v0.11.0 ADE harness |
+| ADE-07 | 26 | v0.11.0 ADE harness |
+| ADE-08 | 26 | v0.11.0 ADE harness |
+| ADE-09 | 27 | v0.11.0 ADE harness |
+| ADE-10 | 27 | v0.11.0 ADE harness |
+| ADE-11 | 27 | v0.11.0 ADE harness |
+| ADE-12 | 27 | v0.11.0 ADE harness |
+| ADE-13 | 29 | v0.11.0 ADE harness |
+| ADE-14 | 28 | v0.11.0 ADE harness |
+| ADE-15 | 29 | v0.11.0 ADE harness |
+| ADE-16 | 28 | v0.11.0 ADE harness |
+| ADE-17 | 28 | v0.11.0 ADE harness |
+| ADE-18 | 28 | v0.11.0 ADE harness |
+| ADE-19 | 28 | v0.11.0 ADE harness |
+| ADE-20 | 29 | v0.11.0 ADE harness |
+| ADE-21 | 30 | v0.11.0 ADE harness |
+| ADE-22 | 30 | v0.11.0 ADE harness |

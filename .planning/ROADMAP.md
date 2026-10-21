@@ -191,6 +191,7 @@
 **Plans**: TBD
 
 ### Phase 15: macOS iOS and MacCatalyst Builds
+**Superseded 2026-10-21 (ADR-0004):** replaced by v0.10.0 Phase 22 (macOS, XP-04) and Phase 24 (iOS, XP-05). Original scope kept for the record.
 **Goal**: `apps/OmpOS.App` builds for iOS and MacCatalyst with warnings as errors, and the macOS CI shells job runs green.
 **Depends on**: Nothing for the builds; a pushed branch for the CI run
 **Requirements**: MAC-01, MAC-02, MAC-03
@@ -203,6 +204,7 @@
 **Plans**: TBD
 
 ### Phase 16: macOS Runtime Spot-Check
+**Superseded 2026-10-21 (ADR-0004):** replaced by v0.10.0 Phase 22 (macOS, XP-04) and Phase 24 (iOS, XP-05). Original scope kept for the record.
 **Goal**: The macOS desktop and mobile builds behave as specified against the hosted backend.
 **Depends on**: Phase 13, Phase 15
 **Requirements**: MAC-04
@@ -372,3 +374,174 @@ These items are closed per the milestone assignment. They are not re-planned. RE
 | REC-03 | Phase 17 | Planned |
 | REC-04 | Phase 19 | Planned |
 | REC-05 | Phase 18 | Planned |
+
+## v0.10.0 Cross-platform UI (planned)
+
+Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazor WebAssembly; Avalonia.Browser is gated by G-WEB, which failed on Avalonia 12.1.4 (ADR-0004).
+
+- [ ] **Phase 20: Avalonia Foundation** - Shared Avalonia native project, shared presentation layer, accessibility baseline, plugin host contracts
+- [ ] **Phase 21: Parity Surface** - Session chat, tool approvals and steering, with parity tests on the presentation layer
+- [ ] **Phase 22: Desktop Heads** - Linux, Windows and macOS heads with platform accessibility; macOS signing on the Mac channel
+- [ ] **Phase 23: Web Head on the Shared Presentation Layer** - Blazor WebAssembly web head, G-WEB re-measurement, Vercel static hosting
+- [ ] **Phase 24: iOS and Android Heads** - Mobile heads with platform accessibility; iOS on the Mac channel
+- [ ] **Phase 25: Cutover** - Remove the MAUI head after parity; remove the Razor component library once the web head no longer references it
+
+### Phase 20: Avalonia Foundation
+**Goal**: One shared Avalonia native project, a framework-neutral presentation layer, an accessibility baseline and plugin host contracts form the base that every head builds on.
+**Requirements**: XP-01, XP-08, XP-09
+**Depends on**: Nothing (first phase of v0.10.0)
+**Mac channel**: No. The shared project and its contract tests build and run on the Linux host and the CI runners; no signing or device run is involved.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. One Avalonia 12.1.4 native project is in the solution and builds with warnings as errors. Verify: gate at phase HEAD.
+  2. A presentation layer project holds the view models and state extracted from the Razor components, with no UI-framework types, and references no Avalonia, MAUI or ASP.NET Core Components assembly. Verify: contract test in the gate that fails on any such reference or UI-framework type.
+  3. The presentation layer is consumed by both the Avalonia head and the Blazor web head; both build against it and its tests pass in the gate. Verify: gate build of both heads and presentation-layer tests.
+  4. Every control in the Avalonia head has an explicit AutomationProperties name, and the names of the prompt input, send control and transcript are exposed through AT-SPI2 on Linux. Verify: headless UI test in the gate that fails on an unnamed control; AT-SPI2 query output in the runbook.
+  5. Shared controls are reachable by keyboard, have a visible focus style, and disable transitions when reduced motion is on. Verify: headless UI test in the gate over every shared control.
+  6. Theme tokens for colour, type and spacing live in one resource dictionary, and a contract test asserts at least 4.5:1 text contrast for every foreground and background pair the dictionary defines. Verify: contract test in the gate.
+  7. Plugin host contracts in the contracts layer define commands, panels, tools and agent modes with no UI-framework reference, and an in-process sample plugin registers one of each through the host. Verify: contract test in the gate that fails if the contracts assembly references a UI framework assembly, and asserts each registration.
+**Plans**: TBD
+
+### Phase 21: Parity Surface
+**Goal**: Session chat, tool approvals and steering work on the shared presentation layer, and every RCL and MAUI feature in this surface has a test before its old head is removed.
+**Requirements**: ADE-01, ADE-02, ADE-03, XP-10
+**Depends on**: Phase 20
+**Mac channel**: No. The parity tests run headless on the Linux host and the CI runners; no platform signing is involved.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. Session chat renders the streamed generative UI blocks that the Razor head renders, with one test per block type. Verify: gate; each test name appears in the parity inventory.
+  2. Parity tests run against the presentation layer for the Razor head and the Avalonia head, with the same test cases for both. Verify: gate test that runs one case set against both heads and fails on any difference in asserted results.
+  3. A parity inventory lists each RCL and MAUI feature in this surface with the test that covers it. Verify: gate test that fails when an inventory row has no test name or the named test does not exist.
+  4. Tool approvals appear in the run UI, and an approve or deny decision reaches the ACP permission bridge and resolves the pending request. Verify: gate test that sends each decision and asserts the bridge resolves the matching request.
+  5. Steering and follow-up prompts can be sent while a run is active and are delivered in send order. Verify: gate test with an active run that asserts queue order and delivery.
+**Plans**: TBD
+
+### Phase 22: Desktop Heads
+**Goal**: The Linux, Windows and macOS desktop heads build from the shared project and expose names and roles through each platform's accessibility API.
+**Requirements**: XP-02, XP-03, XP-04, XP-11
+**Depends on**: Phases 20, 21
+**Mac channel**: Yes. The macOS 26 build check, the NSAccessibility inspection, signing and notarization need a Mac host, so the owner runs them on the Mac channel and records them under XP-11. Their macOS scope replaces v0.9.2 Phases 15 and 16.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The Linux head starts on X11 and on Wayland with the native backend opt-in, and each start is recorded with its backend named. Verify: Linux smoke logs in the runbook; a Wayland run with no Wayland session is recorded as not run, not as passed.
+  2. The Linux head exposes the prompt input, the send control and the transcript through AT-SPI2 with their accessible names and roles. Verify: AT-SPI2 query output recorded in the runbook.
+  3. The Windows head builds for net10.0-windows on Windows 11 24H2 in CI, and UI Automation returns the name and role of the same three controls. Verify: Windows runner log and UI Automation dump attached to the CI run.
+  4. The macOS head builds for macOS 26 on the Mac channel, and NSAccessibility returns the name and role of the same three controls. Verify: Mac-channel build log and accessibility dump recorded in the runbook.
+  5. The macOS head builds unsigned on the CI macOS runner; its signing and notarization run on the Mac channel and are listed under XP-11 with the ticket identifier. Verify: CI run link and the XP-11 entry in the runbook.
+**Plans**: TBD
+
+### Phase 23: Web Head on the Shared Presentation Layer
+**Goal**: The Blazor WebAssembly web head runs on the shared presentation layer and keeps Vercel static hosting, with the G-WEB measurement recorded and repeated on each Avalonia release.
+**Requirements**: XP-07
+**Depends on**: Phases 20, 21
+**Mac channel**: No. The accessibility-tree check and the browser smoke run in headless Chromium on the Linux host, and Vercel serves the static output.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The Blazor WebAssembly web head consumes the shared presentation layer, and it builds and passes its tests in the gate. Verify: gate at phase HEAD.
+  2. The axe run and the CSP check of the Blazor web head still pass on the deployed static build. Verify: axe run in the gate and browser console check on the Vercel URL showing zero CSP violations.
+  3. Vercel serves the Blazor WebAssembly publish output as static files, unchanged from the current hosting. Verify: publish log and browser smoke on the deployed URL.
+  4. The G-WEB re-measurement is recorded with its three measurements: stock Avalonia.Browser build, named-control build, and the Chromium accessibility tree roleNodes count. Verify: evidence file in docs with the measurement command, re-runnable from the repository.
+  5. G-WEB is repeated on each Avalonia release, and Avalonia.Browser is considered for the web head only after a recorded pass. Verify: one dated G-WEB entry in docs per Avalonia release.
+**Plans**: TBD
+
+### Phase 24: iOS and Android Heads
+**Goal**: The iOS and Android heads build from the shared project and expose names and roles through their platform accessibility APIs.
+**Requirements**: XP-05, XP-06, XP-11
+**Depends on**: Phases 20, 21
+**Mac channel**: Yes. The iOS build, the UIAccessibility inspection, code signing and any device run need a Mac host and stay human-gated; they are listed under XP-11. The Android head needs no Mac step. The iOS and mobile scope replaces v0.9.2 Phases 15 and 16.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The iOS head builds for net10.0-ios on iOS/iPadOS 26, and the build log is recorded. Verify: Mac-channel build log in the runbook.
+  2. On an iOS 26 run, UIAccessibility returns the name and role of the prompt input, the send control and the transcript. Verify: Mac-channel accessibility dump recorded in the runbook.
+  3. Code signing and iOS device runs are performed by the owner on the Mac channel and listed under XP-11 with their verification route. Verify: XP-11 entry in the runbook.
+  4. The Android head builds for net10.0-android in CI on the Linux runner. Verify: CI run log.
+  5. On an Android 16 run, AccessibilityNodeInfo returns the name and role of the same three controls. Verify: emulator or device accessibility dump recorded in the runbook.
+**Plans**: TBD
+
+### Phase 25: Cutover
+**Goal**: The MAUI head is removed after parity, and the Razor component library is removed once the Blazor web head no longer references it.
+**Requirements**: XP-01 (complete), XP-10 (complete)
+**Depends on**: Phases 21, 22, 23, 24
+**Mac channel**: No. Removal and the gate run on the Linux host; the Mac-channel evidence that replaces the MAUI iOS and macOS builds is recorded in Phases 22 and 24.
+**Success Criteria** (what must be TRUE):
+  1. Before any removal, every row of the Phase 21 parity inventory has a passing Avalonia test. Verify: gate run at phase HEAD.
+  2. apps/OmpOS.App and its test projects are removed, and a repository search finds no reference to apps/OmpOS.App in the solution, project or CI files. Verify: search output in the phase record and the gate.
+  3. src/OmpOS.UI and its test projects are removed only when no project in the solution references them. src/OmpOS.UI stays because the Blazor web head uses it; its removal is tracked under gate G-WEB, not under XP-01. Verify: repository search output and the gate.
+  4. The gate is green at the phase HEAD. Verify: gate run at phase HEAD.
+**Plans**: TBD
+
+## v0.11.0 ADE harness (planned)
+
+Source: ADR-0004 decision 4 (plugin harness, in-process first, MCP out-of-process later). Phases 26 to 30 build on the v0.10.0 parity surface and desktop heads. Phase 21 covers ADE-01 to ADE-03 and Phase 20 provides the plugin host contracts used by Phase 30.
+
+- [ ] **Phase 26: Agents, Worktrees, Cloud and Remote** - Side chats, transcript search, Agents window, worktree isolation, cloud runs, remote control
+- [ ] **Phase 27: Editor and Review** - Code editor, file tree, diff review with per-hunk accept and reject, inline edit
+- [ ] **Phase 28: Terminal, MCP, Rules and Search** - Approved terminal, MCP client, rules and skills and modes, codebase search, environment setup
+- [ ] **Phase 29: Browser Pane, Completion and Export** - Embedded browser with design mode, inline completion, Markdown export and usage history
+- [ ] **Phase 30: Later Compatibility and Admin** - VS Code extension compatibility and admin, analytics and team controls, with explicit deferral criteria
+
+### Phase 26: Agents, Worktrees, Cloud and Remote
+**Goal**: Side chats, transcript search, a parallel Agents window, per-run git worktrees, hosted cloud runs and remote control from another device work in the Avalonia UI.
+**Requirements**: ADE-04, ADE-05, ADE-06, ADE-07, ADE-08
+**Depends on**: Phases 21, 22; the cloud criterion also needs v0.9.2 Phase 13 (hosted routed harness) complete
+**Mac channel**: No. Worktree, transcript and Agents window tests run on the Linux gate; the remote-control check uses a second client on the Linux or Windows host.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. A side chat opens from a session as its own chat, and transcript search returns matches across chats and opens the selected match. Verify: gate UI test with two chats and a known search term.
+  2. The Agents window lists parallel runs with their status, filters the list by status, and opens or closes a run. Verify: gate UI test that starts three runs and asserts each status transition and filter result.
+  3. Each agent run starts in its own git worktree, two concurrent runs in one repository never share a worktree, and the worktree is removed when the run closes. Verify: gate integration test on a temporary repository.
+  4. A cloud run on the hosted API shows its status and its reviewable output when it completes. Verify: gate contract test against the hosted run contract, and one live cloud run recorded in the runbook.
+  5. A second device can send a prompt to a local run and receive its status notifications, and the run stays on the paired computer. Verify: gate integration test with two clients on the Linux host, and a pairing run recorded in the runbook.
+**Plans**: TBD
+
+### Phase 27: Editor and Review
+**Goal**: The Avalonia UI has a code editor, a workspace file tree, diff review with per-hunk accept and reject, and inline edit on a selection.
+**Requirements**: ADE-09, ADE-10, ADE-11, ADE-12
+**Depends on**: Phases 21, 22
+**Mac channel**: No. All editor and review tests run headless on the Linux gate.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The editor highlights syntax for a fixture file in each language the repository uses, shows tabs, and finds text with a match count. Verify: gate UI test on the fixture files.
+  2. Open folder sets the workspace root, and the file tree lists its files and expands directories. Verify: gate UI test on a fixture folder.
+  3. Diff review shows each hunk of an agent change with its own accept and reject control. Accepting one hunk writes only that hunk, and rejecting one leaves its lines unchanged. Verify: gate test that asserts the file contents after each decision.
+  4. Inline edit on a selection sends the selected range and the instruction to the model provider, and the returned edit opens as a reviewable diff instead of a direct write. Verify: gate test against a recorded provider reply.
+**Plans**: TBD
+
+### Phase 28: Terminal, MCP, Rules and Search
+**Goal**: Agent runs get an integrated terminal with approvals, MCP servers, project rules, skills and modes, codebase search and an environment setup file.
+**Requirements**: ADE-14, ADE-16, ADE-17, ADE-18, ADE-19
+**Depends on**: Phases 21, 22
+**Mac channel**: No. The terminal, MCP, search and setup tests run on the Linux gate against local stdio and HTTP fixture servers.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. A terminal command runs only after an approval through the ADE-02 bridge. Auto-run is off by default and turns on only through an explicit opt-in setting. Verify: gate test that a command without approval does not start, and a test of the default and opt-in settings.
+  2. The MCP client connects to a stdio server and an HTTP server, lists their tools in one registry, and enables or disables each tool per session. Verify: gate integration test against local fixture servers.
+  3. Rules, skills and custom agent modes load from project files and reload when a project file changes. Verify: gate test on a fixture project folder with an edit applied.
+  4. Text and regex search over the workspace returns file, line and match. Semantic indexing is not part of this phase. Verify: gate test on a fixture repository.
+  5. An environment setup file runs before an agent run; a failed setup stops the run and shows its error. Verify: gate test with a passing and a failing setup file.
+**Plans**: TBD
+
+### Phase 29: Browser Pane, Completion and Export
+**Goal**: The UI has an embedded browser pane with design mode, inline completion from a configured model provider, and export of chats and runs with usage history.
+**Requirements**: ADE-13, ADE-15, ADE-20
+**Depends on**: Phases 26, 27
+**Mac channel**: No. Verification runs on the Linux gate with headless Chromium and fixture pages; this phase makes no claim about the browser pane on the macOS and mobile heads.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The browser pane loads a URL, and design mode selects an element and sends it to the chat as context with its selector and bounding box. Verify: gate test against a fixture page in headless Chromium.
+  2. Inline completion calls only the model provider set in configuration. With no provider configured, no provider call is made and completion stays off. Verify: gate test with a recorded provider reply and a no-configuration test.
+  3. Chats and runs export to Markdown with their messages, tool calls and approvals, and usage history lists the recorded usage of each run. Verify: gate golden-file test on the Markdown export and a usage history test.
+**Plans**: TBD
+
+### Phase 30: Later Compatibility and Admin
+**Goal**: VS Code extension compatibility and admin, analytics and team controls start only when their deferral criteria hold, and stay deferred in writing until then.
+**Requirements**: ADE-21, ADE-22
+**Depends on**: Phases 20, 26, 29
+**Mac channel**: No. Compatibility and admin checks run on the Linux gate; no platform signing is involved.
+**Success Criteria** (what must be TRUE):
+  1. ADE-21 starts only when the XP-09 plugin host contract tests pass at HEAD. Until then the item is recorded as deferred with the unmet criterion. Verify: gate status recorded at phase start.
+  2. ADE-22 starts only when the cloud runs of Phase 26 criterion 4 are live on the hosted API. Until then the item is recorded as deferred with the unmet criterion. Verify: gate status and the Phase 26 runbook entry recorded at phase start.
+  3. When ADE-21 starts, a compatibility report lists each VS Code extension API the plugin harness supports, and each row is backed by a passing contract test. Verify: gate test that fails when a row has no test.
+  4. When ADE-22 starts, role assignment, team controls and usage analytics are covered by gate contract tests on their API. Verify: gate contract tests.
+  5. Deferred items ship no stub endpoint or placeholder control. Verify: repository search for their identifiers finds only the deferral record.
+**Plans**: TBD
