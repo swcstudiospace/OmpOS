@@ -21,22 +21,23 @@ public static partial class MauiProgram
     {
         var builder = MauiApp.CreateBuilder();
         builder
-            .UseMauiApp<App>()
+            .UseMauiApp<OmpOsApp>()
             .UseMauiBlazorWebView();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
 #endif
-        builder.Services.AddSingleton<IEngineHost>(static _ => CreateEngineHost());
+        builder.Services.AddSingleton(static _ => new HttpClient { BaseAddress = new Uri(DefaultApiBaseUrl, UriKind.Absolute) });
+        builder.Services.AddSingleton<IEngineHost>(static sp => CreateEngineHost(sp.GetRequiredService<HttpClient>()));
         RegisterPlatformServices(builder.Services);
         return builder.Build();
     }
 
-    private static IEngineHost CreateEngineHost()
+    private static IEngineHost CreateEngineHost(HttpClient httpClient)
     {
         if (DeviceInfo.Current.Platform == DevicePlatform.Android || DeviceInfo.Current.Platform == DevicePlatform.iOS)
         {
-            return new RemoteEngineHost(new HttpClient { BaseAddress = new Uri(DefaultApiBaseUrl, UriKind.Absolute) });
+            return new RemoteEngineHost(httpClient);
         }
 
         return InProcessEngineHost.ForAcp(new OmpAcpClient(), new AcpClientOptions());
