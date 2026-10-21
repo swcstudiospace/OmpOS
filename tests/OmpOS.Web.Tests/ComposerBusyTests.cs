@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using Bunit;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using OmpOS.Web.Services;
@@ -32,14 +33,26 @@ public sealed class ComposerBusyTests : BunitContext
         Services.AddSingleton(new SseEventStream(sseHttp));
         JSInterop.Mode = JSRuntimeMode.Loose;
         var cut = Render<OmpOS.Web.Pages.Index>();
-        cut.WaitForAssertion(() => cut.Find("textarea").ShouldNotBeNull());
+        await cut.WaitForAssertionAsync(() =>
+        {
+            cut.Find("textarea").ShouldNotBeNull();
+            return Task.CompletedTask;
+        }).ConfigureAwait(true);
 
         await cut.Find("textarea").InputAsync(new ChangeEventArgs { Value = "hello" }).ConfigureAwait(true);
         await cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" }).ConfigureAwait(true);
-        cut.WaitForAssertion(() => cut.Find("button[aria-label='Stop response']").ShouldNotBeNull());
+        await cut.WaitForAssertionAsync(() =>
+        {
+            cut.Find("button[aria-label='Stop response']").ShouldNotBeNull();
+            return Task.CompletedTask;
+        }).ConfigureAwait(true);
 
         gate.Release();
-        cut.WaitForAssertion(() => cut.Find("button[aria-label='Send message']").ShouldNotBeNull());
+        await cut.WaitForAssertionAsync(() =>
+        {
+            cut.Find("button[aria-label='Send message']").ShouldNotBeNull();
+            return Task.CompletedTask;
+        }).ConfigureAwait(true);
         cut.FindAll("[role='alert']").ShouldBeEmpty();
     }
 
@@ -59,16 +72,21 @@ public sealed class ComposerBusyTests : BunitContext
         Services.AddSingleton(new SseEventStream(sseHttp));
         JSInterop.Mode = JSRuntimeMode.Loose;
         var cut = Render<OmpOS.Web.Pages.Index>();
-        cut.WaitForAssertion(() => cut.Find("textarea").ShouldNotBeNull());
+        await cut.WaitForAssertionAsync(() =>
+        {
+            cut.Find("textarea").ShouldNotBeNull();
+            return Task.CompletedTask;
+        }).ConfigureAwait(true);
 
         await cut.Find("textarea").InputAsync(new ChangeEventArgs { Value = "hello" }).ConfigureAwait(true);
         await cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" }).ConfigureAwait(true);
 
-        cut.WaitForAssertion(() =>
+        await cut.WaitForAssertionAsync(() =>
         {
             cut.Find("p.ompos-error").TextContent.ShouldContain("Could not send");
             cut.Find("button[aria-label='Send message']").ShouldNotBeNull();
-        });
+            return Task.CompletedTask;
+        }).ConfigureAwait(true);
     }
 
     /// <summary>Builds a JSON success response for a scripted API call.</summary>

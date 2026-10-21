@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text;
-using OmpOS.Contracts.Sandboxes;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.InMemory;
 using Shouldly;
@@ -204,8 +203,8 @@ public sealed class EngineHostTests
         var raised = 0;
         host.MissedEventsHeld += (_, _) => raised++;
 
-        await using var turn = host.SubmitPromptAsync("one", new PromptOptions(), ct).ConfigureAwait(true).GetAsyncEnumerator(ct);
-        (await turn.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
+        await using var turn = host.SubmitPromptAsync("one", new PromptOptions(), ct).WithCancellation(ct).GetAsyncEnumerator();
+        (await turn.MoveNextAsync()).ShouldBeTrue();
         var first = turn.Current;
         first.ShouldBeOfType<TextDeltaEvent>().Text.ShouldBe("a");
 
@@ -216,9 +215,9 @@ public sealed class EngineHostTests
         handler.Gets.ShouldBe(1);
 
         handler.Release();
-        (await turn.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
+        (await turn.MoveNextAsync()).ShouldBeTrue();
         turn.Current.ShouldBeOfType<CompletedEvent>().Reason.ShouldBe("end_turn");
-        (await turn.MoveNextAsync().ConfigureAwait(true)).ShouldBeFalse();
+        (await turn.MoveNextAsync()).ShouldBeFalse();
     }
 
     /// <summary>A faulted engine that the host replaces is disposed; the replacement serves the next prompt.</summary>
