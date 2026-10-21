@@ -49,7 +49,7 @@ public partial class OmpOsApp : Application
     /// <remarks>Expected resume failures are logged here; an unexpected fault is logged by the
     /// observing continuation in <see cref="OnWindowResumed"/>. Resume is best-effort: the next
     /// stream replays from the stored cursor.</remarks>
-    private async Task ResumeRemoteAsync(RemoteEngineHost remote)
+    private static async Task ResumeRemoteAsync(RemoteEngineHost remote)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         try
