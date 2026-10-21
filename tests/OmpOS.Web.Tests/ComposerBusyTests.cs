@@ -19,14 +19,19 @@ public sealed class ComposerBusyTests : BunitContext
     {
         using var apiHandler = new ScriptedHandler();
         using var sseHandler = new ScriptedHandler();
-        apiHandler.Enqueue(Json("[]"));
-        apiHandler.Enqueue(Json(SessionJson));
-        apiHandler.Enqueue(Json(SessionJson));
-        apiHandler.Enqueue(Accepted());
+        using var listed = Json("[]");
+        using var created = Json(SessionJson);
+        using var fetched = Json(SessionJson);
+        using var accepted = Accepted();
+        apiHandler.Enqueue(listed);
+        apiHandler.Enqueue(created);
+        apiHandler.Enqueue(fetched);
+        apiHandler.Enqueue(accepted);
         var gate = new GatedSseContent(
             SseFixtures.Frame(SseFixtures.Text(1, "hi"), "text_delta"),
             SseFixtures.Frame(SseFixtures.Completed(2), "completed"));
-        sseHandler.Enqueue(Sse(gate));
+        using var streamed = Sse(gate);
+        sseHandler.Enqueue(streamed);
         using var apiHttp = new HttpClient(apiHandler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
         using var sseHttp = new HttpClient(sseHandler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
         Services.AddSingleton(new ApiSessionClient(apiHttp));
@@ -62,10 +67,14 @@ public sealed class ComposerBusyTests : BunitContext
     {
         using var apiHandler = new ScriptedHandler();
         using var sseHandler = new ScriptedHandler();
-        apiHandler.Enqueue(Json("[]"));
-        apiHandler.Enqueue(Json(SessionJson));
-        apiHandler.Enqueue(Json(SessionJson));
-        apiHandler.Enqueue(Refused());
+        using var listed = Json("[]");
+        using var created = Json(SessionJson);
+        using var fetched = Json(SessionJson);
+        using var refused = Refused();
+        apiHandler.Enqueue(listed);
+        apiHandler.Enqueue(created);
+        apiHandler.Enqueue(fetched);
+        apiHandler.Enqueue(refused);
         using var apiHttp = new HttpClient(apiHandler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
         using var sseHttp = new HttpClient(sseHandler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
         Services.AddSingleton(new ApiSessionClient(apiHttp));
