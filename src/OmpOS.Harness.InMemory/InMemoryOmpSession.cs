@@ -72,7 +72,7 @@ public sealed class InMemoryOmpSession : IOmpSession
         }
 
         var reader = Produce().Reader;
-        var sawCompletion = false;
+        var sawTerminal = false;
         var finished = false;
         try
         {
@@ -92,8 +92,12 @@ public sealed class InMemoryOmpSession : IOmpSession
                     yield break;
                 }
 
-                sawCompletion |= next is CompletedEvent;
+                sawTerminal |= next is CompletedEvent or ErrorEvent;
                 yield return next;
+                if (next is ErrorEvent)
+                {
+                    break;
+                }
             }
 
             finished = true;
@@ -107,14 +111,14 @@ public sealed class InMemoryOmpSession : IOmpSession
         }
 
         var cancelled = IsCancelRequested();
-        if (!sawCompletion && !cancelled)
+        if (!sawTerminal && !cancelled)
         {
             FaultStream();
-            throw new DisconnectedHarnessException("Stream ended without a CompletedEvent.", SessionId);
+            throw new DisconnectedHarnessException("Stream ended without a terminal event.", SessionId);
         }
 
         EndStream();
-        if (cancelled && !sawCompletion)
+        if (cancelled && !sawTerminal)
         {
             yield return new CompletedEvent(CancelledReason);
         }
