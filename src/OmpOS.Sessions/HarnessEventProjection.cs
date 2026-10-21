@@ -30,6 +30,7 @@ public static class HarnessEventProjection
     private const string ToolCallUpdateKind = "tool_call_update";
     private const string PermissionRequestKind = "permission_request";
     private const string PlanKind = "plan";
+    private const string FailedTurnReason = "error";
 
     /// <summary>Folds one harness event into the UI state.</summary>
     /// <param name="state">The state before the event.</param>
@@ -85,7 +86,7 @@ public static class HarnessEventProjection
     {
         TextDeltaEvent text => new TextDeltaPayload { Delta = text.Text },
         UiBlockEvent block => new UiBlockPayload { Block = block.Block },
-        ErrorEvent error => new ErrorPayload { Message = error.Message, Retryable = error.Retryable },
+        ErrorEvent error => new ErrorPayload { Message = string.IsNullOrWhiteSpace(error.Message) ? SessionService.FailedTurnMessage : error.Message, Retryable = error.Retryable },
         CompletedEvent completed => new CompletedPayload { Reason = completed.Reason },
         ThoughtEvent thought => Unknown(ThoughtKind, ("text", thought.Text)),
         ToolCallEvent call => Unknown(ToolCallKind, ("callId", call.CallId), ("name", call.Name), ("payloadJson", call.PayloadJson)),
@@ -121,7 +122,7 @@ public static class HarnessEventProjection
     {
         TextDeltaPayload text => state with { StreamingText = state.StreamingText + text.Delta },
         UiBlockPayload block => Append(Flush(state), block.Block),
-        ErrorPayload error => AddBlock(state, "error", id => new ErrorBlock { Id = id, Message = error.Message, Retryable = error.Retryable }),
+        ErrorPayload error => AddBlock(state, "error", id => new ErrorBlock { Id = id, Message = error.Message, Retryable = error.Retryable }) with { CompletionReason = FailedTurnReason },
         CompletedPayload completed => Flush(state) with { CompletionReason = completed.Reason },
         UnknownPayload unknown => ApplyUnknown(state, unknown),
         _ => throw new ArgumentOutOfRangeException(nameof(payload), payload.GetType(), "No projection exists for this payload."),

@@ -76,7 +76,7 @@ internal sealed class SessionEventStreamer
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 // Take the wake-up before reading the log: an append that lands during the read completes it.
-                var wake = signal.Next();
+                var wake = signal.NextAsync();
                 var delivered = false;
                 await foreach (var evt in ReplayAsync(sessionId, Floor(last), cancellationToken).ConfigureAwait(false))
                 {
@@ -182,12 +182,12 @@ internal sealed class SessionEventStreamer
         public void Release() => RefCount--;
 
         /// <summary>Returns the task that completes on the next <see cref="Notify"/>. Take it before reading the log.</summary>
-        /// <returns>The task for the current generation.</returns>
-        public Task Next()
+        /// <returns>The task for the current generation; it completes with <see langword="true"/>.</returns>
+        public Task<bool> NextAsync()
         {
             lock (_lock)
             {
-                return _generation.Task;
+                return _generation.Task.WaitAsync(CancellationToken.None);
             }
         }
 

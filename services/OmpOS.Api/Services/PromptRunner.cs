@@ -181,9 +181,18 @@ internal sealed class PromptRunner
             var result = await workflow.RunAsync(input, new DirectWorkflowContext(), stoppingToken).ConfigureAwait(false);
             if (result.Status == WorkflowRunStatus.Completed)
             {
-                if (_logger.IsEnabled(LogLevel.Information))
+                // The run completes even when the turn it carried failed, so log the status the session settled with.
+                var settled = await _repository.GetAsync(input.SessionId, CancellationToken.None).ConfigureAwait(false);
+                if (settled?.Status == SessionStatus.Completed)
                 {
-                    PromptCompleted(_logger, input.SessionId, PromptRedactor.Format(input.Prompt, _debug.Value), null);
+                    if (_logger.IsEnabled(LogLevel.Information))
+                    {
+                        PromptCompleted(_logger, input.SessionId, PromptRedactor.Format(input.Prompt, _debug.Value), null);
+                    }
+                }
+                else
+                {
+                    PromptRunFailed(_logger, input.SessionId, settled?.Status.ToString() ?? "Missing", null);
                 }
             }
             else if (result.Status == WorkflowRunStatus.Failed)

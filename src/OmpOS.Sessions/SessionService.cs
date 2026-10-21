@@ -42,6 +42,8 @@ namespace OmpOS.Sessions;
 /// </remarks>
 public sealed class SessionService
 {
+    /// <summary>The message of a failed turn's terminal error event when the harness supplied no message of its own.</summary>
+    public const string FailedTurnMessage = "Prompt execution failed.";
     private const string UserRole = "user";
     private const string SteerRole = "steer";
     private const string FollowUpRole = "follow_up";
@@ -53,7 +55,6 @@ public sealed class SessionService
     private const string ToolApprovalDeniedKind = "tool_approval_denied";
     private const string CompletedReason = "completed";
     private const string CancelledReason = "cancelled";
-    private const string FailureMessage = "Prompt execution failed.";
 
     /// <summary>The number of lock stripes. Bounded: one <see cref="SemaphoreSlim"/> per stripe, never per session.</summary>
     private const int StripeCount = 64;
@@ -499,7 +500,7 @@ public sealed class SessionService
     private static StreamEventPayload TerminalPayload(SessionStatus final, string? stopReason) => final switch
     {
         SessionStatus.Completed => new CompletedPayload { Reason = string.IsNullOrWhiteSpace(stopReason) ? CompletedReason : stopReason },
-        SessionStatus.Failed => new ErrorPayload { Message = FailureMessage, Retryable = false },
+        SessionStatus.Failed => new ErrorPayload { Message = FailedTurnMessage, Retryable = false },
         _ => new CompletedPayload { Reason = CancelledReason },
     };
 

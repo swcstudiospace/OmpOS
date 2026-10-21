@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using OmpOS.Contracts.Streaming;
 using OmpOS.Harness.Abstractions;
+using OmpOS.Sessions;
 
 namespace OmpOS.Api.Harness;
 
@@ -22,7 +23,7 @@ internal static class HarnessEventMapper
         {
             TextDeltaEvent text => new TextDeltaPayload { Delta = text.Text },
             UiBlockEvent block => new UiBlockPayload { Block = block.Block },
-            ErrorEvent error => new ErrorPayload { Message = error.Message, Retryable = error.Retryable },
+            ErrorEvent error => new ErrorPayload { Message = string.IsNullOrWhiteSpace(error.Message) ? SessionService.FailedTurnMessage : error.Message, Retryable = error.Retryable },
             CompletedEvent completed => new CompletedPayload { Reason = completed.Reason },
             DiagnosticEvent diagnostic => new DiagnosticPayload { Message = diagnostic.Message },
             ThoughtEvent thought => Unknown("thought", ("text", thought.Text)),
