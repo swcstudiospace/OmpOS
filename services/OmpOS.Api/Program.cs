@@ -170,7 +170,26 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 app.MapSessionEndpoints();
 app.MapEventStreamEndpoints();
 
-app.Run();
+// Start without RunAsync's dispose-on-failure: RunAsync disposes the host when startup
+// validation throws, which races WebApplicationFactory's in-memory-host observation
+// (DeferredHost.StartAsync resolves IHostApplicationLifetime from the same provider)
+// and intermittently surfaces ObjectDisposedException instead of the keyed
+// OptionsValidationException. Disposing only after a successful start keeps shutdown
+// behavior identical while making startup failures deterministic.
+var started = false;
+try
+{
+    app.Start();
+    started = true;
+    app.WaitForShutdown();
+}
+finally
+{
+    if (started)
+    {
+        ((IDisposable)app).Dispose();
+    }
+}
 
 /// <summary>
 /// The API host entry point. Internal with InternalsVisibleTo for
