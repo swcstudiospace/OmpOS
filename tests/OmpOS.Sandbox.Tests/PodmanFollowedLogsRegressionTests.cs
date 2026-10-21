@@ -22,11 +22,10 @@ public sealed class PodmanFollowedLogsRegressionTests
         var provisioned = await provider.ProvisionAsync(PodmanTestData.CreateRequest(), ct);
 
         // The second line is held back until the test has consumed the first one.
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        runner.StreamFor = _ => GatedLines(release.Task);
-
+        using var release = new SemaphoreSlim(0);
         using var bounded = CancellationTokenSource.CreateLinkedTokenSource(ct);
         bounded.CancelAfter(TimeSpan.FromSeconds(10));
+        runner.StreamFor = _ => GatedLinesAsync(release, bounded.Token);
         await using var lines = provider
             .StreamLogsAsync(provisioned.Descriptor.Id, new LogCursor { Position = 0, Follow = true }, bounded.Token)
             .GetAsyncEnumerator(bounded.Token);
@@ -34,17 +33,17 @@ public sealed class PodmanFollowedLogsRegressionTests
         (await lines.MoveNextAsync()).ShouldBeTrue();
         lines.Current.ShouldBe("first");
 
-        release.SetResult();
+        release.Release();
         (await lines.MoveNextAsync()).ShouldBeTrue();
         lines.Current.ShouldBe("second");
 
         runner.Specs.ShouldContain(static s => PodmanTestData.HasArgument(s, "-f"));
     }
 
-    private static async IAsyncEnumerable<string> GatedLines(Task release)
+    private static async IAsyncEnumerable<string> GatedLinesAsync(SemaphoreSlim release, CancellationToken cancellationToken)
     {
         yield return "first";
-        await release;
+        await release.WaitAsync(cancellationToken).ConfigureAwait(true);
         yield return "second";
     }
 }

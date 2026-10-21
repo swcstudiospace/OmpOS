@@ -20,7 +20,7 @@ public sealed class PodmanSingleSandboxPerKeyRegressionTests
 
         // Hold the owner inside `up` until the overlapping call has been issued.
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        runner.PauseFor = spec => PodmanTestData.HasArgument(spec, "up") ? release.Task : null;
+        runner.PauseFor = spec => PodmanTestData.HasArgument(spec, "up") ? release.Task : Task.CompletedTask;
 
         var provider = PodmanTestData.CreateProvider(runner);
         var ct = TestContext.Current.CancellationToken;

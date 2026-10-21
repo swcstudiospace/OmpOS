@@ -87,7 +87,7 @@ public sealed class PodmanExecSettingsRegressionTests
         var execSpec = runner.Specs.Last(static s => PodmanTestData.HasArgument(s, "exec"));
         execSpec.Argv.Any(arg => arg.Contains(secretValue, StringComparison.Ordinal)).ShouldBeFalse();
         execSpec.Argv.Any(arg => arg.Contains("SECRET_TOKEN=", StringComparison.Ordinal)).ShouldBeFalse();
-        execSpec.Argv.ShouldContain("SECRET_TOKEN");
+        execSpec.Argv.ShouldContain("SECRET_TOKEN", StringComparer.Ordinal);
         execSpec.Environment["SECRET_TOKEN"].ShouldBe(secretValue);
     }
 }
