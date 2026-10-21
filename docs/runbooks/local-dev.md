@@ -93,9 +93,22 @@ axe-core 4.14.0 (WCAG 2.0 and 2.1, levels A and AA) against the published Releas
 
 - Empty state and an active conversation with a streamed reply: **0 violations** in both states.
 - First-run findings, fixed: no skip link (`bypass`), and the accessible name of the New button did not contain its visible label (`label-content-name-mismatch`). The skip link is shared by both heads through `SessionView`.
-- Remaining `incomplete` items, both on the icon-only send control: axe cannot evaluate a pictogram's label or colour automatically. Measured in the live page: foreground `rgb(0, 0, 0)` on `rgb(239, 239, 239)`, contrast **18.26:1** (WCAG 1.4.11 requires 3:1; text requires 4.5:1).
-- Not isolated: one screenshot captured immediately after the full axe run showed the skip link. Probes before, during and after a send, a stream, and an axe run show it hidden (1 px, clipped, unfocused), and a later screenshot in the same state does not show it. The cause was not isolated; the product path keeps the link hidden.
+- Remaining `incomplete` items: two, both on the icon-only send control (`button.ompos-icon-btn`, `src/OmpOS.UI/Components/Composer.razor`). Axe reports `incomplete` when its automatic check cannot reach a decision. The 2026-10-21 record did not keep the rule IDs or node targets of the two items, so the rule behind each one is not identified here. Measured in the live page, the glyph colours are foreground `rgb(0, 0, 0)` on `rgb(239, 239, 239)`, contrast **18.26:1** (WCAG 1.4.11 requires 3:1; text requires 4.5:1). The record's statement that the pictogram's label cannot be evaluated does not hold for the final tree: the send button carries `aria-label="Send message"` (send button markup in `Composer.razor`), pinned by `tests/OmpOS.Web.Tests/ComposerBusyTests.cs` (`button[aria-label='Send message']`). Fix: the accessible name is in place and matches the copy the smoke uses; no markup change was needed. Status: to be re-run on the final tree.
+- Skip-link screenshot: not explained by the record. The only screenshot in the repo, `docs/runbooks/evidence/web-vertical-slice-smoke.webp`, comes from the browser smoke, not the axe run, and shows no skip link. The axe-run screenshot that showed the link was not retained, so its cause cannot be established from the repo. The stylesheet clips `.ompos-skip-link` to 1 px and expands it only under `:focus` (`src/OmpOS.UI/wwwroot/styles/ompos.css`, the `.ompos-skip-link` and `.ompos-skip-link:focus` rules; the link is at `src/OmpOS.UI/Components/SessionView.razor:7`). [INFERENCE] The link becomes visible in the repo's CSS only while it holds keyboard focus; the record does not say whether focus was on it. Status: to be re-run on the final tree; the re-run must record the link's state with each screenshot (step 6 below).
 - Not verified here: the MAUI head (it cannot run on Linux) and assistive-technology testing with a screen reader.
+
+#### Re-run of axe-core on the final tree
+
+Status: to be re-run on the final tree. Steps:
+
+1. Set the SDK and publish the Release web head: `export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH`, then `git rev-parse --short HEAD` (record it), then `dotnet publish apps/OmpOS.Web -c Release --no-restore -o /tmp/ompos-web`.
+2. Serve the API and the web head exactly as in "Serve the API (in-memory adapter)" and "Serve the published web head" above, so the page is at `http://127.0.0.1:5180/`.
+3. Fetch the pinned engine: `mkdir -p /tmp/axe && cd /tmp/axe && npm pack axe-core@4.14.0 && tar -xzf axe-core-4.14.0.tgz package/axe.min.js`.
+4. Launch the owned headless Chrome and attach over CDP as in "Browser smoke" (fresh `--user-data-dir`, never a user profile), then load `http://127.0.0.1:5180/`.
+5. Inject `/tmp/axe/package/axe.min.js` into the page, then run `axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] }, resultTypes: ['violations', 'incomplete'] })`. Record each `violations` and `incomplete` entry as `id`, `impact`, and every `nodes[].target`. Run it once in the empty state, then again after the probe prompt from the smoke has streamed to "Response complete.".
+6. Before and after each axe run, record the skip link (`.ompos-skip-link`): `getBoundingClientRect()`, computed `clip`, `width`, and `document.activeElement`. Take a screenshot at each point and keep it with the JSON.
+7. For each `incomplete` node on `button.ompos-icon-btn`, record the rule ID and the computed `color` and `background-color` of the node, and compute the contrast ratio.
+8. Save the axe JSON and screenshots under `docs/runbooks/evidence/` with the commit in the file name, then add a dated entry here with the commit, the counts of violations and incomplete items, the rule IDs of the two items, the skip-link probe results, and the new status.
 
 ### Vercel static deploy (WEB-02)
 
