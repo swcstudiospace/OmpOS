@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Runtime.CompilerServices;
 
@@ -98,6 +99,7 @@ public sealed class ProcessRunner : IProcessRunner
         {
             // Runs on end of output, timeout, caller cancellation and early disposal by the consumer.
             KillTreeBestEffort(process);
+            await WaitForExitBestEffortAsync(process, CancellationToken.None).ConfigureAwait(false);
             ObserveAbandoned(stderrTask);
         }
     }
@@ -278,6 +280,36 @@ public sealed class ProcessRunner : IProcessRunner
 
     private static void KillTreeBestEffort(Process process)
     {
+        int rootId;
+        try
+        {
+            rootId = process.Id;
+        }
+        catch (InvalidOperationException)
+        {
+            // Never started or already disposed; nothing to kill.
+            return;
+        }
+        catch (Win32Exception)
+        {
+            // Process id unavailable; nothing to kill.
+            return;
+        }
+        catch (NotSupportedException)
+        {
+            // Platform without process ids; nothing to kill.
+            return;
+        }
+
+        // Snapshot the whole descendant tree BEFORE killing anything. Killing the
+        // root first orphans grandchildren to init, after which they are no longer
+        // discoverable by parent id. Every pid below is killed by id, so later
+        // re-parenting cannot hide a snapshotted process from its SIGKILL.
+        foreach (int pid in SnapshotDescendants(rootId))
+        {
+            TryKillPid(pid);
+        }
+
         try
         {
             if (!process.HasExited)
@@ -296,6 +328,155 @@ public sealed class ProcessRunner : IProcessRunner
         catch (NotSupportedException)
         {
             // Platform without tree kill; still a timeout.
+        }
+    }
+
+    /// <summary>
+    /// Snapshots the live descendant pids of <paramref name="rootPid"/> without killing anything.
+    /// </summary>
+    /// <param name="rootPid">The child process id to walk down from.</param>
+    /// <returns>Every descendant pid found via /proc at snapshot time, root excluded.</returns>
+    private static List<int> SnapshotDescendants(int rootPid)
+    {
+        Dictionary<int, List<int>> children = BuildChildrenMap();
+        var descendants = new List<int>();
+        var pending = new Queue<int>();
+        pending.Enqueue(rootPid);
+        while (pending.TryDequeue(out int parent))
+        {
+            if (!children.TryGetValue(parent, out List<int>? direct))
+            {
+                continue;
+            }
+
+            foreach (int child in direct)
+            {
+                descendants.Add(child);
+                pending.Enqueue(child);
+            }
+        }
+
+        return descendants;
+    }
+
+    /// <summary>
+    /// Builds a parent-pid to child-pids map from a single /proc scan.
+    /// </summary>
+    /// <returns>The parent-to-children map; empty off Linux or when /proc is unreadable.</returns>
+    private static Dictionary<int, List<int>> BuildChildrenMap()
+    {
+        var children = new Dictionary<int, List<int>>();
+        if (!OperatingSystem.IsLinux())
+        {
+            return children;
+        }
+
+        string[] entries;
+        try
+        {
+            entries = Directory.GetDirectories("/proc");
+        }
+        catch (IOException)
+        {
+            // /proc unreadable; the caller falls back to the framework tree kill.
+            return children;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // /proc unreadable; the caller falls back to the framework tree kill.
+            return children;
+        }
+
+        foreach (string entry in entries)
+        {
+            if (!int.TryParse(Path.GetFileName(entry), CultureInfo.InvariantCulture, out int pid))
+            {
+                continue;
+            }
+
+            if (!TryReadParentPid(pid, out int parentPid))
+            {
+                continue;
+            }
+
+            if (!children.TryGetValue(parentPid, out List<int>? direct))
+            {
+                direct = new List<int>();
+                children[parentPid] = direct;
+            }
+
+            direct.Add(pid);
+        }
+
+        return children;
+    }
+
+    /// <summary>
+    /// Reads the parent pid of <paramref name="pid"/> from /proc.
+    /// </summary>
+    /// <param name="pid">The process id to inspect.</param>
+    /// <param name="parentPid">The parent pid on success; zero otherwise.</param>
+    /// <returns>True when the parent pid was read.</returns>
+    private static bool TryReadParentPid(int pid, out int parentPid)
+    {
+        parentPid = 0;
+        string stat;
+        try
+        {
+            stat = File.ReadAllText($"/proc/{pid}/stat");
+        }
+        catch (IOException)
+        {
+            // Exited mid-scan or unreadable; skipped from the snapshot.
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Unreadable; skipped from the snapshot.
+            return false;
+        }
+
+        // Layout is "pid (comm) state ppid ..."; comm may itself contain spaces
+        // or parens, so the fields after the final ')' are split instead.
+        int close = stat.LastIndexOf(')');
+        if (close < 0)
+        {
+            return false;
+        }
+
+        string[] fields = stat[(close + 1)..].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return fields.Length > 1 && int.TryParse(fields[1], CultureInfo.InvariantCulture, out parentPid);
+    }
+
+    /// <summary>
+    /// SIGKILLs one pid best-effort; never throws.
+    /// </summary>
+    /// <param name="pid">The process id to kill.</param>
+    private static void TryKillPid(int pid)
+    {
+        try
+        {
+            using Process probe = Process.GetProcessById(pid);
+            if (!probe.HasExited)
+            {
+                probe.Kill();
+            }
+        }
+        catch (ArgumentException)
+        {
+            // Exited between the snapshot and the kill.
+        }
+        catch (InvalidOperationException)
+        {
+            // Exited between the snapshot and the kill.
+        }
+        catch (Win32Exception)
+        {
+            // Already exiting; the root kill still runs afterwards.
+        }
+        catch (NotSupportedException)
+        {
+            // Platform without kill support.
         }
     }
 
