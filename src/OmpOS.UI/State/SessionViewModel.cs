@@ -43,6 +43,15 @@ public sealed class SessionViewModel
     {
         ArgumentNullException.ThrowIfNull(evt);
 
+        // Diagnostics are non-terminal and have no UI surface: the live feeds drop
+        // them before the view-model, so replaying a persisted log must drop them
+        // here too. Folding one would add an unknown card and flush StreamingText,
+        // splitting text that streamed continuously.
+        if (evt.Payload is DiagnosticPayload)
+        {
+            return;
+        }
+
         Tree = UiFolder.Fold(Tree, evt);
         // The server session status is the only authority for AwaitingApproval and the server
         // never sets it, so a permission event must not change the lifecycle state: the turn
@@ -51,8 +60,6 @@ public sealed class SessionViewModel
         {
             CompletedPayload => SessionViewState.Success,
             ErrorPayload error => error.Retryable ? SessionViewState.RecoverableError : SessionViewState.FatalError,
-            // A diagnostic is non-terminal: it keeps the current state, streaming included.
-            DiagnosticPayload => State,
             _ => SessionViewState.Streaming,
         });
 

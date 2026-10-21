@@ -93,6 +93,38 @@ public sealed class StreamingStateTests : UiTestContext
         model.CanRetry.ShouldBeTrue();
     }
 
+    /// <summary>Replaying a diagnostic leaves the tree untouched: no unknown card and no text split, matching the live feed which drops diagnostics before the view-model.</summary>
+    [Fact]
+    public void DiagnosticLeavesTreeUntouched()
+    {
+        var model = new SessionViewModel();
+        model.ApplyEvent(Stream(new TextDeltaPayload { Delta = "hello " }));
+
+        model.ApplyEvent(Stream(new DiagnosticPayload { Message = "slow tool" }));
+
+        model.Tree.StreamingText.ShouldBe("hello ");
+        model.Tree.Blocks.ShouldBeEmpty();
+
+        model.ApplyEvent(Stream(new TextDeltaPayload { Delta = "world" }));
+
+        model.Tree.StreamingText.ShouldBe("hello world");
+        model.Tree.Blocks.ShouldBeEmpty();
+        model.State.ShouldBe(SessionViewState.Streaming);
+    }
+
+    /// <summary>A log holding only diagnostics replays to the empty prompt, matching the live view which never shows them.</summary>
+    [Fact]
+    public void HistoryOfOnlyDiagnosticsLoadsEmpty()
+    {
+        var model = new SessionViewModel();
+        model.ApplyEvent(Stream(new DiagnosticPayload { Message = "slow tool" }));
+        model.MarkHistoryLoaded();
+
+        model.State.ShouldBe(SessionViewState.Empty);
+        model.Tree.Blocks.ShouldBeEmpty();
+        model.Tree.StreamingText.ShouldBeEmpty();
+    }
+
     /// <summary>History load resolves to empty when nothing folded, success otherwise.</summary>
     [Theory]
     [InlineData(false, SessionViewState.Empty)]
