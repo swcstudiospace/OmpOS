@@ -1,8 +1,8 @@
 namespace OmpOS.Api.Middleware;
 
 /// <summary>
-/// Accepts an inbound <c>x-correlation-id</c> only when it parses as a GUID and is at most
-/// 128 characters; anything else is replaced with a minted GUIDv7, so attacker-shaped ids
+/// Accepts an inbound <c>x-correlation-id</c> only when it is 1 to 64 characters from <c>[A-Za-z0-9_-]</c>;
+/// anything else is replaced with a minted GUIDv7, so attacker-shaped ids
 /// never reach the log scope, the response header, or the persisted event log.
 /// The id mirrors onto <see cref="HttpContext.TraceIdentifier"/>, the response header, and
 /// the log scope, so every response — including errors — carries the identifier end to end.
@@ -11,6 +11,9 @@ internal sealed class CorrelationIdMiddleware
 {
     /// <summary>Gets the correlation header name.</summary>
     public const string HeaderName = "x-correlation-id";
+
+    /// <summary>Gets the maximum accepted length of an inbound correlation id.</summary>
+    private const int MaxLength = 64;
 
     private readonly RequestDelegate _next;
 
@@ -30,9 +33,7 @@ internal sealed class CorrelationIdMiddleware
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(logger);
         var inbound = context.Request.Headers[HeaderName].FirstOrDefault();
-        var correlationId = Guid.TryParse(inbound, out _) && inbound!.Length <= 128
-            ? inbound
-            : Guid.CreateVersion7().ToString("N");
+        var correlationId = inbound is not null && IsValid(inbound) ? inbound : Guid.CreateVersion7().ToString("N");
 
         context.TraceIdentifier = correlationId;
         var captured = correlationId;
@@ -46,5 +47,23 @@ internal sealed class CorrelationIdMiddleware
         {
             await _next(context).ConfigureAwait(false);
         }
+    }
+
+    private static bool IsValid(string value)
+    {
+        if (value.Length is < 1 or > MaxLength)
+        {
+            return false;
+        }
+
+        foreach (var c in value)
+        {
+            if (!char.IsAsciiLetterOrDigit(c) && c is not ('_' or '-'))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

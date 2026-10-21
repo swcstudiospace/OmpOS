@@ -236,11 +236,11 @@ public sealed class SessionEndpointTests
 
         using var unshapedFactory = new OmpApiFactory();
         using var plain = unshapedFactory.CreateClient();
-        plain.DefaultRequestHeaders.Add("x-correlation-id", "not-a-guid");
+        plain.DefaultRequestHeaders.Add("x-correlation-id", "not a valid id");
         using var minted = await plain.GetAsync(new Uri("/health/live", UriKind.Relative), testToken);
         var echoed = string.Join(",", minted.Headers.GetValues("x-correlation-id"));
-        Guid.TryParse(echoed, out _).ShouldBeTrue("a non-guid inbound id must be replaced with a minted one");
-        string.Equals(echoed, "not-a-guid", StringComparison.Ordinal).ShouldBeFalse("a non-guid inbound id must be replaced with a minted one");
+        Guid.TryParse(echoed, out _).ShouldBeTrue("an invalid inbound id must be replaced with a minted one");
+        string.Equals(echoed, "not a valid id", StringComparison.Ordinal).ShouldBeFalse("an invalid inbound id must be replaced with a minted one");
 
         using var bareFactory = new OmpApiFactory();
         using var bare = bareFactory.CreateClient();

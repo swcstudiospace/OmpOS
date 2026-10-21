@@ -70,13 +70,13 @@ public sealed class SecurityMitigationsTests
         Guid.TryParse(echoed, out _).ShouldBeTrue("a 129-character inbound id must be replaced with a minted guid");
     }
 
-    /// <summary>Verifies a 20-character non-Guid inbound id is replaced by a minted Guid.</summary>
+    /// <summary>Verifies a 20-character inbound id containing a space is replaced by a minted Guid.</summary>
     [Fact]
     public async Task CorrelationId_NonGuidValue_IsMinted()
     {
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
-        const string Inbound = "12345678901234567890";
+        const string Inbound = "1234567890 123456789";
         Inbound.Length.ShouldBe(20);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri("/health/live", UriKind.Relative));
@@ -84,8 +84,8 @@ public sealed class SecurityMitigationsTests
         using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         var echoed = string.Join(",", response.Headers.GetValues("x-correlation-id"));
-        string.Equals(echoed, Inbound, StringComparison.Ordinal).ShouldBeFalse("a non-guid inbound id must be replaced with a minted one");
-        Guid.TryParse(echoed, out _).ShouldBeTrue("a non-guid inbound id must be replaced with a minted guid");
+        string.Equals(echoed, Inbound, StringComparison.Ordinal).ShouldBeFalse("an invalid inbound id must be replaced with a minted one");
+        Guid.TryParse(echoed, out _).ShouldBeTrue("an invalid inbound id must be replaced with a minted guid");
     }
 
     /// <summary>

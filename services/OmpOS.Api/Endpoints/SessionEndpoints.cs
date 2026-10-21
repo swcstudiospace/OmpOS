@@ -31,6 +31,9 @@ internal static class SessionEndpoints
     /// <summary>Gets the rate-limiter policy name guarding session creation (single global bucket).</summary>
     public const string CreationPolicy = "SessionCreation";
 
+    /// <summary>Gets the maximum accepted length of a requested owner id.</summary>
+    private const int MaxOwnerIdLength = 128;
+
     /// <summary>Maps the session endpoints.</summary>
     /// <param name="endpoints">The route builder.</param>
     /// <returns>The route builder.</returns>
@@ -101,17 +104,35 @@ internal static class SessionEndpoints
             }
 
             ownerId = request?.OwnerId;
-            if (ownerId is not null && ownerId.Length > 256)
+            if (ownerId is not null && !IsValidOwnerId(ownerId))
             {
-                return ProblemResponse(400, "Invalid owner id.", "The owner id must be at most 256 characters.");
+                return ProblemResponse(400, "Invalid owner id.", "The owner id must be 1 to 128 characters from A-Z, a-z, 0-9, '.', '_', '@' or '-'.");
             }
         }
 
-        var owner = string.IsNullOrWhiteSpace(ownerId) ? user.Name : ownerId;
+        var owner = ownerId ?? user.Name;
         var session = await sessions.CreateAsync(owner, cancellationToken).ConfigureAwait(false);
         registry.Add(session.Id);
         metrics.SessionCreated();
         return TypedResults.Created($"/sessions/{session.Id}", session);
+    }
+
+    private static bool IsValidOwnerId(string value)
+    {
+        if (value.Length is < 1 or > MaxOwnerIdLength)
+        {
+            return false;
+        }
+
+        foreach (var c in value)
+        {
+            if (!char.IsAsciiLetterOrDigit(c) && c is not ('.' or '_' or '@' or '-'))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static async Task<Ok<Session[]>> ListSessionsAsync(

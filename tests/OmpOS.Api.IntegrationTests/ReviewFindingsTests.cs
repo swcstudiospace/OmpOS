@@ -113,10 +113,10 @@ public sealed class ReviewFindingsTests
         items.ShouldBeEmpty("afterSeq at long.MaxValue must not wrap and replay the log");
     }
 
-    /// <summary>Verifies an over-long owner id is rejected with 400 while the 256-character boundary is accepted.</summary>
+    /// <summary>Verifies a 128-character owner id is accepted while a 129-character owner id is rejected with 400.</summary>
     [Theory]
-    [InlineData(256, HttpStatusCode.Created)]
-    [InlineData(257, HttpStatusCode.BadRequest)]
+    [InlineData(128, HttpStatusCode.Created)]
+    [InlineData(129, HttpStatusCode.BadRequest)]
     public async Task Create_OwnerIdLength_BoundaryEnforced(int length, HttpStatusCode expected)
     {
         using var factory = new OmpApiFactory();
