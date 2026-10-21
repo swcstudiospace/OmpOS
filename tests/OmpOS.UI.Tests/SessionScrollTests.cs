@@ -7,7 +7,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>Auto-follow, user scroll-up pause, and jump-to-latest resume through the scroll module (UI-02).</summary>
-internal sealed class SessionScrollTests : UiTestContext
+public sealed class SessionScrollTests : UiTestContext
 {
     private const string ScrollModule = "./_content/OmpOS.UI/scripts/ompos-scroll.js";
     private const string ScrollToEnd = "scrollToEnd";

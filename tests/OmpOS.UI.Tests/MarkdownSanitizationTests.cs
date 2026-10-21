@@ -7,7 +7,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>Markdown renders as sanitized HTML: no raw HTML, no dangerous hrefs, no remote images (UI-01).</summary>
-internal sealed class MarkdownSanitizationTests : BunitContext
+public sealed class MarkdownSanitizationTests : BunitContext
 {
     /// <summary>Emphasis renders a strong element.</summary>
     [Fact]

@@ -13,7 +13,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>Replay equality of <see cref="UiFolder"/> over the fixed 23-event fixture (UI-04).</summary>
-internal sealed class ReplayTreeTests : UiTestContext
+public sealed class ReplayTreeTests : UiTestContext
 {
     private const string SessionId = "s-replay";
     private const string CorrelationId = "s-replay/turn-1";

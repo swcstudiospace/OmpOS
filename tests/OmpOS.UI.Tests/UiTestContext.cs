@@ -6,7 +6,7 @@ namespace OmpOS.UI.Tests;
 /// Base context for component tests. Components make their own JS calls (the session scroll module),
 /// which return defaults in loose mode instead of failing tests that do not assert on them.
 /// </summary>
-internal abstract class UiTestContext : BunitContext
+public abstract class UiTestContext : BunitContext
 {
     /// <summary>Creates the context in loose JS interop mode.</summary>
     protected UiTestContext()
@@ -18,7 +18,7 @@ internal abstract class UiTestContext : BunitContext
     /// <param name="sent">The messages the host has received.</param>
     /// <param name="text">The submitted draft.</param>
     /// <returns>A completed task whose result is true.</returns>
-    protected static Task<bool> Accept(ICollection<string> sent, string text)
+    protected static Task<bool> AcceptAsync(ICollection<string> sent, string text)
     {
         sent.Add(text);
         return Task.FromResult(true);
@@ -28,7 +28,7 @@ internal abstract class UiTestContext : BunitContext
     /// <param name="sent">The messages the host has received.</param>
     /// <param name="text">The submitted draft.</param>
     /// <returns>A completed task whose result is false.</returns>
-    protected static Task<bool> Refuse(ICollection<string> sent, string text)
+    protected static Task<bool> RefuseAsync(ICollection<string> sent, string text)
     {
         sent.Add(text);
         return Task.FromResult(false);

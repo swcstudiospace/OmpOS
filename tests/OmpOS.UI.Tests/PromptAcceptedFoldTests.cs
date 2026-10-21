@@ -11,7 +11,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>A <c>prompt_accepted</c> event folds to exactly one user message with the prompt text (UI-01, UI-04).</summary>
-internal sealed class PromptAcceptedFoldTests : UiTestContext
+public sealed class PromptAcceptedFoldTests : UiTestContext
 {
     private const string SessionId = "s-1";
     private const string CorrelationId = "s-1/turn-1";

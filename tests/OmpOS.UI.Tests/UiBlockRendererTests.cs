@@ -8,7 +8,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>One render assertion per <see cref="UiBlock"/> variant (UI-01).</summary>
-internal sealed class UiBlockRendererTests : BunitContext
+public sealed class UiBlockRendererTests : BunitContext
 {
     /// <summary>A markdown block renders its text as HTML.</summary>
     [Fact]

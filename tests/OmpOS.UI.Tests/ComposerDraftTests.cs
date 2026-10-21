@@ -1,4 +1,5 @@
 using Bunit;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using OmpOS.UI.Components;
 using Shouldly;
@@ -7,7 +8,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>Enter sends only what the parent accepts; a refused send keeps the typed draft (UI-03).</summary>
-internal sealed class ComposerDraftTests : UiTestContext
+public sealed class ComposerDraftTests : UiTestContext
 {
     /// <summary>Enter while a response streams keeps the typed draft for the next send.</summary>
     [Fact]
@@ -16,8 +17,8 @@ internal sealed class ComposerDraftTests : UiTestContext
         var sent = new List<string>();
         var cut = Render<Composer>(parameters => parameters
             .Add(p => p.IsStreaming, true)
-            .Add(p => p.OnSend, (string text) => Accept(sent, text)));
-        cut.Find("textarea").Input("keep me");
+            .Add(p => p.OnSend, (string text) => AcceptAsync(sent, text)));
+        await cut.Find("textarea").InputAsync(new ChangeEventArgs { Value = "keep me" });
 
         await cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
         sent.ShouldBeEmpty();
@@ -34,8 +35,8 @@ internal sealed class ComposerDraftTests : UiTestContext
     {
         var sent = new List<string>();
         var cut = Render<Composer>(parameters => parameters
-            .Add(p => p.OnSend, (string text) => Refuse(sent, text)));
-        cut.Find("textarea").Input("keep me");
+            .Add(p => p.OnSend, (string text) => RefuseAsync(sent, text)));
+        await cut.Find("textarea").InputAsync(new ChangeEventArgs { Value = "keep me" });
 
         await cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
         await cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
@@ -49,14 +50,14 @@ internal sealed class ComposerDraftTests : UiTestContext
     {
         var sent = new List<string>();
         var cut = Render<Composer>(parameters => parameters
-            .Add(p => p.OnSend, (string text) => Accept(sent, text)));
-        cut.Find("textarea").Input("first");
+            .Add(p => p.OnSend, (string text) => AcceptAsync(sent, text)));
+        await cut.Find("textarea").InputAsync(new ChangeEventArgs { Value = "first" });
 
         await cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
         await cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
         sent.Single().ShouldBe("first");
 
-        cut.Find("textarea").Input("second");
+        await cut.Find("textarea").InputAsync(new ChangeEventArgs { Value = "second" });
         await cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
 
         sent.ShouldBe(["first", "second"]);
@@ -72,14 +73,16 @@ internal sealed class ComposerDraftTests : UiTestContext
             .Add(p => p.OnSend, (string text) =>
             {
                 sent.Add(text);
+#pragma warning disable VSTHRD003 // Test helper: the send stays open until the test thread releases it, by design.
                 return release.Task;
+#pragma warning restore VSTHRD003
             }));
-        cut.Find("textarea").Input("once");
+        await cut.Find("textarea").InputAsync(new ChangeEventArgs { Value = "once" });
 
         var pending = cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
         await cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
         release.SetResult(true);
-        await pending;
+        await pending.ConfigureAwait(true);
 
         sent.ShouldBe(["once"]);
     }

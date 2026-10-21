@@ -1,9 +1,11 @@
 @namespace OmpOS.App.Components
+@using Microsoft.Extensions.Logging
 @using OmpOS.EngineHost
 @using OmpOS.Harness.Abstractions
 @using OmpOS.UI.Components
 @using OmpOS.UI.State
 @inject IEngineHost Host
+@inject ILogger<SessionHost> Logger
 @implements IAsyncDisposable
 
 <div class="ompos-shell">
@@ -34,6 +36,11 @@
     private long _seq;
     private bool _disposed;
 
+    private static readonly Action<ILogger, Exception?> TurnFailed = LoggerMessage.Define(
+        LogLevel.Error,
+        new EventId(1, nameof(TurnFailed)),
+        "Streaming a prompt turn failed unexpectedly.");
+
     /// <inheritdoc />
     protected override void OnInitialized()
     {
@@ -63,10 +70,29 @@
         _streamCts = new CancellationTokenSource();
         _streaming = true;
         var accepted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        // Observed through the accepted result and the view model; any unexpected fault is surfaced by StreamTurnAsync's finally block.
-        _ = StreamTurnAsync(prompt, _streamCts.Token, accepted);
+        // Faults are logged and shown by RunTurnAsync; the accepted result is settled in StreamTurnAsync's finally block.
+        _ = RunTurnAsync(prompt, _streamCts.Token, accepted);
         StateHasChanged();
         return accepted.Task;
+    }
+
+    /// <summary>
+    /// Runs one turn and observes its outcome. A fault that StreamTurnAsync does not handle is logged and shown
+    /// as an error, so the fire-and-forget start in SendAsync never hides it.
+    /// </summary>
+    private async Task RunTurnAsync(string prompt, CancellationToken token, TaskCompletionSource<bool> accepted)
+    {
+        try
+        {
+            await StreamTurnAsync(prompt, token, accepted).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !token.IsCancellationRequested)
+        {
+            TurnFailed(Logger, ex);
+            _error = "The engine stream failed unexpectedly. Retry to send the prompt again.";
+            _viewModel.MarkOffline();
+            StateHasChanged();
+        }
     }
 
     private async Task StreamTurnAsync(string prompt, CancellationToken token, TaskCompletionSource<bool> accepted)

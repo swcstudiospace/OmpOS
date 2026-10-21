@@ -6,7 +6,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>The conversation list renders titles, marks the selection, and reports picks (UI-01).</summary>
-internal sealed class ConversationListTests : BunitContext
+public sealed class ConversationListTests : BunitContext
 {
     /// <summary>Conversations render as titled buttons with the selection marked.</summary>
     [Fact]
