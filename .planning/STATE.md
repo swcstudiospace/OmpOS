@@ -1,20 +1,20 @@
 ---
 gsd_state_version: "1.0"
 milestone: v0.9.1
+status: Awaiting next milestone
+stopped_at: Phase 5 verify pass done; next step clean-clone bootstrap, then milestone audit
+last_updated: "2026-10-21T03:46:02.272Z"
+last_activity: 2026-10-21
+last_activity_desc: Milestone v0.9.1 completed and archived
+state_head: fcaba9702ac380d66c23de7307b3d8d680d290e7
+progress:
+  total_phases: 5
+  completed_phases: 4
+  total_plans: 15
+  completed_plans: 15
 current_phase: 5
 current_phase_name: Verify & Handoff
 current_plan: 1
-status: in_progress
-stopped_at: Phase 5 verify pass done; next step clean-clone bootstrap, then milestone audit
-last_updated: "2026-10-20T12:00:00.000Z"
-last_activity: 2026-10-20
-last_activity_desc: Phase 2 reopened; executing plan 02-06 (API host, OPS)
-state_head: 82db6d1eb0bf5b6763711f5cedd595172ee0b6a6
-progress:
-  total_phases: 5
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 
 ## Current Position
 
-Milestone v0.9.1, Phase 5 (Verify & Handoff) in progress. Phases 1–4 complete
-(MAUI binaries human-deferred to macOS; WEB-02 live deploy outstanding).
-Next step: dated clean-clone `./bootstrap.sh` run recorded in
-`docs/runbooks/local-dev.md` (VERIFY-01), then milestone audit.
+Phase: Milestone v0.9.1 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-10-21 — Milestone v0.9.1 completed and archived
 
 ## Performance Metrics
 
@@ -103,3 +103,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 Last session: 2026-10-20T06:26:48.224Z
 Stopped at: Completed 1-03-PLAN.md
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
