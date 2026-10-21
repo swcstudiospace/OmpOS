@@ -29,8 +29,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Fail-fast options: every section binds with data-annotation validation on start,
 // so a missing required key (notably Harness:Adapter) names itself in the startup error.
+// Data-annotation validation does not recurse into nested objects, so the nested rate-limit
+// section is bound and validated on its own; ApiOptions.RateLimit reads the same values.
 builder.Services.AddOptions<ApiOptions>().BindConfiguration(ApiOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
-builder.Services.AddOptions<HarnessOptions>().BindConfiguration(HarnessOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
+builder.Services.AddOptions<ApiRateLimitOptions>().BindConfiguration($"{ApiOptions.SectionName}:RateLimit").ValidateDataAnnotations().ValidateOnStart();
+builder.Services.AddOptions<HarnessOptions>()
+    .BindConfiguration(HarnessOptions.SectionName)
+    .ValidateDataAnnotations()
+    .Validate(static options => HarnessOptions.IsSupportedAdapter(options.Adapter), "Harness:Adapter must be InMemory, the only adapter supported in Phase 2.")
+    .ValidateOnStart();
 builder.Services.AddOptions<WorkflowsOptions>().BindConfiguration(WorkflowsOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
 builder.Services.AddOptions<OtelOptions>().BindConfiguration(OtelOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
 builder.Services.AddOptions<DebugOptions>().BindConfiguration(DebugOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();

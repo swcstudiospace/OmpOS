@@ -12,7 +12,15 @@ internal sealed class HarnessOptions
     /// <summary>Gets the configuration section name.</summary>
     public const string SectionName = "Harness";
 
+    /// <summary>Gets the only harness adapter this host can serve.</summary>
+    public const string InMemoryAdapter = "InMemory";
+
     /// <summary>Gets or sets the adapter name. Only <c>InMemory</c> exists in Phase 2.</summary>
     [Required(ErrorMessage = "Harness:Adapter is required but was not provided. Set Harness:Adapter (supported value: InMemory).")]
     public string Adapter { get; set; } = string.Empty;
+
+    /// <summary>Returns whether <paramref name="adapter"/> names a harness adapter this host can serve.</summary>
+    /// <param name="adapter">The configured adapter name.</param>
+    /// <returns>True when the adapter is supported.</returns>
+    public static bool IsSupportedAdapter(string? adapter) => string.Equals(adapter, InMemoryAdapter, StringComparison.OrdinalIgnoreCase);
 }

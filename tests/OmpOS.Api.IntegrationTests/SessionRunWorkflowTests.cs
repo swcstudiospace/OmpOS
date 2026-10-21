@@ -76,6 +76,27 @@ public sealed class SessionRunWorkflowTests
         counting.TeardownsFor(id).ShouldBe(1, "teardown runs in a finally even when the prompt fails");
     }
 
+    /// <summary>
+    /// Verifies a provision failure settles the session as failed: the workflow reports the failure without
+    /// throwing, so the runner must settle the session that the endpoint left running.
+    /// </summary>
+    [Fact]
+    public async Task ProvisionFailure_SettlesSessionAsFailed()
+    {
+        var sandbox = new FakeSandboxProvider();
+        sandbox.FailProvision(1);
+        using var factory = new OmpApiFactory(configureServices: services => services.AddSingleton<ISandboxProvider>(sandbox));
+        using var client = factory.CreateClient();
+        var testToken = TestContext.Current.CancellationToken;
+        var id = await SessionClient.CreateSessionAsync(client, testToken);
+
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"hello\"}", testToken);
+        accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
+
+        var settled = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Failed, SettleTimeout, testToken);
+        settled.Events.ShouldContain(static evt => evt.Payload is ErrorPayload, "the failed run appends an error event");
+    }
+
     /// <summary>Polls a count until it reaches the expected value or the test times out.</summary>
     /// <param name="read">The count reader.</param>
     /// <param name="expected">The expected count.</param>

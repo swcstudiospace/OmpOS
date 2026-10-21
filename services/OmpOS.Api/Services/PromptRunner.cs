@@ -189,6 +189,11 @@ internal sealed class PromptRunner
             else if (result.Status == WorkflowRunStatus.Failed)
             {
                 PromptRunFailed(_logger, input.SessionId, result.Status.ToString(), null);
+                await SettleIfRunningAsync(input.SessionId, SessionStatus.Failed, "Prompt execution failed.").ConfigureAwait(false);
+            }
+            else if (result.Status == WorkflowRunStatus.Cancelled)
+            {
+                await SettleIfRunningAsync(input.SessionId, SessionStatus.Cancelled, "Prompt cancelled.").ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
@@ -227,11 +232,13 @@ internal sealed class PromptRunner
                 await harness.CreateAsync(stoppingToken).ConfigureAwait(false);
                 await foreach (var evt in harness.SubmitPromptAsync(prompt, new PromptOptions { Steer = false }, stoppingToken).ConfigureAwait(false))
                 {
-                    await AppendAsync(sessionId, correlationId, HarnessEventMapper.ToPayload(evt), stoppingToken).ConfigureAwait(false);
                     if (evt is CompletedEvent)
                     {
+                        // Not appended here: RecordCompletionAsync writes the turn's single completed event once the status is final.
                         break;
                     }
+
+                    await AppendAsync(sessionId, correlationId, HarnessEventMapper.ToPayload(evt), stoppingToken).ConfigureAwait(false);
                 }
             }
 
@@ -295,5 +302,18 @@ internal sealed class PromptRunner
             PromptSettleFailed(_logger, sessionId, ex.GetType().FullName ?? "Unknown", null);
         }
 #pragma warning restore CA1031
+    }
+
+    /// <summary>Settles the session as failed or cancelled only while its prompt is still running, so a run that already settled is not settled twice.</summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="final">The terminal status to record.</param>
+    /// <param name="errorDetail">The error detail for a failed settle.</param>
+    private async Task SettleIfRunningAsync(string sessionId, SessionStatus final, string errorDetail)
+    {
+        var session = await _repository.GetAsync(sessionId, CancellationToken.None).ConfigureAwait(false);
+        if (session is { Status: SessionStatus.Running })
+        {
+            await SettleAsync(sessionId, final, errorDetail).ConfigureAwait(false);
+        }
     }
 }

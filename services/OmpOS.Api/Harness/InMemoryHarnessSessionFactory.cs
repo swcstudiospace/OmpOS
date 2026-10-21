@@ -26,7 +26,7 @@ internal sealed class InMemoryHarnessSessionFactory : IHarnessSessionFactory
     {
         ArgumentNullException.ThrowIfNull(prompt);
         var adapter = _options.Value.Adapter;
-        if (!string.Equals(adapter, "InMemory", StringComparison.OrdinalIgnoreCase))
+        if (!HarnessOptions.IsSupportedAdapter(adapter))
         {
             throw new InvalidOperationException(
                 $"Unsupported Harness:Adapter '{adapter}'. Phase 2 supports only InMemory.");

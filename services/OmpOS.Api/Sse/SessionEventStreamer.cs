@@ -9,10 +9,10 @@ namespace OmpOS.Api.Sse;
 
 /// <summary>
 /// Per-session SSE broadcaster. The session log is the source of truth: subscribers replay
-/// from the log, then tail live appends. A wake-up signal fires on every append; on wake the
-/// subscriber re-queries the log from its last delivered Seq, so the replay/live handoff can
-/// neither gap (the signal cannot be lost: a pre-wait signal releases the next wait) nor
-/// duplicate (events at or below the last delivered Seq are skipped).
+/// from the log, then tail live appends. Every append wakes every waiting subscriber through a
+/// broadcast signal; on wake a subscriber re-queries the log from its last delivered Seq. A
+/// subscriber takes its wake-up before each log read, so an append that lands during the read
+/// is never missed, and events at or below the last delivered Seq are skipped (no duplicates).
 /// </summary>
 internal sealed class SessionEventStreamer
 {
@@ -75,6 +75,8 @@ internal sealed class SessionEventStreamer
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                // Take the wake-up before reading the log: an append that lands during the read completes it.
+                var wake = signal.Next();
                 var delivered = false;
                 await foreach (var evt in ReplayAsync(sessionId, Floor(last), cancellationToken).ConfigureAwait(false))
                 {
@@ -106,7 +108,7 @@ internal sealed class SessionEventStreamer
                     }
                 }
 
-                await signal.WaitAsync(cancellationToken).ConfigureAwait(false);
+                await wake.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
         }
         finally
@@ -136,7 +138,6 @@ internal sealed class SessionEventStreamer
             if (signal.RefCount == 0)
             {
                 _signals.TryRemove(new KeyValuePair<string, SessionSignal>(sessionId, signal));
-                signal.Dispose();
             }
         }
     }
@@ -162,11 +163,14 @@ internal sealed class SessionEventStreamer
 
     private static long Floor(long last) => last == long.MaxValue ? long.MaxValue : last + 1;
 
-    /// <summary>Coalescing wake-up: releases collapse into one permit because waiters always re-query.</summary>
-    private sealed class SessionSignal : IDisposable
+    /// <summary>
+    /// Broadcast wake-up for one session. <see cref="Notify"/> completes the current generation, so every
+    /// subscriber waiting on it wakes; waiters always re-query the log, so a wake carries no payload.
+    /// </summary>
+    private sealed class SessionSignal
     {
-        private readonly SemaphoreSlim _gate = new(0, 1);
-        private bool _disposed;
+        private readonly Lock _lock = new();
+        private TaskCompletionSource<bool> _generation = NewGeneration();
 
         /// <summary>Gets the number of streams currently holding this signal. Guarded by the streamer's lock.</summary>
         public int RefCount { get; private set; }
@@ -177,44 +181,26 @@ internal sealed class SessionEventStreamer
         /// <summary>Releases one stream's hold on this signal.</summary>
         public void Release() => RefCount--;
 
-        /// <summary>Signals waiters that the log grew.</summary>
+        /// <summary>Returns the task that completes on the next <see cref="Notify"/>. Take it before reading the log.</summary>
+        /// <returns>The task for the current generation.</returns>
+        public Task Next()
+        {
+            lock (_lock)
+            {
+                return _generation.Task;
+            }
+        }
+
+        /// <summary>Wakes every waiter on the current generation and starts the next one.</summary>
         public void Notify()
         {
-            if (_disposed)
+            lock (_lock)
             {
-                return;
-            }
-
-            if (_gate.CurrentCount == 0)
-            {
-                try
-                {
-                    _gate.Release();
-                }
-                catch (SemaphoreFullException)
-                {
-                    // A concurrent notify won the permit; the waiter still re-queries.
-                }
-                catch (ObjectDisposedException)
-                {
-                    // Shutdown race; waiters observe cancellation instead.
-                }
+                _generation.TrySetResult(true);
+                _generation = NewGeneration();
             }
         }
 
-        /// <summary>Waits for the next append signal.</summary>
-        /// <param name="cancellationToken">Cancels the wait.</param>
-        /// <returns>A task representing the wait.</returns>
-        public Task WaitAsync(CancellationToken cancellationToken) => _gate.WaitAsync(cancellationToken);
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            if (!_disposed)
-            {
-                _disposed = true;
-                _gate.Dispose();
-            }
-        }
+        private static TaskCompletionSource<bool> NewGeneration() => new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 }

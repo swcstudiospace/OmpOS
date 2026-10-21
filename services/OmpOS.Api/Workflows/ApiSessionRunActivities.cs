@@ -130,13 +130,15 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
                 await harness.CreateAsync(cancellationToken).ConfigureAwait(false);
                 await foreach (var evt in harness.SubmitPromptAsync(input.Prompt, new PromptOptions { Steer = false }, cancellationToken).ConfigureAwait(false))
                 {
+                    if (evt is CompletedEvent)
+                    {
+                        // Not appended here: RecordCompletionAsync writes the turn's single completed event once the status is final.
+                        break;
+                    }
+
                     await AppendAsync(input.SessionId, input.CorrelationId, HarnessEventMapper.ToPayload(evt), cancellationToken).ConfigureAwait(false);
                     appended++;
                     heartbeat($"appended:{appended}");
-                    if (evt is CompletedEvent)
-                    {
-                        break;
-                    }
                 }
             }
 

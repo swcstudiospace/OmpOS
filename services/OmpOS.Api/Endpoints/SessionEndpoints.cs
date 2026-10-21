@@ -7,6 +7,7 @@ using OmpOS.Api.Options;
 using OmpOS.Api.Security;
 using OmpOS.Api.Serialization;
 using OmpOS.Api.Services;
+using OmpOS.Api.Sse;
 using OmpOS.Api.Telemetry;
 using OmpOS.Contracts.Errors;
 using OmpOS.Contracts.Intents;
@@ -37,6 +38,7 @@ internal static class SessionEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapPost("/sessions", CreateSessionAsync)
+            .Accepts<CreateSessionRequest>(isOptional: true, contentType: "application/json")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
             .ProducesProblem(StatusCodes.Status415UnsupportedMediaType)
@@ -46,6 +48,7 @@ internal static class SessionEndpoints
         endpoints.MapGet("/sessions/{id}", GetSessionAsync)
             .ProducesProblem(StatusCodes.Status404NotFound);
         endpoints.MapPost("/sessions/{id}/prompts", SubmitPromptAsync)
+            .Accepts<PromptRequest>("application/json")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
@@ -150,6 +153,7 @@ internal static class SessionEndpoints
         PromptParser parser,
         ApiMetrics metrics,
         IOptions<ApiOptions> options,
+        SessionEventStreamer streamer,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -183,12 +187,13 @@ internal static class SessionEndpoints
 
         if (envelope.Kind is IntentKind.Steer or IntentKind.FollowUp && isRunning)
         {
-            return await SubmitQueuedAsync(sessions, id, envelope, intentKind, diagnosticCodes, cancellationToken).ConfigureAwait(false);
+            return await SubmitQueuedAsync(sessions, streamer, id, envelope, intentKind, diagnosticCodes, cancellationToken).ConfigureAwait(false);
         }
 
         try
         {
             await sessions.SubmitPromptAsync(id, envelope.RawText, cancellationToken, intentKind, diagnosticCodes).ConfigureAwait(false);
+            streamer.Notify(id);
         }
         catch (SessionException ex) when (ex.Error.Code == ErrorCode.PromptInFlight)
         {
@@ -211,6 +216,7 @@ internal static class SessionEndpoints
 
     private static async Task<Results<Accepted<PromptAcceptedResponse>, ProblemHttpResult>> SubmitQueuedAsync(
         SessionService sessions,
+        SessionEventStreamer streamer,
         string id,
         IntentEnvelope envelope,
         string intentKind,
@@ -229,6 +235,7 @@ internal static class SessionEndpoints
             {
                 await sessions.SubmitFollowUpAsync(id, envelope.RawText, cancellationToken).ConfigureAwait(false);
             }
+            streamer.Notify(id);
         }
         catch (SessionException ex) when (ex.Error.Code is ErrorCode.PromptInFlight or ErrorCode.InvalidTransition)
         {
