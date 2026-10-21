@@ -10,36 +10,30 @@ namespace OmpOS.Api.Persistence;
 /// which throws naming <c>Sessions:Postgres:ConnectionString</c> when that key is missing, and creates the session schema (idempotent).
 /// The host runs every service's <see cref="StartingAsync"/> before any <c>StartAsync</c>, and the web server listens only in its
 /// <c>StartAsync</c>, so no request can run before the schema exists. A failure stops startup. When the store is <c>InMemory</c> it
-/// creates nothing; in the Production environment it logs a warning, which does not stop startup.
+/// creates nothing outside the Production environment. In the Production environment an <c>InMemory</c> store refuses startup, naming
+/// <c>Sessions:Store</c>, because session state would be neither durable nor shared between instances.
 /// </summary>
 internal sealed class SessionStoreStartup : IHostedLifecycleService
 {
-    private static readonly Action<ILogger, Exception?> InMemoryInProduction =
-        LoggerMessage.Define(
-            LogLevel.Warning,
-            new EventId(31, "SessionsInMemoryInProduction"),
-            "Sessions:Store is InMemory in the Production environment. Session state is not durable and is not shared between instances; set Sessions:Store to Postgres.");
+    private const string InMemoryInProductionMessage =
+        "Sessions:Store is InMemory in the Production environment, so the host refuses to start. Session state is not durable and is not shared between instances; set Sessions:Store to Postgres.";
 
     private readonly IServiceProvider _services;
     private readonly IOptions<SessionsOptions> _options;
     private readonly IHostEnvironment _environment;
-    private readonly ILogger<SessionStoreStartup> _logger;
 
     /// <summary>Initializes a new instance of the <see cref="SessionStoreStartup"/> class.</summary>
     /// <param name="services">The application service provider, used to resolve the data source only for the PostgreSQL store.</param>
     /// <param name="options">The sessions options; reading them runs their validation.</param>
-    /// <param name="environment">The host environment, used to decide whether the in-memory warning applies.</param>
-    /// <param name="logger">The logger.</param>
+    /// <param name="environment">The host environment, used to decide whether an in-memory store refuses startup.</param>
     public SessionStoreStartup(
         IServiceProvider services,
         IOptions<SessionsOptions> options,
-        IHostEnvironment environment,
-        ILogger<SessionStoreStartup> logger)
+        IHostEnvironment environment)
     {
         _services = services;
         _options = options;
         _environment = environment;
-        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -49,7 +43,7 @@ internal sealed class SessionStoreStartup : IHostedLifecycleService
         {
             if (_environment.IsProduction())
             {
-                InMemoryInProduction(_logger, null);
+                throw new InvalidOperationException(InMemoryInProductionMessage);
             }
 
             return;

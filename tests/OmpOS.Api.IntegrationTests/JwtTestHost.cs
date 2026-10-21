@@ -22,6 +22,9 @@ internal static class JwtTestHost
     /// <summary>Gets the issuer of test tokens and the HTTPS authority of production-shaped hosts.</summary>
     public const string Issuer = "https://issuer.test.invalid/";
 
+    /// <summary>Gets the environment variable that holds the PostgreSQL connection string for Production-shaped hosts. Its name matches the PostgreSQL test fixture.</summary>
+    public const string PostgresConnectionEnvironmentVariable = "OMPOS_TEST_POSTGRES_CONNECTION";
+
     private const string KeyId = "ompos-api-test-key";
 
     private static readonly SymmetricSecurityKey SigningKey = new(Encoding.UTF8.GetBytes("ompos-api-test-signing-key-material-0123456789")) { KeyId = KeyId };
@@ -38,8 +41,12 @@ internal static class JwtTestHost
         };
     }
 
-    /// <summary>Returns the settings a production host needs to start: an HTTPS authority and an audience.</summary>
+    /// <summary>
+    /// Returns the settings a production host needs to start: an HTTPS authority, an audience, and the PostgreSQL session store. The
+    /// store's connection string is read from <see cref="PostgresConnectionEnvironmentVariable"/>, so the test run must set it.
+    /// </summary>
     /// <returns>The configuration overrides.</returns>
+    /// <exception cref="InvalidOperationException">The PostgreSQL connection environment variable is not set.</exception>
     public static Dictionary<string, string?> ProductionConfig()
     {
         return new Dictionary<string, string?>(StringComparer.Ordinal)
@@ -48,7 +55,22 @@ internal static class JwtTestHost
             ["Api:Auth:Audience"] = Audience,
             ["Harness:Adapter"] = "Acp",
             ["Api:Auth:ValidIssuer"] = Issuer,
+            ["Sessions:Store"] = "Postgres",
+            ["Sessions:Postgres:ConnectionString"] = PostgresConnectionString(),
         };
+    }
+
+    private static string PostgresConnectionString()
+    {
+        var connectionString = Environment.GetEnvironmentVariable(PostgresConnectionEnvironmentVariable);
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                $"{PostgresConnectionEnvironmentVariable} is not set. Production-shaped test hosts use the PostgreSQL session store, " +
+                "so the test run must set that variable to a PostgreSQL connection string; the gate sets it.");
+        }
+
+        return connectionString;
     }
 
     /// <summary>Creates a Development host that validates bearer tokens against the static test key.</summary>

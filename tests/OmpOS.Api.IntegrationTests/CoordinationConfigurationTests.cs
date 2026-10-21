@@ -6,7 +6,7 @@ namespace OmpOS.Api.IntegrationTests;
 
 /// <summary>
 /// Verifies the session and coordination stores fail startup, naming the missing key, when the selected store lacks its
-/// connection setting, and that a host outside Development with explicit in-process stores starts and says so in its log.
+/// connection setting, and that a Production host with the in-memory coordination store starts and says so in its log.
 /// </summary>
 public sealed class CoordinationConfigurationTests
 {
@@ -38,13 +38,12 @@ public sealed class CoordinationConfigurationTests
         StartupFailureText.Of(caught).ShouldContain("Sessions:Postgres:ConnectionString");
     }
 
-    /// <summary>Verifies a host outside Development with both stores set to InMemory starts, logs one warning naming both store keys, and logs no connection string.</summary>
+    /// <summary>Verifies a Production host with the PostgreSQL session store and the in-memory coordination store starts, logs a warning naming Coordination:Store, and logs no connection string.</summary>
     [Fact]
-    public async Task ProductionWithInMemoryStores_StartsAndLogsWarningNamingBothKeys()
+    public async Task ProductionWithInMemoryCoordination_StartsAndLogsWarningNamingCoordinationKey()
     {
         var logs = new CapturingLoggerProvider();
         var config = JwtTestHost.ProductionConfig();
-        config["Sessions:Store"] = "InMemory";
         config["Coordination:Store"] = "InMemory";
         using var factory = new OmpApiFactory(config, loggerProvider: logs, environment: "Production");
         using var client = factory.CreateClient();
@@ -53,8 +52,6 @@ public sealed class CoordinationConfigurationTests
         using var live = await client.GetAsync(new Uri("/health/live", UriKind.Relative), testToken).ConfigureAwait(true);
         live.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        logs.Messages.Any(static message => message.Contains("Warning", StringComparison.Ordinal) && message.Contains("Sessions:Store", StringComparison.Ordinal))
-            .ShouldBeTrue("at least one logged warning names Sessions:Store");
         logs.Messages.Any(static message => message.Contains("Warning", StringComparison.Ordinal) && message.Contains("Coordination:Store", StringComparison.Ordinal))
             .ShouldBeTrue("at least one logged warning names Coordination:Store");
         logs.Messages.Any(static message => ConnectionStringMarkers.Any(marker => message.Contains(marker, StringComparison.OrdinalIgnoreCase)))
