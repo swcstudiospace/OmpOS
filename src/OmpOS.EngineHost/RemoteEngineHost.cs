@@ -35,10 +35,16 @@ public sealed class RemoteEngineHost : IEngineHost
     private long _lastSeq;
 
     /// <summary>
-    /// The highest Seq accepted so far, delivered or held. Seq is monotonic per session, so any Seq at or
-    /// below this mark is a replay overlap and is dropped.
+    /// The highest Seq delivered so far. Seq is monotonic per session, so any Seq at or
+    /// below this mark is a replay overlap and is dropped. Only delivery moves this mark;
+    /// holding a missed event merely claims its Seq (see <see cref="_heldSeqs"/>).
     /// </summary>
     private long _highWater;
+
+    /// <summary>Seqs claimed by exactly one delivery path but not yet delivered, guarded by <see cref="_gate"/>.</summary>
+    /// <remarks>A claim reserves a Seq for either the live turn or the held queue, so a resume fetching alongside a
+    /// live stream neither redelivers the live stream's events nor lets the live stream skip the held ones.</remarks>
+    private readonly HashSet<long> _heldSeqs = new();
 
     /// <summary>Events fetched by <see cref="ReconnectAsync"/> that no consumer has received yet, in Seq order.</summary>
     private readonly Queue<(long? Seq, HarnessEvent Event)> _held = new();
@@ -71,13 +77,16 @@ public sealed class RemoteEngineHost : IEngineHost
         ArgumentNullException.ThrowIfNull(options);
         var sessionId = await EnsureSessionAsync(cancellationToken).ConfigureAwait(false);
 
+        // The prompt is submitted before any held history is replayed: a consumer that stops reading on a held
+        // terminal event has still sent the message, and the new reply waits on the server for the next stream.
+        await SubmitAsync(sessionId, prompt, cancellationToken).ConfigureAwait(false);
+
         // Events held by ReconnectAsync belong to earlier turns: they reach the consumer before this prompt's reply.
         while (TakeHeld() is { } held)
         {
             yield return held;
         }
 
-        await SubmitAsync(sessionId, prompt, cancellationToken).ConfigureAwait(false);
         await foreach (var (seq, evt) in StreamAsync(sessionId, ResumePosition(), cancellationToken).ConfigureAwait(false))
         {
             MarkDelivered(seq);
@@ -88,7 +97,8 @@ public sealed class RemoteEngineHost : IEngineHost
     /// <summary>
     /// Fetches the events after the delivered cursor (exclusive) and holds them, in Seq order. Raises <see cref="MissedEventsHeld"/>
     /// so the consumer can render them with <see cref="TakeHeldEvents"/>. <see cref="SubmitPromptAsync"/> delivers any still held before its own reply.
-    /// Nothing is dropped: the cursor moves only when a consumer receives an event.
+    /// Nothing is dropped: the cursor moves only when a consumer receives an event. When a turn is already streaming, the
+    /// resume returns at once: that stream owns the session and delivers everything after the cursor itself.
     /// </summary>
     /// <param name="cancellationToken">Cancels the fetch.</param>
     /// <returns>A task that completes when the fetch ends (terminal event, server close, or transport drop).</returns>
@@ -318,8 +328,8 @@ public sealed class RemoteEngineHost : IEngineHost
 
     /// <summary>
     /// Maps one dispatched frame onto a harness event with its Seq, or null when it must not surface
-    /// (duplicate, heartbeat residue, corrupt, or unrecognized). Moves no cursor: the caller does when it
-    /// hands the event to a consumer.
+    /// (duplicate, already claimed by the other delivery path, heartbeat residue, corrupt, or unrecognized).
+    /// Moves no cursor: the caller does when it hands the event to a consumer.
     /// </summary>
     private (long? Seq, HarnessEvent Event)? ProcessFrame(string? frameId, string data)
     {
@@ -329,10 +339,6 @@ public sealed class RemoteEngineHost : IEngineHost
         }
 
         long? seq = long.TryParse(frameId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ? parsed : null;
-        if (seq is long known && IsDuplicate(known))
-        {
-            return null;
-        }
 
         StreamEventPayload? payload;
         try
@@ -351,24 +357,39 @@ public sealed class RemoteEngineHost : IEngineHost
             return null;
         }
 
+        // Claiming happens after mapping, so a frame discarded above is never reserved and a later
+        // resume may still deliver its Seq.
+        if (seq is long known && !TryClaim(known))
+        {
+            return null;
+        }
+
         return (seq, mapped);
     }
 
     /// <summary>Fetches the events after <paramref name="resumeFrom"/> and holds them for the next prompt.</summary>
+    /// <remarks>When a turn is already streaming, that stream owns the session: it delivers everything after the
+    /// cursor, so the resume holds nothing and returns. Holding advances no cursor; <see cref="TakeHeldEvents"/>
+    /// moves the delivered cursor to the last event it hands out.</remarks>
     private async Task HoldMissedAsync(string sessionId, long? resumeFrom, CancellationToken cancellationToken)
     {
+        lock (_gate)
+        {
+            if (_activeCts is not null)
+            {
+                return;
+            }
+        }
+
         var held = false;
         try
         {
             await foreach (var (seq, evt) in StreamAsync(sessionId, resumeFrom, cancellationToken).ConfigureAwait(false))
             {
+                // The Seq was claimed in ProcessFrame; holding advances no cursor, only the queue.
                 lock (_gate)
                 {
                     _held.Enqueue((seq, evt));
-                    if (seq is long accepted)
-                    {
-                        _highWater = Math.Max(_highWater, accepted);
-                    }
                 }
 
                 held = true;
@@ -384,6 +405,8 @@ public sealed class RemoteEngineHost : IEngineHost
     }
 
     /// <summary>Takes the oldest held event and marks it delivered, or returns null when none is held.</summary>
+    /// <remarks>Delivery moves both the delivered cursor and the replay mark to the taken Seq and releases its
+    /// claim, so the next stream resumes after it and never replays it.</remarks>
     private HarnessEvent? TakeHeld()
     {
         lock (_gate)
@@ -396,6 +419,8 @@ public sealed class RemoteEngineHost : IEngineHost
             if (held.Seq is long seq)
             {
                 _lastSeq = Math.Max(_lastSeq, seq);
+                _highWater = Math.Max(_highWater, seq);
+                _heldSeqs.Remove(seq);
             }
 
             return held.Event;
@@ -414,6 +439,7 @@ public sealed class RemoteEngineHost : IEngineHost
         {
             _lastSeq = Math.Max(_lastSeq, delivered);
             _highWater = Math.Max(_highWater, delivered);
+            _heldSeqs.Remove(delivered);
         }
     }
 
@@ -426,14 +452,17 @@ public sealed class RemoteEngineHost : IEngineHost
         }
     }
 
-    private bool IsDuplicate(long seq)
+    /// <summary>
+    /// Claims <paramref name="seq"/> for the calling delivery path, or returns false when it was already
+    /// delivered (at or below the replay mark) or claimed by the other path.
+    /// </summary>
+    private bool TryClaim(long seq)
     {
         lock (_gate)
         {
-            return seq <= _highWater;
+            return seq > _highWater && _heldSeqs.Add(seq);
         }
     }
-
 
     private static HarnessEvent? MapPayload(StreamEventPayload payload) => payload switch
     {

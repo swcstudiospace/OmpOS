@@ -166,6 +166,61 @@ public sealed class EngineHostTests
         handler.ResumePositions.ShouldBe(["2"]);
     }
 
+    /// <summary>
+    /// A new prompt is submitted even when a held completion was never taken: the resume callback may not have
+    /// drained <c>TakeHeldEvents</c> yet, but the terminal event it replays must not swallow the next message.
+    /// The consumer stops on terminals exactly like the app shell does.
+    /// </summary>
+    [Fact]
+    public async Task NewPromptSubmitsEvenWhenHeldCompletionIsUndrained()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var handler = new ScriptedApiHandler();
+        using var http = ClientFor(handler);
+        var host = new RemoteEngineHost(http);
+
+        _ = await CollectTurnAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct)).ConfigureAwait(true);
+        await host.ReconnectAsync(ct).ConfigureAwait(true);
+
+        var seen = await CollectTurnAsync(host.SubmitPromptAsync("next prompt", new PromptOptions(), ct)).ConfigureAwait(true);
+
+        handler.PromptPosts.ShouldBe(2);
+        seen.OfType<TextDeltaEvent>().Select(static evt => evt.Text).ShouldBe(["t6", "t7", "t8", "t9", "t10", "t11"]);
+        seen[^1].ShouldBeOfType<CompletedEvent>().Reason.ShouldBe("end_turn");
+    }
+
+    /// <summary>
+    /// A resume that lands while a turn is still streaming holds nothing: the live stream owns the session and
+    /// delivers everything after the cursor itself, so the resume must not open a second fetch that would hold
+    /// duplicates or let the live stream skip ahead of the held events.
+    /// </summary>
+    [Fact]
+    public async Task ReconnectDuringActiveTurnHoldsNothing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var handler = new GatedTurnHandler();
+        using var http = ClientFor(handler);
+        var host = new RemoteEngineHost(http);
+        var raised = 0;
+        host.MissedEventsHeld += (_, _) => raised++;
+
+        await using var turn = host.SubmitPromptAsync("one", new PromptOptions(), ct).ConfigureAwait(true).GetAsyncEnumerator(ct);
+        (await turn.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
+        var first = turn.Current;
+        first.ShouldBeOfType<TextDeltaEvent>().Text.ShouldBe("a");
+
+        // The live stream is provably open: it delivered an event but its terminal frame is still gated.
+        await host.ReconnectAsync(ct).ConfigureAwait(true);
+
+        raised.ShouldBe(0);
+        handler.Gets.ShouldBe(1);
+
+        handler.Release();
+        (await turn.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
+        turn.Current.ShouldBeOfType<CompletedEvent>().Reason.ShouldBe("end_turn");
+        (await turn.MoveNextAsync().ConfigureAwait(true)).ShouldBeFalse();
+    }
+
     /// <summary>A faulted engine that the host replaces is disposed; the replacement serves the next prompt.</summary>
     [Fact]
     public async Task FaultedEngineIsDisposedWhenReplaced()
@@ -297,6 +352,26 @@ public sealed class EngineHostTests
     }
 
     /// <summary>
+    /// a replayed completion are never read. Plain <see cref="CollectAsync"/> reads to the end of the stream.
+    /// </summary>
+    /// <param name="events">The turn's events.</param>
+    /// <returns>The events up to and including the terminal one, if any.</returns>
+    private static async Task<List<HarnessEvent>> CollectTurnAsync(IAsyncEnumerable<HarnessEvent> events)
+    {
+        var collected = new List<HarnessEvent>();
+        await foreach (var evt in events.ConfigureAwait(true))
+        {
+            collected.Add(evt);
+            if (evt is CompletedEvent or ErrorEvent)
+            {
+                break;
+            }
+        }
+
+        return collected;
+    }
+
+    /// <summary>
     /// Scripted API origin: creates session <c>sess-1</c>, accepts prompts, then serves SSE.
     /// The first event stream delivers Seqs 1..5 and ends (connection drop); a stream carrying
     /// <c>Last-Event-ID</c> replays Seqs 5..12 with Seq 12 terminal, so Seq 5 overlaps on purpose.
@@ -306,7 +381,9 @@ public sealed class EngineHostTests
         /// <summary>Gets every Last-Event-ID value received, in arrival order.</summary>
         public List<string?> ResumePositions { get; } = [];
 
-        /// <inheritdoc />
+        /// <summary>Gets how many prompts were submitted, proving a new message still sends after an undrained resume.</summary>
+        public int PromptPosts { get; private set; }
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var path = request.RequestUri!.AbsolutePath;
@@ -317,6 +394,7 @@ public sealed class EngineHostTests
 
             if (request.Method == HttpMethod.Post && string.Equals(path, "/sessions/sess-1/prompts", StringComparison.Ordinal))
             {
+                PromptPosts++;
                 return Task.FromResult(Json(202, """{"sessionId":"sess-1","status":"accepted"}"""));
             }
 
@@ -460,6 +538,173 @@ public sealed class EngineHostTests
 
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
         }
+    }
+
+    /// <summary>Streams <paramref name="first"/> at once, then blocks until the gate before <paramref name="rest"/>.</summary>
+    /// <param name="first">The frame bytes served immediately.</param>
+    /// <param name="rest">The frame bytes served after the gate completes.</param>
+    /// <param name="gate">Completes when the remainder may be served.</param>
+    private sealed class GatedSseContent(string first, string rest, Task gate) : HttpContent
+    {
+        /// <inheritdoc />
+        protected override Task<Stream> CreateContentReadStreamAsync() =>
+            Task.FromResult<Stream>(new GateStream(Encoding.UTF8.GetBytes(first), Encoding.UTF8.GetBytes(rest), gate));
+
+        /// <inheritdoc />
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            throw new NotSupportedException("GatedSseContent streams through CreateContentReadStreamAsync.");
+
+        /// <inheritdoc />
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
+            throw new NotSupportedException("GatedSseContent streams through CreateContentReadStreamAsync.");
+
+        /// <inheritdoc />
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
+    }
+
+    /// <summary>Serves two byte ranges with a gate between them, then ends the stream.</summary>
+    /// <param name="first">The bytes served immediately.</param>
+    /// <param name="rest">The bytes served after the gate completes.</param>
+    /// <param name="gate">Completes when <paramref name="rest"/> may be served.</param>
+    private sealed class GateStream(byte[] first, byte[] rest, Task gate) : Stream
+    {
+        private int _stage;
+        private int _offset;
+
+        /// <inheritdoc />
+        public override bool CanRead => true;
+
+        /// <inheritdoc />
+        public override bool CanSeek => false;
+
+        /// <inheritdoc />
+        public override bool CanWrite => false;
+
+        /// <inheritdoc />
+        public override long Length => throw new NotSupportedException();
+
+        /// <inheritdoc />
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        /// <inheritdoc />
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (_stage == 1)
+            {
+#pragma warning disable VSTHRD003 // The gate is test-owned and completes via RunContinuationsAsynchronously.
+                await gate.ConfigureAwait(false);
+#pragma warning restore VSTHRD003
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+            else if (_stage > 1)
+            {
+                return 0;
+            }
+
+            var current = _stage == 0 ? first : rest;
+            var count = Math.Min(buffer.Length, current.Length - _offset);
+            current.AsMemory(_offset, count).CopyTo(buffer);
+            _offset += count;
+            if (_offset >= current.Length)
+            {
+                _stage++;
+                _offset = 0;
+            }
+
+            return count;
+        }
+
+        /// <inheritdoc />
+        public override int Read(byte[] buffer, int offset, int count) =>
+            throw new IOException("GateStream serves reads asynchronously only.");
+
+        /// <inheritdoc />
+        public override void Flush()
+        {
+        }
+
+        /// <inheritdoc />
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        /// <inheritdoc />
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        /// <inheritdoc />
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    /// <summary>
+    /// A turn whose event stream stays open: the first GET streams one text frame, then blocks until
+    /// <see cref="Release"/> before serving the terminal frame. A second GET serves a terminal frame at
+    /// once; it is only reachable when a resume wrongly opens its own fetch during the live turn.
+    /// </summary>
+    private sealed class GatedTurnHandler : HttpMessageHandler
+    {
+        private readonly TaskCompletionSource _gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _gets;
+
+        /// <summary>Gets how many event-stream fetches reached the origin.</summary>
+        public int Gets => _gets;
+
+        /// <summary>Serves the terminal frame to the live stream. Idempotent.</summary>
+        public void Release() => _gate.TrySetResult();
+
+        /// <inheritdoc />
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            if (request.Method == HttpMethod.Post && string.Equals(path, "/sessions", StringComparison.Ordinal))
+            {
+                return Task.FromResult(Created());
+            }
+
+            if (request.Method == HttpMethod.Post && string.Equals(path, "/sessions/sess-1/prompts", StringComparison.Ordinal))
+            {
+                return Task.FromResult(Accepted());
+            }
+
+            if (request.Method == HttpMethod.Get && string.Equals(path, "/sessions/sess-1/events", StringComparison.Ordinal))
+            {
+                _gets++;
+                return Task.FromResult(_gets == 1 ? Gated() : Immediate());
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        }
+
+        private static HttpResponseMessage Created() => new(HttpStatusCode.Created)
+        {
+            Content = new StringContent("""{"id":"sess-1","ownerId":"local-dev"}""", Encoding.UTF8, "application/json"),
+        };
+
+        private static HttpResponseMessage Accepted() => new(HttpStatusCode.Accepted)
+        {
+            Content = new StringContent("""{"sessionId":"sess-1","status":"accepted"}""", Encoding.UTF8, "application/json"),
+        };
+
+        private HttpResponseMessage Gated() => new(HttpStatusCode.OK)
+        {
+            Content = new GatedSseContent(
+                "id: 1\nevent: text_delta\ndata: {\"kind\":\"text_delta\",\"delta\":\"a\"}\n\n",
+                "id: 2\nevent: completed\ndata: {\"kind\":\"completed\",\"reason\":\"end_turn\"}\n\n",
+                _gate.Task),
+        };
+
+        private static HttpResponseMessage Immediate() => new(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                "id: 2\nevent: completed\ndata: {\"kind\":\"completed\",\"reason\":\"end_turn\"}\n\n",
+                Encoding.UTF8,
+                "text/event-stream"),
+        };
     }
 
     /// <summary>An in-process engine that records how many times it was disposed.</summary>

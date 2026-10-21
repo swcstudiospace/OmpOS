@@ -173,6 +173,9 @@
         _streaming = true;
         _error = null;
         _lastPrompt = prompt;
+        // OnSend is a plain Func, so completing it renders only the composer: request the parent render that
+        // flips the composer to Stop here, and again on every terminal path below.
+        StateHasChanged();
         try
         {
             await Api.SubmitPromptAsync(sessionId, prompt).ConfigureAwait(true);
@@ -181,6 +184,7 @@
         {
             _streaming = false;
             _error = $"Could not send the message: {ex.Message}";
+            StateHasChanged();
             return false;
         }
 
@@ -261,10 +265,13 @@
         }
         finally
         {
-            // A stream replaced by a newer send must not clear the flag the newer stream holds.
+            // A stream replaced by a newer send must not clear the flag the newer stream holds. Clearing
+            // renders the parent: the background loop holds no EventCallback, so without this the composer
+            // would keep showing Stop after the terminal event, the error, or the stop.
             if (ReferenceEquals(_streamCts, cts))
             {
                 _streaming = false;
+                StateHasChanged();
             }
         }
     }
