@@ -1,10 +1,13 @@
 @page "/"
+@using System.Diagnostics.CodeAnalysis
+@using Microsoft.Extensions.Logging
 @using OmpOS.Contracts.Sessions
 @using OmpOS.UI.Components
 @using OmpOS.UI.State
 @using OmpOS.Web.Services
  @inject ApiSessionClient Api
  @inject SseEventStream EventStream
+@inject ILogger<Index> Logger
  @implements IAsyncDisposable
 
 <PageTitle>OmpOS</PageTitle>
@@ -31,6 +34,12 @@
 
 @code {
     private const string OwnerId = "local-dev";
+
+    private static readonly Action<ILogger, string, Exception?> BackgroundStreamFailed =
+        LoggerMessage.Define<string>(
+            LogLevel.Error,
+            new EventId(1, "BackgroundStreamFailed"),
+            "Background stream failed for session {SessionId}");
 
     private SessionViewModel _viewModel = new();
     private List<ConversationSummary> _conversations = new();
@@ -176,7 +185,7 @@
         }
 
         // The host accepted the send: the reply streams in the background, so the composer can clear its draft now.
-        _ = StreamFromAsync(sessionId);
+        _ = StreamInBackgroundAsync(sessionId);
         return true;
     }
 
@@ -257,6 +266,22 @@
             {
                 _streaming = false;
             }
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "The stream runs fire-and-forget, so no caller can observe a fault. Every fault is logged and shown in the page's visible error state instead of escaping unobserved.")]
+    private async Task StreamInBackgroundAsync(string sessionId)
+    {
+        try
+        {
+            await StreamFromAsync(sessionId).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            BackgroundStreamFailed(Logger, sessionId, ex);
+            _error = $"The stream stopped unexpectedly: {ex.Message}";
+            _viewModel.MarkOffline();
+            StateHasChanged();
         }
     }
 

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text;
 using OmpOS.Contracts.Sandboxes;
@@ -13,6 +14,7 @@ namespace OmpOS.EngineHost.Tests;
 /// and descriptor honesty. No test spawns omp: the in-process path uses the scripted in-memory
 /// adapter and the remote path uses a scripted <see cref="HttpMessageHandler"/>.
 /// </summary>
+[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default, and await using disposal is intentional.")]
 public sealed class EngineHostTests
 {
     /// <summary>The in-memory host reports the InProcess kind by default.</summary>
@@ -286,7 +288,7 @@ public sealed class EngineHostTests
     private static async Task<List<HarnessEvent>> CollectAsync(IAsyncEnumerable<HarnessEvent> events)
     {
         var collected = new List<HarnessEvent>();
-        await foreach (var evt in events)
+        await foreach (var evt in events.ConfigureAwait(true))
         {
             collected.Add(evt);
         }
@@ -470,7 +472,7 @@ public sealed class EngineHostTests
         public HarnessState State { get; set; } = HarnessState.Ready;
 
         /// <inheritdoc />
-        public IReadOnlyDictionary<string, string> AdvertisedCapabilities { get; } = new Dictionary<string, string>();
+        public IReadOnlyDictionary<string, string> AdvertisedCapabilities { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
         /// <inheritdoc />
         public Task CreateAsync(CancellationToken cancellationToken) => Task.CompletedTask;
