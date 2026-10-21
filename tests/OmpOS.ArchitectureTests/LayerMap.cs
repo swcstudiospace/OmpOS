@@ -19,6 +19,7 @@ internal static class LayerMap
         ["OmpOS.Harness.Acp"] = 2,
         ["OmpOS.Harness.Rpc"] = 2,
         ["OmpOS.Harness.InMemory"] = 2,
+        ["OmpOS.EngineHost"] = 3,
         ["OmpOS.Sessions"] = 2,
         ["OmpOS.GenUi"] = 2,
         ["OmpOS.Sandbox"] = 2,

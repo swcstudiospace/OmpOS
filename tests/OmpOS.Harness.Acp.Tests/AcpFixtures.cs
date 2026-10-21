@@ -38,8 +38,10 @@ internal static class AcpFixtures
     public static long IdOf(byte[] frame) => JsonNode.Parse(frame)!["id"]!.GetValue<long>();
 
     /// <summary>
-    /// Answers a client request. Requests the capture recorded (initialize, session/new) get the captured reply;
-    /// every other request is acknowledged with an empty result. Responses and notifications get no reply.
+    /// Answers a client request. Requests the capture recorded (initialize) get the captured reply;
+    /// <c>authenticate</c> is accepted with an empty result; <c>session/new</c> gets the captured reply
+    /// re-addressed to the request id, because authentication shifts it past the captured id; every other
+    /// request is acknowledged with an empty result. Responses and notifications get no reply.
     /// </summary>
     public static IEnumerable<byte[]> Reply(byte[] frame)
     {
@@ -49,9 +51,25 @@ internal static class AcpFixtures
             return [];
         }
 
+        var method = node["method"]!.GetValue<string>();
         var id = node["id"]!.GetValue<long>();
-        return CapturedResponses.TryGetValue(id, out var captured)
-            ? [captured]
-            : [Utf8($"{{\"jsonrpc\":\"2.0\",\"id\":{id},\"result\":{{}}}}")];
+        if (string.Equals(method, "authenticate", StringComparison.Ordinal))
+        {
+            return [Utf8($"{{\"jsonrpc\":\"2.0\",\"id\":{id},\"result\":{{}}}}")];
+        }
+
+        if (CapturedResponses.TryGetValue(id, out var captured))
+        {
+            return [captured];
+        }
+
+        if (string.Equals(method, "session/new", StringComparison.Ordinal))
+        {
+            var sessionNew = JsonNode.Parse(Text(CapturedResponses[2]))!;
+            sessionNew["id"] = id;
+            return [Utf8(sessionNew.ToJsonString())];
+        }
+
+        return [Utf8($"{{\"jsonrpc\":\"2.0\",\"id\":{id},\"result\":{{}}}}")];
     }
 }

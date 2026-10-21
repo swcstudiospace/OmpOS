@@ -32,6 +32,11 @@ public sealed class InMemorySessionRepository : ISessionRepository
     }
 
     /// <inheritdoc />
+    /// <exception cref="InvalidOperationException">
+    /// The incoming <see cref="Session.Events"/> neither extend nor agree with the stored log: an event
+    /// within the common prefix carries a different <see cref="StreamEvent.Seq"/> than the stored event
+    /// at the same position. The message names the session and the first conflicting position.
+    /// </exception>
     public Task SaveAsync(Session session, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(session);
@@ -40,14 +45,46 @@ public sealed class InMemorySessionRepository : ISessionRepository
         var entry = _sessions.GetOrAdd(session.Id, static _ => new Entry());
         lock (entry.Gate)
         {
-            entry.Header = session with { Events = ImmutableList<StreamEvent>.Empty };
             if (session.Events.Count >= entry.Log.Count)
             {
+                var conflict = FirstConflict(entry.Log, session.Events);
+                if (conflict >= 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Session '{session.Id}' has a conflicting event log: incoming event at index {conflict} " +
+                        $"has Seq {session.Events[conflict].Seq} but the stored log has Seq {entry.Log[conflict].Seq}.");
+                }
+            }
+
+            entry.Header = session with { Events = ImmutableList<StreamEvent>.Empty };
+            if (session.Events.Count > entry.Log.Count)
+            {
+                // The incoming events extend the stored log: same Seq prefix, strictly longer.
                 entry.Log = session.Events.ToImmutableList();
             }
+            // Otherwise the save is stale (fewer events) or agrees exactly: keep the stored log.
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Finds the first position where the incoming events disagree with the stored log.
+    /// </summary>
+    /// <param name="stored">The stored event log.</param>
+    /// <param name="incoming">The incoming events, at least as long as the stored log.</param>
+    /// <returns>The first conflicting index, or -1 when the stored log is a Seq-prefix of the incoming events.</returns>
+    private static int FirstConflict(ImmutableList<StreamEvent> stored, IReadOnlyList<StreamEvent> incoming)
+    {
+        for (var i = 0; i < stored.Count; i++)
+        {
+            if (incoming[i].Seq != stored[i].Seq)
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     /// <inheritdoc />

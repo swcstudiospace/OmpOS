@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Threading.Channels;
 
 namespace OmpOS.Harness.Rpc.Tests;
@@ -5,10 +6,15 @@ namespace OmpOS.Harness.Rpc.Tests;
 /// <summary>
 /// Scripted <see cref="IRpcTransport"/>. Lines emitted by the test (or by <c>respond</c> for each command written)
 /// are delivered to the session's pump exactly as stdout would deliver them. Every written command is recorded.
+/// Stderr is a bounded tail that never blocks the protocol stream, mirroring <c>OmpRpcProcess</c>.
 /// </summary>
 internal sealed class FakeRpcTransport : IRpcTransport
 {
+    /// <summary>Maximum retained stderr lines, matching <c>OmpRpcProcess</c>'s bounded tail.</summary>
+    internal const int StderrTailCap = 200;
+
     private readonly Channel<string> _stdout = Channel.CreateUnbounded<string>();
+    private readonly ConcurrentQueue<string> _stderrTail = new();
     private readonly Func<string, IEnumerable<string>>? _respond;
     private readonly List<string> _sent = [];
     private readonly System.Threading.Lock _gate = new();
@@ -42,6 +48,19 @@ internal sealed class FakeRpcTransport : IRpcTransport
     /// <summary>Ends stdout, as process exit would.</summary>
     public void EndStdout() => _stdout.Writer.TryComplete();
 
+    /// <summary>Appends one stderr line to the bounded tail, dropping the oldest past the cap.</summary>
+    /// <param name="line">The stderr line.</param>
+    public void EmitStderr(string line)
+    {
+        _stderrTail.Enqueue(line);
+        while (_stderrTail.Count > StderrTailCap)
+        {
+            _ = _stderrTail.TryDequeue(out _);
+        }
+    }
+
+    /// <summary>Gets the most recent stderr lines (up to 200), oldest first.</summary>
+    public IReadOnlyList<string> RecentStderr => _stderrTail.ToArray();
     /// <inheritdoc />
     public IAsyncEnumerable<string> ReadLinesAsync(CancellationToken cancellationToken) =>
         _stdout.Reader.ReadAllAsync(cancellationToken);

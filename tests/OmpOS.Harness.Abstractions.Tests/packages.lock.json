@@ -102,11 +102,6 @@
           "Microsoft.Testing.Platform": "[2.5.1, 3.0.0)"
         }
       },
-      "Microsoft.Testing.Platform": {
-        "type": "Transitive",
-        "resolved": "2.5.1",
-        "contentHash": "FAMaFFWnULW+hDHMb40Qzhcgz9cAU2/EtgRCBNX/DdQoKo0sPG2EiY+w7bQdl/BgHnf/DbpXLbf5Xy0o15M8NA=="
-      },
       "Microsoft.Testing.Platform.MSBuild": {
         "type": "Transitive",
         "resolved": "2.5.1",
@@ -305,6 +300,12 @@
         "requested": "[10.0.13, )",
         "resolved": "10.0.13",
         "contentHash": "ZjTwxzhiw2TMEzIbUDkMF0dfDB2I4NQgIfKD0ELu9/5Mk+SRGdKZcD0/lvBrRCAPo6KN2r0BW86MRancoyJkoA=="
+      },
+      "Microsoft.Testing.Platform": {
+        "type": "CentralTransitive",
+        "requested": "[2.5.1, )",
+        "resolved": "2.5.1",
+        "contentHash": "FAMaFFWnULW+hDHMb40Qzhcgz9cAU2/EtgRCBNX/DdQoKo0sPG2EiY+w7bQdl/BgHnf/DbpXLbf5Xy0o15M8NA=="
       }
     }
   }

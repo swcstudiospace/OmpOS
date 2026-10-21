@@ -57,7 +57,7 @@ public static class OmpVersionProbe
             return Process.Start(startInfo)
                 ?? throw new ProcessStartHarnessException($"Could not start '{ompPath}'.");
         }
-        catch (Win32Exception ex)
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or UnauthorizedAccessException)
         {
             throw new ProcessStartHarnessException($"Could not start '{ompPath}'.", ex);
         }

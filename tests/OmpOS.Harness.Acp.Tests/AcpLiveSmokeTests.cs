@@ -20,6 +20,7 @@ public sealed class AcpLiveSmokeTests
         var options = new AcpClientOptions
         {
             WorkingDirectory = Directory.GetCurrentDirectory(),
+            AuthMethodId = "agent",
             HandshakeTimeout = TimeSpan.FromSeconds(60),
             RequestTimeout = TimeSpan.FromSeconds(60),
         };

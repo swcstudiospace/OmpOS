@@ -5,4 +5,8 @@
     <ProjectReference Include="../OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="OmpOS.Sessions.Tests" />
+  </ItemGroup>
+
 </Project>

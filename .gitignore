@@ -183,6 +183,8 @@ DocProject/Help/html
 
 # Click-Once directory
 publish/
+# Local publish output (vercel.json buildCommand publishes to output/)
+/output/
 
 # Publish Web Output
 *.[Pp]ublish.xml

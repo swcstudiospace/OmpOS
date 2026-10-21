@@ -66,7 +66,7 @@ public sealed class OmpRpcProcess : IRpcTransport
         {
             process = Process.Start(startInfo);
         }
-        catch (Win32Exception ex)
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or UnauthorizedAccessException)
         {
             throw new ProcessStartHarnessException($"Could not start '{ompPath}'.", ex);
         }
@@ -139,7 +139,7 @@ public sealed class OmpRpcProcess : IRpcTransport
             await stdin.WriteAsync(string.Concat(line, "\n").AsMemory(), cancellationToken).ConfigureAwait(false);
             await stdin.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {
             throw new DisconnectedHarnessException("Writing to omp stdin failed.", ex);
         }

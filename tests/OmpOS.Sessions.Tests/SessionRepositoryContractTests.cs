@@ -165,6 +165,54 @@ public abstract class SessionRepositoryContractTests<T> where T : ISessionReposi
         loaded.Events.Select(static evt => evt.Seq).ToArray().ShouldBe([1L, 2L, 3L]);
     }
 
+    /// <summary>Saving an equal-length log whose Seq diverges from the stored log is rejected and keeps the stored log.</summary>
+    [Fact]
+    public async Task SaveWithEqualLengthConflictingLogThrows()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await SeededAsync("s-1", 3, ct).ConfigureAwait(true);
+        var clashing = Sample("s-1") with
+        {
+            Status = SessionStatus.Running,
+            Events =
+            [
+                Event("s-1", new TextDeltaPayload { Delta = "stale-0" }) with { Seq = 11 },
+                Event("s-1", new TextDeltaPayload { Delta = "stale-1" }) with { Seq = 12 },
+                Event("s-1", new TextDeltaPayload { Delta = "stale-2" }) with { Seq = 13 },
+            ],
+        };
+
+        var error = await Should.ThrowAsync<InvalidOperationException>(() =>
+            repository.SaveAsync(clashing, ct)).ConfigureAwait(true);
+
+        error.Message.ShouldContain("s-1");
+        var loaded = await repository.GetAsync("s-1", ct).ConfigureAwait(true);
+        loaded.ShouldNotBeNull();
+        loaded.Events.Select(static evt => evt.Seq).ToArray().ShouldBe([1L, 2L, 3L]);
+    }
+
+    /// <summary>Saving a longer log whose Seq prefix matches the stored log replaces it.</summary>
+    [Fact]
+    public async Task SaveWithLongerExtendingLogReplaces()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await SeededAsync("s-1", 3, ct).ConfigureAwait(true);
+        var loaded = await repository.GetAsync("s-1", ct).ConfigureAwait(true);
+        loaded.ShouldNotBeNull();
+        var extended = loaded with
+        {
+            Status = SessionStatus.Running,
+            Events = [.. loaded.Events, Event("s-1", new TextDeltaPayload { Delta = "extra" }) with { Seq = 4 }],
+        };
+
+        await repository.SaveAsync(extended, ct).ConfigureAwait(true);
+
+        var stored = await repository.GetAsync("s-1", ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Status.ShouldBe(SessionStatus.Running);
+        stored.Events.Select(static evt => evt.Seq).ToArray().ShouldBe([1L, 2L, 3L, 4L]);
+    }
+
     /// <summary>Asserts every field of two sessions is equal, comparing collections element by element.</summary>
     /// <param name="actual">The loaded session.</param>
     /// <param name="expected">The session that was saved.</param>

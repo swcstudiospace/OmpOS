@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -15,9 +16,11 @@ namespace OmpOS.Harness.Rpc;
 /// <remarks>
 /// <para>
 /// A single pump task reads every frame. Command responses complete the command with the same id, and nothing else.
-/// Responses with unknown ids are ignored. A <c>prompt</c> is admitted by its response (<c>success: true</c>); its
-/// stream events flow to the prompt's slot until a <c>prompt_result</c> with the same id completes it. A response with
-/// <c>agentInvoked: false</c> is a local command: no <c>prompt_result</c> follows, so the stream completes at once.
+/// Command responses with unknown ids are ignored. A <c>prompt</c> is admitted by its response (<c>success: true</c>);
+/// its stream events flow to the prompt's slot until a <c>prompt_result</c> with the same id completes it. A
+/// <c>prompt_result</c> for any other id faults the session: an exact repeat of the last completed id is a duplicate
+/// completion, anything else is malformed. A response with <c>agentInvoked: false</c> is a local command: no
+/// <c>prompt_result</c> follows, so the stream completes at once.
 /// </para>
 /// <para>
 /// Any protocol violation (malformed frame, handshake timeout, dropped stream, event overflow) faults the session.
@@ -188,6 +191,105 @@ public sealed class OmpRpcSession : IOmpSession
         _ = await SendCommandAsync(new AbortCommand { Id = NextId() }, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Aborts the in-flight turn and withdraws queued steering and follow-up input back to the caller.
+    /// The plain abort-on-cancel path is untouched: <see cref="CancelAsync"/> still sends <c>abort</c>.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The steering and follow-up inputs omp restored to the caller.</returns>
+    /// <exception cref="RpcCommandException">omp rejected the abort.</exception>
+    /// <exception cref="MalformedFrameHarnessException">omp answered without a queue object.</exception>
+    public async Task<RestoredQueue> AbortAndRestoreQueueAsync(CancellationToken cancellationToken)
+    {
+        RpcResponse response = await SendCommandAsync(new AbortAndRestoreQueueCommand { Id = NextId() }, cancellationToken)
+            .ConfigureAwait(false);
+        return ParseRestoredQueue(response.Data);
+    }
+
+    private static RestoredQueue ParseRestoredQueue(JsonElement? data)
+    {
+        if (data is not { ValueKind: JsonValueKind.Object } root)
+        {
+            throw new MalformedFrameHarnessException("abort_and_restore_queue returned no queue data.", Context);
+        }
+
+        return new RestoredQueue
+        {
+            Steering = ReadQueuedInputs(root, "steering"),
+            FollowUp = ReadQueuedInputs(root, "followUp"),
+        };
+    }
+
+    private static List<QueuedInput> ReadQueuedInputs(JsonElement root, string property)
+    {
+        if (!root.TryGetProperty(property, out JsonElement array)
+            || array.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return [];
+        }
+
+        if (array.ValueKind != JsonValueKind.Array)
+        {
+            throw new MalformedFrameHarnessException($"abort_and_restore_queue data '{property}' is not an array.", Context);
+        }
+
+        var inputs = new List<QueuedInput>(array.GetArrayLength());
+        foreach (JsonElement item in array.EnumerateArray())
+        {
+            inputs.Add(ReadQueuedInput(item, property));
+        }
+
+        return inputs;
+    }
+
+    private static QueuedInput ReadQueuedInput(JsonElement item, string property)
+    {
+        if (item.ValueKind != JsonValueKind.Object
+            || !item.TryGetProperty("text", out JsonElement text)
+            || text.ValueKind != JsonValueKind.String
+            || text.GetString() is not { } content)
+        {
+            throw new MalformedFrameHarnessException(
+                $"abort_and_restore_queue data '{property}' holds an item without text.", Context);
+        }
+
+        List<RpcImageContent>? images = null;
+        if (item.TryGetProperty("images", out JsonElement imagesElement)
+            && imagesElement.ValueKind != JsonValueKind.Null)
+        {
+            if (imagesElement.ValueKind != JsonValueKind.Array)
+            {
+                throw new MalformedFrameHarnessException(
+                    $"abort_and_restore_queue data '{property}' holds images that are not an array.", Context);
+            }
+
+            images = new List<RpcImageContent>(imagesElement.GetArrayLength());
+            foreach (JsonElement image in imagesElement.EnumerateArray())
+            {
+                images.Add(ReadQueuedImage(image, property));
+            }
+        }
+
+        return new QueuedInput { Text = content, Images = images };
+    }
+
+    private static RpcImageContent ReadQueuedImage(JsonElement image, string property)
+    {
+        if (image.ValueKind != JsonValueKind.Object
+            || !image.TryGetProperty("data", out JsonElement data)
+            || data.ValueKind != JsonValueKind.String
+            || data.GetString() is not { } bytes
+            || !image.TryGetProperty("mimeType", out JsonElement mimeType)
+            || mimeType.ValueKind != JsonValueKind.String
+            || mimeType.GetString() is not { } type)
+        {
+            throw new MalformedFrameHarnessException(
+                $"abort_and_restore_queue data '{property}' holds an image without data or mimeType.", Context);
+        }
+
+        return new RpcImageContent { Data = bytes, MimeType = type };
+    }
+
     /// <summary>Reads the engine's current state (<c>get_state</c>).</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The state object omp returned.</returns>
@@ -211,6 +313,10 @@ public sealed class OmpRpcSession : IOmpSession
     }
 
     /// <inheritdoc />
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "HI-01: observing the pump must not throw its recorded failure out of disposal.")]
     public async ValueTask DisposeAsync()
     {
         lock (_gate)
@@ -226,7 +332,14 @@ public sealed class OmpRpcSession : IOmpSession
         await _transport.DisposeAsync().ConfigureAwait(false);
         if (_pump is { } pump)
         {
-            await pump.ConfigureAwait(false);
+            try
+            {
+                await pump.ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                // The session already recorded its failure; disposal must not throw it back out.
+            }
         }
     }
 
@@ -335,6 +448,10 @@ public sealed class OmpRpcSession : IOmpSession
         }
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "HI-01: unexpected transport failures must end the session typed, never escape raw.")]
     private async Task PumpAsync()
     {
         try
@@ -353,6 +470,12 @@ public sealed class OmpRpcSession : IOmpSession
         catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {
             _ = Fail(new DisconnectedHarnessException("Reading from omp failed.", Context, ex));
+        }
+        catch (Exception ex)
+        {
+            // Harness failures are claimed above; anything else is an unexpected transport or dispatch
+            // failure that must end the session with a typed error instead of hanging its consumers.
+            _ = Fail(new DisconnectedHarnessException("The omp session failed.", Context, ex));
         }
     }
 
@@ -422,7 +545,7 @@ public sealed class OmpRpcSession : IOmpSession
                 throw Fail(new DuplicateCompletionHarnessException($"prompt_result repeated for id {frame.Id}.", Context));
             }
 
-            return;
+            throw Fail(new MalformedFrameHarnessException($"prompt_result for unknown prompt id '{frame.Id}'.", Context));
         }
 
         if (string.Equals(frame.Status, ErrorReason, StringComparison.Ordinal))

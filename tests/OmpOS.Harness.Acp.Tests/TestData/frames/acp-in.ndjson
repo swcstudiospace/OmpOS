@@ -1,2 +1,3 @@
 {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1,"clientCapabilities":{"fs":{"readTextFile":false,"writeTextFile":false}}}}
-{"jsonrpc":"2.0","id":2,"method":"session/new","params":{"cwd":"/root/src/repos/ompos","mcpServers":[]}}
+{"jsonrpc":"2.0","id":2,"method":"authenticate","params":{"methodId":"agent"}}
+{"jsonrpc":"2.0","id":3,"method":"session/new","params":{"cwd":"/root/src/repos/ompos","mcpServers":[]}}

@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using OmpOS.Harness.Abstractions;
 using Shouldly;
@@ -14,6 +15,10 @@ public sealed class AcpAgentSessionTests
 {
     private const long PermissionRequestId = 900;
     private const long UnsupportedRequestId = 901;
+    private const long FsAnswerId = 910;
+
+    /// <summary>Update notifications delivered with no consumer after the first, past the 4096-event turn buffer.</summary>
+    private const int FloodUpdates = 5000;
 
     private const string AllowAndRejectOptions =
         "[{\"optionId\":\"allow-once\",\"name\":\"Allow\",\"kind\":\"allow_once\"},{\"optionId\":\"reject-once\",\"name\":\"Reject\",\"kind\":\"reject_once\"}]";
@@ -117,7 +122,7 @@ public sealed class AcpAgentSessionTests
     {
         var ct = TestContext.Current.CancellationToken;
         var answer = await AnswerPermissionAsync(
-            new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd },
+            new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent" },
             PermissionRequest("execute", AllowAndRejectOptions),
             ct).ConfigureAwait(true);
 
@@ -132,7 +137,7 @@ public sealed class AcpAgentSessionTests
     {
         var ct = TestContext.Current.CancellationToken;
         var answer = await AnswerPermissionAsync(
-            new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd },
+            new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent" },
             PermissionRequest("execute", AllowOnlyOption),
             ct).ConfigureAwait(true);
 
@@ -147,7 +152,7 @@ public sealed class AcpAgentSessionTests
     {
         var ct = TestContext.Current.CancellationToken;
         var answer = await AnswerPermissionAsync(
-            new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, ApprovalPolicy = new AcpApprovalPolicy(["read"]) },
+            new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent", ApprovalPolicy = new AcpApprovalPolicy(["read"]) },
             PermissionRequest("read", AllowAndRejectOptions),
             ct).ConfigureAwait(true);
 
@@ -160,7 +165,7 @@ public sealed class AcpAgentSessionTests
     {
         var ct = TestContext.Current.CancellationToken;
         var answer = await AnswerPermissionAsync(
-            new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, ApprovalPolicy = new AcpApprovalPolicy(["read"], static _ => true) },
+            new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent", ApprovalPolicy = new AcpApprovalPolicy(["read"], static _ => true) },
             PermissionRequest("execute", AllowAndRejectOptions),
             ct).ConfigureAwait(true);
 
@@ -190,6 +195,342 @@ public sealed class AcpAgentSessionTests
         var answer = await answered.Task.WaitAsync(TimeSpan.FromSeconds(10), ct).ConfigureAwait(true);
 
         JsonNode.Parse(answer)!["error"]!["code"]!.GetValue<long>().ShouldBe(-32601);
+    }
+
+    /// <summary>An initialize result without auth methods sends no authenticate request and the session becomes ready.</summary>
+    [Fact]
+    public async Task NoAuthMethodsMeansNoAuthenticateRequest()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var transport = new ScriptedAcpTransport(frame => HasMethod(frame, "initialize")
+            ? [InitializeWithoutAuthMethods(AcpFixtures.IdOf(frame))]
+            : AcpFixtures.Reply(frame));
+        await using var session = NewSession(transport);
+        await session.CreateAsync(ct).ConfigureAwait(true);
+
+        session.State.ShouldBe(HarnessState.Ready);
+        session.SessionId.ShouldBe(AcpFixtures.CapturedSessionId);
+        transport.Sent.Any(static frame => HasMethod(frame, "authenticate")).ShouldBeFalse();
+        transport.Sent.Any(static frame => HasMethod(frame, "session/new")).ShouldBeTrue();
+    }
+
+    /// <summary>Advertised auth methods plus a configured id send exactly one authenticate with that id before session/new.</summary>
+    [Fact]
+    public async Task AuthMethodsWithConfiguredIdSendsOneAuthenticateBeforeSessionNew()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
+        await using var session = NewSession(transport);
+        await session.CreateAsync(ct).ConfigureAwait(true);
+
+        var authenticates = transport.Sent.Where(static frame => HasMethod(frame, "authenticate")).ToArray();
+        authenticates.Length.ShouldBe(1);
+        JsonNode.Parse(authenticates[0])!["params"]!["methodId"]!.GetValue<string>().ShouldBe("agent");
+        var methods = transport.Sent.Select(AcpFixtures.MethodOf).ToArray();
+        Array.IndexOf(methods, "authenticate", 0).ShouldBeLessThan(Array.IndexOf(methods, "session/new", 0));
+    }
+
+    /// <summary>Advertised auth methods without a configured id fail the handshake instead of guessing a method.</summary>
+    [Fact]
+    public async Task AuthMethodsWithoutConfiguredIdFailsHandshake()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
+        await using var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd });
+
+        var failure = await Should.ThrowAsync<AcpRequestFailedHarnessException>(() => session.CreateAsync(ct)).ConfigureAwait(true);
+        failure.Context.ShouldBe("authenticate");
+        session.State.ShouldBe(HarnessState.Faulted);
+        transport.Sent.Any(static frame => HasMethod(frame, "session/new")).ShouldBeFalse();
+    }
+
+    /// <summary>With FsRoot set, initialize advertises both fs capabilities as true.</summary>
+    [Fact]
+    public async Task FsRootAdvertisesReadAndWriteCapabilities()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var root = Directory.CreateTempSubdirectory("acp-fs-");
+        try
+        {
+            var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
+            await using var session = new AcpAgentSession(transport, FsOptions(root.FullName));
+            await session.CreateAsync(ct).ConfigureAwait(true);
+
+            var initialize = transport.Sent.Single(frame => HasMethod(frame, "initialize"));
+            var fs = JsonNode.Parse(initialize)!["params"]!["clientCapabilities"]!["fs"]!;
+            fs["readTextFile"]!.GetValue<bool>().ShouldBeTrue();
+            fs["writeTextFile"]!.GetValue<bool>().ShouldBeTrue();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>Without FsRoot, initialize advertises both fs capabilities as false.</summary>
+    [Fact]
+    public async Task NoFsRootAdvertisesFalseCapabilities()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
+        await using var session = NewSession(transport);
+        await session.CreateAsync(ct).ConfigureAwait(true);
+
+        var initialize = transport.Sent.Single(frame => HasMethod(frame, "initialize"));
+        var fs = JsonNode.Parse(initialize)!["params"]!["clientCapabilities"]!["fs"]!;
+        fs["readTextFile"]!.GetValue<bool>().ShouldBeFalse();
+        fs["writeTextFile"]!.GetValue<bool>().ShouldBeFalse();
+    }
+
+    /// <summary>Without FsRoot, both fs handlers answer with an error naming the capability as disabled.</summary>
+    [Fact]
+    public async Task NoFsRootRejectsFsCallsAsDisabled()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var options = FsOptions(null);
+
+        var read = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, "notes.txt"), FsAnswerId, ct).ConfigureAwait(true);
+        read["error"]!["code"]!.GetValue<long>().ShouldBe(-32601);
+        read["error"]!["message"]!.GetValue<string>().ShouldContain("disabled");
+
+        var write = await AnswerFsAsync(options, FsWriteRequest(FsAnswerId, "notes.txt", "hi"), FsAnswerId, ct).ConfigureAwait(true);
+        write["error"]!["code"]!.GetValue<long>().ShouldBe(-32601);
+        write["error"]!["message"]!.GetValue<string>().ShouldContain("disabled");
+    }
+
+    /// <summary>With a root, a read inside returns the file content, honouring line and limit, for relative and absolute paths.</summary>
+    [Fact]
+    public async Task FsReadInsideRootReturnsContent()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var root = Directory.CreateTempSubdirectory("acp-fs-");
+        try
+        {
+            var dir = Path.Combine(root.FullName, "notes");
+            Directory.CreateDirectory(dir);
+            await File.WriteAllTextAsync(Path.Combine(dir, "hello.txt"), "line1\nline2\nline3\n", ct).ConfigureAwait(true);
+            var options = FsOptions(root.FullName);
+
+            var full = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, "notes/hello.txt"), FsAnswerId, ct).ConfigureAwait(true);
+            full["result"]!["content"]!.GetValue<string>().ShouldBe("line1\nline2\nline3");
+
+            var absolute = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, Path.Combine(dir, "hello.txt")), FsAnswerId, ct).ConfigureAwait(true);
+            absolute["result"]!["content"]!.GetValue<string>().ShouldBe("line1\nline2\nline3");
+
+            var window = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, "notes/hello.txt", line: 2, limit: 1), FsAnswerId, ct).ConfigureAwait(true);
+            window["result"]!["content"]!.GetValue<string>().ShouldBe("line2");
+
+            var pastEnd = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, "notes/hello.txt", line: 9), FsAnswerId, ct).ConfigureAwait(true);
+            pastEnd["result"]!["content"]!.GetValue<string>().ShouldBe(string.Empty);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>Reads that leave the root by traversal or by absolute path are rejected.</summary>
+    [Fact]
+    public async Task FsReadOutsideRootIsRejected()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var outer = Directory.CreateTempSubdirectory("acp-fs-outer-");
+        var root = Directory.CreateTempSubdirectory("acp-fs-");
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(outer.FullName, "outside.txt"), "secret", ct).ConfigureAwait(true);
+            var options = FsOptions(root.FullName);
+
+            var traversal = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, $"../{outer.Name}/outside.txt"), FsAnswerId, ct).ConfigureAwait(true);
+            traversal["error"]!["code"]!.GetValue<long>().ShouldBe(-32602);
+
+            var absolute = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, Path.Combine(outer.FullName, "outside.txt")), FsAnswerId, ct).ConfigureAwait(true);
+            absolute["error"]!["code"]!.GetValue<long>().ShouldBe(-32602);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+            outer.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>A read through a symlink that escapes the root is rejected.</summary>
+    [Fact]
+    public async Task FsReadThroughSymlinkEscapeIsRejected()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var ct = TestContext.Current.CancellationToken;
+        var outer = Directory.CreateTempSubdirectory("acp-fs-outer-");
+        var root = Directory.CreateTempSubdirectory("acp-fs-");
+        try
+        {
+            var secret = Path.Combine(outer.FullName, "secret.txt");
+            await File.WriteAllTextAsync(secret, "secret", ct).ConfigureAwait(true);
+            _ = File.CreateSymbolicLink(Path.Combine(root.FullName, "link.txt"), secret);
+
+            var answer = await AnswerFsAsync(FsOptions(root.FullName), FsReadRequest(FsAnswerId, "link.txt"), FsAnswerId, ct).ConfigureAwait(true);
+
+            answer["error"]!["code"]!.GetValue<long>().ShouldBe(-32602);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+            outer.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>With a root, a write inside creates the file with its parent directories.</summary>
+    [Fact]
+    public async Task FsWriteInsideRootCreatesFile()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var root = Directory.CreateTempSubdirectory("acp-fs-");
+        try
+        {
+            var answer = await AnswerFsAsync(
+                FsOptions(root.FullName),
+                FsWriteRequest(FsAnswerId, "sub/deep/new.txt", "hello"),
+                FsAnswerId,
+                ct).ConfigureAwait(true);
+
+            answer["error"].ShouldBeNull();
+            (await File.ReadAllTextAsync(Path.Combine(root.FullName, "sub", "deep", "new.txt"), ct).ConfigureAwait(true)).ShouldBe("hello");
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>A write outside the root is rejected and creates nothing.</summary>
+    [Fact]
+    public async Task FsWriteOutsideRootIsRejected()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var outer = Directory.CreateTempSubdirectory("acp-fs-outer-");
+        var root = Directory.CreateTempSubdirectory("acp-fs-");
+        try
+        {
+            var evil = Path.Combine(outer.FullName, "evil.txt");
+            var options = FsOptions(root.FullName);
+
+            var traversal = await AnswerFsAsync(options, FsWriteRequest(FsAnswerId, $"../{outer.Name}/evil.txt", "hi"), FsAnswerId, ct).ConfigureAwait(true);
+            traversal["error"]!["code"]!.GetValue<long>().ShouldBe(-32602);
+
+            var absolute = await AnswerFsAsync(options, FsWriteRequest(FsAnswerId, evil, "hi"), FsAnswerId, ct).ConfigureAwait(true);
+            absolute["error"]!["code"]!.GetValue<long>().ShouldBe(-32602);
+
+            File.Exists(evil).ShouldBeFalse();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+            outer.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>A write through a symlinked directory that escapes the root is rejected and creates nothing outside.</summary>
+    [Fact]
+    public async Task FsWriteThroughSymlinkEscapeIsRejected()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var ct = TestContext.Current.CancellationToken;
+        var outer = Directory.CreateTempSubdirectory("acp-fs-outer-");
+        var root = Directory.CreateTempSubdirectory("acp-fs-");
+        try
+        {
+            _ = Directory.CreateSymbolicLink(Path.Combine(root.FullName, "evildir"), outer.FullName);
+            var evil = Path.Combine(outer.FullName, "evil.txt");
+
+            var answer = await AnswerFsAsync(
+                FsOptions(root.FullName),
+                FsWriteRequest(FsAnswerId, "evildir/evil.txt", "hi"),
+                FsAnswerId,
+                ct).ConfigureAwait(true);
+
+            answer["error"]!["code"]!.GetValue<long>().ShouldBe(-32602);
+            File.Exists(evil).ShouldBeFalse();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+            outer.Delete(recursive: true);
+        }
+    }
+
+    private static AcpClientOptions FsOptions(string? fsRoot) =>
+        new() { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent", FsRoot = fsRoot };
+
+    private static byte[] FsReadRequest(long id, string path, int? line = null, int? limit = null)
+    {
+        var paramsNode = new JsonObject { ["sessionId"] = AcpFixtures.CapturedSessionId, ["path"] = path };
+        if (line.HasValue)
+        {
+            paramsNode["line"] = line.Value;
+        }
+
+        if (limit.HasValue)
+        {
+            paramsNode["limit"] = limit.Value;
+        }
+
+        return AcpFixtures.Utf8(new JsonObject
+        {
+            ["jsonrpc"] = "2.0",
+            ["id"] = id,
+            ["method"] = "fs/read_text_file",
+            ["params"] = paramsNode,
+        }.ToJsonString());
+    }
+
+    private static byte[] FsWriteRequest(long id, string path, string content) =>
+        AcpFixtures.Utf8(new JsonObject
+        {
+            ["jsonrpc"] = "2.0",
+            ["id"] = id,
+            ["method"] = "fs/write_text_file",
+            ["params"] = new JsonObject
+            {
+                ["sessionId"] = AcpFixtures.CapturedSessionId,
+                ["path"] = path,
+                ["content"] = content,
+            },
+        }.ToJsonString());
+
+    private static async Task<JsonNode> AnswerFsAsync(AcpClientOptions options, byte[] request, long answerId, CancellationToken ct)
+    {
+        var answered = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var transport = new ScriptedAcpTransport(frame =>
+        {
+            if (AcpFixtures.MethodOf(frame) is null && AcpFixtures.IdOf(frame) == answerId)
+            {
+                answered.TrySetResult(frame);
+            }
+
+            return AcpFixtures.Reply(frame);
+        });
+        await using var session = new AcpAgentSession(transport, options);
+        await session.CreateAsync(ct).ConfigureAwait(true);
+
+        transport.Deliver(request);
+        var answer = await answered.Task.WaitAsync(TimeSpan.FromSeconds(10), ct).ConfigureAwait(true);
+        return JsonNode.Parse(answer)!;
+    }
+
+    private static byte[] InitializeWithoutAuthMethods(long id)
+    {
+        var node = JsonNode.Parse(AcpFixtures.Lines("acp-out.ndjson")[0])!;
+        node["result"]!.AsObject().Remove("authMethods");
+        node["id"] = id;
+        return AcpFixtures.Utf8(node.ToJsonString());
     }
 
     /// <summary>A silent agent fails the handshake with HandshakeTimeoutHarnessException and faults the session.</summary>
@@ -293,11 +634,181 @@ public sealed class AcpAgentSessionTests
         JsonNode.Parse(close)!["params"]!["sessionId"]!.GetValue<string>().ShouldBe(AcpFixtures.CapturedSessionId);
     }
 
+    /// <summary>A session/update flood past the turn buffer fails the turn with BackpressureHarnessException and faults the session.</summary>
+    [Fact]
+    public async Task UpdateFloodBeyondCapacityFailsTurnWithBackpressureAndFaultsSession()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var transport = new ScriptedAcpTransport(frame => HasMethod(frame, "session/prompt") ? [] : AcpFixtures.Reply(frame));
+        await using var session = NewSession(transport);
+        await session.CreateAsync(ct).ConfigureAwait(true);
+
+        await using var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        var firstMove = stream.MoveNextAsync();
+        transport.Deliver(Update(AcpFixtures.CapturedSessionId, "{\"sessionUpdate\":\"agent_message_chunk\",\"content\":{\"type\":\"text\",\"text\":\"first\"}}"));
+        (await firstMove.ConfigureAwait(true)).ShouldBeTrue();
+        stream.Current.ShouldBe(new TextDeltaEvent("first"));
+
+        for (var i = 0; i < FloodUpdates; i++)
+        {
+            transport.Deliver(Update(AcpFixtures.CapturedSessionId, "{\"sessionUpdate\":\"agent_message_chunk\",\"content\":{\"type\":\"text\",\"text\":\"flood\"}}"));
+        }
+
+        await WaitForStateAsync(session, HarnessState.Faulted, ct).ConfigureAwait(true);
+
+        await Should.ThrowAsync<BackpressureHarnessException>(DrainAsync).ConfigureAwait(true);
+
+        async Task DrainAsync()
+        {
+            while (await stream.MoveNextAsync().ConfigureAwait(true))
+            {
+            }
+        }
+    }
+
+    /// <summary>A throwing narrowing hook fails closed: the request is denied and the failure is recorded as a diagnostic event.</summary>
+    [Fact]
+    public async Task ThrowingApprovalHookDeniesAndRecordsDiagnostic()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var transport = new ScriptedAcpTransport(frame => HasMethod(frame, "session/prompt") ? [] : AcpFixtures.Reply(frame));
+        var options = new AcpClientOptions
+        {
+            WorkingDirectory = AcpFixtures.CapturedCwd,
+            AuthMethodId = "agent",
+            ApprovalPolicy = new AcpApprovalPolicy(["execute"], static _ => throw new InvalidOperationException("hook blew up")),
+        };
+        await using var session = new AcpAgentSession(transport, options);
+        await session.CreateAsync(ct).ConfigureAwait(true);
+
+        await using var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        var firstMove = stream.MoveNextAsync();
+        transport.Deliver(Update(AcpFixtures.CapturedSessionId, "{\"sessionUpdate\":\"agent_message_chunk\",\"content\":{\"type\":\"text\",\"text\":\"first\"}}"));
+        (await firstMove.ConfigureAwait(true)).ShouldBeTrue();
+
+        transport.Deliver(PermissionRequest("execute", AllowAndRejectOptions));
+
+        var answer = await WaitForFrameAsync(transport, static frame => AcpFixtures.MethodOf(frame) is null, ct).ConfigureAwait(true);
+        JsonNode.Parse(answer)!["result"]!["outcome"]!["optionId"]!.GetValue<string>().ShouldBe("reject-once");
+
+        (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
+        var diagnostic = stream.Current.ShouldBeOfType<ErrorEvent>();
+        diagnostic.Message.ShouldContain("InvalidOperationException");
+        diagnostic.Retryable.ShouldBeFalse();
+
+        (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
+        stream.Current.ShouldBeOfType<PermissionRequestEvent>();
+    }
+
+    /// <summary>A non-harness pump failure ends the stream with the real exception as the cause, faults the session, and never escapes disposal.</summary>
+    [Fact]
+    public async Task PumpFailurePreservesCauseAndDisposeDoesNotThrow()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var transport = new ScriptedAcpTransport(frame =>
+        {
+            if (AcpFixtures.MethodOf(frame) is null)
+            {
+                throw new InvalidOperationException("answer send blew up");
+            }
+
+            return HasMethod(frame, "session/prompt") ? [] : AcpFixtures.Reply(frame);
+        });
+        await using var session = NewSession(transport);
+        await session.CreateAsync(ct).ConfigureAwait(true);
+
+        await using var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        var firstMove = stream.MoveNextAsync();
+        transport.Deliver(PermissionRequest("execute", AllowAndRejectOptions));
+
+        // The permission request is announced before its answer send fails, so the first move still yields it.
+        (await firstMove.ConfigureAwait(true)).ShouldBeTrue();
+        stream.Current.ShouldBeOfType<PermissionRequestEvent>();
+
+        var failure = await Should.ThrowAsync<DisconnectedHarnessException>(DrainAsync).ConfigureAwait(true);
+        failure.InnerException.ShouldBeOfType<InvalidOperationException>();
+        session.State.ShouldBe(HarnessState.Faulted);
+
+        // Disposal must not throw the pump's recorded failure back out.
+        await session.DisposeAsync().ConfigureAwait(true);
+
+        async Task DrainAsync()
+        {
+            while (await stream.MoveNextAsync().ConfigureAwait(true))
+            {
+            }
+        }
+    }
+
+    /// <summary>An agent request with a string id is answered with an error carrying that id, and the session stays healthy.</summary>
+    [Fact]
+    public async Task StringIdPermissionRequestIsAnsweredWithoutFaultingSession()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var answered = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var transport = new ScriptedAcpTransport(frame =>
+        {
+            if (AcpFixtures.MethodOf(frame) is null && HasRawId(frame, "perm-1"))
+            {
+                answered.TrySetResult(frame);
+            }
+
+            return AcpFixtures.Reply(frame);
+        });
+        await using var session = NewSession(transport);
+        await session.CreateAsync(ct).ConfigureAwait(true);
+
+        transport.Deliver(AcpFixtures.Utf8(
+            $"{{\"jsonrpc\":\"2.0\",\"id\":\"perm-1\",\"method\":\"session/request_permission\",\"params\":{{\"sessionId\":\"{AcpFixtures.CapturedSessionId}\",\"toolCall\":{{\"toolCallId\":\"c1\",\"title\":\"Run it\",\"kind\":\"execute\"}},\"options\":{AllowAndRejectOptions}}}}}"));
+
+        var answer = await answered.Task.WaitAsync(TimeSpan.FromSeconds(10), ct).ConfigureAwait(true);
+
+        var node = JsonNode.Parse(answer)!;
+        node["id"]!.GetValue<string>().ShouldBe("perm-1");
+        node["error"]!["code"]!.GetValue<long>().ShouldBe(-32602);
+        session.State.ShouldBe(HarnessState.Ready);
+    }
+
     private static AcpAgentSession NewSession(IAcpTransport transport) =>
-        new(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd });
+        new(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent" });
 
     private static bool HasMethod(byte[] frame, string method) =>
         string.Equals(AcpFixtures.MethodOf(frame), method, StringComparison.Ordinal);
+
+    private static bool HasRawId(byte[] frame, string id)
+    {
+        var nodeId = JsonNode.Parse(frame)?["id"];
+        return nodeId is not null && nodeId.GetValueKind() is JsonValueKind.String
+            && string.Equals(nodeId.GetValue<string>(), id, StringComparison.Ordinal);
+    }
+
+    private static async Task<byte[]> WaitForFrameAsync(ScriptedAcpTransport transport, Func<byte[], bool> match, CancellationToken ct)
+    {
+        var deadline = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(10);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            var hit = transport.Sent.FirstOrDefault(match);
+            if (hit is not null)
+            {
+                return hit;
+            }
+
+            await Task.Delay(10, ct).ConfigureAwait(true);
+        }
+
+        throw new TimeoutException("The expected frame was not sent within 10 seconds.");
+    }
+
+    private static async Task WaitForStateAsync(AcpAgentSession session, HarnessState state, CancellationToken ct)
+    {
+        var deadline = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(10);
+        while (session.State != state && DateTimeOffset.UtcNow < deadline)
+        {
+            await Task.Delay(10, ct).ConfigureAwait(true);
+        }
+
+        session.State.ShouldBe(state);
+    }
 
     private static byte[] PermissionRequest(string kind, string options) =>
         AcpFixtures.Utf8(

@@ -195,10 +195,14 @@ public sealed class SessionServiceTests
         var prompt = await Should.ThrowAsync<SessionException>(() => service.SubmitPromptAsync("absent", "hi", ct)).ConfigureAwait(true);
         var steer = await Should.ThrowAsync<SessionException>(() => service.SubmitSteerAsync("absent", "hi", ct)).ConfigureAwait(true);
         var complete = await Should.ThrowAsync<SessionException>(() => service.RecordCompletionAsync("absent", SessionStatus.Completed, ct)).ConfigureAwait(true);
+        var request = await Should.ThrowAsync<SessionException>(() => service.RequestToolApprovalAsync("absent", ct)).ConfigureAwait(true);
+        var resolve = await Should.ThrowAsync<SessionException>(() => service.ResolveToolApprovalAsync("absent", approved: true, ct)).ConfigureAwait(true);
 
         prompt.Error.Code.ShouldBe(ErrorCode.SessionNotFound);
         steer.Error.Code.ShouldBe(ErrorCode.SessionNotFound);
         complete.Error.Code.ShouldBe(ErrorCode.SessionNotFound);
+        request.Error.Code.ShouldBe(ErrorCode.SessionNotFound);
+        resolve.Error.Code.ShouldBe(ErrorCode.SessionNotFound);
     }
 
     /// <summary>Completing a session that is idle is rejected with InvalidTransition and changes nothing.</summary>
@@ -256,6 +260,159 @@ public sealed class SessionServiceTests
         stored.Events[1].CorrelationId.ShouldBe(stored.Events[0].CorrelationId);
     }
 
+    /// <summary>An approved tool decision resumes the prompt, which then settles normally.</summary>
+    [Fact]
+    public async Task ToolApprovalApproveResumesAndCompletes()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
+        await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+
+        await service.RequestToolApprovalAsync(session.Id, ct).ConfigureAwait(true);
+
+        var waiting = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        waiting.ShouldNotBeNull();
+        waiting.Status.ShouldBe(SessionStatus.AwaitingToolApproval);
+
+        await service.ResolveToolApprovalAsync(session.Id, approved: true, ct).ConfigureAwait(true);
+
+        var resumed = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        resumed.ShouldNotBeNull();
+        resumed.Status.ShouldBe(SessionStatus.Running);
+
+        await service.RecordCompletionAsync(session.Id, SessionStatus.Completed, ct).ConfigureAwait(true);
+
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Status.ShouldBe(SessionStatus.Completed);
+        stored.Events.Select(static evt => evt.Seq).ToArray().ShouldBe([1L, 2L, 3L, 4L]);
+        stored.Events.Select(static evt => evt.Payload).OfType<UnknownPayload>().Select(static payload => payload.OriginalKind)
+            .ShouldBe(["prompt_accepted", "tool_approval_requested", "tool_approval_approved"]);
+    }
+
+    /// <summary>A denied tool decision records the denial, leaves the session running, and the turn still settles.</summary>
+    [Fact]
+    public async Task ToolApprovalDenyReturnsToRunningThenCompletes()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
+        await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, ct).ConfigureAwait(true);
+
+        await service.ResolveToolApprovalAsync(session.Id, approved: false, ct).ConfigureAwait(true);
+
+        var resumed = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        resumed.ShouldNotBeNull();
+        resumed.Status.ShouldBe(SessionStatus.Running);
+        resumed.Events.Select(static evt => evt.Payload).OfType<UnknownPayload>().Select(static payload => payload.OriginalKind)
+            .ShouldBe(["prompt_accepted", "tool_approval_requested", "tool_approval_denied"]);
+
+        await service.RecordCompletionAsync(session.Id, SessionStatus.Completed, ct).ConfigureAwait(true);
+
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Status.ShouldBe(SessionStatus.Completed);
+    }
+
+    /// <summary>Approval transitions outside Running/AwaitingToolApproval are rejected with InvalidTransition.</summary>
+    [Fact]
+    public async Task ToolApprovalInvalidTransitionsAreRejected()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
+
+        var requestWhileIdle = await Should.ThrowAsync<SessionException>(() =>
+            service.RequestToolApprovalAsync(session.Id, ct)).ConfigureAwait(true);
+        requestWhileIdle.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
+
+        var resolveWhileIdle = await Should.ThrowAsync<SessionException>(() =>
+            service.ResolveToolApprovalAsync(session.Id, approved: true, ct)).ConfigureAwait(true);
+        resolveWhileIdle.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
+
+        await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+
+        var resolveWhileRunning = await Should.ThrowAsync<SessionException>(() =>
+            service.ResolveToolApprovalAsync(session.Id, approved: true, ct)).ConfigureAwait(true);
+        resolveWhileRunning.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
+
+        await service.RequestToolApprovalAsync(session.Id, ct).ConfigureAwait(true);
+
+        var secondRequest = await Should.ThrowAsync<SessionException>(() =>
+            service.RequestToolApprovalAsync(session.Id, ct)).ConfigureAwait(true);
+        secondRequest.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
+
+        await service.ResolveToolApprovalAsync(session.Id, approved: true, ct).ConfigureAwait(true);
+        await service.RecordCompletionAsync(session.Id, SessionStatus.Completed, ct).ConfigureAwait(true);
+
+        var requestWhenTerminal = await Should.ThrowAsync<SessionException>(() =>
+            service.RequestToolApprovalAsync(session.Id, ct)).ConfigureAwait(true);
+        requestWhenTerminal.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
+    }
+
+    /// <summary>A prompt submitted while the session awaits tool approval is rejected with PromptInFlight.</summary>
+    [Fact]
+    public async Task PromptWhileAwaitingApprovalViaApiIsRejected()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
+        await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, ct).ConfigureAwait(true);
+
+        var error = await Should.ThrowAsync<SessionException>(() =>
+            service.SubmitPromptAsync(session.Id, "second", ct)).ConfigureAwait(true);
+
+        error.Error.Code.ShouldBe(ErrorCode.PromptInFlight);
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Status.ShouldBe(SessionStatus.AwaitingToolApproval);
+        stored.Messages.Select(static message => message.Content).ShouldBe(["first"]);
+    }
+
+    /// <summary>Concurrent prompts on distinct sessions each admit exactly one: stripes serialize without cross-talk.</summary>
+    [Fact]
+    public async Task ConcurrentPromptsOnDistinctSessionsEachAdmitOne()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var sessions = new List<Session>();
+        for (var i = 0; i < 8; i++)
+        {
+            sessions.Add(await service.CreateAsync("dev", ct).ConfigureAwait(true));
+        }
+
+        var outcomes = await Task.WhenAll(sessions.SelectMany(session =>
+            Enumerable.Range(0, 4).Select(i => Task.Run(async () =>
+            {
+                try
+                {
+                    await service.SubmitPromptAsync(session.Id, $"prompt {i}", ct).ConfigureAwait(false);
+                    return (SessionId: session.Id, Admitted: true, Code: (ErrorCode?)null);
+                }
+                catch (SessionException ex)
+                {
+                    return (SessionId: session.Id, Admitted: false, Code: (ErrorCode?)ex.Error.Code);
+                }
+            }, ct)))).ConfigureAwait(true);
+
+        foreach (var session in sessions)
+        {
+            var perSession = outcomes.Where(outcome => string.Equals(outcome.SessionId, session.Id, StringComparison.Ordinal)).ToArray();
+            perSession.Count(static outcome => outcome.Admitted).ShouldBe(1);
+            perSession.Where(static outcome => !outcome.Admitted).Select(static outcome => outcome.Code)
+                .ShouldAllBe(code => code == ErrorCode.PromptInFlight);
+        }
+    }
+
     private static SessionService NewService(ISessionRepository repository) =>
         new(repository, new FixedTimeProvider(Now));
 }
+

@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -18,14 +19,18 @@ public sealed class AcpAgentSession : IOmpSession
 {
     private const string UpdateMethod = "session/update";
     private const string PermissionMethod = "session/request_permission";
+    private const string AuthenticateMethod = "authenticate";
+    private const string FsReadMethod = "fs/read_text_file";
+    private const string FsWriteMethod = "fs/write_text_file";
     private const int MethodNotFound = -32601;
     private const int InvalidParams = -32602;
+    private const int InternalError = -32603;
 
     private static readonly string[] AllowKinds = ["allow_once", "allow_always"];
     private static readonly string[] RejectKinds = ["reject_once", "reject_always"];
-
     private readonly IAcpTransport _transport;
     private readonly AcpClientOptions _options;
+    private readonly string? _fsRoot;
     private readonly HarnessStateMachine _machine = new();
     private readonly System.Threading.Lock _gate = new();
     private readonly Dictionary<long, PendingCall> _pending = [];
@@ -46,6 +51,7 @@ public sealed class AcpAgentSession : IOmpSession
         ValidateOptions(options);
         _transport = transport;
         _options = options;
+        _fsRoot = options.FsRoot is null ? null : Path.GetFullPath(options.FsRoot);
     }
 
     /// <summary>Gets the ACP session identifier once the session has been created or resumed.</summary>
@@ -158,6 +164,10 @@ public sealed class AcpAgentSession : IOmpSession
     }
 
     /// <inheritdoc />
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "MED-01: observing the pump must not throw its recorded failure out of disposal.")]
     public async ValueTask DisposeAsync()
     {
         PromptTurn? turn;
@@ -200,9 +210,9 @@ public sealed class AcpAgentSession : IOmpSession
             {
                 await pump.ConfigureAwait(false);
             }
-            catch (HarnessException)
+            catch (Exception)
             {
-                // The pump records connection loss itself; disposal has nothing further to report.
+                // The pump records connection loss itself; disposal must not throw.
             }
         }
     }
@@ -222,6 +232,11 @@ public sealed class AcpAgentSession : IOmpSession
         if (!Path.IsPathFullyQualified(options.WorkingDirectory))
         {
             throw new ArgumentException("ACP requires an absolute working directory.", nameof(options));
+        }
+
+        if (options.FsRoot is not null && !Path.IsPathFullyQualified(options.FsRoot))
+        {
+            throw new ArgumentException("FsRoot must be an absolute directory path.", nameof(options));
         }
     }
 
@@ -268,9 +283,10 @@ public sealed class AcpAgentSession : IOmpSession
 
     private async Task InitializeAsync(CancellationToken cancellationToken)
     {
+        var fsEnabled = _fsRoot is not null;
         var parameters = new AcpFrames.InitializeParams(
             AcpFrames.ProtocolVersion,
-            new AcpFrames.ClientCapabilities(new AcpFrames.FsCapabilities(ReadTextFile: false, WriteTextFile: false)));
+            new AcpFrames.ClientCapabilities(new AcpFrames.FsCapabilities(ReadTextFile: fsEnabled, WriteTextFile: fsEnabled)));
         AcpFrames.InitializeResult result;
         try
         {
@@ -295,6 +311,55 @@ public sealed class AcpAgentSession : IOmpSession
             AgentInfo = result.AgentInfo;
             AdvertisedCapabilities = AcpWireMapping.Flatten(result.AgentCapabilities);
         }
+
+        if (result.AuthMethods is { Count: > 0 } authMethods)
+        {
+            await AuthenticateAsync(authMethods, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Sends <c>authenticate</c> with the configured <see cref="AcpClientOptions.AuthMethodId"/> before any session
+    /// is opened. The method id is never guessed: an unconfigured or unknown id fails the handshake.
+    /// </summary>
+    /// <param name="authMethods">The authentication methods the agent advertised.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <exception cref="AcpRequestFailedHarnessException">
+    /// No method id is configured, the configured id is unknown, or the agent answers with an error.
+    /// </exception>
+    private async Task AuthenticateAsync(IReadOnlyList<AcpFrames.AuthMethod> authMethods, CancellationToken cancellationToken)
+    {
+        var methodId = _options.AuthMethodId;
+        if (string.IsNullOrWhiteSpace(methodId))
+        {
+            throw new AcpRequestFailedHarnessException(
+                "omp acp requires authentication but no AuthMethodId is configured on AcpClientOptions.",
+                AuthenticateMethod);
+        }
+
+        var known = false;
+        foreach (var method in authMethods)
+        {
+            if (string.Equals(method.Id, methodId, StringComparison.Ordinal))
+            {
+                known = true;
+                break;
+            }
+        }
+
+        if (!known)
+        {
+            throw new AcpRequestFailedHarnessException(
+                $"The configured AuthMethodId '{methodId}' is not one of the methods omp acp advertised.",
+                AuthenticateMethod);
+        }
+
+        await CallAsync(
+            AuthenticateMethod,
+            new AcpFrames.AuthenticateParams(methodId),
+            AcpJsonContext.Default.RequestAuthenticateParams,
+            _options.HandshakeTimeout,
+            cancellationToken).ConfigureAwait(false);
     }
 
     private async Task OpenSessionAsync(string? resumeSessionId, CancellationToken cancellationToken)
@@ -397,6 +462,10 @@ public sealed class AcpAgentSession : IOmpSession
         await _transport.SendAsync(bytes, cancellationToken).ConfigureAwait(false);
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "MED-01: the pump invokes untrusted hook and transport code; any failure must fault the session with the real cause preserved.")]
     private async Task PumpAsync()
     {
         Exception failure = new DisconnectedHarnessException("omp acp closed the stream.", "acp");
@@ -407,9 +476,12 @@ public sealed class AcpAgentSession : IOmpSession
                 await DispatchAsync(frame).ConfigureAwait(false);
             }
         }
-        catch (HarnessException ex)
+        catch (Exception ex)
         {
-            failure = ex;
+            // The pump invokes untrusted code (the approval hook, the transport). A non-harness failure
+            // still ends the stream, but the real exception is kept as the cause instead of a generic close.
+            failure = ex is HarnessException hex ? hex
+                : new DisconnectedHarnessException("The omp acp session failed.", SessionId, ex);
         }
         finally
         {
@@ -449,6 +521,14 @@ public sealed class AcpAgentSession : IOmpSession
 
         if (!TryGetId(inbound.Id, out var requestId))
         {
+            // String ids are legal JSON-RPC 2.0 but this client correlates its own requests numerically:
+            // answer with an error instead of faulting the session. Any other id shape is malformed.
+            if (inbound.Id is { ValueKind: JsonValueKind.String } element && element.GetString() is { } rawId)
+            {
+                await AnswerStringIdRequestAsync(rawId, inbound).ConfigureAwait(false);
+                return;
+            }
+
             throw AcpFrameDiagnostics.Malformed(frame, "agent request without a numeric id");
         }
 
@@ -479,12 +559,12 @@ public sealed class AcpAgentSession : IOmpSession
 
             if (AcpWireMapping.MapSessionUpdate(notification.Update) is { } harnessEvent)
             {
-                turn.Events.Writer.TryWrite(harnessEvent);
+                WriteTurnEvent(turn, harnessEvent);
             }
         }
         catch (JsonException)
         {
-            turn.Events.Writer.TryWrite(new ErrorEvent("omp acp sent a session/update that could not be decoded.", Retryable: false));
+            WriteTurnEvent(turn, new ErrorEvent("omp acp sent a session/update that could not be decoded.", Retryable: false));
         }
     }
 
@@ -496,11 +576,27 @@ public sealed class AcpAgentSession : IOmpSession
             return;
         }
 
-        // The client advertises no fs or terminal capabilities, so the agent must not call those methods; anything else is unknown.
+        if (string.Equals(request.Method, FsReadMethod, StringComparison.Ordinal))
+        {
+            await AnswerFsReadAsync(id, request).ConfigureAwait(false);
+            return;
+        }
+
+        if (string.Equals(request.Method, FsWriteMethod, StringComparison.Ordinal))
+        {
+            await AnswerFsWriteAsync(id, request).ConfigureAwait(false);
+            return;
+        }
+
+        // The client advertises no terminal capabilities, so the agent must not call those methods; anything else is unknown.
         var error = new AcpFrames.AcpError { Code = MethodNotFound, Message = $"Method not found: {request.Method}" };
         await SendFrameAsync(new AcpFrames.ErrorResponse(id, error), AcpJsonContext.Default.ErrorResponse, CancellationToken.None).ConfigureAwait(false);
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "MED-01: the narrowing hook is untrusted caller code; a hook failure denies closed with a diagnostic.")]
     private async Task AnswerPermissionAsync(long id, AcpFrames.Inbound request)
     {
         var raw = request.Params;
@@ -526,8 +622,28 @@ public sealed class AcpAgentSession : IOmpSession
             toolCall.Title ?? toolCall.Kind ?? "tool",
             toolCall.Kind ?? string.Empty,
             raw.Value.GetRawText());
-        var granted = _options.ApprovalPolicy.Allows(permission);
-        ActiveTurn()?.Events.Writer.TryWrite(new PermissionRequestEvent(permission.CallId, permission.Name, permission.PayloadJson));
+        var turn = ActiveTurn();
+        bool granted;
+        try
+        {
+            granted = _options.ApprovalPolicy.Allows(permission);
+        }
+        catch (Exception ex)
+        {
+            // The narrowing hook is untrusted caller code: fail closed (deny) and record the
+            // hook failure as a diagnostic event instead of faulting the pump with the raw exception.
+            if (turn is not null)
+            {
+                WriteTurnEvent(turn, new ErrorEvent($"Approval policy failed: {ex.GetType().Name}. Denied.", false));
+            }
+
+            granted = false;
+        }
+
+        if (turn is not null)
+        {
+            WriteTurnEvent(turn, new PermissionRequestEvent(permission.CallId, permission.Name, permission.PayloadJson));
+        }
 
         var option = SelectOption(parameters.Options, granted);
         var outcome = option is null
@@ -537,6 +653,275 @@ public sealed class AcpAgentSession : IOmpSession
             new AcpFrames.Response<AcpFrames.PermissionResponse>(id, new AcpFrames.PermissionResponse(outcome)),
             AcpJsonContext.Default.ResponsePermissionResponse,
             CancellationToken.None).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Answers an agent-initiated request that carries a string identifier. The client correlates its own
+    /// requests numerically, so the request cannot be processed: it is answered with an error instead of
+    /// faulting the session. The raw id text is echoed verbatim, as JSON-RPC 2.0 requires.
+    /// </summary>
+    private async Task AnswerStringIdRequestAsync(string rawId, AcpFrames.Inbound request)
+    {
+        var error = new AcpFrames.AcpError { Code = InvalidParams, Message = $"Agent requests with string ids are not supported: '{request.Method}'." };
+        await SendFrameAsync(new AcpFrames.StringErrorResponse(rawId, error), AcpJsonContext.Default.StringErrorResponse, CancellationToken.None).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Answers an agent-initiated <c>fs/read_text_file</c> request. Without <c>FsRoot</c> the capability is
+    /// disabled; with it, the requested path must stay under the root, including through symlinks.
+    /// </summary>
+    private async Task AnswerFsReadAsync(long id, AcpFrames.Inbound request)
+    {
+        var parameters = DeserializeFsParams(request.Params, AcpJsonContext.Default.FsReadParams);
+        if (parameters is null || string.IsNullOrEmpty(parameters.Path))
+        {
+            await SendFsErrorAsync(id, InvalidParams, $"{FsReadMethod} requires params.path.").ConfigureAwait(false);
+            return;
+        }
+
+        if (parameters.Line is < 1 || parameters.Limit is < 1)
+        {
+            await SendFsErrorAsync(id, InvalidParams, $"{FsReadMethod} requires a 1-based line and a positive limit.").ConfigureAwait(false);
+            return;
+        }
+
+        if (CheckFsAccess(FsReadMethod, parameters.Path, out var fullPath) is { } denial)
+        {
+            await SendFsErrorAsync(id, denial.Code, denial.Message).ConfigureAwait(false);
+            return;
+        }
+
+        var lines = await TryReadFsLinesAsync(id, fullPath).ConfigureAwait(false);
+        if (lines is null)
+        {
+            return;
+        }
+
+        var start = (parameters.Line ?? 1) - 1;
+        var selected = lines.Skip(start);
+        if (parameters.Limit.HasValue)
+        {
+            selected = selected.Take(parameters.Limit.Value);
+        }
+
+        await SendFrameAsync(
+            new AcpFrames.Response<AcpFrames.FsReadResult>(id, new AcpFrames.FsReadResult(string.Join("\n", selected))),
+            AcpJsonContext.Default.ResponseFsReadResult,
+            CancellationToken.None).ConfigureAwait(false);
+    }
+
+    private async Task<string[]?> TryReadFsLinesAsync(long id, string fullPath)
+    {
+        try
+        {
+            if (Directory.Exists(fullPath) || !File.Exists(fullPath))
+            {
+                await SendFsErrorAsync(id, InvalidParams, $"{FsReadMethod} found no file at the requested path.").ConfigureAwait(false);
+                return null;
+            }
+
+            return await File.ReadAllLinesAsync(fullPath, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (IOException ex)
+        {
+            await SendFsErrorAsync(id, InternalError, $"{FsReadMethod} could not read the file: {ex.Message}").ConfigureAwait(false);
+            return null;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            await SendFsErrorAsync(id, InternalError, $"{FsReadMethod} could not read the file: {ex.Message}").ConfigureAwait(false);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Answers an agent-initiated <c>fs/write_text_file</c> request. Without <c>FsRoot</c> the capability is
+    /// disabled; with it, the requested path must stay under the root, including through symlinks. Parent
+    /// directories are created when they do not exist yet.
+    /// </summary>
+    private async Task AnswerFsWriteAsync(long id, AcpFrames.Inbound request)
+    {
+        var parameters = DeserializeFsParams(request.Params, AcpJsonContext.Default.FsWriteParams);
+        if (parameters is null || string.IsNullOrEmpty(parameters.Path))
+        {
+            await SendFsErrorAsync(id, InvalidParams, $"{FsWriteMethod} requires params.path.").ConfigureAwait(false);
+            return;
+        }
+
+        if (parameters.Content is null)
+        {
+            await SendFsErrorAsync(id, InvalidParams, $"{FsWriteMethod} requires params.content.").ConfigureAwait(false);
+            return;
+        }
+
+        if (CheckFsAccess(FsWriteMethod, parameters.Path, out var fullPath) is { } denial)
+        {
+            await SendFsErrorAsync(id, denial.Code, denial.Message).ConfigureAwait(false);
+            return;
+        }
+
+        if (!await TryWriteFsFileAsync(id, fullPath, parameters.Content).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        await SendFrameAsync(
+            new AcpFrames.Response<AcpFrames.FsWriteResult>(id, new AcpFrames.FsWriteResult()),
+            AcpJsonContext.Default.ResponseFsWriteResult,
+            CancellationToken.None).ConfigureAwait(false);
+    }
+
+    private async Task<bool> TryWriteFsFileAsync(long id, string fullPath, string content)
+    {
+        try
+        {
+            if (Directory.Exists(fullPath))
+            {
+                await SendFsErrorAsync(id, InvalidParams, $"{FsWriteMethod} cannot overwrite a directory.").ConfigureAwait(false);
+                return false;
+            }
+
+            var directory = Path.GetDirectoryName(fullPath);
+            if (directory is not null)
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            await File.WriteAllTextAsync(fullPath, content, CancellationToken.None).ConfigureAwait(false);
+            return true;
+        }
+        catch (IOException ex)
+        {
+            await SendFsErrorAsync(id, InternalError, $"{FsWriteMethod} could not write the file: {ex.Message}").ConfigureAwait(false);
+            return false;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            await SendFsErrorAsync(id, InternalError, $"{FsWriteMethod} could not write the file: {ex.Message}").ConfigureAwait(false);
+            return false;
+        }
+    }
+
+    private static T? DeserializeFsParams<T>(JsonElement? raw, JsonTypeInfo<T> typeInfo)
+        where T : class
+    {
+        try
+        {
+            return raw?.Deserialize(typeInfo);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Denies an fs call when the capability is disabled or the path leaves the root. Returns null when the call may proceed.
+    /// </summary>
+    private AcpFrames.AcpError? CheckFsAccess(string method, string requestedPath, out string fullPath)
+    {
+        if (_fsRoot is null)
+        {
+            fullPath = string.Empty;
+            return new AcpFrames.AcpError { Code = MethodNotFound, Message = $"{method} is disabled: no FsRoot is configured." };
+        }
+
+        if (!TryResolveInsideRoot(_fsRoot, requestedPath, method, out fullPath, out var violation))
+        {
+            return new AcpFrames.AcpError { Code = InvalidParams, Message = violation };
+        }
+
+        return null;
+    }
+
+    private Task SendFsErrorAsync(long id, long code, string message)
+    {
+        var error = new AcpFrames.AcpError { Code = code, Message = message };
+        return SendFrameAsync(new AcpFrames.ErrorResponse(id, error), AcpJsonContext.Default.ErrorResponse, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Resolves a requested fs path against the root, rejecting traversal outside the root, the root itself,
+    /// and symlink escapes. Only existing components can be links, so missing parents are safe to create.
+    /// </summary>
+    private static bool TryResolveInsideRoot(string rootFull, string requestedPath, string method, out string fullPath, out string violation)
+    {
+        string combined;
+        try
+        {
+            combined = Path.GetFullPath(Path.Combine(rootFull, requestedPath));
+        }
+        catch (ArgumentException)
+        {
+            fullPath = string.Empty;
+            violation = $"{method} was given a path that cannot be resolved.";
+            return false;
+        }
+        catch (NotSupportedException)
+        {
+            fullPath = string.Empty;
+            violation = $"{method} was given a path that cannot be resolved.";
+            return false;
+        }
+
+        if (string.Equals(combined, rootFull, RootComparison))
+        {
+            fullPath = string.Empty;
+            violation = $"{method} requires a file inside the allowed root.";
+            return false;
+        }
+
+        if (!IsWithinRoot(rootFull, combined) || HasSymlinkEscape(rootFull, combined))
+        {
+            fullPath = string.Empty;
+            violation = $"{method} resolved outside the allowed root.";
+            return false;
+        }
+
+        fullPath = combined;
+        violation = string.Empty;
+        return true;
+    }
+
+    private static bool IsWithinRoot(string rootFull, string candidate)
+    {
+        if (candidate.Length < rootFull.Length || !candidate.StartsWith(rootFull, RootComparison))
+        {
+            return false;
+        }
+
+        return candidate.Length == rootFull.Length
+            || candidate[rootFull.Length] == Path.DirectorySeparatorChar;
+    }
+
+    private static StringComparison RootComparison =>
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+    /// <summary>
+    /// Checks the resolved path and every existing ancestor down to the root for links whose final target
+    /// leaves the root. Ancestors that do not exist yet cannot be links.
+    /// </summary>
+    private static bool HasSymlinkEscape(string rootFull, string fullPath)
+    {
+        var current = fullPath;
+        while (current is not null
+            && !string.Equals(current, rootFull, RootComparison)
+            && IsWithinRoot(rootFull, current))
+        {
+            FileSystemInfo info = Directory.Exists(current) ? (FileSystemInfo)new DirectoryInfo(current) : new FileInfo(current);
+            if (info.Exists)
+            {
+                var target = info.ResolveLinkTarget(returnFinalTarget: true);
+                if (target is not null && !IsWithinRoot(rootFull, Path.GetFullPath(target.FullName)))
+                {
+                    return true;
+                }
+            }
+
+            current = Path.GetDirectoryName(current);
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -691,6 +1076,23 @@ public sealed class AcpAgentSession : IOmpSession
         }
 
         turn.Events.Writer.TryComplete(error);
+    }
+
+    /// <summary>
+    /// Writes an event into the active turn. When the bounded turn buffer is full the consumer has fallen
+    /// behind: the turn fails with <see cref="BackpressureHarnessException"/> and the session faults, because
+    /// the wire state after a dropped update is unknown.
+    /// </summary>
+    private void WriteTurnEvent(PromptTurn turn, HarnessEvent harnessEvent)
+    {
+        if (!turn.Events.Writer.TryWrite(harnessEvent))
+        {
+            FailTurn(turn, new BackpressureHarnessException("omp acp produced events faster than the consumer read them.", "acp"));
+            lock (_gate)
+            {
+                TryFaultLocked();
+            }
+        }
     }
 
     private async Task AbandonTurnAsync(PromptTurn turn)
@@ -851,12 +1253,16 @@ public sealed class AcpAgentSession : IOmpSession
     /// <summary>A request awaiting its response. Callbacks run on the pump.</summary>
     private sealed record PendingCall(Action<AcpFrames.Inbound> OnResponse, Action<Exception> OnFailure);
 
+    /// <summary>The turn event buffer capacity, matching the RPC prompt slot: a flood beyond it faults the session.</summary>
+    private const int TurnCapacity = 4096;
+
     /// <summary>One <c>session/prompt</c> in flight, and the channel its events stream through.</summary>
     private sealed class PromptTurn(string sessionId)
     {
         public string SessionId { get; } = sessionId;
 
-        public Channel<HarnessEvent> Events { get; } = Channel.CreateUnbounded<HarnessEvent>(new UnboundedChannelOptions { SingleReader = true });
+        public Channel<HarnessEvent> Events { get; } = Channel.CreateBounded<HarnessEvent>(
+            new BoundedChannelOptions(TurnCapacity) { SingleReader = true });
 
         public long RequestId { get; set; }
 

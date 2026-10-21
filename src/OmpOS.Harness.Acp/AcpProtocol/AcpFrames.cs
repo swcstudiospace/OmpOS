@@ -62,6 +62,20 @@ public static class AcpFrames
         public string Jsonrpc { get; } = JsonRpcVersion;
     }
 
+    /// <summary>
+    /// An error response to an agent-initiated request that carries a string identifier. JSON-RPC 2.0 allows
+    /// string ids; this client correlates its own requests numerically but echoes a string id verbatim instead
+    /// of faulting the session.
+    /// </summary>
+    /// <param name="Id">The raw identifier text of the agent request being answered.</param>
+    /// <param name="Error">The JSON-RPC error.</param>
+    public sealed record StringErrorResponse(string Id, AcpError Error)
+    {
+        /// <summary>Gets the JSON-RPC version.</summary>
+        [JsonPropertyOrder(-1)]
+        public string Jsonrpc { get; } = JsonRpcVersion;
+    }
+
     /// <summary>Decoding envelope for every frame the agent sends. Exactly one of the shapes applies per frame.</summary>
     public sealed class Inbound
     {
@@ -91,7 +105,7 @@ public static class AcpFrames
         public string Message { get; init; } = string.Empty;
     }
 
-    /// <summary>File-system capability flags the client advertises. Both are false: the client serves no fs methods.</summary>
+    /// <summary>File-system capability flags the client advertises. Both are <see langword="true"/> only when <c>FsRoot</c> is configured.</summary>
     /// <param name="ReadTextFile">Whether the client implements <c>fs/read_text_file</c>.</param>
     /// <param name="WriteTextFile">Whether the client implements <c>fs/write_text_file</c>.</param>
     public sealed record FsCapabilities(bool ReadTextFile, bool WriteTextFile);
@@ -104,6 +118,42 @@ public static class AcpFrames
     /// <param name="ProtocolVersion">The protocol version the client speaks.</param>
     /// <param name="ClientCapabilities">The capabilities the client advertises.</param>
     public sealed record InitializeParams(int ProtocolVersion, ClientCapabilities ClientCapabilities);
+
+    /// <summary>Parameters of an agent-initiated <c>fs/read_text_file</c> request.</summary>
+    public sealed class FsReadParams
+    {
+        /// <summary>Gets the session the request belongs to.</summary>
+        public string SessionId { get; init; } = string.Empty;
+
+        /// <summary>Gets the requested path, resolved against the configured fs root.</summary>
+        public string Path { get; init; } = string.Empty;
+
+        /// <summary>Gets the 1-based first line to return, when provided.</summary>
+        public int? Line { get; init; }
+
+        /// <summary>Gets the maximum number of lines to return, when provided.</summary>
+        public int? Limit { get; init; }
+    }
+
+    /// <summary>Parameters of an agent-initiated <c>fs/write_text_file</c> request.</summary>
+    public sealed class FsWriteParams
+    {
+        /// <summary>Gets the session the request belongs to.</summary>
+        public string SessionId { get; init; } = string.Empty;
+
+        /// <summary>Gets the requested path, resolved against the configured fs root.</summary>
+        public string Path { get; init; } = string.Empty;
+
+        /// <summary>Gets the content to write.</summary>
+        public string? Content { get; init; }
+    }
+
+    /// <summary>Result of <c>fs/read_text_file</c>.</summary>
+    /// <param name="Content">The file content honouring <c>line</c> and <c>limit</c> when provided.</param>
+    public sealed record FsReadResult(string Content);
+
+    /// <summary>Result of <c>fs/write_text_file</c>. Empty: success is the absence of an error.</summary>
+    public sealed record FsWriteResult;
 
     /// <summary>Identity the agent reports about itself.</summary>
     public sealed class AgentInfo
@@ -130,6 +180,10 @@ public static class AcpFrames
         /// <summary>Gets the description.</summary>
         public string? Description { get; init; }
     }
+
+    /// <summary>Parameters of <c>authenticate</c>.</summary>
+    /// <param name="MethodId">The advertised authentication method id to use.</param>
+    public sealed record AuthenticateParams(string MethodId);
 
     /// <summary>MCP transport capabilities the agent supports.</summary>
     public sealed class McpCapabilities

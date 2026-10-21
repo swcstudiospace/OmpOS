@@ -4,10 +4,11 @@ using OmpOS.Harness.Abstractions;
 namespace OmpOS.Harness.InMemory;
 
 /// <summary>
-/// Placeholder for the remote WebSocket ACP transport. Every operation fails with a typed
+/// Placeholder for the remote WebSocket ACP transport. Every operation except close fails with a typed
 /// <see cref="ProcessStartHarnessException"/> whose inner exception is a
-/// <see cref="NotImplementedException"/>. No protocol work exists; the owner is tracked in
-/// docs/open-questions.md as Q-HARN-WS.
+/// <see cref="NotImplementedException"/>. Closing succeeds unconditionally: an unconnected stub has
+/// nothing to close, so disposing a session built on it never throws. No protocol work exists; the owner
+/// is tracked in docs/open-questions.md as Q-HARN-WS.
 /// </summary>
 public sealed class WebSocketOmpTransportStub : IAcpTransport
 {
@@ -28,7 +29,7 @@ public sealed class WebSocketOmpTransportStub : IAcpTransport
     }
 
     /// <inheritdoc />
-    public Task CloseAsync(CancellationToken cancellationToken) => FaultNotAvailableAsync();
+    public Task CloseAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <inheritdoc />
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;

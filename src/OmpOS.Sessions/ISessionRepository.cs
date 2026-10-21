@@ -31,6 +31,8 @@ public interface ISessionRepository
     /// The event log is never shrunk by a save: when <see cref="Session.Events"/> holds fewer events than
     /// the stored log, the stored log is kept. This lets a caller that read a session before a concurrent
     /// append save its header without losing the append. Events are added only through <see cref="AppendAsync"/>.
+    /// When <see cref="Session.Events"/> is at least as long as the stored log, its Seq prefix must match the
+    /// stored log; a divergent log is rejected instead of clobbering the stored events.
     /// </remarks>
     /// <param name="session">The session to store.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>

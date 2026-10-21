@@ -8,6 +8,7 @@
     <ProjectReference Include="../../src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Rpc/OmpOS.Harness.Rpc.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj" />
+    <ProjectReference Include="../../src/OmpOS.EngineHost/OmpOS.EngineHost.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sessions/OmpOS.Sessions.csproj" />
     <ProjectReference Include="../../src/OmpOS.GenUi/OmpOS.GenUi.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sandbox/OmpOS.Sandbox.csproj" />

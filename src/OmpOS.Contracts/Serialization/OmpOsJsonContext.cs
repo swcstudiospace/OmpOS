@@ -18,6 +18,7 @@ namespace OmpOS.Contracts.Serialization;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     UseStringEnumConverter = true)]
+[JsonSerializable(typeof(Session[]))]
 [JsonSerializable(typeof(Session))]
 [JsonSerializable(typeof(Message))]
 [JsonSerializable(typeof(SessionStatus))]

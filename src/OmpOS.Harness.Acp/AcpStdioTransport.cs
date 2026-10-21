@@ -188,7 +188,7 @@ public sealed class AcpStdioTransport : IAcpTransport
         {
             return Process.Start(startInfo) ?? throw new ProcessStartHarnessException("The omp acp process did not start.", _ompPath);
         }
-        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or UnauthorizedAccessException)
         {
             throw new ProcessStartHarnessException($"Could not start '{_ompPath} acp'.", _ompPath, ex);
         }

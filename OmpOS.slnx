@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/apps/">
     <Project Path="apps/OmpOS.Web/OmpOS.Web.csproj" />
+    <Project Path="apps/OmpOS.App/OmpOS.App.csproj" />
   </Folder>
   <Folder Name="/services/">
     <Project Path="services/OmpOS.Api/OmpOS.Api.csproj" />
@@ -8,6 +9,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/OmpOS.Contracts/OmpOS.Contracts.csproj" />
+    <Project Path="src/OmpOS.EngineHost/OmpOS.EngineHost.csproj" />
     <Project Path="src/OmpOS.GenUi/OmpOS.GenUi.csproj" />
     <Project Path="src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
     <Project Path="src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
@@ -30,5 +32,11 @@
     <Project Path="tests/OmpOS.Harness.Acp.Tests/OmpOS.Harness.Acp.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Rpc.Tests/OmpOS.Harness.Rpc.Tests.csproj" />
     <Project Path="tests/OmpOS.Sessions.Tests/OmpOS.Sessions.Tests.csproj" />
+    <Project Path="tests/OmpOS.Sandbox.Tests/OmpOS.Sandbox.Tests.csproj" />
+    <Project Path="tests/OmpOS.UI.Tests/OmpOS.UI.Tests.csproj" />
+    <Project Path="tests/OmpOS.Web.Tests/OmpOS.Web.Tests.csproj" />
+    <Project Path="tests/OmpOS.EngineHost.Tests/OmpOS.EngineHost.Tests.csproj" />
+    <Project Path="tests/OmpOS.Api.IntegrationTests/OmpOS.Api.IntegrationTests.csproj" />
+    <Project Path="tests/OmpOS.Workflows.Tests/OmpOS.Workflows.Tests.csproj" />
   </Folder>
 </Solution>

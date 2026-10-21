@@ -13,6 +13,7 @@ namespace OmpOS.Harness.Rpc;
 public sealed class RpcChunkAssembler
 {
     private const int CompletedIdMemory = 64;
+    private const int MaxIncompleteGroups = 64;
     private const int MaxChunkIdLength = 128;
 
     private readonly Dictionary<string, PendingFrame> _pending = new(StringComparer.Ordinal);
@@ -87,6 +88,12 @@ public sealed class RpcChunkAssembler
             if (_completed.Contains(chunkId))
             {
                 throw new MalformedFrameHarnessException($"rpc_chunk id '{chunkId}' was reused after its frame completed.");
+            }
+
+            if (_pending.Count >= MaxIncompleteGroups)
+            {
+                throw new MalformedFrameHarnessException(
+                    $"Too many incomplete rpc_chunk groups; at most {MaxIncompleteGroups} may be in flight.");
             }
 
             pending = new PendingFrame(count, byteLength);

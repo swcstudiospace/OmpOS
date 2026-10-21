@@ -27,13 +27,13 @@ public sealed class AcpFrameReplayTests
         ["sessionCapabilities.close"] = "true",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
-    /// <summary>The client's request frames for initialize and session/new are byte-identical to the captured requests.</summary>
+    /// <summary>The client's request frames for initialize, authenticate and session/new are byte-identical to the captured requests.</summary>
     [Fact]
     public async Task HandshakeRequestsAreByteIdenticalToCapture()
     {
         var ct = TestContext.Current.CancellationToken;
         var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
-        await using var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd });
+        await using var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent" });
 
         await session.CreateAsync(ct).ConfigureAwait(true);
 
@@ -46,7 +46,7 @@ public sealed class AcpFrameReplayTests
     {
         var ct = TestContext.Current.CancellationToken;
         var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
-        await using var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd });
+        await using var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent" });
 
         await session.CreateAsync(ct).ConfigureAwait(true);
 

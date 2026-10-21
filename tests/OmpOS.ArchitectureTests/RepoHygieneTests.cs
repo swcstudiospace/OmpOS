@@ -96,8 +96,18 @@ public sealed class RepoHygieneTests
 
         var questions = File.ReadAllLines(Path.Combine(repoRoot, "docs/open-questions.md"));
         questions.Any(static line => string.Equals(line, "| ID | Question | Why it matters | Default taken | Owner | Status |", StringComparison.Ordinal)).ShouldBeTrue("open-questions.md must contain the exact header row");
-        var rows = questions.Where(static line => line.Length > 0 && line[0] == '|' && line.Contains("ompos-maintainers", StringComparison.Ordinal)).ToList();
-        rows.Count.ShouldBe(27);
+        var rows = questions.Where(static line => line.StartsWith("| ", StringComparison.Ordinal) && !line.StartsWith("| ID ", StringComparison.Ordinal) && !line.StartsWith("| ---", StringComparison.Ordinal)).ToList();
+        rows.ShouldNotBeEmpty();
+        foreach (var row in rows)
+        {
+            var cells = row.Trim().Trim('|').Split('|');
+            cells.Length.ShouldBeGreaterThanOrEqualTo(6, $"open question row needs six columns: {row}");
+            cells[^2].Trim().ShouldNotBeNullOrWhiteSpace($"open question row needs an owner: {row}");
+            cells[^1].Trim().ShouldNotBeNullOrWhiteSpace($"open question row needs a status: {row}");
+        }
+
+        // The row count is deliberately not pinned: it changes whenever a question is added.
+        rows.Select(static row => row.Split('|')[1].Trim()).Distinct(StringComparer.Ordinal).Count().ShouldBe(rows.Count, "open question IDs must be unique");
     }
 
     private static bool ContainsDockerWord(string line)

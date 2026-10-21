@@ -18,10 +18,10 @@ public sealed class ProjectGraphTests
         var edges = ProjectGraphChecker.ReadEdges(repoRoot);
         ProjectGraphChecker.FindViolations(edges).ShouldBeEmpty();
 
-        // The map must stay in sync with the tree: only OmpOS.App may lack a
-        // csproj on disk (the MAUI head arrives in Phase 4).
+        // The map must stay in sync with the tree: every LayerMap entry has a csproj
+        // on disk now that the MAUI head and the EngineHost library landed in Phase 4.
         var onDisk = ProjectGraphChecker.ReadProjectNames(repoRoot);
-        LayerMap.Layers.Keys.Except(onDisk, StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray().ShouldBe(["OmpOS.App"]);
+        LayerMap.Layers.Keys.Except(onDisk, StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray().ShouldBe([]);
     }
 
     [Fact]

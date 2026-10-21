@@ -3,6 +3,7 @@
         "path": "OmpOS.slnx",
         "projects": [
             "src/OmpOS.Contracts/OmpOS.Contracts.csproj",
+            "src/OmpOS.EngineHost/OmpOS.EngineHost.csproj",
             "src/OmpOS.Parser/OmpOS.Parser.csproj",
             "src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj",
             "src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj",
@@ -25,7 +26,13 @@
             "tests/OmpOS.ArchitectureTests/OmpOS.ArchitectureTests.csproj",
             "tests/OmpOS.Harness.Acp.Tests/OmpOS.Harness.Acp.Tests.csproj",
             "tests/OmpOS.Harness.Rpc.Tests/OmpOS.Harness.Rpc.Tests.csproj",
-            "tests/OmpOS.Sessions.Tests/OmpOS.Sessions.Tests.csproj"
+            "tests/OmpOS.Sessions.Tests/OmpOS.Sessions.Tests.csproj",
+            "tests/OmpOS.Sandbox.Tests/OmpOS.Sandbox.Tests.csproj",
+            "tests/OmpOS.Workflows.Tests/OmpOS.Workflows.Tests.csproj",
+            "tests/OmpOS.UI.Tests/OmpOS.UI.Tests.csproj",
+            "tests/OmpOS.Web.Tests/OmpOS.Web.Tests.csproj",
+            "tests/OmpOS.EngineHost.Tests/OmpOS.EngineHost.Tests.csproj",
+            "tests/OmpOS.Api.IntegrationTests/OmpOS.Api.IntegrationTests.csproj"
         ]
     }
 }

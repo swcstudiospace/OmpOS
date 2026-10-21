@@ -63,7 +63,7 @@ internal static class ProjectGraphChecker
 
     /// <summary>
     /// Finds the .csproj for an assembly name, or null when no project exists on disk
-    /// (expected only for OmpOS.App until Phase 4).
+    /// (every LayerMap entry has a project since Phase 4 landed the MAUI head).
     /// </summary>
     public static string? FindCsprojPath(string repoRoot, string assemblyName)
     {

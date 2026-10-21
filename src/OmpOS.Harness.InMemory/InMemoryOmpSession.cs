@@ -252,7 +252,10 @@ public sealed class InMemoryOmpSession : IOmpSession
     {
         lock (_gate)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+            {
+                throw new DisconnectedHarnessException("The session was disposed while streaming.", SessionId);
+            }
         }
 
         try

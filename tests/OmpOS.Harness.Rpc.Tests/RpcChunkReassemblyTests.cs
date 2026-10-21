@@ -114,6 +114,31 @@ public sealed class RpcChunkReassemblyTests
         Should.Throw<MalformedFrameHarnessException>(() => assembler.Accept(lines[0]));
     }
 
+    /// <summary>More than 64 incomplete chunk groups is malformed, bounding trickle-fed group growth.</summary>
+    [Fact]
+    public void SixtyFifthIncompleteGroupIsMalformed()
+    {
+        var assembler = new RpcChunkAssembler();
+        for (int i = 0; i < 64; i++)
+        {
+            assembler.Accept(SingleChunkLine($"group-{i}")).ShouldBeNull();
+        }
+
+        MalformedFrameHarnessException failure = Should.Throw<MalformedFrameHarnessException>(
+            () => assembler.Accept(SingleChunkLine("group-64")));
+        failure.Message.ShouldContain("64");
+    }
+
+    /// <summary>Builds one buffered chunk (index 0 of 2) opening a new incomplete group.</summary>
+    /// <param name="chunkId">The distinct group id.</param>
+    /// <returns>The chunk line.</returns>
+    private static string SingleChunkLine(string chunkId)
+    {
+        string payload = Convert.ToBase64String(new byte[64]);
+        return "{\"type\":\"rpc_chunk\",\"chunkId\":\"" + chunkId
+            + "\",\"index\":0,\"count\":2,\"byteLength\":2097152,\"data\":\"" + payload + "\"}";
+    }
+
     /// <summary>A physical line over 1 MiB is rejected before parsing.</summary>
     [Fact]
     public void OversizedPhysicalLineIsMalformed()

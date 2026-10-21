@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using OmpOS.Harness.Abstractions;
 
 namespace OmpOS.Harness.Rpc;
@@ -53,6 +54,24 @@ public sealed class OmpRpcClient
 
         OmpRpcProcess process = OmpRpcProcess.Start(_options.OmpPath, _options.Cwd);
         var session = new OmpRpcSession(process, _options.HandshakeTimeout, _options.CommandTimeout);
+        return await StartSessionAsync(session, start).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Starts an owned session. A failed start tears the session down without letting a compensating-dispose
+    /// failure mask the original start exception.
+    /// </summary>
+    /// <param name="session">The session to start; disposed when <paramref name="start"/> fails.</param>
+    /// <param name="start">The handshake that makes the session ready.</param>
+    /// <returns>The started session.</returns>
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "MED-06: the compensating dispose must never mask the original start exception.")]
+    internal static async Task<IOmpSession> StartSessionAsync(OmpRpcSession session, Func<OmpRpcSession, Task> start)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(start);
         try
         {
             await start(session).ConfigureAwait(false);
@@ -60,7 +79,15 @@ public sealed class OmpRpcClient
         }
         catch (Exception)
         {
-            await session.DisposeAsync().ConfigureAwait(false);
+            try
+            {
+                await session.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                // The start failure is authoritative; a compensating-dispose failure must not mask it.
+            }
+
             throw;
         }
     }

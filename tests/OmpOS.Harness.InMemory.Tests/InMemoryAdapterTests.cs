@@ -39,6 +39,34 @@ public sealed class InMemoryAdapterTests
         session.AdvertisedCapabilities.ShouldBeEmpty();
     }
 
+    /// <summary>Disposing mid-stream ends the stream with DisconnectedHarnessException, not ObjectDisposedException.</summary>
+    [Fact]
+    public async Task DisposeMidStreamSurfacesDisconnectedHarnessException()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var session = new InMemoryOmpAdapter(ScriptFixtures.Emit(ScriptFixtures.HappySequence)).CreateSession();
+        await session.CreateAsync(ct).ConfigureAwait(true);
+
+        var stream = session.SubmitPromptAsync("prompt", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        try
+        {
+            (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
+
+            await session.DisposeAsync().ConfigureAwait(true);
+
+            await Should.ThrowAsync<DisconnectedHarnessException>(MoveOnceAsync).ConfigureAwait(true);
+        }
+        finally
+        {
+            await stream.DisposeAsync().ConfigureAwait(true);
+        }
+
+        async Task MoveOnceAsync()
+        {
+            await stream.MoveNextAsync().ConfigureAwait(true);
+        }
+    }
+
     /// <summary>A second submit while a stream is open is rejected: one prompt per session.</summary>
     [Fact]
     public async Task SubmitWhileStreamingIsRejectedAsInvalidTransition()

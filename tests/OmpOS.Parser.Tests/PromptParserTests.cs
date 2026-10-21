@@ -234,9 +234,8 @@ public sealed class PromptParserTests
     [Theory]
     [InlineData("ULTRATHINK")]
     [InlineData("Ultrathink now")]
-    [InlineData("ultrathink.")]
     [InlineData("ultrathinking")]
-    public void MagicKeywordIsCaseSensitiveAndWhitespaceDelimited(string raw)
+    public void MagicKeywordIsCaseSensitiveAndBoundaryDelimited(string raw)
     {
         var envelope = CreateParser().Parse(raw);
 
