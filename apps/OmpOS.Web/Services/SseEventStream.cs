@@ -213,12 +213,13 @@ internal sealed class SseEventStream
     {
         foreach (var frame in parser.Feed(chunk))
         {
-            if (TryConvert(sessionId, frame, tracker, out var evt) && evt is not null)
+            var evt = ConvertFrame(sessionId, frame, tracker, out var terminal);
+            if (evt is not null)
             {
                 yield return evt;
             }
 
-            if (IsTerminal(frame, evt))
+            if (terminal)
             {
                 outcome.Terminal = true;
                 yield break;
@@ -243,12 +244,13 @@ internal sealed class SseEventStream
             yield break;
         }
 
-        if (TryConvert(sessionId, trailing, tracker, out var evt) && evt is not null)
+        var evt = ConvertFrame(sessionId, trailing, tracker, out var terminal);
+        if (evt is not null)
         {
             yield return evt;
         }
 
-        if (IsTerminal(trailing, evt))
+        if (terminal)
         {
             outcome.Terminal = true;
         }
@@ -274,45 +276,36 @@ internal sealed class SseEventStream
         return request;
     }
 
-    private static bool IsTerminal(SseFrame frame, StreamEvent? evt) =>
+    /// <summary>
+    /// A frame is terminal when its event name or its payload says so. The payload is judged on its own, so a
+    /// terminal frame stops the stream even when it carries no id or a Seq that was already delivered.
+    /// </summary>
+    private static bool IsTerminal(SseFrame frame, StreamEventPayload? payload) =>
         (frame.EventType is not null && TerminalEventTypes.Contains(frame.EventType))
-        || evt?.Payload is CompletedPayload or ErrorPayload;
+        || payload is CompletedPayload or ErrorPayload;
 
-    private static bool TryConvert(string sessionId, SseFrame frame, SeqTracker tracker, out StreamEvent? evt)
+    /// <summary>
+    /// Converts one frame to an event, or returns null when it must not surface (corrupt, duplicate, or diagnostic).
+    /// <paramref name="terminal"/> is set for every frame, independent of whether the event surfaces.
+    /// </summary>
+    private static StreamEvent? ConvertFrame(string sessionId, SseFrame frame, SeqTracker tracker, out bool terminal)
     {
-        evt = null;
-        if (string.IsNullOrEmpty(frame.Data))
+        var payload = ParsePayload(frame.Data);
+        terminal = IsTerminal(frame, payload);
+        if (payload is null
+            || !long.TryParse(frame.Id, NumberStyles.Integer, CultureInfo.InvariantCulture, out var seq)
+            || !tracker.TryAdd(seq))
         {
-            return false;
-        }
-
-        if (!long.TryParse(frame.Id, NumberStyles.Integer, CultureInfo.InvariantCulture, out var seq))
-        {
-            return false;
-        }
-
-        StreamEventPayload? payload;
-        try
-        {
-            payload = JsonSerializer.Deserialize(frame.Data, OmpOsJsonContext.Default.StreamEventPayload);
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-
-        if (payload is null || !tracker.TryAdd(seq))
-        {
-            return false;
+            return null;
         }
 
         if (payload is DiagnosticPayload)
         {
             // Non-terminal, and the web UI has no notice path: the frame is consumed (its seq is tracked) but never shown.
-            return false;
+            return null;
         }
 
-        evt = new StreamEvent
+        return new StreamEvent
         {
             Seq = seq,
             SessionId = sessionId,
@@ -320,7 +313,23 @@ internal sealed class SseEventStream
             Timestamp = DateTimeOffset.UtcNow,
             Payload = payload,
         };
-        return true;
+    }
+
+    private static StreamEventPayload? ParsePayload(string data)
+    {
+        if (string.IsNullOrEmpty(data))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize(data, OmpOsJsonContext.Default.StreamEventPayload);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     [SuppressMessage(
