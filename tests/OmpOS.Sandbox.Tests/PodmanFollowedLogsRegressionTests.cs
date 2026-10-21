@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using OmpOS.Sandbox.Abstractions;
 using Shouldly;
 using Xunit;
@@ -40,7 +41,7 @@ public sealed class PodmanFollowedLogsRegressionTests
         runner.Specs.ShouldContain(static s => PodmanTestData.HasArgument(s, "-f"));
     }
 
-    private static async IAsyncEnumerable<string> GatedLinesAsync(SemaphoreSlim release, CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<string> GatedLinesAsync(SemaphoreSlim release, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield return "first";
         await release.WaitAsync(cancellationToken).ConfigureAwait(true);

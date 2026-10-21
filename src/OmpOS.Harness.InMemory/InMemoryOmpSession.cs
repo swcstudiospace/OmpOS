@@ -64,12 +64,7 @@ public sealed class InMemoryOmpSession : IOmpSession
         ArgumentNullException.ThrowIfNull(prompt);
         ArgumentNullException.ThrowIfNull(options);
 
-        lock (_gate)
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            _machine.TransitionTo(HarnessState.Streaming);
-            _cancelRequested = false;
-        }
+        BeginStream();
 
         var reader = Produce().Reader;
         var sawTerminal = false;
@@ -84,11 +79,11 @@ public sealed class InMemoryOmpSession : IOmpSession
                     break;
                 }
 
-                if (IsCancelRequested())
+                var cancelledEvent = TakeCancellation();
+                if (cancelledEvent is not null)
                 {
-                    EndStream();
                     finished = true;
-                    yield return new CompletedEvent(CancelledReason);
+                    yield return cancelledEvent;
                     yield break;
                 }
 
@@ -110,6 +105,42 @@ public sealed class InMemoryOmpSession : IOmpSession
             }
         }
 
+        var trailing = FinishStream(sawTerminal);
+        if (trailing is not null)
+        {
+            yield return trailing;
+        }
+    }
+
+    /// <summary>Enters the streaming state for a new prompt.</summary>
+    private void BeginStream()
+    {
+        lock (_gate)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            _machine.TransitionTo(HarnessState.Streaming);
+            _cancelRequested = false;
+        }
+    }
+
+    /// <summary>Ends the stream for a cancellation observed mid-turn.</summary>
+    /// <returns>The terminal event, or null when no cancellation was requested.</returns>
+    private CompletedEvent? TakeCancellation()
+    {
+        if (!IsCancelRequested())
+        {
+            return null;
+        }
+
+        EndStream();
+        return new CompletedEvent(CancelledReason);
+    }
+
+    /// <summary>Completes a stream that reached its end, throwing when no terminal event arrived.</summary>
+    /// <param name="sawTerminal">Whether a completed or error event was delivered.</param>
+    /// <returns>The trailing cancelled event, or null when the turn already ended terminally.</returns>
+    private CompletedEvent? FinishStream(bool sawTerminal)
+    {
         var cancelled = IsCancelRequested();
         if (!sawTerminal && !cancelled)
         {
@@ -118,10 +149,7 @@ public sealed class InMemoryOmpSession : IOmpSession
         }
 
         EndStream();
-        if (cancelled && !sawTerminal)
-        {
-            yield return new CompletedEvent(CancelledReason);
-        }
+        return cancelled && !sawTerminal ? new CompletedEvent(CancelledReason) : null;
     }
 
     /// <inheritdoc />

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Bunit;
 
 namespace OmpOS.UI.Tests;
@@ -6,6 +7,7 @@ namespace OmpOS.UI.Tests;
 /// Base context for component tests. Components make their own JS calls (the session scroll module),
 /// which return defaults in loose mode instead of failing tests that do not assert on them.
 /// </summary>
+[SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "Public test classes derive from this base; the xUnit test discovery and the derived classes require consistent accessibility.")]
 public abstract class UiTestContext : BunitContext
 {
     /// <summary>Creates the context in loose JS interop mode.</summary>
