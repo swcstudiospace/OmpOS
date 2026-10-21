@@ -110,7 +110,7 @@ Run on 2026-10-21 against commit `a6fcadd` (branch `feat/ompos-scaffold`, the co
 ```sh
 git clone /root/src/repos/ompos /tmp/ompos-clean
 cd /tmp/ompos-clean
-env -u DOTNET_ROOT DOTNET_ROOT=/tmp/ompos-clean-dotnet ./bootstrap.sh
+env -u DOTNET_ROOT DOTNET_ROOT=/tmp/ompos-clean-dotnet2 ./bootstrap.sh
 ```
 
 - The bootstrap installed .NET SDK 10.0.402 into the empty root.
