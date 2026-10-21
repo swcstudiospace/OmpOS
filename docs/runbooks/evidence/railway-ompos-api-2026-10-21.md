@@ -74,3 +74,7 @@ No line in `docs/runbooks/hosting.md` became false in this run. Lines 5 ("does n
 - Not committed or pushed.
 
 To resume: the owner needs to lift the Railway deploy pause for this account. Then rerun Step 2 with the same mutation (`serviceCreate` with projectId `67a98752-…`, environmentId `6cfcb6de-…`, name `ompos-api`). The rest of this runbook applies unchanged.
+
+## Later attempt, same day
+
+After the wave 1 work, one more serviceCreate call for ompos-api in project 67a98752-ba0a-4ae2-a881-8d0e33a89328 and environment 6cfcb6de-3175-418b-8e20-7817a3d31633 returned the same error, "Deploys have been paused temporarily" (traceId 5720965041042355567). No resource was created. The pause is account-level and still in force. Retries stop here. The owner must lift the pause before Steps 2 to 7 can run.
