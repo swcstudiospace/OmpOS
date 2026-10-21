@@ -340,10 +340,19 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
 
         // Success: local state and registry entry go away together. On failure both are
         // retained so lifecycle retries can re-run down with the same compose file.
+        // The key is released only while it still maps to this sandbox: an overlapping
+        // teardown may finish first and a new provision may already have re-reserved the
+        // key, and an unconditional remove would drop the new reservation and allow a
+        // duplicate sandbox for one key. The pair-form TryRemove makes the check atomic.
         DeleteComposeFile(sandbox.ComposeFile);
         _sandboxes.TryRemove(sandboxId, out _);
-        _provisionsByKey.TryRemove(sandbox.IdempotencyKey, out _);
-    }
+        if (_provisionsByKey.TryGetValue(sandbox.IdempotencyKey, out var reservation)
+            && reservation.IsCompletedSuccessfully
+            && string.Equals((await reservation.ConfigureAwait(false)).Id, sandboxId, StringComparison.Ordinal))
+        {
+            _ = _provisionsByKey.TryRemove(new KeyValuePair<string, Task<PodmanSandbox>>(sandbox.IdempotencyKey, reservation));
+        }
+        }
 
     private static SandboxDescriptor CreateDescriptor(string sandboxId, string projectName, ProvisionRequest request)
     {
