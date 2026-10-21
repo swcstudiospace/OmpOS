@@ -52,7 +52,8 @@ public sealed class StreamEventPayloadConverter : JsonConverter<StreamEventPaylo
         ArgumentNullException.ThrowIfNull(writer);
         ArgumentNullException.ThrowIfNull(value);
         ArgumentNullException.ThrowIfNull(options);
-        if (value is UnknownPayload { Raw.ValueKind: JsonValueKind.Object } unknown)
+        // The stored raw value is written verbatim for every JSON kind, so an unknown payload round-trips unchanged.
+        if (value is UnknownPayload { Raw.ValueKind: not JsonValueKind.Undefined } unknown)
         {
             unknown.Raw.WriteTo(writer);
             return;

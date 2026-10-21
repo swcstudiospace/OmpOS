@@ -131,6 +131,7 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
 
         IOmpSession winner;
         IOmpSession? loser = null;
+        IOmpSession? replaced = null;
         bool disposed;
         lock (_gate)
         {
@@ -139,6 +140,7 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
             {
                 if (_session is null || _session.State is HarnessState.Faulted or HarnessState.Disposed)
                 {
+                    replaced = _session;
                     winner = _session = fresh;
                 }
                 else
@@ -153,6 +155,12 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
                 winner = fresh;
                 loser = fresh;
             }
+        }
+
+        if (replaced is not null)
+        {
+            // The faulted or disposed engine this one replaces must not stay alive.
+            await replaced.DisposeAsync().ConfigureAwait(false);
         }
 
         if (disposed)

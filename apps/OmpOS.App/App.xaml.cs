@@ -38,11 +38,8 @@ public partial class App : Application
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         try
         {
-            // Enumerate to advance the host's resume cursor; the session surface picks the
-            // replayed events up on its next subscription.
-            await foreach (var _ in remote.ReconnectAsync(timeout.Token).ConfigureAwait(true))
-            {
-            }
+            // Missed events are held by the host and reach the session before the next prompt's reply.
+            await remote.ReconnectAsync(timeout.Token).ConfigureAwait(true);
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException or InvalidOperationException)
         {

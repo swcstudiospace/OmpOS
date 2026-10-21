@@ -14,8 +14,9 @@ namespace OmpOS.EngineHost;
 /// Mobile host: consumes the backend API only and never spawns a process. Prompts are submitted
 /// over HTTP (<c>POST /sessions</c>, <c>POST /sessions/{id}/prompts</c>) and events stream back over
 /// the resumable SSE endpoint (<c>GET /sessions/{id}/events</c>). A transport drop ends the stream
-/// without throwing; <see cref="ReconnectAsync"/> replays from the last seen Seq with
-/// <c>Last-Event-ID</c> (and <c>?since=</c>), de-duplicating by Seq so every event surfaces exactly once.
+/// without throwing. Every stream starts after the delivered cursor (exclusive, sent as <c>?since=</c> and
+/// <c>Last-Event-ID</c>) and de-duplicates by Seq. <see cref="ReconnectAsync"/> fetches missed events and holds them
+/// for the next prompt, which delivers them before its own reply.
 /// </summary>
 public sealed class RemoteEngineHost : IEngineHost
 {
@@ -28,11 +29,19 @@ public sealed class RemoteEngineHost : IEngineHost
     private string? _sessionId;
 
     /// <summary>
-    /// The high-water Seq mark: every Seq at or below this value was already delivered (or
-    /// recorded as corrupt), so replay/live overlap drops without an ever-growing set.
-    /// Seq is monotonic per session, which makes a single mark exact.
+    /// The delivered cursor: the Seq of the last event handed to a consumer. Every stream starts after it
+    /// (exclusive), so a completion that was already delivered is never replayed into a later turn.
     /// </summary>
     private long _lastSeq;
+
+    /// <summary>
+    /// The highest Seq accepted so far, delivered or held. Seq is monotonic per session, so any Seq at or
+    /// below this mark is a replay overlap and is dropped.
+    /// </summary>
+    private long _highWater;
+
+    /// <summary>Events fetched by <see cref="ReconnectAsync"/> that no consumer has received yet, in Seq order.</summary>
+    private readonly Queue<(long? Seq, HarnessEvent Event)> _held = new();
 
     /// <summary>Initializes a new instance of the <see cref="RemoteEngineHost"/> class.</summary>
     /// <param name="httpClient">An HTTP client whose base address is the API origin. Not owned; not disposed.</param>
@@ -61,27 +70,35 @@ public sealed class RemoteEngineHost : IEngineHost
         ArgumentNullException.ThrowIfNull(prompt);
         ArgumentNullException.ThrowIfNull(options);
         var sessionId = await EnsureSessionAsync(cancellationToken).ConfigureAwait(false);
-        await SubmitAsync(sessionId, prompt, cancellationToken).ConfigureAwait(false);
-        await foreach (var evt in StreamAsync(sessionId, resumeFrom: null, cancellationToken).ConfigureAwait(false))
+
+        // Events held by ReconnectAsync belong to earlier turns: they reach the consumer before this prompt's reply.
+        while (TakeHeld() is { } held)
         {
+            yield return held;
+        }
+
+        await SubmitAsync(sessionId, prompt, cancellationToken).ConfigureAwait(false);
+        await foreach (var (seq, evt) in StreamAsync(sessionId, ResumePosition(), cancellationToken).ConfigureAwait(false))
+        {
+            MarkDelivered(seq);
             yield return evt;
         }
     }
 
     /// <summary>
-    /// Replays the current session's events from the last seen Seq (exclusive), for resume-on-foreground.
+    /// Fetches the session's events after the delivered cursor (exclusive) and holds them, in Seq order, for the
+    /// next <see cref="SubmitPromptAsync"/>, which delivers them before its own reply. Nothing is dropped: the cursor
+    /// moves only when a consumer receives an event.
     /// </summary>
-    /// <param name="cancellationToken">Cancels the consumer side of the stream.</param>
-    /// <returns>Each unseen event exactly once; already-seen Seq values are dropped.</returns>
+    /// <param name="cancellationToken">Cancels the fetch.</param>
+    /// <returns>A task that completes when the fetch ends (terminal event, server close, or transport drop).</returns>
     /// <exception cref="InvalidOperationException">No prompt has been submitted yet, so there is nothing to resume.</exception>
-    public IAsyncEnumerable<HarnessEvent> ReconnectAsync(CancellationToken cancellationToken = default)
+    public Task ReconnectAsync(CancellationToken cancellationToken = default)
     {
         string? sessionId;
-        long resume;
         lock (_gate)
         {
             sessionId = _sessionId;
-            resume = _lastSeq;
         }
 
         if (sessionId is null)
@@ -89,7 +106,7 @@ public sealed class RemoteEngineHost : IEngineHost
             throw new InvalidOperationException("No session has been started; call SubmitPromptAsync before ReconnectAsync.");
         }
 
-        return StreamAsync(sessionId, resume, cancellationToken);
+        return HoldMissedAsync(sessionId, ResumePosition(), cancellationToken);
     }
 
     /// <inheritdoc />
@@ -148,7 +165,7 @@ public sealed class RemoteEngineHost : IEngineHost
         response.EnsureSuccessStatusCode();
     }
 
-    private async IAsyncEnumerable<HarnessEvent> StreamAsync(
+    private async IAsyncEnumerable<(long? Seq, HarnessEvent Event)> StreamAsync(
         string sessionId,
         long? resumeFrom,
         [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -168,14 +185,13 @@ public sealed class RemoteEngineHost : IEngineHost
             using var reader = new StreamReader(stream, Encoding.UTF8);
             await foreach (var (id, data) in ReadFramesAsync(reader, current.Token).ConfigureAwait(false))
             {
-                var frame = ProcessFrame(id, data);
-                if (frame is null)
+                if (ProcessFrame(id, data) is not { } frame)
                 {
                     continue;
                 }
 
                 yield return frame;
-                if (frame is CompletedEvent or ErrorEvent)
+                if (frame.Event is CompletedEvent or ErrorEvent)
                 {
                     break;
                 }
@@ -278,8 +294,12 @@ public sealed class RemoteEngineHost : IEngineHost
         return false;
     }
 
-    /// <summary>Maps one dispatched frame onto a harness event, or null when it must not surface (duplicate, heartbeat residue, corrupt, or unrecognized).</summary>
-    private HarnessEvent? ProcessFrame(string? frameId, string data)
+    /// <summary>
+    /// Maps one dispatched frame onto a harness event with its Seq, or null when it must not surface
+    /// (duplicate, heartbeat residue, corrupt, or unrecognized). Moves no cursor: the caller does when it
+    /// hands the event to a consumer.
+    /// </summary>
+    private (long? Seq, HarnessEvent Event)? ProcessFrame(string? frameId, string data)
     {
         if (data.Length == 0)
         {
@@ -299,43 +319,83 @@ public sealed class RemoteEngineHost : IEngineHost
         }
         catch (JsonException)
         {
-            // Corrupt frame: record the Seq so a resume does not redeliver the same poison frame.
-            Advance(seq);
+            // Corrupt frame: skipped. A later resume may read it again and skip it again.
             return null;
         }
 
         var mapped = payload is null ? null : MapPayload(payload);
         if (mapped is null)
         {
-            Advance(seq);
             return null;
         }
 
-        Advance(seq);
-        return mapped;
+        return (seq, mapped);
     }
 
-    private bool IsDuplicate(long seq)
+    /// <summary>Fetches the events after <paramref name="resumeFrom"/> and holds them for the next prompt.</summary>
+    private async Task HoldMissedAsync(string sessionId, long? resumeFrom, CancellationToken cancellationToken)
     {
-        lock (_gate)
+        await foreach (var (seq, evt) in StreamAsync(sessionId, resumeFrom, cancellationToken).ConfigureAwait(false))
         {
-            return seq <= _lastSeq;
+            lock (_gate)
+            {
+                _held.Enqueue((seq, evt));
+                if (seq is long accepted)
+                {
+                    _highWater = Math.Max(_highWater, accepted);
+                }
+            }
         }
     }
 
-    private void Advance(long? seq)
+    /// <summary>Takes the oldest held event and marks it delivered, or returns null when none is held.</summary>
+    private HarnessEvent? TakeHeld()
     {
-        if (seq is null)
+        lock (_gate)
+        {
+            if (!_held.TryDequeue(out var held))
+            {
+                return null;
+            }
+
+            if (held.Seq is long seq)
+            {
+                _lastSeq = Math.Max(_lastSeq, seq);
+            }
+
+            return held.Event;
+        }
+    }
+
+    /// <summary>Records that a consumer received <paramref name="seq"/>: it becomes the delivered cursor.</summary>
+    private void MarkDelivered(long? seq)
+    {
+        if (seq is not long delivered)
         {
             return;
         }
 
         lock (_gate)
         {
-            if (seq.Value > _lastSeq)
-            {
-                _lastSeq = seq.Value;
-            }
+            _lastSeq = Math.Max(_lastSeq, delivered);
+            _highWater = Math.Max(_highWater, delivered);
+        }
+    }
+
+    /// <summary>The resume position for a new stream: the delivered cursor, or null (from the start) before any delivery.</summary>
+    private long? ResumePosition()
+    {
+        lock (_gate)
+        {
+            return _lastSeq == 0 ? (long?)null : _lastSeq;
+        }
+    }
+
+    private bool IsDuplicate(long seq)
+    {
+        lock (_gate)
+        {
+            return seq <= _highWater;
         }
     }
 

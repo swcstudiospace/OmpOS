@@ -38,7 +38,8 @@
     private bool _streaming;
     private CancellationTokenSource? _streamCts;
     private string? _lastPrompt;
-    private long? _lastSeq;
+    // The delivered cursor per session: the Seq of the last event shown for that session (an exclusive resume point).
+    private readonly Dictionary<string, long> _cursors = new(StringComparer.Ordinal);
     private bool _disposed;
 
     /// <inheritdoc />
@@ -100,7 +101,6 @@
     {
         StopStreaming();
         _error = null;
-        _selectedId = sessionId;
         try
         {
             var session = await Api.GetSessionAsync(sessionId).ConfigureAwait(true);
@@ -112,6 +112,7 @@
 
             var fresh = new SessionViewModel();
             var replayed = new SeqTracker();
+            long? lastLoaded = null;
             foreach (var evt in session.Events.OrderBy(static e => e.Seq))
             {
                 if (!replayed.TryAdd(evt.Seq))
@@ -120,6 +121,7 @@
                 }
 
                 fresh.ApplyEvent(evt);
+                lastLoaded = evt.Seq;
             }
 
             fresh.MarkHistoryLoaded();
@@ -131,6 +133,17 @@
             }
 
             _viewModel = fresh;
+            _selectedId = sessionId;
+
+            // Loading history is authoritative: the session's cursor becomes its last loaded event.
+            if (lastLoaded is long loaded)
+            {
+                _cursors[sessionId] = loaded;
+            }
+            else
+            {
+                _cursors.Remove(sessionId);
+            }
         }
         catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
         {
@@ -157,7 +170,7 @@
             return;
         }
 
-        await StreamFromAsync(_lastSeq).ConfigureAwait(true);
+        await StreamFromAsync().ConfigureAwait(true);
     }
 
     private async Task RetryAsync()
@@ -180,9 +193,10 @@
         _viewModel.ResumeAutoScroll();
     }
 
-    private async Task StreamFromAsync(long? sinceSeq)
+    private async Task StreamFromAsync()
     {
-        if (_selectedId is null)
+        var sessionId = _selectedId;
+        if (sessionId is null)
         {
             return;
         }
@@ -194,10 +208,19 @@
         _streaming = true;
         try
         {
-            await foreach (var evt in EventStream.StreamSessionAsync(_selectedId, sinceSeq, token).ConfigureAwait(true))
+            // The cursor is exclusive (the last event this session delivered). The SSE client takes the first Seq to
+            // include, so the stream asks for the Seq after the cursor.
+            long? sinceSeq = _cursors.TryGetValue(sessionId, out var cursor) ? cursor + 1 : (long?)null;
+            await foreach (var evt in EventStream.StreamSessionAsync(sessionId, sinceSeq, token).ConfigureAwait(true))
             {
+                if (_selectedId != sessionId)
+                {
+                    // The user switched conversations: this event belongs to a session that is no longer on screen.
+                    break;
+                }
+
                 _viewModel.ApplyEvent(evt);
-                _lastSeq = evt.Seq;
+                _cursors[sessionId] = evt.Seq;
                 StateHasChanged();
             }
         }

@@ -57,34 +57,74 @@ public sealed class EngineHostTests
     }
 
     /// <summary>
-    /// The remote host streams events 1..5, survives the connection drop, and replays 6..12
-    /// exactly once on <c>ReconnectAsync</c> (the replay overlaps Seq 5 to prove de-duplication).
+    /// The remote host streams events 1..5 and survives the connection drop. <c>ReconnectAsync</c> fetches the
+    /// missed events 6..12 (the replay overlaps Seq 5 to prove de-duplication) and holds them; the next prompt
+    /// delivers each exactly once, before its own reply.
     /// </summary>
     [Fact]
-    public async Task RemoteResumeReplaysMissedEventsExactlyOnce()
+    public async Task RemoteResumeHoldsMissedEventsExactlyOnceForNextPrompt()
     {
         var ct = TestContext.Current.CancellationToken;
         using var handler = new ScriptedApiHandler();
         using var http = ClientFor(handler);
         var host = new RemoteEngineHost(http);
 
-        var seen = new List<HarnessEvent>();
-        await foreach (var evt in host.SubmitPromptAsync("prompt", new PromptOptions(), ct))
-        {
-            seen.Add(evt);
-        }
-
+        var seen = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
         seen.Count.ShouldBe(5);
-        await foreach (var evt in host.ReconnectAsync(ct))
-        {
-            seen.Add(evt);
-        }
+
+        await host.ReconnectAsync(ct);
+        seen.AddRange(await CollectAsync(host.SubmitPromptAsync("next prompt", new PromptOptions(), ct)));
 
         var texts = seen.OfType<TextDeltaEvent>().Select(static evt => evt.Text).ToArray();
         texts.ShouldBe(["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10", "t11"]);
         seen.OfType<CompletedEvent>().Select(static evt => evt.Reason).ShouldBe(["end_turn"]);
         seen.Count.ShouldBe(12);
-        handler.ResumePositions.ShouldBe(["5"]);
+        handler.ResumePositions.ShouldBe(["5", "12"]);
+    }
+
+    /// <summary>
+    /// A second prompt streams only its own reply. The stream starts after the delivered cursor (exclusive), so the
+    /// first turn's completion, which the server would replay from the start, cannot end the second turn early.
+    /// </summary>
+    [Fact]
+    public async Task SecondPromptReceivesOnlyItsOwnReply()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var handler = new TurnServerHandler();
+        using var http = ClientFor(handler);
+        var host = new RemoteEngineHost(http);
+
+        var first = await CollectAsync(host.SubmitPromptAsync("one", new PromptOptions(), ct));
+        var second = await CollectAsync(host.SubmitPromptAsync("two", new PromptOptions(), ct));
+
+        first.OfType<TextDeltaEvent>().Select(static evt => evt.Text).ShouldBe(["a"]);
+        second.OfType<TextDeltaEvent>().Select(static evt => evt.Text).ShouldBe(["b"]);
+        second.OfType<CompletedEvent>().Count().ShouldBe(1);
+        handler.ResumePositions.ShouldBe(["2"]);
+    }
+
+    /// <summary>A faulted engine that the host replaces is disposed; the replacement serves the next prompt.</summary>
+    [Fact]
+    public async Task FaultedEngineIsDisposedWhenReplaced()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var engines = new List<FakeOmpSession>();
+        await using var host = new InProcessEngineHost(
+            () =>
+            {
+                var engine = new FakeOmpSession();
+                engines.Add(engine);
+                return engine;
+            },
+            new EngineHostDescriptor { Kind = EngineHostKind.InProcess, Isolation = Isolation.Process, Attestation = Attestation.None });
+
+        (await CollectAsync(host.SubmitPromptAsync("one", new PromptOptions(), ct))).Count.ShouldBe(1);
+        engines[0].State = HarnessState.Faulted;
+
+        (await CollectAsync(host.SubmitPromptAsync("two", new PromptOptions(), ct))).Count.ShouldBe(1);
+        engines.Count.ShouldBe(2);
+        engines[0].DisposeCount.ShouldBe(1);
+        engines[1].DisposeCount.ShouldBe(0);
     }
 
     /// <summary>Reconnecting before any prompt throws: there is no session to resume.</summary>
@@ -179,8 +219,19 @@ public sealed class EngineHostTests
         Steps = events.Select(static evt => (InMemoryStep)new EmitStep(evt)).ToArray(),
     };
 
-    private static HttpClient ClientFor(ScriptedApiHandler handler) =>
+    private static HttpClient ClientFor(HttpMessageHandler handler) =>
         new(handler, disposeHandler: false) { BaseAddress = new Uri("https://api.local/") };
+
+    private static async Task<List<HarnessEvent>> CollectAsync(IAsyncEnumerable<HarnessEvent> events)
+    {
+        var collected = new List<HarnessEvent>();
+        await foreach (var evt in events)
+        {
+            collected.Add(evt);
+        }
+
+        return collected;
+    }
 
     /// <summary>
     /// Scripted API origin: creates session <c>sess-1</c>, accepts prompts, then serves SSE.
@@ -243,6 +294,114 @@ public sealed class EngineHostTests
                 Content = new StringContent(string.Concat(frames), Encoding.UTF8, "text/event-stream"),
             };
             return response;
+        }
+    }
+
+    /// <summary>
+    /// Faithful SSE origin for two turns: <c>a</c> then a completion (Seq 2), and <c>b</c> then a completion (Seq 4).
+    /// As the API does, a stream carries only Seqs after <c>Last-Event-ID</c> and closes after its completion.
+    /// </summary>
+    private sealed class TurnServerHandler : HttpMessageHandler
+    {
+        private static readonly (long Seq, string Data, bool Terminal)[] Events =
+        [
+            (1, """{"kind":"text_delta","delta":"a"}""", false),
+            (2, """{"kind":"completed","reason":"end_turn"}""", true),
+            (3, """{"kind":"text_delta","delta":"b"}""", false),
+            (4, """{"kind":"completed","reason":"end_turn"}""", true),
+        ];
+
+        /// <summary>Gets every Last-Event-ID value received, in arrival order.</summary>
+        public List<string> ResumePositions { get; } = [];
+
+        /// <inheritdoc />
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            if (request.Method == HttpMethod.Post && string.Equals(path, "/sessions", StringComparison.Ordinal))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created)
+                {
+                    Content = new StringContent("""{"id":"sess-1","ownerId":"local-dev"}""", Encoding.UTF8, "application/json"),
+                });
+            }
+
+            if (request.Method == HttpMethod.Post && string.Equals(path, "/sessions/sess-1/prompts", StringComparison.Ordinal))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)
+                {
+                    Content = new StringContent("""{"sessionId":"sess-1","status":"accepted"}""", Encoding.UTF8, "application/json"),
+                });
+            }
+
+            if (request.Method == HttpMethod.Get && string.Equals(path, "/sessions/sess-1/events", StringComparison.Ordinal))
+            {
+                var after = 0L;
+                if (request.Headers.TryGetValues(RemoteEngineHost.LastEventIdHeader, out var values))
+                {
+                    var position = values.Single();
+                    ResumePositions.Add(position);
+                    after = long.Parse(position, System.Globalization.CultureInfo.InvariantCulture);
+                }
+
+                var frames = new List<string>();
+                foreach (var (seq, data, terminal) in Events.Where(evt => evt.Seq > after))
+                {
+                    frames.Add($"id: {seq}\ndata: {data}\n\n");
+                    if (terminal)
+                    {
+                        break;
+                    }
+                }
+
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(string.Concat(frames), Encoding.UTF8, "text/event-stream"),
+                });
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        }
+    }
+
+    /// <summary>An in-process engine that records how many times it was disposed.</summary>
+    private sealed class FakeOmpSession : IOmpSession
+    {
+        /// <summary>Gets how many times the engine was disposed.</summary>
+        public int DisposeCount { get; private set; }
+
+        /// <inheritdoc />
+        public HarnessState State { get; set; } = HarnessState.Ready;
+
+        /// <inheritdoc />
+        public IReadOnlyDictionary<string, string> AdvertisedCapabilities { get; } = new Dictionary<string, string>();
+
+        /// <inheritdoc />
+        public Task CreateAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        /// <inheritdoc />
+        public Task ResumeAsync(string sessionId, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        /// <inheritdoc />
+        public async IAsyncEnumerable<HarnessEvent> SubmitPromptAsync(
+            string prompt,
+            PromptOptions options,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            await Task.Yield();
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return new CompletedEvent("end_turn");
+        }
+
+        /// <inheritdoc />
+        public Task CancelAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        /// <inheritdoc />
+        public ValueTask DisposeAsync()
+        {
+            DisposeCount++;
+            State = HarnessState.Disposed;
+            return ValueTask.CompletedTask;
         }
     }
 }

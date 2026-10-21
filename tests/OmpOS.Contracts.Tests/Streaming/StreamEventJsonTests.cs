@@ -94,4 +94,26 @@ public sealed class StreamEventJsonTests
         // token; the reference deserializes to null. Must not throw.
         JsonSerializer.Deserialize("null", OmpOsJsonContext.Default.StreamEventPayload).ShouldBeNull();
     }
+
+    [Theory]
+    [InlineData("""[]""")]
+    [InlineData("""[1,2,3]""")]
+    [InlineData("\"not-an-object\"")]
+    [InlineData("""42""")]
+    [InlineData("""true""")]
+    public void UnknownNonObjectPayloadWritesItsRawValueUnchanged(string rootJson)
+    {
+        var payload = JsonSerializer.Deserialize(rootJson, OmpOsJsonContext.Default.StreamEventPayload);
+
+        JsonSerializer.Serialize(payload, OmpOsJsonContext.Default.StreamEventPayload).ShouldBe(rootJson);
+    }
+
+    [Fact]
+    public void UnknownObjectPayloadWritesItsRawValueUnchanged()
+    {
+        const string rootJson = """{"kind":"future-kind","data":[1,"two",{"three":3}]}""";
+        var payload = JsonSerializer.Deserialize(rootJson, OmpOsJsonContext.Default.StreamEventPayload);
+
+        JsonSerializer.Serialize(payload, OmpOsJsonContext.Default.StreamEventPayload).ShouldBe(rootJson);
+    }
 }
