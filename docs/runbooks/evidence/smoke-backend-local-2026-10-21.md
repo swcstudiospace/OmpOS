@@ -53,3 +53,10 @@ Configuration (secrets omitted): `ASPNETCORE_ENVIRONMENT=Production`, `Sessions_
 - Railway private networking over IPv6 (`*.railway.internal`), TLS on the TimescaleDB template, GreptimeDB Basic
   authentication, and the deployed image. These are verified only by the Railway deploy.
 - The real omp harness and sandbox provider. The hosted runtime uses the InMemory harness and the fake sandbox (HOST-04 stays open).
+
+## Container image verification
+
+`podman build -f deploy/api.Containerfile -t ompos-api:local .` succeeded (244 MB). The container ran against the same
+stand-ins with `PORT=18090` and the production config keys, as uid 10001: `/health/live` returned 200, `/health/ready`
+returned Healthy (200), a prompt returned 202 and its run completed, and the container log had no failure or exception
+lines. This verifies the artifact Railway would build. It does not verify Railway, which refused deploys in this session.
