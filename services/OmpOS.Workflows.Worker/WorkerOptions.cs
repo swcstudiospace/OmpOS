@@ -23,10 +23,6 @@ internal sealed class WorkerOptions
     /// <remarks>Defaults to <see langword="false"/>. When disabled, the host exits immediately without registering Temporal services.</remarks>
     internal bool Enabled { get; set; }
 
-    /// <summary>Gets or sets whether the worker registers fake session-run activities.</summary>
-    /// <remarks>Defaults to <see langword="false"/>. Fake activities silently fabricate successful runs; they must be opted into explicitly for replay and smoke runs. Otherwise a fail-loud guard is registered.</remarks>
-    internal bool EnableFakeActivities { get; set; }
-
     /// <summary>Gets or sets the Temporal server address.</summary>
     /// <remarks>Required when <see cref="Enabled"/> is <see langword="true"/>. Defaults to <c>localhost:7233</c>.</remarks>
     internal string Address { get; set; } = DefaultAddress;

@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using OmpOS.Harness.Abstractions;
+using OmpOS.Sandbox.Abstractions;
 using OmpOS.Workflows.Worker;
 using Temporalio.Client;
 using Xunit;
@@ -190,6 +192,8 @@ public sealed class WorkerConnectionOptionsTests
     private static TemporalClientConnectOptions ResolveClientOptions(WorkerOptions options)
     {
         var services = new ServiceCollection();
+        services.AddSingleton<ISandboxProvider>(new StubSandboxProvider());
+        services.AddSingleton<IHarnessSessionFactory>(new StubHarnessSessionFactory());
         WorkerHostConfiguration.ConfigureServices(services, options);
         using var provider = services.BuildServiceProvider();
         return provider.GetRequiredService<IOptions<TemporalClientConnectOptions>>().Value;

@@ -15,6 +15,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\OmpOS.Workflows\OmpOS.Workflows.csproj" />
     <ProjectReference Include="..\..\src\OmpOS.Contracts\OmpOS.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\OmpOS.Sandbox.Abstractions\OmpOS.Sandbox.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\OmpOS.Harness.Abstractions\OmpOS.Harness.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\OmpOS.Sandbox\OmpOS.Sandbox.csproj" />
+    <ProjectReference Include="..\..\src\OmpOS.Harness.Rpc\OmpOS.Harness.Rpc.csproj" />
   </ItemGroup>
 
   <ItemGroup>

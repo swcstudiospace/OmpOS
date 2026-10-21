@@ -3,6 +3,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using OmpOS.Harness.Abstractions;
+using OmpOS.Harness.Rpc;
+using OmpOS.Sandbox;
+using OmpOS.Sandbox.Abstractions;
 using OmpOS.Workflows.Worker;
 using Temporalio.Client;
 using Temporalio.Extensions.Hosting;
@@ -15,7 +19,8 @@ namespace OmpOS.Workflows.Tests;
 /// <remarks>
 /// When <c>Workflows:Enabled=false</c> (default) <c>Program.Main</c> returns 0 before any
 /// Temporal service is registered; when enabled, <see cref="WorkerHostConfiguration"/>
-/// registers the Temporal client and the hosted session-run worker.
+/// selects the sandbox provider and harness adapter, then registers the Temporal client and the hosted
+/// session-run worker.
 /// </remarks>
 [SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default.")]
 [SuppressMessage("Usage", "MA0004:Use Task.ConfigureAwait", Justification = "Same as CA2007: test methods await on the test context.")]
@@ -44,25 +49,37 @@ public sealed class WorkerHostTests
     }
 
     /// <summary>
-    /// Verifies the disabled configuration can never register Temporal services (IN-02).
+    /// Verifies the disabled entry point takes its early-return branch, exits with code 0, and never
+    /// builds the Temporal host (IN-02).
     /// </summary>
     /// <remarks>
-    /// The disabled path exits in <c>Program.Main</c> before registration; this pins the
-    /// guarantee structurally by refusing disabled options in <c>ConfigureServices</c>, so
-    /// the test fails if the early return is ever bypassed rather than passing by construction.
+    /// <c>Program.Main</c> builds its host locally, so the registrations it would make cannot be read
+    /// from outside. The disabled branch returns before <c>ConfigureServices</c> and <c>Build</c>. If that
+    /// branch were bypassed, <c>ConfigureServices</c> would refuse the disabled options and <c>Main</c>
+    /// would throw, so this test fails instead of passing by construction.
     /// </remarks>
     [Fact]
-    public void WorkerHost_Disabled_ConfigureServicesRefusesRegistration()
+    public async Task WorkerHost_Disabled_NoTemporalServicesRegistered()
     {
-        // Arrange
-        var services = new ServiceCollection();
-        var options = new WorkerOptions { Enabled = false };
+        // Arrange — Main reads the process environment; capture its console banner to prove the branch ran.
+        Environment.SetEnvironmentVariable("Workflows__Enabled", "false");
+        using var output = new StringWriter();
+        var originalOut = Console.Out;
+        Console.SetOut(output);
+        try
+        {
+            // Act — must return the disabled exit code without building a host.
+            var exitCode = await Program.Main([]);
 
-        // Act & Assert — no Temporal service is registered; registration itself is refused.
-        var ex = Assert.Throws<InvalidOperationException>(
-            () => WorkerHostConfiguration.ConfigureServices(services, options));
-        Assert.Contains("Workflows:Enabled=true", ex.Message, StringComparison.Ordinal);
-        Assert.Empty(services);
+            // Assert — the disabled branch wrote its banner and exited with code 0.
+            Assert.Equal(0, exitCode);
+            Assert.Contains("Workflows:Enabled=false", output.ToString(), StringComparison.Ordinal);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+            Environment.SetEnvironmentVariable("Workflows__Enabled", null);
+        }
     }
 
     /// <summary>
@@ -71,8 +88,10 @@ public sealed class WorkerHostTests
     [Fact]
     public void WorkerHost_Enabled_RegistersTemporalServices()
     {
-        // Arrange
+        // Arrange — the host supplies the sandbox provider and harness factory; the worker registers no stand-ins.
         var services = new ServiceCollection();
+        services.AddSingleton<ISandboxProvider>(new StubSandboxProvider());
+        services.AddSingleton<IHarnessSessionFactory>(new StubHarnessSessionFactory());
         var options = new WorkerOptions
         {
             Enabled = true,
@@ -94,6 +113,40 @@ public sealed class WorkerHostTests
 
         var clientOptions = provider.GetRequiredService<IOptions<TemporalClientConnectOptions>>().Value;
         Assert.Same(SessionRunDataConverter.Instance, clientOptions.DataConverter);
+    }
+
+    /// <summary>
+    /// Verifies the options overload refuses to register anything when the worker is disabled (the guard).
+    /// </summary>
+    [Fact]
+    public void ConfigureServices_DisabledOptions_ThrowsAndRegistersNothing()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var options = new WorkerOptions { Enabled = false };
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() => WorkerHostConfiguration.ConfigureServices(services, options));
+        Assert.Contains("Workflows:Enabled=true", ex.Message, StringComparison.Ordinal);
+        Assert.Empty(services);
+    }
+
+    /// <summary>
+    /// Verifies the configuration overload refuses a disabled worker before it selects any dependency.
+    /// </summary>
+    [Fact]
+    public void ConfigureServices_FromConfigurationWhenDisabled_ThrowsBeforeSelectingDependencies()
+    {
+        // Arrange — both selectors are set, so only the guard can stop registration before they run.
+        using var configuration = new ConfigurationManager();
+        configuration["Sandbox:Provider"] = "podman";
+        configuration["Harness:Adapter"] = "rpc";
+        var services = new ServiceCollection();
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() => WorkerHostConfiguration.ConfigureServices(services, configuration));
+        Assert.Contains("Workflows:Enabled=true", ex.Message, StringComparison.Ordinal);
+        Assert.Empty(services);
     }
 
     /// <summary>
@@ -155,49 +208,154 @@ public sealed class WorkerHostTests
     }
 
     /// <summary>
-    /// Verifies the enabled worker registers a fail-loud guard by default (WR-10).
+    /// Verifies a missing or unsupported <c>Sandbox:Provider</c> fails startup and names the key. Only <c>podman</c> is composed.
     /// </summary>
-    [Fact]
-    public async Task WorkerHost_Enabled_RegistersFailLoudGuardByDefault()
+    /// <param name="provider">The configured provider value under test.</param>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("openshell")]
+    [InlineData("agentos")]
+    [InlineData("railway")]
+    public void RegisterSandboxProvider_MissingOrUnsupported_FailsNamingKey(string? provider)
     {
         // Arrange
         var services = new ServiceCollection();
-        var options = new WorkerOptions { Enabled = true };
 
-        // Act
-        WorkerHostConfiguration.ConfigureServices(services, options);
-
-        // Assert — resolution succeeds but every activity throws fail-loud.
-        using var provider = services.BuildServiceProvider();
-        var activities = provider.GetRequiredService<ISessionRunActivities>();
-        Assert.IsType<GuardedSessionRunActivities>(activities);
-
-        var input = TestInputFactory.Create();
-        var ct = TestContext.Current.CancellationToken;
-        await Assert.ThrowsAsync<InvalidOperationException>(() => activities.ProvisionSandboxAsync(input, ct));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => activities.RunPromptAsync(input, _ => { }, ct));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => activities.CollectArtifactsAsync(input, ct));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => activities.TeardownSandboxAsync(input, ct));
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() => WorkerHostConfiguration.RegisterSandboxProvider(services, provider));
+        Assert.Contains("Sandbox:Provider", ex.Message, StringComparison.Ordinal);
+        Assert.Empty(services);
     }
 
     /// <summary>
-    /// Verifies fake activities are opt-in only via explicit configuration (WR-10).
+    /// Verifies the <c>podman</c> provider resolves to the local podman-compose provider.
     /// </summary>
     [Fact]
-    public void WorkerHost_EnabledFakeActivities_RegistersFakes()
+    public void RegisterSandboxProvider_Podman_ResolvesLocalPodmanComposeProvider()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        // Act
+        WorkerHostConfiguration.RegisterSandboxProvider(services, "podman");
+
+        // Assert — resolution builds the provider through its constructor only; no podman process is started.
+        using var provider = services.BuildServiceProvider();
+        Assert.IsType<LocalPodmanComposeProvider>(provider.GetRequiredService<ISandboxProvider>());
+    }
+
+    /// <summary>
+    /// Verifies <c>Harness:Adapter=rpc</c> with an omp path and working directory resolves the RPC-backed harness session factory.
+    /// </summary>
+    [Fact]
+    public void RegisterHarnessAdapter_Rpc_ResolvesRpcHarnessSessionFactory()
+    {
+        // Arrange
+        using var configuration = new ConfigurationManager();
+        configuration["Harness:Adapter"] = "rpc";
+        configuration["Harness:OmpPath"] = "omp";
+        configuration["Harness:Cwd"] = Path.GetTempPath();
+        var services = new ServiceCollection();
+
+        // Act
+        WorkerHostConfiguration.RegisterHarnessAdapter(services, configuration);
+
+        // Assert — resolving the factory builds the client only; no engine starts until a session is created.
+        using var provider = services.BuildServiceProvider();
+        Assert.IsType<RpcHarnessSessionFactory>(provider.GetRequiredService<IHarnessSessionFactory>());
+    }
+
+    /// <summary>
+    /// Verifies every <c>Harness:Adapter</c> value other than <c>rpc</c>, including the in-memory scripted harness,
+    /// fails startup and names the key.
+    /// </summary>
+    /// <param name="adapter">The configured adapter value under test.</param>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("inmemory")]
+    [InlineData("InMemory")]
+    [InlineData("RPC")]
+    [InlineData("rpc ")]
+    public void RegisterHarnessAdapter_UnsupportedValue_FailsNamingKey(string? adapter)
+    {
+        // Arrange
+        using var configuration = new ConfigurationManager();
+        configuration["Harness:Adapter"] = adapter;
+        configuration["Harness:OmpPath"] = "omp";
+        configuration["Harness:Cwd"] = Path.GetTempPath();
+        var services = new ServiceCollection();
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() => WorkerHostConfiguration.RegisterHarnessAdapter(services, configuration));
+        Assert.Contains("Harness:Adapter", ex.Message, StringComparison.Ordinal);
+        Assert.Empty(services);
+    }
+
+    /// <summary>
+    /// Verifies the <c>rpc</c> adapter fails startup and names <c>Harness:OmpPath</c> when the omp path is missing or blank.
+    /// </summary>
+    /// <param name="ompPath">The configured omp path under test.</param>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void RegisterHarnessAdapter_RpcWithoutOmpPath_FailsNamingKey(string? ompPath)
+    {
+        // Arrange
+        using var configuration = new ConfigurationManager();
+        configuration["Harness:Adapter"] = "rpc";
+        configuration["Harness:OmpPath"] = ompPath;
+        configuration["Harness:Cwd"] = Path.GetTempPath();
+        var services = new ServiceCollection();
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() => WorkerHostConfiguration.RegisterHarnessAdapter(services, configuration));
+        Assert.Contains("Harness:OmpPath", ex.Message, StringComparison.Ordinal);
+        Assert.Empty(services);
+    }
+
+    /// <summary>
+    /// Verifies the <c>rpc</c> adapter fails startup and names <c>Harness:Cwd</c> when the working directory is missing or blank.
+    /// </summary>
+    /// <param name="cwd">The configured working directory under test.</param>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void RegisterHarnessAdapter_RpcWithoutCwd_FailsNamingKey(string? cwd)
+    {
+        // Arrange
+        using var configuration = new ConfigurationManager();
+        configuration["Harness:Adapter"] = "rpc";
+        configuration["Harness:OmpPath"] = "omp";
+        configuration["Harness:Cwd"] = cwd;
+        var services = new ServiceCollection();
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() => WorkerHostConfiguration.RegisterHarnessAdapter(services, configuration));
+        Assert.Contains("Harness:Cwd", ex.Message, StringComparison.Ordinal);
+        Assert.Empty(services);
+    }
+
+    /// <summary>
+    /// Verifies enabled startup with a valid sandbox provider still fails at harness selection and names the key.
+    /// </summary>
+    [Fact]
+    public void ConfigureServices_EnabledWithoutHarnessAdapter_FailsNamingKey()
     {
         // Arrange
         using var configuration = new ConfigurationManager();
         configuration["Workflows:Enabled"] = "true";
-        configuration["Workflows:EnableFakeActivities"] = "true";
-        var options = WorkerHostConfiguration.ReadOptions(configuration);
+        configuration["Sandbox:Provider"] = "podman";
         var services = new ServiceCollection();
 
-        // Act
-        WorkerHostConfiguration.ConfigureServices(services, options);
-
-        // Assert
-        using var provider = services.BuildServiceProvider();
-        Assert.IsType<FakeSessionRunActivities>(provider.GetRequiredService<ISessionRunActivities>());
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() => WorkerHostConfiguration.ConfigureServices(services, configuration));
+        Assert.Contains("Harness:Adapter", ex.Message, StringComparison.Ordinal);
     }
 }

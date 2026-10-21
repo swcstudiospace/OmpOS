@@ -167,6 +167,34 @@
       "ompos.contracts": {
         "type": "Project"
       },
+      "ompos.harness.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Contracts": "[1.0.0, )"
+        }
+      },
+      "ompos.harness.rpc": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+        }
+      },
+      "ompos.sandbox": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
+          "Microsoft.Extensions.Options": "[10.0.13, )",
+          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
+          "YamlDotNet": "[16.3.0, )"
+        }
+      },
+      "ompos.sandbox.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Contracts": "[1.0.0, )"
+        }
+      },
       "ompos.workflows": {
         "type": "Project",
         "dependencies": {
@@ -367,6 +395,12 @@
         "requested": "[10.0.13, )",
         "resolved": "10.0.13",
         "contentHash": "ZjTwxzhiw2TMEzIbUDkMF0dfDB2I4NQgIfKD0ELu9/5Mk+SRGdKZcD0/lvBrRCAPo6KN2r0BW86MRancoyJkoA=="
+      },
+      "YamlDotNet": {
+        "type": "CentralTransitive",
+        "requested": "[16.3.0, )",
+        "resolved": "16.3.0",
+        "contentHash": "SgMOdxbz8X65z8hraIs6hOEdnkH6hESTAIUa7viEngHOYaH+6q5XJmwr1+yb9vJpNQ19hCQY69xbFsLtXpobQA=="
       }
     }
   }

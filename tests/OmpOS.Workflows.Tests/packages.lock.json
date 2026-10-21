@@ -384,6 +384,34 @@
       "ompos.contracts": {
         "type": "Project"
       },
+      "ompos.harness.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Contracts": "[1.0.0, )"
+        }
+      },
+      "ompos.harness.rpc": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+        }
+      },
+      "ompos.sandbox": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
+          "Microsoft.Extensions.Options": "[10.0.13, )",
+          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
+          "YamlDotNet": "[16.3.0, )"
+        }
+      },
+      "ompos.sandbox.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Contracts": "[1.0.0, )"
+        }
+      },
       "ompos.workflows": {
         "type": "Project",
         "dependencies": {
@@ -394,6 +422,10 @@
         "type": "Project",
         "dependencies": {
           "OmpOS.Contracts": "[1.0.0, )",
+          "OmpOS.Harness.Abstractions": "[1.0.0, )",
+          "OmpOS.Harness.Rpc": "[1.0.0, )",
+          "OmpOS.Sandbox": "[1.0.0, )",
+          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
           "OmpOS.Workflows": "[1.0.0, )",
           "Temporalio": "[1.20.0, )",
           "Temporalio.Extensions.Hosting": "[1.20.0, )"
@@ -557,6 +589,12 @@
         "requested": "[2.5.1, )",
         "resolved": "2.5.1",
         "contentHash": "FAMaFFWnULW+hDHMb40Qzhcgz9cAU2/EtgRCBNX/DdQoKo0sPG2EiY+w7bQdl/BgHnf/DbpXLbf5Xy0o15M8NA=="
+      },
+      "YamlDotNet": {
+        "type": "CentralTransitive",
+        "requested": "[16.3.0, )",
+        "resolved": "16.3.0",
+        "contentHash": "SgMOdxbz8X65z8hraIs6hOEdnkH6hESTAIUa7viEngHOYaH+6q5XJmwr1+yb9vJpNQ19hCQY69xbFsLtXpobQA=="
       }
     }
   }

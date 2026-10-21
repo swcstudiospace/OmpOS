@@ -137,12 +137,29 @@ None outstanding for workflow routing.
 - Single workflow definition (`ISessionRunWorkflow`) reused by both runners.
 - Worker is a separate deployable unit — can scale independently.
 - Replay tests catch non-determinism in CI without a Temporal server.
+- Transient provision, collect, or teardown failures on the direct path are retried per activity, matching the Temporal attempt counts (Q-WF-RETRY).
 
 ### Negative
 
 - Two code paths to maintain (direct + Temporal adapters).
 - Configuration complexity for operators (must know when to enable Temporal).
 - Replay fixture may drift from real server exports until Q-WF-HISTORY resolved.
+- A permanently failing provision or teardown adds up to 3 s (provision) or 15 s (teardown) of backoff before the run reports Failed.
+
+### Direct-path retry policy (Q-WF-RETRY)
+
+`DirectSessionRunner` bounds each activity with the Temporal attempt counts. `MaximumAttempts` includes the first attempt.
+
+| Activity | Attempts | Backoff between attempts | Rationale |
+|---|---|---|---|
+| ProvisionSandbox | 3 | 1 s, 2 s | Idempotent: keyed by `SessionRunInput.IdempotencyKey`. |
+| RunPrompt | 1 | none | Not idempotent: streams events into the session log, so a repeat duplicates work and events. |
+| CollectArtifacts | 3 | 1 s, 2 s | Runs after the prompt has finished; a retry re-reads artifacts. |
+| TeardownSandbox | 5 | 1 s, 2 s, 4 s, 8 s | Repeat-safe: the stub providers report an already-removed sandbox as success. |
+
+Cancellation is never retried. Backoff is awaited through `IWorkflowContext.DelayAsync`, so tests inject a zero-delay context. Teardown still runs in `finally` once provisioning has succeeded.
+
+Heartbeat stays a no-op on the direct path. A heartbeat exists to reset an activity heartbeat timeout, and the direct path has no such timeout. The only heartbeat timeout is on the Temporal `RunPrompt`, which is not retried. Progress is observable through the session event log.
 
 ## References
 
