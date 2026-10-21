@@ -44,7 +44,18 @@ internal static class WorkerHostConfiguration
             Address = section["Address"] ?? WorkerOptions.DefaultAddress,
             Namespace = section["Namespace"] ?? WorkerOptions.DefaultNamespace,
             TaskQueue = section["TaskQueue"] ?? WorkerOptions.DefaultTaskQueue,
+            ApiKey = NormalizeApiKey(section["ApiKey"]),
+            Tls = string.Equals(section["Tls"], bool.TrueString, StringComparison.OrdinalIgnoreCase),
         };
+    }
+
+    /// <summary>Normalizes the optional API key; blank values count as absent.</summary>
+    /// <param name="value">The raw configured value.</param>
+    /// <returns>The trimmed key, or <see langword="null"/> when absent or blank.</returns>
+    private static string? NormalizeApiKey(string? value)
+    {
+        var trimmed = value?.Trim();
+        return string.IsNullOrEmpty(trimmed) ? null : trimmed;
     }
 
     /// <summary>Validates the worker options, failing fast on missing values.</summary>
@@ -96,11 +107,21 @@ internal static class WorkerHostConfiguration
         {
             services.AddSingleton<ISessionRunActivities>(new GuardedSessionRunActivities());
         }
-        services.Configure<TemporalClientConnectOptions>(clientOptions =>
+        services.AddTemporalClient(clientOptions =>
         {
+            clientOptions.TargetHost = options.Address;
+            clientOptions.Namespace = options.Namespace;
             clientOptions.DataConverter = SessionRunDataConverter.Instance;
+            if (options.ApiKey is { } apiKey)
+            {
+                clientOptions.ApiKey = apiKey;
+            }
+
+            if (options.Tls)
+            {
+                clientOptions.Tls = new TlsOptions();
+            }
         });
-        services.AddTemporalClient(options.Address, options.Namespace);
         services.AddHostedTemporalWorker(
                 options.TaskQueue,
                 new WorkerDeploymentOptions(new WorkerDeploymentVersion("ompos", BuildId), useWorkerVersioning: false))

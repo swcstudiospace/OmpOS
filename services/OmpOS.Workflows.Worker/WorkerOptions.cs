@@ -38,4 +38,12 @@ internal sealed class WorkerOptions
     /// <summary>Gets or sets the task queue name.</summary>
     /// <remarks>Defaults to <c>ompos-session-runs</c>.</remarks>
     internal string TaskQueue { get; set; } = DefaultTaskQueue;
+
+    /// <summary>Gets or sets the Temporal API key, sent as a Bearer token on every call.</summary>
+    /// <remarks>Optional; <see langword="null"/> when unset or blank. Temporal Cloud requires it. The SDK enables TLS automatically when it is set. The value is never logged and never echoed in exception text.</remarks>
+    internal string? ApiKey { get; set; }
+
+    /// <summary>Gets or sets whether the Temporal client connects over TLS.</summary>
+    /// <remarks>Defaults to <see langword="false"/>. When <see langword="true"/>, the client uses default TLS options. When <see langword="false"/> and <see cref="ApiKey"/> is set, the SDK still enables TLS.</remarks>
+    internal bool Tls { get; set; }
 }
