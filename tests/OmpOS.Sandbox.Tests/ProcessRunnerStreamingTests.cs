@@ -17,7 +17,7 @@ public sealed class ProcessRunnerStreamingTests
     {
         Assert.SkipUnless(OperatingSystem.IsLinux(), "Streaming test requires a POSIX shell.");
         var ct = TestContext.Current.CancellationToken;
-        Assert.SkipUnless(await RealProcessRunner.CheckCommandExistsAsync("sh", ct), "sh not available on PATH.");
+        Assert.SkipUnless(await CommandProbe.CheckCommandExistsAsync("sh", ct), "sh not available on PATH.");
 
         var spec = new ProcessSpec
         {

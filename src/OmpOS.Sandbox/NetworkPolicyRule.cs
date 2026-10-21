@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace OmpOS.Sandbox;
@@ -32,6 +34,11 @@ public sealed class NetworkPolicyRule
         return $"{{destination: {ToYamlScalar(Destination)}, port: {ToYamlScalar(Port)}, protocol: {ToYamlScalar(Protocol)}, action: {ToYamlScalar(Action)}}}";
     }
 
+    private static readonly HashSet<string> ReservedPlainScalars = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "true", "false", "null", "yes", "no", "on", "off", "-",
+    };
+
     /// <summary>
     /// Formats a value as a YAML scalar, quoting when it is not a plain scalar.
     /// </summary>
@@ -39,11 +46,57 @@ public sealed class NetworkPolicyRule
     /// <returns>The value verbatim when plain, otherwise double-quoted with escapes.</returns>
     internal static string ToYamlScalar(string value)
     {
-        if (value.Length > 0 && value.All(static c => char.IsLetterOrDigit(c) || c is '.' or '_' or '-' or '/'))
+        if (IsPlainYamlScalar(value))
         {
             return value;
         }
 
-        return $"\"{value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal).Replace("\n", "\\n", StringComparison.Ordinal).Replace("\r", "\\r", StringComparison.Ordinal).Replace("\t", "\\t", StringComparison.Ordinal)}\"";
+        return $"\"{EscapeForDoubleQuotes(value)}\"";
+    }
+
+    private static bool IsPlainYamlScalar(string value)
+    {
+        return value.Length > 0
+            && !ReservedPlainScalars.Contains(value)
+            && value.All(static c => char.IsLetterOrDigit(c) || c is '.' or '_' or '-' or '/');
+    }
+
+    private static string EscapeForDoubleQuotes(string value)
+    {
+        var builder = new StringBuilder(value.Length + 8);
+        foreach (var c in value)
+        {
+            switch (c)
+            {
+                case '\\':
+                    builder.Append("\\\\");
+                    break;
+                case '"':
+                    builder.Append("\\\"");
+                    break;
+                case '\n':
+                    builder.Append("\\n");
+                    break;
+                case '\r':
+                    builder.Append("\\r");
+                    break;
+                case '\t':
+                    builder.Append("\\t");
+                    break;
+                default:
+                    if (c < 0x20 || c == 0x7F)
+                    {
+                        builder.Append("\\u").Append(((int)c).ToString("X4", CultureInfo.InvariantCulture));
+                    }
+                    else
+                    {
+                        builder.Append(c);
+                    }
+
+                    break;
+            }
+        }
+
+        return builder.ToString();
     }
 }

@@ -4,29 +4,10 @@ using System.Diagnostics;
 namespace OmpOS.Sandbox.Tests;
 
 /// <summary>
-/// Real process runner for smoke tests (argv only, no shell).
+/// Probes whether external commands are available for environment-gated tests.
 /// </summary>
-/// <remarks>
-/// Delegates to the production <see cref="ProcessRunner"/> so the suite exercises the same
-/// bounded-drain, whole-tree-kill behavior that ships (the timeout guards both process exit
-/// and post-exit pipe drain, so no grandchild can hang the run).
-/// </remarks>
-internal sealed class RealProcessRunner : IProcessRunner
+internal static class CommandProbe
 {
-    private static readonly ProcessRunner Inner = new();
-
-    /// <inheritdoc />
-    public Task<ProcessResult> RunAsync(ProcessSpec spec, CancellationToken cancellationToken = default)
-    {
-        return Inner.RunAsync(spec, cancellationToken);
-    }
-
-    /// <inheritdoc />
-    public IAsyncEnumerable<string> StreamStdoutLinesAsync(ProcessSpec spec, CancellationToken cancellationToken = default)
-    {
-        return Inner.StreamStdoutLinesAsync(spec, cancellationToken);
-    }
-
     /// <summary>
     /// Checks whether a command exists on PATH.
     /// </summary>

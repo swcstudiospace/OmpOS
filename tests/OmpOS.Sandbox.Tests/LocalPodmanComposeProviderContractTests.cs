@@ -135,14 +135,14 @@ public sealed class LocalPodmanComposeProviderContractTests : SandboxProviderCon
     {
         var ct = TestContext.Current.CancellationToken;
         Assert.SkipUnless(
-            await RealProcessRunner.CheckCommandExistsAsync("podman", ct)
-                && await RealProcessRunner.CheckCommandExistsAsync("podman-compose", ct),
+            await CommandProbe.CheckCommandExistsAsync("podman", ct)
+                && await CommandProbe.CheckCommandExistsAsync("podman-compose", ct),
             "podman or podman-compose not available");
 
         // Config-only smoke: render the repo compose file. Never starts containers
         // (no ProvisionAsync/TeardownAsync), so this cannot leave anything running.
         var composePath = FindRepoComposeFile();
-        var runner = new RealProcessRunner();
+        var runner = new ProcessRunner();
         var result = await runner.RunAsync(new ProcessSpec
         {
             Argv = ["podman-compose", "-f", composePath, "--profile", "workflows", "config"],
