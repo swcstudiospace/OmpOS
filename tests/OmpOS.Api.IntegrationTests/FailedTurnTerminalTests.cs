@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.Extensions.DependencyInjection;
 using OmpOS.Api.Harness;
 using OmpOS.Contracts.Sessions;
 using OmpOS.Harness.Abstractions;
@@ -44,8 +45,8 @@ public sealed class FailedTurnTerminalTests
         _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Failed, SettleTimeout, testToken);
 
         var turn = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken);
-        turn.Count(static item => item.EventType == "completed").ShouldBe(0, "a failed turn carries no completed event");
-        turn.Count(static item => item.EventType == "error").ShouldBe(1, "a failed turn carries exactly one error event");
+        turn.Count(static item => string.Equals(item.EventType, "completed", StringComparison.Ordinal)).ShouldBe(0, "a failed turn carries no completed event");
+        turn.Count(static item => string.Equals(item.EventType, "error", StringComparison.Ordinal)).ShouldBe(1, "a failed turn carries exactly one error event");
         turn[^1].EventType.ShouldBe("error", "the error event is the turn's last event");
     }
 }

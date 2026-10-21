@@ -31,7 +31,7 @@ public sealed class CompletionOncePerTurnTests
         _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Completed, SettleTimeout, testToken);
 
         var turn = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken);
-        turn.Count(static item => item.EventType == "completed").ShouldBe(1, "a turn carries exactly one completed event");
+        turn.Count(static item => string.Equals(item.EventType, "completed", StringComparison.Ordinal)).ShouldBe(1, "a turn carries exactly one completed event");
         turn[^1].EventType.ShouldBe("completed", "the completed event is the turn's last event");
 
         var afterCompletion = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken, turn[^1].EventId);

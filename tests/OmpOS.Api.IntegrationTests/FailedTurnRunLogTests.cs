@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.Extensions.DependencyInjection;
 using OmpOS.Api.Harness;
 using OmpOS.Contracts.Sessions;
 using OmpOS.Harness.Abstractions;
@@ -56,7 +57,7 @@ public sealed class FailedTurnRunLogTests
                 return;
             }
 
-            await Task.Delay(TimeSpan.FromMilliseconds(25), cancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(25), cancellationToken).ConfigureAwait(true);
         }
     }
 }
