@@ -6,6 +6,11 @@
        mode restore is a no-op for a project without a lock file. -->
   <PropertyGroup>
     <TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
+    <!-- Directory.Build.props sets one TargetFramework=net10.0 for every project. Left in place it
+         overrides TargetFrameworks here: the build asks for net10.0 while restore produced only the
+         platform TFMs, which fails with NETSDK1005 on the macOS shells job. Clear it so the platform
+         TFMs apply. The shared props stay unchanged for every other project. -->
+    <TargetFramework></TargetFramework>
     <OutputType>Exe</OutputType>
     <UseMaui>true</UseMaui>
     <SingleProject>true</SingleProject>
