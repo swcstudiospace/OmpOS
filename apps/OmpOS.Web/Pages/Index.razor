@@ -1,0 +1,235 @@
+@page "/"
+@using OmpOS.Contracts.Sessions
+@using OmpOS.UI.Components
+@using OmpOS.UI.State
+@using OmpOS.Web.Services
+ @inject ApiSessionClient Api
+ @inject SseEventStream EventStream
+ @implements IAsyncDisposable
+
+<PageTitle>OmpOS</PageTitle>
+
+<div class="ompos-shell">
+    <ConversationList Conversations="_conversations" SelectedId="_selectedId" OnSelected="SelectSessionAsync" />
+    <div class="ompos-main">
+        <button type="button" class="ompos-btn" aria-label="New conversation" @onclick="NewSessionAsync">+ New</button>
+        @if (_error is not null)
+        {
+            <p class="ompos-error" role="alert">@_error</p>
+        }
+        <SessionView Tree="_viewModel.Tree"
+                     ViewState="_viewModel.State"
+                     AutoScrollPaused="_viewModel.AutoScrollPaused"
+                     Announcement="@_viewModel.Announcement"
+                     OnStop="StopStreaming"
+                     OnRetry="RetryAsync"
+                     OnJumpToLatest="JumpToLatest" />
+        <Composer IsStreaming="_streaming" OnSend="SendAsync" OnStop="StopStreaming" />
+    </div>
+</div>
+
+@code {
+    private const string OwnerId = "local-dev";
+
+    private SessionViewModel _viewModel = new();
+    private List<ConversationSummary> _conversations = new();
+    private string? _selectedId;
+    private string? _error;
+    private bool _streaming;
+    private CancellationTokenSource? _streamCts;
+    private string? _lastPrompt;
+    private long? _lastSeq;
+    private bool _disposed;
+
+    /// <inheritdoc />
+    public ValueTask DisposeAsync()
+    {
+        if (_disposed)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        _disposed = true;
+        _streamCts?.Cancel();
+        _streamCts?.Dispose();
+        GC.SuppressFinalize(this);
+        return ValueTask.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var sessions = await Api.ListSessionsAsync().ConfigureAwait(true);
+            _conversations = sessions
+                .Select(s => new ConversationSummary { Id = s.Id, Title = TitleFor(s) })
+                .ToList();
+            if (_conversations.Count == 0)
+            {
+                await NewSessionAsync().ConfigureAwait(true);
+            }
+            else
+            {
+                await SelectSessionAsync(_conversations[0].Id).ConfigureAwait(true);
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or ApiClientException or InvalidOperationException)
+        {
+            _error = $"Could not reach the API: {ex.Message}";
+            _viewModel.MarkOffline();
+        }
+    }
+
+    private async Task NewSessionAsync()
+    {
+        _error = null;
+        try
+        {
+            var session = await Api.CreateSessionAsync(OwnerId).ConfigureAwait(true);
+            _conversations.Insert(0, new ConversationSummary { Id = session.Id, Title = TitleFor(session) });
+            await SelectSessionAsync(session.Id).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
+        {
+            _error = $"Could not create a session: {ex.Message}";
+        }
+    }
+
+    private async Task SelectSessionAsync(string sessionId)
+    {
+        StopStreaming();
+        _error = null;
+        _selectedId = sessionId;
+        try
+        {
+            var session = await Api.GetSessionAsync(sessionId).ConfigureAwait(true);
+            if (session is null)
+            {
+                _error = "That session no longer exists.";
+                return;
+            }
+
+            var fresh = new SessionViewModel();
+            var replayed = new SeqTracker();
+            foreach (var evt in session.Events.OrderBy(static e => e.Seq))
+            {
+                if (!replayed.TryAdd(evt.Seq))
+                {
+                    continue;
+                }
+
+                fresh.ApplyEvent(evt);
+            }
+
+            fresh.MarkHistoryLoaded();
+            if (session.Status == SessionStatus.AwaitingToolApproval)
+            {
+                // The server session status is the only authority for the awaiting-approval
+                // state; permission events during streaming never enter it.
+                fresh.MarkAwaitingApproval();
+            }
+
+            _viewModel = fresh;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
+        {
+            _error = $"Could not load the session: {ex.Message}";
+        }
+    }
+
+    private async Task SendAsync(string prompt)
+    {
+        if (_selectedId is null || _streaming)
+        {
+            return;
+        }
+
+        _error = null;
+        _lastPrompt = prompt;
+        try
+        {
+            await Api.SubmitPromptAsync(_selectedId, prompt).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
+        {
+            _error = $"Could not send the message: {ex.Message}";
+            return;
+        }
+
+        await StreamFromAsync(_lastSeq).ConfigureAwait(true);
+    }
+
+    private async Task RetryAsync()
+    {
+        if (_selectedId is null || _lastPrompt is null || _streaming)
+        {
+            return;
+        }
+
+        await SendAsync(_lastPrompt).ConfigureAwait(true);
+    }
+
+    private void StopStreaming()
+    {
+        _streamCts?.Cancel();
+    }
+
+    private void JumpToLatest()
+    {
+        _viewModel.ResumeAutoScroll();
+    }
+
+    private async Task StreamFromAsync(long? sinceSeq)
+    {
+        if (_selectedId is null)
+        {
+            return;
+        }
+
+        StopStreaming();
+        _streamCts?.Dispose();
+        _streamCts = new CancellationTokenSource();
+        var token = _streamCts.Token;
+        _streaming = true;
+        try
+        {
+            await foreach (var evt in EventStream.StreamSessionAsync(_selectedId, sinceSeq, token).ConfigureAwait(true))
+            {
+                _viewModel.ApplyEvent(evt);
+                _lastSeq = evt.Seq;
+                StateHasChanged();
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            // Stop is an intentional user action, not an error.
+        }
+        catch (ApiClientException ex)
+        {
+            _error = $"The stream failed: {ex.Message}";
+            _viewModel.MarkOffline();
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = $"Lost connection to the API: {ex.Message}";
+            _viewModel.MarkOffline();
+        }
+        finally
+        {
+            _streaming = false;
+        }
+    }
+
+    private static string TitleFor(Session session)
+    {
+        var first = session.Messages.FirstOrDefault(m => m.Content.Length > 0);
+        if (first is not null)
+        {
+            var text = first.Content.Trim();
+            return text.Length <= 48 ? text : text[..48] + "…";
+        }
+
+        return session.Id.Length <= 12 ? session.Id : session.Id[..12] + "…";
+    }
+}

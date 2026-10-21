@@ -1,0 +1,61 @@
+@namespace OmpOS.UI.Components
+@using Microsoft.AspNetCore.Components.Web
+<div class="ompos-composer">
+    <textarea class="ompos-composer-input"
+              aria-label="Message"
+              placeholder="Type a message…"
+              @bind="_draft"
+              @bind:event="oninput"
+              @onkeydown="HandleKeyDown"></textarea>
+    @if (IsStreaming)
+    {
+        <button type="button" class="ompos-btn ompos-icon-btn" aria-label="Stop response" @onclick="() => OnStop.InvokeAsync()">■</button>
+    }
+    else
+    {
+        <button type="button" class="ompos-btn ompos-icon-btn" aria-label="Send message" @onclick="Send">➤</button>
+    }
+</div>
+
+@code {
+    private string _draft = string.Empty;
+
+    /// <summary>Gets whether the assistant is currently streaming; Escape stops, and the stop control replaces send.</summary>
+    [Parameter]
+    public bool IsStreaming { get; set; }
+
+    /// <summary>Gets the callback invoked with the draft text when the user sends.</summary>
+    [Parameter]
+    public EventCallback<string> OnSend { get; set; }
+
+    /// <summary>Gets the callback invoked when the user stops the stream.</summary>
+    [Parameter]
+    public EventCallback OnStop { get; set; }
+
+    private async Task Send()
+    {
+        if (string.IsNullOrWhiteSpace(_draft))
+        {
+            return;
+        }
+
+        var text = _draft;
+        _draft = string.Empty;
+        await OnSend.InvokeAsync(text);
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (string.Equals(args.Key, "Escape", StringComparison.Ordinal))
+        {
+            if (IsStreaming)
+            {
+                await OnStop.InvokeAsync();
+            }
+        }
+        else if (string.Equals(args.Key, "Enter", StringComparison.Ordinal) && !args.ShiftKey)
+        {
+            await Send();
+        }
+    }
+}

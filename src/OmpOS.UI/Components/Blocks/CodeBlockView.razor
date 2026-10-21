@@ -1,0 +1,35 @@
+@namespace OmpOS.UI.Components.Blocks
+@using OmpOS.Contracts.Ui
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+<div class="ompos-block ompos-code">
+    <div class="ompos-code-header">
+        <span class="ompos-code-language">@Block.Language</span>
+        <button type="button" class="ompos-btn ompos-icon-btn" aria-label="Copy code" @onclick="CopyAsync">⧉</button>
+    </div>
+    <pre><code>@Block.Code</code></pre>
+</div>
+
+@code {
+    /// <summary>Gets the code block to render.</summary>
+    [Parameter, EditorRequired]
+    public CodeBlock Block { get; set; } = null!;
+
+    /// <summary>Gets the callback invoked with the code text when the copy control is activated.</summary>
+    [Parameter]
+    public EventCallback<string> OnCopy { get; set; }
+
+    /// <summary>Copies the code through the clipboard, then notifies listeners.</summary>
+    private async Task CopyAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", Block.Code);
+        }
+        catch (JSException)
+        {
+            // Clipboard unavailable (permissions, non-secure context): the copy callback still fires.
+        }
+        await OnCopy.InvokeAsync(Block.Code);
+    }
+}

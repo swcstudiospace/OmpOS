@@ -112,11 +112,26 @@
       "ompos.contracts": {
         "type": "Project"
       },
+      "ompos.genui": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Contracts": "[1.0.0, )"
+        }
+      },
       "ompos.ui": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.AspNetCore.Components.Web": "[10.0.13, )"
+          "Markdig": "[1.4.2, )",
+          "Microsoft.AspNetCore.Components.Web": "[10.0.13, )",
+          "OmpOS.Contracts": "[1.0.0, )",
+          "OmpOS.GenUi": "[1.0.0, )"
         }
+      },
+      "Markdig": {
+        "type": "CentralTransitive",
+        "requested": "[1.4.2, )",
+        "resolved": "1.4.2",
+        "contentHash": "C5jl2hFLK5KHxWWWO6JxfuQCRirW5DGnCn9IEhJ7xgBMVnd+PjRNdAKO2C6YHpkOtVvZMJ8Zbma7B+CDi+hl+g=="
       },
       "Microsoft.AspNetCore.Components.Web": {
         "type": "CentralTransitive",

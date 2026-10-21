@@ -1,0 +1,12 @@
+@namespace OmpOS.UI.Components.Blocks
+@using OmpOS.Contracts.Ui
+<div class="ompos-block ompos-tool-call" data-status="@Block.Status">
+    <span class="ompos-tool-name">@Block.ToolName</span>
+    <span class="ompos-tool-status">@Block.Status</span>
+</div>
+
+@code {
+    /// <summary>Gets the tool-call block to render.</summary>
+    [Parameter, EditorRequired]
+    public ToolCallBlock Block { get; set; } = null!;
+}

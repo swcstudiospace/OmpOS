@@ -3,6 +3,8 @@
   <PropertyGroup>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <CompressionEnabled>false</CompressionEnabled>
+    <!-- Blazor's HeadOutlet interop deserializes through the reflection path. With the repo-wide switch off (Directory.Build.props), first render throws JsonSerializerIsReflectionDisabled. Found by the browser smoke; tracked as Q-WEB-REFLECTION. -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +15,15 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\OmpOS.Contracts\OmpOS.Contracts.csproj" />
     <ProjectReference Include="..\..\src\OmpOS.UI\OmpOS.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OmpOS.Web.Tests" />
+  </ItemGroup>
+
+  <!-- Router discovers pages by reflection over AppAssembly, which the trimmer cannot see; without this root Pages/Index.razor is trimmed and "/" falls through to NotFound (found by the browser smoke). -->
+  <ItemGroup>
+    <TrimmerRootAssembly Include="OmpOS.Web" />
   </ItemGroup>
 
 </Project>

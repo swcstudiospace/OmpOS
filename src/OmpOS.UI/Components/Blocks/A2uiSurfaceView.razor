@@ -1,0 +1,61 @@
+@namespace OmpOS.UI.Components.Blocks
+@using OmpOS.Contracts.Ui
+@using OmpOS.GenUi
+<div class="ompos-block ompos-a2ui" data-surface="@Block.SurfaceId">
+    @foreach (var component in A2uiSurfaceCatalog.GetComponents(Block.Payload))
+    {
+        @if (component.Supported)
+        {
+            @switch (component.Type)
+            {
+                case A2uiSurfaceCatalog.HeadingType:
+                    <h3 class="ompos-a2ui-heading">@component.Text</h3>
+                    break;
+                case A2uiSurfaceCatalog.TextType:
+                    <p class="ompos-a2ui-text">@component.Text</p>
+                    break;
+                case A2uiSurfaceCatalog.ImageType:
+                    @if (component.ImageUrl is not null)
+                    {
+                        <img class="ompos-a2ui-image" src="@component.ImageUrl" alt="@component.Alt" />
+                    }
+                    else if (component.ImageSource is not null)
+                    {
+                        @if (component.ImageLinkHref is not null)
+                        {
+                            <a class="ompos-a2ui-image-link" href="@component.ImageLinkHref" rel="noopener noreferrer nofollow" target="_blank">@component.ImageLinkText</a>
+                        }
+                        else
+                        {
+                            <span class="ompos-a2ui-image-link">@component.ImageLinkText</span>
+                        }
+                    }
+                    break;
+                case A2uiSurfaceCatalog.ButtonType:
+                    <button type="button" class="ompos-btn">@component.Label</button>
+                    break;
+                case A2uiSurfaceCatalog.ListType:
+                    <ul class="ompos-a2ui-list">
+                        @foreach (var item in component.Items)
+                        {
+                            <li>@item</li>
+                        }
+                    </ul>
+                    break;
+            }
+        }
+        else
+        {
+            <details class="ompos-unknown">
+                <summary>Unsupported content (@component.Type)</summary>
+                <pre>@component.Raw.GetRawText()</pre>
+            </details>
+        }
+    }
+</div>
+
+@code {
+    /// <summary>Gets the A2UI surface block to render.</summary>
+    [Parameter, EditorRequired]
+    public A2uiSurfaceBlock Block { get; set; } = null!;
+}

@@ -1,0 +1,83 @@
+@namespace OmpOS.UI.Components
+@using OmpOS.GenUi
+<section class="ompos-session" id="ompos-conversation" aria-label="Session" tabindex="-1">
+    <a class="ompos-skip-link" href="#ompos-conversation">Skip to conversation</a>
+    <div class="ompos-announcement" aria-live="polite">@Announcement</div>
+    @if (ViewState == SessionViewState.LoadingHistory)
+    {
+        <p class="ompos-loading">Loading conversation history…</p>
+    }
+    else if (ViewState == SessionViewState.Empty)
+    {
+        <p class="ompos-empty">No messages yet. Send a message to begin.</p>
+    }
+    else
+    {
+        <div class="ompos-blocks">
+            @foreach (var block in Tree.Blocks)
+            {
+                <OmpOS.UI.Components.Blocks.UiBlockRenderer Block="block" OnRetry="OnRetry" />
+            }
+            @if (Tree.StreamingText.Length > 0)
+            {
+                <div class="ompos-block ompos-streaming">@Tree.StreamingText</div>
+            }
+        </div>
+        @if (ViewState == SessionViewState.AwaitingApproval)
+        {
+            // Read-only notice: the server session status is the only authority for this state,
+            // and there is deliberately no approval action on the client (Q-HARN-PERMISSION).
+            <p class="ompos-approval-notice" role="status">Approval needed to continue. The decision is made by policy.</p>
+        }
+        else if (ViewState == SessionViewState.Reconnecting)
+        {
+            <p class="ompos-transport-notice" role="status">Reconnecting…</p>
+        }
+        else if (ViewState == SessionViewState.Offline)
+        {
+            <p class="ompos-transport-notice" role="status">You are offline. Showing the last known output.</p>
+        }
+        @if (ViewState == SessionViewState.Streaming)
+        {
+            <button type="button" class="ompos-btn ompos-icon-btn" aria-label="Stop response" @onclick="() => OnStop.InvokeAsync()">■</button>
+        }
+        @if (ViewState == SessionViewState.RecoverableError)
+        {
+            <button type="button" class="ompos-btn" aria-label="Retry failed operation" @onclick="() => OnRetry.InvokeAsync()">Retry</button>
+        }
+        @if (AutoScrollPaused)
+        {
+            <button type="button" class="ompos-btn ompos-icon-btn" aria-label="Jump to latest" @onclick="() => OnJumpToLatest.InvokeAsync()">↓</button>
+        }
+    }
+</section>
+
+@code {
+    /// <summary>Gets the folded UI tree to render.</summary>
+    [Parameter, EditorRequired]
+    public UiTree Tree { get; set; } = null!;
+
+    /// <summary>Gets the lifecycle state driving announcements and affordances.</summary>
+    [Parameter, EditorRequired]
+    public SessionViewState ViewState { get; set; }
+
+    /// <summary>Gets whether auto-scroll is paused because the user scrolled up.</summary>
+    [Parameter]
+    public bool AutoScrollPaused { get; set; }
+
+    /// <summary>Gets the throttled aria-live announcement text.</summary>
+    [Parameter]
+    public string? Announcement { get; set; }
+
+    /// <summary>Gets the callback invoked when the stop control is activated.</summary>
+    [Parameter]
+    public EventCallback OnStop { get; set; }
+
+    /// <summary>Gets the callback invoked when the retry affordance is activated.</summary>
+    [Parameter]
+    public EventCallback OnRetry { get; set; }
+
+    /// <summary>Gets the callback invoked when the jump-to-latest control is activated.</summary>
+    [Parameter]
+    public EventCallback OnJumpToLatest { get; set; }
+}

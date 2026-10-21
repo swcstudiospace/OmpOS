@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!-- The MAUI head never restores or builds on Linux (no workloads): it is excluded from
+       OmpOS.Linux.slnf and builds only in the macOS shells CI job. Its lock file can only be
+       generated on macOS with workloads installed, so it opts out of lock files; a locked
+       mode restore is a no-op for a project without a lock file. -->
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <RootNamespace>OmpOS.App</RootNamespace>
+    <ApplicationId>com.ompos.app</ApplicationId>
+    <ApplicationTitle>OmpOS</ApplicationTitle>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+    <!-- Same HeadOutlet interop as the web head: the repo-wide reflection switch must be on for this head (tracked as Q-WEB-REFLECTION). Inferred, not built on Linux. -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <!-- Workload package pins live here (not Directory.Packages.props): the MAUI workload resolves
+       these from the installed SDK band, and central props stay workload-free. No Version
+       attributes are used, per central package management. -->
+  <ItemGroup Label="Workload package pins">
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.110" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.110" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/OmpOS.UI/OmpOS.UI.csproj" />
+    <ProjectReference Include="../../src/OmpOS.EngineHost/OmpOS.EngineHost.csproj" />
+  </ItemGroup>
+
+</Project>

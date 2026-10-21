@@ -1,0 +1,37 @@
+@namespace OmpOS.UI.Components
+<nav class="ompos-conversation-list" aria-label="Conversations">
+    @if (Conversations.Count == 0)
+    {
+        <p class="ompos-empty">No conversations yet.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var conversation in Conversations)
+            {
+                <li>
+                    <button type="button"
+                            class="ompos-btn ompos-conversation-item@(conversation.Id == SelectedId ? " is-selected" : null)"
+                            aria-current="@(conversation.Id == SelectedId ? "true" : null)"
+                            @onclick="() => OnSelected.InvokeAsync(conversation.Id)">
+                        @conversation.Title
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+</nav>
+
+@code {
+    /// <summary>Gets the conversations to list, in display order.</summary>
+    [Parameter]
+    public IReadOnlyList<ConversationSummary> Conversations { get; set; } = [];
+
+    /// <summary>Gets the selected conversation identifier, if any.</summary>
+    [Parameter]
+    public string? SelectedId { get; set; }
+
+    /// <summary>Gets the callback invoked with the selected conversation identifier.</summary>
+    [Parameter]
+    public EventCallback<string> OnSelected { get; set; }
+}

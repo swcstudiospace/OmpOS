@@ -1,0 +1,121 @@
+@namespace OmpOS.App.Components
+@using OmpOS.EngineHost
+@using OmpOS.Harness.Abstractions
+@using OmpOS.UI.Components
+@using OmpOS.UI.State
+@inject IEngineHost Host
+@implements IAsyncDisposable
+
+<div class="ompos-shell">
+    @if (_error is not null)
+    {
+        <p class="ompos-error" role="alert">@_error</p>
+    }
+    <SessionView Tree="_viewModel.Tree"
+                 ViewState="_viewModel.State"
+                 AutoScrollPaused="_viewModel.AutoScrollPaused"
+                 Announcement="_viewModel.Announcement"
+                 OnStop="StopStreamingAsync"
+                 OnRetry="RetryAsync"
+                 OnJumpToLatest="JumpToLatest" />
+    <Composer IsStreaming="_streaming" OnSend="SendAsync" OnStop="StopStreamingAsync" />
+</div>
+
+@code {
+    // Display correlation only: the engine session itself lives inside the host, which the
+    // mobile head resumes by sequence and the desktop head streams in-process.
+    private readonly string _conversationId = Guid.NewGuid().ToString("N");
+    private readonly SessionViewModel _viewModel = new();
+    private CancellationTokenSource? _streamCts;
+    private string? _error;
+    private string? _lastPrompt;
+    private bool _streaming;
+    private long _seq;
+    private bool _disposed;
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        _viewModel.MarkHistoryLoaded();
+    }
+
+    private async Task SendAsync(string prompt)
+    {
+        if (_streaming)
+        {
+            return;
+        }
+
+        _error = null;
+        _lastPrompt = prompt;
+        _streamCts?.Cancel();
+        _streamCts?.Dispose();
+        _streamCts = new CancellationTokenSource();
+        var token = _streamCts.Token;
+        _streaming = true;
+        try
+        {
+            await foreach (var evt in Host.SubmitPromptAsync(prompt, new PromptOptions(), token).ConfigureAwait(true))
+            {
+                _viewModel.ApplyEvent(EngineEventMapper.ToStreamEvent(evt, _conversationId, ++_seq));
+                StateHasChanged();
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            // Stop is an intentional user action, not an error.
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
+        {
+            _error = $"The engine stream failed: {ex.Message}";
+            _viewModel.MarkOffline();
+        }
+        finally
+        {
+            _streaming = false;
+        }
+    }
+
+    private Task RetryAsync()
+    {
+        if (_lastPrompt is null || _streaming)
+        {
+            return Task.CompletedTask;
+        }
+
+        return SendAsync(_lastPrompt);
+    }
+
+    private async Task StopStreamingAsync()
+    {
+        _streamCts?.Cancel();
+        try
+        {
+            await Host.CancelAsync(CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or OperationCanceledException)
+        {
+            // Stopping is best-effort once the stream is already gone.
+            _error = $"Stop did not reach the engine: {ex.Message}";
+        }
+    }
+
+    private void JumpToLatest()
+    {
+        _viewModel.ResumeAutoScroll();
+    }
+
+    /// <inheritdoc />
+    public ValueTask DisposeAsync()
+    {
+        if (!_disposed)
+        {
+            _disposed = true;
+            _streamCts?.Cancel();
+            _streamCts?.Dispose();
+            _streamCts = null;
+        }
+
+        return ValueTask.CompletedTask;
+    }
+}
