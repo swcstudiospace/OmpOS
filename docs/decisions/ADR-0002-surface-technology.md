@@ -1,6 +1,8 @@
 # ADR-0002: Surface technology
 
-- Status: accepted
+**Status update 2026-10-21:** the UI stack decisions in this record (MAUI heads and the Blazor RCL shared by Blazor WebAssembly and MAUI) are superseded by ADR-0004 (Avalonia UI). Other decisions here stand.
+
+- Status: Partially superseded by ADR-0004
 - Date: 2026-10-20
 - Deciders: ompos-maintainers
 - Scope: Phase 1 (Foundation), built in Phase 4
