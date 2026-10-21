@@ -53,15 +53,15 @@ public sealed class PodmanOverlappingTeardownRegressionTests
 
         // The first teardown finishes and releases the key; a new provision re-reserves it.
         releaseFirst.SetResult();
-        await teardownOne;
+        await teardownOne.ConfigureAwait(true);
 
         var second = await provider.ProvisionAsync(request, ct);
         second.NewlyProvisioned.ShouldBeTrue();
-        second.Descriptor.Id.ShouldNotBe(first.Descriptor.Id);
+        second.Descriptor.Id.ShouldNotBe(first.Descriptor.Id, StringComparer.Ordinal);
 
         // The stale second teardown finishes: the new reservation must survive it.
         releaseSecond.SetResult();
-        await teardownTwo;
+        await teardownTwo.ConfigureAwait(true);
 
         var upsBefore = runner.Specs.Count(static s => PodmanTestData.HasArgument(s, "up"));
         var joined = await provider.ProvisionAsync(request, ct);
