@@ -148,9 +148,22 @@ Decided, not open: worker placement is none.
 
 ## Known blockers and gaps
 
-1. The API has no authentication, and no sign-in method is chosen (OD-03). Do not expose it publicly.
-2. The hosted API runs the InMemory harness and `FakeSandboxProvider`. No real omp runtime, sandbox, or model credential is deployed (HOST-04).
+1. The API requires an OIDC bearer token (OD-03, decided autonomously 2026-10-21). No identity provider authority is configured yet, so the API is not exposed publicly.
+2. The hosted API is configured for the ACP harness (`Harness__Adapter=Acp`); Production refuses the in-memory adapter at startup. No deployed image contains omp, no sandbox provider is wired to the hosted path, and no model credential is deployed (HOST-04 stays open).
 3. Private-path reachability of GreptimeDB and Dragonfly is unverified (Q-HOST-PRIVNET).
 4. The Dragonfly image is unpinned (Q-HOST-DFLY-PIN).
-5. Nothing has been deployed, built with podman for hosting, or smoke-tested on Railway.
+5. Nothing has been deployed to Railway. The production image builds with podman locally (verified), but no Railway service or deploy exists while deploys are paused.
 6. The local compose stack does not match hosted TLS or extensions (Q-LOCAL-PARITY).
+
+## Deploy checklist (Phase 12, OD-03 gated)
+
+Status on 2026-10-21: nothing is deployed. Railway refuses deploys for this account while they are paused, so no item below has been observed on a deployed URL. Each item states how it was verified.
+
+1. **Build settings.** Set them on the service, not in a committed file: builder Dockerfile, Dockerfile path `deploy/api.Containerfile`, healthcheck path `/health/ready`. Verified: the image builds with podman (`ompos-api:local`, 244 MB, runs as uid 10001, honors `PORT`). Railway config-as-code is not used. Its own docs say it is deprecated and that new services cannot opt in (https://docs.railway.com/config-as-code, hard cutoff 2026-12-01), so no `railway.json` is committed.
+2. **Variables.** Set them in the Railway service, never committed: `Api__Auth__Authority` (https), `Api__Auth__Audience`, `Harness__Adapter=Acp`, `Sessions__Store=Postgres` with `Sessions__Postgres__ConnectionString`, `Coordination__Store=Dragonfly` with `Coordination__Dragonfly__ConnectionString`, `Api__Cors__Origins__0` (the web origin), and the OTLP variables. The API refuses to start when a required value is missing, and `.env.example` documents each key.
+3. **Locked CORS default.** With no `Api__Cors__Origins__*` value, cross-origin requests are denied. Verified by `ApiCorsPreflightTests` in the gate for an unlisted origin. Check the deployed URL with:
+   `curl -s -o /dev/null -D - -X OPTIONS -H 'Origin: https://unlisted.example' -H 'Access-Control-Request-Method: POST' https://<api-host>/sessions`
+   The response must carry no `Access-Control-Allow-Origin` header for the unlisted origin.
+4. **Sign-in gate.** `GET https://<api-host>/sessions` without a token returns 401. `/health/live` and `/health/ready` answer without a token.
+5. **Public exposure.** No public domain is generated for `ompos-api` until `Api__Auth__Authority` and `Api__Auth__Audience` are set (OD-03, HOST-02). Generate the domain only after items 2 and 4 pass.
+6. **Not verified until a deploy exists:** `/health/live` and `/health/ready` on the deployed URL (Phase 12 criterion 2), the hosted real omp run (Phase 13 criterion 2), and the Vercel origin (Phase 14 criteria 2 and 3).

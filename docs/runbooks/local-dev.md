@@ -95,7 +95,7 @@ axe-core 4.14.0 (WCAG 2.0 and 2.1, levels A and AA) against the published Releas
 
 #### Re-run of axe-core on the final tree
 
-Status: to be re-run on the final tree. Steps:
+Status: re-run on commit 924ca78 (2026-10-21). Result below.
 
 1. Set the SDK and publish the Release web head: `export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH`, then `git rev-parse --short HEAD` (record it), then `dotnet publish apps/OmpOS.Web -c Release --no-restore -o /tmp/ompos-web`.
 2. Serve the API and the web head exactly as in "Serve the API (in-memory adapter)" and "Serve the published web head" above, so the page is at `http://127.0.0.1:5180/`.
@@ -105,6 +105,14 @@ Status: to be re-run on the final tree. Steps:
 6. Before and after each axe run, record the skip link (`.ompos-skip-link`): `getBoundingClientRect()`, computed `clip`, `width`, and `document.activeElement`. Take a screenshot at each point and keep it with the JSON.
 7. For each `incomplete` node on `button.ompos-icon-btn`, record the rule ID and the computed `color` and `background-color` of the node, and compute the contrast ratio.
 8. Save the axe JSON and screenshots under `docs/runbooks/evidence/` with the commit in the file name, then add a dated entry here with the commit, the counts of violations and incomplete items, the rule IDs of the two items, the skip-link probe results, and the new status.
+
+**Dated entry, 2026-10-21, commit 924ca78.** Browser smoke (`docs/runbooks/evidence/web-smoke-924ca78-2026-10-21.json`, `.log`, and `web-first-render-924ca78-2026-10-21.png`, `web-axe-empty-924ca78-2026-10-21.png`, `web-axe-after-response-924ca78-2026-10-21.png`): first render is clean with `JsonSerializerIsReflectionEnabledByDefault` at its scoped `true`. The switch-off run failed the first render (`web-reflection-off-2026-10-21.json`), so the override stays. The probe streamed to "Response complete." with `strong` 1, `img` 0 and `script` 0 under `#app`, and no error bar.
+
+axe-core 4.14.0, WCAG 2.0 and 2.1, levels A and AA: 0 violations and 0 `incomplete` items in the empty state and after the streamed response. The two earlier `incomplete` items on `button.ompos-icon-btn` (`color-contrast` and `label-content-name-mismatch`) are resolved. The glyph is now an `aria-hidden` SVG, the accessible name stays `Send message`, and the measured contrast is 18.26:1.
+
+Skip link: on a fresh load, one Tab from the body focuses `a.ompos-skip-link`, and its target `#ompos-conversation` exists (`web-skip-link-focus-924ca78-2026-10-21.json`, `web-skip-link-focused-924ca78-2026-10-21.png`). The link is clipped to 1 px until it has focus. The earlier skip-link screenshot was taken with focus on the link, which explains it. The earlier probe that read focus after a Send click is not a skip-link result, because the Tab started from that button.
+
+Not verified here: the MAUI head (it cannot run on Linux) and screen-reader testing.
 
 ### Vercel static deploy (WEB-02)
 
