@@ -199,6 +199,15 @@ public sealed class RemoteEngineHost : IEngineHost, IDisposable
         // starts after this point throws instead of blocking: the lease is already gone.
         _fetchLease.Wait();
         _fetchLease.Dispose();
+
+        CancellationTokenSource? current;
+        lock (_gate)
+        {
+            current = _activeCts;
+            _activeCts = null;
+        }
+
+        current?.Dispose();
     }
 
     private async Task<string> EnsureSessionAsync(CancellationToken cancellationToken)
