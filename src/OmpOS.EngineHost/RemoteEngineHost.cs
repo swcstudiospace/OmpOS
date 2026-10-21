@@ -19,7 +19,7 @@ namespace OmpOS.EngineHost;
 /// <see cref="TakeHeldEvents"/> takes them, in Seq order, each exactly once. A prompt's own stream yields only that
 /// turn's events, after its POST is accepted; held events are delivered only through <see cref="TakeHeldEvents"/>.
 /// </summary>
-public sealed class RemoteEngineHost : IEngineHost, IDisposable
+public sealed class RemoteEngineHost : IEngineHost
 {
     /// <summary>The request header carrying the resume position.</summary>
     public const string LastEventIdHeader = "Last-Event-ID";
@@ -28,7 +28,11 @@ public sealed class RemoteEngineHost : IEngineHost, IDisposable
     private readonly Lock _gate = new();
     private CancellationTokenSource? _activeCts;
     private string? _sessionId;
-    private bool _disposed;
+
+    // The single stream-owner lease: _leaseHeld while a live turn or a hold owns the session stream,
+    // _leaseFreed signals waiters when it is released. All access is under _gate; see the lease methods below.
+    private bool _leaseHeld;
+    private TaskCompletionSource? _leaseFreed;
 
     /// <summary>
     /// The delivered cursor: the Seq of the last event handed to a consumer. Every stream starts after it
@@ -50,12 +54,6 @@ public sealed class RemoteEngineHost : IEngineHost, IDisposable
 
     /// <summary>Events fetched by <see cref="ReconnectAsync"/> that no consumer has received yet, in Seq order.</summary>
     private readonly Queue<(long? Seq, HarnessEvent Event)> _held = new();
-
-    /// <summary>The single stream-owner lease for the session.</summary>
-    /// <remarks>A live turn holds the lease from before its POST until its iterator ends; a resume takes it only
-    /// when free and returns at once otherwise. The two paths can never overlap, so delivery order follows the
-    /// wire. The lease never transfers cancellation: <see cref="_activeCts"/> still stops the live stream.</remarks>
-    private readonly SemaphoreSlim _fetchLease = new(1, 1);
 
     /// <summary>Initializes a new instance of the <see cref="RemoteEngineHost"/> class.</summary>
     /// <param name="httpClient">An HTTP client whose base address is the API origin. Not owned; not disposed.</param>
@@ -84,10 +82,11 @@ public sealed class RemoteEngineHost : IEngineHost, IDisposable
         ArgumentNullException.ThrowIfNull(prompt);
         ArgumentNullException.ThrowIfNull(options);
 
-        // The lease makes the single stream owner atomic: a live turn waits for a hold in flight, while a
-        // resume takes the lease only when free. It is held until the iterator ends, including on break or
-        // dispose, so the two paths can never overlap and delivery order follows the wire.
-        await _fetchLease.WaitAsync(cancellationToken).ConfigureAwait(false);
+        // The lease makes the single stream owner atomic without blocking Dispose: a live turn waits for a
+        // hold in flight (cancellably), while a resume takes the lease only when free. It is held until the
+        // iterator ends, including on break or dispose, so the two paths can never overlap and delivery
+        // order follows the wire.
+        await AcquireLeaseAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var sessionId = await EnsureSessionAsync(cancellationToken).ConfigureAwait(false);
@@ -105,7 +104,7 @@ public sealed class RemoteEngineHost : IEngineHost, IDisposable
         }
         finally
         {
-            _fetchLease.Release();
+            ReleaseLease();
         }
     }
 
@@ -181,33 +180,61 @@ public sealed class RemoteEngineHost : IEngineHost, IDisposable
         return Task.CompletedTask;
     }
 
-    /// <summary>Waits for the in-flight turn, if any, then releases the stream-owner lease. Safe to call twice.</summary>
-    /// <remarks>Call only when no new prompts will be submitted: a prompt submitted after disposal throws.</remarks>
-    public void Dispose()
+    /// <summary>Takes the session stream lease only when it is free, without waiting.</summary>
+    /// <returns>True when this call now owns the lease; false when a live turn or a hold already owns it.</returns>
+    private bool TryAcquireLease()
     {
         lock (_gate)
         {
-            if (_disposed)
+            if (_leaseHeld)
             {
-                return;
+                return false;
             }
 
-            _disposed = true;
+            _leaseHeld = true;
+            return true;
         }
+    }
 
-        // Wait for the in-flight turn, if any, so its Release never lands on a disposed lease. A turn that
-        // starts after this point throws instead of blocking: the lease is already gone.
-        _fetchLease.Wait();
-        _fetchLease.Dispose();
+    /// <summary>
+    /// Takes the session stream lease, waiting for a hold in flight to release it. The wait honors
+    /// <paramref name="cancellationToken"/>, so abandoning the caller never blocks: closing or abandoning
+    /// an iterator always releases the lease in its finally, and no code path waits without that token.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the wait.</param>
+    private async Task AcquireLeaseAsync(CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            Task? freed;
+            lock (_gate)
+            {
+                if (!_leaseHeld)
+                {
+                    _leaseHeld = true;
+                    return;
+                }
 
-        CancellationTokenSource? current;
+                _leaseFreed ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                freed = _leaseFreed.Task;
+            }
+
+            await freed.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Releases the session stream lease and wakes one waiter, if any.</summary>
+    private void ReleaseLease()
+    {
+        TaskCompletionSource? freed;
         lock (_gate)
         {
-            current = _activeCts;
-            _activeCts = null;
+            _leaseHeld = false;
+            freed = _leaseFreed;
+            _leaseFreed = null;
         }
 
-        current?.Dispose();
+        freed?.TrySetResult();
     }
 
     private async Task<string> EnsureSessionAsync(CancellationToken cancellationToken)
@@ -417,9 +444,9 @@ public sealed class RemoteEngineHost : IEngineHost, IDisposable
     /// <see cref="TakeHeldEvents"/> moves the delivered cursor to the last event it hands out.</remarks>
     private async Task HoldMissedAsync(string sessionId, long? resumeFrom, CancellationToken cancellationToken)
     {
-        // The lease makes the single stream owner atomic where the old _activeCts check could not: it is taken
-        // and released as one step, so a resume can never start fetching alongside a live turn.
-        if (!await _fetchLease.WaitAsync(0, cancellationToken).ConfigureAwait(false))
+        // The lease makes the single stream owner atomic: it is taken and released as one step under the
+        // gate, so a resume can never start fetching alongside a live turn.
+        if (!TryAcquireLease())
         {
             return;
         }
@@ -440,7 +467,7 @@ public sealed class RemoteEngineHost : IEngineHost, IDisposable
         }
         finally
         {
-            _fetchLease.Release();
+            ReleaseLease();
             if (held)
             {
                 MissedEventsHeld?.Invoke(this, EventArgs.Empty);
