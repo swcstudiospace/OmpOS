@@ -20,6 +20,9 @@ public sealed class AcpAgentSessionTests
     /// <summary>Update notifications delivered with no consumer after the first, past the 4096-event turn buffer.</summary>
     private const int FloodUpdates = 5000;
 
+    /// <summary>The turn buffer capacity: this many updates fill it exactly.</summary>
+    private const int TurnBufferCapacity = 4096;
+
     private const string AllowAndRejectOptions =
         "[{\"optionId\":\"allow-once\",\"name\":\"Allow\",\"kind\":\"allow_once\"},{\"optionId\":\"reject-once\",\"name\":\"Reject\",\"kind\":\"reject_once\"}]";
 
@@ -322,6 +325,47 @@ public sealed class AcpAgentSessionTests
 
             var pastEnd = await AnswerFsAsync(options, FsReadRequest(FsAnswerId, "notes/hello.txt", line: 9), FsAnswerId, ct).ConfigureAwait(true);
             pastEnd["result"]!["content"]!.GetValue<string>().ShouldBe(string.Empty);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>A root that is a filesystem root admits a file beneath it, read by absolute path.</summary>
+    [Fact]
+    public async Task FsRootAtFilesystemRootAdmitsFileBeneathIt()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var dir = Directory.CreateTempSubdirectory("acp-fs-");
+        try
+        {
+            var file = Path.Combine(dir.FullName, "hello.txt");
+            await File.WriteAllTextAsync(file, "hello", ct).ConfigureAwait(true);
+
+            var answer = await AnswerFsAsync(FsOptions(Path.GetPathRoot(file)), FsReadRequest(FsAnswerId, file), FsAnswerId, ct).ConfigureAwait(true);
+
+            answer["result"]!["content"]!.GetValue<string>().ShouldBe("hello");
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>A root spelled with a trailing separator admits a relative file beneath it.</summary>
+    [Fact]
+    public async Task FsRootWithTrailingSeparatorAdmitsRelativeFile()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var root = Directory.CreateTempSubdirectory("acp-fs-");
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root.FullName, "hello.txt"), "hello", ct).ConfigureAwait(true);
+
+            var answer = await AnswerFsAsync(FsOptions(root.FullName + Path.DirectorySeparatorChar), FsReadRequest(FsAnswerId, "hello.txt"), FsAnswerId, ct).ConfigureAwait(true);
+
+            answer["result"]!["content"]!.GetValue<string>().ShouldBe("hello");
         }
         finally
         {
@@ -632,6 +676,40 @@ public sealed class AcpAgentSessionTests
         session.State.ShouldBe(HarnessState.Disposed);
         var close = transport.Sent.Single(frame => HasMethod(frame, "session/close"));
         JsonNode.Parse(close)!["params"]!["sessionId"]!.GetValue<string>().ShouldBe(AcpFixtures.CapturedSessionId);
+    }
+
+    /// <summary>A completion that finds the turn buffer full fails the turn with BackpressureHarnessException and faults the session instead of ending cleanly.</summary>
+    [Fact]
+    public async Task CompletionWithFullTurnBufferFailsTurnWithBackpressure()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var transport = new ScriptedAcpTransport(frame => HasMethod(frame, "session/prompt") ? [] : AcpFixtures.Reply(frame));
+        await using var session = NewSession(transport);
+        await session.CreateAsync(ct).ConfigureAwait(true);
+
+        await using var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        var firstMove = stream.MoveNextAsync();
+        var prompt = await WaitForFrameAsync(transport, frame => HasMethod(frame, "session/prompt"), ct).ConfigureAwait(true);
+        transport.Deliver(Update(AcpFixtures.CapturedSessionId, "{\"sessionUpdate\":\"agent_message_chunk\",\"content\":{\"type\":\"text\",\"text\":\"first\"}}"));
+        (await firstMove.ConfigureAwait(true)).ShouldBeTrue();
+        stream.Current.ShouldBe(new TextDeltaEvent("first"));
+
+        for (var i = 0; i < TurnBufferCapacity; i++)
+        {
+            transport.Deliver(Update(AcpFixtures.CapturedSessionId, "{\"sessionUpdate\":\"agent_message_chunk\",\"content\":{\"type\":\"text\",\"text\":\"flood\"}}"));
+        }
+
+        transport.Deliver(AcpFixtures.Utf8($"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(prompt)},\"result\":{{\"stopReason\":\"end_turn\"}}}}"));
+
+        await WaitForStateAsync(session, HarnessState.Faulted, ct).ConfigureAwait(true);
+        await Should.ThrowAsync<BackpressureHarnessException>(DrainAsync).ConfigureAwait(true);
+
+        async Task DrainAsync()
+        {
+            while (await stream.MoveNextAsync().ConfigureAwait(true))
+            {
+            }
+        }
     }
 
     /// <summary>A session/update flood past the turn buffer fails the turn with BackpressureHarnessException and faults the session.</summary>

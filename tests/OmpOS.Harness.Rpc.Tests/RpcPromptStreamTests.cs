@@ -118,6 +118,42 @@ public sealed class RpcPromptStreamTests
             ct);
     }
 
+    /// <summary>
+    /// A consumer that stops after its first event abandons the prompt. The abort's terminal is drained rather than left
+    /// unread, so stopping early returns the session to Ready instead of faulting it on a timeout.
+    /// </summary>
+    [Fact]
+    public async Task StoppingPromptEarlyLeavesSessionReady()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        string? promptId = null;
+        await RunAsync(
+            (command, id) =>
+            {
+                switch (command)
+                {
+                    case "prompt":
+                        promptId = id;
+                        return [RpcTestData.Ok(id, "prompt", """{"agentInvoked":true}"""), RpcTestData.TextDelta("Hel"), RpcTestData.TextDelta("lo")];
+                    case "abort":
+                        return [RpcTestData.Ok(id, "abort", "null"), RpcTestData.PromptResult(promptId!, "aborted")];
+                    default:
+                        return null;
+                }
+            },
+            async session =>
+            {
+                IAsyncEnumerator<HarnessEvent> stream = session.SubmitPromptAsync("long task", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+                (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
+                stream.Current.ShouldBe(new TextDeltaEvent("Hel"));
+
+                await stream.DisposeAsync().ConfigureAwait(true);
+
+                session.State.ShouldBe(HarnessState.Ready);
+            },
+            ct);
+    }
+
     /// <summary>A <c>prompt_result</c> with an unknown status faults the session and fails the consumer, never hanging it.</summary>
     [Fact]
     public async Task UnknownPromptStatusFaultsSessionAndFailsConsumer()

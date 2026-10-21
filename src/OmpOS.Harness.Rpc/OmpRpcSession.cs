@@ -692,7 +692,7 @@ public sealed class OmpRpcSession : IOmpSession
             return;
         }
 
-        // Admitted but abandoned: abort the engine's turn, then wait for its prompt_result so the next prompt is admitted.
+        // Admitted but abandoned: abort the engine's turn, then drain its events until prompt_result closes the slot, so the next prompt is admitted.
         try
         {
             _ = await SendCommandAsync(new AbortCommand { Id = NextId() }, CancellationToken.None).ConfigureAwait(false);
@@ -702,11 +702,20 @@ public sealed class OmpRpcSession : IOmpSession
             // omp had no run to abort; a prompt_result for the admitted prompt still follows.
         }
 
-        Task drained = slot.Events.Reader.Completion;
+        Task drained = DiscardUntilCompleteAsync(slot.Events.Reader);
         Task finished = await Task.WhenAny(drained, Task.Delay(_commandTimeout)).ConfigureAwait(false);
         if (!ReferenceEquals(finished, drained))
         {
             throw Fail(new RpcCommandTimeoutException("prompt_result", slot.Id, Context));
+        }
+    }
+
+    /// <summary>Reads and discards a slot's events until its writer completes. An abandoned consumer must not leave the terminal unread.</summary>
+    private static async Task DiscardUntilCompleteAsync(ChannelReader<HarnessEvent> reader)
+    {
+        while (await reader.WaitToReadAsync().ConfigureAwait(false))
+        {
+            _ = reader.TryRead(out _);
         }
     }
 

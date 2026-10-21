@@ -51,7 +51,7 @@ public sealed class AcpAgentSession : IOmpSession
         ValidateOptions(options);
         _transport = transport;
         _options = options;
-        _fsRoot = options.FsRoot is null ? null : Path.GetFullPath(options.FsRoot);
+        _fsRoot = options.FsRoot is null ? null : Path.TrimEndingDirectorySeparator(Path.GetFullPath(options.FsRoot));
     }
 
     /// <summary>Gets the ACP session identifier once the session has been created or resumed.</summary>
@@ -890,7 +890,9 @@ public sealed class AcpAgentSession : IOmpSession
             return false;
         }
 
+        // A filesystem root such as "/" already ends with a separator, so the character after it is the child's first.
         return candidate.Length == rootFull.Length
+            || Path.EndsInDirectorySeparator(rootFull)
             || candidate[rootFull.Length] == Path.DirectorySeparatorChar;
     }
 
@@ -1020,13 +1022,10 @@ public sealed class AcpAgentSession : IOmpSession
     /// <summary>Runs on the pump. Completes the turn: an error becomes <see cref="ErrorEvent"/> then <c>CompletedEvent("error")</c>; a result becomes its stop reason.</summary>
     private void OnPromptResponse(PromptTurn turn, AcpFrames.Inbound response)
     {
-        var writer = turn.Events.Writer;
         if (response.Error is { } error)
         {
             Settle(turn);
-            writer.TryWrite(new ErrorEvent(error.Message, Retryable: false));
-            writer.TryWrite(new CompletedEvent("error"));
-            writer.TryComplete();
+            EndTurn(turn, new ErrorEvent(error.Message, Retryable: false), new CompletedEvent("error"));
             return;
         }
 
@@ -1038,9 +1037,36 @@ public sealed class AcpAgentSession : IOmpSession
         }
 
         Settle(turn);
-        writer.TryWrite(new CompletedEvent(stopReason));
+        EndTurn(turn, new CompletedEvent(stopReason));
+    }
+
+    /// <summary>
+    /// Writes the turn's final events, then completes its stream. A final event the bounded buffer cannot take is lost
+    /// to the consumer, so the turn fails with <see cref="BackpressureHarnessException"/> and the session faults, the same
+    /// as a dropped update. A clean end is never reported in its place.
+    /// </summary>
+    private void EndTurn(PromptTurn turn, params HarnessEvent[] finalEvents)
+    {
+        var writer = turn.Events.Writer;
+        foreach (HarnessEvent harnessEvent in finalEvents)
+        {
+            if (!writer.TryWrite(harnessEvent))
+            {
+                writer.TryComplete(TurnBufferFull());
+                lock (_gate)
+                {
+                    TryFaultLocked();
+                }
+
+                return;
+            }
+        }
+
         writer.TryComplete();
     }
+
+    private static BackpressureHarnessException TurnBufferFull() =>
+        new("omp acp produced events faster than the consumer read them.", "acp");
 
     private void Settle(PromptTurn turn)
     {
@@ -1087,7 +1113,7 @@ public sealed class AcpAgentSession : IOmpSession
     {
         if (!turn.Events.Writer.TryWrite(harnessEvent))
         {
-            FailTurn(turn, new BackpressureHarnessException("omp acp produced events faster than the consumer read them.", "acp"));
+            FailTurn(turn, TurnBufferFull());
             lock (_gate)
             {
                 TryFaultLocked();
