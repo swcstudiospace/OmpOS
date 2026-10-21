@@ -21,18 +21,18 @@ namespace OmpOS.Sandbox;
 /// process tree is killed best-effort, the pipe readers are abandoned with observed
 /// continuations, and a timed-out result is returned.
 /// </para>
-    /// <para>
-    /// Captured output is bounded: each stream keeps at most <see cref="MaxOutputChars"/>
-    /// characters and the result is marked <see cref="ProcessResult.Truncated"/> when the cap
-    /// is hit. Excess output is discarded while the drain continues so a verbose child never
-    /// blocks on a full pipe.
-    /// </para>
-    /// <para>
-    /// Streamed lines are bounded per line: <see cref="StreamStdoutLinesAsync"/> keeps at most
-    /// <see cref="MaxStreamLineChars"/> characters per line and appends
-    /// <see cref="StreamLineTruncatedMarker"/> when a line is truncated, so a very large record
-    /// (or a missing newline) cannot grow host memory without bound.
-    /// </para>
+/// <para>
+/// Captured output is bounded: each stream keeps at most <see cref="MaxOutputChars"/>
+/// characters and the result is marked <see cref="ProcessResult.Truncated"/> when the cap
+/// is hit. Excess output is discarded while the drain continues so a verbose child never
+/// blocks on a full pipe.
+/// </para>
+/// <para>
+/// Streamed lines are bounded per line: <see cref="StreamStdoutLinesAsync"/> keeps at most
+/// <see cref="MaxStreamLineChars"/> characters per line and appends
+/// <see cref="StreamLineTruncatedMarker"/> when a line is truncated, so a very large record
+/// (or a missing newline) cannot grow host memory without bound.
+/// </para>
 /// </remarks>
 public sealed class ProcessRunner : IProcessRunner
 {

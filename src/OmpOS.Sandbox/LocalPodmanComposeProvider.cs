@@ -352,7 +352,7 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         {
             _ = _provisionsByKey.TryRemove(new KeyValuePair<string, Task<PodmanSandbox>>(sandbox.IdempotencyKey, reservation));
         }
-        }
+    }
 
     private static SandboxDescriptor CreateDescriptor(string sandboxId, string projectName, ProvisionRequest request)
     {
