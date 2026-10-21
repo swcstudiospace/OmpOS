@@ -108,9 +108,11 @@ Status: to be re-run on the final tree. Steps:
 
 ### Vercel static deploy (WEB-02)
 
-`vercel.json` at the repo root publishes the WASM head statically: the SDK installs via `dotnet-install.sh --jsonfile global.json` into `./.dotnet`, the build runs `./.dotnet/dotnet publish apps/OmpOS.Web -c Release -o output`, and `output/wwwroot` is served with an SPA rewrite to `/index.html` plus security headers.
+`vercel.ts` at the repo root is the only Vercel configuration (the static `vercel.json` was removed on 2026-10-21, because Vercel reads static config before the build runs). It executes at build time, so the CSP is generated from one validated API origin. The SDK installs via `dotnet-install.sh --jsonfile global.json` into `./.dotnet`, the build runs `./.dotnet/dotnet publish apps/OmpOS.Web -c Release -o output`, and `output/wwwroot` is served with an SPA rewrite to `/index.html` plus security headers.
 
-The CSP is `connect-src 'self' http://127.0.0.1:5187` and `img-src 'self' data:`. Before deploying, add the production API origin to `connect-src`: the static deploy cannot reach any other API. The browser never fetches remote images. `script-src 'self' 'wasm-unsafe-eval'` is required for Blazor WASM. Never add a legacy `routes` key alongside `rewrites`/`headers`.
+`connect-src` comes from `scripts/vercel/render-csp.sh`, which reads `OMPOS_API_ORIGIN` and accepts only `https://host[:port]`: no path, query, fragment, userinfo, wildcard, trailing slash or IP-literal brackets. An invalid or missing origin aborts config evaluation, so the deploy fails closed. Production must set `OMPOS_API_ORIGIN` in the Vercel project environment; preview builds need it too. For local checks only, `OMPOS_API_ORIGIN_ALLOW_LOOPBACK=1` also accepts `http://127.0.0.1:<port>`. `script-src 'self' 'wasm-unsafe-eval'` is required for Blazor WASM, and `img-src 'self' data:` means the browser never fetches remote images. Never add a legacy `routes` key alongside `rewrites`/`headers`.
+
+Verified locally on 2026-10-21 by evaluating `vercel.ts` with Bun: a valid HTTPS origin produces `connect-src 'self' <origin>`; a wildcard, a missing origin, and loopback without the flag each exit 1. Not verified: config evaluation on Vercel itself (working directory and project environment visibility) needs a preview deployment, which also needs the production API origin.
 
 ### Clean-clone bootstrap (VERIFY-01)
 
