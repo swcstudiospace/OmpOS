@@ -191,7 +191,7 @@ public sealed class ProcessRunner : IProcessRunner
 
             string carry = _carry;
             _carry = null;
-            int newline = carry.IndexOf('\n');
+            int newline = carry.AsSpan().IndexOf('\n');
             if (newline < 0)
             {
                 AppendChunk(builder, carry.AsSpan(), ref truncated);
