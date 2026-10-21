@@ -59,6 +59,12 @@ internal sealed class PromptRunner
             new EventId(6, "BackgroundRunFaulted"),
             "Background prompt run faulted for session {SessionId}: {ErrorType}");
 
+    private static readonly Action<ILogger, string, int, Exception?> StaleRunSettleSkipped =
+        LoggerMessage.Define<string, int>(
+            LogLevel.Warning,
+            new EventId(7, "StaleRunSettleSkipped"),
+            "Stale run settle skipped for session {SessionId}: expected turn {ExpectedTurn} already superseded");
+
     private readonly ConcurrentDictionary<string, Task> _pending = new(StringComparer.Ordinal);
     private readonly SessionService _sessions;
     private readonly ISessionRepository _repository;
@@ -175,6 +181,10 @@ internal sealed class PromptRunner
             PromptStarted(_logger, input.SessionId, PromptRedactor.Format(input.Prompt, _debug.Value), null);
         }
 
+        // The turn identity of this run: the activities settle our turn before the runner tears the
+        // sandbox down, so a later teardown failure must never settle a newer turn admitted meanwhile.
+        var expectedTurn = await GetTurnAsync(input.SessionId).ConfigureAwait(false);
+
         try
         {
             var workflow = _services.GetRequiredService<ISessionRunWorkflow>();
@@ -197,23 +207,25 @@ internal sealed class PromptRunner
             }
             else if (result.Status == WorkflowRunStatus.Failed)
             {
-                PromptRunFailed(_logger, input.SessionId, result.Status.ToString(), null);
-                await SettleIfRunningAsync(input.SessionId, SessionStatus.Failed).ConfigureAwait(false);
+                // Log the cause (often a teardown failure for an already-settled turn) before the guarded
+                // settle below, so a skipped stale settlement never swallows the cleanup failure.
+                PromptRunFailed(_logger, input.SessionId, result.FailureDetail ?? result.Status.ToString(), null);
+                await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Failed).ConfigureAwait(false);
             }
             else if (result.Status == WorkflowRunStatus.Cancelled)
             {
-                await SettleIfRunningAsync(input.SessionId, SessionStatus.Cancelled).ConfigureAwait(false);
+                await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Cancelled).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
         {
-            await SettleAsync(input.SessionId, SessionStatus.Cancelled).ConfigureAwait(false);
+            await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Cancelled).ConfigureAwait(false);
         }
 #pragma warning disable CA1031 // Background execution must never fault the tracked task; the activities already settled above.
         catch (Exception ex)
         {
             PromptRunFailed(_logger, input.SessionId, ex.GetType().FullName ?? "Unknown", null);
-            await SettleAsync(input.SessionId, SessionStatus.Failed).ConfigureAwait(false);
+            await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Failed).ConfigureAwait(false);
         }
 #pragma warning restore CA1031
     }
@@ -332,15 +344,52 @@ internal sealed class PromptRunner
 #pragma warning restore CA1031
     }
 
-    /// <summary>Settles the session as failed or cancelled only while its prompt is still running, so a run that already settled is not settled twice.</summary>
+    /// <summary>Settles the session as failed or cancelled only while its own turn is still running, so a stale run never settles a newer turn admitted after its own turn already settled.</summary>
     /// <param name="sessionId">The session identifier.</param>
+    /// <param name="expectedTurn">The turn identity captured when this run started; settlement is skipped when the session moved on.</param>
     /// <param name="final">The terminal status to record.</param>
-    private async Task SettleIfRunningAsync(string sessionId, SessionStatus final)
+    private async Task SettleIfRunningAsync(string sessionId, int expectedTurn, SessionStatus final)
     {
         var session = await _repository.GetAsync(sessionId, CancellationToken.None).ConfigureAwait(false);
-        if (session is { Status: SessionStatus.Running })
+        if (session is not { Status: SessionStatus.Running })
         {
-            await SettleAsync(sessionId, final).ConfigureAwait(false);
+            return;
         }
+
+        if (TurnOf(session) != expectedTurn)
+        {
+            StaleRunSettleSkipped(_logger, sessionId, expectedTurn, null);
+            return;
+        }
+
+        await SettleAsync(sessionId, final).ConfigureAwait(false);
+    }
+
+    /// <summary>Reads the turn identity of the run in flight: the number of user prompts admitted so far.</summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <returns>The turn identity, or -1 when the session is gone.</returns>
+    private async Task<int> GetTurnAsync(string sessionId)
+    {
+        var session = await _repository.GetAsync(sessionId, CancellationToken.None).ConfigureAwait(false);
+        return session is null ? -1 : TurnOf(session);
+    }
+
+    /// <summary>Counts admitted user prompts: steer and follow-up messages never change the turn.</summary>
+    /// <param name="session">The session to inspect.</param>
+    /// <returns>The number of user prompts admitted.</returns>
+    private static int TurnOf(Session session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        var turn = 0;
+        foreach (var message in session.Messages)
+        {
+            // Mirrors SessionService.UserRole: the admission role marking a new turn.
+            if (string.Equals(message.Role, "user", StringComparison.Ordinal))
+            {
+                turn++;
+            }
+        }
+
+        return turn;
     }
 }
