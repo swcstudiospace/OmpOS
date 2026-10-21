@@ -61,11 +61,15 @@ public sealed class GuardTests
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
-    /// <summary>Verifies readiness degrades when workflows are enabled without an endpoint.</summary>
+    /// <summary>Verifies readiness is unavailable when workflows are enabled and the configured Workflows:Address refuses connections.</summary>
     [Fact]
-    public async Task Health_Ready_DegradedWhenWorkflowsEnabledWithoutEndpoint()
+    public async Task Health_Ready_UnavailableWhenWorkflowsAddressRefusesConnections()
     {
-        using var factory = new OmpApiFactory(new Dictionary<string, string?>(StringComparer.Ordinal) { ["Workflows:Enabled"] = "true" });
+        using var factory = new OmpApiFactory(new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["Workflows:Enabled"] = "true",
+            ["Workflows:Address"] = "127.0.0.1:1",
+        });
         using var client = factory.CreateClient();
 
         using var response = await client.GetAsync(new Uri("/health/ready", UriKind.Relative), TestContext.Current.CancellationToken);

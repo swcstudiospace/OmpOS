@@ -89,7 +89,7 @@ public sealed class TemporalReadinessTests
         return Microsoft.Extensions.Options.Options.Create(new WorkflowsOptions
         {
             Enabled = enabled,
-            TemporalEndpoint = endpoint,
+            Address = endpoint,
         });
     }
 

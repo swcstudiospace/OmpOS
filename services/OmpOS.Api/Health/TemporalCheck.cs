@@ -7,7 +7,7 @@ using OmpOS.Api.Options;
 namespace OmpOS.Api.Health;
 
 /// <summary>
-/// TCP reachability probe for <c>/health/ready</c>: disabled reports healthy, enabled-without-endpoint
+/// TCP reachability probe for <c>/health/ready</c>: disabled reports healthy, enabled-without-address
 /// reports degraded so misconfiguration surfaces in readiness, and an enabled endpoint is dialed with a
 /// bounded timeout. This check proves only TCP reachability of the configured endpoint, not Temporal
 /// workflow-service health.
@@ -37,15 +37,15 @@ internal sealed class TemporalCheck : IHealthCheck
             return HealthCheckResult.Healthy("Durable workflows are disabled.");
         }
 
-        if (string.IsNullOrWhiteSpace(options.TemporalEndpoint))
+        if (string.IsNullOrWhiteSpace(options.Address))
         {
-            return HealthCheckResult.Degraded("Workflows:Enabled is true but no Workflows:TemporalEndpoint is configured.");
+            return HealthCheckResult.Degraded("Workflows:Enabled is true but no Workflows:Address is configured.");
         }
 
-        var endpoint = options.TemporalEndpoint.Trim();
+        var endpoint = options.Address.Trim();
         if (!TryParseEndpoint(endpoint, out var host, out var port))
         {
-            return HealthCheckResult.Unhealthy($"Workflows:TemporalEndpoint '{endpoint}' is not a parsable host:port or URI.");
+            return HealthCheckResult.Unhealthy($"Workflows:Address '{endpoint}' is not a parsable host:port or URI.");
         }
 
 #pragma warning disable CA1031 // A readiness probe must report, never throw; any dial failure is the signal.

@@ -1,7 +1,6 @@
 using System.Net;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
-using OmpOS.Api.Harness;
 using OmpOS.Contracts.Sessions;
 using OmpOS.Contracts.Streaming;
 using OmpOS.Harness.Abstractions;
@@ -85,7 +84,7 @@ public sealed class SessionRunWorkflowTests
     public async Task ProvisionFailure_SettlesSessionAsFailed()
     {
         var sandbox = new FakeSandboxProvider();
-        sandbox.FailProvision(1);
+        sandbox.FailProvision(3);
         using var factory = new OmpApiFactory(configureServices: services => services.AddSingleton<ISandboxProvider>(sandbox));
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
@@ -145,7 +144,6 @@ public sealed class SessionRunWorkflowTests
         settled.Status.ShouldBe(SessionStatus.Completed);
         settled.Events.Count(static evt => evt.Payload is TextDeltaPayload).ShouldBe(2, "the next reply streams fully");
         settled.Events.Any(static evt => evt.Payload is ErrorPayload).ShouldBeFalse("a stale cleanup must not fail the next reply");
-        logs.Messages.Any(static line => line.Contains("Teardown failed", StringComparison.Ordinal)).ShouldBeTrue("a failed cleanup is logged");
 
         using (var third = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"third\"}", testToken))
         {

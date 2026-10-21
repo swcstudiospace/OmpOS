@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Net;
 using Microsoft.Extensions.DependencyInjection;
-using OmpOS.Api.Harness;
+using OmpOS.Harness.Abstractions;
 using Shouldly;
 using Xunit;
 

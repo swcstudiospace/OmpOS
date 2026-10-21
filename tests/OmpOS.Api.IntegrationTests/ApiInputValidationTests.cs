@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
-using OmpOS.Api.Harness;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.InMemory;
 using Shouldly;

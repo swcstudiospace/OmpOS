@@ -86,6 +86,11 @@
         "resolved": "4.4.0",
         "contentHash": "gwJEfIGS7FhykvtZoscwXj/XwW+mJY6UbAZk+qtLKFUGWC95kfKXnj8VkxsZQnWBxJemM/q664rGLN5nf+OHZw=="
       },
+      "Google.Protobuf": {
+        "type": "Transitive",
+        "resolved": "3.26.1",
+        "contentHash": "CHZX8zXqhF/fdUtd+AYzew8T2HFkAoe5c7lbGxZY/qryAlQXckDvM5BfOJjXlMS7kyICqQTMszj4w1bX5uBJ/w=="
+      },
       "Microsoft.ApplicationInsights": {
         "type": "Transitive",
         "resolved": "2.23.0",
@@ -243,6 +248,11 @@
         "resolved": "5.0.0",
         "contentHash": "dDoKi0PnDz31yAyETfRntsLArTlVAVzUzCIvvEDsDsucrl33Dl8pIJG06ePTJTI3tGpeyHS9Cq7Foc/s4EeKcg=="
       },
+      "NexusRpc": {
+        "type": "Transitive",
+        "resolved": "0.4.0",
+        "contentHash": "2cdRtmwT/vskWqJvojODvR7CpRhLWAnCeVT5Z8sPdRDX8P/Ywpw48T2lqgqhxM8JROfoflHzhSiXo4h1ln3/MQ=="
+      },
       "OpenTelemetry.Api": {
         "type": "Transitive",
         "resolved": "1.20.0",
@@ -366,7 +376,8 @@
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "[1.20.0, )",
           "OpenTelemetry.Extensions.Hosting": "[1.20.0, )",
           "OpenTelemetry.Instrumentation.AspNetCore": "[1.20.0, )",
-          "Scalar.AspNetCore": "[2.18.0, )"
+          "Scalar.AspNetCore": "[2.18.0, )",
+          "Temporalio": "[1.20.0, )"
         }
       },
       "ompos.contracts": {
@@ -691,6 +702,17 @@
         "requested": "[2.18.0, )",
         "resolved": "2.18.0",
         "contentHash": "wwI3khcYNM7oL6axr4a41G29fJYOS3ckusgYZ4NiIccL8Amh2LOeu4HSK1SrQWiMJNrgoFqyWfDkOkunQCiRDw=="
+      },
+      "Temporalio": {
+        "type": "CentralTransitive",
+        "requested": "[1.20.0, )",
+        "resolved": "1.20.0",
+        "contentHash": "5Y11I7V2L/EAMczly8sT8b+dhLIiBwUmJSiUbsJOId7r1f2BZJn+2oEo2RUauSwUeIMXXEfvq3Y92BM8RjoqqQ==",
+        "dependencies": {
+          "Google.Protobuf": "3.26.1",
+          "Microsoft.Extensions.Logging.Abstractions": "2.2.0",
+          "NexusRpc": "0.4.0"
+        }
       },
       "YamlDotNet": {
         "type": "CentralTransitive",

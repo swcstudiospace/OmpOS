@@ -16,6 +16,7 @@ using OmpOS.Api.Sse;
 using OmpOS.Api.Telemetry;
 using OmpOS.Api.Workflows;
 using OmpOS.Contracts.Serialization;
+using OmpOS.Harness.Abstractions;
 using OmpOS.Parser;
 using OmpOS.Sandbox;
 using OmpOS.Sandbox.Abstractions;
@@ -38,7 +39,11 @@ builder.Services.AddOptions<HarnessOptions>()
     .ValidateDataAnnotations()
     .Validate(static options => HarnessOptions.IsSupportedAdapter(options.Adapter), "Harness:Adapter must be InMemory, the only adapter supported in Phase 2.")
     .ValidateOnStart();
-builder.Services.AddOptions<WorkflowsOptions>().BindConfiguration(WorkflowsOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
+builder.Services.AddOptions<WorkflowsOptions>()
+    .BindConfiguration(WorkflowsOptions.SectionName)
+    .ValidateDataAnnotations()
+    .Validate(static options => !options.Enabled || !string.IsNullOrWhiteSpace(options.Address), "Workflows:Address is required when Workflows:Enabled is true.")
+    .ValidateOnStart();
 builder.Services.AddOptions<OtelOptions>().BindConfiguration(OtelOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
 builder.Services.AddOptions<DebugOptions>().BindConfiguration(DebugOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
 
@@ -58,16 +63,21 @@ builder.Services.AddSingleton<SessionRegistry>();
 builder.Services.AddSingleton<IHarnessSessionFactory, InMemoryHarnessSessionFactory>();
 builder.Services.AddSingleton<PromptRunner>();
 
-// The API is the composition root for the session-run workflow (WFLW-01). When durable
-// workflows are disabled (the default), each prompt runs in-process through DirectSessionRunner
-// with an in-memory fake sandbox; the Temporal worker is a separate process and is not wired
-// into the API, so nothing is registered here when Workflows:Enabled is true.
-if (!builder.Configuration.GetValue<bool>("Workflows:Enabled"))
-{
-    builder.Services.AddSingleton<ISandboxProvider, FakeSandboxProvider>();
-    builder.Services.AddSingleton<ISessionRunActivities, ApiSessionRunActivities>();
-    builder.Services.AddSingleton<ISessionRunWorkflow, DirectSessionRunner>();
-}
+// The API is the composition root for session runs (WFLW-01, OD-02). Both dispatchers are registered and the
+// choice is made at resolution time from the bound Workflows options. When Workflows:Enabled is true, runs start
+// as SessionRunWorkflow on Workflows:TaskQueue and the worker executes them. When false (the default), each prompt
+// runs in-process through DirectSessionRunner with an in-memory fake sandbox, exactly as before. Resolution-time
+// selection keeps configuration added after host construction (for example by test hosts) authoritative.
+builder.Services.AddSingleton<ISandboxProvider, FakeSandboxProvider>();
+builder.Services.AddSingleton<ISessionRunActivities, ApiSessionRunActivities>();
+builder.Services.AddSingleton<ISessionRunWorkflow, DirectSessionRunner>();
+builder.Services.AddSingleton<DirectSessionRunDispatcher>();
+builder.Services.AddSingleton<ITemporalWorkflowStarter, TemporalWorkflowStarter>();
+builder.Services.AddSingleton<TemporalSessionRunDispatcher>();
+builder.Services.AddSingleton<ISessionRunDispatcher>(static services =>
+    services.GetRequiredService<IOptions<WorkflowsOptions>>().Value.Enabled
+        ? services.GetRequiredService<TemporalSessionRunDispatcher>()
+        : services.GetRequiredService<DirectSessionRunDispatcher>());
 builder.Services.AddSingleton<SessionEventStreamer>();
 builder.Services.AddSingleton<ApiMetrics>();
 builder.Services.AddScoped<IUserContext, SingleDevPrincipal>();
@@ -168,6 +178,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     },
 });
 app.MapSessionEndpoints();
+app.MapToolApprovalEndpoints();
 app.MapEventStreamEndpoints();
 
 // Start without RunAsync's dispose-on-failure: RunAsync disposes the host when startup

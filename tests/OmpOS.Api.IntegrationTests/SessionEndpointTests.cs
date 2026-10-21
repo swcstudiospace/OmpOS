@@ -2,7 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
-using OmpOS.Api.Harness;
+using OmpOS.Harness.Abstractions;
 using Shouldly;
 using Xunit;
 

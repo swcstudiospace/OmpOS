@@ -1,4 +1,3 @@
-using OmpOS.Api.Harness;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.InMemory;
 

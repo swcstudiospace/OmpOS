@@ -1,25 +1,22 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using Microsoft.Extensions.Options;
-using OmpOS.Api.Harness;
 using OmpOS.Api.Options;
 using OmpOS.Api.Sse;
 using OmpOS.Api.Telemetry;
+using OmpOS.Api.Workflows;
 using OmpOS.Contracts.Sessions;
-using OmpOS.Contracts.Streaming;
 using OmpOS.Contracts.Workflows;
-using OmpOS.Harness.Abstractions;
 using OmpOS.Sessions;
 using OmpOS.Workflows;
 
 namespace OmpOS.Api.Services;
 
 /// <summary>
-/// Executes accepted prompts in the background: streams the harness, appends each event to the
-/// session log, wakes SSE tails, then settles the session. Failures append an error event and
-/// settle as failed. When Workflows:Enabled is false (the default) the run goes through
-/// DirectSessionRunner; when true the legacy in-process harness path runs instead. Every background
-/// run is observed through a tracked continuation, so no task result is ever dropped and no failure escapes unlogged.
+/// Executes accepted prompts in the background through <see cref="ISessionRunDispatcher"/>, which selects the run path
+/// from Workflows:Enabled. An in-process run reports its completion on the handle and is settled here from its result;
+/// a routed run reports no completion and is settled by the process that executes it. Every background run is observed
+/// through a tracked continuation, so no task result is ever dropped and no failure escapes unlogged.
 /// </summary>
 internal sealed class PromptRunner
 {
@@ -68,47 +65,35 @@ internal sealed class PromptRunner
     private readonly ConcurrentDictionary<string, Task> _pending = new(StringComparer.Ordinal);
     private readonly SessionService _sessions;
     private readonly ISessionRepository _repository;
-    private readonly IHarnessSessionFactory _factory;
+    private readonly ISessionRunDispatcher _dispatcher;
     private readonly SessionEventStreamer _streamer;
     private readonly IOptions<DebugOptions> _debug;
-    private readonly TimeProvider _time;
     private readonly IHostApplicationLifetime _lifetime;
-    private readonly IOptions<WorkflowsOptions> _workflows;
-    private readonly IServiceProvider _services;
     private readonly ILogger<PromptRunner> _logger;
 
     /// <summary>Initializes a new instance of the <see cref="PromptRunner"/> class.</summary>
     /// <param name="sessions">The session service.</param>
     /// <param name="repository">The session store.</param>
-    /// <param name="factory">The harness session factory.</param>
+    /// <param name="dispatcher">The dispatcher that starts each session run.</param>
     /// <param name="streamer">The SSE broadcaster.</param>
     /// <param name="debug">The debug options (prompt redaction switch).</param>
-    /// <param name="timeProvider">The clock.</param>
     /// <param name="lifetime">The host lifetime (shutdown signal).</param>
-    /// <param name="workflows">The workflows options (direct runner when disabled).</param>
-    /// <param name="services">The service provider (resolves the workflow lazily).</param>
     /// <param name="logger">The logger.</param>
     public PromptRunner(
         SessionService sessions,
         ISessionRepository repository,
-        IHarnessSessionFactory factory,
+        ISessionRunDispatcher dispatcher,
         SessionEventStreamer streamer,
         IOptions<DebugOptions> debug,
-        TimeProvider timeProvider,
-        IOptions<WorkflowsOptions> workflows,
-        IServiceProvider services,
         IHostApplicationLifetime lifetime,
         ILogger<PromptRunner> logger)
     {
         _sessions = sessions;
         _repository = repository;
-        _factory = factory;
+        _dispatcher = dispatcher;
         _streamer = streamer;
         _debug = debug;
-        _time = timeProvider;
         _lifetime = lifetime;
-        _workflows = workflows;
-        _services = services;
         _logger = logger;
     }
 
@@ -122,9 +107,7 @@ internal sealed class PromptRunner
         ArgumentNullException.ThrowIfNull(sessionId);
         ArgumentNullException.ThrowIfNull(prompt);
         ArgumentNullException.ThrowIfNull(correlationId);
-        var run = _workflows.Value.Enabled
-            ? RunAsync(sessionId, prompt, correlationId, parent, _lifetime.ApplicationStopping)
-            : RunWorkflowAsync(BuildInput(sessionId, prompt, correlationId), parent, _lifetime.ApplicationStopping);
+        var run = RunDispatchedAsync(BuildInput(sessionId, prompt, correlationId), parent, _lifetime.ApplicationStopping);
         _pending[sessionId] = run;
         _ = run.ContinueWith(
             static (completed, state) =>
@@ -163,15 +146,14 @@ internal sealed class PromptRunner
     }
 
     /// <summary>
-    /// Executes the prompt through <see cref="ISessionRunWorkflow"/> (provision, run prompt, collect,
-    /// teardown in a finally). The endpoint already admitted the prompt synchronously, so this runs in
-    /// the background and the 202 response is unaffected; the activities settle the session exactly as
-    /// the legacy path does, so the SSE event sequence is unchanged.
+    /// Starts the run through <see cref="ISessionRunDispatcher"/> and, when the dispatcher reports an in-process
+    /// completion, settles the session from that result. The endpoint already admitted the prompt synchronously, so this
+    /// runs in the background and the 202 response is unaffected.
     /// </summary>
-    /// <param name="input">The workflow input for this run.</param>
+    /// <param name="input">The run input for this prompt.</param>
     /// <param name="parent">The accepting request's trace context, or null.</param>
     /// <param name="stoppingToken">The host shutdown signal.</param>
-    private async Task RunWorkflowAsync(SessionRunInput input, ActivityContext? parent, CancellationToken stoppingToken)
+    private async Task RunDispatchedAsync(SessionRunInput input, ActivityContext? parent, CancellationToken stoppingToken)
     {
         using var activity = parent.HasValue
             ? OmpTelemetry.Activities.StartActivity("harness.run", ActivityKind.Internal, parent.Value)
@@ -187,34 +169,11 @@ internal sealed class PromptRunner
 
         try
         {
-            var workflow = _services.GetRequiredService<ISessionRunWorkflow>();
-            var result = await workflow.RunAsync(input, new DirectWorkflowContext(), stoppingToken).ConfigureAwait(false);
-            if (result.Status == WorkflowRunStatus.Completed)
+            var handle = await _dispatcher.StartAsync(input, stoppingToken).ConfigureAwait(false);
+            if (handle.Completion is not null)
             {
-                // The run completes even when the turn it carried failed, so log the status the session settled with.
-                var settled = await _repository.GetAsync(input.SessionId, CancellationToken.None).ConfigureAwait(false);
-                if (settled?.Status == SessionStatus.Completed)
-                {
-                    if (_logger.IsEnabled(LogLevel.Information))
-                    {
-                        PromptCompleted(_logger, input.SessionId, PromptRedactor.Format(input.Prompt, _debug.Value), null);
-                    }
-                }
-                else
-                {
-                    PromptRunFailed(_logger, input.SessionId, settled?.Status.ToString() ?? "Missing", null);
-                }
-            }
-            else if (result.Status == WorkflowRunStatus.Failed)
-            {
-                // Log the cause (often a teardown failure for an already-settled turn) before the guarded
-                // settle below, so a skipped stale settlement never swallows the cleanup failure.
-                PromptRunFailed(_logger, input.SessionId, result.FailureDetail ?? result.Status.ToString(), null);
-                await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Failed).ConfigureAwait(false);
-            }
-            else if (result.Status == WorkflowRunStatus.Cancelled)
-            {
-                await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Cancelled).ConfigureAwait(false);
+                var result = await handle.Completion.ConfigureAwait(false);
+                await SettleFromResultAsync(input, expectedTurn, result).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
@@ -230,99 +189,39 @@ internal sealed class PromptRunner
 #pragma warning restore CA1031
     }
 
-    private async Task RunAsync(
-        string sessionId,
-        string prompt,
-        string correlationId,
-        ActivityContext? parent,
-        CancellationToken stoppingToken)
+    /// <summary>Logs an in-process run's outcome and settles the session from the status the run reported.</summary>
+    /// <param name="input">The run input for this prompt.</param>
+    /// <param name="expectedTurn">The turn identity captured when this run started.</param>
+    /// <param name="result">The run result.</param>
+    private async Task SettleFromResultAsync(SessionRunInput input, int expectedTurn, SessionRunResult result)
     {
-        using var activity = parent.HasValue
-            ? OmpTelemetry.Activities.StartActivity("harness.run", ActivityKind.Internal, parent.Value)
-            : OmpTelemetry.Activities.StartActivity("harness.run");
-        if (_logger.IsEnabled(LogLevel.Information))
+        if (result.Status == WorkflowRunStatus.Completed)
         {
-            PromptStarted(_logger, sessionId, PromptRedactor.Format(prompt, _debug.Value), null);
-        }
-
-        try
-        {
-            var (stopReason, sawError) = await StreamTurnAsync(sessionId, prompt, correlationId, stoppingToken).ConfigureAwait(false);
-            var final = HarnessTurnOutcome.SettledStatus(stopReason, sawError);
-            await _sessions.RecordCompletionAsync(sessionId, final, CancellationToken.None, stopReason).ConfigureAwait(false);
-            _streamer.Notify(sessionId);
-            if (final == SessionStatus.Completed)
+            // The run completes even when the turn it carried failed, so log the status the session settled with.
+            var settled = await _repository.GetAsync(input.SessionId, CancellationToken.None).ConfigureAwait(false);
+            if (settled?.Status == SessionStatus.Completed)
             {
                 if (_logger.IsEnabled(LogLevel.Information))
                 {
-                    PromptCompleted(_logger, sessionId, PromptRedactor.Format(prompt, _debug.Value), null);
+                    PromptCompleted(_logger, input.SessionId, PromptRedactor.Format(input.Prompt, _debug.Value), null);
                 }
             }
             else
             {
-                PromptRunFailed(_logger, sessionId, stopReason ?? "harness-error", null);
+                PromptRunFailed(_logger, input.SessionId, settled?.Status.ToString() ?? "Missing", null);
             }
         }
-        catch (OperationCanceledException)
+        else if (result.Status == WorkflowRunStatus.Failed)
         {
-            await SettleAsync(sessionId, SessionStatus.Cancelled).ConfigureAwait(false);
+            // Log the cause (often a teardown failure for an already-settled turn) before the guarded
+            // settle below, so a skipped stale settlement never swallows the cleanup failure.
+            PromptRunFailed(_logger, input.SessionId, result.FailureDetail ?? result.Status.ToString(), null);
+            await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Failed).ConfigureAwait(false);
         }
-#pragma warning disable CA1031 // Background execution must never fault the tracked task; failures are logged and settled above.
-        catch (Exception ex)
+        else if (result.Status == WorkflowRunStatus.Cancelled)
         {
-            PromptRunFailed(_logger, sessionId, ex.GetType().FullName ?? "Unknown", null);
-            await SettleAsync(sessionId, SessionStatus.Failed).ConfigureAwait(false);
+            await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Cancelled).ConfigureAwait(false);
         }
-#pragma warning restore CA1031
-    }
-
-    /// <summary>Streams one harness turn into the session log until the harness completes or its stream ends.</summary>
-    /// <param name="sessionId">The session identifier.</param>
-    /// <param name="prompt">The prompt text.</param>
-    /// <param name="correlationId">The end-to-end correlation identifier.</param>
-    /// <param name="cancellationToken">Cancels the stream.</param>
-    /// <returns>The harness stop reason (null when the stream ended without a completion) and whether an error was streamed.</returns>
-    private async Task<(string? StopReason, bool SawError)> StreamTurnAsync(
-        string sessionId,
-        string prompt,
-        string correlationId,
-        CancellationToken cancellationToken)
-    {
-        string? stopReason = null;
-        var sawError = false;
-        var harness = _factory.CreateSession(prompt);
-        await using (harness.ConfigureAwait(false))
-        {
-            await harness.CreateAsync(cancellationToken).ConfigureAwait(false);
-            await foreach (var evt in harness.SubmitPromptAsync(prompt, new PromptOptions { Steer = false }, cancellationToken).ConfigureAwait(false))
-            {
-                if (evt is CompletedEvent completed)
-                {
-                    // The completion settles the turn; RecordCompletionAsync writes the turn's terminal event.
-                    stopReason = completed.Reason;
-                    break;
-                }
-
-                sawError |= evt is ErrorEvent;
-                await AppendAsync(sessionId, correlationId, HarnessEventMapper.ToPayload(evt), cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        return (stopReason, sawError);
-    }
-
-    private async Task AppendAsync(string sessionId, string correlationId, StreamEventPayload payload, CancellationToken cancellationToken)
-    {
-        var evt = new StreamEvent
-        {
-            Seq = 0,
-            SessionId = sessionId,
-            CorrelationId = correlationId,
-            Timestamp = _time.GetUtcNow(),
-            Payload = payload,
-        };
-        await _repository.AppendAsync(sessionId, evt, cancellationToken).ConfigureAwait(false);
-        _streamer.Notify(sessionId);
     }
 
     private async Task SettleAsync(string sessionId, SessionStatus final)

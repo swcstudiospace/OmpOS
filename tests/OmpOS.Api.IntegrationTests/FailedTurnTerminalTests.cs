@@ -1,6 +1,5 @@
 using System.Net;
 using Microsoft.Extensions.DependencyInjection;
-using OmpOS.Api.Harness;
 using OmpOS.Contracts.Sessions;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.InMemory;
@@ -10,21 +9,19 @@ using Xunit;
 namespace OmpOS.Api.IntegrationTests;
 
 /// <summary>
-/// A failed turn ends its stream on exactly one error event and never appends a completed event after it, whichever
-/// prompt path serves the turn and whether or not the harness also reports a completion with the error reason.
+/// A failed turn ends its stream on exactly one error event and never appends a completed event after it,
+/// whether or not the harness also reports a completion with the error reason.
 /// </summary>
 public sealed class FailedTurnTerminalTests
 {
     private static readonly TimeSpan SettleTimeout = TimeSpan.FromSeconds(15);
 
     /// <summary>Verifies a failed turn streams one error as its final event and no completed event.</summary>
-    /// <param name="workflowsEnabled">Whether the legacy in-process path (Workflows:Enabled) serves the prompt.</param>
+    /// <param name="workflowsEnabled">The Workflows:Enabled value; false selects the legacy in-process path.</param>
     /// <param name="trailingErrorCompletion">Whether the harness also reports <c>CompletedEvent("error")</c> after its error.</param>
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
     public async Task FailedTurn_StreamEndsOnErrorWithNoCompleted(bool workflowsEnabled, bool trailingErrorCompletion)
     {
         var steps = new List<InMemoryStep> { new EmitStep(new ErrorEvent("boom", Retryable: false)) };

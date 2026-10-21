@@ -48,6 +48,7 @@
     <PackageReference Include="OpenTelemetry.Exporter.Console" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
     <PackageReference Include="Scalar.AspNetCore" />
+    <PackageReference Include="Temporalio" />
   </ItemGroup>
 
   <ItemGroup>

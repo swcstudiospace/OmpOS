@@ -34,6 +34,9 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
 {
     private static readonly TimeSpan ProvisionTimeout = TimeSpan.FromSeconds(30);
 
+    /// <summary>How long a routed permission request waits for its decision before the session service denies it.</summary>
+    private static readonly TimeSpan ToolApprovalTimeout = TimeSpan.FromMinutes(5);
+
     private static readonly Action<ILogger, string, string, Exception?> SettleSkipped =
         LoggerMessage.Define<string, string>(
             LogLevel.Warning,
@@ -139,6 +142,13 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
                         break;
                     }
 
+                    if (evt is PermissionRequestEvent { RequestId: { } requestId } permission)
+                    {
+                        // The request is held in approval and the run waits for its decision; no other event streams meanwhile.
+                        await AwaitToolApprovalAsync(input, requestId, permission.Name, cancellationToken).ConfigureAwait(false);
+                        continue;
+                    }
+
                     sawError |= evt is ErrorEvent;
                     await AppendAsync(input.SessionId, input.CorrelationId, HarnessEventMapper.ToPayload(evt), cancellationToken).ConfigureAwait(false);
                     appended++;
@@ -165,6 +175,18 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
 
         var session = await _repository.GetAsync(input.SessionId, CancellationToken.None).ConfigureAwait(false);
         return session is null || session.Events.Count == 0 ? 0 : session.Events[^1].Seq;
+    }
+
+    /// <summary>
+    /// Routes a permission request into the session's tool approval and waits for its decision on this direct path. A request
+    /// that no decision reaches within <see cref="ToolApprovalTimeout"/> is denied by the session service.
+    /// </summary>
+    private async Task AwaitToolApprovalAsync(SessionRunInput input, string requestId, string toolName, CancellationToken cancellationToken)
+    {
+        await _sessions.RequestToolApprovalAsync(input.SessionId, requestId, toolName, cancellationToken).ConfigureAwait(false);
+        _streamer.Notify(input.SessionId);
+        await _sessions.WaitForDecisionAsync(input.SessionId, requestId, ToolApprovalTimeout, cancellationToken).ConfigureAwait(false);
+        _streamer.Notify(input.SessionId);
     }
 
     /// <inheritdoc />
