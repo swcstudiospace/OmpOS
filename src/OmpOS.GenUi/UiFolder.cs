@@ -33,6 +33,7 @@ public static class UiFolder
     private const string PermissionRequestKind = "permission_request";
     private const string PlanKind = "plan";
     private const string PromptAcceptedKind = "prompt_accepted";
+    private const string FailedTurnReason = "error";
 
     /// <summary>Folds one stream event into the UI tree. Replaying a log is a fold of this overload from <see cref="UiTree.Empty"/>.</summary>
     /// <param name="state">The tree before the event.</param>
@@ -50,7 +51,7 @@ public static class UiFolder
     {
         TextDeltaPayload text => state with { StreamingText = state.StreamingText + text.Delta },
         UiBlockPayload block => Append(Flush(state), block.Block),
-        ErrorPayload error => AddBlock(state, "error", id => new ErrorBlock { Id = id, Message = error.Message, Retryable = error.Retryable }),
+        ErrorPayload error => AddBlock(state, "error", id => new ErrorBlock { Id = id, Message = error.Message, Retryable = error.Retryable }) with { CompletionReason = FailedTurnReason },
         CompletedPayload completed => Flush(state) with { CompletionReason = completed.Reason },
         UnknownPayload unknown => ApplyUnknown(state, unknown),
         _ => AddBlock(state, "unknown", id => new UnknownBlock { Id = id, OriginalKind = payload.GetType().Name, Raw = ToRaw(payload) }),
