@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OmpOS.Contracts.Sandboxes;
@@ -17,6 +18,8 @@ namespace OmpOS.Sandbox;
 /// </summary>
 public sealed class LocalPodmanComposeProvider : ISandboxProvider
 {
+    private const string SandboxServiceName = "sandbox";
+
     private static readonly Action<ILogger, string, Exception?> ComposeCleanupFailed =
         LoggerMessage.Define<string>(
             LogLevel.Warning,
@@ -32,6 +35,16 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
             LogLevel.Warning,
             new EventId(3, "PartialTeardownFailed"),
             "Best-effort partial teardown failed for project {ProjectName} ({Reason}); containers labelled with the ompos.project label may remain");
+    private static readonly Action<ILogger, string, Exception?> StagingFileCleanupFailed =
+        LoggerMessage.Define<string>(
+            LogLevel.Warning,
+            new EventId(4, "StagingFileCleanupFailed"),
+            "Failed to delete credential staging file {StagingFile}");
+    private static readonly Action<ILogger, string, string, Exception?> SecretCleanupFailed =
+        LoggerMessage.Define<string, string>(
+            LogLevel.Warning,
+            new EventId(5, "SecretCleanupFailed"),
+            "Best-effort removal of credential secret {SecretName} failed ({Reason}) during provision cleanup");
 
     private readonly IProcessRunner _processRunner;
     private readonly ILogger<LocalPodmanComposeProvider> _logger;
@@ -117,31 +130,128 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
     private async Task<PodmanSandbox> CreateSandboxAsync(ProvisionRequest request, CancellationToken cancellationToken)
     {
         var sandboxId = $"podman-{Guid.NewGuid().ToString("N")[..12]}";
+        if (!IsSafeId(sandboxId))
+        {
+            throw new PolicyDeniedException("sandbox-id", $"Generated SandboxId '{sandboxId}' is outside the allowed charset.");
+        }
+
         var projectName = $"ompos-{sandboxId}";
         var composeFile = Path.Combine(Path.GetTempPath(), $"{projectName}.yaml");
+        var secretName = PodmanSandboxCredential.SecretNameFor(sandboxId);
+        var secretCreated = false;
 
         try
         {
-            return await ProvisionCoreAsync(sandboxId, projectName, composeFile, request, cancellationToken).ConfigureAwait(false);
+            await CreateCredentialSecretAsync(sandboxId, secretName, cancellationToken).ConfigureAwait(false);
+            secretCreated = true;
+            return await ProvisionCoreAsync(sandboxId, projectName, composeFile, secretName, request, cancellationToken).ConfigureAwait(false);
         }
         catch (SandboxException)
         {
-            // Typed failures (non-zero up exit, timeout, container lookup) are the dominant
-            // provision failure modes: tear down any half-started containers best-effort,
-            // delete the compose file, and rethrow untouched so callers see the typed error.
-            await TeardownPartialAsync(projectName, composeFile).ConfigureAwait(false);
-            DeleteComposeFile(composeFile);
+            // Typed failures (secret create, non-zero up exit, timeout, container lookup) are the dominant
+            // provision failure modes: clean up best-effort and rethrow untouched so callers see the typed error.
+            await CleanupFailedProvisionAsync(projectName, composeFile, secretName, secretCreated).ConfigureAwait(false);
             throw;
         }
         catch (Exception ex)
         {
-            await TeardownPartialAsync(projectName, composeFile).ConfigureAwait(false);
-            DeleteComposeFile(composeFile);
+            await CleanupFailedProvisionAsync(projectName, composeFile, secretName, secretCreated).ConfigureAwait(false);
             throw new ProvisionTimeoutException($"Provisioning failed: {ex.Message}", ex);
         }
     }
 
-    private async Task<PodmanSandbox> ProvisionCoreAsync(string sandboxId, string projectName, string composeFile, ProvisionRequest request, CancellationToken cancellationToken)
+    private async Task CleanupFailedProvisionAsync(string projectName, string composeFile, string secretName, bool secretCreated)
+    {
+        // Compose down runs first: podman refuses to remove a secret that a container still uses.
+        await TeardownPartialAsync(projectName, composeFile).ConfigureAwait(false);
+        if (secretCreated)
+        {
+            await RemoveCredentialSecretBestEffortAsync(secretName).ConfigureAwait(false);
+        }
+
+        DeleteComposeFile(composeFile);
+    }
+
+    private async Task CreateCredentialSecretAsync(string sandboxId, string secretName, CancellationToken cancellationToken)
+    {
+        var credential = PodmanSandboxCredential.NewValue();
+        var stagingPath = PodmanSandboxCredential.NewStagingPath(secretName);
+        try
+        {
+            PodmanSandboxCredential.WriteStagingFile(stagingPath, credential);
+            // Only the secret name and the staging path are argv; podman reads the value from the file.
+            var result = await _processRunner.RunAsync(new ProcessSpec
+            {
+                Argv = ["podman", "secret", "create", secretName, stagingPath],
+                WorkingDirectory = "/",
+                Environment = new Dictionary<string, string>(StringComparer.Ordinal),
+                Timeout = TimeSpan.FromSeconds(30),
+            }, cancellationToken).ConfigureAwait(false);
+
+            if (result.TimedOut)
+            {
+                throw new ProvisionTimeoutException($"podman secret create timed out for sandbox {sandboxId}");
+            }
+
+            if (result.ExitCode != 0)
+            {
+                throw new ProvisionTimeoutException($"podman secret create failed for sandbox {sandboxId} (exit {result.ExitCode})");
+            }
+        }
+        finally
+        {
+            DeleteFileBestEffort(stagingPath, StagingFileCleanupFailed);
+        }
+    }
+
+    private async Task RemoveCredentialSecretAsync(string sandboxId, string secretName, CancellationToken cancellationToken)
+    {
+        var result = await _processRunner.RunAsync(SecretRemoveSpec(secretName, TimeSpan.FromSeconds(30)), cancellationToken).ConfigureAwait(false);
+        if (result.TimedOut)
+        {
+            throw new TeardownFailedException(sandboxId, 1, $"podman secret rm timed out for sandbox {sandboxId}");
+        }
+
+        if (result.ExitCode != 0)
+        {
+            throw new TeardownFailedException(sandboxId, 1, $"podman secret rm failed for sandbox {sandboxId} (exit {result.ExitCode})");
+        }
+    }
+
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Secret removal on a failed provision is best-effort cleanup; any failure must be logged, never mask the in-flight provisioning error.")]
+    private async Task RemoveCredentialSecretBestEffortAsync(string secretName)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+            var result = await _processRunner.RunAsync(SecretRemoveSpec(secretName, TimeSpan.FromMinutes(2)), cts.Token).ConfigureAwait(false);
+            if (result.TimedOut)
+            {
+                SecretCleanupFailed(_logger, secretName, "timed out", null);
+            }
+            else if (result.ExitCode != 0)
+            {
+                SecretCleanupFailed(_logger, secretName, $"exit {result.ExitCode.ToString(CultureInfo.InvariantCulture)}", null);
+            }
+        }
+        catch (Exception ex)
+        {
+            SecretCleanupFailed(_logger, secretName, "runner failed", ex);
+        }
+    }
+
+    private static ProcessSpec SecretRemoveSpec(string secretName, TimeSpan timeout) => new()
+    {
+        Argv = ["podman", "secret", "rm", secretName],
+        WorkingDirectory = "/",
+        Environment = new Dictionary<string, string>(StringComparer.Ordinal),
+        Timeout = timeout,
+    };
+
+    private async Task<PodmanSandbox> ProvisionCoreAsync(string sandboxId, string projectName, string composeFile, string secretName, ProvisionRequest request, CancellationToken cancellationToken)
     {
         await WriteComposeFileAsync(composeFile, sandboxId, projectName, request, cancellationToken).ConfigureAwait(false);
         await BringUpAsync(projectName, composeFile, request.Timeout, cancellationToken).ConfigureAwait(false);
@@ -155,6 +265,7 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
             Descriptor = CreateDescriptor(sandboxId, projectName, request),
             ProjectName = projectName,
             ComposeFile = composeFile,
+            SecretName = secretName,
             ContainerId = containerId,
             Spec = request.Spec,
             Status = SandboxStatus.Ready,
@@ -338,6 +449,10 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
             throw new TeardownFailedException(sandboxId, 1, $"podman-compose down failed for sandbox {sandboxId} (exit {result.ExitCode})");
         }
 
+        // The credential secret is removed only after down succeeded: podman refuses to remove a secret that a
+        // container still uses. A failed removal keeps the record so a retry re-runs down and then removal.
+        await RemoveCredentialSecretAsync(sandboxId, sandbox.SecretName, cancellationToken).ConfigureAwait(false);
+
         // Success: local state and registry entry go away together. On failure both are
         // retained so lifecycle retries can re-run down with the same compose file.
         // The key is released only while it still maps to this sandbox: an overlapping
@@ -452,22 +567,27 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
 
     private void DeleteComposeFile(string composeFile)
     {
+        DeleteFileBestEffort(composeFile, ComposeCleanupFailed);
+    }
+
+    private void DeleteFileBestEffort(string path, Action<ILogger, string, Exception?> onFailure)
+    {
         // Best-effort cleanup on failure paths: only I/O and permission failures are tolerated so a
         // cleanup failure never masks the in-flight provisioning or teardown error.
         try
         {
-            if (File.Exists(composeFile))
+            if (File.Exists(path))
             {
-                File.Delete(composeFile);
+                File.Delete(path);
             }
         }
         catch (IOException ex)
         {
-            ComposeCleanupFailed(_logger, composeFile, ex);
+            onFailure(_logger, path, ex);
         }
         catch (UnauthorizedAccessException ex)
         {
-            ComposeCleanupFailed(_logger, composeFile, ex);
+            onFailure(_logger, path, ex);
         }
     }
 
@@ -622,12 +742,15 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
             });
         }
 
-        document.Services["sandbox"] = service;
+        document.Services[SandboxServiceName] = service;
         document.Networks["default"] = request.NetworkPolicy.OutboundDefault == OutboundDefault.Deny
             ? new ComposeNetwork { Internal = true, Driver = "bridge" }
             : new ComposeNetwork { Driver = "bridge" };
 
-        return JsonSerializer.Serialize(document, SandboxJsonContext.Default.ComposeDocument);
+        var composeDocument = JsonSerializer.SerializeToNode(document, SandboxJsonContext.Default.ComposeDocument) as JsonObject
+            ?? throw new InvalidOperationException("Compose document did not serialize to a JSON object.");
+        PodmanSandboxCredential.AttachCredentialSecret(composeDocument, SandboxServiceName, PodmanSandboxCredential.SecretNameFor(sandboxId));
+        return composeDocument.ToJsonString();
     }
 
     private static string MountTypeName(MountType type) => type switch
@@ -651,6 +774,8 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         public required string ProjectName { get; init; }
 
         public required string ComposeFile { get; init; }
+
+        public required string SecretName { get; init; }
 
         public required string ContainerId { get; init; }
 

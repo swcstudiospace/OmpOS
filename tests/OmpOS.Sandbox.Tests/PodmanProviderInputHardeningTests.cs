@@ -41,7 +41,7 @@ public sealed class PodmanProviderInputHardeningTests
     {
         var containerId = new string('e', length);
         var runner = new FakeProcessRunner();
-        runner.EnqueueResults(PodmanTestData.Ok(), PodmanTestData.Ok(containerId), PodmanTestData.Ok());
+        runner.EnqueueResults(PodmanTestData.Ok(), PodmanTestData.Ok(), PodmanTestData.Ok(containerId), PodmanTestData.Ok());
         var provider = PodmanTestData.CreateProvider(runner);
         var ct = TestContext.Current.CancellationToken;
 
@@ -62,7 +62,7 @@ public sealed class PodmanProviderInputHardeningTests
     public async Task InvalidContainerId_FailsClosedAndTearsDown(string containerId)
     {
         var runner = new FakeProcessRunner();
-        runner.EnqueueResults(PodmanTestData.Ok(), PodmanTestData.Ok(containerId), PodmanTestData.Ok());
+        runner.EnqueueResults(PodmanTestData.Ok(), PodmanTestData.Ok(), PodmanTestData.Ok(containerId), PodmanTestData.Ok());
         var provider = PodmanTestData.CreateProvider(runner);
         var ct = TestContext.Current.CancellationToken;
 
@@ -79,7 +79,7 @@ public sealed class PodmanProviderInputHardeningTests
     {
         var sessionId = new string('s', length);
         var runner = new FakeProcessRunner();
-        runner.EnqueueResults(PodmanTestData.Ok(), PodmanTestData.Ok(ValidContainerId), PodmanTestData.Ok());
+        runner.EnqueueResults(PodmanTestData.Ok(), PodmanTestData.Ok(), PodmanTestData.Ok(ValidContainerId), PodmanTestData.Ok());
         var provider = PodmanTestData.CreateProvider(runner);
         var ct = TestContext.Current.CancellationToken;
         var request = PodmanTestData.CreateRequest() with { SessionId = sessionId };
@@ -109,6 +109,7 @@ public sealed class PodmanProviderInputHardeningTests
     {
         var runner = new FakeProcessRunner();
         runner.EnqueueResults(
+            PodmanTestData.Ok(),
             new ProcessResult { ExitCode = 1, Stdout = string.Empty, Stderr = $"{StderrMarker} up failure", TimedOut = false },
             PodmanTestData.Ok());
         var provider = PodmanTestData.CreateProvider(runner);
@@ -124,6 +125,7 @@ public sealed class PodmanProviderInputHardeningTests
     {
         var runner = new FakeProcessRunner();
         runner.EnqueueResults(
+            PodmanTestData.Ok(),
             PodmanTestData.Ok(),
             new ProcessResult { ExitCode = 2, Stdout = string.Empty, Stderr = $"{StderrMarker} lookup failure", TimedOut = false },
             PodmanTestData.Ok());

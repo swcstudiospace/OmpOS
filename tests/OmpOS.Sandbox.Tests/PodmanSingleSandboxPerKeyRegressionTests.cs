@@ -45,6 +45,7 @@ public sealed class PodmanSingleSandboxPerKeyRegressionTests
     {
         var runner = new FakeProcessRunner();
         runner.EnqueueResults(
+            PodmanTestData.Ok(),
             new ProcessResult { ExitCode = 1, Stdout = string.Empty, Stderr = "container failed to start", TimedOut = false },
             PodmanTestData.Ok());
         runner.SetResult(PodmanTestData.Ok("0123456789ab"));
