@@ -21,12 +21,18 @@ namespace OmpOS.Sandbox;
 /// process tree is killed best-effort, the pipe readers are abandoned with observed
 /// continuations, and a timed-out result is returned.
 /// </para>
-/// <para>
-/// Captured output is bounded: each stream keeps at most <see cref="MaxOutputChars"/>
-/// characters and the result is marked <see cref="ProcessResult.Truncated"/> when the cap
-/// is hit. Excess output is discarded while the drain continues so a verbose child never
-/// blocks on a full pipe.
-/// </para>
+    /// <para>
+    /// Captured output is bounded: each stream keeps at most <see cref="MaxOutputChars"/>
+    /// characters and the result is marked <see cref="ProcessResult.Truncated"/> when the cap
+    /// is hit. Excess output is discarded while the drain continues so a verbose child never
+    /// blocks on a full pipe.
+    /// </para>
+    /// <para>
+    /// Streamed lines are bounded per line: <see cref="StreamStdoutLinesAsync"/> keeps at most
+    /// <see cref="MaxStreamLineChars"/> characters per line and appends
+    /// <see cref="StreamLineTruncatedMarker"/> when a line is truncated, so a very large record
+    /// (or a missing newline) cannot grow host memory without bound.
+    /// </para>
 /// </remarks>
 public sealed class ProcessRunner : IProcessRunner
 {
@@ -34,6 +40,19 @@ public sealed class ProcessRunner : IProcessRunner
     /// Exit code reported when <see cref="ProcessSpec.Timeout"/> elapses before process exit.
     /// </summary>
     internal const int TimeoutExitCode = 124;
+
+    /// <summary>
+    /// Maximum characters buffered for a single streamed stdout line (64 KiB).
+    /// A longer line is truncated to this length with <see cref="StreamLineTruncatedMarker"/>
+    /// appended; the excess characters are discarded up to the next newline. This bounds host
+    /// memory when a child writes a very large record or never emits a newline.
+    /// </summary>
+    internal const int MaxStreamLineChars = 64 * 1024;
+
+    /// <summary>
+    /// Marker appended to a streamed line truncated at <see cref="MaxStreamLineChars"/>.
+    /// </summary>
+    internal const string StreamLineTruncatedMarker = "...[truncated]";
 
     /// <summary>
     /// Maximum captured output per stream (1 MiB, measured in characters; identical to bytes for single-byte output).
@@ -72,6 +91,7 @@ public sealed class ProcessRunner : IProcessRunner
         var stderrTask = ReadCappedAsync(process.StandardError, cancellationToken);
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutCts.CancelAfter(spec.Timeout);
+        var lines = new BoundedLineReader(process.StandardOutput);
         try
         {
             while (true)
@@ -79,7 +99,7 @@ public sealed class ProcessRunner : IProcessRunner
                 string? line;
                 try
                 {
-                    line = await process.StandardOutput.ReadLineAsync(timeoutCts.Token).ConfigureAwait(false);
+                    line = await lines.ReadLineAsync(timeoutCts.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                 {
@@ -101,6 +121,128 @@ public sealed class ProcessRunner : IProcessRunner
             KillTreeBestEffort(process);
             await WaitForExitBestEffortAsync(process, CancellationToken.None).ConfigureAwait(false);
             ObserveAbandoned(stderrTask);
+        }
+    }
+
+    /// <summary>
+    /// Newline-delimited reader that keeps at most <see cref="MaxStreamLineChars"/> characters per line.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="TextReader.ReadLineAsync()"/> buffers a whole line before returning, so a child
+    /// that writes a very large record (or never emits a newline) makes the host retain the entire
+    /// line. This reader consumes bounded chunks instead, discards the excess of an oversized line
+    /// up to its newline, and appends <see cref="StreamLineTruncatedMarker"/> so truncation is visible.
+    /// </para>
+    /// </remarks>
+    private sealed class BoundedLineReader
+    {
+        private readonly TextReader _reader;
+        private string? _carry;
+
+        public BoundedLineReader(TextReader reader)
+        {
+            _reader = reader;
+        }
+
+        public async Task<string?> ReadLineAsync(CancellationToken cancellationToken)
+        {
+            var builder = new StringBuilder();
+            var truncated = false;
+            if (ConsumeCarry(builder, ref truncated))
+            {
+                return FinishLine(builder, truncated);
+            }
+
+            var buffer = new char[8192];
+            while (true)
+            {
+                int read = await _reader.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                {
+                    return builder.Length == 0 && !truncated ? null : FinishLine(builder, truncated);
+                }
+
+                int newline = Array.IndexOf(buffer, '\n', 0, read);
+                if (newline < 0)
+                {
+                    AppendChunk(builder, buffer.AsSpan(0, read), ref truncated);
+                    continue;
+                }
+
+                int end = newline;
+                if (end > 0 && buffer[end - 1] == '\r')
+                {
+                    end--;
+                }
+
+                AppendChunk(builder, buffer.AsSpan(0, end), ref truncated);
+                _carry = newline + 1 < read ? new string(buffer, newline + 1, read - newline - 1) : string.Empty;
+                return FinishLine(builder, truncated);
+            }
+        }
+
+        private bool ConsumeCarry(StringBuilder builder, ref bool truncated)
+        {
+            if (_carry is null)
+            {
+                return false;
+            }
+
+            string carry = _carry;
+            _carry = null;
+            int newline = carry.IndexOf('\n');
+            if (newline < 0)
+            {
+                AppendChunk(builder, carry.AsSpan(), ref truncated);
+                return false;
+            }
+
+            int end = newline;
+            if (end > 0 && carry[end - 1] == '\r')
+            {
+                end--;
+            }
+
+            AppendChunk(builder, carry.AsSpan(0, end), ref truncated);
+            _carry = carry[(newline + 1)..];
+            return true;
+        }
+
+        private static void AppendChunk(StringBuilder builder, ReadOnlySpan<char> chunk, ref bool truncated)
+        {
+            int remaining = MaxStreamLineChars - builder.Length;
+            if (remaining <= 0)
+            {
+                truncated = true;
+                return;
+            }
+
+            if (chunk.Length > remaining)
+            {
+                builder.Append(chunk[..remaining]);
+                truncated = true;
+            }
+            else
+            {
+                builder.Append(chunk);
+            }
+        }
+
+        private static string FinishLine(StringBuilder builder, bool truncated)
+        {
+            string line = builder.ToString();
+            if (!truncated)
+            {
+                return line;
+            }
+
+            if (line.Length > 0 && char.IsHighSurrogate(line[^1]))
+            {
+                line = line[..^1];
+            }
+
+            return line + StreamLineTruncatedMarker;
         }
     }
 
