@@ -19,7 +19,7 @@ namespace OmpOS.EngineHost;
 /// <see cref="TakeHeldEvents"/> takes them, in Seq order, each exactly once. A prompt's own stream yields only that
 /// turn's events, after its POST is accepted; held events are delivered only through <see cref="TakeHeldEvents"/>.
 /// </summary>
-public sealed class RemoteEngineHost : IEngineHost
+public sealed class RemoteEngineHost : IEngineHost, IDisposable
 {
     /// <summary>The request header carrying the resume position.</summary>
     public const string LastEventIdHeader = "Last-Event-ID";
@@ -28,6 +28,7 @@ public sealed class RemoteEngineHost : IEngineHost
     private readonly Lock _gate = new();
     private CancellationTokenSource? _activeCts;
     private string? _sessionId;
+    private bool _disposed;
 
     /// <summary>
     /// The delivered cursor: the Seq of the last event handed to a consumer. Every stream starts after it
@@ -178,6 +179,26 @@ public sealed class RemoteEngineHost : IEngineHost
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>Waits for the in-flight turn, if any, then releases the stream-owner lease. Safe to call twice.</summary>
+    /// <remarks>Call only when no new prompts will be submitted: a prompt submitted after disposal throws.</remarks>
+    public void Dispose()
+    {
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+        }
+
+        // Wait for the in-flight turn, if any, so its Release never lands on a disposed lease. A turn that
+        // starts after this point throws instead of blocking: the lease is already gone.
+        _fetchLease.Wait();
+        _fetchLease.Dispose();
     }
 
     private async Task<string> EnsureSessionAsync(CancellationToken cancellationToken)
