@@ -19,6 +19,7 @@ public sealed class StreamEventJsonTests
         new TextDeltaPayload { Delta = "hello" },
         new UiBlockPayload { Block = new MarkdownBlock { Id = "b1", Markdown = "hi" } },
         new ErrorPayload { Message = "boom", Retryable = false },
+        new DiagnosticPayload { Message = "note" },
         new DiagnosticPayload { Message = "slow decode" },
         new CompletedPayload { Reason = "done" },
         new UnknownPayload { OriginalKind = "future", Raw = JsonDocument.Parse("""{"kind":"future"}""").RootElement.Clone() },
@@ -127,5 +128,15 @@ public sealed class StreamEventJsonTests
         var payload = JsonSerializer.Deserialize(rootJson, OmpOsJsonContext.Default.StreamEventPayload);
 
         JsonSerializer.Serialize(payload, OmpOsJsonContext.Default.StreamEventPayload).ShouldBe(rootJson);
+    }
+
+    [Fact]
+    public void DiagnosticPayloadWritesDiagnosticWireKind()
+    {
+        var json = JsonSerializer.Serialize<StreamEventPayload>(new DiagnosticPayload { Message = "note" }, OmpOsJsonContext.Default.StreamEventPayload);
+
+        using var doc = JsonDocument.Parse(json);
+        doc.RootElement.GetProperty("kind").GetString().ShouldBe("diagnostic");
+        doc.RootElement.GetProperty("message").GetString().ShouldBe("note");
     }
 }
