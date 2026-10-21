@@ -19,13 +19,15 @@ env:
   DOTNET_NOLOGO: 1
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
 
 jobs:
   build-test:
     runs-on: ubuntu-latest
     steps:
       # Action tags verified 2026-10-20 against the GitHub releases API:
-      # checkout v7.0.1, setup-dotnet v6.0.0, upload-artifact v7.0.2, gitleaks-action v3.0.0.
+      # checkout v7.0.1, setup-dotnet v6.0.0, upload-artifact v7.0.2.
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -61,10 +63,15 @@ jobs:
           print(json.dumps(hits, indent=1))
           sys.exit(1 if hits else 0)
           PY
-      - uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+      - name: Secret scan (gitleaks CLI, pinned)
+        run: |
+          curl -sSL -o /tmp/gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  /tmp/gitleaks.tar.gz" | sha256sum -c -
+          mkdir -p /tmp/gitleaks-bin && tar -xzf /tmp/gitleaks.tar.gz -C /tmp/gitleaks-bin
+          /tmp/gitleaks-bin/gitleaks git --redact --exit-code 1 --log-level warn .
+      - name: Install podman (for compose validation)
+        run: |
+          command -v podman >/dev/null || { sudo apt-get update -y; sudo apt-get install -y podman; }
       - name: Validate compose (podman-compose needs the podman binary and the profile)
         run: |
           pipx install podman-compose==1.6.0
