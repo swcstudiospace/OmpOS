@@ -1,0 +1,524 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "OmpOS.Api | v1",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "paths": {
+    "/sessions": {
+      "post": {
+        "tags": [
+          "SessionEndpoints"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "SessionEndpoints"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Session"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}": {
+      "get": {
+        "tags": [
+          "SessionEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/prompts": {
+      "post": {
+        "tags": [
+          "SessionEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptAcceptedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/events": {
+      "get": {
+        "tags": [
+          "EventStreamEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateSessionRequest": {
+        "type": "object",
+        "properties": {
+          "ownerId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the owning principal identifier, or null to use the ambient principal."
+          }
+        },
+        "description": "Request body for `POST /sessions`. The owner defaults to the ambient principal when omitted."
+      },
+      "Message": {
+        "required": [
+          "role",
+          "content",
+          "timestamp"
+        ],
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "Gets the message role (for example \"user\" or \"assistant\")."
+          },
+          "content": {
+            "type": "string",
+            "description": "Gets the message content."
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "Gets the timestamp the message was recorded.",
+            "format": "date-time"
+          }
+        },
+        "description": "A single chat message inside a session."
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PromptAcceptedResponse": {
+        "required": [
+          "sessionId",
+          "status",
+          "intentKind",
+          "diagnosticCodes"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Gets the session the prompt was accepted on."
+          },
+          "status": {
+            "type": "string",
+            "description": "Gets the acceptance status."
+          },
+          "intentKind": {
+            "type": "string",
+            "description": "Gets the parser intent-kind name assigned to the prompt (for example `Steer` or `Fallback`)."
+          },
+          "diagnosticCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the parser diagnostic codes recorded with the prompt."
+          }
+        },
+        "description": "Response body for an accepted `POST /sessions/{id}/prompts` (HTTP 202)."
+      },
+      "PromptRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the prompt text. Required, non-empty, within the configured length limit."
+          }
+        },
+        "description": "Request body for `POST /sessions/{id}/prompts`."
+      },
+      "Session": {
+        "required": [
+          "id",
+          "ownerId",
+          "createdAt",
+          "updatedAt",
+          "status",
+          "messages",
+          "events"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "ownerId": {
+            "type": "string",
+            "description": "Gets the reserved owner identifier (single dev principal)."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Gets the creation timestamp.",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "Gets the last-update timestamp.",
+            "format": "date-time"
+          },
+          "status": {
+            "description": "Gets the session lifecycle state.",
+            "$ref": "#/components/schemas/SessionStatus"
+          },
+          "sandboxId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the sandbox identifier, or null when the session runs without a sandbox."
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "description": "Gets the ordered chat messages."
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StreamEvent"
+            },
+            "description": "Gets the append-only stream-event log."
+          }
+        },
+        "description": "An agent session: ordered messages plus the append-only stream-event log."
+      },
+      "SessionStatus": {
+        "enum": [
+          "Idle",
+          "Running",
+          "AwaitingToolApproval",
+          "Completed",
+          "Failed",
+          "Cancelled"
+        ],
+        "description": "Lifecycle states of an agent session."
+      },
+      "StreamEvent": {
+        "required": [
+          "seq",
+          "sessionId",
+          "correlationId",
+          "timestamp",
+          "payload"
+        ],
+        "type": "object",
+        "properties": {
+          "seq": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the monotonic sequence number.",
+            "format": "int64"
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Gets the owning session identifier."
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "Gets the end-to-end correlation identifier."
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "Gets the event timestamp.",
+            "format": "date-time"
+          },
+          "payload": {
+            "description": "Gets the event payload.",
+            "$ref": "#/components/schemas/StreamEventPayload"
+          }
+        },
+        "description": "A single sequence-numbered event in a session's append-only log.\nThe SSE transport maps long StreamEvent.Seq to the `id:` field."
+      },
+      "StreamEventPayload": {
+        "description": "Base record for every stream-event payload. Deserialization never throws on\nunknown or missing `kind` discriminators: they degrade to\nUnknownPayload with the raw payload preserved."
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "SessionEndpoints"
+    },
+    {
+      "name": "EventStreamEndpoints"
+    }
+  ]
+}

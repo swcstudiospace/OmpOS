@@ -1,0 +1,12 @@
+@namespace OmpOS.UI.Components.Blocks
+@using OmpOS.Contracts.Ui
+<div class="ompos-block ompos-diff">
+    <span class="ompos-diff-path">@Block.Path</span>
+    <span class="ompos-diff-reason">@Block.Reason</span>
+</div>
+
+@code {
+    /// <summary>Gets the diff placeholder block to render.</summary>
+    [Parameter, EditorRequired]
+    public DiffPlaceholderBlock Block { get; set; } = null!;
+}

@@ -1,0 +1,144 @@
+Installing .NET SDK 10.0.402 into /tmp/ompos-clean-dotnet2
+dotnet-install: Attempting to download using primary link https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.402/dotnet-sdk-10.0.402-linux-x64.tar.gz
+dotnet-install: Remote file https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.402/dotnet-sdk-10.0.402-linux-x64.tar.gz size is 240279509 bytes.
+dotnet-install: Extracting archive from https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.402/dotnet-sdk-10.0.402-linux-x64.tar.gz
+dotnet-install: Downloaded file size is 240279509 bytes.
+dotnet-install: The remote and local file sizes are equal.
+dotnet-install: Installed version is 10.0.402
+dotnet-install: Adding to current process PATH: `/tmp/ompos-clean-dotnet2`. Note: This change will be visible only when sourcing script.
+dotnet-install: Note that the script does not resolve dependencies during installation.
+dotnet-install: To check the list of dependencies, go to https://learn.microsoft.com/dotnet/core/install, select your operating system and check the "Dependencies" section.
+dotnet-install: Installation finished successfully.
+10.0.402
+  Determining projects to restore...
+  Restored /tmp/ompos-clean/src/OmpOS.Contracts/OmpOS.Contracts.csproj (in 1.43 sec).
+  Restored /tmp/ompos-clean/src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj (in 1.43 sec).
+  Restored /tmp/ompos-clean/src/OmpOS.Workflows/OmpOS.Workflows.csproj (in 1.43 sec).
+  Restored /tmp/ompos-clean/src/OmpOS.Harness.Rpc/OmpOS.Harness.Rpc.csproj (in 1.43 sec).
+  Restored /tmp/ompos-clean/src/OmpOS.Sandbox/OmpOS.Sandbox.csproj (in 1.43 sec).
+  Restored /tmp/ompos-clean/tests/OmpOS.Harness.Acp.Tests/OmpOS.Harness.Acp.Tests.csproj (in 1.46 sec).
+  Restored /tmp/ompos-clean/tests/OmpOS.Contracts.Tests/OmpOS.Contracts.Tests.csproj (in 1.46 sec).
+  Restored /tmp/ompos-clean/tests/OmpOS.Workflows.Tests/OmpOS.Workflows.Tests.csproj (in 1.46 sec).
+  Restored /tmp/ompos-clean/tests/OmpOS.Parser.Tests/OmpOS.Parser.Tests.csproj (in 26 ms).
+  Restored /tmp/ompos-clean/tests/OmpOS.Sessions.Tests/OmpOS.Sessions.Tests.csproj (in 32 ms).
+  Restored /tmp/ompos-clean/tests/OmpOS.Harness.InMemory.Tests/OmpOS.Harness.InMemory.Tests.csproj (in 40 ms).
+  Restored /tmp/ompos-clean/tests/OmpOS.Harness.Rpc.Tests/OmpOS.Harness.Rpc.Tests.csproj (in 34 ms).
+  Restored /tmp/ompos-clean/tests/OmpOS.Harness.Abstractions.Tests/OmpOS.Harness.Abstractions.Tests.csproj (in 7 ms).
+  Restored /tmp/ompos-clean/tests/OmpOS.Harness.ContractTests/OmpOS.Harness.ContractTests.csproj (in 19 ms).
+  Restored /tmp/ompos-clean/tests/OmpOS.Sandbox.Tests/OmpOS.Sandbox.Tests.csproj (in 75 ms).
+  Restored /tmp/ompos-clean/tests/OmpOS.EngineHost.Tests/OmpOS.EngineHost.Tests.csproj (in 39 ms).
+  Restored /tmp/ompos-clean/src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj (in 4 ms).
+  Restored /tmp/ompos-clean/src/OmpOS.UI/OmpOS.UI.csproj (in 19 ms).
+  Restored /tmp/ompos-clean/src/OmpOS.Parser/OmpOS.Parser.csproj (in 16 ms).
+  Restored /tmp/ompos-clean/tests/OmpOS.Web.Tests/OmpOS.Web.Tests.csproj (in 126 ms).
+  Restored /tmp/ompos-clean/src/OmpOS.Sessions/OmpOS.Sessions.csproj (in 9 ms).
+  Restored /tmp/ompos-clean/src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj (in 9 ms).
+  Restored /tmp/ompos-clean/src/OmpOS.GenUi/OmpOS.GenUi.csproj (in 5 ms).
+  Restored /tmp/ompos-clean/src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj (in 4 ms).
+  Restored /tmp/ompos-clean/tests/OmpOS.UI.Tests/OmpOS.UI.Tests.csproj (in 124 ms).
+  Restored /tmp/ompos-clean/src/OmpOS.EngineHost/OmpOS.EngineHost.csproj (in 14 ms).
+  Restored /tmp/ompos-clean/services/OmpOS.Workflows.Worker/OmpOS.Workflows.Worker.csproj (in 12 ms).
+  Restored /tmp/ompos-clean/tests/OmpOS.Api.IntegrationTests/OmpOS.Api.IntegrationTests.csproj (in 114 ms).
+  Restored /tmp/ompos-clean/services/OmpOS.Api/OmpOS.Api.csproj (in 46 ms).
+  Restored /tmp/ompos-clean/apps/OmpOS.Web/OmpOS.Web.csproj (in 69 ms).
+  Restored /tmp/ompos-clean/tests/OmpOS.ArchitectureTests/OmpOS.ArchitectureTests.csproj (in 118 ms).
+  OmpOS.Contracts -> /tmp/ompos-clean/src/OmpOS.Contracts/bin/Release/net10.0/OmpOS.Contracts.dll
+  OmpOS.Workflows -> /tmp/ompos-clean/src/OmpOS.Workflows/bin/Release/net10.0/OmpOS.Workflows.dll
+  OmpOS.Sandbox.Abstractions -> /tmp/ompos-clean/src/OmpOS.Sandbox.Abstractions/bin/Release/net10.0/OmpOS.Sandbox.Abstractions.dll
+  OmpOS.Parser -> /tmp/ompos-clean/src/OmpOS.Parser/bin/Release/net10.0/OmpOS.Parser.dll
+  OmpOS.Contracts.Tests -> /tmp/ompos-clean/tests/OmpOS.Contracts.Tests/bin/Release/net10.0/OmpOS.Contracts.Tests.dll
+  OmpOS.GenUi -> /tmp/ompos-clean/src/OmpOS.GenUi/bin/Release/net10.0/OmpOS.GenUi.dll
+  OmpOS.Workflows.Worker -> /tmp/ompos-clean/services/OmpOS.Workflows.Worker/bin/Release/net10.0/OmpOS.Workflows.Worker.dll
+  OmpOS.Harness.Abstractions -> /tmp/ompos-clean/src/OmpOS.Harness.Abstractions/bin/Release/net10.0/OmpOS.Harness.Abstractions.dll
+  OmpOS.Sandbox -> /tmp/ompos-clean/src/OmpOS.Sandbox/bin/Release/net10.0/OmpOS.Sandbox.dll
+  OmpOS.Workflows.Tests -> /tmp/ompos-clean/tests/OmpOS.Workflows.Tests/bin/Release/net10.0/OmpOS.Workflows.Tests.dll
+  OmpOS.Sessions -> /tmp/ompos-clean/src/OmpOS.Sessions/bin/Release/net10.0/OmpOS.Sessions.dll
+  OmpOS.Harness.Abstractions.Tests -> /tmp/ompos-clean/tests/OmpOS.Harness.Abstractions.Tests/bin/Release/net10.0/OmpOS.Harness.Abstractions.Tests.dll
+  OmpOS.Parser.Tests -> /tmp/ompos-clean/tests/OmpOS.Parser.Tests/bin/Release/net10.0/OmpOS.Parser.Tests.dll
+  OmpOS.Harness.Rpc -> /tmp/ompos-clean/src/OmpOS.Harness.Rpc/bin/Release/net10.0/OmpOS.Harness.Rpc.dll
+  OmpOS.Harness.ContractTests -> /tmp/ompos-clean/tests/OmpOS.Harness.ContractTests/bin/Release/net10.0/OmpOS.Harness.ContractTests.dll
+  OmpOS.UI -> /tmp/ompos-clean/src/OmpOS.UI/bin/Release/net10.0/OmpOS.UI.dll
+  OmpOS.Harness.InMemory -> /tmp/ompos-clean/src/OmpOS.Harness.InMemory/bin/Release/net10.0/OmpOS.Harness.InMemory.dll
+  OmpOS.Harness.Rpc.Tests -> /tmp/ompos-clean/tests/OmpOS.Harness.Rpc.Tests/bin/Release/net10.0/OmpOS.Harness.Rpc.Tests.dll
+  OmpOS.Harness.Acp -> /tmp/ompos-clean/src/OmpOS.Harness.Acp/bin/Release/net10.0/OmpOS.Harness.Acp.dll
+  OmpOS.UI.Tests -> /tmp/ompos-clean/tests/OmpOS.UI.Tests/bin/Release/net10.0/OmpOS.UI.Tests.dll
+  OmpOS.Sandbox.Tests -> /tmp/ompos-clean/tests/OmpOS.Sandbox.Tests/bin/Release/net10.0/OmpOS.Sandbox.Tests.dll
+  OmpOS.EngineHost -> /tmp/ompos-clean/src/OmpOS.EngineHost/bin/Release/net10.0/OmpOS.EngineHost.dll
+  OmpOS.Web -> /tmp/ompos-clean/apps/OmpOS.Web/bin/Release/net10.0/OmpOS.Web.dll
+  OmpOS.Web (Blazor output) -> /tmp/ompos-clean/apps/OmpOS.Web/bin/Release/net10.0/wwwroot
+  OmpOS.Harness.InMemory.Tests -> /tmp/ompos-clean/tests/OmpOS.Harness.InMemory.Tests/bin/Release/net10.0/OmpOS.Harness.InMemory.Tests.dll
+  OmpOS.Harness.Acp.Tests -> /tmp/ompos-clean/tests/OmpOS.Harness.Acp.Tests/bin/Release/net10.0/OmpOS.Harness.Acp.Tests.dll
+  OmpOS.EngineHost.Tests -> /tmp/ompos-clean/tests/OmpOS.EngineHost.Tests/bin/Release/net10.0/OmpOS.EngineHost.Tests.dll
+  OmpOS.Web.Tests -> /tmp/ompos-clean/tests/OmpOS.Web.Tests/bin/Release/net10.0/OmpOS.Web.Tests.dll
+  OmpOS.Sessions.Tests -> /tmp/ompos-clean/tests/OmpOS.Sessions.Tests/bin/Release/net10.0/OmpOS.Sessions.Tests.dll
+  OmpOS.Api -> /tmp/ompos-clean/services/OmpOS.Api/bin/Release/net10.0/OmpOS.Api.dll
+  
+  GenerateOpenApiDocuments:
+    dotnet "/root/.nuget/packages/microsoft.extensions.apidescription.server/10.0.13/build/../tools/dotnet-getdocument.dll" --assembly "/tmp/ompos-clean/services/OmpOS.Api/bin/Release/net10.0/OmpOS.Api.dll" --file-list "obj/OmpOS.Api.OpenApiFiles.cache" --framework ".NETCoreApp,Version=v10.0" --output "/tmp/ompos-clean/docs/api" --project "OmpOS.Api" --assets-file "/tmp/ompos-clean/services/OmpOS.Api/obj/project.assets.json" --platform "AnyCPU" --file-name openapi --openapi-version OpenApi3_1
+  Generating document named 'v1'.
+  Using discovered `GenerateAsync` overload with version parameter.
+  info: Microsoft.AspNetCore.Mvc.Infrastructure.DefaultActionDescriptorCollectionProvider[1]
+        No action descriptors found. This may indicate an incorrectly configured application or missing application parts. To learn more, visit https://aka.ms/aspnet/mvc/app-parts
+  Writing document named 'v1' to '/tmp/ompos-clean/docs/api/openapi.json'.
+  OmpOS.Api.IntegrationTests -> /tmp/ompos-clean/tests/OmpOS.Api.IntegrationTests/bin/Release/net10.0/OmpOS.Api.IntegrationTests.dll
+  OmpOS.ArchitectureTests -> /tmp/ompos-clean/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:58.97
+Running tests from /tmp/ompos-clean/tests/OmpOS.Sessions.Tests/bin/Release/net10.0/OmpOS.Sessions.Tests.dll (net10.0|x64)
+Running tests from /tmp/ompos-clean/tests/OmpOS.Sandbox.Tests/bin/Release/net10.0/OmpOS.Sandbox.Tests.dll (net10.0|x64)
+Running tests from /tmp/ompos-clean/tests/OmpOS.Harness.Abstractions.Tests/bin/Release/net10.0/OmpOS.Harness.Abstractions.Tests.dll (net10.0|x64)
+Running tests from /tmp/ompos-clean/tests/OmpOS.Parser.Tests/bin/Release/net10.0/OmpOS.Parser.Tests.dll (net10.0|x64)
+Running tests from /tmp/ompos-clean/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll (net10.0|x64)
+Running tests from /tmp/ompos-clean/tests/OmpOS.UI.Tests/bin/Release/net10.0/OmpOS.UI.Tests.dll (net10.0|x64)
+Running tests from /tmp/ompos-clean/tests/OmpOS.Harness.Rpc.Tests/bin/Release/net10.0/OmpOS.Harness.Rpc.Tests.dll (net10.0|x64)
+Running tests from /tmp/ompos-clean/tests/OmpOS.EngineHost.Tests/bin/Release/net10.0/OmpOS.EngineHost.Tests.dll (net10.0|x64)
+/tmp/ompos-clean/tests/OmpOS.Harness.Abstractions.Tests/bin/Release/net10.0/OmpOS.Harness.Abstractions.Tests.dll (net10.0|x64) passed (1s 105ms)
+/tmp/ompos-clean/tests/OmpOS.Parser.Tests/bin/Release/net10.0/OmpOS.Parser.Tests.dll (net10.0|x64) passed (1s 207ms)
+/tmp/ompos-clean/tests/OmpOS.Sessions.Tests/bin/Release/net10.0/OmpOS.Sessions.Tests.dll (net10.0|x64) passed (1s 430ms)
+Running tests from /tmp/ompos-clean/tests/OmpOS.Workflows.Tests/bin/Release/net10.0/OmpOS.Workflows.Tests.dll (net10.0|x64)
+Running tests from /tmp/ompos-clean/tests/OmpOS.Api.IntegrationTests/bin/Release/net10.0/OmpOS.Api.IntegrationTests.dll (net10.0|x64)
+/tmp/ompos-clean/tests/OmpOS.EngineHost.Tests/bin/Release/net10.0/OmpOS.EngineHost.Tests.dll (net10.0|x64) passed (1s 915ms)
+Running tests from /tmp/ompos-clean/tests/OmpOS.Contracts.Tests/bin/Release/net10.0/OmpOS.Contracts.Tests.dll (net10.0|x64)
+Running tests from /tmp/ompos-clean/tests/OmpOS.Harness.ContractTests/bin/Release/net10.0/OmpOS.Harness.ContractTests.dll (net10.0|x64)
+/tmp/ompos-clean/tests/OmpOS.Sandbox.Tests/bin/Release/net10.0/OmpOS.Sandbox.Tests.dll (net10.0|x64) passed (3s 474ms)
+/tmp/ompos-clean/tests/OmpOS.UI.Tests/bin/Release/net10.0/OmpOS.UI.Tests.dll (net10.0|x64) passed (3s 306ms)
+Running tests from /tmp/ompos-clean/tests/OmpOS.Harness.InMemory.Tests/bin/Release/net10.0/OmpOS.Harness.InMemory.Tests.dll (net10.0|x64)
+Running tests from /tmp/ompos-clean/tests/OmpOS.Harness.Acp.Tests/bin/Release/net10.0/OmpOS.Harness.Acp.Tests.dll (net10.0|x64)
+/tmp/ompos-clean/tests/OmpOS.Harness.ContractTests/bin/Release/net10.0/OmpOS.Harness.ContractTests.dll (net10.0|x64) passed (1s 293ms)
+/tmp/ompos-clean/tests/OmpOS.Contracts.Tests/bin/Release/net10.0/OmpOS.Contracts.Tests.dll (net10.0|x64) passed (2s 395ms)
+/tmp/ompos-clean/tests/OmpOS.Workflows.Tests/bin/Release/net10.0/OmpOS.Workflows.Tests.dll (net10.0|x64) passed (3s 219ms)
+Running tests from /tmp/ompos-clean/tests/OmpOS.Web.Tests/bin/Release/net10.0/OmpOS.Web.Tests.dll (net10.0|x64)
+/tmp/ompos-clean/tests/OmpOS.Harness.InMemory.Tests/bin/Release/net10.0/OmpOS.Harness.InMemory.Tests.dll (net10.0|x64) passed (1s 555ms)
+/tmp/ompos-clean/tests/OmpOS.Api.IntegrationTests/bin/Release/net10.0/OmpOS.Api.IntegrationTests.dll (net10.0|x64) passed (5s 047ms)
+/tmp/ompos-clean/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll (net10.0|x64) passed (8s 689ms)
+/tmp/ompos-clean/tests/OmpOS.Harness.Acp.Tests/bin/Release/net10.0/OmpOS.Harness.Acp.Tests.dll (net10.0|x64) passed (8s 565ms)
+/tmp/ompos-clean/tests/OmpOS.Harness.Rpc.Tests/bin/Release/net10.0/OmpOS.Harness.Rpc.Tests.dll (net10.0|x64) passed (13s 834ms)
+/tmp/ompos-clean/tests/OmpOS.Web.Tests/bin/Release/net10.0/OmpOS.Web.Tests.dll (net10.0|x64) passed (20s 727ms)
+
+Test run summary: Passed!
+  /tmp/ompos-clean/tests/OmpOS.Api.IntegrationTests/bin/Release/net10.0/OmpOS.Api.IntegrationTests.dll (net10.0|x64) passed (5s 047ms)
+  /tmp/ompos-clean/tests/OmpOS.EngineHost.Tests/bin/Release/net10.0/OmpOS.EngineHost.Tests.dll (net10.0|x64) passed (1s 915ms)
+  /tmp/ompos-clean/tests/OmpOS.Sandbox.Tests/bin/Release/net10.0/OmpOS.Sandbox.Tests.dll (net10.0|x64) passed (3s 474ms)
+  /tmp/ompos-clean/tests/OmpOS.Harness.InMemory.Tests/bin/Release/net10.0/OmpOS.Harness.InMemory.Tests.dll (net10.0|x64) passed (1s 555ms)
+  /tmp/ompos-clean/tests/OmpOS.Contracts.Tests/bin/Release/net10.0/OmpOS.Contracts.Tests.dll (net10.0|x64) passed (2s 395ms)
+  /tmp/ompos-clean/tests/OmpOS.UI.Tests/bin/Release/net10.0/OmpOS.UI.Tests.dll (net10.0|x64) passed (3s 306ms)
+  /tmp/ompos-clean/tests/OmpOS.Workflows.Tests/bin/Release/net10.0/OmpOS.Workflows.Tests.dll (net10.0|x64) passed (3s 219ms)
+  /tmp/ompos-clean/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll (net10.0|x64) passed (8s 689ms)
+  /tmp/ompos-clean/tests/OmpOS.Harness.Rpc.Tests/bin/Release/net10.0/OmpOS.Harness.Rpc.Tests.dll (net10.0|x64) passed (13s 834ms)
+  /tmp/ompos-clean/tests/OmpOS.Parser.Tests/bin/Release/net10.0/OmpOS.Parser.Tests.dll (net10.0|x64) passed (1s 207ms)
+  /tmp/ompos-clean/tests/OmpOS.Sessions.Tests/bin/Release/net10.0/OmpOS.Sessions.Tests.dll (net10.0|x64) passed (1s 430ms)
+  /tmp/ompos-clean/tests/OmpOS.Harness.Acp.Tests/bin/Release/net10.0/OmpOS.Harness.Acp.Tests.dll (net10.0|x64) passed (8s 565ms)
+  /tmp/ompos-clean/tests/OmpOS.Web.Tests/bin/Release/net10.0/OmpOS.Web.Tests.dll (net10.0|x64) passed (20s 727ms)
+  /tmp/ompos-clean/tests/OmpOS.Harness.ContractTests/bin/Release/net10.0/OmpOS.Harness.ContractTests.dll (net10.0|x64) passed (1s 293ms)
+  /tmp/ompos-clean/tests/OmpOS.Harness.Abstractions.Tests/bin/Release/net10.0/OmpOS.Harness.Abstractions.Tests.dll (net10.0|x64) passed (1s 105ms)
+
+  total: 615
+  failed: 0
+  succeeded: 615
+  skipped: 0
+  duration: 26s 466ms
+bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format)

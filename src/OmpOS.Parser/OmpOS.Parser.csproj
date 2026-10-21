@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../OmpOS.Contracts/OmpOS.Contracts.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+</Project>

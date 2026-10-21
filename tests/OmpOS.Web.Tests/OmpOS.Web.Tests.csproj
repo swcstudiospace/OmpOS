@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <None Include="TestData/**/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../apps/OmpOS.Web/OmpOS.Web.csproj" />
+    <PackageReference Include="bunit" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+</Project>

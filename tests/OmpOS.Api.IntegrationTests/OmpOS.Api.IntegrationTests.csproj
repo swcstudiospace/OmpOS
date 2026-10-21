@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../services/OmpOS.Api/OmpOS.Api.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Contracts/OmpOS.Contracts.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Sessions/OmpOS.Sessions.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Sandbox/OmpOS.Sandbox.csproj" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+
+</Project>

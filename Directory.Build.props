@@ -1,0 +1,41 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Deterministic>true</Deterministic>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+    <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CI)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <RestoreLockedMode>true</RestoreLockedMode>
+  </PropertyGroup>
+
+  <!-- Test projects: xunit.v3 on Microsoft.Testing.Platform -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <IsTrimmable>false</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" Link="BannedSymbols.txt" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.NoProcess.txt" Link="BannedSymbols.NoProcess.txt" Condition="!$(MSBuildProjectName.StartsWith('OmpOS.Harness.')) And '$(MSBuildProjectName)' != 'OmpOS.Sandbox' And !$(MSBuildProjectName.EndsWith('Tests'))" />
+  </ItemGroup>
+</Project>

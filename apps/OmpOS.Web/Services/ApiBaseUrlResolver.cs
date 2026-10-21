@@ -1,0 +1,103 @@
+namespace OmpOS.Web.Services;
+
+/// <summary>
+/// Resolves the API base URL from configuration with a boot-time query-string override.
+/// The query parameter <c>apiBaseUrl</c> wins when present, so a single static publish
+/// can point at any API origin without rebuilds or hardcoded hosts.
+/// </summary>
+internal static class ApiBaseUrlResolver
+{
+    /// <summary>The query-string parameter carrying the API base URL override.</summary>
+    internal const string OverrideParameter = "apiBaseUrl";
+
+    /// <summary>The configuration key carrying the API base URL.</summary>
+    internal const string ConfigKey = "Api:BaseUrl";
+
+    /// <summary>
+    /// Resolves the API base URL: query override first, then configuration.
+    /// </summary>
+    /// <param name="configuredBaseUrl">The <c>Api:BaseUrl</c> configuration value, if any.</param>
+    /// <param name="currentUri">The current browser URI, used only for the query override.</param>
+    /// <returns>The resolved absolute API base URL.</returns>
+    /// <exception cref="InvalidOperationException">No base URL was configured or overridden, or the value is not an absolute http(s) URL.</exception>
+    internal static string Resolve(string? configuredBaseUrl, string? currentUri)
+    {
+        var overrideUrl = ExtractOverride(currentUri);
+        var resolved = overrideUrl ?? configuredBaseUrl;
+        if (string.IsNullOrWhiteSpace(resolved))
+        {
+            throw new InvalidOperationException(
+                $"No API base URL is available. Set {ConfigKey} in wwwroot/appsettings.json " +
+                $"or pass ?{OverrideParameter}=https://api-host in the page URL.");
+        }
+
+        return Validate(resolved, overrideUrl is not null);
+    }
+
+    /// <summary>
+    /// Validates that a base URL is an absolute <c>http(s):</c> URL. Cleartext <c>http:</c> is
+    /// accepted only for loopback origins (local development); anything else must be <c>https:</c>
+    /// so a mistyped or attacker-crafted link fails fast instead of crashing on first use or
+    /// silently redirecting prompts to an arbitrary origin.
+    /// </summary>
+    /// <param name="resolved">The candidate base URL.</param>
+    /// <param name="fromOverride">Whether the value came from the query override (named in errors).</param>
+    /// <returns>The validated absolute base URL.</returns>
+    /// <exception cref="InvalidOperationException">The value is not an absolute http(s) URL, or http is not loopback.</exception>
+    internal static string Validate(string resolved, bool fromOverride)
+    {
+        var source = fromOverride ? $"query parameter ?{OverrideParameter}" : $"configuration {ConfigKey}";
+        if (!Uri.TryCreate(resolved, UriKind.Absolute, out var uri)
+            || (!string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal)
+                && !string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal)))
+        {
+            throw new InvalidOperationException(
+                $"API base URL from {source} must be an absolute http(s): URL, but was '{resolved}'.");
+        }
+
+        if (string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal) && !uri.IsLoopback)
+        {
+            throw new InvalidOperationException(
+                $"API base URL from {source} uses cleartext http: outside loopback ('{resolved}'); use https: or a loopback host.");
+        }
+
+        return resolved;
+    }
+
+    /// <summary>Extracts the <c>apiBaseUrl</c> query value from a URI, or null when absent.</summary>
+    /// <param name="uri">The URI to inspect.</param>
+    /// <returns>The decoded override value, or null.</returns>
+    internal static string? ExtractOverride(string? uri)
+    {
+        if (string.IsNullOrEmpty(uri))
+        {
+            return null;
+        }
+
+        var queryIndex = uri.IndexOf('?', StringComparison.Ordinal);
+        if (queryIndex < 0 || queryIndex == uri.Length - 1)
+        {
+            return null;
+        }
+
+        var query = uri[(queryIndex + 1)..];
+        var fragmentIndex = query.IndexOf('#', StringComparison.Ordinal);
+        if (fragmentIndex >= 0)
+        {
+            query = query[..fragmentIndex];
+        }
+
+        foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var equalsIndex = pair.IndexOf('=', StringComparison.Ordinal);
+            var name = equalsIndex < 0 ? pair : pair[..equalsIndex];
+            if (string.Equals(name, OverrideParameter, StringComparison.Ordinal))
+            {
+                var value = equalsIndex < 0 ? string.Empty : Uri.UnescapeDataString(pair[(equalsIndex + 1)..].Replace('+', ' '));
+                return string.IsNullOrWhiteSpace(value) ? null : value;
+            }
+        }
+
+        return null;
+    }
+}

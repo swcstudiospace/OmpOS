@@ -1,0 +1,96 @@
+# OmpOS CI (Phase 1, decision D-05).
+# Mirrors bootstrap.sh, then adds the audit, scan, and compose gates.
+# Podman is the only container runtime referenced here; Docker is not used.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      # Action tags verified 2026-10-20 against the GitHub releases API:
+      # checkout v7.0.1, setup-dotnet v6.0.0, upload-artifact v7.0.2.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - run: dotnet restore OmpOS.Linux.slnf --locked-mode
+      - run: dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
+      - run: dotnet test OmpOS.Linux.slnf -c Release --no-build --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: test-results
+          path: TestResults
+      - run: dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
+      - name: Vulnerable packages (list exits 0 even on findings, so the parse is the gate)
+        run: |
+          dotnet list OmpOS.Linux.slnf package --vulnerable --include-transitive --format json > vuln.json
+          python3 - <<'PY'
+          import json
+          import sys
+          document = json.load(open("vuln.json"))
+          hits = [
+              package
+              for project in document["projects"]
+              for framework in project.get("frameworks", [])
+              for key in ("topLevelPackages", "transitivePackages")
+              for package in framework.get(key, [])
+              if package.get("vulnerabilities")
+          ]
+          print(json.dumps(hits, indent=1))
+          sys.exit(1 if hits else 0)
+          PY
+      - name: Secret scan (gitleaks CLI, pinned)
+        run: |
+          curl -sSL -o /tmp/gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  /tmp/gitleaks.tar.gz" | sha256sum -c -
+          mkdir -p /tmp/gitleaks-bin && tar -xzf /tmp/gitleaks.tar.gz -C /tmp/gitleaks-bin
+          /tmp/gitleaks-bin/gitleaks git --redact --exit-code 1 --log-level warn .
+      - name: Install podman (for compose validation)
+        run: |
+          command -v podman >/dev/null || { sudo apt-get update -y; sudo apt-get install -y podman; }
+      - name: Validate compose (podman-compose needs the podman binary and the profile)
+        run: |
+          pipx install podman-compose==1.6.0
+          podman-compose --profile workflows -f deploy/compose.yaml config --services | grep -qx temporal
+          podman-compose --profile workflows -f deploy/compose.yaml config -q
+
+  shells:
+    runs-on: macos-15
+    needs: build-test
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: MAUI head (only when the project exists)
+        if: hashFiles('apps/OmpOS.App/OmpOS.App.csproj') != ''
+        run: |
+          dotnet workload install maui
+          dotnet restore apps/OmpOS.App/OmpOS.App.csproj --locked-mode
+          # iOS and MacCatalyst packs require Xcode 27.1, which hosted runners do not provide as a stable toolchain, so those targets are not built here and are tracked as a human follow-up.
+          dotnet build apps/OmpOS.App/OmpOS.App.csproj -c Release --no-restore -warnaserror -f net10.0-android

@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>OmpOS.Workflows.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Temporalio" />
+    <PackageReference Include="Temporalio.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\OmpOS.Workflows\OmpOS.Workflows.csproj" />
+    <ProjectReference Include="..\..\services\OmpOS.Workflows.Worker\OmpOS.Workflows.Worker.csproj" />
+    <ProjectReference Include="..\..\src\OmpOS.Contracts\OmpOS.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="TestData/histories/session-run.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

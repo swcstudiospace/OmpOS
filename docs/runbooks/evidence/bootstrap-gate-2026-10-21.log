@@ -1,0 +1,103 @@
+10.0.402
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  OmpOS.Contracts -> /root/src/repos/ompos/src/OmpOS.Contracts/bin/Release/net10.0/OmpOS.Contracts.dll
+  OmpOS.Workflows -> /root/src/repos/ompos/src/OmpOS.Workflows/bin/Release/net10.0/OmpOS.Workflows.dll
+  OmpOS.GenUi -> /root/src/repos/ompos/src/OmpOS.GenUi/bin/Release/net10.0/OmpOS.GenUi.dll
+  OmpOS.Harness.Abstractions -> /root/src/repos/ompos/src/OmpOS.Harness.Abstractions/bin/Release/net10.0/OmpOS.Harness.Abstractions.dll
+  OmpOS.Sandbox.Abstractions -> /root/src/repos/ompos/src/OmpOS.Sandbox.Abstractions/bin/Release/net10.0/OmpOS.Sandbox.Abstractions.dll
+  OmpOS.Parser -> /root/src/repos/ompos/src/OmpOS.Parser/bin/Release/net10.0/OmpOS.Parser.dll
+  OmpOS.Workflows.Worker -> /root/src/repos/ompos/services/OmpOS.Workflows.Worker/bin/Release/net10.0/OmpOS.Workflows.Worker.dll
+  OmpOS.Contracts.Tests -> /root/src/repos/ompos/tests/OmpOS.Contracts.Tests/bin/Release/net10.0/OmpOS.Contracts.Tests.dll
+  OmpOS.Harness.Rpc -> /root/src/repos/ompos/src/OmpOS.Harness.Rpc/bin/Release/net10.0/OmpOS.Harness.Rpc.dll
+  OmpOS.Sessions -> /root/src/repos/ompos/src/OmpOS.Sessions/bin/Release/net10.0/OmpOS.Sessions.dll
+  OmpOS.Harness.ContractTests -> /root/src/repos/ompos/tests/OmpOS.Harness.ContractTests/bin/Release/net10.0/OmpOS.Harness.ContractTests.dll
+  OmpOS.Harness.Abstractions.Tests -> /root/src/repos/ompos/tests/OmpOS.Harness.Abstractions.Tests/bin/Release/net10.0/OmpOS.Harness.Abstractions.Tests.dll
+  OmpOS.Sandbox -> /root/src/repos/ompos/src/OmpOS.Sandbox/bin/Release/net10.0/OmpOS.Sandbox.dll
+  OmpOS.Harness.Acp -> /root/src/repos/ompos/src/OmpOS.Harness.Acp/bin/Release/net10.0/OmpOS.Harness.Acp.dll
+  OmpOS.Harness.InMemory -> /root/src/repos/ompos/src/OmpOS.Harness.InMemory/bin/Release/net10.0/OmpOS.Harness.InMemory.dll
+  OmpOS.Sessions.Tests -> /root/src/repos/ompos/tests/OmpOS.Sessions.Tests/bin/Release/net10.0/OmpOS.Sessions.Tests.dll
+  OmpOS.Harness.Rpc.Tests -> /root/src/repos/ompos/tests/OmpOS.Harness.Rpc.Tests/bin/Release/net10.0/OmpOS.Harness.Rpc.Tests.dll
+  OmpOS.UI -> /root/src/repos/ompos/src/OmpOS.UI/bin/Release/net10.0/OmpOS.UI.dll
+  OmpOS.Workflows.Tests -> /root/src/repos/ompos/tests/OmpOS.Workflows.Tests/bin/Release/net10.0/OmpOS.Workflows.Tests.dll
+  OmpOS.UI.Tests -> /root/src/repos/ompos/tests/OmpOS.UI.Tests/bin/Release/net10.0/OmpOS.UI.Tests.dll
+  OmpOS.Parser.Tests -> /root/src/repos/ompos/tests/OmpOS.Parser.Tests/bin/Release/net10.0/OmpOS.Parser.Tests.dll
+  OmpOS.Harness.Acp.Tests -> /root/src/repos/ompos/tests/OmpOS.Harness.Acp.Tests/bin/Release/net10.0/OmpOS.Harness.Acp.Tests.dll
+  OmpOS.EngineHost -> /root/src/repos/ompos/src/OmpOS.EngineHost/bin/Release/net10.0/OmpOS.EngineHost.dll
+  OmpOS.Web -> /root/src/repos/ompos/apps/OmpOS.Web/bin/Release/net10.0/OmpOS.Web.dll
+  OmpOS.Web (Blazor output) -> /root/src/repos/ompos/apps/OmpOS.Web/bin/Release/net10.0/wwwroot
+  OmpOS.EngineHost.Tests -> /root/src/repos/ompos/tests/OmpOS.EngineHost.Tests/bin/Release/net10.0/OmpOS.EngineHost.Tests.dll
+  OmpOS.Web.Tests -> /root/src/repos/ompos/tests/OmpOS.Web.Tests/bin/Release/net10.0/OmpOS.Web.Tests.dll
+  OmpOS.Sandbox.Tests -> /root/src/repos/ompos/tests/OmpOS.Sandbox.Tests/bin/Release/net10.0/OmpOS.Sandbox.Tests.dll
+  OmpOS.Api -> /root/src/repos/ompos/services/OmpOS.Api/bin/Release/net10.0/OmpOS.Api.dll
+  
+  GenerateOpenApiDocuments:
+    dotnet "/root/.nuget/packages/microsoft.extensions.apidescription.server/10.0.13/build/../tools/dotnet-getdocument.dll" --assembly "/root/src/repos/ompos/services/OmpOS.Api/bin/Release/net10.0/OmpOS.Api.dll" --file-list "obj/OmpOS.Api.OpenApiFiles.cache" --framework ".NETCoreApp,Version=v10.0" --output "/root/src/repos/ompos/docs/api" --project "OmpOS.Api" --assets-file "/root/src/repos/ompos/services/OmpOS.Api/obj/project.assets.json" --platform "AnyCPU" --file-name openapi --openapi-version OpenApi3_1
+  Generating document named 'v1'.
+  Using discovered `GenerateAsync` overload with version parameter.
+  info: Microsoft.AspNetCore.Mvc.Infrastructure.DefaultActionDescriptorCollectionProvider[1]
+        No action descriptors found. This may indicate an incorrectly configured application or missing application parts. To learn more, visit https://aka.ms/aspnet/mvc/app-parts
+  Writing document named 'v1' to '/root/src/repos/ompos/docs/api/openapi.json'.
+  OmpOS.Harness.InMemory.Tests -> /root/src/repos/ompos/tests/OmpOS.Harness.InMemory.Tests/bin/Release/net10.0/OmpOS.Harness.InMemory.Tests.dll
+  OmpOS.ArchitectureTests -> /root/src/repos/ompos/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll
+  OmpOS.Api.IntegrationTests -> /root/src/repos/ompos/tests/OmpOS.Api.IntegrationTests/bin/Release/net10.0/OmpOS.Api.IntegrationTests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:33.37
+Running tests from /root/src/repos/ompos/tests/OmpOS.Sandbox.Tests/bin/Release/net10.0/OmpOS.Sandbox.Tests.dll (net10.0|x64)
+Running tests from /root/src/repos/ompos/tests/OmpOS.Harness.Abstractions.Tests/bin/Release/net10.0/OmpOS.Harness.Abstractions.Tests.dll (net10.0|x64)
+Running tests from /root/src/repos/ompos/tests/OmpOS.Harness.Acp.Tests/bin/Release/net10.0/OmpOS.Harness.Acp.Tests.dll (net10.0|x64)
+Running tests from /root/src/repos/ompos/tests/OmpOS.Parser.Tests/bin/Release/net10.0/OmpOS.Parser.Tests.dll (net10.0|x64)
+Running tests from /root/src/repos/ompos/tests/OmpOS.UI.Tests/bin/Release/net10.0/OmpOS.UI.Tests.dll (net10.0|x64)
+Running tests from /root/src/repos/ompos/tests/OmpOS.Harness.Rpc.Tests/bin/Release/net10.0/OmpOS.Harness.Rpc.Tests.dll (net10.0|x64)
+Running tests from /root/src/repos/ompos/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll (net10.0|x64)
+Running tests from /root/src/repos/ompos/tests/OmpOS.Sessions.Tests/bin/Release/net10.0/OmpOS.Sessions.Tests.dll (net10.0|x64)
+/root/src/repos/ompos/tests/OmpOS.Parser.Tests/bin/Release/net10.0/OmpOS.Parser.Tests.dll (net10.0|x64) passed (1s 143ms)
+/root/src/repos/ompos/tests/OmpOS.Harness.Abstractions.Tests/bin/Release/net10.0/OmpOS.Harness.Abstractions.Tests.dll (net10.0|x64) passed (1s 206ms)
+Running tests from /root/src/repos/ompos/tests/OmpOS.Web.Tests/bin/Release/net10.0/OmpOS.Web.Tests.dll (net10.0|x64)
+Running tests from /root/src/repos/ompos/tests/OmpOS.Api.IntegrationTests/bin/Release/net10.0/OmpOS.Api.IntegrationTests.dll (net10.0|x64)
+/root/src/repos/ompos/tests/OmpOS.Sessions.Tests/bin/Release/net10.0/OmpOS.Sessions.Tests.dll (net10.0|x64) passed (1s 957ms)
+/root/src/repos/ompos/tests/OmpOS.UI.Tests/bin/Release/net10.0/OmpOS.UI.Tests.dll (net10.0|x64) passed (2s 559ms)
+/root/src/repos/ompos/tests/OmpOS.Sandbox.Tests/bin/Release/net10.0/OmpOS.Sandbox.Tests.dll (net10.0|x64) passed (3s 060ms)
+Running tests from /root/src/repos/ompos/tests/OmpOS.Workflows.Tests/bin/Release/net10.0/OmpOS.Workflows.Tests.dll (net10.0|x64)
+Running tests from /root/src/repos/ompos/tests/OmpOS.Contracts.Tests/bin/Release/net10.0/OmpOS.Contracts.Tests.dll (net10.0|x64)
+Running tests from /root/src/repos/ompos/tests/OmpOS.Harness.InMemory.Tests/bin/Release/net10.0/OmpOS.Harness.InMemory.Tests.dll (net10.0|x64)
+/root/src/repos/ompos/tests/OmpOS.Harness.InMemory.Tests/bin/Release/net10.0/OmpOS.Harness.InMemory.Tests.dll (net10.0|x64) passed (1s 367ms)
+/root/src/repos/ompos/tests/OmpOS.Contracts.Tests/bin/Release/net10.0/OmpOS.Contracts.Tests.dll (net10.0|x64) passed (1s 932ms)
+Running tests from /root/src/repos/ompos/tests/OmpOS.EngineHost.Tests/bin/Release/net10.0/OmpOS.EngineHost.Tests.dll (net10.0|x64)
+/root/src/repos/ompos/tests/OmpOS.Workflows.Tests/bin/Release/net10.0/OmpOS.Workflows.Tests.dll (net10.0|x64) passed (3s 426ms)
+Running tests from /root/src/repos/ompos/tests/OmpOS.Harness.ContractTests/bin/Release/net10.0/OmpOS.Harness.ContractTests.dll (net10.0|x64)
+/root/src/repos/ompos/tests/OmpOS.EngineHost.Tests/bin/Release/net10.0/OmpOS.EngineHost.Tests.dll (net10.0|x64) passed (1s 238ms)
+/root/src/repos/ompos/tests/OmpOS.Api.IntegrationTests/bin/Release/net10.0/OmpOS.Api.IntegrationTests.dll (net10.0|x64) passed (5s 740ms)
+/root/src/repos/ompos/tests/OmpOS.Harness.ContractTests/bin/Release/net10.0/OmpOS.Harness.ContractTests.dll (net10.0|x64) passed (999ms)
+/root/src/repos/ompos/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll (net10.0|x64) passed (8s 492ms)
+/root/src/repos/ompos/tests/OmpOS.Harness.Acp.Tests/bin/Release/net10.0/OmpOS.Harness.Acp.Tests.dll (net10.0|x64) passed (10s 063ms)
+/root/src/repos/ompos/tests/OmpOS.Harness.Rpc.Tests/bin/Release/net10.0/OmpOS.Harness.Rpc.Tests.dll (net10.0|x64) passed (11s 816ms)
+/root/src/repos/ompos/tests/OmpOS.Web.Tests/bin/Release/net10.0/OmpOS.Web.Tests.dll (net10.0|x64) passed (18s 082ms)
+
+Test run summary: Passed!
+  /root/src/repos/ompos/tests/OmpOS.Sessions.Tests/bin/Release/net10.0/OmpOS.Sessions.Tests.dll (net10.0|x64) passed (1s 957ms)
+  /root/src/repos/ompos/tests/OmpOS.Workflows.Tests/bin/Release/net10.0/OmpOS.Workflows.Tests.dll (net10.0|x64) passed (3s 426ms)
+  /root/src/repos/ompos/tests/OmpOS.Harness.ContractTests/bin/Release/net10.0/OmpOS.Harness.ContractTests.dll (net10.0|x64) passed (999ms)
+  /root/src/repos/ompos/tests/OmpOS.Parser.Tests/bin/Release/net10.0/OmpOS.Parser.Tests.dll (net10.0|x64) passed (1s 143ms)
+  /root/src/repos/ompos/tests/OmpOS.Harness.Acp.Tests/bin/Release/net10.0/OmpOS.Harness.Acp.Tests.dll (net10.0|x64) passed (10s 063ms)
+  /root/src/repos/ompos/tests/OmpOS.Web.Tests/bin/Release/net10.0/OmpOS.Web.Tests.dll (net10.0|x64) passed (18s 082ms)
+  /root/src/repos/ompos/tests/OmpOS.UI.Tests/bin/Release/net10.0/OmpOS.UI.Tests.dll (net10.0|x64) passed (2s 559ms)
+  /root/src/repos/ompos/tests/OmpOS.Sandbox.Tests/bin/Release/net10.0/OmpOS.Sandbox.Tests.dll (net10.0|x64) passed (3s 060ms)
+  /root/src/repos/ompos/tests/OmpOS.Harness.Abstractions.Tests/bin/Release/net10.0/OmpOS.Harness.Abstractions.Tests.dll (net10.0|x64) passed (1s 206ms)
+  /root/src/repos/ompos/tests/OmpOS.Contracts.Tests/bin/Release/net10.0/OmpOS.Contracts.Tests.dll (net10.0|x64) passed (1s 932ms)
+  /root/src/repos/ompos/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll (net10.0|x64) passed (8s 492ms)
+  /root/src/repos/ompos/tests/OmpOS.EngineHost.Tests/bin/Release/net10.0/OmpOS.EngineHost.Tests.dll (net10.0|x64) passed (1s 238ms)
+  /root/src/repos/ompos/tests/OmpOS.Harness.InMemory.Tests/bin/Release/net10.0/OmpOS.Harness.InMemory.Tests.dll (net10.0|x64) passed (1s 367ms)
+  /root/src/repos/ompos/tests/OmpOS.Harness.Rpc.Tests/bin/Release/net10.0/OmpOS.Harness.Rpc.Tests.dll (net10.0|x64) passed (11s 816ms)
+  /root/src/repos/ompos/tests/OmpOS.Api.IntegrationTests/bin/Release/net10.0/OmpOS.Api.IntegrationTests.dll (net10.0|x64) passed (5s 740ms)
+
+  total: 615
+  failed: 0
+  succeeded: 615
+  skipped: 0
+  duration: 20s 369ms
+bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format)

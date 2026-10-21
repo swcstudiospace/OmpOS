@@ -1,19 +1,20 @@
 ---
 gsd_state_version: "1.0"
 milestone: v0.9.1
-current_phase: 1
-current_phase_name: Foundation
-status: executing
-stopped_at: "ROADMAP.md and STATE.md written; REQUIREMENTS.md traceability updated. Next: `/gsd:plan-phase 1`"
-last_updated: "2026-10-20T05:41:18.011Z"
-last_activity: 2026-10-20
-last_activity_desc: Roadmap created (5 phases, 49/49 v1 requirements mapped)
-state_head: 34048239b1e538498d06aad3384d6fdf2c727e66
+status: Awaiting next milestone
+stopped_at: Phase 5 verify pass done; next step clean-clone bootstrap, then milestone audit
+last_updated: "2026-10-21T03:46:02.272Z"
+last_activity: 2026-10-21
+last_activity_desc: Milestone v0.9.1 completed and archived
+state_head: fcaba9702ac380d66c23de7307b3d8d680d290e7
 progress:
   total_phases: 5
-  completed_phases: 0
-  total_plans: 3
-  completed_plans: 0
+  completed_phases: 4
+  total_plans: 15
+  completed_plans: 15
+current_phase: 5
+current_phase_name: Verify & Handoff
+current_plan: 1
 ---
 
 # Project State
@@ -27,12 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 
 ## Current Position
 
-Phase: 1 (Foundation) — READY TO EXECUTE
-Plan: 0 of TBD in current phase
-Status: Ready to execute
-Last activity: 2026-10-20 — Roadmap created (5 phases, 49/49 v1 requirements mapped)
-
-Progress: [░░░░░░░░░░] 0%
+Phase: Milestone v0.9.1 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-10-21 — Milestone v0.9.1 completed and archived
 
 ## Performance Metrics
 
@@ -52,6 +51,13 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 *Updated after each plan completion*
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 1 P01 | 12 min | 4 tasks | 114 files |
+| Phase 1-foundation P02 | 11 min | 3 tasks | 45 files |
+| Phase 1-foundation P03 | 13 min | 3 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -65,6 +71,12 @@ Recent decisions affecting current work:
 - [Foundation]: .NET 10 SDK 10.0.402 pinned in `global.json`; CPM with transitive pinning, lock files on app/test heads; STJ source-gen only (`JsonSerializerIsReflectionEnabledByDefault=false`); Podman/podman-compose only, Docker refused.
 - [Core]: Append-only sequence-numbered `StreamEvent` log is the resume/dedup primitive (SSE `id:` = `Seq`); approval hook is deny-by-policy and may only deny earlier, never grant more.
 - [Platform]: Temporal optional behind `Workflows:Enabled` with `DirectSessionRunner` default; vendor sandbox providers (OpenShell, agentOS, Railway Swarm, attested enclave) are interface-conforming stubs with owner-tagged open questions — no invented vendor calls.
+- [Phase 1]: Blazor package versions in CPM; Web entry uses ConfigureAwait(false) under latest-all — Template-inline versions conflict with CPM; template await trips CA2007/MA0004
+- [Phase 1]: bootstrap.sh keeps dotnet test step as-is despite exit 1 on empty test set — Plan-directed: no masking flags; plan 01-02 test projects resolve it
+- [Phase 1]: 01-02: A2uiSurfaceBlock kind is a2ui-surface; bare a2ui stays unknown
+- [Phase 1]: 01-02: OmpOSError is a sealed record; contract collections are read-only interfaces; semver asserted via Version.TryParse
+- [Phase 1]: ArchUnitNET rules take Assembly objects: the string overload of ResideInAssembly compares full assembly names, so short names match nothing — Probed short and full names (both fail to match); object overloads evaluate over real object sets for both positive and negative rules
+- [Phase 1]: open-questions.md seeded with 26 owned rows (14 research gaps, 4 research extras, 8 ultrathink ambiguities transcribed from dispatch context) — Q1-Q8 text is not locatable in the repo; dispatch context provided the eight items with resolved defaults
 
 ### Pending Todos
 
@@ -83,10 +95,15 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
-| *(none)* | | | | |
+| Verification | Remote CI run green (push + PR jobs on GitHub; local gates pass, no remote configured yet). Resume: verify on first ship PR run | deferred-human | 2026-10-20 | v0.9.1 |
+| Verification | macOS MAUI head build job (excluded from Linux slnf; local host is Linux). Resume: verify on first CI run on a macOS runner | deferred-human | 2026-10-20 | v0.9.1 |
 
 ## Session Continuity
 
-Last session: 2026-10-20
-Stopped at: ROADMAP.md and STATE.md written; REQUIREMENTS.md traceability updated. Next: `/gsd:plan-phase 1`
+Last session: 2026-10-20T06:26:48.224Z
+Stopped at: Completed 1-03-PLAN.md
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

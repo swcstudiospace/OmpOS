@@ -1,0 +1,48 @@
+{
+  "framework": null,
+  "installCommand": "curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh && chmod +x /tmp/dotnet-install.sh && /tmp/dotnet-install.sh --jsonfile global.json --install-dir ./.dotnet",
+  "buildCommand": "./.dotnet/dotnet publish apps/OmpOS.Web -c Release -o output",
+  "outputDirectory": "output/wwwroot",
+  "env": {
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+    "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "1"
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/_framework/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+        "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:5187; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
+    }
+  ]
+}

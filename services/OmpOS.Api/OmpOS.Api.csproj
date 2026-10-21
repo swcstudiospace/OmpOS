@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- The host wires reflection-based framework services (config binding, validation,
+       minimal APIs, health checks) that trim analysis cannot prove safe, and it ships
+       as a non-trimmed deployment artifact. Libraries keep IsTrimmable=true. -->
+  <PropertyGroup>
+    <IsTrimmable>false</IsTrimmable>
+    <OpenApiGenerateDocumentsOnBuild>true</OpenApiGenerateDocumentsOnBuild>
+    <OpenApiDocumentsDirectory>$(MSBuildThisFileDirectory)../../docs/api</OpenApiDocumentsDirectory>
+    <OpenApiGenerateDocumentsOptions>--file-name openapi --openapi-version OpenApi3_1</OpenApiGenerateDocumentsOptions>
+  </PropertyGroup>
+
+  <!-- The build-time OpenAPI generator shells out to bare `dotnet`, which may resolve
+       to an older system SDK. Prepend the running SDK's directory to the process PATH
+       so `dotnet build` succeeds with no environment variables set. -->
+  <UsingTask TaskName="PrependHostDirToPath" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <Task>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var hostPath = System.Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
+        if (!string.IsNullOrEmpty(hostPath))
+        {
+          var dir = System.IO.Path.GetDirectoryName(hostPath);
+          var current = System.Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+          if (!string.IsNullOrEmpty(dir) && !current.StartsWith(dir + System.IO.Path.PathSeparator, System.StringComparison.Ordinal))
+          {
+            System.Environment.SetEnvironmentVariable("PATH", dir + System.IO.Path.PathSeparator + current);
+          }
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="EnsureDotnetOnPathForOpenApi" BeforeTargets="GenerateOpenApiDocuments">
+    <PrependHostDirToPath />
+  </Target>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>OmpOS.Api.IntegrationTests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" />
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/OmpOS.Contracts/OmpOS.Contracts.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Parser/OmpOS.Parser.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Sandbox/OmpOS.Sandbox.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Sessions/OmpOS.Sessions.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Workflows/OmpOS.Workflows.csproj" />
+  </ItemGroup>
+</Project>
