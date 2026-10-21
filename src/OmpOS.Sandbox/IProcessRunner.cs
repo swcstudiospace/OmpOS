@@ -21,7 +21,7 @@ public interface IProcessRunner
     /// elapses (the sequence then ends without error), or when the caller cancels (the call then throws
     /// <see cref="OperationCanceledException"/>).
     /// Each yielded line is bounded: at most 64 KiB of a line is buffered and any excess up to the next
-    /// newline is discarded, with a truncation marker appended so truncation is visible.
+    /// line terminator (CR, LF or CRLF) is discarded, with a truncation marker appended so truncation is visible.
     /// </remarks>
     /// <param name="spec">The process specification.</param>
     /// <param name="cancellationToken">Cancellation token.</param>

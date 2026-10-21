@@ -132,13 +132,18 @@ public sealed class ProcessRunner : IProcessRunner
     /// <see cref="TextReader.ReadLineAsync()"/> buffers a whole line before returning, so a child
     /// that writes a very large record (or never emits a newline) makes the host retain the entire
     /// line. This reader consumes bounded chunks instead, discards the excess of an oversized line
-    /// up to its newline, and appends <see cref="StreamLineTruncatedMarker"/> so truncation is visible.
+    /// up to its terminator, and appends <see cref="StreamLineTruncatedMarker"/> so truncation is visible.
+    /// </para>
+    /// <para>
+    /// Terminator semantics match <see cref="TextReader.ReadLineAsync()"/> exactly: a CR ends a line,
+    /// an LF ends a line, and a CRLF pair ends one line, including a CRLF split across two chunks.
     /// </para>
     /// </remarks>
-    private sealed class BoundedLineReader
+    internal sealed class BoundedLineReader
     {
         private readonly TextReader _reader;
         private string? _carry;
+        private bool _skipLf;
 
         public BoundedLineReader(TextReader reader)
         {
@@ -163,22 +168,10 @@ public sealed class ProcessRunner : IProcessRunner
                     return builder.Length == 0 && !truncated ? null : FinishLine(builder, truncated);
                 }
 
-                int newline = Array.IndexOf(buffer, '\n', 0, read);
-                if (newline < 0)
+                if (ConsumeChunk(builder, buffer.AsSpan(0, read), ref truncated))
                 {
-                    AppendChunk(builder, buffer.AsSpan(0, read), ref truncated);
-                    continue;
+                    return FinishLine(builder, truncated);
                 }
-
-                int end = newline;
-                if (end > 0 && buffer[end - 1] == '\r')
-                {
-                    end--;
-                }
-
-                AppendChunk(builder, buffer.AsSpan(0, end), ref truncated);
-                _carry = newline + 1 < read ? new string(buffer, newline + 1, read - newline - 1) : string.Empty;
-                return FinishLine(builder, truncated);
             }
         }
 
@@ -191,21 +184,54 @@ public sealed class ProcessRunner : IProcessRunner
 
             string carry = _carry;
             _carry = null;
-            int newline = carry.AsSpan().IndexOf('\n');
-            if (newline < 0)
+            return ConsumeChunk(builder, carry.AsSpan(), ref truncated);
+        }
+
+        /// <summary>
+        /// Scans one chunk for a CR, LF or CRLF terminator.
+        /// </summary>
+        /// <param name="builder">The current line buffer.</param>
+        /// <param name="chunk">The freshly read characters.</param>
+        /// <param name="truncated">Whether the line already exceeded its bound.</param>
+        /// <returns>True when a terminator ended the current line.</returns>
+        private bool ConsumeChunk(StringBuilder builder, ReadOnlySpan<char> chunk, ref bool truncated)
+        {
+            if (_skipLf)
             {
-                AppendChunk(builder, carry.AsSpan(), ref truncated);
+                if (chunk.Length == 0)
+                {
+                    return false;
+                }
+
+                _skipLf = false;
+                if (chunk[0] == '\n')
+                {
+                    chunk = chunk[1..];
+                }
+            }
+
+            int terminator = chunk.IndexOfAny('\r', '\n');
+            if (terminator < 0)
+            {
+                AppendChunk(builder, chunk, ref truncated);
                 return false;
             }
 
-            int end = newline;
-            if (end > 0 && carry[end - 1] == '\r')
+            AppendChunk(builder, chunk[..terminator], ref truncated);
+            int after = terminator + 1;
+            if (chunk[terminator] == '\r')
             {
-                end--;
+                if (after < chunk.Length && chunk[after] == '\n')
+                {
+                    after++;
+                }
+                else if (after == chunk.Length)
+                {
+                    _skipLf = true;
+                }
             }
 
-            AppendChunk(builder, carry.AsSpan(0, end), ref truncated);
-            _carry = carry[(newline + 1)..];
+            _carry = after < chunk.Length ? new string(chunk[after..]) : string.Empty;
             return true;
         }
 
