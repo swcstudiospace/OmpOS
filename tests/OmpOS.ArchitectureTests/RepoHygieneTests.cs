@@ -126,7 +126,8 @@ public sealed class RepoHygieneTests
     /// .yml, .yaml, .json, .slnf, .slnx, .css, .js, .ts, .tsx, .html.
     /// Skipped path segments: .git, bin, obj, node_modules, TestResults, output, .planning
     /// (planning text is not code), docs (documentation, not code), TestData (recorded
-    /// payloads are data), plus the vendored wwwroot/lib subtree only (wwwroot itself stays
+    /// payloads are data), .nuget (the NuGet package cache, which CI places inside the
+    /// checkout), plus the vendored wwwroot/lib subtree only (wwwroot itself stays
     /// scanned: first-party css and html live there).
     /// </summary>
     private static readonly string[] TodoScanExtensions =
@@ -143,7 +144,7 @@ public sealed class RepoHygieneTests
     private static readonly string[] TodoExcludedScanSegments =
     [
         ".git", "bin", "obj", "node_modules", "TestResults", "output",
-        ".planning", "docs", "TestData",
+        ".planning", "docs", "TestData", ".nuget",
     ];
 
     private static readonly Regex MarkerPattern = new(@"\b(?:TODO|FIXME|HACK|XXX)\b", RegexOptions.Compiled, TimeSpan.FromSeconds(2));
