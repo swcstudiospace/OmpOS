@@ -13,12 +13,24 @@ export DOTNET_NOLOGO=1 DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 if [ ! -d "$DOTNET_ROOT/sdk/$SDK_VERSION" ]; then
   echo "Installing .NET SDK $SDK_VERSION into $DOTNET_ROOT"
-  # Integrity gap: dotnet-install.sh is fetched without a checksum pin (no verified
-  # digest is available). Tracked as OQ-27 in docs/open-questions.md.
+  # Fail closed: the SDK archive is installed only when its SHA-512 matches the pin
+  # below. Digest source: releases.json for channel 10.0 (release 10.0.13), reached from
+  # https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json,
+  # entry dotnet-sdk-linux-x64.tar.gz for SDK 10.0.402.
+  case "$SDK_VERSION" in
+    10.0.402) SDK_SHA512=1904a98dda2db34ba78ba3c4fb1b224455329af91c341d83547843c1839e112b04ae699ee92fa2449a8f62249196a938723078c0c60b9f65c88539d5687729c2 ;;
+    *)
+      echo "error: no pinned SHA-512 for .NET SDK $SDK_VERSION; add it to bootstrap.sh from releases.json" >&2
+      exit 1
+      ;;
+  esac
   INSTALLER_DIR="$(mktemp -d)"
   trap 'rm -rf "$INSTALLER_DIR"' EXIT
-  curl -fsSL https://dot.net/v1/dotnet-install.sh -o "$INSTALLER_DIR/dotnet-install.sh"
-  bash "$INSTALLER_DIR/dotnet-install.sh" --jsonfile global.json --install-dir "$DOTNET_ROOT"
+  SDK_ARCHIVE="$INSTALLER_DIR/dotnet-sdk.tar.gz"
+  curl -fsSL "https://builds.dotnet.microsoft.com/dotnet/Sdk/$SDK_VERSION/dotnet-sdk-$SDK_VERSION-linux-x64.tar.gz" -o "$SDK_ARCHIVE"
+  echo "$SDK_SHA512  $SDK_ARCHIVE" | sha512sum -c -
+  mkdir -p "$DOTNET_ROOT"
+  tar -xzf "$SDK_ARCHIVE" -C "$DOTNET_ROOT"
 fi
 
 dotnet --version
