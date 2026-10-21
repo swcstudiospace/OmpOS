@@ -1,0 +1,6 @@
+# Allowlisted by fingerprint, not by path, so no other finding can hide behind it.
+# The flagged literal is a test placeholder ("ompos-test-api-key-7f3a") in
+# tests/OmpOS.Workflows.Tests/WorkerConnectionOptionsTests.cs, added in commit 10bbad3
+# (Temporal Cloud options). The string is not a credential. History is not rewritten,
+# so the fingerprint is allowlisted here.
+10bbad323a3c7400e3c099732125ee740d85a41e:tests/OmpOS.Workflows.Tests/WorkerConnectionOptionsTests.cs:generic-api-key:15

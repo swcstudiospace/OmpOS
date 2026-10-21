@@ -80,7 +80,7 @@ jobs:
       - name: Boot workflows profile (detached, healthy within 300s)
         run: |
           podman-compose --profile workflows -f deploy/compose.yaml up -d
-          timeout 300 bash -c 'until [ "$(podman inspect --format "{{.State.Health.Status}}" ompos-temporal 2>/dev/null)" = healthy ]; do if [ "$(podman inspect --format "{{.State.Health.Status}}" ompos-temporal 2>/dev/null)" = unhealthy ]; then echo "ompos-temporal reported unhealthy"; exit 1; fi; sleep 5; done'
+          timeout 300 bash -c 'until podman exec ompos-temporal temporal operator cluster health --address 127.0.0.1:7233 >/dev/null 2>&1; do if [ "$(podman inspect --format "{{.State.Status}}" ompos-temporal 2>/dev/null)" != running ]; then echo "ompos-temporal is not running"; exit 1; fi; sleep 5; done'
       - name: Tear down workflows profile
         if: always()
         run: podman-compose --profile workflows -f deploy/compose.yaml down -v
