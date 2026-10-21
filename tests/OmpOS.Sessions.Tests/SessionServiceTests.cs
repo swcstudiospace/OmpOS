@@ -10,6 +10,7 @@ namespace OmpOS.Sessions.Tests;
 public sealed class SessionServiceTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
+    private static readonly IReadOnlySet<string> BashGrant = new HashSet<string>(StringComparer.Ordinal) { "bash" };
 
     /// <summary>A new session is idle, owned by the caller, and persisted.</summary>
     [Fact]
@@ -195,8 +196,8 @@ public sealed class SessionServiceTests
         var prompt = await Should.ThrowAsync<SessionException>(() => service.SubmitPromptAsync("absent", "hi", ct)).ConfigureAwait(true);
         var steer = await Should.ThrowAsync<SessionException>(() => service.SubmitSteerAsync("absent", "hi", ct)).ConfigureAwait(true);
         var complete = await Should.ThrowAsync<SessionException>(() => service.RecordCompletionAsync("absent", SessionStatus.Completed, ct)).ConfigureAwait(true);
-        var request = await Should.ThrowAsync<SessionException>(() => service.RequestToolApprovalAsync("absent", ct)).ConfigureAwait(true);
-        var resolve = await Should.ThrowAsync<SessionException>(() => service.ResolveToolApprovalAsync("absent", approved: true, ct)).ConfigureAwait(true);
+        var request = await Should.ThrowAsync<SessionException>(() => service.RequestToolApprovalAsync("absent", "request-1", "bash", ct)).ConfigureAwait(true);
+        var resolve = await Should.ThrowAsync<SessionException>(() => service.ResolveToolApprovalAsync("absent", "request-1", approved: true, ct)).ConfigureAwait(true);
 
         prompt.Error.Code.ShouldBe(ErrorCode.SessionNotFound);
         steer.Error.Code.ShouldBe(ErrorCode.SessionNotFound);
@@ -270,13 +271,13 @@ public sealed class SessionServiceTests
         var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
         await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
 
-        await service.RequestToolApprovalAsync(session.Id, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, "request-1", "bash", ct, BashGrant).ConfigureAwait(true);
 
         var waiting = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
         waiting.ShouldNotBeNull();
         waiting.Status.ShouldBe(SessionStatus.AwaitingToolApproval);
 
-        await service.ResolveToolApprovalAsync(session.Id, approved: true, ct).ConfigureAwait(true);
+        await service.ResolveToolApprovalAsync(session.Id, "request-1", approved: true, ct).ConfigureAwait(true);
 
         var resumed = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
         resumed.ShouldNotBeNull();
@@ -301,9 +302,9 @@ public sealed class SessionServiceTests
         var service = NewService(repository);
         var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
         await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
-        await service.RequestToolApprovalAsync(session.Id, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, "request-1", "bash", ct).ConfigureAwait(true);
 
-        await service.ResolveToolApprovalAsync(session.Id, approved: false, ct).ConfigureAwait(true);
+        await service.ResolveToolApprovalAsync(session.Id, "request-1", approved: false, ct).ConfigureAwait(true);
 
         var resumed = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
         resumed.ShouldNotBeNull();
@@ -328,30 +329,30 @@ public sealed class SessionServiceTests
         var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
 
         var requestWhileIdle = await Should.ThrowAsync<SessionException>(() =>
-            service.RequestToolApprovalAsync(session.Id, ct)).ConfigureAwait(true);
+            service.RequestToolApprovalAsync(session.Id, "request-1", "bash", ct)).ConfigureAwait(true);
         requestWhileIdle.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
 
         var resolveWhileIdle = await Should.ThrowAsync<SessionException>(() =>
-            service.ResolveToolApprovalAsync(session.Id, approved: true, ct)).ConfigureAwait(true);
+            service.ResolveToolApprovalAsync(session.Id, "request-1", approved: true, ct)).ConfigureAwait(true);
         resolveWhileIdle.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
 
         await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
 
         var resolveWhileRunning = await Should.ThrowAsync<SessionException>(() =>
-            service.ResolveToolApprovalAsync(session.Id, approved: true, ct)).ConfigureAwait(true);
+            service.ResolveToolApprovalAsync(session.Id, "request-1", approved: true, ct)).ConfigureAwait(true);
         resolveWhileRunning.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
 
-        await service.RequestToolApprovalAsync(session.Id, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, "request-1", "bash", ct, BashGrant).ConfigureAwait(true);
 
         var secondRequest = await Should.ThrowAsync<SessionException>(() =>
-            service.RequestToolApprovalAsync(session.Id, ct)).ConfigureAwait(true);
+            service.RequestToolApprovalAsync(session.Id, "request-2", "bash", ct)).ConfigureAwait(true);
         secondRequest.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
 
-        await service.ResolveToolApprovalAsync(session.Id, approved: true, ct).ConfigureAwait(true);
+        await service.ResolveToolApprovalAsync(session.Id, "request-1", approved: true, ct).ConfigureAwait(true);
         await service.RecordCompletionAsync(session.Id, SessionStatus.Completed, ct).ConfigureAwait(true);
 
         var requestWhenTerminal = await Should.ThrowAsync<SessionException>(() =>
-            service.RequestToolApprovalAsync(session.Id, ct)).ConfigureAwait(true);
+            service.RequestToolApprovalAsync(session.Id, "request-3", "bash", ct)).ConfigureAwait(true);
         requestWhenTerminal.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
     }
 
@@ -364,7 +365,7 @@ public sealed class SessionServiceTests
         var service = NewService(repository);
         var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
         await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
-        await service.RequestToolApprovalAsync(session.Id, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, "request-1", "bash", ct).ConfigureAwait(true);
 
         var error = await Should.ThrowAsync<SessionException>(() =>
             service.SubmitPromptAsync(session.Id, "second", ct)).ConfigureAwait(true);

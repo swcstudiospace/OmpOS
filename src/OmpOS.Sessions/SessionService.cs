@@ -1,8 +1,10 @@
+using System.Collections.Frozen;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using OmpOS.Contracts.Errors;
 using OmpOS.Contracts.Sessions;
 using OmpOS.Contracts.Streaming;
+using OmpOS.Harness.Abstractions;
 
 namespace OmpOS.Sessions;
 
@@ -20,10 +22,11 @@ namespace OmpOS.Sessions;
 /// <para>
 /// <b>Tool approval lifecycle.</b> A running prompt pauses for a tool decision via
 /// <see cref="RequestToolApprovalAsync"/>, which moves the session from <see cref="SessionStatus.Running"/>
-/// to <see cref="SessionStatus.AwaitingToolApproval"/>. <see cref="ResolveToolApprovalAsync"/> moves it back
-/// to <see cref="SessionStatus.Running"/> in both outcomes: an approval resumes the prompt, and a denial
-/// records the denial and likewise returns the session to <see cref="SessionStatus.Running"/>, from which the
-/// caller settles the turn with <see cref="RecordCompletionAsync"/>. There is no direct transition from
+/// to <see cref="SessionStatus.AwaitingToolApproval"/> and registers the request under its identifier.
+/// <see cref="ResolveToolApprovalAsync"/> is the single entry point for a decision; it moves the session back to
+/// <see cref="SessionStatus.Running"/> in both outcomes. An approval may allow only a tool the request's ceiling permits
+/// (by default none), and a request that no decision reaches within the wait timeout is denied by
+/// <see cref="WaitForDecisionAsync"/>. There is no direct transition from
 /// <see cref="SessionStatus.AwaitingToolApproval"/> to a terminal state.
 /// </para>
 /// <para>
@@ -62,6 +65,8 @@ public sealed class SessionService
     private readonly ISessionRepository _repository;
     private readonly TimeProvider _timeProvider;
     private readonly SemaphoreSlim[] _stripes;
+    private readonly System.Threading.Lock _approvalsGate = new();
+    private readonly Dictionary<(string SessionId, string RequestId), PendingApproval> _pendingApprovals = [];
 
     /// <summary>Initializes a new instance of the <see cref="SessionService"/> class.</summary>
     /// <param name="repository">The session store.</param>
@@ -276,19 +281,31 @@ public sealed class SessionService
     }
 
     /// <summary>
-    /// Pauses a running prompt for a tool decision, moving the session from
-    /// <see cref="SessionStatus.Running"/> to <see cref="SessionStatus.AwaitingToolApproval"/>
-    /// and recording the request in the event log.
+    /// Pauses a running prompt for a tool decision, moving the session from <see cref="SessionStatus.Running"/> to
+    /// <see cref="SessionStatus.AwaitingToolApproval"/>, recording the request in the event log and registering it as
+    /// pending under <paramref name="requestId"/>.
     /// </summary>
     /// <param name="sessionId">The session identifier.</param>
+    /// <param name="requestId">The identifier a decision is addressed to. Unique among the session's pending requests.</param>
+    /// <param name="toolName">The tool the request concerns. A decision may allow it only when the ceiling permits it.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <param name="grantableTools">
+    /// The policy ceiling: the tools a decision may allow. Null is the default ceiling, which permits none (DenyAll).
+    /// </param>
     /// <exception cref="SessionException">
     /// <see cref="ErrorCode.SessionNotFound"/> when the session does not exist;
-    /// <see cref="ErrorCode.InvalidTransition"/> when the session is not running.
+    /// <see cref="ErrorCode.InvalidTransition"/> when the session is not running or the request identifier is already pending.
     /// </exception>
-    internal async Task RequestToolApprovalAsync(string sessionId, CancellationToken cancellationToken)
+    public async Task RequestToolApprovalAsync(
+        string sessionId,
+        string requestId,
+        string toolName,
+        CancellationToken cancellationToken,
+        IReadOnlySet<string>? grantableTools = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(requestId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(toolName);
 
         var gate = GateFor(sessionId);
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -297,16 +314,18 @@ public sealed class SessionService
             var session = await LoadAsync(sessionId, cancellationToken).ConfigureAwait(false);
             if (session.Status != SessionStatus.Running)
             {
-                throw new SessionException(new OmpOSError
-                {
-                    Code = ErrorCode.InvalidTransition,
-                    Detail = $"Session '{sessionId}' cannot request tool approval from {session.Status}; only a running prompt can pause for approval.",
-                });
+                throw InvalidTransition($"Session '{sessionId}' cannot request tool approval from {session.Status}; only a running prompt can pause for approval.");
+            }
+
+            if (FindPending(sessionId, requestId) is not null)
+            {
+                throw InvalidTransition($"Tool approval '{requestId}' is already pending in session '{sessionId}'.");
             }
 
             var now = _timeProvider.GetUtcNow();
             var waiting = session with { Status = SessionStatus.AwaitingToolApproval, UpdatedAt = now };
             await _repository.SaveAsync(waiting, cancellationToken).ConfigureAwait(false);
+            AddPending(sessionId, requestId, new PendingApproval(toolName, grantableTools ?? FrozenSet<string>.Empty));
 
             await AppendAsync(
                 sessionId,
@@ -315,7 +334,7 @@ public sealed class SessionService
                 new UnknownPayload
                 {
                     OriginalKind = ToolApprovalRequestedKind,
-                    Raw = HarnessEventProjection.BuildRaw(ToolApprovalRequestedKind),
+                    Raw = HarnessEventProjection.BuildRaw(ToolApprovalRequestedKind, ("requestId", requestId), ("toolName", toolName)),
                 },
                 cancellationToken).ConfigureAwait(false);
         }
@@ -326,26 +345,29 @@ public sealed class SessionService
     }
 
     /// <summary>
-    /// Resolves a pending tool decision, moving the session from
-    /// <see cref="SessionStatus.AwaitingToolApproval"/> back to <see cref="SessionStatus.Running"/>
-    /// and recording the decision in the event log.
+    /// Settles a pending tool approval. This is the single production entry point for a decision: the endpoint calls it, and
+    /// so does the timeout that denies a request nobody decided. An approval resumes the prompt; a denial records the denial.
+    /// Both leave the session <see cref="SessionStatus.Running"/>, from which the caller settles the turn with
+    /// <see cref="RecordCompletionAsync"/>. Any waiter on the request receives the decision.
     /// </summary>
     /// <remarks>
-    /// Both outcomes return the session to <see cref="SessionStatus.Running"/>: an approval resumes the
-    /// prompt, and a denial records the denial and likewise leaves the session running, from which the
-    /// caller settles the turn with <see cref="RecordCompletionAsync"/>. There is no direct transition
-    /// from <see cref="SessionStatus.AwaitingToolApproval"/> to a terminal state.
+    /// An approval may allow only what the request's ceiling permits. A refused approval leaves the request pending, so a
+    /// denial can still arrive.
     /// </remarks>
     /// <param name="sessionId">The session identifier.</param>
-    /// <param name="approved"><see langword="true"/> to approve the tool call, <see langword="false"/> to deny it.</param>
+    /// <param name="requestId">The identifier of the pending request.</param>
+    /// <param name="approved"><see langword="true"/> to allow the tool call, <see langword="false"/> to deny it.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>
     /// <exception cref="SessionException">
     /// <see cref="ErrorCode.SessionNotFound"/> when the session does not exist;
-    /// <see cref="ErrorCode.InvalidTransition"/> when the session is not awaiting tool approval.
+    /// <see cref="ErrorCode.InvalidTransition"/> when the session is not awaiting tool approval, or no request with that identifier
+    /// is pending (it is unknown, or it was already decided).
     /// </exception>
-    internal async Task ResolveToolApprovalAsync(string sessionId, bool approved, CancellationToken cancellationToken)
+    /// <exception cref="UnauthorizedAccessException">The approval exceeds the request's ceiling. The request stays pending.</exception>
+    public async Task ResolveToolApprovalAsync(string sessionId, string requestId, bool approved, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(requestId);
 
         var gate = GateFor(sessionId);
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -354,16 +376,21 @@ public sealed class SessionService
             var session = await LoadAsync(sessionId, cancellationToken).ConfigureAwait(false);
             if (session.Status != SessionStatus.AwaitingToolApproval)
             {
-                throw new SessionException(new OmpOSError
-                {
-                    Code = ErrorCode.InvalidTransition,
-                    Detail = $"Session '{sessionId}' cannot resolve tool approval from {session.Status}; only a session awaiting tool approval can resolve it.",
-                });
+                throw InvalidTransition($"Session '{sessionId}' cannot resolve tool approval from {session.Status}; only a session awaiting tool approval can resolve it.");
+            }
+
+            var pending = FindPending(sessionId, requestId)
+                ?? throw InvalidTransition($"No tool approval '{requestId}' is pending in session '{sessionId}'; it is unknown or already decided.");
+            if (approved && !pending.GrantableTools.Contains(pending.ToolName))
+            {
+                throw new UnauthorizedAccessException($"The policy ceiling does not permit approving tool '{pending.ToolName}'.");
             }
 
             var now = _timeProvider.GetUtcNow();
             var resumed = session with { Status = SessionStatus.Running, UpdatedAt = now };
             await _repository.SaveAsync(resumed, cancellationToken).ConfigureAwait(false);
+            RemovePending(sessionId, requestId);
+            pending.Decision.TrySetResult(approved ? PermissionDecision.Allow : PermissionDecision.Deny);
 
             var kind = approved ? ToolApprovalApprovedKind : ToolApprovalDeniedKind;
             await AppendAsync(
@@ -373,7 +400,7 @@ public sealed class SessionService
                 new UnknownPayload
                 {
                     OriginalKind = kind,
-                    Raw = HarnessEventProjection.BuildRaw(kind, ("approved", approved ? "true" : "false")),
+                    Raw = HarnessEventProjection.BuildRaw(kind, ("requestId", requestId), ("approved", approved ? "true" : "false")),
                 },
                 cancellationToken).ConfigureAwait(false);
         }
@@ -382,6 +409,87 @@ public sealed class SessionService
             gate.Release();
         }
     }
+
+    /// <summary>
+    /// Waits for the decision on a pending tool approval. A request that no decision reaches within <paramref name="timeout"/>
+    /// is denied through <see cref="ResolveToolApprovalAsync"/>. A cancelled wait denies it too, before the cancellation propagates.
+    /// </summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="requestId">The identifier of the pending request.</param>
+    /// <param name="timeout">How long to wait for a decision. Must be positive.</param>
+    /// <param name="cancellationToken">Cancels the wait.</param>
+    /// <returns>The decision. A timed-out or cancelled wait returns <see cref="PermissionDecision.Deny"/> only for a timeout.</returns>
+    /// <exception cref="SessionException"><see cref="ErrorCode.InvalidTransition"/> when no request with that identifier is pending.</exception>
+    public async Task<PermissionDecision> WaitForDecisionAsync(string sessionId, string requestId, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(requestId);
+        if (timeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(timeout), timeout, "The decision timeout must be positive.");
+        }
+
+        var pending = FindPending(sessionId, requestId)
+            ?? throw InvalidTransition($"No tool approval '{requestId}' is pending in session '{sessionId}'.");
+        try
+        {
+            return await pending.Decision.Task.WaitAsync(timeout, cancellationToken).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            return await DenyLapsedAsync(sessionId, requestId, pending).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await DenyLapsedAsync(sessionId, requestId, pending).ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Denies a request whose wait lapsed or was cancelled, unless a decision landed first, and returns the settled decision.
+    /// </summary>
+    private async Task<PermissionDecision> DenyLapsedAsync(string sessionId, string requestId, PendingApproval pending)
+    {
+        try
+        {
+            await ResolveToolApprovalAsync(sessionId, requestId, approved: false, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (SessionException) when (pending.Decision.Task.IsCompleted)
+        {
+            // A decision landed first and already settled the request.
+        }
+
+        // Every path above returns only after the decision was set, so this await completes without waiting.
+        return await pending.Decision.Task.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+    }
+
+    private PendingApproval? FindPending(string sessionId, string requestId)
+    {
+        lock (_approvalsGate)
+        {
+            return _pendingApprovals.TryGetValue((sessionId, requestId), out var pending) ? pending : null;
+        }
+    }
+
+    private void AddPending(string sessionId, string requestId, PendingApproval pending)
+    {
+        lock (_approvalsGate)
+        {
+            _pendingApprovals[(sessionId, requestId)] = pending;
+        }
+    }
+
+    private void RemovePending(string sessionId, string requestId)
+    {
+        lock (_approvalsGate)
+        {
+            _pendingApprovals.Remove((sessionId, requestId));
+        }
+    }
+
+    private static SessionException InvalidTransition(string detail) =>
+        new(new OmpOSError { Code = ErrorCode.InvalidTransition, Detail = detail });
 
     private async Task SubmitQueuedAsync(
         string sessionId,
@@ -524,5 +632,18 @@ public sealed class SessionService
         }
 
         return false;
+    }
+
+    /// <summary>A tool approval awaiting its decision. Held in memory; the event log records the request and its outcome.</summary>
+    private sealed class PendingApproval(string toolName, IReadOnlySet<string> grantableTools)
+    {
+        /// <summary>Gets the tool the request concerns.</summary>
+        public string ToolName { get; } = toolName;
+
+        /// <summary>Gets the tools a decision may allow: the request's policy ceiling.</summary>
+        public IReadOnlySet<string> GrantableTools { get; } = grantableTools;
+
+        /// <summary>Gets the decision. Completed exactly once, when the request is settled.</summary>
+        public TaskCompletionSource<PermissionDecision> Decision { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 }

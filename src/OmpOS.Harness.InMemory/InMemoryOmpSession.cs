@@ -66,46 +66,43 @@ public sealed class InMemoryOmpSession : IOmpSession
 
         BeginStream();
 
-        var reader = Produce().Reader;
-        var sawTerminal = false;
-        var finished = false;
+        var run = new PromptRun();
         try
         {
             while (true)
             {
-                var next = await ReadNextAsync(reader, cancellationToken).ConfigureAwait(false);
-                if (next is null)
+                var segment = Produce(run.Position, run.Completions);
+                run.Position = segment.Resume;
+                run.Completions = segment.Completions;
+                await foreach (var evt in ReadSegmentAsync(segment.Events.Reader, run, cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
                 {
-                    break;
+                    yield return evt;
                 }
 
-                var cancelledEvent = TakeCancellation();
-                if (cancelledEvent is not null)
+                if (run.Cancelled)
                 {
-                    finished = true;
-                    yield return cancelledEvent;
                     yield break;
                 }
 
-                sawTerminal |= next is CompletedEvent or ErrorEvent;
-                yield return next;
-                if (next is ErrorEvent)
+                if (run.Errored || segment.Pause is null)
                 {
                     break;
                 }
+
+                await AwaitPermissionAsync(segment.Pause, cancellationToken).ConfigureAwait(false);
             }
 
-            finished = true;
+            run.Finished = true;
         }
         finally
         {
-            if (!finished)
+            if (!run.Finished)
             {
                 AbandonStreamIfActive();
             }
         }
 
-        var trailing = FinishStream(sawTerminal);
+        var trailing = FinishStream(run.SawTerminal);
         if (trailing is not null)
         {
             yield return trailing;
@@ -233,11 +230,14 @@ public sealed class InMemoryOmpSession : IOmpSession
     }
 
     /// <summary>
-    /// Replays the script into a fresh bounded channel. A refused <see cref="ChannelWriter{T}.TryWrite(T)"/>
-    /// is an overflow and completes the channel with <see cref="BackpressureHarnessException"/>; a second
-    /// <see cref="CompletedEvent"/> completes it with <see cref="DuplicateCompletionHarnessException"/>.
+    /// Replays the script from <paramref name="start"/> into a fresh bounded channel, and stops after a permission pause.
+    /// A refused <see cref="ChannelWriter{T}.TryWrite(T)"/> is an overflow and completes the channel with
+    /// <see cref="BackpressureHarnessException"/>; a second <see cref="CompletedEvent"/> completes it with
+    /// <see cref="DuplicateCompletionHarnessException"/>.
     /// </summary>
-    private Channel<HarnessEvent> Produce()
+    /// <param name="start">The index of the first step to replay.</param>
+    /// <param name="completions">The completed events already emitted by earlier segments of this prompt.</param>
+    private Segment Produce(int start, int completions)
     {
         var channel = Channel.CreateBounded<HarnessEvent>(new BoundedChannelOptions(_script.ChannelCapacity)
         {
@@ -246,15 +246,24 @@ public sealed class InMemoryOmpSession : IOmpSession
             SingleWriter = true,
         });
         var writer = channel.Writer;
-        var completions = 0;
-        for (var index = 0; index < _script.Steps.Count; index++)
+        Segment Ended() => new(channel, null, _script.Steps.Count, completions);
+        for (var index = start; index < _script.Steps.Count; index++)
         {
             var context = $"script step {index}";
             switch (_script.Steps[index])
             {
                 case FailStep fail:
                     writer.TryComplete(fail.Error);
-                    return channel;
+                    return Ended();
+                case PermissionPauseStep pause:
+                    if (!writer.TryWrite(pause.Request))
+                    {
+                        writer.TryComplete(new BackpressureHarnessException($"Event buffer of capacity {_script.ChannelCapacity} overflowed.", context));
+                        return Ended();
+                    }
+
+                    writer.TryComplete();
+                    return new Segment(channel, pause.Request, index + 1, completions);
                 case EmitStep emit:
                     if (emit.Event is CompletedEvent)
                     {
@@ -262,14 +271,14 @@ public sealed class InMemoryOmpSession : IOmpSession
                         if (completions > 1)
                         {
                             writer.TryComplete(new DuplicateCompletionHarnessException("Script emitted more than one CompletedEvent.", context));
-                            return channel;
+                            return Ended();
                         }
                     }
 
                     if (!writer.TryWrite(emit.Event))
                     {
                         writer.TryComplete(new BackpressureHarnessException($"Event buffer of capacity {_script.ChannelCapacity} overflowed.", context));
-                        return channel;
+                        return Ended();
                     }
 
                     break;
@@ -277,7 +286,75 @@ public sealed class InMemoryOmpSession : IOmpSession
         }
 
         writer.TryComplete();
-        return channel;
+        return Ended();
+    }
+
+    /// <summary>
+    /// Holds a paused stream until the script's resolver answers or its timeout elapses. The script models no tool effects,
+    /// so the decision gates the stream but is not echoed into it. With no resolver, the pause ends at once without a grant.
+    /// The timeout bounds the wait; a cancelled prompt does not interrupt it.
+    /// </summary>
+    private async Task AwaitPermissionAsync(PermissionRequestEvent request, CancellationToken cancellationToken)
+    {
+        var resolver = _script.PermissionResolver;
+        if (resolver is null)
+        {
+            return;
+        }
+
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(_script.PermissionDecisionTimeout);
+        try
+        {
+            await resolver.ResolveAsync(request, timeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // The timeout elapsed without a decision: the pause ends without a grant.
+        }
+    }
+
+    /// <summary>One replayed stretch of a script: its events, the pause that ends it (if any), and the step to resume at.</summary>
+    private sealed record Segment(Channel<HarnessEvent> Events, PermissionRequestEvent? Pause, int Resume, int Completions);
+
+    /// <summary>Mutable state of one prompt stream across its script segments.</summary>
+    private sealed class PromptRun
+    {
+        public int Position { get; set; }
+
+        public int Completions { get; set; }
+
+        public bool SawTerminal { get; set; }
+
+        public bool Errored { get; set; }
+
+        public bool Cancelled { get; set; }
+
+        public bool Finished { get; set; }
+    }
+
+    /// <summary>Yields one segment's events until it ends, an error ends the stream, or a cancellation is observed.</summary>
+    private async IAsyncEnumerable<HarnessEvent> ReadSegmentAsync(ChannelReader<HarnessEvent> reader, PromptRun run, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        while (await ReadNextAsync(reader, cancellationToken).ConfigureAwait(false) is { } next)
+        {
+            var cancelledEvent = TakeCancellation();
+            if (cancelledEvent is not null)
+            {
+                run.Cancelled = true;
+                run.Finished = true;
+                yield return cancelledEvent;
+                yield break;
+            }
+
+            run.SawTerminal |= next is CompletedEvent or ErrorEvent;
+            yield return next;
+            if (next is ErrorEvent)
+            {
+                run.Errored = true;
+                yield break;
+            }
+        }
     }
 
     private async ValueTask<HarnessEvent?> ReadNextAsync(ChannelReader<HarnessEvent> reader, CancellationToken cancellationToken)
