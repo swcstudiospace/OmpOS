@@ -221,6 +221,7 @@
         "dependencies": {
           "Microsoft.Testing.Extensions.TrxReport": "[2.5.1, )",
           "OmpOS.Harness.Abstractions": "[1.0.0, )",
+          "OmpOS.Harness.Acp": "[1.0.0, )",
           "Shouldly": "[4.3.0, )",
           "coverlet.MTP": "[10.1.0, )",
           "xunit.v3": "[4.0.2, )"
