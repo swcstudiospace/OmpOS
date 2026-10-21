@@ -21,8 +21,9 @@ public static partial class MauiProgram
     {
         var builder = MauiApp.CreateBuilder();
         builder
-            .UseMauiApp<OmpOsApp>()
-            .UseMauiBlazorWebView();
+            .UseMauiApp<OmpOsApp>();
+
+        builder.Services.AddMauiBlazorWebView();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
