@@ -48,7 +48,7 @@ cleanup() {
 trap cleanup EXIT
 TEST_SERVICES_ENV="$(bash scripts/test-services.sh up)"
 source "$TEST_SERVICES_ENV"
-dotnet test OmpOS.Linux.slnf -c Release --no-build
+dotnet test OmpOS.Linux.slnf -c Release --no-build -- --filter-not-trait "Category=Live"
 dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
 
 command -v podman-compose >/dev/null || echo "hint: podman-compose not found; install podman plus 'pipx install podman-compose==1.6.0' to run deploy/compose.yaml"
