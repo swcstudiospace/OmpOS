@@ -56,6 +56,21 @@ Success criteria (verbatim from `.planning/ROADMAP.md` lines 397-404):
 
 Exact file names inside the new projects, the internal shape of the presentation view models, the order of per-criterion tests, and the choice between one or two plans in each wave, as long as the locked decisions above hold.
 
+### Amendments from research and pattern mapping (2026-10-21)
+
+These refine the locked decisions above. They do not reopen them. Sources: `20-RESEARCH.md`, `20-PATTERNS.md`, `20-UI-SPEC.md`.
+
+- **A-01 (refines D-20-03): JS interop stays in Razor.** `Components/SessionView.razor` (JS scroll module, `[JSInvokable]`) and `Components/Blocks/CodeBlockView.razor` (clipboard JS) keep their JS interop in `OmpOS.UI`. Everything else in the `@code` blocks that is framework-neutral moves to `OmpOS.Presentation`: composer send gating and key handling, A2UI mapping, block projection, and scroll state that needs no JS. The criterion-2 requirement is met by the view models and state, not by moving markup or interop.
+- **A-02 (refines D-20-03): namespace move.** `SessionViewState` lives in namespace `OmpOS.UI` today, not `OmpOS.UI.State`. Its move changes every `using` in `src/OmpOS.UI` (including `_Imports.razor`), `tests/OmpOS.UI.Tests`, and `apps/OmpOS.App/Components/SessionHost.razor`. All of them are migrated in the same phase (D-20-04).
+- **A-03 (refines D-20-12): ArchitectureTests references.** `tests/OmpOS.ArchitectureTests` gets a `ProjectReference` only to the product assemblies that `LayerMap` maps and that must load for ArchUnit: `OmpOS.Presentation` and `OmpOS.Native`. Test projects get no such reference. Test projects are not in `LayerMap`.
+- **A-04 (new requirement): TODO scanner covers AXAML.** `tests/OmpOS.ArchitectureTests/TodoMarkerScanner.cs` does not scan `.axaml`. An unlinked TODO in the new token dictionary or views would pass the gate. The scanner's extension list gains `.axaml` in this phase, with a test that proves an unlinked `.axaml` TODO is reported.
+- **A-05 (refines D-20-06): test-assembly parallelism.** `tests/OmpOS.Native.Tests` sets `[assembly: CollectionBehavior(DisableTestParallelization = true)]` in addition to the `[AvaloniaFact]` setup. Reason: issue AvaloniaUI/Avalonia#22021, where plain `[Fact]` tests that build Avalonia objects race an Avalonia session. The setting holds whether or not plain facts are later added.
+- **A-06 (new requirement): central package versions for the Avalonia transitive set.** `CentralPackageTransitivePinningEnabled` is on. Every Avalonia transitive package that restore resolves (for example `Avalonia.BuildServices`, `Avalonia.Remote.Protocol`, `MicroCom.Runtime`, `Avalonia.Native`, `Avalonia.X11`, `Avalonia.Skia`, `Avalonia.Win32`, `Avalonia.HarfBuzz`, `Avalonia.Fonts.Inter`, `xunit.v3.mtp-v2`) needs a `PackageVersion` in `Directory.Packages.props`. The exact set comes from restore output in the execution phase. Planning records the rule, not the list.
+- **A-07 (UI-SPEC decisions, locked for Phase 20):** Send and Stop are always enabled, so they stay in the tab order. Pressing either with nothing to do is a no-op with a status message. The only non-essential animation is a 120 ms Button background transition, which reduced motion removes. The native accent is `#0b4fd6`, which differs from the web accent `#0b5fff` because the web accent measures 4.04:1 on the hover background. Accessible names are the web Composer labels (`Message`, `Send message`, `Stop response`) plus `Conversations`, `Session transcript` and `Session status`. The full contract is `20-UI-SPEC.md`.
+- **A-08 (UI-SPEC, departure from D-20-10, flagged):** the transcript `ScrollViewer` is made focusable explicitly, because the default focusability of a `ScrollViewer` is unverified. Its runbook entry must confirm keyboard reach.
+
+The plugin contract and host decisions (D-20-05), the reduced-motion decision (D-20-08), and every other locked decision stand unchanged.
+
 </decisions>
 
 <code_context>

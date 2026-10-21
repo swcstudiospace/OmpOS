@@ -402,7 +402,11 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
   5. Shared controls are reachable by keyboard, have a visible focus style, and disable transitions when reduced motion is on. Verify: headless UI test in the gate over every shared control.
   6. Theme tokens for colour, type and spacing live in one resource dictionary, and a contract test asserts at least 4.5:1 text contrast for every foreground and background pair the dictionary defines. Verify: contract test in the gate.
   7. Plugin host contracts in the contracts layer define commands, panels, tools and agent modes with no UI-framework reference, and an in-process sample plugin registers one of each through the host. Verify: contract test in the gate that fails if the contracts assembly references a UI framework assembly, and asserts each registration.
-**Plans**: TBD
+**Plans**: 4 plans in 4 waves, each wave depends on the previous one
+- [ ] 20-01-PLAN.md: Wave 1, plugin contracts, presentation skeleton, package pins and wiring
+- [ ] 20-02-PLAN.md: Wave 2, presentation state extraction and caller migration
+- [ ] 20-03-PLAN.md: Wave 3, Avalonia native head, accessibility and headless tests
+- [ ] 20-04-PLAN.md: Wave 4, AT-SPI2 evidence, architecture and open-question records
 
 ### Phase 21: Parity Surface
 **Goal**: Session chat, tool approvals and steering work on the shared presentation layer, and every RCL and MAUI feature in this surface has a test before its old head is removed.
