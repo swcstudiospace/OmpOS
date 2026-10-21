@@ -60,7 +60,9 @@ internal static class JwtTestHost
         };
     }
 
-    private static string PostgresConnectionString()
+    /// <summary>Returns the PostgreSQL connection string from <see cref="PostgresConnectionEnvironmentVariable"/>, or throws when it is unset.</summary>
+    /// <returns>The connection string.</returns>
+    internal static string PostgresConnectionString()
     {
         var connectionString = Environment.GetEnvironmentVariable(PostgresConnectionEnvironmentVariable);
         if (string.IsNullOrWhiteSpace(connectionString))
