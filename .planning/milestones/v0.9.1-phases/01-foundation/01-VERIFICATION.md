@@ -1,8 +1,9 @@
 ---
 phase: 01-foundation
 verified: 2026-10-20T08:00:00Z
-status: human_needed
+status: passed
 score: 18/18 must-haves verified
+human_validation: accepted as tracked follow-ups by owner decision 8 (docs/handoff.md, 2026-10-21): remote CI run (now running on PR #1), podman-compose binary validation, macOS CI shells job
 covered_files:
     - ".editorconfig"
     - ".env.example"

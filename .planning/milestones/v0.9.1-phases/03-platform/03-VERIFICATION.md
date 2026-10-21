@@ -1,12 +1,13 @@
 ---
 phase: 03-platform
 verified: 2026-10-21T00:00:00Z
-status: gaps_found
-score: 8/8 requirements verified, 3/4 criteria fully met (1 partial)
+status: passed
+score: 8/8 requirements verified; 4/4 criteria met (criterion 4c re-verified at HEAD, see the re-verification section)
 suite_counts:
   sandbox_test_cases: 70
   workflows_test_cases: 20
-  evidence: "/tmp/bootstrap-final3.log:63-64,70-71 (both suites passed, 527 total, 0 failed)"
+  evidence: "docs/runbooks/evidence/bootstrap-gate-2026-10-21.log (gate total 615 at a6fcadd; sandbox and workflows suites passed)"
+human_validation: accepted as tracked follow-ups by owner decision 8 (docs/handoff.md, 2026-10-21): podman smoke on a podman host, live Temporal replay check, owner sign-off on TCP-level readiness for criterion 4c
 ---
 
 # Phase 3 (Platform) Verification Report
