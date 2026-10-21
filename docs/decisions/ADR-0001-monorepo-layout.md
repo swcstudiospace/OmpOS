@@ -1,6 +1,6 @@
 # ADR-0001: Monorepo layout and dependency layers
 
-- Status: accepted
+- Status: accepted (amended 2026-10-21: the Temporal volume note in D-05 is superseded)
 - Date: 2026-10-20
 - Deciders: ompos-maintainers
 - Scope: Phase 1 (Foundation)
@@ -22,6 +22,8 @@ Enforcement: `tests/OmpOS.ArchitectureTests` encodes the map as data (one-line c
 ## Volume deviation
 
 D-05 wrote the Temporal volume as `/data/temporal.db`. The `temporalio/temporal:1.9.1` image runs as uid 1000 and `/data` does not exist in the image, so a write there may fail under rootless Podman. Following the vendor's own compose file, the volume mounts at `/home/temporal` (owned by the image user) with `--db-filename /home/temporal/temporal.db`. Recorded here and in `docs/runbooks/sandbox.md`.
+
+**Superseded 2026-10-21:** Temporal is removed (see [handoff decision](../handoff.md#temporal-removal-and-railway-topology-2026-10-21)). The volume at `/home/temporal` no longer exists. The text above is kept as history.
 
 ## Rejected alternatives
 

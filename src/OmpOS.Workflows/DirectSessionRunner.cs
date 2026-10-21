@@ -6,14 +6,14 @@ namespace OmpOS.Workflows;
 /// Direct in-process implementation of <see cref="ISessionRunWorkflow"/>.
 /// </summary>
 /// <remarks>
-/// Executes the workflow activities sequentially (provision, run prompt, collect) with
-/// teardown in a <c>finally</c> block once provisioning has succeeded. Each activity is bounded
-/// by the same attempt counts as the Temporal path (ADR-0003, Q-WF-RETRY): provision 3×,
+/// Executes the workflow activities sequentially (provision, run prompt, collect) with teardown in a <c>finally</c>
+/// block once provisioning has succeeded. When the prompt started, <see cref="SessionRunInput.OnPromptSettled"/> runs in
+/// the same <c>finally</c> block after the collect phase and before teardown, including after prompt failures. Each activity is bounded
+/// by these attempt counts (ADR-0003, Q-WF-RETRY): provision 3×,
 /// run prompt 1× (not idempotent), collect 3×, teardown 5×. Backoff waits go through
 /// <see cref="IWorkflowContext.DelayAsync"/>, so a context whose delay completes immediately
 /// runs the full policy with zero wall-clock delay. Deterministic primitives (clock, random,
-/// delay, heartbeat) arrive per call through <see cref="IWorkflowContext"/>. Used when
-/// <c>Workflows:Enabled=false</c> (default).
+/// delay, heartbeat) arrive per call through <see cref="IWorkflowContext"/>.
 /// </remarks>
 public sealed class DirectSessionRunner : ISessionRunWorkflow
 {
@@ -52,26 +52,9 @@ public sealed class DirectSessionRunner : ISessionRunWorkflow
 
         try
         {
-            await RetryWithoutResultAsync(
-                ProvisionRetry,
-                ctx,
-                token => _activities.ProvisionSandboxAsync(input, token),
-                cancellationToken).ConfigureAwait(false);
-            state.Provisioned = true;
-
-            state.FinalSeq = await RetryAsync(
-                RunPromptRetry,
-                ctx,
-                token => _activities.RunPromptAsync(input, details => ctx.Heartbeat(details), token),
-                cancellationToken).ConfigureAwait(false);
-
-            state.Artifacts.AddRange(
-                await RetryAsync(
-                    CollectRetry,
-                    ctx,
-                    token => _activities.CollectArtifactsAsync(input, token),
-                    cancellationToken).ConfigureAwait(false));
-
+            await ProvisionPhaseAsync(input, ctx, state, cancellationToken).ConfigureAwait(false);
+            await PromptPhaseAsync(input, ctx, state, cancellationToken).ConfigureAwait(false);
+            await CollectPhaseAsync(input, ctx, state, cancellationToken).ConfigureAwait(false);
             state.Status = WorkflowRunStatus.Completed;
         }
         catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
@@ -86,9 +69,16 @@ public sealed class DirectSessionRunner : ISessionRunWorkflow
         }
         finally
         {
-            if (state.Provisioned)
+            try
             {
-                await TryTeardownAsync(input, ctx, state).ConfigureAwait(false);
+                await NotifyPromptSettledAsync(input, state, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                if (state.Provisioned)
+                {
+                    await TryTeardownAsync(input, ctx, state).ConfigureAwait(false);
+                }
             }
         }
 
@@ -99,6 +89,72 @@ public sealed class DirectSessionRunner : ISessionRunWorkflow
             Artifacts = state.Artifacts,
             FailureDetail = state.FailureDetail,
         };
+    }
+
+    /// <summary>
+    /// Provisions the sandbox under the provision retry policy and records it as provisioned.
+    /// </summary>
+    /// <param name="input">The workflow input.</param>
+    /// <param name="ctx">The workflow context carrying the backoff delay.</param>
+    /// <param name="state">The mutable run state.</param>
+    /// <param name="cancellationToken">The run's cancellation token.</param>
+    private async Task ProvisionPhaseAsync(SessionRunInput input, IWorkflowContext ctx, WorkflowExecutionState state, CancellationToken cancellationToken)
+    {
+        await RetryWithoutResultAsync(
+            ProvisionRetry,
+            ctx,
+            token => _activities.ProvisionSandboxAsync(input, token),
+            cancellationToken).ConfigureAwait(false);
+        state.Provisioned = true;
+    }
+
+    /// <summary>
+    /// Runs the prompt under the non-retried prompt policy and records the final sequence number.
+    /// </summary>
+    /// <param name="input">The workflow input.</param>
+    /// <param name="ctx">The workflow context carrying heartbeats and the backoff delay.</param>
+    /// <param name="state">The mutable run state.</param>
+    /// <param name="cancellationToken">The run's cancellation token.</param>
+    private async Task PromptPhaseAsync(SessionRunInput input, IWorkflowContext ctx, WorkflowExecutionState state, CancellationToken cancellationToken)
+    {
+        state.PromptStarted = true;
+        state.FinalSeq = await RetryAsync(
+            RunPromptRetry,
+            ctx,
+            token => _activities.RunPromptAsync(input, details => ctx.Heartbeat(details), token),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Collects the run's artifacts under the collect retry policy.
+    /// </summary>
+    /// <param name="input">The workflow input.</param>
+    /// <param name="ctx">The workflow context carrying the backoff delay.</param>
+    /// <param name="state">The mutable run state.</param>
+    /// <param name="cancellationToken">The run's cancellation token.</param>
+    private async Task CollectPhaseAsync(SessionRunInput input, IWorkflowContext ctx, WorkflowExecutionState state, CancellationToken cancellationToken)
+    {
+        state.Artifacts.AddRange(
+            await RetryAsync(
+                CollectRetry,
+                ctx,
+                token => _activities.CollectArtifactsAsync(input, token),
+                cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// Invokes <see cref="SessionRunInput.OnPromptSettled"/> once when the prompt was started, after the collect phase and
+    /// before teardown. It is not invoked when the prompt did not start.
+    /// </summary>
+    /// <param name="input">The workflow input.</param>
+    /// <param name="state">The mutable run state.</param>
+    /// <param name="cancellationToken">The run's cancellation token.</param>
+    private static async Task NotifyPromptSettledAsync(SessionRunInput input, WorkflowExecutionState state, CancellationToken cancellationToken)
+    {
+        if (state.PromptStarted && input.OnPromptSettled is { } onPromptSettled)
+        {
+            await onPromptSettled(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     /// <summary>
@@ -194,7 +250,7 @@ public sealed class DirectSessionRunner : ISessionRunWorkflow
     }
 
     /// <summary>
-    /// Attempt bound and backoff for one activity, mirroring the Temporal <c>RetryPolicy</c>.
+    /// Attempt bound and backoff for one activity.
     /// </summary>
     /// <param name="MaximumAttempts">Total attempts including the first; 1 disables retry.</param>
     /// <param name="InitialInterval">The wait after the first failed attempt.</param>
@@ -214,6 +270,8 @@ public sealed class DirectSessionRunner : ISessionRunWorkflow
     private sealed class WorkflowExecutionState
     {
         public bool Provisioned { get; set; }
+
+        public bool PromptStarted { get; set; }
 
         public long FinalSeq { get; set; }
 

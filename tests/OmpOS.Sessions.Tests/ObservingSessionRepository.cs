@@ -60,4 +60,8 @@ internal sealed class ObservingSessionRepository : ISessionRepository
         DateTimeOffset decidedAt,
         CancellationToken cancellationToken) =>
         _inner.TryDecideToolApprovalAsync(sessionId, requestId, decision, decidedAt, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<string>> ListSessionIdsByStatusAsync(SessionStatus status, DateTimeOffset updatedBefore, CancellationToken cancellationToken) =>
+        _inner.ListSessionIdsByStatusAsync(status, updatedBefore, cancellationToken);
 }

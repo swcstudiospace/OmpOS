@@ -17,12 +17,11 @@ public sealed class FailedTurnTerminalTests
     private static readonly TimeSpan SettleTimeout = TimeSpan.FromSeconds(15);
 
     /// <summary>Verifies a failed turn streams one error as its final event and no completed event.</summary>
-    /// <param name="workflowsEnabled">The Workflows:Enabled value; false selects the legacy in-process path.</param>
     /// <param name="trailingErrorCompletion">Whether the harness also reports <c>CompletedEvent("error")</c> after its error.</param>
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    public async Task FailedTurn_StreamEndsOnErrorWithNoCompleted(bool workflowsEnabled, bool trailingErrorCompletion)
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FailedTurn_StreamEndsOnErrorWithNoCompleted(bool trailingErrorCompletion)
     {
         var steps = new List<InMemoryStep> { new EmitStep(new ErrorEvent("boom", Retryable: false)) };
         if (trailingErrorCompletion)
@@ -31,17 +30,16 @@ public sealed class FailedTurnTerminalTests
         }
 
         var script = new InMemoryScript { Steps = steps };
-        var config = new Dictionary<string, string?>(StringComparer.Ordinal) { ["Workflows:Enabled"] = workflowsEnabled ? "true" : "false" };
-        using var factory = new OmpApiFactory(config, configureServices: services => services.AddSingleton<IHarnessSessionFactory>(new ScriptedHarnessFactory(script)));
+        using var factory = new OmpApiFactory(configureServices: services => services.AddSingleton<IHarnessSessionFactory>(new ScriptedHarnessFactory(script)));
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"hello\"}", testToken);
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"hello\"}", testToken).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
-        _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Failed, SettleTimeout, testToken);
+        _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Failed, SettleTimeout, testToken).ConfigureAwait(true);
 
-        var turn = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken);
+        var turn = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken).ConfigureAwait(true);
         turn.Count(static item => string.Equals(item.EventType, "completed", StringComparison.Ordinal)).ShouldBe(0, "a failed turn carries no completed event");
         turn.Count(static item => string.Equals(item.EventType, "error", StringComparison.Ordinal)).ShouldBe(1, "a failed turn carries exactly one error event");
         turn[^1].EventType.ShouldBe("error", "the error event is the turn's last event");

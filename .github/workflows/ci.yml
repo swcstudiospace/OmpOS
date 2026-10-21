@@ -22,6 +22,7 @@ env:
   GITLEAKS_VERSION: 8.30.1
   GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
   OMPOS_POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+  OMPOS_DRAGONFLY_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
   build-test:
@@ -39,14 +40,22 @@ jobs:
           cache-dependency-path: '**/packages.lock.json'
       - run: dotnet restore OmpOS.Linux.slnf --locked-mode
       - run: dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
-      - name: Install podman (for the test PostgreSQL and compose validation)
+      - name: Install podman (for the test services and compose validation)
         run: |
           command -v podman >/dev/null || { sudo apt-get update -y; sudo apt-get install -y podman; }
-      - name: Test (throwaway PostgreSQL for the API and session-store tests)
+      - name: Start test services (throwaway TimescaleDB and Dragonfly)
         run: |
-          eval "$(bash scripts/test-postgres.sh up)"
-          trap 'bash scripts/test-postgres.sh down' EXIT
+          env_file="$(bash scripts/test-services.sh up)"
+          echo "TEST_SERVICES_ENV=$env_file" >> "$GITHUB_ENV"
+      - name: Test (throwaway TimescaleDB and Dragonfly for the API, session-store and coordination tests)
+        run: |
+          source "$TEST_SERVICES_ENV"
           dotnet test OmpOS.Linux.slnf -c Release --no-build --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
+      - name: Stop test services
+        if: always()
+        run: |
+          bash scripts/test-services.sh down
+          if [ -n "${TEST_SERVICES_ENV:-}" ]; then rm -f "$TEST_SERVICES_ENV"; fi
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -77,18 +86,51 @@ jobs:
           echo "${GITLEAKS_SHA256}  /tmp/gitleaks.tar.gz" | sha256sum -c -
           mkdir -p /tmp/gitleaks-bin && tar -xzf /tmp/gitleaks.tar.gz -C /tmp/gitleaks-bin
           /tmp/gitleaks-bin/gitleaks git --redact --exit-code 1 --log-level warn .
-      - name: Validate compose (podman-compose needs the podman binary and the profile)
+      - name: Validate compose (podman-compose needs the podman binary and the backend profile)
         run: |
           pipx install podman-compose==1.6.0
-          podman-compose --profile workflows -f deploy/compose.yaml config --services | grep -qx temporal
-          podman-compose --profile workflows -f deploy/compose.yaml config -q
-      - name: Boot workflows profile (detached, healthy within 300s)
+          services="$(podman-compose --profile backend -f deploy/compose.yaml config --services)"
+          for service in postgres dragonfly greptimedb; do
+            grep -qx "$service" <<<"$services" || { echo "error: service $service is missing from profile backend" >&2; exit 1; }
+          done
+          while read -r service; do
+            case "$service" in
+              postgres|dragonfly|greptimedb) ;;
+              *) echo "error: unexpected service $service in profile backend; only postgres, dragonfly and greptimedb are allowed" >&2; exit 1 ;;
+            esac
+          done <<<"$services"
+          podman-compose --profile backend -f deploy/compose.yaml config -q
+      - name: Boot backend profile (detached)
+        run: podman-compose --profile backend -f deploy/compose.yaml up -d
+      - name: Wait for backend services (each within 300s)
         run: |
-          podman-compose --profile workflows -f deploy/compose.yaml up -d
-          timeout 300 bash -c 'until podman exec ompos-temporal temporal operator cluster health --address 127.0.0.1:7233 >/dev/null 2>&1; do if [ "$(podman inspect --format "{{.State.Status}}" ompos-temporal 2>/dev/null)" != running ]; then echo "ompos-temporal is not running"; exit 1; fi; sleep 5; done'
-      - name: Tear down workflows profile
+          wait_ready() {
+            local name="$1"
+            shift
+            local deadline=$((SECONDS + 300))
+            until "$@" >/dev/null 2>&1; do
+              if [ "$SECONDS" -ge "$deadline" ]; then
+                echo "error: $name is not ready within 300 seconds" >&2
+                exit 1
+              fi
+              sleep 3
+            done
+          }
+          dragonfly_ping() {
+            { exec 3<>/dev/tcp/127.0.0.1/6379; } 2>/dev/null || return 1
+            printf 'AUTH %s\r\nPING\r\n' "$OMPOS_DRAGONFLY_PASSWORD" >&3
+            local auth="" pong=""
+            IFS= read -r -t 5 auth <&3 || true
+            IFS= read -r -t 5 pong <&3 || true
+            exec 3>&-
+            [ "$auth" = $'+OK\r' ] && [ "$pong" = $'+PONG\r' ]
+          }
+          wait_ready "ompos-postgres" podman exec ompos-postgres pg_isready -h 127.0.0.1 -p 5432
+          wait_ready "ompos-dragonfly" dragonfly_ping
+          wait_ready "ompos-greptimedb" curl -fsS http://127.0.0.1:4000/health
+      - name: Tear down backend profile
         if: always()
-        run: podman-compose --profile workflows -f deploy/compose.yaml down -v
+        run: podman-compose --profile backend -f deploy/compose.yaml down -v
 
   shells:
     runs-on: macos-15

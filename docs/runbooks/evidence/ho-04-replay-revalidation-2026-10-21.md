@@ -1,3 +1,5 @@
+> **Superseded 2026-10-21: the Temporal fixture is retired.** The Temporal worker and its replay fixture (`tests/OmpOS.Workflows.Tests/TestData/histories/session-run.json`) are retired by the Temporal removal decision ([handoff](../../handoff.md#temporal-removal-and-railway-topology-2026-10-21)). This record is kept as history. It does not describe a running Temporal service.
+
 # HO-04: Temporal replay fixtures re-validated on this host (2026-10-21)
 
 Requirement: HO-04 (REQUIREMENTS.md, Human-Only Items on This Host). Re-validate the replay fixtures against a Temporal dev server on this host.

@@ -36,8 +36,8 @@ public sealed class AuthBoundaryTests
         using var scope = factory.Services.CreateScope();
         var expectedOwner = scope.ServiceProvider.GetRequiredService<IUserContext>().Name;
 
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
-        var session = await SessionClient.ReadSessionAsync(client, id, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
+        var session = await SessionClient.ReadSessionAsync(client, id, testToken).ConfigureAwait(true);
 
         session.OwnerId.ShouldBe(expectedOwner);
         session.OwnerId.ShouldBe(SingleDevPrincipal.DevName);
@@ -51,12 +51,12 @@ public sealed class AuthBoundaryTests
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
 
-        using var list = await client.GetAsync(new Uri("/sessions", UriKind.Relative), testToken);
+        using var list = await client.GetAsync(new Uri("/sessions", UriKind.Relative), testToken).ConfigureAwait(true);
         list.StatusCode.ShouldBe(HttpStatusCode.OK);
         list.StatusCode.ShouldNotBe(HttpStatusCode.Unauthorized);
 
         using var content = new StringContent("{}", Encoding.UTF8, "application/json");
-        using var created = await client.PostAsync(new Uri("/sessions", UriKind.Relative), content, testToken);
+        using var created = await client.PostAsync(new Uri("/sessions", UriKind.Relative), content, testToken).ConfigureAwait(true);
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
         created.StatusCode.ShouldNotBe(HttpStatusCode.Unauthorized);
     }

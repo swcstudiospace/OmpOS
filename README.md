@@ -1,6 +1,6 @@
 # OmpOS
 
-OmpOS is a chat-style agent workspace — a Grok Chat / Cursor Agent–class client whose engine is **omp** rather than Cursor. It orchestrates omp sessions and renders their streamed output as **Generative UI** (structured, interactive blocks, not plain text). It is a **Desktop ACP Harness built in C#** that grows into one full-stack product: a Blazor WebAssembly web app hosted on Vercel, .NET MAUI Blazor Hybrid native shells for macOS/Windows/iOS/Android, and a unified ASP.NET Core backend on Railway with optional Temporal durable workflows and sandboxed agent execution.
+OmpOS is a chat-style agent workspace — a Grok Chat / Cursor Agent–class client whose engine is **omp** rather than Cursor. It orchestrates omp sessions and renders their streamed output as **Generative UI** (structured, interactive blocks, not plain text). It is a **Desktop ACP Harness built in C#** that grows into one full-stack product: a Blazor WebAssembly web app hosted on Vercel, .NET MAUI Blazor Hybrid native shells for macOS/Windows/iOS/Android, and a unified ASP.NET Core backend on Railway (session runs execute in-process in the API; no Temporal and no worker service) and sandboxed agent execution.
 
 A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
 
@@ -8,7 +8,7 @@ A prompt typed on any surface becomes an omp session whose streamed events rende
 
 - `bash`, `curl`, `git`, `python3` on `PATH`.
 - .NET is **not** a prerequisite: `./bootstrap.sh` installs the SDK pinned in `global.json` into `~/.dotnet` when it is missing.
-- `podman` plus `podman-compose` are optional (only the `workflows` compose profile needs them). Podman is the only supported container runtime; Docker is not used.
+- `podman` plus `podman-compose` are optional (only the local sandbox provider needs them; the `workflows` profile is removed). Podman is the only supported container runtime; Docker is not used.
 
 ## Bootstrap
 
@@ -40,20 +40,20 @@ It installs the pinned SDK when missing, then runs a locked restore, a warnings-
 | `bootstrap.sh` | One-command bootstrap (restore, build, test, format) |
 | `.env.example` | Every configuration variable, documented |
 | `src/` | Libraries L0–L2 (`Contracts`, `Parser`, `Harness.*`, `Sandbox.*`, `Sessions`, `GenUi`, `Workflows`, `UI`) |
-| `services/` | L3 hosts (`Api`, `Workflows.Worker`) |
+| `services/` | L3 hosts (`Api`) |
 | `apps/` | L4 heads (`Web` Blazor WASM now, `App` MAUI in Phase 4) |
 | `tests/` | Per-project suites plus contract fixtures and `ArchitectureTests` |
 | `docs/` | Architecture, ADRs, open questions, runbooks |
 | `docs/decisions/` | Architecture Decision Records |
 | `docs/runbooks/` | Operator and developer runbooks |
-| `deploy/` | `compose.yaml` for podman-compose (Temporal dev server) |
+| `deploy/` | `compose.yaml` for podman-compose (the Temporal dev server was removed on 2026-10-21) |
 | `.github/workflows/` | `ci.yml` (build, test, format, audit, scan, compose, MAUI) |
 
 ## What is verified where
 
 | Surface | Verifier | Scope |
 | ------- | -------- | ----- |
-| Linux (`ubuntu-latest`) | `ci.yml` job `build-test` | Everything in `OmpOS.Linux.slnf`: API, harness, sandbox, sessions, workflows, web head, EngineHost — libraries, worker, and all test suites |
+| Linux (`ubuntu-latest`) | `ci.yml` job `build-test` | Everything in `OmpOS.Linux.slnf`: API, harness, sandbox, sessions, workflows, web head, EngineHost — libraries and all test suites. The worker project was removed on 2026-10-21 ([decision](docs/handoff.md#temporal-removal-and-railway-topology-2026-10-21)) |
 | Linux dev box | `./bootstrap.sh` | Same scope as Linux CI; the MAUI head is never built locally on Linux |
 | macOS (`macos-15`, human-deferred) | `ci.yml` job `shells` | `apps/OmpOS.App` (MAUI head) only — first run pending, see [docs/handoff.md](docs/handoff.md) |
 | Inspection only (Linux) | Code review | The MAUI head's structure (project file, RCL sharing, `IEngineHost` registration) — its binaries are not produced on Linux |
@@ -96,6 +96,6 @@ Full per-AC verdicts and the human verification steps: [docs/handoff.md](docs/ha
 - [docs/decisions/ADR-0001-monorepo-layout.md](docs/decisions/ADR-0001-monorepo-layout.md) — repo layout and dependency layers.
 - [docs/decisions/ADR-0002-surface-technology.md](docs/decisions/ADR-0002-surface-technology.md) — Blazor, MAUI, SSE, harness, workflow, and sandbox choices.
 - [docs/open-questions.md](docs/open-questions.md) — every unverified external fact, with owner.
-- [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md) — bootstrap, workflows profile, troubleshooting.
+- [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md) — bootstrap, local dependency stack, troubleshooting.
 - [docs/runbooks/sandbox.md](docs/runbooks/sandbox.md) — sandbox prerequisites and providers.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — branches, commits, formatting, lock files, TODO policy.

@@ -4,9 +4,9 @@ using Npgsql;
 namespace OmpOS.Sessions.Postgres.Tests;
 
 /// <summary>
-/// A fresh PostgreSQL schema for one test. Every data source it creates uses the schema as its search path, so the
-/// production SQL (which names tables without a schema) runs unchanged and each test sees an empty store. Disposing
-/// closes the data sources and drops the schema.
+/// A fresh PostgreSQL schema for one test. Every data source it creates uses the schema, then public, as its search path, so
+/// the production SQL (which names tables without a schema, and calls the TimescaleDB functions that live in public) runs
+/// unchanged and each test sees an empty store. Disposing closes the data sources and drops the schema.
 /// </summary>
 internal sealed class PostgresTestSchema : IAsyncDisposable
 {
@@ -22,8 +22,8 @@ internal sealed class PostgresTestSchema : IAsyncDisposable
     /// <summary>Gets the schema name.</summary>
     internal string SchemaName { get; }
 
-    /// <summary>Gets a connection string whose search path is this schema.</summary>
-    internal string ConnectionString => new NpgsqlConnectionStringBuilder(_adminConnectionString) { SearchPath = SchemaName }.ConnectionString;
+    /// <summary>Gets a connection string whose search path is this schema, then public.</summary>
+    internal string ConnectionString => new NpgsqlConnectionStringBuilder(_adminConnectionString) { SearchPath = $"{SchemaName},public" }.ConnectionString;
 
     /// <summary>Creates an empty schema on the server.</summary>
     /// <param name="adminConnectionString">An administrative connection string for the server.</param>
@@ -44,6 +44,13 @@ internal sealed class PostgresTestSchema : IAsyncDisposable
         _dataSources.Add(dataSource);
         return dataSource;
     }
+
+    /// <summary>Gets the connection the store is configured with for this schema. Session locks connect with it directly.</summary>
+    internal PostgresSessionConnection Connection => new(ConnectionString);
+
+    /// <summary>Creates a repository over a new data source that uses this schema, configured as the store is.</summary>
+    /// <returns>A repository whose data source the schema owns.</returns>
+    internal PostgresSessionRepository CreateRepository() => new(CreateDataSource(), Connection);
 
     /// <summary>Disposes every data source this schema created, then drops the schema.</summary>
     /// <returns>A task that completes when the schema is gone.</returns>

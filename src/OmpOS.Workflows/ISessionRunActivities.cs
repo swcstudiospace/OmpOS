@@ -6,7 +6,7 @@ namespace OmpOS.Workflows;
 /// Activities for the session run workflow (provision, run prompt, collect, teardown).
 /// </summary>
 /// <remarks>
-/// Activities are executed by the runner (direct or Temporal) and contain the
+/// Activities are executed by the runner and contain the
 /// effectful operations. The workflow orchestrates them with teardown in a finally block.
 /// </remarks>
 public interface ISessionRunActivities

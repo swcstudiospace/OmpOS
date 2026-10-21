@@ -86,30 +86,20 @@
         "resolved": "2.18.0",
         "contentHash": "wwI3khcYNM7oL6axr4a41G29fJYOS3ckusgYZ4NiIccL8Amh2LOeu4HSK1SrQWiMJNrgoFqyWfDkOkunQCiRDw=="
       },
-      "Temporalio": {
+      "StackExchange.Redis": {
         "type": "Direct",
-        "requested": "[1.20.0, )",
-        "resolved": "1.20.0",
-        "contentHash": "5Y11I7V2L/EAMczly8sT8b+dhLIiBwUmJSiUbsJOId7r1f2BZJn+2oEo2RUauSwUeIMXXEfvq3Y92BM8RjoqqQ==",
+        "requested": "[3.4.5, )",
+        "resolved": "3.4.5",
+        "contentHash": "LtbEuNmaW6N75tvLAlXoDGDJHTCwmrHFL8/9OeQknWoCWcZhUcUnPvG2ijSO7tTyC7XID9LskIu42spa0b/nMQ==",
         "dependencies": {
-          "Google.Protobuf": "3.26.1",
-          "NexusRpc": "0.4.0"
+          "RESPite": "3.4.5",
+          "System.IO.Hashing": "10.0.12"
         }
-      },
-      "Google.Protobuf": {
-        "type": "Transitive",
-        "resolved": "3.26.1",
-        "contentHash": "CHZX8zXqhF/fdUtd+AYzew8T2HFkAoe5c7lbGxZY/qryAlQXckDvM5BfOJjXlMS7kyICqQTMszj4w1bX5uBJ/w=="
       },
       "Microsoft.OpenApi": {
         "type": "Transitive",
         "resolved": "2.12.2",
         "contentHash": "ZkT7qiJe0Kj0+DTZOZo+xrDy1kNmdsWFQVPIQLNx9ZJ0T9cB2LG7r+Bi60so8/+yg1nkS7QCPadrzsTG4VPKrA=="
-      },
-      "NexusRpc": {
-        "type": "Transitive",
-        "resolved": "0.4.0",
-        "contentHash": "2cdRtmwT/vskWqJvojODvR7CpRhLWAnCeVT5Z8sPdRDX8P/Ywpw48T2lqgqhxM8JROfoflHzhSiXo4h1ln3/MQ=="
       },
       "OpenTelemetry.Api": {
         "type": "Transitive",
@@ -124,8 +114,28 @@
           "OpenTelemetry.Api": "1.20.0"
         }
       },
+      "RESPite": {
+        "type": "Transitive",
+        "resolved": "3.4.5",
+        "contentHash": "EzMx67+IXC8lQRI78yeSBWKCTn9qvSIaale6XZ1RJLKpr2NJqmptgn3UqgguWqoeGUsoohiy3SWeiVLAj1n9DA=="
+      },
+      "System.IO.Hashing": {
+        "type": "Transitive",
+        "resolved": "10.0.12",
+        "contentHash": "jDix4bBMYnpZdSPcnY+KDV6ik3SRMzpMKby/bZl/XUwIiflwRNAFZ0oOl61R/pSaveIJ8t1gs2BUlrGsPs/bcg=="
+      },
       "ompos.contracts": {
         "type": "Project"
+      },
+      "ompos.coordination": {
+        "type": "Project"
+      },
+      "ompos.coordination.dragonfly": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Coordination": "[1.0.0, )",
+          "StackExchange.Redis": "[3.4.5, )"
+        }
       },
       "ompos.harness.abstractions": {
         "type": "Project",

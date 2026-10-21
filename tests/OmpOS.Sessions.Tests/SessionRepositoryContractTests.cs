@@ -396,6 +396,41 @@ public abstract class SessionRepositoryContractTests<T> : IAsyncLifetime where T
         (await repository.TryDecideToolApprovalAsync("no-session", "req-1", PermissionDecision.Deny, Epoch, ct).ConfigureAwait(true)).ShouldBeFalse();
     }
 
+    /// <summary>Lists only sessions with the requested status that were last updated strictly before the moment, in identifier order.</summary>
+    [Fact]
+    public async Task ListSessionIdsByStatusReturnsOnlyMatchingSessionsUpdatedBeforeTheMoment()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await NewRepositoryAsync(ct).ConfigureAwait(true);
+        var threshold = Epoch.AddMinutes(10);
+        await repository.SaveAsync(Sample("b-idle-old"), ct).ConfigureAwait(true);
+        await repository.SaveAsync(Sample("a-idle-old"), ct).ConfigureAwait(true);
+        await repository.SaveAsync(Sample("c-idle-recent") with { UpdatedAt = Epoch.AddMinutes(20) }, ct).ConfigureAwait(true);
+        await repository.SaveAsync(Sample("d-running-old") with { Status = SessionStatus.Running }, ct).ConfigureAwait(true);
+        await repository.SaveAsync(Sample("e-idle-at-threshold") with { UpdatedAt = threshold }, ct).ConfigureAwait(true);
+
+        var ids = await repository.ListSessionIdsByStatusAsync(SessionStatus.Idle, threshold, ct).ConfigureAwait(true);
+
+        ids.ToArray().ShouldBe(["a-idle-old", "b-idle-old"]);
+    }
+
+    /// <summary>At most 200 matching sessions are returned, and they are the first 200 by identifier, not by save order.</summary>
+    [Fact]
+    public async Task ListSessionIdsByStatusIsBoundedAndOrderedById()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = await NewRepositoryAsync(ct).ConfigureAwait(true);
+        for (var index = 204; index >= 0; index--)
+        {
+            // Saved in descending order, so a result ordered by insertion would not match.
+            await repository.SaveAsync(Sample($"s-{index:D3}"), ct).ConfigureAwait(true);
+        }
+
+        var ids = await repository.ListSessionIdsByStatusAsync(SessionStatus.Idle, Epoch.AddSeconds(1), ct).ConfigureAwait(true);
+
+        ids.ToArray().ShouldBe(Enumerable.Range(0, 200).Select(static index => $"s-{index:D3}").ToArray());
+    }
+
     /// <summary>Asserts every field of two sessions is equal, comparing collections element by element.</summary>
     /// <param name="actual">The loaded session.</param>
     /// <param name="expected">The session that was saved.</param>

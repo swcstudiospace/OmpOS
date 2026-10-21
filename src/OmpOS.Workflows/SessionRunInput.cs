@@ -4,7 +4,7 @@ namespace OmpOS.Workflows;
 /// Input for a session run workflow.
 /// </summary>
 /// <remarks>
-/// Carries only identifiers and cursors; payloads must remain under 64 KiB.
+/// Carries identifiers, cursors and an optional in-process callback; payloads must remain under 64 KiB.
 /// </remarks>
 public sealed record SessionRunInput
 {
@@ -28,4 +28,12 @@ public sealed record SessionRunInput
 
     /// <summary>Gets the sandbox provision idempotency key.</summary>
     public required string IdempotencyKey { get; init; }
+
+    /// <summary>
+    /// Gets the optional callback invoked once per run, in the run's finally block after the collect phase and before
+    /// the sandbox teardown starts. It is invoked whenever the prompt started, including when the prompt failed or the
+    /// run was cancelled after it started. It is never invoked when the prompt did not start, such as a provision
+    /// failure. An exception from the callback propagates only after the teardown has run.
+    /// </summary>
+    public Func<CancellationToken, ValueTask>? OnPromptSettled { get; init; }
 }

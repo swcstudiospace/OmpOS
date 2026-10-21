@@ -5,9 +5,9 @@ namespace OmpOS.Sessions.Postgres.Tests;
 
 /// <summary>
 /// Supplies one PostgreSQL server for the whole test run. The server comes from the environment variable
-/// <c>OMPOS_TEST_POSTGRES_CONNECTION</c> when it is set (a CI service or a developer database). Otherwise a
-/// PostgreSQL 17 container is started with podman and removed when the run ends. When neither is possible the
-/// fixture throws; the tests never skip.
+/// <c>OMPOS_TEST_POSTGRES_CONNECTION</c> when it is set (a CI service or a developer database, which must have the
+/// TimescaleDB extension available). Otherwise a TimescaleDB 2.13 container on PostgreSQL 16 is started with podman and
+/// removed when the run ends. When neither is possible the fixture throws; the tests never skip.
 /// </summary>
 [SuppressMessage(
     "Design",

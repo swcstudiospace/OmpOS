@@ -6,16 +6,17 @@ using OmpOS.Sessions.Postgres;
 namespace OmpOS.Api.Persistence;
 
 /// <summary>
-/// Registers the API's session store. <see cref="ISessionRepository"/> is resolved per use: when <c>Workflows:Enabled</c> is
-/// true it is the PostgreSQL session log that the API and the run worker share, so a routed run's events, approvals and
-/// settlement are visible to both processes. When false it is the in-process <see cref="InMemorySessionRepository"/>, exactly
-/// as before.
+/// Registers the API's session store. <see cref="ISessionRepository"/> is chosen from <c>Sessions:Store</c>: the PostgreSQL
+/// session log when it is <c>Postgres</c>, so every replica reads and writes one log; otherwise the in-process
+/// <see cref="InMemorySessionRepository"/>.
 /// </summary>
 /// <remarks>
-/// The choice is made at resolution time, like the dispatcher: the test host applies configuration after the top-level
-/// statements of <c>Program</c> have run, so a composition-time branch would not see its overrides. The PostgreSQL
-/// registration does not read the connection string until its data source is first resolved, so a default configuration never
-/// needs it. Startup validation of the enabled path lives in <see cref="SessionStoreStartup"/>.
+/// The choice is made at resolution time, not at composition time. The test host (<c>OmpApiFactory</c>) applies its
+/// configuration overrides after the top-level statements of <c>Program</c> have run, so a composition-time branch would not
+/// see them. Resolution-time selection reads the bound <see cref="SessionsOptions"/>, the configuration the host actually runs
+/// with. The PostgreSQL registration reads its connection string only when its data source is first resolved, so the in-memory
+/// store never needs it. Startup validation of the bound options runs at host start; <see cref="SessionStoreStartup"/> creates
+/// the schema for the PostgreSQL store.
 /// </remarks>
 internal static class SessionStoreRegistration
 {
@@ -31,7 +32,7 @@ internal static class SessionStoreRegistration
         services.AddPostgresSessionStore(configuration);
         services.AddSingleton<InMemorySessionRepository>();
         services.AddSingleton<ISessionRepository>(static provider =>
-            provider.GetRequiredService<IOptions<WorkflowsOptions>>().Value.Enabled
+            SessionsOptions.IsPostgresStore(provider.GetRequiredService<IOptions<SessionsOptions>>().Value.Store)
                 ? (ISessionRepository)provider.GetRequiredService<PostgresSessionRepository>()
                 : provider.GetRequiredService<InMemorySessionRepository>());
         services.AddHostedService<SessionStoreStartup>();

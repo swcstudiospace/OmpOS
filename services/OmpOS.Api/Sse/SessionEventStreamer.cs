@@ -13,10 +13,10 @@ namespace OmpOS.Api.Sse;
 /// broadcast signal; on wake a subscriber re-queries the log from its last delivered Seq. A
 /// subscriber takes its wake-up before each log read, so an append that lands during the read
 /// is never missed, and events at or below the last delivered Seq are skipped (no duplicates).
-/// A waiting subscriber also re-reads the log every <see cref="PollInterval"/> without a local wake-up. The run worker is a
-/// separate process and cannot call <see cref="Notify"/> here, so the poll is the cross-process signal: an append made elsewhere
-/// reaches this stream within one interval. The poll needs no listener connection, survives pooled connections and restarts,
-/// and bounds latency; the local <see cref="Notify"/> remains the fast path for appends made in this process.
+/// A waiting subscriber also re-reads the log every <see cref="PollInterval"/> without a local wake-up. Appends made by another replica
+/// reach this stream through the session signal channel (see <see cref="SessionChangePublisher"/>); the poll is the fallback that keeps the
+/// stream correct when signals are lost or unavailable, so an append reaches it within one interval. The poll needs no listener connection,
+/// survives pooled connections and restarts, and bounds latency; the local <see cref="Notify"/> remains the fast path for appends made in this process.
 /// </summary>
 internal sealed class SessionEventStreamer
 {

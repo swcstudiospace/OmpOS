@@ -5,10 +5,11 @@
   </Folder>
   <Folder Name="/services/">
     <Project Path="services/OmpOS.Api/OmpOS.Api.csproj" />
-    <Project Path="services/OmpOS.Workflows.Worker/OmpOS.Workflows.Worker.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/OmpOS.Contracts/OmpOS.Contracts.csproj" />
+    <Project Path="src/OmpOS.Coordination/OmpOS.Coordination.csproj" />
+    <Project Path="src/OmpOS.Coordination.Dragonfly/OmpOS.Coordination.Dragonfly.csproj" />
     <Project Path="src/OmpOS.EngineHost/OmpOS.EngineHost.csproj" />
     <Project Path="src/OmpOS.GenUi/OmpOS.GenUi.csproj" />
     <Project Path="src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
@@ -27,6 +28,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/OmpOS.ArchitectureTests/OmpOS.ArchitectureTests.csproj" />
     <Project Path="tests/OmpOS.Contracts.Tests/OmpOS.Contracts.Tests.csproj" />
+    <Project Path="tests/OmpOS.Coordination.Tests/OmpOS.Coordination.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Abstractions.Tests/OmpOS.Harness.Abstractions.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.ContractTests/OmpOS.Harness.ContractTests.csproj" />
     <Project Path="tests/OmpOS.Parser.Tests/OmpOS.Parser.Tests.csproj" />

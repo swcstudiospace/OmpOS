@@ -51,7 +51,7 @@ internal static class PodmanCommand
         {
             throw new InvalidOperationException(
                 "No PostgreSQL is available for the session store tests: set OMPOS_TEST_POSTGRES_CONNECTION to an administrative " +
-                "connection string, or install podman so the test can start a PostgreSQL 17 container.",
+                "connection string, or install podman so the test can start a TimescaleDB 2.13 container.",
                 failure);
         }
     }

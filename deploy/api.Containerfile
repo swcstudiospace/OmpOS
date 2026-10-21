@@ -36,12 +36,13 @@ RUN groupadd --system --gid 10001 ompos \
 COPY --from=build --chown=10001:10001 /app ./
 
 ENV ASPNETCORE_ENVIRONMENT=Production \
+    ASPNETCORE_URLS=http://[::]:8080 \
     DOTNET_NOLOGO=1
 USER 10001:10001
 
 # Documents the default port only; the process binds to PORT (set by the platform) or 8080.
 EXPOSE 8080
 
-# Runs under /bin/sh -c so ${PORT} expands at start. ASPNETCORE_HTTP_PORTS is unset so it cannot override ASPNETCORE_URLS.
+# Runs under /bin/sh -c so ${PORT} expands at start and binds dual-stack ([::] accepts IPv4 and IPv6; Railway private networking needs IPv6). ASPNETCORE_HTTP_PORTS is unset so it cannot override ASPNETCORE_URLS.
 # exec replaces the shell, so the .NET process is PID 1 and receives termination signals.
-ENTRYPOINT ["/bin/sh", "-c", "unset ASPNETCORE_HTTP_PORTS; export ASPNETCORE_URLS=\"http://+:${PORT:-8080}\"; exec dotnet /app/OmpOS.Api.dll"]
+ENTRYPOINT ["/bin/sh", "-c", "unset ASPNETCORE_HTTP_PORTS; export ASPNETCORE_URLS=\"http://[::]:${PORT:-8080}\"; exec dotnet /app/OmpOS.Api.dll"]

@@ -9,7 +9,7 @@ namespace OmpOS.Workflows.Tests;
 /// Behaviour tests for the direct runner's per-activity retry policy (ADR-0003, Q-WF-RETRY).
 /// </summary>
 /// <remarks>
-/// Attempt counts mirror the Temporal policies: provision 3, run prompt 1 (not idempotent),
+/// Attempt counts: provision 3, run prompt 1 (not idempotent),
 /// collect 3, teardown 5. Backoff is requested through <see cref="IWorkflowContext.DelayAsync"/>;
 /// the recording context completes each delay immediately, so the policy runs with zero wall-clock delay.
 /// </remarks>
@@ -143,7 +143,7 @@ public sealed class DirectRunnerRetryPolicyTests
     }
 
     /// <summary>
-    /// Backoff between teardown attempts doubles from one second, matching the Temporal initial interval and coefficient.
+    /// Backoff between teardown attempts doubles from one second.
     /// </summary>
     [Fact]
     public async Task TeardownBackoff_DoublesFromOneSecondBetweenAttempts()

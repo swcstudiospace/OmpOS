@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using Microsoft.Extensions.Options;
 using OmpOS.Api.Options;
@@ -7,19 +6,22 @@ using OmpOS.Api.Telemetry;
 using OmpOS.Api.Workflows;
 using OmpOS.Contracts.Sessions;
 using OmpOS.Contracts.Workflows;
+using OmpOS.Coordination;
 using OmpOS.Sessions;
 using OmpOS.Workflows;
 
 namespace OmpOS.Api.Services;
 
 /// <summary>
-/// Executes accepted prompts in the background through <see cref="ISessionRunDispatcher"/>, which selects the run path
-/// from Workflows:Enabled. An in-process run reports its completion on the handle and is settled here from its result;
-/// a routed run reports no completion and is settled by the process that executes it. Every background run is observed
-/// through a tracked continuation, so no task result is ever dropped and no failure escapes unlogged.
+/// Admits and executes prompts. A new turn acquires its session's run lease through <see cref="TryAcquireLeaseAsync"/> before
+/// the prompt is admitted; the lease is then handed to the run, which holds it until the run ends. Every background run is
+/// observed through a tracked continuation, so no task result is ever dropped and no failure escapes unlogged.
 /// </summary>
 internal sealed class PromptRunner
 {
+    // One identity per process: a lease owner is "{instance}:{runId}", so a lease left by a crashed process never matches a live run.
+    private static readonly Guid InstanceId = Guid.NewGuid();
+
     private static readonly Action<ILogger, string, string, Exception?> PromptStarted =
         LoggerMessage.Define<string, string>(
             LogLevel.Information,
@@ -62,11 +64,11 @@ internal sealed class PromptRunner
             new EventId(7, "StaleRunSettleSkipped"),
             "Stale run settle skipped for session {SessionId}: expected turn {ExpectedTurn} already superseded");
 
-    private readonly ConcurrentDictionary<string, Task> _pending = new(StringComparer.Ordinal);
     private readonly SessionService _sessions;
     private readonly ISessionRepository _repository;
-    private readonly ISessionRunDispatcher _dispatcher;
-    private readonly SessionEventStreamer _streamer;
+    private readonly ISessionRunLeases _leases;
+    private readonly DirectSessionRunDispatcher _dispatcher;
+    private readonly SessionChangePublisher _publisher;
     private readonly IOptions<DebugOptions> _debug;
     private readonly IHostApplicationLifetime _lifetime;
     private readonly ILogger<PromptRunner> _logger;
@@ -74,66 +76,90 @@ internal sealed class PromptRunner
     /// <summary>Initializes a new instance of the <see cref="PromptRunner"/> class.</summary>
     /// <param name="sessions">The session service.</param>
     /// <param name="repository">The session store.</param>
-    /// <param name="dispatcher">The dispatcher that starts each session run.</param>
-    /// <param name="streamer">The SSE broadcaster.</param>
+    /// <param name="leases">The run-lease store.</param>
+    /// <param name="dispatcher">Runs each admitted turn under its lease.</param>
+    /// <param name="publisher">Announces session changes to this process's streams and to the other replicas.</param>
     /// <param name="debug">The debug options (prompt redaction switch).</param>
     /// <param name="lifetime">The host lifetime (shutdown signal).</param>
     /// <param name="logger">The logger.</param>
     public PromptRunner(
         SessionService sessions,
         ISessionRepository repository,
-        ISessionRunDispatcher dispatcher,
-        SessionEventStreamer streamer,
+        ISessionRunLeases leases,
+        DirectSessionRunDispatcher dispatcher,
+        SessionChangePublisher publisher,
         IOptions<DebugOptions> debug,
         IHostApplicationLifetime lifetime,
         ILogger<PromptRunner> logger)
     {
         _sessions = sessions;
         _repository = repository;
+        _leases = leases;
         _dispatcher = dispatcher;
-        _streamer = streamer;
+        _publisher = publisher;
         _debug = debug;
         _lifetime = lifetime;
         _logger = logger;
     }
 
-    /// <summary>Starts prompt execution in the background and tracks it until it settles.</summary>
+    /// <summary>
+    /// Acquires the session's run lease for a new run. Called before the prompt is admitted, so a turn held by another owner is refused
+    /// before any acceptance. A refused acquisition is retried for up to <see cref="RunLeaseRetry.Deadline"/>, because the previous run
+    /// releases its lease a few milliseconds after its terminal event reaches the client. A lease another owner holds for longer still
+    /// returns null, and the caller answers 409.
+    /// </summary>
     /// <param name="sessionId">The session identifier.</param>
-    /// <param name="prompt">The prompt text.</param>
-    /// <param name="correlationId">The end-to-end correlation identifier.</param>
-    /// <param name="parent">The accepting request's trace context, or null.</param>
-    public void Start(string sessionId, string prompt, string correlationId, ActivityContext? parent)
+    /// <param name="runId">The run identifier; the lease owner is derived from it.</param>
+    /// <param name="cancellationToken">Cancels the acquisition, including any wait between attempts.</param>
+    /// <returns>The held lease, or null when the deadline passed with another owner still holding the session's run lease.</returns>
+    public Task<ISessionRunLease?> TryAcquireLeaseAsync(string sessionId, string runId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(sessionId);
+        ArgumentNullException.ThrowIfNull(runId);
+        var owner = $"{InstanceId:N}:{runId}";
+        return RunLeaseRetry.AcquireWithinDeadlineAsync(
+            ct => _leases.TryAcquireAsync(sessionId, owner, CoordinationDefaults.RunLeaseTimeToLive, ct),
+            cancellationToken);
+    }
+
+    /// <summary>Starts an admitted run in the background, under the lease the caller acquired, and tracks it until it settles.</summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="runId">The run identifier the lease was acquired for.</param>
+    /// <param name="prompt">The prompt text.</param>
+    /// <param name="correlationId">The end-to-end correlation identifier.</param>
+    /// <param name="lease">The run lease; the run takes ownership of it.</param>
+    /// <param name="parent">The accepting request's trace context, or null.</param>
+    public void Start(string sessionId, string runId, string prompt, string correlationId, ISessionRunLease lease, ActivityContext? parent)
+    {
+        ArgumentNullException.ThrowIfNull(sessionId);
+        ArgumentNullException.ThrowIfNull(runId);
         ArgumentNullException.ThrowIfNull(prompt);
         ArgumentNullException.ThrowIfNull(correlationId);
-        var run = RunDispatchedAsync(BuildInput(sessionId, prompt, correlationId), parent, _lifetime.ApplicationStopping);
-        _pending[sessionId] = run;
+        ArgumentNullException.ThrowIfNull(lease);
+        var run = RunDispatchedAsync(BuildInput(sessionId, runId, prompt, correlationId), lease, parent, _lifetime.ApplicationStopping);
         _ = run.ContinueWith(
             static (completed, state) =>
             {
-                var (pending, key, expected, logger) = (ValueTuple<ConcurrentDictionary<string, Task>, string, Task, ILogger<PromptRunner>>)state!;
-                pending.TryRemove(new KeyValuePair<string, Task>(key, expected));
+                var (key, logger) = ((string Key, ILogger<PromptRunner> Logger))state!;
                 if (completed.IsFaulted)
                 {
                     BackgroundRunFaulted(logger, key, completed.Exception?.GetType().FullName ?? "Unknown", null);
                 }
             },
-            ValueTuple.Create(_pending, sessionId, run, _logger),
+            (sessionId, _logger),
             CancellationToken.None,
             TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);
     }
 
-    /// <summary>Builds one workflow run input per prompt: one run means one provision and one teardown.</summary>
+    /// <summary>Builds the run input for one prompt: one run means one provision and one teardown.</summary>
     /// <param name="sessionId">The session identifier.</param>
+    /// <param name="runId">The run identifier.</param>
     /// <param name="prompt">The prompt text.</param>
     /// <param name="correlationId">The end-to-end correlation identifier.</param>
-    /// <returns>The workflow input for the run.</returns>
-    private static SessionRunInput BuildInput(string sessionId, string prompt, string correlationId)
-    {
-        var runId = Guid.NewGuid().ToString("N");
-        return new SessionRunInput
+    /// <returns>The run input for the run.</returns>
+    private static SessionRunInput BuildInput(string sessionId, string runId, string prompt, string correlationId) =>
+        new()
         {
             RunId = runId,
             SessionId = sessionId,
@@ -143,17 +169,16 @@ internal sealed class PromptRunner
             ResumeFromSeq = 0,
             IdempotencyKey = $"prompt-{runId}",
         };
-    }
 
     /// <summary>
-    /// Starts the run through <see cref="ISessionRunDispatcher"/> and, when the dispatcher reports an in-process
-    /// completion, settles the session from that result. The endpoint already admitted the prompt synchronously, so this
-    /// runs in the background and the 202 response is unaffected.
+    /// Runs the admitted turn under the lease handed over and, once the run completes, settles the session from its result. The
+    /// endpoint already admitted the prompt synchronously, so this runs in the background and the 202 response is unaffected.
     /// </summary>
     /// <param name="input">The run input for this prompt.</param>
+    /// <param name="lease">The run lease; the dispatcher releases it when the run ends.</param>
     /// <param name="parent">The accepting request's trace context, or null.</param>
     /// <param name="stoppingToken">The host shutdown signal.</param>
-    private async Task RunDispatchedAsync(SessionRunInput input, ActivityContext? parent, CancellationToken stoppingToken)
+    private async Task RunDispatchedAsync(SessionRunInput input, ISessionRunLease lease, ActivityContext? parent, CancellationToken stoppingToken)
     {
         using var activity = parent.HasValue
             ? OmpTelemetry.Activities.StartActivity("harness.run", ActivityKind.Internal, parent.Value)
@@ -165,26 +190,33 @@ internal sealed class PromptRunner
 
         // The turn identity of this run: the activities settle our turn before the runner tears the
         // sandbox down, so a later teardown failure must never settle a newer turn admitted meanwhile.
-        var expectedTurn = await GetTurnAsync(input.SessionId).ConfigureAwait(false);
+        // The run has not started yet, so a failure here must release the lease it was handed.
+        int expectedTurn;
+        try
+        {
+            expectedTurn = await GetTurnAsync(input.SessionId).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            await SettleAsync(input.SessionId, SessionStatus.Failed, null).ConfigureAwait(false);
+            await lease.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
 
         try
         {
-            var handle = await _dispatcher.StartAsync(input, stoppingToken).ConfigureAwait(false);
-            if (handle.Completion is not null)
-            {
-                var result = await handle.Completion.ConfigureAwait(false);
-                await SettleFromResultAsync(input, expectedTurn, result).ConfigureAwait(false);
-            }
+            var result = await _dispatcher.RunAsync(input, lease, stoppingToken).ConfigureAwait(false);
+            await SettleFromResultAsync(input, expectedTurn, result).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
-            await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Cancelled).ConfigureAwait(false);
+            await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Cancelled, null).ConfigureAwait(false);
         }
 #pragma warning disable CA1031 // Background execution must never fault the tracked task; the activities already settled above.
         catch (Exception ex)
         {
             PromptRunFailed(_logger, input.SessionId, ex.GetType().FullName ?? "Unknown", null);
-            await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Failed).ConfigureAwait(false);
+            await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Failed, null).ConfigureAwait(false);
         }
 #pragma warning restore CA1031
     }
@@ -216,20 +248,33 @@ internal sealed class PromptRunner
             // Log the cause (often a teardown failure for an already-settled turn) before the guarded
             // settle below, so a skipped stale settlement never swallows the cleanup failure.
             PromptRunFailed(_logger, input.SessionId, result.FailureDetail ?? result.Status.ToString(), null);
-            await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Failed).ConfigureAwait(false);
+            await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Failed, PersistableFailureDetail(result.FailureDetail)).ConfigureAwait(false);
         }
         else if (result.Status == WorkflowRunStatus.Cancelled)
         {
-            await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Cancelled).ConfigureAwait(false);
+            await SettleIfRunningAsync(input.SessionId, expectedTurn, SessionStatus.Cancelled, null).ConfigureAwait(false);
         }
     }
 
-    private async Task SettleAsync(string sessionId, SessionStatus final)
+    /// <summary>
+    /// Returns the failure detail a run may persist to the session log. Only the OmpOS-authored lease-lost text qualifies; runtime
+    /// error messages stay out of the log, as they always have.
+    /// </summary>
+    /// <param name="detail">The run's failure detail.</param>
+    /// <returns>The detail to persist, or null.</returns>
+    private static string? PersistableFailureDetail(string? detail) =>
+        string.Equals(detail, DirectSessionRunDispatcher.LeaseLostDetail, StringComparison.Ordinal) ? detail : null;
+
+    /// <summary>Records a terminal status for the session and announces it.</summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="final">The terminal status.</param>
+    /// <param name="failureDetail">The detail appended to a failed turn's terminal message, or null.</param>
+    private async Task SettleAsync(string sessionId, SessionStatus final, string? failureDetail)
     {
         try
         {
-            await _sessions.RecordCompletionAsync(sessionId, final, CancellationToken.None).ConfigureAwait(false);
-            _streamer.Notify(sessionId);
+            await _sessions.RecordCompletionAsync(sessionId, final, CancellationToken.None, failureDetail: failureDetail).ConfigureAwait(false);
+            await _publisher.NotifyAsync(sessionId).ConfigureAwait(false);
         }
         catch (SessionException ex)
         {
@@ -247,7 +292,8 @@ internal sealed class PromptRunner
     /// <param name="sessionId">The session identifier.</param>
     /// <param name="expectedTurn">The turn identity captured when this run started; settlement is skipped when the session moved on.</param>
     /// <param name="final">The terminal status to record.</param>
-    private async Task SettleIfRunningAsync(string sessionId, int expectedTurn, SessionStatus final)
+    /// <param name="failureDetail">The detail appended to a failed turn's terminal message, or null.</param>
+    private async Task SettleIfRunningAsync(string sessionId, int expectedTurn, SessionStatus final, string? failureDetail)
     {
         var session = await _repository.GetAsync(sessionId, CancellationToken.None).ConfigureAwait(false);
         if (session is not { Status: SessionStatus.Running })
@@ -261,7 +307,7 @@ internal sealed class PromptRunner
             return;
         }
 
-        await SettleAsync(sessionId, final).ConfigureAwait(false);
+        await SettleAsync(sessionId, final, failureDetail).ConfigureAwait(false);
     }
 
     /// <summary>Reads the turn identity of the run in flight: the number of user prompts admitted so far.</summary>

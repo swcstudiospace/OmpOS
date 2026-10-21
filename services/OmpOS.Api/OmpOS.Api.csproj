@@ -48,11 +48,13 @@
     <PackageReference Include="OpenTelemetry.Exporter.Console" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
     <PackageReference Include="Scalar.AspNetCore" />
-    <PackageReference Include="Temporalio" />
+    <PackageReference Include="StackExchange.Redis" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/OmpOS.Contracts/OmpOS.Contracts.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Coordination/OmpOS.Coordination.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Coordination.Dragonfly/OmpOS.Coordination.Dragonfly.csproj" />
     <ProjectReference Include="../../src/OmpOS.SessionRuns/OmpOS.SessionRuns.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sessions.Postgres/OmpOS.Sessions.Postgres.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />

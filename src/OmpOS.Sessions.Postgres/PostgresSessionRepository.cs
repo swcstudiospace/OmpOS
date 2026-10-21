@@ -10,23 +10,26 @@ using OmpOS.Harness.Abstractions;
 namespace OmpOS.Sessions.Postgres;
 
 /// <summary>
-/// PostgreSQL-backed <see cref="ISessionRepository"/>. Several processes (the API and the workflow worker) can share
+/// PostgreSQL-backed <see cref="ISessionRepository"/>. Several processes (for example the API and a worker) can share
 /// one database: every guarantee the in-memory repository gives within one process also holds across processes.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Seq allocation.</b> <see cref="AppendAsync"/> locks the session row with <c>SELECT … FOR UPDATE</c>, computes
-/// <c>max(seq) + 1</c> and inserts, all in one transaction. Appends and saves of one session therefore serialize on that
-/// row, so Seq is dense and unique under concurrency, from any number of processes.
+/// <b>Seq allocation.</b> Every writer of the event log takes the session header row lock before it chooses a Seq:
+/// <see cref="AppendAsync"/> with <c>SELECT … FOR UPDATE</c>, and <see cref="SaveAsync"/> with the header upsert. Writers of
+/// one session therefore serialize on that row, and Seq is dense and unique under concurrency, from any number of processes.
+/// The event table's primary key includes <c>occurred_at</c> (a TimescaleDB hypertable requires it), so the database does
+/// not enforce Seq uniqueness itself; this lock is what does.
 /// </para>
 /// <para>
-/// <b>Saves.</b> <see cref="SaveAsync"/> upserts the header, then applies the same rules as the in-memory repository:
+/// <b>Saves.</b> <see cref="SaveAsync"/> upserts the header, then applies the same prefix rule as the in-memory repository:
 /// the stored log is never shrunk, and a log whose Seq prefix diverges from the stored log is rejected with an
 /// <see cref="InvalidOperationException"/>, rolling back the header write. Events already stored are never rewritten,
-/// because the log is append-only: a longer save inserts only the events past the stored log.
+/// because the log is append-only. A longer save also requires each event past the stored log to carry a Seq above the one
+/// before it, because the database no longer rejects a repeated Seq.
 /// </para>
 /// <para>
-/// <b>Locks.</b> <see cref="LockSessionAsync"/> takes a session-level PostgreSQL advisory lock on a dedicated pooled
+/// <b>Locks.</b> <see cref="LockSessionAsync"/> takes a session-level PostgreSQL advisory lock on a dedicated unpooled
 /// connection, keyed by a stable 64-bit hash of the session id. The lock is exclusive across processes, is not
 /// reentrant, and works for a session id that has no header yet.
 /// </para>
@@ -39,8 +42,8 @@ namespace OmpOS.Sessions.Postgres;
 public sealed class PostgresSessionRepository : ISessionRepository
 {
     private const string InsertEventSql =
-        "INSERT INTO session_events (session_id, seq, correlation_id, event_timestamp, payload) " +
-        "VALUES (@session_id, @seq, @correlation_id, @event_timestamp, CAST(@payload AS jsonb))";
+        "INSERT INTO session_events (session_id, seq, correlation_id, occurred_at, payload) " +
+        "VALUES (@session_id, @seq, @correlation_id, @occurred_at, CAST(@payload AS jsonb))";
 
     private const string UpsertHeaderSql =
         "INSERT INTO sessions (id, owner_id, created_at, updated_at, status, sandbox_id, messages) " +
@@ -52,7 +55,7 @@ public sealed class PostgresSessionRepository : ISessionRepository
         "SELECT owner_id, created_at, updated_at, status, sandbox_id, CAST(messages AS text) FROM sessions WHERE id = @id";
 
     private const string SelectEventsSql =
-        "SELECT seq, correlation_id, event_timestamp, CAST(payload AS text) FROM session_events " +
+        "SELECT seq, correlation_id, occurred_at, CAST(payload AS text) FROM session_events " +
         "WHERE session_id = @session_id AND seq >= @from_seq ORDER BY seq";
 
     private const string SelectStoredSeqsSql =
@@ -78,14 +81,25 @@ public sealed class PostgresSessionRepository : ISessionRepository
         "UPDATE session_tool_approvals SET decision = @decision, decided_at = @decided_at " +
         "WHERE session_id = @session_id AND request_id = @request_id AND decision IS NULL";
 
+    private const string SelectSessionIdsByStatusSql =
+        "SELECT id FROM sessions WHERE status = @status AND updated_at < @updated_before " +
+        "ORDER BY id COLLATE \"C\" LIMIT @max_ids";
+
+    /// <summary>The most session identifiers one <see cref="ListSessionIdsByStatusAsync"/> call returns.</summary>
+    private const int MaxSessionIdsPerListing = 200;
+
     private readonly NpgsqlDataSource _dataSource;
+    private readonly PostgresSessionConnection _connection;
 
     /// <summary>Creates a repository over an existing data source. The schema must already exist; see <see cref="PostgresSessionSchema"/>.</summary>
     /// <param name="dataSource">The data source for the session database. Its lifetime is owned by the caller.</param>
-    public PostgresSessionRepository(NpgsqlDataSource dataSource)
+    /// <param name="connection">The connection string the store was configured with. Session locks connect with it directly.</param>
+    public PostgresSessionRepository(NpgsqlDataSource dataSource, PostgresSessionConnection connection)
     {
         ArgumentNullException.ThrowIfNull(dataSource);
+        ArgumentNullException.ThrowIfNull(connection);
         _dataSource = dataSource;
+        _connection = connection;
     }
 
     /// <inheritdoc />
@@ -113,10 +127,15 @@ public sealed class PostgresSessionRepository : ISessionRepository
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The upsert takes the session header row lock before the stored log is read, so a save and an append of one session
+    /// serialize on that lock, the same lock that orders <see cref="AppendAsync"/>.
+    /// </remarks>
     /// <exception cref="InvalidOperationException">
     /// The incoming <see cref="Session.Events"/> neither extend nor agree with the stored log: an event within the common
-    /// prefix carries a different <see cref="StreamEvent.Seq"/> than the stored event at the same position. The message names
-    /// the session and the first conflicting position. The header write is rolled back.
+    /// prefix carries a different <see cref="StreamEvent.Seq"/> than the stored event at the same position, or an event past
+    /// the stored log does not carry a Seq above the one before it. The message names the session and the first conflicting
+    /// position. The header write is rolled back.
     /// </exception>
     public async Task SaveAsync(Session session, CancellationToken cancellationToken)
     {
@@ -143,6 +162,14 @@ public sealed class PostgresSessionRepository : ISessionRepository
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>Seq is allocated under the session row lock.</b> The transaction first locks the header row with
+    /// <c>SELECT … FOR UPDATE</c>, then reads <c>max(seq) + 1</c> and inserts. The lock is granted only after any concurrent
+    /// append or save of the session commits, and the read runs in a statement that starts after the grant, so it sees every
+    /// committed Seq. Two events of one session therefore never receive the same Seq. This holds without a unique constraint
+    /// on Seq, which a hypertable primary key cannot express. Any new writer of <c>session_events</c> must take the same lock
+    /// before it chooses a Seq.
+    /// </remarks>
     /// <exception cref="KeyNotFoundException">No session has the given identifier.</exception>
     public async Task AppendAsync(string sessionId, StreamEvent evt, CancellationToken cancellationToken)
     {
@@ -185,7 +212,7 @@ public sealed class PostgresSessionRepository : ISessionRepository
 
     /// <inheritdoc />
     /// <remarks>
-    /// The lock is taken on a dedicated pooled connection and held until the returned value is disposed. A second
+    /// The lock is taken on a dedicated unpooled connection and held until the returned value is disposed. A second
     /// caller, in this process or another, waits until then. Do not nest calls for the same session: the lock is not
     /// reentrant and a nested call on the same task would wait forever.
     /// </remarks>
@@ -194,8 +221,7 @@ public sealed class PostgresSessionRepository : ISessionRepository
         ArgumentNullException.ThrowIfNull(sessionId);
 
         var key = PostgresSql.AdvisoryKey(sessionId);
-        var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-        var acquired = false;
+        var connection = await OpenLockConnectionAsync(_connection, cancellationToken).ConfigureAwait(false);
         try
         {
             var command = PostgresSql.Create(connection, null);
@@ -205,25 +231,40 @@ public sealed class PostgresSessionRepository : ISessionRepository
                 command.Parameters.AddWithValue("key", key);
                 await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
             }
-
-            acquired = true;
-            return new PostgresSessionLock(connection, key);
         }
-        finally
+        catch
         {
-            if (!acquired)
-            {
-                // A cancelled wait can race with the grant: release explicitly so a pooled connection never returns holding the lock.
-                try
-                {
-                    await PostgresSessionLock.UnlockAsync(connection, key, CancellationToken.None).ConfigureAwait(false);
-                }
-                finally
-                {
-                    await connection.DisposeAsync().ConfigureAwait(false);
-                }
-            }
+            // A cancelled or failed acquisition can race with the grant. Closing the unpooled connection ends its backend, which releases any grant.
+            await PostgresSessionLock.CloseConnectionAsync(connection).ConfigureAwait(false);
+            throw;
         }
+
+        return new PostgresSessionLock(connection, key);
+    }
+
+    /// <summary>
+    /// Opens the connection that holds a session lock. It is built from the connection string the store was configured with,
+    /// with pooling off, and opened directly, not through the data source, so the password and the authentication settings are
+    /// the originals. Closing it ends its server backend, and the server then releases the lock, whether or not an unlock ran.
+    /// </summary>
+    /// <param name="connection">The configured connection string. It holds credentials and is never logged.</param>
+    /// <param name="cancellationToken">Cancels the open.</param>
+    /// <returns>The open, unpooled connection. The caller owns it.</returns>
+    internal static async Task<NpgsqlConnection> OpenLockConnectionAsync(PostgresSessionConnection connection, CancellationToken cancellationToken)
+    {
+        var unpooled = new NpgsqlConnectionStringBuilder(connection.ConnectionString) { Pooling = false }.ConnectionString;
+        var opened = new NpgsqlConnection(unpooled);
+        try
+        {
+            await opened.OpenAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            await opened.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+
+        return opened;
     }
 
     /// <inheritdoc />
@@ -323,6 +364,39 @@ public sealed class PostgresSessionRepository : ISessionRepository
 
                 // The conditional UPDATE is the decision: exactly one caller can change a pending row.
                 return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) == 1;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Ids are ordered with the <c>C</c> collation, which is byte order, the same order as ordinal comparison in the
+    /// in-memory repository, whatever the database collation.
+    /// </remarks>
+    public async Task<IReadOnlyList<string>> ListSessionIdsByStatusAsync(SessionStatus status, DateTimeOffset updatedBefore, CancellationToken cancellationToken)
+    {
+        var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            var command = PostgresSql.Create(connection, null);
+            command.CommandText = SelectSessionIdsByStatusSql;
+            await using (command.ConfigureAwait(false))
+            {
+                command.Parameters.AddWithValue("status", status.ToString());
+                command.Parameters.AddWithValue("updated_before", updatedBefore);
+                command.Parameters.AddWithValue("max_ids", (long)MaxSessionIdsPerListing);
+
+                var ids = new List<string>();
+                var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                await using (reader.ConfigureAwait(false))
+                {
+                    while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                    {
+                        ids.Add(reader.GetString(0));
+                    }
+                }
+
+                return ids;
             }
         }
     }
@@ -450,9 +524,13 @@ public sealed class PostgresSessionRepository : ISessionRepository
         return seqs;
     }
 
-    /// <summary>Throws when the incoming log, at least as long as the stored one, disagrees with the stored Seq prefix.</summary>
+    /// <summary>
+    /// Throws when the incoming log, at least as long as the stored one, disagrees with the stored Seq prefix, or when an
+    /// event past the stored log does not carry a Seq above the one before it.
+    /// </summary>
     /// <param name="session">The session being saved.</param>
     /// <param name="stored">The Seq values of the stored log, in order.</param>
+    /// <exception cref="InvalidOperationException">The incoming log conflicts with the stored log.</exception>
     private static void ThrowOnConflict(Session session, List<long> stored)
     {
         if (session.Events.Count < stored.Count)
@@ -469,6 +547,22 @@ public sealed class PostgresSessionRepository : ISessionRepository
                     $"has Seq {session.Events[index].Seq} but the stored log has Seq {stored[index]}.");
             }
         }
+
+        // The primary key includes occurred_at, so the database accepts a repeated Seq. This check, made under the session
+        // header row lock taken by the upsert, keeps the stored log unique in Seq.
+        var previous = stored.Count == 0 ? long.MinValue : stored[^1];
+        for (var index = stored.Count; index < session.Events.Count; index++)
+        {
+            var seq = session.Events[index].Seq;
+            if (seq <= previous)
+            {
+                throw new InvalidOperationException(
+                    $"Session '{session.Id}' has a conflicting event log: incoming event at index {index} has Seq {seq}, " +
+                    $"which is not above the Seq {previous} before it.");
+            }
+
+            previous = seq;
+        }
     }
 
     private static async Task InsertEventAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, string sessionId, StreamEvent evt, CancellationToken cancellationToken)
@@ -480,7 +574,7 @@ public sealed class PostgresSessionRepository : ISessionRepository
             command.Parameters.AddWithValue("session_id", sessionId);
             command.Parameters.AddWithValue("seq", evt.Seq);
             command.Parameters.AddWithValue("correlation_id", evt.CorrelationId);
-            command.Parameters.AddWithValue("event_timestamp", evt.Timestamp);
+            command.Parameters.AddWithValue("occurred_at", evt.Timestamp);
             command.Parameters.AddWithValue("payload", JsonSerializer.Serialize(evt.Payload, OmpOsJsonContext.Default.StreamEventPayload));
 
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);

@@ -13,7 +13,7 @@ namespace OmpOS.SessionRuns;
 
 /// <summary>
 /// The session-run activities (WFLW-01, OD-02): the single implementation of a prompt run, used by the API's direct path
-/// and by the Temporal worker.
+/// and by any other host that executes session runs.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -235,12 +235,17 @@ public sealed class SessionRunActivities : ISessionRunActivities
     }
 
     /// <inheritdoc />
-    public Task TeardownSandboxAsync(SessionRunInput input, CancellationToken cancellationToken)
+    public async Task TeardownSandboxAsync(SessionRunInput input, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(input);
-        return !_sandboxIds.TryRemove(input.IdempotencyKey, out var sandboxId)
-            ? Task.CompletedTask
-            : _sandbox.TeardownAsync(sandboxId, cancellationToken);
+        if (!_sandboxIds.TryGetValue(input.IdempotencyKey, out var sandboxId))
+        {
+            return;
+        }
+
+        // The mapping stays until the provider confirms teardown, so a failed attempt can be retried by the caller.
+        await _sandbox.TeardownAsync(sandboxId, cancellationToken).ConfigureAwait(false);
+        _ = _sandboxIds.TryRemove(new KeyValuePair<string, string>(input.IdempotencyKey, sandboxId));
     }
 
     private async Task AppendAsync(string sessionId, string correlationId, StreamEventPayload payload, CancellationToken cancellationToken)

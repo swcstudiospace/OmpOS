@@ -23,7 +23,7 @@ public sealed class SseWatcherWakeTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
         var streamer = factory.Services.GetRequiredService<SessionEventStreamer>();
         var repository = factory.Services.GetRequiredService<ISessionRepository>();
 
@@ -41,7 +41,7 @@ public sealed class SseWatcherWakeTests
         }
 
         // Give every subscriber time to reach its wait; one that has not waited yet still replays the append.
-        await Task.Delay(TimeSpan.FromMilliseconds(250), token);
+        await Task.Delay(TimeSpan.FromMilliseconds(250), token).ConfigureAwait(true);
 
         var evt = new StreamEvent
         {
@@ -51,16 +51,16 @@ public sealed class SseWatcherWakeTests
             Timestamp = DateTimeOffset.UtcNow,
             Payload = new TextDeltaPayload { Delta = "wake" },
         };
-        await repository.AppendAsync(id, evt, token);
+        await repository.AppendAsync(id, evt, token).ConfigureAwait(true);
         streamer.Notify(id);
 
-        var woke = await Task.WhenAll(pending).WaitAsync(WakeBudget, token);
+        var woke = await Task.WhenAll(pending).WaitAsync(WakeBudget, token).ConfigureAwait(true);
 
         woke.ShouldAllBe(static delivered => delivered, "every waiting subscriber must wake for the append");
         enumerators.ShouldAllBe(static enumerator => enumerator.Current.Payload is TextDeltaPayload);
         foreach (var enumerator in enumerators)
         {
-            await enumerator.DisposeAsync();
+            await enumerator.DisposeAsync().ConfigureAwait(true);
         }
     }
 }

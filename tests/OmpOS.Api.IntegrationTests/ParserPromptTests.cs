@@ -22,15 +22,15 @@ public sealed class ParserPromptTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var response = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"ultrathink the deployment plan\"}", testToken);
+        using var response = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"ultrathink the deployment plan\"}", testToken).ConfigureAwait(true);
         response.StatusCode.ShouldBe(HttpStatusCode.Accepted);
-        var body = await response.Content.ReadAsStringAsync(testToken);
+        var body = await response.Content.ReadAsStringAsync(testToken).ConfigureAwait(true);
         using var document = JsonDocument.Parse(body);
         document.RootElement.GetProperty("intentKind").GetString().ShouldBe("Magic");
 
-        var items = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 1, testToken);
+        var items = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 1, testToken).ConfigureAwait(true);
         items.Count.ShouldBe(1);
         items[0].EventType.ShouldBe("prompt_accepted");
         using var evt = JsonDocument.Parse(items[0].Data);
@@ -47,11 +47,11 @@ public sealed class ParserPromptTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var response = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"/resume from the last checkpoint\"}", testToken);
+        using var response = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"/resume from the last checkpoint\"}", testToken).ConfigureAwait(true);
         response.StatusCode.ShouldBe(HttpStatusCode.Accepted);
-        var body = await response.Content.ReadAsStringAsync(testToken);
+        var body = await response.Content.ReadAsStringAsync(testToken).ConfigureAwait(true);
         using var document = JsonDocument.Parse(body);
         document.RootElement.GetProperty("intentKind").GetString().ShouldBe("SlashCommand");
     }
@@ -75,11 +75,11 @@ public sealed class ParserPromptTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var response = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"Summarize the quarterly report in plain words\"}", testToken);
+        using var response = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"Summarize the quarterly report in plain words\"}", testToken).ConfigureAwait(true);
         response.StatusCode.ShouldBe(HttpStatusCode.Accepted);
-        var body = await response.Content.ReadAsStringAsync(testToken);
+        var body = await response.Content.ReadAsStringAsync(testToken).ConfigureAwait(true);
         using var document = JsonDocument.Parse(body);
         document.RootElement.GetProperty("intentKind").GetString().ShouldBe("Fallback");
 
@@ -94,19 +94,19 @@ public sealed class ParserPromptTests
         using var factory = new OmpApiFactory(configureServices: services => services.AddSingleton<IHarnessSessionFactory>(gate));
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var first = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"start the long task\"}", testToken);
+        using var first = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"start the long task\"}", testToken).ConfigureAwait(true);
         first.StatusCode.ShouldBe(HttpStatusCode.Accepted);
 
-        using var second = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"keep going faster\"}", testToken);
+        using var second = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"keep going faster\"}", testToken).ConfigureAwait(true);
         second.StatusCode.ShouldBe(HttpStatusCode.Accepted);
-        var body = await second.Content.ReadAsStringAsync(testToken);
+        var body = await second.Content.ReadAsStringAsync(testToken).ConfigureAwait(true);
         using var document = JsonDocument.Parse(body);
         document.RootElement.GetProperty("intentKind").GetString().ShouldBe("Steer");
 
         gate.Release();
-        var settled = await SessionClient.WaitForStatusAsync(client, id, Contracts.Sessions.SessionStatus.Completed, TimeSpan.FromSeconds(15), testToken);
+        var settled = await SessionClient.WaitForStatusAsync(client, id, Contracts.Sessions.SessionStatus.Completed, TimeSpan.FromSeconds(15), testToken).ConfigureAwait(true);
         settled.Messages.Select(static message => message.Role).ShouldBe(["user", "steer"]);
     }
 
@@ -117,9 +117,9 @@ public sealed class ParserPromptTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var response = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"\"}", testToken);
+        using var response = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"\"}", testToken).ConfigureAwait(true);
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 }

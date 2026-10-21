@@ -10,8 +10,7 @@ namespace OmpOS.Workflows.Tests;
 /// <remarks>
 /// Tests the workflow contract: provision → run prompt → collect → teardown in order,
 /// with teardown in finally semantics (happy path, prompt failure, provision failure,
-/// heartbeats, cancellation). Run against <see cref="DirectSessionRunner"/> and reusable
-/// for the Temporal implementation later (WFLW-03).
+/// heartbeats, cancellation). Run against <see cref="DirectSessionRunner"/>.
 /// </remarks>
 /// <typeparam name="TFixture">The test fixture type providing test activities.</typeparam>
 [SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default.")]

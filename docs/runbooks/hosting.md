@@ -2,150 +2,155 @@
 
 ## Status
 
-Nothing has been deployed. No Railway service exists for OmpOS. The images below have not been built, and the Railway config files have not been applied. This runbook and the files under `deploy/` are the hosting definition only.
+Nothing is deployed by this runbook. The `ompos-api` service does not exist yet. This document and `deploy/api.Containerfile` are the hosting definition only.
 
-## Files
+The topology below is the owner decision of 2026-10-21 ([decision text](../handoff.md#temporal-removal-and-railway-topology-2026-10-21)). Services marked "existing" are described from that decision. They were not re-inspected in this rewrite [INFERENCE: state at deploy time].
 
-| File | Purpose |
-|------|---------|
-| `deploy/api.Containerfile` | Multi-stage image for `services/OmpOS.Api` |
-| `deploy/worker.Containerfile` | Multi-stage image for `services/OmpOS.Workflows.Worker` |
-| `.containerignore` | Build-context exclusions for both images: `bin/`, `obj/`, `.git`, `.dotnet`, `.nuget`, `.env*`, `.planning/` never enter a build |
+Hosted runtime limits:
 
-The build files are named `*.Containerfile` because `RepoHygieneTests` forbids files named `Dockerfile*` or `docker-compose*`. Builds use podman only.
+- The hosted API runs the InMemory harness and `FakeSandboxProvider`.
+- No real omp runtime, sandbox provider, or model credential is deployed.
+- HOST-04 stays open.
 
-## Railway settings: no config file
+## Topology
 
-Railway Config as Code is deprecated, and new services cannot opt into it (https://docs.railway.com/config-as-code). This repository therefore commits no `railway.json` or `railway.toml`. Every setting below is a dashboard setting or a service variable.
+Railway project `Ultrathink`, environment `production`. All service-to-service traffic uses private networking at `SERVICE_NAME.railway.internal`.
 
-- The former `deploy/railway/api.json` and `deploy/railway/worker.json` were removed. They applied only to services that already used a config file, so they never applied to a new service.
-- Owner decision 6 stands: dashboard settings and variables (the path recorded here), or IaC `.railway/railway.ts`. Do not manage one service with both systems (IaC docs).
+| Service | State | Image or source | Private host and port | Role |
+|---------|-------|-----------------|-----------------------|------|
+| `ompos-api` | Planned, not created | `deploy/api.Containerfile`, repository root as build context | `ompos-api.railway.internal:8080` | ASP.NET Core API. Session runs execute in-process. |
+| TimescaleDB | Existing | `timescale-postgis-ssl:pg16-ts2.13` (Railway template: PostgreSQL 16, TimescaleDB 2.13, TLS on) | `timescaledb.railway.internal`, port [INFERENCE: 5432, the PostgreSQL default; read `PGPORT`] | Session log, schema `ompos` |
+| Dragonfly | Existing | `ghcr.io/dragonflydb/dragonfly:latest` (unpinned; open item Q-HOST-DFLY-PIN) | `dragonfly.railway.internal:6379` | Run leases, idempotency, SSE wake-up pub/sub |
+| GreptimeDB | Existing | `greptime/greptimedb:v1.1.4` (pinned) | `greptimedb.railway.internal:4000` | OTLP telemetry (auth enabled) |
+| Postgres (plain) | Existing | Not used by this change | n/a | Retirement is an open owner decision (Q-PG-RETIRE) |
+| Agent, Routines, OpenBot, Gate | Existing | Not used by this change | n/a | None |
 
-### Settings verified against Railway docs
+Not services:
 
-| Setting | Where | Value | Source |
-|---------|-------|-------|--------|
-| Builder | Service settings, build | Dockerfile | https://docs.railway.com/builds/dockerfiles |
-| Dockerfile path | Variable `RAILWAY_DOCKERFILE_PATH` | `deploy/api.Containerfile` / `deploy/worker.Containerfile` | https://docs.railway.com/builds/dockerfiles#custom-dockerfile-path; https://docs.railway.com/variables/reference#user-provided-configuration-variables |
-| Build context | Service Root Directory | Repository root (default) | https://docs.railway.com/guides/docker-compose#services-with-a-dockerfile-or-build-context |
-| Health check path | Service settings, health check | `/health/ready` (API only) | https://docs.railway.com/deployments/healthchecks |
-| Health check timeout | Service settings, health check | 120 s (API only; chosen value, not a platform default) | https://docs.railway.com/deployments/healthchecks |
-| Restart policy | Service settings, deploy | On failure | Dashboard setting; the exact label was not re-verified |
+- **Worker.** None. The Temporal worker project was removed on 2026-10-21, and `deploy/` no longer contains a worker image.
+- **Web.** Vercel hosts the Blazor WebAssembly web head outside Railway. Its origin and CSP are open items (Q-VERCEL-CSP).
 
-Railway injects `PORT`. The API binds to it and falls back to 8080. The health check runs at deploy time only, from host `healthcheck.railway.app` (https://docs.railway.com/deployments/healthchecks).
+## Network and ports
 
-The build context is the service Root Directory, not the Dockerfile's directory (https://docs.railway.com/guides/docker-compose#services-with-a-dockerfile-or-build-context). Keep the Root Directory at the repository root, because the Containerfiles copy repo-relative paths.
+- **No public domain for `ompos-api`.** Do not generate one until the sign-in method is decided (OD-03). Until then the API has no authentication (single local dev principal), so it must stay private.
+- **Listener.** The API listens on `[::]:8080` (dual-stack). Dual-stack is required for private networking in legacy IPv6-only environments.
+- **PORT=8080 rule.** Set `PORT=8080` on `ompos-api`. The API binds the `PORT` value, and the hosted value is 8080. Confirm the injected value and the listener in the deploy logs (decided at deploy time).
+- **Fallback domain (telemetry only).** GreptimeDB has a public service domain, `greptimedb-production.up.railway.app` over HTTPS. Use it only if the private path fails (Q-HOST-PRIVNET). It is not an API domain.
 
-The API does not restrict hosts (no `AllowedHosts` setting in `services/OmpOS.Api`). That is acceptable only while the API stays private (owner decision 1).
+## Service settings (dashboard; no config file)
+
+Railway Config as Code is deprecated, and new services cannot opt into it (https://docs.railway.com/config-as-code). This repository commits no `railway.json` or `railway.toml`. Every setting below is a dashboard setting or a service variable.
+
+| Setting | Value | Source |
+|---------|-------|--------|
+| Builder | Dockerfile | Previous revision of this runbook, citing https://docs.railway.com/builds/dockerfiles; not re-verified in this rewrite |
+| Dockerfile path | Variable `RAILWAY_DOCKERFILE_PATH` = `deploy/api.Containerfile` | Previous revision, citing https://docs.railway.com/variables/reference; not re-verified |
+| Root Directory | Repository root (default) | The Containerfile copies repo-relative paths; build context is the Root Directory |
+| Health check path | `/health/ready` | Owner decision 2026-10-21 |
+| Health check timeout | 120 s | Chosen value, not a platform default |
+| Restart policy | On failure | Dashboard setting; exact label not re-verified |
+
+The platform health check runs at deploy time from host `healthcheck.railway.app` (https://docs.railway.com/deployments/healthchecks, cited in the previous revision).
 
 ## Base images
 
 | Stage | Image | Why |
 |-------|-------|-----|
-| API build | `mcr.microsoft.com/dotnet/sdk:10.0.402-noble` | `global.json` pins SDK `10.0.402` with `rollForward: latestPatch`. The tag matches exactly. |
-| API runtime | `mcr.microsoft.com/dotnet/aspnet:10.0.13-noble` | The runtime bundled with SDK 10.0.402 is 10.0.13 (https://dotnet.microsoft.com/en-us/download/dotnet/10.0). Noble (Ubuntu 24.04) is used because the entrypoint needs `/bin/sh` to map `PORT`. Chiseled images have no shell. |
-| Worker build | `mcr.microsoft.com/dotnet/sdk:10.0.402-noble` | Same as the API. |
-| Worker runtime | `mcr.microsoft.com/dotnet/runtime:10.0.13-noble` | The worker is a generic host with no HTTP listener, so the ASP.NET image is not needed. |
+| Build | `mcr.microsoft.com/dotnet/sdk:10.0.402-noble` | `global.json` pins SDK `10.0.402` with `rollForward: latestPatch`. |
+| Runtime | `mcr.microsoft.com/dotnet/aspnet:10.0.13-noble` | Runtime bundled with SDK 10.0.402 is 10.0.13. Noble is used because the entrypoint needs `/bin/sh` to map `PORT`. |
 
-Sources for tags:
+Both stages pass `--locked-mode` restore, then `publish --no-restore`. The final stage runs as UID/GID `10001`. Pin by digest before production (for example `sdk:10.0.402-noble@sha256:...`). No digest has been recorded, because no registry pull was performed.
 
-- SDK `10.0.402-noble`: https://github.com/dotnet/dotnet-docker/blob/main/README.sdk.md (tag table) and https://mcr.microsoft.com/v2/dotnet/sdk/tags/list.
-- ASP.NET and runtime `10.0.13-noble`: https://raw.githubusercontent.com/dotnet/dotnet-docker/main/README.aspnet.md and https://raw.githubusercontent.com/dotnet/dotnet-docker/main/README.runtime.md; confirmed in the MCR tag lists `https://mcr.microsoft.com/v2/dotnet/aspnet/tags/list` and `https://mcr.microsoft.com/v2/dotnet/runtime/tags/list`.
-- SDK 10.0.402 bundles runtime 10.0.13: https://dotnet.microsoft.com/en-us/download/dotnet/10.0 and https://github.com/dotnet/core/blob/main/release-notes/10.0/10.0.13/10.0.13.md.
+The build files are named `*.Containerfile` because `RepoHygieneTests` forbids files named `Dockerfile*` or `docker-compose*`. Builds use podman only. `.containerignore` excludes `bin/`, `obj/`, `.git`, `.dotnet`, `.nuget`, `.env*`, and `.planning/`.
 
-Both stages pass `--locked-mode` restore, then `publish --no-restore`. Every project in both graphs has a committed `packages.lock.json`. Both final stages run as UID/GID `10001`.
-
-Pin by digest before production (for example `sdk:10.0.402-noble@sha256:...`). Digests were not recorded here because no registry pull was performed.
-
-## Build commands (podman only)
+## Build and local smoke test (podman only)
 
 Run from the repository root:
 
 ```sh
 podman build -f deploy/api.Containerfile -t ompos-api:local .
-podman build -f deploy/worker.Containerfile -t ompos-worker:local .
-```
-
-Local smoke test (after building):
-
-```sh
-podman run --rm -p 8080:8080 -e Harness__Adapter=InMemory ompos-api:local
+podman run --rm -p 8080:8080 -e PORT=8080 -e Harness__Adapter=InMemory -e Sessions__Store=InMemory -e Coordination__Store=InMemory ompos-api:local
 curl -fsS http://127.0.0.1:8080/health/ready
 ```
 
-Build context: the whole repository. `.containerignore` excludes `bin/`, `obj/`, `.git`, `.dotnet`, `.nuget`, `.env*` and `.planning/`, so host build output and local secrets stay out of images.
+The `Sessions__Store` and `Coordination__Store` keys default to `InMemory` in `appsettings.json`, so the smoke test does not need them. The explicit `-e` settings above only make the mode visible. The container runs with `ASPNETCORE_ENVIRONMENT=Production`, so the API logs the InMemory warning (events 31 and 32). This smoke test has not been run in this rewrite [INFERENCE: expected to pass; not executed].
 
 ## Environment variables
 
-Config keys use `:` in code and `__` in the environment. Names below come from the option classes in `services/OmpOS.Api/Options/` and `services/OmpOS.Workflows.Worker/` (`WorkerHostConfiguration.cs`, `WorkerOptions.cs`).
+Names only. Config keys use `:` in code and `__` in the environment. Values never go in this file or in the repository. Mark secret variables as secrets in Railway.
 
-### API (`services/OmpOS.Api`)
+Reference variables use the shape `${{SERVICE.VARIABLE}}`, resolved by Railway at deploy time. The `PGHOST` reference is from the owner decision. The other Postgres reference names are the standard template names [INFERENCE: confirm on the TimescaleDB Variables tab].
 
-| Variable | Default | Required | Notes | Source |
-|----------|---------|----------|-------|--------|
-| `PORT` | unset (uses 8080) | No (platform injects it) | Listen port. Railway sets it. | `deploy/api.Containerfile` entrypoint |
-| `ASPNETCORE_ENVIRONMENT` | `Production` (set in image) | No | Development enables Scalar UI and the developer exception page. Do not set Development in hosting. | `deploy/api.Containerfile` |
-| `Harness__Adapter` | `InMemory` (appsettings) | Yes | Only `InMemory` is accepted. Startup fails naming this key if absent. | `HarnessOptions.cs` |
-| `Api__Cors__Origins__0`, `__1`, ... | empty (no cross-origin) | Owner decision | Public web origin(s). Empty denies cross-origin traffic. | `ApiCorsOptions.cs` |
-| `Api__MaxPromptLength` | `64000` | No | 1 to 10,000,000. | `ApiOptions.cs` |
-| `Api__MaxRequestBodyBytes` | `1048576` | No | 1 to 1,073,741,824. | `ApiOptions.cs` |
-| `Api__RateLimit__PromptsPerMinute` | `60` | No | 1 to 100,000. | `ApiRateLimitOptions.cs` |
-| `Api__RateLimit__SessionsPerMinute` | `60` | No | 1 to 100,000. | `ApiRateLimitOptions.cs` |
-| `Workflows__Enabled` | `false` | Owner decision | `false` runs prompts in-process with the fake sandbox. `true` dispatches to Temporal. | `WorkflowsOptions.cs`, `Program.cs` |
-| `Workflows__Address` | none | Yes when `Workflows__Enabled=true` | Temporal host:port. Startup fails without it. | `WorkflowsOptions.cs` |
-| `Workflows__Namespace` | `default` | Owner decision | Temporal namespace. | `WorkflowsOptions.cs` |
-| `Workflows__TaskQueue` | `ompos-session-runs` | No | Must match the worker's queue. | `WorkflowsOptions.cs` |
-| `Workflows__ApiKey` | none | Secret, when Temporal Cloud needs it | Bearer token. Set it in Railway as a secret. Never commit it. | `WorkflowsOptions.cs` |
-| `Workflows__Tls` | `false` | Owner decision | Enables TLS on the Temporal client. | `WorkflowsOptions.cs` |
-| `Otel__Exporter` | `none` | No | `none`, `console`, or `otlp`. | `OtelOptions.cs` |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | SDK default | Required for `otlp` | Read by the OpenTelemetry .NET SDK, since the code calls `AddOtlpExporter()` with no arguments. [INFERENCE: standard SDK behaviour, not set in repo.] | `services/OmpOS.Api/Program.cs` |
-| `OmpOS__Debug__LogPrompts` | `false` | No | Must stay `false` when hosted: `true` writes prompt bodies to logs. | `DebugOptions.cs` |
+### `ompos-api`
 
-### Worker (`services/OmpOS.Workflows.Worker`)
+| Variable | Hosted value (shape) | Required | Notes |
+|----------|----------------------|----------|-------|
+| `PORT` | `8080` | Yes | Rule in "Network and ports". |
+| `ASPNETCORE_ENVIRONMENT` | `Production` (set by image) | No | Never `Development`. |
+| `Sessions__Store` | `Postgres` | Yes, explicit in production | `Postgres` or `InMemory`. Defaults to `InMemory` in `appsettings.json`; production must set it explicitly. A warning is logged in Production when it is `InMemory` (event 31). |
+| `Sessions__Postgres__ConnectionString` | `Host=${{TimescaleDB.PGHOST}};Port=${{TimescaleDB.PGPORT}};Database=${{TimescaleDB.PGDATABASE}};Username=${{TimescaleDB.PGUSER}};Password=${{TimescaleDB.PGPASSWORD}};Ssl Mode=Require;Trust Server Certificate=true` | Yes, secret | Npgsql. `Trust Server Certificate` is needed because the template's TLS certificate is self-signed on the private network. |
+| `Coordination__Store` | `Dragonfly` | Yes, explicit in production | `Dragonfly` or `InMemory`. Defaults to `InMemory` in `appsettings.json`; production must set it explicitly. A warning is logged in Production when it is `InMemory` (event 32). |
+| `Coordination__Dragonfly__ConnectionString` | `dragonfly.railway.internal:6379,password=${{Dragonfly.DFLY_requirepass}},abortConnect=false` | Yes, secret | StackExchange.Redis format. `abortConnect=false` is required. [INFERENCE: the Dragonfly reference name `Dragonfly`; the private host is lowercase in DNS.] |
+| `Otel__Exporter` | `otlp` | No | `none` (default), `console`, or `otlp`. |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://greptimedb.railway.internal:4000/v1/otlp` | Yes when `otlp` | Read by the .NET OpenTelemetry SDK. The private path is unverified (Q-HOST-PRIVNET). |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | Yes when `otlp` | |
+| `OTEL_EXPORTER_OTLP_HEADERS` | `Authorization=<Basic credential>,X-Greptime-DB-Name=public,X-Greptime-Pipeline-Name=greptime_trace_v1` | Yes, secret | The only OTLP header variable. Set it in the hosting environment; the Authorization value is never committed. Traces are rejected with `400 Pipeline is required for this API` without the pipeline header, so do not use `OTEL_EXPORTER_OTLP_TRACES_HEADERS` (it was not applied in the local smoke). See [smoke evidence, finding 1](evidence/smoke-backend-local-2026-10-21.md). `X-Greptime-DB-Name=public` comes from the 2026-10-21 orchestrator decision; the smoke file records only the pipeline header [INFERENCE]. |
+| `Harness__Adapter` | `InMemory` | Yes | The only adapter the API accepts. The real harness is HOST-04 (open). |
+| `OmpOS__Debug__LogPrompts` | `false` | No | `true` writes prompt bodies to logs. Keep `false` when hosted. |
+| `Api__Cors__Origins__0` (and `__1`, ...) | Unset | Owner decision | An empty list denies all cross-origin traffic. Set only after the Vercel origin mechanism is decided (Q-VERCEL-CSP). |
+| `Api__MaxPromptLength` | Default `64000` | No | |
+| `Api__MaxRequestBodyBytes` | Default `1048576` | No | |
+| `Api__RateLimit__PromptsPerMinute` | Default `60` | No | |
+| `Api__RateLimit__SessionsPerMinute` | Default `60` | No | |
 
-| Variable | Default | Required | Notes | Source |
-|----------|---------|----------|-------|--------|
-| `Workflows__Enabled` | `false` | Yes | `false` prints a message and exits 0. The worker is inert until this is `true`. | `WorkerHostConfiguration.cs`, `Program.cs` |
-| `Workflows__Address` | `localhost:7233` | Yes when enabled | Temporal host:port. Must be reachable from Railway. | `WorkerOptions.cs` |
-| `Workflows__Namespace` | `default` | Owner decision | | `WorkerOptions.cs` |
-| `Workflows__TaskQueue` | `ompos-session-runs` | No | | `WorkerOptions.cs` |
-| `Workflows__ApiKey` | none | Secret, when needed | Same secret as the API when both use Temporal Cloud. | `WorkerOptions.cs` |
-| `Workflows__Tls` | `false` | Owner decision | | `WorkerOptions.cs` |
-| `Sandbox__Provider` | none | Yes when enabled | Only `podman` is accepted. Selects `LocalPodmanComposeProvider`, which runs podman. See blocker 2. | `WorkerHostConfiguration.cs` |
-| `Harness__Adapter` | none | Yes when enabled | Only `rpc` is accepted. | `WorkerHostConfiguration.cs` |
-| `Harness__OmpPath` | none | Yes when `rpc` | Path to the `omp` binary. The image does not contain one. See blocker 3. | `WorkerHostConfiguration.cs` |
-| `Harness__Cwd` | none | Yes when `rpc` | Working directory for `omp`. | `WorkerHostConfiguration.cs` |
+Removed: every `Workflows__*` variable (`Workflows__Enabled`, `Workflows__Address`, `Workflows__Namespace`, `Workflows__TaskQueue`, `Workflows__ApiKey`, `Workflows__Tls`). The Temporal configuration is gone. Do not set any of them.
 
-Railway injects `PORT` (https://docs.railway.com/deployments/healthchecks). The worker has no HTTP listener, so it needs no port and no health check path.
+The TimescaleDB, Dragonfly, and GreptimeDB variables belong to their own services. The Dragonfly password lives in the variable `DFLY_requirepass` on the Dragonfly service. Read it through the reference shown above; never copy it.
 
-**Not present in code:** no sign-in or API-key variable exists for the API. `AuthBoundaryMiddleware` attaches a single `local-dev` principal to every request (`SingleDevPrincipal`). Hosting the API publicly therefore exposes it without authentication. See owner decision 1.
+## Deploy steps
 
-## Deploy order
+Each step says whether it has been verified. Steps not yet verified are marked "decided at deploy time".
 
-Do not deploy until the owner decisions below are answered.
+1. **Check the existing services.** Confirm TimescaleDB, Dragonfly, and GreptimeDB are running in `Ultrathink` / `production`. Read their private hosts and ports from their Variables tabs. *Decided at deploy time.*
+2. **Create `ompos-api`** from this repository, with Root Directory at the repository root and Dockerfile path `deploy/api.Containerfile`. Do not generate a domain. *Not yet performed.*
+3. **Set the variables** from the table above, with secrets marked as secrets and references used for every connection string. *Decided at deploy time.*
+4. **Set the health check** path to `/health/ready` and the timeout to 120 s. *Not yet performed.*
+5. **Deploy and read the logs.** Confirm the listener is `[::]:8080` and that the Postgres schema and hypertable are present. The DDL has not been executed (Q-DATA-TSDB-VERSION). *Decided at deploy time.*
+6. **Check health.** `/health/ready` and `/health/live` return 200. *Decided at deploy time.*
+7. **Check the private paths.** From `ompos-api`, confirm Dragonfly and GreptimeDB are reachable over the private network (Q-HOST-PRIVNET). If GreptimeDB fails, the fallback is the public HTTPS domain; that choice is not yet made. *Decided at deploy time.*
+8. **Smoke-test a session.** A prompt returns 202, the SSE stream completes, and the run lease is released. This runs on the InMemory harness and `FakeSandboxProvider`, so it proves plumbing only. *Decided at deploy time.*
+9. **Confirm the topology.** No worker service exists, and `ompos-api` has no public domain. *Decided at deploy time.*
+10. **Do not** enable public exposure, add the Vercel origin, or set `Api__Cors__Origins__0` until OD-03 and the Vercel mechanism are decided.
 
-1. Provision Temporal (owner decision 3) and create the namespace. Store the API key as a secret.
-2. Create the worker service with `RAILWAY_DOCKERFILE_PATH=deploy/worker.Containerfile`. Set `Workflows__Enabled=false` first. The image should start and exit 0. This confirms the image runs, and nothing more.
-3. Create the API service with `RAILWAY_DOCKERFILE_PATH=deploy/api.Containerfile`, health check path `/health/ready`, and health check timeout 120 s (both in service settings). Keep `Workflows__Enabled=false` and `Harness__Adapter=InMemory`. Confirm `/health/ready` returns 200 and `/health/live` returns 200.
-4. Set `Api__Cors__Origins__0` to the owner-confirmed public web origin. Redeploy the API.
-5. Enable workflows only after blockers 2 and 3 are resolved. Set `Workflows__Enabled=true` and `Workflows__Address` on both services. The API `/health/ready` then includes a TCP check of the Temporal address.
+## Owner decisions and open items
 
-## Owner decisions
+| ID | Item | Status |
+|----|------|--------|
+| OD-03 | Sign-in method. Blocks public exposure and any API domain. | Open (owner) |
+| Q-VERCEL-CSP | Mechanism for the Vercel origin and the production API origin in CSP `connect-src`. | Open (owner) |
+| Q-APPROVAL-ADAPTER | Approval adapter: ACP or RPC. | Open (owner) |
+| Q-PG-RETIRE | Whether the plain Postgres service in Ultrathink is retired. | Open (owner) |
+| Q-HOST-PRIVNET | Private-path reachability of GreptimeDB and Dragonfly from an IPv6-only environment. | Open (platform) |
+| Q-HOST-DFLY-PIN | Dragonfly image unpinned on Railway. | Open (platform) |
+| Q-HOST-GREPTIME-AUTH | Basic auth credential rotation for GreptimeDB. | Open (platform) |
+| Q-DATA-TSDB-VERSION | TimescaleDB 2.13 versus a newer version for the hypertable DDL. | Open (ompos-maintainers) |
+| Q-LOCAL-PARITY | Local compose gap: no TLS and no PostGIS locally. | Open (ompos-maintainers) |
+| Q-HOST-RUNTIME | Real omp runtime, sandbox provider, and model credential for the hosted API (HOST-04). | Open (ompos-maintainers) |
 
-1. **Sign-in method.** None exists. The API serves every request as `local-dev`. Choose an authentication scheme before exposing the API publicly. Until then the API should not be exposed beyond a trusted network.
-2. **Public origin.** The API origin and the web origin for `Api__Cors__Origins__0`. Nothing is set.
-3. **Temporal.** Temporal Cloud or self-hosted; the address, namespace, whether TLS and an API key are required.
-4. **Worker sandbox.** The worker accepts only `Sandbox:Provider=podman`, which runs podman from inside the worker process. Decide whether podman is supported in the Railway container at all, and if so how it is installed and what privileges it needs.
-5. **Worker harness.** `Harness:Adapter=rpc` needs an `omp` binary at `Harness__OmpPath`. Decide how that binary gets into the image, and its version.
-6. **Config mechanism.** Dashboard and variables, or IaC `.railway/railway.ts`. Config-as-code files stop being read for legacy services on 2026-12-01, and new services cannot use them.
-7. **OTLP endpoint and Temporal namespace.** Where traces and metrics go, if anywhere.
-8. **Region and replicas.** Not specified anywhere in the repo.
+Decided, not open: worker placement is none.
+
+## Verification
+
+- Local smoke, 2026-10-21: [smoke-backend-local-2026-10-21.md](evidence/smoke-backend-local-2026-10-21.md). It ran the Release `OmpOS.Api` binary in Production mode against local stand-ins (TimescaleDB 2.13.1, Dragonfly v1.27.1, GreptimeDB v1.1.4). It covered health, the session and prompt flow, idempotency, lease release, reaper settlement, restart durability, and traces and metrics in GreptimeDB.
+- Its finding 1 sets the OTLP header rule in the table above. Its finding 2 (a startup failure aborts with SIGABRT, exit 134) applies on Railway too.
+- Not verified by the smoke: Railway private networking over IPv6, TLS on the TimescaleDB template, GreptimeDB Basic authentication, and the deployed image. Only the Railway deploy verifies these.
+- Known limits KL-01 to KL-07 are listed in [open-questions.md](../open-questions.md). None is fixed by this change.
 
 ## Known blockers and gaps
 
-1. The API has no authentication (owner decision 1).
-2. The worker image has no podman. `Sandbox:Provider=podman` will fail when a run needs it.
-3. The worker image has no `omp` binary. `Harness:Adapter=rpc` will fail at `Harness__OmpPath`.
-4. With `Workflows__Enabled=false`, the API runs prompts in-process with `FakeSandboxProvider` (`services/OmpOS.Api/Program.cs`, comments at lines 66-70). It does not run a real sandbox.
-5. Railway's build context for a subdirectory Dockerfile is the service Root Directory (verified in the Railway docs above). Keep the Root Directory at the repository root.
-6. Nothing was built with podman, and nothing was run or deployed.
+1. The API has no authentication, and no sign-in method is chosen (OD-03). Do not expose it publicly.
+2. The hosted API runs the InMemory harness and `FakeSandboxProvider`. No real omp runtime, sandbox, or model credential is deployed (HOST-04).
+3. Private-path reachability of GreptimeDB and Dragonfly is unverified (Q-HOST-PRIVNET).
+4. The Dragonfly image is unpinned (Q-HOST-DFLY-PIN).
+5. Nothing has been deployed, built with podman for hosting, or smoke-tested on Railway.
+6. The local compose stack does not match hosted TLS or extensions (Q-LOCAL-PARITY).

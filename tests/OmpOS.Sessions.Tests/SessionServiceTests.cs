@@ -451,6 +451,44 @@ public sealed class SessionServiceTests
         stored.Events.Select(static evt => evt.Payload).OfType<CompletedPayload>().ShouldBeEmpty();
     }
 
+    /// <summary>A failed completion with detail persists the detail after the standard failure message.</summary>
+    [Fact]
+    public async Task FailedCompletionWithDetailPersistsDetailInTerminalError()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
+        await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+
+        await service.RecordCompletionAsync(session.Id, SessionStatus.Failed, ct, failureDetail: "  rate limited  ").ConfigureAwait(true);
+
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Status.ShouldBe(SessionStatus.Failed);
+        stored.Events[^1].Payload.ShouldBeOfType<ErrorPayload>().Message.ShouldBe("Prompt execution failed. Detail: rate limited");
+    }
+
+    /// <summary>A failed completion with no detail, null, empty or whitespace, persists the standard failure message unchanged.</summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task FailedCompletionWithoutDetailKeepsExistingMessage(string? detail)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
+        await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+
+        await service.RecordCompletionAsync(session.Id, SessionStatus.Failed, ct, failureDetail: detail).ConfigureAwait(true);
+
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Events[^1].Payload.ShouldBeOfType<ErrorPayload>().Message.ShouldBe(SessionService.FailedTurnMessage);
+    }
+
     /// <summary>An error streamed during the turn is its only terminal event, so settling the failed turn adds none.</summary>
     [Fact]
     public async Task StreamedErrorIsTheOnlyTerminalEventWhenTheTurnFails()

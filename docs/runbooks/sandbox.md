@@ -17,9 +17,7 @@ Note: Ubuntu 24.04 apt ships Podman 4.9.3, which is enough for `podman-compose` 
 ## Local compose provider
 
 - The local provider shells out to `podman-compose` with the stack in `deploy/compose.yaml`.
-- The `temporal` service runs the `temporalio/temporal:1.9.1` dev server (`server start-dev`) on ports 7233 (gRPC) and 8233 (UI), gated behind the `workflows` profile.
-- The database lives on a named volume mounted at `/home/temporal` (see ADR-0001): the image runs as uid 1000 and that path is owned by the image user, so rootless Podman can write there.
-- Health probing prefers the CLI (`temporal operator cluster health --address 127.0.0.1:7233`, exit 0 when serving); a `nc -z localhost 7233` probe is the documented fallback where `nc` exists.
+- The Temporal dev server and its `workflows` profile were removed on 2026-10-21. There is no `temporal` service and no `/home/temporal` volume; ADR-0001's volume note is superseded. See [handoff decision](../handoff.md#temporal-removal-and-railway-topology-2026-10-21).
 
 ## Provider posture
 

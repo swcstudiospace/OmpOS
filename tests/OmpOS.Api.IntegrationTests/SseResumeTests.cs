@@ -24,19 +24,19 @@ public sealed class SseResumeTests
         using var factory = new OmpApiFactory(configureServices: services => services.AddSingleton<IHarnessSessionFactory>(new ScriptedHarnessFactory(script)));
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"stream me\"}", testToken);
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"stream me\"}", testToken).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
 
-        var first = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 5, testToken);
+        var first = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 5, testToken).ConfigureAwait(true);
         first.Count.ShouldBe(5);
         first[0].EventType.ShouldBe("prompt_accepted");
         first.ShouldAllBe(static item => !string.IsNullOrWhiteSpace(item.EventId));
         var firstSeqs = first.Select(static item => long.Parse(item.EventId!, CultureInfo.InvariantCulture)).ToList();
         firstSeqs.ShouldBe(Enumerable.Range(1, 5).Select(static i => (long)i).ToList());
 
-        var resumed = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken, first[^1].EventId);
+        var resumed = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken, first[^1].EventId).ConfigureAwait(true);
         var resumedSeqs = resumed.Select(static item => long.Parse(item.EventId!, CultureInfo.InvariantCulture)).ToList();
         resumedSeqs.ShouldBe(Enumerable.Range(6, resumedSeqs.Count).Select(static i => (long)i).ToList());
         resumed.ShouldAllBe(static item => !string.IsNullOrWhiteSpace(item.Data));
@@ -55,15 +55,15 @@ public sealed class SseResumeTests
         using var factory = new OmpApiFactory(configureServices: services => services.AddSingleton<IHarnessSessionFactory>(new ScriptedHarnessFactory(script)));
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"stream me\"}", testToken);
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"stream me\"}", testToken).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
 
-        var first = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 2, testToken);
+        var first = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 2, testToken).ConfigureAwait(true);
         first.Count.ShouldBe(2);
 
-        var resumed = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events?since={first[^1].EventId}", 50, testToken);
+        var resumed = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events?since={first[^1].EventId}", 50, testToken).ConfigureAwait(true);
         var resumedSeqs = resumed.Select(static item => long.Parse(item.EventId!, CultureInfo.InvariantCulture)).ToList();
         resumedSeqs.ShouldBe(Enumerable.Range(3, resumedSeqs.Count).Select(static i => (long)i).ToList());
         resumed[^1].EventType.ShouldBe("completed", "the stream ends on the terminal event");
@@ -76,7 +76,7 @@ public sealed class SseResumeTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
 
-        using var response = await client.GetAsync(new Uri("/sessions/does-not-exist/events", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync(new Uri("/sessions/does-not-exist/events", UriKind.Relative), TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -91,7 +91,7 @@ public sealed class SseResumeTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
         var streamer = factory.Services.GetRequiredService<SessionEventStreamer>();
         var repository = factory.Services.GetRequiredService<ISessionRepository>();
 
@@ -99,22 +99,29 @@ public sealed class SseResumeTests
         budget.CancelAfter(TimeSpan.FromSeconds(10));
         var token = budget.Token;
 
-        await using var enumerator = streamer.SubscribeAsync(id, 0, token).GetAsyncEnumerator(token);
-        var delivered = enumerator.MoveNextAsync().AsTask();
-
-        // Let the subscriber finish its first read and settle into its wait before the append.
-        await Task.Delay(TimeSpan.FromMilliseconds(250), token);
-        var evt = new StreamEvent
+        var enumerator = streamer.SubscribeAsync(id, 0, token).GetAsyncEnumerator(token);
+        try
         {
-            Seq = 0,
-            SessionId = id,
-            CorrelationId = id,
-            Timestamp = DateTimeOffset.UtcNow,
-            Payload = new TextDeltaPayload { Delta = "polled" },
-        };
-        await repository.AppendAsync(id, evt, token);
+            var delivered = enumerator.MoveNextAsync().AsTask();
 
-        (await delivered.WaitAsync(token)).ShouldBeTrue();
-        enumerator.Current.Payload.ShouldBeOfType<TextDeltaPayload>().Delta.ShouldBe("polled");
+            // Let the subscriber finish its first read and settle into its wait before the append.
+            await Task.Delay(TimeSpan.FromMilliseconds(250), token).ConfigureAwait(true);
+            var evt = new StreamEvent
+            {
+                Seq = 0,
+                SessionId = id,
+                CorrelationId = id,
+                Timestamp = DateTimeOffset.UtcNow,
+                Payload = new TextDeltaPayload { Delta = "polled" },
+            };
+            await repository.AppendAsync(id, evt, token).ConfigureAwait(true);
+
+            (await delivered.WaitAsync(token).ConfigureAwait(true)).ShouldBeTrue();
+            enumerator.Current.Payload.ShouldBeOfType<TextDeltaPayload>().Delta.ShouldBe("polled");
+        }
+        finally
+        {
+            await enumerator.DisposeAsync().ConfigureAwait(true);
+        }
     }
 }

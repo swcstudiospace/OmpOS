@@ -24,8 +24,8 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            var writer = new PostgresSessionRepository(schema.CreateDataSource());
-            var reader = new PostgresSessionRepository(schema.CreateDataSource());
+            var writer = schema.CreateRepository();
+            var reader = schema.CreateRepository();
             await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
 
             await writer.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
@@ -55,7 +55,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
-            var repositories = Enumerable.Range(0, 4).Select(_ => new PostgresSessionRepository(schema.CreateDataSource())).ToArray();
+            var repositories = Enumerable.Range(0, 4).Select(_ => schema.CreateRepository()).ToArray();
             await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
             await repositories[0].SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
 
@@ -83,7 +83,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
             await Task.WhenAll(dataSources.Select(dataSource => PostgresSessionSchema.EnsureCreatedAsync(dataSource, ct))).ConfigureAwait(true);
             await PostgresSessionSchema.EnsureCreatedAsync(dataSources[0], ct).ConfigureAwait(true);
 
-            var repository = new PostgresSessionRepository(dataSources[1]);
+            var repository = new PostgresSessionRepository(dataSources[1], schema.Connection);
             await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
             await AppendDeltasAsync(repository, "s-1", 0, 2, ct).ConfigureAwait(true);
 
@@ -92,6 +92,39 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
             var loaded = await repository.GetAsync("s-1", ct).ConfigureAwait(true);
             loaded.ShouldNotBeNull();
             loaded.Events.Select(static evt => evt.Seq).ToArray().ShouldBe([1L, 2L]);
+        }
+        finally
+        {
+            await schema.DisposeAsync().ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>Creating the schema twice leaves <c>session_events</c> as one hypertable partitioned on <c>occurred_at</c> in one-day chunks.</summary>
+    [Fact]
+    public async Task EnsureCreatedTwiceLeavesEventsAsOneHypertableOnOccurredAt()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
+        try
+        {
+            var dataSource = schema.CreateDataSource();
+            await PostgresSessionSchema.EnsureCreatedAsync(dataSource, ct).ConfigureAwait(true);
+            await PostgresSessionSchema.EnsureCreatedAsync(dataSource, ct).ConfigureAwait(true);
+
+            using var count = dataSource.CreateCommand(
+                "SELECT count(*) FROM timescaledb_information.hypertables WHERE hypertable_schema = @schema AND hypertable_name = 'session_events'");
+            count.Parameters.AddWithValue("schema", schema.SchemaName);
+            (await count.ExecuteScalarAsync(ct).ConfigureAwait(true)).ShouldBe(1L);
+
+            using var dimensions = dataSource.CreateCommand(
+                "SELECT column_name::text, time_interval = INTERVAL '1 day' FROM timescaledb_information.dimensions " +
+                "WHERE hypertable_schema = @schema AND hypertable_name = 'session_events'");
+            dimensions.Parameters.AddWithValue("schema", schema.SchemaName);
+            using var reader = await dimensions.ExecuteReaderAsync(ct).ConfigureAwait(true);
+            (await reader.ReadAsync(ct).ConfigureAwait(true)).ShouldBeTrue();
+            reader.GetString(0).ShouldBe("occurred_at");
+            reader.GetBoolean(1).ShouldBeTrue();
+            (await reader.ReadAsync(ct).ConfigureAwait(true)).ShouldBeFalse();
         }
         finally
         {
@@ -108,8 +141,8 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         try
         {
             await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
-            var holder = new PostgresSessionRepository(schema.CreateDataSource());
-            var contender = new PostgresSessionRepository(schema.CreateDataSource());
+            var holder = schema.CreateRepository();
+            var contender = schema.CreateRepository();
 
             var held = await holder.LockSessionAsync("s-lock", ct).ConfigureAwait(true);
             var contending = contender.LockSessionAsync("s-lock", ct);
@@ -143,8 +176,8 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         try
         {
             await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
-            var first = new PostgresSessionRepository(schema.CreateDataSource());
-            var second = new PostgresSessionRepository(schema.CreateDataSource());
+            var first = schema.CreateRepository();
+            var second = schema.CreateRepository();
 
             var firstLock = await first.LockSessionAsync("s-1", ct).ConfigureAwait(true);
             try
@@ -179,7 +212,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         try
         {
             await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
-            var repository = new PostgresSessionRepository(schema.CreateDataSource());
+            var repository = schema.CreateRepository();
 
             var held = await repository.LockSessionAsync("never-saved", ct).ConfigureAwait(true);
             try
@@ -206,7 +239,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         try
         {
             await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
-            var repository = new PostgresSessionRepository(schema.CreateDataSource());
+            var repository = schema.CreateRepository();
             await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
             await AppendDeltasAsync(repository, "s-1", 0, 3, ct).ConfigureAwait(true);
 
@@ -235,6 +268,45 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         }
     }
 
+    /// <summary>A save whose events past the stored log repeat a Seq is rejected, because the table cannot enforce Seq uniqueness itself.</summary>
+    [Fact]
+    public async Task SaveWithRepeatedSeqPastTheStoredLogIsRejectedAndRolledBack()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
+        try
+        {
+            await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
+            var repository = schema.CreateRepository();
+            await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
+            await AppendDeltasAsync(repository, "s-1", 0, 2, ct).ConfigureAwait(true);
+
+            var repeated = Sample("s-1") with
+            {
+                Status = SessionStatus.Running,
+                Events =
+                [
+                    Event("s-1", new TextDeltaPayload { Delta = "stored-0" }) with { Seq = 1 },
+                    Event("s-1", new TextDeltaPayload { Delta = "stored-1" }) with { Seq = 2 },
+                    Event("s-1", new TextDeltaPayload { Delta = "new-2" }) with { Seq = 3 },
+                    Event("s-1", new TextDeltaPayload { Delta = "new-3" }) with { Seq = 3 },
+                ],
+            };
+
+            var error = await Should.ThrowAsync<InvalidOperationException>(() => repository.SaveAsync(repeated, ct)).ConfigureAwait(true);
+
+            error.Message.ShouldContain("s-1");
+            var loaded = await repository.GetAsync("s-1", ct).ConfigureAwait(true);
+            loaded.ShouldNotBeNull();
+            loaded.Status.ShouldBe(SessionStatus.Idle);
+            loaded.Events.Select(static evt => evt.Seq).ToArray().ShouldBe([1L, 2L]);
+        }
+        finally
+        {
+            await schema.DisposeAsync().ConfigureAwait(true);
+        }
+    }
+
     /// <summary>A tool approval can be decided once, and the decision is visible from every instance.</summary>
     [Fact]
     public async Task ToolApprovalIsDecidedOnlyOnceAcrossInstances()
@@ -244,8 +316,8 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         try
         {
             await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
-            var first = new PostgresSessionRepository(schema.CreateDataSource());
-            var second = new PostgresSessionRepository(schema.CreateDataSource());
+            var first = schema.CreateRepository();
+            var second = schema.CreateRepository();
             await first.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
 
             (await first.TryAddToolApprovalAsync("s-1", Approval("s-1", "req-1"), ct).ConfigureAwait(true)).ShouldBeTrue();
@@ -280,7 +352,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         try
         {
             await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
-            var repository = new PostgresSessionRepository(schema.CreateDataSource());
+            var repository = schema.CreateRepository();
             await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
 
             (await repository.TryDecideToolApprovalAsync("s-1", "absent", PermissionDecision.Allow, Epoch, ct).ConfigureAwait(true)).ShouldBeFalse();
@@ -301,7 +373,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         try
         {
             await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
-            var repository = new PostgresSessionRepository(schema.CreateDataSource());
+            var repository = schema.CreateRepository();
 
             await Should.ThrowAsync<KeyNotFoundException>(() => repository.TryAddToolApprovalAsync("absent", Approval("absent", "req-1"), ct)).ConfigureAwait(true);
         }
@@ -320,7 +392,7 @@ public sealed class PostgresSessionStoreTests(PostgresServerFixture server)
         try
         {
             await PostgresSessionSchema.EnsureCreatedAsync(schema.CreateDataSource(), ct).ConfigureAwait(true);
-            var repository = new PostgresSessionRepository(schema.CreateDataSource());
+            var repository = schema.CreateRepository();
 
             await Should.ThrowAsync<KeyNotFoundException>(() => ListAsync(repository, "absent", 0, ct)).ConfigureAwait(true);
         }

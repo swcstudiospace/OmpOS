@@ -6,13 +6,13 @@ using Npgsql;
 namespace OmpOS.Sessions.Postgres.Tests;
 
 /// <summary>
-/// A throwaway PostgreSQL 17 server started with the podman CLI for one test run. The container has a unique name,
+/// A throwaway TimescaleDB 2.13 server on PostgreSQL 16, started with the podman CLI for one test run. The container has a unique name,
 /// a free port bound to 127.0.0.1, and a random password that is passed through the environment, not the argument list.
 /// </summary>
 internal sealed class PodmanPostgresContainer : IAsyncDisposable
 {
     /// <summary>The fully qualified image reference.</summary>
-    internal const string Image = "docker.io/library/postgres:17";
+    internal const string Image = "docker.io/timescale/timescaledb:2.13.1-pg16";
 
     private static readonly TimeSpan ReadyTimeout = TimeSpan.FromSeconds(120);
 

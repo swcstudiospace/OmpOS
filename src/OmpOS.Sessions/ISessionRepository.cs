@@ -58,6 +58,16 @@ public interface ISessionRepository
     IAsyncEnumerable<StreamEvent> ListFromSeqAsync(string sessionId, long fromSeq, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Lists the identifiers of the sessions that have the given status and were last updated before a moment, so that a
+    /// caller can find sessions that stayed in one status too long.
+    /// </summary>
+    /// <param name="status">The status to match.</param>
+    /// <param name="updatedBefore">The exclusive upper bound on <see cref="Session.UpdatedAt"/>.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns>At most 200 session identifiers, in ordinal order. Empty when no session matches.</returns>
+    Task<IReadOnlyList<string>> ListSessionIdsByStatusAsync(SessionStatus status, DateTimeOffset updatedBefore, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Acquires the exclusive lock of one session. The lock is held across processes until the returned value is disposed.
     /// </summary>
     /// <remarks>

@@ -5,21 +5,21 @@ using OmpOS.SessionRuns;
 namespace OmpOS.Api.Workflows;
 
 /// <summary>
-/// The API process's <see cref="ISessionRunObserver"/>: wakes this process's SSE streams after a run appends to the log and
-/// records sandbox provisioning latency. A routed run executes in the worker, which observes nothing; its appends reach this
-/// process's streams through the cross-process poll in <see cref="SessionEventStreamer"/>.
+/// The API process's <see cref="ISessionRunObserver"/>: a run started by this process announces each log append through
+/// <see cref="SessionChangePublisher"/>, which wakes this process's SSE streams and publishes the change to the other replicas.
+/// It also records sandbox provisioning latency.
 /// </summary>
 internal sealed class ApiSessionRunObserver : ISessionRunObserver
 {
-    private readonly SessionEventStreamer _streamer;
+    private readonly SessionChangePublisher _publisher;
     private readonly ApiMetrics _metrics;
 
     /// <summary>Initializes a new instance of the <see cref="ApiSessionRunObserver"/> class.</summary>
-    /// <param name="streamer">The SSE broadcaster for this process.</param>
+    /// <param name="publisher">Announces session changes to this process's streams and to the other replicas.</param>
     /// <param name="metrics">The API metrics.</param>
-    public ApiSessionRunObserver(SessionEventStreamer streamer, ApiMetrics metrics)
+    public ApiSessionRunObserver(SessionChangePublisher publisher, ApiMetrics metrics)
     {
-        _streamer = streamer;
+        _publisher = publisher;
         _metrics = metrics;
     }
 
@@ -27,7 +27,10 @@ internal sealed class ApiSessionRunObserver : ISessionRunObserver
     public void SessionChanged(string sessionId)
     {
         ArgumentNullException.ThrowIfNull(sessionId);
-        _streamer.Notify(sessionId);
+
+        // The observer is synchronous and must not block the run. NotifyAsync wakes this process before its first await
+        // and never faults, so the discarded task has no unobserved failure.
+        _ = _publisher.NotifyAsync(sessionId);
     }
 
     /// <inheritdoc />

@@ -163,4 +163,29 @@ public sealed class SessionRunActivitiesTests
         observer.ProvisionMilliseconds[0].ShouldBeGreaterThanOrEqualTo(0d);
         sandbox.Teardowns.ToArray().ShouldBe([RunFixtures.SandboxId]);
     }
+
+    /// <summary>A teardown that fails once is retried by the next attempt, and the sandbox mapping is removed only after the teardown succeeds.</summary>
+    [Fact]
+    public async Task TeardownFailedOnce_RetryTearsDownAndMappingRemovedOnlyAfterSuccess()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var sessions = new SessionService(repository, TimeProvider.System);
+        var sessionId = await RunFixtures.StartPromptAsync(sessions, "hello", ct).ConfigureAwait(true);
+        var sandbox = new RecordingSandboxProvider { TeardownFailuresRemaining = 1 };
+        var harness = new ScriptedHarnessFactory([new CompletedEvent("end_turn")]);
+        var activities = RunFixtures.Activities(sandbox, harness, repository, sessions, new RecordingObserver());
+        var input = RunFixtures.InputFor(sessionId, "hello");
+        await activities.ProvisionSandboxAsync(input, ct).ConfigureAwait(true);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => activities.TeardownSandboxAsync(input, ct)).ConfigureAwait(true);
+        sandbox.Teardowns.ShouldBeEmpty();
+
+        await activities.TeardownSandboxAsync(input, ct).ConfigureAwait(true);
+        sandbox.TeardownAttempts.ShouldBe(2);
+        sandbox.Teardowns.ToArray().ShouldBe([RunFixtures.SandboxId]);
+
+        await activities.TeardownSandboxAsync(input, ct).ConfigureAwait(true);
+        sandbox.TeardownAttempts.ShouldBe(2);
+    }
 }

@@ -49,7 +49,7 @@ Release build, tests, format verification). Log: `docs/runbooks/evidence/bootstr
 - Line 81: `Test run summary: Passed!`
 - Line 98: `total: 707` · Line 99: `failed: 0`
 - Line 103: `bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format)`
-- Scope: everything in `OmpOS.Linux.slnf` (libraries, API, worker, web head, all
+- Scope at f77221a (historical; the worker project was removed on 2026-10-21): everything in `OmpOS.Linux.slnf` (libraries, API, worker, web head, all
   test suites). The MAUI head is excluded from that filter by design. Its Android target is built by the macOS `shells` job in `ci.yml`; iOS and MacCatalyst are not built on hosted runners (they need Xcode 27.1, which is not a stable toolchain there).
 
 **Gate defect, recorded honestly:** the API integration suite
@@ -64,6 +64,8 @@ pre-registration total of 552 excluded it. It is now registered in both files:
 ## AC_1..AC_11 verdicts
 
 Status values are as recorded at the pinned head f77221a. The last column is the 2026-10-21 re-check. **Holds** means the cited file, test or record exists at f77221a and proves the row as written; **unverified** names the sub-claim whose record lacks proof. Line numbers are at f77221a unless marked HEAD. Plan-tag results follow the table.
+
+**Superseded 2026-10-21 (Temporal removal).** Rows that describe the Temporal worker are historical at f77221a: AC_9 and its Temporal test names, owner decision 1, the Temporal items under Known deferrals, and the Temporal replay check in owner decision 8. The current decision and its supersessions are in [Temporal removal and Railway topology (2026-10-21)](#temporal-removal-and-railway-topology-2026-10-21).
 
 | AC | Criterion (reconstructed) | Status | Evidence | Re-check (2026-10-21) |
 | --- | --- | --- | --- | --- |
@@ -106,14 +108,14 @@ Status values are as recorded at the pinned head f77221a. The last column is the
 
 | # | Decision | Effect |
 | --- | --- | --- |
-| 1 | WFLW-01 is wired: with `Workflows:Enabled=false` the API prompt path executes through `DirectSessionRunner`, provisioning via `ISandboxProvider` (`FakeSandboxProvider` by default) and tearing down in `finally`; the Temporal worker is not wired into the API | **Q-SB-WORKER-COMPOSE** stands; AC_9 reads Implemented with that deferral |
+| 1 | WFLW-01 is wired: with `Workflows:Enabled=false` the API prompt path executes through `DirectSessionRunner`, provisioning via `ISandboxProvider` (`FakeSandboxProvider` by default) and tearing down in `finally`; the Temporal worker is not wired into the API | Superseded 2026-10-21: the Temporal worker is removed, so **Q-SB-WORKER-COMPOSE** is resolved by removal. See [the decision section](#temporal-removal-and-railway-topology-2026-10-21). AC_9 reads Implemented with the direct path only. |
 | 2 | `SessionService.RequestToolApprovalAsync` and `ResolveToolApprovalAsync` are `internal` (`InternalsVisibleTo` `Sessions.Tests` only); interactive approval stays deferred | **Q-HARN-PERMISSION** stands; AC_4 reads Implemented with that deferral |
 | 3 | The markdown `MarkupString` sink is accepted: its only input is `MarkdownRenderer` output, produced with raw HTML disabled and a link/image scheme allowlist, under a CSP without inline script | No finding; recorded here as an accepted sink |
 | 4 | The API has no authentication — a single local dev principal (OQ-26); it must not be exposed publicly until an auth provider exists | Deploy blocker (see below) |
 | 5 | The macOS MAUI build is partly verified: the CI `shells` job builds the Android target on a hosted macOS runner; iOS and MacCatalyst need Xcode 27.1, which hosted runners do not provide as a stable toolchain | DESK-01 / MOB-01 / SHELL-01 stay Partial; AC_10 stays split |
 | 6 | Remote repository: `https://github.com/swcstudiospace/OmpOS` (currently empty and public; local `git remote -v` is unconfigured) | origin is `https://github.com/swcstudiospace/OmpOS.git`; `main` and `feat/ompos-scaffold` were pushed on 2026-10-21; PR #1 is open |
 | 7 | Tech debt from the milestone audit (43 items) is accepted and tracked in the backlog, not fixed in v0.9.1 | Recorded in the archived audit (`.planning/milestones/v0.9.1-MILESTONE-AUDIT.md`) |
-| 8 | The human-only items are carried as tracked follow-ups: podman-compose validation, podman smoke test, live Temporal replay check, TCP readiness sign-off (4c), iOS and MacCatalyst builds (Xcode 27.1), live Vercel deploy, screen-reader pass, clean-clone re-record at a later HEAD | Each has its file reference in the audit; none blocks the archive |
+| 8 | The human-only items are carried as tracked follow-ups: podman-compose validation, podman smoke test, ~~live Temporal replay check~~ (superseded 2026-10-21; HO-04 evidence retired), TCP readiness sign-off (4c), iOS and MacCatalyst builds (Xcode 27.1), live Vercel deploy, screen-reader pass, clean-clone re-record at a later HEAD | Each has its file reference in the audit; none blocks the archive |
 | 9 | The API host runs only the in-memory harness for v0.9.1 (`services/OmpOS.Api/Program.cs`); wiring the real ACP harness is the first item of the next milestone | Acknowledged scope limit for the vertical slice |
 | 10 | Ship: push `main` and `feat/ompos-scaffold` to `https://github.com/swcstudiospace/OmpOS` and open a PR into `main`. The PR is not merged by the orchestrator, but the user's later ship instruction supersedes this: the PR merges through ultrathink-ship only after a completed Greptile review scores 5 with no open threads and CI passes | Superseded by the user's ship instruction on 2026-10-21; this row is kept as history |
 
@@ -126,8 +128,8 @@ All open-question IDs below were confirmed present in `docs/open-questions.md` o
 - **Unseen `session/update` variants** — fixtures frozen from recorded/scripted turns; unknown-fallback path until verified against a live omp (**Q-HARN-UPDATE**).
 - **Sandbox vendor stubs** — OpenShell, agentOS, Railway Swarm, attested enclave (**Q-SB-AGENTOS**, **Q-SB-RAILWAY**, **Q-SB-ENCLAVE**).
 - **Per-sandbox credential issuance** — duplicate-target rejection only (**Q-SB-CREDENTIALS**).
-- **Real provider/activity composition into the Temporal worker** — opt-in fake activities only (**Q-SB-WORKER-COMPOSE**).
-- **Direct-path retry policy** — fail fast on the direct path; retries live on the Temporal path (**Q-WF-RETRY**).
+- ~~**Real provider/activity composition into the Temporal worker** — opt-in fake activities only (**Q-SB-WORKER-COMPOSE**).~~ Superseded 2026-10-21: the worker is removed, and Q-SB-WORKER-COMPOSE is resolved by removal.
+- ~~**Direct-path retry policy** — fail fast on the direct path; retries live on the Temporal path (**Q-WF-RETRY**).~~ Superseded 2026-10-21: retry lives in `DirectSessionRunner` and the run lease only (**Q-WF-RETRY**).
 - **Blazor reflection switch override** for the web/MAUI heads (**Q-WEB-REFLECTION**).
 - **Authoritative AC enumeration** — verifying against the reconstructed list until the original is retrieved (**Q-AC-LIST**).
 - **iOS and MacCatalyst builds (human)** — need Xcode 27.1; the macOS `shells` job builds only the Android target, and the other targets are unverified.
@@ -155,3 +157,45 @@ Accessibility run section):
 3. **iOS and MacCatalyst builds (human).** With Xcode 27.1 on a macOS host, build `apps/OmpOS.App` for `net10.0-ios` and `net10.0-maccatalyst` with warnings as errors (the `shells` job builds only `net10.0-android`), then spot-check desktop against the remote backend and mobile remote-only resume. Verify: warning-free build; desktop streams; mobile never spawns a process.
 4. **Live Vercel deploy.** Deploy the static output once the origin above exists and re-run the runbook browser smoke against it. Verify: same observations as `docs/runbooks/local-dev.md` (strong 1, img 0, no script, no error bar).
 5. **Clean-clone bootstrap record (VERIFY-01).** Fresh `git clone` into a temp dir → `./bootstrap.sh` → record date, host, SDK version, duration, result in `docs/runbooks/local-dev.md`.
+
+## Temporal removal and Railway topology (2026-10-21)
+
+Decision recorded by the orchestrator on 2026-10-21. The code cutover, the compose file, and the deployment are still in progress and do not yet match this text. Nothing here was deployed or executed.
+
+### Decisions
+
+1. **Temporal removed.** Clean cutover, no shims. The Temporal worker project and the `Workflows:*` configuration are removed. Session runs execute in-process in the API through `DirectSessionRunner`. There is no worker service.
+2. **Railway topology.** Project `Ultrathink`, environment `production`. All private networking uses `SERVICE_NAME.railway.internal`. No public domain for the API until OD-03 is decided. Services and variables: [hosting runbook](runbooks/hosting.md).
+3. **API listener.** `[::]:8080`, dual-stack, required for private networking in legacy IPv6-only environments. `PORT=8080`.
+4. **Stores and coordination.** Session log: TimescaleDB (schema `ompos`, hypertable). Coordination: Dragonfly. Telemetry: GreptimeDB over OTLP. Details: [architecture](architecture.md#session-run-path-in-process).
+5. **Config contract.** `Sessions:Store` (`Postgres|InMemory`) defaults to `InMemory` in `appsettings.json`; production must set it explicitly, and a warning is logged in Production when it is `InMemory` (event 31). `Sessions:Postgres:ConnectionString` (Npgsql; production uses `Ssl Mode=Require;Trust Server Certificate=true` because the template uses a self-signed certificate on the private network). `Coordination:Store` (`Dragonfly|InMemory`) defaults to `InMemory` in `appsettings.json`; production must set it explicitly, and a warning is logged in Production when it is `InMemory` (event 32). `Coordination:Dragonfly:ConnectionString` (StackExchange.Redis format; `abortConnect=false` is required). `Otel:Exporter` (`none|console|otlp`). OTLP endpoint, protocol, and headers come only from `OTEL_EXPORTER_OTLP_*`. The Authorization header is set only in the hosting environment and is never committed. The GreptimeDB pipeline header goes in `OTEL_EXPORTER_OTLP_HEADERS`, never in `OTEL_EXPORTER_OTLP_TRACES_HEADERS` (smoke evidence finding 1: [evidence](runbooks/evidence/smoke-backend-local-2026-10-21.md)).
+6. **Run ownership.** Admission acquires the run lease (TTL 30 s, renewed every 10 s). Admission is synchronous: a conflict returns 409 before any 202. A reaper every 15 s settles a Running session older than 60 s whose lease is absent, with detail `run owner lost`. A lost lease settles the run with detail `run lease lost`. Terminal failure detail is persisted in the terminal event text.
+7. **Idempotency.** Optional `Idempotency-Key` on prompt submission. Completed records last 24 h; a pending claim lasts 60 s. Replay returns the stored 202 body. A different body under the same key returns 409 `/problems/idempotency-key-reused`. A concurrent claim returns 409 `/problems/idempotency-in-progress`.
+8. **Signals.** Published after commit and best-effort: failures are logged and swallowed. Polling (about 200 ms) remains the source of truth for SSE.
+9. **Hosted runtime limits.** The hosted API runs the InMemory harness (`Harness:Adapter=InMemory` is the only adapter the API supports) and `FakeSandboxProvider`. No real omp runtime, sandbox provider, or model credential is deployed. HOST-04 stays open.
+10. **Vercel.** Hosts the Blazor WebAssembly web head unchanged. Its origin and CSP stay blocked until the mechanism is decided.
+
+### Supersessions
+
+| Item | Superseded by | Where recorded |
+| --- | --- | --- |
+| OD-02 routed worker composition | Worker removed. The session log is shared by the API only. | Q-SB-WORKER-COMPOSE; `.planning` (orchestrator) |
+| HO-04 replay evidence | Temporal history fixture retired. The evidence file is kept and marked superseded. | `runbooks/evidence/ho-04-replay-revalidation-2026-10-21.md` |
+| Q-SB-WORKER-COMPOSE | Resolved by removing the worker. | open-questions.md |
+| Q-WF-RETRY | Retry lives in `DirectSessionRunner` and the run lease only. | open-questions.md |
+| HOST-03 (Temporal Cloud requirement) | Railway services in decision 2. | `.planning` (orchestrator) |
+| ADR-0003 workflow routing | Temporal removed; `DirectSessionRunner` only. | decisions/ADR-0003 |
+| OQ-11, OQ-15, OQ-16, OQ-22 | Temporal removed. | open-questions.md |
+
+### Open items
+
+Owner decisions still open:
+
+- **OD-03**: sign-in method. Blocks public exposure and the public API domain.
+- **Vercel origin and CSP mechanism** (Q-VERCEL-CSP).
+- **Approval adapter**: ACP or RPC (Q-APPROVAL-ADAPTER).
+- **Plain Postgres service**: retire or keep in Ultrathink (Q-PG-RETIRE).
+
+Decided, not open: worker placement is none.
+
+New open questions, with owners in [open-questions.md](open-questions.md): Q-HOST-PRIVNET, Q-HOST-DFLY-PIN, Q-HOST-GREPTIME-AUTH, Q-DATA-TSDB-VERSION, Q-LOCAL-PARITY, Q-HOST-RUNTIME (HOST-04).

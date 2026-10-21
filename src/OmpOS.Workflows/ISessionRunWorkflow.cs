@@ -4,11 +4,9 @@ namespace OmpOS.Workflows;
 /// Workflow contract for a durable session run (provision → run prompt → collect → teardown).
 /// </summary>
 /// <remarks>
-/// The direct runner (<see cref="DirectSessionRunner"/>) implements this interface.
-/// The Temporal worker reuses the same state machine and the same
-/// <see cref="ISessionRunActivities"/> contract through its own
-/// <c>[Workflow]</c> entry point, so the definition exists once (WFLW-01).
-/// This assembly (L2) carries no Temporal dependency.
+/// <see cref="DirectSessionRunner"/> implements this interface and executes the
+/// <see cref="ISessionRunActivities"/> contract in-process through the same
+/// provision → run prompt → collect → teardown state machine (WFLW-01).
 /// </remarks>
 public interface ISessionRunWorkflow
 {

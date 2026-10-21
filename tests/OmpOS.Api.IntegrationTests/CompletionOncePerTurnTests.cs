@@ -17,21 +17,20 @@ public sealed class CompletionOncePerTurnTests
     [Fact]
     public async Task Turn_StreamsOneCompletedAsFinalEvent()
     {
-        var config = new Dictionary<string, string?>(StringComparer.Ordinal) { ["Workflows:Enabled"] = "false" };
-        using var factory = new OmpApiFactory(config);
+        using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"hello\"}", testToken);
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"hello\"}", testToken).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
-        _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Completed, SettleTimeout, testToken);
+        _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Completed, SettleTimeout, testToken).ConfigureAwait(true);
 
-        var turn = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken);
+        var turn = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken).ConfigureAwait(true);
         turn.Count(static item => string.Equals(item.EventType, "completed", StringComparison.Ordinal)).ShouldBe(1, "a turn carries exactly one completed event");
         turn[^1].EventType.ShouldBe("completed", "the completed event is the turn's last event");
 
-        var afterCompletion = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken, turn[^1].EventId);
+        var afterCompletion = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken, turn[^1].EventId).ConfigureAwait(true);
         afterCompletion.ShouldBeEmpty("a client resuming after the completed event has nothing left to read");
     }
 }

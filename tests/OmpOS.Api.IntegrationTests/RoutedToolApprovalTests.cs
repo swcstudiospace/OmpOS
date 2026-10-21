@@ -30,16 +30,16 @@ public sealed class RoutedToolApprovalTests
         var ct = TestContext.Current.CancellationToken;
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
-        var id = await PendingRequestAsync(factory, client, grantableTools: null, ct);
+        var id = await PendingRequestAsync(factory, client, grantableTools: null, ct).ConfigureAwait(true);
 
-        using (var forbidden = await PostDecisionAsync(client, id, RequestId, AllowBody, ct))
+        using (var forbidden = await PostDecisionAsync(client, id, RequestId, AllowBody, ct).ConfigureAwait(true))
         {
             forbidden.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         }
 
-        var session = await SessionClient.ReadSessionAsync(client, id, ct);
+        var session = await SessionClient.ReadSessionAsync(client, id, ct).ConfigureAwait(true);
         session.Status.ShouldBe(SessionStatus.AwaitingToolApproval);
-        var record = await factory.Services.GetRequiredService<ISessionRepository>().GetToolApprovalAsync(id, RequestId, ct);
+        var record = await factory.Services.GetRequiredService<ISessionRepository>().GetToolApprovalAsync(id, RequestId, ct).ConfigureAwait(true);
         record.ShouldNotBeNull().Decision.ShouldBeNull();
     }
 
@@ -50,14 +50,14 @@ public sealed class RoutedToolApprovalTests
         var ct = TestContext.Current.CancellationToken;
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
-        var id = await PendingRequestAsync(factory, client, new HashSet<string>(StringComparer.Ordinal) { ToolName }, ct);
+        var id = await PendingRequestAsync(factory, client, new HashSet<string>(StringComparer.Ordinal) { ToolName }, ct).ConfigureAwait(true);
 
-        using var allowed = await PostDecisionAsync(client, id, RequestId, AllowBody, ct);
+        using var allowed = await PostDecisionAsync(client, id, RequestId, AllowBody, ct).ConfigureAwait(true);
 
         allowed.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-        var session = await SessionClient.ReadSessionAsync(client, id, ct);
+        var session = await SessionClient.ReadSessionAsync(client, id, ct).ConfigureAwait(true);
         session.Status.ShouldBe(SessionStatus.Running);
-        var record = await factory.Services.GetRequiredService<ISessionRepository>().GetToolApprovalAsync(id, RequestId, ct);
+        var record = await factory.Services.GetRequiredService<ISessionRepository>().GetToolApprovalAsync(id, RequestId, ct).ConfigureAwait(true);
         record.ShouldNotBeNull().Decision.ShouldBe(PermissionDecision.Allow);
     }
 
@@ -68,19 +68,19 @@ public sealed class RoutedToolApprovalTests
         var ct = TestContext.Current.CancellationToken;
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
-        var id = await PendingRequestAsync(factory, client, grantableTools: null, ct);
+        var id = await PendingRequestAsync(factory, client, grantableTools: null, ct).ConfigureAwait(true);
 
-        using (var denied = await PostDecisionAsync(client, id, RequestId, DenyBody, ct))
+        using (var denied = await PostDecisionAsync(client, id, RequestId, DenyBody, ct).ConfigureAwait(true))
         {
             denied.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         }
 
-        using (var repeat = await PostDecisionAsync(client, id, RequestId, AllowBody, ct))
+        using (var repeat = await PostDecisionAsync(client, id, RequestId, AllowBody, ct).ConfigureAwait(true))
         {
             repeat.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         }
 
-        var record = await factory.Services.GetRequiredService<ISessionRepository>().GetToolApprovalAsync(id, RequestId, ct);
+        var record = await factory.Services.GetRequiredService<ISessionRepository>().GetToolApprovalAsync(id, RequestId, ct).ConfigureAwait(true);
         record.ShouldNotBeNull().Decision.ShouldBe(PermissionDecision.Deny);
     }
 
@@ -92,7 +92,7 @@ public sealed class RoutedToolApprovalTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
 
-        using var response = await PostDecisionAsync(client, "missing-session", RequestId, DenyBody, ct);
+        using var response = await PostDecisionAsync(client, "missing-session", RequestId, DenyBody, ct).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }

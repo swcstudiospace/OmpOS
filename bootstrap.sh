@@ -2,7 +2,8 @@
 # OmpOS one-command bootstrap (Phase 1, decision D-05).
 # Installs the SDK pinned in global.json when missing, then runs a locked
 # restore, a warnings-as-errors Release build, the test suite, and a format
-# verification. Exits non-zero on any failing step. Never installs containers.
+# verification. Exits non-zero on any failing step. Never installs containers;
+# the test step starts throwaway test services and stops them on exit.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
@@ -36,9 +37,17 @@ fi
 dotnet --version
 dotnet restore OmpOS.Linux.slnf --locked-mode
 dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
-TEST_PG_EXPORT="$(bash scripts/test-postgres.sh up)"
-trap 'bash scripts/test-postgres.sh down; if [ -n "${INSTALLER_DIR:-}" ]; then rm -rf "$INSTALLER_DIR"; fi' EXIT
-eval "$TEST_PG_EXPORT"
+
+# Cleanup runs on every exit path. `down` is idempotent; the export file holds test passwords and is removed.
+TEST_SERVICES_ENV=""
+cleanup() {
+  bash scripts/test-services.sh down
+  if [ -n "$TEST_SERVICES_ENV" ]; then rm -f "$TEST_SERVICES_ENV"; fi
+  if [ -n "${INSTALLER_DIR:-}" ]; then rm -rf "$INSTALLER_DIR"; fi
+}
+trap cleanup EXIT
+TEST_SERVICES_ENV="$(bash scripts/test-services.sh up)"
+source "$TEST_SERVICES_ENV"
 dotnet test OmpOS.Linux.slnf -c Release --no-build
 dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
 

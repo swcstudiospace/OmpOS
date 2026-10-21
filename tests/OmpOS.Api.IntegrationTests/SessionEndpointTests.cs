@@ -22,12 +22,12 @@ public sealed class SessionEndpointTests
         using var client = factory.CreateClient();
 
         using var content = new StringContent("{}", Encoding.UTF8, "application/json");
-        using var response = await client.PostAsync(new Uri("/sessions", UriKind.Relative), content, TestContext.Current.CancellationToken);
+        using var response = await client.PostAsync(new Uri("/sessions", UriKind.Relative), content, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         response.Headers.Location.ShouldNotBeNull();
         response.Headers.GetValues("x-correlation-id").ShouldNotBeEmpty();
-        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
         using var document = JsonDocument.Parse(body);
         document.RootElement.GetProperty("ownerId").GetString().ShouldBe("local-dev");
     }
@@ -40,8 +40,8 @@ public sealed class SessionEndpointTests
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
 
-        var id = await SessionClient.CreateSessionAsync(client, testToken, "{\"ownerId\":\"alice\"}");
-        var session = await SessionClient.ReadSessionAsync(client, id, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken, "{\"ownerId\":\"alice\"}").ConfigureAwait(true);
+        var session = await SessionClient.ReadSessionAsync(client, id, testToken).ConfigureAwait(true);
 
         session.OwnerId.ShouldBe("alice");
     }
@@ -53,13 +53,13 @@ public sealed class SessionEndpointTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var found = await client.GetAsync(new Uri($"/sessions/{id}", UriKind.Relative), testToken);
+        using var found = await client.GetAsync(new Uri($"/sessions/{id}", UriKind.Relative), testToken).ConfigureAwait(true);
         found.StatusCode.ShouldBe(HttpStatusCode.OK);
         found.Headers.GetValues("x-correlation-id").ShouldNotBeEmpty();
 
-        using var missing = await client.GetAsync(new Uri("/sessions/does-not-exist", UriKind.Relative), testToken);
+        using var missing = await client.GetAsync(new Uri("/sessions/does-not-exist", UriKind.Relative), testToken).ConfigureAwait(true);
         missing.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         missing.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
         missing.Headers.GetValues("x-correlation-id").ShouldNotBeEmpty();
@@ -72,12 +72,12 @@ public sealed class SessionEndpointTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var first = await SessionClient.CreateSessionAsync(client, testToken);
-        var second = await SessionClient.CreateSessionAsync(client, testToken);
+        var first = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
+        var second = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var response = await client.GetAsync(new Uri("/sessions", UriKind.Relative), testToken);
+        using var response = await client.GetAsync(new Uri("/sessions", UriKind.Relative), testToken).ConfigureAwait(true);
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var body = await response.Content.ReadAsStringAsync(testToken);
+        var body = await response.Content.ReadAsStringAsync(testToken).ConfigureAwait(true);
         using var document = JsonDocument.Parse(body);
         var ids = document.RootElement.EnumerateArray().Select(static element => element.GetProperty("id").GetString()).ToList();
         ids.Contains(first, StringComparer.Ordinal).ShouldBeTrue();
@@ -91,9 +91,9 @@ public sealed class SessionEndpointTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var response = await SessionClient.PostPromptAsync(client, id, "hello", testToken, "text/plain");
+        using var response = await SessionClient.PostPromptAsync(client, id, "hello", testToken, "text/plain").ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.UnsupportedMediaType);
     }
@@ -105,9 +105,9 @@ public sealed class SessionEndpointTests
         using var factory = new OmpApiFactory(new Dictionary<string, string?>(StringComparer.Ordinal) { ["Api:MaxRequestBodyBytes"] = "512" });
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var response = await SessionClient.PostPromptAsync(client, id, $"{{\"prompt\":\"{new string('x', 600)}\"}}", testToken);
+        using var response = await SessionClient.PostPromptAsync(client, id, $"{{\"prompt\":\"{new string('x', 600)}\"}}", testToken).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.RequestEntityTooLarge);
     }
@@ -123,9 +123,9 @@ public sealed class SessionEndpointTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var response = await SessionClient.PostPromptAsync(client, id, body, testToken);
+        using var response = await SessionClient.PostPromptAsync(client, id, body, testToken).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -137,9 +137,9 @@ public sealed class SessionEndpointTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var response = await SessionClient.PostPromptAsync(client, id, $"{{\"prompt\":\"{new string('x', 64001)}\"}}", testToken);
+        using var response = await SessionClient.PostPromptAsync(client, id, $"{{\"prompt\":\"{new string('x', 64001)}\"}}", testToken).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -151,7 +151,7 @@ public sealed class SessionEndpointTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
 
-        using var response = await SessionClient.PostPromptAsync(client, "does-not-exist", "{\"prompt\":\"hi\"}", TestContext.Current.CancellationToken);
+        using var response = await SessionClient.PostPromptAsync(client, "does-not-exist", "{\"prompt\":\"hi\"}", TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -165,17 +165,17 @@ public sealed class SessionEndpointTests
         using var factory = new OmpApiFactory(configureServices: services => services.AddSingleton<IHarnessSessionFactory>(gate));
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var first = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"one\"}", testToken);
+        using var first = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"one\"}", testToken).ConfigureAwait(true);
         first.StatusCode.ShouldBe(HttpStatusCode.Accepted);
 
-        using var second = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"/resume\"}", testToken);
+        using var second = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"/resume\"}", testToken).ConfigureAwait(true);
         second.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         second.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
 
         gate.Release();
-        var settled = await SessionClient.WaitForStatusAsync(client, id, Contracts.Sessions.SessionStatus.Completed, TimeSpan.FromSeconds(15), testToken);
+        var settled = await SessionClient.WaitForStatusAsync(client, id, Contracts.Sessions.SessionStatus.Completed, TimeSpan.FromSeconds(15), testToken).ConfigureAwait(true);
         settled.Messages.Count.ShouldBe(1, "the rejected prompt is never queued");
     }
 
@@ -186,13 +186,13 @@ public sealed class SessionEndpointTests
         using var factory = new OmpApiFactory(new Dictionary<string, string?>(StringComparer.Ordinal) { ["Api:RateLimit:PromptsPerMinute"] = "2" });
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
         var attempts = await Task.WhenAll(Enumerable.Range(0, 4).Select(async _ =>
         {
             using var response = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"hi\"}", testToken).ConfigureAwait(false);
             return (Status: response.StatusCode, RetryAfter: response.Headers.RetryAfter);
-        }));
+        })).ConfigureAwait(true);
 
         attempts.Select(static attempt => attempt.Status).ShouldContain(HttpStatusCode.TooManyRequests);
         foreach (var attempt in attempts.Where(static attempt => attempt.Status == HttpStatusCode.TooManyRequests))
@@ -211,12 +211,12 @@ public sealed class SessionEndpointTests
 
         using var denied = new HttpRequestMessage(HttpMethod.Get, new Uri("/sessions", UriKind.Relative));
         denied.Headers.Add("Origin", "https://evil.example");
-        using var deniedResponse = await client.SendAsync(denied, testToken);
+        using var deniedResponse = await client.SendAsync(denied, testToken).ConfigureAwait(true);
         deniedResponse.Headers.Contains("Access-Control-Allow-Origin").ShouldBeFalse();
 
         using var allowed = new HttpRequestMessage(HttpMethod.Get, new Uri("/sessions", UriKind.Relative));
         allowed.Headers.Add("Origin", "https://allowed.example");
-        using var allowedResponse = await client.SendAsync(allowed, testToken);
+        using var allowedResponse = await client.SendAsync(allowed, testToken).ConfigureAwait(true);
         allowedResponse.Headers.GetValues("Access-Control-Allow-Origin").Contains("https://allowed.example", StringComparer.Ordinal).ShouldBeTrue();
     }
 
@@ -231,20 +231,20 @@ public sealed class SessionEndpointTests
         client.DefaultRequestHeaders.Add("x-correlation-id", correlation);
 
         using var content = new StringContent("{}", Encoding.UTF8, "application/json");
-        using var response = await client.PostAsync(new Uri("/sessions", UriKind.Relative), content, testToken);
+        using var response = await client.PostAsync(new Uri("/sessions", UriKind.Relative), content, testToken).ConfigureAwait(true);
         response.Headers.GetValues("x-correlation-id").Contains(correlation, StringComparer.Ordinal).ShouldBeTrue();
 
         using var unshapedFactory = new OmpApiFactory();
         using var plain = unshapedFactory.CreateClient();
         plain.DefaultRequestHeaders.Add("x-correlation-id", "not a valid id");
-        using var minted = await plain.GetAsync(new Uri("/health/live", UriKind.Relative), testToken);
+        using var minted = await plain.GetAsync(new Uri("/health/live", UriKind.Relative), testToken).ConfigureAwait(true);
         var echoed = string.Join(",", minted.Headers.GetValues("x-correlation-id"));
         Guid.TryParse(echoed, out _).ShouldBeTrue("an invalid inbound id must be replaced with a minted one");
         string.Equals(echoed, "not a valid id", StringComparison.Ordinal).ShouldBeFalse("an invalid inbound id must be replaced with a minted one");
 
         using var bareFactory = new OmpApiFactory();
         using var bare = bareFactory.CreateClient();
-        using var anonymous = await bare.GetAsync(new Uri("/health/live", UriKind.Relative), testToken);
+        using var anonymous = await bare.GetAsync(new Uri("/health/live", UriKind.Relative), testToken).ConfigureAwait(true);
         anonymous.Headers.GetValues("x-correlation-id").ShouldNotBeEmpty();
     }
 }

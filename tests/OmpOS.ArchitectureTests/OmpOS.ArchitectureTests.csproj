@@ -11,13 +11,14 @@
     <ProjectReference Include="../../src/OmpOS.EngineHost/OmpOS.EngineHost.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sessions/OmpOS.Sessions.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sessions.Postgres/OmpOS.Sessions.Postgres.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Coordination/OmpOS.Coordination.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Coordination.Dragonfly/OmpOS.Coordination.Dragonfly.csproj" />
     <ProjectReference Include="../../src/OmpOS.SessionRuns/OmpOS.SessionRuns.csproj" />
     <ProjectReference Include="../../src/OmpOS.GenUi/OmpOS.GenUi.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sandbox/OmpOS.Sandbox.csproj" />
     <ProjectReference Include="../../src/OmpOS.Workflows/OmpOS.Workflows.csproj" />
     <ProjectReference Include="../../src/OmpOS.UI/OmpOS.UI.csproj" />
     <ProjectReference Include="../../services/OmpOS.Api/OmpOS.Api.csproj" />
-    <ProjectReference Include="../../services/OmpOS.Workflows.Worker/OmpOS.Workflows.Worker.csproj" />
     <ProjectReference Include="../../apps/OmpOS.Web/OmpOS.Web.csproj" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="Shouldly" />

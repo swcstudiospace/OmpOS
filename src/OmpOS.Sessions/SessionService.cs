@@ -28,8 +28,9 @@ namespace OmpOS.Sessions;
 /// <see cref="ResolveToolApprovalAsync"/> is the single entry point for a decision; it moves the session back to
 /// <see cref="SessionStatus.Running"/> in both outcomes. An approval may allow only a tool the request's ceiling permits
 /// (by default none), and a request that no decision reaches within the wait timeout is denied by
-/// <see cref="WaitForDecisionAsync"/>. There is no direct transition from
-/// <see cref="SessionStatus.AwaitingToolApproval"/> to a terminal state.
+/// <see cref="WaitForDecisionAsync"/>. There is no direct transition from <see cref="SessionStatus.AwaitingToolApproval"/>
+/// to a terminal state: <see cref="RecordCompletionAsync"/> denies the pending request first, which returns the session to
+/// <see cref="SessionStatus.Running"/>, and then settles it.
 /// </para>
 /// <para>
 /// <b>Steer and follow-up policy.</b> Steering and follow-up are distinct intents and are exempt from
@@ -236,16 +237,18 @@ public sealed class SessionService
     /// Settles the active prompt with a terminal status. The turn's terminal event is appended before the settled
     /// status is saved, so a subscriber that sees the settled status always finds that event ahead of its cursor.
     /// A turn that already carries a terminal event (an error streamed during the turn) gets no second one.
+    /// A session awaiting tool approval has its pending request denied first, which returns it to running, and then settles.
     /// </summary>
     /// <param name="sessionId">The session identifier.</param>
     /// <param name="final">The terminal status: <see cref="SessionStatus.Completed"/>, <see cref="SessionStatus.Failed"/> or <see cref="SessionStatus.Cancelled"/>.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>
     /// <param name="stopReason">The harness stop reason, for example <c>end_turn</c>, written to the completed event; <see langword="null"/> writes <c>completed</c>. Ignored unless <paramref name="final"/> is <see cref="SessionStatus.Completed"/>.</param>
+    /// <param name="failureDetail">Detail appended to a failed turn's terminal error message as <c>" Detail: "</c> plus the trimmed detail. Ignored unless <paramref name="final"/> is <see cref="SessionStatus.Failed"/>; null, empty or whitespace keeps the message <see cref="FailedTurnMessage"/>.</param>
     /// <exception cref="SessionException">
     /// <see cref="ErrorCode.SessionNotFound"/> when the session does not exist;
-    /// <see cref="ErrorCode.InvalidTransition"/> when the session is not running or <paramref name="final"/> is not terminal.
+    /// <see cref="ErrorCode.InvalidTransition"/> when the session is neither running nor awaiting tool approval, or <paramref name="final"/> is not terminal.
     /// </exception>
-    public async Task RecordCompletionAsync(string sessionId, SessionStatus final, CancellationToken cancellationToken, string? stopReason = null)
+    public async Task RecordCompletionAsync(string sessionId, SessionStatus final, CancellationToken cancellationToken, string? stopReason = null, string? failureDetail = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
 
@@ -262,6 +265,13 @@ public sealed class SessionService
         try
         {
             var session = await LoadAsync(sessionId, cancellationToken).ConfigureAwait(false);
+            if (session.Status == SessionStatus.AwaitingToolApproval)
+            {
+                // The prompt ends while it awaits a decision: deny the pending request first. The denial returns the session to Running.
+                await DenyPendingApprovalsUnderLockAsync(session).ConfigureAwait(false);
+                session = await LoadAsync(sessionId, cancellationToken).ConfigureAwait(false);
+            }
+
             if (session.Status != SessionStatus.Running)
             {
                 throw new SessionException(new OmpOSError
@@ -274,7 +284,7 @@ public sealed class SessionService
             var now = _timeProvider.GetUtcNow();
             if (!TurnHasTerminalEvent(session))
             {
-                await AppendAsync(sessionId, CorrelationIdOf(sessionId, session), now, TerminalPayload(final, stopReason), cancellationToken).ConfigureAwait(false);
+                await AppendAsync(sessionId, CorrelationIdOf(sessionId, session), now, TerminalPayload(final, stopReason, failureDetail), cancellationToken).ConfigureAwait(false);
             }
 
             // The save carries the snapshot taken before the append. The repository keeps its longer stored log on a
@@ -441,8 +451,12 @@ public sealed class SessionService
         }
         catch (OperationCanceledException) when (lapse.IsCancellationRequested)
         {
+            // Deny first, so no approval stays pending after the wait ends. A cancelled wait then rethrows the original cancellation.
             var settled = await DenyLapsedAsync(sessionId, requestId).ConfigureAwait(false);
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             return settled;
         }
         finally
@@ -488,24 +502,74 @@ public sealed class SessionService
         var lease = await EnterAsync(sessionId, CancellationToken.None).ConfigureAwait(false);
         try
         {
-            var record = await _repository.GetToolApprovalAsync(sessionId, requestId, CancellationToken.None).ConfigureAwait(false);
-            if (record is null)
-            {
-                throw InvalidTransition($"No tool approval '{requestId}' is pending in session '{sessionId}'.");
-            }
-
-            if (record.Decision is { } settled)
-            {
-                return settled;
-            }
-
-            var session = await LoadAsync(sessionId, CancellationToken.None).ConfigureAwait(false);
-            await SettleAsync(session, requestId, PermissionDecision.Deny, CancellationToken.None).ConfigureAwait(false);
-            return PermissionDecision.Deny;
+            return await DenyLapsedUnderLockAsync(sessionId, requestId).ConfigureAwait(false);
         }
         finally
         {
             await lease.ExitAsync().ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// The body of <see cref="DenyLapsedAsync"/> for a caller that already holds the session lock. The lock is not reentrant:
+    /// calling <see cref="DenyLapsedAsync"/> from inside a locked operation would wait for its own lock.
+    /// </summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="requestId">The identifier of the request.</param>
+    /// <returns>The request's settled decision.</returns>
+    private async Task<PermissionDecision> DenyLapsedUnderLockAsync(string sessionId, string requestId)
+    {
+        var record = await _repository.GetToolApprovalAsync(sessionId, requestId, CancellationToken.None).ConfigureAwait(false);
+        if (record is null)
+        {
+            throw InvalidTransition($"No tool approval '{requestId}' is pending in session '{sessionId}'.");
+        }
+
+        if (record.Decision is { } settled)
+        {
+            return settled;
+        }
+
+        var session = await LoadAsync(sessionId, CancellationToken.None).ConfigureAwait(false);
+        await SettleAsync(session, requestId, PermissionDecision.Deny, CancellationToken.None).ConfigureAwait(false);
+        return PermissionDecision.Deny;
+    }
+
+    /// <summary>
+    /// Denies every tool approval of a session that is still pending. Runs under the session lock the caller holds. The
+    /// requests come from the session's event log, the only place that lists them, so no pending request is missed. Each
+    /// denial returns the session to Running.
+    /// </summary>
+    /// <param name="session">The session as loaded under the lock.</param>
+    private async Task DenyPendingApprovalsUnderLockAsync(Session session)
+    {
+        foreach (var requestId in RequestedApprovalIds(session))
+        {
+            var record = await _repository.GetToolApprovalAsync(session.Id, requestId, CancellationToken.None).ConfigureAwait(false);
+            if (record is { Decision: null })
+            {
+                await DenyLapsedUnderLockAsync(session.Id, requestId).ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>Lists the distinct request identifiers of the tool approvals requested in a session's event log, in log order.</summary>
+    /// <param name="session">The session, including its event log.</param>
+    /// <returns>The request identifiers.</returns>
+    private static IEnumerable<string> RequestedApprovalIds(Session session)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var evt in session.Events)
+        {
+            if (evt.Payload is UnknownPayload { OriginalKind: ToolApprovalRequestedKind } payload
+                && payload.Raw.ValueKind == JsonValueKind.Object
+                && payload.Raw.TryGetProperty("requestId", out var id)
+                && id.ValueKind == JsonValueKind.String
+                && id.GetString() is { } requestId
+                && seen.Add(requestId))
+            {
+                yield return requestId;
+            }
         }
     }
 
@@ -687,11 +751,12 @@ public sealed class SessionService
     /// <summary>The terminal event that settles a turn: a completed event for success or cancel, an error event for failure.</summary>
     /// <param name="final">The terminal status.</param>
     /// <param name="stopReason">The harness stop reason, or null for <c>completed</c>.</param>
+    /// <param name="failureDetail">Detail appended to the failed turn's message as <c>" Detail: "</c> plus the trimmed detail; null, empty or whitespace keeps the message unchanged.</param>
     /// <returns>The payload of the turn's terminal event.</returns>
-    private static StreamEventPayload TerminalPayload(SessionStatus final, string? stopReason) => final switch
+    private static StreamEventPayload TerminalPayload(SessionStatus final, string? stopReason, string? failureDetail) => final switch
     {
         SessionStatus.Completed => new CompletedPayload { Reason = string.IsNullOrWhiteSpace(stopReason) ? CompletedReason : stopReason },
-        SessionStatus.Failed => new ErrorPayload { Message = FailedTurnMessage, Retryable = false },
+        SessionStatus.Failed => new ErrorPayload { Message = string.IsNullOrWhiteSpace(failureDetail) ? FailedTurnMessage : $"{FailedTurnMessage} Detail: {failureDetail.Trim()}", Retryable = false },
         _ => new CompletedPayload { Reason = CancelledReason },
     };
 

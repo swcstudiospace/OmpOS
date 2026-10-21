@@ -19,7 +19,7 @@ public sealed class PostgresSessionRepositoryContractTests(PostgresServerFixture
         var dataSource = schema.CreateDataSource();
         await PostgresSessionSchema.EnsureCreatedAsync(dataSource, cancellationToken).ConfigureAwait(false);
 
-        var repository = new PostgresSessionRepository(dataSource);
+        var repository = new PostgresSessionRepository(dataSource, schema.Connection);
         _schemas.Add(repository, schema);
         return repository;
     }

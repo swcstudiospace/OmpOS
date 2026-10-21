@@ -224,6 +224,56 @@ public sealed class ToolApprovalTests
         EventKinds(stored).ShouldContain("tool_approval_denied", StringComparer.Ordinal);
     }
 
+    /// <summary>Cancelling a wait that is in progress denies the request, so no approval stays pending after the wait ends.</summary>
+    [Fact]
+    public async Task CancellingAnApprovalWaitLeavesNoPendingRequest()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await RunningSessionAsync(service, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, RequestId, Tool, ct).ConfigureAwait(true);
+        using var cancelled = new CancellationTokenSource();
+
+        await Should.ThrowAsync<OperationCanceledException>(async () =>
+        {
+            var waiting = service.WaitForDecisionAsync(session.Id, RequestId, LongWait, cancelled.Token);
+            await Task.Delay(TimeSpan.FromMilliseconds(50), ct).ConfigureAwait(true);
+            await cancelled.CancelAsync().ConfigureAwait(true);
+            await waiting.ConfigureAwait(true);
+        }).ConfigureAwait(true);
+        var record = await repository.GetToolApprovalAsync(session.Id, RequestId, ct).ConfigureAwait(true);
+        record.ShouldNotBeNull();
+        record.Decision.ShouldBe(PermissionDecision.Deny);
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Status.ShouldBe(SessionStatus.Running);
+    }
+
+    /// <summary>Settling a session that awaits approval denies the pending request, then completes with the requested status.</summary>
+    [Theory]
+    [InlineData(SessionStatus.Completed)]
+    [InlineData(SessionStatus.Failed)]
+    [InlineData(SessionStatus.Cancelled)]
+    public async Task SettlingAwaitingApprovalCompletesWithRequestedStatus(SessionStatus final)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await RunningSessionAsync(service, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, RequestId, Tool, ct, GrantBash).ConfigureAwait(true);
+
+        await service.RecordCompletionAsync(session.Id, final, ct).ConfigureAwait(true);
+
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Status.ShouldBe(final);
+        EventKinds(stored).ShouldContain("tool_approval_denied", StringComparer.Ordinal);
+        var record = await repository.GetToolApprovalAsync(session.Id, RequestId, ct).ConfigureAwait(true);
+        record.ShouldNotBeNull();
+        record.Decision.ShouldBe(PermissionDecision.Deny);
+    }
+
     /// <summary>A wait for a request that is not pending is refused.</summary>
     [Fact]
     public async Task WaitForRequestThatIsNotPendingIsRefused()

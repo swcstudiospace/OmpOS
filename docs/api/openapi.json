@@ -150,6 +150,17 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Optional client key that makes a prompt submission idempotent within its session. A repeat with the same key and the same prompt returns the original 202 response; the same key with a different prompt returns 409. A key still in progress returns 409. Keys are 1 to 128 visible ASCII characters.",
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[!-~]{1,128}$",
+              "type": "string"
+            }
           }
         ],
         "requestBody": {

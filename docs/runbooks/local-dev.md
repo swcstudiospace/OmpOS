@@ -16,15 +16,11 @@ Every shell that calls `dotnet` directly needs the user SDK first:
 export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH
 ```
 
-## Workflows profile
+## Local dependency stack
 
-The Temporal dev server (needed only when `Workflows:Enabled` is true, Phase 3+) runs under podman-compose:
+The Temporal dev server and its `workflows` profile were removed on 2026-10-21 ([decision](../handoff.md#temporal-removal-and-railway-topology-2026-10-21)). Session runs execute in-process in the API, so no local Temporal server is needed. `podman-compose --profile workflows` no longer applies.
 
-```sh
-podman-compose --profile workflows up
-```
-
-This is the only supported invocation. The API, worker, and web runbooks land with their phases:
+The API and web runbook sections land with their phases:
 
 - API backend serving and SSE resume: added in Phase 2.
 - Blazor web head serving: added in Phase 4.

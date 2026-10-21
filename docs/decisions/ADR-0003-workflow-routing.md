@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-10-20)
+Superseded (2026-10-21; was Accepted 2026-10-20). Temporal is removed; see [handoff decision](../handoff.md#temporal-removal-and-railway-topology-2026-10-21). `DirectSessionRunner` in the API is the only session run path. The text below is the 2026-10-20 decision, kept as history.
 
 ## Context
 

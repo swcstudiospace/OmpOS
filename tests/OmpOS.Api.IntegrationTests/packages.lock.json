@@ -86,11 +86,6 @@
         "resolved": "4.4.0",
         "contentHash": "gwJEfIGS7FhykvtZoscwXj/XwW+mJY6UbAZk+qtLKFUGWC95kfKXnj8VkxsZQnWBxJemM/q664rGLN5nf+OHZw=="
       },
-      "Google.Protobuf": {
-        "type": "Transitive",
-        "resolved": "3.26.1",
-        "contentHash": "CHZX8zXqhF/fdUtd+AYzew8T2HFkAoe5c7lbGxZY/qryAlQXckDvM5BfOJjXlMS7kyICqQTMszj4w1bX5uBJ/w=="
-      },
       "Microsoft.ApplicationInsights": {
         "type": "Transitive",
         "resolved": "2.23.0",
@@ -248,11 +243,6 @@
         "resolved": "5.0.0",
         "contentHash": "dDoKi0PnDz31yAyETfRntsLArTlVAVzUzCIvvEDsDsucrl33Dl8pIJG06ePTJTI3tGpeyHS9Cq7Foc/s4EeKcg=="
       },
-      "NexusRpc": {
-        "type": "Transitive",
-        "resolved": "0.4.0",
-        "contentHash": "2cdRtmwT/vskWqJvojODvR7CpRhLWAnCeVT5Z8sPdRDX8P/Ywpw48T2lqgqhxM8JROfoflHzhSiXo4h1ln3/MQ=="
-      },
       "OpenTelemetry.Api": {
         "type": "Transitive",
         "resolved": "1.20.0",
@@ -267,6 +257,11 @@
           "OpenTelemetry.Api": "1.20.0"
         }
       },
+      "RESPite": {
+        "type": "Transitive",
+        "resolved": "3.4.5",
+        "contentHash": "EzMx67+IXC8lQRI78yeSBWKCTn9qvSIaale6XZ1RJLKpr2NJqmptgn3UqgguWqoeGUsoohiy3SWeiVLAj1n9DA=="
+      },
       "System.CodeDom": {
         "type": "Transitive",
         "resolved": "6.0.0",
@@ -276,6 +271,11 @@
         "type": "Transitive",
         "resolved": "10.0.13",
         "contentHash": "DkNjtQyPR5Ud/zHnWHdsOuKbFRL9nIC92Q76z0NmHVDoQm40toLtsGFTIWq7toBoVa6fo/DInL3PLxY3Asixyw=="
+      },
+      "System.IO.Hashing": {
+        "type": "Transitive",
+        "resolved": "10.0.12",
+        "contentHash": "jDix4bBMYnpZdSPcnY+KDV6ik3SRMzpMKby/bZl/XUwIiflwRNAFZ0oOl61R/pSaveIJ8t1gs2BUlrGsPs/bcg=="
       },
       "System.Management": {
         "type": "Transitive",
@@ -364,6 +364,8 @@
           "Microsoft.AspNetCore.OpenApi": "[10.0.13, )",
           "Microsoft.Extensions.ApiDescription.Server": "[10.0.13, )",
           "OmpOS.Contracts": "[1.0.0, )",
+          "OmpOS.Coordination": "[1.0.0, )",
+          "OmpOS.Coordination.Dragonfly": "[1.0.0, )",
           "OmpOS.Harness.Abstractions": "[1.0.0, )",
           "OmpOS.Harness.InMemory": "[1.0.0, )",
           "OmpOS.Parser": "[1.0.0, )",
@@ -379,11 +381,24 @@
           "OpenTelemetry.Extensions.Hosting": "[1.20.0, )",
           "OpenTelemetry.Instrumentation.AspNetCore": "[1.20.0, )",
           "Scalar.AspNetCore": "[2.18.0, )",
-          "Temporalio": "[1.20.0, )"
+          "StackExchange.Redis": "[3.4.5, )"
         }
       },
       "ompos.contracts": {
         "type": "Project"
+      },
+      "ompos.coordination": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )"
+        }
+      },
+      "ompos.coordination.dragonfly": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Coordination": "[1.0.0, )",
+          "StackExchange.Redis": "[3.4.5, )"
+        }
       },
       "ompos.harness.abstractions": {
         "type": "Project",
@@ -736,15 +751,15 @@
         "resolved": "2.18.0",
         "contentHash": "wwI3khcYNM7oL6axr4a41G29fJYOS3ckusgYZ4NiIccL8Amh2LOeu4HSK1SrQWiMJNrgoFqyWfDkOkunQCiRDw=="
       },
-      "Temporalio": {
+      "StackExchange.Redis": {
         "type": "CentralTransitive",
-        "requested": "[1.20.0, )",
-        "resolved": "1.20.0",
-        "contentHash": "5Y11I7V2L/EAMczly8sT8b+dhLIiBwUmJSiUbsJOId7r1f2BZJn+2oEo2RUauSwUeIMXXEfvq3Y92BM8RjoqqQ==",
+        "requested": "[3.4.5, )",
+        "resolved": "3.4.5",
+        "contentHash": "LtbEuNmaW6N75tvLAlXoDGDJHTCwmrHFL8/9OeQknWoCWcZhUcUnPvG2ijSO7tTyC7XID9LskIu42spa0b/nMQ==",
         "dependencies": {
-          "Google.Protobuf": "3.26.1",
-          "Microsoft.Extensions.Logging.Abstractions": "2.2.0",
-          "NexusRpc": "0.4.0"
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.5",
+          "RESPite": "3.4.5",
+          "System.IO.Hashing": "10.0.12"
         }
       },
       "YamlDotNet": {

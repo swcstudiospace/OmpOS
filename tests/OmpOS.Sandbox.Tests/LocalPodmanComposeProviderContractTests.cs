@@ -145,19 +145,23 @@ public sealed class LocalPodmanComposeProviderContractTests : SandboxProviderCon
         var runner = new ProcessRunner();
         var result = await runner.RunAsync(new ProcessSpec
         {
-            Argv = ["podman-compose", "-f", composePath, "--profile", "workflows", "config"],
+            Argv = ["podman-compose", "-f", composePath, "--profile", "backend", "config"],
             WorkingDirectory = Path.GetDirectoryName(composePath)!,
             Environment = new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                // Config-only run: this value only satisfies the required variable and never starts a container.
+                // Config-only run: these values only satisfy the required variables and never start a container.
                 ["OMPOS_POSTGRES_PASSWORD"] = Guid.NewGuid().ToString("N"),
+                ["OMPOS_DRAGONFLY_PASSWORD"] = Guid.NewGuid().ToString("N"),
             },
             Timeout = TimeSpan.FromSeconds(60),
         }, ct);
 
         result.TimedOut.ShouldBeFalse();
         result.ExitCode.ShouldBe(0);
-        result.Stdout.ShouldContain("temporal");
+        result.Stdout.ShouldContain("postgres");
+        result.Stdout.ShouldContain("dragonfly");
+        result.Stdout.ShouldContain("greptimedb");
+        result.Stdout.ShouldNotContain("temporal");
     }
 
     private static string FindRepoComposeFile()

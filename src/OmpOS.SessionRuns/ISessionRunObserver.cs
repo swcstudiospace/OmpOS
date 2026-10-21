@@ -6,7 +6,7 @@ namespace OmpOS.SessionRuns;
 /// </summary>
 /// <remarks>
 /// The API implements this over its SSE streams and metrics, so a run that appends from the API wakes the readers of
-/// that process. A process with no streams or metrics to feed, such as the Temporal worker, uses
+/// that process. A process with no streams or metrics to feed, such as a background worker, uses
 /// <see cref="NullSessionRunObserver"/>. Observers are called on the run's own task and must not block.
 /// </remarks>
 public interface ISessionRunObserver

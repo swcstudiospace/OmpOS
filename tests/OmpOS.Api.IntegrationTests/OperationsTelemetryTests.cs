@@ -34,7 +34,7 @@ public sealed class OperationsTelemetryTests
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
 
-        _ = await SessionClient.CreateSessionAsync(client, testToken);
+        _ = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
         measurements.Sum().ShouldBeGreaterThanOrEqualTo(1L, "creating a session must record one sessions.count hit");
     }
@@ -59,12 +59,12 @@ public sealed class OperationsTelemetryTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"trace me\"}", testToken);
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"trace me\"}", testToken).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
 
-        var events = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken);
+        var events = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken).ConfigureAwait(true);
         events.ShouldNotBeEmpty("the stream must terminate so the delivery latency is recorded");
 
         measurements.ShouldNotBeEmpty("completing a session event stream must record a stream latency value");
@@ -86,9 +86,9 @@ public sealed class OperationsTelemetryTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"trace me\"}", testToken);
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"trace me\"}", testToken).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
 
         seen.Contains("POST /sessions", StringComparer.Ordinal).ShouldBeTrue("session creation must emit an OmpOS endpoint span");

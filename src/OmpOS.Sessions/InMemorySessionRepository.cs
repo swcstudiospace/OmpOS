@@ -17,6 +17,9 @@ public sealed class InMemorySessionRepository : ISessionRepository
 {
     private readonly ConcurrentDictionary<string, Entry> _sessions = new(StringComparer.Ordinal);
 
+    /// <summary>The most session identifiers one <see cref="ListSessionIdsByStatusAsync"/> call returns.</summary>
+    private const int MaxSessionIdsPerListing = 200;
+
     /// <inheritdoc />
     public Task<Session?> GetAsync(string id, CancellationToken cancellationToken)
     {
@@ -130,6 +133,38 @@ public sealed class InMemorySessionRepository : ISessionRepository
             cancellationToken.ThrowIfCancellationRequested();
             yield return evt;
         }
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<string>> ListSessionIdsByStatusAsync(SessionStatus status, DateTimeOffset updatedBefore, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var ids = new List<string>();
+        foreach (var id in _sessions.Keys.Order(StringComparer.Ordinal))
+        {
+            if (!_sessions.TryGetValue(id, out var entry))
+            {
+                continue;
+            }
+
+            Session? header;
+            lock (entry.Gate)
+            {
+                header = entry.Header;
+            }
+
+            if (header is not null && header.Status == status && header.UpdatedAt < updatedBefore)
+            {
+                ids.Add(id);
+                if (ids.Count == MaxSessionIdsPerListing)
+                {
+                    break;
+                }
+            }
+        }
+
+        return Task.FromResult<IReadOnlyList<string>>(ids);
     }
 
     /// <inheritdoc />

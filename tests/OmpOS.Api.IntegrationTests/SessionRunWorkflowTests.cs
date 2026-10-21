@@ -35,13 +35,13 @@ public sealed class SessionRunWorkflowTests
         });
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"hello\"}", testToken);
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"hello\"}", testToken).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
 
-        _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Completed, SettleTimeout, testToken);
-        await WaitForCountAsync(() => counting.TeardownsFor(id), 1, testToken);
+        _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Completed, SettleTimeout, testToken).ConfigureAwait(true);
+        await WaitForCountAsync(() => counting.TeardownsFor(id), 1, testToken).ConfigureAwait(true);
 
         counting.ProvisionsFor(id).ShouldBe(1, "one prompt is one run with one provision");
         counting.TeardownsFor(id).ShouldBe(1, "the run tears down exactly once");
@@ -63,14 +63,14 @@ public sealed class SessionRunWorkflowTests
         });
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"hello\"}", testToken);
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"hello\"}", testToken).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
 
-        var settled = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Failed, SettleTimeout, testToken);
+        var settled = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Failed, SettleTimeout, testToken).ConfigureAwait(true);
         settled.Events.ShouldContain(static evt => evt.Payload is ErrorPayload, "the failed run appends an error event");
-        await WaitForCountAsync(() => counting.TeardownsFor(id), 1, testToken);
+        await WaitForCountAsync(() => counting.TeardownsFor(id), 1, testToken).ConfigureAwait(true);
 
         counting.ProvisionsFor(id).ShouldBe(1, "the failed run still provisioned exactly once");
         counting.TeardownsFor(id).ShouldBe(1, "teardown runs in a finally even when the prompt fails");
@@ -88,12 +88,12 @@ public sealed class SessionRunWorkflowTests
         using var factory = new OmpApiFactory(configureServices: services => services.AddSingleton<ISandboxProvider>(sandbox));
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"hello\"}", testToken);
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"hello\"}", testToken).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
 
-        var settled = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Failed, SettleTimeout, testToken);
+        var settled = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Failed, SettleTimeout, testToken).ConfigureAwait(true);
         settled.Events.ShouldContain(static evt => evt.Payload is ErrorPayload, "the failed run appends an error event");
     }
 
@@ -119,38 +119,38 @@ public sealed class SessionRunWorkflowTests
             loggerProvider: logs);
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using (var first = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"first\"}", testToken))
+        using (var first = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"first\"}", testToken).ConfigureAwait(true))
         {
             first.StatusCode.ShouldBe(HttpStatusCode.Accepted);
         }
 
-        _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Completed, SettleTimeout, testToken);
+        _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Completed, SettleTimeout, testToken).ConfigureAwait(true);
 
-        using (var second = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"second\"}", testToken))
+        using (var second = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"second\"}", testToken).ConfigureAwait(true))
         {
             second.StatusCode.ShouldBe(HttpStatusCode.Accepted);
         }
 
         // The second run streams its delta, then parks mid-turn: the stale teardown failure below
         // must land while the next turn is still Running.
-        await WaitForDeltaCountAsync(client, id, 2, testToken);
+        await WaitForDeltaCountAsync(client, id, 2, testToken).ConfigureAwait(true);
         sandboxGate.TrySetResult();
-        await Task.Delay(TimeSpan.FromMilliseconds(500), testToken);
+        await Task.Delay(TimeSpan.FromMilliseconds(500), testToken).ConfigureAwait(true);
         harnessGate.TrySetResult();
 
-        var settled = await WaitForTerminalAsync(client, id, testToken);
+        var settled = await WaitForTerminalAsync(client, id, testToken).ConfigureAwait(true);
         settled.Status.ShouldBe(SessionStatus.Completed);
         settled.Events.Count(static evt => evt.Payload is TextDeltaPayload).ShouldBe(2, "the next reply streams fully");
         settled.Events.Any(static evt => evt.Payload is ErrorPayload).ShouldBeFalse("a stale cleanup must not fail the next reply");
 
-        using (var third = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"third\"}", testToken))
+        using (var third = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"third\"}", testToken).ConfigureAwait(true))
         {
             third.StatusCode.ShouldBe(HttpStatusCode.Accepted);
         }
 
-        _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Completed, SettleTimeout, testToken);
+        _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Completed, SettleTimeout, testToken).ConfigureAwait(true);
     }
 
     /// <summary>Polls a session until its log holds at least <paramref name="expected"/> text deltas.</summary>

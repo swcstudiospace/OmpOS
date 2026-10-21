@@ -43,39 +43,22 @@ public sealed class GuardTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
 
-        using var response = await client.GetAsync(new Uri("/health/live", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync(new Uri("/health/live", UriKind.Relative), TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         response.Headers.GetValues("x-correlation-id").ShouldNotBeEmpty();
     }
 
-    /// <summary>Verifies readiness is healthy with the default (workflows disabled) configuration.</summary>
+    /// <summary>Verifies readiness is healthy with the default configuration.</summary>
     [Fact]
     public async Task Health_Ready_Returns200ByDefault()
     {
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
 
-        using var response = await client.GetAsync(new Uri("/health/ready", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync(new Uri("/health/ready", UriKind.Relative), TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-    }
-
-    /// <summary>Verifies readiness is unavailable when workflows are enabled and the configured Workflows:Address refuses connections.</summary>
-    [Fact]
-    public async Task Health_Ready_UnavailableWhenWorkflowsAddressRefusesConnections()
-    {
-        using var factory = new OmpApiFactory(new Dictionary<string, string?>(StringComparer.Ordinal)
-        {
-            ["Workflows:Enabled"] = "true",
-            ["Workflows:Address"] = "127.0.0.1:1",
-            [PostgresTestDatabase.ConnectionStringKey] = PostgresTestDatabase.ConnectionString(),
-        });
-        using var client = factory.CreateClient();
-
-        using var response = await client.GetAsync(new Uri("/health/ready", UriKind.Relative), TestContext.Current.CancellationToken);
-
-        response.StatusCode.ShouldBe(HttpStatusCode.ServiceUnavailable);
     }
 
     /// <summary>Verifies the served OpenAPI document equals the committed build-time document.</summary>
@@ -86,13 +69,13 @@ public sealed class GuardTests
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
 
-        using var response = await client.GetAsync(new Uri("/openapi/v1.json", UriKind.Relative), testToken);
+        using var response = await client.GetAsync(new Uri("/openapi/v1.json", UriKind.Relative), testToken).ConfigureAwait(true);
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         response.Content.Headers.ContentType?.MediaType.ShouldBe("application/json");
-        var served = JsonNode.Parse(await response.Content.ReadAsStringAsync(testToken))!;
+        var served = JsonNode.Parse(await response.Content.ReadAsStringAsync(testToken).ConfigureAwait(true))!;
 
         var committedPath = Path.Combine(FindRepoRoot(), "docs", "api", "openapi.json");
-        var committed = JsonNode.Parse(await File.ReadAllTextAsync(committedPath, testToken))!;
+        var committed = JsonNode.Parse(await File.ReadAllTextAsync(committedPath, testToken).ConfigureAwait(true))!;
 
         (served["openapi"]?.GetValue<string>() ?? string.Empty).ShouldStartWith("3.1");
         JsonNode.DeepEquals(served, committed).ShouldBeTrue("the served document must equal the committed build-time document");
@@ -107,13 +90,13 @@ public sealed class GuardTests
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
         var marker = $"PROMPTMARKER-{Guid.NewGuid():N}";
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
         using var content = new StringContent($"{{\"prompt\":\"Summarize {marker} please\"}}", Encoding.UTF8, "application/json");
-        using var accepted = await client.PostAsync(new Uri($"/sessions/{id}/prompts", UriKind.Relative), content, testToken);
+        using var accepted = await client.PostAsync(new Uri($"/sessions/{id}/prompts", UriKind.Relative), content, testToken).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
 
-        await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Completed, TimeSpan.FromSeconds(15), testToken);
+        await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Completed, TimeSpan.FromSeconds(15), testToken).ConfigureAwait(true);
 
         provider.Messages.ShouldContain(static message => message.Contains("<redacted", StringComparison.Ordinal));
         provider.Messages.Where(message => message.Contains(marker, StringComparison.Ordinal)).ShouldBeEmpty();
@@ -137,13 +120,20 @@ public sealed class GuardTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"trace me\"}", testToken);
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"trace me\"}", testToken).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
 
-        var events = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken);
+        var events = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken).ConfigureAwait(true);
         events.ShouldNotBeEmpty("the stream must terminate so the background span stops");
+
+        // The run span stops after teardown, which can finish after the terminal event reached the client, so wait for it.
+        var runSpanDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(15);
+        while (!seen.Any(static record => string.Equals(record.Name, "harness.run", StringComparison.Ordinal)) && DateTime.UtcNow < runSpanDeadline)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(20), testToken).ConfigureAwait(true);
+        }
 
         var group = seen.GroupBy(static record => record.TraceId).FirstOrDefault(static traces => traces.Any(static record => string.Equals(record.Name, "harness.run", StringComparison.Ordinal)));
         group.ShouldNotBeNull("the harness run must share a trace with the request");

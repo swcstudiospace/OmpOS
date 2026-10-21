@@ -15,8 +15,7 @@ namespace OmpOS.Api.Endpoints;
 /// request id is not pending (unknown, or already decided). An unknown request id is a 409 rather than a 404: the session
 /// exists, and the request cannot be decided in its current state. The same response covers a request already decided,
 /// so the API does not reveal which request ids were ever issued.
-/// The decision is written to the session store, so it resolves a request registered by a routed run in the worker as well as one
-/// registered in this process.
+/// The decision is written to the session store, so it resolves a request registered by a run on any replica, not only this process.
 /// </summary>
 internal static class ToolApprovalEndpoints
 {
@@ -45,7 +44,7 @@ internal static class ToolApprovalEndpoints
         string id,
         string requestId,
         SessionService sessions,
-        SessionEventStreamer streamer,
+        SessionChangePublisher publisher,
         IOptions<ApiOptions> options,
         CancellationToken cancellationToken)
     {
@@ -83,7 +82,7 @@ internal static class ToolApprovalEndpoints
             return ProblemResponse(403, "Tool approval forbidden.", ex.Message);
         }
 
-        streamer.Notify(id);
+        await publisher.NotifyAsync(id).ConfigureAwait(false);
         return TypedResults.NoContent();
     }
 

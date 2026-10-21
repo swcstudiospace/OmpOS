@@ -24,7 +24,7 @@ public sealed class ApiInputValidationTests
     [InlineData("3f2b8c1e-9a4d-4e7f-8b2c-1d0e9f8a7b6c")]
     public async Task CorrelationId_AllowedShape_IsEchoed(string inbound)
     {
-        var echoed = await EchoedCorrelationIdAsync(inbound, TestContext.Current.CancellationToken);
+        var echoed = await EchoedCorrelationIdAsync(inbound, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         echoed.ShouldBe(inbound);
     }
@@ -35,7 +35,7 @@ public sealed class ApiInputValidationTests
     {
         var boundary = new string('c', 64);
 
-        var echoed = await EchoedCorrelationIdAsync(boundary, TestContext.Current.CancellationToken);
+        var echoed = await EchoedCorrelationIdAsync(boundary, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         echoed.ShouldBe(boundary);
     }
@@ -46,7 +46,7 @@ public sealed class ApiInputValidationTests
     {
         var oversized = new string('c', 65);
 
-        var echoed = await EchoedCorrelationIdAsync(oversized, TestContext.Current.CancellationToken);
+        var echoed = await EchoedCorrelationIdAsync(oversized, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         string.Equals(echoed, oversized, StringComparison.Ordinal).ShouldBeFalse("a rejected inbound id must not be echoed");
         Guid.TryParse(echoed, out _).ShouldBeTrue("a rejected inbound id must be replaced with a minted guid");
@@ -59,7 +59,7 @@ public sealed class ApiInputValidationTests
     [InlineData("{3f2b8c1e-9a4d-4e7f-8b2c-1d0e9f8a7b6c}")]
     public async Task CorrelationId_OutsideAllowedShape_IsReplacedByMintedId(string inbound)
     {
-        var echoed = await EchoedCorrelationIdAsync(inbound, TestContext.Current.CancellationToken);
+        var echoed = await EchoedCorrelationIdAsync(inbound, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         string.Equals(echoed, inbound, StringComparison.Ordinal).ShouldBeFalse("a rejected inbound id must not be echoed");
         Guid.TryParse(echoed, out _).ShouldBeTrue("a rejected inbound id must be replaced with a minted guid");
@@ -75,9 +75,9 @@ public sealed class ApiInputValidationTests
         using var factory = ScriptedFactory(ScriptedHarnessFactory.DeltaScript(11));
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await AcceptPromptAsync(client, testToken);
+        var id = await AcceptPromptAsync(client, testToken).ConfigureAwait(true);
 
-        var items = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events{query}", 1, testToken, lastEventId);
+        var items = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events{query}", 1, testToken, lastEventId).ConfigureAwait(true);
 
         items.Count.ShouldBe(1);
         items[0].EventId.ShouldBe(expectedFirstId);
@@ -99,7 +99,7 @@ public sealed class ApiInputValidationTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"/sessions/{id}/events{query}", UriKind.Relative));
         if (lastEventId is not null)
@@ -107,7 +107,7 @@ public sealed class ApiInputValidationTests
             request.Headers.TryAddWithoutValidation("Last-Event-ID", lastEventId);
         }
 
-        using var response = await client.SendAsync(request, testToken);
+        using var response = await client.SendAsync(request, testToken).ConfigureAwait(true);
 
         AssertProblem(response, HttpStatusCode.BadRequest);
     }
@@ -129,9 +129,9 @@ public sealed class ApiInputValidationTests
         using var factory = ScriptedFactory(script);
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await AcceptPromptAsync(client, testToken);
+        var id = await AcceptPromptAsync(client, testToken).ConfigureAwait(true);
 
-        var items = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken);
+        var items = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, testToken).ConfigureAwait(true);
 
         items.Count.ShouldBeGreaterThanOrEqualTo(5);
         items[^1].EventType.ShouldBe("completed");
@@ -148,8 +148,8 @@ public sealed class ApiInputValidationTests
         var testToken = TestContext.Current.CancellationToken;
         const string Owner = "ops.team_lead@example-1";
 
-        var id = await SessionClient.CreateSessionAsync(client, testToken, $"{{\"ownerId\":\"{Owner}\"}}");
-        var session = await SessionClient.ReadSessionAsync(client, id, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken, $"{{\"ownerId\":\"{Owner}\"}}").ConfigureAwait(true);
+        var session = await SessionClient.ReadSessionAsync(client, id, testToken).ConfigureAwait(true);
 
         session.OwnerId.ShouldBe(Owner);
     }
@@ -162,7 +162,7 @@ public sealed class ApiInputValidationTests
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
 
-        using var response = await PostSessionAsync(client, $"{{\"ownerId\":\"{new string('o', 128)}\"}}", testToken);
+        using var response = await PostSessionAsync(client, $"{{\"ownerId\":\"{new string('o', 128)}\"}}", testToken).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
@@ -175,7 +175,7 @@ public sealed class ApiInputValidationTests
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
 
-        using var response = await PostSessionAsync(client, $"{{\"ownerId\":\"{new string('o', 129)}\"}}", testToken);
+        using var response = await PostSessionAsync(client, $"{{\"ownerId\":\"{new string('o', 129)}\"}}", testToken).ConfigureAwait(true);
 
         AssertProblem(response, HttpStatusCode.BadRequest);
     }
@@ -192,7 +192,7 @@ public sealed class ApiInputValidationTests
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
 
-        using var response = await PostSessionAsync(client, $"{{\"ownerId\":\"{owner}\"}}", testToken);
+        using var response = await PostSessionAsync(client, $"{{\"ownerId\":\"{owner}\"}}", testToken).ConfigureAwait(true);
 
         AssertProblem(response, HttpStatusCode.BadRequest);
     }

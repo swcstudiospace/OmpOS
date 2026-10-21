@@ -12,8 +12,14 @@ internal sealed class RecordingSandboxProvider : ISandboxProvider
     /// <summary>Gets the provision requests received, in order.</summary>
     public IReadOnlyList<ProvisionRequest> Provisions => _provisions;
 
-    /// <summary>Gets the sandbox identifiers torn down, in order.</summary>
+    /// <summary>Gets the sandbox identifiers whose teardown succeeded, in order.</summary>
     public IReadOnlyList<string> Teardowns => _teardowns;
+
+    /// <summary>Gets or sets how many of the upcoming teardown attempts fail before one succeeds.</summary>
+    public int TeardownFailuresRemaining { get; set; }
+
+    /// <summary>Gets the number of teardown attempts received, including failed attempts.</summary>
+    public int TeardownAttempts { get; private set; }
 
     /// <inheritdoc />
     public SandboxCapability Capabilities { get; } = new()
@@ -66,6 +72,13 @@ internal sealed class RecordingSandboxProvider : ISandboxProvider
     public Task TeardownAsync(string sandboxId, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(sandboxId);
+        TeardownAttempts++;
+        if (TeardownFailuresRemaining > 0)
+        {
+            TeardownFailuresRemaining--;
+            return Task.FromException(new InvalidOperationException("Scripted teardown failure."));
+        }
+
         _teardowns.Add(sandboxId);
         return Task.CompletedTask;
     }

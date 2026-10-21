@@ -94,27 +94,6 @@
           "EmptyFiles": "4.4.0"
         }
       },
-      "Temporalio": {
-        "type": "Direct",
-        "requested": "[1.20.0, )",
-        "resolved": "1.20.0",
-        "contentHash": "5Y11I7V2L/EAMczly8sT8b+dhLIiBwUmJSiUbsJOId7r1f2BZJn+2oEo2RUauSwUeIMXXEfvq3Y92BM8RjoqqQ==",
-        "dependencies": {
-          "Google.Protobuf": "3.26.1",
-          "Microsoft.Extensions.Logging.Abstractions": "2.2.0",
-          "NexusRpc": "0.4.0"
-        }
-      },
-      "Temporalio.Extensions.Hosting": {
-        "type": "Direct",
-        "requested": "[1.20.0, )",
-        "resolved": "1.20.0",
-        "contentHash": "6J9DznMPdMPpZQfvuk6bRGakh6xs3/cnevp5GO175yi/lHSZMnNSRLHACyh/czgvLA0pVafywHk/OT54Z6znOA==",
-        "dependencies": {
-          "Microsoft.Extensions.Hosting": "8.0.1",
-          "Temporalio": "1.20.0"
-        }
-      },
       "xunit.v3": {
         "type": "Direct",
         "requested": "[4.0.2, )",
@@ -137,11 +116,6 @@
         "type": "Transitive",
         "resolved": "4.4.0",
         "contentHash": "gwJEfIGS7FhykvtZoscwXj/XwW+mJY6UbAZk+qtLKFUGWC95kfKXnj8VkxsZQnWBxJemM/q664rGLN5nf+OHZw=="
-      },
-      "Google.Protobuf": {
-        "type": "Transitive",
-        "resolved": "3.26.1",
-        "contentHash": "CHZX8zXqhF/fdUtd+AYzew8T2HFkAoe5c7lbGxZY/qryAlQXckDvM5BfOJjXlMS7kyICqQTMszj4w1bX5uBJ/w=="
       },
       "Microsoft.ApplicationInsights": {
         "type": "Transitive",
@@ -285,11 +259,6 @@
         "resolved": "5.0.0",
         "contentHash": "dDoKi0PnDz31yAyETfRntsLArTlVAVzUzCIvvEDsDsucrl33Dl8pIJG06ePTJTI3tGpeyHS9Cq7Foc/s4EeKcg=="
       },
-      "NexusRpc": {
-        "type": "Transitive",
-        "resolved": "0.4.0",
-        "contentHash": "2cdRtmwT/vskWqJvojODvR7CpRhLWAnCeVT5Z8sPdRDX8P/Ywpw48T2lqgqhxM8JROfoflHzhSiXo4h1ln3/MQ=="
-      },
       "System.CodeDom": {
         "type": "Transitive",
         "resolved": "6.0.0",
@@ -390,77 +359,10 @@
           "OmpOS.Contracts": "[1.0.0, )"
         }
       },
-      "ompos.harness.rpc": {
-        "type": "Project",
-        "dependencies": {
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
-        }
-      },
-      "ompos.sandbox": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
-          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "Microsoft.Extensions.Options": "[10.0.13, )",
-          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
-          "YamlDotNet": "[16.3.0, )"
-        }
-      },
-      "ompos.sandbox.abstractions": {
-        "type": "Project",
-        "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
-        }
-      },
-      "ompos.sessionruns": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )",
-          "OmpOS.Workflows": "[1.0.0, )"
-        }
-      },
-      "ompos.sessions": {
-        "type": "Project",
-        "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
-        }
-      },
-      "ompos.sessions.postgres": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.Extensions.Configuration.Abstractions": "[10.0.13, )",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
-          "Npgsql": "[10.0.3, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )"
-        }
-      },
       "ompos.workflows": {
         "type": "Project",
         "dependencies": {
           "OmpOS.Contracts": "[1.0.0, )"
-        }
-      },
-      "ompos.workflows.worker": {
-        "type": "Project",
-        "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Harness.Rpc": "[1.0.0, )",
-          "OmpOS.Sandbox": "[1.0.0, )",
-          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
-          "OmpOS.SessionRuns": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )",
-          "OmpOS.Sessions.Postgres": "[1.0.0, )",
-          "OmpOS.Workflows": "[1.0.0, )",
-          "Temporalio": "[1.20.0, )",
-          "Temporalio.Extensions.Hosting": "[1.20.0, )"
         }
       },
       "Microsoft.Extensions.Configuration": {
@@ -621,21 +523,6 @@
         "requested": "[2.5.1, )",
         "resolved": "2.5.1",
         "contentHash": "FAMaFFWnULW+hDHMb40Qzhcgz9cAU2/EtgRCBNX/DdQoKo0sPG2EiY+w7bQdl/BgHnf/DbpXLbf5Xy0o15M8NA=="
-      },
-      "Npgsql": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.3, )",
-        "resolved": "10.0.3",
-        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w==",
-        "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
-        }
-      },
-      "YamlDotNet": {
-        "type": "CentralTransitive",
-        "requested": "[16.3.0, )",
-        "resolved": "16.3.0",
-        "contentHash": "SgMOdxbz8X65z8hraIs6hOEdnkH6hESTAIUa7viEngHOYaH+6q5XJmwr1+yb9vJpNQ19hCQY69xbFsLtXpobQA=="
       }
     }
   }

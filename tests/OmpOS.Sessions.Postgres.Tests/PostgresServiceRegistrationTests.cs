@@ -62,23 +62,28 @@ public sealed class PostgresServiceRegistrationTests(PostgresServerFixture serve
         }
     }
 
-    /// <summary>A configured container resolves a repository that works against the schema, registers no ISessionRepository, and reuses one instance.</summary>
+    /// <summary>
+    /// A configured container resolves a repository that works against the database, puts the tables in the <c>ompos</c>
+    /// schema through its search path, registers no ISessionRepository, and reuses one instance.
+    /// </summary>
     [Fact]
     public async Task ConfiguredContainerResolvesAWorkingRepository()
     {
         var ct = TestContext.Current.CancellationToken;
-        var schema = await PostgresTestSchema.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
+        // The data source sets its own search path, so this test needs a database of its own rather than a schema.
+        var database = await PostgresTestDatabase.CreateAsync(server.AdminConnectionString, ct).ConfigureAwait(true);
         try
         {
             var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?>(StringComparer.Ordinal) { [ServiceCollectionExtensions.ConnectionStringKey] = schema.ConnectionString })
+                .AddInMemoryCollection(new Dictionary<string, string?>(StringComparer.Ordinal) { [ServiceCollectionExtensions.ConnectionStringKey] = database.ConnectionString })
                 .Build();
             var services = new ServiceCollection();
             services.AddPostgresSessionStore(configuration);
             var provider = services.BuildServiceProvider();
             try
             {
-                await PostgresSessionSchema.EnsureCreatedAsync(provider.GetRequiredService<NpgsqlDataSource>(), ct).ConfigureAwait(true);
+                var dataSource = provider.GetRequiredService<NpgsqlDataSource>();
+                await PostgresSessionSchema.EnsureCreatedAsync(dataSource, ct).ConfigureAwait(true);
                 var repository = provider.GetRequiredService<PostgresSessionRepository>();
                 await repository.SaveAsync(Sample("s-1"), ct).ConfigureAwait(true);
                 await AppendDeltasAsync(repository, "s-1", 0, 2, ct).ConfigureAwait(true);
@@ -88,6 +93,9 @@ public sealed class PostgresServiceRegistrationTests(PostgresServerFixture serve
                 loaded.Events.Select(static evt => evt.Seq).ToArray().ShouldBe([1L, 2L]);
                 provider.GetRequiredService<PostgresSessionRepository>().ShouldBeSameAs(repository);
                 provider.GetService<ISessionRepository>().ShouldBeNull();
+
+                using var location = dataSource.CreateCommand("SELECT to_regclass('ompos.session_events') IS NOT NULL");
+                (await location.ExecuteScalarAsync(ct).ConfigureAwait(true)).ShouldBe(true);
             }
             finally
             {
@@ -96,7 +104,7 @@ public sealed class PostgresServiceRegistrationTests(PostgresServerFixture serve
         }
         finally
         {
-            await schema.DisposeAsync().ConfigureAwait(true);
+            await database.DisposeAsync().ConfigureAwait(true);
         }
     }
 }
