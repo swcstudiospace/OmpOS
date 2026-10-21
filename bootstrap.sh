@@ -36,6 +36,9 @@ fi
 dotnet --version
 dotnet restore OmpOS.Linux.slnf --locked-mode
 dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
+TEST_PG_EXPORT="$(bash scripts/test-postgres.sh up)"
+trap 'bash scripts/test-postgres.sh down; if [ -n "${INSTALLER_DIR:-}" ]; then rm -rf "$INSTALLER_DIR"; fi' EXIT
+eval "$TEST_PG_EXPORT"
 dotnet test OmpOS.Linux.slnf -c Release --no-build
 dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
 

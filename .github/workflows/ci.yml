@@ -21,6 +21,7 @@ env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
   GITLEAKS_VERSION: 8.30.1
   GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+  OMPOS_POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
   build-test:
@@ -38,7 +39,14 @@ jobs:
           cache-dependency-path: '**/packages.lock.json'
       - run: dotnet restore OmpOS.Linux.slnf --locked-mode
       - run: dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
-      - run: dotnet test OmpOS.Linux.slnf -c Release --no-build --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
+      - name: Install podman (for the test PostgreSQL and compose validation)
+        run: |
+          command -v podman >/dev/null || { sudo apt-get update -y; sudo apt-get install -y podman; }
+      - name: Test (throwaway PostgreSQL for the API and session-store tests)
+        run: |
+          eval "$(bash scripts/test-postgres.sh up)"
+          trap 'bash scripts/test-postgres.sh down' EXIT
+          dotnet test OmpOS.Linux.slnf -c Release --no-build --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -69,9 +77,6 @@ jobs:
           echo "${GITLEAKS_SHA256}  /tmp/gitleaks.tar.gz" | sha256sum -c -
           mkdir -p /tmp/gitleaks-bin && tar -xzf /tmp/gitleaks.tar.gz -C /tmp/gitleaks-bin
           /tmp/gitleaks-bin/gitleaks git --redact --exit-code 1 --log-level warn .
-      - name: Install podman (for compose validation)
-        run: |
-          command -v podman >/dev/null || { sudo apt-get update -y; sudo apt-get install -y podman; }
       - name: Validate compose (podman-compose needs the podman binary and the profile)
         run: |
           pipx install podman-compose==1.6.0
