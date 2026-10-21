@@ -1,0 +1,31 @@
+desktop children: 2
+APP xdg-desktop-portal-gtk
+APP Avalonia Application
+  application | Avalonia Application
+    frame | OmpOSSpike
+      panel | WindowChrome
+      panel | Panel
+        panel | Border
+        panel | Border
+        panel | Panel
+        panel | VisualLayerManager
+          panel | ContentPresenter
+            unknown | MainView
+              panel | ContentPresenter
+                entry | TextBox
+                  panel | DataValidationErrors
+                    panel | DockPanel
+                      panel | ContentPresenter
+                        panel | Panel
+                          panel | Border
+                          panel | Border
+                            panel | Grid
+                              panel | ContentPresenter
+                              panel | DockPanel
+                                scroll pane | ScrollViewer
+                                  panel | Grid
+                                    panel | ScrollContentPresenter
+                                      panel | Panel
+                                        panel | TextPresenter
+                                    panel | Panel
+                              panel | ContentPresenter

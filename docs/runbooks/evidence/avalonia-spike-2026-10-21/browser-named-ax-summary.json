@@ -1,0 +1,26 @@
+[
+  {
+    "nodeId": "1",
+    "role": "RootWebArea",
+    "name": "OmpOSSpike.Browser",
+    "ignored": false
+  },
+  {
+    "nodeId": "15",
+    "role": "generic",
+    "name": "",
+    "ignored": false
+  },
+  {
+    "nodeId": "5",
+    "role": "Canvas",
+    "name": "",
+    "ignored": false
+  },
+  {
+    "nodeId": "3",
+    "role": "generic",
+    "name": "",
+    "ignored": false
+  }
+]
