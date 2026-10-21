@@ -184,7 +184,7 @@ DocProject/Help/html
 
 # Click-Once directory
 publish/
-# Local publish output (vercel.json buildCommand publishes to output/)
+# Local publish output (vercel.ts buildCommand publishes to output/)
 /output/
 
 # Publish Web Output

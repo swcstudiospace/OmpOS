@@ -24,7 +24,7 @@ The API and web runbook sections land with their phases:
 
 - API backend serving and SSE resume: added in Phase 2.
 - Blazor web head serving: added in Phase 4.
-- MAUI head builds: macOS CI only, never locally on Linux.
+- Native head builds: the Avalonia UI native heads (ADR-0004) are not in the repo yet. Supersession note (2026-10-21): the MAUI head build in the CI `shells` job (macOS only, Android target, run only when `apps/OmpOS.App/OmpOS.App.csproj` exists) is superseded and goes with the MAUI head at v0.10.0 Phase 25. Never built locally on Linux.
 
 ## Troubleshooting
 
@@ -83,6 +83,8 @@ Observed across load, send and reload: `strong` count 1, `img` count 0, `#app sc
 - `NoMetadataForType` on reload once a session had streamed events: the web client decoded contract types with a context that lacked the payload types. Contract types now decode through `OmpOsJsonContext`.
 - Markdown rendered as plain text, and the copy control was unbound. Markdig now renders with raw HTML disabled and a link scheme allowlist.
 
+> Supersession note (2026-10-21, ADR-0004): the MAUI head named in the first item above is superseded and retires by clean cutover after parity tests (v0.10.0 Phase 25). Its reflection override was never built on Linux. The native heads are Avalonia UI, and this record does not establish their reflection setting.
+
 ### Accessibility run (UI-03)
 
 axe-core 4.14.0 (WCAG 2.0 and 2.1, levels A and AA) against the published Release head, run in an owned headless Chrome on 2026-10-21:
@@ -92,6 +94,8 @@ axe-core 4.14.0 (WCAG 2.0 and 2.1, levels A and AA) against the published Releas
 - Remaining `incomplete` items: two, both on the icon-only send control (`button.ompos-icon-btn`, `src/OmpOS.UI/Components/Composer.razor`). Axe reports `incomplete` when its automatic check cannot reach a decision. The 2026-10-21 record did not keep the rule IDs or node targets of the two items, so the rule behind each one is not identified here. Measured in the live page, the glyph colours are foreground `rgb(0, 0, 0)` on `rgb(239, 239, 239)`, contrast **18.26:1** (WCAG 1.4.11 requires 3:1; text requires 4.5:1). The record's statement that the pictogram's label cannot be evaluated does not hold for the final tree: the send button carries `aria-label="Send message"` (send button markup in `Composer.razor`), pinned by `tests/OmpOS.Web.Tests/ComposerBusyTests.cs` (`button[aria-label='Send message']`). Fix: the accessible name is in place and matches the copy the smoke uses; no markup change was needed. Status: to be re-run on the final tree.
 - Skip-link screenshot: not explained by the record. The only screenshot in the repo, `docs/runbooks/evidence/web-vertical-slice-smoke.webp`, comes from the browser smoke, not the axe run, and shows no skip link. The axe-run screenshot that showed the link was not retained, so its cause cannot be established from the repo. The stylesheet clips `.ompos-skip-link` to 1 px and expands it only under `:focus` (`src/OmpOS.UI/wwwroot/styles/ompos.css`, the `.ompos-skip-link` and `.ompos-skip-link:focus` rules; the link is at `src/OmpOS.UI/Components/SessionView.razor:7`). [INFERENCE] The link becomes visible in the repo's CSS only while it holds keyboard focus; the record does not say whether focus was on it. Status: to be re-run on the final tree; the re-run must record the link's state with each screenshot (step 6 below).
 - Not verified here: the MAUI head (it cannot run on Linux) and assistive-technology testing with a screen reader.
+
+> Supersession note (2026-10-21, ADR-0004): the MAUI head and the "both heads" wording in the accessibility record above refer to the .NET MAUI Blazor Hybrid head, which is superseded and retires by clean cutover after parity tests (v0.10.0 Phase 25). The native heads are Avalonia UI, and this record does not cover them. The web head results above are unchanged.
 
 #### Re-run of axe-core on the final tree
 
@@ -113,6 +117,8 @@ axe-core 4.14.0, WCAG 2.0 and 2.1, levels A and AA: 0 violations and 0 `incomple
 Skip link: on a fresh load, one Tab from the body focuses `a.ompos-skip-link`, and its target `#ompos-conversation` exists (`web-skip-link-focus-924ca78-2026-10-21.json`, `web-skip-link-focused-924ca78-2026-10-21.png`). The link is clipped to 1 px until it has focus. The earlier skip-link screenshot was taken with focus on the link, which explains it. The earlier probe that read focus after a Send click is not a skip-link result, because the Tab started from that button.
 
 Not verified here: the MAUI head (it cannot run on Linux) and screen-reader testing.
+
+> Supersession note (2026-10-21, ADR-0004): the MAUI head referenced in this line is superseded, as described in the note under the accessibility run above.
 
 ### Vercel static deploy (WEB-02)
 
@@ -142,3 +148,4 @@ env -u DOTNET_ROOT DOTNET_ROOT=/tmp/ompos-clean-dotnet2 ./bootstrap.sh
 - Re-run at the newest code head `f77221a` (the lock-owned fetch lease that replaces the disposable one): same procedure, SDK root `/tmp/ompos-clean-dotnet7`, bootstrap OK, 707 total, 0 failed. Log: `docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21-f77221a.log`.
 - Re-run at the v0.9.2 hardening head `2549586`, cloned from the pushed remote branch `origin/feat/v0.9.2-hardening` (not from a local path, as the earlier runs were): the bootstrap installed .NET SDK 10.0.402 into the clone, the locked restore, Release build (warnings as errors), 914 tests (914 passed, 0 failed, 0 skipped) and format verification passed; the script printed `bootstrap: OK` in 113 seconds. Host: linux 6.8.0-147-generic, x64. Log: `docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21-2549586.log`.
 - Re-run at the final pushed head `dee19dd`, cloned from `origin/feat/v0.9.2-hardening`: bootstrap OK in 184 seconds, 925 tests (925 passed, 0 failed, 0 skipped), locked restore, Release build with warnings as errors, and format verification passed. Host: linux 6.8.0-147-generic, x64; SDK 10.0.402 installed by the bootstrap. Log: `docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21-dee19dd.log`.
+- Re-run at HEAD `a26fe2f` (REC-02), cloned from the pushed remote branch `origin/feat/v0.9.2-hardening` into `/tmp/ompos-clean-a26fe2f`. Start 2026-10-21 19:15:07 UTC, end 19:17:43 UTC, 2 minutes 36 seconds. `./bootstrap.sh` exited 0 and printed `bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format)`. Tests: 1080 total, 1080 passed, 0 failed, 0 skipped. Host: Ubuntu 24.04.4 LTS, kernel 6.8.0-147-generic, x64. Log: `docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21-a26fe2f.log`.

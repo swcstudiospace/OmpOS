@@ -75,9 +75,9 @@ dotnet test OmpOS.Linux.slnf -c Release
 
 Three blockers must clear before the API or web head is exposed publicly:
 
-- **Auth provider.** The API has no authentication — a single local dev principal only. Do not expose it publicly until an auth provider fronts it.
-- **Production API origin.** The static web head cannot reach any API not listed in `connect-src` (`vercel.json` currently allows only `'self'` plus loopback). Point the head at the production API origin (`Api:BaseUrl` / `?apiBaseUrl=`) and add that origin to `connect-src`.
-- **macOS MAUI build (human).** The MAUI head (`apps/OmpOS.App`) never builds on Linux; its first warning-free build and spot-check happen on a macOS runner via the `ci.yml` `shells` job.
+- **Auth provider.** The API validates OIDC bearer tokens fail-closed. Production needs `Api:Auth:Authority` (https) and `Api:Auth:Audience`. Do not expose the API publicly until an identity provider is configured for it (OD-03).
+- **Production API origin.** The web head's `connect-src` is generated at build time from one validated origin (`OMPOS_API_ORIGIN`, see `vercel.ts` and `scripts/vercel/render-csp.sh`). Set it to the production API origin, then rebuild the web head.
+- **Native macOS head (human).** The Avalonia macOS head's first warning-free build and spot-check run on a macOS runner (v0.10.0 Phase 22). The MAUI head (`apps/OmpOS.App`) builds only in the `ci.yml` `shells` job until it retires after parity (v0.10.0 Phase 25). See [ADR-0004](docs/decisions/ADR-0004-cross-platform-ui.md).
 
 Full per-AC verdicts and the human verification steps: [docs/handoff.md](docs/handoff.md).
 

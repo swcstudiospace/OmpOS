@@ -8,7 +8,7 @@ The topology below is the owner decision of 2026-10-21 ([decision text](../hando
 
 Hosted runtime limits:
 
-- The hosted API runs the InMemory harness and `FakeSandboxProvider`.
+- The hosted API is configured for the ACP harness (`Harness__Adapter=Acp`). Production refuses the InMemory adapter at startup.
 - No real omp runtime, sandbox provider, or model credential is deployed.
 - HOST-04 stays open.
 
@@ -28,7 +28,7 @@ Railway project `Ultrathink`, environment `production`. All service-to-service t
 Not services:
 
 - **Worker.** None. The Temporal worker project was removed on 2026-10-21, and `deploy/` no longer contains a worker image.
-- **Web.** Vercel hosts the Blazor WebAssembly web head outside Railway. Its origin and CSP are open items (Q-VERCEL-CSP).
+- **Web.** Vercel hosts the Blazor WebAssembly web head outside Railway. Its configuration is `vercel.ts`; the CSP `connect-src` is generated at build time from `OMPOS_API_ORIGIN` by `scripts/vercel/render-csp.sh`. The Vercel origin and the production API origin are open items (Q-VERCEL-CSP).
 
 ## Network and ports
 
@@ -69,11 +69,11 @@ Run from the repository root:
 
 ```sh
 podman build -f deploy/api.Containerfile -t ompos-api:local .
-podman run --rm -p 8080:8080 -e PORT=8080 -e Harness__Adapter=InMemory -e Sessions__Store=InMemory -e Coordination__Store=InMemory ompos-api:local
+podman run --rm -p 8080:8080 -e PORT=8080 -e ASPNETCORE_ENVIRONMENT=Development -e Harness__Adapter=InMemory -e Sessions__Store=InMemory -e Coordination__Store=InMemory ompos-api:local
 curl -fsS http://127.0.0.1:8080/health/ready
 ```
 
-The `Sessions__Store` and `Coordination__Store` keys default to `InMemory` in `appsettings.json`, so the smoke test does not need them. The explicit `-e` settings above only make the mode visible. The container runs with `ASPNETCORE_ENVIRONMENT=Production`, so the API logs the InMemory warning (events 31 and 32). This smoke test has not been run in this rewrite [INFERENCE: expected to pass; not executed].
+The `Sessions__Store` and `Coordination__Store` keys default to `InMemory` in `appsettings.json`, so the smoke test does not need them. The explicit `-e` settings above only make the mode visible. The command sets `ASPNETCORE_ENVIRONMENT=Development` because Production refuses the InMemory harness adapter and any session store other than Postgres at startup (`HarnessAdapterSelectionTests`, `SessionStoreProductionTests`). Under Production, `Coordination__Store=InMemory` is not refused; it logs the InMemory warning (event 32). This smoke test has not been run in this rewrite [INFERENCE: expected to pass; not executed].
 
 ## Environment variables
 
@@ -87,7 +87,7 @@ Reference variables use the shape `${{SERVICE.VARIABLE}}`, resolved by Railway a
 |----------|----------------------|----------|-------|
 | `PORT` | `8080` | Yes | Rule in "Network and ports". |
 | `ASPNETCORE_ENVIRONMENT` | `Production` (set by image) | No | Never `Development`. |
-| `Sessions__Store` | `Postgres` | Yes, explicit in production | `Postgres` or `InMemory`. Defaults to `InMemory` in `appsettings.json`; production must set it explicitly. A warning is logged in Production when it is `InMemory` (event 31). |
+| `Sessions__Store` | `Postgres` | Yes, explicit in production | `Postgres` or `InMemory`. Defaults to `InMemory` in `appsettings.json`; production must set it explicitly. Production refuses any value other than `Postgres` at startup, and the startup error names `Sessions:Store` (`SessionStoreProductionTests`). |
 | `Sessions__Postgres__ConnectionString` | `Host=${{TimescaleDB.PGHOST}};Port=${{TimescaleDB.PGPORT}};Database=${{TimescaleDB.PGDATABASE}};Username=${{TimescaleDB.PGUSER}};Password=${{TimescaleDB.PGPASSWORD}};Ssl Mode=Require;Trust Server Certificate=true` | Yes, secret | Npgsql. `Trust Server Certificate` is needed because the template's TLS certificate is self-signed on the private network. |
 | `Coordination__Store` | `Dragonfly` | Yes, explicit in production | `Dragonfly` or `InMemory`. Defaults to `InMemory` in `appsettings.json`; production must set it explicitly. A warning is logged in Production when it is `InMemory` (event 32). |
 | `Coordination__Dragonfly__ConnectionString` | `dragonfly.railway.internal:6379,password=${{Dragonfly.DFLY_requirepass}},abortConnect=false` | Yes, secret | StackExchange.Redis format. `abortConnect=false` is required. [INFERENCE: the Dragonfly reference name `Dragonfly`; the private host is lowercase in DNS.] |
@@ -95,7 +95,7 @@ Reference variables use the shape `${{SERVICE.VARIABLE}}`, resolved by Railway a
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://greptimedb.railway.internal:4000/v1/otlp` | Yes when `otlp` | Read by the .NET OpenTelemetry SDK. The private path is unverified (Q-HOST-PRIVNET). |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | Yes when `otlp` | |
 | `OTEL_EXPORTER_OTLP_HEADERS` | `Authorization=<Basic credential>,X-Greptime-DB-Name=public,X-Greptime-Pipeline-Name=greptime_trace_v1` | Yes, secret | The only OTLP header variable. Set it in the hosting environment; the Authorization value is never committed. Traces are rejected with `400 Pipeline is required for this API` without the pipeline header, so do not use `OTEL_EXPORTER_OTLP_TRACES_HEADERS` (it was not applied in the local smoke). See [smoke evidence, finding 1](evidence/smoke-backend-local-2026-10-21.md). `X-Greptime-DB-Name=public` comes from the 2026-10-21 orchestrator decision; the smoke file records only the pipeline header [INFERENCE]. |
-| `Harness__Adapter` | `InMemory` | Yes | The only adapter the API accepts. The real harness is HOST-04 (open). |
+| `Harness__Adapter` | `Acp` | Yes | Production refuses `InMemory` at startup (`HarnessAdapterSelectionTests`). The hosted value is `Acp`; the ACP adapter needs an omp runtime, which no deployed image contains (HOST-04 open). |
 | `OmpOS__Debug__LogPrompts` | `false` | No | `true` writes prompt bodies to logs. Keep `false` when hosted. |
 | `Api__Cors__Origins__0` (and `__1`, ...) | Unset | Owner decision | An empty list denies all cross-origin traffic. Set only after the Vercel origin mechanism is decided (Q-VERCEL-CSP). |
 | `Api__MaxPromptLength` | Default `64000` | No | |

@@ -134,6 +134,7 @@
 **Plans**: TBD
 
 ### Phase 10: Routed Interactive Approvals
+**Status (2026-10-21):** Criteria 1 and 3 met (commits 75bbca0 and 4196345). Criterion 2 superseded 2026-10-21 by the direct-run design (`docs/handoff.md`, "Temporal removal and Railway topology (2026-10-21)").
 **Goal**: A UI decision reaches a pending ACP `session/request_permission` in direct and routed runs, and deny-by-policy remains the default.
 **Depends on**: Phase 8
 **Requirements**: OD-01
@@ -168,6 +169,7 @@
 **Plans**: TBD
 
 ### Phase 13: Hosted Routed omp Harness
+**Status (2026-10-21):** Criterion 3 met (commit 3f18b99, `tests/OmpOS.Api.IntegrationTests/PostgresRoutedRunTests.cs`). Criterion 2 blocked by the Railway deploy pause (`docs/runbooks/hosting.md`, deploy checklist).
 **Goal**: The hosted API runs the real omp harness and persists routed runs through the PostgreSQL log.
 **Depends on**: Phase 8, Phase 12
 **Requirements**: HOST-04
@@ -340,9 +342,9 @@ These items are closed per the milestone assignment. They are not re-planned. RE
 | TD-39 | - | Closed |
 | TD-40 | - | Closed |
 | TD-41 | - | Closed |
-| TD-42 | Phase 1 | Planned |
+| TD-42 | Phase 1 | Complete (2026-10-21) |
 | TD-43 | - | Closed |
-| TD-44 | Phase 3 | Planned |
+| TD-44 | Phase 3 | Complete (2026-10-21) |
 | OD-01 | Phase 10 | Planned |
 | OD-02 | Phase 7 (persistence half); Phase 8 superseded 2026-10-21 | Planned (composition half superseded) |
 | OD-03 | - | Blocked (owner) |
