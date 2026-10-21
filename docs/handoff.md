@@ -57,6 +57,10 @@ pre-registration total of 552 excluded it. It is now registered in both files:
 | 4 | The API has no authentication — a single local dev principal (OQ-26); it must not be exposed publicly until an auth provider exists | Deploy blocker (see below) |
 | 5 | The macOS MAUI build is human-deferred (no macOS runner in this environment) | DESK-01 / MOB-01 / SHELL-01 stay Partial; AC_10 stays split |
 | 6 | Remote repository: `https://github.com/swcstudiospace/OmpOS` (currently empty and public; local `git remote -v` is unconfigured) | First push + remote CI run are human steps |
+| 7 | Tech debt from the milestone audit (43 items) is accepted and tracked in the backlog, not fixed in v0.9.1 | Recorded in the archived audit (`.planning/milestones/v0.9.1-MILESTONE-AUDIT.md`) |
+| 8 | The nine human-only items are carried as tracked follow-ups: remote CI and first push, podman-compose validation, podman smoke test, live Temporal replay check, TCP readiness sign-off (4c), macOS MAUI build, live Vercel deploy, screen-reader pass, clean-clone re-record | Each has its file reference in the audit; none blocks the archive |
+| 9 | The API host runs only the in-memory harness for v0.9.1 (`services/OmpOS.Api/Program.cs`); wiring the real ACP harness is the first item of the next milestone | Acknowledged scope limit for the vertical slice |
+| 10 | Ship: push `main` and `feat/ompos-scaffold` to `https://github.com/swcstudiospace/OmpOS` and open a PR into `main`; the PR is not merged by the orchestrator | A human reviews and merges |
 
 ## Known deferrals
 
