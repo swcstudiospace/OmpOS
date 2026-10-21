@@ -204,7 +204,7 @@ public sealed class SessionRunWorkflowTests
     {
         private readonly ISandboxProvider _inner;
         private readonly Task _gate;
-        private readonly object _sync = new();
+        private readonly Lock _sync = new();
         private string? _failId;
 
         /// <summary>Initializes a new instance of the <see cref="GatedTeardownSandboxProvider"/> class.</summary>
