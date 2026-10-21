@@ -39,13 +39,13 @@ Scope: the 3 requirements that ROADMAP.md (Phase 5 `Requirements:` line) and the
 
 | Req | Missing | Evidence |
 |---|---|---|
-| VERIFY-02 | No positive case: the TODO check passes with zero markers. It has not been shown to fail on an unlinked marker in this repository. | `RepoHygieneTests.cs:121-156`; grep finds no code-comment markers. |
+| VERIFY-02 | None for the marker-gate cases. The positive case now exists: an unlinked marker is reported (one offender) and a linked marker is accepted (no offenders). | `TodoScan_ReportsUnlinkedMarkerInTemporaryTree` (expects one offender) and `TodoScan_AcceptsLinkedMarkerInTemporaryTree` (expects none), both in `tests/OmpOS.ArchitectureTests/RepoHygieneTests.cs`, using the shared helper `tests/OmpOS.ArchitectureTests/TodoMarkerScanner.cs`. Present and exercised by the gate run; not claimed as passed in this file. |
 | VERIFY-02 | Source tag `Q-SB-OPENSHELL` (src/OmpOS.Sandbox/OpenShellProvider.cs:11) has no row in docs/open-questions.md. The TODO check does not cover it because it is not a TODO marker, but the VERIFY-02 "every unverified external fact" clause is not met for that tag. | grep of `docs/` for `Q-SB-OPENSHELL` returns no match. Also recorded under Phase 3 SBOX-04. |
 | VERIFY-03 | The AC list provenance is open (Q-AC-LIST). The docs-fidelity claim for architecture, ADRs, runbooks, README and CONTRIBUTING (ROADMAP Phase 5 criterion 3) was not re-audited here. | `docs/open-questions.md` Q-AC-LIST row; `.planning/ROADMAP.md:96`. |
 
 ## Resolved since the previous draft (confirmed by grep at HEAD)
 
-- The milestone audit B-4 and the prior VERIFY-02 note said `RepoHygieneTests` had no TODO check. `RepoHygieneTests.TodoMarkersLinkToOpenQuestion` now exists (RepoHygieneTests.cs:121). VERIFY-02 moves from UNSATISFIED/PENDING to AUTOMATED.
+- The milestone audit B-4 and the prior VERIFY-02 note said `RepoHygieneTests` had no marker check. `RepoHygieneTests.TodoMarkersLinkToOpenQuestion` now exists (RepoHygieneTests.cs:121), and the positive and negative cases are `TodoScan_AcceptsLinkedMarkerInTemporaryTree` and `TodoScan_ReportsUnlinkedMarkerInTemporaryTree` in the same file, using the shared helper `TodoMarkerScanner.cs`. These are present and exercised by the gate run. VERIFY-02 moves from UNSATISFIED/PENDING to AUTOMATED.
 - `.planning/phases/05-verify/05-VERIFICATION.md` exists (status `gaps_found`, dated 2026-10-21). Its VERIFY-02 PARTIAL finding states that no TODO check exists; that finding predates `TodoMarkersLinkToOpenQuestion` and is stale on this point. It is not edited here.
 
 ## Notes
