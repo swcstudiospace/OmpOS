@@ -65,6 +65,9 @@
 
         _error = null;
         _lastPrompt = prompt;
+        // H4: resumed history renders before the new turn. The host never yields held events through
+        // SubmitPromptAsync (H1), so drain them here; the turn then streams only its own reply.
+        DrainHeldEvents();
         _streamCts?.Cancel();
         _streamCts?.Dispose();
         _streamCts = new CancellationTokenSource();
@@ -199,6 +202,25 @@
     private void ApplyHeldEvents()
     {
         if (_disposed || Host is not RemoteEngineHost remote)
+        {
+            return;
+        }
+
+        foreach (var evt in remote.TakeHeldEvents())
+        {
+            if (evt is DiagnosticEvent)
+            {
+                continue;
+            }
+
+            ApplyEvent(evt);
+        }
+    }
+
+    /// <summary>Renders events a resume held, in Seq order, before the new turn's own reply.</summary>
+    private void DrainHeldEvents()
+    {
+        if (Host is not RemoteEngineHost remote)
         {
             return;
         }
