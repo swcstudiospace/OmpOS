@@ -21,16 +21,16 @@ public sealed class ProcessRunnerBoundedLineReaderTests
             _chunks = new Queue<string>(chunks);
         }
 
-        public override Task<int> ReadAsync(char[] buffer, CancellationToken cancellationToken)
+        public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken)
         {
             if (_chunks.Count == 0)
             {
-                return Task.FromResult(0);
+                return ValueTask.FromResult(0);
             }
 
             string chunk = _chunks.Dequeue();
-            chunk.AsSpan().CopyTo(buffer);
-            return Task.FromResult(chunk.Length);
+            chunk.AsSpan().CopyTo(buffer.Span);
+            return ValueTask.FromResult(chunk.Length);
         }
     }
 
