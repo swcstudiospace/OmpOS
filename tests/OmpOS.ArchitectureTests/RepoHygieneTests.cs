@@ -142,6 +142,25 @@ public sealed class RepoHygieneTests
     }
 
     [Fact]
+    public void TodoScan_ReportsUnlinkedAxamlMarkerInTemporaryTree()
+    {
+        var root = CreateTempTree();
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "Sample.axaml"), "<!-- TODO: no open question yet -->" + Environment.NewLine);
+
+            var offenders = TodoMarkerScanner.FindUnlinkedMarkers(root, OwnersWithOneQuestion());
+
+            offenders.ShouldHaveSingleItem();
+            offenders[0].ShouldStartWith("Sample.axaml:1:");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void TodoScan_AcceptsLinkedMarkerInTemporaryTree()
     {
         var root = CreateTempTree();

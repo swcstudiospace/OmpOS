@@ -518,6 +518,14 @@
           "OmpOS.Contracts": "[1.0.0, )"
         }
       },
+      "ompos.presentation": {
+        "type": "Project",
+        "dependencies": {
+          "Markdig": "[1.4.2, )",
+          "OmpOS.Contracts": "[1.0.0, )",
+          "OmpOS.GenUi": "[1.0.0, )"
+        }
+      },
       "ompos.sandbox": {
         "type": "Project",
         "dependencies": {

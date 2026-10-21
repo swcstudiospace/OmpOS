@@ -19,7 +19,7 @@ internal static class TodoMarkerScanner
     /// produce a match and is accepted as flagged (no string-literal stripping: the gate
     /// favors false positives over silent bypass).
     /// Scanned extensions (first-party code): .cs, .razor, .csproj, .props, .targets, .sh,
-    /// .yml, .yaml, .json, .slnf, .slnx, .css, .js, .ts, .tsx, .html.
+    /// .yml, .yaml, .json, .slnf, .slnx, .css, .js, .ts, .tsx, .html, .axaml.
     /// Skipped path segments: .git, bin, obj, node_modules, TestResults, output, .planning
     /// (planning text is not code), docs (documentation, not code), TestData (recorded
     /// payloads are data), .nuget (the NuGet package cache, which CI places inside the
@@ -29,7 +29,7 @@ internal static class TodoMarkerScanner
     private static readonly string[] TodoScanExtensions =
     [
         ".cs", ".razor", ".csproj", ".props", ".targets", ".sh", ".yml", ".yaml",
-        ".json", ".slnf", ".slnx", ".css", ".js", ".ts", ".tsx", ".html",
+        ".json", ".slnf", ".slnx", ".css", ".js", ".ts", ".tsx", ".html", ".axaml",
     ];
 
     /// <summary>

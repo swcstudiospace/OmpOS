@@ -29,6 +29,7 @@ internal static class LayerMap
         ["OmpOS.Sandbox"] = 2,
         ["OmpOS.Workflows"] = 2,
         ["OmpOS.UI"] = 2,
+        ["OmpOS.Presentation"] = 2,
         ["OmpOS.Api"] = 3,
         ["OmpOS.Web"] = 4,
         ["OmpOS.App"] = 4,
@@ -36,7 +37,8 @@ internal static class LayerMap
 
     /// <summary>
     /// Explicit allow-list for same-layer edges (D-02): Sessions may use GenUi,
-    /// the UI razor library may use GenUi, the Postgres store and the shared session-run activities may use
+    /// the UI razor library may use GenUi and Presentation, and Presentation may use GenUi,
+    /// the Postgres store and the shared session-run activities may use
     /// Sessions (and the run activities Workflows), and the catch-all parser may use the
     /// harness and sandbox abstraction types. Every other same-layer edge is a violation.
     /// </summary>
@@ -44,6 +46,8 @@ internal static class LayerMap
     {
         ("OmpOS.Sessions", "OmpOS.GenUi"),
         ("OmpOS.UI", "OmpOS.GenUi"),
+        ("OmpOS.UI", "OmpOS.Presentation"),
+        ("OmpOS.Presentation", "OmpOS.GenUi"),
         ("OmpOS.Sessions.Postgres", "OmpOS.Sessions"),
         ("OmpOS.SessionRuns", "OmpOS.Sessions"),
         ("OmpOS.SessionRuns", "OmpOS.Workflows"),

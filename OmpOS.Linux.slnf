@@ -16,6 +16,7 @@
             "src/OmpOS.Sessions.Postgres/OmpOS.Sessions.Postgres.csproj",
             "src/OmpOS.SessionRuns/OmpOS.SessionRuns.csproj",
             "src/OmpOS.GenUi/OmpOS.GenUi.csproj",
+            "src/OmpOS.Presentation/OmpOS.Presentation.csproj",
             "src/OmpOS.Sandbox/OmpOS.Sandbox.csproj",
             "src/OmpOS.Workflows/OmpOS.Workflows.csproj",
             "src/OmpOS.UI/OmpOS.UI.csproj",
@@ -37,6 +38,7 @@
             "tests/OmpOS.Sandbox.Tests/OmpOS.Sandbox.Tests.csproj",
             "tests/OmpOS.Workflows.Tests/OmpOS.Workflows.Tests.csproj",
             "tests/OmpOS.UI.Tests/OmpOS.UI.Tests.csproj",
+            "tests/OmpOS.Presentation.Tests/OmpOS.Presentation.Tests.csproj",
             "tests/OmpOS.Web.Tests/OmpOS.Web.Tests.csproj",
             "tests/OmpOS.EngineHost.Tests/OmpOS.EngineHost.Tests.csproj",
             "tests/OmpOS.Api.IntegrationTests/OmpOS.Api.IntegrationTests.csproj"

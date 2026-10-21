@@ -15,6 +15,7 @@
     <ProjectReference Include="../../src/OmpOS.Coordination.Dragonfly/OmpOS.Coordination.Dragonfly.csproj" />
     <ProjectReference Include="../../src/OmpOS.SessionRuns/OmpOS.SessionRuns.csproj" />
     <ProjectReference Include="../../src/OmpOS.GenUi/OmpOS.GenUi.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Presentation/OmpOS.Presentation.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sandbox/OmpOS.Sandbox.csproj" />
     <ProjectReference Include="../../src/OmpOS.Workflows/OmpOS.Workflows.csproj" />
     <ProjectReference Include="../../src/OmpOS.UI/OmpOS.UI.csproj" />

@@ -17,6 +17,7 @@
     <Project Path="src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj" />
     <Project Path="src/OmpOS.Harness.Rpc/OmpOS.Harness.Rpc.csproj" />
     <Project Path="src/OmpOS.Parser/OmpOS.Parser.csproj" />
+    <Project Path="src/OmpOS.Presentation/OmpOS.Presentation.csproj" />
     <Project Path="src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj" />
     <Project Path="src/OmpOS.Sandbox/OmpOS.Sandbox.csproj" />
     <Project Path="src/OmpOS.Sessions/OmpOS.Sessions.csproj" />
@@ -32,6 +33,7 @@
     <Project Path="tests/OmpOS.Harness.Abstractions.Tests/OmpOS.Harness.Abstractions.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.ContractTests/OmpOS.Harness.ContractTests.csproj" />
     <Project Path="tests/OmpOS.Parser.Tests/OmpOS.Parser.Tests.csproj" />
+    <Project Path="tests/OmpOS.Presentation.Tests/OmpOS.Presentation.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.InMemory.Tests/OmpOS.Harness.InMemory.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Acp.Tests/OmpOS.Harness.Acp.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Rpc.Tests/OmpOS.Harness.Rpc.Tests.csproj" />
