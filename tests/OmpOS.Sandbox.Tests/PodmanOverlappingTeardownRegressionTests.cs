@@ -55,7 +55,7 @@ public sealed class PodmanOverlappingTeardownRegressionTests
         releaseFirst.SetResult();
         await teardownOne.ConfigureAwait(true);
 
-        var second = await provider.ProvisionAsync(request, ct);
+        var second = await provider.ProvisionAsync(request, ct).ConfigureAwait(true);
         second.NewlyProvisioned.ShouldBeTrue();
         second.Descriptor.Id.ShouldNotBe(first.Descriptor.Id, StringComparer.Ordinal);
 
@@ -64,11 +64,11 @@ public sealed class PodmanOverlappingTeardownRegressionTests
         await teardownTwo.ConfigureAwait(true);
 
         var upsBefore = runner.Specs.Count(static s => PodmanTestData.HasArgument(s, "up"));
-        var joined = await provider.ProvisionAsync(request, ct);
+        var joined = await provider.ProvisionAsync(request, ct).ConfigureAwait(true);
         joined.NewlyProvisioned.ShouldBeFalse();
         joined.Descriptor.Id.ShouldBe(second.Descriptor.Id);
         runner.Specs.Count(static s => PodmanTestData.HasArgument(s, "up")).ShouldBe(upsBefore);
 
-        await provider.TeardownAsync(second.Descriptor.Id, ct);
+        await provider.TeardownAsync(second.Descriptor.Id, ct).ConfigureAwait(true);
     }
 }
