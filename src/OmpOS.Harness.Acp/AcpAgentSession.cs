@@ -564,7 +564,7 @@ public sealed class AcpAgentSession : IOmpSession
         }
         catch (JsonException)
         {
-            WriteTurnEvent(turn, new ErrorEvent("omp acp sent a session/update that could not be decoded.", Retryable: false));
+            WriteTurnEvent(turn, new DiagnosticEvent("omp acp sent a session/update that could not be decoded."));
         }
     }
 
@@ -634,7 +634,7 @@ public sealed class AcpAgentSession : IOmpSession
             // hook failure as a diagnostic event instead of faulting the pump with the raw exception.
             if (turn is not null)
             {
-                WriteTurnEvent(turn, new ErrorEvent($"Approval policy failed: {ex.GetType().Name}. Denied.", false));
+                WriteTurnEvent(turn, new DiagnosticEvent($"Approval policy failed: {ex.GetType().Name}. Denied."));
             }
 
             granted = false;

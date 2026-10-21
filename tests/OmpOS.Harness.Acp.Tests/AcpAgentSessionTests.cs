@@ -763,6 +763,7 @@ public sealed class AcpAgentSessionTests
         var firstMove = stream.MoveNextAsync();
         transport.Deliver(Update(AcpFixtures.CapturedSessionId, "{\"sessionUpdate\":\"agent_message_chunk\",\"content\":{\"type\":\"text\",\"text\":\"first\"}}"));
         (await firstMove.ConfigureAwait(true)).ShouldBeTrue();
+        var prompt = await WaitForFrameAsync(transport, frame => HasMethod(frame, "session/prompt"), ct).ConfigureAwait(true);
 
         transport.Deliver(PermissionRequest("execute", AllowAndRejectOptions));
 
@@ -770,12 +771,43 @@ public sealed class AcpAgentSessionTests
         JsonNode.Parse(answer)!["result"]!["outcome"]!["optionId"]!.GetValue<string>().ShouldBe("reject-once");
 
         (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
-        var diagnostic = stream.Current.ShouldBeOfType<ErrorEvent>();
+        var diagnostic = stream.Current.ShouldBeOfType<DiagnosticEvent>();
         diagnostic.Message.ShouldContain("InvalidOperationException");
-        diagnostic.Retryable.ShouldBeFalse();
 
         (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
         stream.Current.ShouldBeOfType<PermissionRequestEvent>();
+
+        transport.Deliver(AcpFixtures.Utf8($"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(prompt)},\"result\":{{\"stopReason\":\"end_turn\"}}}}"));
+        (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
+        stream.Current.ShouldBe(new CompletedEvent("end_turn"));
+        (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeFalse();
+    }
+
+    /// <summary>A diagnostic is non-terminal: it leaves the turn running, and the turn still ends with its CompletedEvent.</summary>
+    [Fact]
+    public async Task DiagnosticDoesNotEndTurn()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var transport = new ScriptedAcpTransport(frame => HasMethod(frame, "session/prompt") ? [] : AcpFixtures.Reply(frame));
+        await using var session = NewSession(transport);
+        await session.CreateAsync(ct).ConfigureAwait(true);
+
+        await using var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        var firstMove = stream.MoveNextAsync();
+        var prompt = await WaitForFrameAsync(transport, frame => HasMethod(frame, "session/prompt"), ct).ConfigureAwait(true);
+        transport.Deliver(Update(AcpFixtures.CapturedSessionId, "\"not-an-object\""));
+        (await firstMove.ConfigureAwait(true)).ShouldBeTrue();
+        stream.Current.ShouldBeOfType<DiagnosticEvent>();
+
+        transport.Deliver(Update(AcpFixtures.CapturedSessionId, "{\"sessionUpdate\":\"agent_message_chunk\",\"content\":{\"type\":\"text\",\"text\":\"after\"}}"));
+        (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
+        stream.Current.ShouldBe(new TextDeltaEvent("after"));
+
+        transport.Deliver(AcpFixtures.Utf8($"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(prompt)},\"result\":{{\"stopReason\":\"end_turn\"}}}}"));
+        (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
+        stream.Current.ShouldBe(new CompletedEvent("end_turn"));
+        (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeFalse();
+        session.State.ShouldBe(HarnessState.Ready);
     }
 
     /// <summary>A non-harness pump failure ends the stream with the real exception as the cause, faults the session, and never escapes disposal.</summary>

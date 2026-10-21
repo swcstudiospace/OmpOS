@@ -52,9 +52,9 @@ public sealed class HarnessContractShapeTests
         error.Message.ShouldContain("Disposed");
     }
 
-    /// <summary>The event union is closed at exactly nine derived records.</summary>
+    /// <summary>The event union is closed at exactly ten derived records.</summary>
     [Fact]
-    public void HarnessEventUnionHasNineClosedCases()
+    public void HarnessEventUnionHasTenClosedCases()
     {
         var cases = typeof(HarnessEvent).Assembly.GetTypes()
             .Where(type => type.IsSubclassOf(typeof(HarnessEvent)))
@@ -65,6 +65,7 @@ public sealed class HarnessContractShapeTests
         cases.ShouldBe(
         [
             "CompletedEvent",
+            "DiagnosticEvent",
             "ErrorEvent",
             "PermissionRequestEvent",
             "PlanEvent",

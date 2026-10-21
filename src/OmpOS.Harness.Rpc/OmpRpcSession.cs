@@ -605,9 +605,8 @@ public sealed class OmpRpcSession : IOmpSession
         {
             Publish(
                 slot,
-                new ErrorEvent(
-                    $"omp dropped an oversized {frame.OriginalType ?? "frame"}: {frame.Error ?? "transport limit exceeded"}",
-                    false));
+                new DiagnosticEvent(
+                    $"omp dropped an oversized {frame.OriginalType ?? "frame"}: {frame.Error ?? "transport limit exceeded"}"));
         }
     }
 

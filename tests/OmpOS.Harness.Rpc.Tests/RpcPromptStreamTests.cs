@@ -83,6 +83,36 @@ public sealed class RpcPromptStreamTests
             ct);
     }
 
+    /// <summary>A dropped oversized frame is a non-terminal diagnostic: the prompt still streams and completes on its prompt_result.</summary>
+    [Fact]
+    public async Task DroppedOversizedFrameIsDiagnosticAndTurnStillCompletes()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await RunAsync(
+            (command, id) => command switch
+            {
+                "prompt" =>
+                [
+                    RpcTestData.Ok(id, "prompt", """{"agentInvoked":true}"""),
+                    """{"type":"rpc_frame_error","originalType":"message_update","error":"transport limit exceeded"}""",
+                    RpcTestData.TextDelta("done"),
+                    RpcTestData.PromptResult(id, "completed"),
+                ],
+                _ => null,
+            },
+            async session =>
+            {
+                List<HarnessEvent> events = await CollectAsync(session.SubmitPromptAsync("hi", new PromptOptions(), ct)).ConfigureAwait(true);
+
+                events.Count.ShouldBe(3);
+                events[0].ShouldBeOfType<DiagnosticEvent>();
+                events[1].ShouldBe(new TextDeltaEvent("done"));
+                events[2].ShouldBe(new CompletedEvent("completed"));
+                session.State.ShouldBe(HarnessState.Ready);
+            },
+            ct);
+    }
+
     /// <summary>Cancelling an in-flight prompt sends <c>abort</c> and completes the stream as cancelled.</summary>
     [Fact]
     public async Task CancelAbortsInFlightPromptAsCancelled()
