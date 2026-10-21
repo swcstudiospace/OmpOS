@@ -123,6 +123,8 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
 
         try
         {
+            string? stopReason = null;
+            var sawError = false;
             var appended = 0;
             var harness = _factory.CreateSession(input.Prompt);
             await using (harness.ConfigureAwait(false))
@@ -130,30 +132,33 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
                 await harness.CreateAsync(cancellationToken).ConfigureAwait(false);
                 await foreach (var evt in harness.SubmitPromptAsync(input.Prompt, new PromptOptions { Steer = false }, cancellationToken).ConfigureAwait(false))
                 {
-                    if (evt is CompletedEvent)
+                    if (evt is CompletedEvent completed)
                     {
-                        // Not appended here: RecordCompletionAsync writes the turn's single completed event once the status is final.
+                        // The completion settles the turn; RecordCompletionAsync writes the turn's terminal event.
+                        stopReason = completed.Reason;
                         break;
                     }
 
+                    sawError |= evt is ErrorEvent;
                     await AppendAsync(input.SessionId, input.CorrelationId, HarnessEventMapper.ToPayload(evt), cancellationToken).ConfigureAwait(false);
                     appended++;
                     heartbeat($"appended:{appended}");
                 }
             }
 
-            await _sessions.RecordCompletionAsync(input.SessionId, SessionStatus.Completed, CancellationToken.None).ConfigureAwait(false);
+            var final = HarnessTurnOutcome.SettledStatus(stopReason, sawError);
+            await _sessions.RecordCompletionAsync(input.SessionId, final, CancellationToken.None, stopReason).ConfigureAwait(false);
             _streamer.Notify(input.SessionId);
         }
         catch (OperationCanceledException)
         {
-            await SettleAsync(input.SessionId, SessionStatus.Cancelled, "Prompt cancelled.").ConfigureAwait(false);
+            await SettleAsync(input.SessionId, SessionStatus.Cancelled).ConfigureAwait(false);
             throw;
         }
 #pragma warning disable CA1031 // The activities boundary settles the session as failed, then rethrows so the runner records the failure.
         catch (Exception)
         {
-            await SettleAsync(input.SessionId, SessionStatus.Failed, "Prompt execution failed.").ConfigureAwait(false);
+            await SettleAsync(input.SessionId, SessionStatus.Failed).ConfigureAwait(false);
             throw;
         }
 #pragma warning restore CA1031
@@ -193,19 +198,10 @@ internal sealed class ApiSessionRunActivities : ISessionRunActivities
         _streamer.Notify(sessionId);
     }
 
-    private async Task SettleAsync(string sessionId, SessionStatus final, string errorDetail)
+    private async Task SettleAsync(string sessionId, SessionStatus final)
     {
         try
         {
-            if (final == SessionStatus.Failed)
-            {
-                await AppendAsync(
-                    sessionId,
-                    sessionId,
-                    new ErrorPayload { Message = errorDetail, Retryable = false },
-                    CancellationToken.None).ConfigureAwait(false);
-            }
-
             await _sessions.RecordCompletionAsync(sessionId, final, CancellationToken.None).ConfigureAwait(false);
             _streamer.Notify(sessionId);
         }

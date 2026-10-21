@@ -51,6 +51,9 @@ public sealed class SessionService
     private const string ToolApprovalRequestedKind = "tool_approval_requested";
     private const string ToolApprovalApprovedKind = "tool_approval_approved";
     private const string ToolApprovalDeniedKind = "tool_approval_denied";
+    private const string CompletedReason = "completed";
+    private const string CancelledReason = "cancelled";
+    private const string FailureMessage = "Prompt execution failed.";
 
     /// <summary>The number of lock stripes. Bounded: one <see cref="SemaphoreSlim"/> per stripe, never per session.</summary>
     private const int StripeCount = 64;
@@ -214,15 +217,20 @@ public sealed class SessionService
     public Task SubmitFollowUpAsync(string sessionId, string text, CancellationToken cancellationToken) =>
         SubmitQueuedAsync(sessionId, text, FollowUpRole, FollowUpKind, requireActivePrompt: false, cancellationToken);
 
-    /// <summary>Settles the active prompt with a terminal status and records the completion event.</summary>
+    /// <summary>
+    /// Settles the active prompt with a terminal status. The turn's terminal event is appended before the settled
+    /// status is saved, so a subscriber that sees the settled status always finds that event ahead of its cursor.
+    /// A turn that already carries a terminal event (an error streamed during the turn) gets no second one.
+    /// </summary>
     /// <param name="sessionId">The session identifier.</param>
     /// <param name="final">The terminal status: <see cref="SessionStatus.Completed"/>, <see cref="SessionStatus.Failed"/> or <see cref="SessionStatus.Cancelled"/>.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <param name="stopReason">The harness stop reason, for example <c>end_turn</c>, written to the completed event; <see langword="null"/> writes <c>completed</c>. Ignored unless <paramref name="final"/> is <see cref="SessionStatus.Completed"/>.</param>
     /// <exception cref="SessionException">
     /// <see cref="ErrorCode.SessionNotFound"/> when the session does not exist;
     /// <see cref="ErrorCode.InvalidTransition"/> when the session is not running or <paramref name="final"/> is not terminal.
     /// </exception>
-    public async Task RecordCompletionAsync(string sessionId, SessionStatus final, CancellationToken cancellationToken)
+    public async Task RecordCompletionAsync(string sessionId, SessionStatus final, CancellationToken cancellationToken, string? stopReason = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
 
@@ -250,21 +258,15 @@ public sealed class SessionService
             }
 
             var now = _timeProvider.GetUtcNow();
+            if (!TurnHasTerminalEvent(session))
+            {
+                await AppendAsync(sessionId, CorrelationIdOf(sessionId, session), now, TerminalPayload(final, stopReason), cancellationToken).ConfigureAwait(false);
+            }
+
+            // The save carries the snapshot taken before the append. The repository keeps its longer stored log on a
+            // stale save (SessionRepositoryContractTests), so the terminal event appended above survives this write.
             var settled = session with { Status = final, UpdatedAt = now };
             await _repository.SaveAsync(settled, cancellationToken).ConfigureAwait(false);
-
-            var reason = final switch
-            {
-                SessionStatus.Completed => "completed",
-                SessionStatus.Failed => "failed",
-                _ => "cancelled",
-            };
-            await AppendAsync(
-                sessionId,
-                CorrelationIdOf(sessionId, settled),
-                now,
-                new CompletedPayload { Reason = reason },
-                cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -489,4 +491,37 @@ public sealed class SessionService
 
     private static bool IsPromptActive(SessionStatus status) =>
         status is SessionStatus.Running or SessionStatus.AwaitingToolApproval;
+
+    /// <summary>The terminal event that settles a turn: a completed event for success or cancel, an error event for failure.</summary>
+    /// <param name="final">The terminal status.</param>
+    /// <param name="stopReason">The harness stop reason, or null for <c>completed</c>.</param>
+    /// <returns>The payload of the turn's terminal event.</returns>
+    private static StreamEventPayload TerminalPayload(SessionStatus final, string? stopReason) => final switch
+    {
+        SessionStatus.Completed => new CompletedPayload { Reason = string.IsNullOrWhiteSpace(stopReason) ? CompletedReason : stopReason },
+        SessionStatus.Failed => new ErrorPayload { Message = FailureMessage, Retryable = false },
+        _ => new CompletedPayload { Reason = CancelledReason },
+    };
+
+    /// <summary>
+    /// Whether the active turn already carries its terminal event. Scans back to the turn's acceptance event, so a
+    /// terminal event appended earlier in the same turn is found.
+    /// </summary>
+    /// <param name="session">The session, including its event log.</param>
+    /// <returns>True when a completed or error event follows the turn's acceptance event.</returns>
+    private static bool TurnHasTerminalEvent(Session session)
+    {
+        for (var i = session.Events.Count - 1; i >= 0; i--)
+        {
+            switch (session.Events[i].Payload)
+            {
+                case CompletedPayload or ErrorPayload:
+                    return true;
+                case UnknownPayload { OriginalKind: PromptAcceptedKind }:
+                    return false;
+            }
+        }
+
+        return false;
+    }
 }

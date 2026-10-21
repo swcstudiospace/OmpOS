@@ -24,6 +24,7 @@ internal static class HarnessEventMapper
             UiBlockEvent block => new UiBlockPayload { Block = block.Block },
             ErrorEvent error => new ErrorPayload { Message = error.Message, Retryable = error.Retryable },
             CompletedEvent completed => new CompletedPayload { Reason = completed.Reason },
+            DiagnosticEvent diagnostic => new DiagnosticPayload { Message = diagnostic.Message },
             ThoughtEvent thought => Unknown("thought", ("text", thought.Text)),
             ToolCallEvent call => Unknown("tool_call", ("callId", call.CallId), ("name", call.Name), ("payloadJson", call.PayloadJson)),
             ToolCallUpdateEvent update => Unknown("tool_call_update", ("callId", update.CallId), ("status", update.Status), ("payloadJson", update.PayloadJson)),

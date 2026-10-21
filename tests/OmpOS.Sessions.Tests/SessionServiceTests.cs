@@ -412,7 +412,113 @@ public sealed class SessionServiceTests
         }
     }
 
+    /// <summary>A completed turn writes the harness stop reason to its single completed event.</summary>
+    [Fact]
+    public async Task CompletionRecordsHarnessStopReason()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
+        await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+
+        await service.RecordCompletionAsync(session.Id, SessionStatus.Completed, ct, "end_turn").ConfigureAwait(true);
+
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Status.ShouldBe(SessionStatus.Completed);
+        stored.Events.Select(static evt => evt.Payload).OfType<CompletedPayload>().Select(static payload => payload.Reason).ShouldBe(["end_turn"]);
+        stored.Events.Count(static evt => IsTerminal(evt.Payload)).ShouldBe(1);
+    }
+
+    /// <summary>A failed turn ends with its error event and carries no completed event.</summary>
+    [Fact]
+    public async Task FailedTurnEndsWithErrorAndNoCompletedEvent()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
+        await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+
+        await service.RecordCompletionAsync(session.Id, SessionStatus.Failed, ct, "error").ConfigureAwait(true);
+
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Status.ShouldBe(SessionStatus.Failed);
+        stored.Events[^1].Payload.ShouldBeOfType<ErrorPayload>().Message.ShouldBe("Prompt execution failed.");
+        stored.Events.Select(static evt => evt.Payload).OfType<CompletedPayload>().ShouldBeEmpty();
+    }
+
+    /// <summary>An error streamed during the turn is its only terminal event, so settling the failed turn adds none.</summary>
+    [Fact]
+    public async Task StreamedErrorIsTheOnlyTerminalEventWhenTheTurnFails()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
+        await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+        await repository.AppendAsync(session.Id, StreamedEvent(session.Id, new ErrorPayload { Message = "rate limited", Retryable = true }), ct).ConfigureAwait(true);
+
+        await service.RecordCompletionAsync(session.Id, SessionStatus.Failed, ct, "error").ConfigureAwait(true);
+
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Status.ShouldBe(SessionStatus.Failed);
+        stored.Events.Select(static evt => evt.Payload).OfType<ErrorPayload>().Select(static payload => payload.Message).ShouldBe(["rate limited"]);
+        stored.Events.Select(static evt => evt.Payload).OfType<CompletedPayload>().ShouldBeEmpty();
+    }
+
+    /// <summary>A completion after a streamed error appends no completed event, so the turn never carries both terminal events.</summary>
+    [Fact]
+    public async Task CompletionAfterStreamedErrorAppendsNoCompletedEvent()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
+        await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+        await repository.AppendAsync(session.Id, StreamedEvent(session.Id, new ErrorPayload { Message = "transient", Retryable = true }), ct).ConfigureAwait(true);
+
+        await service.RecordCompletionAsync(session.Id, SessionStatus.Completed, ct, "end_turn").ConfigureAwait(true);
+
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Events.Count(static evt => IsTerminal(evt.Payload)).ShouldBe(1);
+        stored.Events.Select(static evt => evt.Payload).OfType<CompletedPayload>().ShouldBeEmpty();
+    }
+
+    /// <summary>The terminal event is in the log before the settled status is saved, so a subscriber that sees the settled status finds it.</summary>
+    [Theory]
+    [InlineData(SessionStatus.Completed)]
+    [InlineData(SessionStatus.Failed)]
+    [InlineData(SessionStatus.Cancelled)]
+    public async Task TerminalEventIsLoggedBeforeSettledStatusIsSaved(SessionStatus outcome)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new ObservingSessionRepository();
+        var service = NewService(repository);
+        var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
+        await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+
+        await service.RecordCompletionAsync(session.Id, outcome, ct).ConfigureAwait(true);
+
+        repository.SettledSaveTerminalFlags.ToArray().ShouldBe([true]);
+    }
+
     private static SessionService NewService(ISessionRepository repository) =>
         new(repository, new FixedTimeProvider(Now));
+
+    private static bool IsTerminal(StreamEventPayload payload) => payload is CompletedPayload or ErrorPayload;
+
+    private static StreamEvent StreamedEvent(string sessionId, StreamEventPayload payload) => new()
+    {
+        Seq = 0,
+        SessionId = sessionId,
+        CorrelationId = $"{sessionId}/turn-1",
+        Timestamp = Now,
+        Payload = payload,
+    };
 }
 

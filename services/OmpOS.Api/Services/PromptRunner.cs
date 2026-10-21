@@ -189,22 +189,22 @@ internal sealed class PromptRunner
             else if (result.Status == WorkflowRunStatus.Failed)
             {
                 PromptRunFailed(_logger, input.SessionId, result.Status.ToString(), null);
-                await SettleIfRunningAsync(input.SessionId, SessionStatus.Failed, "Prompt execution failed.").ConfigureAwait(false);
+                await SettleIfRunningAsync(input.SessionId, SessionStatus.Failed).ConfigureAwait(false);
             }
             else if (result.Status == WorkflowRunStatus.Cancelled)
             {
-                await SettleIfRunningAsync(input.SessionId, SessionStatus.Cancelled, "Prompt cancelled.").ConfigureAwait(false);
+                await SettleIfRunningAsync(input.SessionId, SessionStatus.Cancelled).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
         {
-            await SettleAsync(input.SessionId, SessionStatus.Cancelled, "Prompt cancelled.").ConfigureAwait(false);
+            await SettleAsync(input.SessionId, SessionStatus.Cancelled).ConfigureAwait(false);
         }
 #pragma warning disable CA1031 // Background execution must never fault the tracked task; the activities already settled above.
         catch (Exception ex)
         {
             PromptRunFailed(_logger, input.SessionId, ex.GetType().FullName ?? "Unknown", null);
-            await SettleAsync(input.SessionId, SessionStatus.Failed, "Prompt execution failed.").ConfigureAwait(false);
+            await SettleAsync(input.SessionId, SessionStatus.Failed).ConfigureAwait(false);
         }
 #pragma warning restore CA1031
     }
@@ -226,40 +226,68 @@ internal sealed class PromptRunner
 
         try
         {
-            var harness = _factory.CreateSession(prompt);
-            await using (harness.ConfigureAwait(false))
+            var (stopReason, sawError) = await StreamTurnAsync(sessionId, prompt, correlationId, stoppingToken).ConfigureAwait(false);
+            var final = HarnessTurnOutcome.SettledStatus(stopReason, sawError);
+            await _sessions.RecordCompletionAsync(sessionId, final, CancellationToken.None, stopReason).ConfigureAwait(false);
+            _streamer.Notify(sessionId);
+            if (final == SessionStatus.Completed)
             {
-                await harness.CreateAsync(stoppingToken).ConfigureAwait(false);
-                await foreach (var evt in harness.SubmitPromptAsync(prompt, new PromptOptions { Steer = false }, stoppingToken).ConfigureAwait(false))
+                if (_logger.IsEnabled(LogLevel.Information))
                 {
-                    if (evt is CompletedEvent)
-                    {
-                        // Not appended here: RecordCompletionAsync writes the turn's single completed event once the status is final.
-                        break;
-                    }
-
-                    await AppendAsync(sessionId, correlationId, HarnessEventMapper.ToPayload(evt), stoppingToken).ConfigureAwait(false);
+                    PromptCompleted(_logger, sessionId, PromptRedactor.Format(prompt, _debug.Value), null);
                 }
             }
-
-            await _sessions.RecordCompletionAsync(sessionId, SessionStatus.Completed, CancellationToken.None).ConfigureAwait(false);
-            _streamer.Notify(sessionId);
-            if (_logger.IsEnabled(LogLevel.Information))
+            else
             {
-                PromptCompleted(_logger, sessionId, PromptRedactor.Format(prompt, _debug.Value), null);
+                PromptRunFailed(_logger, sessionId, stopReason ?? "harness-error", null);
             }
         }
         catch (OperationCanceledException)
         {
-            await SettleAsync(sessionId, SessionStatus.Cancelled, "Prompt cancelled.").ConfigureAwait(false);
+            await SettleAsync(sessionId, SessionStatus.Cancelled).ConfigureAwait(false);
         }
 #pragma warning disable CA1031 // Background execution must never fault the tracked task; failures are logged and settled above.
         catch (Exception ex)
         {
             PromptRunFailed(_logger, sessionId, ex.GetType().FullName ?? "Unknown", null);
-            await SettleAsync(sessionId, SessionStatus.Failed, "Prompt execution failed.").ConfigureAwait(false);
+            await SettleAsync(sessionId, SessionStatus.Failed).ConfigureAwait(false);
         }
 #pragma warning restore CA1031
+    }
+
+    /// <summary>Streams one harness turn into the session log until the harness completes or its stream ends.</summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="prompt">The prompt text.</param>
+    /// <param name="correlationId">The end-to-end correlation identifier.</param>
+    /// <param name="cancellationToken">Cancels the stream.</param>
+    /// <returns>The harness stop reason (null when the stream ended without a completion) and whether an error was streamed.</returns>
+    private async Task<(string? StopReason, bool SawError)> StreamTurnAsync(
+        string sessionId,
+        string prompt,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        string? stopReason = null;
+        var sawError = false;
+        var harness = _factory.CreateSession(prompt);
+        await using (harness.ConfigureAwait(false))
+        {
+            await harness.CreateAsync(cancellationToken).ConfigureAwait(false);
+            await foreach (var evt in harness.SubmitPromptAsync(prompt, new PromptOptions { Steer = false }, cancellationToken).ConfigureAwait(false))
+            {
+                if (evt is CompletedEvent completed)
+                {
+                    // The completion settles the turn; RecordCompletionAsync writes the turn's terminal event.
+                    stopReason = completed.Reason;
+                    break;
+                }
+
+                sawError |= evt is ErrorEvent;
+                await AppendAsync(sessionId, correlationId, HarnessEventMapper.ToPayload(evt), cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        return (stopReason, sawError);
     }
 
     private async Task AppendAsync(string sessionId, string correlationId, StreamEventPayload payload, CancellationToken cancellationToken)
@@ -276,19 +304,10 @@ internal sealed class PromptRunner
         _streamer.Notify(sessionId);
     }
 
-    private async Task SettleAsync(string sessionId, SessionStatus final, string errorDetail)
+    private async Task SettleAsync(string sessionId, SessionStatus final)
     {
         try
         {
-            if (final == SessionStatus.Failed)
-            {
-                await AppendAsync(
-                    sessionId,
-                    sessionId,
-                    new ErrorPayload { Message = errorDetail, Retryable = false },
-                    CancellationToken.None).ConfigureAwait(false);
-            }
-
             await _sessions.RecordCompletionAsync(sessionId, final, CancellationToken.None).ConfigureAwait(false);
             _streamer.Notify(sessionId);
         }
@@ -307,13 +326,12 @@ internal sealed class PromptRunner
     /// <summary>Settles the session as failed or cancelled only while its prompt is still running, so a run that already settled is not settled twice.</summary>
     /// <param name="sessionId">The session identifier.</param>
     /// <param name="final">The terminal status to record.</param>
-    /// <param name="errorDetail">The error detail for a failed settle.</param>
-    private async Task SettleIfRunningAsync(string sessionId, SessionStatus final, string errorDetail)
+    private async Task SettleIfRunningAsync(string sessionId, SessionStatus final)
     {
         var session = await _repository.GetAsync(sessionId, CancellationToken.None).ConfigureAwait(false);
         if (session is { Status: SessionStatus.Running })
         {
-            await SettleAsync(sessionId, final, errorDetail).ConfigureAwait(false);
+            await SettleAsync(sessionId, final).ConfigureAwait(false);
         }
     }
 }
