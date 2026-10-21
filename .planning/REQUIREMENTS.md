@@ -179,7 +179,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DESK-01 | Phase 4 | Partial — MAUI binaries human-deferred (macOS); host logic tested |
 | MOB-01 | Phase 4 | Partial — MAUI binaries human-deferred (macOS); remote-only path tested |
 | SHELL-01 | Phase 4 | Partial — filter exclusion + README scope verified; macOS CI run outstanding |
-| VERIFY-01 | Phase 5 | Complete (clean clone of 8479c7c, empty SDK root; docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21.log) |
+| VERIFY-01 | Phase 5 | Complete (clean clone of a6fcadd, empty SDK root, 615 tests, 0 failed; docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21.log) |
 | VERIFY-02 | Phase 5 | Complete (open questions populated; RepoHygieneTests enforces TODO linkage) |
 | VERIFY-03 | Phase 5 | Complete (docs/handoff.md maps AC_1..AC_11 with evidence) |
 

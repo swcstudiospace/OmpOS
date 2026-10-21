@@ -105,7 +105,7 @@ The CSP is `connect-src 'self' http://127.0.0.1:5187` and `img-src 'self' data:`
 
 ### Clean-clone bootstrap (VERIFY-01)
 
-Run on 2026-10-21 against commit `8479c7c` (branch `feat/ompos-scaffold`), from a fresh clone into an empty temp directory, with an empty SDK root so the pinned SDK must be installed:
+Run on 2026-10-21 against commit `a6fcadd` (branch `feat/ompos-scaffold`, the committed HEAD of the gate), from a fresh clone into an empty temp directory, with an empty SDK root so the pinned SDK must be installed:
 
 ```sh
 git clone /root/src/repos/ompos /tmp/ompos-clean
@@ -114,6 +114,6 @@ env -u DOTNET_ROOT DOTNET_ROOT=/tmp/ompos-clean-dotnet ./bootstrap.sh
 ```
 
 - The bootstrap installed .NET SDK 10.0.402 into the empty root.
-- Locked restore, a Release build with warnings as errors (0 warnings, 0 errors), the full test run (614 total, 0 failed) and the format verification all passed; the script printed `bootstrap: OK`.
-- Log: `docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21.log`.
+- Locked restore, a Release build with warnings as errors (0 warnings, 0 errors), the full test run (615 total, 0 failed) and the format verification all passed; the script printed `bootstrap: OK`.
+- Log: `docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21.log` (commit `a6fcadd`). An earlier clean run at `8479c7c` (614 total, 0 failed) is kept as `docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21-8479c7c.log`.
 - Limits: the clone was taken from the local repository, not from the GitHub remote, which had not been pushed when this ran. The NuGet package cache was warm, so the run does not measure cold package download time. Host: linux 6.8.0-147-generic, x64.

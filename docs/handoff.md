@@ -16,9 +16,9 @@ the reconstructed list and states that here.
 Full gate `./bootstrap.sh` (SDK install, locked restore, warnings-as-errors
 Release build, tests, format verification). Log: `docs/runbooks/evidence/bootstrap-gate-2026-10-21.log`:
 
-- Line 73: `Test run summary: Passed!`
-- Line 90: `total: 614` · Line 91: `failed: 0` (`succeeded: 614`, `skipped: 0`)
-- Line 95: `bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format)`
+- Line 81: `Test run summary: Passed!`
+- Line 98: `total: 615` · Line 99: `failed: 0`
+- Line 103: `bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format)`
 - Scope: everything in `OmpOS.Linux.slnf` (libraries, API, worker, web head, all
   test suites). The MAUI head is excluded from that filter by design.
 
@@ -26,9 +26,9 @@ Release build, tests, format verification). Log: `docs/runbooks/evidence/bootstr
 (`tests/OmpOS.Api.IntegrationTests`, ~60 tests) was not registered in the
 solution files until this pass, so earlier gate totals never ran it — a
 pre-registration total of 552 excluded it. It is now registered in both files:
-`OmpOS.slnx:39` and `OmpOS.Linux.slnf:35`. The 614 total above includes it.
+`OmpOS.slnx:39` and `OmpOS.Linux.slnf:35`. The 615 total above includes it.
 
-**Caveat:** the bootstrap gate log is a working-tree run. The clean-clone run (VERIFY-01) is recorded separately: commit 8479c7c, empty SDK root, bootstrap OK, 614 tests, 0 failed (`docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21.log`).
+**Caveat:** the bootstrap gate log is a working-tree run. The clean-clone run (VERIFY-01) is recorded separately: commit a6fcadd, empty SDK root, bootstrap OK, 615 tests, 0 failed (`docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21.log`).
 `docs/runbooks/local-dev.md` documents the one-command clean-clone flow.
 
 ## AC_1..AC_11 verdicts

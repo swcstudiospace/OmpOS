@@ -1,8 +1,8 @@
 ---
 phase: 05-verify
 verified: 2026-10-21
-status: gaps_found
-score: 2/3 requirements VERIFIED (1 PARTIAL)
+status: passed
+score: 3/3 requirements VERIFIED (VERIFY-02 re-verified at HEAD a6fcadd)
 requirements:
   - id: VERIFY-01
     status: VERIFIED
@@ -52,3 +52,8 @@ output. This is the first VERIFICATION.md for Phase 5 (no prior verification exi
 
 _Verified: 2026-10-21_
 _Verifier: P5Verify (goal-backward, read-only)_
+
+## Re-verification at HEAD a6fcadd (2026-10-21)
+
+- **VERIFY-02: VERIFIED.** The TODO clause is now enforced. `tests/OmpOS.ArchitectureTests/RepoHygieneTests.cs` defines `TodoMarkersLinkToOpenQuestion`, which fails on any TODO, FIXME, HACK or XXX in first-party `*.cs` and `*.razor` under src, services, apps and tests that lacks an open-question ID present in `docs/open-questions.md`. The executing agent recorded a negative control: a probe with an unlinked TODO failed the test, and the suite passed once the probe was removed. The full gate at HEAD passes with 615 tests and 0 failed (`docs/runbooks/evidence/bootstrap-gate-2026-10-21.log`).
+- **Phase 5 status: passed.** VERIFY-01 (clean-clone run), VERIFY-02 (open questions and the enforced TODO gate) and VERIFY-03 (handoff AC table) are verified.
