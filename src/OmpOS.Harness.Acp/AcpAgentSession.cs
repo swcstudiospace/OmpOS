@@ -1019,13 +1019,13 @@ public sealed class AcpAgentSession : IOmpSession
         }
     }
 
-    /// <summary>Runs on the pump. Completes the turn: an error becomes <see cref="ErrorEvent"/> then <c>CompletedEvent("error")</c>; a result becomes its stop reason.</summary>
+    /// <summary>Runs on the pump. Completes the turn: an error ends it with an <see cref="ErrorEvent"/> alone; a result ends it with a <see cref="CompletedEvent"/> carrying its stop reason.</summary>
     private void OnPromptResponse(PromptTurn turn, AcpFrames.Inbound response)
     {
         if (response.Error is { } error)
         {
             Settle(turn);
-            EndTurn(turn, new ErrorEvent(error.Message, Retryable: false), new CompletedEvent("error"));
+            EndTurn(turn, new ErrorEvent(error.Message, Retryable: false));
             return;
         }
 

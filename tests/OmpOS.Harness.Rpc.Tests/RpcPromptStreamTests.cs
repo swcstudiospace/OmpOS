@@ -58,9 +58,9 @@ public sealed class RpcPromptStreamTests
             ct);
     }
 
-    /// <summary>An error terminal surfaces its message and retryability before the completion.</summary>
+    /// <summary>An error terminal surfaces its message and retryability, and nothing follows it: the turn ends with the error alone.</summary>
     [Fact]
-    public async Task ErrorStatusEmitsErrorThenCompleted()
+    public async Task ErrorStatusEmitsErrorAloneAndNoCompletion()
     {
         var ct = TestContext.Current.CancellationToken;
         await RunAsync(
@@ -77,7 +77,7 @@ public sealed class RpcPromptStreamTests
             {
                 List<HarnessEvent> events = await CollectAsync(session.SubmitPromptAsync("hi", new PromptOptions(), ct)).ConfigureAwait(true);
 
-                events.ShouldBe([new ErrorEvent("rate limited", true), new CompletedEvent("error")]);
+                events.ShouldBe([new ErrorEvent("rate limited", true)]);
                 session.State.ShouldBe(HarnessState.Ready);
             },
             ct);

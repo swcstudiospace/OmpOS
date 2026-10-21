@@ -57,9 +57,9 @@ public sealed class AcpAgentSessionTests
         session.State.ShouldBe(HarnessState.Ready);
     }
 
-    /// <summary>A failed prompt ends with an ErrorEvent and CompletedEvent("error") and leaves the session Ready.</summary>
+    /// <summary>A failed prompt ends with its ErrorEvent alone: no CompletedEvent follows it, and the session stays Ready.</summary>
     [Fact]
-    public async Task PromptErrorEndsWithErrorEventThenErrorCompletion()
+    public async Task PromptErrorEndsTurnWithErrorEventAlone()
     {
         var ct = TestContext.Current.CancellationToken;
         var transport = new ScriptedAcpTransport(frame => HasMethod(frame, "session/prompt")
@@ -70,7 +70,7 @@ public sealed class AcpAgentSessionTests
 
         var events = await CollectAsync(session.SubmitPromptAsync("hi", new PromptOptions(), ct), ct).ConfigureAwait(true);
 
-        events.ShouldBe(new HarnessEvent[] { new ErrorEvent("model unavailable", Retryable: false), new CompletedEvent("error") });
+        events.ShouldBe(new HarnessEvent[] { new ErrorEvent("model unavailable", Retryable: false) });
         session.State.ShouldBe(HarnessState.Ready);
     }
 

@@ -552,8 +552,11 @@ public sealed class OmpRpcSession : IOmpSession
         {
             Publish(slot, new ErrorEvent(frame.Error?.Message ?? "omp reported a prompt error.", frame.Error?.Retryable ?? false));
         }
+        else
+        {
+            Publish(slot, new CompletedEvent(ReasonFor(frame.Status)));
+        }
 
-        Publish(slot, new CompletedEvent(ReasonFor(frame.Status)));
         _ = slot.Events.Writer.TryComplete();
     }
 
