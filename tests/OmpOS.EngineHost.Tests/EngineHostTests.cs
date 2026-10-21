@@ -228,6 +228,56 @@ public sealed class EngineHostTests
         host.TakeHeldEvents().ShouldBeEmpty();
     }
 
+    /// <summary>
+    /// Lease: a hold fetch gated mid-stream owns the session stream, so a live turn started while it is gated
+    /// issues no fetch and yields nothing until the hold completes. The held events come out in order through
+    /// <c>TakeHeldEvents</c>, then the live reply follows in order, each Seq exactly once. The poll only waits
+    /// for the gate-driven fetch to arrive; every assertion is on sequence numbers and string contents.
+    /// </summary>
+    [Fact]
+    public async Task LiveTurnWaitsForGatedHoldThenStreamsAfterItInOrder()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var handler = new HoldGatedHandler();
+        using var http = ClientFor(handler);
+        var host = new RemoteEngineHost(http);
+        var raised = 0;
+        host.MissedEventsHeld += (_, _) => raised++;
+
+        _ = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct)).ConfigureAwait(true);
+
+        var hold = host.ReconnectAsync(ct);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        while (handler.LabelledGets == 0)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(10), timeout.Token).ConfigureAwait(true);
+        }
+
+        handler.LabelledGets.ShouldBe(1);
+        await using var live = host.SubmitPromptAsync("next", new PromptOptions(), ct).WithCancellation(ct).GetAsyncEnumerator();
+        var liveNext = live.MoveNextAsync();
+        liveNext.IsCompleted.ShouldBeFalse();
+        handler.PromptPosts.ShouldBe(1);
+
+        handler.Release();
+        await hold.ConfigureAwait(true);
+        raised.ShouldBe(1);
+
+        var held = host.TakeHeldEvents();
+        held.OfType<TextDeltaEvent>().Select(static evt => evt.Text).ShouldBe(["t6", "t7", "t8", "t9", "t10", "t11"]);
+        held[^1].ShouldBeOfType<CompletedEvent>().Reason.ShouldBe("end_turn");
+        held.Count.ShouldBe(7);
+
+        (await liveNext).ShouldBeTrue();
+        live.Current.ShouldBeOfType<TextDeltaEvent>().Text.ShouldBe("live13");
+        (await live.MoveNextAsync()).ShouldBeTrue();
+        live.Current.ShouldBeOfType<CompletedEvent>().Reason.ShouldBe("end_turn");
+        (await live.MoveNextAsync()).ShouldBeFalse();
+
+        handler.PromptPosts.ShouldBe(2);
+        host.TakeHeldEvents().ShouldBeEmpty();
+    }
+
     /// <summary>A faulted engine that the host replaces is disposed; the replacement serves the next prompt.</summary>
     [Fact]
     public async Task FaultedEngineIsDisposedWhenReplaced()
@@ -692,6 +742,93 @@ public sealed class EngineHostTests
                 Encoding.UTF8,
                 "text/event-stream"),
         };
+    }
+
+    /// <summary>
+    /// A hold fetch gated mid-stream: the first event-stream request without <c>Last-Event-ID</c> serves turn 1 and
+    /// ends. The first request carrying <c>Last-Event-ID</c> serves one replayed frame, one held frame, then blocks
+    /// until <see cref="Release"/> before the rest of the held turn. Any later request serves only the next turn's
+    /// reply; it is reachable only when a live turn wrongly fetches alongside the hold.
+    /// </summary>
+    private sealed class HoldGatedHandler : HttpMessageHandler
+    {
+        private readonly TaskCompletionSource _gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _labelledGets;
+
+        /// <summary>Gets how many fetches carried <c>Last-Event-ID</c>, proving whether the live turn fetched early.</summary>
+        public int LabelledGets => _labelledGets;
+
+        /// <summary>Gets how many prompts were submitted.</summary>
+        public int PromptPosts { get; private set; }
+
+        /// <summary>Serves the rest of the held turn. Idempotent.</summary>
+        public void Release() => _gate.TrySetResult();
+
+        /// <inheritdoc />
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            if (request.Method == HttpMethod.Post && string.Equals(path, "/sessions", StringComparison.Ordinal))
+            {
+                return Task.FromResult(Created());
+            }
+
+            if (request.Method == HttpMethod.Post && string.Equals(path, "/sessions/sess-1/prompts", StringComparison.Ordinal))
+            {
+                PromptPosts++;
+                return Task.FromResult(Accepted());
+            }
+
+            if (request.Method == HttpMethod.Get && string.Equals(path, "/sessions/sess-1/events", StringComparison.Ordinal))
+            {
+                if (!request.Headers.TryGetValues(RemoteEngineHost.LastEventIdHeader, out _))
+                {
+                    return Task.FromResult(Immediate(1, 5));
+                }
+
+                _labelledGets++;
+                return Task.FromResult(_labelledGets == 1 ? GatedHold() : LiveReply());
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        }
+
+        private static HttpResponseMessage Created() => new(HttpStatusCode.Created)
+        {
+            Content = new StringContent("""{"id":"sess-1","ownerId":"local-dev"}""", Encoding.UTF8, "application/json"),
+        };
+
+        private static HttpResponseMessage Accepted() => new(HttpStatusCode.Accepted)
+        {
+            Content = new StringContent("""{"sessionId":"sess-1","status":"accepted"}""", Encoding.UTF8, "application/json"),
+        };
+
+        private HttpResponseMessage GatedHold() => new(HttpStatusCode.OK)
+        {
+            Content = new GatedSseContent(
+                Frame(5) + Frame(6),
+                Frames(7, 11) + Terminal(12),
+                _gate.Task),
+        };
+
+        private static HttpResponseMessage LiveReply() => new(HttpStatusCode.OK)
+        {
+            Content = new StringContent(Frame(13, "live") + Terminal(14), Encoding.UTF8, "text/event-stream"),
+        };
+
+        private static HttpResponseMessage Immediate(int first, int last) => new(HttpStatusCode.OK)
+        {
+            Content = new StringContent(Frames(first, last), Encoding.UTF8, "text/event-stream"),
+        };
+
+        private static string Frames(int first, int last, string text = "t") =>
+            string.Concat(Enumerable.Range(first, last - first + 1).Select(seq => Frame(seq, text)));
+
+        private static string Frame(int seq, string text = "t") =>
+            $"id: {seq}\nevent: text_delta\ndata: {{\"kind\":\"text_delta\",\"delta\":\"{text}{seq}\"}}\n\n";
+
+        private static string Terminal(int seq) =>
+            $"id: {seq}\nevent: completed\ndata: {{\"kind\":\"completed\",\"reason\":\"end_turn\"}}\n\n";
     }
 
     /// <summary>An in-process engine that records how many times it was disposed.</summary>

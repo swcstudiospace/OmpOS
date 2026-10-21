@@ -43,12 +43,18 @@ public sealed class RemoteEngineHost : IEngineHost
     private long _highWater;
 
     /// <summary>Seqs claimed by exactly one delivery path but not yet delivered, guarded by <see cref="_gate"/>.</summary>
-    /// <remarks>A claim reserves a Seq for either the live turn or the held queue, so a resume fetching alongside a
-    /// live stream neither redelivers the live stream's events nor lets the live stream skip the held ones.</remarks>
+    /// <remarks>A claim reserves a Seq for either the live turn or the held queue, so a replay the server sends
+    /// across sequential fetches is delivered once: the second fetch skips what the first already claimed.</remarks>
     private readonly HashSet<long> _heldSeqs = new();
 
     /// <summary>Events fetched by <see cref="ReconnectAsync"/> that no consumer has received yet, in Seq order.</summary>
     private readonly Queue<(long? Seq, HarnessEvent Event)> _held = new();
+
+    /// <summary>The single stream-owner lease for the session.</summary>
+    /// <remarks>A live turn holds the lease from before its POST until its iterator ends; a resume takes it only
+    /// when free and returns at once otherwise. The two paths can never overlap, so delivery order follows the
+    /// wire. The lease never transfers cancellation: <see cref="_activeCts"/> still stops the live stream.</remarks>
+    private readonly SemaphoreSlim _fetchLease = new(1, 1);
 
     /// <summary>Initializes a new instance of the <see cref="RemoteEngineHost"/> class.</summary>
     /// <param name="httpClient">An HTTP client whose base address is the API origin. Not owned; not disposed.</param>
@@ -76,17 +82,29 @@ public sealed class RemoteEngineHost : IEngineHost
     {
         ArgumentNullException.ThrowIfNull(prompt);
         ArgumentNullException.ThrowIfNull(options);
-        var sessionId = await EnsureSessionAsync(cancellationToken).ConfigureAwait(false);
 
-        // H1: this turn yields only the events of the prompt submitted here, and only after its POST is
-        // accepted. Held history is never replayed inline: the consumer takes it through TakeHeldEvents
-        // before submitting (H4), and any replay the server still sends is skipped by Seq claim below.
-        await SubmitAsync(sessionId, prompt, cancellationToken).ConfigureAwait(false);
-
-        await foreach (var (seq, evt) in StreamAsync(sessionId, ResumePosition(), cancellationToken).ConfigureAwait(false))
+        // The lease makes the single stream owner atomic: a live turn waits for a hold in flight, while a
+        // resume takes the lease only when free. It is held until the iterator ends, including on break or
+        // dispose, so the two paths can never overlap and delivery order follows the wire.
+        await _fetchLease.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            MarkDelivered(seq);
-            yield return evt;
+            var sessionId = await EnsureSessionAsync(cancellationToken).ConfigureAwait(false);
+
+            // H1: this turn yields only the events of the prompt submitted here, and only after its POST is
+            // accepted. Held history is never replayed inline: the consumer takes it through TakeHeldEvents
+            // before submitting (H4), and any replay the server still sends is skipped by Seq claim below.
+            await SubmitAsync(sessionId, prompt, cancellationToken).ConfigureAwait(false);
+
+            await foreach (var (seq, evt) in StreamAsync(sessionId, ResumePosition(), cancellationToken).ConfigureAwait(false))
+            {
+                MarkDelivered(seq);
+                yield return evt;
+            }
+        }
+        finally
+        {
+            _fetchLease.Release();
         }
     }
 
@@ -364,17 +382,16 @@ public sealed class RemoteEngineHost : IEngineHost
     }
 
     /// <summary>Fetches the events after <paramref name="resumeFrom"/> and holds them for the next prompt.</summary>
-    /// <remarks>When a turn is already streaming, that stream owns the session: it delivers everything after the
-    /// cursor, so the resume holds nothing and returns. Holding advances no cursor; <see cref="TakeHeldEvents"/>
-    /// moves the delivered cursor to the last event it hands out.</remarks>
+    /// <remarks>When a live turn already holds the session lease, this returns at once: that stream owns the
+    /// session and delivers everything after the cursor itself. Holding advances no cursor;
+    /// <see cref="TakeHeldEvents"/> moves the delivered cursor to the last event it hands out.</remarks>
     private async Task HoldMissedAsync(string sessionId, long? resumeFrom, CancellationToken cancellationToken)
     {
-        lock (_gate)
+        // The lease makes the single stream owner atomic where the old _activeCts check could not: it is taken
+        // and released as one step, so a resume can never start fetching alongside a live turn.
+        if (!await _fetchLease.WaitAsync(0, cancellationToken).ConfigureAwait(false))
         {
-            if (_activeCts is not null)
-            {
-                return;
-            }
+            return;
         }
 
         var held = false;
@@ -393,6 +410,7 @@ public sealed class RemoteEngineHost : IEngineHost
         }
         finally
         {
+            _fetchLease.Release();
             if (held)
             {
                 MissedEventsHeld?.Invoke(this, EventArgs.Empty);
