@@ -17,7 +17,8 @@
                  Announcement="_viewModel.Announcement"
                  OnStop="StopStreamingAsync"
                  OnRetry="RetryAsync"
-                 OnJumpToLatest="JumpToLatest" />
+                 OnJumpToLatest="JumpToLatest"
+                 AutoScrollPausedChanged="OnAutoScrollPausedChanged" />
     <Composer IsStreaming="_streaming" OnSend="SendAsync" OnStop="StopStreamingAsync" />
 </div>
 
@@ -37,13 +38,22 @@
     protected override void OnInitialized()
     {
         _viewModel.MarkHistoryLoaded();
+        if (Host is RemoteEngineHost remote)
+        {
+            remote.MissedEventsHeld += OnMissedEventsHeld;
+        }
     }
 
-    private async Task SendAsync(string prompt)
+    /// <summary>
+    /// Starts a turn. Resolves true once the engine has accepted the prompt (its first non-error event arrives),
+    /// false when the send is refused: already streaming, or the engine refused the turn before any output.
+    /// The turn then streams in the background, so the composer clears its draft without waiting for the whole reply.
+    /// </summary>
+    private Task<bool> SendAsync(string prompt)
     {
         if (_streaming)
         {
-            return;
+            return Task.FromResult(false);
         }
 
         _error = null;
@@ -51,14 +61,39 @@
         _streamCts?.Cancel();
         _streamCts?.Dispose();
         _streamCts = new CancellationTokenSource();
-        var token = _streamCts.Token;
         _streaming = true;
+        var accepted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        // Observed through the accepted result and the view model; any unexpected fault is surfaced by StreamTurnAsync's finally block.
+        _ = StreamTurnAsync(prompt, _streamCts.Token, accepted);
+        StateHasChanged();
+        return accepted.Task;
+    }
+
+    private async Task StreamTurnAsync(string prompt, CancellationToken token, TaskCompletionSource<bool> accepted)
+    {
         try
         {
             await foreach (var evt in Host.SubmitPromptAsync(prompt, new PromptOptions(), token).ConfigureAwait(true))
             {
-                _viewModel.ApplyEvent(EngineEventMapper.ToStreamEvent(evt, _conversationId, ++_seq));
-                StateHasChanged();
+                // Diagnostics are non-terminal and have no UI: they neither render nor count as the engine's reply.
+                if (evt is DiagnosticEvent)
+                {
+                    continue;
+                }
+
+                // An error as the first event means the engine refused the turn, so the draft stays in the composer.
+                if (evt is not ErrorEvent)
+                {
+                    accepted.TrySetResult(true);
+                }
+
+                ApplyEvent(evt);
+
+                // Completed and error both end the turn; the client never keeps streaming past either.
+                if (evt is CompletedEvent or ErrorEvent)
+                {
+                    break;
+                }
             }
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
@@ -72,8 +107,19 @@
         }
         finally
         {
+            accepted.TrySetResult(false);
             _streaming = false;
+            if (!_disposed)
+            {
+                StateHasChanged();
+            }
         }
+    }
+
+    private void ApplyEvent(HarnessEvent evt)
+    {
+        _viewModel.ApplyEvent(EngineEventMapper.ToStreamEvent(evt, _conversationId, ++_seq));
+        StateHasChanged();
     }
 
     private Task RetryAsync()
@@ -105,12 +151,54 @@
         _viewModel.ResumeAutoScroll();
     }
 
+    private void OnAutoScrollPausedChanged(bool paused)
+    {
+        if (paused)
+        {
+            _viewModel.PauseAutoScroll();
+        }
+        else
+        {
+            _viewModel.ResumeAutoScroll();
+        }
+    }
+
+    private void OnMissedEventsHeld(object? sender, EventArgs e)
+    {
+        // The fetch raises this on the thread that completed it, so render on the component's context.
+        _ = InvokeAsync(ApplyHeldEvents);
+    }
+
+    /// <summary>Renders the events a resume fetched, in seq order, now rather than on the next prompt.</summary>
+    private void ApplyHeldEvents()
+    {
+        if (_disposed || Host is not RemoteEngineHost remote)
+        {
+            return;
+        }
+
+        foreach (var evt in remote.TakeHeldEvents())
+        {
+            if (evt is DiagnosticEvent)
+            {
+                continue;
+            }
+
+            ApplyEvent(evt);
+        }
+    }
+
     /// <inheritdoc />
     public ValueTask DisposeAsync()
     {
         if (!_disposed)
         {
             _disposed = true;
+            if (Host is RemoteEngineHost remote)
+            {
+                remote.MissedEventsHeld -= OnMissedEventsHeld;
+            }
+
             _streamCts?.Cancel();
             _streamCts?.Dispose();
             _streamCts = null;

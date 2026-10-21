@@ -9,7 +9,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>Permission-option folding and A2UI image-URL allowlisting (WR-01, WR-06).</summary>
-public sealed class SurfaceSafetyTests
+internal sealed class SurfaceSafetyTests
 {
     /// <summary>A permission request without an options array still offers the non-destructive Dismiss option.</summary>
     [Fact]

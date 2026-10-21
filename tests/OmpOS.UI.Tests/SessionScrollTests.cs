@@ -7,7 +7,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>Auto-follow, user scroll-up pause, and jump-to-latest resume through the scroll module (UI-02).</summary>
-public sealed class SessionScrollTests : UiTestContext
+internal sealed class SessionScrollTests : UiTestContext
 {
     private const string ScrollModule = "./_content/OmpOS.UI/scripts/ompos-scroll.js";
     private const string ScrollToEnd = "scrollToEnd";
@@ -23,7 +23,7 @@ public sealed class SessionScrollTests : UiTestContext
             .Add(p => p.ViewState, SessionViewState.Streaming)
             .Add(p => p.AutoScrollPaused, false));
 
-        cut.SetParametersAndRender(parameters => parameters.Add(p => p.Announcement, "Streaming"));
+        cut.Render(parameters => parameters.Add(p => p.Announcement, "Streaming"));
 
         module.VerifyInvoke(ScrollToEnd, 2);
     }
@@ -38,7 +38,7 @@ public sealed class SessionScrollTests : UiTestContext
             .Add(p => p.ViewState, SessionViewState.Streaming)
             .Add(p => p.AutoScrollPaused, true));
 
-        cut.SetParametersAndRender(parameters => parameters.Add(p => p.Announcement, "Streaming"));
+        cut.Render(parameters => parameters.Add(p => p.Announcement, "Streaming"));
 
         module.VerifyNotInvoke(ScrollToEnd);
     }
@@ -59,10 +59,10 @@ public sealed class SessionScrollTests : UiTestContext
         await cut.InvokeAsync(() => cut.Instance.ReportScrollPositionAsync(true));
         cut.FindAll(JumpSelector).Count.ShouldBe(1);
 
-        cut.SetParametersAndRender(parameters => parameters.Add(p => p.Announcement, "More output"));
+        cut.Render(parameters => parameters.Add(p => p.Announcement, "More output"));
         module.VerifyInvoke(ScrollToEnd, 1);
 
-        cut.Find(JumpSelector).Click();
+        await cut.Find(JumpSelector).ClickAsync();
 
         jumps.ShouldBe(1);
         cut.FindAll(JumpSelector).Count.ShouldBe(0);

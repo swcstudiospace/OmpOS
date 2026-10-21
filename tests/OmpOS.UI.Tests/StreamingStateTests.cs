@@ -12,7 +12,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>Lifecycle transitions, stop/retry affordances, and the scroll-pause flag (UI-02).</summary>
-public sealed class StreamingStateTests : UiTestContext
+internal sealed class StreamingStateTests : UiTestContext
 {
     private const string SessionId = "s-1";
     private const string CorrelationId = "s-1/turn-1";
@@ -74,6 +74,23 @@ public sealed class StreamingStateTests : UiTestContext
         model.State.ShouldBe(SessionViewState.Success);
         model.Tree.CompletionReason.ShouldBe("end_turn");
         model.Tree.StreamingText.ShouldBeEmpty();
+    }
+
+    /// <summary>A diagnostic is non-terminal: it keeps the streaming state, and after an error it leaves the error state in place.</summary>
+    [Fact]
+    public void DiagnosticNeverChangesLifecycleState()
+    {
+        var model = new SessionViewModel();
+        model.ApplyEvent(Stream(new TextDeltaPayload { Delta = "partial" }));
+
+        model.ApplyEvent(Stream(new DiagnosticPayload { Message = "slow tool" }));
+        model.State.ShouldBe(SessionViewState.Streaming);
+
+        model.ApplyEvent(Stream(new ErrorPayload { Message = "transient", Retryable = true }));
+        model.ApplyEvent(Stream(new DiagnosticPayload { Message = "after error" }));
+
+        model.State.ShouldBe(SessionViewState.RecoverableError);
+        model.CanRetry.ShouldBeTrue();
     }
 
     /// <summary>History load resolves to empty when nothing folded, success otherwise.</summary>

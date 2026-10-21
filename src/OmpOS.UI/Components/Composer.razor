@@ -19,14 +19,18 @@
 
 @code {
     private string _draft = string.Empty;
+    private bool _sending;
 
     /// <summary>Gets whether the assistant is currently streaming; Escape stops, and the stop control replaces send.</summary>
     [Parameter]
     public bool IsStreaming { get; set; }
 
-    /// <summary>Gets the callback invoked with the draft text when the user sends.</summary>
-    [Parameter]
-    public EventCallback<string> OnSend { get; set; }
+    /// <summary>
+    /// Gets the callback that submits the draft text. It resolves to true when the host accepted the send and
+    /// to false when the host refused it; the draft is cleared only on true.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public Func<string, Task<bool>> OnSend { get; set; } = null!;
 
     /// <summary>Gets the callback invoked when the user stops the stream.</summary>
     [Parameter]
@@ -34,15 +38,28 @@
 
     private async Task Send()
     {
-        // While a response streams the parent refuses the send, so the draft must stay in place.
-        if (IsStreaming || string.IsNullOrWhiteSpace(_draft))
+        // A send still in flight, or one made while a response streams, leaves the draft in place.
+        if (_sending || IsStreaming || string.IsNullOrWhiteSpace(_draft))
         {
             return;
         }
 
         var text = _draft;
-        _draft = string.Empty;
-        await OnSend.InvokeAsync(text);
+        _sending = true;
+        try
+        {
+            var accepted = await OnSend(text);
+
+            // Clear only the message the host accepted. Text typed while the send was pending is not the sent text, so it stays.
+            if (accepted && string.Equals(_draft, text, StringComparison.Ordinal))
+            {
+                _draft = string.Empty;
+            }
+        }
+        finally
+        {
+            _sending = false;
+        }
     }
 
     private async Task HandleKeyDown(KeyboardEventArgs args)

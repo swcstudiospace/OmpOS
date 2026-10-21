@@ -51,6 +51,8 @@ public sealed class SessionViewModel
         {
             CompletedPayload => SessionViewState.Success,
             ErrorPayload error => error.Retryable ? SessionViewState.RecoverableError : SessionViewState.FatalError,
+            // A diagnostic is non-terminal: it keeps the current state, streaming included.
+            DiagnosticPayload => State,
             _ => SessionViewState.Streaming,
         });
 

@@ -8,7 +8,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>Keyboard, labeling, live-region, and stylesheet accessibility assertions (UI-03).</summary>
-public sealed class AccessibilityTests : UiTestContext
+internal sealed class AccessibilityTests : UiTestContext
 {
     /// <summary>Enter sends the draft; Shift+Enter does not send.</summary>
     [Theory]
@@ -18,7 +18,7 @@ public sealed class AccessibilityTests : UiTestContext
     {
         var sent = new List<string>();
         var cut = Render<Composer>(parameters => parameters
-            .Add(p => p.OnSend, (string text) => sent.Add(text)));
+            .Add(p => p.OnSend, (string text) => Accept(sent, text)));
         cut.Find("textarea").Input("hello");
 
         cut.Find("textarea").KeyDown(new KeyboardEventArgs { Key = "Enter", ShiftKey = shift });
