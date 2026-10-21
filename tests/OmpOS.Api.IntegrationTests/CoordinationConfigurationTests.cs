@@ -43,14 +43,10 @@ public sealed class CoordinationConfigurationTests
     public async Task ProductionWithInMemoryStores_StartsAndLogsWarningNamingBothKeys()
     {
         var logs = new CapturingLoggerProvider();
-        using var factory = new OmpApiFactory(
-            new Dictionary<string, string?>(StringComparer.Ordinal)
-            {
-                ["Sessions:Store"] = "InMemory",
-                ["Coordination:Store"] = "InMemory",
-            },
-            loggerProvider: logs,
-            environment: "Production");
+        var config = JwtTestHost.ProductionConfig();
+        config["Sessions:Store"] = "InMemory";
+        config["Coordination:Store"] = "InMemory";
+        using var factory = new OmpApiFactory(config, loggerProvider: logs, environment: "Production");
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
 

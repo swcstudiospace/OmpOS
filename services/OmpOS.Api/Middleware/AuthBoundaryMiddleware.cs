@@ -1,16 +1,19 @@
 using System.Security.Claims;
+using Microsoft.Net.Http.Headers;
 using OmpOS.Api.Security;
 
 namespace OmpOS.Api.Middleware;
 
 /// <summary>
-/// No-op authentication boundary: publishes the ambient <see cref="IUserContext"/> onto the
-/// request (items plus a named <see cref="ClaimsPrincipal"/>) so endpoints never branch on
-/// authentication mechanics. A real deployment replaces the <c>IUserContext</c> registration;
-/// this middleware stays the single place that decision lands.
+/// Development-only authentication boundary. It is registered only when <c>Api:Auth:AllowDevelopmentPrincipal</c> is set, and the
+/// options validator refuses that setting outside Development. A request that carries no Authorization header and no validated
+/// identity runs as the single developer principal. A request that presents a bearer token keeps its JwtBearer outcome, so an
+/// invalid or wrongly audienced token stays 401.
 /// </summary>
 internal sealed class AuthBoundaryMiddleware
 {
+    private const string DevelopmentAuthenticationType = "development";
+
     private readonly RequestDelegate _next;
 
     /// <summary>Initializes a new instance of the <see cref="AuthBoundaryMiddleware"/> class.</summary>
@@ -20,17 +23,18 @@ internal sealed class AuthBoundaryMiddleware
         _next = next;
     }
 
-    /// <summary>Publishes the ambient principal and invokes the pipeline.</summary>
+    /// <summary>Runs a request without a bearer token as the development principal and invokes the pipeline.</summary>
     /// <param name="context">The HTTP context.</param>
-    /// <param name="user">The ambient user context.</param>
     /// <returns>A task representing the operation.</returns>
-    public async Task InvokeAsync(HttpContext context, IUserContext user)
+    public async Task InvokeAsync(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(user);
-        context.Items[typeof(IUserContext)] = user;
-        context.User = new ClaimsPrincipal(
-            new ClaimsIdentity([new Claim(ClaimTypes.Name, user.Name)], "dev"));
+        if (!context.Request.Headers.ContainsKey(HeaderNames.Authorization) && context.User.Identity?.IsAuthenticated != true)
+        {
+            context.User = new ClaimsPrincipal(
+                new ClaimsIdentity([new Claim(ClaimTypes.Name, SingleDevPrincipal.DevName)], DevelopmentAuthenticationType));
+        }
+
         await _next(context).ConfigureAwait(false);
     }
 }

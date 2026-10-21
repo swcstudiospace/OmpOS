@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -19,6 +21,7 @@ using OmpOS.Api.Telemetry;
 using OmpOS.Api.Workflows;
 using OmpOS.Contracts.Serialization;
 using OmpOS.Harness.Abstractions;
+using OmpOS.Harness.Acp;
 using OmpOS.Parser;
 using OmpOS.Sandbox;
 using OmpOS.Sandbox.Abstractions;
@@ -37,10 +40,14 @@ var builder = WebApplication.CreateBuilder(args);
 // section is bound and validated on its own; ApiOptions.RateLimit reads the same values.
 builder.Services.AddOptions<ApiOptions>().BindConfiguration(ApiOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
 builder.Services.AddOptions<ApiRateLimitOptions>().BindConfiguration($"{ApiOptions.SectionName}:RateLimit").ValidateDataAnnotations().ValidateOnStart();
+// Harness:Adapter selects the harness. Outside Development the in-memory echo adapter is refused: the hosted path runs omp over ACP.
+var harnessInDevelopment = builder.Environment.IsDevelopment();
 builder.Services.AddOptions<HarnessOptions>()
     .BindConfiguration(HarnessOptions.SectionName)
     .ValidateDataAnnotations()
-    .Validate(static options => HarnessOptions.IsSupportedAdapter(options.Adapter), "Harness:Adapter must be InMemory, the only adapter supported in Phase 2.")
+    .Validate(static options => HarnessOptions.IsSupportedAdapter(options.Adapter), "Harness:Adapter must be InMemory or Acp.")
+    .Validate(options => harnessInDevelopment || !HarnessOptions.IsInMemoryAdapter(options.Adapter), "Harness:Adapter must be Acp outside the Development environment; InMemory is a development-only adapter.")
+    .Validate(static options => !HarnessOptions.IsAcpAdapter(options.Adapter) || !string.IsNullOrWhiteSpace(options.Acp.OmpPath), "Harness:Acp:OmpPath must be set when Harness:Adapter is Acp.")
     .ValidateOnStart();
 builder.Services.AddOptions<SessionsOptions>()
     .BindConfiguration(SessionsOptions.SectionName)
@@ -57,6 +64,17 @@ builder.Services.AddOptions<CoordinationOptions>()
 builder.Services.AddOptions<OtelOptions>().BindConfiguration(OtelOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
 builder.Services.AddOptions<DebugOptions>().BindConfiguration(DebugOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
 
+// OIDC bearer sign-in (OD-03). ApiAuthOptionsValidator checks these options against the host environment on start: outside
+// Development, Authority and Audience are required, Authority must be https, and the development principal is refused.
+builder.Services.AddOptions<ApiAuthOptions>()
+    .BindConfiguration(ApiAuthOptions.SectionName)
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<ApiAuthOptions>, ApiAuthOptionsValidator>();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
+builder.Services.AddSingleton<IPostConfigureOptions<JwtBearerOptions>, JwtBearerSetup>();
+// Default policy: every endpoint without an explicit policy requires an authenticated user. Health and (in Development) OpenAPI opt out below.
+builder.Services.AddAuthorizationBuilder().SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+
 // Source-generation-only JSON: API DTOs plus every contract shape.
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -71,7 +89,21 @@ builder.Services.AddApiCoordination(builder.Configuration);
 builder.Services.AddSingleton<SessionService>();
 builder.Services.AddOmpParser();
 builder.Services.AddSingleton<SessionRegistry>();
-builder.Services.AddSingleton<IHarnessSessionFactory, InMemoryHarnessSessionFactory>();
+// Harness:Adapter picks the factory. Acp runs omp over stdio through OmpAcpClient, which takes its permission resolver from DI;
+// InMemory is the development echo adapter.
+builder.Services.AddSingleton<OmpAcpClient>(static services => new OmpAcpClient(services.GetService<IPermissionResolver>()));
+builder.Services.AddSingleton<AcpHarnessSessionFactory>();
+builder.Services.AddSingleton<InMemoryHarnessSessionFactory>();
+builder.Services.AddSingleton<IHarnessSessionFactory>(static services =>
+{
+    var adapter = services.GetRequiredService<IOptions<HarnessOptions>>().Value.Adapter;
+    if (HarnessOptions.IsAcpAdapter(adapter))
+    {
+        return services.GetRequiredService<AcpHarnessSessionFactory>();
+    }
+
+    return services.GetRequiredService<InMemoryHarnessSessionFactory>();
+});
 builder.Services.AddSingleton<PromptRunner>();
 
 // The API is the composition root for session runs. Each prompt runs in this process through DirectSessionRunner, which holds
@@ -90,7 +122,18 @@ builder.Services.AddSingleton<IHostedService>(static services => services.GetReq
 builder.Services.AddSingleton<SessionRunReaper>();
 builder.Services.AddSingleton<IHostedService>(static services => services.GetRequiredService<SessionRunReaper>());
 builder.Services.AddSingleton<ApiMetrics>();
-builder.Services.AddScoped<IUserContext, SingleDevPrincipal>();
+// The caller is the subject of the validated bearer token. The development principal is used only behind the explicit
+// Api:Auth:AllowDevelopmentPrincipal opt-in, which the options validator refuses outside Development.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUserContext>(static services =>
+{
+    if (services.GetRequiredService<IOptions<ApiAuthOptions>>().Value.AllowDevelopmentPrincipal)
+    {
+        return new SingleDevPrincipal();
+    }
+
+    return new AuthenticatedUserContext(services.GetRequiredService<IHttpContextAccessor>());
+});
 
 // CORS locked to Api:Cors:Origins; empty means no cross-origin traffic. The policy is
 // built from IOptions on first use (see ConfigureCorsOptions) so late configuration
@@ -165,17 +208,29 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<CorrelationIdMiddleware>();
-app.UseMiddleware<AuthBoundaryMiddleware>();
 app.UseCors(ConfigureCorsOptions.PolicyName);
+app.UseAuthentication();
+var authOptions = app.Services.GetRequiredService<IOptions<ApiAuthOptions>>().Value;
+if (authOptions.AllowDevelopmentPrincipal)
+{
+    app.UseMiddleware<AuthBoundaryMiddleware>();
+}
+
 app.UseRateLimiter();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapScalarApiReference();
+    app.MapScalarApiReference().AllowAnonymous();
 }
 
-app.MapOpenApi();
-app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = static check => check.Tags.Contains("live") });
+// OpenAPI document is anonymous in Development only; elsewhere the fallback policy requires a token.
+var openApi = app.MapOpenApi();
+if (app.Environment.IsDevelopment())
+{
+    openApi.AllowAnonymous();
+}
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = static check => check.Tags.Contains("live") }).AllowAnonymous();
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = static check => check.Tags.Contains("ready"),
@@ -185,7 +240,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
         [HealthStatus.Degraded] = StatusCodes.Status503ServiceUnavailable,
         [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable,
     },
-});
+}).AllowAnonymous();
 app.MapSessionEndpoints();
 app.MapToolApprovalEndpoints();
 app.MapEventStreamEndpoints();

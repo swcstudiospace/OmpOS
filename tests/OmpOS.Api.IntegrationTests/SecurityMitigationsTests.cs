@@ -156,12 +156,15 @@ public sealed class SecurityMitigationsTests
         // Production-only: Development keeps the developer exception page by design, so this
         // test opts this host into Production where UseExceptionHandler owns the 500 path.
         using var factory = new OmpApiFactory(
+            config: JwtTestHost.ProductionConfig(),
             environment: "Production",
             configureServices: static services =>
         {
             services.AddSingleton<IStartupFilter>(new UnhandledExceptionStartupFilter());
+            JwtTestHost.InjectStaticMetadata(services);
         });
         using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("Authorization", "Bearer " + JwtTestHost.IssueToken("alice"));
         var testToken = TestContext.Current.CancellationToken;
 
         using var response = await client.GetAsync(new Uri(UnhandledExceptionStartupFilter.BoomPath, UriKind.Relative), testToken).ConfigureAwait(true);

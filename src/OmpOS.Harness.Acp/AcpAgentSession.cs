@@ -30,7 +30,7 @@ public sealed class AcpAgentSession : IOmpSession
 
     private static readonly string[] AllowKinds = ["allow_once", "allow_always"];
     private static readonly string[] RejectKinds = ["reject_once", "reject_always"];
-    private static readonly TimeSpan DefaultPermissionDecisionTimeout = TimeSpan.FromSeconds(30);
+    internal static readonly TimeSpan DefaultPermissionDecisionTimeout = TimeSpan.FromSeconds(30);
     private readonly IAcpTransport _transport;
     private readonly AcpClientOptions _options;
     private readonly string? _fsRoot;
@@ -46,7 +46,7 @@ public sealed class AcpAgentSession : IOmpSession
     private bool _sessionClosed;
     private bool _disposed;
 
-    /// <summary>Initializes a new instance of the <see cref="AcpAgentSession"/> class. Policy alone answers permission requests.</summary>
+    /// <summary>Initializes a new instance of the <see cref="AcpAgentSession"/> class. With no resolver, a request the policy admits is denied.</summary>
     /// <param name="transport">The transport to the agent. The session opens it; the session closes it.</param>
     /// <param name="options">Session options.</param>
     public AcpAgentSession(IAcpTransport transport, AcpClientOptions options)
@@ -58,7 +58,7 @@ public sealed class AcpAgentSession : IOmpSession
     /// <param name="transport">The transport to the agent. The session opens it; the session closes it.</param>
     /// <param name="options">Session options.</param>
     /// <param name="permissionResolver">
-    /// Supplies the decision for a request the approval policy admits. Null means no decision can arrive, so the policy's answer stands.
+    /// Supplies the decision for a request the approval policy admits. Null means no decision can arrive, so such a request is denied.
     /// </param>
     /// <param name="permissionDecisionTimeout">How long a parked request waits for its decision before it is denied.</param>
     public AcpAgentSession(IAcpTransport transport, AcpClientOptions options, IPermissionResolver? permissionResolver, TimeSpan permissionDecisionTimeout)
@@ -659,7 +659,8 @@ public sealed class AcpAgentSession : IOmpSession
             return;
         }
 
-        await SendPermissionOutcomeAsync(id, parameters.Options, granted, CancellationToken.None).ConfigureAwait(false);
+        // Reached when the policy forbids the request, or admits it with no resolver to decide it. Neither path grants.
+        await SendPermissionOutcomeAsync(id, parameters.Options, granted: false, CancellationToken.None).ConfigureAwait(false);
     }
 
     [SuppressMessage(

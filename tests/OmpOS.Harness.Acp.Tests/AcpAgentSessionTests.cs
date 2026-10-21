@@ -149,9 +149,9 @@ public sealed class AcpAgentSessionTests
         outcome["optionId"].ShouldBeNull();
     }
 
-    /// <summary>An allowlisted kind is granted by selecting the allow option.</summary>
+    /// <summary>An allowlisted kind with no resolver is denied: the policy admits the request, but no decision can arrive to grant it.</summary>
     [Fact]
-    public async Task AllowlistedPermissionIsGrantedByAllowOption()
+    public async Task AllowlistedPermissionWithoutResolverIsDeniedByRejectOption()
     {
         var ct = TestContext.Current.CancellationToken;
         var answer = await AnswerPermissionAsync(
@@ -159,7 +159,7 @@ public sealed class AcpAgentSessionTests
             PermissionRequest("read", AllowAndRejectOptions),
             ct).ConfigureAwait(true);
 
-        JsonNode.Parse(answer)!["result"]!["outcome"]!["optionId"]!.GetValue<string>().ShouldBe("allow-once");
+        JsonNode.Parse(answer)!["result"]!["outcome"]!["optionId"]!.GetValue<string>().ShouldBe("reject-once");
     }
 
     /// <summary>A permission request outside the allowlist is denied even when the narrowing hook accepts it.</summary>

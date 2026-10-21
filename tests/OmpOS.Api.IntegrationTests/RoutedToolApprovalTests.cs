@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using OmpOS.Contracts.Sessions;
+using OmpOS.Contracts.Streaming;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Sessions;
 using Shouldly;
@@ -96,6 +97,81 @@ public sealed class RoutedToolApprovalTests
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
+
+    /// <summary>An allow within the ceiling resumes the run, and the prompt then settles as completed.</summary>
+    [Fact]
+    public async Task GrantedAllow_ResumesRun_AndPromptSettlesCompleted()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var factory = new OmpApiFactory();
+        using var client = factory.CreateClient();
+        var id = await PendingRequestAsync(factory, client, new HashSet<string>(StringComparer.Ordinal) { ToolName }, ct).ConfigureAwait(true);
+
+        using (var allowed = await PostDecisionAsync(client, id, RequestId, AllowBody, ct).ConfigureAwait(true))
+        {
+            allowed.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        }
+
+        await factory.Services.GetRequiredService<SessionService>().RecordCompletionAsync(id, SessionStatus.Completed, ct).ConfigureAwait(true);
+        var settled = await SessionClient.ReadSessionAsync(client, id, ct).ConfigureAwait(true);
+        settled.Status.ShouldBe(SessionStatus.Completed);
+        var stored = await factory.Services.GetRequiredService<ISessionRepository>().GetAsync(id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        EventKinds(stored).ShouldContain("tool_approval_approved", StringComparer.Ordinal);
+    }
+
+    /// <summary>An approval is decided once: a repeated approval is a 409, and the stored decision stays an allow.</summary>
+    [Fact]
+    public async Task GrantedAllow_RepeatedApprovalIsConflict_AndStoredDecisionStaysAllow()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var factory = new OmpApiFactory();
+        using var client = factory.CreateClient();
+        var id = await PendingRequestAsync(factory, client, new HashSet<string>(StringComparer.Ordinal) { ToolName }, ct).ConfigureAwait(true);
+
+        using (var allowed = await PostDecisionAsync(client, id, RequestId, AllowBody, ct).ConfigureAwait(true))
+        {
+            allowed.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        }
+
+        using (var repeat = await PostDecisionAsync(client, id, RequestId, AllowBody, ct).ConfigureAwait(true))
+        {
+            repeat.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        }
+
+        var record = await factory.Services.GetRequiredService<ISessionRepository>().GetToolApprovalAsync(id, RequestId, ct).ConfigureAwait(true);
+        record.ShouldNotBeNull().Decision.ShouldBe(PermissionDecision.Allow);
+    }
+
+    /// <summary>With no grant, a request that no decision reaches is denied when its wait lapses; a later approval is a 409 that grants nothing.</summary>
+    [Fact]
+    public async Task NoGrant_LapsedWaitDeniesRequest_AndLaterApprovalIsConflict()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var factory = new OmpApiFactory();
+        using var client = factory.CreateClient();
+        var id = await PendingRequestAsync(factory, client, grantableTools: null, ct).ConfigureAwait(true);
+
+        var outcome = await factory.Services.GetRequiredService<SessionService>().WaitForDecisionAsync(id, RequestId, TimeSpan.FromMilliseconds(50), ct).ConfigureAwait(true);
+        outcome.ShouldBe(PermissionDecision.Deny);
+
+        using (var late = await PostDecisionAsync(client, id, RequestId, AllowBody, ct).ConfigureAwait(true))
+        {
+            late.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        }
+
+        var record = await factory.Services.GetRequiredService<ISessionRepository>().GetToolApprovalAsync(id, RequestId, ct).ConfigureAwait(true);
+        record.ShouldNotBeNull().Decision.ShouldBe(PermissionDecision.Deny);
+        var session = await SessionClient.ReadSessionAsync(client, id, ct).ConfigureAwait(true);
+        session.Status.ShouldBe(SessionStatus.Running);
+    }
+
+    private static string?[] EventKinds(Session session) =>
+        session.Events
+            .Select(static evt => evt.Payload)
+            .OfType<UnknownPayload>()
+            .Select(static payload => payload.OriginalKind)
+            .ToArray();
 
     /// <summary>
     /// Creates a session whose run is awaiting approval for <see cref="RequestId"/>. The request is registered through

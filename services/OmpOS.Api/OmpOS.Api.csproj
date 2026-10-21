@@ -32,6 +32,24 @@
   <Target Name="EnsureDotnetOnPathForOpenApi" BeforeTargets="GenerateOpenApiDocuments">
     <PrependHostDirToPath />
   </Target>
+  <UsingTask TaskName="SetDesignTimeEnvironmentForOpenApi" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <Task>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        // The generator runs the API host to read its OpenAPI document. Production refuses startup without
+        // the sign-in authority and the ACP harness (OD-03, Q-HARN-PERMISSION), which a build must not need.
+        // The generator runs in Development unless the caller already chose an environment; the running API
+        // is unaffected, because this only sets the environment of the build-time process.
+        if (string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"))
+            && string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")))
+        {
+          System.Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="EnsureDevelopmentEnvironmentForOpenApi" BeforeTargets="GenerateOpenApiDocuments">
+    <SetDesignTimeEnvironmentForOpenApi />
+  </Target>
 
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
@@ -40,6 +58,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" />
     <PackageReference Include="OpenTelemetry" />
@@ -58,6 +77,7 @@
     <ProjectReference Include="../../src/OmpOS.SessionRuns/OmpOS.SessionRuns.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sessions.Postgres/OmpOS.Sessions.Postgres.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj" />
     <ProjectReference Include="../../src/OmpOS.Parser/OmpOS.Parser.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj" />
