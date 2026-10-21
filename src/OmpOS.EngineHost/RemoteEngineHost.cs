@@ -16,7 +16,8 @@ namespace OmpOS.EngineHost;
 /// the resumable SSE endpoint (<c>GET /sessions/{id}/events</c>). A transport drop ends the stream
 /// without throwing. Every stream starts after the delivered cursor (exclusive, sent as <c>?since=</c> and
 /// <c>Last-Event-ID</c>) and de-duplicates by Seq. <see cref="ReconnectAsync"/> fetches missed events and holds them until
-/// <see cref="TakeHeldEvents"/> takes them; the next prompt delivers any still held before its own reply.
+/// <see cref="TakeHeldEvents"/> takes them, in Seq order, each exactly once. A prompt's own stream yields only that
+/// turn's events, after its POST is accepted; held events are delivered only through <see cref="TakeHeldEvents"/>.
 /// </summary>
 public sealed class RemoteEngineHost : IEngineHost
 {
@@ -77,15 +78,10 @@ public sealed class RemoteEngineHost : IEngineHost
         ArgumentNullException.ThrowIfNull(options);
         var sessionId = await EnsureSessionAsync(cancellationToken).ConfigureAwait(false);
 
-        // The prompt is submitted before any held history is replayed: a consumer that stops reading on a held
-        // terminal event has still sent the message, and the new reply waits on the server for the next stream.
+        // H1: this turn yields only the events of the prompt submitted here, and only after its POST is
+        // accepted. Held history is never replayed inline: the consumer takes it through TakeHeldEvents
+        // before submitting (H4), and any replay the server still sends is skipped by Seq claim below.
         await SubmitAsync(sessionId, prompt, cancellationToken).ConfigureAwait(false);
-
-        // Events held by ReconnectAsync belong to earlier turns: they reach the consumer before this prompt's reply.
-        while (TakeHeld() is { } held)
-        {
-            yield return held;
-        }
 
         await foreach (var (seq, evt) in StreamAsync(sessionId, ResumePosition(), cancellationToken).ConfigureAwait(false))
         {
@@ -96,7 +92,7 @@ public sealed class RemoteEngineHost : IEngineHost
 
     /// <summary>
     /// Fetches the events after the delivered cursor (exclusive) and holds them, in Seq order. Raises <see cref="MissedEventsHeld"/>
-    /// so the consumer can render them with <see cref="TakeHeldEvents"/>. <see cref="SubmitPromptAsync"/> delivers any still held before its own reply.
+    /// so the consumer can render them with <see cref="TakeHeldEvents"/>, which is the only path that delivers held events.
     /// Nothing is dropped: the cursor moves only when a consumer receives an event. When a turn is already streaming, the
     /// resume returns at once: that stream owns the session and delivers everything after the cursor itself.
     /// </summary>

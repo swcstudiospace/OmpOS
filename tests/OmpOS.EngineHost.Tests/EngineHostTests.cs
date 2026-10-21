@@ -167,35 +167,41 @@ public sealed class EngineHostTests
     }
 
     /// <summary>
-    /// A new prompt is submitted even when a held completion was never taken: the resume callback may not have
-    /// drained <c>TakeHeldEvents</c> yet, but the terminal event it replays must not swallow the next message.
-    /// The consumer stops on terminals exactly like the app shell does.
+    /// H1/H2: with a held completion present, the next prompt's stream yields none of the held events, the POST
+    /// is still sent, and <c>TakeHeldEvents</c> returns the held events in Seq order. Both streams resume from
+    /// the delivered cursor, proving a hold never moves it.
     /// </summary>
     [Fact]
-    public async Task NewPromptSubmitsEvenWhenHeldCompletionIsUndrained()
+    public async Task HeldCompletionIsNotYieldedByNextPrompt()
     {
         var ct = TestContext.Current.CancellationToken;
         using var handler = new ScriptedApiHandler();
         using var http = ClientFor(handler);
         var host = new RemoteEngineHost(http);
 
-        _ = await CollectTurnAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct)).ConfigureAwait(true);
+        _ = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct)).ConfigureAwait(true);
         await host.ReconnectAsync(ct).ConfigureAwait(true);
 
-        var seen = await CollectTurnAsync(host.SubmitPromptAsync("next prompt", new PromptOptions(), ct)).ConfigureAwait(true);
+        var seen = await CollectAsync(host.SubmitPromptAsync("next prompt", new PromptOptions(), ct)).ConfigureAwait(true);
 
         handler.PromptPosts.ShouldBe(2);
-        seen.OfType<TextDeltaEvent>().Select(static evt => evt.Text).ShouldBe(["t6", "t7", "t8", "t9", "t10", "t11"]);
-        seen[^1].ShouldBeOfType<CompletedEvent>().Reason.ShouldBe("end_turn");
+        seen.ShouldBeEmpty();
+        handler.ResumePositions.ShouldBe(["5", "5"]);
+
+        var held = host.TakeHeldEvents();
+        held.OfType<TextDeltaEvent>().Select(static evt => evt.Text).ShouldBe(["t6", "t7", "t8", "t9", "t10", "t11"]);
+        held[^1].ShouldBeOfType<CompletedEvent>().Reason.ShouldBe("end_turn");
+        held.Count.ShouldBe(7);
+        host.TakeHeldEvents().ShouldBeEmpty();
     }
 
     /// <summary>
-    /// A resume that lands while a turn is still streaming holds nothing: the live stream owns the session and
-    /// delivers everything after the cursor itself, so the resume must not open a second fetch that would hold
-    /// duplicates or let the live stream skip ahead of the held events.
+    /// H2/H3: a resume that lands while a turn is still streaming opens no second fetch: the live stream owns
+    /// the session and delivers every Seq exactly once, in increasing order, while the resume holds nothing.
+    /// The gate makes this deterministic: the terminal frame stays blocked until the resume has returned.
     /// </summary>
     [Fact]
-    public async Task ReconnectDuringActiveTurnHoldsNothing()
+    public async Task ResumeDuringLiveTurnDeliversEachEventExactlyOnceInOrder()
     {
         var ct = TestContext.Current.CancellationToken;
         using var handler = new GatedTurnHandler();
@@ -206,8 +212,7 @@ public sealed class EngineHostTests
 
         await using var turn = host.SubmitPromptAsync("one", new PromptOptions(), ct).WithCancellation(ct).GetAsyncEnumerator();
         (await turn.MoveNextAsync()).ShouldBeTrue();
-        var first = turn.Current;
-        first.ShouldBeOfType<TextDeltaEvent>().Text.ShouldBe("a");
+        turn.Current.ShouldBeOfType<TextDeltaEvent>().Text.ShouldBe("a");
 
         // The live stream is provably open: it delivered an event but its terminal frame is still gated.
         await host.ReconnectAsync(ct).ConfigureAwait(true);
@@ -219,6 +224,8 @@ public sealed class EngineHostTests
         (await turn.MoveNextAsync()).ShouldBeTrue();
         turn.Current.ShouldBeOfType<CompletedEvent>().Reason.ShouldBe("end_turn");
         (await turn.MoveNextAsync()).ShouldBeFalse();
+
+        host.TakeHeldEvents().ShouldBeEmpty();
     }
 
     /// <summary>A faulted engine that the host replaces is disposed; the replacement serves the next prompt.</summary>
@@ -346,26 +353,6 @@ public sealed class EngineHostTests
         await foreach (var evt in events.ConfigureAwait(true))
         {
             collected.Add(evt);
-        }
-
-        return collected;
-    }
-
-    /// <summary>
-    /// a replayed completion are never read. Plain <see cref="CollectAsync"/> reads to the end of the stream.
-    /// </summary>
-    /// <param name="events">The turn's events.</param>
-    /// <returns>The events up to and including the terminal one, if any.</returns>
-    private static async Task<List<HarnessEvent>> CollectTurnAsync(IAsyncEnumerable<HarnessEvent> events)
-    {
-        var collected = new List<HarnessEvent>();
-        await foreach (var evt in events.ConfigureAwait(true))
-        {
-            collected.Add(evt);
-            if (evt is CompletedEvent or ErrorEvent)
-            {
-                break;
-            }
         }
 
         return collected;

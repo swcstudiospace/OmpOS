@@ -188,7 +188,8 @@
             return false;
         }
 
-        // The host accepted the send: the reply streams in the background, so the composer can clear its draft now.
+        // Acceptance is the POST itself, not the first stream event: the reply streams in the background,
+        // so the composer can clear its draft now.
         _ = StreamInBackgroundAsync(sessionId);
         return true;
     }
