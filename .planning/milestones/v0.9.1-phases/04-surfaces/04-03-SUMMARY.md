@@ -1,5 +1,6 @@
 ---
 requirements-completed: [SHELL-01]
+requirements: [DESK-01, MOB-01, SHELL-01]
 ---
 
 # Phase 4 · Plan 03 Summary — Engine hosts and MAUI Blazor Hybrid head (DESK-01, MOB-01, SHELL-01)
