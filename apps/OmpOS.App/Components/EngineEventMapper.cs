@@ -13,6 +13,9 @@ namespace OmpOS.App.Components;
 /// </summary>
 internal static class EngineEventMapper
 {
+    /// <summary>The message shown for a failed turn whose error event carries no message of its own.</summary>
+    private const string FailedTurnMessage = "Prompt execution failed.";
+
     /// <summary>Wraps one harness event as a session-log event with a client-assigned Seq.</summary>
     /// <param name="evt">The harness event.</param>
     /// <param name="sessionId">The display correlation identifier for this conversation.</param>
@@ -42,7 +45,7 @@ internal static class EngineEventMapper
         {
             TextDeltaEvent text => new TextDeltaPayload { Delta = text.Text },
             UiBlockEvent block => new UiBlockPayload { Block = block.Block },
-            ErrorEvent error => new ErrorPayload { Message = error.Message, Retryable = error.Retryable },
+            ErrorEvent error => new ErrorPayload { Message = string.IsNullOrWhiteSpace(error.Message) ? FailedTurnMessage : error.Message, Retryable = error.Retryable },
             CompletedEvent completed => new CompletedPayload { Reason = completed.Reason },
             ThoughtEvent thought => Unknown("thought", ("text", thought.Text)),
             ToolCallEvent call => Unknown("tool_call", ("callId", call.CallId), ("name", call.Name), ("payloadJson", call.PayloadJson)),
