@@ -25,7 +25,7 @@ namespace OmpOS.SessionRuns;
 /// </para>
 /// <para>
 /// A permission request is routed into the store-backed tool approval. The run waits for its decision for at most the
-/// approval timeout (five minutes); a request that no decision reaches is denied, so the default outcome is deny.
+/// approval timeout (the shared <see cref="PermissionDecisionWindow"/>, 30 seconds); a request that no decision reaches is denied, so the default outcome is deny.
 /// </para>
 /// <para>
 /// Provisioned sandbox ids are tracked per idempotency key because the provider assigns the sandbox id at
@@ -36,8 +36,8 @@ public sealed class SessionRunActivities : ISessionRunActivities
 {
     private static readonly TimeSpan ProvisionTimeout = TimeSpan.FromSeconds(30);
 
-    /// <summary>How long a routed permission request waits for its decision before the session service denies it.</summary>
-    private static readonly TimeSpan DefaultToolApprovalTimeout = TimeSpan.FromMinutes(5);
+    /// <summary>How long a routed permission request waits for its decision. It is the window the ACP session also uses, so both sides end the wait together.</summary>
+    private static readonly TimeSpan DefaultToolApprovalTimeout = PermissionDecisionWindow.Default;
 
     private static readonly Action<ILogger, string, string, Exception?> SettleSkipped =
         LoggerMessage.Define<string, string>(
@@ -163,7 +163,7 @@ public sealed class SessionRunActivities : ISessionRunActivities
             string? stopReason = null;
             var sawError = false;
             var appended = 0;
-            var harness = _factory.CreateSession(input.Prompt);
+            var harness = _factory.CreateSession(input.Prompt, input.SessionId, input.RunId);
             await using (harness.ConfigureAwait(false))
             {
                 await harness.CreateAsync(cancellationToken).ConfigureAwait(false);

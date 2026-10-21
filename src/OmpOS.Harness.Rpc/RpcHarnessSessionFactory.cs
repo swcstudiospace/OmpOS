@@ -8,7 +8,7 @@ namespace OmpOS.Harness.Rpc;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Contract decision: <see cref="IHarnessSessionFactory.CreateSession"/> is synchronous and the interface shape is
+/// Contract decision: <see cref="IHarnessSessionFactory.CreateSession(string)"/> is synchronous and the interface shape is
 /// unchanged. Making it asynchronous would force edits in the API session-run activities, the in-memory factory and
 /// five test implementers, none of which this adapter owns. The returned session therefore starts omp lazily, on its
 /// first <see cref="IOmpSession.CreateAsync"/>. A start failure surfaces from that call and leaves the session

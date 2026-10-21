@@ -30,7 +30,7 @@ public sealed class AcpAgentSession : IOmpSession
 
     private static readonly string[] AllowKinds = ["allow_once", "allow_always"];
     private static readonly string[] RejectKinds = ["reject_once", "reject_always"];
-    internal static readonly TimeSpan DefaultPermissionDecisionTimeout = TimeSpan.FromSeconds(30);
+    internal static readonly TimeSpan DefaultPermissionDecisionTimeout = PermissionDecisionWindow.Default;
     private readonly IAcpTransport _transport;
     private readonly AcpClientOptions _options;
     private readonly string? _fsRoot;
@@ -644,22 +644,35 @@ public sealed class AcpAgentSession : IOmpSession
             raw.Value.GetRawText());
         var turn = ActiveTurn();
 
-        // The policy ceiling is consulted first: a request it forbids is denied at once and never waits for a decision.
+        // The policy ceiling is consulted first. A request it forbids never becomes an approval: the turn records an informational
+        // diagnostic and the agent gets its reject answer at once, so no run registers or waits on the request.
         var granted = IsGrantedByPolicy(permission, turn);
+        if (!granted)
+        {
+            if (turn is not null)
+            {
+                WriteTurnEvent(turn, new DiagnosticEvent($"Approval policy denied permission request for call '{permission.CallId}' without a decision."));
+            }
+
+            await SendPermissionOutcomeAsync(id, parameters.Options, granted: false, CancellationToken.None).ConfigureAwait(false);
+            return;
+        }
+
+        // The policy admits the request, so it becomes a pending approval that a decision settles.
         var requestEvent = new PermissionRequestEvent(permission.CallId, permission.Name, permission.PayloadJson, id.ToString(CultureInfo.InvariantCulture));
         if (turn is not null)
         {
             WriteTurnEvent(turn, requestEvent);
         }
 
-        if (granted && _permissionResolver is { } resolver)
+        if (_permissionResolver is { } resolver)
         {
-            // The policy admits the request and a decision can arrive: park it under its id and keep the pump reading.
+            // Park the request under its id and keep the pump reading; the resolver's decision answers it.
             _ = DecideParkedPermissionAsync(id, parameters.Options, requestEvent, resolver, turn);
             return;
         }
 
-        // Reached when the policy forbids the request, or admits it with no resolver to decide it. Neither path grants.
+        // An admitted request with no resolver to decide it is denied.
         await SendPermissionOutcomeAsync(id, parameters.Options, granted: false, CancellationToken.None).ConfigureAwait(false);
     }
 
