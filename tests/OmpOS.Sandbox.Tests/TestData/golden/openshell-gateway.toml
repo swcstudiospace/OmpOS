@@ -1,0 +1,15 @@
+[openshell]
+version = 2
+
+[openshell.gateway]
+compute_driver = "podman"
+grpc_endpoint = "unix:///var/run/openshell.sock"
+
+[openshell.drivers.podman]
+socket_path = "/run/user/1000/podman/podman.sock"
+network_name = "openshell"
+sandbox_runtime_image = "ghcr.io/nvidia/openshell-sandbox-runtime:latest"
+supervisor_image = "ghcr.io/nvidia/openshell-supervisor:latest"
+image_pull_policy = "IfNotPresent"
+stop_timeout_secs = 30
+grpc_endpoint = "unix:///var/run/openshell.sock"

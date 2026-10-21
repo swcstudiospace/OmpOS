@@ -1,3 +1,24 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>OmpOS.Workflows.Worker</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Temporalio" />
+    <PackageReference Include="Temporalio.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\OmpOS.Workflows\OmpOS.Workflows.csproj" />
+    <ProjectReference Include="..\..\src\OmpOS.Contracts\OmpOS.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OmpOS.Workflows.Tests" />
+  </ItemGroup>
 
 </Project>
