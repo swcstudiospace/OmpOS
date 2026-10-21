@@ -31,7 +31,7 @@ public sealed class EngineHostTests
     {
         using var handler = new ScriptedApiHandler();
         using var http = ClientFor(handler);
-        var host = new RemoteEngineHost(http);
+        using var host = new RemoteEngineHost(http);
 
         host.Descriptor.Kind.ShouldBe(EngineHostKind.Remote);
     }
@@ -69,7 +69,7 @@ public sealed class EngineHostTests
         var ct = TestContext.Current.CancellationToken;
         using var handler = new ScriptedApiHandler();
         using var http = ClientFor(handler);
-        var host = new RemoteEngineHost(http);
+        using var host = new RemoteEngineHost(http);
         var raised = 0;
         host.MissedEventsHeld += (_, _) => raised++;
 
@@ -93,7 +93,7 @@ public sealed class EngineHostTests
         var ct = TestContext.Current.CancellationToken;
         using var handler = new ScriptedApiHandler();
         using var http = ClientFor(handler);
-        var host = new RemoteEngineHost(http);
+        using var host = new RemoteEngineHost(http);
 
         _ = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
         await host.ReconnectAsync(ct);
@@ -115,7 +115,7 @@ public sealed class EngineHostTests
             "id: 2\nevent: error\ndata: {\"kind\":\"error\",\"message\":\"boom\",\"retryable\":false}\n\n",
             "id: 3\nevent: completed\ndata: {\"kind\":\"completed\",\"reason\":\"end_turn\"}\n\n");
         using var http = ClientFor(handler);
-        var host = new RemoteEngineHost(http);
+        using var host = new RemoteEngineHost(http);
 
         var seen = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
 
@@ -135,7 +135,7 @@ public sealed class EngineHostTests
             "id: 3\nevent: text_delta\ndata: {\"kind\":\"text_delta\",\"delta\":\"b\"}\n\n",
             "id: 4\nevent: completed\ndata: {\"kind\":\"completed\",\"reason\":\"end_turn\"}\n\n");
         using var http = ClientFor(handler);
-        var host = new RemoteEngineHost(http);
+        using var host = new RemoteEngineHost(http);
 
         var seen = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
 
@@ -155,7 +155,7 @@ public sealed class EngineHostTests
         var ct = TestContext.Current.CancellationToken;
         using var handler = new TurnServerHandler();
         using var http = ClientFor(handler);
-        var host = new RemoteEngineHost(http);
+        using var host = new RemoteEngineHost(http);
 
         var first = await CollectAsync(host.SubmitPromptAsync("one", new PromptOptions(), ct));
         var second = await CollectAsync(host.SubmitPromptAsync("two", new PromptOptions(), ct));
@@ -177,7 +177,7 @@ public sealed class EngineHostTests
         var ct = TestContext.Current.CancellationToken;
         using var handler = new ScriptedApiHandler();
         using var http = ClientFor(handler);
-        var host = new RemoteEngineHost(http);
+        using var host = new RemoteEngineHost(http);
 
         _ = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct)).ConfigureAwait(true);
         await host.ReconnectAsync(ct).ConfigureAwait(true);
@@ -206,7 +206,7 @@ public sealed class EngineHostTests
         var ct = TestContext.Current.CancellationToken;
         using var handler = new GatedTurnHandler();
         using var http = ClientFor(handler);
-        var host = new RemoteEngineHost(http);
+        using var host = new RemoteEngineHost(http);
         var raised = 0;
         host.MissedEventsHeld += (_, _) => raised++;
 
@@ -240,7 +240,7 @@ public sealed class EngineHostTests
         var ct = TestContext.Current.CancellationToken;
         using var handler = new HoldGatedHandler();
         using var http = ClientFor(handler);
-        var host = new RemoteEngineHost(http);
+        using var host = new RemoteEngineHost(http);
         var raised = 0;
         host.MissedEventsHeld += (_, _) => raised++;
 
@@ -254,7 +254,7 @@ public sealed class EngineHostTests
         }
 
         handler.LabelledGets.ShouldBe(1);
-        await using var live = host.SubmitPromptAsync("next", new PromptOptions(), ct).WithCancellation(ct).GetAsyncEnumerator();
+        await using var live = host.SubmitPromptAsync("next", new PromptOptions(), ct).GetAsyncEnumerator(ct);
         var liveNext = live.MoveNextAsync();
         liveNext.IsCompleted.ShouldBeFalse();
         handler.PromptPosts.ShouldBe(1);
@@ -308,7 +308,7 @@ public sealed class EngineHostTests
     {
         using var handler = new ScriptedApiHandler();
         using var http = ClientFor(handler);
-        var host = new RemoteEngineHost(http);
+        using var host = new RemoteEngineHost(http);
 
         Should.Throw<InvalidOperationException>(() => host.ReconnectAsync(TestContext.Current.CancellationToken));
     }
@@ -321,7 +321,7 @@ public sealed class EngineHostTests
         await using var inProcess = InProcessEngineHost.ForInMemory(new InMemoryOmpAdapter(Scripted([])));
         using var handler = new ScriptedApiHandler();
         using var http = ClientFor(handler);
-        var remote = new RemoteEngineHost(http);
+        using var remote = new RemoteEngineHost(http);
 
         await inProcess.CancelAsync(ct);
         await remote.CancelAsync(ct);
@@ -346,7 +346,7 @@ public sealed class EngineHostTests
         await using var inProcess = InProcessEngineHost.ForInMemory(new InMemoryOmpAdapter(Scripted([])), inProcessDescriptor);
         using var handler = new ScriptedApiHandler();
         using var http = ClientFor(handler);
-        var remote = new RemoteEngineHost(http, remoteDescriptor);
+        using var remote = new RemoteEngineHost(http, remoteDescriptor);
 
         inProcess.Descriptor.ShouldBe(inProcessDescriptor);
         inProcess.Descriptor.Isolation.ShouldBe(Isolation.Enclave);
