@@ -1,3 +1,7 @@
+---
+requirements-completed: [WFLW-01, WFLW-02, WFLW-03]
+---
+
 # Phase 3 · Plan 02 Summary — Session-run workflow: direct runner and Temporal worker behind the flag (WFLW-01..03)
 
 **Completed:** 2026-10-20 · **Implementation:** gsd-executor `P3Workflows`, then `P3Workflows-2` (revived after the first pass died), then `P3FixtureReexport` (provenance) and `P3Fix` (review criticals) · **Verified by:** orchestrator

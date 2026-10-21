@@ -1,3 +1,7 @@
+---
+requirements-completed: [SBOX-01, SBOX-02, SBOX-03, SBOX-04, SBOX-05]
+---
+
 # Phase 3 · Plan 01 Summary — Sandbox abstraction, lifecycle, providers, vendor stubs (SBOX-01..05)
 
 **Completed:** 2026-10-20 · **Implementation:** gsd-executor `P3Sandbox` (died mid-run), finished by `P3SandboxFinish` (hang fix), hardened by `P3Fix` (review criticals and warnings) · **Verified by:** orchestrator

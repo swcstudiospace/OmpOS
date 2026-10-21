@@ -75,3 +75,9 @@ Fixes landed after the verification above; each cites a grep-confirmed test or r
 - apiBaseUrl rejection: `ApiBaseUrlResolverTests` (`MissingBaseUrlThrowsNamingTheKey`, `GarbageOverrideThrows`, `NonLoopbackHttpThrows`, `FtpSchemeOverrideIsRejected`, `JavaScriptSchemeOverrideIsRejected`, `FileSchemeOverrideIsRejected`, `PlainHttpToNonLoopbackHostIsRejected`) pins that only loopback http(s) or non-loopback https origins are accepted.
 - CSP `connect-src` property: `VercelConfigTests.VercelConfigConnectSrcAllowsOnlySelfAndLoopbackHttp` pins that `connect-src` admits only `'self'` and loopback http origins.
 - Axe run recorded (closes gap G-2): `docs/runbooks/local-dev.md` (Accessibility run section) records the axe-core 4.14.0 WCAG 2.0/2.1 A+AA run — 0 violations in empty and active states, two `incomplete` items on the icon-only send control (measured 18.26:1), one unexplained screenshot on record.
+
+## Re-verification (2026-10-21, after the accessibility run)
+
+- **UI-03: VERIFIED.** bUnit evidence in `tests/OmpOS.UI.Tests/AccessibilityTests.cs`, plus `SkipLinkIsFirstFocusableAndTargetsConversation` and `NewConversationButtonNameContainsVisibleLabel` (`tests/OmpOS.Web.Tests/NewConversationButtonTests.cs`), and an axe-core 4.14.0 run (WCAG 2.0 and 2.1, levels A and AA) against the published Release head: zero violations in the empty and the active state. Recorded in `docs/runbooks/local-dev.md` (section Accessibility run (UI-03)). Two incomplete items on the icon-only send control remain; its measured contrast is 18.26:1.
+- **G-2 and H-2: closed** by the recorded run. A screen-reader check remains a human step outside the requirement text.
+- **G-1 is unchanged.** Interactive approval stays deferred by the owner's decision (Q-HARN-PERMISSION).

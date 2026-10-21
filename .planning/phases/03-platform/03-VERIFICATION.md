@@ -121,3 +121,41 @@ Fixes landed after the verification above; each cites a grep-confirmed test:
 - Attested enclave stub honesty: `VendorStubTests` proves `AttestedEnclaveProvider` throws `NotAvailable` for every sandbox operation and its attestation verdict stays `Unverified` (`AttestedEnclaveProvider_GetQuoteAsync_ReturnsUnverified`).
 - Real readiness probe (closes criterion-4c gap): `services/OmpOS.Api/Health/TemporalCheck.cs` now performs a real TCP reachability check against the configured Temporal endpoint instead of reporting Healthy from configuration alone; `TemporalReadinessTests` (`Enabled_WithReachableEndpoint_ReturnsHealthy`, `Enabled_WithClosedPort_ReturnsUnhealthy`, `Enabled_WithUnparsableEndpoint_ReturnsUnhealthy`) pins reachable/unreachable/unparsable behavior.
 - WFLW-01 API wiring: `services/OmpOS.Api/Workflows/ApiSessionRunActivities.cs` is the in-process `ISessionRunActivities` the API prompt path executes through `DirectSessionRunner` when `Workflows:Enabled=false`; `SessionRunWorkflowTests` covers the composed session-run path.
+
+## Re-verification against HEAD (2026-10-21)
+
+**Scope:** criterion 4c only (`/health/ready` must reflect Temporal connectivity when
+`Workflows:Enabled` is true). Read-only static re-check at HEAD; no builds or test runs.
+**Status: MET** — with the exact scope that the probe proves TCP reachability of the
+configured endpoint, not Temporal workflow-service health.
+
+**Evidence (all grep/read-confirmed at HEAD):**
+
+1. Real TCP dial with timeout — `services/OmpOS.Api/Health/TemporalCheck.cs:53-72`:
+   `new TcpClient()` + `ConnectAsync(host, port, timeout.Token)` bounded by
+   `ConnectTimeout = TimeSpan.FromSeconds(2)` (:20); any dial failure returns
+   `HealthCheckResult.Unhealthy` (:63-67), never throws (`CA1031`
+   suppression :54/:68 with "a readiness probe must report, never throw").
+2. Disabled and missing-endpoint branches unchanged from the configuration-level
+   behavior — disabled returns `Healthy("Durable workflows are disabled.")` (:38-41);
+   enabled-without-endpoint returns `Degraded` (:43-46); unparsable endpoint returns
+   `Unhealthy` (`TryParseEndpoint`, :76+).
+3. Five pinning tests — `tests/OmpOS.Api.IntegrationTests/TemporalReadinessTests.cs`
+   (all five names grep-confirmed): `Enabled_WithReachableEndpoint_ReturnsHealthy`,
+   `Enabled_WithClosedPort_ReturnsUnhealthy`,
+   `Enabled_WithUnparsableEndpoint_ReturnsUnhealthy`,
+   `Disabled_ReturnsHealthyWithoutConnecting`,
+   `Enabled_WithoutEndpoint_ReturnsDegraded` (the last two extend the three named in
+   the earlier post-verification note).
+4. Wiring — `services/OmpOS.Api/Program.cs:97-101` registers
+   `.AddCheck<TemporalCheck>("temporal", tags: ["ready"])`; `:152-156` maps
+   `/health/ready` with the `ready`-tag predicate, so the check participates in
+   readiness. The class's own doc comment (`TemporalCheck.cs:9-14`) states the scope
+   explicitly: "This check proves only TCP reachability of the configured endpoint,
+   not Temporal workflow-service health."
+
+**Exact scope:** a closed/dead endpoint flips readiness to Unhealthy and a missing
+endpoint surfaces Degraded, closing the original Gap 1 (config-only Healthy). A
+TCP-accepting port that is not a healthy Temporal workflow service still reports
+Healthy — gRPC/service-level health remains out of scope and is correctly
+disclaimed in the probe's documentation.

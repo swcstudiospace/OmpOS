@@ -1,3 +1,7 @@
+---
+requirements-completed: [VERIFY-01, VERIFY-03]
+---
+
 # Phase 5 Plan 01: Verify & Handoff docs Summary
 
 One-liner: AC_1..AC_11 handoff report with evidence, open-questions completion
@@ -128,3 +132,7 @@ Q-SB-ENCLAVE; Vercel build image → OQ-09; Podman 5.x → OQ-10.
    absent; only `04-REVIEW.md`/`04-VERIFICATION.md` present) recorded instead.
 6. **Q-WF-HISTORY observed without a row**: ADR-0003 marks it resolved in-text;
    out of VERIFY-02 scope, left untouched.
+
+## Requirements-completed note
+
+`requirements-completed` lists VERIFY-01 and VERIFY-03, which `05-VERIFICATION.md` (P5Verify, 2026-10-21) marks VERIFIED with evidence (clean-clone log `docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21.log`, 614 total / 0 failed; `docs/handoff.md:39-49` eleven AC rows). VERIFY-02 is excluded: the plan names it, but `05-VERIFICATION.md` marks it PARTIAL (open-question rows complete; the TODO-linkage enforcement check does not exist yet in `RepoHygieneTests.cs`).

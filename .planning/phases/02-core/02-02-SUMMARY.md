@@ -1,3 +1,7 @@
+---
+requirements-completed: [HARN-01, HARN-02, HARN-03, HARN-06]
+---
+
 # Phase 2 · Plan 02 Summary — Harness abstractions, state machine, in-memory adapter, WebSocket stub
 
 **Completed:** 2026-10-20 · **Agent:** sonic `P2Harness` · **Verified:** orchestrator

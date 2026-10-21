@@ -1,3 +1,7 @@
+---
+requirements-completed: [SESS-01, SESS-02, SESS-03]
+---
+
 # Phase 2 · Plan 05 Summary — Sessions: repository, service, projection (SESS-01..03)
 
 **Completed:** 2026-10-20 · **Agent:** sonic `P2Sessions` · **Verified:** orchestrator

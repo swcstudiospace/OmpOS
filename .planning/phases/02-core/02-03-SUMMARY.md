@@ -1,3 +1,7 @@
+---
+requirements-completed: [HARN-04]
+---
+
 # Phase 2 · Plan 03 Summary — Real ACP v1 client (HARN-04)
 
 **Completed:** 2026-10-20 · **Agent:** sonic `P2Acp` · **Verified:** orchestrator

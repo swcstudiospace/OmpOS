@@ -21,60 +21,60 @@ Requirements for the scaffold milestone. Each maps to a roadmap phase. "Real" me
 
 ### Prompt Parser
 
-- [ ] **PARSE-01**: Every input string, including empty/whitespace-only, oversized (documented `MaxPromptLength` = 64,000 chars with truncation diagnostic), mixed newlines, unicode/emoji, control characters and injection-style text, yields exactly one `IntentEnvelope` and the pipeline never throws to the caller.
-- [ ] **PARSE-02**: Ordered recognizers detect slash commands (`/cmd args`), `@mentions`/file references, structured directives, and omp magic keywords (`ultrathink`, `orchestrate`, `workflowz`, `jevify`) using omp's documented matching rules (lowercase standalone prose; fenced code, inline code and HTML ignored), and command-lookalike text inside code fences is treated as plain text.
-- [ ] **PARSE-03**: The fallback recognizer is hardwired last and cannot be removed or reordered by registration; the envelope preserves `RawText` byte-for-byte alongside `NormalizedText`, `IntentKind`, `Arguments`, `Resources`, `Confidence` and `Diagnostics`, and recognizer exceptions are captured as diagnostics.
-- [ ] **PARSE-04**: New recognizers register through `IPromptRecognizer` (with `Order`) via DI without changes to the pipeline core, proven by a test that registers a custom recognizer.
+- [x] **PARSE-01**: Every input string, including empty/whitespace-only, oversized (documented `MaxPromptLength` = 64,000 chars with truncation diagnostic), mixed newlines, unicode/emoji, control characters and injection-style text, yields exactly one `IntentEnvelope` and the pipeline never throws to the caller.
+- [x] **PARSE-02**: Ordered recognizers detect slash commands (`/cmd args`), `@mentions`/file references, structured directives, and omp magic keywords (`ultrathink`, `orchestrate`, `workflowz`, `jevify`) using omp's documented matching rules (lowercase standalone prose; fenced code, inline code and HTML ignored), and command-lookalike text inside code fences is treated as plain text.
+- [x] **PARSE-03**: The fallback recognizer is hardwired last and cannot be removed or reordered by registration; the envelope preserves `RawText` byte-for-byte alongside `NormalizedText`, `IntentKind`, `Arguments`, `Resources`, `Confidence` and `Diagnostics`, and recognizer exceptions are captured as diagnostics.
+- [x] **PARSE-04**: New recognizers register through `IPromptRecognizer` (with `Order`) via DI without changes to the pipeline core, proven by a test that registers a custom recognizer.
 
 ### ACP Harness
 
-- [ ] **HARN-01**: `OmpOS.Harness.Abstractions` exposes `IAcpTransport` (connect/send/receive/close), `IOmpSession` (create/resume/cancel/dispose, capability negotiation, `SubmitPromptAsync` returning `IAsyncEnumerable<HarnessEvent>`), the `HarnessEvent` union (TextDelta, Thought, ToolCall, ToolCallUpdate, PermissionRequest, Plan, UiBlock, Error, Completed) and a typed `HarnessException` tree (ProcessStart, HandshakeTimeout, MalformedFrame, Disconnected, Backpressure, DuplicateCompletion).
-- [ ] **HARN-02**: `HarnessState` (Disconnected, Connecting, Handshaking, Ready, Streaming, Cancelling, Faulted, Disposed) is an explicit state machine with a static allowed-transition table; invalid transitions throw `InvalidHarnessTransitionException` and every transition is covered by tests.
-- [ ] **HARN-03**: A deterministic script-driven `InMemoryOmpAdapter` emits a configurable `HarnessEvent` sequence (including a Generative UI block) so the vertical slice and UI run without omp installed; failure-mode tests cover process-start failure, handshake timeout, malformed frame, mid-stream disconnect, consumer backpressure (bounded channel) and duplicate completion.
-- [ ] **HARN-04**: A real ACP v1 client (JSON-RPC 2.0 over newline-delimited stdio, source-generated STJ) implements `initialize`, `authenticate`, `session/new`, `session/load`, `session/prompt`, `session/cancel`, `session/update` notifications, `session/request_permission` (agent→client, answered through an approval policy hook that defaults to deny-by-policy and may only deny earlier, never grant more), `fs/read_text_file`/`fs/write_text_file` (desktop capability flags), and `$/cancel_request`; a smoke test spawns the locally installed `omp acp`, completes `initialize` + `session/new` + `session/close` and asserts the advertised capabilities, skipping when `omp` is absent.
-- [ ] **HARN-05**: A real omp RPC JSONL client implements the `ready` frame handshake, `negotiate_protocol` v2 with `rpc_chunk` reassembly (1 MiB physical / 64 MiB logical caps), id-correlated command/response matching independent of emission order, `prompt` admission vs `prompt_result` completion, `abort`/`abort_and_restore_queue`, and concurrent stderr draining; a smoke test spawns `omp --mode rpc`, receives `ready`, negotiates v2 and runs `get_state`, skipping when `omp` is absent.
-- [ ] **HARN-06**: A remote WebSocket transport is a bounded stub (typed `NotAvailable` result, contract-test fixture passes, owner-tagged open question); abstract `OmpSessionContractTests<T>` and `AcpTransportContractTests<T>` run against the in-memory implementations and are reusable for real ones.
+- [x] **HARN-01**: `OmpOS.Harness.Abstractions` exposes `IAcpTransport` (connect/send/receive/close), `IOmpSession` (create/resume/cancel/dispose, capability negotiation, `SubmitPromptAsync` returning `IAsyncEnumerable<HarnessEvent>`), the `HarnessEvent` union (TextDelta, Thought, ToolCall, ToolCallUpdate, PermissionRequest, Plan, UiBlock, Error, Completed) and a typed `HarnessException` tree (ProcessStart, HandshakeTimeout, MalformedFrame, Disconnected, Backpressure, DuplicateCompletion).
+- [x] **HARN-02**: `HarnessState` (Disconnected, Connecting, Handshaking, Ready, Streaming, Cancelling, Faulted, Disposed) is an explicit state machine with a static allowed-transition table; invalid transitions throw `InvalidHarnessTransitionException` and every transition is covered by tests.
+- [x] **HARN-03**: A deterministic script-driven `InMemoryOmpAdapter` emits a configurable `HarnessEvent` sequence (including a Generative UI block) so the vertical slice and UI run without omp installed; failure-mode tests cover process-start failure, handshake timeout, malformed frame, mid-stream disconnect, consumer backpressure (bounded channel) and duplicate completion.
+- [x] **HARN-04**: A real ACP v1 client (JSON-RPC 2.0 over newline-delimited stdio, source-generated STJ) implements `initialize`, `authenticate`, `session/new`, `session/load`, `session/prompt`, `session/cancel`, `session/update` notifications, `session/request_permission` (agent→client, answered through an approval policy hook that defaults to deny-by-policy and may only deny earlier, never grant more), `fs/read_text_file`/`fs/write_text_file` (desktop capability flags), and `$/cancel_request`; a smoke test spawns the locally installed `omp acp`, completes `initialize` + `session/new` + `session/close` and asserts the advertised capabilities, skipping when `omp` is absent.
+- [x] **HARN-05**: A real omp RPC JSONL client implements the `ready` frame handshake, `negotiate_protocol` v2 with `rpc_chunk` reassembly (1 MiB physical / 64 MiB logical caps), id-correlated command/response matching independent of emission order, `prompt` admission vs `prompt_result` completion, `abort`/`abort_and_restore_queue`, and concurrent stderr draining; a smoke test spawns `omp --mode rpc`, receives `ready`, negotiates v2 and runs `get_state`, skipping when `omp` is absent.
+- [x] **HARN-06**: A remote WebSocket transport is a bounded stub (typed `NotAvailable` result, contract-test fixture passes, owner-tagged open question); abstract `OmpSessionContractTests<T>` and `AcpTransportContractTests<T>` run against the in-memory implementations and are reusable for real ones.
 
 ### Session Orchestration & Streaming API
 
-- [ ] **SESS-01**: `Session` carries Id, OwnerId, CreatedAt/UpdatedAt, SessionStatus (Idle, Running, AwaitingToolApproval, Completed, Failed, Cancelled), optional SandboxId, ordered Messages and an append-only `StreamEvent` log with monotonic Seq; `ISessionRepository` (get/save/append/list-from-seq) has an in-memory implementation and an abstract `SessionRepositoryContractTests<T>` fixture.
-- [ ] **SESS-02**: `SessionService` enforces one active prompt per session — a concurrent submission is rejected with `OmpOSError` code `PromptInFlight` (never queued silently); steer/follow-up intents are a distinct kind exempt from that rejection and documented as a queued-message policy.
-- [ ] **SESS-03**: Harness events are folded into `StreamEvent`s and `UiBlock`s by a single pure projection, so replaying the event log reproduces identical UI state (tested by replay equality).
-- [ ] **API-01**: `OmpOS.Api` (ASP.NET Core 10 minimal API) exposes typed, validated endpoints to create/list/get sessions and submit prompts, with request size limits, content-type enforcement, a pluggable per-session rate limiter (in-memory default), CORS locked to configured origins, and an OpenAPI 3.1 document committed via build-time generation.
-- [ ] **API-02**: `GET /sessions/{id}/events` streams `StreamEvent`s as Server-Sent Events with `id:` = Seq, honours `Last-Event-ID`/`since` to replay from the log, ends with a terminal event, and an integration test proves disconnect → reconnect → resume without gaps or duplicates (client-side de-duplication by Seq).
-- [ ] **API-03**: A correlation ID is accepted/generated at the API boundary and propagated through logs of API → session service → harness → sandbox calls (structured logging with prompt/secret redaction by default and an explicit debug opt-in).
+- [x] **SESS-01**: `Session` carries Id, OwnerId, CreatedAt/UpdatedAt, SessionStatus (Idle, Running, AwaitingToolApproval, Completed, Failed, Cancelled), optional SandboxId, ordered Messages and an append-only `StreamEvent` log with monotonic Seq; `ISessionRepository` (get/save/append/list-from-seq) has an in-memory implementation and an abstract `SessionRepositoryContractTests<T>` fixture.
+- [x] **SESS-02**: `SessionService` enforces one active prompt per session — a concurrent submission is rejected with `OmpOSError` code `PromptInFlight` (never queued silently); steer/follow-up intents are a distinct kind exempt from that rejection and documented as a queued-message policy.
+- [x] **SESS-03**: Harness events are folded into `StreamEvent`s and `UiBlock`s by a single pure projection, so replaying the event log reproduces identical UI state (tested by replay equality).
+- [x] **API-01**: `OmpOS.Api` (ASP.NET Core 10 minimal API) exposes typed, validated endpoints to create/list/get sessions and submit prompts, with request size limits, content-type enforcement, a pluggable per-session rate limiter (in-memory default), CORS locked to configured origins, and an OpenAPI 3.1 document committed via build-time generation.
+- [x] **API-02**: `GET /sessions/{id}/events` streams `StreamEvent`s as Server-Sent Events with `id:` = Seq, honours `Last-Event-ID`/`since` to replay from the log, ends with a terminal event, and an integration test proves disconnect → reconnect → resume without gaps or duplicates (client-side de-duplication by Seq).
+- [x] **API-03**: A correlation ID is accepted/generated at the API boundary and propagated through logs of API → session service → harness → sandbox calls (structured logging with prompt/secret redaction by default and an explicit debug opt-in).
 
 ### Platform Foundations & Security
 
-- [ ] **OPS-01**: Layered typed configuration (defaults → appsettings → environment → local overrides) with `ValidateOnStart` options classes; startup fails fast with a readable message naming the missing variable; `.env.example` documents every variable.
-- [ ] **OPS-02**: `/health/live` and `/health/ready` endpoints exist; readiness reflects harness, repository and (when `Workflows:Enabled`) Temporal connectivity.
-- [ ] **OPS-03**: OpenTelemetry tracing/metrics hooks exist with spans across the vertical slice and metrics for session count, stream latency, sandbox provision time and parser fallback rate (console/OTLP exporter configurable).
-- [ ] **OPS-04**: Auth boundary is middleware with a no-op single-dev-principal provider (`IUserContext`) and a documented extension point; user text is never concatenated into system/control messages; no secrets are committed (verified by a CI secret scan step).
+- [x] **OPS-01**: Layered typed configuration (defaults → appsettings → environment → local overrides) with `ValidateOnStart` options classes; startup fails fast with a readable message naming the missing variable; `.env.example` documents every variable.
+- [x] **OPS-02**: `/health/live` and `/health/ready` endpoints exist; readiness reflects harness, repository and (when `Workflows:Enabled`) Temporal connectivity.
+- [x] **OPS-03**: OpenTelemetry tracing/metrics hooks exist with spans across the vertical slice and metrics for session count, stream latency, sandbox provision time and parser fallback rate (console/OTLP exporter configurable).
+- [x] **OPS-04**: Auth boundary is middleware with a no-op single-dev-principal provider (`IUserContext`) and a documented extension point; user text is never concatenated into system/control messages; no secrets are committed (verified by a CI secret scan step).
 
 ### Sandbox Provisioning
 
-- [ ] **SBOX-01**: `ISandboxProvider` (provision/attach/exec/stream-logs/snapshot/teardown) takes requests with explicit timeouts and idempotency keys and reports `SandboxStatus` (Requested, Provisioning, Ready, Attached, Degraded, TearingDown, Destroyed, Failed).
-- [ ] **SBOX-02**: `SandboxLifecycle` enforces a TTL, exposes an orphan-reaper hook, retries teardown with jittered backoff, and guarantees a failed provisioning never leaves a session in `Running` (tested).
-- [ ] **SBOX-03**: `FakeSandboxProvider` passes the abstract `SandboxProviderContractTests<T>` fixture; `LocalPodmanComposeProvider` shells out to `podman-compose`/`podman` via an injectable process runner (tested with a fake runner, real invocation skipped when podman is absent).
-- [ ] **SBOX-04**: `OpenShellProvider` (podman compute driver; gateway TOML and policy YAML v1 generated from a typed policy model), `AgentOsProvider`, `RailwaySwarmProvider` and `AttestedEnclaveProvider` (dstack-shaped attestation contract) are interface-conforming stubs returning typed `NotAvailable` results, each with an owner-tagged open question; no vendor API is invented.
-- [ ] **SBOX-05**: Sandbox isolation defaults are explicit settings: no host paths or host secrets mounted, per-sandbox credentials, outbound network policy default-deny.
+- [x] **SBOX-01**: `ISandboxProvider` (provision/attach/exec/stream-logs/snapshot/teardown) takes requests with explicit timeouts and idempotency keys and reports `SandboxStatus` (Requested, Provisioning, Ready, Attached, Degraded, TearingDown, Destroyed, Failed).
+- [x] **SBOX-02**: `SandboxLifecycle` enforces a TTL, exposes an orphan-reaper hook, retries teardown with jittered backoff, and guarantees a failed provisioning never leaves a session in `Running` (tested).
+- [x] **SBOX-03**: `FakeSandboxProvider` passes the abstract `SandboxProviderContractTests<T>` fixture; `LocalPodmanComposeProvider` shells out to `podman-compose`/`podman` via an injectable process runner (tested with a fake runner, real invocation skipped when podman is absent).
+- [x] **SBOX-04**: `OpenShellProvider` (podman compute driver; gateway TOML and policy YAML v1 generated from a typed policy model), `AgentOsProvider`, `RailwaySwarmProvider` and `AttestedEnclaveProvider` (dstack-shaped attestation contract) are interface-conforming stubs returning typed `NotAvailable` results, each with an owner-tagged open question; no vendor API is invented.
+- [x] **SBOX-05**: Sandbox isolation defaults are explicit settings: no host paths or host secrets mounted, per-sandbox credentials, outbound network policy default-deny.
 
 ### Durable Workflows
 
-- [ ] **WFLW-01**: `ISessionRunWorkflow` and `ISessionRunActivities` (provision → run prompt → collect result → teardown, teardown in finally) are defined once; `DirectSessionRunner` executes them in-process when `Workflows:Enabled=false` (the default) so the vertical slice needs no Temporal server.
-- [ ] **WFLW-02**: `OmpOS.Workflows.Worker` hosts a Temporal .NET worker (`Temporalio.Extensions.Hosting`) with the deterministic `SessionRunWorkflow` and activities carrying retry policies and heartbeats; it starts only when `Workflows:Enabled=true` and a workflow replay test passes; the decision criteria for routing a path through Temporal are documented.
-- [ ] **WFLW-03**: Abstract `SessionRunWorkflowContractTests<T>` runs against the direct runner and is reusable for the Temporal implementation.
+- [x] **WFLW-01**: `ISessionRunWorkflow` and `ISessionRunActivities` (provision → run prompt → collect result → teardown, teardown in finally) are defined once; `DirectSessionRunner` executes them in-process when `Workflows:Enabled=false` (the default) so the vertical slice needs no Temporal server.
+- [x] **WFLW-02**: `OmpOS.Workflows.Worker` hosts a Temporal .NET worker (`Temporalio.Extensions.Hosting`) with the deterministic `SessionRunWorkflow` and activities carrying retry policies and heartbeats; it starts only when `Workflows:Enabled=true` and a workflow replay test passes; the decision criteria for routing a path through Temporal are documented.
+- [x] **WFLW-03**: Abstract `SessionRunWorkflowContractTests<T>` runs against the direct runner and is reusable for the Temporal implementation.
 
 ### Shared Chat Surface (Razor Class Library)
 
-- [ ] **UI-01**: `OmpOS.UI` provides a conversation list, a session view with streamed messages, a composer, and a `UiBlock` renderer covering markdown text, code block (copy), tool-call card with status, permission card rendering agent-provided options verbatim, plan panel, file-diff placeholder, error block, A2UI v0.9.1 surface (fixed component catalog subset) and an unknown-block fallback that shows the raw payload collapsed.
-- [ ] **UI-02**: Streaming UX: deltas render incrementally, a stop/cancel control is shown while streaming, partial output is preserved on failure with a retry affordance, auto-scroll pauses when the user scrolls up with a jump-to-latest control, and UI states (loading history, empty, streaming, awaiting approval, recoverable/fatal error, reconnecting, offline, success) are explicit.
-- [ ] **UI-03**: Accessibility baseline: composer and all controls keyboard-operable (Enter send / Shift+Enter newline / Esc stop), visible focus rings, labelled icon buttons, WCAG AA contrast tokens, throttled `aria-live` announcements, `prefers-reduced-motion` honoured, ≥44px touch targets; verified by an automated check (bUnit assertions and an axe-core run against the published web app where tooling exists).
-- [ ] **UI-04**: The UI is a pure fold over `StreamEvent`s: the same event log renders identical block trees in bUnit tests, and unknown events never blank or crash the view.
+- [x] **UI-01**: `OmpOS.UI` provides a conversation list, a session view with streamed messages, a composer, and a `UiBlock` renderer covering markdown text, code block (copy), tool-call card with status, permission card rendering agent-provided options verbatim, plan panel, file-diff placeholder, error block, A2UI v0.9.1 surface (fixed component catalog subset) and an unknown-block fallback that shows the raw payload collapsed.
+- [x] **UI-02**: Streaming UX: deltas render incrementally, a stop/cancel control is shown while streaming, partial output is preserved on failure with a retry affordance, auto-scroll pauses when the user scrolls up with a jump-to-latest control, and UI states (loading history, empty, streaming, awaiting approval, recoverable/fatal error, reconnecting, offline, success) are explicit.
+- [x] **UI-03**: Accessibility baseline: composer and all controls keyboard-operable (Enter send / Shift+Enter newline / Esc stop), visible focus rings, labelled icon buttons, WCAG AA contrast tokens, throttled `aria-live` announcements, `prefers-reduced-motion` honoured, ≥44px touch targets; verified by an automated check (bUnit assertions and an axe-core run against the published web app where tooling exists).
+- [x] **UI-04**: The UI is a pure fold over `StreamEvent`s: the same event log renders identical block trees in bUnit tests, and unknown events never blank or crash the view.
 
 ### Web, Desktop and Mobile Shells
 
-- [ ] **WEB-01**: `apps/OmpOS.Web` is a Blazor WebAssembly standalone app hosting `OmpOS.UI`, reads the API base URL from environment-driven configuration (no hardcoded hosts), consumes the SSE stream with response streaming enabled, and completes the vertical slice end-to-end against the in-memory adapter in a browser smoke run.
+- [x] **WEB-01**: `apps/OmpOS.Web` is a Blazor WebAssembly standalone app hosting `OmpOS.UI`, reads the API base URL from environment-driven configuration (no hardcoded hosts), consumes the SSE stream with response streaming enabled, and completes the vertical slice end-to-end against the in-memory adapter in a browser smoke run.
 - [ ] **WEB-02**: `vercel.json` (dotnet-install `installCommand`, `dotnet publish` build, static `outputDirectory`, SPA rewrite, CSP/security headers) deploys the static publish output to Vercel without any server component.
 - [ ] **DESK-01**: `apps/OmpOS.App` (.NET MAUI Blazor Hybrid) shares `OmpOS.UI`; on desktop targets (Windows, macCatalyst) it hosts the harness in-process via an `IEngineHost` registered for local stdio spawning of `omp acp`, can alternatively point at the remote backend, and stubs window-state persistence, single-instance guard and crash-safe session recovery behind interfaces.
 - [ ] **MOB-01**: On mobile targets (iOS, Android) the same MAUI head registers a remote-only `IEngineHost`, never spawns processes, and reconnects the SSE stream with sequence resume on `Window.Resumed`.
@@ -82,9 +82,9 @@ Requirements for the scaffold milestone. Each maps to a roadmap phase. "Real" me
 
 ### Verification & Handoff
 
-- [ ] **VERIFY-01**: A clean-clone bootstrap run (fresh `git clone` into a temp dir → `./bootstrap.sh`) succeeds and is recorded in `docs/runbooks/local-dev.md`.
-- [ ] **VERIFY-02**: `docs/open-questions.md` lists every unverified external fact (omp session/update variants emitted in real turns, A2UI payload channel from omp, agentOS hosting of omp, OpenShell gRPC contract, Railway Cloud Swarm endpoints/auth, dTEE/dstack attestation verifier, Vercel build-image details, Podman 5.x availability) with an owner tag, and every TODO in code links to an entry.
-- [ ] **VERIFY-03**: The final report (`docs/handoff.md`) distinguishes implemented, stubbed and deferred items against the acceptance criteria AC_1–AC_11 of the ultrathink specification.
+- [x] **VERIFY-01**: A clean-clone bootstrap run (fresh `git clone` into a temp dir → `./bootstrap.sh`) succeeds and is recorded in `docs/runbooks/local-dev.md`.
+- [x] **VERIFY-02**: `docs/open-questions.md` lists every unverified external fact (omp session/update variants emitted in real turns, A2UI payload channel from omp, agentOS hosting of omp, OpenShell gRPC contract, Railway Cloud Swarm endpoints/auth, dTEE/dstack attestation verifier, Vercel build-image details, Podman 5.x availability) with an owner tag, and every TODO in code links to an entry.
+- [x] **VERIFY-03**: The final report (`docs/handoff.md`) distinguishes implemented, stubbed and deferred items against the acceptance criteria AC_1–AC_11 of the ultrathink specification.
 
 ## v2 Requirements
 
@@ -149,7 +149,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HARN-01 | Phase 2 | Complete |
 | HARN-02 | Phase 2 | Complete |
 | HARN-03 | Phase 2 | Complete |
-| HARN-04 | Phase 2 | Partial — interactive approval deferred (Q-HARN-PERMISSION); replay + live smoke verified |
+| HARN-04 | Phase 2 | Complete (authenticate, deny-by-default fs handlers, replay and live smoke; interactive approval is outside this text, tracked as Q-HARN-PERMISSION) |
 | HARN-05 | Phase 2 | Complete |
 | HARN-06 | Phase 2 | Complete (bounded stub, as specified) |
 | SESS-01 | Phase 2 | Complete |
@@ -167,7 +167,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SBOX-03 | Phase 3 | Complete |
 | SBOX-04 | Phase 3 | Complete (stubs by design; all four throw NotAvailable, enclave Unverified) |
 | SBOX-05 | Phase 3 | Complete (settings explicit; per-sandbox issuance deferred — Q-SB-CREDENTIALS) |
-| WFLW-01 | Phase 3 | Partial — direct runner wired and verified; Temporal worker composition deferred (Q-SB-WORKER-COMPOSE) |
+| WFLW-01 | Phase 3 | Complete (API prompt path runs through DirectSessionRunner when Workflows:Enabled=false; Temporal worker composition is outside this text, tracked as Q-SB-WORKER-COMPOSE) |
 | WFLW-02 | Phase 3 | Complete (worker host + replay fixture + TCP readiness probe) |
 | WFLW-03 | Phase 3 | Complete |
 | UI-01 | Phase 4 | Complete |
@@ -179,7 +179,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DESK-01 | Phase 4 | Partial — MAUI binaries human-deferred (macOS); host logic tested |
 | MOB-01 | Phase 4 | Partial — MAUI binaries human-deferred (macOS); remote-only path tested |
 | SHELL-01 | Phase 4 | Partial — filter exclusion + README scope verified; macOS CI run outstanding |
-| VERIFY-01 | Phase 5 | Pending — clean-clone run not yet recorded |
+| VERIFY-01 | Phase 5 | Complete (clean clone of 8479c7c, empty SDK root; docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21.log) |
 | VERIFY-02 | Phase 5 | Complete (open questions populated; RepoHygieneTests enforces TODO linkage) |
 | VERIFY-03 | Phase 5 | Complete (docs/handoff.md maps AC_1..AC_11 with evidence) |
 

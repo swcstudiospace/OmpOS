@@ -1,3 +1,7 @@
+---
+requirements-completed: [PARSE-01, PARSE-02, PARSE-03, PARSE-04]
+---
+
 # Phase 2 · Plan 01 Summary — Catch-all prompt parser
 
 **Completed:** 2026-10-20 · **Agent:** sonic `P2Parser` · **Verified:** orchestrator

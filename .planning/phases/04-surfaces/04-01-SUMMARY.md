@@ -1,3 +1,7 @@
+---
+requirements-completed: [UI-01, UI-02, UI-03, UI-04]
+---
+
 # Phase 4 · Plan 01 Summary — Shared chat surface RCL and Generative UI renderer (UI-01..UI-04)
 
 **Completed:** 2026-10-21 · **Implementation:** gsd-executor `P4UiRcl`; review fixes `P4Fix` and `P4Approval`; browser-driven fixes `P4Fix2` · **Verified by:** orchestrator (final integrated gate, browser smoke)

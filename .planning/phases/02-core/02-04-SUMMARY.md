@@ -1,3 +1,7 @@
+---
+requirements-completed: [HARN-05]
+---
+
 # Phase 2 · Plan 04 Summary — Real omp RPC JSONL client (HARN-05)
 
 **Completed:** 2026-10-20 · **Agent:** sonic `P2Rpc` · **Verified:** orchestrator

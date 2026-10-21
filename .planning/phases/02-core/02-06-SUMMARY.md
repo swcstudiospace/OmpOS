@@ -1,3 +1,7 @@
+---
+requirements-completed: [API-01, API-02, API-03, OPS-01, OPS-02, OPS-03, OPS-04]
+---
+
 # Phase 2 · Plan 06 Summary — API host, SSE resume, guards, ops (API-01..03, OPS-01..04)
 
 **Completed:** 2026-10-20 · **Implementation:** gsd-executor `P2ApiOps` (parked mid-verification), completed by `P2WireParser` · **Verified by:** orchestrator (fresh test run, live smoke, code inspection)

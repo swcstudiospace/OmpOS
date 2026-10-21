@@ -102,3 +102,18 @@ axe-core 4.14.0 (WCAG 2.0 and 2.1, levels A and AA) against the published Releas
 `vercel.json` at the repo root publishes the WASM head statically: the SDK installs via `dotnet-install.sh --jsonfile global.json` into `./.dotnet`, the build runs `./.dotnet/dotnet publish apps/OmpOS.Web -c Release -o output`, and `output/wwwroot` is served with an SPA rewrite to `/index.html` plus security headers.
 
 The CSP is `connect-src 'self' http://127.0.0.1:5187` and `img-src 'self' data:`. Before deploying, add the production API origin to `connect-src`: the static deploy cannot reach any other API. The browser never fetches remote images. `script-src 'self' 'wasm-unsafe-eval'` is required for Blazor WASM. Never add a legacy `routes` key alongside `rewrites`/`headers`.
+
+### Clean-clone bootstrap (VERIFY-01)
+
+Run on 2026-10-21 against commit `8479c7c` (branch `feat/ompos-scaffold`), from a fresh clone into an empty temp directory, with an empty SDK root so the pinned SDK must be installed:
+
+```sh
+git clone /root/src/repos/ompos /tmp/ompos-clean
+cd /tmp/ompos-clean
+env -u DOTNET_ROOT DOTNET_ROOT=/tmp/ompos-clean-dotnet ./bootstrap.sh
+```
+
+- The bootstrap installed .NET SDK 10.0.402 into the empty root.
+- Locked restore, a Release build with warnings as errors (0 warnings, 0 errors), the full test run (614 total, 0 failed) and the format verification all passed; the script printed `bootstrap: OK`.
+- Log: `docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21.log`.
+- Limits: the clone was taken from the local repository, not from the GitHub remote, which had not been pushed when this ran. The NuGet package cache was warm, so the run does not measure cold package download time. Host: linux 6.8.0-147-generic, x64.

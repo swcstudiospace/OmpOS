@@ -1,3 +1,7 @@
+---
+requirements-completed: [WEB-01, WEB-02]
+---
+
 # Phase 4 · Plan 02 Summary — Blazor WebAssembly web head and Vercel static deploy (WEB-01, WEB-02)
 
 **Completed:** 2026-10-21 · **Implementation:** gsd-executor `P4Web`; review fix `P4Fix` (incremental SSE, reconnect bound, origin validation, CSP); `P4Fix3` (web JSON decoding) · **Verified by:** orchestrator, in a real browser
