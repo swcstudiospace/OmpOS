@@ -68,4 +68,7 @@
     <GlobalPackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.12.1" />
     <GlobalPackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="5.6.0" />
   </ItemGroup>
+  <ItemGroup Label="MCP harness (ADE-16)">
+    <PackageVersion Include="ModelContextProtocol" Version="2.3.0" />
+  </ItemGroup>
 </Project>

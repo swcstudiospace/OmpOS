@@ -8,7 +8,8 @@
         Width="960"
         Height="640">
 
-  <!-- Logical and keyboard order follows XAML order: skip link, session list, transcript, run controls, prompt, send, follow-up, stop. -->
+  <!-- Logical and keyboard order follows XAML order: skip link, session list, transcript (or Agents view), run controls, prompt,
+       send, stop, then transcript search, the Agents and side-chat toggles, and the side-chat region. -->
   <DockPanel>
 
     <Button x:Name="SkipLink"
@@ -30,10 +31,13 @@
         <views:ConversationListView x:Name="ConversationList" />
       </Border>
 
-      <Grid Grid.Column="1" RowDefinitions="*,Auto,Auto,Auto">
+      <Grid Grid.Column="1" RowDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
 
-        <ContentControl x:Name="TranscriptHost"
-                        Grid.Row="0" />
+        <Grid Grid.Row="0">
+          <ContentControl x:Name="TranscriptHost" />
+          <ContentControl x:Name="AgentsHost"
+                          IsVisible="False" />
+        </Grid>
 
         <TextBlock x:Name="StatusLine"
                    Grid.Row="1"
@@ -51,6 +55,27 @@
 
         <ContentControl x:Name="ComposerHost"
                         Grid.Row="3" />
+
+        <ContentControl x:Name="SearchHost"
+                        Grid.Row="4" />
+
+        <StackPanel Grid.Row="5"
+                    Orientation="Horizontal"
+                    Margin="{DynamicResource OmpOS.Space.Sm}"
+                    Spacing="{DynamicResource OmpOS.Gap.Sm}">
+          <ToggleButton x:Name="AgentsToggle"
+                        Content="Agents"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="Agents" />
+          <ToggleButton x:Name="SideChatsToggle"
+                        Content="Side chats"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="Show side chats" />
+        </StackPanel>
+
+        <ContentControl x:Name="SideChatHost"
+                        Grid.Row="6"
+                        IsVisible="False" />
 
       </Grid>
 

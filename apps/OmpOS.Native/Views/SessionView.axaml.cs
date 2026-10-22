@@ -26,6 +26,22 @@ internal partial class SessionView : UserControl
     /// <summary>Moves keyboard focus to the transcript region. The shell's skip link uses this.</summary>
     public void FocusTranscript() => _ = TranscriptScroll.Focus();
 
+    /// <summary>
+    /// Scrolls the transcript so the block at <paramref name="index"/> is in view. The index is a block index of the folded
+    /// tree. The streaming tail (an index equal to the block count) is not a block control, so it and any other index
+    /// outside the drawn blocks do nothing.
+    /// </summary>
+    /// <param name="index">The block index to bring into view.</param>
+    public void ScrollToBlock(int index)
+    {
+        if (index < 0 || index >= BlockHost.Children.Count)
+        {
+            return;
+        }
+
+        BlockHost.Children[index].BringIntoView();
+    }
+
     /// <summary>Binds the transcript to the session view model in the data context and draws its current state.</summary>
     protected override void OnDataContextChanged(EventArgs e)
     {

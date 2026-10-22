@@ -4,7 +4,9 @@ using OmpOS.Native.Engine;
 using OmpOS.Native.Views;
 using OmpOS.Native.Views.RunControls;
 using OmpOS.Presentation;
+using OmpOS.Presentation.Agents;
 using OmpOS.Presentation.Approvals;
+using OmpOS.Presentation.Chats;
 using OmpOS.Presentation.Components;
 using OmpOS.Presentation.Composer;
 using OmpOS.Presentation.Runs;
@@ -13,9 +15,9 @@ using OmpOS.Presentation.State;
 namespace OmpOS.Native;
 
 /// <summary>
-/// The one main window of the native head. It hosts the session list, the transcript, the status line, the run controls
-/// (pending tool approvals) and the composer, and it binds the presentation view models the web head binds. It has no
-/// dialog and no second window.
+/// The one main window of the native head. It hosts the session list, the transcript (or the Agents view that opens in its
+/// place), the status line, the run controls (pending tool approvals), the composer, the transcript search, and the side chats of
+/// the session. It binds the presentation view models the web head binds. It has no dialog and no second window.
 /// </summary>
 internal partial class MainWindow : Window
 {
@@ -29,6 +31,9 @@ internal partial class MainWindow : Window
     public const string FaultedStatus = "Something went wrong.";
 
     private const string ReducedMotionClass = "reduced-motion";
+
+    /// <summary>The identifier of the one session this shell shows. The shell has no session transport yet, so the id is fixed.</summary>
+    private const string SessionId = "shell-session";
 
     /// <summary>
     /// Creates the window with the production defaults: no approval service and no run input are connected in this build, so
@@ -61,6 +66,22 @@ internal partial class MainWindow : Window
         Session.MarkHistoryLoaded();
         TranscriptHost.Content = ViewMapping.Create(Session);
 
+        // The Agents window: one registry of runs and one view model over it. The view opens in place of the transcript.
+        AgentRuns = new AgentRunRegistry();
+        Agents = new AgentsViewModel(AgentRuns);
+        AgentsHost.Content = ViewMapping.Create(Agents);
+        AgentsToggle.IsCheckedChanged += OnAgentsToggleChanged;
+
+        // The transcript search: one model per session. It follows the session's transcript and is disposed when the window closes.
+        Search = new TranscriptSearchModel(Session);
+        Search.MatchSelected += OnMatchSelected;
+        SearchHost.Content = ViewMapping.Create(Search);
+
+        // The side chats of this session. Opening one adds messages to the side chat panel only, never to the session's transcript.
+        SideChats = new SideChatPanel(SessionId);
+        SideChatHost.Content = ViewMapping.Create(SideChats);
+        SideChatsToggle.IsCheckedChanged += OnSideChatsToggleChanged;
+
         RunControls = new RunControlsViewModel(approvalBridge);
         RunControlsHost.Content = new RunControlsView { DataContext = RunControls };
 
@@ -87,6 +108,18 @@ internal partial class MainWindow : Window
 
     /// <summary>Gets the scheduler that routes steering messages and queued follow-ups to the active run.</summary>
     public RunInputScheduler Runs { get; }
+
+    /// <summary>Gets the registry of the agent runs the Agents window shows.</summary>
+    public AgentRunRegistry AgentRuns { get; }
+
+    /// <summary>Gets the Agents window state: the runs that match the status filter and the open run view.</summary>
+    public AgentsViewModel Agents { get; }
+
+    /// <summary>Gets the transcript search of the session. It is disposed when the window closes.</summary>
+    public TranscriptSearchModel Search { get; }
+
+    /// <summary>Gets the side chats opened from the session.</summary>
+    public SideChatPanel SideChats { get; }
 
     /// <summary>
     /// Resolves a motion setting to the reduced-motion flag. <see cref="MotionPreference.System"/> resolves to full
@@ -115,5 +148,36 @@ internal partial class MainWindow : Window
     private void OnComposerWorkFaulted(object? sender, ComposerWorkFaultedEventArgs e) =>
         SetStatus($"{FaultedStatus} {e.Exception.GetBaseException().Message}");
 
-    private void OnSkipLinkClick(object? sender, RoutedEventArgs e) => (TranscriptHost.Content as SessionView)?.FocusTranscript();
+    private void OnSkipLinkClick(object? sender, RoutedEventArgs e)
+    {
+        if (AgentsToggle.IsChecked == true)
+        {
+            // The Agents view stands in for the transcript while it is open, so the skip link lands on its status filter.
+            _ = (AgentsHost.Content as Control)?.FindControl<ComboBox>("StatusFilter")?.Focus();
+            return;
+        }
+
+        (TranscriptHost.Content as SessionView)?.FocusTranscript();
+    }
+
+    private void OnAgentsToggleChanged(object? sender, RoutedEventArgs e)
+    {
+        var open = AgentsToggle.IsChecked == true;
+        AgentsHost.IsVisible = open;
+        TranscriptHost.IsVisible = !open;
+    }
+
+    private void OnSideChatsToggleChanged(object? sender, RoutedEventArgs e) =>
+        SideChatHost.IsVisible = SideChatsToggle.IsChecked == true;
+
+    private void OnMatchSelected(object? sender, MatchSelectedEventArgs e) =>
+        (TranscriptHost.Content as SessionView)?.ScrollToBlock(e.Match.BlockIndex);
+
+    /// <summary>Stops the transcript search when the window closes, so it holds no subscription to the session.</summary>
+    protected override void OnClosed(EventArgs e)
+    {
+        Search.MatchSelected -= OnMatchSelected;
+        Search.Dispose();
+        base.OnClosed(e);
+    }
 }

@@ -2,7 +2,11 @@ using Avalonia.Controls;
 using OmpOS.Contracts.Ui;
 using OmpOS.GenUi;
 using OmpOS.Native.Views;
+using OmpOS.Native.Views.Agents;
 using OmpOS.Native.Views.Blocks;
+using OmpOS.Native.Views.Chats;
+using OmpOS.Presentation.Agents;
+using OmpOS.Presentation.Chats;
 using OmpOS.Presentation.Composer;
 using OmpOS.Presentation.State;
 
@@ -27,6 +31,9 @@ internal static class ViewMapping
         {
             SessionViewModel session => new SessionView { DataContext = session },
             ComposerViewModel composer => new ComposerView { DataContext = composer },
+            AgentsViewModel agents => new AgentsView { DataContext = agents },
+            SideChatPanel sideChats => new SideChatListView { DataContext = sideChats },
+            TranscriptSearchModel search => new TranscriptSearchView { DataContext = search },
             _ => throw new ArgumentOutOfRangeException(
                 nameof(viewModel),
                 viewModel.GetType(),
