@@ -6,6 +6,7 @@
 
 - v0.9.1: foundation through verified handoff. Closed 2026-10-21; merge of PR #1 (swcstudiospace/OmpOS) pending. Archived in `.planning/milestones/` (v0.9.1-ROADMAP.md, v0.9.1-REQUIREMENTS.md, v0.9.1-MILESTONE-AUDIT.md, v0.9.1-phases/).
 - v0.9.2 Hardening and hosted API: audit status `tech_debt` (2026-10-21, `.planning/v0.9.2-MILESTONE-AUDIT.md`). Phases 1-5, 7, 10, 11, 17-19 complete; 8, 9, 15, 16 superseded; 6, 12, 13, 14 blocked on external criteria. Completion awaits the owner (irreversible). Requirements in `.planning/REQUIREMENTS.md` (75 REQ-IDs).
+- v0.13.0 Cursor 1:1 workspace and provider platform: planned 2026-10-22 from the ultrathink plan (graph ut-mvjvg4gj-fb21d80f); phases 36 to 43; requirements VX-01 to VX-10 in `.planning/REQUIREMENTS.md`.
 - v0.10.0 Cross-platform UI: active. Phase 20 in progress (waves 1 to 3 implemented, wave 4 pending). Requirements XP-01 to XP-11.
 
 ## Planning Rules
@@ -616,4 +617,119 @@ Source: user request 2026-10-22. The ADE harness must match Cursor desktop capab
   1. A repository-wide review produces per-file findings; each finding is fixed or recorded with an owner and an open-question link. Verify: findings table in the phase record.
   2. Analyzer, warnings-as-errors, formatter, architecture and secret-scan checks are enforced in CI and in bootstrap, and every suppression has a row in docs/open-questions.md. Verify: gate run at phase HEAD.
   3. Decision records exist for the editor, terminal, MCP, browser pane and plugin isolation choices. Verify: docs/decisions listing.
+**Plans**: TBD
+
+## v0.13.0 Cursor 1:1 workspace and provider platform (planned, added 2026-10-22)
+
+Source: user request 2026-10-22 and the ultrathink plan graph ut-mvjvg4gj-fb21d80f (spec `/root/.omp/agent/ultrathink/sessions/01a160e3-3eca-717c-b5de-fb65516aa688.xml`). Primary-source research with a verdict per row is in `docs/plans/vision-research/`. Requirements VX-01 to VX-10 are in `.planning/REQUIREMENTS.md`. Phases 36 to 43 build on v0.11.0 (sessions, approvals, terminal, MCP) and v0.12.0 (plugin host, registry, omp launcher).
+
+Phases 36 to 38 do not depend on the blocked v0.10.0 items (Phases 22, 24, 25), so they run while those stay blocked. The blocked items stay open; this plan closes none of them.
+
+- [ ] **Phase 36: Contracts and Theme Foundation** - token set (White and Purple), Greptile font families under OFL, command record, Kanban status model, provider record and URL validator, secret type with canary harness, herdr and omp adapter contracts with recorded fakes
+- [ ] **Phase 37: Session Runtime, Streaming and Local Terminal** - session lifecycle service, heartbeat and stale detection, sequence-numbered stream with replay, local PTY backend on Linux
+- [ ] **Phase 38: Chat Window and Slash Commands** - chat states and composer context, slash registry and palette
+- [ ] **Phase 39: Kanban Board** - one task card per chat with runtime status and a stale flag
+- [ ] **Phase 40: Settings Window and Model Providers** - Runtime section, provider catalogue (local, custom, cloud, API key, coding plan)
+- [ ] **Phase 41: Pets Companion** - pet state model, 2D fallback, hide and reduced-motion controls
+- [ ] **Phase 42: Cloud Terminals on Railway** - persistent container per session with idle sleep; prototype until Railway confirms policy in writing
+- [ ] **Phase 43: Mobile and Web Terminals** - remote-attached terminal on iOS, Android and WebAssembly; session-only web keys by default
+
+### Phase 36: Contracts and Theme Foundation
+**Goal**: The contracts every surface consumes exist and are tested: one token set, one command record, one status model, one provider record, one secret type, and versioned herdr and omp adapter contracts backed by recorded fakes.
+**Requirements**: VX-01, VX-02, VX-04, VX-05, VX-06, VX-07, VX-10
+**Depends on**: Phases 20, 21 (theme resource dictionary and presentation layer exist)
+**Mac channel**: No.
+**Success Criteria** (what must be TRUE):
+  1. The theme dictionary defines White and Purple roles in light and dark variants, the Greptile families as OFL resources with their licence notice, one spacing scale and one radius scale; no view hard-codes a colour. Verify: contrast test in the gate asserting 4.5:1 for text and 3:1 for non-text in both themes.
+  2. The command record and the registry exist with an empty catalogue; no command name is added without a verified reference. Verify: gate tests for empty query, unknown command and disabled reason.
+  3. The Kanban runtime status enumeration and its independent stale flag exist, with the mapping table recorded in CONTEXT. Verify: gate test mapping each value and showing that the stale flag changes without changing status.
+  4. The provider record and URL validator accept https, accept http only for localhost, and reject remote plain http unless explicitly allowed. Verify: gate tests.
+  5. A SecretString type never renders its value in ToString or serialisation, and the canary harness fails when a registered secret reaches a stub log, transcript, crash or telemetry sink. Verify: gate canary test.
+  6. The herdr session client contract and the omp adapter contract are versioned interfaces with recorded-transcript fakes; replaying a fixture twice yields the same typed event sequence; detach leaves the fake session alive. Verify: gate contract tests.
+**Plans**: TBD
+
+### Phase 37: Session Runtime, Streaming and Local Terminal
+**Goal**: Sessions reattach through the herdr contract after a client restart, streamed output renders without duplicates, and each desktop OS gets a real local shell.
+**Requirements**: VX-06, VX-07, VX-08
+**Depends on**: Phase 36
+**Mac channel**: No for the Linux and Windows backends. The macOS local PTY backend runs on the Mac channel and is listed under XP-11.
+**Success Criteria** (what must be TRUE):
+  1. The session service creates, attaches, detaches, pauses, resumes and terminates sessions through the herdr contract; detach never terminates; the session id, provider selection and last-known status persist locally; a restart reattaches by stored id. Verify: gate lifecycle tests over the fake.
+  2. Heartbeat every 15 seconds; a session is stale after three missed heartbeats (45 seconds of simulated time). Verify: gate test with a fake clock.
+  3. Streamed output is sequence-numbered; replay from the last acknowledged sequence yields no duplicate blocks; cancelling a response leaves the session running. Verify: gate transcript replay test.
+  4. A local shell spawns, echoes input and exits with its code on Linux in the gate. Windows and macOS are recorded as not run until their runners exist. Verify: Linux gate test and runbook entries for the other platforms.
+  5. The real herdr endpoint stays blocked until the owner decides the restart semantics recorded in STATE. Verify: STATE entry.
+**Plans**: TBD
+
+### Phase 38: Chat Window and Slash Commands
+**Goal**: The chat window streams session output in every state the plan names, and slash commands are discoverable through a registry whose catalogue matches a verified Cursor reference.
+**Requirements**: VX-02, VX-03
+**Depends on**: Phases 36, 37
+**Mac channel**: No.
+**Success Criteria** (what must be TRUE):
+  1. The transcript renders text, tool call, tool result and file edit as distinct blocks; loading, empty first run, streaming with cancel, error with retry that keeps the transcript, and disconnected with reconnect status each have a UI test. Verify: gate UI tests.
+  2. The composer shows the active model and provider; a model switch the provider does not support shows a notice. Verify: UI test.
+  3. Typing a slash opens the palette; an empty query shows the full list; an unknown command shows a suggestion; a disabled command shows its reason. Verify: UI tests.
+  4. The catalogue lists Cursor commands only with the reference version and date recorded in CONTEXT; unverified names are not added. Parity sign-off is an owner decision (default recorded: functional parity against the public docs). Verify: CONTEXT entry and catalogue test.
+**Plans**: TBD
+
+### Phase 39: Kanban Board
+**Goal**: The Kanban board shows one task card per chat with its live runtime status, and status changes arrive as events.
+**Requirements**: VX-04
+**Depends on**: Phases 36, 37
+**Mac channel**: No.
+**Success Criteria** (what must be TRUE):
+  1. One card per chat shows title, active model and provider, last activity time and status; statuses come from the runtime enumeration, with no client-side guesses. Verify: gate tests from fake session events.
+  2. Runtime statuses are not user-draggable; only the user-settable statuses (default Backlog and Archived) accept drag. Verify: gate test.
+  3. A card with a stale heartbeat shows the stale indicator with a screen-reader label; an unreachable session shows the card error state. Verify: UI test.
+  4. Column names are the defaults recorded in CONTEXT until the owner confirms the final names. Verify: CONTEXT entry (owner decision).
+**Plans**: TBD
+
+### Phase 40: Settings Window and Model Providers
+**Goal**: The settings window holds a Runtime section and a Model Providers section, and every provider is a registry entry configured without code changes.
+**Requirements**: VX-05
+**Depends on**: Phases 36, 37
+**Mac channel**: No.
+**Success Criteria** (what must be TRUE):
+  1. The Runtime section sets idle stop (default 24 hours) and completed-session retention (default 7 days) with validated floors and ceilings; invalid values are rejected inline; reset-to-default works per section; closing with unsaved changes asks first. Verify: UI tests.
+  2. Local hosting entries (Ollama, LM Studio, llama.cpp, vLLM, LocalAI, Jan, Docker Model Runner) and the generic OpenAI-compatible local transport are recorded with source and date; an unreachable local server shows a not-running error. Verify: probe test against a fake server and a catalogue test that every entry carries source and date.
+  3. A custom provider is added from a user entry (base URL, auth header, model list, capability flags) without a code change. Verify: gate test.
+  4. Cloud API-key and coding-plan entries are added only where the research verified the endpoint, auth and quota (default: verified providers only). Coding plans are separate entries with their own auth, quota display and error mapping; quota exhaustion and plan expiry produce actionable messages. Verify: catalogue tests per entry.
+  5. Live validation with real credentials is blocked until the owner supplies test credentials per provider. Verify: STATE entry.
+**Plans**: TBD
+
+### Phase 41: Pets Companion
+**Goal**: A companion character shows session state at a glance, never blocks the chat or terminal, and respects reduced motion and a hide toggle.
+**Requirements**: VX-09
+**Depends on**: Phases 36, 39
+**Mac channel**: No.
+**Success Criteria** (what must be TRUE):
+  1. The pet state model (hidden, idle, working, attention-needed, fallback) drives a 2D anime-style companion; each state has a text equivalent for screen readers. Verify: gate state tests and a UI test.
+  2. Reduced motion disables animation; the hide toggle removes the companion; the companion never overlaps the transcript or terminal. Verify: UI and layout tests.
+  3. The 3D renderer is not built until a per-target spike passes; the research verdict is recorded in `docs/plans/vision-research/pets-feasibility.md`. Verify: spike record per target.
+  4. The owner signs off the appearance before character art ships (validation sign-off). Character assets use only a verified licence. Verify: asset licence record.
+**Plans**: TBD
+
+### Phase 42: Cloud Terminals on Railway
+**Goal**: Each cloud session runs in a Linux environment that sleeps when idle and restores its transcript on reattach.
+**Requirements**: VX-06, VX-08
+**Depends on**: Phases 37, 40; the cloud runtime criterion also needs v0.9.2 Phase 13 (hosted routed harness)
+**Mac channel**: No.
+**Success Criteria** (what must be TRUE):
+  1. The cloud model is a persistent container per session with idle sleep (owner decision, 2026-10-22). Each session has one container and a volume for its transcript; reattach restores the transcript after the environment sleeps. Verify: integration test against a fake Railway client; the live run is recorded as blocked.
+  2. Remote desktop or browser-streaming features are not built until Railway confirms in writing that the use is permitted under its acceptable-use and trust terms; the research found no primary statement either way. Verify: written confirmation in docs/runbooks. Pause: external confirmation.
+  3. Process state across sleep is not claimed: a restored session resumes from its stored native omp session reference, and the transcript comes from the volume. Verify: test that a restored session shows the stored transcript and a resume marker.
+**Status (2026-10-22)**: Prototype only, on a Railway project the owner controls. No production deploy until criterion 2 is met.
+**Plans**: TBD
+
+### Phase 43: Mobile and Web Terminals
+**Goal**: iOS, Android and WebAssembly show a remote-attached terminal, never spawn a local shell, and keep web keys out of durable browser storage.
+**Requirements**: VX-08, VX-10
+**Depends on**: Phases 36, 37, 40
+**Mac channel**: Yes for the iOS build and iOS accessibility dump (listed under XP-11). The Android build runs on the Linux runner.
+**Success Criteria** (what must be TRUE):
+  1. Mobile and web builds reference no local process spawning; the local terminal shows as unavailable with its reason. Verify: per-target build check and UI test.
+  2. A remote-attached terminal renders the same terminal model as desktop and resumes after network loss without duplicated blocks. Verify: gate replay test.
+  3. WebAssembly keeps provider keys in session-only memory, cleared on reload, with a documented threat model; no key is written to browser storage. Verify: browser-run check and the canary test. Pause: server-side vault or per-session entry (default session-only).
+  4. The Android accessibility dump needs an Android 16 device or emulator, which this host does not have; it is recorded as blocked.
 **Plans**: TBD

@@ -29,6 +29,34 @@ Plan: 20-04 complete (wave 4 records)
 Status: Executing v0.10.0 (active). v0.9.2 is tech_debt, awaiting owner completion.
 Last activity: 2026-10-22 - phase SUMMARY records written for phases 20 to 30; STATE updated
 
+## Plan Decisions and Assumptions (2026-10-22, ultrathink graph ut-mvjvg4gj-fb21d80f)
+
+Owner decision (answered 2026-10-22): cloud model is a persistent container per session with idle sleep, restoring the transcript from a volume on reattach.
+
+Defaults applied, not yet confirmed (non-blocking, kickoff step 4): providers, verified only (q2); Pets, 2D anime companion first with 3D gated by a per-target spike (q3); Cursor reference, current public docs with version and date recorded in CONTEXT, functional parity with no visual or asset copying (q4).
+
+Numeric defaults recorded as assumptions: heartbeat every 15 seconds, stale after three missed beats (45 seconds); server scrollback 10,000 lines; client scrollback 5,000 lines; input queue 50 messages while herdr is unreachable; attach token expiry 15 minutes; idle stop after 24 hours; completed-session retention 7 days.
+
+Verified facts (research, opened primary pages, 2026-10-22; files in docs/plans/vision-research/):
+- herdr: herdrdev/herdr, Apache-2.0, v0.9.5. Detaching leaves panes running. A herdr server restart or machine reboot does not keep processes; only the layout returns, and conversations resume only from native session references. Multi-day process durability is not supported by herdr.
+- Greptile fonts: DM Sans, Anybody and Space Mono under SIL OFL 1.1; Nanum Pen Script is loaded but unused on the homepage.
+- Railway: no desktop, VNC or browser-streaming product. Sandboxes and per-session Docker services are the viable paths. Trust and Safety text prohibits remote desktops for personal or professional browsing; written confirmation is required before production.
+- Pets: Blazor WebAssembly is feasible with three.js (MIT) and @pixiv/three-vrm (MIT). Avalonia desktop has no .NET VRM renderer, so desktop 3D needs a custom renderer. The 2D fallback is feasible on every head.
+- Cursor slash commands: 86 tokens, 69 verified and 22 unverified (changelog only). Cursor settings: 34 rows, 30 verified and 4 unverified.
+- Providers, local and US: 24 of 25 rows verified; OpenAI and Groq pricing pages were unreadable (403 and redirect). Providers, EU and CN: 22 researched; 4 verified, 14 partial, 4 unverified.
+
+Open pauses:
+- PRODUCT BEHAVIOUR (new, owner decision): durability across a herdr server restart or machine reboot. Options: (a) accept the herdr limit; after a restart or reboot, sessions resume from the stored native omp session reference with the transcript restored (default); (b) require process survival, which herdr v0.9.5 does not provide, so it needs an upstream change or another runtime; (c) defer cloud terminals until (b) is available.
+- EXTERNAL: Railway written confirmation for remote desktops; Railway account and deploy access; production API origin.
+- VALIDATION: Greptile render sign-off; Pets appearance sign-off; Cursor parity sign-off.
+- CREDENTIALS: live provider credentials per provider; herdr endpoint and credentials; omp launch-time provider configuration (unverified).
+
+Blocked, carried from v0.10.0 and earlier: Phases 22, 24 and 25 (Mac channel, Windows runner, Wayland session, Android SDK and device); Phase 34 (OD-06); Phases 12 to 14 (deploys paused).
+
+Execution assumption: v0.13.0 Phases 36 to 38 do not depend on the blocked items and proceed in parallel with them. No blocked item is closed by this plan.
+
+Next action: dispatch the Phase 36 units through the AgentSwarm (a01-orchestrator), run the gate, commit by phase, then ask the owner the durability question.
+
 ## Performance Metrics
 
 **Velocity:**

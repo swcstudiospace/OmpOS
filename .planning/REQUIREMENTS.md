@@ -315,3 +315,38 @@ Source: user request 2026-10-22 and the ultrathink plan graph ut-mvirx2k5-37cf01
 - [ ] **CX-08**: Decision records exist for the editor, terminal, MCP, browser pane and plugin isolation choices.
   - Acceptance: each record names the candidate chosen, its licence (SPDX, with its source URL), its verification route and its open risks.
   - Verification: docs/decisions listing (Phase 35).
+
+## Vision and workspace platform (VX, v0.13.0, planned 2026-10-22)
+
+Source: user request 2026-10-22 and ultrathink plan graph ut-mvjvg4gj-fb21d80f. Verdicts per research row are in `docs/plans/vision-research/`. Not counted in v0.9.2 completion.
+
+- [ ] **VX-01**: One Avalonia token set provides White and Purple roles in light and dark variants, with OFL typography resources and one spacing and one radius scale; no view hard-codes a colour.
+  - Acceptance: every foreground and background pair in both themes meets WCAG AA (4.5:1 for text, 3:1 for non-text); the Greptile families (DM Sans, Anybody, Space Mono) ship unmodified with their OFL notice; the owner signs off the rendered look.
+  - Verification: contrast test in the gate; licence files in the bundle (Phase 36). Research: `docs/plans/vision-research/greptile-font.md`.
+- [ ] **VX-02**: One slash command registry declares each command's name, arguments, description, platform availability and handler; commands appear only with a verified reference.
+  - Acceptance: an empty query lists all commands; an unknown command shows a suggestion; a command that needs an unavailable capability is shown disabled with its reason; the catalogue records the Cursor reference version and date.
+  - Verification: palette and registry tests (Phases 36, 38). Research: `docs/plans/vision-research/cursor-slash-commands.md` (86 tokens; 69 verified, 22 unverified).
+- [ ] **VX-03**: The chat window streams session output as distinct blocks with loading, empty, streaming, error and disconnected states; cancel stops a response without stopping the session.
+  - Acceptance: text, tool call, tool result and file edit render as separate blocks; an error keeps the transcript and offers retry; reconnect after network loss does not duplicate blocks.
+  - Verification: UI and replay tests (Phase 38).
+- [ ] **VX-04**: The Kanban board shows one task card per chat, with status taken from runtime events and never from client-side guesses.
+  - Acceptance: runtime statuses are read-only; user-settable statuses accept drag; a stale heartbeat shows an indicator with a screen-reader label; updates arrive without a reload.
+  - Verification: gate tests from fake session events (Phases 36, 39). Column names await owner confirmation (default recorded in CONTEXT).
+- [ ] **VX-05**: The settings window and model provider registry configure local, custom, cloud, API key and coding plan entries without code changes.
+  - Acceptance: Runtime settings validate floors and ceilings; a custom provider needs no code change; a coding plan is a separate entry with its own auth, quota display and error mapping; remote plain http is refused unless explicitly allowed.
+  - Verification: settings and catalogue tests (Phase 40). Research: `docs/plans/vision-research/providers-local-us.md` and `providers-eu-cn.md`.
+- [ ] **VX-06**: Agent sessions run under herdr, which owns process lifetime; the client attaches, detaches and observes, and detach never terminates a session.
+  - Acceptance: sessions persist locally and reattach after a client restart; heartbeat every 15 seconds, stale after three missed beats; a herdr server restart or machine reboot keeps no processes, so restored sessions resume from the stored native omp session reference (owner decision pending in STATE).
+  - Verification: recorded-transcript fake tests (Phases 36, 37); the real endpoint is verified only after the owner decision. Research: `docs/plans/vision-research/herdr.md`.
+- [ ] **VX-07**: The omp engine is reached through a versioned adapter that emits typed events; no UI code depends on omp output formats.
+  - Acceptance: replaying a recorded fixture twice yields the same typed event sequence; cancel leaves the session running; omp launch-time provider configuration is used only once verified.
+  - Verification: fixture replay tests (Phases 36, 37).
+- [ ] **VX-08**: Every head offers a terminal that matches its platform: a local PTY on desktop, a remote-attached terminal on mobile and web, and a Linux environment per cloud session on Railway.
+  - Acceptance: desktop spawns a local shell per OS; mobile and web never spawn a local shell and show the local terminal as unavailable with a reason; the cloud environment is a persistent container with idle sleep (owner decision 2026-10-22) and restores its transcript on reattach.
+  - Verification: per-target build checks and UI tests (Phases 37, 42, 43). Research: `docs/plans/vision-research/railway-cloud-desktop.md`; remote desktops need Railway's written confirmation before production.
+- [ ] **VX-09**: A pets companion reflects session state at a glance, never blocks the chat or terminal, and respects reduced motion and a hide toggle.
+  - Acceptance: hidden, idle, working, attention-needed and fallback states each have a text equivalent; reduced motion disables animation; 3D is built only after a per-target spike passes, and 2D is the default.
+  - Verification: state and UI tests (Phase 41). Research: `docs/plans/vision-research/pets-feasibility.md`; the appearance needs owner sign-off.
+- [ ] **VX-10**: Provider keys live only in the platform secure store on desktop and mobile, or in session memory on web, and never reach logs, transcripts, crash output or telemetry.
+  - Acceptance: a canary key injected into each sink is absent from every sink in the gate; web keys are cleared on reload; no key is written to browser storage.
+  - Verification: canary harness tests (Phase 36); browser-run check (Phase 43). Web key storage (vault or per-session entry) is an owner decision; the default is session-only memory.
