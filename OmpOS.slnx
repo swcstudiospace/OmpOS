@@ -22,6 +22,10 @@
     <Project Path="src/OmpOS.Harness.Workspace/OmpOS.Harness.Workspace.csproj" />
     <Project Path="src/OmpOS.Harness.Mcp/OmpOS.Harness.Mcp.csproj" />
     <Project Path="src/OmpOS.Harness.Completion/OmpOS.Harness.Completion.csproj" />
+    <Project Path="src/OmpOS.Harness.Plugins/OmpOS.Harness.Plugins.csproj" />
+    <Project Path="src/OmpOS.Harness.Automations/OmpOS.Harness.Automations.csproj" />
+    <Project Path="src/OmpOS.Harness.Registry/OmpOS.Harness.Registry.csproj" />
+    <Project Path="src/OmpOS.Harness.OmpLauncher/OmpOS.Harness.OmpLauncher.csproj" />
     <Project Path="src/OmpOS.Parser/OmpOS.Parser.csproj" />
     <Project Path="src/OmpOS.Presentation/OmpOS.Presentation.csproj" />
     <Project Path="src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj" />
@@ -51,6 +55,10 @@
     <Project Path="tests/OmpOS.Harness.Mcp.Tests/OmpOS.Harness.Mcp.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Mcp.Fixtures/OmpOS.Harness.Mcp.Fixtures.csproj" />
     <Project Path="tests/OmpOS.Harness.Completion.Tests/OmpOS.Harness.Completion.Tests.csproj" />
+    <Project Path="tests/OmpOS.Harness.Plugins.Tests/OmpOS.Harness.Plugins.Tests.csproj" />
+    <Project Path="tests/OmpOS.Harness.Automations.Tests/OmpOS.Harness.Automations.Tests.csproj" />
+    <Project Path="tests/OmpOS.Harness.Registry.Tests/OmpOS.Harness.Registry.Tests.csproj" />
+    <Project Path="tests/OmpOS.Harness.OmpLauncher.Tests/OmpOS.Harness.OmpLauncher.Tests.csproj" />
     <Project Path="tests/OmpOS.Sessions.Tests/OmpOS.Sessions.Tests.csproj" />
     <Project Path="tests/OmpOS.Sessions.Postgres.Tests/OmpOS.Sessions.Postgres.Tests.csproj" />
     <Project Path="tests/OmpOS.Sessions.Postgres.Probe/OmpOS.Sessions.Postgres.Probe.csproj" />

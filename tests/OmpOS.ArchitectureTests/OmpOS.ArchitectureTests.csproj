@@ -13,6 +13,10 @@
     <ProjectReference Include="../../src/OmpOS.Harness.Workspace/OmpOS.Harness.Workspace.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Mcp/OmpOS.Harness.Mcp.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Completion/OmpOS.Harness.Completion.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Plugins/OmpOS.Harness.Plugins.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Automations/OmpOS.Harness.Automations.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Registry/OmpOS.Harness.Registry.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.OmpLauncher/OmpOS.Harness.OmpLauncher.csproj" />
     <ProjectReference Include="../../src/OmpOS.EngineHost/OmpOS.EngineHost.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sessions/OmpOS.Sessions.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sessions.Postgres/OmpOS.Sessions.Postgres.csproj" />

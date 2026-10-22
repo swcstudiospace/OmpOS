@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../OmpOS.Harness.Plugins/OmpOS.Harness.Plugins.csproj" />
+  </ItemGroup>
+</Project>
