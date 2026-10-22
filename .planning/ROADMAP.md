@@ -5,7 +5,8 @@
 ## Milestones
 
 - v0.9.1: foundation through verified handoff. Closed 2026-10-21; merge of PR #1 (swcstudiospace/OmpOS) pending. Archived in `.planning/milestones/` (v0.9.1-ROADMAP.md, v0.9.1-REQUIREMENTS.md, v0.9.1-MILESTONE-AUDIT.md, v0.9.1-phases/).
-- v0.9.2 Hardening and hosted API: current. Requirements in `.planning/REQUIREMENTS.md` (75 REQ-IDs). Scope is the work still open; items already closed are recorded in "Closed Records" and are not re-planned.
+- v0.9.2 Hardening and hosted API: audit status `tech_debt` (2026-10-21, `.planning/v0.9.2-MILESTONE-AUDIT.md`). Phases 1-5, 7, 10, 11, 17-19 complete; 8, 9, 15, 16 superseded; 6, 12, 13, 14 blocked on external criteria. Completion awaits the owner (irreversible). Requirements in `.planning/REQUIREMENTS.md` (75 REQ-IDs).
+- v0.10.0 Cross-platform UI: active. Phase 20 in progress (waves 1 to 3 implemented, wave 4 pending). Requirements XP-01 to XP-11.
 
 ## Planning Rules
 
@@ -16,25 +17,25 @@
 
 ## Phases
 
-- [ ] **Phase 1: Validation Evidence and Record Fixes** - Negative proofs for 01-VALIDATION rows and the 04-03 summary frontmatter
-- [ ] **Phase 2: Acceptance-Criteria List Recovery** - Recover or record AC_7, AC_9, AC_10, AC_11
-- [ ] **Phase 3: Web Head Reflection and Browser Verification** - Reflection switch off for the web head; axe and skip-link items resolved
-- [ ] **Phase 4: AgentOS Remaining Operations** - Verified agentOS operations or verified fail-closed records
-- [ ] **Phase 5: Railway Swarm Remaining Operations** - Verified Railway GraphQL operations or verified fail-closed records
-- [ ] **Phase 6: Per-Sandbox Credential Issuance** - Scoped credentials for non-podman providers, revoked at teardown
-- [ ] **Phase 7: PostgreSQL Session Log** - Shared session log behind `ISessionRepository` for API and worker
-- [ ] **Phase 8: Worker Composition and Routed Settlement and Streaming** - ~~Real worker composition; routed runs write and stream through the log~~ Superseded 2026-10-21 (worker removed, docs/handoff.md)
-- [ ] **Phase 9: Replay Re-Validation** - ~~`session-run.json` replayed against a live Temporal dev server~~ Superseded 2026-10-21 (Temporal removed, docs/handoff.md)
-- [ ] **Phase 10: Routed Interactive Approvals** - UI decisions reach pending permission requests, direct and routed
-- [ ] **Phase 11: RPC-Mode Update Recording** - Unseen `session/update` variants recorded from omp RPC turns (owner approval gate)
-- [ ] **Phase 12: Hosted Deploy Config and Exposure Gate** - Railway and CORS lock (OD-03 gated); ~~Temporal Cloud~~ superseded 2026-10-21 (docs/handoff.md)
-- [ ] **Phase 13: Hosted Routed omp Harness** - Hosted API runs the real harness (OD-03 gated)
-- [ ] **Phase 14: Vercel Web Against Production Origin** - Deployed web head and CSP-clean smoke (OD-03 gated)
-- [ ] **Phase 15: macOS iOS and MacCatalyst Builds** - Builds and macOS CI shells job (Mac channel gated)
-- [ ] **Phase 16: macOS Runtime Spot-Check** - Desktop against remote backend; mobile remote-only (Mac channel gated)
-- [ ] **Phase 17: Blocking Record and Nyquist Verdicts** - BR-1 closed; phases 1 to 5 validated
-- [ ] **Phase 18: Handoff and Open-Question Closure** - Docs reflect every closure and blocker
-- [ ] **Phase 19: Milestone Re-Audit** - Re-audit status is not `gaps_found`
+- [x] **Phase 1: Validation Evidence and Record Fixes** - Negative proofs for 01-VALIDATION rows and the 04-03 summary frontmatter
+- [x] **Phase 2: Acceptance-Criteria List Recovery** - Recover or record AC_7, AC_9, AC_10, AC_11
+- [x] **Phase 3: Web Head Reflection and Browser Verification** - Reflection switch off for the web head; axe and skip-link items resolved
+- [x] **Phase 4: AgentOS Remaining Operations** - Verified agentOS operations or verified fail-closed records
+- [x] **Phase 5: Railway Swarm Remaining Operations** - Verified Railway GraphQL operations or verified fail-closed records
+- [ ] **Phase 6: Per-Sandbox Credential Issuance** - Scoped credentials for non-podman providers, revoked at teardown. BLOCKED (external): no verified vendor secret-store operation
+- [x] **Phase 7: PostgreSQL Session Log** - Shared session log behind `ISessionRepository` for API and worker
+- [x] **Phase 8: Worker Composition and Routed Settlement and Streaming** - ~~Real worker composition; routed runs write and stream through the log~~ Superseded 2026-10-21 (worker removed, docs/handoff.md)
+- [x] **Phase 9: Replay Re-Validation** - ~~`session-run.json` replayed against a live Temporal dev server~~ Superseded 2026-10-21 (Temporal removed, docs/handoff.md)
+- [x] **Phase 10: Routed Interactive Approvals** - UI decisions reach pending permission requests, direct and routed
+- [x] **Phase 11: RPC-Mode Update Recording** - Unseen `session/update` variants recorded from omp RPC turns (owner approval gate)
+- [ ] **Phase 12: Hosted Deploy Config and Exposure Gate** - Railway and CORS lock (OD-03 gated); ~~Temporal Cloud~~ superseded 2026-10-21 (docs/handoff.md). BLOCKED (external): Railway deploys paused
+- [ ] **Phase 13: Hosted Routed omp Harness** - Hosted API runs the real harness (OD-03 gated). BLOCKED (external): Railway deploy pause, criterion 2
+- [ ] **Phase 14: Vercel Web Against Production Origin** - Deployed web head and CSP-clean smoke (OD-03 gated). BLOCKED (external): production origin unset, Railway pause
+- [x] **Phase 15: macOS iOS and MacCatalyst Builds** - Superseded by ADR-0004 (v0.10.0 Phases 22 and 24)
+- [x] **Phase 16: macOS Runtime Spot-Check** - Superseded by ADR-0004 (v0.10.0 Phase 22)
+- [x] **Phase 17: Blocking Record and Nyquist Verdicts** - BR-1 closed; phases 1 to 5 validated
+- [x] **Phase 18: Handoff and Open-Question Closure** - Docs reflect every closure and blocker
+- [x] **Phase 19: Milestone Re-Audit** - Re-audit status is not `gaps_found` (audit status `tech_debt`; completion awaits owner)
 
 ## Phase Details
 
@@ -253,25 +254,25 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Validation Evidence and Record Fixes | 0/TBD | Not started | - |
-| 2. Acceptance-Criteria List Recovery | 0/TBD | Not started | - |
-| 3. Web Head Reflection and Browser Verification | 0/TBD | Not started | - |
-| 4. AgentOS Remaining Operations | 0/TBD | Not started | - |
-| 5. Railway Swarm Remaining Operations | 0/TBD | Not started | - |
-| 6. Per-Sandbox Credential Issuance | 0/TBD | Not started | - |
-| 7. PostgreSQL Session Log | 0/TBD | Not started | - |
-| 8. Worker Composition and Routed Settlement and Streaming | 0/TBD | Superseded 2026-10-21 (worker removed) | - |
-| 9. Replay Re-Validation | 0/TBD | Superseded 2026-10-21 (Temporal removed) | - |
-| 10. Routed Interactive Approvals | 0/TBD | Not started | - |
-| 11. RPC-Mode Update Recording | 0/TBD | Gated: owner approval | - |
-| 12. Hosted Deploy Config and Exposure Gate | 0/TBD | Gated: OD-03 | - |
-| 13. Hosted Routed omp Harness | 0/TBD | Gated: OD-03 | - |
-| 14. Vercel Web Against Production Origin | 0/TBD | Gated: OD-03 | - |
-| 15. macOS iOS and MacCatalyst Builds | 0/TBD | Gated: Mac channel | - |
-| 16. macOS Runtime Spot-Check | 0/TBD | Gated: Mac channel | - |
-| 17. Blocking Record and Nyquist Verdicts | 0/TBD | Not started | - |
-| 18. Handoff and Open-Question Closure | 0/TBD | Not started | - |
-| 19. Milestone Re-Audit | 0/TBD | Not started | - |
+| 1. Validation Evidence and Record Fixes | 882444f | Complete | 2026-10-21 |
+| 2. Acceptance-Criteria List Recovery | 924ca78 | Complete (AC_7, AC_9, AC_10, AC_11 recorded unrecoverable) | 2026-10-21 |
+| 3. Web Head Reflection and Browser Verification | d318d1b, 924ca78 | Complete | 2026-10-21 |
+| 4. AgentOS Remaining Operations | ab71523 | Complete (fail-closed records) | 2026-10-21 |
+| 5. Railway Swarm Remaining Operations | ab71523 | Complete (egress unverified, recorded) | 2026-10-21 |
+| 6. Per-Sandbox Credential Issuance | - | Blocked (external: no verified vendor secret-store operation) | - |
+| 7. PostgreSQL Session Log | b60d029 | Complete | 2026-10-21 |
+| 8. Worker Composition and Routed Settlement and Streaming | - | Superseded 2026-10-21 (worker removed) | - |
+| 9. Replay Re-Validation | - | Superseded 2026-10-21 (Temporal removed) | - |
+| 10. Routed Interactive Approvals | 75bbca0, 4196345 | Complete (direct path; criterion 2 superseded) | 2026-10-21 |
+| 11. RPC-Mode Update Recording | 05dd8ea | Complete | 2026-10-21 |
+| 12. Hosted Deploy Config and Exposure Gate | - | Blocked (external: Railway deploys paused; criteria 1 and 3 met) | - |
+| 13. Hosted Routed omp Harness | 3f18b99 | Blocked (external: criterion 2; criterion 3 met) | - |
+| 14. Vercel Web Against Production Origin | - | Blocked (external: production origin unset; Railway pause) | - |
+| 15. macOS iOS and MacCatalyst Builds | - | Superseded by ADR-0004 (v0.10.0 Phases 22 and 24) | - |
+| 16. macOS Runtime Spot-Check | - | Superseded by ADR-0004 (v0.10.0 Phase 22) | - |
+| 17. Blocking Record and Nyquist Verdicts | 8f422c9 | Complete (BR-1 closed; verdicts partial with named blockers) | 2026-10-21 |
+| 18. Handoff and Open-Question Closure | 3ce7250, 0b67f4b | Complete | 2026-10-21 |
+| 19. Milestone Re-Audit | audit file | Complete (status tech_debt; owner decides completion) | 2026-10-21 |
 
 ## Blocked Records
 
@@ -279,7 +280,7 @@ Each item is recorded with its reason. Its REQ-ID has no phase until the unblock
 
 | Item | Blocker | Unblock condition | Owner |
 |------|---------|-------------------|-------|
-| OD-03 | Sign-in method not decided; no source for this milestone records a decision (Q OQ-26 covers only the single dev principal) | Owner selects the method. Phases 12 to 14 then start. Public exposure stays forbidden until it is in place (HOST-02) | Owner |
+| OD-03 | Decided 2026-10-21 (OIDC bearer, fail-closed; handoff owner decision 4). No identity provider authority is configured for the deployed API | Configure `Api:Auth:Authority` and `Api:Auth:Audience` for the deployed API. Phases 12 and 13 then continue. Public exposure stays forbidden until then (HOST-02) | Owner |
 | OD-06 | External protocol gap in `Q-HARN-WS`: WebSocket upgrade authentication, reconnect, and an omp remote endpoint are unverified (omp ACP is stdio only) | A verified spec for upgrade auth and a real remote omp endpoint. The stub stays until then | Platform |
 | OD-10 | Verifier decision in `Q-SB-ENCLAVE`: the attestation report format to model is not chosen | Verifier and owner choose the report format; then the verdict is implemented against it | ompos-maintainers |
 | OD-11 | Podman 5.x required for `OpenShellProvider` through the compute driver; the host does not have it | Podman 5.x installed on this host; then exercise the driver and record the result in `Q-SB-OPENSHELL` | ompos-maintainers |
@@ -550,4 +551,69 @@ Source: ADR-0004 decision 4 (plugin harness, in-process first, MCP out-of-proces
   3. When ADE-21 starts, a compatibility report lists each VS Code extension API the plugin harness supports, and each row is backed by a passing contract test. Verify: gate test that fails when a row has no test.
   4. When ADE-22 starts, role assignment, team controls and usage analytics are covered by gate contract tests on their API. Verify: gate contract tests.
   5. Deferred items ship no stub endpoint or placeholder control. Verify: repository search for their identifiers finds only the deferral record.
+**Plans**: TBD
+
+## v0.12.0 Cursor parity and quality bar (planned, added 2026-10-22)
+
+Source: user request 2026-10-22. The ADE harness must match Cursor desktop capabilities (hooks, MCP, cloud, local and remote development, automations), and its embedded terminal opens the omp CLI so plugins and MCP servers can be reviewed on the command line. Code quality must meet a state-of-the-art, enterprise and production bar. Requirements CX-01 to CX-08 are in `.planning/REQUIREMENTS.md`. Phases 31 to 35 build on v0.11.0. Phases 26, 28 and 33 carry the MCP, terminal, cloud and local-run criteria (ADE-06, ADE-07, ADE-14, ADE-16, ADE-19).
+
+- [ ] **Phase 31: Plugin Manifests and Hooks** - Manifest validation, API version gate and quarantine; lifecycle hooks with consent per exact command (CX-01, CX-02)
+- [ ] **Phase 32: Automations** - Event, schedule and manual triggers with loop, chain, rate and runtime guards (CX-03)
+- [ ] **Phase 33: Omp CLI Terminal and Shared Registry** - Terminal opens omp; one registry for the UI and omp; host-owned MCP gateway (CX-04)
+- [ ] **Phase 34: Remote Development** - Authenticated, encrypted remote transport; BLOCKED on OD-06 and owner decisions (CX-05)
+- [ ] **Phase 35: Code Quality Bar** - Repository-wide review, enforced gates and decision records (CX-06, CX-07, CX-08)
+
+### Phase 31: Plugin Manifests and Hooks
+**Goal**: Plugins declare a validated manifest with API version, capabilities and permissions. The host loads, quarantines or rejects them without crashing, and hooks run only after consent for their exact command.
+**Requirements**: CX-01, CX-02
+**Depends on**: Phase 21 (approval path), Phase 28 (consent, permission broker, process supervisor)
+**Mac channel**: No. The gate runs on the Linux host.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. A hostile manifest is rejected by schema validation before any code runs, and an incompatible API version is rejected with a message naming the plugin and the supported range. Verify: gate test with a sentinel-writing fixture.
+  2. A plugin that throws asynchronously is quarantined with a persisted reason, and the host and other plugins keep running. Verify: gate test.
+  3. A hook runs only after consent for its exact command hash, re-prompts when the command changes, and records exit status, duration and truncated output. Verify: gate test with zero spawned processes before consent.
+  4. The hooks list shows trigger, command and enabled state; enable, disable and reorder work; loading, empty, error, success and degraded states render. Verify: component tests on the presentation layer and the Avalonia head.
+**Plans**: TBD
+
+### Phase 32: Automations
+**Goal**: Automations run agent work on event, schedule or manual triggers, with an explicit enable toggle, a maximum runtime and guards that fail closed.
+**Requirements**: CX-03
+**Depends on**: Phase 26 (local and cloud runs), Phase 31 (consent and execution log)
+**Mac channel**: No.
+**UI hint**: yes
+**Cursor reference**: https://cursor.com/docs/cloud-agent/automations (cloud-agent triggers: schedule, source-control events, webhook and others; runs use a written prompt and enabled tools, not shell hooks).
+**Success Criteria** (what must be TRUE):
+  1. An automation that triggers itself is blocked at chain depth one and the block is recorded; chain depth is capped at 3. Verify: gate test.
+  2. An exception injected into the guard store refuses the run (deny on error). Verify: gate test.
+  3. Runs are capped per time window by a rate limit and stop at the maximum runtime. Verify: gate test with a fake clock.
+  4. A paused automation names the guard that paused it and how to resume. Verify: component test.
+**Plans**: TBD
+
+### Phase 33: Omp CLI Terminal and Shared Registry
+**Goal**: The embedded terminal opens an omp session in the project, and the app UI and the omp CLI read one plugin and MCP registry without drift.
+**Requirements**: CX-04
+**Depends on**: Phase 28 (terminal, MCP client)
+**Mac channel**: No.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The terminal launches the located omp executable with an argument array and the project directory. A missing omp shows its detected path, version and install guidance while the rest of the app keeps working. Verify: gate test with a fake executable.
+  2. The registry has one writer; its export carries a generation and checksum; the UI list and the omp view report the same generation. Verify: gate test.
+  3. omp's MCP connections go through the host-owned MCP gateway (decision 2026-10-22), which refuses tools that are not granted. Verify: gate test that an ungranted tool call is refused at the gateway.
+**Plans**: TBD
+
+### Phase 34: Remote Development
+**Goal**: Remote development connects to a host over an authenticated, encrypted transport and verifies host identity before the first connection.
+**Requirements**: CX-05
+**Status (2026-10-22)**: BLOCKED. The remote omp endpoint and WebSocket upgrade authentication are unverified (OD-06, Q-HARN-WS). The remote protocol and host-key storage are not decided. No Cursor primary docs page for SSH remote development was found (https://cursor.com/docs/remote-ssh.md and https://cursor.com/docs/remote-development return 404). This phase stays deferred in writing until OD-06 has a verified spec and the owner decides the protocol and host-key store. No stub ships.
+**Plans**: TBD
+
+### Phase 35: Code Quality Bar
+**Goal**: The codebase meets an enterprise and production bar, measured by repo-enforced checks, with every audit finding fixed or recorded with an owner.
+**Requirements**: CX-06, CX-07, CX-08
+**Depends on**: Phases 20 to 33 (the audit covers the final tree)
+**Success Criteria** (what must be TRUE):
+  1. A repository-wide review produces per-file findings; each finding is fixed or recorded with an owner and an open-question link. Verify: findings table in the phase record.
+  2. Analyzer, warnings-as-errors, formatter, architecture and secret-scan checks are enforced in CI and in bootstrap, and every suppression has a row in docs/open-questions.md. Verify: gate run at phase HEAD.
+  3. Decision records exist for the editor, terminal, MCP, browser pane and plugin isolation choices. Verify: docs/decisions listing.
 **Plans**: TBD

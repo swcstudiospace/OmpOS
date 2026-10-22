@@ -286,3 +286,32 @@ Source: ADR-0004 (accepted 2026-10-21; reversible through gate G-WEB); `docs/pla
 | ADE-20 | 29 | v0.11.0 ADE harness |
 | ADE-21 | 30 | v0.11.0 ADE harness |
 | ADE-22 | 30 | v0.11.0 ADE harness |
+
+## Cursor parity and quality bar (CX, v0.12.0, planned 2026-10-22)
+
+Source: user request 2026-10-22 and the ultrathink plan graph ut-mvirx2k5-37cf010f. Cursor references are primary sources checked 2026-10-22. Not counted in v0.9.2 completion.
+
+- [ ] **CX-01**: Plugin manifests are validated against a versioned schema before any code runs, with an API version gate and quarantine of failing plugins.
+  - Acceptance: a malformed or hostile manifest is rejected with a specific error and runs no code; an incompatible API version is rejected naming the plugin and the supported range; a plugin that throws asynchronously is quarantined with a persisted reason, and the host keeps running.
+  - Verification: gate tests with a sentinel-writing fixture, an incompatible-version fixture and an async-throwing fixture (Phase 31).
+- [ ] **CX-02**: Hooks run user commands on lifecycle events only after consent for the exact command.
+  - Acceptance: a hook runs only after consent recorded against a hash of its exact command; editing the command forces new consent; each run records exit status, duration and truncated output; a failing hook does not block other hooks unless declared blocking.
+  - Verification: gate test with zero spawned processes before consent; list, enable, disable and reorder tests (Phase 31). Cursor reference: https://cursor.com/docs/hooks (labelled beta in https://cursor.com/changelog/1-7; exit code 2 blocks an action, other failures let it proceed).
+- [ ] **CX-03**: Automations run agent work on event, schedule or manual triggers, with guards that fail closed.
+  - Acceptance: an automation that triggers itself is blocked at depth one and the block is recorded; chain depth is capped at 3; runs are rate limited per window and stop at a maximum runtime; an exception in the guard store refuses the run; consent is required before the first run.
+  - Verification: gate tests with a fake clock and a fault-injected guard store (Phase 32). Cursor reference: https://cursor.com/docs/cloud-agent/automations.
+- [ ] **CX-04**: The embedded terminal opens an omp session in the project, and the app UI and the omp CLI read one plugin and MCP registry.
+  - Acceptance: omp is launched with an argument array and the project directory; a missing omp shows its detected path, version and install guidance; one registry with a generation and checksum backs both views; omp's MCP connections go through the host-owned MCP gateway chosen 2026-10-22, which refuses ungranted tools.
+  - Verification: gate tests with a fake executable; registry generation tests; a gateway refusal test (Phase 33).
+- [ ] **CX-05**: Remote development connects to a host over an authenticated, encrypted transport, with host-identity verification.
+  - Acceptance: host identity is verified before the first connection; a changed key is refused with no auto-accept path; the disconnected state says local development remains available.
+  - Verification: deferred, blocked on OD-06 (verified remote omp endpoint and WebSocket upgrade authentication) and the owner's protocol and host-key decision. No Cursor primary docs page for SSH remote development was found (https://cursor.com/docs/remote-ssh.md and https://cursor.com/docs/remote-development return 404) (Phase 34).
+- [ ] **CX-06**: The codebase meets a state-of-the-art, enterprise and production-ready bar, checked by a repository-wide review in which every finding is fixed or recorded.
+  - Acceptance: every finding has a disposition (fixed, or recorded with an owner and an open-question link); no finding is silently suppressed.
+  - Verification: findings table in the Phase 35 record.
+- [ ] **CX-07**: Quality gates are enforced in CI and in bootstrap: analyzers, warnings as errors, formatter, architecture tests and secret scanning.
+  - Acceptance: each gate fails the build on violation; every suppression has a row in docs/open-questions.md.
+  - Verification: gate run at Phase 35 HEAD.
+- [ ] **CX-08**: Decision records exist for the editor, terminal, MCP, browser pane and plugin isolation choices.
+  - Acceptance: each record names the candidate chosen, its licence (SPDX, with its source URL), its verification route and its open risks.
+  - Verification: docs/decisions listing (Phase 35).
