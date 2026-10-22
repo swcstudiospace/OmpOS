@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Net;
+using OmpOS.Contracts.Sessions;
 using Shouldly;
 using Xunit;
 
@@ -93,5 +94,35 @@ public sealed class OperationsTelemetryTests
 
         seen.Contains("POST /sessions", StringComparer.Ordinal).ShouldBeTrue("session creation must emit an OmpOS endpoint span");
         seen.Contains("POST /sessions/{id}/prompts", StringComparer.Ordinal).ShouldBeTrue("prompt submission must emit an OmpOS endpoint span");
+    }
+
+    /// <summary>Verifies a prompt run records <c>ompos.sandbox.provision.time</c> values, in milliseconds, once its sandbox is provisioned.</summary>
+    [Fact]
+    public async Task SandboxProvisionTime_RecordsAfterPromptRunProvisionsSandbox()
+    {
+        var measurements = new ConcurrentBag<double>();
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, observer) =>
+        {
+            if (string.Equals(instrument.Name, "ompos.sandbox.provision.time", StringComparison.Ordinal))
+            {
+                observer.EnableMeasurementEvents(instrument);
+            }
+        };
+        listener.SetMeasurementEventCallback<double>(
+            (instrument, measurement, tags, state) => measurements.Add(measurement));
+        listener.Start();
+
+        using var factory = new OmpApiFactory();
+        using var client = factory.CreateClient();
+        var testToken = TestContext.Current.CancellationToken;
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
+
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"provision me\"}", testToken).ConfigureAwait(true);
+        accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
+        await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Completed, TimeSpan.FromSeconds(15), testToken).ConfigureAwait(true);
+
+        measurements.ShouldNotBeEmpty("a prompt run provisions its sandbox, which records the provision time");
+        measurements.ShouldAllBe(static value => value >= 0d);
     }
 }

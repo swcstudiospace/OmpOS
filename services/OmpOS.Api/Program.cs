@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using OmpOS.Api.Coordination;
@@ -157,11 +158,18 @@ builder.Services.AddProblemDetails(static options =>
     };
 });
 
+// Each limiter policy is a keyed IRateLimiterPolicy<string>, resolved when the limiter options are built. The session policies are the
+// defaults; registering a different policy under the same key substitutes the limiter for that endpoint group.
+builder.Services.AddKeyedSingleton<IRateLimiterPolicy<string>, SessionRateLimiterPolicy>(SessionEndpoints.PromptsPolicy);
+builder.Services.AddKeyedSingleton<IRateLimiterPolicy<string>, SessionCreationRateLimiterPolicy>(SessionEndpoints.CreationPolicy);
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddPolicy<string, SessionRateLimiterPolicy>(SessionEndpoints.PromptsPolicy);
-    options.AddPolicy<string, SessionCreationRateLimiterPolicy>(SessionEndpoints.CreationPolicy);
+});
+builder.Services.AddOptions<RateLimiterOptions>().Configure<IServiceProvider>(static (options, services) =>
+{
+    options.AddPolicy(SessionEndpoints.PromptsPolicy, services.GetRequiredKeyedService<IRateLimiterPolicy<string>>(SessionEndpoints.PromptsPolicy));
+    options.AddPolicy(SessionEndpoints.CreationPolicy, services.GetRequiredKeyedService<IRateLimiterPolicy<string>>(SessionEndpoints.CreationPolicy));
 });
 
 builder.Services.AddHealthChecks()
