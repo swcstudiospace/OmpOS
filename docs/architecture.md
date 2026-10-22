@@ -8,7 +8,7 @@ This document records the layering every later phase must respect, and the sessi
 flowchart TB
     L0["L0 · OmpOS.Contracts"]
     L1["L1 · Parser · Harness.Abstractions · Sandbox.Abstractions"]
-    L2["L2 · Harness.Acp · Harness.Rpc · Harness.InMemory · Sessions · GenUi · Sandbox · Workflows (DirectSessionRunner) · UI"]
+    L2["L2 · Harness.Acp · Harness.Rpc · Harness.InMemory · Sessions · GenUi · Sandbox · Workflows (DirectSessionRunner) · UI · Presentation"]
     L3["L3 · Api"]
     L4["L4 - Web - Native heads"]
     L4 --> L3
@@ -38,15 +38,17 @@ There is no worker layer. The Temporal worker project was removed on 2026-10-21,
 | `OmpOS.Sandbox` | L2 | Fake, local podman-compose, and vendor-stub providers (Phase 3) |
 | `OmpOS.Workflows` | L2 | In-process session run path: `DirectSessionRunner`, the only run path after the Temporal removal (Phase 3; library name pending the code cutover [INFERENCE]) |
 | `OmpOS.UI` | L2 | Razor chat surface for the Blazor WebAssembly web head: list, session view, composer, block renderer (Phase 4). Under ADR-0004 it remains the web head's UI; the native heads bind the framework-neutral presentation layer instead. |
+| `OmpOS.Presentation` | L2 | Framework-neutral presentation layer (Phase 20): view models and state (`SessionViewModel`, `ComposerViewModel`, `ConversationListState`), tool approvals and run input, `MotionPreference`, the plugin host (`PluginHost`), and change notification through `ObservableModel` (OQ-44). References no UI framework (`PresentationIsolationTests`). Consumed by `OmpOS.UI` (web head) and `OmpOS.Native` (Avalonia head). |
 | `OmpOS.Api` | L3 | Session/prompt endpoints, resumable SSE stream, health, OpenAPI, and in-process session runs (Phase 2) |
 | `OmpOS.Web` | L4 | Blazor WebAssembly standalone web head, which stays Blazor WebAssembly under ADR-0004; static publish to Vercel (Phase 4) |
-| `OmpOS.App` | L4 | Superseded 2026-10-21 by ADR-0004: the .NET MAUI Blazor Hybrid head sharing `OmpOS.UI` (Phase 4) retires by clean cutover after parity tests (v0.10.0 Phase 25). Its replacement, the Avalonia UI native heads for Windows, macOS, Linux, iOS and Android, is not yet in the repo. |
+| `OmpOS.App` | L4 | Superseded 2026-10-21 by ADR-0004: the .NET MAUI Blazor Hybrid head sharing `OmpOS.UI` (Phase 4) retires by clean cutover after parity tests (v0.10.0 Phase 25). Its replacement, the Avalonia UI native heads for Windows, macOS, Linux, iOS and Android, has its first project in the repo (`OmpOS.Native`, Phase 20); the other platform heads are not yet in the repo. |
+| `OmpOS.Native` | L4 | Avalonia 12.1.4 desktop shell (Phase 20). Binds the `OmpOS.Presentation` view models through an explicit `ViewMapping` (no `ViewLocator`), with one token dictionary (`Themes/OmpOSTokens.axaml`). Headless tests live in `tests/OmpOS.Native.Tests`. Per-platform runs for Linux, Windows, macOS, iOS and Android are not yet recorded (Phases 22 and 24). |
 
 `OmpOS.Api` is a class-library placeholder in Phase 1 and is converted to the web SDK host in Phase 2.
 
 ## Data flow
 
-A prompt typed on any surface becomes an `IntentEnvelope` (parser), runs through a harness session against omp, lands as sequence-numbered `StreamEvent`s in the session log, streams out over SSE with `id:` = `Seq`, and folds into `UiBlock`s rendered by the web head's Razor surface (`OmpOS.UI`). The Avalonia native heads will bind the shared presentation layer that ADR-0004 specifies. Unknown JSON kinds never throw: they deserialize to `UnknownBlock`/`UnknownPayload` with the raw payload preserved, so future protocol additions render through the unknown fallback instead of breaking clients.
+A prompt typed on any surface becomes an `IntentEnvelope` (parser), runs through a harness session against omp, lands as sequence-numbered `StreamEvent`s in the session log, streams out over SSE with `id:` = `Seq`, and folds into `UiBlock`s rendered by the web head's Razor surface (`OmpOS.UI`). The Avalonia native head (`OmpOS.Native`, Phase 20) binds the shared presentation layer that ADR-0004 specifies; the other platform heads are not yet in the repo. Unknown JSON kinds never throw: they deserialize to `UnknownBlock`/`UnknownPayload` with the raw payload preserved, so future protocol additions render through the unknown fallback instead of breaking clients.
 2026-10-20: that stream is served over HTTP as `GET /sessions/{id}/events` (SSE with `id:` = `Seq`, resume via `Last-Event-ID` or `?since=`, terminal `completed`/`error` ends the response), alongside the session endpoints documented in `docs/api/openapi.json`.
 
 ## Session run path (in process)
