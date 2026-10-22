@@ -33,9 +33,6 @@ internal static class SessionEndpoints
     /// <summary>Gets the rate-limiter policy name guarding session creation (single global bucket).</summary>
     public const string CreationPolicy = "SessionCreation";
 
-    /// <summary>Gets the maximum accepted length of a requested owner id.</summary>
-    private const int MaxOwnerIdLength = 128;
-
     /// <summary>Maps the session endpoints.</summary>
     /// <param name="endpoints">The route builder.</param>
     /// <returns>The route builder.</returns>
@@ -64,7 +61,7 @@ internal static class SessionEndpoints
         return endpoints;
     }
 
-    /// <summary>Creates a session for the ambient principal (or the requested owner) behind the creation limiter.</summary>
+    /// <summary>Creates a session owned by the authenticated caller, behind the creation limiter.</summary>
     /// <remarks>
     /// Phase 2 retention decision: sessions are kept for the life of the process with no TTL or delete
     /// path. The host serves a single dev principal, so unbounded growth is an accepted Phase 2 exposure;
@@ -87,7 +84,6 @@ internal static class SessionEndpoints
             return ProblemResponse(413, "Request body too large.", "The request body exceeds the configured limit.");
         }
 
-        string? ownerId = null;
         if (body.Bytes.Length > 0)
         {
             if (!IsJsonContentType(context.Request.ContentType))
@@ -105,48 +101,30 @@ internal static class SessionEndpoints
                 return ProblemResponse(400, "Invalid request body.", "The request body is not valid JSON.");
             }
 
-            ownerId = request?.OwnerId;
-            if (ownerId is not null && !IsValidOwnerId(ownerId))
+            if (request?.OwnerId is not null)
             {
-                return ProblemResponse(400, "Invalid owner id.", "The owner id must be 1 to 128 characters from A-Z, a-z, 0-9, '.', '_', '@' or '-'.");
+                return ProblemResponse(400, "Owner not accepted.", "The owner is the authenticated caller. The request body must not name an owner.");
             }
         }
 
-        var owner = ownerId ?? user.Name;
-        var session = await sessions.CreateAsync(owner, cancellationToken).ConfigureAwait(false);
+        var session = await sessions.CreateAsync(user.Name, cancellationToken).ConfigureAwait(false);
         registry.Add(session.Id);
         metrics.SessionCreated();
         return TypedResults.Created($"/sessions/{session.Id}", session);
     }
 
-    private static bool IsValidOwnerId(string value)
-    {
-        if (value.Length is < 1 or > MaxOwnerIdLength)
-        {
-            return false;
-        }
-
-        foreach (var c in value)
-        {
-            if (!char.IsAsciiLetterOrDigit(c) && c is not ('.' or '_' or '@' or '-'))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
+    /// <summary>Lists the sessions the caller owns, oldest first. Sessions another owner holds are never included.</summary>
     private static async Task<Ok<Session[]>> ListSessionsAsync(
         ISessionRepository repository,
         SessionRegistry registry,
+        IUserContext user,
         CancellationToken cancellationToken)
     {
         var found = new List<Session>();
         foreach (var id in registry.Ids)
         {
             var session = await repository.GetAsync(id, cancellationToken).ConfigureAwait(false);
-            if (session is not null)
+            if (session is not null && string.Equals(session.OwnerId, user.Name, StringComparison.Ordinal))
             {
                 found.Add(session);
             }
@@ -159,12 +137,11 @@ internal static class SessionEndpoints
     private static async Task<Results<Ok<Session>, ProblemHttpResult>> GetSessionAsync(
         string id,
         ISessionRepository repository,
+        IUserContext user,
         CancellationToken cancellationToken)
     {
-        var session = await repository.GetAsync(id, cancellationToken).ConfigureAwait(false);
-        return session is null
-            ? ProblemResponse(404, "Session not found.", $"No session has id '{id}'.")
-            : TypedResults.Ok(session);
+        var session = await FindOwnedSessionAsync(id, repository, user, cancellationToken).ConfigureAwait(false);
+        return session is null ? SessionNotFound(id) : TypedResults.Ok(session);
     }
 
     private static async Task<Results<Accepted<PromptAcceptedResponse>, ProblemHttpResult>> SubmitPromptAsync(
@@ -179,6 +156,7 @@ internal static class SessionEndpoints
         SessionChangePublisher publisher,
         IIdempotencyStore idempotency,
         ILogger<PromptRunner> logger,
+        IUserContext user,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -190,10 +168,10 @@ internal static class SessionEndpoints
             return ProblemResponse(400, "Invalid idempotency key.", $"The {IdempotencyKeyHeader.HeaderName} header must appear at most once and hold 1 to {IdempotencyKeyHeader.MaxLength} visible ASCII characters.");
         }
 
-        var session = await repository.GetAsync(id, cancellationToken).ConfigureAwait(false);
+        var session = await FindOwnedSessionAsync(id, repository, user, cancellationToken).ConfigureAwait(false);
         if (session is null)
         {
-            return ProblemResponse(404, "Session not found.", $"No session has id '{id}'.");
+            return SessionNotFound(id);
         }
 
         var read = await ReadPromptAsync(context, options.Value, cancellationToken).ConfigureAwait(false);
@@ -449,6 +427,30 @@ internal static class SessionEndpoints
 
         return null;
     }
+
+    /// <summary>
+    /// Loads a session the caller owns. A session another owner holds reads as absent, so one owner's sessions are never visible to another caller.
+    /// </summary>
+    /// <param name="id">The session identifier.</param>
+    /// <param name="repository">The session store.</param>
+    /// <param name="user">The authenticated caller.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The session when the caller owns it; otherwise null.</returns>
+    internal static async Task<Session?> FindOwnedSessionAsync(
+        string id,
+        ISessionRepository repository,
+        IUserContext user,
+        CancellationToken cancellationToken)
+    {
+        var session = await repository.GetAsync(id, cancellationToken).ConfigureAwait(false);
+        return session is not null && string.Equals(session.OwnerId, user.Name, StringComparison.Ordinal) ? session : null;
+    }
+
+    /// <summary>The 404 for a session the caller cannot see. An absent session and another owner's session get this same response.</summary>
+    /// <param name="id">The session identifier the caller named.</param>
+    /// <returns>The problem response.</returns>
+    internal static ProblemHttpResult SessionNotFound(string id) =>
+        ProblemResponse(404, "Session not found.", $"No session has id '{id}'.");
 
     private static async Task<PromptRead> ReadPromptAsync(HttpContext context, ApiOptions options, CancellationToken cancellationToken)
     {

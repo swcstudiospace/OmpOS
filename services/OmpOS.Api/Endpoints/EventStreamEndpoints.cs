@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net.ServerSentEvents;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using OmpOS.Api.Security;
 using OmpOS.Api.Sse;
 using OmpOS.Contracts.Serialization;
 using OmpOS.Sessions;
@@ -33,14 +34,15 @@ internal static class EventStreamEndpoints
         HttpContext context,
         string id,
         ISessionRepository repository,
+        IUserContext user,
         SessionEventStreamer streamer,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
-        var session = await repository.GetAsync(id, cancellationToken).ConfigureAwait(false);
+        var session = await SessionEndpoints.FindOwnedSessionAsync(id, repository, user, cancellationToken).ConfigureAwait(false);
         if (session is null)
         {
-            return TypedResults.Problem(detail: $"No session has id '{id}'.", statusCode: 404, title: "Session not found.");
+            return SessionEndpoints.SessionNotFound(id);
         }
 
         long? header = null;

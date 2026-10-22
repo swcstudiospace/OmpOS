@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using OmpOS.Harness.Abstractions;
@@ -139,24 +140,25 @@ public sealed class ApiInputValidationTests
         seqs.ShouldBe(Enumerable.Range(1, seqs.Count).Select(static i => (long)i).ToList());
     }
 
-    /// <summary>Verifies an owner id within the 128-character bound and allowed set is persisted exactly as requested.</summary>
+    /// <summary>Verifies a subject made of the owner id character set is persisted as the session owner exactly as the token carries it.</summary>
     [Fact]
-    public async Task Create_OwnerIdWithinBoundAndCharset_IsPersistedAsRequested()
+    public async Task Create_SubjectWithOwnerCharset_IsPersistedAsOwner()
     {
-        using var factory = new OmpApiFactory();
+        using var factory = JwtTestHost.CreateFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        const string Owner = "ops.team_lead@example-1";
+        const string Subject = "ops.team_lead@example-1";
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", JwtTestHost.IssueToken(Subject));
 
-        var id = await SessionClient.CreateSessionAsync(client, testToken, $"{{\"ownerId\":\"{Owner}\"}}").ConfigureAwait(true);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
         var session = await SessionClient.ReadSessionAsync(client, id, testToken).ConfigureAwait(true);
 
-        session.OwnerId.ShouldBe(Owner);
+        session.OwnerId.ShouldBe(Subject);
     }
 
-    /// <summary>Verifies the 128-character owner id boundary is accepted.</summary>
+    /// <summary>Verifies a body owner id of exactly 128 characters is refused with 400: the owner is never taken from the body.</summary>
     [Fact]
-    public async Task Create_OwnerIdAt128Characters_IsAccepted()
+    public async Task Create_OwnerIdAt128Characters_IsRefused()
     {
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
@@ -164,7 +166,7 @@ public sealed class ApiInputValidationTests
 
         using var response = await PostSessionAsync(client, $"{{\"ownerId\":\"{new string('o', 128)}\"}}", testToken).ConfigureAwait(true);
 
-        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        AssertProblem(response, HttpStatusCode.BadRequest);
     }
 
     /// <summary>Verifies an owner id one character over the bound returns 400 with a problem body.</summary>

@@ -4,9 +4,8 @@ namespace OmpOS.Api.Endpoints;
 /// Request body for <c>POST /sessions</c>. The owner defaults to the ambient principal when omitted.
 /// </summary>
 /// <remarks>
-/// The real auth provider owns this field: the middleware stays the single decision point, and
-/// this value is only honored while the host serves its single dev principal. At most 256
-/// characters; longer values are rejected with 400.
+/// The owner is the subject of the bearer token that created the session, so a request cannot name another owner. A non-null
+/// <c>ownerId</c> is refused with 400; the property exists only so that such a request is detected.
 /// </remarks>
 internal sealed record CreateSessionRequest
 {

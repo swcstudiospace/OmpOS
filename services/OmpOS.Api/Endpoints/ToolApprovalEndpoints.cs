@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
 using OmpOS.Api.Options;
+using OmpOS.Api.Security;
 using OmpOS.Api.Sse;
 using OmpOS.Contracts.Errors;
 using OmpOS.Sessions;
@@ -11,7 +12,7 @@ namespace OmpOS.Api.Endpoints;
 /// <summary>
 /// Tool-approval decisions: <c>POST /sessions/{id}/tool-approvals/{requestId}</c> with <c>{"decision":"allow"|"deny"}</c>.
 /// Outcomes: 204 when the decision is recorded; 400 for a malformed body; 403 when an allow exceeds the request's ceiling
-/// (the request stays pending); 404 when the session does not exist; 409 when the session is not awaiting approval or the
+/// (the request stays pending); 404 when the session does not exist or belongs to another owner; 409 when the session is not awaiting approval or the
 /// request id is not pending (unknown, or already decided). An unknown request id is a 409 rather than a 404: the session
 /// exists, and the request cannot be decided in its current state. The same response covers a request already decided,
 /// so the API does not reveal which request ids were ever issued.
@@ -44,6 +45,8 @@ internal static class ToolApprovalEndpoints
         string id,
         string requestId,
         SessionService sessions,
+        ISessionRepository repository,
+        IUserContext user,
         SessionChangePublisher publisher,
         IOptions<ApiOptions> options,
         CancellationToken cancellationToken)
@@ -63,6 +66,12 @@ internal static class ToolApprovalEndpoints
         if (string.IsNullOrWhiteSpace(requestId) || !TryReadDecision(body.Bytes, out var approved))
         {
             return ProblemResponse(400, "Invalid tool decision.", $"The body must be an object whose only member is '{DecisionProperty}', set to '{AllowValue}' or '{DenyValue}'.");
+        }
+
+        var session = await SessionEndpoints.FindOwnedSessionAsync(id, repository, user, cancellationToken).ConfigureAwait(false);
+        if (session is null)
+        {
+            return SessionEndpoints.SessionNotFound(id);
         }
 
         try

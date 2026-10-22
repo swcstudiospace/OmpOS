@@ -113,18 +113,18 @@ public sealed class ReviewFindingsTests
         items.ShouldBeEmpty("afterSeq at long.MaxValue must not wrap and replay the log");
     }
 
-    /// <summary>Verifies a 128-character owner id is accepted while a 129-character owner id is rejected with 400.</summary>
+    /// <summary>Verifies a body owner id is refused with 400 at every length, so the owner can never be taken from the request.</summary>
     [Theory]
-    [InlineData(128, HttpStatusCode.Created)]
-    [InlineData(129, HttpStatusCode.BadRequest)]
-    public async Task Create_OwnerIdLength_BoundaryEnforced(int length, HttpStatusCode expected)
+    [InlineData(128)]
+    [InlineData(129)]
+    public async Task Create_OwnerIdInBody_IsRefusedAtEveryLength(int length)
     {
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
 
         using var response = await PostSessionAsync(client, $"{{\"ownerId\":\"{new string('o', length)}\"}}", testToken).ConfigureAwait(true);
-        response.StatusCode.ShouldBe(expected);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
     private static async Task<HttpResponseMessage> PostSessionAsync(HttpClient client, string json, CancellationToken testToken)

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,15 +33,16 @@ public sealed class SessionEndpointTests
         document.RootElement.GetProperty("ownerId").GetString().ShouldBe("local-dev");
     }
 
-    /// <summary>Verifies an explicit owner id is honored.</summary>
+    /// <summary>Verifies the session owner is the subject of the caller's bearer token, not a requested owner.</summary>
     [Fact]
-    public async Task Create_WithOwnerId_HonorsOwner()
+    public async Task Create_WithPrincipalSubject_OwnerIsTheSubject()
     {
-        using var factory = new OmpApiFactory();
+        using var factory = JwtTestHost.CreateFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", JwtTestHost.IssueToken("alice"));
 
-        var id = await SessionClient.CreateSessionAsync(client, testToken, "{\"ownerId\":\"alice\"}").ConfigureAwait(true);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
         var session = await SessionClient.ReadSessionAsync(client, id, testToken).ConfigureAwait(true);
 
         session.OwnerId.ShouldBe("alice");
