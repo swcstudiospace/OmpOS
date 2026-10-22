@@ -11,7 +11,9 @@ namespace OmpOS.Harness.Plugins;
 /// as skipped. A blocking hook that exits with code 2 denies the action. That follows the convention in the Cursor hooks
 /// documentation, https://cursor.com/docs/hooks, where exit code 2 blocks an action and other failures let it proceed.
 /// A blocking hook with no consent does not start, and it also denies the action, so withholding consent cannot turn a
-/// guard into a pass. Each denial reports its <see cref="HookDenialReason"/>.
+/// guard into a pass. A blocking hook of a quarantined plugin is treated the same way, with reason
+/// <see cref="HookDenialReason.PluginQuarantined"/>. A non-blocking hook of a quarantined plugin is skipped. Each denial
+/// reports its <see cref="HookDenialReason"/>.
 /// </remarks>
 public sealed class HookRunner
 {
@@ -76,7 +78,16 @@ public sealed class HookRunner
 
             if (_state.FindQuarantine(hook.PluginId) is not null)
             {
+                if (!hook.Blocking)
+                {
+                    executions.Add(NotRun(hook, HookExecutionStatus.Skipped));
+                    continue;
+                }
+
+                // A blocking hook of a quarantined plugin does not start, and it denies the action.
                 executions.Add(NotRun(hook, HookExecutionStatus.PluginQuarantined));
+                denial = HookDenialReason.PluginQuarantined;
+                stopped = true;
                 continue;
             }
 

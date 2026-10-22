@@ -88,6 +88,31 @@ public sealed class PluginHost : IDisposable
     }
 
     /// <summary>
+    /// Lifts a plugin's quarantine and persists the operator's reason. Hooks that were registered before the quarantine
+    /// run again once the lift is recorded. A plugin quarantined at load has no registered hooks; it is activated by a
+    /// host that loads it after the lift.
+    /// </summary>
+    /// <param name="pluginId">The quarantined plugin.</param>
+    /// <param name="reason">Why the operator lifted the quarantine. It must not be empty or whitespace.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>True when a quarantine was lifted; false when the plugin was not quarantined.</returns>
+    /// <exception cref="ArgumentException">The plugin identifier or the reason is empty or whitespace.</exception>
+    public async Task<bool> LiftQuarantineAsync(string pluginId, string reason, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(pluginId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        await _loadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await _state.LiftQuarantineAsync(pluginId, reason, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _loadGate.Release();
+        }
+    }
+
+    /// <summary>
     /// Releases the hook registry and the load lock.
     /// </summary>
     public void Dispose()

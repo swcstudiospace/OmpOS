@@ -78,6 +78,11 @@ public sealed class PluginStateStore : IDisposable
     public ImmutableList<string> HookOrder => _snapshot.HookOrder;
 
     /// <summary>
+    /// Every quarantine that an operator lifted, oldest first, with the reason given for each.
+    /// </summary>
+    public ImmutableList<PluginLift> Lifts => _snapshot.Lifts;
+
+    /// <summary>
     /// Quarantines a plugin with a reason and persists it. A plugin that is already quarantined keeps its first reason.
     /// </summary>
     /// <param name="pluginId">The plugin to quarantine.</param>
@@ -95,6 +100,38 @@ public sealed class PluginStateStore : IDisposable
                     Quarantines = state.Quarantines.Add(pluginId, new PluginQuarantine(pluginId, reason, _clock.GetUtcNow())),
                 },
             cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Lifts a plugin's quarantine, records the operator's reason, and persists both. A plugin that is not quarantined is
+    /// left unchanged.
+    /// </summary>
+    /// <param name="pluginId">The plugin whose quarantine is lifted.</param>
+    /// <param name="reason">Why the operator lifted the quarantine.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>True when a quarantine was lifted; false when the plugin was not quarantined.</returns>
+    public async Task<bool> LiftQuarantineAsync(string pluginId, string reason, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(pluginId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        var lifted = false;
+        await MutateAsync(
+            state =>
+            {
+                if (!state.Quarantines.ContainsKey(pluginId))
+                {
+                    return state;
+                }
+
+                lifted = true;
+                return state with
+                {
+                    Quarantines = state.Quarantines.Remove(pluginId),
+                    Lifts = state.Lifts.Add(new PluginLift(pluginId, reason, _clock.GetUtcNow())),
+                };
+            },
+            cancellationToken).ConfigureAwait(false);
+        return lifted;
     }
 
     /// <summary>
@@ -187,12 +224,14 @@ public sealed class PluginStateStore : IDisposable
 
     private sealed record PluginStateSnapshot(
         ImmutableDictionary<string, PluginQuarantine> Quarantines,
+        ImmutableList<PluginLift> Lifts,
         ImmutableHashSet<string> ConsentedHashes,
         ImmutableList<string> HookOrder,
         ImmutableHashSet<string> DisabledHooks)
     {
         public static PluginStateSnapshot Empty { get; } = new(
             ImmutableDictionary.Create<string, PluginQuarantine>(StringComparer.Ordinal),
+            ImmutableList<PluginLift>.Empty,
             ImmutableHashSet.Create<string>(StringComparer.Ordinal),
             ImmutableList<string>.Empty,
             ImmutableHashSet.Create<string>(StringComparer.Ordinal));
@@ -202,6 +241,7 @@ public sealed class PluginStateStore : IDisposable
                 quarantine => quarantine.PluginId,
                 quarantine => new PluginQuarantine(quarantine.PluginId, quarantine.Reason, quarantine.QuarantinedAt),
                 StringComparer.Ordinal),
+            document.Lifts.Select(lift => new PluginLift(lift.PluginId, lift.Reason, lift.LiftedAt)).ToImmutableList(),
             document.ConsentedHashes.ToImmutableHashSet(StringComparer.Ordinal),
             document.HookOrder.ToImmutableList(),
             document.DisabledHooks.ToImmutableHashSet(StringComparer.Ordinal));
@@ -213,6 +253,12 @@ public sealed class PluginStateStore : IDisposable
                 PluginId = quarantine.PluginId,
                 Reason = quarantine.Reason,
                 QuarantinedAt = quarantine.QuarantinedAt,
+            })],
+            Lifts = [.. Lifts.Select(lift => new LiftDocument
+            {
+                PluginId = lift.PluginId,
+                Reason = lift.Reason,
+                LiftedAt = lift.LiftedAt,
             })],
             ConsentedHashes = [.. ConsentedHashes],
             HookOrder = [.. HookOrder],

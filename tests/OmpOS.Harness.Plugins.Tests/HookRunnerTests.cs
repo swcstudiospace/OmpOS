@@ -124,7 +124,7 @@ public sealed class HookRunnerTests
 
         first.Executions.Select(execution => execution.Status).ShouldBe([HookExecutionStatus.Faulted, HookExecutionStatus.Succeeded]);
         store.FindQuarantine("bad.plugin")!.Reason.ShouldContain("boom in hook");
-        second.Executions.Select(execution => execution.Status).ShouldBe([HookExecutionStatus.PluginQuarantined, HookExecutionStatus.Succeeded]);
+        second.Executions.Select(execution => execution.Status).ShouldBe([HookExecutionStatus.Skipped, HookExecutionStatus.Succeeded]);
         runner.Spawns.Count(command => IsArgument(command, "/opt/bad", index: 0)).ShouldBe(1);
     }
 

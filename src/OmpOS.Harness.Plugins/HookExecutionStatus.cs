@@ -23,10 +23,16 @@ public enum HookExecutionStatus
     /// </summary>
     AwaitingConsent,
 
-    /// <summary>The hook did not start because its plugin is quarantined.</summary>
+    /// <summary>
+    /// The blocking hook did not start because its plugin is quarantined. The action is denied with
+    /// <see cref="HookDenialReason.PluginQuarantined"/>.
+    /// </summary>
     PluginQuarantined,
 
-    /// <summary>The hook did not start because an earlier blocking hook stopped the run.</summary>
+    /// <summary>
+    /// The hook did not start. An earlier blocking hook stopped the run, or the hook is non-blocking and its plugin is
+    /// quarantined.
+    /// </summary>
     Skipped,
 
     /// <summary>The runner threw. The plugin that owns the hook has been quarantined.</summary>
