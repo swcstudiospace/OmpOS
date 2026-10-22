@@ -1,0 +1,109 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:agents="clr-namespace:OmpOS.Presentation.Agents;assembly=OmpOS.Presentation"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             x:Class="OmpOS.Native.Views.Agents.AgentsView"
+             x:DataType="agents:AgentsViewModel"
+             Padding="{DynamicResource OmpOS.Space.Sm}">
+
+  <DockPanel>
+
+    <StackPanel DockPanel.Dock="Top"
+                Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+      <TextBlock Text="Agents"
+                 FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Body}" />
+
+      <StackPanel Orientation="Horizontal"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+        <TextBlock Text="Status"
+                   VerticalAlignment="Center"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+
+        <ComboBox x:Name="StatusFilter"
+                  MinWidth="160"
+                  MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                  AutomationProperties.Name="Filter runs by status" />
+
+      </StackPanel>
+
+      <TextBlock x:Name="EmptyState"
+                 Classes="muted"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap" />
+
+    </StackPanel>
+
+    <Border x:Name="RunPanel"
+            x:DataType="agents:AgentRun"
+            DockPanel.Dock="Bottom"
+            IsVisible="False"
+            Margin="{DynamicResource OmpOS.Space.Xs}"
+            Padding="{DynamicResource OmpOS.Space.Sm}"
+            BorderBrush="{DynamicResource OmpOS.Color.Accent}"
+            BorderThickness="1">
+
+      <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+        <TextBlock Text="{CompiledBinding Title}"
+                   FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Body}"
+                   TextTrimming="CharacterEllipsis"
+                   MaxLines="1" />
+
+        <TextBlock Text="{CompiledBinding StatusText}"
+                   Classes="muted"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+
+        <Button x:Name="CloseRunButton"
+                Content="Close run"
+                HorizontalAlignment="Left"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                AutomationProperties.Name="Close run" />
+
+        <ScrollViewer MaxHeight="240"
+                      AutomationProperties.Name="Run transcript">
+          <ItemsControl ItemsSource="{CompiledBinding Transcript}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="sys:String">
+                <TextBlock Text="{CompiledBinding}"
+                           TextWrapping="Wrap"
+                           FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+      </StackPanel>
+
+    </Border>
+
+    <ScrollViewer AutomationProperties.Name="Agent runs">
+      <ItemsControl x:Name="AgentRows"
+                    ItemsSource="{CompiledBinding VisibleRuns}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="agents:AgentRun">
+            <Button HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Left"
+                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                    AutomationProperties.Name="{CompiledBinding AccessibleLabel}">
+              <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
+                <TextBlock Text="{CompiledBinding Title}"
+                           FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                           TextTrimming="CharacterEllipsis"
+                           MaxLines="1" />
+                <TextBlock Text="{CompiledBinding StatusText}"
+                           Classes="muted"
+                           FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+              </StackPanel>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+  </DockPanel>
+
+</UserControl>
