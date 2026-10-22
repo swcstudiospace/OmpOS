@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OmpOS.Native.Views.InlineEditing.InlineEditView">
+
+  <StackPanel Margin="{DynamicResource OmpOS.Space.Sm}"
+              Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+    <TextBlock x:Name="InstructionText"
+               FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Edit instruction" />
+
+    <TextBlock x:Name="SelectionText"
+               FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Selected text" />
+
+    <TextBox x:Name="ProposalInput"
+             AcceptsReturn="True"
+             TextWrapping="Wrap"
+             MinHeight="60"
+             AutomationProperties.Name="Proposed replacement" />
+
+    <Button x:Name="ProposeButton"
+            Content="Propose"
+            HorizontalAlignment="Left"
+            AutomationProperties.Name="Propose replacement" />
+
+    <StackPanel x:Name="ChangePanel"
+                IsVisible="False"
+                Spacing="{DynamicResource OmpOS.Gap.Xs}">
+      <TextBlock x:Name="RemovedText"
+                 FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Removed text" />
+      <TextBlock x:Name="AddedText"
+                 FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Added text" />
+    </StackPanel>
+
+    <StackPanel Orientation="Horizontal"
+                Spacing="{DynamicResource OmpOS.Gap.Sm}">
+      <Button x:Name="AcceptButton"
+              Content="Accept"
+              IsEnabled="False"
+              AutomationProperties.Name="Accept edit" />
+      <Button x:Name="RejectButton"
+              Content="Reject"
+              IsEnabled="False"
+              AutomationProperties.Name="Reject edit" />
+      <Button x:Name="UndoButton"
+              Content="Undo"
+              IsEnabled="False"
+              AutomationProperties.Name="Undo edit" />
+    </StackPanel>
+
+    <TextBlock x:Name="StatusText"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Edit status"
+               AutomationProperties.LiveSetting="Polite" />
+
+  </StackPanel>
+
+</UserControl>

@@ -1,0 +1,76 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:diff="clr-namespace:OmpOS.Native.Views.Diff"
+             x:Class="OmpOS.Native.Views.Diff.DiffReviewView">
+
+  <Grid RowDefinitions="Auto,*,Auto,Auto">
+
+    <TextBlock x:Name="PendingText"
+               Grid.Row="0"
+               Margin="{DynamicResource OmpOS.Space.Sm}"
+               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Pending hunks"
+               AutomationProperties.LiveSetting="Polite" />
+
+    <ScrollViewer Grid.Row="1"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto"
+                  Padding="{DynamicResource OmpOS.Space.Sm}">
+      <ItemsControl x:Name="HunkRows"
+                    AutomationProperties.Name="Diff hunks">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="diff:DiffHunkRow">
+            <StackPanel Margin="0,0,0,12"
+                        Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+              <TextBlock Text="{CompiledBinding Heading}"
+                         FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                         TextWrapping="Wrap" />
+
+              <ItemsControl ItemsSource="{CompiledBinding Lines}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="diff:DiffLineRow">
+                    <TextBlock Text="{CompiledBinding Display}"
+                               FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                               TextWrapping="Wrap" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <StackPanel Orientation="Horizontal"
+                          Spacing="{DynamicResource OmpOS.Gap.Sm}">
+                <TextBlock Text="{CompiledBinding DecisionText}"
+                           VerticalAlignment="Center" />
+                <Button Content="Accept"
+                        Command="{CompiledBinding AcceptCommand}"
+                        AutomationProperties.Name="{CompiledBinding AcceptName}" />
+                <Button Content="Reject"
+                        Command="{CompiledBinding RejectCommand}"
+                        AutomationProperties.Name="{CompiledBinding RejectName}" />
+              </StackPanel>
+
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+    <TextBlock Grid.Row="2"
+               Margin="{DynamicResource OmpOS.Space.Sm}"
+               Text="Resulting text"
+               FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}" />
+
+    <TextBox x:Name="ResultBox"
+             Grid.Row="3"
+             Margin="{DynamicResource OmpOS.Space.Sm}"
+             MaxHeight="220"
+             IsReadOnly="True"
+             AcceptsReturn="True"
+             TextWrapping="Wrap"
+             FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+             AutomationProperties.Name="Resulting text" />
+
+  </Grid>
+
+</UserControl>

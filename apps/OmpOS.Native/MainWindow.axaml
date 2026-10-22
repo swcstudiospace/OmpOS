@@ -8,8 +8,9 @@
         Width="960"
         Height="640">
 
-  <!-- Logical and keyboard order follows XAML order: skip link, session list, transcript (or Agents view), run controls, prompt,
-       send, stop, then transcript search, the Agents and side-chat toggles, and the side-chat region. -->
+  <!-- Logical and keyboard order follows XAML order: skip link, session list, transcript (or the Agents or tool view that opens in
+       its place), run controls, prompt, send, stop, then transcript search, the Agents and side-chat toggles, the workspace tool
+       toggles, and the side-chat region. -->
   <DockPanel>
 
     <Button x:Name="SkipLink"
@@ -31,11 +32,13 @@
         <views:ConversationListView x:Name="ConversationList" />
       </Border>
 
-      <Grid Grid.Column="1" RowDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
+      <Grid Grid.Column="1" RowDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
         <Grid Grid.Row="0">
           <ContentControl x:Name="TranscriptHost" />
           <ContentControl x:Name="AgentsHost"
+                          IsVisible="False" />
+          <ContentControl x:Name="ToolHost"
                           IsVisible="False" />
         </Grid>
 
@@ -73,8 +76,63 @@
                         AutomationProperties.Name="Show side chats" />
         </StackPanel>
 
+        <!-- Each tool replaces the transcript in the host above. Opening one closes the others and the Agents view. -->
+        <WrapPanel Grid.Row="6"
+                   Margin="{DynamicResource OmpOS.Space.Sm}">
+          <ToggleButton x:Name="EditorToggle"
+                        Content="Editor"
+                        Margin="{DynamicResource OmpOS.Space.Xs}"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="Editor" />
+          <ToggleButton x:Name="ExplorerToggle"
+                        Content="Explorer"
+                        Margin="{DynamicResource OmpOS.Space.Xs}"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="Explorer" />
+          <ToggleButton x:Name="TerminalToggle"
+                        Content="Terminal"
+                        Margin="{DynamicResource OmpOS.Space.Xs}"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="Terminal" />
+          <ToggleButton x:Name="DiffToggle"
+                        Content="Diff review"
+                        Margin="{DynamicResource OmpOS.Space.Xs}"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="Diff review" />
+          <ToggleButton x:Name="InlineEditToggle"
+                        Content="Inline edit"
+                        Margin="{DynamicResource OmpOS.Space.Xs}"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="Inline edit" />
+          <ToggleButton x:Name="ConventionsToggle"
+                        Content="Conventions"
+                        Margin="{DynamicResource OmpOS.Space.Xs}"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="Workspace conventions" />
+          <ToggleButton x:Name="McpToggle"
+                        Content="MCP tools"
+                        Margin="{DynamicResource OmpOS.Space.Xs}"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="MCP tools" />
+          <ToggleButton x:Name="WorkspaceSearchToggle"
+                        Content="Workspace search"
+                        Margin="{DynamicResource OmpOS.Space.Xs}"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="Workspace search" />
+          <ToggleButton x:Name="ExportToggle"
+                        Content="Export"
+                        Margin="{DynamicResource OmpOS.Space.Xs}"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="Transcript export" />
+          <ToggleButton x:Name="SuggestionsToggle"
+                        Content="Inline suggestions"
+                        Margin="{DynamicResource OmpOS.Space.Xs}"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="Inline suggestions" />
+        </WrapPanel>
+
         <ContentControl x:Name="SideChatHost"
-                        Grid.Row="6"
+                        Grid.Row="7"
                         IsVisible="False" />
 
       </Grid>

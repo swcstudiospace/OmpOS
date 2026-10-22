@@ -40,6 +40,34 @@ internal partial class App : Application
         _runInput = runInput;
     }
 
+    /// <summary>
+    /// Creates the application over a composed engine. Its approval bridge is the engine's, so each decision settles the request
+    /// the engine parked. The run input stays unconnected until a run input is composed.
+    /// </summary>
+    /// <param name="engine">The composed engine.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="engine"/> is null.</exception>
+    public App(EngineComposition engine)
+        : this(ApprovalBridgeOf(engine), new UnconnectedRunInput())
+    {
+    }
+
+    /// <summary>
+    /// Creates the application over an engine composed on first use. The engine is composed on the first tool-approval decision,
+    /// so launching the application composes nothing and starts no process.
+    /// </summary>
+    /// <param name="engine">The lazily composed engine.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="engine"/> is null.</exception>
+    public App(Lazy<EngineComposition> engine)
+        : this(new ComposedApprovalBridge(engine), new UnconnectedRunInput())
+    {
+    }
+
+    private static IToolApprovalBridge ApprovalBridgeOf(EngineComposition engine)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+        return engine.ApprovalBridge;
+    }
+
     /// <summary>Loads the application XAML.</summary>
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
@@ -52,5 +80,27 @@ internal partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// The approval bridge of an engine composed on first use. Each decision composes the engine if it is not composed yet, then
+    /// settles the request through the engine's own bridge.
+    /// </summary>
+    internal sealed class ComposedApprovalBridge : IToolApprovalBridge
+    {
+        private readonly Lazy<EngineComposition> _engine;
+
+        /// <summary>Creates the bridge over a lazily composed engine.</summary>
+        /// <param name="engine">The lazily composed engine.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="engine"/> is null.</exception>
+        public ComposedApprovalBridge(Lazy<EngineComposition> engine)
+        {
+            ArgumentNullException.ThrowIfNull(engine);
+            _engine = engine;
+        }
+
+        /// <inheritdoc/>
+        public async Task<ToolApprovalOutcome> DecideAsync(string sessionId, string requestId, ToolApprovalDecision decision, CancellationToken cancellationToken) =>
+            await _engine.Value.ApprovalBridge.DecideAsync(sessionId, requestId, decision, cancellationToken).ConfigureAwait(false);
     }
 }

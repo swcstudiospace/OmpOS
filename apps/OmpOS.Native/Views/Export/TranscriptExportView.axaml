@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:export="clr-namespace:OmpOS.Presentation.Export;assembly=OmpOS.Presentation"
+             x:Class="OmpOS.Native.Views.Export.TranscriptExportView"
+             Padding="{DynamicResource OmpOS.Space.Sm}">
+
+  <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+    <TextBlock Text="Export transcript"
+               FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+               FontSize="{DynamicResource OmpOS.Font.Size.Body}" />
+
+    <Grid ColumnDefinitions="*,Auto"
+          ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
+
+      <TextBox x:Name="PathInput"
+               Grid.Column="0"
+               PlaceholderText="File path, for example notes/transcript.md"
+               MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+               AutomationProperties.Name="Export file path" />
+
+      <Button x:Name="ExportButton"
+              Grid.Column="1"
+              Content="Export"
+              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+              AutomationProperties.Name="Export transcript" />
+
+    </Grid>
+
+    <TextBlock x:Name="StatusText"
+               Classes="muted"
+               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Export status"
+               AutomationProperties.LiveSetting="Polite" />
+
+    <TextBlock Text="Usage"
+               FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+               FontSize="{DynamicResource OmpOS.Font.Size.Body}" />
+
+    <ComboBox x:Name="PeriodSelector"
+              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+              AutomationProperties.Name="Usage period" />
+
+    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto"
+          ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
+      <TextBlock Grid.Column="0" Classes="muted" Text="Period" FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+      <TextBlock Grid.Column="1" Classes="muted" Text="Runs" FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+      <TextBlock Grid.Column="2" Classes="muted" Text="Input" FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+      <TextBlock Grid.Column="3" Classes="muted" Text="Output" FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+      <TextBlock Grid.Column="4" Classes="muted" Text="Total" FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+    </Grid>
+
+    <ListBox x:Name="UsageList"
+             MaxHeight="240"
+             AutomationProperties.Name="Usage totals per period">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="export:UsageTotal">
+          <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto"
+                ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
+            <TextBlock Grid.Column="0" Text="{CompiledBinding Period}" />
+            <TextBlock Grid.Column="1" Text="{CompiledBinding RunCount}" />
+            <TextBlock Grid.Column="2" Text="{CompiledBinding InputTokens}" />
+            <TextBlock Grid.Column="3" Text="{CompiledBinding OutputTokens}" />
+            <TextBlock Grid.Column="4" Text="{CompiledBinding TotalTokens}" />
+          </Grid>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <TextBlock x:Name="UsageEmptyText"
+               Classes="muted"
+               Text="No usage recorded."
+               IsVisible="False"
+               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+               AutomationProperties.Name="Usage status" />
+
+  </StackPanel>
+
+</UserControl>

@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using OmpOS.Harness.Completion;
 using OmpOS.Presentation.Composer;
 using OmpOS.Presentation.Runs;
 
@@ -40,6 +41,16 @@ internal partial class ComposerView : UserControl
     public bool IsWorking => _inFlight > 0;
 
     /// <summary>
+    /// Gets or sets the completion client the inline suggestions box asks for suggestions. Null, or a client whose settings configure
+    /// no provider, sends no request.
+    /// </summary>
+    public CompletionClient? Completion
+    {
+        get => Suggestions.Client;
+        set => Suggestions.Client = value;
+    }
+
+    /// <summary>
     /// Gets or sets the run input of the active run. Null means no run input is connected: the send control then always sends
     /// a new prompt, and no steer or follow-up control is offered.
     /// </summary>
@@ -66,6 +77,13 @@ internal partial class ComposerView : UserControl
 
             RefreshRunState();
         }
+    }
+
+    /// <summary>Gets or sets whether the inline suggestions box is shown below the prompt. It is hidden by default.</summary>
+    public bool SuggestionsShown
+    {
+        get => Suggestions.IsVisible;
+        set => Suggestions.IsVisible = value;
     }
 
     /// <summary>Raised on the UI thread once no started work is in flight and the prompt matches the draft.</summary>

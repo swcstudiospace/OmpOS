@@ -1,0 +1,81 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ws="clr-namespace:OmpOS.Workspace;assembly=OmpOS.Harness.Workspace"
+             x:Class="OmpOS.Native.Views.Search.WorkspaceSearchView">
+
+  <StackPanel Margin="{DynamicResource OmpOS.Space.Sm}"
+              Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+    <TextBox x:Name="PatternInput"
+             x:FieldModifier="internal"
+             PlaceholderText="Search the workspace"
+             AutomationProperties.Name="Search pattern" />
+
+    <StackPanel Orientation="Horizontal"
+                Spacing="{DynamicResource OmpOS.Gap.Xs}">
+      <CheckBox x:Name="RegexCheck"
+                x:FieldModifier="internal"
+                Content="Regular expression"
+                AutomationProperties.Name="Regular expression" />
+      <CheckBox x:Name="IgnoreCaseCheck"
+                x:FieldModifier="internal"
+                Content="Ignore case"
+                AutomationProperties.Name="Ignore case" />
+      <Button x:Name="SearchButton"
+              x:FieldModifier="internal"
+              Content="Search"
+              AutomationProperties.Name="Search workspace" />
+    </StackPanel>
+
+    <TextBlock x:Name="SearchError"
+               x:FieldModifier="internal"
+               Classes="error"
+               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+               TextWrapping="Wrap"
+               IsVisible="False"
+               AutomationProperties.Name="Search error"
+               AutomationProperties.LiveSetting="Assertive" />
+
+    <TextBlock x:Name="SearchStatus"
+               Classes="muted"
+               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Search status"
+               AutomationProperties.LiveSetting="Polite" />
+
+    <ListBox x:Name="HitRows"
+             x:FieldModifier="internal"
+             MaxHeight="360"
+             AutomationProperties.Name="Search results">
+      <ListBox.Styles>
+        <Style Selector="ListBoxItem">
+          <Setter Property="AutomationProperties.Name">
+            <Setter.Value>
+              <MultiBinding StringFormat="{}{0}, line {1}">
+                <ReflectionBinding Path="RelativePath" />
+                <ReflectionBinding Path="LineNumber" />
+              </MultiBinding>
+            </Setter.Value>
+          </Setter>
+        </Style>
+      </ListBox.Styles>
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="ws:SearchHit">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="{DynamicResource OmpOS.Gap.Xs}">
+            <TextBlock Classes="path"
+                       FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                       Text="{CompiledBinding RelativePath}" />
+            <TextBlock Classes="line"
+                       Text="{CompiledBinding LineNumber}" />
+            <TextBlock Classes="match"
+                       TextTrimming="CharacterEllipsis"
+                       Text="{CompiledBinding MatchText}" />
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+  </StackPanel>
+
+</UserControl>

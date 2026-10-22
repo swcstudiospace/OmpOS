@@ -1,11 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:completion="clr-namespace:OmpOS.Native.Views.Completion"
              x:Class="OmpOS.Native.Views.ComposerView"
              Background="{DynamicResource OmpOS.Color.Surface}"
              Padding="{DynamicResource OmpOS.Space.Md}">
 
-  <!-- Keyboard order follows XAML order: prompt, send (steer while a run is active), follow-up (only while a run is active), stop. -->
-  <Grid RowDefinitions="Auto,Auto"
+  <!-- Keyboard order follows XAML order: prompt, send (steer while a run is active), follow-up (only while a run is active), stop,
+       then the suggestions box while it is shown. -->
+  <Grid RowDefinitions="Auto,Auto,Auto"
         ColumnDefinitions="*,Auto,Auto,Auto"
         ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}"
         RowSpacing="{DynamicResource OmpOS.Gap.Xs}">
@@ -67,6 +69,13 @@
                  Height="14"
                  Fill="{DynamicResource OmpOS.Color.Text}" />
     </Button>
+
+    <!-- The suggestions box is shown by the shell's Inline suggestions toggle. It is hidden until then, so it is no tab stop before that. -->
+    <completion:InlineCompletionBox x:Name="Suggestions"
+                                    Grid.Row="2"
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="4"
+                                    IsVisible="False" />
 
   </Grid>
 

@@ -18,6 +18,11 @@
   <ItemGroup>
     <ProjectReference Include="../../src/OmpOS.Presentation/OmpOS.Presentation.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Terminal/OmpOS.Harness.Terminal.csproj" />
+    <ProjectReference Include="../../src/OmpOS.EngineHost/OmpOS.EngineHost.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Workspace/OmpOS.Harness.Workspace.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Mcp/OmpOS.Harness.Mcp.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Completion/OmpOS.Harness.Completion.csproj" />
   </ItemGroup>
 
 </Project>

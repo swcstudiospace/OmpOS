@@ -5,9 +5,15 @@ using OmpOS.Native.Views;
 using OmpOS.Native.Views.Agents;
 using OmpOS.Native.Views.Blocks;
 using OmpOS.Native.Views.Chats;
+using OmpOS.Native.Views.Editor;
+using OmpOS.Native.Views.Explorer;
+using OmpOS.Native.Views.Mcp;
+using OmpOS.Native.Views.Search;
+using OmpOS.Native.Views.Workspace;
 using OmpOS.Presentation.Agents;
 using OmpOS.Presentation.Chats;
 using OmpOS.Presentation.Composer;
+using OmpOS.Presentation.Editor;
 using OmpOS.Presentation.State;
 
 namespace OmpOS.Native;
@@ -34,6 +40,11 @@ internal static class ViewMapping
             AgentsViewModel agents => new AgentsView { DataContext = agents },
             SideChatPanel sideChats => new SideChatListView { DataContext = sideChats },
             TranscriptSearchModel search => new TranscriptSearchView { DataContext = search },
+            EditorViewModel editor => new EditorView { DataContext = editor },
+            WorkspaceTree tree => new WorkspaceTreeView { DataContext = tree },
+            WorkspaceConventionsModel conventions => new WorkspaceConventionsView { DataContext = conventions },
+            McpToolsModel mcpTools => new McpToolsView { DataContext = mcpTools },
+            WorkspaceSearchModel workspaceSearch => new WorkspaceSearchView { DataContext = workspaceSearch },
             _ => throw new ArgumentOutOfRangeException(
                 nameof(viewModel),
                 viewModel.GetType(),
