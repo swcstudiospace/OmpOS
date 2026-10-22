@@ -49,11 +49,11 @@ Source for each line: audit front matter `tech_debt` block, `phase` name and lin
 - [ ] **TD-29**: 03-REVIEW finding IN-02 is closed. Source: audit IN-02 (`03-REVIEW.md`), line 98.
 - [ ] **TD-30**: 03-REVIEW finding IN-03 is closed. Source: audit IN-03 (`03-REVIEW.md`), line 98.
 - [ ] **TD-31**: 03-REVIEW finding IN-04 is closed. Source: audit IN-04 (`03-REVIEW.md`), line 98.
-- [ ] **TD-32**: The reconnect policy in the web head has a recorded closure: bounded reconnect with backoff implemented and tested, or the policy decision written down. Source: audit 04-surfaces WR-02 (`04-REVIEW.md:140`), line 102.
-- [ ] **TD-33**: Terminal SSE detection checks the event type, not only an event field. Source: audit WR-03 (`apps/OmpOS.Web/Services/SseEventStream.cs:157-158`), line 103.
-- [ ] **TD-34**: Seq dedup sets are bounded. Source: audit WR-04 (`src/OmpOS.EngineHost/RemoteEngineHost.cs:27,315-355`; `apps/OmpOS.Web/Services/SseEventStream.cs:62`), line 104.
-- [ ] **TD-35**: A2UI image URLs are restricted to an allowed scheme list. Source: audit WR-06 (`src/OmpOS.GenUi/A2uiSurfaceCatalog.cs:110-117`), line 105.
-- [ ] **TD-36**: `EngineEventMapper` maps unknown events to a fallback instead of throwing. Source: audit WR-07 (`apps/OmpOS.App/Components/EngineEventMapper.cs:56`), line 106.
+- [x] **TD-32**: The reconnect policy in the web head has a recorded closure: bounded reconnect with backoff implemented and tested, or the policy decision written down. Source: audit 04-surfaces WR-02 (`04-REVIEW.md:140`), line 102.
+- [x] **TD-33**: Terminal SSE detection checks the event type, not only an event field. Source: audit WR-03 (`apps/OmpOS.Web/Services/SseEventStream.cs:157-158`), line 103.
+- [x] **TD-34**: Seq dedup sets are bounded. Source: audit WR-04 (`src/OmpOS.EngineHost/RemoteEngineHost.cs:27,315-355`; `apps/OmpOS.Web/Services/SseEventStream.cs:62`), line 104.
+- [x] **TD-35**: A2UI image URLs are restricted to an allowed scheme list. Source: audit WR-06 (`src/OmpOS.GenUi/A2uiSurfaceCatalog.cs:110-117`), line 105.
+- [x] **TD-36**: `EngineEventMapper` maps unknown events to a fallback instead of throwing. Source: audit WR-07 (`apps/OmpOS.App/Components/EngineEventMapper.cs:56`), line 106.
 - [ ] **TD-37**: The accepted `MarkupString` sink (handoff decision 3) has a regression test proving its only input is `MarkdownRenderer` output. Source: audit IN-01 (`src/OmpOS.UI/Components/Blocks/MarkdownBlockView.razor:4`), line 107.
 - [ ] **TD-38**: Whitespace-only drafts are not sent. Source: audit IN-02 (`src/OmpOS.UI/Components/Composer.razor:36-45`), line 108.
 - [ ] **TD-39**: History replay deduplicates by Seq in `SelectSessionAsync`. Source: audit IN-03 (`apps/OmpOS.Web/Pages/Index.razor`), line 109.
