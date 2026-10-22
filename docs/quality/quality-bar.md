@@ -31,7 +31,7 @@ Full list, one line per occurrence: `docs/runbooks/evidence/quality-audit-2026-1
 
 Findings:
 
-- All 132 conflict with the repo rule "no pragma, NoWarn, SuppressMessage, Skip or disabled tests". None was removed, per the assignment.
+- No repository document forbids suppressions. AGENTS.md, CONTRIBUTING.md and PROJECT.md are silent on them. The rule "no pragma, NoWarn, SuppressMessage, Skip or disabled tests" was a coding rule the orchestrator set for the wave units, and the audit wrongly recorded it as a repo rule. Each of the 132 occurrences is therefore a review question, not a confirmed violation. None was removed.
 - 128 carry a justification in source. The 4 `.editorconfig` overrides have none in the repo. Their only rationale is in `.planning/phases/01-foundation/01-RESEARCH.md`, outside `docs/`. These are the undocumented, unjustified-looking entries: `CA1303=none` removes that rule for every C# file, not for one site.
 - Skip markers hide tests on hosts without the tool. CI has `sh`, `head` and `tr`, so they run there; a host without them reports skipped, not failed.
 - Every occurrence has an open-question row, `SUP-001` to `SUP-132`, appended after `OQ-61` in `docs/open-questions.md` (lines 99 to 230). Owner `ompos-maintainers`, status `documented suppression`. `suppressions-id-map.tsv` maps each ID to its file and line. No existing row covered any of these occurrences.
@@ -91,7 +91,7 @@ Comparison with `ho-03-podman-compose-config-2026-10-21.md`: the test name is un
 
 ## 5. Findings for owners
 
-- Repo rule conflict: 132 suppressions and skip markers (section 2).
+- Review question, not a violation: 132 suppressions and skip markers (section 2). Phase 35 decides, for each one, whether to keep it with its justification or fix the cause.
 - `ci.yml` `shells` job will run for `apps/OmpOS.App`, which has no lock file (row 6). [INFERENCE, not run]
 - `apps/OmpOS.App` still exists although `local-dev.md` says it retires at v0.10.0 Phase 25.
 - `tools/gweb/stock` and `tools/gweb/named` are outside the solution filter and CI. `named` has no lock file.

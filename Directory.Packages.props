@@ -89,4 +89,7 @@
     <PackageVersion Include="TextMateSharp.Grammars" Version="2.0.3" />
     <PackageVersion Include="Onigwrap" Version="1.0.10" />
   </ItemGroup>
+  <ItemGroup Label="Embedded browser pane spike (ADE-15, OQ-51, ADR-0009)">
+    <PackageVersion Include="Avalonia.Controls.WebView" Version="12.1.1" />
+  </ItemGroup>
 </Project>

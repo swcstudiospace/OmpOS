@@ -46,7 +46,7 @@ talks to the API over HTTP + SSE. No host is hardcoded: the API origin comes fro
 ### Serve the API (in-memory adapter)
 
 ```sh
-export DOTNET_ROOT=$HOME/.dotnet Harness__Adapter=InMemory Api__Cors__Origins__0=http://127.0.0.1:5180
+export DOTNET_ROOT=$HOME/.dotnet ASPNETCORE_ENVIRONMENT=Development Sessions__Store=InMemory Coordination__Store=InMemory Api__Auth__AllowDevelopmentPrincipal=true Harness__Adapter=InMemory Api__Cors__Origins__0=http://127.0.0.1:5180
 dotnet run --project services/OmpOS.Api --urls http://127.0.0.1:5187
 ```
 
@@ -66,7 +66,7 @@ The page's default API origin is `http://127.0.0.1:5187` (`apps/OmpOS.Web/wwwroo
 Run it in an owned, empty-profile headless Chrome, never a user profile. Launch the Playwright-managed `chrome-linux64/chrome` with `--headless --no-sandbox --disable-dev-shm-usage --remote-debugging-port=0` and a fresh `--user-data-dir`, then attach with `browser.open({ app: { cdp_url } })`.
 
 1. Load `http://127.0.0.1:5180/`. Expect the conversation list, no unhandled-error bar and no console errors.
-2. Click "Start new conversation", type a prompt into "Message", click "Send message".
+2. Click "+ New", type a prompt into "Message", click "Send message".
 3. Expect the user turn as escaped text, the assistant output streamed to "Response complete.", bold markdown rendered, and remote images shown as links with no `img` element.
 4. Reload and open the conversation. Expect the stored history to render the same way.
 5. Screenshot: `docs/runbooks/evidence/web-vertical-slice-smoke.webp`.
