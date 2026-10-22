@@ -1,3 +1,5 @@
+using OmpOS.Presentation.Observable;
+
 namespace OmpOS.Presentation.Composer;
 
 /// <summary>
@@ -8,11 +10,13 @@ namespace OmpOS.Presentation.Composer;
 /// A send still in flight, or one made while a response streams, leaves the draft in place. The draft clears
 /// only when the host accepts the text that was sent, so text typed while the send was pending stays.
 /// </remarks>
-public sealed class ComposerViewModel
+public sealed class ComposerViewModel : ObservableModel
 {
     private readonly Func<string, Task<bool>> _onSend;
     private readonly Func<Task> _onStop;
     private bool _sending;
+    private string _draft = string.Empty;
+    private bool _isStreaming;
 
     /// <summary>Creates a composer that submits drafts through <paramref name="onSend"/> and stops responses through <paramref name="onStop"/>.</summary>
     /// <param name="onSend">Submits the draft. Resolves to true when the host accepted the send and to false when it refused it.</param>
@@ -28,10 +32,10 @@ public sealed class ComposerViewModel
     }
 
     /// <summary>Gets or sets the draft text the user is composing.</summary>
-    public string Draft { get; set; } = string.Empty;
+    public string Draft { get => _draft; set => SetProperty(ref _draft, value); }
 
     /// <summary>Gets or sets whether the assistant is streaming. Escape stops only while it is, and the stop control replaces send.</summary>
-    public bool IsStreaming { get; set; }
+    public bool IsStreaming { get => _isStreaming; set => SetProperty(ref _isStreaming, value); }
 
     /// <summary>Submits the draft unless it is blank, a send is already in flight, or a response is streaming.</summary>
     /// <returns>A task that completes when the host has answered the send.</returns>

@@ -1,0 +1,61 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:OmpOS.Native.Views"
+        x:Class="OmpOS.Native.MainWindow"
+        Title="OmpOS"
+        MinWidth="640"
+        MinHeight="480"
+        Width="960"
+        Height="640">
+
+  <!-- Logical and keyboard order follows XAML order: skip link, session list, transcript, run controls, prompt, send, follow-up, stop. -->
+  <DockPanel>
+
+    <Button x:Name="SkipLink"
+            DockPanel.Dock="Top"
+            HorizontalAlignment="Left"
+            MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+            Padding="{DynamicResource OmpOS.Space.Sm}"
+            Margin="{DynamicResource OmpOS.Space.Sm}"
+            Content="Skip to conversation"
+            AutomationProperties.Name="Skip to conversation"
+            Click="OnSkipLinkClick" />
+
+    <Grid ColumnDefinitions="Auto,*">
+
+      <Border Grid.Column="0"
+              Width="{DynamicResource OmpOS.Size.SessionListWidth}"
+              Background="{DynamicResource OmpOS.Color.Surface}"
+              Padding="{DynamicResource OmpOS.Space.Sm}">
+        <views:ConversationListView x:Name="ConversationList" />
+      </Border>
+
+      <Grid Grid.Column="1" RowDefinitions="*,Auto,Auto,Auto">
+
+        <ContentControl x:Name="TranscriptHost"
+                        Grid.Row="0" />
+
+        <TextBlock x:Name="StatusLine"
+                   Grid.Row="1"
+                   Classes="muted"
+                   Margin="{DynamicResource OmpOS.Space.Xs}"
+                   Padding="{DynamicResource OmpOS.Space.Md}"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                   TextWrapping="Wrap"
+                   IsVisible="False"
+                   AutomationProperties.Name="Session status"
+                   AutomationProperties.LiveSetting="Polite" />
+
+        <ContentControl x:Name="RunControlsHost"
+                        Grid.Row="2" />
+
+        <ContentControl x:Name="ComposerHost"
+                        Grid.Row="3" />
+
+      </Grid>
+
+    </Grid>
+
+  </DockPanel>
+
+</Window>

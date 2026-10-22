@@ -22,7 +22,6 @@
     <PackageVersion Include="Avalonia.Desktop" Version="12.1.4" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.4" />
     <PackageVersion Include="Avalonia.Headless" Version="12.1.4" />
-    <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.4" />
   </ItemGroup>
   <ItemGroup Label="Libraries (consumed in later phases)">
     <PackageVersion Include="Markdig" Version="1.4.2" />

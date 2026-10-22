@@ -1,0 +1,64 @@
+using Avalonia.Controls;
+using OmpOS.Contracts.Ui;
+using OmpOS.GenUi;
+using OmpOS.Native.Views;
+using OmpOS.Native.Views.Blocks;
+using OmpOS.Presentation.Composer;
+using OmpOS.Presentation.State;
+
+namespace OmpOS.Native;
+
+/// <summary>
+/// Maps each presentation view model, and each transcript block, to the native view that renders it. The mapping is an
+/// explicit type switch (D-20-11): there is no reflection and no view locator, and a type with no mapping is an error, not a guess.
+/// </summary>
+internal static class ViewMapping
+{
+    /// <summary>Creates the view for a presentation view model, with the model as its data context.</summary>
+    /// <param name="viewModel">A presentation view model.</param>
+    /// <returns>The native view bound to <paramref name="viewModel"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="viewModel"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">No native view is mapped for the type of <paramref name="viewModel"/>.</exception>
+    public static Control Create(object viewModel)
+    {
+        ArgumentNullException.ThrowIfNull(viewModel);
+
+        return viewModel switch
+        {
+            SessionViewModel session => new SessionView { DataContext = session },
+            ComposerViewModel composer => new ComposerView { DataContext = composer },
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(viewModel),
+                viewModel.GetType(),
+                "No native view is mapped for this view model type."),
+        };
+    }
+
+    /// <summary>Creates the view for one transcript block.</summary>
+    /// <param name="block">A folded UI block.</param>
+    /// <returns>The native view that draws <paramref name="block"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="block"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">No native view is mapped for the type of <paramref name="block"/>.</exception>
+    public static Control CreateBlock(UiBlock block)
+    {
+        ArgumentNullException.ThrowIfNull(block);
+
+        return block switch
+        {
+            UserMessageBlock userMessage => new UserMessageView(userMessage),
+            MarkdownBlock markdown => new MarkdownBlockView(markdown),
+            CodeBlock code => new CodeBlockView(code),
+            ToolCallBlock toolCall => new ToolCallBlockView(toolCall),
+            PermissionBlock permission => new PermissionBlockView(permission),
+            PlanBlock plan => new PlanBlockView(plan),
+            DiffPlaceholderBlock diff => new DiffPlaceholderView(diff),
+            ErrorBlock error => new ErrorBlockView(error),
+            A2uiSurfaceBlock surface => new A2uiSurfaceView(surface),
+            UnknownBlock unknown => new UnknownBlockView(unknown),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(block),
+                block.GetType(),
+                "No native view is mapped for this block type."),
+        };
+    }
+}

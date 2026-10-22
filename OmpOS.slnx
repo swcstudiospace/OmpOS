@@ -2,6 +2,7 @@
   <Folder Name="/apps/">
     <Project Path="apps/OmpOS.Web/OmpOS.Web.csproj" />
     <Project Path="apps/OmpOS.App/OmpOS.App.csproj" />
+    <Project Path="apps/OmpOS.Native/OmpOS.Native.csproj" />
   </Folder>
   <Folder Name="/services/">
     <Project Path="services/OmpOS.Api/OmpOS.Api.csproj" />
@@ -16,6 +17,7 @@
     <Project Path="src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
     <Project Path="src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj" />
     <Project Path="src/OmpOS.Harness.Rpc/OmpOS.Harness.Rpc.csproj" />
+    <Project Path="src/OmpOS.Harness.Worktrees/OmpOS.Harness.Worktrees.csproj" />
     <Project Path="src/OmpOS.Parser/OmpOS.Parser.csproj" />
     <Project Path="src/OmpOS.Presentation/OmpOS.Presentation.csproj" />
     <Project Path="src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj" />
@@ -32,11 +34,14 @@
     <Project Path="tests/OmpOS.Coordination.Tests/OmpOS.Coordination.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Abstractions.Tests/OmpOS.Harness.Abstractions.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.ContractTests/OmpOS.Harness.ContractTests.csproj" />
+    <Project Path="tests/OmpOS.Native.Tests/OmpOS.Native.Tests.csproj" />
     <Project Path="tests/OmpOS.Parser.Tests/OmpOS.Parser.Tests.csproj" />
     <Project Path="tests/OmpOS.Presentation.Tests/OmpOS.Presentation.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.InMemory.Tests/OmpOS.Harness.InMemory.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Acp.Tests/OmpOS.Harness.Acp.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Rpc.Tests/OmpOS.Harness.Rpc.Tests.csproj" />
+    <Project Path="tests/OmpOS.Harness.Worktrees.Tests/OmpOS.Harness.Worktrees.Tests.csproj" />
+    <Project Path="tests/OmpOS.Parity.Support/OmpOS.Parity.Support.csproj" />
     <Project Path="tests/OmpOS.Sessions.Tests/OmpOS.Sessions.Tests.csproj" />
     <Project Path="tests/OmpOS.Sessions.Postgres.Tests/OmpOS.Sessions.Postgres.Tests.csproj" />
     <Project Path="tests/OmpOS.Sessions.Postgres.Probe/OmpOS.Sessions.Postgres.Probe.csproj" />

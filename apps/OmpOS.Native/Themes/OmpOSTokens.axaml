@@ -1,0 +1,43 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Colour tokens (20-UI-SPEC.md, Color). Every foreground and background pair is tested in ThemeContrastTests. -->
+  <SolidColorBrush x:Key="OmpOS.Color.Background">#ffffff</SolidColorBrush>
+  <SolidColorBrush x:Key="OmpOS.Color.Surface">#f4f4f5</SolidColorBrush>
+  <SolidColorBrush x:Key="OmpOS.Color.SurfaceActive">#e4e4e7</SolidColorBrush>
+  <SolidColorBrush x:Key="OmpOS.Color.Text">#1a1a1a</SolidColorBrush>
+  <SolidColorBrush x:Key="OmpOS.Color.TextMuted">#52525b</SolidColorBrush>
+  <SolidColorBrush x:Key="OmpOS.Color.Accent">#0b4fd6</SolidColorBrush>
+  <SolidColorBrush x:Key="OmpOS.Color.Error">#b3261e</SolidColorBrush>
+
+  <!-- Type tokens (20-UI-SPEC.md, Typography). Three sizes, two weights. -->
+  <FontFamily x:Key="OmpOS.Font.Family">Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
+  <x:Double x:Key="OmpOS.Font.Size.Label">13</x:Double>
+  <x:Double x:Key="OmpOS.Font.Size.Body">15</x:Double>
+  <x:Double x:Key="OmpOS.Font.Size.Heading">18</x:Double>
+  <FontWeight x:Key="OmpOS.Font.Weight.Regular">Normal</FontWeight>
+  <FontWeight x:Key="OmpOS.Font.Weight.Semibold">SemiBold</FontWeight>
+  <x:Double x:Key="OmpOS.Font.LineHeight.Label">18.2</x:Double>
+  <x:Double x:Key="OmpOS.Font.LineHeight.Body">22.5</x:Double>
+  <x:Double x:Key="OmpOS.Font.LineHeight.Heading">21.6</x:Double>
+
+  <!-- Spacing tokens (multiples of 4). Uniform Thickness values: they are applied to Padding, Margin and
+       BorderThickness, which take Thickness. -->
+  <Thickness x:Key="OmpOS.Space.Xs">4</Thickness>
+  <Thickness x:Key="OmpOS.Space.Sm">8</Thickness>
+  <Thickness x:Key="OmpOS.Space.Md">16</Thickness>
+  <Thickness x:Key="OmpOS.Space.Lg">24</Thickness>
+  <Thickness x:Key="OmpOS.Space.Xl">32</Thickness>
+  <Thickness x:Key="OmpOS.Space.Xxl">48</Thickness>
+  <Thickness x:Key="OmpOS.Space.Xxxl">64</Thickness>
+
+  <!-- Scalar gaps for StackPanel.Spacing and Grid.ColumnSpacing, which take double. Same values as the spacing tokens. -->
+  <x:Double x:Key="OmpOS.Gap.Xs">4</x:Double>
+  <x:Double x:Key="OmpOS.Gap.Sm">8</x:Double>
+
+  <!-- Fixed sizes (multiples of 4, except the 2 px focus stroke, which is a border width). -->
+  <x:Double x:Key="OmpOS.Size.SessionListWidth">240</x:Double>
+  <x:Double x:Key="OmpOS.Size.TargetMin">44</x:Double>
+  <Thickness x:Key="OmpOS.Size.FocusBorder">2</Thickness>
+
+</ResourceDictionary>

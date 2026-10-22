@@ -1,0 +1,9 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OmpOS.Native.Views.Blocks.MarkdownBlockView"
+             AutomationProperties.Name="Markdown">
+
+  <StackPanel x:Name="Body"
+              Spacing="{DynamicResource OmpOS.Gap.Sm}" />
+
+</UserControl>

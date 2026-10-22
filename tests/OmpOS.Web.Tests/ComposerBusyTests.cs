@@ -13,6 +13,9 @@ namespace OmpOS.Web.Tests;
 /// <summary>The composer returns to idle on every terminal path: a completed turn and a refused send.</summary>
 public sealed class ComposerBusyTests : BunitContext
 {
+    /// <summary>The bound for every bUnit wait. The 1 s default is too short for a loaded host, so waits get 10 s.</summary>
+    private static readonly TimeSpan LoadedHostWait = TimeSpan.FromSeconds(10);
+
     /// <summary>A completed turn flips the composer back from Stop to Send with no error shown.</summary>
     [Fact]
     public async Task CompletedTurnReleasesTheComposer()
@@ -38,11 +41,7 @@ public sealed class ComposerBusyTests : BunitContext
         Services.AddSingleton(new SseEventStream(sseHttp));
         JSInterop.Mode = JSRuntimeMode.Loose;
         var cut = Render<OmpOS.Web.Pages.Index>();
-        await cut.WaitForAssertionAsync(() =>
-        {
-            cut.Find("textarea").ShouldNotBeNull();
-            return Task.CompletedTask;
-        }).ConfigureAwait(true);
+        await WaitForSessionLoadedAsync(cut).ConfigureAwait(true);
 
         await cut.Find("textarea").InputAsync(new ChangeEventArgs { Value = "hello" }).ConfigureAwait(true);
         await cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" }).ConfigureAwait(true);
@@ -50,14 +49,14 @@ public sealed class ComposerBusyTests : BunitContext
         {
             cut.Find("button[aria-label='Stop response']").ShouldNotBeNull();
             return Task.CompletedTask;
-        }).ConfigureAwait(true);
+        }, LoadedHostWait).ConfigureAwait(true);
 
         gate.Release();
         await cut.WaitForAssertionAsync(() =>
         {
             cut.Find("button[aria-label='Send message']").ShouldNotBeNull();
             return Task.CompletedTask;
-        }).ConfigureAwait(true);
+        }, LoadedHostWait).ConfigureAwait(true);
         cut.FindAll("[role='alert']").ShouldBeEmpty();
     }
 
@@ -81,11 +80,7 @@ public sealed class ComposerBusyTests : BunitContext
         Services.AddSingleton(new SseEventStream(sseHttp));
         JSInterop.Mode = JSRuntimeMode.Loose;
         var cut = Render<OmpOS.Web.Pages.Index>();
-        await cut.WaitForAssertionAsync(() =>
-        {
-            cut.Find("textarea").ShouldNotBeNull();
-            return Task.CompletedTask;
-        }).ConfigureAwait(true);
+        await WaitForSessionLoadedAsync(cut).ConfigureAwait(true);
 
         await cut.Find("textarea").InputAsync(new ChangeEventArgs { Value = "hello" }).ConfigureAwait(true);
         await cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" }).ConfigureAwait(true);
@@ -95,7 +90,26 @@ public sealed class ComposerBusyTests : BunitContext
             cut.Find("p.ompos-error").TextContent.ShouldContain("Could not send");
             cut.Find("button[aria-label='Send message']").ShouldNotBeNull();
             return Task.CompletedTask;
-        }).ConfigureAwait(true);
+        }, LoadedHostWait).ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Waits until the page has loaded its session. The page shows the empty-state paragraph only after the session's
+    /// history is applied, and it sets the selected session in the same step, so the send that follows is accepted.
+    /// The harness does not re-render the page when its asynchronous load completes, so each pass yields to queued work
+    /// and then requests a render. The loop is bounded by <see cref="LoadedHostWait"/>.
+    /// </summary>
+    /// <param name="cut">The rendered page.</param>
+    private static async Task WaitForSessionLoadedAsync(IRenderedComponent<OmpOS.Web.Pages.Index> cut)
+    {
+        var deadline = DateTime.UtcNow + LoadedHostWait;
+        while (cut.FindAll("p.ompos-empty").Count == 0 && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(10).ConfigureAwait(true);
+            cut.Render(_ => { });
+        }
+
+        cut.Find("p.ompos-empty").ShouldNotBeNull();
     }
 
     /// <summary>Builds a JSON success response for a scripted API call.</summary>

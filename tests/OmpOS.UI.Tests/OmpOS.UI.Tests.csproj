@@ -4,6 +4,7 @@
     <ProjectReference Include="../../src/OmpOS.Contracts/OmpOS.Contracts.csproj" />
     <ProjectReference Include="../../src/OmpOS.GenUi/OmpOS.GenUi.csproj" />
     <ProjectReference Include="../../src/OmpOS.UI/OmpOS.UI.csproj" />
+    <ProjectReference Include="../OmpOS.Parity.Support/OmpOS.Parity.Support.csproj" />
     <PackageReference Include="bunit" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="Shouldly" />

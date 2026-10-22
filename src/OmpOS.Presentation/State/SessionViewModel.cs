@@ -1,5 +1,6 @@
 using OmpOS.Contracts.Streaming;
 using OmpOS.GenUi;
+using OmpOS.Presentation.Observable;
 
 namespace OmpOS.Presentation.State;
 
@@ -12,18 +13,34 @@ namespace OmpOS.Presentation.State;
 /// Announcements are throttled by state change: streaming deltas update the tree but leave the
 /// announcement untouched, so screen readers announce lifecycle transitions rather than every token.
 /// </remarks>
-public sealed class SessionViewModel
+public sealed class SessionViewModel : ObservableModel
 {
     private string? _lastAnnouncedFor;
+    private UiTree _tree = UiTree.Empty;
+    private SessionViewState _state = SessionViewState.LoadingHistory;
+    private bool _autoScrollPaused;
+    private string? _announcement;
+    private string? _lastError;
 
     /// <summary>Gets the current folded UI tree.</summary>
-    public UiTree Tree { get; private set; } = UiTree.Empty;
+    public UiTree Tree { get => _tree; private set => SetProperty(ref _tree, value); }
 
     /// <summary>Gets the current lifecycle state.</summary>
-    public SessionViewState State { get; private set; } = SessionViewState.LoadingHistory;
+    public SessionViewState State
+    {
+        get => _state;
+        private set
+        {
+            if (SetProperty(ref _state, value))
+            {
+                NotifyPropertyChanged(nameof(CanStop));
+                NotifyPropertyChanged(nameof(CanRetry));
+            }
+        }
+    }
 
     /// <summary>Gets whether the user scrolled up and auto-scroll is paused.</summary>
-    public bool AutoScrollPaused { get; private set; }
+    public bool AutoScrollPaused { get => _autoScrollPaused; private set => SetProperty(ref _autoScrollPaused, value); }
 
     /// <summary>Gets whether the stop control is available in the current state.</summary>
     public bool CanStop => State == SessionViewState.Streaming;
@@ -32,10 +49,10 @@ public sealed class SessionViewModel
     public bool CanRetry => State == SessionViewState.RecoverableError;
 
     /// <summary>Gets the current throttled aria-live announcement, or null before the first transition.</summary>
-    public string? Announcement { get; private set; }
+    public string? Announcement { get => _announcement; private set => SetProperty(ref _announcement, value); }
 
     /// <summary>Gets the last error message, preserved with partial output on failure.</summary>
-    public string? LastError { get; private set; }
+    public string? LastError { get => _lastError; private set => SetProperty(ref _lastError, value); }
 
     /// <summary>Folds one stream event into the tree and derives the lifecycle state.</summary>
     /// <param name="evt">The stream event.</param>

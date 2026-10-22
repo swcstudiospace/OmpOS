@@ -15,6 +15,14 @@ public sealed class RpcLiveSmokeTests
     public static bool OmpOnPath => FindOnPath("omp") is not null;
 
     /// <summary>
+    /// Bound for omp's <c>ready</c> frame. Measured omp startup to <c>ready</c> is about 15 CPU-seconds (14.7 to 16.2 s
+    /// on the gate host at load 6 to 14, 16 to 19 s wall). Wall time scales with the CPU share: 40 to 58 s at load 36
+    /// to 43, and more than 120 s at load 56, so the former 60 s bound failed under full parallel load. 300 s leaves
+    /// margin for that load while still failing a real hang.
+    /// </summary>
+    private static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(300);
+
+    /// <summary>
     /// Spawns <c>omp --mode rpc --no-ui</c>, waits for <c>ready</c>, negotiates v2, reads <c>get_state</c>, closes
     /// stdin, and asserts a clean exit.
     /// </summary>
@@ -23,7 +31,7 @@ public sealed class RpcLiveSmokeTests
     {
         var ct = TestContext.Current.CancellationToken;
         var process = OmpRpcProcess.Start("omp", RepoRoot());
-        var session = new OmpRpcSession(process, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+        var session = new OmpRpcSession(process, HandshakeTimeout, TimeSpan.FromSeconds(60));
         try
         {
             await session.CreateAsync(ct).ConfigureAwait(true);

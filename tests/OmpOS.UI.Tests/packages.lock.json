@@ -347,6 +347,12 @@
           "OmpOS.Contracts": "[1.0.0, )"
         }
       },
+      "ompos.parity.support": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Presentation": "[1.0.0, )"
+        }
+      },
       "ompos.presentation": {
         "type": "Project",
         "dependencies": {

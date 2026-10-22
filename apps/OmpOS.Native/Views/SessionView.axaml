@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OmpOS.Native.Views.SessionView">
+
+  <ScrollViewer x:Name="TranscriptScroll"
+                AutomationProperties.Name="Session transcript"
+                Focusable="True"
+                IsTabStop="True"
+                Padding="{DynamicResource OmpOS.Space.Md}"
+                Background="{DynamicResource OmpOS.Color.Background}">
+    <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
+                Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+      <TextBlock x:Name="AnnouncementText"
+                 Classes="muted"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Session announcements"
+                 AutomationProperties.LiveSetting="Polite" />
+
+      <TextBlock x:Name="StateHeading"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Heading}"
+                 FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                 TextWrapping="Wrap" />
+      <TextBlock x:Name="StateBody"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Body}"
+                 TextWrapping="Wrap" />
+
+      <StackPanel x:Name="BlockHost"
+                  AutomationProperties.Name="Conversation"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}" />
+
+      <TextBlock x:Name="StreamingText"
+                 TextWrapping="Wrap"
+                 IsVisible="False" />
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

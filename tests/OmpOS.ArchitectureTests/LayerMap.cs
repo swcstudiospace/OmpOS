@@ -20,6 +20,7 @@ internal static class LayerMap
         ["OmpOS.Harness.Acp"] = 2,
         ["OmpOS.Harness.Rpc"] = 2,
         ["OmpOS.Harness.InMemory"] = 2,
+        ["OmpOS.Harness.Worktrees"] = 2,
         ["OmpOS.Coordination.Dragonfly"] = 2,
         ["OmpOS.EngineHost"] = 3,
         ["OmpOS.Sessions"] = 2,
@@ -33,6 +34,7 @@ internal static class LayerMap
         ["OmpOS.Api"] = 3,
         ["OmpOS.Web"] = 4,
         ["OmpOS.App"] = 4,
+        ["OmpOS.Native"] = 4,
     };
 
     /// <summary>
