@@ -222,6 +222,7 @@ public sealed class TerminalPanelViewTests : IDisposable
             window.Width = 1100;
             window.Height = 760;
             await WaitForAsync(window, () => terminal.Cols > before, "the terminal to widen").ConfigureAwait(true);
+            await WaitForStableGridAsync(window, terminal).ConfigureAwait(true);
 
             Propose(view, window, Shell, "-c\nsleep 1; stty size");
             await WaitForAsync(window, () => ButtonNamed(view, "ApproveButton").IsEnabled, "the decision buttons").ConfigureAwait(true);
@@ -451,13 +452,13 @@ public sealed class TerminalPanelViewTests : IDisposable
         throw new InvalidOperationException($"No terminal line starts with '{prefix}'.");
     }
 
-    /// <summary>Waits, for at most 20 seconds, until the terminal keeps the same rows and columns across several layout passes.</summary>
+    /// <summary>Waits, for at most 20 seconds, until the terminal keeps the same rows and columns for about 500 ms.</summary>
     private static async Task WaitForStableGridAsync(Window window, XTerm.Terminal terminal)
     {
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
         var last = (terminal.Rows, terminal.Cols);
         var unchanged = 0;
-        while (unchanged < 5)
+        while (unchanged < 10)
         {
             if (DateTime.UtcNow > deadline)
             {

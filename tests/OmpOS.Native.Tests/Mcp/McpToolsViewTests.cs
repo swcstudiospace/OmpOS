@@ -1,4 +1,6 @@
 using Avalonia.Automation;
+using Avalonia.Automation.Peers;
+using Avalonia.Automation.Provider;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
@@ -101,6 +103,48 @@ public sealed class McpToolsViewTests
             ShownText(view.OfferedRows).ShouldNotShowText("docs/search");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
+
+    /// <summary>Space switches each focused toggle like Enter does: the toggle, the offered list and its accessible state agree.</summary>
+    [Fact]
+    public async Task EveryToggleSwitchesWithSpaceLikeEnter()
+    {
+        var registry = SampleRegistry();
+
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            var (view, window) = Open(registry);
+
+            foreach (var name in ToggleNames(view))
+            {
+                var toggle = Toggle(view, name);
+                toggle.Focus();
+                ShellHarness.Settle(window);
+                toggle.IsFocused.ShouldBeTrue(name + " takes focus");
+                var wasOn = toggle.IsChecked;
+
+                ViewHost.PressAndRelease(window, Key.Space, PhysicalKey.Space);
+
+                toggle.IsChecked.ShouldBe(!wasOn, name + " changes state on Space");
+                AccessibleState(toggle).ShouldBe(!wasOn, name + " accessible state follows Space");
+                ShownText(view.OfferedRows).Contains(name).ShouldBe(toggle.IsChecked == true, name + " offered list follows Space");
+
+                ViewHost.PressAndRelease(window, Key.Enter, PhysicalKey.Enter);
+
+                toggle.IsChecked.ShouldBe(wasOn, name + " changes back on Enter");
+                AccessibleState(toggle).ShouldBe(wasOn, name + " accessible state follows Enter");
+            }
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>The accessible toggle state of a switch: true when on, false when off.</summary>
+    private static bool? AccessibleState(ToggleSwitch toggle) =>
+        ((IToggleProvider)ControlAutomationPeer.CreatePeerForElement(toggle)).ToggleState switch
+        {
+            ToggleState.On => true,
+            ToggleState.Off => false,
+            _ => null,
+        };
 
     private static FakeMcpToolRegistry SampleRegistry() =>
         new(

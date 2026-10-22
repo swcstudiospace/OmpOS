@@ -30,13 +30,27 @@ internal static class ViewHost
         return window;
     }
 
-    /// <summary>Presses and releases one key on a window, as the keyboard would, then settles the layout.</summary>
+    /// <summary>Presses one key down on a window, as the keyboard would, then settles the layout. The key is not released; see <see cref="PressAndRelease"/>.</summary>
     /// <param name="window">The shown window that owns the focus.</param>
     /// <param name="key">The logical key.</param>
     /// <param name="physical">The physical key.</param>
     public static void Press(Window window, Key key, PhysicalKey physical)
     {
         window.KeyPress(key, default, physical, null);
+        ShellHarness.Settle(window);
+    }
+
+    /// <summary>
+    /// Presses one key down and releases it, as the keyboard does, then settles the layout. Some controls act on the key up,
+    /// so a press alone does not reach them: <see cref="Press"/> raises only the key down.
+    /// </summary>
+    /// <param name="window">The shown window that owns the focus.</param>
+    /// <param name="key">The logical key.</param>
+    /// <param name="physical">The physical key.</param>
+    public static void PressAndRelease(Window window, Key key, PhysicalKey physical)
+    {
+        window.KeyPress(key, default, physical, null);
+        window.KeyRelease(key, default, physical, null);
         ShellHarness.Settle(window);
     }
 
