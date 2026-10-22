@@ -432,6 +432,7 @@
           "OmpOS.Harness.Abstractions": "[1.0.0, )",
           "OmpOS.Harness.Acp": "[1.0.0, )",
           "OmpOS.Harness.InMemory": "[1.0.0, )",
+          "OmpOS.Harness.Worktrees": "[1.0.0, )",
           "OmpOS.Parser": "[1.0.0, )",
           "OmpOS.Sandbox": "[1.0.0, )",
           "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
@@ -482,6 +483,9 @@
           "OmpOS.Contracts": "[1.0.0, )",
           "OmpOS.Harness.Abstractions": "[1.0.0, )"
         }
+      },
+      "ompos.harness.worktrees": {
+        "type": "Project"
       },
       "ompos.parser": {
         "type": "Project",

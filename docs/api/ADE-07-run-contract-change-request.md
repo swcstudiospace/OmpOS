@@ -18,12 +18,14 @@ The committed contract `docs/api/openapi.json` lists five paths and no others:
 
 | Method | Path | Current behaviour |
 |---|---|---|
-| POST | `/sessions` | Creates a session. Returns 201 with the session. Accepts an optional `ownerId` in the body (section 5.2). |
-| GET | `/sessions` | Lists every session in the registry. |
-| GET | `/sessions/{id}` | Returns one session, including its messages and events. |
+| POST | `/sessions` | Creates a session owned by the caller's token subject. Returns 201 with the session. A body `ownerId` is refused with 400. |
+| GET | `/sessions` | Lists the caller's own sessions, oldest first. Another owner's sessions are not listed. |
+| GET | `/sessions/{id}` | Returns one session, including its messages and events. Another owner's session returns 404. |
 | POST | `/sessions/{id}/prompts` | Submits a prompt. Returns 202 with `PromptAcceptedResponse`. Idempotency-Key supported. |
 | POST | `/sessions/{id}/tool-approvals/{requestId}` | Records `allow` or `deny`. 204 when recorded; 403 when an allow exceeds the ceiling; 409 when not pending. |
 | GET | `/sessions/{id}/events` | Server-sent event stream, resumable by `Last-Event-ID` or `?since=`. |
+
+Ownership, as implemented: the session owner is the subject claim of the validated bearer token. Every session route (`GET /sessions/{id}`, prompts, tool approvals and the event stream) resolves the session for the caller, and a session owned by another subject gets the same 404 as an unknown id (`services/OmpOS.Api/Endpoints/SessionEndpoints.cs`, `FindOwnedSessionAsync`).
 
 There is no run resource, no run endpoint, no diff endpoint, no transcript endpoint and no cancel endpoint. This was checked against `docs/api/openapi.json` (`paths` keys) and the route map in `services/OmpOS.Api/Endpoints`.
 
@@ -80,15 +82,15 @@ Phase 26 criterion 4 cannot pass until the wiring lands. The contract can be app
 - Outside Development the development principal is refused at startup (`ApiAuthOptionsValidator`). Inside Development it is off unless `Api:Auth:AllowDevelopmentPrincipal` is set. A run operation must answer 401 without a bearer token in both environments.
 - OD-03 gate: the hosted run contract and remote control (ADE-08) MUST NOT be exposed publicly until an identity provider is configured for the deployed API (`docs/handoff.md` decision 4 and the deploy-blocker entry). Until OD-03 closes, the run endpoints are reachable only inside the private network.
 
-### 5.2 Ownership (blocker, found while writing this request)
+### 5.2 Ownership (found while writing this request; resolved 2026-10-22, commit 9119f7e)
 
-The current session contract does not enforce ownership, and run endpoints would inherit that gap:
+The session contract had three gaps before commit 9119f7e, and all three are now closed.
 
-- `POST /sessions` takes `ownerId` from the request body and uses it in preference to the authenticated subject (`SessionEndpoints.cs`: `var owner = ownerId ?? user.Name`). An authenticated caller can therefore create a session owned by another user.
-- `GET /sessions` lists every session in the registry, with no owner filter.
-- `GET /sessions/{id}` and the other session operations do not compare the session owner with the caller.
+- `POST /sessions` took `ownerId` from the request body in preference to the authenticated subject. A body `ownerId` is now refused with 400, and the owner is always the caller's subject.
+- `GET /sessions` listed every session in the registry. It now lists only the caller's sessions.
+- `GET /sessions/{id}` and the other session operations did not compare the owner with the caller. They now return 404 for another owner's session, the same as for a missing one.
 
-Run operations MUST derive the owner from the validated token only, and MUST return 404 (not 403) for a run or session the caller does not own, so that run identifiers are not revealed. This request does not change the existing session endpoints; the maintainers must decide how to fix them before remote control ships.
+Run operations keep these rules: derive the owner from the validated token only, and return 404 (not 403) for a run or session the caller does not own, so that run identifiers are not revealed.
 
 ### 5.3 Other rules
 
@@ -124,7 +126,7 @@ AT-01 and the 401 cases of AT-07 can be written before any run code exists, beca
 3. Status set: five values (proposed, covering ADE-05 and ADE-07) or the three ADE-07 names alone.
 4. Diff format: unified diff as `text/plain` (proposed) or a structured JSON file list with per-file hunks. ADE-11 (diff review, Phase 27) may need the structured form; deciding now avoids a second contract change.
 5. Operator-controlled worktree root on the hosted server, its owner and its cleanup policy (section 4).
-6. Ownership: remove the body `ownerId` override in session create, and add owner filtering to the list and read operations (section 5.2). Blocks remote control.
+6. Ownership: resolved in commit 9119f7e (section 5.2). Owner to confirm that run endpoints return 404 for another owner's run.
 7. Cross-session list of active runs for ADE-05 and ADE-08: a `GET /runs?status=` endpoint, or the session list filtered by status. Proposed: leave it out of this change and filter the session list.
 8. Whether ADR-0008's version policy applies to the HTTP contract (`ContractVersion.Current` is `1.0.0`). ADR-0008 scopes plugin contracts only. Owner to decide whether the HTTP contract follows the same rule.
 9. Timing: OD-03 closes before any public run endpoint. Owner to name the date or confirm that Phase 26 ships the run endpoints on the private network only.

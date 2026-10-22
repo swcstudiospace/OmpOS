@@ -10,7 +10,7 @@ public sealed record Session
     /// <summary>Gets the session identifier.</summary>
     public required string Id { get; init; }
 
-    /// <summary>Gets the reserved owner identifier (single dev principal).</summary>
+    /// <summary>Gets the owner identifier: the subject of the bearer token that created the session.</summary>
     public required string OwnerId { get; init; }
 
     /// <summary>Gets the creation timestamp.</summary>

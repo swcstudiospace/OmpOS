@@ -29,6 +29,7 @@ using OmpOS.Sandbox.Abstractions;
 using OmpOS.SessionRuns;
 using OmpOS.Sessions;
 using OmpOS.Workflows;
+using OmpOS.Worktrees;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
@@ -64,6 +65,13 @@ builder.Services.AddOptions<CoordinationOptions>()
     .ValidateOnStart();
 builder.Services.AddOptions<OtelOptions>().BindConfiguration(OtelOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
 builder.Services.AddOptions<DebugOptions>().BindConfiguration(DebugOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
+// Worktrees: the operator-controlled root for per-run git worktrees and the repository they come from. Unset values are allowed; a set value
+// must be an absolute path, so a relative root or repository stops startup and the error names the key.
+builder.Services.AddOptions<WorktreesOptions>()
+    .BindConfiguration(WorktreesOptions.SectionName)
+    .Validate(static options => string.IsNullOrWhiteSpace(options.Root) || Path.IsPathFullyQualified(options.Root), "Worktrees:Root must be an absolute path when set.")
+    .Validate(static options => string.IsNullOrWhiteSpace(options.Repository) || Path.IsPathFullyQualified(options.Repository), "Worktrees:Repository must be an absolute path when set.")
+    .ValidateOnStart();
 
 // OIDC bearer sign-in (OD-03). ApiAuthOptionsValidator checks these options against the host environment on start: outside
 // Development, Authority and Audience are required, Authority must be https, and the development principal is refused.

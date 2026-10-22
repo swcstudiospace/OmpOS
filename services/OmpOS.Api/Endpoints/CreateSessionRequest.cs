@@ -1,7 +1,7 @@
 namespace OmpOS.Api.Endpoints;
 
 /// <summary>
-/// Request body for <c>POST /sessions</c>. The owner defaults to the ambient principal when omitted.
+/// Request body for <c>POST /sessions</c>. The owner is never taken from the body; it is the caller's subject.
 /// </summary>
 /// <remarks>
 /// The owner is the subject of the bearer token that created the session, so a request cannot name another owner. A non-null
@@ -9,6 +9,6 @@ namespace OmpOS.Api.Endpoints;
 /// </remarks>
 internal sealed record CreateSessionRequest
 {
-    /// <summary>Gets the owning principal identifier, or null to use the ambient principal.</summary>
+    /// <summary>Gets a body owner identifier, which is refused with 400 when non-null.</summary>
     public string? OwnerId { get; init; }
 }

@@ -226,6 +226,9 @@
           "OmpOS.Harness.Abstractions": "[1.0.0, )"
         }
       },
+      "ompos.harness.worktrees": {
+        "type": "Project"
+      },
       "ompos.parser": {
         "type": "Project",
         "dependencies": {
