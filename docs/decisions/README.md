@@ -11,6 +11,8 @@ source of truth; this index only lists them with status and in-text amendments.
 | [ADR-0004](ADR-0004-cross-platform-ui.md) | Cross-platform UI: Avalonia | Accepted 2026-10-21, amended (web stays Blazor WebAssembly) | Supersedes the MAUI and Blazor RCL UI stack decisions in ADR-0002. The web head stays Blazor WebAssembly after gate G-WEB failed on Avalonia 12.1.4. Other ADR-0002 decisions stand. |
 | [ADR-0005](ADR-0005-workspace-conventions.md) | Workspace conventions: rules, skills, modes, search and setup file | Accepted 2026-10-22 | Layout under `.ompos/` (rules, skills, modes, setup.json). Setup commands run with user privileges and must go through the approval path before a real agent uses them (open risk, ADR text) |
 | [ADR-0006](ADR-0006-terminal-control.md) | Terminal control and PTY (ADE-14, ADR R-1) | Proposed 2026-10-22 | Approval gate implemented; control and PTY choice open until an accessibility and ANSI spike passes (candidates and licences in ADR text) |
+| [ADR-0007](ADR-0007-editor-control.md) | Editor control: AvaloniaEdit (ADE-09) | Accepted 2026-10-22 | Licences and grammar sources recorded in the ADR; token colours and contrast on the Fluent surface not yet measured |
+| [ADR-0008](ADR-0008-contract-versioning.md) | Contract versioning policy (R-11) | Accepted 2026-10-22 | Applies to presentation and harness plugin contracts |
 
 Conventions: new ADRs take the next number (`ADR-0004`, …); status changes are
 recorded in the ADR’s own header, and this index is updated to match.

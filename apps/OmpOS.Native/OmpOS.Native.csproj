@@ -9,10 +9,15 @@
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Iciclecreek.Avalonia.Terminal" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" />
+    <PackageReference Include="AvaloniaEdit.TextMate" />
+    <PackageReference Include="TextMateSharp.Grammars" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/OmpOS.Presentation/OmpOS.Presentation.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Terminal/OmpOS.Harness.Terminal.csproj" />
   </ItemGroup>
 
 </Project>

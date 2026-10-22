@@ -1,0 +1,88 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:term="clr-namespace:Iciclecreek.Terminal;assembly=Iciclecreek.Avalonia.Terminal"
+             x:Class="OmpOS.Native.Views.Terminal.TerminalPanelView"
+             Padding="{DynamicResource OmpOS.Space.Sm}">
+  <!-- The output control's default theme is scoped to this panel, so its template does not depend on the application's style list.
+       Commands run only after Approve. The output control shows what approved runs print; it is not attached to any shell. -->
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Iciclecreek.Avalonia.Terminal/Themes/Generic.axaml" />
+  </UserControl.Styles>
+
+  <DockPanel>
+
+    <StackPanel DockPanel.Dock="Top"
+                Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+      <TextBlock Text="Terminal"
+                 FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Body}" />
+
+      <TextBox x:Name="CommandInput"
+               PlaceholderText="Command, for example /bin/sh"
+               MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+               AutomationProperties.Name="Command" />
+
+      <TextBox x:Name="ArgumentsInput"
+               PlaceholderText="Arguments, one per line"
+               AcceptsReturn="True"
+               TextWrapping="Wrap"
+               MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+               AutomationProperties.Name="Arguments, one per line" />
+
+      <TextBox x:Name="DirectoryInput"
+               PlaceholderText="Working directory, relative to the workspace (empty for the workspace root)"
+               MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+               AutomationProperties.Name="Working directory" />
+
+      <Button x:Name="ProposeButton"
+              Content="Propose command"
+              HorizontalAlignment="Left"
+              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+              AutomationProperties.Name="Propose command" />
+
+      <TextBlock x:Name="PendingText"
+                 Classes="muted"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Pending command"
+                 AutomationProperties.LiveSetting="Polite" />
+
+      <StackPanel Orientation="Horizontal"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+        <Button x:Name="ApproveButton"
+                Content="Approve"
+                IsEnabled="False"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                AutomationProperties.Name="Approve command" />
+
+        <Button x:Name="DeclineButton"
+                Content="Decline"
+                IsEnabled="False"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                AutomationProperties.Name="Decline command" />
+
+        <Button x:Name="StopButton"
+                Content="Stop"
+                IsEnabled="False"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                AutomationProperties.Name="Stop running command" />
+
+      </StackPanel>
+
+      <TextBlock x:Name="StatusText"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Terminal status"
+                 AutomationProperties.LiveSetting="Polite" />
+
+    </StackPanel>
+
+    <term:TerminalControl x:Name="Output"
+                          Margin="{DynamicResource OmpOS.Space.Xs}"
+                          AutomationProperties.Name="Terminal output" />
+
+  </DockPanel>
+
+</UserControl>
