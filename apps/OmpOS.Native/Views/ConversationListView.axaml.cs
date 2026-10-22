@@ -1,6 +1,8 @@
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using OmpOS.Presentation.Components;
 using OmpOS.Presentation.State;
 
@@ -9,6 +11,8 @@ namespace OmpOS.Native.Views;
 /// <summary>
 /// The session list. It draws the presentation <see cref="ConversationListState"/>: the loading, empty and failed
 /// copy, or one row per <see cref="ConversationSummary"/>. Each row is named by its full title.
+/// When its data context is a <see cref="ConversationListModel"/>, it draws that model and redraws it whenever the model
+/// changes while the list is shown.
 /// </summary>
 internal partial class ConversationListView : UserControl
 {
@@ -23,6 +27,7 @@ internal partial class ConversationListView : UserControl
             Array.Empty<ConversationSummary>());
 
     private IReadOnlyList<ConversationSummary> _rows = Array.Empty<ConversationSummary>();
+    private ConversationListModel? _model;
 
     /// <summary>Creates the list in the loading state with no conversations.</summary>
     public ConversationListView()
@@ -59,21 +64,51 @@ internal partial class ConversationListView : UserControl
         }
     }
 
-    /// <summary>Redraws the rows and the state copy from <see cref="State"/> and <see cref="Conversations"/>.</summary>
-    public void Refresh()
+    /// <summary>Subscribes to the data-context model when the list is shown, and draws its current state.</summary>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        _rows = State == ConversationListState.Loaded ? Conversations : Array.Empty<ConversationSummary>();
-        ConversationRows.ItemsSource = _rows;
-        ApplyStateCopy();
+        base.OnAttachedToVisualTree(e);
+        BindModel(DataContext as ConversationListModel);
+        Refresh();
     }
 
-    private void ApplyStateCopy()
+    /// <summary>Unsubscribes from the model when the list leaves the visual tree; a list that is not shown keeps what it drew.</summary>
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        var (heading, body, isError) = State switch
+        base.OnDetachedFromVisualTree(e);
+        BindModel(null);
+    }
+
+    /// <summary>Follows a new data context while the list is shown.</summary>
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+
+        if (VisualRoot is not null)
+        {
+            BindModel(DataContext as ConversationListModel);
+            Refresh();
+        }
+    }
+
+    /// <summary>Redraws the rows and the state copy from the bound model when there is one, otherwise from <see cref="State"/> and <see cref="Conversations"/>.</summary>
+    public void Refresh()
+    {
+        var state = _model?.State ?? State;
+        var conversations = _model?.Conversations ?? Conversations;
+
+        _rows = state == ConversationListState.Loaded ? conversations : Array.Empty<ConversationSummary>();
+        ConversationRows.ItemsSource = _rows;
+        ApplyStateCopy(state, conversations.Count);
+    }
+
+    private void ApplyStateCopy(ConversationListState state, int count)
+    {
+        var (heading, body, isError) = state switch
         {
             ConversationListState.Loading => ("Loading conversations…", string.Empty, false),
             ConversationListState.Failed => ("Could not load conversations.", "Close and reopen OmpOS to try again.", true),
-            _ when Conversations.Count == 0 => ("No conversations yet.", "Conversations you start will appear here.", false),
+            _ when count == 0 => ("No conversations yet.", "Conversations you start will appear here.", false),
             _ => (string.Empty, string.Empty, false),
         };
 
@@ -95,6 +130,43 @@ internal partial class ConversationListView : UserControl
         if (index >= 0 && index < _rows.Count)
         {
             AutomationProperties.SetName(container, _rows[index].Title);
+        }
+    }
+
+    private void BindModel(ConversationListModel? model)
+    {
+        if (_model is not null)
+        {
+            _model.PropertyChanged -= OnModelPropertyChanged;
+        }
+
+        _model = model;
+        if (_model is not null)
+        {
+            _model.PropertyChanged += OnModelPropertyChanged;
+        }
+    }
+
+    private void OnModelPropertyChanged(object? sender, PropertyChangedEventArgs e) =>
+        OnUiThread(() =>
+        {
+            // A change made while the list is not shown is not drawn; the list catches up when it is attached again.
+            if (_model is not null)
+            {
+                Refresh();
+            }
+        });
+
+    private static void OnUiThread(Action action)
+    {
+        // The model may change off the UI thread; the controls are drawn only on the thread that owns them.
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            action();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(action);
         }
     }
 }
