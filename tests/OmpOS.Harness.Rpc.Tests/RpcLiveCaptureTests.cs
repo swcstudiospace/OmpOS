@@ -26,7 +26,11 @@ public sealed class RpcLiveCaptureTests
     private const string TimeoutReason = "timeout";
     private const string MissingCompletionReason = "no_completion";
     private static readonly TimeSpan TurnTimeout = TimeSpan.FromSeconds(120);
-    private static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(60);
+    // Bound for omp's ready frame: the same 300 s bound RpcLiveSmokeTests.HandshakeTimeout uses.
+    // Measured omp startup to ready is about 15 CPU-seconds, 16 to 19 s wall at load 6 to 14,
+    // 40 to 58 s at load 36 to 43, and more than 120 s at load 56 (RpcLiveSmokeTests.cs:18-21).
+    // The former 60 s bound failed under full parallel load.
+    private static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(300);
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>Gets whether the capture is requested and an <c>omp</c> executable is on PATH. Gates the capture.</summary>
