@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:hooks="clr-namespace:OmpOS.Native.Views.Hooks"
+             x:Class="OmpOS.Native.Views.Hooks.HooksView">
+
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="{DynamicResource OmpOS.Space.Sm}"
+                Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+      <TextBlock x:Name="StateHeading"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                 AutomationProperties.Name="Hooks state"
+                 AutomationProperties.LiveSetting="Polite" />
+
+      <TextBlock x:Name="LoadingText"
+                 Classes="muted"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 Text="Loading hooks from the loaded plugins." />
+
+      <TextBlock x:Name="EmptyText"
+                 Classes="muted"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 Text="No loaded plugin declares a hook." />
+
+      <TextBlock x:Name="ErrorText"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Hooks load error"
+                 AutomationProperties.LiveSetting="Assertive" />
+
+      <StackPanel x:Name="ListPanel"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+        <TextBlock x:Name="SummaryText"
+                   Classes="muted"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                   TextWrapping="Wrap"
+                   AutomationProperties.Name="Hooks summary" />
+
+        <ItemsControl x:Name="HookRows"
+                      AutomationProperties.Name="Hooks in run order">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="hooks:HookRow">
+              <StackPanel Margin="{DynamicResource OmpOS.Space.Xs}"
+                          Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+                <TextBlock Text="{CompiledBinding Id}"
+                           FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}" />
+                <TextBlock Text="{CompiledBinding TriggerText}"
+                           FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+                <TextBlock Text="{CompiledBinding CommandText}"
+                           FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="{CompiledBinding WorkingDirectoryText}"
+                           FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="{CompiledBinding EnabledText}"
+                           FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+                <TextBlock Text="{CompiledBinding ConsentText}"
+                           FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                           TextWrapping="Wrap" />
+
+                <StackPanel IsVisible="{CompiledBinding IsDegraded}"
+                            Spacing="{DynamicResource OmpOS.Gap.Xs}">
+                  <TextBlock Text="Degraded"
+                             FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                             FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+                  <TextBlock Text="{CompiledBinding DegradedText}"
+                             FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+
+                <WrapPanel>
+                  <Button Content="Enable"
+                          Margin="0,0,4,4"
+                          AutomationProperties.Name="{CompiledBinding EnableName}"
+                          Command="{CompiledBinding EnableCommand}" />
+                  <Button Content="Disable"
+                          Margin="0,0,4,4"
+                          AutomationProperties.Name="{CompiledBinding DisableName}"
+                          Command="{CompiledBinding DisableCommand}" />
+                  <Button Content="Move up"
+                          Margin="0,0,4,4"
+                          AutomationProperties.Name="{CompiledBinding MoveUpName}"
+                          Command="{CompiledBinding MoveUpCommand}" />
+                  <Button Content="Move down"
+                          Margin="0,0,4,4"
+                          AutomationProperties.Name="{CompiledBinding MoveDownName}"
+                          Command="{CompiledBinding MoveDownCommand}" />
+                  <Button Content="{CompiledBinding ReviewText}"
+                          Margin="0,0,4,4"
+                          AutomationProperties.Name="{CompiledBinding ReviewName}"
+                          Command="{CompiledBinding ReviewCommand}" />
+                </WrapPanel>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+
+      <StackPanel x:Name="ConsentPanel"
+                  Spacing="{DynamicResource OmpOS.Gap.Xs}">
+        <TextBlock Text="Consent"
+                   FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+        <TextBlock x:Name="ConsentPrompt"
+                   Classes="muted"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                   TextWrapping="Wrap" />
+
+        <StackPanel x:Name="ConsentDetails"
+                    Spacing="{DynamicResource OmpOS.Gap.Xs}">
+          <TextBlock x:Name="ConsentTrigger"
+                     FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                     TextWrapping="Wrap" />
+          <TextBlock x:Name="ConsentDirectory"
+                     FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                     TextWrapping="Wrap"
+                     AutomationProperties.Name="Consent working directory" />
+          <TextBlock Text="Arguments, executable first"
+                     FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+          <TextBlock x:Name="ConsentArguments"
+                     FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                     TextWrapping="Wrap"
+                     AutomationProperties.Name="Consent argument list" />
+        </StackPanel>
+
+        <Button x:Name="ApproveButton"
+                Content="Approve consent"
+                HorizontalAlignment="Left" />
+      </StackPanel>
+
+      <TextBlock x:Name="ActionErrorText"
+                 IsVisible="False"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Hooks action error"
+                 AutomationProperties.LiveSetting="Assertive" />
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -325,6 +325,9 @@
           "OmpOS.Harness.Abstractions": "[1.0.0, )"
         }
       },
+      "ompos.harness.plugins": {
+        "type": "Project"
+      },
       "ompos.harness.terminal": {
         "type": "Project",
         "dependencies": {
