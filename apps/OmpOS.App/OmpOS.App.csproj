@@ -1,14 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
-  <!-- The MAUI head never restores or builds on Linux (no workloads): it is excluded from
-       OmpOS.Linux.slnf and builds only in the macOS shells CI job. Its lock file can only be
-       generated on macOS with workloads installed, so it opts out of lock files; a locked
-       mode restore is a no-op for a project without a lock file. -->
+  <!-- The MAUI head is excluded from OmpOS.Linux.slnf. CI builds its Android target in the
+       `shells` job on the Linux Omega CI pool, whose image carries the maui-android workload.
+       iOS and MacCatalyst need macOS and Xcode, so those targets are added only when building
+       on macOS. Its lock file depends on the installed workloads, so it opts out of lock
+       files; a locked mode restore is a no-op for a project without a lock file. -->
   <PropertyGroup>
-    <TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
+    <TargetFrameworks>net10.0-android</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(TargetFrameworks);net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
     <!-- Directory.Build.props sets one TargetFramework=net10.0 for every project. Left in place it
          overrides TargetFrameworks here: the build asks for net10.0 while restore produced only the
-         platform TFMs, which fails with NETSDK1005 on the macOS shells job. Clear it so the platform
+         platform TFMs, which fails with NETSDK1005 in the shells job. Clear it so the platform
          TFMs apply. The shared props stay unchanged for every other project. -->
     <TargetFramework></TargetFramework>
     <OutputType>Exe</OutputType>

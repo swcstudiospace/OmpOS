@@ -1,6 +1,9 @@
 # OmpOS CI (Phase 1, decision D-05).
 # Mirrors bootstrap.sh, then adds the audit, scan, and compose gates.
 # Podman is the only container runtime referenced here; Docker is not used.
+# Every job runs on the Omega CI runner pool ([self-hosted, linux, x64, omega-ci],
+# swcstudiospace/Omega-Prime docs/ci-runners.md), never on GitHub-hosted runners. Pull requests
+# from forks are skipped: fork code never reaches the pool.
 name: ci
 
 on:
@@ -24,7 +27,8 @@ env:
 
 jobs:
   build-test:
-    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, omega-ci]
     steps:
       # Action tags verified 2026-10-20 against the GitHub releases API:
       # checkout v7.0.1, setup-dotnet v6.0.0, upload-artifact v7.0.2.
@@ -65,13 +69,16 @@ jobs:
           PY
       - name: Secret scan (gitleaks CLI, pinned)
         run: |
-          curl -sSL -o /tmp/gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-          echo "${GITLEAKS_SHA256}  /tmp/gitleaks.tar.gz" | sha256sum -c -
-          mkdir -p /tmp/gitleaks-bin && tar -xzf /tmp/gitleaks.tar.gz -C /tmp/gitleaks-bin
-          /tmp/gitleaks-bin/gitleaks git --redact --exit-code 1 --log-level warn .
-      - name: Install podman (for compose validation)
+          # RUNNER_TEMP, not /tmp: jobs on one pool host share /tmp.
+          curl -sSL -o "$RUNNER_TEMP/gitleaks.tar.gz" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/gitleaks-bin" && tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP/gitleaks-bin"
+          "$RUNNER_TEMP/gitleaks-bin/gitleaks" git --redact --exit-code 1 --log-level warn .
+      - name: Require podman (for compose validation)
+        # The Omega CI runner image ships podman; jobs have no sudo to install it.
         run: |
-          command -v podman >/dev/null || { sudo apt-get update -y; sudo apt-get install -y podman; }
+          command -v podman >/dev/null || { echo "::error::podman is not on PATH; add it to the Omega CI runner image" >&2; exit 1; }
+          podman --version
       - name: Validate compose (podman-compose needs the podman binary and the profile)
         run: |
           pipx install podman-compose==1.6.0
@@ -79,7 +86,12 @@ jobs:
           podman-compose --profile workflows -f deploy/compose.yaml config -q
 
   shells:
-    runs-on: macos-15
+    # The MAUI head's Android target on the Omega CI pool. The runner image pre-installs the
+    # maui-android workload (the SDK directory is read-only, so there is no `dotnet workload
+    # install` step), JDK 17 and Android SDK 36. iOS and MacCatalyst need macOS and Xcode, which
+    # the Linux pool does not have; OmpOS.App.csproj adds those targets only on macOS.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, omega-ci]
     needs: build-test
     continue-on-error: false
     steps:
@@ -87,10 +99,9 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
-      - name: MAUI head (only when the project exists)
+      - name: MAUI head, Android (only when the project exists)
         if: hashFiles('apps/OmpOS.App/OmpOS.App.csproj') != ''
         run: |
-          dotnet workload install maui
+          dotnet workload list
           dotnet restore apps/OmpOS.App/OmpOS.App.csproj --locked-mode
-          # iOS and MacCatalyst packs require Xcode 27.1, which hosted runners do not provide as a stable toolchain, so those targets are not built here and are tracked as a human follow-up.
           dotnet build apps/OmpOS.App/OmpOS.App.csproj -c Release --no-restore -warnaserror -f net10.0-android
