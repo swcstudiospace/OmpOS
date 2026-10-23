@@ -65,8 +65,8 @@ public sealed class ArchUnitLayerTests
             var candidate = Path.Combine(AppContext.BaseDirectory, name + ".dll");
             if (!File.Exists(candidate))
             {
-                // Only the MAUI head may be absent: it never builds on Linux by design
-                // (excluded from OmpOS.Linux.slnf; built only in the macOS shells job).
+                // Only the MAUI head may be absent: the Linux solution filter never builds it
+                // (excluded from OmpOS.Linux.slnf; built only in the CI shells job).
                 if (!string.Equals(name, "OmpOS.App", StringComparison.Ordinal))
                 {
                     throw new FileNotFoundException($"Expected built assembly for {name} at {candidate}.");

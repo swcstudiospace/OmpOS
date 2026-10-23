@@ -53,19 +53,21 @@ It installs the pinned SDK when missing, then runs a locked restore, a warnings-
 
 | Surface | Verifier | Scope |
 | ------- | -------- | ----- |
-| Linux (`ubuntu-latest`) | `ci.yml` job `build-test` | Everything in `OmpOS.Linux.slnf`: API, harness, sandbox, sessions, workflows, web head, EngineHost — libraries, worker, and all test suites |
+| Linux (Omega CI pool, `[self-hosted, linux, x64, omega-ci]`) | `ci.yml` job `build-test` | Everything in `OmpOS.Linux.slnf`: API, harness, sandbox, sessions, workflows, web head, EngineHost — libraries, worker, and all test suites |
 | Linux dev box | `./bootstrap.sh` | Same scope as Linux CI; the MAUI head is never built locally on Linux |
-| macOS (`macos-15`, human-deferred) | `ci.yml` job `shells` | `apps/OmpOS.App` (MAUI head) only — first run pending, see [docs/handoff.md](docs/handoff.md) |
+| Linux (Omega CI pool) | `ci.yml` job `shells` | `apps/OmpOS.App` (MAUI head), Android target (`net10.0-android`) only |
+| macOS (human-deferred) | none in CI | The iOS and MacCatalyst heads need macOS and Xcode; there is no macOS runner in the pool, so they are not built in CI — see [docs/handoff.md](docs/handoff.md) |
 | Inspection only (Linux) | Code review | The MAUI head's structure (project file, RCL sharing, `IEngineHost` registration) — its binaries are not produced on Linux |
 
 ### MAUI workload requirement
 
-Restoring the full `OmpOS.slnx` needs the .NET MAUI workloads installed
-(`dotnet workload install maui`, as the macOS CI `shells` job does). On Linux,
-without those workloads, restore of `apps/OmpOS.App` (which targets
-`net10.0-android`, `net10.0-ios`, `net10.0-maccatalyst` with `UseMaui`) fails
-(missing-workload `NETSDK1147`, `maui-tizen` chain) — so the supported Linux path
-is the solution filter, which excludes the MAUI head:
+`apps/OmpOS.App` targets `net10.0-android` everywhere and adds `net10.0-ios` and
+`net10.0-maccatalyst` only when building on macOS. Restoring it needs the matching
+MAUI workload: `maui-android` on Linux (pre-installed in the Omega CI runner image,
+which is how the CI `shells` job builds it without `dotnet workload install`), or
+`maui` on macOS. On a Linux box without `maui-android`, restore of the MAUI head fails
+(missing-workload `NETSDK1147`) — so the supported Linux dev path is the solution
+filter, which excludes the MAUI head:
 
 ```sh
 dotnet test OmpOS.Linux.slnf -c Release
@@ -77,7 +79,7 @@ Three blockers must clear before the API or web head is exposed publicly:
 
 - **Auth provider.** The API has no authentication — a single local dev principal only. Do not expose it publicly until an auth provider fronts it.
 - **Production API origin.** The static web head cannot reach any API not listed in `connect-src` (`vercel.json` currently allows only `'self'` plus loopback). Point the head at the production API origin (`Api:BaseUrl` / `?apiBaseUrl=`) and add that origin to `connect-src`.
-- **macOS MAUI build (human).** The MAUI head (`apps/OmpOS.App`) never builds on Linux; its first warning-free build and spot-check happen on a macOS runner via the `ci.yml` `shells` job.
+- **macOS MAUI build (human).** CI builds the MAUI head's Android target on the Linux runner pool (`ci.yml` job `shells`). The iOS and MacCatalyst targets need macOS and Xcode; there is no macOS runner in the pool, so their first build and spot-check stay with a human on a Mac.
 
 Full per-AC verdicts and the human verification steps: [docs/handoff.md](docs/handoff.md).
 
