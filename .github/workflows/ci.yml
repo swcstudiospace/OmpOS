@@ -49,7 +49,10 @@ jobs:
           cache-dependency-path: '**/packages.lock.json'
       - run: dotnet restore OmpOS.Linux.slnf --locked-mode
       - run: dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
-      - run: dotnet test OmpOS.Linux.slnf -c Release --no-build --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
+      # Two test modules at a time, the runner's vCPU budget. Every concurrent
+      # pool job shares the job uid's RLIMIT_NPROC, and 15 test hosts at once
+      # failed to start threads ("Failed to create CoreCLR", OutOfMemory).
+      - run: dotnet test OmpOS.Linux.slnf -c Release --no-build --max-parallel-test-modules 2 --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
       - uses: actions/upload-artifact@v7
         if: always()
         with:
