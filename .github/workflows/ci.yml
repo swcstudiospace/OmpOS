@@ -83,7 +83,11 @@ jobs:
           curl -sSL -o "$RUNNER_TEMP/gitleaks.tar.gz" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
           echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
           mkdir -p "$RUNNER_TEMP/gitleaks-bin" && tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP/gitleaks-bin"
-          "$RUNNER_TEMP/gitleaks-bin/gitleaks" git --redact --exit-code 1 --log-level warn .
+          # Scan the checked-out commit and all of its history: on a pull request that is main plus
+          # the PR's commits (the merge ref), on a push it is that branch. gitleaks' default log
+          # options include --all, which with fetch-depth: 0 also scans every other branch, so one
+          # branch's findings failed every PR. Each branch is still scanned by its own push run.
+          "$RUNNER_TEMP/gitleaks-bin/gitleaks" git --redact --exit-code 1 --log-level warn --log-opts="--full-history HEAD" .
       - name: Require podman (for compose validation)
         # The Omega CI runner image ships podman; jobs have no sudo to install it.
         run: |
