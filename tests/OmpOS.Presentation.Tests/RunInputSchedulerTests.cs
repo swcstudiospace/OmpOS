@@ -53,8 +53,56 @@ public sealed class RunInputSchedulerTests
         await scheduler.SteerAsync("course correction", NoCancellation).ConfigureAwait(true);
 
         input.FollowUps.ShouldBeEmpty();
-        scheduler.QueuedFollowUpCount.ShouldBe(2);
+        scheduler.QueuedFollowUpCount.ShouldBe(3, "the steer queues behind the follow-ups");
+        input.Steers.ShouldBeEmpty();
         scheduler.IsRunActive.ShouldBeTrue();
+    }
+
+    /// <summary>A steer sent while a follow-up waits queues behind it, so the two are dispatched in the order they were sent.</summary>
+    [Fact]
+    public async Task ASteerWhileFollowUpsWaitGoesBehindThem()
+    {
+        var input = new RecordingRunInput();
+        var scheduler = new RunInputScheduler(input);
+        scheduler.RunStarted();
+        scheduler.QueueFollowUp("first");
+
+        await scheduler.SteerAsync("steer", NoCancellation).ConfigureAwait(true);
+
+        input.Steers.ShouldBeEmpty("the steer does not reach the run ahead of the follow-up");
+        scheduler.QueuedFollowUpCount.ShouldBe(2);
+        scheduler.SteersHeld.ShouldBe(0, "a steer queued as a follow-up is not a held steer");
+
+        await scheduler.RunCompletedAsync(NoCancellation).ConfigureAwait(true);
+        input.FollowUps.ShouldBe(["first"]);
+
+        await scheduler.RunCompletedAsync(NoCancellation).ConfigureAwait(true);
+        input.FollowUps.ShouldBe(["first", "steer"]);
+        input.Steers.ShouldBeEmpty();
+        scheduler.QueuedFollowUpCount.ShouldBe(0);
+    }
+
+    /// <summary>Steers the input accepts during a run stay counted until each steer starts its own turn, past the run completing.</summary>
+    [Fact]
+    public async Task SteersAcceptedDuringARunStayCountedUntilEachTurnStarts()
+    {
+        var input = new RecordingRunInput();
+        var scheduler = new RunInputScheduler(input);
+        scheduler.RunStarted();
+        scheduler.SteersHeld.ShouldBe(0);
+
+        await scheduler.SteerAsync("one", NoCancellation).ConfigureAwait(true);
+        await scheduler.SteerAsync("two", NoCancellation).ConfigureAwait(true);
+        scheduler.SteersHeld.ShouldBe(2);
+
+        await scheduler.RunCompletedAsync(NoCancellation).ConfigureAwait(true);
+        scheduler.SteersHeld.ShouldBe(2, "a held steer waits for its own turn, not for the run to complete");
+
+        input.StartHeldSteer().ShouldBe("one");
+        scheduler.SteersHeld.ShouldBe(1);
+
+        input.StartHeldSteer().ShouldBe("two");
+        scheduler.SteersHeld.ShouldBe(0);
     }
 
     /// <summary>Queued follow-ups dispatch in send order, one per completed run, and each dispatched run waits for its own completion.</summary>
@@ -198,7 +246,13 @@ public sealed class RunInputSchedulerTests
     /// <summary>Records each message the scheduler hands to the run, and can hold a steer or reject a follow-up on request.</summary>
     private sealed class RecordingRunInput : IRunInput
     {
+        private readonly Queue<string> _heldSteers = new();
+
         public List<string> Steers { get; } = [];
+
+        public int SteersHeld => _heldSteers.Count;
+
+        public string StartHeldSteer() => _heldSteers.Dequeue();
 
         public List<string> FollowUps { get; } = [];
 
@@ -210,6 +264,7 @@ public sealed class RunInputSchedulerTests
         public async Task SteerAsync(string text, CancellationToken cancellationToken)
         {
             Steers.Add(text);
+            _heldSteers.Enqueue(text);
             if (SteerGate is not null)
             {
                 await SteerGate.WaitAsync(cancellationToken).ConfigureAwait(true);

@@ -59,7 +59,7 @@ public sealed class KeyboardFocusTests
     }
 
     /// <summary>
-    /// Each shared control that keyboard focus reaches shows the Accent token as a 2 px border with no default adorner.
+    /// Each shared control that keyboard focus reaches shows the AccentPurple token as a 2 px border with no default adorner.
     /// Focus arrives by Tab presses, so the <c>:focus-visible</c> style applies.
     /// </summary>
     [Fact]
@@ -210,12 +210,14 @@ public sealed class KeyboardFocusTests
 
     private static void AssertAccentRing(Control control)
     {
-        var accent = ((ISolidColorBrush)control.FindResource("OmpOS.Color.Accent")!).Color;
+        var application = Application.Current!;
+        application.TryGetResource("OmpOS.Color.AccentPurple", application.ActualThemeVariant, out var accentBrush).ShouldBeTrue("the accent token must resolve for the active theme variant");
+        var accent = ((ISolidColorBrush)accentBrush!).Color;
 
         var templated = (TemplatedControl)control;
         var border = templated.BorderBrush as ISolidColorBrush;
         border.ShouldNotBeNull($"{control.GetType().Name} must have a solid focus border");
-        border.Color.ShouldBe(accent, $"{control.GetType().Name} focus border must be the Accent token");
+        border.Color.ShouldBe(accent, $"{control.GetType().Name} focus border must be the AccentPurple token");
         templated.BorderThickness.ShouldBe(new Thickness(2), $"{control.GetType().Name} focus border must be OmpOS.Size.FocusBorder");
         control.FocusAdorner.ShouldBeNull($"{control.GetType().Name} must not draw the default focus adorner");
     }

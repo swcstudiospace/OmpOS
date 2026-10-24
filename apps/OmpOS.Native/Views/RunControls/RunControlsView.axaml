@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="OmpOS.Native.Views.RunControls.RunControlsView"
-             Background="{DynamicResource OmpOS.Color.Surface}"
+             Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
              Padding="{DynamicResource OmpOS.Space.Md}">
 
   <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">

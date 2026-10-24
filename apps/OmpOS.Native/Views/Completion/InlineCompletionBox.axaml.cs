@@ -9,6 +9,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
 using OmpOS.Harness.Completion;
+using OmpOS.Native.Views.Blocks;
 
 namespace OmpOS.Native.Views.Completion;
 
@@ -176,7 +177,7 @@ internal partial class InlineCompletionBox : UserControl
         _shown = suggestion;
         _inputBrush = InputBox.Foreground;
 
-        var muted = (IBrush)this.FindResource("OmpOS.Color.TextMuted")!;
+        var muted = BlockTokens.Get<IBrush>("OmpOS.Color.TextSecondary");
         var text = suggestion.Position.Text;
         var caret = suggestion.Position.Caret;
         var inlines = MirrorInlines;

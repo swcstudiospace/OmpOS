@@ -1,5 +1,5 @@
 using Avalonia.Controls;
-using OmpOS.GenUi;
+using OmpOS.Contracts.Ui;
 
 namespace OmpOS.Native.Views.Blocks;
 

@@ -1,17 +1,46 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-  <!-- Colour tokens (20-UI-SPEC.md, Color). Every foreground and background pair is tested in ThemeContrastTests. -->
-  <SolidColorBrush x:Key="OmpOS.Color.Background">#ffffff</SolidColorBrush>
-  <SolidColorBrush x:Key="OmpOS.Color.Surface">#f4f4f5</SolidColorBrush>
-  <SolidColorBrush x:Key="OmpOS.Color.SurfaceActive">#e4e4e7</SolidColorBrush>
-  <SolidColorBrush x:Key="OmpOS.Color.Text">#1a1a1a</SolidColorBrush>
-  <SolidColorBrush x:Key="OmpOS.Color.TextMuted">#52525b</SolidColorBrush>
-  <SolidColorBrush x:Key="OmpOS.Color.Accent">#0b4fd6</SolidColorBrush>
-  <SolidColorBrush x:Key="OmpOS.Color.Error">#b3261e</SolidColorBrush>
+  <!-- Colour roles (20-UI-SPEC.md, Color). Each role has a Light and a Dark value; Avalonia selects the set for the
+       active theme variant. ThemeContrastTests classifies each role by its use and checks every text and non-text
+       pair the classification produces, in both variants.
+       FocusRing is reserved for focus indicators to bind in a later phase. No style consumes it yet: the focus
+       indicators in App.axaml draw AccentPurple. -->
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="OmpOS.Color.Surface">#ffffff</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.SurfaceRaised">#f4f4f5</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.SurfaceActive">#e4e4e7</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.TextPrimary">#1a1a1a</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.TextSecondary">#52525b</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.AccentPurple">#6d28d9</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.AccentPurpleOn">#ffffff</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.FocusRing">#5b21b6</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.StatusSuccess">#166534</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.StatusWarning">#92400e</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.StatusError">#b3261e</SolidColorBrush>
+    </ResourceDictionary>
 
-  <!-- Type tokens (20-UI-SPEC.md, Typography). Three sizes, two weights. -->
-  <FontFamily x:Key="OmpOS.Font.Family">Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="OmpOS.Color.Surface">#18181b</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.SurfaceRaised">#27272a</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.SurfaceActive">#3f3f46</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.TextPrimary">#fafafa</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.TextSecondary">#b0b0b8</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.AccentPurple">#a78bfa</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.AccentPurpleOn">#18181b</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.FocusRing">#c4b5fd</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.StatusSuccess">#4ade80</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.StatusWarning">#fbbf24</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.StatusError">#fca5a5</SolidColorBrush>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <!-- Type tokens (20-UI-SPEC.md, Typography). Three sizes, two weights. The bundled faces are named by their
+       avares URI; the fallbacks follow the family name after the fragment. -->
+  <FontFamily x:Key="OmpOS.Font.Family">avares://OmpOS.Native/Assets/Fonts/DMSans/DMSans.ttf#DM Sans, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
+  <FontFamily x:Key="OmpOS.Font.Display">avares://OmpOS.Native/Assets/Fonts/Anybody/Anybody.ttf#Anybody, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
+  <FontFamily x:Key="OmpOS.Font.Mono">avares://OmpOS.Native/Assets/Fonts/SpaceMono/SpaceMono-Regular.ttf#Space Mono, Menlo, Consolas, Liberation Mono, monospace</FontFamily>
   <x:Double x:Key="OmpOS.Font.Size.Label">13</x:Double>
   <x:Double x:Key="OmpOS.Font.Size.Body">15</x:Double>
   <x:Double x:Key="OmpOS.Font.Size.Heading">18</x:Double>
@@ -30,6 +59,11 @@
   <Thickness x:Key="OmpOS.Space.Xl">32</Thickness>
   <Thickness x:Key="OmpOS.Space.Xxl">48</Thickness>
   <Thickness x:Key="OmpOS.Space.Xxxl">64</Thickness>
+
+  <!-- Corner radius scale (multiples of 4). -->
+  <CornerRadius x:Key="OmpOS.Radius.Sm">4</CornerRadius>
+  <CornerRadius x:Key="OmpOS.Radius.Md">8</CornerRadius>
+  <CornerRadius x:Key="OmpOS.Radius.Lg">12</CornerRadius>
 
   <!-- Scalar gaps for StackPanel.Spacing and Grid.ColumnSpacing, which take double. Same values as the spacing tokens. -->
   <x:Double x:Key="OmpOS.Gap.Xs">4</x:Double>

@@ -2,8 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="OmpOS.Native.Views.RunControls.ToolApprovalRowView">
 
-  <Border Background="{DynamicResource OmpOS.Color.Background}"
-          BorderBrush="{DynamicResource OmpOS.Color.Accent}"
+  <Border Background="{DynamicResource OmpOS.Color.Surface}"
+          BorderBrush="{DynamicResource OmpOS.Color.AccentPurple}"
           BorderThickness="1"
           Padding="{DynamicResource OmpOS.Space.Sm}">
 

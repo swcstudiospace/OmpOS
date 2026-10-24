@@ -11,9 +11,9 @@
                BorderThickness="1"
                Padding="8,6"
                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-               Background="{DynamicResource OmpOS.Color.Background}"
-               Foreground="{DynamicResource OmpOS.Color.Text}"
-               CaretBrush="{DynamicResource OmpOS.Color.Text}"
+               Background="{DynamicResource OmpOS.Color.Surface}"
+               Foreground="{DynamicResource OmpOS.Color.TextPrimary}"
+               CaretBrush="{DynamicResource OmpOS.Color.TextPrimary}"
                AutomationProperties.Name="Message with suggestions" />
 
       <!-- The mirror draws over the text box while a suggestion shows. It never takes input, so clicks reach the text box. -->
@@ -25,7 +25,7 @@
               Padding="8,6">
         <TextBlock x:Name="GhostText"
                    TextWrapping="Wrap"
-                   Foreground="{DynamicResource OmpOS.Color.Text}"
+                   Foreground="{DynamicResource OmpOS.Color.TextPrimary}"
                    AutomationProperties.Name="Suggested completion" />
       </Border>
     </Grid>

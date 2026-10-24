@@ -1,7 +1,11 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
+using OmpOS.Contracts.Streaming;
+using OmpOS.Contracts.Ui;
+using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.Mcp;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Views;
@@ -25,6 +29,7 @@ using OmpOS.Presentation.Editor;
 using OmpOS.Presentation.Export;
 using OmpOS.Presentation.Runs;
 using OmpOS.Presentation.State;
+using OmpOS.Sessions;
 using OmpOS.Workspace;
 
 namespace OmpOS.Native;
@@ -74,6 +79,10 @@ internal partial class MainWindow : Window
     private WorkspaceSearchModel? _workspaceSearch;
     private McpToolRegistry? _mcp;
     private McpToolsModel? _mcpTools;
+    private readonly EnginePromptChannel? _prompts;
+    private readonly EngineRunInput? _queued;
+    private bool _stopRequested;
+    private long _nextSeq = 1;
 
     /// <summary>
     /// Creates the window with the production defaults: no approval service and no run input are connected in this build, so
@@ -103,10 +112,11 @@ internal partial class MainWindow : Window
     /// <param name="runInput">The input channel of the active run.</param>
     /// <param name="motion">The motion setting. Only <see cref="MotionPreference.Reduced"/> removes transitions.</param>
     /// <param name="workspaceRoot">The workspace folder. It must exist.</param>
+    /// <param name="engine">The lazily composed engine the window sends prompts through. Null refuses every send and stop.</param>
     /// <exception cref="ArgumentNullException">A dependency is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="workspaceRoot"/> is null, empty or white space.</exception>
     /// <exception cref="DirectoryNotFoundException"><paramref name="workspaceRoot"/> does not exist.</exception>
-    public MainWindow(IToolApprovalBridge approvalBridge, IRunInput runInput, MotionPreference motion, string workspaceRoot)
+    public MainWindow(IToolApprovalBridge approvalBridge, IRunInput runInput, MotionPreference motion, string workspaceRoot, Lazy<EngineComposition>? engine = null)
     {
         ArgumentNullException.ThrowIfNull(approvalBridge);
         ArgumentNullException.ThrowIfNull(runInput);
@@ -144,9 +154,11 @@ internal partial class MainWindow : Window
         RunControlsHost.Content = new RunControlsView { DataContext = RunControls };
 
         Runs = new RunInputScheduler(runInput);
-        Composer = new ComposerViewModel(
-            _ => RefuseSendAsync(),
-            StopIdleAsync);
+        _prompts = engine is null ? null : new EnginePromptChannel(engine);
+
+        // A composed engine holds the messages the active run accepts behind its turn, so its run input must be the engine's own.
+        _queued = engine is null ? null : runInput as EngineRunInput ?? throw new ArgumentException("A composed engine needs the engine's run input.", nameof(runInput));
+        Composer = new ComposerViewModel(StartTurnAsync, StopTurnAsync);
         var composerView = (ComposerView)ViewMapping.Create(Composer);
         composerView.Runs = Runs;
         composerView.WorkFaulted += OnComposerWorkFaulted;
@@ -199,10 +211,214 @@ internal partial class MainWindow : Window
         return Task.FromResult(false);
     }
 
-    private Task StopIdleAsync()
+    /// <summary>
+    /// Stops the turn in flight through the composed host. The run then ends: messages held behind it are dropped, not sent.
+    /// With no turn running the status says so.
+    /// </summary>
+    /// <returns>A task that completes when the host has accepted the cancellation.</returns>
+    private async Task StopTurnAsync()
     {
-        SetStatus(NoResponseStatus);
-        return Task.CompletedTask;
+        if (_prompts is not { } prompts || !Composer.IsStreaming)
+        {
+            SetStatus(NoResponseStatus);
+            return;
+        }
+
+        // The flag is raised before the cancel, so the turn's end sees it. It is lowered again only when the cancel was not accepted.
+        _stopRequested = true;
+        var accepted = false;
+        try
+        {
+            await prompts.CancelAsync(CancellationToken.None).ConfigureAwait(true);
+            accepted = true;
+        }
+        finally
+        {
+            if (!accepted)
+            {
+                _stopRequested = false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sends the draft to the composed host and streams the turn's events into the transcript. The turn runs in the background, so
+    /// the composer clears the draft once the host accepts the send. Without a composed engine the send is refused.
+    /// </summary>
+    /// <param name="text">The draft text the user sent.</param>
+    /// <returns>True when the host accepted the send; false when no engine is composed.</returns>
+    private Task<bool> StartTurnAsync(string text)
+    {
+        if (_prompts is not { } prompts || _queued is not { } queued)
+        {
+            return RefuseSendAsync();
+        }
+
+        // The composer does not send while a response streams. The run stays active until its last turn ends, so a message sent
+        // meanwhile steers it or queues behind it.
+        Composer.IsStreaming = true;
+        Runs.RunStarted();
+        var correlationId = Guid.NewGuid().ToString("N");
+        EchoUserMessage(text, correlationId);
+        var turn = DriveTurnsAsync(prompts, queued, text, correlationId);
+
+        // The turn is not awaited. DriveTurnsAsync shows a turn's fault under that turn's own id, so this observes only what escapes it.
+        _ = turn.ContinueWith(
+            faulted => Dispatcher.UIThread.Post(() => ShowTurnFault(faulted.Exception!.InnerExceptions[0], correlationId)),
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.Default);
+        return Task.FromResult(true);
+    }
+
+    /// <summary>
+    /// Streams one turn's events into the transcript. A fault that ends the turn is not caught here: <see cref="StartTurnAsync"/>
+    /// observes it and shows it inline.
+    /// </summary>
+    /// <param name="prompts">The send path of the composed engine.</param>
+    /// <param name="text">The prompt text.</param>
+    /// <param name="correlationId">The correlation identifier of the turn.</param>
+    /// <returns>A task that completes when the turn has ended.</returns>
+    private async Task StreamTurnAsync(EnginePromptChannel prompts, string text, string correlationId)
+    {
+        await foreach (var evt in prompts.SubmitAsync(text, CancellationToken.None).ConfigureAwait(true))
+        {
+            ShowTurnEvent(evt, correlationId);
+        }
+    }
+
+    /// <summary>
+    /// Runs the turns of one run in send order: the sent prompt first, then each message the run accepted behind it, one turn each.
+    /// The run ends when no message is held. A stop or a faulted turn ends it early: whatever is still held is dropped and the
+    /// transcript says how many were not sent.
+    /// </summary>
+    /// <param name="prompts">The send path of the composed engine.</param>
+    /// <param name="queued">The run input that holds the messages accepted behind the active turn.</param>
+    /// <param name="text">The prompt the run starts with.</param>
+    /// <param name="correlationId">The correlation identifier of the first turn.</param>
+    /// <returns>A task that completes when the run has ended.</returns>
+    private async Task DriveTurnsAsync(EnginePromptChannel prompts, EngineRunInput queued, string text, string correlationId)
+    {
+        var turnCorrelationId = correlationId;
+        try
+        {
+            while (true)
+            {
+                try
+                {
+                    await StreamTurnAsync(prompts, text, turnCorrelationId).ConfigureAwait(true);
+                }
+                catch (Exception fault) when (fault is not OperationCanceledException)
+                {
+                    // The fault ends the run. Its reason is shown under the turn that faulted, and the held messages are dropped in
+                    // the finally, so the not-sent line follows the reason.
+                    ShowTurnFault(fault, turnCorrelationId);
+                    return;
+                }
+
+                if (_stopRequested)
+                {
+                    return;
+                }
+
+                // The turn ended on its own. The scheduler dispatches the next follow-up if one waits; the next held message runs next.
+                await Runs.RunCompletedAsync(CancellationToken.None).ConfigureAwait(true);
+                var next = queued.TakeNext();
+                Runs.NotifySteersHeldChanged();
+                if (next is null)
+                {
+                    return;
+                }
+
+                text = next;
+                turnCorrelationId = Guid.NewGuid().ToString("N");
+                EchoUserMessage(text, turnCorrelationId);
+                if (!Runs.IsRunActive)
+                {
+                    Runs.RunStarted();
+                }
+            }
+        }
+        finally
+        {
+            // A run still active here was stopped or its turn faulted. Nothing held is sent after either.
+            var notSent = Runs.DiscardQueuedFollowUps() + queued.Discard();
+            Runs.NotifySteersHeldChanged();
+            if (Runs.IsRunActive)
+            {
+                await Runs.RunCompletedAsync(CancellationToken.None).ConfigureAwait(true);
+            }
+
+            Composer.IsStreaming = false;
+            _stopRequested = false;
+            if (notSent > 0)
+            {
+                ShowNotSent(notSent, turnCorrelationId);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Echoes a prompt the composed run has just sent into the transcript as the user's own turn. The echo is a shared
+    /// <see cref="UserMessagePayload"/> that the presentation layer folds, so it lands ahead of the reply it prompted.
+    /// </summary>
+    /// <param name="text">The prompt text that was sent.</param>
+    /// <param name="correlationId">The correlation identifier of the turn the prompt starts.</param>
+    private void EchoUserMessage(string text, string correlationId)
+    {
+        Session.ApplyEvent(new StreamEvent
+        {
+            Seq = _nextSeq,
+            SessionId = SessionId,
+            CorrelationId = correlationId,
+            Timestamp = DateTimeOffset.UtcNow,
+            Payload = new UserMessagePayload { Text = text },
+        });
+        _nextSeq++;
+    }
+
+    /// <summary>Shows the inline line that says how many held messages were not sent when the run ended.</summary>
+    /// <param name="count">The number of messages not sent.</param>
+    /// <param name="correlationId">The correlation identifier of the last turn of the run.</param>
+    private void ShowNotSent(int count, string correlationId)
+    {
+        var noun = count == 1 ? "message was" : "messages were";
+        var line = new MarkdownBlock { Id = $"not-sent-{correlationId}", Markdown = $"{count} queued {noun} not sent." };
+        ShowTurnEvent(new UiBlockEvent(line), correlationId);
+    }
+
+    /// <summary>Shows the fault that ended a turn inline with its reason. A cancelled turn is not a fault and adds no row.</summary>
+    /// <param name="fault">The exception that ended the turn.</param>
+    /// <param name="correlationId">The correlation identifier of the turn.</param>
+    private void ShowTurnFault(Exception fault, string correlationId)
+    {
+        if (fault is OperationCanceledException)
+        {
+            return;
+        }
+
+        ShowTurnEvent(new ErrorEvent(fault.Message, Retryable: false), correlationId);
+    }
+
+    /// <summary>
+    /// Shows one host event: a permission request becomes a pending approval, and every event folds into the transcript through the
+    /// shared harness projection.
+    /// </summary>
+    /// <param name="evt">The host event.</param>
+    /// <param name="correlationId">The correlation identifier of the turn.</param>
+    private void ShowTurnEvent(HarnessEvent evt, string correlationId)
+    {
+        // The id the host's resolver holds the request under is the one the bridge decides by.
+        if (evt is PermissionRequestEvent request)
+        {
+            RunControls.Approvals.Add(new PendingToolApproval(SessionId, request.RequestId ?? request.CallId, request.Name, request.PayloadJson));
+        }
+
+        foreach (var streamEvent in HarnessEventProjection.ToStreamEvents(_nextSeq, SessionId, correlationId, DateTimeOffset.UtcNow, evt))
+        {
+            Session.ApplyEvent(streamEvent);
+            _nextSeq = streamEvent.Seq + 1;
+        }
     }
 
     private void SetStatus(string text)
@@ -449,6 +665,15 @@ internal partial class MainWindow : Window
         Search.MatchSelected -= OnMatchSelected;
         Search.Dispose();
         EditorModel.Dispose();
+        if (_prompts is not null)
+        {
+            _ = CloseEngineAsync(_prompts).ContinueWith(
+                closed => Dispatcher.UIThread.Post(() => SetStatus($"{FaultedStatus} {closed.Exception!.GetBaseException().Message}")),
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted,
+                TaskScheduler.Default);
+        }
+
         _conventions?.Dispose();
         _catalog?.Dispose();
         if (_mcp is not null)
@@ -457,6 +682,27 @@ internal partial class MainWindow : Window
         }
 
         base.OnClosed(e);
+    }
+
+    /// <summary>
+    /// Cancels the turn in flight, if one runs, and then disposes the composed host. The window is closing, so nothing awaits this; a
+    /// failure reaches the status line through the caller's continuation.
+    /// </summary>
+    /// <param name="prompts">The send path of the composed engine.</param>
+    /// <returns>A task that completes when the host has been disposed.</returns>
+    private async Task CloseEngineAsync(EnginePromptChannel prompts)
+    {
+        try
+        {
+            if (Composer.IsStreaming)
+            {
+                await StopTurnAsync().ConfigureAwait(true);
+            }
+        }
+        finally
+        {
+            await prompts.DisposeAsync().ConfigureAwait(true);
+        }
     }
 
     /// <summary>One workspace tool: its toggle, its accessible name, how its view is built, and the view once it is built.</summary>

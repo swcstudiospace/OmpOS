@@ -14,6 +14,9 @@ internal sealed class RecordingRunInput : IRunInput
     /// <summary>Gets or sets the fault every steer raises instead of being delivered.</summary>
     public Exception? SteerFault { get; set; }
 
+    /// <summary>Gets zero: this input delivers each steer at once, so it holds none.</summary>
+    public int SteersHeld => 0;
+
     /// <inheritdoc/>
     public Task SteerAsync(string text, CancellationToken cancellationToken)
     {

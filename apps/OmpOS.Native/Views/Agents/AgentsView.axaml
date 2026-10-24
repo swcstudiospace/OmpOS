@@ -42,7 +42,7 @@
             IsVisible="False"
             Margin="{DynamicResource OmpOS.Space.Xs}"
             Padding="{DynamicResource OmpOS.Space.Sm}"
-            BorderBrush="{DynamicResource OmpOS.Color.Accent}"
+            BorderBrush="{DynamicResource OmpOS.Color.AccentPurple}"
             BorderThickness="1">
 
       <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">

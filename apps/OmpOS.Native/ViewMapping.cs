@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using OmpOS.Contracts.Ui;
-using OmpOS.GenUi;
 using OmpOS.Native.Views;
 using OmpOS.Native.Views.Agents;
 using OmpOS.Native.Views.Blocks;

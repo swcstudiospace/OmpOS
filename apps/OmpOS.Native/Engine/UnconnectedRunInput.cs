@@ -12,6 +12,9 @@ internal sealed class UnconnectedRunInput : IRunInput
     public const string UnavailableText = "No run input is connected in this build.";
 
     /// <inheritdoc/>
+    public int SteersHeld => 0;
+
+    /// <inheritdoc/>
     public Task SteerAsync(string text, CancellationToken cancellationToken) =>
         Task.FromException(new InvalidOperationException(UnavailableText));
 

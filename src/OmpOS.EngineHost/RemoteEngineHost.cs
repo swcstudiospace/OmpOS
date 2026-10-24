@@ -541,6 +541,8 @@ public sealed class RemoteEngineHost : IEngineHost
         CompletedPayload completed => new CompletedEvent(completed.Reason),
         ErrorPayload error => new ErrorEvent(error.Message, error.Retryable),
         DiagnosticPayload diagnostic => new DiagnosticEvent(diagnostic.Message),
+        // The engine never emits user_message: the client that sent the prompt echoes it locally, so there is nothing to map.
+        UserMessagePayload => null,
         UiBlockPayload block => new UiBlockEvent(block.Block),
         UnknownPayload unknown => MapUnknown(unknown),
         _ => null,

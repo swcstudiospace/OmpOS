@@ -4,9 +4,9 @@ namespace OmpOS.Presentation.Runs;
 
 /// <summary>
 /// Routes user messages sent while a run is active (ADE-03), through a deterministic queue. A steering message goes to
-/// <see cref="IRunInput"/> at once. A follow-up waits in send order and is dispatched only after <see cref="RunCompletedAsync"/>
-/// reports that the active run completed. Each dispatched follow-up starts a new run, so the next follow-up waits for that
-/// run's completion.
+/// <see cref="IRunInput"/> at once, unless a follow-up already waits: then it queues behind that follow-up, so the messages keep
+/// their send order. A follow-up waits in send order and is dispatched only after <see cref="RunCompletedAsync"/> reports that the
+/// active run completed. Each dispatched follow-up starts a new run, so the next follow-up waits for that run's completion.
 /// </summary>
 /// <remarks>
 /// <see cref="Pending"/> is <see cref="PendingRunInput.FollowUp"/> while any follow-up is queued. Otherwise it is
@@ -42,6 +42,12 @@ public sealed class RunInputScheduler : ObservableModel
     /// <summary>Gets the kind of user input that is waiting on the run.</summary>
     public PendingRunInput Pending => _pending;
 
+    /// <summary>
+    /// Gets the number of steering messages the input has accepted that have not yet started their turn. The engine holds each such
+    /// message until its own turn starts, so the count spans every turn of the run and a steer leaves it only then.
+    /// </summary>
+    public int SteersHeld => _input.SteersHeld;
+
     /// <summary>Records that a run started from a prompt the user sent.</summary>
     /// <exception cref="InvalidOperationException">A run is already active or a follow-up is being dispatched.</exception>
     public void RunStarted()
@@ -54,10 +60,13 @@ public sealed class RunInputScheduler : ObservableModel
         SetProperty(ref _runActive, true, nameof(IsRunActive));
     }
 
-    /// <summary>Delivers a steering message to the active run immediately.</summary>
+    /// <summary>
+    /// Hands a steering message to the active run. The input receives it at once; an engine without a steer command holds it until the
+    /// active turn ends. While follow-ups wait, the steer queues behind them as a follow-up instead, so the messages keep their send order.
+    /// </summary>
     /// <param name="text">The steering message.</param>
     /// <param name="cancellationToken">Cancels the delivery.</param>
-    /// <returns>A task that completes when the input has accepted the steering message.</returns>
+    /// <returns>A task that completes when the input has accepted the steering message, or when it has been queued behind a follow-up.</returns>
     /// <exception cref="ArgumentException"><paramref name="text"/> is null, empty or white space.</exception>
     /// <exception cref="InvalidOperationException">No run is active.</exception>
     public async Task SteerAsync(string text, CancellationToken cancellationToken)
@@ -68,11 +77,18 @@ public sealed class RunInputScheduler : ObservableModel
             throw new InvalidOperationException("No run is active. Send the message as a new prompt.");
         }
 
+        if (_followUps.Count > 0)
+        {
+            QueueFollowUp(text);
+            return;
+        }
+
         _steeringInFlight++;
         UpdatePending();
         try
         {
             await _input.SteerAsync(text, cancellationToken).ConfigureAwait(true);
+            NotifySteersHeldChanged();
         }
         finally
         {
@@ -138,6 +154,25 @@ public sealed class RunInputScheduler : ObservableModel
             UpdatePending();
         }
     }
+
+    /// <summary>
+    /// Drops every follow-up still waiting in the queue, so none is dispatched. The owner of the run calls it when the user stops the run.
+    /// </summary>
+    /// <returns>The number of follow-ups dropped.</returns>
+    public int DiscardQueuedFollowUps()
+    {
+        var count = _followUps.Count;
+        _followUps.Clear();
+        NotifyPropertyChanged(nameof(QueuedFollowUpCount));
+        UpdatePending();
+        return count;
+    }
+
+    /// <summary>
+    /// Raises a change for <see cref="SteersHeld"/>. The owner of the run calls it after it takes or discards held messages, since
+    /// those change the input's count outside the scheduler.
+    /// </summary>
+    public void NotifySteersHeldChanged() => NotifyPropertyChanged(nameof(SteersHeld));
 
     private void UpdatePending() =>
         SetProperty(ref _pending, ComputePending(), nameof(Pending));

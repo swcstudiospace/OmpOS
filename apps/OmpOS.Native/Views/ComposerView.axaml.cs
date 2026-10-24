@@ -159,9 +159,14 @@ internal partial class ComposerView : UserControl
 
     private void OnRunsChanged(object? sender, PropertyChangedEventArgs e) => RefreshRunState();
 
-    /// <summary>While a run is active the draft steers it; otherwise the composer sends it as a new prompt.</summary>
+    /// <summary>
+    /// While a run is active the draft steers it, unless a follow-up already waits: then the draft queues behind that follow-up, so
+    /// the messages start in the order they were sent. Otherwise the composer sends the draft as a new prompt.
+    /// </summary>
     private Task SubmitAsync(ComposerViewModel composer) =>
-        _runs is { IsRunActive: true } runs ? SteerDraftAsync(composer, runs) : composer.SendAsync();
+        _runs is { IsRunActive: true } runs
+            ? runs.QueuedFollowUpCount > 0 ? QueueFollowUpAsync(composer, runs) : SteerDraftAsync(composer, runs)
+            : composer.SendAsync();
 
     private static async Task SteerDraftAsync(ComposerViewModel composer, RunInputScheduler runs)
     {
@@ -252,15 +257,28 @@ internal partial class ComposerView : UserControl
             return string.Empty;
         }
 
-        return _runs.Pending switch
+        var held = _runs.SteersHeld switch
+        {
+            0 => string.Empty,
+            1 => "1 steering message is held until the active turn ends.",
+            _ => $"{_runs.SteersHeld} steering messages are held until the active turn ends.",
+        };
+        var pending = _runs.Pending switch
         {
             PendingRunInput.FollowUp => _runs.QueuedFollowUpCount == 1
                 ? "1 follow-up is queued. It starts when the active run completes."
                 : $"{_runs.QueuedFollowUpCount} follow-ups are queued. They start one at a time when the active run completes.",
             PendingRunInput.Steering => "A steering message is being delivered to the active run.",
             _ => _runs.IsRunActive
-                ? "A run is active. Send steers it now; Follow-up waits until it completes."
+                ? "A run is active. Send waits until the active turn ends; Follow-up waits until the run completes."
                 : string.Empty,
         };
+
+        if (held.Length == 0)
+        {
+            return pending;
+        }
+
+        return pending.Length == 0 ? held : $"{held} {pending}";
     }
 }

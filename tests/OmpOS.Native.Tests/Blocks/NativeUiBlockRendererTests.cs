@@ -9,7 +9,6 @@ using Avalonia.Media;
 using Avalonia.VisualTree;
 using OmpOS.Contracts.Streaming;
 using OmpOS.Contracts.Ui;
-using OmpOS.GenUi;
 using OmpOS.Native.Views;
 using OmpOS.Presentation.State;
 using Shouldly;

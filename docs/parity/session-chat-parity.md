@@ -13,7 +13,7 @@ This inventory lists every session-chat feature that the Razor head (`src/OmpOS.
   (`ParityScenarios`). `SharedScenarioParityTests` renders each one through `SessionView` and checks the normalized
   blocks against the shared expectation. The normalization contract is in `ParityNormalization`.
 - Rows 1 to 38 have Razor sources. Rows 39 to 44 are MAUI host features; the Razor tests named there cover the Razor
-  side of the same behaviour.
+  side of the same behaviour. Row 45 is the shared user-message echo: its Razor source is the GenUi fold that both heads render.
 
 | # | Feature | Razor source | Razor tests | Avalonia test | Status |
 |---|---|---|---|---|---|
@@ -61,3 +61,4 @@ This inventory lists every session-chat feature that the Razor head (`src/OmpOS.
 | 42 | MAUI Stop and Retry wiring | apps/OmpOS.App/Components/SessionHost.razor:155-177 | SessionChatParityGapTests.StopAffordanceInvokesOnStop; SessionChatParityGapTests.RetryAffordanceInvokesOnRetry | pending: MAUI host Stop and Retry wiring has no native equivalent; native Stop is covered only by EnterOnStopReportsNoResponseAndStaysEnabled | Razor partial: the control callbacks are tested; the host's StopStreamingAsync and RetryAsync are not |
 | 43 | Auto-scroll pause bridge (OnAutoScrollPausedChanged, JumpToLatest) | apps/OmpOS.App/Components/SessionHost.razor:179-194 | SessionScrollTests.ScrollTransitionsAreReportedToTheHostOncePerChange; SessionScrollTests.UserScrollUpPausesFollowUntilJumpToLatestResumes | pending: the MAUI auto-scroll bridge has no native equivalent; the native transcript has no scroll pause (see row 30) | Razor partial: the Razor bridge is tested; the MAUI host handler is not |
 | 44 | Engine to session event mapping, held-event resume, diagnostic drop | apps/OmpOS.App/Components/EngineEventMapper.cs:24-69; apps/OmpOS.App/Components/SessionHost.razor:102-147, 196-238 | SharedScenarioParityTests.DiagnosticsNeverRender; StreamingStateTests.DiagnosticNeverChangesLifecycleState | pending: diagnostic drop is covered by SharedScenarioParityTests.DiagnosticsNeverRender; the MAUI engine mapping and held-event resume are host-only | Razor partial: diagnostic drop is tested; the MAUI mapping and held-event resume are host-only and untested |
+| 45 | User message echo: a sent prompt, and each queued message when it is delivered, folds to one user turn (user_message payload) | src/OmpOS.GenUi/UiFolder.cs (user_message arm); src/OmpOS.UI/Components/Blocks/UserMessageView.razor | UserMessagePayloadFoldTests.UserMessagePayloadFoldsToOneUserTurn | EngineSendPathTests.ASentPromptAppearsInTheTranscriptAsAUserMessage; EngineRunInputSendTests.ASteerThenAFollowUpAreSentInTheOrderTheyWereSent | Razor covered |

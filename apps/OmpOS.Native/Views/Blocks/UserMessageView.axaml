@@ -3,7 +3,7 @@
              x:Class="OmpOS.Native.Views.Blocks.UserMessageView"
              AutomationProperties.Name="User message">
 
-  <Border Background="{DynamicResource OmpOS.Color.Surface}"
+  <Border Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
           Padding="{DynamicResource OmpOS.Space.Sm}">
     <TextBlock x:Name="Body"
                TextWrapping="Wrap" />

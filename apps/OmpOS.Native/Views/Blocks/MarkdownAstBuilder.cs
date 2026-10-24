@@ -87,7 +87,7 @@ internal static class MarkdownAstBuilder
 
     private static Border CodeControl(string code) => new()
     {
-        Background = BlockTokens.Get<IBrush>("OmpOS.Color.Surface"),
+        Background = BlockTokens.Get<IBrush>("OmpOS.Color.SurfaceRaised"),
         Padding = BlockTokens.Get<Thickness>("OmpOS.Space.Sm"),
         Child = new TextBlock
         {
@@ -99,7 +99,7 @@ internal static class MarkdownAstBuilder
 
     private static Border QuoteControl(QuoteBlock quote) => new()
     {
-        BorderBrush = BlockTokens.Get<IBrush>("OmpOS.Color.TextMuted"),
+        BorderBrush = BlockTokens.Get<IBrush>("OmpOS.Color.TextSecondary"),
         BorderThickness = new Thickness(2, 0, 0, 0),
         Padding = BlockTokens.Get<Thickness>("OmpOS.Space.Sm"),
         Child = Stack(quote),

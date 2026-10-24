@@ -27,7 +27,7 @@
 
       <Border Grid.Column="0"
               Width="{DynamicResource OmpOS.Size.SessionListWidth}"
-              Background="{DynamicResource OmpOS.Color.Surface}"
+              Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
               Padding="{DynamicResource OmpOS.Space.Sm}">
         <views:ConversationListView x:Name="ConversationList" />
       </Border>

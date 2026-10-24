@@ -7,7 +7,7 @@
                 Focusable="True"
                 IsTabStop="True"
                 Padding="{DynamicResource OmpOS.Space.Md}"
-                Background="{DynamicResource OmpOS.Color.Background}">
+                Background="{DynamicResource OmpOS.Color.Surface}">
     <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
                 Spacing="{DynamicResource OmpOS.Gap.Xs}">
 

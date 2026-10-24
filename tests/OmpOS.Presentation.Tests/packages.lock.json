@@ -210,12 +210,20 @@
           "OmpOS.Contracts": "[1.0.0, )"
         }
       },
+      "ompos.parser": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
+          "OmpOS.Contracts": "[1.0.0, )"
+        }
+      },
       "ompos.presentation": {
         "type": "Project",
         "dependencies": {
           "Markdig": "[1.4.2, )",
           "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.GenUi": "[1.0.0, )"
+          "OmpOS.GenUi": "[1.0.0, )",
+          "OmpOS.Parser": "[1.0.0, )"
         }
       },
       "Markdig": {

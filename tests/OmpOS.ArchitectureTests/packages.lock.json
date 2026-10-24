@@ -660,6 +660,12 @@
           "OmpOS.Harness.Abstractions": "[1.0.0, )"
         }
       },
+      "ompos.harness.agent": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+        }
+      },
       "ompos.harness.automations": {
         "type": "Project",
         "dependencies": {
@@ -667,6 +673,9 @@
         }
       },
       "ompos.harness.completion": {
+        "type": "Project"
+      },
+      "ompos.harness.herdr": {
         "type": "Project"
       },
       "ompos.harness.inmemory": {
@@ -689,6 +698,9 @@
       "ompos.harness.plugins": {
         "type": "Project"
       },
+      "ompos.harness.providers": {
+        "type": "Project"
+      },
       "ompos.harness.registry": {
         "type": "Project"
       },
@@ -697,6 +709,9 @@
         "dependencies": {
           "OmpOS.Harness.Abstractions": "[1.0.0, )"
         }
+      },
+      "ompos.harness.secrets": {
+        "type": "Project"
       },
       "ompos.harness.terminal": {
         "type": "Project",
@@ -727,6 +742,7 @@
           "OmpOS.Harness.Terminal": "[1.0.0, )",
           "OmpOS.Harness.Workspace": "[1.0.0, )",
           "OmpOS.Presentation": "[1.0.0, )",
+          "OmpOS.Sessions": "[1.0.0, )",
           "TextMateSharp.Grammars": "[2.0.3, )"
         }
       },
@@ -742,7 +758,8 @@
         "dependencies": {
           "Markdig": "[1.4.2, )",
           "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.GenUi": "[1.0.0, )"
+          "OmpOS.GenUi": "[1.0.0, )",
+          "OmpOS.Parser": "[1.0.0, )"
         }
       },
       "ompos.sandbox": {

@@ -68,7 +68,7 @@ Names are the `AutomationProperties.Name` values in the XAML.
 | Skip link | `Skip to conversation` | `MainWindow.axaml` | Not in the UI-SPEC Control Inventory (OQ-47). Moves focus to the transcript. |
 
 - **Keyboard order:** conversation list, transcript, prompt, send, stop (`TabMovesFromSessionListThroughTranscriptPromptSendAndStop`).
-- **Focus style:** `:focus-visible` on each shared control. Border Accent (`OmpOS.Color.Accent`), width `OmpOS.Size.FocusBorder` (2 px), `FocusAdorner` null (D-20-10).
+- **Focus style:** `:focus-visible` on each shared control. Border AccentPurple (`OmpOS.Color.AccentPurple`), width `OmpOS.Size.FocusBorder` (2 px), `FocusAdorner` null (D-20-10).
 - **Reduced motion:** `MainWindow` sets the window class `reduced-motion` only for `MotionPreference.Reduced`. `System` resolves to `Full` (D-20-08, OQ-34). Shared controls then have their transitions removed by the styles in `App.axaml`.
 
 ## 5. Open questions that bear on this evidence

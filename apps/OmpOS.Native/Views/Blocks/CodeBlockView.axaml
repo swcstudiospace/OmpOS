@@ -3,7 +3,7 @@
              x:Class="OmpOS.Native.Views.Blocks.CodeBlockView"
              AutomationProperties.Name="Code block">
 
-  <Border Background="{DynamicResource OmpOS.Color.Surface}"
+  <Border Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
           Padding="{DynamicResource OmpOS.Space.Sm}">
     <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
 

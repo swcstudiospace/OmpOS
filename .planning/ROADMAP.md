@@ -7,7 +7,7 @@
 - v0.9.1: foundation through verified handoff. Closed 2026-10-21; merge of PR #1 (swcstudiospace/OmpOS) pending. Archived in `.planning/milestones/` (v0.9.1-ROADMAP.md, v0.9.1-REQUIREMENTS.md, v0.9.1-MILESTONE-AUDIT.md, v0.9.1-phases/).
 - v0.9.2 Hardening and hosted API: audit status `tech_debt` (2026-10-21, `.planning/v0.9.2-MILESTONE-AUDIT.md`). Phases 1-5, 7, 10, 11, 17-19 complete; 8, 9, 15, 16 superseded; 6, 12, 13, 14 blocked on external criteria. Completion awaits the owner (irreversible). Requirements in `.planning/REQUIREMENTS.md` (75 REQ-IDs).
 - v0.13.0 Cursor 1:1 workspace and provider platform: planned 2026-10-22 from the ultrathink plan (graph ut-mvjvg4gj-fb21d80f); phases 36 to 43; requirements VX-01 to VX-10 in `.planning/REQUIREMENTS.md`.
-- v0.10.0 Cross-platform UI: active. Phase 20 in progress (waves 1 to 3 implemented, wave 4 pending). Requirements XP-01 to XP-11.
+- v0.10.0 Cross-platform UI: active. Phases 20 and 21 complete (both verified). Phase 22 blocked on external hosts: criterion 1 met on the XWayland path (2026-10-24); criteria 3 (Windows runner) and 4 and 5 (Mac channel) open. Phases 23 to 25 partial or blocked (see STATE). Requirements XP-01 to XP-11.
 
 ## Planning Rules
 
@@ -383,8 +383,8 @@ These items are closed per the milestone assignment. They are not re-planned. RE
 
 Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazor WebAssembly; Avalonia.Browser is gated by G-WEB, which failed on Avalonia 12.1.4 (ADR-0004).
 
-- [ ] **Phase 20: Avalonia Foundation** - Shared Avalonia native project, shared presentation layer, accessibility baseline, plugin host contracts
-- [ ] **Phase 21: Parity Surface** - Session chat, tool approvals and steering, with parity tests on the presentation layer
+- [x] **Phase 20: Avalonia Foundation** - Shared Avalonia native project, shared presentation layer, accessibility baseline, plugin host contracts
+- [x] **Phase 21: Parity Surface** - Session chat, tool approvals and steering, with parity tests on the presentation layer
 - [ ] **Phase 22: Desktop Heads** - Linux, Windows and macOS heads with platform accessibility; macOS signing on the Mac channel
 - [ ] **Phase 23: Web Head on the Shared Presentation Layer** - Blazor WebAssembly web head, G-WEB re-measurement, Vercel static hosting
 - [ ] **Phase 24: iOS and Android Heads** - Mobile heads with platform accessibility; iOS on the Mac channel
@@ -405,10 +405,10 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
   6. Theme tokens for colour, type and spacing live in one resource dictionary, and a contract test asserts at least 4.5:1 text contrast for every foreground and background pair the dictionary defines. Verify: contract test in the gate.
   7. Plugin host contracts in the contracts layer define commands, panels, tools and agent modes with no UI-framework reference, and an in-process sample plugin registers one of each through the host. Verify: contract test in the gate that fails if the contracts assembly references a UI framework assembly, and asserts each registration.
 **Plans**: 4 plans in 4 waves, each wave depends on the previous one
-- [ ] 20-01-PLAN.md: Wave 1, plugin contracts, presentation skeleton, package pins and wiring
-- [ ] 20-02-PLAN.md: Wave 2, presentation state extraction and caller migration
-- [ ] 20-03-PLAN.md: Wave 3, Avalonia native head, accessibility and headless tests
-- [ ] 20-04-PLAN.md: Wave 4, AT-SPI2 evidence, architecture and open-question records
+- [x] 20-01-PLAN.md: Wave 1, plugin contracts, presentation skeleton, package pins and wiring
+- [x] 20-02-PLAN.md: Wave 2, presentation state extraction and caller migration
+- [x] 20-03-PLAN.md: Wave 3, Avalonia native head, accessibility and headless tests
+- [x] 20-04-PLAN.md: Wave 4, AT-SPI2 evidence, architecture and open-question records
 
 ### Phase 21: Parity Surface
 **Goal**: Session chat, tool approvals and steering work on the shared presentation layer, and every RCL and MAUI feature in this surface has a test before its old head is removed.
@@ -416,6 +416,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Depends on**: Phase 20
 **Mac channel**: No. The parity tests run headless on the Linux host and the CI runners; no platform signing is involved.
 **UI hint**: yes
+**Status (2026-10-24)**: complete. 5 of 5 criteria verified in 21-VERIFICATION.md. Criterion 4 covers the approval kinds edit, delete, move, execute, read and search (owner decision F1); the other kinds are denied automatically. Criterion 5 queues steer and follow-up after the active turn (owner decision F3). No live omp turn was exercised.
 **Success Criteria** (what must be TRUE):
   1. Session chat renders the streamed generative UI blocks that the Razor head renders, with one test per block type. Verify: gate; each test name appears in the parity inventory.
   2. Parity tests run against the presentation layer for the Razor head and the Avalonia head, with the same test cases for both. Verify: gate test that runs one case set against both heads and fails on any difference in asserted results.
@@ -624,17 +625,16 @@ Source: user request 2026-10-22. The ADE harness must match Cursor desktop capab
 Source: user request 2026-10-22 and the ultrathink plan graph ut-mvjvg4gj-fb21d80f (spec `/root/.omp/agent/ultrathink/sessions/01a160e3-3eca-717c-b5de-fb65516aa688.xml`). Primary-source research with a verdict per row is in `docs/plans/vision-research/`. Requirements VX-01 to VX-10 are in `.planning/REQUIREMENTS.md`. Phases 36 to 43 build on v0.11.0 (sessions, approvals, terminal, MCP) and v0.12.0 (plugin host, registry, omp launcher).
 
 Phases 36 to 38 do not depend on the blocked v0.10.0 items (Phases 22, 24, 25), so they run while those stay blocked. The blocked items stay open; this plan closes none of them.
-
-- [ ] **Phase 36: Contracts and Theme Foundation** - token set (White and Purple), Greptile font families under OFL, command record, Kanban status model, provider record and URL validator, secret type with canary harness, herdr and omp adapter contracts with recorded fakes
-- [ ] **Phase 37: Session Runtime, Streaming and Local Terminal** - session lifecycle service, heartbeat and stale detection, sequence-numbered stream with replay, local PTY backend on Linux
+- [x] **Phase 36: Contracts and Theme Foundation** - token set (White and Purple), Greptile font families under OFL, command record, Kanban status model, provider record and URL validator, secret type with canary harness, herdr and omp adapter contracts with recorded fakes
+- [ ] **Phase 37: Session Runtime, Streaming and Local Terminal** - session lifecycle service, heartbeat and stale detection, sequence-numbered stream with replay, local PTY backend on Linux. Criteria 1 to 4 verified (37-VERIFICATION.md); criterion 5 open by design (owner durability decision, STATE)
 - [ ] **Phase 38: Chat Window and Slash Commands** - chat states and composer context, slash registry and palette
 - [ ] **Phase 39: Kanban Board** - one task card per chat with runtime status and a stale flag
 - [ ] **Phase 40: Settings Window and Model Providers** - Runtime section, provider catalogue (local, custom, cloud, API key, coding plan)
 - [ ] **Phase 41: Pets Companion** - pet state model, 2D fallback, hide and reduced-motion controls
 - [ ] **Phase 42: Cloud Terminals on Railway** - persistent container per session with idle sleep; prototype until Railway confirms policy in writing
 - [ ] **Phase 43: Mobile and Web Terminals** - remote-attached terminal on iOS, Android and WebAssembly; session-only web keys by default
-
 ### Phase 36: Contracts and Theme Foundation
+**Status (2026-10-24)**: complete. 6 of 6 criteria verified in 36-VERIFICATION.md. Pending, recorded and not failed: VX-01 owner look sign-off; VX-06 real herdr endpoint; VX-07 omp launch-time provider configuration.
 **Goal**: The contracts every surface consumes exist and are tested: one token set, one command record, one status model, one provider record, one secret type, and versioned herdr and omp adapter contracts backed by recorded fakes.
 **Requirements**: VX-01, VX-02, VX-04, VX-05, VX-06, VX-07, VX-10
 **Depends on**: Phases 20, 21 (theme resource dictionary and presentation layer exist)
@@ -649,6 +649,7 @@ Phases 36 to 38 do not depend on the blocked v0.10.0 items (Phases 22, 24, 25), 
 **Plans**: TBD
 
 ### Phase 37: Session Runtime, Streaming and Local Terminal
+**Status (2026-10-24)**: partial. Criteria 1 to 4 verified in 37-VERIFICATION.md. Criterion 5 is open by design: the real herdr endpoint waits on the owner's restart-semantics decision (STATE). Windows and macOS local backends not run (no runner; macOS on the Mac channel).
 **Goal**: Sessions reattach through the herdr contract after a client restart, streamed output renders without duplicates, and each desktop OS gets a real local shell.
 **Requirements**: VX-06, VX-07, VX-08
 **Depends on**: Phase 36

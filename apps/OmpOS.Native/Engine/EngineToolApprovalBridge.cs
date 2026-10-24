@@ -37,7 +37,17 @@ internal sealed class EngineToolApprovalBridge : IToolApprovalBridge
         _policyAllowsAnyTool = allowedKinds.Count > 0;
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Settles the parked request with the user's decision. A deny always settles the request. An allow is gated on the composed policy
+    /// allowing at least one tool kind, not on the kind of this request. That is sound because the host parks only the requests its
+    /// policy admits, so a non-empty allowed set means the request being decided was admitted. An allow with no admitted kind reports
+    /// refused and leaves the request pending, so the user may still deny it.
+    /// </summary>
+    /// <param name="sessionId">The session that raised the request. The bridge composes one session, so requests are found by id.</param>
+    /// <param name="requestId">The identifier of the parked request.</param>
+    /// <param name="decision">The user's decision.</param>
+    /// <param name="cancellationToken">Not consulted: the settlement completes synchronously.</param>
+    /// <returns>The outcome of the decision.</returns>
     public Task<ToolApprovalOutcome> DecideAsync(string sessionId, string requestId, ToolApprovalDecision decision, CancellationToken cancellationToken)
     {
         if (decision == ToolApprovalDecision.Allow && !_policyAllowsAnyTool)

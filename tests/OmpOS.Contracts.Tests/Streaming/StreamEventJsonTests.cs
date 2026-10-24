@@ -21,6 +21,7 @@ public sealed class StreamEventJsonTests
         new ErrorPayload { Message = "boom", Retryable = false },
         new DiagnosticPayload { Message = "note" },
         new DiagnosticPayload { Message = "slow decode" },
+        new UserMessagePayload { Text = "ship it" },
         new CompletedPayload { Reason = "done" },
         new UnknownPayload { OriginalKind = "future", Raw = JsonDocument.Parse("""{"kind":"future"}""").RootElement.Clone() },
     };

@@ -10,13 +10,14 @@ namespace OmpOS.Native;
 
 /// <summary>
 /// The Avalonia application root. It loads the application XAML, which merges the token dictionary and the
-/// shared control styles, and opens the main window on a classic desktop lifetime. It receives the approval bridge and the
-/// run input the main window routes through.
+/// shared control styles, and opens the main window on a classic desktop lifetime. It receives the approval bridge, the run input
+/// and, when an engine is composed, the lazily composed engine the main window sends prompts through.
 /// </summary>
 internal partial class App : Application
 {
     private readonly IToolApprovalBridge _approvalBridge;
     private readonly IRunInput _runInput;
+    private readonly Lazy<EngineComposition>? _engine;
 
     /// <summary>
     /// Creates the application with the production defaults. No approval service and no run input are connected in this build,
@@ -27,7 +28,7 @@ internal partial class App : Application
     {
     }
 
-    /// <summary>Creates the application with the approval bridge and run input its main window uses.</summary>
+    /// <summary>Creates the application with the approval bridge and run input its main window uses. Sending is refused.</summary>
     /// <param name="approvalBridge">The bridge that records each tool-approval decision.</param>
     /// <param name="runInput">The input channel of the active run.</param>
     /// <exception cref="ArgumentNullException">A dependency is null.</exception>
@@ -41,31 +42,15 @@ internal partial class App : Application
     }
 
     /// <summary>
-    /// Creates the application over a composed engine. Its approval bridge is the engine's, so each decision settles the request
-    /// the engine parked. The run input stays unconnected until a run input is composed.
-    /// </summary>
-    /// <param name="engine">The composed engine.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="engine"/> is null.</exception>
-    public App(EngineComposition engine)
-        : this(ApprovalBridgeOf(engine), new UnconnectedRunInput())
-    {
-    }
-
-    /// <summary>
-    /// Creates the application over an engine composed on first use. The engine is composed on the first tool-approval decision,
-    /// so launching the application composes nothing and starts no process.
+    /// Creates the application over an engine composed on first use. The engine is composed on the first tool-approval decision or
+    /// the first send, so launching the application composes nothing and starts no process. Decisions and sends share that engine.
     /// </summary>
     /// <param name="engine">The lazily composed engine.</param>
     /// <exception cref="ArgumentNullException"><paramref name="engine"/> is null.</exception>
     public App(Lazy<EngineComposition> engine)
-        : this(new ComposedApprovalBridge(engine), new UnconnectedRunInput())
+        : this(new ComposedApprovalBridge(engine), new EngineRunInput())
     {
-    }
-
-    private static IToolApprovalBridge ApprovalBridgeOf(EngineComposition engine)
-    {
-        ArgumentNullException.ThrowIfNull(engine);
-        return engine.ApprovalBridge;
+        _engine = engine;
     }
 
     /// <summary>Loads the application XAML.</summary>
@@ -76,7 +61,7 @@ internal partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow(_approvalBridge, _runInput, MotionPreference.System);
+            desktop.MainWindow = new MainWindow(_approvalBridge, _runInput, MotionPreference.System, Environment.CurrentDirectory, _engine);
         }
 
         base.OnFrameworkInitializationCompleted();

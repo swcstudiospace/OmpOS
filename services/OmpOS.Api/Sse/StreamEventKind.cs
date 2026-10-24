@@ -19,6 +19,8 @@ internal static class StreamEventKind
             UiBlockPayload => "ui_block",
             ErrorPayload => "error",
             CompletedPayload => "completed",
+            UserMessagePayload => "user_message",
+            DiagnosticPayload => "diagnostic",
             UnknownPayload unknown => unknown.OriginalKind ?? "unknown",
             _ => "unknown",
         };
