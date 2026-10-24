@@ -328,3 +328,35 @@ Pauses and payloads (the run stops at these):
 
 Resume point: Phase 24 criterion 4, local part. Create the Android head project following CONTRIBUTING "Adding a project". Pin Avalonia.Android to the version the native head uses, after a NuGet check. Build it with ANDROID_HOME=/root/Android/Sdk and warnings as errors, and record the log. The CI part waits on the push decision.
 
+
+## Discuss Step and Plan Pause (2026-10-24, graph ut-mvm12su0-1fae51f6)
+
+Discuss records written, one CONTEXT.md per remaining v0.10.0 phase: 22-CONTEXT.md, 23-CONTEXT.md, 24-CONTEXT.md and 25-CONTEXT.md, each in its phase directory. Each lists verified paths, the criteria with their evidence, the grey areas with defaults, and its pause payload.
+
+Naming convention (n1.4): phase directories are NN-slug/, and artifacts are NN-CONTEXT.md, NN-01-PLAN.md, NN-SUMMARY.md and NN-VERIFICATION.md. Examples: .planning/phases/21-parity-surface/21-CONTEXT.md and .planning/phases/21-parity-surface/21-01-PLAN.md.
+
+Audit (n2.4, n2.6): dotnet list OmpOS.Linux.slnf package --vulnerable --include-transitive exited 0 and reported no vulnerable packages. Build output is ignored by .gitignore lines 30 and 31 (bin/ and obj/).
+
+Grey areas awaiting one batched answer (GREY_AREA class):
+- G22-1: add Avalonia.Wayland and call UseWayland() for a native Wayland run? Default: no.
+- G22-2: accept that native Wayland has no AT-SPI support, so the criterion 2 Wayland variant stays unmet? Default: record the gap.
+- G23-1: run the axe check as a gate step, which adds Node 22 or later and Chrome to the gate? Default: no. scripts/web-smoke stays the axe evidence.
+- G24-1: Android head structure. (a) A new head project over a shared Avalonia library, with a behavior-neutral move of views out of apps/OmpOS.Native. (b) A repeated shell. Default: (a).
+- G24-2: write the Android CI job now, and authorize a push for a CI run? Default: write the job, and do not push.
+- G25-1: remove apps/OmpOS.App only after Phases 22 and 24 close and the parity inventory is green. Default: yes, and no deletion in this run.
+- G-M1 (milestone order): continue to v0.11.0 while v0.10.0 items stay blocked? Default: no. Close each milestone before the next.
+- G-S1 (process): Skill() is not a tool in this environment. Default: run each phase command by loading its skill document as the one active command, recorded as a deviation. Under the spec, this is a BLOCKER if it is not accepted.
+
+BLOCKERs, external, and no decision clears them: Phase 22 criteria 3 to 5 (Windows 11 24H2 runner, Mac channel). Phase 23 criteria 2 and 3 (OMPOS_API_ORIGIN, Railway deploys). Phase 24 criteria 1 to 3 (Mac with Xcode and an iOS device) and criterion 5 (Android 16 device or KVM host). Phase 25 is blocked on Phases 22 and 24.
+
+Plan (n8, rewritten from the wave 1 to 3 evidence; the waves run in sequence because the answers change the file set):
+- Pause 1, now: the batched GREY_AREA answers above. Each answer becomes an accepted decision in its CONTEXT.md.
+- Wave A, after the answers: Phase 24 criterion 4 local part (structure per G24-1; build with ANDROID_HOME; record the log; write the CI job per G24-2). Phase 22 native run if G22-1 is accepted. Phase 23 gate step if G23-1 is accepted.
+- Wave B: n5 pattern convergence over the paths Wave A touches, counting the families and choosing the winner by the precedence rules. Then the gates, with one checkpoint commit per phase.
+- Pause 2, external: the BLOCKERs above, in one payload.
+- Closeout: blocked until every v0.10.0 phase is complete, or G-M1 is answered. Then audit, complete and cleanup, in that order.
+
+Wave status: Wave 2 (n3 tooling findings and n4 scope records) is complete with these records. Wave 3: n6 and n7 are recorded, and n5 waits for Wave A's touched-file set. Wave 4 (n8) is this plan, and it depends on n5.
+
+Ship: held. assess returned done=false (roadmap 2/6). No PR, no push, no merge.
+
