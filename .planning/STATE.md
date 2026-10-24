@@ -244,3 +244,87 @@ Ship: ultrathink-ship is enabled with autoMerge on. It has NOT run. Its gate rul
 - Linear: upgrade the workspace or accept Notion-only tracking. Then re-run `ultrathink-mcp track complete` and the substrate `graph_register` call.
 - Host items (owner): Mac channel for Phase 22 macOS and Phase 24 iOS; a Windows 11 24H2 runner; Android SDK API 36; OMPOS_API_ORIGIN and Railway deploys before the Phase 23 smoke.
 - Review and commit the uncommitted working tree when ready. The autonomous run made no commits.
+
+## Run Discovery 2026-10-24 (gsd-autonomous, graph ut-mvm12su0-1fae51f6)
+
+This section supersedes the stale statements above it. Gate count is 2245 (not 2240). Phase 36 is complete (36-VERIFICATION passed 6 of 6). Phase 37 is partial (criteria 1 to 4 verified, criterion 5 open by design). The Phase 22 owner question is answered: skip Phase 22 and continue.
+
+Kickoff clarifications, answered 2026-10-24:
+- Branch: current branch feat/v0.9.2-hardening, local commits only. No push and no pull request.
+- Uncommitted work: committed as baseline 8e0c5e2 (229 paths). A secret-shaped scan of the staged set found no matches. BASE for this run is 8e0c5e2.
+- System installs: Android SDK API 36 and the .NET Android workload only. Podman 5.x and gitleaks are not authorized.
+- Caller identity: record the code's behavior. Callers are the JWT subject. local-dev is a Development-only principal behind Api:Auth:AllowDevelopmentPrincipal. An OwnerId in a request body is refused with 400. The Greptile knowledge-base answer is stale, and its cited docs/api-service.md is not in this tree.
+- Non-blocking defaults applied: scope is the ROADMAP phases plus behavior-neutral safe fixes (q1); CI is recommend-only (q3).
+- Phase commands: Skill() is not a tool in this environment. Each phase command runs by loading its skill document and executing it as the single active command. Recorded deviation.
+
+Discrepancy list (on-disk evidence wins):
+1. Phase 22 criterion 1 is overstated in 22-SUMMARY and in this file ("met on the XWayland path"). ROADMAP criterion 1 requires the start "with the native backend opt-in". Corrected to partial: X11 and XWayland starts are recorded, and the native Wayland run is not done.
+2. Phase 23 criterion 4 is recorded here as blocked, saying the spike project is not in the repo. Commit e598e5e re-measured G-WEB from the repository, and tools/gweb/ is tracked. Corrected: see the 2026-10-24 re-run under QUALITY_BASELINE.
+3. Phase 36 is listed as unblocked and awaiting records. It is complete: 36-CONTEXT, 36-01-PLAN, 36-SUMMARY and 36-VERIFICATION all exist.
+4. Phase 37 is listed as planned. It is partial: criteria 1 to 4 verified in 37-VERIFICATION, and criterion 5 is open by design.
+5. The Phase 22 question above is answered (skip and continue). The "answer pending" wording is stale.
+6. v0.11.0 and v0.12.0 phase statuses do not match commits 90d1296, 377d96f, 68f78c7 and 8a89149, which implement parts of Phases 31 to 33 and 26. Not reconciled in this pass. Recorded for MILESTONE_AUDIT.
+
+QUALITY_BASELINE (BASE 8e0c5e2, 2026-10-24):
+- Stack: .NET SDK 10.0.402 (global.json). C# throughout: an Avalonia 12.1.4 native head and a Blazor WebAssembly web head. Manifests: OmpOS.Linux.slnf (54 projects, each with packages.lock.json) and Directory.Packages.props (central package versions).
+- Gate commands, verbatim from bootstrap.sh:
+  - restore: dotnet restore OmpOS.Linux.slnf --locked-mode
+  - build: dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
+  - test: dotnet test OmpOS.Linux.slnf -c Release --no-build -- --filter-not-trait "Category=Live"
+  - format: dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
+  - full gate: ./bootstrap.sh exits 0 and prints "bootstrap: OK". Result: total 2245, failed 0, skipped 0, test duration 48.9 s, wall time 265.8 s.
+- Outside the gate, CI only: gitleaks secret scan (ci.yml, pinned 8.30.1), the vulnerable-package list, and compose validation.
+- Pre-existing gate failures: none.
+- Known limits: the open-questions register (KL-01 to KL-08 and the open OQ rows).
+
+Entry state (n1 step 8):
+- v0.10.0 is RUNNING.
+- Phases 20 and 21: COMPLETE (verified).
+- Phase 22: BLOCKED. Criteria 3 to 5 need external hosts. Criterion 1 is partial. Owner decision: skip and continue.
+- Phase 23: REMAINING, partial. Criteria 2 and 3 need OMPOS_API_ORIGIN and the Vercel and Railway deploys. Criteria 1, 4 and 5 are to be verified this run.
+- Phase 24: BLOCKED. iOS needs the Mac channel. Criterion 5 needs a device or emulator, and /dev/kvm is absent. Criterion 4 needs the Android SDK (authorized for this run) and a CI run.
+- Phase 25: BLOCKED on Phases 22 and 24.
+
+Remaining phases in ROADMAP order, v0.10.0: 22 (BLOCKED), 23 (REMAINING), 24 (BLOCKED), 25 (BLOCKED).
+Milestone closeout cannot run until v0.10.0 is complete or the owner decides otherwise. Later milestones follow only after that.
+
+Pauses raised: none for grey areas. BLOCKERs for Phase 22 criteria 3 to 5 (Windows runner, Mac channel), Phase 23 criteria 2 and 3 (OMPOS_API_ORIGIN, Vercel, Railway deploys paused), and Phase 24 criteria 1 to 3 and 5 (Mac channel, no device or emulator).
+
+
+
+## Run Progress 2026-10-24 (after the baseline)
+
+Baseline: committed as 8e0c5e2. This is BASE for the run. The uncommitted tree is now in history, and the working tree was clean before the first run edit.
+
+QUALITY_BASELINE gate on 8e0c5e2: ./bootstrap.sh exit 0, prints "bootstrap: OK", total 2245, failed 0, skipped 0.
+
+Install record (authorized: Android SDK and .NET Android workload):
+- Android SDK at /root/Android/Sdk, present before this run: platforms android-34 and android-36, platform-tools, ndk 26.3.11579264, build-tools 34.0.0, and cmdline-tools latest and latest-2. sdkmanager is deprecated, and the android CLI sits in the same directory.
+- Installed this run: build-tools 36.0.0 through sdkmanager (exit 0). The warning that cmdline-tools;latest sits in latest-2 is informational and was left alone.
+- Installed this run: the .NET workload android 36.1.118 (manifest 10.0.100, SDK band 10.0.400), exit 0.
+- Classification: development tooling for Phase 24. No repository file references it yet. Its first user is the Phase 24 Android head project.
+- Licences: the Android SDK terms were accepted under this run's authorization of the Android SDK install. The SDK licenses directory existed before the run.
+- ANDROID_HOME is not set globally. Set ANDROID_HOME=/root/Android/Sdk for each build.
+- Not installed: Podman 5.x and gitleaks. Not authorized.
+
+G-WEB re-measurement (Phase 23 criterion 4): tools/gweb/measure.sh on 2026-10-24 gives roleNodes 4, textboxNodes 0 and namedTextboxNodes 0 for stock and named. This matches 2026-10-22. Evidence: docs/runbooks/evidence/gweb-remeasure-2026-10-24/.
+
+Phase status, v0.10.0:
+- 20: COMPLETE (verified).
+- 21: COMPLETE (verified).
+- 22: BLOCKED. Criterion 1 is partial (the native Wayland opt-in run is not done). Criteria 3 to 5 are external. Owner decision: skip and continue.
+- 23: BLOCKED. Criteria 1, 4 and 5 are met. Criteria 2 and 3 are external.
+- 24: BLOCKED. Criterion 4 is partial: local prerequisites are installed, no head project exists, and no CI run has happened. Criteria 1 to 3 and 5 are external.
+- 25: BLOCKED on Phases 22 and 24.
+
+Corrections recorded in this run: 22-SUMMARY (criterion 1 is partial), 23-SUMMARY (criterion 4 is met, and the spike-project claim was wrong), and 24-SUMMARY (the Android SDK is present). Each correction is marked in its file.
+
+Pauses and payloads (the run stops at these):
+- GREY_AREA, Phase 22 criterion 1: add Avalonia.Wayland and call UseWayland() for a native Wayland opt-in run? Default: no. Cost: a package addition, and native Wayland has no AT-SPI support, so the accessibility gap needs its own decision.
+- BLOCKER, Phase 22 criteria 3 to 5: a Windows 11 24H2 runner and the Mac channel. Minimal action: provide a runner and a Mac host, or record these criteria as owner-blocked.
+- BLOCKER, Phase 23 criteria 2 and 3: OMPOS_API_ORIGIN, the Vercel deploy, and Railway deploys that are paused. Minimal action: provide the production API origin and resume deploys, or confirm the deploy is out of scope.
+- VALIDATION, Phase 24 criterion 4: a CI run needs a push of this branch. GIT_SAFETY allows a push only when a phase requires one, and this phase does. Decision needed: authorize the push, or leave criterion 4 open.
+- BLOCKER, Phase 24 criteria 1 to 3: iOS needs a Mac with Xcode. BLOCKER, Phase 24 criterion 5: an Android 16 device or emulator. /dev/kvm is absent on this host, so no emulator runs here.
+
+Resume point: Phase 24 criterion 4, local part. Create the Android head project following CONTRIBUTING "Adding a project". Pin Avalonia.Android to the version the native head uses, after a NuGet check. Build it with ANDROID_HOME=/root/Android/Sdk and warnings as errors, and record the log. The CI part waits on the push decision.
+
