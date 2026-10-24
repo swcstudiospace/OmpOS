@@ -1,0 +1,50 @@
+== measure.sh started 2026-10-24T07:08:58Z
+repo=/root/src/repos/ompos
+evidence=/root/src/repos/ompos/docs/runbooks/evidence/gweb-remeasure-2026-10-24
+work=/tmp/gweb-remeasure.QydYBn
+chrome=/usr/bin/google-chrome
+chrome_version=Google Chrome 153.0.8010.36 
+node_version=v24.18.0
+dotnet_version=10.0.402
+host=Linux 6.8.0-147-generic x86_64
+cdp_version={   "Browser": "Chrome/153.0.8010.36",   "Protocol-Version": "1.3",   "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",   "V8-Version": "15.3.76.10",   "WebKit-Version": "537.36 (@507c6ee3e2f3b2ca0e660547e5b9ea4820c67f4c)",   "webSocketDebuggerUrl": "ws://127.0.0.1:9444/devtools/browser/cfd0364d-be76-465d-b37a-9d3703908bda"}
+
+== build=stock project=stock
+  Determining projects to restore...
+  Restored /root/src/repos/ompos/tools/gweb/stock/OmpOS.Gweb.Stock.csproj (in 1.66 sec).
+  OmpOS.Gweb.Stock -> /root/src/repos/ompos/tools/gweb/stock/bin/Release/net10.0-browser/OmpOS.Gweb.Stock.dll
+  Optimizing assemblies for size. This process might take a while.
+  OmpOS.Gweb.Stock -> /tmp/gweb-remeasure.QydYBn/stock/
+publish_files=142
+publish_wwwroot_bytes=29769207
+probe={"title":"OmpOS.Gweb.Stock","canvasElements":1,"domElementsWithRoleAttribute":0,"readyState":"complete"}
+ax_nodes_total=7
+roleNodes=4
+textboxNodes=0
+namedTextboxNodes=0
+roleCounts={"RootWebArea":1,"generic":2,"Canvas":1}
+node 1: role=RootWebArea name="OmpOS.Gweb.Stock"
+node 11: role=generic name=""
+node 14: role=Canvas name=""
+node 13: role=generic name=""
+
+== build=named project=named
+  Determining projects to restore...
+  Restored /root/src/repos/ompos/tools/gweb/named/OmpOS.Gweb.Named.csproj (in 400 ms).
+  OmpOS.Gweb.Named -> /root/src/repos/ompos/tools/gweb/named/bin/Release/net10.0-browser/OmpOS.Gweb.Named.dll
+  Optimizing assemblies for size. This process might take a while.
+  OmpOS.Gweb.Named -> /tmp/gweb-remeasure.QydYBn/named/
+publish_files=142
+publish_wwwroot_bytes=29769233
+probe={"title":"OmpOS.Gweb.Named","canvasElements":1,"domElementsWithRoleAttribute":0,"readyState":"complete"}
+ax_nodes_total=7
+roleNodes=4
+textboxNodes=0
+namedTextboxNodes=0
+roleCounts={"RootWebArea":1,"generic":2,"Canvas":1}
+node 1: role=RootWebArea name="OmpOS.Gweb.Named"
+node 13: role=generic name=""
+node 14: role=Canvas name=""
+node 3: role=generic name=""
+
+== measure.sh finished 2026-10-24T07:10:38Z
