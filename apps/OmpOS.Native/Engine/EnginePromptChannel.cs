@@ -6,7 +6,7 @@ namespace OmpOS.Native.Engine;
 /// The send path of the composed engine. A prompt is submitted to the engine's host and its events stream back in order; Stop cancels
 /// the in-flight turn through the same host. The engine is composed on the first send, never before.
 /// </summary>
-internal sealed class EnginePromptChannel(Lazy<EngineComposition> engine) : IAsyncDisposable
+internal sealed class EnginePromptChannel(Lazy<EngineComposition> engine) : IPromptChannel
 {
     private readonly Lazy<EngineComposition> _engine = engine ?? throw new ArgumentNullException(nameof(engine));
 

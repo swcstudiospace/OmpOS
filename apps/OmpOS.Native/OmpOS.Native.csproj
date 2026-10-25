@@ -9,27 +9,13 @@
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
-    <PackageReference Include="Iciclecreek.Avalonia.Terminal" />
-    <PackageReference Include="Avalonia.AvaloniaEdit" />
-    <PackageReference Include="AvaloniaEdit.TextMate" />
-    <PackageReference Include="TextMateSharp.Grammars" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/OmpOS.Native.Views/OmpOS.Native.Views.csproj" />
     <ProjectReference Include="../../src/OmpOS.Presentation/OmpOS.Presentation.csproj" />
-    <ProjectReference Include="../../src/OmpOS.Harness.Terminal/OmpOS.Harness.Terminal.csproj" />
     <ProjectReference Include="../../src/OmpOS.EngineHost/OmpOS.EngineHost.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
-    <ProjectReference Include="../../src/OmpOS.Sessions/OmpOS.Sessions.csproj" />
-    <ProjectReference Include="../../src/OmpOS.Harness.Workspace/OmpOS.Harness.Workspace.csproj" />
-    <ProjectReference Include="../../src/OmpOS.Harness.Mcp/OmpOS.Harness.Mcp.csproj" />
-    <ProjectReference Include="../../src/OmpOS.Harness.Completion/OmpOS.Harness.Completion.csproj" />
-    <ProjectReference Include="../../src/OmpOS.Harness.Plugins/OmpOS.Harness.Plugins.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <AvaloniaResource Include="Assets/Fonts/**/*.ttf" />
-    <AvaloniaResource Include="Assets/Fonts/**/OFL.txt" />
   </ItemGroup>
 
 </Project>

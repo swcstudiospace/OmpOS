@@ -38,9 +38,9 @@
 
   <!-- Type tokens (20-UI-SPEC.md, Typography). Three sizes, two weights. The bundled faces are named by their
        avares URI; the fallbacks follow the family name after the fragment. -->
-  <FontFamily x:Key="OmpOS.Font.Family">avares://OmpOS.Native/Assets/Fonts/DMSans/DMSans.ttf#DM Sans, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
-  <FontFamily x:Key="OmpOS.Font.Display">avares://OmpOS.Native/Assets/Fonts/Anybody/Anybody.ttf#Anybody, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
-  <FontFamily x:Key="OmpOS.Font.Mono">avares://OmpOS.Native/Assets/Fonts/SpaceMono/SpaceMono-Regular.ttf#Space Mono, Menlo, Consolas, Liberation Mono, monospace</FontFamily>
+  <FontFamily x:Key="OmpOS.Font.Family">avares://OmpOS.Native.Views/Assets/Fonts/DMSans/DMSans.ttf#DM Sans, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
+  <FontFamily x:Key="OmpOS.Font.Display">avares://OmpOS.Native.Views/Assets/Fonts/Anybody/Anybody.ttf#Anybody, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
+  <FontFamily x:Key="OmpOS.Font.Mono">avares://OmpOS.Native.Views/Assets/Fonts/SpaceMono/SpaceMono-Regular.ttf#Space Mono, Menlo, Consolas, Liberation Mono, monospace</FontFamily>
   <x:Double x:Key="OmpOS.Font.Size.Label">13</x:Double>
   <x:Double x:Key="OmpOS.Font.Size.Body">15</x:Double>
   <x:Double x:Key="OmpOS.Font.Size.Heading">18</x:Double>

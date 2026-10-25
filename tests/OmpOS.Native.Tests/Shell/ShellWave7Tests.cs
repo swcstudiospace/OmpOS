@@ -130,11 +130,11 @@ public sealed class ShellWave7Tests
                 Activate(window, Toggle(window, "AgentsToggle"));
                 Toggle(window, "TerminalToggle").IsChecked.ShouldBe(false);
                 ToolHost(window).IsVisible.ShouldBeFalse("the Agents view stands in for the transcript");
-                window.FindControl<ContentControl>("AgentsHost")!.IsVisible.ShouldBeTrue();
+                ShellHarness.MainViewOf(window).FindControl<ContentControl>("AgentsHost")!.IsVisible.ShouldBeTrue();
 
                 Activate(window, Toggle(window, "ExplorerToggle"));
                 Toggle(window, "AgentsToggle").IsChecked.ShouldBe(false);
-                window.FindControl<ContentControl>("AgentsHost")!.IsVisible.ShouldBeFalse();
+                ShellHarness.MainViewOf(window).FindControl<ContentControl>("AgentsHost")!.IsVisible.ShouldBeFalse();
                 ToolHost(window).Content.ShouldBeOfType<WorkspaceTreeView>();
 
                 Activate(window, Toggle(window, "ExplorerToggle"));
@@ -367,7 +367,7 @@ public sealed class ShellWave7Tests
             {
                 composed.ShouldBe(0, "the engine is composed on the first decision, not at launch");
                 ProcessIds().Except(before).ShouldBeEmpty("launch starts no child process");
-                window.RunControls.UnavailableDetail.ShouldBeNull("the composed bridge is connected");
+                ShellHarness.MainViewOf(window).RunControls.UnavailableDetail.ShouldBeNull("the composed bridge is connected");
 
                 var outcome = await bridge.DecideAsync("shell-session", "no-pending-request", ToolApprovalDecision.Deny, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
@@ -394,7 +394,7 @@ public sealed class ShellWave7Tests
             ShellHarness.Settle(window);
             try
             {
-                window.RunControls.UnavailableDetail.ShouldNotBeNullOrWhiteSpace();
+                ShellHarness.MainViewOf(window).RunControls.UnavailableDetail.ShouldNotBeNullOrWhiteSpace();
             }
             finally
             {
@@ -411,16 +411,16 @@ public sealed class ShellWave7Tests
         return window;
     }
 
-    private static ToggleButton Toggle(MainWindow window, string name) => window.FindControl<ToggleButton>(name)!;
+    private static ToggleButton Toggle(MainWindow window, string name) => ShellHarness.MainViewOf(window).FindControl<ToggleButton>(name)!;
 
-    private static ToggleButton SuggestionsToggle(MainWindow window) => window.FindControl<ToggleButton>("SuggestionsToggle")!;
+    private static ToggleButton SuggestionsToggle(MainWindow window) => ShellHarness.MainViewOf(window).FindControl<ToggleButton>("SuggestionsToggle")!;
 
     private static InlineCompletionBox Suggestions(MainWindow window) =>
         ShellHarness.Composer(window).FindControl<InlineCompletionBox>("Suggestions")!;
 
-    private static ContentControl ToolHost(MainWindow window) => window.FindControl<ContentControl>("ToolHost")!;
+    private static ContentControl ToolHost(MainWindow window) => ShellHarness.MainViewOf(window).FindControl<ContentControl>("ToolHost")!;
 
-    private static ContentControl TranscriptHost(MainWindow window) => window.FindControl<ContentControl>("TranscriptHost")!;
+    private static ContentControl TranscriptHost(MainWindow window) => ShellHarness.MainViewOf(window).FindControl<ContentControl>("TranscriptHost")!;
 
     /// <summary>Focuses a toggle and activates it from the keyboard, as a user does, then settles the layout.</summary>
     private static void Activate(MainWindow window, ToggleButton toggle)

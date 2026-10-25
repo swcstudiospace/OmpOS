@@ -47,8 +47,9 @@ public sealed class EngineRunInputSendTests
 
     private static async Task SendAsync(MainWindow window, string text)
     {
-        window.Composer.Draft = text;
-        await window.Composer.SendAsync().ConfigureAwait(true);
+        var main = ShellHarness.MainViewOf(window);
+        main.Composer.Draft = text;
+        await main.Composer.SendAsync().ConfigureAwait(true);
     }
 
     /// <summary>Types a message into the prompt and presses the send control: it steers the active run, or queues behind a follow-up.</summary>
@@ -79,6 +80,7 @@ public sealed class EngineRunInputSendTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, peer.Engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "first").ConfigureAwait(true);
@@ -86,8 +88,8 @@ public sealed class EngineRunInputSendTests
 
                 await TypeAndSendWhileActiveAsync(window, "steer").ConfigureAwait(true);
 
-                window.Runs.IsRunActive.ShouldBeTrue("the steer does not end the run");
-                window.Composer.IsStreaming.ShouldBeTrue("the turn is still in flight");
+                main.Runs.IsRunActive.ShouldBeTrue("the steer does not end the run");
+                main.Composer.IsStreaming.ShouldBeTrue("the turn is still in flight");
                 peer.Agent.Methods.ShouldNotContain("session/cancel", StringComparer.Ordinal, "a steer never cancels the turn");
                 peer.Agent.PromptTexts.ShouldHaveSingleItem().ShouldBe("first");
 
@@ -96,9 +98,9 @@ public sealed class EngineRunInputSendTests
                 peer.Agent.PromptTexts.ShouldBe(["first", "steer"]);
 
                 peer.FinishTurn();
-                await RunControlsHarness.UntilAsync(() => !window.Composer.IsStreaming, "the steered turn ending", ct).ConfigureAwait(true);
-                window.Runs.IsRunActive.ShouldBeFalse();
-                window.Runs.QueuedFollowUpCount.ShouldBe(0);
+                await RunControlsHarness.UntilAsync(() => !main.Composer.IsStreaming, "the steered turn ending", ct).ConfigureAwait(true);
+                main.Runs.IsRunActive.ShouldBeFalse();
+                main.Runs.QueuedFollowUpCount.ShouldBe(0);
             }
             finally
             {
@@ -119,6 +121,7 @@ public sealed class EngineRunInputSendTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, peer.Engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "first").ConfigureAwait(true);
@@ -136,9 +139,9 @@ public sealed class EngineRunInputSendTests
                 await RunControlsHarness.UntilAsync(() => peer.Agent.PromptTexts.Count == 3, "the follow-up", ct).ConfigureAwait(true);
 
                 peer.FinishTurn();
-                await RunControlsHarness.UntilAsync(() => !window.Composer.IsStreaming, "the last turn ending", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => !main.Composer.IsStreaming, "the last turn ending", ct).ConfigureAwait(true);
                 peer.Agent.PromptTexts.ShouldBe(["first", "steer", "follow-up"]);
-                window.Session.Tree.Blocks.OfType<UserMessageBlock>().Select(block => block.Text).ShouldBe(["first", "steer", "follow-up"]);
+                main.Session.Tree.Blocks.OfType<UserMessageBlock>().Select(block => block.Text).ShouldBe(["first", "steer", "follow-up"]);
             }
             finally
             {
@@ -159,6 +162,7 @@ public sealed class EngineRunInputSendTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, peer.Engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "first").ConfigureAwait(true);
@@ -166,14 +170,14 @@ public sealed class EngineRunInputSendTests
 
                 await TypeAndQueueFollowUpAsync(window, "follow-up").ConfigureAwait(true);
                 await TypeAndSendWhileActiveAsync(window, "later").ConfigureAwait(true);
-                window.Runs.QueuedFollowUpCount.ShouldBe(2, "the send queues behind the follow-up instead of steering");
+                main.Runs.QueuedFollowUpCount.ShouldBe(2, "the send queues behind the follow-up instead of steering");
 
                 peer.FinishTurn();
                 await RunControlsHarness.UntilAsync(() => peer.Agent.PromptTexts.Count == 2, "the follow-up", ct).ConfigureAwait(true);
                 peer.FinishTurn();
                 await RunControlsHarness.UntilAsync(() => peer.Agent.PromptTexts.Count == 3, "the later message", ct).ConfigureAwait(true);
                 peer.FinishTurn();
-                await RunControlsHarness.UntilAsync(() => !window.Composer.IsStreaming, "the last turn ending", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => !main.Composer.IsStreaming, "the last turn ending", ct).ConfigureAwait(true);
 
                 peer.Agent.PromptTexts.ShouldBe(["first", "follow-up", "later"]);
             }
@@ -199,6 +203,7 @@ public sealed class EngineRunInputSendTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, peer.Engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "first").ConfigureAwait(true);
@@ -206,23 +211,23 @@ public sealed class EngineRunInputSendTests
 
                 await TypeAndSendWhileActiveAsync(window, "steer one").ConfigureAwait(true);
                 await TypeAndSendWhileActiveAsync(window, "steer two").ConfigureAwait(true);
-                window.Runs.SteersHeld.ShouldBe(2, "both steers wait for the first turn to end");
+                main.Runs.SteersHeld.ShouldBe(2, "both steers wait for the first turn to end");
                 RunControlsHarness.PendingText(window).ShouldContain("2 steering messages are held");
 
                 peer.FinishTurn();
                 await RunControlsHarness.UntilAsync(() => peer.Agent.PromptTexts.Count == 2, "the first steer turn", ct).ConfigureAwait(true);
                 peer.Agent.PromptTexts[1].ShouldBe("steer one");
-                window.Runs.SteersHeld.ShouldBe(1, "the second steer still waits for its own turn");
+                main.Runs.SteersHeld.ShouldBe(1, "the second steer still waits for its own turn");
                 RunControlsHarness.PendingText(window).ShouldContain("1 steering message is held");
 
                 peer.FinishTurn();
                 await RunControlsHarness.UntilAsync(() => peer.Agent.PromptTexts.Count == 3, "the second steer turn", ct).ConfigureAwait(true);
                 peer.Agent.PromptTexts[2].ShouldBe("steer two");
-                window.Runs.SteersHeld.ShouldBe(0, "no steer waits once the second steer turn started");
+                main.Runs.SteersHeld.ShouldBe(0, "no steer waits once the second steer turn started");
                 RunControlsHarness.PendingText(window).ShouldNotContain("steering message");
 
                 peer.FinishTurn();
-                await RunControlsHarness.UntilAsync(() => !window.Composer.IsStreaming, "the last turn ending", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => !main.Composer.IsStreaming, "the last turn ending", ct).ConfigureAwait(true);
                 peer.Agent.PromptTexts.ShouldBe(["first", "steer one", "steer two"]);
             }
             finally
@@ -247,6 +252,7 @@ public sealed class EngineRunInputSendTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, peer.Engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "first").ConfigureAwait(true);
@@ -256,13 +262,13 @@ public sealed class EngineRunInputSendTests
                 await TypeAndQueueFollowUpAsync(window, "follow-up").ConfigureAwait(true);
 
                 RunControlsHarness.Click(ShellHarness.Stop(window));
-                await RunControlsHarness.UntilAsync(() => !window.Composer.IsStreaming, "the stopped turn ending", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => !main.Composer.IsStreaming, "the stopped turn ending", ct).ConfigureAwait(true);
 
                 peer.Agent.Methods.ShouldContain("session/cancel", StringComparer.Ordinal);
                 peer.Agent.PromptTexts.ShouldHaveSingleItem("nothing held after Stop is sent").ShouldBe("first");
-                window.Runs.IsRunActive.ShouldBeFalse();
-                window.Runs.QueuedFollowUpCount.ShouldBe(0);
-                window.Session.Tree.Blocks.OfType<MarkdownBlock>().Select(block => block.Markdown)
+                main.Runs.IsRunActive.ShouldBeFalse();
+                main.Runs.QueuedFollowUpCount.ShouldBe(0);
+                main.Session.Tree.Blocks.OfType<MarkdownBlock>().Select(block => block.Markdown)
                     .ShouldContain("2 queued messages were not sent.", StringComparer.Ordinal);
             }
             finally

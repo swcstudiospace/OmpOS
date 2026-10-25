@@ -465,13 +465,25 @@
         "type": "Project",
         "dependencies": {
           "Avalonia": "[12.1.4, )",
-          "Avalonia.AvaloniaEdit": "[12.0.0, )",
           "Avalonia.Desktop": "[12.1.4, )",
           "Avalonia.Themes.Fluent": "[12.1.4, )",
-          "AvaloniaEdit.TextMate": "[12.0.0, )",
-          "Iciclecreek.Avalonia.Terminal": "[4.1.0, )",
           "OmpOS.EngineHost": "[1.0.0, )",
           "OmpOS.Harness.Acp": "[1.0.0, )",
+          "OmpOS.Native.Views": "[1.0.0, )",
+          "OmpOS.Presentation": "[1.0.0, )"
+        }
+      },
+      "ompos.native.views": {
+        "type": "Project",
+        "dependencies": {
+          "Avalonia": "[12.1.4, )",
+          "Avalonia.AvaloniaEdit": "[12.0.0, )",
+          "AvaloniaEdit.TextMate": "[12.0.0, )",
+          "Iciclecreek.Avalonia.Terminal": "[4.1.0, )",
+          "Markdig": "[1.4.2, )",
+          "OmpOS.Contracts": "[1.0.0, )",
+          "OmpOS.GenUi": "[1.0.0, )",
+          "OmpOS.Harness.Abstractions": "[1.0.0, )",
           "OmpOS.Harness.Completion": "[1.0.0, )",
           "OmpOS.Harness.Mcp": "[1.0.0, )",
           "OmpOS.Harness.Plugins": "[1.0.0, )",

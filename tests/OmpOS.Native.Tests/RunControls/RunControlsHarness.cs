@@ -46,7 +46,7 @@ internal static class RunControlsHarness
     public static PendingToolApproval AddRequest(MainWindow window, string requestId, string tool = "bash", string arguments = "command: ls")
     {
         var approval = new PendingToolApproval("session-1", requestId, tool, arguments);
-        window.RunControls.Approvals.Add(approval);
+        ShellHarness.MainViewOf(window).RunControls.Approvals.Add(approval);
         ShellHarness.Settle(window);
         return approval;
     }

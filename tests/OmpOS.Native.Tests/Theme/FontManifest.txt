@@ -1,4 +1,4 @@
-# Font manifest for apps/OmpOS.Native/Assets/Fonts. One row per shipped TTF; each OFL.txt is copied unmodified beside it.
+# Font manifest for src/OmpOS.Native.Views/Assets/Fonts. One row per shipped TTF; each OFL.txt is copied unmodified beside it.
 # Columns: path under Assets/Fonts | sha256 of the shipped file | upstream raw URL | upstream commit | licence
 DMSans/DMSans.ttf | 8cd08d97e89c24d0aa92edd2f0f4c8ee6195eee9b7c9f154865a58b02f0c1c0d | https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/dmsans/DMSans%5Bopsz,wght%5D.ttf | 45e3d5269e4a17d823f6d84470bc084dc5ae46f6 | SIL OFL 1.1
 Anybody/Anybody.ttf | b184bd7e6ca8348bbaecec98951565729d7e89b7872d4898a1f9981342b5b64c | https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/anybody/Anybody%5Bwdth,wght%5D.ttf | 45e3d5269e4a17d823f6d84470bc084dc5ae46f6 | SIL OFL 1.1

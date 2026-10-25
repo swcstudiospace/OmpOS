@@ -23,7 +23,8 @@ public sealed class ComposerRunInputTests
         {
             var input = new RecordingRunInput();
             var window = RunControlsHarness.Show(new ScriptedApprovalBridge(), input);
-            window.Runs.RunStarted();
+            var main = ShellHarness.MainViewOf(window);
+            main.Runs.RunStarted();
 
             ShellHarness.Prompt(window).Text = "change course";
             AutomationProperties.GetName(ShellHarness.Send(window)).ShouldBe("Steer message");
@@ -32,8 +33,8 @@ public sealed class ComposerRunInputTests
             await ShellHarness.DrainAsync(window).ConfigureAwait(true);
 
             input.Steers.ShouldHaveSingleItem().ShouldBe("change course");
-            window.Runs.IsRunActive.ShouldBeTrue("steering does not end the run");
-            window.Composer.Draft.ShouldBe(string.Empty);
+            main.Runs.IsRunActive.ShouldBeTrue("steering does not end the run");
+            main.Composer.Draft.ShouldBe(string.Empty);
             ShellHarness.Prompt(window).Text.ShouldBe(string.Empty);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
@@ -47,7 +48,8 @@ public sealed class ComposerRunInputTests
         {
             var input = new RecordingRunInput();
             var window = RunControlsHarness.Show(new ScriptedApprovalBridge(), input);
-            window.Runs.RunStarted();
+            var main = ShellHarness.MainViewOf(window);
+            main.Runs.RunStarted();
 
             ShellHarness.Prompt(window).Text = "first";
             RunControlsHarness.Click(RunControlsHarness.FollowUp(window));
@@ -57,22 +59,22 @@ public sealed class ComposerRunInputTests
             RunControlsHarness.Click(RunControlsHarness.FollowUp(window));
             await ShellHarness.DrainAsync(window).ConfigureAwait(true);
 
-            window.Runs.QueuedFollowUpCount.ShouldBe(2);
+            main.Runs.QueuedFollowUpCount.ShouldBe(2);
             input.FollowUps.ShouldBeEmpty("no follow-up starts while the run is active");
             RunControlsHarness.PendingLabel(window).IsVisible.ShouldBeTrue();
             RunControlsHarness.PendingText(window).ShouldContain("2 follow-ups");
 
-            await window.Runs.RunCompletedAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await main.Runs.RunCompletedAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
             input.FollowUps.ShouldBe(FirstOnly);
-            window.Runs.QueuedFollowUpCount.ShouldBe(1);
-            window.Runs.IsRunActive.ShouldBeTrue("the dispatched follow-up starts a run");
+            main.Runs.QueuedFollowUpCount.ShouldBe(1);
+            main.Runs.IsRunActive.ShouldBeTrue("the dispatched follow-up starts a run");
 
-            await window.Runs.RunCompletedAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await main.Runs.RunCompletedAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
             input.FollowUps.ShouldBe(FirstAndSecond);
-            window.Runs.QueuedFollowUpCount.ShouldBe(0);
-            window.Runs.IsRunActive.ShouldBeTrue("the second follow-up starts a run");
+            main.Runs.QueuedFollowUpCount.ShouldBe(0);
+            main.Runs.IsRunActive.ShouldBeTrue("the second follow-up starts a run");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -85,14 +87,15 @@ public sealed class ComposerRunInputTests
         {
             var input = new RecordingRunInput { SteerFault = new InvalidOperationException("The run rejected the steer.") };
             var window = RunControlsHarness.Show(new ScriptedApprovalBridge(), input);
-            window.Runs.RunStarted();
+            var main = ShellHarness.MainViewOf(window);
+            main.Runs.RunStarted();
 
             ShellHarness.Prompt(window).Text = "keep me";
             RunControlsHarness.Click(ShellHarness.Send(window));
 
             await RunControlsHarness.UntilAsync(() => ShellHarness.Status(window).Text?.Contains("rejected", StringComparison.Ordinal) == true, "the steer fault", TestContext.Current.CancellationToken).ConfigureAwait(true);
-            ShellHarness.Status(window).Text.ShouldBe($"{MainWindow.FaultedStatus} The run rejected the steer.");
-            window.Composer.Draft.ShouldBe("keep me");
+            ShellHarness.Status(window).Text.ShouldBe($"{MainView.FaultedStatus} The run rejected the steer.");
+            main.Composer.Draft.ShouldBe("keep me");
             input.Steers.ShouldBeEmpty();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
@@ -105,13 +108,14 @@ public sealed class ComposerRunInputTests
         await session.RunAsync(async () =>
         {
             var window = RunControlsHarness.ShowDefaults();
-            window.Runs.RunStarted();
+            var main = ShellHarness.MainViewOf(window);
+            main.Runs.RunStarted();
 
             ShellHarness.Prompt(window).Text = "keep me";
             RunControlsHarness.Click(ShellHarness.Send(window));
 
             await RunControlsHarness.UntilAsync(() => ShellHarness.Status(window).Text?.Contains(UnconnectedRunInput.UnavailableText, StringComparison.Ordinal) == true, "the default fault", TestContext.Current.CancellationToken).ConfigureAwait(true);
-            window.Composer.Draft.ShouldBe("keep me");
+            main.Composer.Draft.ShouldBe("keep me");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -123,15 +127,16 @@ public sealed class ComposerRunInputTests
         await session.RunAsync(async () =>
         {
             var window = RunControlsHarness.ShowDefaults();
-            window.Runs.RunStarted();
+            var main = ShellHarness.MainViewOf(window);
+            main.Runs.RunStarted();
 
             ShellHarness.Prompt(window).Text = "later";
             RunControlsHarness.Click(RunControlsHarness.FollowUp(window));
             await ShellHarness.DrainAsync(window).ConfigureAwait(true);
 
-            await Should.ThrowAsync<InvalidOperationException>(() => window.Runs.RunCompletedAsync(TestContext.Current.CancellationToken)).ConfigureAwait(true);
-            window.Runs.QueuedFollowUpCount.ShouldBe(1);
-            window.Runs.IsRunActive.ShouldBeFalse();
+            await Should.ThrowAsync<InvalidOperationException>(() => main.Runs.RunCompletedAsync(TestContext.Current.CancellationToken)).ConfigureAwait(true);
+            main.Runs.QueuedFollowUpCount.ShouldBe(1);
+            main.Runs.IsRunActive.ShouldBeFalse();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -143,12 +148,13 @@ public sealed class ComposerRunInputTests
         await session.RunAsync(async () =>
         {
             var window = RunControlsHarness.Show(new ScriptedApprovalBridge(), new RecordingRunInput());
+            var main = ShellHarness.MainViewOf(window);
 
             RunControlsHarness.FollowUp(window).IsVisible.ShouldBeFalse();
             AutomationProperties.GetName(ShellHarness.Send(window)).ShouldBe("Send message");
             RunControlsHarness.PendingLabel(window).IsVisible.ShouldBeFalse();
 
-            window.Runs.RunStarted();
+            main.Runs.RunStarted();
             ShellHarness.Settle(window);
 
             RunControlsHarness.FollowUp(window).IsVisible.ShouldBeTrue();
@@ -156,7 +162,7 @@ public sealed class ComposerRunInputTests
             RunControlsHarness.PendingLabel(window).IsVisible.ShouldBeTrue();
             RunControlsHarness.PendingText(window).ShouldContain("A run is active");
 
-            await window.Runs.RunCompletedAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await main.Runs.RunCompletedAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
             ShellHarness.Settle(window);
 
             RunControlsHarness.FollowUp(window).IsVisible.ShouldBeFalse();

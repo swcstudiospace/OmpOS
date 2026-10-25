@@ -6,7 +6,7 @@
   <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
-        <ResourceInclude Source="avares://OmpOS.Native/Themes/OmpOSTokens.axaml" />
+        <ResourceInclude Source="avares://OmpOS.Native.Views/Themes/OmpOSTokens.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>

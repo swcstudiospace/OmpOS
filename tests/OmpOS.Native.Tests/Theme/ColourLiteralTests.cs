@@ -9,7 +9,7 @@ namespace OmpOS.Native.Tests.Theme;
 
 /// <summary>
 /// No view holds a colour literal. A colour belongs in <c>Themes/OmpOSTokens.axaml</c>, where the theme variant can
-/// change it; a view refers to it with <c>{DynamicResource ...}</c>. The scan reads <c>apps/OmpOS.Native/Views</c> as
+/// change it; a view refers to it with <c>{DynamicResource ...}</c>. The scan reads <c>src/OmpOS.Native.Views/Views</c> as
 /// text, so no Avalonia runtime is started.
 /// </summary>
 /// <remarks>
@@ -29,7 +29,7 @@ public sealed class ColourLiteralTests
     /// <summary>The most allowlist rows the repository may carry. It may only shrink; it is zero because no view holds a literal.</summary>
     private const int AllowlistBaseline = 0;
 
-    private const string ViewsDirectory = "apps/OmpOS.Native/Views";
+    private const string ViewsDirectory = "src/OmpOS.Native.Views/Views";
     private const string AllowlistPath = "tests/OmpOS.Native.Tests/Theme/ColourLiteralAllowlist.txt";
 
     private static readonly HashSet<string> ColourAttributes = new(StringComparer.Ordinal)

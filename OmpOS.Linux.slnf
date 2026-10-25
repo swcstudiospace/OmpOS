@@ -33,6 +33,7 @@
             "src/OmpOS.Sandbox/OmpOS.Sandbox.csproj",
             "src/OmpOS.Workflows/OmpOS.Workflows.csproj",
             "src/OmpOS.UI/OmpOS.UI.csproj",
+            "src/OmpOS.Native.Views/OmpOS.Native.Views.csproj",
             "services/OmpOS.Api/OmpOS.Api.csproj",
             "apps/OmpOS.Web/OmpOS.Web.csproj",
             "apps/OmpOS.Native/OmpOS.Native.csproj",

@@ -388,3 +388,8 @@ Clarifications q1 to q3 are non-blocking. Defaults applied and stated: q1 public
 Phase 23 record (2026-10-25): see 23-SUMMARY.md, run 2026-10-25. The axe smoke exposed a web-to-API contract defect (OwnerId sent on POST /sessions). It is repaired in the web head.
 
 Ship: held by the owner's answer. ultrathink-ship not invoked. No PR, no push, no merge.
+
+## Phase 24 run record 2026-10-25 (graph ut-mvmegw7f-4a7312d5)
+
+Status: partially complete. The shared library split, the Android head and the android CI job are written; the Android build passes locally. The CI run needs a push, which is not authorized. Criteria 1 to 3 and 5 are blocked. Record: 24-SUMMARY.md, run 2026-10-25. Evidence: docs/runbooks/evidence/phase-24-android-2026-10-25/.
+Gate after the split: `./bootstrap.sh` exit 0, total 2245, failed 0, skipped 0, web smoke exit 0. One flaky test is recorded (LinuxLocalPtyBackendTests.DisposeEndsARunningProcessAndReturns, passed on rerun; the terminal harness is not touched by this run).

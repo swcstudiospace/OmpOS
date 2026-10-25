@@ -22,8 +22,9 @@ public sealed class PresentationBindingTests
         {
             var window = ShellHarness.Show();
 
-            ShellHarness.Transcript(window).DataContext.ShouldBeSameAs(window.Session);
-            window.Session.ShouldBeOfType<SessionViewModel>();
+            var main = ShellHarness.MainViewOf(window);
+            ShellHarness.Transcript(window).DataContext.ShouldBeSameAs(main.Session);
+            main.Session.ShouldBeOfType<SessionViewModel>();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -36,8 +37,9 @@ public sealed class PresentationBindingTests
         {
             var window = ShellHarness.Show();
 
-            ShellHarness.Composer(window).DataContext.ShouldBeSameAs(window.Composer);
-            window.Composer.ShouldBeOfType<ComposerViewModel>();
+            var main = ShellHarness.MainViewOf(window);
+            ShellHarness.Composer(window).DataContext.ShouldBeSameAs(main.Composer);
+            main.Composer.ShouldBeOfType<ComposerViewModel>();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

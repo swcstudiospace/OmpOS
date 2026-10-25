@@ -201,9 +201,9 @@ public sealed class ThemeContrastTests
     [Fact]
     public void TheFontTokensNameTheBundledFaces()
     {
-        ReadTokenText("OmpOS.Font.Family").ShouldStartWith("avares://OmpOS.Native/Assets/Fonts/DMSans/DMSans.ttf#DM Sans");
-        ReadTokenText("OmpOS.Font.Display").ShouldStartWith("avares://OmpOS.Native/Assets/Fonts/Anybody/Anybody.ttf#Anybody");
-        ReadTokenText("OmpOS.Font.Mono").ShouldStartWith("avares://OmpOS.Native/Assets/Fonts/SpaceMono/SpaceMono-Regular.ttf#Space Mono");
+        ReadTokenText("OmpOS.Font.Family").ShouldStartWith("avares://OmpOS.Native.Views/Assets/Fonts/DMSans/DMSans.ttf#DM Sans");
+        ReadTokenText("OmpOS.Font.Display").ShouldStartWith("avares://OmpOS.Native.Views/Assets/Fonts/Anybody/Anybody.ttf#Anybody");
+        ReadTokenText("OmpOS.Font.Mono").ShouldStartWith("avares://OmpOS.Native.Views/Assets/Fonts/SpaceMono/SpaceMono-Regular.ttf#Space Mono");
     }
 
     /// <summary>Every colour role in both variants is a six or eight digit hex colour.</summary>
@@ -277,7 +277,7 @@ public sealed class ThemeContrastTests
 
     private static XDocument LoadTokenDocument()
     {
-        var path = Path.Combine(ShellHarness.RepoRoot(), "apps", "OmpOS.Native", "Themes", "OmpOSTokens.axaml");
+        var path = Path.Combine(ShellHarness.RepoRoot(), "src", "OmpOS.Native.Views", "Themes", "OmpOSTokens.axaml");
         File.Exists(path).ShouldBeTrue($"the token dictionary must exist at {path}");
         return XDocument.Load(path);
     }

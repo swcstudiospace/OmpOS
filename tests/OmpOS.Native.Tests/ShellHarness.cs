@@ -24,6 +24,11 @@ internal static class ShellHarness
         return window;
     }
 
+    /// <summary>Gets the main view the window shows. The shell's named controls live in that view, not in the window.</summary>
+    /// <param name="window">The shown window.</param>
+    /// <returns>The main view.</returns>
+    public static MainView MainViewOf(MainWindow window) => (MainView)window.Content!;
+
     /// <summary>Runs pending dispatcher work and one layout pass, so item containers and state copy exist.</summary>
     /// <param name="window">The window to settle.</param>
     public static void Settle(Window window)
@@ -36,22 +41,22 @@ internal static class ShellHarness
     }
 
     /// <summary>Gets the session list view.</summary>
-    public static ConversationListView List(MainWindow window) => window.FindControl<ConversationListView>("ConversationList")!;
+    public static ConversationListView List(MainWindow window) => MainViewOf(window).FindControl<ConversationListView>("ConversationList")!;
 
     /// <summary>Gets the row list inside the session list.</summary>
     public static ListBox Rows(MainWindow window) => List(window).FindControl<ListBox>("ConversationRows")!;
 
     /// <summary>Gets the skip link.</summary>
-    public static Button SkipLink(MainWindow window) => window.FindControl<Button>("SkipLink")!;
+    public static Button SkipLink(MainWindow window) => MainViewOf(window).FindControl<Button>("SkipLink")!;
 
     /// <summary>Gets the transcript view.</summary>
-    public static SessionView Transcript(MainWindow window) => (SessionView)window.FindControl<ContentControl>("TranscriptHost")!.Content!;
+    public static SessionView Transcript(MainWindow window) => (SessionView)MainViewOf(window).FindControl<ContentControl>("TranscriptHost")!.Content!;
 
     /// <summary>Gets the transcript's scroll region, which is the keyboard stop for the transcript.</summary>
     public static ScrollViewer Scroll(MainWindow window) => Transcript(window).FindControl<ScrollViewer>("TranscriptScroll")!;
 
     /// <summary>Gets the composer view.</summary>
-    public static ComposerView Composer(MainWindow window) => (ComposerView)window.FindControl<ContentControl>("ComposerHost")!.Content!;
+    public static ComposerView Composer(MainWindow window) => (ComposerView)MainViewOf(window).FindControl<ContentControl>("ComposerHost")!.Content!;
 
     /// <summary>Gets the prompt input.</summary>
     public static TextBox Prompt(MainWindow window) => Composer(window).FindControl<TextBox>("PromptInput")!;
@@ -63,7 +68,7 @@ internal static class ShellHarness
     public static Button Stop(MainWindow window) => Composer(window).FindControl<Button>("StopButton")!;
 
     /// <summary>Gets the status line.</summary>
-    public static TextBlock Status(MainWindow window) => window.FindControl<TextBlock>("StatusLine")!;
+    public static TextBlock Status(MainWindow window) => MainViewOf(window).FindControl<TextBlock>("StatusLine")!;
 
     /// <summary>Gets the session list's state heading.</summary>
     public static TextBlock ListHeading(MainWindow window) => List(window).FindControl<TextBlock>("StateHeading")!;

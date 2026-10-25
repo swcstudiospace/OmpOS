@@ -53,3 +53,10 @@ Goal: the iOS and Android heads build from the shared project and expose names a
 
 - GREY_AREA: G24-1 and G24-2, batched with the other phases.
 - BLOCKER: criteria 1 to 3 (a Mac with Xcode, and an iOS 26 device for the device run). Criterion 5 (an Android 16 device, or a KVM-capable host).
+
+## Run record 2026-10-25 (graph ut-mvmegw7f-4a7312d5)
+
+- G24-1 accepted (owner answer: new head over a shared Avalonia library). `src/OmpOS.Native.Views` (layer 3) holds the views, the theme, the fonts, the main view and the engine-independent inputs. `apps/OmpOS.Native` keeps Program, the desktop App, the MainWindow host and the engine composition. `apps/OmpOS.Android` is the Android head (layer 4).
+- G24-2 accepted (owner answer: write the job, no push). The `android` job is in `.github/workflows/ci.yml`. It is not pushed, so criterion 4's CI run is not done.
+- Criterion 4, local part: met. `ANDROID_HOME=/root/Android/Sdk dotnet build apps/OmpOS.Android/OmpOS.Android.csproj -c Release -warnaserror` succeeds. Evidence: docs/runbooks/evidence/phase-24-android-2026-10-25/.
+- Criterion 5 stays blocked (no Android 16 device; no /dev/kvm). Criteria 1 to 3 stay blocked on the Mac channel.

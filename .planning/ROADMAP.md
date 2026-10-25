@@ -460,6 +460,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Depends on**: Phases 20, 21
 **Mac channel**: Yes. The iOS build, the UIAccessibility inspection, code signing and any device run need a Mac host and stay human-gated; they are listed under XP-11. The Android head needs no Mac step. The iOS and mobile scope replaces v0.9.2 Phases 15 and 16.
 **UI hint**: yes
+**Status (2026-10-25)**: partially complete. Criterion 4's local build is met: `apps/OmpOS.Android` builds for net10.0-android36.0 with warnings as errors. Its CI run needs a push, which is not authorized (G24-2). Criteria 1 to 3 need a Mac with Xcode, and criterion 5 needs an Android 16 device or emulator (no /dev/kvm on this host).
 **Success Criteria** (what must be TRUE):
   1. The iOS head builds for net10.0-ios on iOS/iPadOS 26, and the build log is recorded. Verify: Mac-channel build log in the runbook.
   2. On an iOS 26 run, UIAccessibility returns the name and role of the prompt input, the send control and the transcript. Verify: Mac-channel accessibility dump recorded in the runbook.

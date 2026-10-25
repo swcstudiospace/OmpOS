@@ -26,7 +26,7 @@ public sealed class DetachedSettlementTests
             var row = RunControlsHarness.Row(window);
 
             RunControlsHarness.Click(RunControlsHarness.Named(window, "Deny tool request"));
-            window.RunControls.Approvals.Remove(approval);
+            ShellHarness.MainViewOf(window).RunControls.Approvals.Remove(approval);
             ShellHarness.Settle(window);
             window.GetVisualDescendants().OfType<ToolApprovalRowView>().ShouldBeEmpty();
 

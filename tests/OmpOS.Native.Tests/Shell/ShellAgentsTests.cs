@@ -23,6 +23,7 @@ public sealed class ShellAgentsTests
         await session.Dispatch(() =>
         {
             var window = ShellHarness.Show();
+            var main = ShellHarness.MainViewOf(window);
             var toggle = AgentsToggle(window);
             AutomationProperties.GetName(toggle).ShouldBe("Agents");
 
@@ -36,14 +37,14 @@ public sealed class ShellAgentsTests
             ShellHarness.Press(window, Key.Enter, PhysicalKey.Enter);
 
             toggle.IsChecked.ShouldBe(true);
-            window.FindControl<ContentControl>("AgentsHost")!.IsVisible.ShouldBeTrue();
-            window.FindControl<ContentControl>("TranscriptHost")!.IsVisible.ShouldBeFalse("the Agents view stands in for the transcript");
+            main.FindControl<ContentControl>("AgentsHost")!.IsVisible.ShouldBeTrue();
+            main.FindControl<ContentControl>("TranscriptHost")!.IsVisible.ShouldBeFalse("the Agents view stands in for the transcript");
 
             ShellHarness.Press(window, Key.Enter, PhysicalKey.Enter);
 
             toggle.IsChecked.ShouldBe(false);
-            window.FindControl<ContentControl>("AgentsHost")!.IsVisible.ShouldBeFalse();
-            window.FindControl<ContentControl>("TranscriptHost")!.IsVisible.ShouldBeTrue("closing the Agents view shows the transcript again");
+            main.FindControl<ContentControl>("AgentsHost")!.IsVisible.ShouldBeFalse();
+            main.FindControl<ContentControl>("TranscriptHost")!.IsVisible.ShouldBeTrue("closing the Agents view shows the transcript again");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -55,23 +56,24 @@ public sealed class ShellAgentsTests
         await session.Dispatch(() =>
         {
             var window = ShellHarness.Show();
-            window.AgentRuns.Runs.ShouldBeEmpty();
+            var main = ShellHarness.MainViewOf(window);
+            main.AgentRuns.Runs.ShouldBeEmpty();
 
-            var build = window.AgentRuns.Add("build", "Build the app");
+            var build = main.AgentRuns.Add("build", "Build the app");
             AgentsToggle(window).IsChecked = true;
             ShellHarness.Settle(window);
 
-            var view = window.FindControl<ContentControl>("AgentsHost")!.Content.ShouldBeOfType<AgentsView>();
-            view.DataContext.ShouldBeSameAs(window.Agents);
-            window.Agents.VisibleRuns.ShouldBe([build]);
+            var view = main.FindControl<ContentControl>("AgentsHost")!.Content.ShouldBeOfType<AgentsView>();
+            view.DataContext.ShouldBeSameAs(main.Agents);
+            main.Agents.VisibleRuns.ShouldBe([build]);
             RowNames(view).ShouldBe(["Build the app, Running"]);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    private static ToggleButton AgentsToggle(MainWindow window) => window.FindControl<ToggleButton>("AgentsToggle")!;
+    private static ToggleButton AgentsToggle(MainWindow window) => ShellHarness.MainViewOf(window).FindControl<ToggleButton>("AgentsToggle")!;
 
     private static TextBox SearchInput(MainWindow window) =>
-        ((Control)window.FindControl<ContentControl>("SearchHost")!.Content!).FindControl<TextBox>("SearchInput")!;
+        ((Control)ShellHarness.MainViewOf(window).FindControl<ContentControl>("SearchHost")!.Content!).FindControl<TextBox>("SearchInput")!;
 
     private static string[] RowNames(AgentsView view) => view.GetVisualDescendants()
         .OfType<Button>()

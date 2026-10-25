@@ -19,7 +19,7 @@ public sealed class RunControlNameTests
         await session.Dispatch(() =>
         {
             var window = RunControlsHarness.Show(new ScriptedApprovalBridge(), new RecordingRunInput());
-            window.Runs.RunStarted();
+            ShellHarness.MainViewOf(window).Runs.RunStarted();
             RunControlsHarness.AddRequest(window, "request-1");
 
             var unnamed = window.GetVisualDescendants()
@@ -44,7 +44,7 @@ public sealed class RunControlNameTests
         {
             var window = RunControlsHarness.Show(new ScriptedApprovalBridge(), new RecordingRunInput());
             RunControlsHarness.AddRequest(window, "request-1");
-            window.Runs.RunStarted();
+            ShellHarness.MainViewOf(window).Runs.RunStarted();
             ShellHarness.Settle(window);
 
             AutomationProperties.GetName(RunControlsHarness.Named(window, "Approve tool request")).ShouldBe("Approve tool request");

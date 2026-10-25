@@ -105,9 +105,9 @@ public sealed class KeyboardFocusTests
             ShellHarness.Press(window, Key.Enter, PhysicalKey.Enter);
             await ShellHarness.DrainAsync(window).ConfigureAwait(true);
 
-            ShellHarness.Status(window).Text.ShouldBe(MainWindow.RefusedSendStatus);
+            ShellHarness.Status(window).Text.ShouldBe(MainView.RefusedSendStatus);
             ShellHarness.Prompt(window).Text.ShouldBe("hello");
-            window.Composer.Draft.ShouldBe("hello");
+            ShellHarness.MainViewOf(window).Composer.Draft.ShouldBe("hello");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -127,7 +127,7 @@ public sealed class KeyboardFocusTests
             await ShellHarness.DrainAsync(window).ConfigureAwait(true);
 
             ShellHarness.Status(window).Text.ShouldBeNullOrWhiteSpace();
-            window.Composer.Draft.ShouldStartWith("hello");
+            ShellHarness.MainViewOf(window).Composer.Draft.ShouldStartWith("hello");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -184,8 +184,8 @@ public sealed class KeyboardFocusTests
             ShellHarness.Press(window, Key.Enter, PhysicalKey.Enter);
             await ShellHarness.DrainAsync(window).ConfigureAwait(true);
 
-            ShellHarness.Status(window).Text.ShouldBe(MainWindow.RefusedSendStatus);
-            window.Composer.Draft.ShouldBe("hello");
+            ShellHarness.Status(window).Text.ShouldBe(MainView.RefusedSendStatus);
+            ShellHarness.MainViewOf(window).Composer.Draft.ShouldBe("hello");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -202,7 +202,7 @@ public sealed class KeyboardFocusTests
             ShellHarness.Press(window, Key.Enter, PhysicalKey.Enter);
             await ShellHarness.DrainAsync(window).ConfigureAwait(true);
 
-            ShellHarness.Status(window).Text.ShouldBe(MainWindow.NoResponseStatus);
+            ShellHarness.Status(window).Text.ShouldBe(MainView.NoResponseStatus);
             ShellHarness.Stop(window).IsEnabled.ShouldBeTrue();
             ShellHarness.Send(window).IsEnabled.ShouldBeTrue();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);

@@ -101,7 +101,7 @@ internal partial class ToolApprovalRowView : UserControl
     private void Settle(AggregateException? fault)
     {
         _inFlight--;
-        _faultMessage = fault is null ? null : $"{MainWindow.FaultedStatus} {fault.GetBaseException().Message}";
+        _faultMessage = fault is null ? null : $"{MainView.FaultedStatus} {fault.GetBaseException().Message}";
         Refresh();
     }
 

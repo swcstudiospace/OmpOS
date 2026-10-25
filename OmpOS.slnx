@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/apps/">
     <Project Path="apps/OmpOS.Web/OmpOS.Web.csproj" />
+    <Project Path="apps/OmpOS.Android/OmpOS.Android.csproj" />
     <Project Path="apps/OmpOS.App/OmpOS.App.csproj" />
     <Project Path="apps/OmpOS.Native/OmpOS.Native.csproj" />
   </Folder>
@@ -30,6 +31,7 @@
     <Project Path="src/OmpOS.Harness.Secrets/OmpOS.Harness.Secrets.csproj" />
     <Project Path="src/OmpOS.Harness.Herdr/OmpOS.Harness.Herdr.csproj" />
     <Project Path="src/OmpOS.Harness.Agent/OmpOS.Harness.Agent.csproj" />
+    <Project Path="src/OmpOS.Native.Views/OmpOS.Native.Views.csproj" />
     <Project Path="src/OmpOS.Parser/OmpOS.Parser.csproj" />
     <Project Path="src/OmpOS.Presentation/OmpOS.Presentation.csproj" />
     <Project Path="src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj" />

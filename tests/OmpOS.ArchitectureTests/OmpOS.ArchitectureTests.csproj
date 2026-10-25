@@ -33,6 +33,7 @@
     <ProjectReference Include="../../src/OmpOS.Sandbox/OmpOS.Sandbox.csproj" />
     <ProjectReference Include="../../src/OmpOS.Workflows/OmpOS.Workflows.csproj" />
     <ProjectReference Include="../../src/OmpOS.UI/OmpOS.UI.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Native.Views/OmpOS.Native.Views.csproj" />
     <ProjectReference Include="../../services/OmpOS.Api/OmpOS.Api.csproj" />
     <ProjectReference Include="../../apps/OmpOS.Web/OmpOS.Web.csproj" />
     <PackageReference Include="xunit.v3" />

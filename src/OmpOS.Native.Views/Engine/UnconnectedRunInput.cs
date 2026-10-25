@@ -6,7 +6,7 @@ namespace OmpOS.Native.Engine;
 /// The production default run input while no engine is connected in this build. It delivers nothing: every steer and
 /// follow-up faults, so <see cref="RunInputScheduler"/> keeps a follow-up queued and the composer keeps the draft.
 /// </summary>
-internal sealed class UnconnectedRunInput : IRunInput
+public sealed class UnconnectedRunInput : IRunInput
 {
     /// <summary>The fault message shown to the user while no run input is connected.</summary>
     public const string UnavailableText = "No run input is connected in this build.";

@@ -137,6 +137,35 @@ jobs:
         if: always()
         run: podman-compose --profile backend -f deploy/compose.yaml down -v
 
+  # Builds the Android head (apps/OmpOS.Android) on the Linux runner (Phase 24 criterion 4). No device or emulator is needed.
+  # The workflow runs on push and pull_request, so the first green run of this job needs the branch pushed.
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      # Action tags as pinned by build-test above.
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - run: dotnet restore apps/OmpOS.Android/OmpOS.Android.csproj --locked-mode
+      - run: dotnet workload install android
+      - name: Android platform 36 and build-tools 36.0.0 (installed only when the runner lacks them)
+        run: |
+          set -eu
+          sdk="${ANDROID_HOME:?ANDROID_HOME is not set on this runner}"
+          if [ -d "$sdk/platforms/android-36" ] && [ -d "$sdk/build-tools/36.0.0" ]; then
+            echo "Android platform 36 and build-tools 36.0.0 are present; nothing to install."
+            exit 0
+          fi
+          sdkmanager="$sdk/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$sdkmanager" ] || { echo "error: sdkmanager not found at $sdkmanager" >&2; exit 1; }
+          # sdkmanager exits before yes finishes writing, so yes can end on SIGPIPE; only sdkmanager's status counts here.
+          set +o pipefail
+          yes | "$sdkmanager" --licenses >/dev/null
+          set -o pipefail
+          "$sdkmanager" --install "platforms;android-36" "build-tools;36.0.0"
+      - run: dotnet build apps/OmpOS.Android/OmpOS.Android.csproj -c Release --no-restore -warnaserror
+
   shells:
     runs-on: macos-15
     needs: build-test

@@ -146,7 +146,7 @@ public sealed class FontResourceTests
         Should.Throw<InvalidDataException>(() => ReadNames(bytes[..200]));
     }
 
-    private static string FontsRoot() => Path.Combine(ShellHarness.RepoRoot(), "apps", "OmpOS.Native", "Assets", "Fonts");
+    private static string FontsRoot() => Path.Combine(ShellHarness.RepoRoot(), "src", "OmpOS.Native.Views", "Assets", "Fonts");
 
     private static string FontPath(string relativePath) => Path.Combine(FontsRoot(), relativePath);
 

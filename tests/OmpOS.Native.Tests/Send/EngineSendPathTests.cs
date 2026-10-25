@@ -34,8 +34,9 @@ public sealed class EngineSendPathTests
 
     private static async Task SendAsync(MainWindow window, string text)
     {
-        window.Composer.Draft = text;
-        await window.Composer.SendAsync().ConfigureAwait(true);
+        var main = ShellHarness.MainViewOf(window);
+        main.Composer.Draft = text;
+        await main.Composer.SendAsync().ConfigureAwait(true);
     }
 
     /// <summary>Launch composes no engine. The first send composes it, and only then does a prompt reach the host.</summary>
@@ -56,6 +57,7 @@ public sealed class EngineSendPathTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 composed.ShouldBe(0, "launch composes no engine");
@@ -63,7 +65,7 @@ public sealed class EngineSendPathTests
                 agent.PromptTexts.ShouldBeEmpty();
 
                 await SendAsync(window, "hello").ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.Session.State == SessionViewState.Success, "the reply", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => main.Session.State == SessionViewState.Success, "the reply", ct).ConfigureAwait(true);
 
                 composed.ShouldBe(1, "the first send composes the engine once");
             }
@@ -125,12 +127,13 @@ public sealed class EngineSendPathTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "fetch the page").ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.Session.State == SessionViewState.Success, "the turn ending", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => main.Session.State == SessionViewState.Success, "the turn ending", ct).ConfigureAwait(true);
 
-                window.RunControls.Approvals.ShouldBeEmpty("a forbidden kind never becomes an approval");
+                main.RunControls.Approvals.ShouldBeEmpty("a forbidden kind never becomes an approval");
                 agent.PermissionOptionIds.ShouldHaveSingleItem().ShouldBe("reject");
             }
             finally
@@ -156,15 +159,16 @@ public sealed class EngineSendPathTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "edit the file").ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.RunControls.Approvals.Count == 1, "the approval row", ct).ConfigureAwait(true);
-                var approval = window.RunControls.Approvals.Single();
+                await RunControlsHarness.UntilAsync(() => main.RunControls.Approvals.Count == 1, "the approval row", ct).ConfigureAwait(true);
+                var approval = main.RunControls.Approvals.Single();
 
                 RunControlsHarness.Click(RunControlsHarness.Named(window, "Approve tool request"));
                 await RunControlsHarness.UntilAsync(() => approval.Status == ToolApprovalStatus.Allowed, "the allowance", ct).ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.Session.State == SessionViewState.Success, "the turn ending", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => main.Session.State == SessionViewState.Success, "the turn ending", ct).ConfigureAwait(true);
 
                 agent.PermissionOptionIds.ShouldHaveSingleItem().ShouldBe("allow");
             }
@@ -191,15 +195,16 @@ public sealed class EngineSendPathTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "read the file").ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.RunControls.Approvals.Count == 1, "the approval row", ct).ConfigureAwait(true);
-                var approval = window.RunControls.Approvals.Single();
+                await RunControlsHarness.UntilAsync(() => main.RunControls.Approvals.Count == 1, "the approval row", ct).ConfigureAwait(true);
+                var approval = main.RunControls.Approvals.Single();
 
                 RunControlsHarness.Click(RunControlsHarness.Named(window, "Approve tool request"));
                 await RunControlsHarness.UntilAsync(() => approval.Status == ToolApprovalStatus.Allowed, "the allowance", ct).ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.Session.State == SessionViewState.Success, "the turn ending", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => main.Session.State == SessionViewState.Success, "the turn ending", ct).ConfigureAwait(true);
 
                 agent.PermissionOptionIds.ShouldHaveSingleItem().ShouldBe("allow");
             }
@@ -223,14 +228,15 @@ public sealed class EngineSendPathTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "hello").ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.Session.State == SessionViewState.Success, "the reply", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => main.Session.State == SessionViewState.Success, "the reply", ct).ConfigureAwait(true);
 
                 agent.PromptTexts.ShouldHaveSingleItem().ShouldBe("hello");
-                window.Composer.Draft.ShouldBeEmpty("the host accepted the send, so the draft clears");
-                window.Session.Tree.Blocks.OfType<MarkdownBlock>().Select(block => block.Markdown).ShouldHaveSingleItem().ShouldBe("Hi from omp");
+                main.Composer.Draft.ShouldBeEmpty("the host accepted the send, so the draft clears");
+                main.Session.Tree.Blocks.OfType<MarkdownBlock>().Select(block => block.Markdown).ShouldHaveSingleItem().ShouldBe("Hi from omp");
             }
             finally
             {
@@ -252,13 +258,14 @@ public sealed class EngineSendPathTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "hello").ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.Session.State == SessionViewState.Success, "the reply", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => main.Session.State == SessionViewState.Success, "the reply", ct).ConfigureAwait(true);
 
-                window.Session.Tree.Blocks.OfType<UserMessageBlock>().Select(block => block.Text).ShouldHaveSingleItem().ShouldBe("hello");
-                window.Session.Tree.Blocks[0].ShouldBeOfType<UserMessageBlock>("the user's turn comes before the reply");
+                main.Session.Tree.Blocks.OfType<UserMessageBlock>().Select(block => block.Text).ShouldHaveSingleItem().ShouldBe("hello");
+                main.Session.Tree.Blocks[0].ShouldBeOfType<UserMessageBlock>("the user's turn comes before the reply");
             }
             finally
             {
@@ -280,12 +287,13 @@ public sealed class EngineSendPathTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "run ls").ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.RunControls.Approvals.Count == 1, "the approval row", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => main.RunControls.Approvals.Count == 1, "the approval row", ct).ConfigureAwait(true);
 
-                var approval = window.RunControls.Approvals.Single();
+                var approval = main.RunControls.Approvals.Single();
                 approval.ToolName.ShouldBe("bash");
                 approval.RequestId.ShouldBe(ScriptedAgent.PermissionRequestId.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 approval.Status.ShouldBe(ToolApprovalStatus.Pending);
@@ -311,15 +319,16 @@ public sealed class EngineSendPathTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "run ls").ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.RunControls.Approvals.Count == 1, "the approval row", ct).ConfigureAwait(true);
-                var approval = window.RunControls.Approvals.Single();
+                await RunControlsHarness.UntilAsync(() => main.RunControls.Approvals.Count == 1, "the approval row", ct).ConfigureAwait(true);
+                var approval = main.RunControls.Approvals.Single();
 
                 RunControlsHarness.Click(RunControlsHarness.Named(window, "Deny tool request"));
                 await RunControlsHarness.UntilAsync(() => approval.Status == ToolApprovalStatus.Denied, "the denial", ct).ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.Session.State == SessionViewState.Success, "the turn ending", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => main.Session.State == SessionViewState.Success, "the turn ending", ct).ConfigureAwait(true);
 
                 agent.PermissionOptionIds.ShouldHaveSingleItem().ShouldBe("reject");
             }
@@ -381,14 +390,15 @@ public sealed class EngineSendPathTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "hello").ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.Session.State == SessionViewState.FatalError, "the failure", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => main.Session.State == SessionViewState.FatalError, "the failure", ct).ConfigureAwait(true);
 
-                window.Session.LastError.ShouldNotBeNull().ShouldContain("omp executable was not found");
-                window.Session.Tree.Blocks.OfType<ErrorBlock>().ShouldHaveSingleItem().Message.ShouldContain("omp executable was not found");
-                window.Composer.IsStreaming.ShouldBeFalse();
+                main.Session.LastError.ShouldNotBeNull().ShouldContain("omp executable was not found");
+                main.Session.Tree.Blocks.OfType<ErrorBlock>().ShouldHaveSingleItem().Message.ShouldContain("omp executable was not found");
+                main.Composer.IsStreaming.ShouldBeFalse();
             }
             finally
             {
@@ -421,14 +431,15 @@ public sealed class EngineSendPathTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "hello").ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.Session.State == SessionViewState.FatalError, "the failure", ct).ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => main.Session.State == SessionViewState.FatalError, "the failure", ct).ConfigureAwait(true);
 
-                window.Session.LastError.ShouldNotBeNull().ShouldContain("the peer broke during the turn");
-                window.Session.Tree.Blocks.OfType<ErrorBlock>().ShouldHaveSingleItem().Message.ShouldContain("the peer broke during the turn");
-                window.Composer.IsStreaming.ShouldBeFalse();
+                main.Session.LastError.ShouldNotBeNull().ShouldContain("the peer broke during the turn");
+                main.Session.Tree.Blocks.OfType<ErrorBlock>().ShouldHaveSingleItem().Message.ShouldContain("the peer broke during the turn");
+                main.Composer.IsStreaming.ShouldBeFalse();
             }
             finally
             {
@@ -450,17 +461,18 @@ public sealed class EngineSendPathTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "long task").ConfigureAwait(true);
                 await RunControlsHarness.UntilAsync(() => agent.PromptTexts.Count == 1, "the prompt", ct).ConfigureAwait(true);
-                window.Composer.IsStreaming.ShouldBeTrue();
+                main.Composer.IsStreaming.ShouldBeTrue();
 
-                await window.Composer.StopAsync().ConfigureAwait(true);
-                await RunControlsHarness.UntilAsync(() => window.Session.State == SessionViewState.Success, "the cancelled turn", ct).ConfigureAwait(true);
+                await main.Composer.StopAsync().ConfigureAwait(true);
+                await RunControlsHarness.UntilAsync(() => main.Session.State == SessionViewState.Success, "the cancelled turn", ct).ConfigureAwait(true);
 
                 agent.Methods.Count(method => string.Equals(method, "session/cancel", StringComparison.Ordinal)).ShouldBe(1);
-                window.Composer.IsStreaming.ShouldBeFalse();
+                main.Composer.IsStreaming.ShouldBeFalse();
             }
             finally
             {
@@ -486,6 +498,7 @@ public sealed class EngineSendPathTests
         {
             using var workspace = new TempWorkspace();
             var window = ShowOver(workspace, engine);
+            var main = ShellHarness.MainViewOf(window);
             try
             {
                 await SendAsync(window, "first").ConfigureAwait(true);
@@ -497,16 +510,16 @@ public sealed class EngineSendPathTests
                 ShellHarness.Prompt(window).Text = "follow-up";
                 RunControlsHarness.Click(RunControlsHarness.FollowUp(window));
                 await ShellHarness.DrainAsync(window).ConfigureAwait(true);
-                window.Runs.QueuedFollowUpCount.ShouldBe(1, "the follow-up waits in the scheduler");
+                main.Runs.QueuedFollowUpCount.ShouldBe(1, "the follow-up waits in the scheduler");
 
                 // The peer closes its stream while the held turn is in flight, so the turn faults.
                 await transport.ShouldNotBeNull().CloseAsync(CancellationToken.None).ConfigureAwait(true);
                 await RunControlsHarness.UntilAsync(
-                    () => window.Session.Tree.Blocks.OfType<MarkdownBlock>().Any(block => string.Equals(block.Markdown, "2 queued messages were not sent.", StringComparison.Ordinal)),
+                    () => main.Session.Tree.Blocks.OfType<MarkdownBlock>().Any(block => string.Equals(block.Markdown, "2 queued messages were not sent.", StringComparison.Ordinal)),
                     "the not-sent line",
                     ct).ConfigureAwait(true);
 
-                var blocks = window.Session.Tree.Blocks.ToList();
+                var blocks = main.Session.Tree.Blocks.ToList();
                 blocks.Count(block => block is ErrorBlock).ShouldBe(1, "one row per fault");
                 var fault = blocks.FindIndex(block => block is ErrorBlock);
                 var notSent = blocks.FindIndex(block => block is MarkdownBlock { Markdown: "2 queued messages were not sent." });
@@ -514,9 +527,9 @@ public sealed class EngineSendPathTests
                 ((ErrorBlock)blocks[fault]).Message.ShouldContain("closed");
 
                 agent.PromptTexts.ShouldHaveSingleItem("nothing held is sent after the fault").ShouldBe("first");
-                window.Runs.IsRunActive.ShouldBeFalse();
-                window.Composer.IsStreaming.ShouldBeFalse();
-                window.Runs.QueuedFollowUpCount.ShouldBe(0);
+                main.Runs.IsRunActive.ShouldBeFalse();
+                main.Composer.IsStreaming.ShouldBeFalse();
+                main.Runs.QueuedFollowUpCount.ShouldBe(0);
             }
             finally
             {
