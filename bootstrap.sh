@@ -41,10 +41,14 @@ dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
 # Cleanup runs on every exit path. `down` is idempotent; the export file holds test passwords and is removed.
 TEST_SERVICES_ENV=""
 cleanup() {
+  local exit_status=$?
   bash scripts/test-services.sh down
   if [ -n "$TEST_SERVICES_ENV" ]; then rm -f "$TEST_SERVICES_ENV"; fi
   if [ -n "${INSTALLER_DIR:-}" ]; then rm -rf "$INSTALLER_DIR"; fi
-  if [ -n "${SMOKE_OUT:-}" ]; then rm -rf "$SMOKE_OUT"; fi
+  # The smoke evidence (JSON, log, screenshots) is kept when the gate fails, so the failing assertion can be read.
+  if [ -n "${SMOKE_OUT:-}" ]; then
+    if [ "$exit_status" -eq 0 ]; then rm -rf "$SMOKE_OUT"; else echo "web smoke evidence kept at $SMOKE_OUT" >&2; fi
+  fi
 }
 trap cleanup EXIT
 TEST_SERVICES_ENV="$(bash scripts/test-services.sh up)"

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
@@ -687,7 +688,7 @@ public partial class MainView : UserControl
         if (_prompts is not null)
         {
             _ = CloseEngineAsync(_prompts).ContinueWith(
-                closed => Dispatcher.UIThread.Post(() => SetStatus($"{FaultedStatus} {closed.Exception!.GetBaseException().Message}")),
+                closed => Trace.TraceError($"OmpOS could not close the engine host: {closed.Exception!.GetBaseException()}"),
                 CancellationToken.None,
                 TaskContinuationOptions.OnlyOnFaulted,
                 TaskScheduler.Default);
@@ -697,7 +698,11 @@ public partial class MainView : UserControl
         _catalog?.Dispose();
         if (_mcp is not null)
         {
-            _ = _mcp.DisposeAsync().AsTask();
+            _ = _mcp.DisposeAsync().AsTask().ContinueWith(
+                closed => Trace.TraceError($"OmpOS could not close the MCP tools: {closed.Exception!.GetBaseException()}"),
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted,
+                TaskScheduler.Default);
         }
     }
 

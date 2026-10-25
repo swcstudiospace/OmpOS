@@ -43,3 +43,11 @@ Deviations: none in product code. Two analyzer findings in the new tests were fi
 Gate after removal: `./bootstrap.sh` exit 0 on rerun; total 2269 passed, 0 failed, 0 skipped; web smoke exit 0. One flaky test (LinuxLocalPtyBackendTests.DisposeEndsARunningProcessAndReturns) failed once and passed on rerun.
 
 Docs: README.md and CONTRIBUTING.md updated for the removed MAUI head and shells job, and for the Android head. Owner-visible unknown: whether the android CI job is green (not pushed).
+
+## Review follow-up 2026-10-25 (uncommitted)
+
+The parity review found one major defect in SessionView: the transcript kept its model subscription after it left the visual tree. It now subscribes on attach and unsubscribes on detach, following the conversation list's pattern, and redraws its state on attach. The regression test HiddenTranscriptStopsFollowingItsModelUntilShownAgain fails on the pre-fix view and passes on the fixed view.
+
+Also in this phase: MainView.Close now reports a failed engine-host dispose and a failed MCP dispose through a trace error. Before, the engine-host failure was posted to a closed window, and the MCP task was unobserved. Findings that were not applied, with their evidence (the copy specified by 20-UI-SPEC.md, the parameterless constructor the XAML loader requires, and reachability), are recorded in STATE.md under Follow-up run 2026-10-25.
+
+Gate: ./bootstrap.sh exit 0; total 2270, failed 0, skipped 0; web smoke exit 0.

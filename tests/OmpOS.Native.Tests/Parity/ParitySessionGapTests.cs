@@ -237,6 +237,34 @@ public sealed class ParitySessionGapTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
+    /// <summary>
+    /// The transcript follows its model only while it is shown. A model change made while it is hidden does not redraw it, and showing
+    /// it again draws the state the model has reached.
+    /// </summary>
+    [Fact]
+    public async Task HiddenTranscriptStopsFollowingItsModelUntilShownAgain()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            var model = new SessionViewModel();
+            model.MarkReconnecting();
+            var (window, view) = ShowSession(model);
+            var notice = view.FindControl<TextBlock>("StateNotice")!;
+            notice.Text.ShouldBe(ReconnectingCopy);
+
+            window.Content = null;
+            ParityShellHarness.Settle(window);
+            model.MarkOffline();
+            notice.Text.ShouldBe(ReconnectingCopy, "a hidden transcript does not follow its model");
+
+            window.Content = view;
+            ParityShellHarness.Settle(window);
+            notice.Text.ShouldBe(OfflineCopy, "showing the transcript again draws the model's current state");
+            window.Close();
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
     /// <summary>Shows a session view bound to the model, in a window of the given height, and settles it.</summary>
     private static (Window Window, SessionView View) ShowSession(SessionViewModel model, double height = 480)
     {

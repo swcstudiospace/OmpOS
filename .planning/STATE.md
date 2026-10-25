@@ -411,3 +411,45 @@ Owner answers: implement the 13 Class C features with native tests; accept row 1
 ## Phase 25 complete 2026-10-25
 
 Criteria 1 to 3 met with evidence in 25-SUMMARY.md (update 2026-10-25). The owner's waiver covers the dependencies on Phases 22 and 24. v0.10.0 is still open: Phase 22 skipped, Phases 23 and 24 blocked on external criteria.
+
+## Follow-up run 2026-10-25 (graph ut-mvnogkxk-925fdefc, after the ship hold)
+
+Owner answers this turn:
+- Active milestone: run v0.10.0; v0.9.2 stays open for the owner. The question arose because ROADMAP lists v0.9.2 as open (its completion awaits the owner, irreversible), this STATE runs v0.10.0, and .planning/state.json still names v0.9.2 (updated 2026-10-21). The run did not edit state.json and did not close v0.9.2.
+- Ship: held. ultrathink-ship not invoked. No PR, push or merge.
+
+Applied defaults (non-blocking; not asked again):
+- q1 TODO scope: phase-bound only. The code this run changed has zero TODO, FIXME or HACK markers.
+- q2 commits: none in this turn. The changes stay uncommitted for review. The per-phase commits from earlier in the run remain in history (cfa385d, fe2d398, cf4b617, 9171508).
+- q3 quality bar: the existing standards (the bootstrap gate, analyzers, warnings as errors). No coverage threshold or style guide was added.
+
+Work this turn:
+1. Terminal test helper (the flaky test). LinuxLocalPtyBackendTests.DisposeEndsARunningProcessAndReturns treated only FileNotFound and DirectoryNotFound as an ended process. The race surfaces as IOException "No such process" when the process is reaped between open and read. The fix treats an IOException as ended only when /proc/<pid>/stat no longer exists, so other I/O errors still throw. Evidence: under contention (four concurrent runs), the pre-fix helper failed 2 of 36 runs with that exception, and the fixed helper failed 0 of 36. The full suite failed on this test in 2 of 7 gate runs before the fix. The gate after the fix passed.
+2. Review of the changed units. Three read-only reviewers covered the parity behaviours, the split and the Android head, and the web fix with the CI and gate steps. Each finding was checked against the code and the cited spec before a decision.
+   - Fixed, major: SessionView kept its model subscription after the view left the visual tree. It now subscribes on attach, unsubscribes on detach, and redraws on attach. The regression test ParitySessionGapTests.HiddenTranscriptStopsFollowingItsModelUntilShownAgain fails on the pre-fix view (HEAD) at its hidden-transcript assertion, and passes on the fixed view.
+   - Fixed: MainView.Close lost a failed engine-host dispose, because its continuation posted the status line to a closed window. It now writes a trace error. The MCP tools dispose was an unobserved task, and it now has the same observed continuation. No test: Close is fire-and-forget from OnClosed, and a test seam would change its signature.
+   - Fixed: the Android CI SDK guard checked directories only, so a partial install skipped sdkmanager. It now checks android.jar and aapt2, which are present on this host.
+   - Fixed: the bootstrap cleanup deleted the web-smoke evidence on failure. It now keeps the evidence and prints its path when the gate fails.
+   - Not applied, with evidence: the parameterless MainView constructor is required by the XAML loader (AVLN3001 failed the build without it earlier in this run). The empty-list and error copy is specified by 20-UI-SPEC.md (lines 178 to 184); its recovery copy is an open product-review item (line 261). Jump-to-latest in loading or empty states has low reachability. Reselecting the current row raises no selection callback, by design (commented in ConversationListView). The CompiledAvaloniaXaml exemption cannot be narrowed to one side, because the same generated name collides on both sides, and no product type uses that namespace. The Android-absence exemption is caught by ProjectGraphTests. The CA1031 suppression in ApiSessionClient predates this run.
+   - Recorded, not changed: Android teardown does not call MainView.Close. run-smoke.sh picks the first Chrome on PATH (pre-existing; the first CI run will show it). The bootstrap cleanup runs test-services down before removing temporary files under set -e (pre-existing; down exits 0 today).
+3. Smoke flake. One gate run failed the axe smoke (exit 1) after the tests passed. Its evidence was deleted by the cleanup trap, which is now fixed. An isolated rerun passed (exit 0, 61 s). The cause is not identified; watch the next gates.
+4. Phase 25 PLAN. Phase 25 was marked complete without a PLAN file, which the COMPLETE contract requires. .planning/phases/25-cutover/25-01-PLAN.md is a retrospective record and is labelled as one.
+
+Verification:
+- Full gate on the final tree: ./bootstrap.sh exit 0, "bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format, web smoke with axe)", total 2270, failed 0, skipped 0, web smoke exit 0, wall 222 s.
+- Pre-fix checks: the lifecycle test fails on the pre-fix view. The fixed view was restored byte-for-byte afterwards.
+
+Working tree (uncommitted, for review): .github/workflows/ci.yml, bootstrap.sh, src/OmpOS.Native.Views/MainView.axaml.cs, src/OmpOS.Native.Views/Views/SessionView.axaml.cs, tests/OmpOS.Harness.Terminal.Tests/LinuxLocalPtyBackendTests.cs, tests/OmpOS.Native.Tests/Parity/ParitySessionGapTests.cs, and the new .planning/phases/25-cutover/25-01-PLAN.md. Records: STATE.md, .planning/v0.10.0-MILESTONE-AUDIT.md, .planning/phases/25-cutover/25-SUMMARY.md.
+
+Blocked, unchanged: Phase 22 criteria 1 and 3 to 5; Phase 23 criterion 2 (deploy part) and criterion 3; Phase 24 criterion 4 (the CI run needs a push) and criteria 1 to 3 and 5 (Mac channel, device). v0.10.0 cannot close without the owner's decision on its open criteria. v0.9.2 stays open for the owner.
+
+## Ship re-request 2026-10-25 (after the follow-up run)
+
+The user re-requested ultrathink-ship and said the run looked finished. It was not invoked. Verified before asking:
+- `ultrathink-ship assess` returned done=false. Gaps: the uncommitted tracked changes (nine modified paths, plus the untracked .planning/phases/25-cutover/25-01-PLAN.md) and the incomplete roadmap. The skill's gate never opens a PR while done is false.
+- ROADMAP lists v0.9.2 as open (its completion awaits the owner). v0.10.0 has Phase 22 skipped and Phases 23 and 24 blocked on external criteria.
+- The remote branch already exists at b3f3dfd, an ancestor of HEAD (9171508). 33 local commits are unpublished, from f8d0563 onward, including the baseline commit 8e0c5e2 (229 files) and the Phase 23 to 25 checkpoints.
+- Ship settings: enabled, autoMerge on, deleteBranch off, judge advisory, minScore 5. No pull request exists for the branch (`gh pr list --head feat/v0.9.2-hardening --state all`).
+- The override flag is `--ignore-gsd` (ultrathink-ship usage). It needs the owner's explicit statement that the roadmap is separate work.
+
+Owner decision: keep holding. No commit, push, PR or merge was performed. The 10 uncommitted paths remain in the working tree.

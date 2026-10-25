@@ -13,7 +13,7 @@ namespace OmpOS.Native.Views;
 /// The transcript region. It draws the bound <see cref="SessionViewModel"/>: the lifecycle copy, the folded blocks, the
 /// streaming text, the throttled announcement in a polite live region, the lifecycle notice, and the stop, retry and
 /// jump-to-latest controls. It follows the newest output until the user scrolls away from it, and records that pause on the model.
-/// It redraws when the model raises <see cref="INotifyPropertyChanged.PropertyChanged"/>; nothing calls it to refresh.
+/// It redraws when the model raises <see cref="INotifyPropertyChanged.PropertyChanged"/> while it is shown; nothing calls it to refresh.
 /// </summary>
 internal partial class SessionView : UserControl
 {
@@ -25,6 +25,7 @@ internal partial class SessionView : UserControl
 
     private readonly List<UiBlock> _rendered = [];
     private SessionViewModel? _session;
+    private bool _shown;
 
     /// <summary>Creates the transcript with no data context.</summary>
     public SessionView()
@@ -65,21 +66,47 @@ internal partial class SessionView : UserControl
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
+        BindSession(DataContext as SessionViewModel);
+        RenderAll();
+    }
 
+    /// <summary>Subscribes to the model when the transcript is shown, and draws the state the model reached while it was hidden.</summary>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        _shown = true;
+        BindSession(_session);
+        RenderAll();
+    }
+
+    /// <summary>Unsubscribes from the model when the transcript leaves the visual tree, so a hidden transcript keeps no subscription.</summary>
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        _shown = false;
+        BindSession(_session);
+    }
+
+    private void RenderAll()
+    {
+        RenderState();
+        RenderAnnouncement();
+        RenderTree();
+    }
+
+    /// <summary>Points the transcript at a session model. The model notifies the transcript only while the transcript is shown.</summary>
+    private void BindSession(SessionViewModel? session)
+    {
         if (_session is not null)
         {
             _session.PropertyChanged -= OnSessionPropertyChanged;
         }
 
-        _session = DataContext as SessionViewModel;
-        if (_session is not null)
+        _session = session;
+        if (_session is not null && _shown)
         {
             _session.PropertyChanged += OnSessionPropertyChanged;
         }
-
-        RenderState();
-        RenderAnnouncement();
-        RenderTree();
     }
 
     private void OnSessionPropertyChanged(object? sender, PropertyChangedEventArgs e)

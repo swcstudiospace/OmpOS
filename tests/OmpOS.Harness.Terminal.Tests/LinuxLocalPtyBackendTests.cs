@@ -286,8 +286,9 @@ public sealed class LinuxLocalPtyBackendTests
             {
                 text = await File.ReadAllTextAsync(stat, cancellationToken).ConfigureAwait(true);
             }
-            catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+            catch (IOException) when (!File.Exists(stat))
             {
+                // The process was reaped between two reads, so its /proc entry is gone: it has ended.
                 return;
             }
 

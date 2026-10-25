@@ -153,7 +153,7 @@ jobs:
         run: |
           set -eu
           sdk="${ANDROID_HOME:?ANDROID_HOME is not set on this runner}"
-          if [ -d "$sdk/platforms/android-36" ] && [ -d "$sdk/build-tools/36.0.0" ]; then
+          if [ -f "$sdk/platforms/android-36/android.jar" ] && [ -x "$sdk/build-tools/36.0.0/aapt2" ]; then
             echo "Android platform 36 and build-tools 36.0.0 are present; nothing to install."
             exit 0
           fi
