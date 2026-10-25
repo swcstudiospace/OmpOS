@@ -23,3 +23,18 @@ Mac channel: No. The accessibility check and the browser smoke run in headless C
 ## Commits
 
 - 9e5913d: gate-green HEAD (web head on the presentation layer, gate 1596 passed)
+
+## Run 2026-10-25 (gsd-autonomous, graph ut-mvmegw7f-4a7312d5)
+
+Status: partially complete. Criterion 1 met. Criterion 2: gate part met (axe in the gate); deploy part blocked. Criterion 3 blocked. Criteria 4 and 5 met.
+
+Gate evidence on the working tree after this phase's changes:
+- `./bootstrap.sh` exit 0; prints "bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format, web smoke with axe)". Wall 204.05 s.
+- Tests: total 2245, failed 0, skipped 0. The replaced test keeps the count.
+- Web smoke exit 0. Assertions: axeEmptyClean, axeAfterResponseClean, responseCompleted, probeMarkupAsExpected, reloadHistoryRendersSame, iconContrastMeetsNonText, skipLinkFocusedOnTab and firstRenderClean are all true, and noErrorBarOrConsoleErrorsAfterPrompt too. Evidence went to a temporary directory, so the tree stays clean.
+
+Deviations:
+- D1. Found by the gate. `ApiSessionClient.CreateSessionAsync` and `CreateSessionRequest` sent `OwnerId = "local-dev"`. The API returns 400 "Owner not accepted" for any body that names an owner (`services/OmpOS.Api/Endpoints/SessionEndpoints.cs:104`). The web head now posts an owner-free body, and `Index.razor` no longer carries the owner constant. The existing test `CreateSessionPostsOwnerAndReturnsSession` pinned the old body. It is replaced by `CreateSessionSendsNoOwnerInTheBody`, which asserts that the body names no owner.
+- D2. `.github/workflows/ci.yml` gains a browser smoke step in `build-test`. It is not pushed, so no CI run happens in this run.
+
+Open items: the deploy part of criterion 2 and criterion 3. Blocked on OMPOS_API_ORIGIN and the Vercel and Railway deploys. Owner: owner. Route: docs/runbooks/hosting.md.

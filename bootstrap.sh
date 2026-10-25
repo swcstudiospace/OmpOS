@@ -2,7 +2,7 @@
 # OmpOS one-command bootstrap (Phase 1, decision D-05).
 # Installs the SDK pinned in global.json when missing, then runs a locked
 # restore, a warnings-as-errors Release build, the test suite, and a format
-# verification. Exits non-zero on any failing step. Never installs containers;
+# verification, then the web browser smoke with its axe-core check. Exits non-zero on any failing step. Never installs containers;
 # the test step starts throwaway test services and stops them on exit.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -44,6 +44,7 @@ cleanup() {
   bash scripts/test-services.sh down
   if [ -n "$TEST_SERVICES_ENV" ]; then rm -f "$TEST_SERVICES_ENV"; fi
   if [ -n "${INSTALLER_DIR:-}" ]; then rm -rf "$INSTALLER_DIR"; fi
+  if [ -n "${SMOKE_OUT:-}" ]; then rm -rf "$SMOKE_OUT"; fi
 }
 trap cleanup EXIT
 TEST_SERVICES_ENV="$(bash scripts/test-services.sh up)"
@@ -51,6 +52,12 @@ source "$TEST_SERVICES_ENV"
 dotnet test OmpOS.Linux.slnf -c Release --no-build -- --filter-not-trait "Category=Live"
 dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
 
+# Browser smoke with the axe-core gate (Phase 23 criterion 2). scripts/web-smoke/run-smoke.sh publishes the web head and the API,
+# drives the owned headless Chrome, and exits non-zero on any failed assertion, including an axe violation or incomplete item.
+# Its evidence goes to a temporary directory, so the gate never writes into tracked evidence.
+SMOKE_OUT="$(mktemp -d)"
+OUT_DIR="$SMOKE_OUT" bash scripts/web-smoke/run-smoke.sh
+
 command -v podman-compose >/dev/null || echo "hint: podman-compose not found; install podman plus 'pipx install podman-compose==1.6.0' to run deploy/compose.yaml"
 
-echo "bootstrap: OK (SDK $(dotnet --version), locked restore, Release build, tests, format)"
+echo "bootstrap: OK (SDK $(dotnet --version), locked restore, Release build, tests, format, web smoke with axe)"

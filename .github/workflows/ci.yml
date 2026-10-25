@@ -62,6 +62,11 @@ jobs:
           name: test-results
           path: TestResults
       - run: dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
+      - name: Browser smoke with axe-core (needs Node and Chrome on the runner; mirrors the bootstrap step)
+        run: |
+          out_dir="$RUNNER_TEMP/web-smoke"
+          mkdir -p "$out_dir"
+          OUT_DIR="$out_dir" bash scripts/web-smoke/run-smoke.sh
       - name: Vulnerable packages (list exits 0 even on findings, so the parse is the gate)
         run: |
           dotnet list OmpOS.Linux.slnf package --vulnerable --include-transitive --format json > vuln.json

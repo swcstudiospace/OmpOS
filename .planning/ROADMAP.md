@@ -445,6 +445,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Depends on**: Phases 20, 21
 **Mac channel**: No. The accessibility-tree check and the browser smoke run in headless Chromium on the Linux host, and Vercel serves the static output.
 **UI hint**: yes
+**Status (2026-10-25)**: partially complete. Criterion 1 is met. Criteria 4 and 5 are met. Criterion 2's gate part is met: the axe smoke runs in `bootstrap.sh` and in the CI `build-test` job (2026-10-25). Criterion 2's deploy part and criterion 3 are blocked on OMPOS_API_ORIGIN and on the Vercel and Railway deploys.
 **Success Criteria** (what must be TRUE):
   1. The Blazor WebAssembly web head consumes the shared presentation layer, and it builds and passes its tests in the gate. Verify: gate at phase HEAD.
   2. The axe run and the CSP check of the Blazor web head still pass on the deployed static build. Verify: axe run in the gate and browser console check on the Vercel URL showing zero CSP violations.

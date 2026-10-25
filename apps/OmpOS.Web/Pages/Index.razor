@@ -35,7 +35,6 @@
 </div>
 
 @code {
-    private const string OwnerId = "local-dev";
 
     private static readonly Action<ILogger, string, Exception?> BackgroundStreamFailed =
         LoggerMessage.Define<string>(
@@ -99,7 +98,7 @@
         _error = null;
         try
         {
-            var session = await Api.CreateSessionAsync(OwnerId).ConfigureAwait(true);
+            var session = await Api.CreateSessionAsync().ConfigureAwait(true);
             _conversations.Insert(0, new ConversationSummary { Id = session.Id, Title = TitleFor(session) });
             await SelectSessionAsync(session.Id).ConfigureAwait(true);
         }

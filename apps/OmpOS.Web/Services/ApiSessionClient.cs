@@ -23,16 +23,14 @@ internal sealed class ApiSessionClient
         _http = http;
     }
 
-    /// <summary>Creates a session for the given owner.</summary>
-    /// <param name="ownerId">The reserved owner identifier.</param>
+    /// <summary>Creates a session for the authenticated caller. The request names no owner: the API takes the owner from the caller.</summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created session.</returns>
-    internal async Task<Session> CreateSessionAsync(string ownerId, CancellationToken cancellationToken = default)
+    internal async Task<Session> CreateSessionAsync(CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(ownerId);
         using var response = await _http.PostAsJsonAsync(
             new Uri("sessions", UriKind.Relative),
-            new CreateSessionRequest { OwnerId = ownerId },
+            new CreateSessionRequest(),
             WebJsonContext.Default.CreateSessionRequest,
             cancellationToken).ConfigureAwait(false);
         await EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);

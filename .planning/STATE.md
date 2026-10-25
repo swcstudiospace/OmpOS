@@ -360,3 +360,31 @@ Wave status: Wave 2 (n3 tooling findings and n4 scope records) is complete with 
 
 Ship: held. assess returned done=false (roadmap 2/6). No PR, no push, no merge.
 
+
+## Run Start 2026-10-25 (gsd-autonomous, graph ut-mvmegw7f-4a7312d5)
+
+Supersedes the 2026-10-24 run record (graph ut-mvm12su0-1fae51f6). Its Notion rows stay. Linear refuses new issues (free issue limit), so tracking is partial.
+
+Discovery (Wave 1):
+- Git: branch feat/v0.9.2-hardening, HEAD 63e8fcf, 90 commits ahead of main. Working tree clean (0 entries), 0 stashes, 0 unmerged paths. No merge, rebase, cherry-pick or revert in progress.
+- Identity: configured. core.hooksPath unset. commit.gpgsign unset. .planning is tracked (124 files).
+- Stack: .NET SDK 10.0.402 (global.json). Gate: ./bootstrap.sh (locked restore, warnings-as-errors build, tests, format, and from this run the axe web smoke).
+- Skill() is not available. Each phase command is run by loading its skill document (G-S1, accepted 2026-10-25).
+- Host: Node 24.18.0, /usr/bin/google-chrome, python3 3.12.3, npm 11.16.0, Android SDK at /root/Android/Sdk (android-34 and android-36), .NET workloads android 36.1.118 and wasm-tools 10.0.113.
+
+Baseline (Wave 2), at HEAD 63e8fcf before any edit: ./bootstrap.sh exit 0, "bootstrap: OK", total 2245, failed 0, skipped 0, wall 304.95 s.
+
+Phase map (Wave 3), v0.10.0 (Phases 20 to 25):
+- 20 complete. 21 complete. 22 skipped by owner decision (2026-10-24).
+- 23 partially complete: criterion 2's gate part met this run; the deploy part and criterion 3 blocked.
+- 24 partial: no head project yet. Criterion 4 needs a CI run, which needs a push (G24-2 is "no push"). Criteria 1 to 3 need a Mac; criterion 5 needs an Android 16 device or emulator (no /dev/kvm).
+- 25 not started. Criterion 1 is unmet: 24 parity rows carry "pending:" in the Avalonia column (docs/parity/session-chat-parity.md). The owner's waiver covers the phase dependencies on 22 and 24, not criterion 1.
+- v0.11.0 and later: not started (G-M1 answered No).
+
+Owner answers applied (GREY_AREA_ACCEPTANCE, 2026-10-25): phase25 waive the dependencies for MAUI removal; axe add to the gate; push write the job, no push; ship hold; structure new head over a shared Avalonia library; skill accept and record the deviation; m1 No.
+
+Clarifications q1 to q3 are non-blocking. Defaults applied and stated: q1 public contracts stay backward compatible; q2 incremental within scope; q3 minimal local gates, plus the gate and CI additions the owner accepted (axe, and the Android job, not pushed).
+
+Phase 23 record (2026-10-25): see 23-SUMMARY.md, run 2026-10-25. The axe smoke exposed a web-to-API contract defect (OwnerId sent on POST /sessions). It is repaired in the web head.
+
+Ship: held by the owner's answer. ultrathink-ship not invoked. No PR, no push, no merge.

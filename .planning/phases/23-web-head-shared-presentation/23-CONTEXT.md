@@ -50,3 +50,9 @@ Goal: the Blazor WebAssembly web head runs on the shared presentation layer and 
 
 - GREY_AREA: G23-1, batched with the other phases.
 - BLOCKER: criteria 2 and 3. Minimal action: set the production API origin (OMPOS_API_ORIGIN) and resume Railway deploys (docs/runbooks/hosting.md), or record the deploy as out of scope.
+
+## Run record 2026-10-25 (graph ut-mvmegw7f-4a7312d5)
+
+- G23-1 accepted (owner answer "Add axe to the gate"). The axe smoke runs as a gate step in `bootstrap.sh` (through `scripts/web-smoke/run-smoke.sh`, with a temporary `OUT_DIR`) and as a CI step in `build-test`. It requires Node 22 or later and Chrome on the runner. Both are present on this host (Node 24.18.0, `/usr/bin/google-chrome`).
+- The first gate run failed the smoke on `responseCompleted`, `probeMarkupAsExpected` and `reloadHistoryRendersSame`. Root cause: the web head sent `OwnerId` in `POST /sessions`, and the API refuses a body that names an owner (400, "Owner not accepted"). Repaired in the web head (23-SUMMARY.md, D1).
+- Criterion 2's gate part is met. Criterion 2's deploy part and criterion 3 are blocked on OMPOS_API_ORIGIN and on the deploys.
