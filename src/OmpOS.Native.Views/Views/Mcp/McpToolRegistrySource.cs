@@ -2,8 +2,8 @@ using OmpOS.Harness.Mcp;
 
 namespace OmpOS.Native.Views.Mcp;
 
-/// <summary>Adapts the production <see cref="McpToolRegistry"/> to the view's <see cref="IMcpToolSource"/>.</summary>
-internal sealed class McpToolRegistrySource(McpToolRegistry registry) : IMcpToolSource
+/// <summary>Adapts the production <see cref="McpToolRegistry"/> to the window's <see cref="IMcpRegistryHost"/>.</summary>
+internal sealed class McpToolRegistrySource(McpToolRegistry registry) : IMcpRegistryHost
 {
     private readonly McpToolRegistry _registry = registry ?? throw new ArgumentNullException(nameof(registry));
 
@@ -21,4 +21,7 @@ internal sealed class McpToolRegistrySource(McpToolRegistry registry) : IMcpTool
 
     /// <inheritdoc />
     public void Disable(string sessionId, McpToolId tool) => _registry.Disable(sessionId, tool);
+
+    /// <inheritdoc />
+    public ValueTask DisposeAsync() => _registry.DisposeAsync();
 }

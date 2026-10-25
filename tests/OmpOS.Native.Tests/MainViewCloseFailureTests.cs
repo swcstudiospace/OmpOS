@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using OmpOS.Harness.Abstractions;
+using OmpOS.Harness.Mcp;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Tests.Parity;
+using OmpOS.Native.Views.Mcp;
 using Shouldly;
 using Xunit;
 
@@ -16,13 +18,19 @@ public sealed class MainViewCloseFailureTests
     /// <summary>How long the test waits for the close failure to reach the trace.</summary>
     private static readonly TimeSpan TraceTimeout = TimeSpan.FromSeconds(10);
 
+    /// <summary>The fragment the engine host's close continuation traces when its dispose fails.</summary>
+    private const string EngineMarker = "could not close the engine host";
+
+    /// <summary>The fragment the MCP host's close continuation traces when its dispose fails.</summary>
+    private const string McpMarker = "could not close the MCP tools";
+
     /// <summary>Closing the window with an engine host whose dispose fails traces the failure, with the dispose error's message.</summary>
     [Fact]
     public async Task ClosingTheWindowTracesAnEngineHostDisposeFailure()
     {
         await using var session = TestAppBuilder.StartSession();
         var traced = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var listener = new CloseFailureListener(traced);
+        var listener = new CloseFailureListener(traced, EngineMarker);
         Trace.Listeners.Add(listener);
         try
         {
@@ -35,6 +43,33 @@ public sealed class MainViewCloseFailureTests
 
             var message = await traced.Task.WaitAsync(TraceTimeout, TestContext.Current.CancellationToken).ConfigureAwait(true);
             message.ShouldContain("engine dispose failed");
+        }
+        finally
+        {
+            Trace.Listeners.Remove(listener);
+            listener.Dispose();
+        }
+    }
+
+    /// <summary>Closing the window with an MCP host whose dispose fails traces the failure, with the dispose error's message.</summary>
+    [Fact]
+    public async Task ClosingTheWindowTracesAnMcpHostDisposeFailure()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        var traced = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var listener = new CloseFailureListener(traced, McpMarker);
+        Trace.Listeners.Add(listener);
+        try
+        {
+            await session.Dispatch(() =>
+            {
+                var main = new MainView(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), Environment.CurrentDirectory, prompts: null, mcpHost: new DisposeFailingMcpHost());
+                ParityShellHarness.Show(main);
+                main.Close();
+            }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            var message = await traced.Task.WaitAsync(TraceTimeout, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            message.ShouldContain("mcp dispose failed");
         }
         finally
         {
@@ -67,13 +102,38 @@ public sealed class MainViewCloseFailureTests
         public ValueTask DisposeAsync() => ValueTask.FromException(new InvalidOperationException("engine dispose failed"));
     }
 
-    /// <summary>A trace listener that completes once a close failure is traced, with the traced text.</summary>
-    /// <param name="traced">Completed with the first traced message that reports the failed close.</param>
-    private sealed class CloseFailureListener(TaskCompletionSource<string> traced) : TraceListener
+    /// <summary>An MCP host with no tools whose disposal fails the way a registry whose teardown breaks does.</summary>
+    private sealed class DisposeFailingMcpHost : IMcpRegistryHost
     {
-        /// <summary>The fragment of the trace the main view's close continuation writes on a failed close.</summary>
-        private const string Marker = "could not close the engine host";
+        /// <inheritdoc />
+        public IReadOnlyList<McpToolDescriptor> Tools => [];
 
+        /// <inheritdoc />
+        public IReadOnlyList<McpToolDescriptor> GetOfferedTools(string sessionId) => [];
+
+        /// <inheritdoc />
+        public bool IsEnabled(string sessionId, McpToolId tool) => false;
+
+        /// <inheritdoc />
+        public void Enable(string sessionId, McpToolId tool)
+        {
+        }
+
+        /// <inheritdoc />
+        public void Disable(string sessionId, McpToolId tool)
+        {
+        }
+
+        /// <summary>Fails the dispose the way a registry whose teardown breaks does.</summary>
+        /// <returns>A value task that has faulted with the dispose failure.</returns>
+        public ValueTask DisposeAsync() => ValueTask.FromException(new InvalidOperationException("mcp dispose failed"));
+    }
+
+    /// <summary>A trace listener that completes once a close failure with the given marker is traced, with the traced text.</summary>
+    /// <param name="traced">Completed with the first traced message that reports the failed close.</param>
+    /// <param name="marker">The fragment the close continuation writes on that failed close.</param>
+    private sealed class CloseFailureListener(TaskCompletionSource<string> traced, string marker) : TraceListener
+    {
         /// <inheritdoc />
         public override void Write(string? message) => Record(message);
 
@@ -88,7 +148,7 @@ public sealed class MainViewCloseFailureTests
         /// <param name="text">The text the listener received.</param>
         private void Record(string? text)
         {
-            if (text is not null && text.Contains(Marker, StringComparison.Ordinal))
+            if (text is not null && text.Contains(marker, StringComparison.Ordinal))
             {
                 traced.TrySetResult(text);
             }

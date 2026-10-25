@@ -78,7 +78,8 @@ public partial class MainView : UserControl
     private WorkspaceCatalog? _catalog;
     private WorkspaceConventionsModel? _conventions;
     private WorkspaceSearchModel? _workspaceSearch;
-    private McpToolRegistry? _mcp;
+    private IMcpRegistryHost? _mcpHost;
+    private McpToolRegistry? _mcpRegistry;
     private McpToolsModel? _mcpTools;
     private readonly IPromptChannel? _prompts;
     private readonly EngineRunInput? _queued;
@@ -106,9 +107,21 @@ public partial class MainView : UserControl
     /// <exception cref="ArgumentException"><paramref name="workspaceRoot"/> is null, empty or white space, or a composed send path has a run input other than the engine's.</exception>
     /// <exception cref="DirectoryNotFoundException"><paramref name="workspaceRoot"/> does not exist.</exception>
     public MainView(IToolApprovalBridge approvalBridge, IRunInput runInput, string workspaceRoot, IPromptChannel? prompts)
+        : this(approvalBridge, runInput, workspaceRoot, prompts, mcpHost: null)
+    {
+    }
+
+    /// <summary>Creates the window with an MCP host. The window disposes the host when it closes; tests inject a host whose disposal fails.</summary>
+    /// <param name="approvalBridge">The bridge that asks for tool approvals.</param>
+    /// <param name="runInput">The run input that holds the messages the active run accepts.</param>
+    /// <param name="workspaceRoot">The workspace root the window opens.</param>
+    /// <param name="prompts">The send path of the composed engine, or null when none is composed.</param>
+    /// <param name="mcpHost">The MCP host the window lists and disposes, or null to create the production registry when the MCP view opens.</param>
+    internal MainView(IToolApprovalBridge approvalBridge, IRunInput runInput, string workspaceRoot, IPromptChannel? prompts, IMcpRegistryHost? mcpHost)
     {
         ArgumentNullException.ThrowIfNull(approvalBridge);
         ArgumentNullException.ThrowIfNull(runInput);
+        _mcpHost = mcpHost;
         _workspace = new WorkspaceRoot(workspaceRoot);
 
         InitializeComponent();
@@ -654,8 +667,8 @@ public partial class MainView : UserControl
     // The shell connects no MCP server, so the registry holds no tools until one is connected.
     private Control CreateMcpTools()
     {
-        _mcp ??= new McpToolRegistry();
-        _mcpTools ??= new McpToolsModel(new McpToolRegistrySource(_mcp));
+        _mcpHost ??= new McpToolRegistrySource(_mcpRegistry ??= new McpToolRegistry());
+        _mcpTools ??= new McpToolsModel(_mcpHost);
         return ViewMapping.Create(_mcpTools);
     }
 
@@ -696,9 +709,9 @@ public partial class MainView : UserControl
 
         _conventions?.Dispose();
         _catalog?.Dispose();
-        if (_mcp is not null)
+        if (_mcpHost is not null)
         {
-            _ = _mcp.DisposeAsync().AsTask().ContinueWith(
+            _ = _mcpHost.DisposeAsync().AsTask().ContinueWith(
                 closed => Trace.TraceError($"OmpOS could not close the MCP tools: {closed.Exception!.GetBaseException()}"),
                 CancellationToken.None,
                 TaskContinuationOptions.OnlyOnFaulted,
