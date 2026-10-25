@@ -73,10 +73,9 @@ public sealed class ArchUnitLayerTests
             var candidate = Path.Combine(AppContext.BaseDirectory, name + ".dll");
             if (!File.Exists(candidate))
             {
-                // Only the MAUI head and the Android head may be absent: neither builds on Linux by design. The MAUI head is
-                // excluded from OmpOS.Linux.slnf and built only in the macOS shells job; the Android head targets net10.0-android,
-                // which the net10.0 test projects cannot reference, and it is built only in the Android CI job.
-                if (!string.Equals(name, "OmpOS.App", StringComparison.Ordinal) && !string.Equals(name, "OmpOS.Android", StringComparison.Ordinal))
+                // Only the Android head may be absent: it targets net10.0-android, which the net10.0 test projects cannot reference,
+                // so it is built only in the Android CI job and never in the Linux test output.
+                if (!string.Equals(name, "OmpOS.Android", StringComparison.Ordinal))
                 {
                     throw new FileNotFoundException($"Expected built assembly for {name} at {candidate}.");
                 }

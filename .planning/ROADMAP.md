@@ -474,7 +474,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Requirements**: XP-01 (complete), XP-10 (complete)
 **Depends on**: Phases 21, 22, 23, 24
 **Mac channel**: No. Removal and the gate run on the Linux host; the Mac-channel evidence that replaces the MAUI iOS and macOS builds is recorded in Phases 22 and 24.
-**Status (2026-10-25)**: awaiting owner decision. Criterion 1 is unmet: 10 parity rows now have passing native tests, 1 row is a by-design difference that awaits owner acceptance, and 13 rows are not rendered by the Avalonia head (Class C). Criteria 2 and 3 wait on criterion 1. The owner's waiver covers the phase dependencies on Phases 22 and 24, not criterion 1.
+**Status (2026-10-25)**: complete. Criterion 1 is met: all 24 pending rows have a passing native Avalonia test, 10 by native behaviour tests, 1 by-design test accepted by the owner, and 13 rows implemented in the Avalonia head with tests. Criterion 2 is met: `apps/OmpOS.App` is removed from the solution and from the tree, and the search finds no reference in the solution, project or CI files. Criterion 3 is met: `src/OmpOS.UI` stays, referenced by `apps/OmpOS.Web` and `tests/OmpOS.UI.Tests`. The owner's waiver covers the dependencies on Phases 22 and 24 (2026-10-25).
 **Success Criteria** (what must be TRUE):
   1. Before any removal, every row of the Phase 21 parity inventory has a passing Avalonia test. Verify: gate run at phase HEAD.
   2. apps/OmpOS.App and its test projects are removed, and a repository search finds no reference to apps/OmpOS.App in the solution, project or CI files. Verify: search output in the phase record and the gate.

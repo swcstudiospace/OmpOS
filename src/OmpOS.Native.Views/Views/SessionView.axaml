@@ -34,6 +34,35 @@
                  TextWrapping="Wrap"
                  IsVisible="False" />
 
+      <!-- The lifecycle notice and the affordances follow the transcript. The stop control shows while a turn streams, retry after a
+           recoverable failure, and jump to latest while auto-scroll is paused. -->
+      <TextBlock x:Name="StateNotice"
+                 Classes="muted"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 IsVisible="False"
+                 AutomationProperties.Name="Session notice"
+                 AutomationProperties.LiveSetting="Polite" />
+
+      <StackPanel Orientation="Horizontal"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+        <Button x:Name="SessionStopButton"
+                Content="■"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                IsVisible="False"
+                AutomationProperties.Name="Stop response" />
+        <Button x:Name="SessionRetryButton"
+                Content="Retry"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                IsVisible="False"
+                AutomationProperties.Name="Retry failed operation" />
+        <Button x:Name="JumpToLatestButton"
+                Content="↓"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                IsVisible="False"
+                AutomationProperties.Name="Jump to latest" />
+      </StackPanel>
+
     </StackPanel>
   </ScrollViewer>
 

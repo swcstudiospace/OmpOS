@@ -45,7 +45,6 @@ internal static class LayerMap
         ["OmpOS.Presentation"] = 2,
         ["OmpOS.Api"] = 3,
         ["OmpOS.Web"] = 4,
-        ["OmpOS.App"] = 4,
         ["OmpOS.Native"] = 4,
         ["OmpOS.Native.Views"] = 3,
         ["OmpOS.Android"] = 4,

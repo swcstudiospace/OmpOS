@@ -2,7 +2,6 @@
   <Folder Name="/apps/">
     <Project Path="apps/OmpOS.Web/OmpOS.Web.csproj" />
     <Project Path="apps/OmpOS.Android/OmpOS.Android.csproj" />
-    <Project Path="apps/OmpOS.App/OmpOS.App.csproj" />
     <Project Path="apps/OmpOS.Native/OmpOS.Native.csproj" />
   </Folder>
   <Folder Name="/services/">

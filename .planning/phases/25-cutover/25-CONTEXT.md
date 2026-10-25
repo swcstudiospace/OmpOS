@@ -50,3 +50,9 @@ Goal: the MAUI head is removed after parity, and the Razor component library is 
 - Question 1: how does criterion 1 proceed for the 13 Class C rows? Options: implement the features in the Avalonia head with tests (default, keeps the criterion); amend criterion 1 to accept recorded exceptions (a ROADMAP change, owner approval); defer Phase 25.
 - Question 2: accept row 11 (the error block draws no retry action by design) as its passing Avalonia test?
 - Resume point: Wave 8 of Phase 25 with the answers. Class A tests are already in place; the classification stays in the parity table.
+
+## Owner decisions 2026-10-25 (answers to the GREY_AREA questions)
+
+- Criterion 1, Class C rows (13): implement the features in the Avalonia head, each with a native test (owner answer: implement the 13 features with tests).
+- Row 11 (Class B): the by-design native test is accepted as its passing Avalonia test (owner answer: accept by design).
+- Removal (criterion 2) and the reference search start only after criterion 1 passes.

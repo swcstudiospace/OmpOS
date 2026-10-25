@@ -26,6 +26,20 @@ internal partial class ConversationListView : UserControl
             nameof(Conversations),
             Array.Empty<ConversationSummary>());
 
+    /// <summary>The selected conversation identifier. The row with that identifier is the list's current row.</summary>
+    public static readonly StyledProperty<string?> SelectedIdProperty =
+        AvaloniaProperty.Register<ConversationListView, string?>(nameof(SelectedId));
+
+    /// <summary>Gets or sets the identifier of the current conversation. The row with that identifier is selected, and none is when no row has it.</summary>
+    public string? SelectedId
+    {
+        get => GetValue(SelectedIdProperty);
+        set => SetValue(SelectedIdProperty, value);
+    }
+
+    /// <summary>Raised on the UI thread when the user chooses a conversation other than the current one. The argument names it.</summary>
+    public event EventHandler<ConversationSelectedEventArgs>? ConversationSelected;
+
     private IReadOnlyList<ConversationSummary> _rows = Array.Empty<ConversationSummary>();
     private ConversationListModel? _model;
 
@@ -34,6 +48,7 @@ internal partial class ConversationListView : UserControl
     {
         InitializeComponent();
         ConversationRows.ContainerPrepared += OnContainerPrepared;
+        ConversationRows.SelectionChanged += OnRowSelectionChanged;
         ConversationRows.ContainerIndexChanged += OnContainerIndexChanged;
         Refresh();
     }
@@ -61,6 +76,10 @@ internal partial class ConversationListView : UserControl
         if (change.Property == StateProperty || change.Property == ConversationsProperty)
         {
             Refresh();
+        }
+        else if (change.Property == SelectedIdProperty)
+        {
+            RenderSelection();
         }
     }
 
@@ -99,7 +118,33 @@ internal partial class ConversationListView : UserControl
 
         _rows = state == ConversationListState.Loaded ? conversations : Array.Empty<ConversationSummary>();
         ConversationRows.ItemsSource = _rows;
+        RenderSelection();
         ApplyStateCopy(state, conversations.Count);
+    }
+
+    /// <summary>Selects the row whose conversation is the current one, or none when no row has that identifier.</summary>
+    private void RenderSelection()
+    {
+        ConversationRows.SelectedItem = SelectedId is null
+            ? null
+            : _rows.FirstOrDefault(row => string.Equals(row.Id, SelectedId, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Reports a row the user chose. Drawing the current row also selects it, and that is not a choice: only a row that is in the list and
+    /// is not already the current one is reported, and it becomes the current one.
+    /// </summary>
+    private void OnRowSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (ConversationRows.SelectedItem is not ConversationSummary row
+            || string.Equals(row.Id, SelectedId, StringComparison.Ordinal)
+            || !_rows.Contains(row))
+        {
+            return;
+        }
+
+        SelectedId = row.Id;
+        ConversationSelected?.Invoke(this, new ConversationSelectedEventArgs(row.Id));
     }
 
     private void ApplyStateCopy(ConversationListState state, int count)

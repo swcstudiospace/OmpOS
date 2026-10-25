@@ -31,7 +31,7 @@ dotnet restore OmpOS.Linux.slnf --force-evaluate
 ## Adding a project
 
 1. Create the project under `src/`, `services/`, `apps/`, or `tests/` with the matching SDK and TFM (`net10.0`).
-2. Register it: `dotnet sln OmpOS.slnx add <path>` and append the path to `OmpOS.Linux.slnf` (skip the MAUI head there).
+2. Register it: `dotnet sln OmpOS.slnx add <path>` and append the path to `OmpOS.Linux.slnf` (skip the Android head there: the Linux filter excludes it).
 3. Add a one-line entry to the layer map in `tests/OmpOS.ArchitectureTests/LayerMap.cs`.
 4. Add a `ProjectReference` from `tests/OmpOS.ArchitectureTests` so the assembly lands in the test output.
 5. Restore with `--force-evaluate` and keep the whole suite green.

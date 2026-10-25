@@ -1,5 +1,7 @@
 using System.ComponentModel;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using OmpOS.Contracts.Ui;
 using OmpOS.GenUi;
@@ -9,11 +11,18 @@ namespace OmpOS.Native.Views;
 
 /// <summary>
 /// The transcript region. It draws the bound <see cref="SessionViewModel"/>: the lifecycle copy, the folded blocks, the
-/// streaming text, and the throttled announcement in a polite live region. It redraws when the model raises
-/// <see cref="INotifyPropertyChanged.PropertyChanged"/>; nothing calls it to refresh.
+/// streaming text, the throttled announcement in a polite live region, the lifecycle notice, and the stop, retry and
+/// jump-to-latest controls. It follows the newest output until the user scrolls away from it, and records that pause on the model.
+/// It redraws when the model raises <see cref="INotifyPropertyChanged.PropertyChanged"/>; nothing calls it to refresh.
 /// </summary>
 internal partial class SessionView : UserControl
 {
+    /// <summary>The notice drawn while a turn awaits approval. The decision is made by policy, so the client offers no action.</summary>
+    private const string ApprovalNotice = "Approval needed to continue. The decision is made by policy.";
+
+    /// <summary>How far above the end of the transcript a viewport still counts as at the latest output.</summary>
+    private const double LatestTolerance = 1;
+
     private readonly List<UiBlock> _rendered = [];
     private SessionViewModel? _session;
 
@@ -21,7 +30,17 @@ internal partial class SessionView : UserControl
     public SessionView()
     {
         InitializeComponent();
+        TranscriptScroll.ScrollChanged += OnTranscriptScrollChanged;
+        SessionStopButton.Click += OnStopClick;
+        SessionRetryButton.Click += OnRetryClick;
+        JumpToLatestButton.Click += OnJumpToLatestClick;
     }
+
+    /// <summary>Raised on the UI thread when the user activates the stop control while a turn streams.</summary>
+    public event EventHandler? StopRequested;
+
+    /// <summary>Raised on the UI thread when the user activates the retry control after a recoverable failure.</summary>
+    public event EventHandler? RetryRequested;
 
     /// <summary>Moves keyboard focus to the transcript region. The shell's skip link uses this.</summary>
     public void FocusTranscript() => _ = TranscriptScroll.Focus();
@@ -83,6 +102,15 @@ internal partial class SessionView : UserControl
             case nameof(SessionViewModel.Announcement):
                 RenderAnnouncement();
                 break;
+            case nameof(SessionViewModel.AutoScrollPaused):
+                RenderControls();
+                if (_session?.AutoScrollPaused == false)
+                {
+                    // Resuming follows the newest output again: the user jumped to it or scrolled back to its end.
+                    TranscriptScroll.ScrollToEnd();
+                }
+
+                break;
         }
     }
 
@@ -99,6 +127,18 @@ internal partial class SessionView : UserControl
         StateHeading.Classes.Set("error", isError);
         StateBody.Classes.Set("error", isError);
         StateBody.Classes.Set("muted", !isError);
+        RenderControls();
+    }
+
+    /// <summary>Draws the lifecycle notice and the affordances the current state offers.</summary>
+    private void RenderControls()
+    {
+        var notice = _session is null ? string.Empty : NoticeFor(_session.State);
+        StateNotice.Text = notice;
+        StateNotice.IsVisible = notice.Length > 0;
+        SessionStopButton.IsVisible = _session?.CanStop == true;
+        SessionRetryButton.IsVisible = _session?.CanRetry == true;
+        JumpToLatestButton.IsVisible = _session?.AutoScrollPaused == true;
     }
 
     private void RenderAnnouncement() => AnnouncementText.Text = _session?.Announcement ?? string.Empty;
@@ -141,6 +181,49 @@ internal partial class SessionView : UserControl
             _rendered.Add(blocks[index]);
         }
     }
+
+    /// <summary>
+    /// Follows the newest output while auto-scroll is not paused: when the transcript grows or shrinks, it moves to its end. Any other
+    /// scroll is the user's, or a resize: leaving the end pauses following and returning to it resumes. The model changes only on a real
+    /// transition, so each one is reported once.
+    /// </summary>
+    private void OnTranscriptScrollChanged(object? sender, ScrollChangedEventArgs e)
+    {
+        if (_session is null)
+        {
+            return;
+        }
+
+        if (e.ExtentDelta != Vector.Zero && !_session.AutoScrollPaused)
+        {
+            TranscriptScroll.ScrollToEnd();
+            return;
+        }
+
+        var maxOffset = Math.Max(0, TranscriptScroll.Extent.Height - TranscriptScroll.Viewport.Height);
+        if (TranscriptScroll.Offset.Y >= maxOffset - LatestTolerance)
+        {
+            _session.ResumeAutoScroll();
+        }
+        else
+        {
+            _session.PauseAutoScroll();
+        }
+    }
+
+    private void OnStopClick(object? sender, RoutedEventArgs e) => StopRequested?.Invoke(this, EventArgs.Empty);
+
+    private void OnRetryClick(object? sender, RoutedEventArgs e) => RetryRequested?.Invoke(this, EventArgs.Empty);
+
+    private void OnJumpToLatestClick(object? sender, RoutedEventArgs e) => _session?.ResumeAutoScroll();
+
+    private static string NoticeFor(SessionViewState state) => state switch
+    {
+        SessionViewState.AwaitingApproval => ApprovalNotice,
+        SessionViewState.Reconnecting => "Reconnecting…",
+        SessionViewState.Offline => "You are offline. Showing the last known output.",
+        _ => string.Empty,
+    };
 
     private static (string Heading, string Body, bool IsError) Describe(SessionViewState state) => state switch
     {

@@ -149,7 +149,13 @@ internal partial class ComposerView : UserControl
         }
     }
 
-    private void OnStopClick(object? sender, RoutedEventArgs e)
+    private void OnStopClick(object? sender, RoutedEventArgs e) => StopResponse();
+
+    /// <summary>
+    /// Stops the streaming response through the composer's tracked work, so a stop that faults is reported on the status line. The composer's
+    /// stop button and the transcript's stop control both stop this way.
+    /// </summary>
+    public void StopResponse()
     {
         if (DataContext is ComposerViewModel composer)
         {

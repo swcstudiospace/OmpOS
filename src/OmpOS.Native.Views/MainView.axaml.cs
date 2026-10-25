@@ -58,6 +58,9 @@ public partial class MainView : UserControl
     /// <summary>The status line text prefix after a workspace tool cannot open. The tool's name and the reason follow it.</summary>
     public const string ToolFailedStatus = "Could not open";
 
+    /// <summary>The banner text prefix after the engine stream fails. The failure's own message follows it.</summary>
+    public const string EngineFailedBanner = "The engine stream failed:";
+
     /// <summary>The identifier of the one session this shell shows. The shell has no session transport yet, so the id is fixed.</summary>
     private const string SessionId = "shell-session";
 
@@ -79,6 +82,7 @@ public partial class MainView : UserControl
     private readonly IPromptChannel? _prompts;
     private readonly EngineRunInput? _queued;
     private bool _stopRequested;
+    private string? _lastPrompt;
     private long _nextSeq = 1;
 
     /// <summary>
@@ -115,7 +119,10 @@ public partial class MainView : UserControl
 
         Session = new SessionViewModel();
         Session.MarkHistoryLoaded();
-        TranscriptHost.Content = ViewMapping.Create(Session);
+        var transcript = (SessionView)ViewMapping.Create(Session);
+        transcript.StopRequested += OnSessionStopRequested;
+        transcript.RetryRequested += OnSessionRetryRequested;
+        TranscriptHost.Content = transcript;
 
         // The Agents window: one registry of runs and one view model over it. The view opens in place of the transcript.
         AgentRuns = new AgentRunRegistry();
@@ -230,6 +237,10 @@ public partial class MainView : UserControl
             return RefuseSendAsync();
         }
 
+        // The last prompt sent is the one a retry sends again. A new send clears the banner of an earlier failure.
+        _lastPrompt = text;
+        ShowEngineFailure(null);
+
         // The composer does not send while a response streams. The run stays active until its last turn ends, so a message sent
         // meanwhile steers it or queues behind it.
         Composer.IsStreaming = true;
@@ -289,6 +300,7 @@ public partial class MainView : UserControl
                     // The fault ends the run. Its reason is shown under the turn that faulted, and the held messages are dropped in
                     // the finally, so the not-sent line follows the reason.
                     ShowTurnFault(fault, turnCorrelationId);
+                    ShowEngineFailure($"{EngineFailedBanner} {fault.Message}");
                     return;
                 }
 
@@ -401,6 +413,34 @@ public partial class MainView : UserControl
     {
         StatusLine.Text = text;
         StatusLine.IsVisible = text.Length > 0;
+    }
+
+    /// <summary>
+    /// Shows the engine-failure banner with the given text, or hides it when the text is null. The banner is an alert, so it is
+    /// announced when it appears.
+    /// </summary>
+    /// <param name="text">The banner text, or null to hide the banner.</param>
+    private void ShowEngineFailure(string? text)
+    {
+        ErrorBanner.Text = text ?? string.Empty;
+        ErrorBanner.IsVisible = text is not null;
+    }
+
+    /// <summary>The transcript's stop control stops the turn in flight through the composer's tracked stop, the same path its stop button takes.</summary>
+    private void OnSessionStopRequested(object? sender, EventArgs e) => (ComposerHost.Content as ComposerView)?.StopResponse();
+
+    /// <summary>
+    /// Sends the last prompt again when the transcript offers retry after a recoverable failure. It does nothing while a response streams,
+    /// and before any prompt was sent.
+    /// </summary>
+    private void OnSessionRetryRequested(object? sender, EventArgs e)
+    {
+        if (_lastPrompt is not { } prompt || Composer.IsStreaming)
+        {
+            return;
+        }
+
+        _ = StartTurnAsync(prompt);
     }
 
     private void OnComposerWorkFaulted(object? sender, ComposerWorkFaultedEventArgs e) =>

@@ -165,20 +165,3 @@ jobs:
           set -o pipefail
           "$sdkmanager" --install "platforms;android-36" "build-tools;36.0.0"
       - run: dotnet build apps/OmpOS.Android/OmpOS.Android.csproj -c Release --no-restore -warnaserror
-
-  shells:
-    runs-on: macos-15
-    needs: build-test
-    continue-on-error: false
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: global.json
-      - name: MAUI head (only when the project exists)
-        if: hashFiles('apps/OmpOS.App/OmpOS.App.csproj') != ''
-        run: |
-          dotnet workload install maui
-          dotnet restore apps/OmpOS.App/OmpOS.App.csproj --locked-mode
-          # iOS and MacCatalyst packs require Xcode 27.1, which hosted runners do not provide as a stable toolchain, so those targets are not built here and are tracked as a human follow-up.
-          dotnet build apps/OmpOS.App/OmpOS.App.csproj -c Release --no-restore -warnaserror -f net10.0-android

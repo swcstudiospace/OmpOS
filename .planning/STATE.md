@@ -403,3 +403,11 @@ Gate after the split: `./bootstrap.sh` exit 0, total 2245, failed 0, skipped 0, 
 - Ship: held by the owner's answer; ultrathink-ship not invoked; no PR, push or merge.
 - v0.11.0 and later: not started (G-M1 answered No).
 - Unmapped follow-ups: the flaky terminal test helper; a repository-wide TODO and FIXME check (touched paths were clean).
+
+## Phase 25 decision 2026-10-25
+
+Owner answers: implement the 13 Class C features with native tests; accept row 11 as by design. Phase 25 proceeds: criterion 1 first, then the removal of apps/OmpOS.App and its references (criterion 2), then the search evidence.
+
+## Phase 25 complete 2026-10-25
+
+Criteria 1 to 3 met with evidence in 25-SUMMARY.md (update 2026-10-25). The owner's waiver covers the dependencies on Phases 22 and 24. v0.10.0 is still open: Phase 22 skipped, Phases 23 and 24 blocked on external criteria.

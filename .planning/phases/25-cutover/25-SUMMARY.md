@@ -31,3 +31,15 @@ Status: awaiting owner decision. Criterion 1 unmet (Class A 10 met; Class B 1 aw
 Gate on the checkpoint tree: `./bootstrap.sh` exit 0; total 2256 passed, 0 failed, 0 skipped; web smoke exit 0. Tests added: tests/OmpOS.Native.Tests/Parity/ParityGapClosureTests.cs (rows 11, 21, 22, 36, 39) and ParityComposerGapClosureTests.cs (rows 31 to 35, 41). The parity table's Avalonia column names each new test; Class C cells state that the Avalonia head does not render the behaviour. No product code changed.
 
 Deviations: none in product code. Two analyzer findings in the new tests were fixed in the test files (an unnecessary using; a constant array argument).
+
+## Update 2026-10-25: criteria met (complete)
+
+| # | Criterion | Status | Evidence |
+|---|-----------|--------|----------|
+| 1 | Every parity row has a passing Avalonia test before removal | Met | 24 rows: 10 native behaviour tests (ParityGapClosureTests, ParityComposerGapClosureTests); row 11 by design (owner accepted); 13 rows implemented with native tests (ParitySessionGapTests, ParityShellGapTests). Gate: 2269 passed, 0 failed, 0 skipped |
+| 2 | apps/OmpOS.App and its test projects removed; no reference in solution, project or CI files | Met | `OmpOS.slnx` entry removed; `apps/OmpOS.App` removed (13 tracked files); the `shells` CI job removed; LayerMap entry and the loader exception removed. Search over .slnx, .slnf, .csproj, .props, .targets, .yml and .cs: 0 matches |
+| 3 | src/OmpOS.UI stays; removal tracked under G-WEB | Met | Referenced by apps/OmpOS.Web/OmpOS.Web.csproj:17 and tests/OmpOS.UI.Tests/OmpOS.UI.Tests.csproj:6 |
+
+Gate after removal: `./bootstrap.sh` exit 0 on rerun; total 2269 passed, 0 failed, 0 skipped; web smoke exit 0. One flaky test (LinuxLocalPtyBackendTests.DisposeEndsARunningProcessAndReturns) failed once and passed on rerun.
+
+Docs: README.md and CONTRIBUTING.md updated for the removed MAUI head and shells job, and for the Android head. Owner-visible unknown: whether the android CI job is green (not pushed).
