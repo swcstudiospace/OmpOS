@@ -70,21 +70,7 @@ jobs:
       - name: Vulnerable packages (list exits 0 even on findings, so the parse is the gate)
         run: |
           dotnet list OmpOS.Linux.slnf package --vulnerable --include-transitive --format json > vuln.json
-          python3 - <<'PY'
-          import json
-          import sys
-          document = json.load(open("vuln.json"))
-          hits = [
-              package
-              for project in document["projects"]
-              for framework in project.get("frameworks", [])
-              for key in ("topLevelPackages", "transitivePackages")
-              for package in framework.get(key, [])
-              if package.get("vulnerabilities")
-          ]
-          print(json.dumps(hits, indent=1))
-          sys.exit(1 if hits else 0)
-          PY
+          python3 scripts/ci/check-vulnerable-packages.py vuln.json
       - name: Secret scan (gitleaks CLI, pinned)
         run: |
           curl -sSL -o /tmp/gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
@@ -148,6 +134,10 @@ jobs:
         with:
           global-json-file: global.json
       - run: dotnet restore apps/OmpOS.Android/OmpOS.Android.csproj --locked-mode
+      - name: Vulnerable packages of the Android head (same gate as build-test)
+        run: |
+          dotnet list apps/OmpOS.Android/OmpOS.Android.csproj package --vulnerable --include-transitive --format json > vuln-android.json
+          python3 scripts/ci/check-vulnerable-packages.py vuln-android.json
       - run: dotnet workload install android
       - name: Android platform 36 and build-tools 36.0.0 (installed only when the runner lacks them)
         run: |
