@@ -38,3 +38,15 @@ Goal: the MAUI head is removed after parity, and the Razor component library is 
 
 - BLOCKER: Phases 22 and 24 must close first. Minimal action: close those phases, or record them as owner-blocked and decide whether this phase may proceed.
 - GREY_AREA: G25-1, deferred until the blockers above are resolved.
+
+## Run record 2026-10-25 (graph ut-mvmegw7f-4a7312d5)
+
+- Dependency waiver accepted (owner answer: waive the dependencies for MAUI removal). Phases 22 and 24 are not closed, so the waiver covers Phase 25's dependency on them. It does not cover criterion 1.
+- Criterion 1 classification of the 24 pending rows in docs/parity/session-chat-parity.md: Class A (10 rows: 21, 22, 31, 32, 33, 34, 35, 36, 39, 41) have passing native tests in tests/OmpOS.Native.Tests/Parity/. Class B (row 11) has a by-design test, awaiting owner acceptance. Class C (13 rows: 24 to 30, 37, 38, 40, 42, 43, 44) are not rendered by the Avalonia head; they need product work or an owner-approved amendment.
+- Removal (criterion 2) and the reference search are not started. They wait on criterion 1.
+
+## Pause payload (GREY_AREA, 2026-10-25)
+
+- Question 1: how does criterion 1 proceed for the 13 Class C rows? Options: implement the features in the Avalonia head with tests (default, keeps the criterion); amend criterion 1 to accept recorded exceptions (a ROADMAP change, owner approval); defer Phase 25.
+- Question 2: accept row 11 (the error block draws no retry action by design) as its passing Avalonia test?
+- Resume point: Wave 8 of Phase 25 with the answers. Class A tests are already in place; the classification stays in the parity table.

@@ -393,3 +393,13 @@ Ship: held by the owner's answer. ultrathink-ship not invoked. No PR, no push, n
 
 Status: partially complete. The shared library split, the Android head and the android CI job are written; the Android build passes locally. The CI run needs a push, which is not authorized. Criteria 1 to 3 and 5 are blocked. Record: 24-SUMMARY.md, run 2026-10-25. Evidence: docs/runbooks/evidence/phase-24-android-2026-10-25/.
 Gate after the split: `./bootstrap.sh` exit 0, total 2245, failed 0, skipped 0, web smoke exit 0. One flaky test is recorded (LinuxLocalPtyBackendTests.DisposeEndsARunningProcessAndReturns, passed on rerun; the terminal harness is not touched by this run).
+
+## Run summary 2026-10-25 (gsd-autonomous, graph ut-mvmegw7f-4a7312d5, paused)
+
+- v0.10.0 closeout: partial audit written (.planning/v0.10.0-MILESTONE-AUDIT.md). Milestone complete: not run (open phases). Cleanup: no run-created scratch remains (the checkpoint patches were not needed; commits are the checkpoints).
+- Phase states: 20 complete; 21 complete; 22 skipped by owner decision; 23 blocked (criterion 2 deploy part and criterion 3); 24 blocked (CI push not authorized; criteria 1 to 3 Mac; criterion 5 device); 25 awaiting owner decision (criterion 1).
+- Commits: cfa385d (Phase 23 checkpoint), fe2d398 (Phase 24 checkpoint), and the Phase 25 checkpoint with this run summary.
+- Open pauses: Phase 25 GREY_AREA (questions 1 and 2 in 25-CONTEXT.md, run record 2026-10-25). Resume at Phase 25 Wave 8 after the answers. External blockers: Phase 22 (Windows and Mac runners), Phase 23 (OMPOS_API_ORIGIN, deploys), Phase 24 (push authorization for the CI run; Mac; Android 16 device).
+- Ship: held by the owner's answer; ultrathink-ship not invoked; no PR, push or merge.
+- v0.11.0 and later: not started (G-M1 answered No).
+- Unmapped follow-ups: the flaky terminal test helper; a repository-wide TODO and FIXME check (touched paths were clean).

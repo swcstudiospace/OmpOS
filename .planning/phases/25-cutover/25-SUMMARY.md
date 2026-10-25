@@ -23,3 +23,11 @@ Mac channel: No direct step, but the dependencies are Mac-channel and host-block
 
 - No Phase 25 code commit.
 - 9e5913d: gate-green HEAD
+
+## Run 2026-10-25 (gsd-autonomous, graph ut-mvmegw7f-4a7312d5)
+
+Status: awaiting owner decision. Criterion 1 unmet (Class A 10 met; Class B 1 awaiting acceptance; Class C 13 open). Criteria 2 and 3 not started.
+
+Gate on the checkpoint tree: `./bootstrap.sh` exit 0; total 2256 passed, 0 failed, 0 skipped; web smoke exit 0. Tests added: tests/OmpOS.Native.Tests/Parity/ParityGapClosureTests.cs (rows 11, 21, 22, 36, 39) and ParityComposerGapClosureTests.cs (rows 31 to 35, 41). The parity table's Avalonia column names each new test; Class C cells state that the Avalonia head does not render the behaviour. No product code changed.
+
+Deviations: none in product code. Two analyzer findings in the new tests were fixed in the test files (an unnecessary using; a constant array argument).
