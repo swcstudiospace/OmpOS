@@ -200,7 +200,16 @@ internal partial class ComposerView : UserControl
         }
 
         // The scheduler holds the follow-up until the active run completes. The draft clears because the message is now queued.
-        runs.QueueFollowUp(text);
+        try
+        {
+            runs.QueueFollowUp(text);
+        }
+        catch (InvalidOperationException refusal)
+        {
+            // A refused follow-up faults the returned task, so Track reports it on the status line and the draft stays.
+            return Task.FromException(refusal);
+        }
+
         composer.Draft = string.Empty;
         return Task.CompletedTask;
     }

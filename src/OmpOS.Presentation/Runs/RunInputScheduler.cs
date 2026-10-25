@@ -16,6 +16,12 @@ namespace OmpOS.Presentation.Runs;
 /// </remarks>
 public sealed class RunInputScheduler : ObservableModel
 {
+    /// <summary>
+    /// The most user messages that may wait to start: the steers the input has accepted that have not started their turn, plus the
+    /// follow-ups queued behind the active run. A send past this count is refused with <see cref="InvalidOperationException"/>.
+    /// </summary>
+    public const int MaxQueuedMessages = 16;
+
     private readonly IRunInput _input;
     private readonly Queue<string> _followUps = new();
     private bool _runActive;
@@ -68,7 +74,7 @@ public sealed class RunInputScheduler : ObservableModel
     /// <param name="cancellationToken">Cancels the delivery.</param>
     /// <returns>A task that completes when the input has accepted the steering message, or when it has been queued behind a follow-up.</returns>
     /// <exception cref="ArgumentException"><paramref name="text"/> is null, empty or white space.</exception>
-    /// <exception cref="InvalidOperationException">No run is active.</exception>
+    /// <exception cref="InvalidOperationException">No run is active, or the run already holds <see cref="MaxQueuedMessages"/> messages.</exception>
     public async Task SteerAsync(string text, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
@@ -83,6 +89,7 @@ public sealed class RunInputScheduler : ObservableModel
             return;
         }
 
+        EnsureRoomForAnotherMessage();
         _steeringInFlight++;
         UpdatePending();
         try
@@ -100,7 +107,7 @@ public sealed class RunInputScheduler : ObservableModel
     /// <summary>Queues a follow-up. It is dispatched after the active run completes.</summary>
     /// <param name="text">The follow-up message.</param>
     /// <exception cref="ArgumentException"><paramref name="text"/> is null, empty or white space.</exception>
-    /// <exception cref="InvalidOperationException">No run is active.</exception>
+    /// <exception cref="InvalidOperationException">No run is active, or the run already holds <see cref="MaxQueuedMessages"/> messages.</exception>
     public void QueueFollowUp(string text)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
@@ -109,6 +116,7 @@ public sealed class RunInputScheduler : ObservableModel
             throw new InvalidOperationException("No run is active. Send the message as a new prompt.");
         }
 
+        EnsureRoomForAnotherMessage();
         _followUps.Enqueue(text);
         NotifyPropertyChanged(nameof(QueuedFollowUpCount));
         UpdatePending();
@@ -173,6 +181,15 @@ public sealed class RunInputScheduler : ObservableModel
     /// those change the input's count outside the scheduler.
     /// </summary>
     public void NotifySteersHeldChanged() => NotifyPropertyChanged(nameof(SteersHeld));
+
+    private void EnsureRoomForAnotherMessage()
+    {
+        if (_input.SteersHeld + _followUps.Count >= MaxQueuedMessages)
+        {
+            throw new InvalidOperationException(
+                $"The run already holds {MaxQueuedMessages} queued messages. Wait for the active run to finish before queuing more.");
+        }
+    }
 
     private void UpdatePending() =>
         SetProperty(ref _pending, ComputePending(), nameof(Pending));

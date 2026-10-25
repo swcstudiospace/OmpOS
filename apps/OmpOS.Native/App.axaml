@@ -82,7 +82,7 @@
       <Setter Property="BorderThickness" Value="2,0,0,0" />
     </Style>
 
-    <!-- Focus indicator: an AccentPurple border on every shared control, with the default adorner removed (D-20-10, OQ-32). FocusRing is reserved and unused. -->
+    <!-- Focus indicator: an AccentPurple border on the shared controls listed below, with the default adorner removed (D-20-10, OQ-32). FocusRing is reserved and unused. -->
     <Style Selector="ListBox:focus-visible">
       <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
       <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
@@ -108,6 +108,12 @@
     </Style>
 
     <Style Selector="Button:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+
+    <Style Selector="ToggleButton:focus-visible">
       <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
       <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
       <Setter Property="FocusAdorner" Value="{x:Null}" />

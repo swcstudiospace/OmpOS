@@ -708,7 +708,7 @@ public partial class MainView : UserControl
 
     /// <summary>
     /// Cancels the turn in flight, if one runs, and then disposes the composed host. The window is closing, so nothing awaits this; a
-    /// failure reaches the status line through the caller's continuation.
+    /// failure is traced by the caller's continuation, not shown on the status line.
     /// </summary>
     /// <param name="prompts">The send path of the composed engine.</param>
     /// <returns>A task that completes when the host has been disposed.</returns>
