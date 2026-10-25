@@ -379,7 +379,7 @@ These items are closed per the milestone assignment. They are not re-planned. RE
 | REC-04 | Phase 19 | Planned |
 | REC-05 | Phase 18 | Planned |
 
-## v0.10.0 Cross-platform UI (planned)
+## v0.10.0 Cross-platform UI (in progress)
 
 Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazor WebAssembly; Avalonia.Browser is gated by G-WEB, which failed on Avalonia 12.1.4 (ADR-0004).
 
@@ -431,6 +431,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Depends on**: Phases 20, 21
 **Mac channel**: Yes. The macOS 26 build check, the NSAccessibility inspection, signing and notarization need a Mac host, so the owner runs them on the Mac channel and records them under XP-11. Their macOS scope replaces v0.9.2 Phases 15 and 16.
 **UI hint**: yes
+**Status (2026-10-25)**: deferred by owner decision (the phase was skipped on 2026-10-24). Met: criterion 2 on X11 (2026-10-22). Partial: criterion 1, with the X11 and XWayland starts recorded (2026-10-22 and 2026-10-24); the native Wayland opt-in run is not done. 22-SUMMARY.md corrects the earlier claim that criterion 1 was met. Deferred, not removed: criterion 1's opt-in run, and criteria 3 to 5, which need the Windows 11 24H2 runner and the Mac channel.
 **Success Criteria** (what must be TRUE):
   1. The Linux head starts on X11 and on Wayland with the native backend opt-in, and each start is recorded with its backend named. Verify: Linux smoke logs in the runbook; a Wayland run with no Wayland session is recorded as not run, not as passed.
   2. The Linux head exposes the prompt input, the send control and the transcript through AT-SPI2 with their accessible names and roles. Verify: AT-SPI2 query output recorded in the runbook.

@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v0.10.0
 milestone_name: Cross-platform UI
 status: paused
-last_updated: "2026-10-24"
-last_activity: 2026-10-24
+last_updated: "2026-10-25"
+last_activity: 2026-10-25
 progress:
   total_phases: 6
-  completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
-  percent: 33
+  completed_phases: 3
+  total_plans: 8
+  completed_plans: 8
+  percent: 50
 ---
 
 # Project State
@@ -453,3 +453,70 @@ The user re-requested ultrathink-ship and said the run looked finished. It was n
 - The override flag is `--ignore-gsd` (ultrathink-ship usage). It needs the owner's explicit statement that the roadmap is separate work.
 
 Owner decision: keep holding. No commit, push, PR or merge was performed. The 10 uncommitted paths remain in the working tree.
+
+## Uplift run ut-mvnrblbn-d38646a9: run start, baseline and pause (2026-10-25)
+
+Plan source: the uplift output for this request was produced in degraded mode (n8 empty). n1 to n7 were used as the plan, and the wave order is unverified. Skill() is not available here, so phase commands run by loading the skill documents (G-S1, accepted).
+
+Discovery (read-only, then the first write):
+- Skill: /root/.agents/skills/gsd-autonomous/SKILL.md is a wrapper that points to /root/.agents/gsd-core/workflows/autonomous.md. The autonomous step files cover converge only. The skill defines no commit policy for code. Cleanup goes through gsd-cleanup, which asks for approval itself.
+- Config: commit_docs is true (planning docs are committed by the GSD tooling). create_tag is true, so the complete step creates a tag; a closeout tag needs your acceptance.
+- Git: branch feat/v0.9.2-hardening. At the first write, 10 uncommitted paths predated this run. You chose one local baseline commit with no push: 0bea2bf (its file set equals the 10 paths; the tree was clean afterwards). Starting revision: 0bea2bf.
+- TODO markers: 0 in product code. The 12 matching lines (in 4 files) are scanner strings and test fixtures: tests/OmpOS.ArchitectureTests/TodoMarkerScanner.cs, RepoHygieneTests.cs, and tests/OmpOS.Harness.Rpc.Tests/TestData/frames/*.ndjson. There is nothing to map.
+
+BASELINE (captured on 0bea2bf, before any run write; logs in .git/gsd-baseline/, untracked):
+- ./bootstrap.sh: exit 0; total 2270, failed 0, skipped 0; web smoke exit 0.
+- dotnet list OmpOS.Linux.slnf package --vulnerable --include-transitive: exit 0; 71 projects checked, 0 with vulnerable packages.
+- Not run here (CI-only): gitleaks (not installed; install not authorized), compose validation (podman-compose), and the android job (needs a push).
+
+Phase queue (v0.10.0 is the active milestone):
+- 20 complete (20-VERIFICATION.md). 21 complete (21-VERIFICATION.md).
+- 22 deferred by owner decision (2026-10-24). Met: criterion 2 on X11 (2026-10-22) and criterion 1 on the XWayland path (2026-10-24). Deferred, not removed: the native Wayland opt-in start, and criteria 3 to 5. No PLAN exists, which is expected for a deferred phase.
+- 23 blocked: criterion 2's deploy part and criterion 3 need OMPOS_API_ORIGIN, a resumed Railway deploy, and a Vercel deploy. Artifacts 23-CONTEXT.md, 23-01-PLAN.md and 23-SUMMARY.md exist. Discuss and plan were not re-run, because regenerating CONTEXT and PLAN would overwrite recorded decisions; the existing artifacts are reused and verified. Resume point: execute criterion 2's deploy part and criterion 3.
+- 24 blocked: criterion 4 needs a push (not authorized, G24-2). Criteria 1 to 3 and 5 need a Mac with Xcode, an iOS 26 device, and an Android 16 device or a KVM host. Artifacts 24-CONTEXT.md, 24-01-PLAN.md and 24-SUMMARY.md exist. Resume point: execute criterion 4 after push authorization.
+- 25 complete (criteria 1 to 3). 25-01-PLAN.md is a retrospective record, labeled as written after execution.
+
+Pause (BLOCKER_PAUSE): the run stops at the execute step of Phases 23 and 24. Closeout does not start, because every phase must be complete or deferred by a recorded user decision. The open decision is, for each open criterion: defer (keeps v0.10.0 open; the default) or accept.
+
+Open items for the audit:
+- Phase 24 (its entry names apps/OmpOS.Android): Android teardown does not call MainView.Close. CI's vulnerability step audits OmpOS.Linux.slnf, which excludes the Android project; the local audit of that project is clean. The new CI steps (the android job and the browser smoke in build-test) have never run on GitHub. A first push runs gitleaks over the full history, which cannot be run here; the last failing run on the branch (a33c2f7, 2026-10-21) failed that step.
+- Phase 23: the web smoke failed once in a gate run (exit 1) after the tests passed. An isolated rerun passed. The cause is unknown. Its evidence is now kept on failure.
+- Unmapped (tooling): .planning/state.json still names v0.9.2 (2026-10-21).
+
+Reconciliation (run-owned planning edits, not committed):
+- Frontmatter counts now match the artifacts: completed_phases 2 to 3, percent 33 to 50, total_plans 5 to 8, completed_plans 5 to 8 (each plan has its SUMMARY), last_updated and last_activity 2026-10-25.
+- ROADMAP: the v0.10.0 heading status is now "(in progress)", and a Phase 22 status line records the owner's deferral. No goal, order, dependency or criterion changed.
+- Not committed: you approved one baseline commit only. commit_docs is true, so the framework would commit these records in its normal flow. Say "commit docs" and these two files will be committed.
+
+## Kickoff and decisions, graph ut-mvnwnmzr-3a2a4035 (2026-10-25)
+
+Kickoff (ultrathink-kickoff):
+- Step 1, track complete: tracking partial. Notion has the Task, 7 nodes and 48 steps. Linear refused every issue (free issue limit), and its dependent rows failed (dependency or parent missing). Reported to the user in one line.
+- Step 3, substrate: graph registered with the Notion refs (surface omp, status Planning). Linear fields omitted.
+- Step 4, questions: the blocking q1 (cleanup) was asked with three grey areas in one call. Non-blocking defaults applied without asking: q2 quality bar, gates and in-PLAN fixes; q3 TODO scope, ROADMAP phases only; q4 pause policy, pause on each grey area.
+- Step 5: Notion Task status set to Implementing. The Linked-issues lines are in the todo list (55 lines, verbatim). Session marked kicked-off.
+- Answers are persisted to the session spec as ANSWER entries (q1, a1, a2, a3, a4).
+
+Answers and effect:
+- Cleanup (q1): keep phase artifacts. At closeout, cleanup removes only skill-defined transient targets, after the list is shown.
+- REQUIREMENTS.md (a1): keep. The complete step's git rm is skipped and recorded as a deviation. Basis: the active file holds the unstarted CX-01 to CX-06 requirements (ROADMAP v0.12.0 names them there) and the VX requirements for v0.13.0 (ROADMAP v0.13.0).
+- Defects (a2): fix (a) and (b), defer (c). (a) was re-asked and deferred (below). (b) is in the Phase 24 commit that follows this record commit. (c) is an audit follow-up.
+- Commits (a3): commit now; one commit per phase after this. This record commit is the first. It stages explicit paths only and pushes nothing.
+
+Re-asked decision (a4, 2026-10-25): fold-in (a) is deferred to the audit. Basis: the view is built once, in OnFrameworkInitializationCompleted (apps/OmpOS.Android/OmpOSAndroidApp.axaml.cs:28). Closing it on finish would leave a same-process relaunch with a disposed view, and no device here can test the relaunch. The current code keeps the view valid for relaunch. The cost is in-process subscriptions until the process ends. Android has no engine (prompts null), so no native resource is held. The owner's earlier approval was given on a description without this risk; the answer is recorded here and in the spec.
+
+Corrections (new lines; earlier entries are not edited):
+- Phase 22 criterion 1: the run-start entry above, and the first ROADMAP status line, said criterion 1 was met on the XWayland path. 22-SUMMARY.md (criterion 1 row, correction 2026-10-24) says it is partial: the X11 and XWayland starts are recorded, and the native Wayland opt-in run is not done. The ROADMAP Phase 22 status line now matches the summary.
+- Complete step: ~/.agents/gsd-core/workflows/complete-milestone.md line 745 creates the tag v[X.Y] when git.create_tag is enabled (config.json: true). Lines 446 and 24 remove REQUIREMENTS.md after archiving it, and line 538 commits the archive. The tag and the archive commit are closeout actions the spec requires the user to accept; the REQUIREMENTS.md removal is declined above.
+
+TODO inventory (2026-10-25):
+- First-party code markers (apps, src, services, tests, tools, scripts, .github, bootstrap.sh): 12 lines in 4 files, all scanner strings or fixtures (tests/OmpOS.ArchitectureTests/TodoMarkerScanner.cs, RepoHygieneTests.cs, tests/OmpOS.Harness.Rpc.Tests/TestData/frames/*.ndjson). The repository's own VERIFY-02 gate passes at 0bea2bf, so there are zero untracked markers. Bucket NOISE; not mapped.
+- Vendored framework comments under apps/OmpOS.Web/wwwroot/lib: bucket FRAMEWORK; excluded by the repository's scanner; not mapped.
+- Tracker of record: docs/open-questions.md (CONTRIBUTING.md TODO policy: a code TODO cites an OQ ID). 93 ID rows: 64 open, 3 partial, 1 deferred, 1 known limit; the rest are decided, resolved, superseded or closed.
+- Tracker rows that name v0.10.0 phases: OQ-29 (Phase 20), OQ-34 (Phase 20 criterion 5), OQ-44 (native views and view-model refresh; Phases 20 and 21). Rule 6 (complete phase): UNMAPPED-OPEN, listed as unmet in the audit; phases are not reopened. OQ-44's premise may be stale: SessionViewModel raises PropertyChanged and SessionView subscribes to it (commit 0bea2bf). Re-check at the audit.
+- The other open tracker rows name no v0.10.0 phase: OUT-OF-MILESTONE or external. Not mapped here.
+- Phase SUMMARY open items for the active milestone: Phase 22 (3: Windows runner; macOS evidence and signing; native Wayland backend). Phase 23 (3: production origin and Railway deploys; G-WEB repeats, no open item; Avalonia.Browser decision, owner). Phase 24 (3: Android CI run needs a push; iOS Mac evidence; iOS and Android projects, partly stale because the Android project exists). Phase 25 (3: Mac evidence; the apps/OmpOS.App removal is done in 9171508, so stale; src/OmpOS.UI removal is an owner decision, and criterion 3 keeps it while it is referenced).
+- Fold-in candidates: (a) deferred (above); (b) done in the Phase 24 commit; (c) deferred to the audit.
+- Other follow-ups found this run: the bootstrap cleanup runs test-services down before removing temporary files under set -e (latent; down exits 0 today); the Phase 23 smoke failed once with its evidence lost (cause unknown); .planning/state.json still names v0.9.2 (tooling; not edited).
+
+Status: paused at a blocker. Resume points: Phase 23 criterion 2 (deploy part) and criterion 3, blocked on OMPOS_API_ORIGIN (unset here) and on the Vercel and Railway deploys (Railway is paused on the account). Phase 24 criterion 4 (CI run; push not authorized, G24-2) and criteria 1 to 3 and 5 (Mac and Android 16 hardware). Phase 22 is deferred by owner decision. Milestone v0.10.0 stays open: closeout is held while criteria remain open, and cleanup keeps phase artifacts.
