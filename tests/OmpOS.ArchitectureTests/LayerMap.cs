@@ -33,6 +33,7 @@ internal static class LayerMap
         ["OmpOS.Harness.Secrets"] = 2,
         ["OmpOS.Harness.Herdr"] = 2,
         ["OmpOS.Harness.Agent"] = 2,
+        ["OmpOS.Harness.AgentLoop"] = 2,
         ["OmpOS.Coordination.Dragonfly"] = 2,
         ["OmpOS.EngineHost"] = 3,
         ["OmpOS.Sessions"] = 2,

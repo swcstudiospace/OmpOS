@@ -34,6 +34,8 @@ namespace OmpOS.Harness.Acp.AcpProtocol;
 [JsonSerializable(typeof(AcpFrames.ChunkUpdate))]
 [JsonSerializable(typeof(AcpFrames.ToolCallPayload))]
 [JsonSerializable(typeof(AcpFrames.PlanUpdate))]
+[JsonSerializable(typeof(AcpFrames.McpServerFrame))]
+[JsonSerializable(typeof(AcpFrames.NameValueFrame))]
 [JsonSerializable(typeof(AcpFrames.PermissionRequestParams))]
 public sealed partial class AcpJsonContext : JsonSerializerContext
 {
