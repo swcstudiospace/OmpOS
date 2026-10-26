@@ -10,3 +10,10 @@
 # enum member, not a credential. The capture is an unedited record of a live run, so the fingerprint is allowlisted
 # here instead of altering the frames. History is not rewritten.
 05dd8ea69e2fa88749eb890363dfb6606e3c02bd:tests/OmpOS.Harness.Rpc.Tests/TestData/frames/rpc-live-20261021T171351Z.ndjson:generic-api-key:4
+
+# Test canaries added by the agent loop work (Phases 44 to 46 and 43). Each literal is a fake token whose only job is to prove
+# that a secret never reaches a log line, an exception message, a stage event or a serialised form; none is a credential.
+# Allowlisted by fingerprint, not by path. History is not rewritten.
+bdb771f78ec062f24e7ac92c515dea56524e4b74:tests/OmpOS.UI.Tests/Security/SessionKeyHolderTests.cs:generic-api-key:14
+a2b44070d2a7c7800173309adf1ad75d20a746bf:tests/OmpOS.Harness.AgentLoop.Tests/Substrate/SubstrateTestSupport.cs:generic-api-key:18
+bf04ba354a6b2c5a4682a8652b829cfbabc544a3:tests/OmpOS.Harness.AgentLoop.Tests/Launch/OmpLaunchPlannerTests.cs:generic-api-key:16
