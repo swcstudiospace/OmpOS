@@ -1,0 +1,107 @@
+{
+  "milestones": [
+    {
+      "heading": "v0.10.0 Cross-platform UI (in progress)",
+      "version": "v0.10.0"
+    }
+  ],
+  "phases": [
+    {
+      "number": "20",
+      "name": "Avalonia Foundation",
+      "goal": "(trimmed)",
+      "mode": null,
+      "depends_on": "(trimmed)",
+      "plan_count": 4,
+      "summary_count": 4,
+      "has_context": true,
+      "has_research": true,
+      "disk_status": "complete",
+      "roadmap_complete": true,
+      "context_read_error": null,
+      "context_scope": "complete"
+    },
+    {
+      "number": "21",
+      "name": "Parity Surface",
+      "goal": "(trimmed)",
+      "mode": null,
+      "depends_on": "(trimmed)",
+      "plan_count": 1,
+      "summary_count": 0,
+      "has_context": true,
+      "has_research": false,
+      "disk_status": "complete",
+      "roadmap_complete": true,
+      "context_read_error": null,
+      "context_scope": "complete"
+    },
+    {
+      "number": "22",
+      "name": "Desktop Heads",
+      "goal": "(trimmed)",
+      "mode": null,
+      "depends_on": "(trimmed)",
+      "plan_count": 0,
+      "summary_count": 0,
+      "has_context": true,
+      "has_research": false,
+      "disk_status": "discussed",
+      "roadmap_complete": false,
+      "context_read_error": null,
+      "context_scope": "complete"
+    },
+    {
+      "number": "23",
+      "name": "Web Head on the Shared Presentation Layer",
+      "goal": "(trimmed)",
+      "mode": null,
+      "depends_on": "(trimmed)",
+      "plan_count": 1,
+      "summary_count": 0,
+      "has_context": true,
+      "has_research": false,
+      "disk_status": "planned",
+      "roadmap_complete": false,
+      "context_read_error": null,
+      "context_scope": "complete"
+    },
+    {
+      "number": "25.9",
+      "name": "Suppression and Skip Review",
+      "goal": "(trimmed)",
+      "mode": null,
+      "depends_on": "(trimmed)",
+      "plan_count": 0,
+      "summary_count": 0,
+      "has_context": false,
+      "has_research": false,
+      "disk_status": "no_directory",
+      "roadmap_complete": false,
+      "context_read_error": null,
+      "context_scope": "complete"
+    }
+  ],
+  "phase_count": 5,
+  "completed_phases": 3,
+  "total_plans": 16,
+  "total_summaries": 12,
+  "progress_percent": 75,
+  "progress_scope": "complete",
+  "current_phase": "23",
+  "next_phase": "22",
+  "checkbox_conflict": [
+    {
+      "number": "25.1",
+      "roadmap_complete": true,
+      "disk_status": "executed",
+      "plan_count": 1,
+      "summary_count": 1
+    }
+  ],
+  "missing_phase_details": [
+    "1",
+    "2"
+  ],
+  "scope": "complete"
+}

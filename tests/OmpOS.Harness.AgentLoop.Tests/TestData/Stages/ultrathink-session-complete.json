@@ -1,0 +1,141 @@
+{
+  "sessionId": "01a0d443-333f-7664-8d02-cb0687479d39",
+  "at": 1790350290922,
+  "engine": "claude:sonnet",
+  "host": "omp",
+  "result": {
+    "xml": "<BUILD_PROMPT/>",
+    "root": "UPLIFTED_PROMPT",
+    "source": "llm"
+  },
+  "graph": {
+    "goal": "Safely orchestrate the gsd-autonomous skill through all remaining milestone phas",
+    "nodes": [
+      {
+        "id": "n1",
+        "title": "Understand orchestration scope and hazar",
+        "kind": "understand",
+        "dependsOn": []
+      },
+      {
+        "id": "n2",
+        "title": "Pre-flight concurrency check",
+        "kind": "decompose",
+        "dependsOn": [
+          "n1"
+        ]
+      },
+      {
+        "id": "n3",
+        "title": "Pre-flight legitimacy/contamination chec",
+        "kind": "decompose",
+        "dependsOn": [
+          "n1"
+        ]
+      },
+      {
+        "id": "n4",
+        "title": "Phase discovery and per-phase execution ",
+        "kind": "decompose",
+        "dependsOn": [
+          "n2",
+          "n3"
+        ]
+      },
+      {
+        "id": "n5",
+        "title": "Hook-blind verification strategy",
+        "kind": "generate",
+        "dependsOn": [
+          "n4"
+        ]
+      },
+      {
+        "id": "n6",
+        "title": "Pause-condition triggers and grey-area h",
+        "kind": "critique",
+        "dependsOn": [
+          "n2",
+          "n3",
+          "n4"
+        ]
+      },
+      {
+        "id": "n7",
+        "title": "Milestone closeout sequence",
+        "kind": "generate",
+        "dependsOn": [
+          "n4",
+          "n5"
+        ]
+      },
+      {
+        "id": "n8",
+        "title": "Ordered execution plan with waves",
+        "kind": "synthesize",
+        "dependsOn": [
+          "n5",
+          "n6",
+          "n7"
+        ]
+      }
+    ]
+  },
+  "clarifications": [
+    {
+      "id": "q1",
+      "header": "License",
+      "blocking": true
+    },
+    {
+      "id": "q2",
+      "header": "Skip scope",
+      "blocking": false
+    },
+    {
+      "id": "q3",
+      "header": "Copyright",
+      "blocking": false
+    },
+    {
+      "id": "q4",
+      "header": "Secret leak",
+      "blocking": true
+    },
+    {
+      "id": "q1",
+      "header": "Blocker hand",
+      "blocking": false
+    },
+    {
+      "id": "q2",
+      "header": "Pause strate",
+      "blocking": true
+    }
+  ],
+  "kickedOff": true,
+  "synced": true,
+  "futureField": {
+    "addedByAVendorUpdate": true,
+    "items": [
+      1,
+      2,
+      3
+    ]
+  },
+  "plan": {
+    "graphId": "ut-muh4aveq-080f3f30",
+    "task": {
+      "graphId": "ut-muh4aveq-080f3f30",
+      "status": "Planning"
+    },
+    "issues": [],
+    "subIssues": []
+  },
+  "tracking": {
+    "graphId": "ut-muh4aveq-080f3f30",
+    "status": "complete",
+    "errors": [],
+    "updatedAt": 1790350374724
+  }
+}

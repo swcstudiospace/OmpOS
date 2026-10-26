@@ -1,0 +1,8 @@
+{
+  "entries": [
+    {"id":"les_1","scope":"repo:swcstudiospace/OmpOS","kind":"fact","subject":"lesson:v0.14/44-plugin/leases-fence","text":"[lessonbank]\nmilestone: v0.14\nphase: 44-plugin\noutcome: success\nsource: .planning/phases/44/44-01-SUMMARY.md\n\nLeases fence on epoch, so a stale holder cannot release.","created":"2026-10-24T11:00:00.000Z"},
+    {"id":"les_2","scope":"repo:swcstudiospace/OmpOS","kind":"fact","subject":"lesson:v0.13/40-x/heartbeats","text":"Heartbeats stop on a lost refusal.","created":"2026-10-23T11:00:00.000Z"},
+    {"id":"les_3","scope":"repo:swcstudiospace/OmpOS","kind":"fact","subject":"lesson-digest:v0.13","text":"[lessonbankdigest]\nmilestone: v0.13\n\nA digest, not a lesson.","created":"2026-10-22T11:00:00.000Z"}
+  ],
+  "next": null
+}
