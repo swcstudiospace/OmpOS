@@ -1,0 +1,26 @@
+{
+  "name": "gsd-core-omp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "omp binding for the installed GSD-Core (@opengsd/gsd-core): registers its agents with the task tool and reports health",
+  "engines": {
+    "bun": ">=1.2",
+    "node": ">=24"
+  },
+  "omp": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "scripts": {
+    "probe": "node bin/gsd-omp-probe.mjs --json",
+    "link-agents": "node bin/gsd-omp-link.mjs",
+    "test": "node --test \"test/*.test.mjs\""
+  }
+}

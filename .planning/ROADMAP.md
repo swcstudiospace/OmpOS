@@ -8,6 +8,7 @@
 - v0.9.2 Hardening and hosted API: audit status `tech_debt` (2026-10-21, `.planning/v0.9.2-MILESTONE-AUDIT.md`). Phases 1-5, 7, 10, 11, 17-19 complete; 8, 9, 15, 16 superseded; 6, 12, 13, 14 blocked on external criteria. Completion awaits the owner (irreversible). Requirements in `.planning/REQUIREMENTS.md` (75 REQ-IDs).
 - v0.13.0 Cursor 1:1 workspace and provider platform: planned 2026-10-22 from the ultrathink plan (graph ut-mvjvg4gj-fb21d80f); phases 36 to 43; requirements VX-01 to VX-10 in `.planning/REQUIREMENTS.md`.
 - v0.10.0 Cross-platform UI: active. Phases 20 and 21 complete (both verified). Phase 22 blocked on external hosts: criterion 1 met on the XWayland path (2026-10-24); criteria 3 (Windows runner) and 4 and 5 (Mac channel) open. Phases 23 to 25 partial or blocked (see STATE). Requirements XP-01 to XP-11.
+- v0.14.0 Agent loop and Agent Panel: planned 2026-10-26 from the user request to connect claude-ultrathink, agent-swarm and agent-substrate to the agent loop as pinned submodules and omp plugins, add GSD-Core as an omp plugin, build the default Agent Panel and push to main; phases 44 to 47; requirements AL-01 to AL-12 in `.planning/REQUIREMENTS.md`.
 
 ## Planning Rules
 
@@ -869,4 +870,73 @@ Phases 36 to 38 do not depend on the blocked v0.10.0 items (Phases 22, 24, 25), 
   2. A remote-attached terminal renders the same terminal model as desktop and resumes after network loss without duplicated blocks. Verify: gate replay test.
   3. WebAssembly keeps provider keys in session-only memory, cleared on reload, with a documented threat model; no key is written to browser storage. Verify: browser-run check and the canary test. Pause: server-side vault or per-session entry (default session-only).
   4. The Android accessibility dump needs an Android 16 device or emulator, which this host does not have; it is recorded as blocked.
+**Plans**: TBD
+
+## v0.14.0 Agent loop and Agent Panel (planned, added 2026-10-26)
+
+Source: user request 2026-10-26 and the ultrathink plan graph ut-mvp0bh59-2dd6ef4c (spec `/root/.omp/agent/ultrathink/sessions/01a17752-7e43-7002-8ac7-6781e5b19475.xml`). Evidence is in the discovery dossiers under `docs/plans/agent-loop/`. Decisions are recorded in `docs/decisions/ADR-0012-agent-loop-plugins.md`. Requirements AL-01 to AL-12 are in `.planning/REQUIREMENTS.md`.
+
+Settled decisions: the three plugins run inside the omp engine and OmpOS launches omp with them and observes them (the hybrid of the ultrathink clarification q1, settled from repository evidence); the Agent Panel is built on the shared presentation layer in the Avalonia native head (q2, the MAUI head is removed); the runnable panel comes first and externally blocked phases are deferred with recorded reasons (q3). Live delivery of a steering message into a running session does not exist in agent-substrate on main (its Phase 53 is unmerged), so OmpOS delivers steering over ACP and only records it in the substrate.
+
+- [ ] **Phase 44: Plugin Submodules and Launch Contract** - three pinned submodules, the GSD-Core omp plugin, the plugin catalog and its guard, ACP launch plumbing, repository hygiene and CI
+- [ ] **Phase 45: Agent Loop Stage Sources** - stage contracts, observers for Ultrathink, Swarm, Substrate and GSD, task context, session registry with restart resume, degradation
+- [ ] **Phase 46: Agent Panel** - the default surface: session rail, thread, pipeline strip, composer with steering, context inspector, states and accessibility
+- [ ] **Phase 47: Agent Panel on the Web Head** - deferred: the hosted API runs the InMemory harness and Railway deploys are paused
+
+### Phase 44: Plugin Submodules and Launch Contract
+**Goal**: The three sibling projects are pinned submodules, GSD-Core is an omp plugin, and OmpOS can launch omp with the four plugins loaded, hermetically and reproducibly.
+**Requirements**: AL-01, AL-02, AL-03, AL-04
+**Depends on**: Phase 21 (the ACP session and approval path)
+**Mac channel**: No.
+**Status (2026-10-26)**: not started.
+**Success Criteria** (what must be TRUE):
+  1. `.gitmodules` lists `plugins/claude-ultrathink`, `plugins/agent-swarm` and `plugins/agent-substrate` by https remote URL with no local path, each pinned to a commit that exists on its remote. Verify: a gate test parses `.gitmodules` and `git ls-tree HEAD plugins/` for three gitlinks, and `docs/plugins.md` records each pin and the update procedure.
+  2. A fresh clone with `--recurse-submodules` restores the plugin directories, and the repository hygiene tests pass with them present. Verify: fresh-clone run recorded in the runbook.
+  3. `plugins/gsd-core-omp` reports its health as JSON (exit 0 healthy, 2 degraded, 3 not installed) and degrades without GSD-Core. Verify: node tests and the recorded probe output.
+  4. The plugin catalog names the four plugins in composition order (Ultrathink, Swarm, Substrate, GSD-Core). An uninitialised submodule raises `SubmoduleNotInitializedException` naming the plugin, the path and `git submodule update --init --recursive plugins/<name>`. Verify: unit tests.
+  5. The launch planner produces the argv and environment for `omp acp`: exact argument order, a per-session swarm state directory, `SWARM_GSD_STATE_FILE` empty, no `SWARM_AGENT` or `SWARM_TASK_ID`, tokens only by environment variable name and never in argv. The ACP transport applies extra arguments and environment, and `session/new` carries the MCP server specs. Verify: transport and planner tests against a fake omp.
+  6. A real `omp acp` handshake with the planned flags starts and lists the plugin commands, with no model turn. Verify: runbook entry with the probe output.
+  7. The gate is green, the repository hygiene scan excludes `plugins/`, and CI checks out submodules (the private agent-substrate submodule needs a token secret, recorded as an owner action). Verify: `./bootstrap.sh`.
+**Plans**: TBD
+
+### Phase 45: Agent Loop Stage Sources
+**Goal**: What the plugins do becomes observable stage events and task context in a session catalog that survives a restart, and every missing or failing plugin degrades visibly instead of crashing.
+**Requirements**: AL-05, AL-06, AL-07, AL-08
+**Depends on**: Phase 44
+**Mac channel**: No.
+**Status (2026-10-26)**: not started.
+**Success Criteria** (what must be TRUE):
+  1. The Ultrathink, Swarm, Substrate and GSD observers map recorded fixtures (the planner session file, the swarm `live.json` and `events.jsonl`, substrate HTTP replies, GSD query output) to stage events; unknown fields are ignored. Verify: fixture tests per observer.
+  2. Each degraded path (planner off or failing, swarm missing, substrate unreachable, GSD tools missing, submodule uninitialised) yields a Degraded or Unavailable event with a plain-text reason and no exception; cancellation ends every observer and leaves no child process. Verify: degraded-path and cancellation tests.
+  3. The session registry persists several sessions atomically, quarantines a corrupt or unknown-version file, marks a session that was running at shutdown as Lost, and returns the stored references needed to resume it. Verify: persistence and restart tests.
+  4. Task context merges the GSD phase with the substrate brief and lessons, and a session never reads another session's state. Verify: scope-isolation tests.
+  5. A steering message is recorded in the substrate as a `note` event with `payload.action` `steer` when it is reachable, and is skipped with a Degraded stage when it is not. Verify: tests with a fake gateway.
+  6. The gate is green. Verify: `./bootstrap.sh`.
+**Plans**: TBD
+
+### Phase 46: Agent Panel
+**Goal**: The application opens on a Cursor-class Agent Panel that runs several concurrent sessions through the composed loop, shows the pipeline stages, takes steering and keeps every state accessible.
+**Requirements**: AL-09, AL-10, AL-11, AL-12
+**Depends on**: Phases 44, 45
+**Mac channel**: No.
+**UI hint**: yes
+**Status (2026-10-26)**: not started.
+**Success Criteria** (what must be TRUE):
+  1. The default window shows the session rail, the thread, the pipeline strip, the composer and the inspector. Verify: headless UI test and a screenshot recorded under Xvfb.
+  2. Two sessions each own an engine; selecting a session rebinds the thread, composer and approvals, and each row shows its own status. Verify: headless test with two scripted sessions.
+  3. While a run is active, a message queues as a steer or a follow-up, appears in the steering history and is recorded in the substrate. Verify: UI and presenter tests.
+  4. Empty, initialising, streaming, error with retry, success, each degraded mode and a resumed long-running session render their copy. Verify: one test per state.
+  5. Every tab stop has an accessible name, the keyboard map in the UI spec works, stage changes are announced through a polite live region, motion honours reduced motion, and new tokens pass the contrast tests. Verify: the accessibility walk over the opened panel and the contrast tests.
+  6. Eight screenshots (empty, streaming with pipeline, degraded, error, long-running list, narrow window, dense list, keyboard focus) are recorded under Xvfb. Verify: evidence files in `docs/runbooks/evidence/`.
+  7. The gate is green. Verify: `./bootstrap.sh`.
+**Plans**: TBD
+
+### Phase 47: Agent Panel on the Web Head
+**Goal**: The Blazor web head shows the same panel through the API.
+**Requirements**: AL-09 (web head)
+**Depends on**: Phase 46; v0.9.2 Phase 13 (hosted routed harness)
+**Mac channel**: No.
+**Status (2026-10-26)**: deferred. The hosted API runs the InMemory harness, Railway deploys are paused, and the web head cannot spawn processes or read the plugin state, so a faithful panel needs new API endpoints for stage events. Resume when the hosted routed harness (Phase 13) is unblocked.
+**Success Criteria** (what must be TRUE):
+  1. The API exposes the stage events of a session and the web head renders them with the shared presentation models. Verify: API integration test and bunit test.
 **Plans**: TBD

@@ -350,3 +350,44 @@ Source: user request 2026-10-22 and ultrathink plan graph ut-mvjvg4gj-fb21d80f. 
 - [ ] **VX-10**: Provider keys live only in the platform secure store on desktop and mobile, or in session memory on web, and never reach logs, transcripts, crash output or telemetry.
   - Acceptance: a canary key injected into each sink is absent from every sink in the gate; web keys are cleared on reload; no key is written to browser storage.
   - Verification: canary harness tests (Phase 36); browser-run check (Phase 43). Web key storage (vault or per-session entry) is an owner decision; the default is session-only memory.
+
+## Agent loop and Agent Panel (AL, v0.14.0, planned 2026-10-26)
+
+Source: user request 2026-10-26 and ultrathink plan graph ut-mvp0bh59-2dd6ef4c. Evidence: `docs/plans/agent-loop/`. Not counted in v0.9.2 completion.
+
+- [ ] **AL-01**: claude-ultrathink, agent-swarm and agent-substrate are git submodules of the repository, referenced by https remote URL and pinned to commits that exist on their remotes.
+  - Acceptance: `.gitmodules` holds no local path; a fresh clone with `--recurse-submodules` restores them; the update procedure and each pin are documented; no sibling source is copied or edited.
+  - Verification: gate test over `.gitmodules` and the gitlinks; fresh-clone run (Phase 44).
+- [ ] **AL-02**: GSD-Core is an omp plugin owned by this repository that reports its health and degrades without GSD-Core.
+  - Acceptance: the probe prints one JSON object and exits 0, 2 or 3; the plugin copies no GSD file; its agents are linked by absolute symlink and never overwrite a user agent.
+  - Verification: node tests and recorded probe output (Phase 44).
+- [ ] **AL-03**: OmpOS launches `omp acp` with the four plugins loaded and nothing from the user's global omp configuration.
+  - Acceptance: the argument order, the environment and the MCP server list are produced by a pure planner and applied by the ACP transport; tokens appear only as environment variable names; per-session state directories isolate the orchestrator.
+  - Verification: planner and transport tests against a fake omp; a recorded real handshake (Phase 44).
+- [ ] **AL-04**: A missing or uninitialised plugin is reported with an actionable message and never crashes the application.
+  - Acceptance: `SubmoduleNotInitializedException` names the plugin, the path and the exact fix; the panel shows the plugin as unavailable and the session runs as plain omp.
+  - Verification: unit tests (Phase 44), panel state tests (Phase 46).
+- [ ] **AL-05**: The stages of the loop (planner, orchestrator, substrate, workflow engine) are observable as stage events with degradation.
+  - Acceptance: each observer maps recorded fixtures; unknown fields are ignored; a malformed or absent input is a Degraded or Unavailable event; cancellation leaves no child process.
+  - Verification: fixture, degraded-path and cancellation tests (Phase 45).
+- [ ] **AL-06**: Several long-running sessions are kept in a catalog that survives an application restart.
+  - Acceptance: atomic versioned persistence; a corrupt or unknown-version file is quarantined and treated as empty; a session running at shutdown is Lost on the next start and can be resumed from its stored reference.
+  - Verification: persistence and restart tests (Phase 45).
+- [ ] **AL-07**: The operator can steer a running session, and the steering is recorded.
+  - Acceptance: a message sent during a run queues as a steer or a follow-up and is delivered over ACP after the active turn in send order; the substrate records it as a `note` event with `payload.action` `steer` when reachable; OmpOS never claims the substrate delivered it.
+  - Verification: presenter tests and fake-gateway tests (Phases 45, 46).
+- [ ] **AL-08**: The task context of a session (Kanban status, workflow phase, shared memory, lessons) is readable and scoped to the session.
+  - Acceptance: parts that cannot be read are listed as warnings; text is plain and length capped; one session never reads another's state.
+  - Verification: scope-isolation tests (Phase 45).
+- [ ] **AL-09**: The application opens on the Agent Panel, a Cursor-class agent surface.
+  - Acceptance: session rail, thread, pipeline strip, composer with Send, Steer, Follow-up and Stop, and a collapsible inspector; every existing tool remains reachable.
+  - Verification: headless UI test and a recorded screenshot (Phase 46). The web head parity is Phase 47, deferred.
+- [ ] **AL-10**: Several sessions run concurrently, each with its own engine and status.
+  - Acceptance: selecting a session rebinds the thread, composer and approvals; each row shows its own status and last activity; closing a session stops its engine.
+  - Verification: headless test with two scripted sessions (Phase 46).
+- [ ] **AL-11**: The panel is operable by keyboard and by screen reader and honours reduced motion.
+  - Acceptance: every tab stop has an accessible name; the documented keyboard map works; stage changes use a polite live region and errors an assertive one; new colours pass the contrast tests.
+  - Verification: the accessibility walk over the opened panel and the contrast tests (Phase 46).
+- [ ] **AL-12**: Every panel state has its own copy and screenshot evidence.
+  - Acceptance: empty, initialising, streaming, error with retry, success, each degraded mode and a resumed session; eight screenshots recorded.
+  - Verification: one test per state and the evidence files (Phase 46).
