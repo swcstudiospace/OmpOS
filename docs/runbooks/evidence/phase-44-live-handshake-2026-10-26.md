@@ -32,19 +32,12 @@ Measured omp startup to `session/new` is 17 to 97 s depending on host load (`Acp
 
 ## Result
 
-<!-- BEGIN to be filled by the run -->
-Status: NOT RUN. The author did not execute the test.
+<!-- BEGIN result recorded 2026-10-26 -->
+Status: PASSED on 2026-10-26 against the real omp 18.12.6 on Linux, after the test was reworked in Phase 48 (commit `3603ba4`). The reworked test plans all four plugins (Substrate switched on against an address nothing listens on) and, besides the raw frame checks described in steps 4 to 7 above, reads the plugin connection report and the heartbeat: it asserts that all four plugins are Connected, that the heartbeat is fresh and names mode `rpc` with the pid of the run, that no `session/prompt` was sent, and that no omp process of the run remains. The detailed result is in `docs/runbooks/evidence/phase-48-omp-plugins-2026-10-26/README.md` (Live evidence tests).
 
-- Date and host:
-- omp version (`omp --version`):
-- Submodule pins (`git submodule status plugins/`):
-- Command exit code and test summary line:
-- Sent methods:
-- `available_commands_update` notifications:
-- Distinct commands announced:
-- First 40 command names:
-- omp pids found during the run:
-- Processes still carrying the run's `PI_CODING_AGENT_DIR` after the close (expected none):
-- Wall time:
-- Deviations or skips (reason):
-<!-- END to be filled by the run -->
+- Date and host: 2026-10-26, this development host (Linux).
+- omp version: 18.12.6.
+- Test summary: the live trait run passed. The command exit code and the printed counts (distinct commands, first 40 names, pids, wall time) were not copied into this record.
+- Submodule pins: as in `docs/plugins.md`.
+- Not verified: a model turn; Windows and macOS.
+<!-- END result recorded 2026-10-26 -->

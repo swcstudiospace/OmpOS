@@ -65,14 +65,14 @@ Session runs execute inside the API process. No separate worker service exists.
 
 ## Agent loop
 
-The agent loop runs the Ultrathink, Swarm, Substrate and GSD-Core plugins inside the omp processes the application starts: `omp acp` today, and omp terminals as a verification target (Phase 48, DR-2). OmpOS launches them and observes their side channels. What they expose is shown in the default Cursor-style Agent Panel (session rail, thread, composer and a one-line plugin connection row); that panel has no inspector and no stage panels of its own (DR-1). Task context and steering history belong on the Kanban tab card (Phase 39). Plugin details: [docs/plugins.md](plugins.md). Operation: [docs/runbooks/agent-loop.md](runbooks/agent-loop.md).
+The agent loop runs the Ultrathink, Swarm, Substrate and GSD-Core plugins inside every omp process the application starts: the engine session (`omp acp`, one per session) and the omp terminals (an interactive omp in the embedded terminal), planned by the same launch planner (Phase 48, DR-2; verified without a model turn on Linux, see [docs/plugins.md](plugins.md#plugins-in-omp-terminals)). OmpOS launches them and observes their side channels: files, HTTP, and a connection report that the `gsd-core-omp` plugin writes. What they expose is shown in the default Cursor-style Agent Panel (session rail, thread, composer and a one-line plugin connection row); that panel has no inspector and no stage panels of its own (DR-1). Task context and steering history belong on the Kanban tab card (Phase 39). Plugin details: [docs/plugins.md](plugins.md). Operation: [docs/runbooks/agent-loop.md](runbooks/agent-loop.md).
 
 Contracts (`OmpOS.Contracts.Agents`, L0, no `StreamEvent` kind and no `ContractVersion` change): `StageSource` (Omp, Ultrathink, Swarm, Substrate, Gsd), `StageStatus` (Pending, Running, Succeeded, Degraded, Failed, Skipped, Unavailable), `StageEvent`, `StageObservationScope`, `IStageSource`, `SessionLifecycle` (Created, Running, Paused, Completed, Failed, Lost), `SessionSummary`, `ISessionCatalog`, `ContextNote`, `GsdPhaseInfo`, `TaskContext`, `ITaskContextSource`.
 
 ```mermaid
 flowchart TB
     U["User prompt"] --> H["OmpOS.Harness.AgentLoop: plan launch, validate plugin paths"]
-    H --> O["omp acp --no-extensions<br/>-e Ultrathink -e Swarm omp/<br/>-e substrate-status.ts -e substrate-skills.ts<br/>-e gsd-core-omp"]
+    H --> O["omp acp or interactive omp<br/>--no-extensions<br/>-e Ultrathink -e Swarm omp/<br/>-e substrate-status.ts -e substrate-skills.ts<br/>-e gsd-core-omp"]
     O --> UT["Ultrathink session file"]
     O --> SW["Swarm live.json, events.jsonl"]
     O --> SB["Substrate HTTP: brief, events"]
@@ -81,15 +81,19 @@ flowchart TB
     SW --> OB
     SB --> OB
     GS --> OB
+    O --> CR["Connection report, heartbeat<br/>(OMPOS_CONNECTION_FILE, OMPOS_STEER_DIR/alive.json)"]
+    CR --> OB
     OB --> CS["CompositeStageSource"]
     CS --> P["Default Agent Panel: session rail, thread, composer, plugin connection row"]
     CS --> K["Kanban tab card: task context, steering history (Phase 39)"]
-    ST["Steering input"] --> Q["ACP queue after the turn"]
-    Q --> O
+    ST["Steering input"] --> N["Chat: ACP _session/steering"]
+    ST --> I["Terminal and fallback: OmpOS inbox (OMPOS_STEER_DIR)"]
+    N --> O
+    I --> O
     ST --> R["Record in Substrate (events_emit, action steer)"]
 ```
 
-Steering is queued over ACP after the active turn and only recorded in Substrate; Substrate does not deliver it (OQ-66). Queue-after-turn is the fallback: live delivery into a running turn is the requirement and its mechanism is open (OQ-81, Phase 49). An observer that cannot read its source emits a Degraded or Unavailable stage event instead of throwing, so the panel and the run continue.
+Steering depends on the session. A chat (ACP) session sends omp's native `_session/steering` request when omp advertises it; an omp terminal, which has no ACP, and an omp without the capability use the inbox of the `gsd-core-omp` plugin; queue after the turn is the last fallback. Substrate only records the steering action and does not deliver it (OQ-66). Delivery into a running turn is verified without a model turn only up to the wire contract and the inbox heartbeat; an `injected` outcome is not verified (OQ-81, ADR-0012 update). An observer that cannot read its source emits a Degraded or Unavailable stage event instead of throwing, so the panel and the run continue.
 
 Session state directory layout (from `SessionStateLayout`; `<stateRoot>` is `AgentLoopSettings.StateRoot`):
 
@@ -102,6 +106,9 @@ Session state directory layout (from `SessionStateLayout`; `<stateRoot>` is `Age
     .swarm/events.jsonl
   claude-state/                  SWARM_CLAUDE_STATE_DIR
   substrate-pending/             SUBSTRATE_OMP_PENDING_DIR
+  swarm/gsd-state.md             SWARM_GSD_STATE_FILE (a per-session path, never empty)
+  steer/                         OMPOS_STEER_DIR: inbox/, acks/, done/, alive.json
+  connection/report.json         OMPOS_CONNECTION_FILE
 ```
 
 A session id must match `^[A-Za-z0-9_.-]{1,120}$` and must not be `.` or `..`. An observer reads only its own session directory.
@@ -136,4 +143,4 @@ Railway project `Ultrathink`, environment `production`. The service list, variab
 - [ADR-0003](decisions/ADR-0003-workflow-routing.md): workflow routing. Superseded 2026-10-21; `DirectSessionRunner` in the API is the only run path.
 - [ADR-0004](decisions/ADR-0004-cross-platform-ui.md): cross-platform UI. Accepted 2026-10-21: Avalonia UI for the five native heads; the web head stays Blazor WebAssembly on the shared presentation layer. The MAUI head retires after parity (v0.10.0 Phase 25).
 - [Temporal removal and Railway topology (2026-10-21)](handoff.md#temporal-removal-and-railway-topology-2026-10-21): the decision text and its supersessions.
-- [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md): agent loop plugins. Accepted 2026-10-26: Ultrathink, Swarm and Substrate as pinned submodules and `plugins/gsd-core-omp` as a tracked plugin, launched inside `omp acp` with `-e`; steering delivered over ACP and recorded in Substrate. Update 2026-10-26: no additional Agent Panel (DR-1), plugins in every app-started omp process (DR-2), live steering required with queue-after-turn as the fallback (DR-4).
+- [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md): agent loop plugins. Accepted 2026-10-26: Ultrathink, Swarm and Substrate as pinned submodules and `plugins/gsd-core-omp` as a tracked plugin, launched inside `omp acp` with `-e`. Update 2026-10-26: no additional Agent Panel and no inspector (DR-1), plugins in every app-started omp process, engine session and terminals (DR-2), live steering required; implemented as omp's native `_session/steering` for chat sessions and the OmpOS inbox for terminals and as the fallback, Substrate records only (DR-4, OQ-81).

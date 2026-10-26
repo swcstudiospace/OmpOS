@@ -48,6 +48,8 @@ The plugin is loaded (`-e`) into every omp process OmpOS starts, so the two feat
 
 ### Steering inbox (`OMPOS_STEER_DIR`)
 
+**Who uses the inbox.** OmpOS steers a chat (ACP) session through omp's own `_session/steering` request when omp advertises it (`_meta.steering.supported` in `initialize`), so the inbox is not used for those sessions. The inbox is for omp terminals, which have no ACP, and it is the fallback for an omp whose `initialize` lacks the capability (ADR-0012, update 2026-10-26; OQ-81). The paragraph below says why a prompt cannot carry a steer and how the inbox delivers one.
+
 omp's ACP agent cancels a running turn when a new `session/prompt` arrives, so live steering cannot be sent as a prompt. The inbox hands text to the running session with `pi.sendUserMessage(text, { deliverAs })`, where `deliverAs` is the directive's `mode` unchanged (omp 18.12: `steer` queues at the next boundary while streaming, `followUp` runs after the current turn, `aside` injects at the next step boundary without interrupting a running tool batch; an idle session starts a turn). `nextTurn` exists for `sendMessage` only and is not offered.
 
 Layout under the absolute directory `OMPOS_STEER_DIR`:

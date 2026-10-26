@@ -1,6 +1,6 @@
 # Plugins
 
-OmpOS runs four plugins inside the omp engine. Three are sibling projects pinned as git submodules under `plugins/`; one is first-party and tracked in this repository. All four are omp extensions: OmpOS launches omp with them, observes what they write, and shows what they expose in the default Cursor-style Agent Panel (session rail, thread, composer, and the one-line plugin connection row under the thread header). The panel has no stage panels or inspector of its own (DR-1, [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md#update-2026-10-26)); task context and steering history belong on the Kanban tab card (Phase 39). The target is that the plugins are connected to every omp process the application starts, engine sessions over ACP and omp terminals, as described in "Plugins in omp terminals" below. OmpOS never copies, forks or edits their source. Decision record: [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md). Evidence: [docs/plans/agent-loop/](plans/agent-loop/README.md).
+OmpOS runs four plugins inside the omp engine. Three are sibling projects pinned as git submodules under `plugins/`; one is first-party and tracked in this repository. All four are omp extensions: OmpOS launches omp with them, observes what they write, and shows what they expose in the default Cursor-style Agent Panel (session rail, thread, composer, and the one-line plugin connection row under the thread header). The panel has no stage panels or inspector of its own (DR-1, [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md#update-2026-10-26)); task context and steering history belong on the Kanban tab card (Phase 39). The plugins are connected to every omp process the application starts, engine sessions over ACP and omp terminals, as described in "Plugins in omp terminals" below (verified without a model turn on Linux; that section lists what is not verified). OmpOS never copies, forks or edits their source. Decision record: [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md). Evidence: [docs/plans/agent-loop/](plans/agent-loop/README.md).
 
 ## The loop
 
@@ -96,10 +96,12 @@ Per-session environment, from `SessionStateLayout`, with state under `<stateRoot
 | -------- | ----- | --------- |
 | `ULTRATHINK_STATE_DIR` | `<session>/ultrathink` | always |
 | `SWARM_DIR` | `<session>/swarm` | always |
-| `SWARM_GSD_STATE_FILE` | empty | always |
+| `SWARM_GSD_STATE_FILE` | `<session>/swarm/gsd-state.md` | always; never empty, because the pseudo-terminal backend removes an empty variable and the swarm would then write into the workspace `.planning/STATE.md` |
 | `SWARM_CLAUDE_STATE_DIR` | `<session>/claude-state` | always |
 | `SUBSTRATE_OMP_PENDING_DIR` | `<session>/substrate-pending` | always (its default is a hard-coded real-home path) |
 | `SUBSTRATE_TOKENS_DIR` | configured directory | only when configured |
+| `OMPOS_STEER_DIR` | `<session>/steer` | always; the steering inbox of the `gsd-core-omp` plugin (see Steering) |
+| `OMPOS_CONNECTION_FILE` | `<session>/connection/report.json` | always; the connection report of the `gsd-core-omp` plugin (see Plugins in omp terminals) |
 | `SUBSTRATE_URL` | the Substrate endpoint | only when Substrate is enabled and healthy |
 | `ULTRATHINK_UPLIFT` | `0` | only when planning is disabled |
 
@@ -109,17 +111,21 @@ Per-session environment, from `SessionStateLayout`, with state under `<stateRoot
 
 ## Plugins in omp terminals
 
-This section states a target, not a result. No recorded run shows it working or failing yet; it is verified in Phase 48 (criteria in [.planning/ROADMAP.md](../.planning/ROADMAP.md), decision D44-8 in `.planning/phases/44-plugin-submodules-launch-contract/44-CONTEXT.md`).
+The plugins are connected to every omp process the application starts (DR-2): the engine session behind the Agent Panel (`omp acp`) and the omp terminals (an interactive omp in the embedded terminal). Built in Phase 48; the records are `.planning/phases/48-omp-terminals-with-the-four-plugins/48-SUMMARY.md` and `48-VERIFICATION.md`.
 
-Target behaviour (DR-2):
+How it works:
 
-- The launch planner plans an interactive omp (terminal) launch as well as `omp acp`, with the same plugin set, per-session state directory and environment as in the Launch contract above.
+- The launch planner derives the terminal launch from the same plan as the ACP launch (`OmpLaunchPlan.ForTerminal`): `--no-extensions` and the same `-e` arguments, never `acp`, never `--plugin-dir`, the same per-session environment (including the per-session `SWARM_GSD_STATE_FILE`), no MCP server (an interactive omp reads its own), an optional `--resume <omp session>` (never `--continue`) and an optional first prompt.
 - The embedded terminal starts omp through the planner (argument array, project directory). A missing omp, a missing plugin or an uninitialised submodule shows its fix text while the rest of the application keeps working.
-- Each plugin is registered exactly once in an omp process the application starts, also when the user's own omp configuration is present (global `config.yml` extensions, extension symlinks). If omp cannot be made to load each plugin once, the fallback is recorded in an open question ([OQ-82](open-questions.md)).
-- Each of Ultrathink, Substrate, Swarm and GSD-Core is registered with omp, active in the app-started engine session and in the app-started omp terminal, and observable in the session UI to the extent the plugin exposes it. A load or connect failure is shown with its fix text.
+- Each plugin is registered exactly once. `--no-extensions` drops the global `config.yml` `extensions:` list and the `extensions/` directory, and each `-e` plugin loads once; without it a plugin that is both in the user's global configuration and passed with `-e` loads twice ([exactly-once-loading.md](runbooks/evidence/phase-48-omp-plugins-2026-10-26/exactly-once-loading.md)). Side effect: the owner's other global extensions do not load in app-started omp ([OQ-83](open-questions.md)).
+- The PTY child no longer inherits the host environment. It gets `PATH`, `HOME`, `LANG`, `TERM`, `PI_CODING_AGENT_DIR` and `OMP_PROFILE` from the host plus the variables of the launch; every other host variable is unset by name through `/usr/bin/env -u` (Linux).
+- Connection is observed. The `gsd-core-omp` plugin writes the sorted tool and command names omp has registered to `OMPOS_CONNECTION_FILE`; the host compares them with its table of expected names per plugin and shows each plugin's state (waiting, connected, missing names, failed) in the connection row. A plugin that is not loaded shows its fix text. A heartbeat file (`alive.json`, every 5 s) shows that omp is serving.
+- The Substrate extensions load only when a Substrate endpoint is configured and healthy (see Degradation). Without one, the row shows Substrate off with its reason.
 - Plugins are not connected to an omp terminal the user starts outside the application (the default of [OQ-82](open-questions.md)).
 
-What closes it: one recorded run per plugin, one recorded end-to-end run without a model turn, and a degraded-path test per plugin. The checklist is in the [agent loop runbook](runbooks/agent-loop.md#evidence-to-record).
+What is verified (2026-10-26, Linux, real omp 18.12.6, no model turn): the probes in `docs/runbooks/evidence/phase-48-omp-plugins-2026-10-26/` (exactly-once loading, the interactive omp with the planned arguments, the connection report and heartbeat in both modes); the live tests `LiveOmpHandshakeTests` (engine session: all four plugins connected, fresh heartbeat, mode `rpc`) and `LiveOmpTerminalTests` (interactive omp in the PTY: all four connected, fresh heartbeat, mode `tui`, closes on two Ctrl+C once the TUI is quiet), tagged `Category=Live` and excluded from the gate; the planner, terminal and degraded-path tests of the gate.
+
+What is not verified: a live model turn (OD-07); one application run showing all four plugins connected in the row; a run against a real Substrate server; the user's real credentials with this launch recipe; Windows, macOS, Android and the hosted deployments. The checklist is in the [agent loop runbook](runbooks/agent-loop.md#evidence-to-record).
 
 ## Host requirements
 
@@ -148,7 +154,14 @@ Every degradation is a stage event with status Degraded or Unavailable and a pla
 
 ## Steering
 
-OmpOS owns steering. Operator text is queued over ACP and delivered after the current turn. This is the fallback: omp's ACP agent cancels a running turn when a new `session/prompt` arrives, so a prompt cannot deliver live, and live delivery into a running session is the requirement (DR-4, Phase 49). The delivery mechanism is open ([OQ-81](open-questions.md)). When Substrate is reachable, OmpOS also records the action as an `events_emit` note with `payload.action` `steer`; the text itself is never sent, only its length and a 12-hex digest prefix. Substrate does not deliver the steer: live delivery (substrate Phase 53) is unmerged ([OQ-66](open-questions.md)).
+OmpOS owns steering, and the mechanism depends on the session. The requirement is live delivery into a running turn (DR-4, Phase 49).
+
+- **Chat (ACP) sessions** use omp's native extension request `_session/steering` when omp advertises `_meta.steering.supported` in `initialize`. Outcomes: `injected` (a running turn takes the message at its next tool-batch or model-call boundary), `promptRequired` (the session is idle: nothing was consumed and OmpOS sends the text through `session/prompt`) and `failed`. A plain `session/prompt` cannot steer, because omp's ACP agent cancels a running turn when a new one arrives.
+- **Omp terminals** have no ACP. They use the OmpOS inbox in `plugins/gsd-core-omp`: OmpOS writes a directive file under `OMPOS_STEER_DIR/inbox/`, the plugin hands the text to omp with `sendUserMessage(text, { deliverAs })` (`steer`, `followUp` or `aside`) and writes an acknowledgement. OmpOS refuses to write when the heartbeat is older than 15 s, and shows "delivered" only on an acknowledgement. The inbox is also the fallback for an omp whose `initialize` lacks the steering capability.
+- **Queue after the turn** (the held message runs as its own turn) is the last fallback.
+- **Substrate** records the action as an `events_emit` note with `payload.action` `steer` when it is reachable; the text itself is never sent, only its length and a 12-hex digest prefix. Substrate does not deliver the steer: live delivery (substrate Phase 53) is unmerged ([OQ-66](open-questions.md)).
+
+Verified without a model turn: the inbox against the real omp in both modes (heartbeat and connection report), the native wire contract (an idle session answers `promptRequired`, recorded in [OQ-81](open-questions.md)), and every OmpOS-side path with fakes. Not verified: an `injected` delivery into a running real turn (needs a model turn, OD-07). Details: [ADR-0012 update](decisions/ADR-0012-agent-loop-plugins.md#update-2026-10-26-implementation-of-phases-44-to-49).
 
 ## Licence facts
 

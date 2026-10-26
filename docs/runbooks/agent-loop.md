@@ -20,6 +20,10 @@ OMPOS_PLUGINS_ROOT=$PWD/plugins dotnet run --project apps/OmpOS.Native
 
 If a plugin is not initialised the panel still opens. Its stage shows Unavailable with the fix text, and sessions run as plain omp.
 
+### Open an omp terminal
+
+In the rail choose `New omp terminal` (or press `Ctrl+Shift+T`). The application starts the interactive omp in the embedded terminal through the launch planner: the same plugins, the same per-session state directory and environment as a chat session, in the project directory. A missing `omp` shows its fix text in the terminal view and the rest of the application keeps working. The terminal's composer sends steering messages through the inbox of the `gsd-core-omp` plugin. The omp child gets only `PATH`, `HOME`, `LANG`, `TERM`, `PI_CODING_AGENT_DIR` and `OMP_PROFILE` from the host environment (on Linux it needs `/usr/bin/env`). Closing the session ends omp; reopening it resumes the stored omp session when one is known and otherwise starts fresh and says so. Only Linux has been run ([OQ-69](../open-questions.md) for Windows and macOS). Allow up to a minute for omp to draw its first screen on a loaded host.
+
 ### GSD-Core probe
 
 ```sh
@@ -87,24 +91,36 @@ In the test suite the same check is the exact-argument and environment assertion
 
 ## Evidence to record
 
-Empty on purpose: nothing below has been run. Tick an item only with a recorded run (command, output, date) saved under `docs/runbooks/evidence/`; record no figure that was not measured. Target behaviour: [plugins.md, Plugins in omp terminals](../plugins.md#plugins-in-omp-terminals). Criteria: Phase 48 in `.planning/ROADMAP.md`. None of these runs needs a model turn, except the part tagged Live, which is excluded from the gate.
+Status as of 2026-10-26. A row is ticked only where a run is recorded under `docs/runbooks/evidence/` or named as a passing test. None of these runs needed a model turn. The live tests carry the trait `Category=Live`, skip unless `OMPOS_LIVE_OMP=1`, and are excluded from the gate. Target behaviour: [plugins.md, Plugins in omp terminals](../plugins.md#plugins-in-omp-terminals). Criteria and results: `.planning/phases/48-omp-terminals-with-the-four-plugins/48-SUMMARY.md`.
 
-Per plugin (Ultrathink, Substrate, Swarm, GSD-Core), one block each:
+Per plugin (Ultrathink, Substrate, Swarm, GSD-Core), five items each:
 
-- [ ] Ultrathink: registered with omp (commands listed, no command twice); active in the app-started engine session; active in the app-started omp terminal; observable in the session UI as far as the plugin exposes it; load failure shows its fix text (degraded-path test).
-- [ ] Substrate: same five items.
-- [ ] Swarm: same five items.
-- [ ] GSD-Core: same five items.
+| Item | Ultrathink | Substrate | Swarm | GSD-Core |
+| ---- | ---------- | --------- | ----- | -------- |
+| Registered with omp (commands and tools listed, no name twice) | yes: 8 `ultrathink-*` commands | yes: `substrate` | yes: `swarm` and 8 `swarm_*` tools | yes: `gsd-core` |
+| Active in the app-started engine session (mode `rpc`) | yes, `LiveOmpHandshakeTests` | yes, with an endpoint planned (no server answered) | yes | yes |
+| Active in the app-started omp terminal (mode `tui`) | yes, `LiveOmpTerminalTests` | yes, same condition | yes | yes |
+| Observable in the session UI as far as the plugin exposes it | connection row, planner stage, TUI status line | connection row, TUI status line | connection row, run stages, TUI widget | connection row, workflow phase stage |
+| Load failure shows its fix text (degraded-path test) | yes | yes | yes | yes |
+
+Sources: the registered names are in `docs/runbooks/evidence/phase-48-omp-plugins-2026-10-26/plugin-connection-report.md` (section C); the TUI observations are in `omp-terminal-tui.md`; the degraded-path tests are `PluginConnectionStageSourceTests` and `OmpLaunchPlannerTests` in `tests/OmpOS.Harness.AgentLoop.Tests`. Run the live tests with:
+
+```sh
+OMPOS_LIVE_OMP=1 dotnet test tests/OmpOS.Harness.AgentLoop.Tests -c Release --no-build -- --filter-trait "Category=Live"
+OMPOS_LIVE_OMP=1 dotnet test tests/OmpOS.Harness.OmpLauncher.Tests -c Release --no-build -- --filter-trait "Category=Live"
+```
 
 Exactly once:
 
-- [ ] Run against a sandbox whose global omp configuration is polluted (global `config.yml` extensions, extension symlinks): each plugin is registered once in the process the application starts, with unique command names.
-- [ ] If omp cannot be made to load each plugin once: the fallback is recorded in an open question ([OQ-82](../open-questions.md)).
+- [x] Run against a sandbox whose global omp configuration is polluted (global `config.yml` extensions, extension symlinks): each plugin is registered once in the process the application starts, with unique command names (`exactly-once-loading.md`; omp 18.12.5 probe, not an application run).
+- [x] omp can be made to load each plugin once: `--no-extensions` plus one `-e` per plugin. The side effect, that the owner's other global extensions do not load, is recorded in [OQ-83](../open-questions.md); the registration scope is [OQ-82](../open-questions.md).
+- [ ] Not recorded: the same check with the user's real credentials (the claim that credentials stay usable is from source).
 
 End to end:
 
-- [ ] Start a session from the application, open an omp terminal for it, and record that all four plugins show as connected.
-- [ ] The live part of that run is tagged Live.
+- [x] The engine session and the omp terminal each showed all four plugins connected, in separate live runs on 2026-10-26 (real omp 18.12.6, Linux). The live part is tagged Live.
+- [ ] Not recorded: one application run, starting a session in the application and opening an omp terminal for it, that shows all four plugins connected in the connection row. The Xvfb screenshots in `docs/runbooks/evidence/ui-parity-2026-10-26/before/` show the row waiting or off in that run.
+- [ ] Not run: a live model turn (OD-07), an `injected` steering delivery, Windows, macOS, Android, the hosted deployments.
 
 ## Known limits
 
@@ -113,7 +129,7 @@ End to end:
 - Loopback model discovery. Every `omp acp` start probes `127.0.0.1:11434`, `:8080` and `:1234` (ollama, llama.cpp, lm-studio) and logs `model discovery failed`. Whether this can be disabled is UNKNOWN: read `src/config/model-discovery.ts` in the installed `@oh-my-pi/pi-coding-agent` package, then try a `--config` overlay.
 - Substrate status extension polling. With `SUBSTRATE_URL` unset it polls `127.0.0.1:7410`. OmpOS omits both substrate extensions when Substrate is disabled or unhealthy.
 - An intermittent outbound HTTPS connection (TCP/443 to Cloudflare addresses) was seen in 2 of about 45 probe runs and not reproduced in 13 reruns. Its purpose is UNKNOWN ([OQ-65](../open-questions.md)).
-- Steering is recorded in Substrate, not delivered by it ([OQ-66](../open-questions.md)). Over ACP a steer is queued after the active turn, which is the fallback; live delivery is the requirement and its mechanism is open ([OQ-81](../open-questions.md)).
+- Steering. Chat sessions steer through omp's native `_session/steering` when omp advertises it; omp terminals and an omp without the capability use the inbox in `plugins/gsd-core-omp` (`OMPOS_STEER_DIR`); queue after the turn is the last fallback. Substrate records the steering note and never delivers it ([OQ-66](../open-questions.md)). An `injected` delivery into a running turn is not verified; it needs a model turn ([OQ-81](../open-questions.md)).
 - Whether omp follows symlinked `agents/*.md` for `gsd-core-omp` is unconfirmed ([OQ-64](../open-questions.md)).
 - Behaviour of `/ultrathink-status`, `/swarm` and `/substrate` when executed was not verified; only their registration was.
 - Whether several concurrent `omp acp` processes share one `agent.db` safely was not stress-tested.
