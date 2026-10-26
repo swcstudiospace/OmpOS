@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using OmpOS.Contracts.Errors;
 using OmpOS.Contracts.Intents;
+using OmpOS.Contracts.Runs;
 using OmpOS.Contracts.Sandboxes;
 using OmpOS.Contracts.Sessions;
 using OmpOS.Contracts.Streaming;
@@ -53,6 +54,11 @@ namespace OmpOS.Contracts.Serialization;
 [JsonSerializable(typeof(Isolation))]
 [JsonSerializable(typeof(Attestation))]
 [JsonSerializable(typeof(SandboxStatus))]
+[JsonSerializable(typeof(Run))]
+[JsonSerializable(typeof(RunStatus))]
+[JsonSerializable(typeof(RunOutput))]
+[JsonSerializable(typeof(RunTranscript))]
+[JsonSerializable(typeof(RunFileChange))]
 [JsonSerializable(typeof(WorkflowRun))]
 [JsonSerializable(typeof(WorkflowRunStatus))]
 [JsonSerializable(typeof(OmpOSError))]

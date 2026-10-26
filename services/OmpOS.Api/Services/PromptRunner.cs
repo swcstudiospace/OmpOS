@@ -129,14 +129,15 @@ internal sealed class PromptRunner
     /// <param name="correlationId">The end-to-end correlation identifier.</param>
     /// <param name="lease">The run lease; the run takes ownership of it.</param>
     /// <param name="parent">The accepting request's trace context, or null.</param>
-    public void Start(string sessionId, string runId, string prompt, string correlationId, ISessionRunLease lease, ActivityContext? parent)
+    /// <param name="runCancellation">Stops this run when cancelled, in addition to host shutdown. A hosted run passes the token its cancel endpoint signals; a plain prompt passes none.</param>
+    public void Start(string sessionId, string runId, string prompt, string correlationId, ISessionRunLease lease, ActivityContext? parent, CancellationToken runCancellation = default)
     {
         ArgumentNullException.ThrowIfNull(sessionId);
         ArgumentNullException.ThrowIfNull(runId);
         ArgumentNullException.ThrowIfNull(prompt);
         ArgumentNullException.ThrowIfNull(correlationId);
         ArgumentNullException.ThrowIfNull(lease);
-        var run = RunDispatchedAsync(BuildInput(sessionId, runId, prompt, correlationId), lease, parent, _lifetime.ApplicationStopping);
+        var run = RunDispatchedAsync(BuildInput(sessionId, runId, prompt, correlationId), lease, parent, runCancellation);
         _ = run.ContinueWith(
             static (completed, state) =>
             {
@@ -177,9 +178,11 @@ internal sealed class PromptRunner
     /// <param name="input">The run input for this prompt.</param>
     /// <param name="lease">The run lease; the dispatcher releases it when the run ends.</param>
     /// <param name="parent">The accepting request's trace context, or null.</param>
-    /// <param name="stoppingToken">The host shutdown signal.</param>
-    private async Task RunDispatchedAsync(SessionRunInput input, ISessionRunLease lease, ActivityContext? parent, CancellationToken stoppingToken)
+    /// <param name="runCancellation">Stops this run when cancelled, in addition to the host shutdown signal.</param>
+    private async Task RunDispatchedAsync(SessionRunInput input, ISessionRunLease lease, ActivityContext? parent, CancellationToken runCancellation)
     {
+        using var stopping = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.ApplicationStopping, runCancellation);
+        var stoppingToken = stopping.Token;
         using var activity = parent.HasValue
             ? OmpTelemetry.Activities.StartActivity("harness.run", ActivityKind.Internal, parent.Value)
             : OmpTelemetry.Activities.StartActivity("harness.run");

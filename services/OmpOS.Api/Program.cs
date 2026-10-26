@@ -98,6 +98,7 @@ builder.Services.AddApiCoordination(builder.Configuration);
 builder.Services.AddSingleton<SessionService>();
 builder.Services.AddOmpParser();
 builder.Services.AddSingleton<SessionRegistry>();
+builder.Services.AddSingleton<RunRegistry>();
 // Harness:Adapter picks the factory. Acp runs omp over stdio through OmpAcpClient, which takes its permission resolver from DI;
 // InMemory is the development echo adapter.
 builder.Services.AddSingleton<OmpAcpClient>(static services => new OmpAcpClient(services.GetService<IPermissionResolver>()));
@@ -119,7 +120,11 @@ builder.Services.AddSingleton<PromptRunner>();
 // the session's run lease from the coordination store for the whole run. The sandbox is the in-memory fake provider.
 builder.Services.AddSingleton<ISandboxProvider, FakeSandboxProvider>();
 builder.Services.AddSingleton<ISessionRunObserver, ApiSessionRunObserver>();
-builder.Services.AddSingleton<ISessionRunActivities, SessionRunActivities>();
+// The activities are wrapped so a hosted run (POST /sessions/{id}/runs) reports when its harness starts the prompt.
+builder.Services.AddSingleton<SessionRunActivities>();
+builder.Services.AddSingleton<ISessionRunActivities>(static services => new RunTrackingActivities(
+    services.GetRequiredService<SessionRunActivities>(),
+    services.GetRequiredService<RunRegistry>()));
 builder.Services.AddSingleton<ISessionRunWorkflow, DirectSessionRunner>();
 builder.Services.AddSingleton<DirectSessionRunDispatcher>();
 builder.Services.AddSingleton<SessionEventStreamer>();
@@ -260,6 +265,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 app.MapSessionEndpoints();
 app.MapToolApprovalEndpoints();
 app.MapEventStreamEndpoints();
+app.MapRunEndpoints();
 
 // Start without RunAsync's dispose-on-failure: RunAsync disposes the host when startup
 // validation throws, which races WebApplicationFactory's in-memory-host observation

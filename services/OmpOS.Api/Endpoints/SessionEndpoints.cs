@@ -390,7 +390,7 @@ internal static class SessionEndpoints
             throw;
         }
 
-        runner.Start(submission.SessionId, runId, submission.Envelope.RawText, submission.CorrelationId, lease, submission.Parent);
+        runner.Start(submission.SessionId, runId, submission.Envelope.RawText, submission.CorrelationId, lease, submission.Parent, CancellationToken.None);
         return null;
     }
 
@@ -452,7 +452,12 @@ internal static class SessionEndpoints
     internal static ProblemHttpResult SessionNotFound(string id) =>
         ProblemResponse(404, "Session not found.", $"No session has id '{id}'.");
 
-    private static async Task<PromptRead> ReadPromptAsync(HttpContext context, ApiOptions options, CancellationToken cancellationToken)
+    /// <summary>Reads and validates a <c>{"prompt": "..."}</c> body: content type, size, JSON shape and prompt length, each mapped to its problem.</summary>
+    /// <param name="context">The request.</param>
+    /// <param name="options">The API limits.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The request, or the problem that rejected it.</returns>
+    internal static async Task<PromptRead> ReadPromptAsync(HttpContext context, ApiOptions options, CancellationToken cancellationToken)
     {
         if (!IsJsonContentType(context.Request.ContentType))
         {
@@ -490,7 +495,12 @@ internal static class SessionEndpoints
         return new PromptRead(request, null);
     }
 
-    private static ProblemHttpResult ProblemResponse(int statusCode, string title, string detail) =>
+    /// <summary>Builds a problem response with the given status.</summary>
+    /// <param name="statusCode">The HTTP status.</param>
+    /// <param name="title">The problem title.</param>
+    /// <param name="detail">The problem detail.</param>
+    /// <returns>The problem response.</returns>
+    internal static ProblemHttpResult ProblemResponse(int statusCode, string title, string detail) =>
         TypedResults.Problem(detail: detail, statusCode: statusCode, title: title);
 
     private static bool IsJsonContentType(string? contentType)
@@ -533,7 +543,10 @@ internal static class SessionEndpoints
 
     private sealed record BodyRead(bool TooLarge, byte[] Bytes);
 
-    private sealed record PromptRead(PromptRequest? Request, ProblemHttpResult? Error);
+    /// <summary>The outcome of reading a prompt body: the request, or the problem that rejected it.</summary>
+    /// <param name="Request">The validated request, or null when rejected.</param>
+    /// <param name="Error">The problem that rejected the body, or null when accepted.</param>
+    internal sealed record PromptRead(PromptRequest? Request, ProblemHttpResult? Error);
 
     /// <summary>The validated inputs of one prompt submission, carried from parsing to admission.</summary>
     private sealed record PromptSubmission(

@@ -22,7 +22,7 @@ public sealed class ContractVersionTests
 
         match.Success.ShouldBeTrue();
         match.Groups["major"].Value.ShouldBe("1");
-        match.Groups["minor"].Value.ShouldBe("1");
+        match.Groups["minor"].Value.ShouldBe("2");
         match.Groups["patch"].Value.ShouldBe("0");
     }
 

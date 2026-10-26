@@ -20,19 +20,11 @@ public sealed class GuardTests
     {
         using var factory = new OmpApiFactory(new Dictionary<string, string?>(StringComparer.Ordinal) { ["Harness:Adapter"] = string.Empty });
 
-        Exception? caught = null;
-        try
+        var caught = Assert.ThrowsAny<Exception>(() =>
         {
             using var client = factory.CreateClient();
-        }
-#pragma warning disable CA1031 // The fail-fast assertion must observe any startup exception type.
-        catch (Exception ex)
-        {
-            caught = ex;
-        }
-#pragma warning restore CA1031
+        });
 
-        caught.ShouldNotBeNull("startup must fail without Harness:Adapter");
         Flatten(caught).ShouldContain("Harness:Adapter");
     }
 

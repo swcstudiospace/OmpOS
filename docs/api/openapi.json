@@ -378,6 +378,256 @@
           }
         }
       }
+    },
+    "/sessions/{id}/runs": {
+      "post": {
+        "tags": [
+          "RunEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/runs/{runId}": {
+      "get": {
+        "tags": [
+          "RunEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/runs/{runId}/output": {
+      "get": {
+        "tags": [
+          "RunEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunOutput"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/runs/{runId}/cancel": {
+      "post": {
+        "tags": [
+          "RunEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -501,6 +751,141 @@
         },
         "description": "Request body for `POST /sessions/{id}/prompts`."
       },
+      "Run": {
+        "required": [
+          "id",
+          "sessionId",
+          "status",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the run identifier."
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Gets the identifier of the session the run executes in."
+          },
+          "status": {
+            "description": "Gets the run lifecycle state.",
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Gets the time the run was accepted.",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the time the run settled, or null while the run is queued or running.",
+            "format": "date-time"
+          }
+        },
+        "description": "One hosted run: a single prompt executed by the hosted harness inside a session. The run carries its status and no output; the output of a settled run is read as a RunOutput."
+      },
+      "RunFileChange": {
+        "required": [
+          "path",
+          "newText"
+        ],
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Gets the path of the edited file, as the harness reported it."
+          },
+          "oldText": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the file text before the edit, or null when the edit created the file."
+          },
+          "newText": {
+            "type": "string",
+            "description": "Gets the file text after the edit."
+          }
+        },
+        "description": "One file edit a run's harness reported: the path with the text before and after the edit. This is the harness's own before and after text, not a unified diff or a git patch."
+      },
+      "RunOutput": {
+        "required": [
+          "runId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "string",
+            "description": "Gets the run identifier."
+          },
+          "status": {
+            "description": "Gets the run lifecycle state at the time of the read.",
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "transcript": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets the run's transcript, or null while the run is queued or running.",
+                "$ref": "#/components/schemas/RunTranscript"
+              }
+            ]
+          },
+          "changes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RunFileChange"
+            },
+            "description": "Gets the file changes the harness reported, in the order it reported them, or null while the run is queued or running. Empty when the harness reported none."
+          }
+        },
+        "description": "The output of a run. A queued or running run reports its status with no transcript and no changes. A settled run (completed, failed or cancelled) returns its transcript, and the file changes the harness reported while it ran. A harness that reports no file edit yields an empty change list, so the output is the transcript only."
+      },
+      "RunStatus": {
+        "enum": [
+          "Queued",
+          "Running",
+          "Completed",
+          "Failed",
+          "Cancelled"
+        ],
+        "description": "Lifecycle states of a hosted run. A run moves from Queued to Running and ends in exactly one of Completed, Failed or Cancelled."
+      },
+      "RunTranscript": {
+        "required": [
+          "messages",
+          "events"
+        ],
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "description": "Gets the run's chat messages, starting with the user prompt."
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StreamEvent"
+            },
+            "description": "Gets the run's stream events, starting with the prompt acceptance event."
+          }
+        },
+        "description": "The part of a session's record that belongs to one run: the messages and the stream events of that run's turn, in the order they were recorded."
+      },
       "Session": {
         "required": [
           "id",
@@ -623,6 +1008,9 @@
     },
     {
       "name": "EventStreamEndpoints"
+    },
+    {
+      "name": "RunEndpoints"
     }
   ]
 }
