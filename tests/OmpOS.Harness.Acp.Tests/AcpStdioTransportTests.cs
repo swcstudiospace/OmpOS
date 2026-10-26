@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Text;
 using OmpOS.Harness.Abstractions;
@@ -8,8 +7,6 @@ using Xunit;
 namespace OmpOS.Harness.Acp.Tests;
 
 /// <summary>Exercises <see cref="AcpStdioTransport"/> against a real child process: a shell script that stands in for <c>omp acp</c>.</summary>
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default, and await using disposal is intentional.")]
-[SuppressMessage("Usage", "MA0004:Use Task.ConfigureAwait", Justification = "Same as CA2007: test methods await on the test context.")]
 public sealed class AcpStdioTransportTests
 {
     /// <summary>Launching a missing executable fails with ProcessStartHarnessException.</summary>
@@ -17,7 +14,8 @@ public sealed class AcpStdioTransportTests
     public async Task MissingExecutableFailsToStart()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var transport = new AcpStdioTransport("/nonexistent/omp-acp-test-executable");
+        var transport = new AcpStdioTransport("/nonexistent/omp-acp-test-executable");
+        await using var transportScope = transport.ConfigureAwait(true);
 
         await Should.ThrowAsync<ProcessStartHarnessException>(() => transport.ConnectAsync(ct)).ConfigureAwait(true);
     }
@@ -37,13 +35,15 @@ public sealed class AcpStdioTransportTests
         try
         {
             var script = WriteScript(directory, "echo-once", "read line\nprintf '%s\\n' \"$line\"\necho 'diagnostic line' 1>&2\nprintf '%s\\n' '{\"jsonrpc\":\"2.0\",\"method\":\"ping\"}'\n");
-            await using var transport = new AcpStdioTransport(script, directory);
+            var transport = new AcpStdioTransport(script, directory);
+            await using var transportScope = transport.ConfigureAwait(true);
             await transport.ConnectAsync(ct).ConfigureAwait(true);
 
             var request = "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"echo\"}";
             await transport.SendAsync(AcpFixtures.Utf8(request), ct).ConfigureAwait(true);
 
-            await using var frames = transport.ReceiveAsync(ct).GetAsyncEnumerator(ct);
+            var frames = transport.ReceiveAsync(ct).GetAsyncEnumerator(ct);
+            await using var framesScope = frames.ConfigureAwait(true);
             (await frames.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
             AcpFixtures.Text(frames.Current.ToArray()).ShouldBe(request);
             (await frames.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
@@ -76,11 +76,13 @@ public sealed class AcpStdioTransportTests
         try
         {
             var script = WriteScript(directory, "noisy", "read line\necho 'banner not json'\n");
-            await using var transport = new AcpStdioTransport(script, directory);
+            var transport = new AcpStdioTransport(script, directory);
+            await using var transportScope = transport.ConfigureAwait(true);
             await transport.ConnectAsync(ct).ConfigureAwait(true);
             await transport.SendAsync(AcpFixtures.Utf8("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\"}"), ct).ConfigureAwait(true);
 
-            await using var frames = transport.ReceiveAsync(ct).GetAsyncEnumerator(ct);
+            var frames = transport.ReceiveAsync(ct).GetAsyncEnumerator(ct);
+            await using var framesScope = frames.ConfigureAwait(true);
             var malformed = await Should.ThrowAsync<MalformedFrameHarnessException>(async () => await frames.MoveNextAsync().ConfigureAwait(true))
                 .ConfigureAwait(true);
             malformed.Message.ShouldContain("banner not json");
@@ -107,10 +109,12 @@ public sealed class AcpStdioTransportTests
         {
             // 1,100,000 characters on one line, over the 1 MiB (1,048,576-character) limit.
             var script = WriteScript(directory, "oversized", "head -c 1100000 /dev/zero | tr '\\0' 'a'\necho\n");
-            await using var transport = new AcpStdioTransport(script, directory);
+            var transport = new AcpStdioTransport(script, directory);
+            await using var transportScope = transport.ConfigureAwait(true);
             await transport.ConnectAsync(ct).ConfigureAwait(true);
 
-            await using var frames = transport.ReceiveAsync(ct).GetAsyncEnumerator(ct);
+            var frames = transport.ReceiveAsync(ct).GetAsyncEnumerator(ct);
+            await using var framesScope = frames.ConfigureAwait(true);
             var malformed = await Should.ThrowAsync<MalformedFrameHarnessException>(async () => await frames.MoveNextAsync().ConfigureAwait(true))
                 .ConfigureAwait(true);
             malformed.Message.ShouldContain("1 MiB");

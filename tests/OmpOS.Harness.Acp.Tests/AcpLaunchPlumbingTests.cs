@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Text;
 using OmpOS.Harness.Abstractions;
@@ -11,8 +10,6 @@ namespace OmpOS.Harness.Acp.Tests;
 /// Argument and environment plumbing of <see cref="AcpStdioTransport"/> and <see cref="OmpAcpClient"/>, checked against a real
 /// child process: a POSIX script that records its own argv and selected environment variables to a file, then exits.
 /// </summary>
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default, and await using disposal is intentional.")]
-[SuppressMessage("Usage", "MA0004:Use Task.ConfigureAwait", Justification = "Same as CA2007: test methods await on the test context.")]
 public sealed class AcpLaunchPlumbingTests
 {
     private const string OverriddenHome = "/nonexistent-ompos-acp-test-home";
@@ -44,7 +41,8 @@ public sealed class AcpLaunchPlumbingTests
                 ["HOME"] = OverriddenHome,
                 ["OMPOS_ACP_TEST_ADDED"] = AddedValue,
             };
-            await using var transport = new AcpStdioTransport(script, directory, arguments, environment);
+            var transport = new AcpStdioTransport(script, directory, arguments, environment);
+            await using var transportScope = transport.ConfigureAwait(true);
             await transport.ConnectAsync(ct).ConfigureAwait(true);
 
             await WaitForExitAsync(transport, ct).ConfigureAwait(true);
@@ -86,7 +84,8 @@ public sealed class AcpLaunchPlumbingTests
         try
         {
             var script = WriteScript(directory, "record-launch", RecorderBody);
-            await using var transport = new AcpStdioTransport(script, directory);
+            var transport = new AcpStdioTransport(script, directory);
+            await using var transportScope = transport.ConfigureAwait(true);
             await transport.ConnectAsync(ct).ConfigureAwait(true);
 
             await WaitForExitAsync(transport, ct).ConfigureAwait(true);
@@ -163,7 +162,8 @@ public sealed class AcpLaunchPlumbingTests
 
     private static async Task WaitForExitAsync(AcpStdioTransport transport, CancellationToken cancellationToken)
     {
-        await using var frames = transport.ReceiveAsync(cancellationToken).GetAsyncEnumerator(cancellationToken);
+        var frames = transport.ReceiveAsync(cancellationToken).GetAsyncEnumerator(cancellationToken);
+        await using var framesScope = frames.ConfigureAwait(true);
         await Should.ThrowAsync<DisconnectedHarnessException>(async () => await frames.MoveNextAsync().ConfigureAwait(true))
             .ConfigureAwait(true);
     }

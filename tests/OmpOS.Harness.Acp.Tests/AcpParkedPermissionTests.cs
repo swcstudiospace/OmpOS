@@ -11,8 +11,6 @@ namespace OmpOS.Harness.Acp.Tests;
 /// admits is parked on its id until a decision arrives.
 /// </summary>
 [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session under test owns and disposes the scripted transport.")]
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default, and await using disposal is intentional.")]
-[SuppressMessage("Usage", "MA0004:Use Task.ConfigureAwait", Justification = "Same as CA2007: test methods await on the test context.")]
 public sealed class AcpParkedPermissionTests
 {
     private const long PermissionRequestId = 900;
@@ -37,7 +35,8 @@ public sealed class AcpParkedPermissionTests
             AuthMethodId = "agent",
             ApprovalPolicy = new AcpApprovalPolicy(["read"]),
         };
-        await using var session = new AcpAgentSession(transport, options, resolver, DecisionTimeout);
+        var session = new AcpAgentSession(transport, options, resolver, DecisionTimeout);
+        await using var sessionScope = session.ConfigureAwait(true);
         await session.CreateAsync(ct).ConfigureAwait(true);
 
         transport.Deliver(PermissionRequest("execute"));
@@ -61,7 +60,8 @@ public sealed class AcpParkedPermissionTests
             AuthMethodId = "agent",
             ApprovalPolicy = new AcpApprovalPolicy(["execute"]),
         };
-        await using var session = new AcpAgentSession(transport, options, resolver, DecisionTimeout);
+        var session = new AcpAgentSession(transport, options, resolver, DecisionTimeout);
+        await using var sessionScope = session.ConfigureAwait(true);
         await session.CreateAsync(ct).ConfigureAwait(true);
 
         transport.Deliver(PermissionRequest("execute"));

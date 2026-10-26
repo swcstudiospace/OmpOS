@@ -11,8 +11,6 @@ namespace OmpOS.Harness.Acp.Tests;
 /// session on purpose ends the pump the same way, and that close is not logged as a fault.
 /// </summary>
 [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session under test owns and disposes the scripted transport.")]
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default.")]
-[SuppressMessage("Usage", "MA0004:Use Task.ConfigureAwait", Justification = "Same as CA2007: test methods await on the test context.")]
 public sealed class AcpPumpFaultLoggingTests
 {
     private static readonly AcpClientOptions Options = new() { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent" };
@@ -34,7 +32,8 @@ public sealed class AcpPumpFaultLoggingTests
 
             return AcpFixtures.Reply(frame);
         });
-        await using var session = new AcpAgentSession(transport, Options, null, TimeSpan.FromSeconds(30), logger);
+        var session = new AcpAgentSession(transport, Options, null, TimeSpan.FromSeconds(30), logger);
+        await using var sessionScope = session.ConfigureAwait(true);
         await session.CreateAsync(ct).ConfigureAwait(true);
 
         await Should.ThrowAsync<DisconnectedHarnessException>(() => DrainAsync(session.SubmitPromptAsync("hi", new PromptOptions(), ct)))
@@ -64,7 +63,7 @@ public sealed class AcpPumpFaultLoggingTests
 
     private static async Task DrainAsync(IAsyncEnumerable<HarnessEvent> events)
     {
-        await foreach (var evt in events)
+        await foreach (var evt in events.ConfigureAwait(true))
         {
             _ = evt;
         }

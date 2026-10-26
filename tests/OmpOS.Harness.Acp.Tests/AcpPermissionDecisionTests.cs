@@ -12,8 +12,6 @@ namespace OmpOS.Harness.Acp.Tests;
 /// Sessions come from <see cref="OmpAcpClient"/>, so the resolver and the decision timeout are the ones its constructor received.
 /// </summary>
 [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session under test owns and disposes the scripted transport.")]
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default, and await using disposal is intentional.")]
-[SuppressMessage("Usage", "MA0004:Use Task.ConfigureAwait", Justification = "Same as CA2007: test methods await on the test context.")]
 public sealed class AcpPermissionDecisionTests
 {
     private const long PermissionRequestId = 901;

@@ -10,8 +10,6 @@ namespace OmpOS.Harness.Acp.Tests;
 
 /// <summary>Replays the frames captured from a live <c>omp acp</c> through the client, with no process involved.</summary>
 [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session under test owns and disposes the scripted transport.")]
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default, and await using disposal is intentional.")]
-[SuppressMessage("Usage", "MA0004:Use Task.ConfigureAwait", Justification = "Same as CA2007: test methods await on the test context.")]
 public sealed class AcpFrameReplayTests
 {
     private static readonly FrozenDictionary<string, string> ExpectedCapabilities = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -33,7 +31,8 @@ public sealed class AcpFrameReplayTests
     {
         var ct = TestContext.Current.CancellationToken;
         var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
-        await using var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent" });
+        var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent" });
+        await using var sessionScope = session.ConfigureAwait(true);
 
         await session.CreateAsync(ct).ConfigureAwait(true);
 
@@ -46,7 +45,8 @@ public sealed class AcpFrameReplayTests
     {
         var ct = TestContext.Current.CancellationToken;
         var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
-        await using var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent" });
+        var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent" });
+        await using var sessionScope = session.ConfigureAwait(true);
 
         await session.CreateAsync(ct).ConfigureAwait(true);
 

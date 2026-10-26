@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using OmpOS.Contracts.Workflows;
 using Xunit;
 
@@ -7,8 +6,6 @@ namespace OmpOS.Workflows.Tests;
 /// <summary>
 /// Contract tests for <see cref="DirectSessionRunner"/>.
 /// </summary>
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default.")]
-[SuppressMessage("Usage", "MA0004:Use Task.ConfigureAwait", Justification = "Same as CA2007: test methods await on the test context.")]
 public sealed class DirectRunnerTests : SessionRunWorkflowContractTests<DirectRunnerFixture>
 {
     private readonly DirectRunnerFixture _directFixture;
@@ -110,8 +107,8 @@ public sealed class DirectRunnerTests : SessionRunWorkflowContractTests<DirectRu
         activities.ProvisionSandboxOverride = (i, ct) => Task.FromResult(TestSessionRunActivities.CreateSandbox(i));
         activities.RunPromptOverride = async (i, hb, ct) =>
         {
-            await cts.CancelAsync();
-            await Task.Delay(100, ct);
+            await cts.CancelAsync().ConfigureAwait(true);
+            await Task.Delay(100, ct).ConfigureAwait(true);
             return 1L;
         };
         activities.TeardownSandboxOverride = (i, ct) =>

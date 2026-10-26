@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using OmpOS.Contracts.Workflows;
 using Xunit;
 
@@ -13,8 +12,6 @@ namespace OmpOS.Workflows.Tests;
 /// heartbeats, cancellation). Run against <see cref="DirectSessionRunner"/>.
 /// </remarks>
 /// <typeparam name="TFixture">The test fixture type providing test activities.</typeparam>
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default.")]
-[SuppressMessage("Usage", "MA0004:Use Task.ConfigureAwait", Justification = "Same as CA2007: test methods await on the test context.")]
 public abstract class SessionRunWorkflowContractTests<TFixture> : IClassFixture<TFixture>
     where TFixture : class, ISessionRunWorkflowFixture
 {
@@ -265,8 +262,8 @@ public abstract class SessionRunWorkflowContractTests<TFixture> : IClassFixture<
         activities.RunPromptOverride = async (i, hb, ct) =>
         {
             callOrder.Add("RunPrompt");
-            await cts.CancelAsync();
-            await Task.Delay(100, ct);
+            await cts.CancelAsync().ConfigureAwait(true);
+            await Task.Delay(100, ct).ConfigureAwait(true);
             return 1L;
         };
         activities.TeardownSandboxOverride = (i, ct) =>

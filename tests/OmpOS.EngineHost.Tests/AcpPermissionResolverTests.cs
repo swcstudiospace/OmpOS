@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -15,7 +14,6 @@ namespace OmpOS.EngineHost.Tests;
 /// The permission resolver of the in-process ACP composition. A scripted ACP peer stands in for <c>omp acp</c>, so no test
 /// spawns a process: each prompt asks for one permission, and the peer records the answer the client sends back.
 /// </summary>
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default.")]
 public sealed class AcpPermissionResolverTests
 {
     /// <summary>The tool kind the admitting policy allows. The peer's permission request carries it.</summary>
@@ -26,7 +24,8 @@ public sealed class AcpPermissionResolverTests
     public async Task AnAdmittedRequestIsGrantedWhenTheResolverAllows()
     {
         var resolver = new RecordingResolver(PermissionDecision.Allow);
-        await using var peer = new ScriptedAcpPeer();
+        var peer = new ScriptedAcpPeer();
+        await using var peerScope = peer.ConfigureAwait(true);
         await using var host = InProcessEngineHost.ForAcp(AdmittingOptions(), resolver, transportFactory: _ => peer);
 
         var events = await CollectAsync(host, TestContext.Current.CancellationToken);
@@ -41,7 +40,8 @@ public sealed class AcpPermissionResolverTests
     public async Task AResolverDenialRejectsTheAdmittedRequest()
     {
         var resolver = new RecordingResolver(PermissionDecision.Deny);
-        await using var peer = new ScriptedAcpPeer();
+        var peer = new ScriptedAcpPeer();
+        await using var peerScope = peer.ConfigureAwait(true);
         await using var host = InProcessEngineHost.ForAcp(AdmittingOptions(), resolver, transportFactory: _ => peer);
 
         var events = await CollectAsync(host, TestContext.Current.CancellationToken);
@@ -55,7 +55,8 @@ public sealed class AcpPermissionResolverTests
     [Fact]
     public async Task WithoutAResolverAnAdmittedRequestIsDenied()
     {
-        await using var peer = new ScriptedAcpPeer();
+        var peer = new ScriptedAcpPeer();
+        await using var peerScope = peer.ConfigureAwait(true);
         await using var host = InProcessEngineHost.ForAcp(AdmittingOptions(), permissionResolver: null, transportFactory: _ => peer);
 
         var events = await CollectAsync(host, TestContext.Current.CancellationToken);
@@ -69,7 +70,8 @@ public sealed class AcpPermissionResolverTests
     public async Task ADenyAllPolicyNeverConsultsTheResolver()
     {
         var resolver = new RecordingResolver(PermissionDecision.Allow);
-        await using var peer = new ScriptedAcpPeer();
+        var peer = new ScriptedAcpPeer();
+        await using var peerScope = peer.ConfigureAwait(true);
         await using var host = InProcessEngineHost.ForAcp(new AcpClientOptions(), resolver, transportFactory: _ => peer);
 
         var events = await CollectAsync(host, TestContext.Current.CancellationToken);

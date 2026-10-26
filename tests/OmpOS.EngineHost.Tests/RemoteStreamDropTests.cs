@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -12,7 +11,6 @@ namespace OmpOS.EngineHost.Tests;
 /// A transport drop on a prompt's own stream surfaces to the caller and is logged as a warning. The drop still
 /// resumes through <see cref="RemoteEngineHost.ReconnectAsync"/>, which keeps its contract.
 /// </summary>
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default.")]
 public sealed class RemoteStreamDropTests
 {
     /// <summary>A prompt stream that ends after one event, with no terminal, throws to its caller and logs a warning.</summary>

@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text;
 using OmpOS.Contracts.Sandboxes;
@@ -14,7 +13,6 @@ namespace OmpOS.EngineHost.Tests;
 /// and descriptor honesty. No test spawns omp: the in-process path uses the scripted in-memory
 /// adapter and the remote path uses a scripted <see cref="HttpMessageHandler"/>.
 /// </summary>
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default, and await using disposal is intentional.")]
 public sealed class EngineHostTests
 {
     /// <summary>The in-memory host reports the InProcess kind by default.</summary>
@@ -291,7 +289,7 @@ public sealed class EngineHostTests
     {
         var ct = TestContext.Current.CancellationToken;
         var engines = new List<FakeOmpSession>();
-        await using var host = new InProcessEngineHost(
+        var host = new InProcessEngineHost(
             () =>
             {
                 var engine = new FakeOmpSession();
@@ -299,6 +297,7 @@ public sealed class EngineHostTests
                 return engine;
             },
             new EngineHostDescriptor { Kind = EngineHostKind.InProcess, Isolation = Isolation.Process, Attestation = Attestation.None });
+        await using var hostScope = host.ConfigureAwait(true);
 
         (await CollectAsync(host.SubmitPromptAsync("one", new PromptOptions(), ct))).Count.ShouldBe(1);
         engines[0].State = HarnessState.Faulted;

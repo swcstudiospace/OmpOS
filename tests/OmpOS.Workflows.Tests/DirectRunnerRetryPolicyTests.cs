@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using OmpOS.Contracts.Sandboxes;
 using OmpOS.Contracts.Workflows;
 using Xunit;
@@ -13,8 +12,6 @@ namespace OmpOS.Workflows.Tests;
 /// collect 3, teardown 5. Backoff is requested through <see cref="IWorkflowContext.DelayAsync"/>;
 /// the recording context completes each delay immediately, so the policy runs with zero wall-clock delay.
 /// </remarks>
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default.")]
-[SuppressMessage("Usage", "MA0004:Use Task.ConfigureAwait", Justification = "Same as CA2007: test methods await on the test context.")]
 public sealed class DirectRunnerRetryPolicyTests
 {
     private static readonly SessionRunInput Input = TestInputFactory.Create();

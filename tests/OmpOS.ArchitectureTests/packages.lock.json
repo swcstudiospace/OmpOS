@@ -773,6 +773,7 @@
           "OmpOS.Harness.Abstractions": "[1.0.0, )",
           "OmpOS.Harness.Completion": "[1.0.0, )",
           "OmpOS.Harness.Mcp": "[1.0.0, )",
+          "OmpOS.Harness.OmpLauncher": "[1.0.0, )",
           "OmpOS.Harness.Plugins": "[1.0.0, )",
           "OmpOS.Harness.Terminal": "[1.0.0, )",
           "OmpOS.Harness.Workspace": "[1.0.0, )",

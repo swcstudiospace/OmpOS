@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
 namespace OmpOS.Sandbox.Tests;
@@ -35,6 +34,5 @@ internal sealed class CapturingLogger<T> : ILogger<T>
     /// <param name="Level">The log level.</param>
     /// <param name="EventId">The event id.</param>
     /// <param name="Message">The formatted message.</param>
-    [SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "Exposed only through the internal CapturingLogger.Entries; public record matches the public test helper convention used by the Workflows test fixtures.")]
-    public sealed record LogEntry(LogLevel Level, EventId EventId, string Message);
+    internal sealed record LogEntry(LogLevel Level, EventId EventId, string Message);
 }

@@ -9,8 +9,6 @@ namespace OmpOS.Harness.Acp.Tests;
 
 /// <summary>Behaviour of <see cref="AcpAgentSession"/> against a scripted agent.</summary>
 [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session under test owns and disposes the scripted transport.")]
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default, and await using disposal is intentional.")]
-[SuppressMessage("Usage", "MA0004:Use Task.ConfigureAwait", Justification = "Same as CA2007: test methods await on the test context.")]
 public sealed class AcpAgentSessionTests
 {
     private const long PermissionRequestId = 900;
@@ -98,7 +96,8 @@ public sealed class AcpAgentSessionTests
         await using var session = NewSession(transport);
         await session.CreateAsync(ct).ConfigureAwait(true);
 
-        await using var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        await using var streamScope = stream.ConfigureAwait(true);
         (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
         stream.Current.ShouldBe(new TextDeltaEvent("Partial"));
 
@@ -239,7 +238,8 @@ public sealed class AcpAgentSessionTests
     {
         var ct = TestContext.Current.CancellationToken;
         var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
-        await using var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd });
+        var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd });
+        await using var sessionScope = session.ConfigureAwait(true);
 
         var failure = await Should.ThrowAsync<AcpRequestFailedHarnessException>(() => session.CreateAsync(ct)).ConfigureAwait(true);
         failure.Context.ShouldBe("authenticate");
@@ -256,7 +256,8 @@ public sealed class AcpAgentSessionTests
         try
         {
             var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
-            await using var session = new AcpAgentSession(transport, FsOptions(root.FullName));
+            var session = new AcpAgentSession(transport, FsOptions(root.FullName));
+            await using var sessionScope = session.ConfigureAwait(true);
             await session.CreateAsync(ct).ConfigureAwait(true);
 
             var initialize = transport.Sent.Single(frame => HasMethod(frame, "initialize"));
@@ -561,7 +562,8 @@ public sealed class AcpAgentSessionTests
 
             return AcpFixtures.Reply(frame);
         });
-        await using var session = new AcpAgentSession(transport, options);
+        var session = new AcpAgentSession(transport, options);
+        await using var sessionScope = session.ConfigureAwait(true);
         await session.CreateAsync(ct).ConfigureAwait(true);
 
         transport.Deliver(request);
@@ -583,11 +585,12 @@ public sealed class AcpAgentSessionTests
     {
         var ct = TestContext.Current.CancellationToken;
         var transport = new ScriptedAcpTransport(frame => HasMethod(frame, "initialize") ? [] : AcpFixtures.Reply(frame));
-        await using var session = new AcpAgentSession(transport, new AcpClientOptions
+        var session = new AcpAgentSession(transport, new AcpClientOptions
         {
             WorkingDirectory = AcpFixtures.CapturedCwd,
             HandshakeTimeout = TimeSpan.FromMilliseconds(100),
         });
+        await using var sessionScope = session.ConfigureAwait(true);
 
         await Should.ThrowAsync<HandshakeTimeoutHarnessException>(() => session.CreateAsync(ct)).ConfigureAwait(true);
 
@@ -687,7 +690,8 @@ public sealed class AcpAgentSessionTests
         await using var session = NewSession(transport);
         await session.CreateAsync(ct).ConfigureAwait(true);
 
-        await using var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        await using var streamScope = stream.ConfigureAwait(true);
         var firstMove = stream.MoveNextAsync();
         var prompt = await WaitForFrameAsync(transport, frame => HasMethod(frame, "session/prompt"), ct).ConfigureAwait(true);
         transport.Deliver(Update(AcpFixtures.CapturedSessionId, "{\"sessionUpdate\":\"agent_message_chunk\",\"content\":{\"type\":\"text\",\"text\":\"first\"}}"));
@@ -721,7 +725,8 @@ public sealed class AcpAgentSessionTests
         await using var session = NewSession(transport);
         await session.CreateAsync(ct).ConfigureAwait(true);
 
-        await using var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        await using var streamScope = stream.ConfigureAwait(true);
         var firstMove = stream.MoveNextAsync();
         transport.Deliver(Update(AcpFixtures.CapturedSessionId, "{\"sessionUpdate\":\"agent_message_chunk\",\"content\":{\"type\":\"text\",\"text\":\"first\"}}"));
         (await firstMove.ConfigureAwait(true)).ShouldBeTrue();
@@ -756,10 +761,12 @@ public sealed class AcpAgentSessionTests
             AuthMethodId = "agent",
             ApprovalPolicy = new AcpApprovalPolicy(["execute"], static _ => throw new InvalidOperationException("hook blew up")),
         };
-        await using var session = new AcpAgentSession(transport, options);
+        var session = new AcpAgentSession(transport, options);
+        await using var sessionScope = session.ConfigureAwait(true);
         await session.CreateAsync(ct).ConfigureAwait(true);
 
-        await using var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        await using var streamScope = stream.ConfigureAwait(true);
         var firstMove = stream.MoveNextAsync();
         transport.Deliver(Update(AcpFixtures.CapturedSessionId, "{\"sessionUpdate\":\"agent_message_chunk\",\"content\":{\"type\":\"text\",\"text\":\"first\"}}"));
         (await firstMove.ConfigureAwait(true)).ShouldBeTrue();
@@ -792,7 +799,8 @@ public sealed class AcpAgentSessionTests
         await using var session = NewSession(transport);
         await session.CreateAsync(ct).ConfigureAwait(true);
 
-        await using var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        await using var streamScope = stream.ConfigureAwait(true);
         var firstMove = stream.MoveNextAsync();
         var prompt = await WaitForFrameAsync(transport, frame => HasMethod(frame, "session/prompt"), ct).ConfigureAwait(true);
         transport.Deliver(Update(AcpFixtures.CapturedSessionId, "\"not-an-object\""));
@@ -824,10 +832,12 @@ public sealed class AcpAgentSessionTests
 
             return HasMethod(frame, "session/prompt") ? [] : AcpFixtures.Reply(frame);
         });
-        await using var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent", ApprovalPolicy = new AcpApprovalPolicy(["execute"]) });
+        var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent", ApprovalPolicy = new AcpApprovalPolicy(["execute"]) });
+        await using var sessionScope = session.ConfigureAwait(true);
         await session.CreateAsync(ct).ConfigureAwait(true);
 
-        await using var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);
+        await using var streamScope = stream.ConfigureAwait(true);
         var firstMove = stream.MoveNextAsync();
         transport.Deliver(PermissionRequest("execute", AllowAndRejectOptions));
 
@@ -936,7 +946,8 @@ public sealed class AcpAgentSessionTests
 
             return AcpFixtures.Reply(frame);
         });
-        await using var session = new AcpAgentSession(transport, options);
+        var session = new AcpAgentSession(transport, options);
+        await using var sessionScope = session.ConfigureAwait(true);
         await session.CreateAsync(ct).ConfigureAwait(true);
 
         transport.Deliver(request);

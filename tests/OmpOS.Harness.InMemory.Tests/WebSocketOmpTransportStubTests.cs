@@ -9,7 +9,6 @@ namespace OmpOS.Harness.InMemory.Tests;
 
 /// <summary>The WebSocket transport is a typed not-available stub.</summary>
 [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session under test owns the stub transport.")]
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default, and await using disposal is intentional.")]
 public sealed class WebSocketOmpTransportStubTests
 {
     /// <summary>Connect, send and receive fault with a typed NotAvailable carrying the Q-HARN-WS owner tag.</summary>
@@ -50,9 +49,10 @@ public sealed class WebSocketOmpTransportStubTests
     public async Task DisposeSessionBuiltOnStubDoesNotThrow()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var session = new AcpAgentSession(
+        var session = new AcpAgentSession(
             new WebSocketOmpTransportStub(),
             new AcpClientOptions { WorkingDirectory = Directory.GetCurrentDirectory() });
+        await using var sessionScope = session.ConfigureAwait(true);
 
         await Should.ThrowAsync<ProcessStartHarnessException>(() => session.CreateAsync(ct)).ConfigureAwait(true);
 

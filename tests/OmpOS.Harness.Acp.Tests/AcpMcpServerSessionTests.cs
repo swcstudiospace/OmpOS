@@ -8,8 +8,6 @@ namespace OmpOS.Harness.Acp.Tests;
 
 /// <summary>MCP server specs on <c>session/new</c> and <c>session/load</c>: exact wire JSON, validation, and secret redaction.</summary>
 [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session under test owns and disposes the scripted transport.")]
-[SuppressMessage("Usage", "CA2007:Do not directly await a Task", Justification = "xUnit test methods await on the test context; ConfigureAwait(true) is the test default, and await using disposal is intentional.")]
-[SuppressMessage("Usage", "MA0004:Use Task.ConfigureAwait", Justification = "Same as CA2007: test methods await on the test context.")]
 public sealed class AcpMcpServerSessionTests
 {
     private const string HeaderSecret = "Bearer header-secret-7f3a";
@@ -26,7 +24,8 @@ public sealed class AcpMcpServerSessionTests
     {
         var ct = TestContext.Current.CancellationToken;
         var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
-        await using var session = new AcpAgentSession(transport, Options(servers: []));
+        var session = new AcpAgentSession(transport, Options(servers: []));
+        await using var sessionScope = session.ConfigureAwait(true);
 
         await session.CreateAsync(ct).ConfigureAwait(true);
 
@@ -46,7 +45,8 @@ public sealed class AcpMcpServerSessionTests
             "node",
             ["server.js", "--port", "7"],
             new Dictionary<string, string>(StringComparer.Ordinal) { ["ZETA"] = EnvSecretZ, ["ALPHA"] = EnvSecretA });
-        await using var session = new AcpAgentSession(transport, Options([stdio]));
+        var session = new AcpAgentSession(transport, Options([stdio]));
+        await using var sessionScope = session.ConfigureAwait(true);
 
         await session.CreateAsync(ct).ConfigureAwait(true);
 
@@ -61,7 +61,8 @@ public sealed class AcpMcpServerSessionTests
         var ct = TestContext.Current.CancellationToken;
         var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
         var stdio = new AcpStdioMcpServer("bare", "tool", [], new Dictionary<string, string>(StringComparer.Ordinal));
-        await using var session = new AcpAgentSession(transport, Options([stdio]));
+        var session = new AcpAgentSession(transport, Options([stdio]));
+        await using var sessionScope = session.ConfigureAwait(true);
 
         await session.CreateAsync(ct).ConfigureAwait(true);
 
@@ -77,7 +78,8 @@ public sealed class AcpMcpServerSessionTests
         var headers = new Dictionary<string, string>(StringComparer.Ordinal) { ["Authorization"] = HeaderSecret };
         var http = new AcpHttpMcpServer("substrate", new Uri("https://substrate.example/mcp"), headers);
         var sse = new AcpSseMcpServer("events", new Uri("https://events.example/sse"), new Dictionary<string, string>(StringComparer.Ordinal));
-        await using var session = new AcpAgentSession(transport, Options([http, sse]));
+        var session = new AcpAgentSession(transport, Options([http, sse]));
+        await using var sessionScope = session.ConfigureAwait(true);
 
         await session.CreateAsync(ct).ConfigureAwait(true);
 
@@ -93,7 +95,8 @@ public sealed class AcpMcpServerSessionTests
         var ct = TestContext.Current.CancellationToken;
         var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
         var http = new AcpHttpMcpServer("substrate", new Uri("http://127.0.0.1:9/mcp"), new Dictionary<string, string>(StringComparer.Ordinal) { ["X-Key"] = "k" });
-        await using var session = new AcpAgentSession(transport, Options([http]));
+        var session = new AcpAgentSession(transport, Options([http]));
+        await using var sessionScope = session.ConfigureAwait(true);
 
         await session.ResumeAsync(AcpFixtures.CapturedSessionId, ct).ConfigureAwait(true);
 
@@ -174,7 +177,8 @@ public sealed class AcpMcpServerSessionTests
             new AcpStdioMcpServer("gsd", "node", [ArgSecret], envs),
             new AcpHttpMcpServer("substrate", new Uri("https://substrate.example/mcp"), headers),
         ];
-        await using var session = new AcpAgentSession(transport, Options(servers), null, TimeSpan.FromSeconds(30), logger);
+        var session = new AcpAgentSession(transport, Options(servers), null, TimeSpan.FromSeconds(30), logger);
+        await using var sessionScope = session.ConfigureAwait(true);
 
         var failure = await Should.ThrowAsync<AcpRequestFailedHarnessException>(() => session.CreateAsync(ct)).ConfigureAwait(true);
 
