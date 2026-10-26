@@ -394,10 +394,10 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 - [x] **Phase 25.2: Web Head Trust and Stream Bounds** - Prompts and SSE only to the configured origin; SSE reconnect budget and frame sizes bounded (fix F-A)
 - [x] **Phase 25.3: Bounded Child and Vendor Reads** - Every external read path capped and tested (fix F-B)
 - [ ] **Phase 25.4: Build, Deploy, and Image Integrity** - Verified installers, pinned actions, runners, images, and smoke tooling (fix F-C; partial: PodmanDriverSection :latest blocked on GHCR access)
-- [ ] **Phase 25.5: Failures That Stay Silent** - Swallowed faults logged or surfaced; logging split recorded (fix F-D; partial: M-4 detached-path test and desktop logger wiring open)
-- [ ] **Phase 25.6: Secrets and Local Files** - Token scope, owner-only temp files, per-repository consent for setup steps (fix F-E)
-- [ ] **Phase 25.7: UI Head Accessibility** - Reduced motion, alt text, keyboard-operable error dismiss, focus contrast coverage (fix F-F)
-- [ ] **Phase 25.8: Test Quality** - Each named test asserts its claim; no fixed sleeps in settlement tests (fix F-G)
+- [x] **Phase 25.5: Failures That Stay Silent** - Swallowed faults logged or surfaced; logging split recorded (fix F-D; the M-4 detached-path test and the desktop logger wiring closed 2026-10-26)
+- [x] **Phase 25.6: Secrets and Local Files** - Token scope, owner-only temp files, per-repository consent for setup steps (fix F-E)
+- [x] **Phase 25.7: UI Head Accessibility** - Reduced motion, alt text, keyboard-operable error dismiss, focus contrast coverage (fix F-F)
+- [x] **Phase 25.8: Test Quality** - Each named test asserts its claim; no fixed sleeps in settlement tests (fix F-G)
 - [ ] **Phase 25.9: Suppression and Skip Review** - Every suppression and skip marker decided; counts reconciled (fix F-H)
 
 ### Phase 20: Avalonia Foundation
@@ -556,7 +556,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Requirements**: none; scope from the owner's acceptance of F-D (2026-10-26)
 **Depends on**: Phase 25.4
 **Mac channel**: No.
-**Status (2026-10-26)**: partial. Commit bad4e67; gate 2315 passed, 0 failed, 0 skipped. Open: M-4 detached-path test (removed, cause not isolated); desktop composition passes no logger, so service ILogger output is discarded in the desktop app. Record: .planning/phases/25.5-failures-that-stay-silent/25.5-01-SUMMARY.md.
+**Status (2026-10-26)**: complete. Commits bad4e67 and bf7e16b (the two open items: the M-4 detached-path test and the desktop ILoggerFactory wiring); gate 2390 passed, 0 failed, 0 skipped; web smoke exit 0. Record: .planning/phases/25.5-failures-that-stay-silent/25.5-01-SUMMARY.md.
 **Success Criteria** (what must be TRUE):
   1. Each fault in M-2, M-3, M-4, M-12, M-17, M-18, and M-19 is logged or surfaced to its caller. Verify: a test per fault observes the log or the surfaced error.
   2. Close faults in the shipped desktop app reach a configured trace listener. Verify: a test or startup check shows the listener is attached in the app host.
@@ -569,7 +569,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Requirements**: none; scope from the owner's acceptance of F-E and the consent answer (2026-10-26)
 **Depends on**: Phase 25.5
 **Mac channel**: No.
-**Status (2026-10-26)**: not started.
+**Status (2026-10-26)**: complete. Commit 1ef5051; gate 2390 passed, 0 failed, 0 skipped. Record: .planning/phases/25.6-secrets-and-local-files/25.6-01-SUMMARY.md. No head shows a setup-consent prompt yet (no head calls SetupRunner until Phase 28 criterion 5); the default prompt denies with a clear message.
 **Success Criteria** (what must be TRUE):
   1. AgentOsProvider refuses at construction a non-loopback cleartext origin, and sends its bearer token only to the configured origin. Verify: provider tests.
   2. Compose files written to temp directories are owner-only. Verify: a test checks the file mode.
@@ -582,7 +582,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Requirements**: none; scope from the owner's acceptance of F-F (2026-10-26)
 **Depends on**: Phase 25.6
 **Mac channel**: No.
-**Status (2026-10-26)**: not started.
+**Status (2026-10-26)**: complete. Commit bf7e16b (with Phase 25.5); gate 2390 passed, 0 failed, 0 skipped; web smoke exit 0 with the new dismiss-control step. Record: .planning/phases/25.7-ui-head-accessibility/25.7-01-SUMMARY.md. OQ-34 and OQ-39 stay deferred.
 **Success Criteria** (what must be TRUE):
   1. Android transitions honour reduced motion. Verify: the transition is removed or disabled under the reduced-motion setting; a test or static check covers it.
   2. A2UI images always have alt text, with a fallback when the agent omits it. Verify: A2UI test with a missing alt.
@@ -596,7 +596,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Requirements**: none; scope from the owner's acceptance of F-G (2026-10-26)
 **Depends on**: Phase 25.7
 **Mac channel**: No.
-**Status (2026-10-26)**: not started.
+**Status (2026-10-26)**: complete. Commit efc4e12; gate 2390 passed, 0 failed, 0 skipped. Record: .planning/phases/25.8-test-quality/25.8-01-SUMMARY.md (each strengthened test lists the mutation that fails it).
 **Success Criteria** (what must be TRUE):
   1. Each test named in M-8, M-9, lens 1 section 2, InMemorySessionSignalsTests:71, and RailwaySwarmProviderTests:204 asserts the behaviour its name claims, or is removed. Verify: each test fails when its behaviour breaks.
   2. No fixed sleep remains in RunControls settlement tests. Verify: grep finds no Task.Delay or Thread.Sleep in those tests.

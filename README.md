@@ -43,11 +43,14 @@ It installs the pinned SDK when missing, then runs a locked restore, a warnings-
 | `services/` | L3 hosts (`Api`) |
 | `apps/` | L4 heads (`Web` Blazor WASM, `Native` Avalonia desktop, `Android` Avalonia; `App` MAUI removed in v0.10.0, Phase 25) |
 | `tests/` | Per-project suites plus contract fixtures and `ArchitectureTests` |
+| `plugins/` | Agent loop plugins: three pinned submodules (`claude-ultrathink`, `agent-swarm`, `agent-substrate`) and the tracked `gsd-core-omp`; see [docs/plugins.md](docs/plugins.md) |
 | `docs/` | Architecture, ADRs, open questions, runbooks |
 | `docs/decisions/` | Architecture Decision Records |
 | `docs/runbooks/` | Operator and developer runbooks |
 | `deploy/` | `compose.yaml` for podman-compose (the Temporal dev server was removed on 2026-10-21) |
 | `.github/workflows/` | `ci.yml` (build, test, format, audit, scan, compose, Android) |
+
+Plugins: `plugins/` holds the omp plugins the agent loop runs: `claude-ultrathink`, `agent-swarm` and `agent-substrate` as pinned git submodules (`agent-substrate` is private), and `gsd-core-omp`, tracked in this repository. Clone with `git clone --recurse-submodules`, or run `git submodule update --init --recursive` in an existing clone. See [docs/plugins.md](docs/plugins.md).
 
 ## What is verified where
 

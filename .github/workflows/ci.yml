@@ -44,6 +44,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+      - name: Plugin submodules (the public ones always; the private agent-substrate needs the SUBMODULE_TOKEN secret)
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.SUBMODULE_TOKEN }}
+        run: |
+          git submodule update --init --recursive plugins/claude-ultrathink plugins/agent-swarm
+          if [ -n "${SUBMODULE_TOKEN:-}" ]; then
+            header="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$SUBMODULE_TOKEN" | base64 -w0)"
+            echo "::add-mask::$header"
+            GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" GIT_CONFIG_VALUE_0="$header" \
+              git submodule update --init --recursive plugins/agent-substrate
+          else
+            echo "::warning::SUBMODULE_TOKEN is not set: plugins/agent-substrate is not checked out and the substrate plugin reports Unavailable. Add a read-only token for swcstudiospace/substrate as the SUBMODULE_TOKEN secret."
+          fi
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json

@@ -1,0 +1,5 @@
+[
+  {"id":"mem_r1","scope":"repo:swcstudiospace/OmpOS","kind":"fact","subject":"analyzers","text":"Analyzers run at latest-all with warnings as errors.","writer":"omp","created":"2026-10-25T10:00:00.000Z"},
+  {"id":"mem_r2","scope":"repo:swcstudiospace/OmpOS","kind":"handoff","text":"Hand over the wave B stage sources.","created":"2026-10-25T11:00:00.000Z"},
+  {"id":"mem_r3","scope":"repo:swcstudiospace/OmpOS","kind":"fact","subject":"lesson:v0.14/44-plugin/leases-fence","text":"[lessonbank]\nmilestone: v0.14\n\nLeases fence on epoch.","created":"2026-10-24T11:00:00.000Z"}
+]

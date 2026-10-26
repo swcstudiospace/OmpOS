@@ -23,6 +23,7 @@
     <Project Path="src/OmpOS.Harness.Mcp/OmpOS.Harness.Mcp.csproj" />
     <Project Path="src/OmpOS.Harness.Completion/OmpOS.Harness.Completion.csproj" />
     <Project Path="src/OmpOS.Harness.Plugins/OmpOS.Harness.Plugins.csproj" />
+    <Project Path="src/OmpOS.Harness.AgentLoop/OmpOS.Harness.AgentLoop.csproj" />
     <Project Path="src/OmpOS.Harness.Automations/OmpOS.Harness.Automations.csproj" />
     <Project Path="src/OmpOS.Harness.Registry/OmpOS.Harness.Registry.csproj" />
     <Project Path="src/OmpOS.Harness.OmpLauncher/OmpOS.Harness.OmpLauncher.csproj" />
@@ -61,6 +62,7 @@
     <Project Path="tests/OmpOS.Harness.Mcp.Fixtures/OmpOS.Harness.Mcp.Fixtures.csproj" />
     <Project Path="tests/OmpOS.Harness.Completion.Tests/OmpOS.Harness.Completion.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Plugins.Tests/OmpOS.Harness.Plugins.Tests.csproj" />
+    <Project Path="tests/OmpOS.Harness.AgentLoop.Tests/OmpOS.Harness.AgentLoop.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Automations.Tests/OmpOS.Harness.Automations.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Registry.Tests/OmpOS.Harness.Registry.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.OmpLauncher.Tests/OmpOS.Harness.OmpLauncher.Tests.csproj" />

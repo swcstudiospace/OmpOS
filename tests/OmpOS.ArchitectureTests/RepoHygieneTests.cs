@@ -161,6 +161,34 @@ public sealed class RepoHygieneTests
     }
 
     [Fact]
+    public void TodoScan_SkipsPluginSubmodulesButScansTheFirstPartyPlugin()
+    {
+        var root = CreateTempTree();
+        try
+        {
+            foreach (var submodule in new[] { "claude-ultrathink", "agent-swarm", "agent-substrate" })
+            {
+                var directory = Path.Combine(root, "plugins", submodule, "src");
+                Directory.CreateDirectory(directory);
+                File.WriteAllText(Path.Combine(directory, "third-party.ts"), "// TODO: belongs to the sibling repository" + Environment.NewLine);
+            }
+
+            var firstParty = Path.Combine(root, "plugins", "gsd-core-omp", "src");
+            Directory.CreateDirectory(firstParty);
+            File.WriteAllText(Path.Combine(firstParty, "index.ts"), "// TODO: first-party marker with no open question" + Environment.NewLine);
+
+            var offenders = TodoMarkerScanner.FindUnlinkedMarkers(root, OwnersWithOneQuestion());
+
+            offenders.ShouldHaveSingleItem();
+            offenders[0].Replace('\\', '/').ShouldStartWith("plugins/gsd-core-omp/src/index.ts:1:");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void TodoScan_AcceptsLinkedMarkerInTemporaryTree()
     {
         var root = CreateTempTree();

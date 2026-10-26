@@ -8,7 +8,7 @@ This document records the layering every later phase must respect, and the sessi
 flowchart TB
     L0["L0 · OmpOS.Contracts"]
     L1["L1 · Parser · Harness.Abstractions · Sandbox.Abstractions"]
-    L2["L2 · Harness.Acp · Harness.Rpc · Harness.InMemory · Sessions · GenUi · Sandbox · Workflows (DirectSessionRunner) · UI · Presentation"]
+    L2["L2 · Harness.Acp · Harness.Rpc · Harness.InMemory · Harness.AgentLoop · Sessions · GenUi · Sandbox · Workflows (DirectSessionRunner) · UI · Presentation"]
     L3["L3 · Api"]
     L4["L4 - Web - Native heads"]
     L4 --> L3
@@ -31,6 +31,7 @@ There is no worker layer. The Temporal worker project was removed on 2026-10-21,
 | `OmpOS.Harness.Abstractions` | L1 | Transport, session, and event abstractions plus the harness state machine (Phase 2) |
 | `OmpOS.Sandbox.Abstractions` | L1 | Sandbox provider abstraction (Phase 3) |
 | `OmpOS.Harness.Acp` | L2 | ACP v1 client over `omp acp` stdio (Phase 2) |
+| `OmpOS.Harness.AgentLoop` | L2 | Agent loop (v0.14.0): plugin catalogue and resolver for the pinned submodules, the pure launch planner and per-session state layout, observers that project Ultrathink, Swarm, Substrate and GSD state into `StageEvent`s, the Substrate gateway, the GSD tools client, and the session registry (`ISessionCatalog`). References only `OmpOS.Contracts` and `OmpOS.Harness.Abstractions`. May spawn processes (`node` for GSD tools). See [Agent loop](#agent-loop) and [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md). |
 | `OmpOS.Harness.Rpc` | L2 | omp native JSONL client over `omp --mode rpc` (Phase 2) |
 | `OmpOS.Harness.InMemory` | L2 | Deterministic scripted adapter for the vertical slice (Phase 2) |
 | `OmpOS.Sessions` | L2 | Append-only sequence-numbered session log and repository (Phase 2) |
@@ -62,6 +63,48 @@ Session runs execute inside the API process. No separate worker service exists.
 - **Idempotency.** Prompt submission takes an optional `Idempotency-Key` header. A completed record lasts 24 h; a pending claim lasts 60 s. A replay returns the stored 202 body. The same key with a different body returns 409 `/problems/idempotency-key-reused`. A concurrent claim returns 409 `/problems/idempotency-in-progress`.
 - **Streaming.** SSE is served from the session log. Polling (about 200 ms) is the source of truth for SSE. Signals only wake pollers (see Coordination).
 
+## Agent loop
+
+The agent loop runs the Ultrathink, Swarm, Substrate and GSD-Core plugins inside `omp acp`. OmpOS launches them, observes their side channels and renders the result in the Agent Panel. Plugin details: [docs/plugins.md](plugins.md). Operation: [docs/runbooks/agent-loop.md](runbooks/agent-loop.md).
+
+Contracts (`OmpOS.Contracts.Agents`, L0, no `StreamEvent` kind and no `ContractVersion` change): `StageSource` (Omp, Ultrathink, Swarm, Substrate, Gsd), `StageStatus` (Pending, Running, Succeeded, Degraded, Failed, Skipped, Unavailable), `StageEvent`, `StageObservationScope`, `IStageSource`, `SessionLifecycle` (Created, Running, Paused, Completed, Failed, Lost), `SessionSummary`, `ISessionCatalog`, `ContextNote`, `GsdPhaseInfo`, `TaskContext`, `ITaskContextSource`.
+
+```mermaid
+flowchart TB
+    U["User prompt"] --> H["OmpOS.Harness.AgentLoop: plan launch, validate plugin paths"]
+    H --> O["omp acp --no-extensions<br/>-e Ultrathink -e Swarm omp/<br/>-e substrate-status.ts -e substrate-skills.ts<br/>-e gsd-core-omp"]
+    O --> UT["Ultrathink session file"]
+    O --> SW["Swarm live.json, events.jsonl"]
+    O --> SB["Substrate HTTP: brief, events"]
+    O --> GS["GSD tools: phase, state"]
+    UT --> OB["Stage observers"]
+    SW --> OB
+    SB --> OB
+    GS --> OB
+    OB --> CS["CompositeStageSource"]
+    CS --> P["Agent Panel: stage timeline, sessions, task context"]
+    ST["Steering input"] --> Q["ACP queue after the turn"]
+    Q --> O
+    ST --> R["Record in Substrate (events_emit, action steer)"]
+```
+
+Steering is delivered over ACP and only recorded in Substrate; Substrate does not deliver it (OQ-66). An observer that cannot read its source emits a Degraded or Unavailable stage event instead of throwing, so the panel and the run continue.
+
+Session state directory layout (from `SessionStateLayout`; `<stateRoot>` is `AgentLoopSettings.StateRoot`):
+
+```
+<stateRoot>/sessions/<sessionId>/
+  ultrathink/                    ULTRATHINK_STATE_DIR
+    sessions/<acpSessionId>.json   written once planning finishes
+  swarm/                         SWARM_DIR
+    .swarm/live.json
+    .swarm/events.jsonl
+  claude-state/                  SWARM_CLAUDE_STATE_DIR
+  substrate-pending/             SUBSTRATE_OMP_PENDING_DIR
+```
+
+A session id must match `^[A-Za-z0-9_.-]{1,120}$` and must not be `.` or `..`. An observer reads only its own session directory.
+
 ## Stores
 
 - **Session log**: `Sessions:Store` is `Postgres` or `InMemory`. It defaults to `InMemory` in `appsettings.json` for Development only; Production refuses to start unless it is `Postgres`, and the startup error names `Sessions:Store`. Hosted, the store is PostgreSQL 16 with TimescaleDB 2.13 (Railway template image `timescale-postgis-ssl:pg16-ts2.13`, TLS on), schema `ompos`. The session log is a hypertable on `occurred_at` with 1-day chunks and primary key `(session_id, seq, occurred_at)`. The DDL has not been executed against the hosted database (open item Q-DATA-TSDB-VERSION).
@@ -92,3 +135,4 @@ Railway project `Ultrathink`, environment `production`. The service list, variab
 - [ADR-0003](decisions/ADR-0003-workflow-routing.md): workflow routing. Superseded 2026-10-21; `DirectSessionRunner` in the API is the only run path.
 - [ADR-0004](decisions/ADR-0004-cross-platform-ui.md): cross-platform UI. Accepted 2026-10-21: Avalonia UI for the five native heads; the web head stays Blazor WebAssembly on the shared presentation layer. The MAUI head retires after parity (v0.10.0 Phase 25).
 - [Temporal removal and Railway topology (2026-10-21)](handoff.md#temporal-removal-and-railway-topology-2026-10-21): the decision text and its supersessions.
+- [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md): agent loop plugins. Accepted 2026-10-26: Ultrathink, Swarm and Substrate as pinned submodules and `plugins/gsd-core-omp` as a tracked plugin, launched inside `omp acp` with `-e`; steering delivered over ACP and recorded in Substrate.

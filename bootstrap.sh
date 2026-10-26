@@ -34,6 +34,14 @@ if [ ! -d "$DOTNET_ROOT/sdk/$SDK_VERSION" ]; then
   tar -xzf "$SDK_ARCHIVE" -C "$DOTNET_ROOT"
 fi
 
+# Plugin submodules (AL-01): the sibling plugins are pinned git submodules under plugins/. The gate does not need their
+# contents (the plugin guard reports a missing one as Unavailable), so a failed fetch, for example of the private
+# agent-substrate repository without credentials, is a warning and never a failure.
+if [ -f .gitmodules ] && git rev-parse --git-dir >/dev/null 2>&1; then
+  git submodule update --init --recursive \
+    || echo "warning: plugin submodules are not fully initialised; run 'git submodule update --init --recursive' with read access to swcstudiospace/substrate (the substrate plugin reports Unavailable until then)" >&2
+fi
+
 dotnet --version
 dotnet restore OmpOS.Linux.slnf --locked-mode
 dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror

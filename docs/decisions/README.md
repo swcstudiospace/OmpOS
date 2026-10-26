@@ -14,6 +14,7 @@ source of truth; this index only lists them with status and in-text amendments.
 | [ADR-0007](ADR-0007-editor-control.md) | Editor control: AvaloniaEdit (ADE-09) | Accepted 2026-10-22 | Licences and grammar sources recorded in the ADR; token colours and contrast on the Fluent surface not yet measured |
 | [ADR-0008](ADR-0008-contract-versioning.md) | Contract versioning policy (R-11) | Accepted 2026-10-22 | Applies to presentation and harness plugin contracts |
 | [ADR-0011](ADR-0011-logging-split.md) | Logging split by layer | Accepted 2026-10-26 | Services and harness log through ILogger; the native head uses Trace with a stderr listener set at startup; the web head uses ILogger. Residual: the desktop composition passes no logger, so service ILogger output is discarded there. ADR-0009 and ADR-0010 are not listed here; this index predates them. |
+| [ADR-0012](ADR-0012-agent-loop-plugins.md) | Agent loop plugins | Accepted 2026-10-26 | Ultrathink, Swarm and Substrate are pinned git submodules under `plugins/`; `plugins/gsd-core-omp` is tracked and OmpOS-owned. They run inside `omp acp` loaded with `-e` only. Steering is delivered over ACP and only recorded in Substrate. |
 
 Conventions: new ADRs take the next number (`ADR-0004`, …); status changes are
 recorded in the ADR’s own header, and this index is updated to match.

@@ -31,4 +31,22 @@ public sealed record AcpClientOptions
     /// advertises them as <see langword="false"/> and agent calls are answered with a JSON-RPC error.
     /// </summary>
     public string? FsRoot { get; init; }
+
+    /// <summary>
+    /// Gets the arguments appended after <c>acp</c> on the omp command line, one argv element each and in order,
+    /// for example <c>--no-extensions</c>, <c>-e</c> and a path. Defaults to none. Do not put secrets here: argv is visible to other processes.
+    /// </summary>
+    public IReadOnlyList<string> ExtraArguments { get; init; } = [];
+
+    /// <summary>
+    /// Gets the environment variables set on the omp child. The child still inherits the parent environment; an entry here
+    /// overrides an inherited variable of the same name. Values may be secrets: they are never logged or placed in a message. Defaults to none.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> EnvironmentVariables { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Gets the MCP servers attached to the session in <c>session/new</c> and <c>session/load</c>. Header and environment values may
+    /// be secrets: they are never logged or placed in a message. Defaults to none, which is sent as an empty list.
+    /// </summary>
+    public IReadOnlyList<AcpMcpServer> McpServers { get; init; } = [];
 }

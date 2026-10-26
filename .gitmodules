@@ -1,0 +1,12 @@
+[submodule "plugins/claude-ultrathink"]
+	path = plugins/claude-ultrathink
+	url = https://github.com/swcstudiospace/ultrathink.git
+	branch = main
+[submodule "plugins/agent-swarm"]
+	path = plugins/agent-swarm
+	url = https://github.com/swcstudiospace/swarm.git
+	branch = main
+[submodule "plugins/agent-substrate"]
+	path = plugins/agent-substrate
+	url = https://github.com/swcstudiospace/substrate.git
+	branch = main

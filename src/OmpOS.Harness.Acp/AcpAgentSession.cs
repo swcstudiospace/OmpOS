@@ -42,6 +42,7 @@ public sealed class AcpAgentSession : IOmpSession
     private readonly IAcpTransport _transport;
     private readonly AcpClientOptions _options;
     private readonly string? _fsRoot;
+    private readonly AcpFrames.McpServerFrame[] _mcpServers;
     private readonly IPermissionResolver? _permissionResolver;
     private readonly TimeSpan _permissionDecisionTimeout;
     private readonly HarnessStateMachine _machine = new();
@@ -84,6 +85,7 @@ public sealed class AcpAgentSession : IOmpSession
         _transport = transport;
         _options = options;
         _fsRoot = options.FsRoot is null ? null : Path.TrimEndingDirectorySeparator(Path.GetFullPath(options.FsRoot));
+        _mcpServers = AcpWireMapping.ToMcpFrames(options.McpServers);
         _permissionResolver = permissionResolver;
         _permissionDecisionTimeout = permissionDecisionTimeout;
         _logger = logger ?? NullLogger<AcpAgentSession>.Instance;
@@ -404,7 +406,7 @@ public sealed class AcpAgentSession : IOmpSession
         {
             var response = await CallAsync(
                 "session/new",
-                new AcpFrames.NewSessionParams(cwd, []),
+                new AcpFrames.NewSessionParams(cwd, _mcpServers),
                 AcpJsonContext.Default.RequestNewSessionParams,
                 _options.RequestTimeout,
                 cancellationToken).ConfigureAwait(false);
@@ -420,7 +422,7 @@ public sealed class AcpAgentSession : IOmpSession
 
         await CallAsync(
             "session/load",
-            new AcpFrames.LoadSessionParams(resumeSessionId, cwd, []),
+            new AcpFrames.LoadSessionParams(resumeSessionId, cwd, _mcpServers),
             AcpJsonContext.Default.RequestLoadSessionParams,
             _options.RequestTimeout,
             cancellationToken).ConfigureAwait(false);

@@ -1,0 +1,11 @@
+{
+  "future_top_level": {"anything": [1, 2, 3]},
+  "phases": [
+    {"number": 7, "name": "Numeric Number", "plan_count": 2, "summary_count": 2, "disk_status": "complete", "brand_new_field": true},
+    {"number": "8", "name": null, "plan_count": 3, "summary_count": 1, "disk_status": "executed", "roadmap_complete": false},
+    {"name": "No number, skipped", "plan_count": 1},
+    {"number": "9", "name": "Weird Types", "plan_count": null, "summary_count": null, "disk_status": null}
+  ],
+  "current_phase": 8,
+  "next_phase": null
+}

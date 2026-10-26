@@ -1,0 +1,8 @@
+[
+  {"id":"mem_g1","scope":"graph:ut-lq1a2b3c-0f1e2d3c","kind":"decision","subject":"architecture","text":"Use the shared presentation layer for the panel.","writer":"omp","trust":"agent-claimed","ttl":"graph","created":"2026-10-26T08:00:00.000Z","version":1,"entry_hash":"abc","needs_reverification":false},
+  {"id":"mem_g2","scope":"graph:ut-lq1a2b3c-0f1e2d3c","kind":"warning","subject":"leases","text":"Line one\nLine two\u0007 with a bell and a \u202Ebidi override and\ttab.","writer":"omp","created":"2026-10-26T08:05:00.000Z","needs_reverification":false},
+  {"id":"mem_g3","scope":"graph:ut-lq1a2b3c-0f1e2d3c","kind":"todo","text":"Superseded todo.","superseded_by":"mem_g9","created":"2026-10-26T07:00:00.000Z"},
+  {"id":"mem_g4","scope":"graph:ut-lq1a2b3c-0f1e2d3c","kind":"fact","text":"Expired fact.","expired":true,"created":"2026-10-20T07:00:00.000Z"},
+  {"id":"mem_g5","scope":"graph:ut-other-ffffffff","kind":"fact","text":"This belongs to another graph.","created":"2026-10-26T08:06:00.000Z"},
+  {"id":"mem_g6","scope":"graph:ut-lq1a2b3c-0f1e2d3c","kind":"opinion","text":"A kind the contract does not know.","created":"2026-10-26T08:07:00.000Z"}
+]

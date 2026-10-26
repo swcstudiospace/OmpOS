@@ -78,5 +78,10 @@ public sealed class OmpAcpClient
     }
 
     private static Func<AcpClientOptions, IAcpTransport> SpawnOmpAcp(ILoggerFactory? loggerFactory) =>
-        options => new AcpStdioTransport(options.OmpPath ?? DefaultExecutable, options.WorkingDirectory, loggerFactory?.CreateLogger<AcpStdioTransport>());
+        options => new AcpStdioTransport(
+            options.OmpPath ?? DefaultExecutable,
+            options.WorkingDirectory,
+            options.ExtraArguments,
+            options.EnvironmentVariables,
+            loggerFactory?.CreateLogger<AcpStdioTransport>());
 }
