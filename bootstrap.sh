@@ -3,7 +3,9 @@
 # Installs the SDK pinned in global.json when missing, then runs a locked
 # restore, a warnings-as-errors Release build, the test suite, and a format
 # verification, then the web browser smoke with its axe-core check. Exits non-zero on any failing step. Never installs containers;
-# the test step starts throwaway test services and stops them on exit.
+# Before the build it runs the pinned gitleaks secret scan (scripts/ci/secret-scan.sh, shared with CI), which fails closed when
+# the binary cannot be fetched or verified: set OMPOS_SKIP_SECRET_SCAN=1 to skip it explicitly, for example offline.
+# The test step starts throwaway test services and stops them on exit.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
@@ -41,6 +43,10 @@ if [ -f .gitmodules ] && git rev-parse --git-dir >/dev/null 2>&1; then
   git submodule update --init --recursive \
     || echo "warning: plugin submodules are not fully initialised; run 'git submodule update --init --recursive' with read access to swcstudiospace/substrate (the substrate plugin reports Unavailable until then)" >&2
 fi
+
+# Secret scan (35-A): the same pinned, digest-checked gitleaks CI runs (version and SHA-256 in scripts/ci/gitleaks.env,
+# flags in scripts/ci/secret-scan.sh). It fails closed, offline included, unless OMPOS_SKIP_SECRET_SCAN=1 is set.
+bash scripts/ci/secret-scan.sh
 
 dotnet --version
 dotnet restore OmpOS.Linux.slnf --locked-mode

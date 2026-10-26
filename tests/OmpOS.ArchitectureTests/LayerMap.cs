@@ -24,6 +24,7 @@ internal static class LayerMap
         ["OmpOS.Harness.Terminal"] = 2,
         ["OmpOS.Harness.Workspace"] = 2,
         ["OmpOS.Harness.Mcp"] = 2,
+        ["OmpOS.Harness.McpGateway"] = 2,
         ["OmpOS.Harness.Completion"] = 2,
         ["OmpOS.Harness.Plugins"] = 2,
         ["OmpOS.Harness.Registry"] = 2,
@@ -70,5 +71,9 @@ internal static class LayerMap
         // intentional: the catch-all parser feeds the harness via abstraction types (Phase 2 D-01)
         ("OmpOS.Parser", "OmpOS.Harness.Abstractions"),
         ("OmpOS.Parser", "OmpOS.Sandbox.Abstractions"),
+        // intentional: the MCP gateway serves the tool registry that the MCP library owns
+        ("OmpOS.Harness.McpGateway", "OmpOS.Harness.Mcp"),
+        // intentional: the omp launcher starts omp through the terminal library's process host
+        ("OmpOS.Harness.OmpLauncher", "OmpOS.Harness.Terminal"),
     };
 }
