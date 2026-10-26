@@ -736,6 +736,7 @@
           "Avalonia": "[12.1.4, )",
           "Avalonia.Desktop": "[12.1.4, )",
           "Avalonia.Themes.Fluent": "[12.1.4, )",
+          "Microsoft.Extensions.Logging": "[10.0.13, )",
           "OmpOS.EngineHost": "[1.0.0, )",
           "OmpOS.Harness.Acp": "[1.0.0, )",
           "OmpOS.Native.Views": "[1.0.0, )",

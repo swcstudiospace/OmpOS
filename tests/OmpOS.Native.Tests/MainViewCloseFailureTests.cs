@@ -4,6 +4,7 @@ using OmpOS.Harness.Mcp;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Tests.Parity;
 using OmpOS.Native.Views.Mcp;
+using OmpOS.Presentation;
 using Shouldly;
 using Xunit;
 
@@ -63,7 +64,7 @@ public sealed class MainViewCloseFailureTests
         {
             await session.Dispatch(() =>
             {
-                var main = new MainView(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), Environment.CurrentDirectory, prompts: null, mcpHost: new DisposeFailingMcpHost());
+                var main = new MainView(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), Environment.CurrentDirectory, prompts: null, MotionPreference.Full, mcpHost: new DisposeFailingMcpHost());
                 ParityShellHarness.Show(main);
                 main.Close();
             }, TestContext.Current.CancellationToken).ConfigureAwait(true);

@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Media;
 using OmpOS.Contracts.Ui;
+using OmpOS.GenUi;
 using OmpOS.Presentation.Blocks;
 
 namespace OmpOS.Native.Views.Blocks;
@@ -43,7 +44,7 @@ internal partial class A2uiSurfaceView : UserControl
 
     private static Control ImageControl(A2uiImageItem image)
     {
-        var alt = string.IsNullOrEmpty(image.Alt) ? "Image" : image.Alt;
+        var alt = A2uiSurfaceCatalog.ResolveImageAlt(image.Alt);
         var picture = DataImage.TryCreatePicture(image.Url.OriginalString);
         if (picture is null)
         {

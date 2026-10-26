@@ -233,6 +233,33 @@ public sealed class NativeUiBlockRendererTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
+    /// <summary>An inline A2UI image whose payload omits alt, or carries only white space, still gets the shared fallback name.</summary>
+    [Fact]
+    public async Task A2uiImageWithoutAltGetsTheFallbackName()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            using var payload = JsonDocument.Parse($$"""
+                {"components": [
+                  {"type": "image", "url": "data:image/png;base64,{{OnePixelPng}}"},
+                  {"type": "image", "url": "data:image/png;base64,{{OnePixelPng}}", "alt": "  "}
+                ]}
+                """);
+            using var host = new Host(ViewMapping.CreateBlock(new A2uiSurfaceBlock
+            {
+                Id = "a-1",
+                SurfaceId = "s-1",
+                Payload = payload.RootElement.Clone(),
+            }));
+
+            var pictures = host.Window.GetVisualDescendants().OfType<Image>().ToList();
+            pictures.Count.ShouldBe(2);
+            pictures.Select(static picture => AutomationProperties.GetName(picture))
+                .ShouldBe([OmpOS.GenUi.A2uiSurfaceCatalog.DefaultImageAlt, OmpOS.GenUi.A2uiSurfaceCatalog.DefaultImageAlt]);
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
     /// <summary>An allowed inline image whose bytes are not an image draws no picture: it falls back to its alt text, and the transcript keeps rendering.</summary>
     [Fact]
     public async Task UndecodableInlineImageFallsBackToItsAltText()

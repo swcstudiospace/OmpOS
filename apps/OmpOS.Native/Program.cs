@@ -1,5 +1,6 @@
 using Avalonia;
 using OmpOS.Native.Engine;
+using OmpOS.Native.Logging;
 
 namespace OmpOS.Native;
 
@@ -24,9 +25,12 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args) => BuildAvaloniaApp(ComposeProductionEngine).StartWithClassicDesktopLifetime(args);
 
-    /// <summary>Composes the production engine: the named-kind approval policy over <c>omp acp</c> in the working directory.</summary>
+    /// <summary>
+    /// Composes the production engine: the named-kind approval policy over <c>omp acp</c> in the working directory. The services'
+    /// log output goes to <see cref="System.Diagnostics.Trace"/>, so the stderr listener installed at startup receives it (ADR-0011).
+    /// </summary>
     /// <returns>The composed engine. It starts no process until a prompt is submitted.</returns>
-    internal static EngineComposition ComposeProductionEngine() => EngineComposition.Compose(ProductionAllowedKinds);
+    internal static EngineComposition ComposeProductionEngine() => EngineComposition.Compose(ProductionAllowedKinds, loggerFactory: DesktopLogging.Factory);
 
     /// <summary>Builds the application with the windowing platform detected at run time and no engine configured.</summary>
     /// <returns>The configured application builder.</returns>

@@ -4,6 +4,7 @@ using OmpOS.Native.Engine;
 using OmpOS.Native.Tests.RunControls;
 using OmpOS.Native.Views;
 using OmpOS.Parity.Support;
+using OmpOS.Presentation;
 using OmpOS.Presentation.State;
 
 namespace OmpOS.Native.Tests.Parity;
@@ -24,8 +25,8 @@ internal static class ParityShellHarness
     {
         var workspace = Environment.CurrentDirectory;
         return prompts is null
-            ? new MainView(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), workspace, prompts: null)
-            : new MainView(new UnconnectedToolApprovalBridge(), new EngineRunInput(), workspace, prompts);
+            ? new MainView(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), workspace, prompts: null, MotionPreference.Full)
+            : new MainView(new UnconnectedToolApprovalBridge(), new EngineRunInput(), workspace, prompts, MotionPreference.Full);
     }
 
     /// <summary>Shows the main view in a window tall enough to leave the transcript room to scroll, and settles it.</summary>

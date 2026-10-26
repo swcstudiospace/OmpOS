@@ -70,6 +70,7 @@ Run it in an owned, empty-profile headless Chrome, never a user profile. Launch 
 3. Expect the user turn as escaped text, the assistant output streamed to "Response complete.", bold markdown rendered, and remote images shown as links with no `img` element.
 4. Reload and open the conversation. Expect the stored history to render the same way.
 5. Screenshot: `docs/runbooks/evidence/web-vertical-slice-smoke.webp`.
+6. Error banner (phase 25.7, added after the 2026-10-21 run): show `#blazor-error-ui`, focus its Reload link and press Tab. Expect focus on the dismiss button (`button.dismiss`, named "Dismiss error") with a visible outline, `role="alert"` on the banner, two click events after one Enter and one Space, and zero axe violations while the banner is shown. The smoke counts click events itself, because Blazor binds its own dismiss handler only when it shows the banner. Not run in this record.
 
 Probe prompt: `**bold** and [site](https://example.com/) and ![pic](https://evil.example/x.png) and <script>alert(1)</script>`.
 Observed across load, send and reload: `strong` count 1, `img` count 0, `#app script` count 0, no "Unsupported content", no error bar, no console errors after load.

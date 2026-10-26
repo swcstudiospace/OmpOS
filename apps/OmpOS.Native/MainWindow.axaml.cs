@@ -13,7 +13,7 @@ namespace OmpOS.Native;
 /// </summary>
 internal partial class MainWindow : Window
 {
-    private const string ReducedMotionClass = "reduced-motion";
+    private const string ReducedMotionClass = MainView.ReducedMotionClass;
 
     private readonly MainView _main;
     private readonly IPromptChannel? _prompts;
@@ -55,7 +55,7 @@ internal partial class MainWindow : Window
         InitializeComponent();
 
         _prompts = engine is null ? null : new EnginePromptChannel(engine);
-        _main = new MainView(approvalBridge, runInput, workspaceRoot, _prompts);
+        _main = new MainView(approvalBridge, runInput, workspaceRoot, _prompts, motion);
         Content = _main;
         Classes.Set(ReducedMotionClass, IsReducedMotion(motion));
     }

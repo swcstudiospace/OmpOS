@@ -106,6 +106,14 @@
       <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
       <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
+
+    <!-- Reduced motion: the main view carries the reduced-motion class when the user removed animations in Android settings, and this
+         style removes the Button transition. It comes after the Button transition, so it takes precedence. -->
+    <Style Selector=".reduced-motion Button">
+      <Setter Property="Transitions">
+        <Transitions />
+      </Setter>
+    </Style>
   </Application.Styles>
 
 </Application>

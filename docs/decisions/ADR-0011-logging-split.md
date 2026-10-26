@@ -15,7 +15,7 @@ Failures in the code were reported through two mechanisms. The services and harn
 Each layer uses one mechanism:
 
 1. **Services and harness layers** (`Harness.*`, `EngineHost`, `Coordination.*`, `Sessions`, `Workflows`, `Api`) log through `ILogger<T>`. A new logger is an optional constructor parameter `ILogger<T>? logger = null`, stored as `logger ?? NullLogger<T>.Instance`, so existing callers keep compiling and DI-constructed services receive the real logger.
-2. **Native Avalonia head** (`src/OmpOS.Native.Views`, `apps/OmpOS.Native`) reports through `Trace`. `App.Initialize` installs one `StderrTraceListener` that writes every trace line to the process's standard error, through `App.InstallStderrTraceListener`. Installing it again replaces the earlier listener, so at most one is present.
+2. **Native Avalonia head** (`src/OmpOS.Native.Views`, `apps/OmpOS.Native`) reports through `Trace`. `App.Initialize` installs one `StderrTraceListener` that writes every trace line to the process's standard error, through `App.InstallStderrTraceListener`. Installing it again replaces the earlier listener, so at most one is present. The desktop composition root passes the services it composes an `ILoggerFactory` (`DesktopLogging.Factory`) whose only provider, `TraceLoggerProvider`, forwards each entry to `Trace`: Warning to `Trace.TraceWarning`, Error and Critical to `Trace.TraceError`, every other level to `Trace.WriteLine`. The factory passes Information and above.
 3. **Blazor web head** (`apps/OmpOS.Web` and the shared components in `src/OmpOS.UI`) injects `ILogger<T>` through DI. The browser's console logging provider receives the entries.
 
 The split follows the code that already exists. The native head has no DI container for its windows and already used `Trace`; the web head has DI and a browser console provider; the services already take `ILogger<T>`.
@@ -25,9 +25,9 @@ The split follows the code that already exists. The native head has no DI contai
 - No layer writes to `Console` for diagnostics. The one exception is `App.Initialize`, which passes `Console.Error` to the stderr listener. In the desktop app that listener is the operator's output: a failure traced by the native head appears on the standard error of the process that launched it.
 - Native head code that needs to report a failure calls `Trace.TraceError` or `Trace.TraceWarning`. It does not add an `ILogger` dependency.
 - The web head's diagnostics appear in the browser console, not in a terminal.
-- The native composition passes no logger to the services (no `ILogger` is referenced in `apps/OmpOS.Native` or `src/OmpOS.Native.Views`). Their `ILogger` output is discarded in the desktop app until a provider is wired. Wiring it is outside this ADR.
+- The desktop composition passes `DesktopLogging.Factory` through `EngineComposition.Compose` to `InProcessEngineHost.ForAcp` and `OmpAcpClient`, so the `ILogger` output of the ACP session and stdio transport reaches the stderr listener. The desktop composes no Herdr, Dragonfly or remote-host service; when it does, its composition must pass the same factory.
 - Tests of native failures observe them by adding a `TraceListener`, or by calling `App.InstallStderrTraceListener` with a writer they control. Tests of web components supply an `ILogger<T>` through the bUnit service collection.
 
 ## Amendments
 
-None.
+- 2026-10-26 (phase 25.5 follow-up): the desktop logger gap recorded in the first version of this ADR is closed. The native composition no longer discards the services' `ILogger` output; see the consequence above.

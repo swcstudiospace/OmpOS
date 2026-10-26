@@ -20,6 +20,7 @@ using OmpOS.Native.Views.RunControls;
 using OmpOS.Native.Views.Search;
 using OmpOS.Native.Views.Terminal;
 using OmpOS.Native.Views.Workspace;
+using OmpOS.Presentation;
 using OmpOS.Presentation.Agents;
 using OmpOS.Presentation.Approvals;
 using OmpOS.Presentation.Chats;
@@ -62,6 +63,9 @@ public partial class MainView : UserControl
     /// <summary>The banner text prefix after the engine stream fails. The failure's own message follows it.</summary>
     public const string EngineFailedBanner = "The engine stream failed:";
 
+    /// <summary>The style class the view carries under <see cref="MotionPreference.Reduced"/>. A head's styles select it to remove transitions.</summary>
+    public const string ReducedMotionClass = "reduced-motion";
+
     /// <summary>The identifier of the one session this shell shows. The shell has no session transport yet, so the id is fixed.</summary>
     private const string SessionId = "shell-session";
 
@@ -92,7 +96,7 @@ public partial class MainView : UserControl
     /// run and every approval. Avalonia's XAML loader and the designer construct the view through this constructor.
     /// </summary>
     public MainView()
-        : this(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), Environment.CurrentDirectory, prompts: null)
+        : this(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), Environment.CurrentDirectory, prompts: null, MotionPreference.System)
     {
     }
 
@@ -103,11 +107,12 @@ public partial class MainView : UserControl
     /// <param name="runInput">The input channel of the active run. A composed send path needs the engine's own run input.</param>
     /// <param name="workspaceRoot">The workspace folder the view's tools work in. It must exist.</param>
     /// <param name="prompts">The send path of the composed engine. Null refuses every send and stop.</param>
+    /// <param name="motion">The motion setting of the head. Only <see cref="MotionPreference.Reduced"/> puts the <see cref="ReducedMotionClass"/> class on the view, which the head's styles read to remove transitions.</param>
     /// <exception cref="ArgumentNullException">A dependency is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="workspaceRoot"/> is null, empty or white space, or a composed send path has a run input other than the engine's.</exception>
     /// <exception cref="DirectoryNotFoundException"><paramref name="workspaceRoot"/> does not exist.</exception>
-    public MainView(IToolApprovalBridge approvalBridge, IRunInput runInput, string workspaceRoot, IPromptChannel? prompts)
-        : this(approvalBridge, runInput, workspaceRoot, prompts, mcpHost: null)
+    public MainView(IToolApprovalBridge approvalBridge, IRunInput runInput, string workspaceRoot, IPromptChannel? prompts, MotionPreference motion)
+        : this(approvalBridge, runInput, workspaceRoot, prompts, motion, mcpHost: null)
     {
     }
 
@@ -116,8 +121,9 @@ public partial class MainView : UserControl
     /// <param name="runInput">The run input that holds the messages the active run accepts.</param>
     /// <param name="workspaceRoot">The workspace root the window opens.</param>
     /// <param name="prompts">The send path of the composed engine, or null when none is composed.</param>
+    /// <param name="motion">The motion setting of the head.</param>
     /// <param name="mcpHost">The MCP host the window lists and disposes, or null to create the production registry when the MCP view opens.</param>
-    internal MainView(IToolApprovalBridge approvalBridge, IRunInput runInput, string workspaceRoot, IPromptChannel? prompts, IMcpRegistryHost? mcpHost)
+    internal MainView(IToolApprovalBridge approvalBridge, IRunInput runInput, string workspaceRoot, IPromptChannel? prompts, MotionPreference motion, IMcpRegistryHost? mcpHost)
     {
         ArgumentNullException.ThrowIfNull(approvalBridge);
         ArgumentNullException.ThrowIfNull(runInput);
@@ -125,6 +131,7 @@ public partial class MainView : UserControl
         _workspace = new WorkspaceRoot(workspaceRoot);
 
         InitializeComponent();
+        Classes.Set(ReducedMotionClass, motion == MotionPreference.Reduced);
 
         // Phase 20 has no session transport. The shell starts with a loaded, empty list and a loaded, empty transcript,
         // which are the empty states the UI-SPEC copy describes.

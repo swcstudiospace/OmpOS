@@ -1,4 +1,5 @@
 using Avalonia.Animation;
+using OmpOS.Native.Engine;
 using OmpOS.Presentation;
 using Shouldly;
 using Xunit;
@@ -62,6 +63,37 @@ public sealed class ReducedMotionTests
 
             transition.ShouldNotBeNull("the send control keeps its background transition under full motion");
             transition.Duration.ShouldBe(TimeSpan.FromMilliseconds(120));
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>The main view carries the class itself under Reduced, so a head with no window (Android) can style on it (M-22).</summary>
+    [Fact]
+    public async Task ReducedSetsTheClassOnTheMainViewItself()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            var main = new MainView(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), Environment.CurrentDirectory, prompts: null, MotionPreference.Reduced);
+
+            main.Classes.Contains(MainView.ReducedMotionClass).ShouldBeTrue();
+            main.Close();
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>System and Full leave the main view without the class, as they leave the window (System resolves to Full, D-20-08).</summary>
+    [Fact]
+    public async Task SystemAndFullLeaveTheMainViewWithoutTheClass()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            foreach (var motion in new[] { MotionPreference.System, MotionPreference.Full })
+            {
+                var main = new MainView(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), Environment.CurrentDirectory, prompts: null, motion);
+
+                main.Classes.Contains(MainView.ReducedMotionClass).ShouldBeFalse();
+                main.Close();
+            }
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

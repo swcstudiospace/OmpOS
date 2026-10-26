@@ -1,5 +1,6 @@
 @namespace OmpOS.UI.Components.Blocks
 @using OmpOS.Contracts.Ui
+@using OmpOS.GenUi
 @using OmpOS.Presentation.Blocks
 <div class="ompos-block ompos-a2ui" data-surface="@Block.SurfaceId">
     @foreach (var item in A2uiBlockMapping.Map(Block))
@@ -13,7 +14,7 @@
                 <p class="ompos-a2ui-text">@paragraph.Text</p>
                 break;
             case A2uiImageItem image:
-                <img class="ompos-a2ui-image" src="@image.Url" alt="@image.Alt" />
+                <img class="ompos-a2ui-image" src="@image.Url" alt="@A2uiSurfaceCatalog.ResolveImageAlt(image.Alt)" />
                 break;
             case A2uiImageFallbackItem fallback:
                 @if (fallback.Href is not null)

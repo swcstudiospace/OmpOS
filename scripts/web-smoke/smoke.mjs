@@ -165,6 +165,11 @@ async function pressTab() {
   await cdp("Input.dispatchKeyEvent", { type: "keyUp", ...key });
 }
 
+async function pressKey(key) {
+  await cdp("Input.dispatchKeyEvent", { type: "keyDown", ...key });
+  await cdp("Input.dispatchKeyEvent", { type: "keyUp", ...key });
+}
+
 // ---- in-page probes (serialised by evalFn) ----------------------------------------------------
 
 function pageFirstRender() {
@@ -283,6 +288,46 @@ function focusSelector(selector) {
   return true;
 }
 
+function pageErrorBannerShape() {
+  const bar = document.querySelector("#blazor-error-ui");
+  const dismiss = bar ? bar.querySelector(".dismiss") : null;
+  return {
+    present: !!bar,
+    role: bar ? bar.getAttribute("role") : null,
+    dismissTag: dismiss ? dismiss.tagName : null,
+    dismissType: dismiss ? dismiss.getAttribute("type") : null,
+    dismissName: dismiss ? (dismiss.getAttribute("aria-label") || "").trim() : "",
+  };
+}
+
+function showErrorBanner() {
+  const bar = document.querySelector("#blazor-error-ui");
+  if (!bar) return false;
+  bar.style.display = "block";
+  window.__dismissClicks = 0;
+  const dismiss = bar.querySelector(".dismiss");
+  if (dismiss) dismiss.addEventListener("click", () => { window.__dismissClicks += 1; });
+  return true;
+}
+
+function pageDismissState() {
+  const dismiss = document.querySelector("#blazor-error-ui .dismiss");
+  if (!dismiss) return { activeIsDismiss: false, outlineStyle: "none", outlineWidth: 0, clicks: 0 };
+  const style = getComputedStyle(dismiss);
+  return {
+    activeIsDismiss: document.activeElement === dismiss,
+    outlineStyle: style.outlineStyle,
+    outlineWidth: parseFloat(style.outlineWidth) || 0,
+    clicks: window.__dismissClicks ?? 0,
+  };
+}
+
+function hideErrorBanner() {
+  const bar = document.querySelector("#blazor-error-ui");
+  if (bar) bar.style.display = "";
+  return !!bar;
+}
+
 function blurActive() {
   if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
   return document.activeElement ? document.activeElement.tagName : null;
@@ -393,6 +438,27 @@ try {
   result.skipLinkAfterTabFocus = await evalFn(pageSkipLink);
   result.shotSkipLinkFocused = await shot("web-skip-link-focused");
 
+  // Error banner (phase 25.7, M-26): the dismiss is a named button, one Tab from the Reload link reaches it with a visible focus
+  // outline, Enter and Space both activate it, and axe finds no violation while the banner is shown. Blazor binds its own dismiss
+  // handler only when it shows the banner, so this step counts the click events a native button raises, which is what Enter
+  // and Space must produce; it does not exercise the framework handler.
+  note("step 7: error banner, keyboard and axe");
+  const bannerShape = await evalFn(pageErrorBannerShape);
+  await evalFn(showErrorBanner);
+  await evalFn(focusSelector, "#blazor-error-ui .reload");
+  await pressTab();
+  await sleep(200);
+  const tabReachesDismiss = await evalFn(pageDismissState);
+  await pressKey({ key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13, text: "\r" });
+  await pressKey({ key: " ", code: "Space", windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32, text: " " });
+  await sleep(200);
+  const clicksAfterEnterAndSpace = (await evalFn(pageDismissState)).clicks;
+  await injectAxe();
+  const axeShown = await evalValue(`(${runAxeInPage.toString()})()`);
+  result.shotErrorBanner = await shot("web-error-banner");
+  await evalFn(hideErrorBanner);
+  result.errorBanner = { shape: bannerShape, tabReachesDismiss, clicksAfterEnterAndSpace, axeShown };
+
   // Assertions mirror the runbook's expected results.
   const probe = result.probeChecks;
   const reload = result.reload;
@@ -415,6 +481,18 @@ try {
   assertions.axeAfterResponseClean = axeClean(result.axeAfterResponse);
   assertions.iconContrastMeetsNonText = contrastOk(result.iconButtonContrastEmptyState) && contrastOk(result.iconButtonContrastAfterResponse);
   assertions.skipLinkFocusedOnTab = result.skipLinkAfterTabFocus.activeIsSkip === true && result.skipLinkAfterTabFocus.targetExists === true;
+  const banner = result.errorBanner;
+  assertions.errorBannerAnnouncesAndDismissesByKeyboard =
+    banner.shape.present &&
+    banner.shape.role === "alert" &&
+    banner.shape.dismissTag === "BUTTON" &&
+    banner.shape.dismissType === "button" &&
+    banner.shape.dismissName.length > 0 &&
+    banner.tabReachesDismiss.activeIsDismiss === true &&
+    banner.tabReachesDismiss.outlineStyle !== "none" &&
+    banner.tabReachesDismiss.outlineWidth > 0 &&
+    banner.clicksAfterEnterAndSpace === 2 &&
+    banner.axeShown.violations.length === 0;
 } catch (error) {
   result.error = error instanceof Error ? error.message : String(error);
   note(`smoke failed: ${result.error}`);

@@ -1,16 +1,17 @@
 /* OmpOS shared chat surface tokens and baseline styles (UI-03). */
 
 :root {
-  /* WCAG AA contrast token pairs (each pair >= 4.5:1 for normal text). */
+  /* WCAG AA contrast token pairs: text pairs >= 4.5:1, the focus ring >= 3:1 (non-text, WCAG 1.4.11). The ratios in the comments
+     are computed, and AccessibilityTests fails when one of them drifts from the colour it describes. */
   --ompos-bg: #ffffff;
-  --ompos-fg: #1a1a1a; /* ~17:1 on --ompos-bg */
+  --ompos-fg: #1a1a1a; /* 17.40:1 on --ompos-bg */
   --ompos-surface: #f4f4f5;
-  --ompos-surface-fg: #1a1a1a; /* ~15:1 on --ompos-surface */
+  --ompos-surface-fg: #1a1a1a; /* 15.83:1 on --ompos-surface */
   --ompos-primary: #0b5fff;
-  --ompos-primary-contrast: #ffffff; /* ~5.9:1 on --ompos-primary */
+  --ompos-primary-contrast: #ffffff; /* 5.13:1 on --ompos-primary */
   --ompos-error: #b3261e;
-  --ompos-error-contrast: #ffffff; /* ~7:1 on --ompos-error */
-  --ompos-focus-ring: #0b5fff;
+  --ompos-error-contrast: #ffffff; /* 6.54:1 on --ompos-error */
+  --ompos-focus-ring: #0b5fff; /* 5.13:1 on --ompos-bg, 4.67:1 on --ompos-surface */
   /* Minimum touch target size (WCAG 2.2 AA target size). */
   --ompos-target-size: 44px;
 }

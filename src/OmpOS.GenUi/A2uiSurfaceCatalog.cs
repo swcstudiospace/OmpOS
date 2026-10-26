@@ -40,6 +40,9 @@ public static class A2uiSurfaceCatalog
     /// <summary>Gets the list component type name.</summary>
     public const string ListType = "list";
 
+    /// <summary>Gets the alt text an image receives when the agent supplies none or only white space.</summary>
+    public const string DefaultImageAlt = "Image";
+
     /// <summary>Gets the supported component type names.</summary>
     public static IReadOnlyList<string> SupportedTypes { get; } =
         [HeadingType, TextType, ImageType, ButtonType, ListType];
@@ -49,6 +52,15 @@ public static class A2uiSurfaceCatalog
     /// <returns><see langword="true"/> when the surface renders the type richly.</returns>
     public static bool IsSupportedType(string? type) =>
         type is not null && SupportedTypes.Contains(type, StringComparer.Ordinal);
+
+    /// <summary>
+    /// Resolves the alt text every head gives an image. The agent's JSON may omit <c>alt</c>, and a head must never render an
+    /// image without a text alternative, so a missing or white-space alt becomes <see cref="DefaultImageAlt"/>.
+    /// </summary>
+    /// <param name="alt">The alt text the payload carried, or null when it carried none.</param>
+    /// <returns>The agent's alt text when it has any content; otherwise <see cref="DefaultImageAlt"/>.</returns>
+    public static string ResolveImageAlt(string? alt) =>
+        string.IsNullOrWhiteSpace(alt) ? DefaultImageAlt : alt;
 
     /// <summary>Parses the supported components of an A2UI surface payload. Never throws.</summary>
     /// <param name="payload">The raw A2UI payload.</param>
@@ -111,7 +123,7 @@ public static class A2uiSurfaceCatalog
             ImageUrl = ReadRenderableImageUri(imageSource),
             ImageSource = imageSource,
             ImageLinkHref = ReadLinkHref(imageSource),
-            ImageLinkText = string.IsNullOrEmpty(alt) ? imageSource : alt,
+            ImageLinkText = string.IsNullOrWhiteSpace(alt) ? imageSource : alt,
             Alt = alt,
             Label = ReadText(element, "label"),
             Items = ReadItems(element),

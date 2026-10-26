@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using OmpOS.Harness.Abstractions;
 
 namespace OmpOS.Harness.Acp;
@@ -14,10 +15,11 @@ public sealed class OmpAcpClient
     private readonly Func<AcpClientOptions, IAcpTransport> _transportFactory;
     private readonly IPermissionResolver? _permissionResolver;
     private readonly TimeSpan _permissionDecisionTimeout;
+    private readonly ILoggerFactory? _loggerFactory;
 
     /// <summary>Initializes a new instance of the <see cref="OmpAcpClient"/> class that spawns <c>omp acp</c>. With no resolver, every permission request is denied.</summary>
     public OmpAcpClient()
-        : this(SpawnOmpAcp, permissionResolver: null, permissionDecisionTimeout: null)
+        : this(SpawnOmpAcp(loggerFactory: null), permissionResolver: null, permissionDecisionTimeout: null)
     {
     }
 
@@ -28,8 +30,11 @@ public sealed class OmpAcpClient
     /// <param name="permissionDecisionTimeout">
     /// How long an admitted request waits for its decision before it is denied. Null uses the session default.
     /// </param>
-    public OmpAcpClient(IPermissionResolver? permissionResolver, TimeSpan? permissionDecisionTimeout = null)
-        : this(SpawnOmpAcp, permissionResolver, permissionDecisionTimeout)
+    /// <param name="loggerFactory">
+    /// Creates the loggers of the sessions and of the stdio transports this client creates. Null discards their log output.
+    /// </param>
+    public OmpAcpClient(IPermissionResolver? permissionResolver, TimeSpan? permissionDecisionTimeout = null, ILoggerFactory? loggerFactory = null)
+        : this(SpawnOmpAcp(loggerFactory), permissionResolver, permissionDecisionTimeout, loggerFactory)
     {
     }
 
@@ -48,7 +53,8 @@ public sealed class OmpAcpClient
     /// <param name="permissionDecisionTimeout">
     /// How long an admitted request waits for its decision before it is denied. Null uses the session default.
     /// </param>
-    public OmpAcpClient(Func<AcpClientOptions, IAcpTransport> transportFactory, IPermissionResolver? permissionResolver, TimeSpan? permissionDecisionTimeout = null)
+    /// <param name="loggerFactory">Creates the logger of each session. Null discards the sessions' log output.</param>
+    public OmpAcpClient(Func<AcpClientOptions, IAcpTransport> transportFactory, IPermissionResolver? permissionResolver, TimeSpan? permissionDecisionTimeout = null, ILoggerFactory? loggerFactory = null)
     {
         ArgumentNullException.ThrowIfNull(transportFactory);
         if (permissionDecisionTimeout is { } timeout && timeout <= TimeSpan.Zero)
@@ -59,6 +65,7 @@ public sealed class OmpAcpClient
         _transportFactory = transportFactory;
         _permissionResolver = permissionResolver;
         _permissionDecisionTimeout = permissionDecisionTimeout ?? AcpAgentSession.DefaultPermissionDecisionTimeout;
+        _loggerFactory = loggerFactory;
     }
 
     /// <summary>Creates a session. The session is not connected until <see cref="IOmpSession.CreateAsync"/> or <see cref="IOmpSession.ResumeAsync"/> runs.</summary>
@@ -67,9 +74,9 @@ public sealed class OmpAcpClient
     public IOmpSession CreateSession(AcpClientOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return new AcpAgentSession(_transportFactory(options), options, _permissionResolver, _permissionDecisionTimeout);
+        return new AcpAgentSession(_transportFactory(options), options, _permissionResolver, _permissionDecisionTimeout, _loggerFactory?.CreateLogger<AcpAgentSession>());
     }
 
-    private static IAcpTransport SpawnOmpAcp(AcpClientOptions options) =>
-        new AcpStdioTransport(options.OmpPath ?? DefaultExecutable, options.WorkingDirectory);
+    private static Func<AcpClientOptions, IAcpTransport> SpawnOmpAcp(ILoggerFactory? loggerFactory) =>
+        options => new AcpStdioTransport(options.OmpPath ?? DefaultExecutable, options.WorkingDirectory, loggerFactory?.CreateLogger<AcpStdioTransport>());
 }

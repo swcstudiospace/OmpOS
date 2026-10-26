@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
 using OmpOS.Contracts.Sandboxes;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.Acp;
@@ -65,17 +66,19 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     /// <param name="permissionResolver">Decides the permission requests the approval policy admits. Null denies them.</param>
     /// <param name="descriptor">The descriptor to report, or the in-process default.</param>
     /// <param name="transportFactory">Creates the transport for each session. Null spawns <c>omp acp</c>.</param>
+    /// <param name="loggerFactory">Creates the loggers of the sessions and transports. Null discards their log output.</param>
     /// <returns>A host whose sessions speak ACP over the transport and answer permission requests through the resolver.</returns>
     public static InProcessEngineHost ForAcp(
         AcpClientOptions options,
         IPermissionResolver? permissionResolver = null,
         EngineHostDescriptor? descriptor = null,
-        Func<AcpClientOptions, IAcpTransport>? transportFactory = null)
+        Func<AcpClientOptions, IAcpTransport>? transportFactory = null,
+        ILoggerFactory? loggerFactory = null)
     {
         ArgumentNullException.ThrowIfNull(options);
         var client = transportFactory is null
-            ? new OmpAcpClient(permissionResolver)
-            : new OmpAcpClient(transportFactory, permissionResolver);
+            ? new OmpAcpClient(permissionResolver, loggerFactory: loggerFactory)
+            : new OmpAcpClient(transportFactory, permissionResolver, loggerFactory: loggerFactory);
         return ForAcp(client, options, descriptor);
     }
 
