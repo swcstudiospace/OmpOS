@@ -106,3 +106,11 @@ This ADR stays Proposed. The Linux tests above pass, but the decision rule in Sp
 - NuGet package pages, read 2026-10-22: `https://www.nuget.org/packages/Iciclecreek.Avalonia.Terminal/4.1.0`, `https://www.nuget.org/packages/SvcSystems.UI.Terminal/2.3.0`, `https://www.nuget.org/packages/Porta.Pty/2.2.3`.
 - Implementation and tests on Linux, Debug: `src/OmpOS.Harness.Terminal/` with `PtyProcessRunner` and `IProcessOutputSink`; `tests/OmpOS.Harness.Terminal.Tests/` (40 tests passing, 0 skipped, 2026-10-22); `apps/OmpOS.Native/Views/Terminal/`; `tests/OmpOS.Native.Tests/Terminal/` (13 panel tests passing on two consecutive runs, 2026-10-22).
 - Full Native test project (`dotnet test`, Debug, 2026-10-22): 147 tests, 147 passing, 0 failing, 0 skipped. The in-run resize test (`ResizingTheWindowDuringARunResizesThePseudoTerminal`) waits, bounded at about 20 seconds, for the pseudo-terminal to report the grid size the test writes after the layout settles; it passed three times run alone.
+
+## Update 2026-10-26
+
+The Status line above is unchanged: the control and PTY choice stays open, and closing it needs the owner's decision after the three-platform spike (OQ-49). This note records links only.
+
+- [ADR-0013](ADR-0013-plugin-isolation.md) records the isolation boundary for plugin hooks. It shares one residual risk with this record: a path or executable can change between the check and the spawn.
+- The omp terminals that the application starts load the plugins of [ADR-0012](ADR-0012-agent-loop-plugins.md) (DR-2). This record does not cover them: its gate governs commands the user proposes, not the omp process.
+- The decision-record structure check, `tests/OmpOS.ArchitectureTests/DecisionRecordTests.cs`, applies from ADR-0007 up. This record is checked only for being listed in [README.md](README.md) and for naming the terminal topic.

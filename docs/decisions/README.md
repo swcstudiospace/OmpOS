@@ -13,8 +13,17 @@ source of truth; this index only lists them with status and in-text amendments.
 | [ADR-0006](ADR-0006-terminal-control.md) | Terminal control and PTY (ADE-14, ADR R-1) | Proposed 2026-10-22 | Approval gate implemented; control and PTY choice open until an accessibility and ANSI spike passes (candidates and licences in ADR text) |
 | [ADR-0007](ADR-0007-editor-control.md) | Editor control: AvaloniaEdit (ADE-09) | Accepted 2026-10-22 | Licences and grammar sources recorded in the ADR; token colours and contrast on the Fluent surface not yet measured |
 | [ADR-0008](ADR-0008-contract-versioning.md) | Contract versioning policy (R-11) | Accepted 2026-10-22 | Applies to presentation and harness plugin contracts |
-| [ADR-0011](ADR-0011-logging-split.md) | Logging split by layer | Accepted 2026-10-26 | Services and harness log through ILogger; the native head uses Trace with a stderr listener set at startup; the web head uses ILogger. Residual: the desktop composition passes no logger, so service ILogger output is discarded there. ADR-0009 and ADR-0010 are not listed here; this index predates them. |
+| [ADR-0009](ADR-0009-browser-pane.md) | Embedded browser pane (ADE-15, R-3) | Accepted for Linux only, on the WebKitGTK adapter | Windows (WebView2) and macOS (WKWebView) not measured; Wayland and interaction not measured. Candidate `Avalonia.Controls.WebView` 12.1.1 (MIT) |
+| [ADR-0010](ADR-0010-omp-mcp-gateway-feasibility.md) | Feasibility of a host-owned MCP gateway for omp | Proposed 2026-10-22 | Feasible by source through ACP `session/new.mcpServers`, not through the `--config` overlay; nothing was run. Update 2026-10-26 links ADR-0014 and ADR-0013 |
+| [ADR-0011](ADR-0011-logging-split.md) | Logging split by layer | Accepted 2026-10-26 | Services and harness log through ILogger; the native head uses Trace with a stderr listener set at startup; the web head uses ILogger. Residual: the desktop composition passes no logger, so service ILogger output is discarded there. |
 | [ADR-0012](ADR-0012-agent-loop-plugins.md) | Agent loop plugins | Accepted 2026-10-26 | Ultrathink, Swarm and Substrate are pinned git submodules under `plugins/`; `plugins/gsd-core-omp` is tracked and OmpOS-owned. They run inside `omp acp` loaded with `-e` only. Steering is delivered over ACP and only recorded in Substrate. |
+| [ADR-0013](ADR-0013-plugin-isolation.md) | Plugin isolation boundary | Proposed 2026-10-26 | Three tiers: omp plugins inside omp, declarative hook plugins out of process behind per-command consent and persisted quarantine, first-party in-process UI contributions. No OS sandbox; the host and runner are built only in tests. Owner sign-off pending |
+| [ADR-0014](ADR-0014-mcp-client.md) | MCP client for ADE-16 | Proposed 2026-10-26 | `ModelContextProtocol` 2.3.0 (Apache-2.0, older contributions MIT) over stdio and Streamable HTTP, wrapped by a registry and an approval-gated invoker. Stays Proposed until the Mcp test project is recorded passing (OQ-52) |
 
-Conventions: new ADRs take the next number (`ADR-0004`, …); status changes are
-recorded in the ADR’s own header, and this index is updated to match.
+Conventions: new ADRs take the next number (ADR-0015, …); status changes are
+recorded in the ADR’s own header, and this index is updated to match. A record
+that adopts a component names the candidate, its licence (SPDX identifier and
+source URL), the verification route and the open risks; records from ADR-0013
+use the headings `Candidate chosen`, `Licence`, `Verification route` and
+`Open risks`. `tests/OmpOS.ArchitectureTests/DecisionRecordTests.cs` checks the
+records and this index.

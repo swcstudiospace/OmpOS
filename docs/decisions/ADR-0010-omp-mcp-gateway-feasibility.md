@@ -260,3 +260,12 @@ Owner decision needed: approve steps 1-4 (and the optional `config get` check), 
 
 - `docs/open-questions.md` OD-07 (live RPC turn approval; one run approved 2026-10-21).
 - `docs/decisions/ADR-0008-contract-versioning.md` (format reference).
+
+## Update 2026-10-26: candidate, licence and links
+
+The Status line above is unchanged. This note ties the record to the later ones and adds the facts the decision-record rule asks for.
+
+- The number ADR-0009 now exists ([browser pane](ADR-0009-browser-pane.md)). The sentence "No `docs/decisions/` entry numbered ADR-0009 exists" in Context described the tree on 2026-10-22.
+- Candidate: the mechanism this record found feasible by source is ACP `session/new.mcpServers` on omp 18.12.5. The host-side MCP client library is a separate choice, recorded in [ADR-0014](ADR-0014-mcp-client.md). Who runs plugin code and hooks is recorded in [ADR-0013](ADR-0013-plugin-isolation.md).
+- Licence: omp (`@oh-my-pi/pi-coding-agent`) is MIT, from the `license` field of the installed package and the LICENSE file at https://github.com/can1357/oh-my-pi/blob/main/LICENSE, read 2026-10-26. SPDX: MIT.
+- Verification route: unchanged. Every finding is verified by help output or source reading only, and the next step above still needs a recorded owner approval before an ACP session is started. Open risks are the six items under "These remain" in the Verdict and the failure mode in Consequences.
