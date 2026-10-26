@@ -320,18 +320,28 @@ public sealed class EngineHostTests
         Should.Throw<InvalidOperationException>(() => host.ReconnectAsync(TestContext.Current.CancellationToken));
     }
 
-    /// <summary>Cancelling a host with no active prompt completes without throwing.</summary>
+    /// <summary>Cancelling a host with no active prompt does nothing: it sends no request, and the next prompt still runs normally.</summary>
     [Fact]
     public async Task CancelWithoutPromptCompletes()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var inProcess = InProcessEngineHost.ForInMemory(new InMemoryOmpAdapter(Scripted([])));
+        HarnessEvent[] script = [new TextDeltaEvent("Hello"), new CompletedEvent("end_turn")];
+        await using var inProcess = InProcessEngineHost.ForInMemory(new InMemoryOmpAdapter(Scripted(script)));
         using var handler = new ScriptedApiHandler();
         using var http = ClientFor(handler);
         var remote = new RemoteEngineHost(http);
 
-        await inProcess.CancelAsync(ct);
-        await remote.CancelAsync(ct);
+        await Should.NotThrowAsync(() => inProcess.CancelAsync(ct));
+        await Should.NotThrowAsync(() => remote.CancelAsync(ct));
+
+        // The remote host reached no origin for the cancel, so no prompt was posted and no stream was resumed.
+        handler.PromptPosts.ShouldBe(0);
+        handler.ResumePositions.ShouldBeEmpty();
+
+        // A cancel with nothing to cancel must not poison the host: the next prompt streams its whole script.
+        (await CollectAsync(inProcess.SubmitPromptAsync("prompt", new PromptOptions(), ct))).ShouldBe(script);
+        (await CollectDroppedAsync(remote.SubmitPromptAsync("prompt", new PromptOptions(), ct))).Count.ShouldBe(5);
+        handler.PromptPosts.ShouldBe(1);
     }
 
     /// <summary>Both hosts report exactly the descriptor they were constructed with.</summary>

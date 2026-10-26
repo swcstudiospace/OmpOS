@@ -67,13 +67,22 @@ public sealed class InMemorySessionSignalsTests
         await healthy.DisposeAsync().ConfigureAwait(true);
     }
 
-    /// <summary>Publishing with no subscribers succeeds silently.</summary>
+    /// <summary>Publishing with no subscribers succeeds silently, and the signal is not kept for a later subscriber.</summary>
     [Fact]
     public async Task PublishWithoutSubscribersSucceeds()
     {
         var ct = TestContext.Current.CancellationToken;
         var signals = new InMemorySessionSignals();
+        var late = new List<string>();
 
-        await signals.PublishAsync("s-1", ct).ConfigureAwait(true);
+        await Should.NotThrowAsync(() => signals.PublishAsync("s-1", ct)).ConfigureAwait(true);
+
+        var subscription = await signals.SubscribeAsync((id, _) => { late.Add(id); return ValueTask.CompletedTask; }, ct).ConfigureAwait(true);
+        late.ShouldBeEmpty();
+
+        await signals.PublishAsync("s-2", ct).ConfigureAwait(true);
+
+        late.ShouldBe(["s-2"]);
+        await subscription.DisposeAsync().ConfigureAwait(true);
     }
 }

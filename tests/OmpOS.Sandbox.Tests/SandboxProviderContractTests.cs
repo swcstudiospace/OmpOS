@@ -22,6 +22,15 @@ public abstract class SandboxProviderContractTests<TProvider>
     /// </summary>
     protected abstract void DisposeProvider(TProvider provider);
 
+    /// <summary>
+    /// Puts the provider in the state where provisioning <paramref name="request"/> hits its timeout, without waiting: the returned
+    /// request, provisioned against <paramref name="provider"/>, must make the provider report <see cref="ProvisionTimeoutException"/>.
+    /// </summary>
+    /// <param name="provider">The provider under test, before the provision.</param>
+    /// <param name="request">The provision request the test would otherwise send.</param>
+    /// <returns>The request the test provisions.</returns>
+    protected abstract ProvisionRequest ArrangeProvisionTimeout(TProvider provider, ProvisionRequest request);
+
     [Fact]
     public async Task Provision_Attach_Exec_Logs_Teardown_HappyPath()
     {
@@ -103,27 +112,10 @@ public abstract class SandboxProviderContractTests<TProvider>
             var result = await provider.ProvisionAsync(request, ct);
 
             await provider.TeardownAsync(result.Descriptor.Id, ct);
-            await provider.TeardownAsync(result.Descriptor.Id, ct);
-        }
-        finally
-        {
-            DisposeProvider(provider);
-        }
-    }
 
-    [Fact]
-    public async Task StatusTransitions_CoverEnum()
-    {
-        var provider = CreateProvider();
-        try
-        {
-            var ct = TestContext.Current.CancellationToken;
-            var request = CreateProvisionRequest();
-            var result = await provider.ProvisionAsync(request, ct);
-
-            await provider.AttachAsync(result.Descriptor.Id, ct);
-
-            await provider.TeardownAsync(result.Descriptor.Id, ct);
+            // The repeat succeeds, and the sandbox stays gone: a second teardown must not bring it back or leave it attachable.
+            await Should.NotThrowAsync(() => provider.TeardownAsync(result.Descriptor.Id, ct));
+            await Should.ThrowAsync<NotAvailableException>(() => provider.AttachAsync(result.Descriptor.Id, ct));
         }
         finally
         {
@@ -138,20 +130,11 @@ public abstract class SandboxProviderContractTests<TProvider>
         try
         {
             var ct = TestContext.Current.CancellationToken;
-            var request = CreateProvisionRequest() with { Timeout = TimeSpan.FromMilliseconds(1) };
+            var request = ArrangeProvisionTimeout(provider, CreateProvisionRequest());
 
-            try
-            {
-                await provider.ProvisionAsync(request, ct);
-            }
-            catch (ProvisionTimeoutException)
-            {
-                // Expected if implementation respects timeout.
-            }
-            catch (NotAvailableException)
-            {
-                // Stub providers throw this.
-            }
+            // No clock and no wait: the provider is put in the state where its provision deadline has passed, and
+            // the only acceptable outcome is the typed timeout. A provider that ignores the timeout provisions and fails this test.
+            await Should.ThrowAsync<ProvisionTimeoutException>(() => provider.ProvisionAsync(request, ct));
         }
         finally
         {

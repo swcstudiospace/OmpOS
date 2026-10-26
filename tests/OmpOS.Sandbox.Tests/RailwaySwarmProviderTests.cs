@@ -206,7 +206,12 @@ public sealed class RailwaySwarmProviderTests
     {
         var provider = new RailwaySwarmProvider();
 
-        await provider.TeardownAsync(SandboxId, TestContext.Current.CancellationToken);
+        // The unconfigured provider has no HTTP client to send through. Its task is already complete when the call returns, so no
+        // request was started or awaited: any network call would leave the task pending at this point.
+        var teardown = provider.TeardownAsync(SandboxId, TestContext.Current.CancellationToken);
+
+        teardown.IsCompletedSuccessfully.ShouldBeTrue();
+        await teardown.ConfigureAwait(true);
     }
 
     [Fact]

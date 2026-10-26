@@ -36,6 +36,46 @@ public sealed class LocalPodmanComposeProviderContractTests : SandboxProviderCon
     {
     }
 
+    /// <inheritdoc />
+    protected override ProvisionRequest ArrangeProvisionTimeout(LocalPodmanComposeProvider provider, ProvisionRequest request)
+    {
+        // The credential secret create (the first process) succeeds, and every later process, starting with compose up, reports its timeout.
+        _fakeRunner.EnqueueResults(new ProcessResult
+        {
+            ExitCode = 0,
+            Stdout = string.Empty,
+            Stderr = string.Empty,
+            TimedOut = false,
+        });
+        _fakeRunner.SetResult(new ProcessResult
+        {
+            ExitCode = -1,
+            Stdout = string.Empty,
+            Stderr = string.Empty,
+            TimedOut = true,
+        });
+        return request;
+    }
+
+    [Fact]
+    public async Task Provision_HandsTheRequestTimeoutToComposeUp()
+    {
+        var provider = CreateProvider();
+        try
+        {
+            var request = CreateProvisionRequest() with { Timeout = TimeSpan.FromMinutes(7) };
+
+            await provider.ProvisionAsync(request, TestContext.Current.CancellationToken);
+
+            var upSpec = _fakeRunner.Specs.Single(static s => s.Argv.Any(static a => string.Equals(a, "up", StringComparison.Ordinal)));
+            upSpec.Timeout.ShouldBe(TimeSpan.FromMinutes(7));
+        }
+        finally
+        {
+            DisposeProvider(provider);
+        }
+    }
+
     [Fact]
     public async Task Provision_GeneratesComposeFileAndRunsUp()
     {

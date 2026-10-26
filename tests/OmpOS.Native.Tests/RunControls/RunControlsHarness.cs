@@ -15,6 +15,9 @@ internal static class RunControlsHarness
 {
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(10);
 
+    /// <summary>How many thread-pool round trips and dispatcher flushes <see cref="FlushAsync"/> performs.</summary>
+    private const int FlushRounds = 3;
+
     /// <summary>Shows a main window whose approval bridge and run input are the given dependencies.</summary>
     /// <param name="bridge">The approval bridge the window routes decisions through.</param>
     /// <param name="runInput">The run input the window routes steers and follow-ups through.</param>
@@ -111,8 +114,26 @@ internal static class RunControlsHarness
                 throw new TimeoutException($"Timed out waiting for: {description}.");
             }
 
-            await Task.Delay(TimeSpan.FromMilliseconds(5), cancellationToken).ConfigureAwait(true);
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.Yield();
             Dispatcher.UIThread.RunJobs();
+        }
+    }
+
+    /// <summary>
+    /// Gives work that a settlement queued on the thread pool and on the UI thread the chance to run before the caller checks that
+    /// something did not happen. It makes thread-pool round trips with a dispatcher flush after each, so a job that a continuation
+    /// posted to the UI thread has run on return. Use it only after a positive signal that the settlement itself has happened.
+    /// </summary>
+    /// <param name="window">The shown window.</param>
+    /// <param name="cancellationToken">Cancels the flush.</param>
+    /// <returns>A task that completes after the flush.</returns>
+    public static async Task FlushAsync(MainWindow window, CancellationToken cancellationToken)
+    {
+        for (var round = 0; round < FlushRounds; round++)
+        {
+            await Task.Run(static () => { }, cancellationToken).ConfigureAwait(true);
+            ShellHarness.Settle(window);
         }
     }
 }
