@@ -681,6 +681,21 @@ public sealed class AcpAgentSessionTests
         JsonNode.Parse(close)!["params"]!["sessionId"]!.GetValue<string>().ShouldBe(AcpFixtures.CapturedSessionId);
     }
 
+    /// <summary>An agent that never answers session/close must not keep disposal, and so its child, waiting for the whole request timeout: the transport is closed after the short close grace.</summary>
+    [Fact]
+    public async Task DisposeClosesTheTransportEvenWhenTheAgentNeverAnswersSessionClose()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var transport = new ScriptedAcpTransport(frame => HasMethod(frame, "session/close") ? [] : AcpFixtures.Reply(frame));
+        var session = NewSession(transport);
+        await session.CreateAsync(ct).ConfigureAwait(true);
+
+        await session.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30), ct).ConfigureAwait(true);
+
+        transport.Sent.ShouldContain(frame => HasMethod(frame, "session/close"));
+        _ = await Should.ThrowAsync<DisconnectedHarnessException>(() => transport.SendAsync(new byte[] { (byte)'{', (byte)'}' }, ct)).ConfigureAwait(true);
+    }
+
     /// <summary>A completion that finds the turn buffer full fails the turn with BackpressureHarnessException and faults the session instead of ending cleanly.</summary>
     [Fact]
     public async Task CompletionWithFullTurnBufferFailsTurnWithBackpressure()

@@ -16,6 +16,8 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     private readonly Func<IOmpSession> _sessionFactory;
     private readonly System.Threading.Lock _gate = new();
     private IOmpSession? _session;
+    private readonly HostModelControl _models = new();
+    private readonly List<IOmpSession> _opening = [];
     private string? _resumeSessionId;
     private string? _nativeSessionId;
     private bool _disposed;
@@ -60,6 +62,22 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
 
     /// <inheritdoc />
     public EngineHostDescriptor Descriptor { get; }
+
+    /// <summary>
+    /// Gets the model control of the host. It stays valid while the host replaces a faulted session, and its model list is empty until
+    /// the first session is bound (see <see cref="ConnectAsync"/>) or when the session's engine offers no model option.
+    /// </summary>
+    public IOmpModelControl Models => _models;
+
+    /// <summary>
+    /// Opens the engine session now, instead of at the first prompt, so its models are known. Does nothing when a live session is
+    /// already bound.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the start.</param>
+    /// <returns>A task that completes when the session is open.</returns>
+    /// <exception cref="ObjectDisposedException">The host was disposed.</exception>
+    public async Task ConnectAsync(CancellationToken cancellationToken) =>
+        _ = await EnsureSessionAsync(cancellationToken).ConfigureAwait(false);
 
     /// <summary>Creates a host over the scripted in-memory adapter. Never spawns a process.</summary>
     /// <param name="adapter">The adapter each session is created from.</param>
@@ -147,6 +165,7 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         IOmpSession? session;
+        IOmpSession[] opening;
         lock (_gate)
         {
             if (_disposed)
@@ -155,8 +174,17 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
             }
 
             _disposed = true;
+            _models.Unbind();
             session = _session;
             _session = null;
+            opening = [.. _opening];
+            _opening.Clear();
+        }
+
+        // A session still opening has its child running already: stop it now instead of when its handshake ends, so no omp outlives the host.
+        foreach (var pending in opening)
+        {
+            await pending.DisposeAsync().ConfigureAwait(false);
         }
 
         if (session is not null)
@@ -174,6 +202,7 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
 
         var fresh = await CreateSessionAsync(cancellationToken).ConfigureAwait(false);
         var bound = await InstallSessionAsync(fresh).ConfigureAwait(false);
+        _models.Bind(bound);
         PublishNativeSessionId(bound);
         return bound;
     }
@@ -194,9 +223,21 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     {
         var fresh = _sessionFactory();
         string? resumeId;
+        bool disposed;
         lock (_gate)
         {
             resumeId = _resumeSessionId;
+            disposed = _disposed;
+            if (!disposed)
+            {
+                _opening.Add(fresh);
+            }
+        }
+
+        if (disposed)
+        {
+            await fresh.DisposeAsync().ConfigureAwait(false);
+            throw new ObjectDisposedException(GetType().FullName);
         }
 
         try
@@ -219,6 +260,13 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
         {
             await fresh.DisposeAsync().ConfigureAwait(false);
             throw;
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                _ = _opening.Remove(fresh);
+            }
         }
 
         return fresh;

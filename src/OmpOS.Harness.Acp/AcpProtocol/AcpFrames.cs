@@ -298,7 +298,7 @@ public static class AcpFrames
         public string Value { get; init; } = string.Empty;
     }
 
-    /// <summary>Result of <c>session/new</c>. The agent's <c>configOptions</c> array is kept as an opaque element: the client never interprets option ids.</summary>
+    /// <summary>Result of <c>session/new</c>. The agent's <c>configOptions</c> array is kept as an opaque element and read by the config option parser, which skips every kind it does not model.</summary>
     public sealed class NewSessionResult
     {
         /// <summary>Gets the session identifier.</summary>
@@ -307,6 +307,22 @@ public static class AcpFrames
         /// <summary>Gets the opaque <c>configOptions</c> array, when the agent sent one.</summary>
         public JsonElement? ConfigOptions { get; init; }
     }
+
+    /// <summary>
+    /// The result of <c>session/load</c> and of <c>session/set_config_option</c>: the agent's rebuilt <c>configOptions</c> array,
+    /// kept as an opaque element and read by the config option parser. Every other member is skipped.
+    /// </summary>
+    public sealed class ConfigOptionsResult
+    {
+        /// <summary>Gets the opaque <c>configOptions</c> array, when the agent sent one.</summary>
+        public JsonElement? ConfigOptions { get; init; }
+    }
+
+    /// <summary>Parameters of <c>session/set_config_option</c>.</summary>
+    /// <param name="SessionId">The session whose option changes.</param>
+    /// <param name="ConfigId">The option identifier, for example <c>model</c>.</param>
+    /// <param name="Value">The option value to select.</param>
+    public sealed record SetConfigOptionParams(string SessionId, string ConfigId, string Value);
 
     /// <summary>Parameters of <c>session/load</c>.</summary>
     /// <param name="SessionId">The session to resume.</param>

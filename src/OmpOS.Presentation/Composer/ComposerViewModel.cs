@@ -16,6 +16,7 @@ public sealed class ComposerViewModel : ObservableModel
     private readonly Func<Task> _onStop;
     private bool _sending;
     private string _draft = string.Empty;
+    private ModelPickerModel? _modelPicker;
     private bool _isStreaming;
 
     /// <summary>Creates a composer that submits drafts through <paramref name="onSend"/> and stops responses through <paramref name="onStop"/>.</summary>
@@ -35,7 +36,34 @@ public sealed class ComposerViewModel : ObservableModel
     public string Draft { get => _draft; set => SetProperty(ref _draft, value); }
 
     /// <summary>Gets or sets whether the assistant is streaming. Escape stops only while it is, and the stop control replaces send.</summary>
-    public bool IsStreaming { get => _isStreaming; set => SetProperty(ref _isStreaming, value); }
+    public bool IsStreaming
+    {
+        get => _isStreaming;
+        set
+        {
+            if (SetProperty(ref _isStreaming, value) && _modelPicker is not null)
+            {
+                // A run keeps the model fixed.
+                _modelPicker.IsRunActive = value;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the model picker of the session, or null when the session offers no model control (no engine composed, or a terminal).
+    /// While it is set, it follows <see cref="IsStreaming"/>: the model cannot be changed while a response streams.
+    /// </summary>
+    public ModelPickerModel? ModelPicker
+    {
+        get => _modelPicker;
+        set
+        {
+            if (SetProperty(ref _modelPicker, value) && value is not null)
+            {
+                value.IsRunActive = _isStreaming;
+            }
+        }
+    }
 
     /// <summary>Submits the draft unless it is blank, a send is already in flight, or a response is streaming.</summary>
     /// <returns>A task that completes when the host has answered the send.</returns>

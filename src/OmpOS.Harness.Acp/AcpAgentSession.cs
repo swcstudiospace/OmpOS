@@ -19,9 +19,12 @@ namespace OmpOS.Harness.Acp;
 /// change happens at a known point in that order. A request the policy admits waits for its decision on a task of its own,
 /// so the pump never blocks on it.
 /// </summary>
-public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity
+public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpModelControl
 {
     private const string UpdateMethod = "session/update";
+    private const string SetConfigOptionMethod = "session/set_config_option";
+    private const string ConfigOptionUpdateKind = "config_option_update";
+    private const string ModelOptionId = "model";
     private const string PermissionMethod = "session/request_permission";
     private const string AuthenticateMethod = "authenticate";
     private const string FsReadMethod = "fs/read_text_file";
@@ -29,6 +32,9 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity
     private const int MethodNotFound = -32601;
     private const int InvalidParams = -32602;
     private const int InternalError = -32603;
+
+    /// <summary>How long disposal waits for the agent to answer <c>session/close</c> before it stops the child anyway: the close is best-effort, and an agent that never answers it must not keep its child alive for a whole request timeout.</summary>
+    private static readonly TimeSpan DisposeCloseTimeout = TimeSpan.FromSeconds(3);
 
     private static readonly Action<ILogger, string?, Exception?> PumpFailed =
         LoggerMessage.Define<string?>(
@@ -54,6 +60,11 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity
     private Task? _pumpTask;
     private bool _connectionLost;
     private bool _sessionClosed;
+    private IReadOnlyList<AcpConfigOption> _configOptions = [];
+    private IReadOnlyList<OmpModelChoice> _modelChoices = [];
+    private string? _modelOptionId;
+    private string? _currentModelId;
+    private bool _modelSwitching;
     private bool _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="AcpAgentSession"/> class. With no resolver, a request the policy admits is denied.</summary>
@@ -96,6 +107,48 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity
 
     /// <summary>Gets the ACP session identifier once the session has been created or resumed. It is the same value as <see cref="SessionId"/>.</summary>
     public string? NativeSessionId => SessionId;
+
+    /// <summary>
+    /// Gets the select-style configuration options the agent reported in <c>session/new</c>, <c>session/load</c>, a
+    /// <c>session/set_config_option</c> reply or a <c>config_option_update</c> notification, last report first. Empty until the session is open.
+    /// </summary>
+    public IReadOnlyList<AcpConfigOption> ConfigOptions
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _configOptions;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<OmpModelChoice> ModelChoices
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _modelChoices;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public string? CurrentModelId
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _currentModelId;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public event EventHandler? ModelChanged;
 
     /// <summary>Gets the agent identity reported by <c>initialize</c>.</summary>
     public AcpFrames.AgentInfo? AgentInfo { get; private set; }
@@ -178,6 +231,59 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity
         await SendCancelAsync(turn, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
+    public async Task<OmpModelSwitchResult> SetModelAsync(string value, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+
+        string sessionId;
+        string optionId;
+        lock (_gate)
+        {
+            if (RefuseModelSwitchLocked(value) is { } refusal)
+            {
+                return refusal;
+            }
+
+            if (string.Equals(_currentModelId, value, StringComparison.Ordinal))
+            {
+                // The engine already uses this model: nothing to ask.
+                return new OmpModelSwitchResult(OmpModelSwitchOutcome.Switched, _currentModelId, null);
+            }
+
+            _modelSwitching = true;
+            sessionId = SessionId!;
+            optionId = _modelOptionId!;
+        }
+
+        try
+        {
+            var response = await CallAsync(
+                SetConfigOptionMethod,
+                new AcpFrames.SetConfigOptionParams(sessionId, optionId, value),
+                AcpJsonContext.Default.RequestSetConfigOptionParams,
+                _options.RequestTimeout,
+                cancellationToken).ConfigureAwait(false);
+            ApplyConfigOptions(ReadResult(response, AcpJsonContext.Default.ConfigOptionsResult, SetConfigOptionMethod).ConfigOptions);
+        }
+        catch (HarnessException ex)
+        {
+            return new OmpModelSwitchResult(OmpModelSwitchOutcome.Failed, CurrentModelId, $"omp could not switch the model: {ex.Message}");
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                _modelSwitching = false;
+            }
+        }
+
+        var current = CurrentModelId;
+        return string.Equals(current, value, StringComparison.Ordinal)
+            ? new OmpModelSwitchResult(OmpModelSwitchOutcome.Switched, current, null)
+            : new OmpModelSwitchResult(OmpModelSwitchOutcome.Failed, current, "omp did not confirm the model change.");
+    }
+
     /// <summary>Ends the session on the agent with <c>session/close</c>. Disposing the session does this best-effort.</summary>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <exception cref="AcpRequestFailedHarnessException">The agent answered <c>session/close</c> with an error or timed out.</exception>
@@ -200,7 +306,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity
             sessionId = SessionId;
         }
 
-        await CloseRemoteAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        await CloseRemoteAsync(sessionId, _options.RequestTimeout, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -235,7 +341,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity
         {
             try
             {
-                await CloseRemoteAsync(sessionId, CancellationToken.None).ConfigureAwait(false);
+                await CloseRemoteAsync(sessionId, DisposeCloseTimeout, CancellationToken.None).ConfigureAwait(false);
             }
             catch (HarnessException)
             {
@@ -255,6 +361,111 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity
                 // The pump records connection loss itself; disposal must not throw.
             }
         }
+    }
+
+    /// <summary>Decides, with the gate held, whether a switch must be refused before anything is sent. Null means the switch may go ahead.</summary>
+    private OmpModelSwitchResult? RefuseModelSwitchLocked(string value)
+    {
+        if (_disposed || _sessionClosed || _connectionLost || SessionId is null || _machine.State is not (HarnessState.Ready or HarnessState.Streaming or HarnessState.Cancelling))
+        {
+            return new OmpModelSwitchResult(OmpModelSwitchOutcome.NotOpen, _currentModelId, "The agent session is not open, so the model cannot be changed.");
+        }
+
+        // omp's own handler does not reject a switch mid-turn, but the turn runs on the model it started with; a client that lets the
+        // change land mid-turn would show a model that is not the one answering, so a running prompt refuses the switch here.
+        if (_machine.State != HarnessState.Ready || _turn is not null || _modelSwitching)
+        {
+            return new OmpModelSwitchResult(OmpModelSwitchOutcome.Busy, _currentModelId, "The model cannot be changed while a response is running.");
+        }
+
+        if (_modelOptionId is null || _currentModelId is null)
+        {
+            return new OmpModelSwitchResult(OmpModelSwitchOutcome.NoModelOption, _currentModelId, "omp offers no model choice for this session.");
+        }
+
+        if (!_modelChoices.Any(choice => string.Equals(choice.Value, value, StringComparison.Ordinal)))
+        {
+            return new OmpModelSwitchResult(OmpModelSwitchOutcome.UnknownModel, _currentModelId, "omp does not offer that model.");
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Replaces the stored options with the agent's report and raises <see cref="ModelChanged"/> when the model or the model list differs. A
+    /// report without a <c>configOptions</c> array leaves what the session knows as it is.
+    /// </summary>
+    private void ApplyConfigOptions(JsonElement? raw)
+    {
+        if (raw is not { ValueKind: JsonValueKind.Array })
+        {
+            return;
+        }
+
+        var options = AcpConfigOptionParser.Parse(raw);
+        var model = options.FirstOrDefault(static option => string.Equals(option.Id, ModelOptionId, StringComparison.Ordinal))
+            ?? options.FirstOrDefault(static option => string.Equals(option.Category, ModelOptionId, StringComparison.Ordinal));
+        OmpModelChoice[] choices = model is null ? [] : model.Values.Select(static value => new OmpModelChoice(value.Value, value.Name)).ToArray();
+        bool changed;
+        lock (_gate)
+        {
+            changed = !string.Equals(_currentModelId, model?.CurrentValue, StringComparison.Ordinal) || !_modelChoices.SequenceEqual(choices);
+            _configOptions = options;
+            _modelChoices = choices;
+            _modelOptionId = model?.Id;
+            _currentModelId = model?.CurrentValue;
+        }
+
+        if (changed)
+        {
+            RaiseModelChanged();
+        }
+    }
+
+    /// <summary>Raises <see cref="ModelChanged"/>. A subscriber that throws never fails the pump or the caller, and never hides the change from the other subscribers.</summary>
+    private void RaiseModelChanged()
+    {
+        if (ModelChanged is not { } handlers)
+        {
+            return;
+        }
+
+        foreach (var handler in handlers.GetInvocationList().Cast<EventHandler>())
+        {
+            try
+            {
+                handler(this, EventArgs.Empty);
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+                // A subscriber must never fail the session.
+            }
+        }
+    }
+
+    /// <summary>
+    /// Applies a <c>config_option_update</c> notification, in any session state: omp pushes one after a model or thinking change, also
+    /// one that a slash command made, and while a prompt runs. Other updates and other sessions' updates are ignored.
+    /// </summary>
+    private void TryApplyConfigOptionUpdate(AcpFrames.Inbound inbound)
+    {
+        if (inbound.Params is not { ValueKind: JsonValueKind.Object } parameters
+            || !parameters.TryGetProperty("update", out var update)
+            || update.ValueKind != JsonValueKind.Object
+            || !update.TryGetProperty("sessionUpdate", out var kind)
+            || !kind.ValueEquals(ConfigOptionUpdateKind))
+        {
+            return;
+        }
+
+        var current = SessionId;
+        if (current is not null
+            && !(parameters.TryGetProperty("sessionId", out var target) && target.ValueKind == JsonValueKind.String && target.ValueEquals(current)))
+        {
+            return;
+        }
+
+        ApplyConfigOptions(update.TryGetProperty("configOptions", out var options) ? options : null);
     }
 
     private static void ValidateOptions(AcpClientOptions options)
@@ -420,25 +631,29 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity
             }
 
             SetSessionId(created.SessionId);
+            ApplyConfigOptions(created.ConfigOptions);
             return;
         }
 
-        await CallAsync(
+        var loaded = await CallAsync(
             "session/load",
             new AcpFrames.LoadSessionParams(resumeSessionId, cwd, _mcpServers),
             AcpJsonContext.Default.RequestLoadSessionParams,
             _options.RequestTimeout,
             cancellationToken).ConfigureAwait(false);
         SetSessionId(resumeSessionId);
+
+        // A load answer may carry no result at all; the options are then learned from the agent's own config_option_update.
+        ApplyConfigOptions(loaded.Result is { ValueKind: JsonValueKind.Object } result && result.TryGetProperty("configOptions", out var options) ? options : null);
     }
 
-    private async Task CloseRemoteAsync(string sessionId, CancellationToken cancellationToken)
+    private async Task CloseRemoteAsync(string sessionId, TimeSpan timeout, CancellationToken cancellationToken)
     {
         await CallAsync(
             "session/close",
             new AcpFrames.CloseSessionParams(sessionId),
             AcpJsonContext.Default.RequestCloseSessionParams,
-            _options.RequestTimeout,
+            timeout,
             cancellationToken).ConfigureAwait(false);
         lock (_gate)
         {
@@ -590,6 +805,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity
 
     private void HandleSessionUpdate(AcpFrames.Inbound inbound)
     {
+        TryApplyConfigOptionUpdate(inbound);
         var turn = ActiveTurn();
         if (turn is null)
         {
