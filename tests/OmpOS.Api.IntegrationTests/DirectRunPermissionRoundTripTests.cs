@@ -37,7 +37,7 @@ public sealed class DirectRunPermissionRoundTripTests
     private const string JsonType = "application/json";
     private const string OptionsJson =
         "[{\"optionId\":\"allow-once\",\"name\":\"Allow\",\"kind\":\"allow_once\"},{\"optionId\":\"reject-once\",\"name\":\"Reject\",\"kind\":\"reject_once\"}]";
-    // Capabilities as the real adapter sends them. authMethods is omitted: this peer's harness configures no AuthMethodId.
+    // Capabilities as the real adapter sends them. authMethods is omitted, so the client sends no authenticate request (see AcpAuthenticationHandshakeTests for the advertised case).
     private const string InitializeResultJson =
         "{\"protocolVersion\":1,\"agentInfo\":{\"name\":\"omp\",\"title\":\"omp\",\"version\":\"18.12.3\"},\"agentCapabilities\":{\"loadSession\":true,\"mcpCapabilities\":{\"http\":true,\"sse\":true},\"promptCapabilities\":{\"embeddedContext\":true,\"image\":true},\"sessionCapabilities\":{\"list\":{},\"fork\":{},\"resume\":{},\"close\":{}}}}";
 

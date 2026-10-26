@@ -17,5 +17,5 @@ public interface IOmpLiveSteering
     /// <param name="queue">The queue to put the message into.</param>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <returns>How the attempt ended.</returns>
-    Task<OmpSteerResult> SteerAsync(string text, OmpSteerQueue queue, CancellationToken cancellationToken);
+    Task<OmpSteerResult> SteerAsync(string text, OmpSteerLane queue, CancellationToken cancellationToken);
 }

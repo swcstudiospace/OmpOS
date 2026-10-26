@@ -57,7 +57,7 @@ public sealed class NativeSteeringHeadTests
         var result = await steering.SteerAsync(id, Text, mode, ct).ConfigureAwait(true);
 
         result.Outcome.ShouldBe(expected);
-        result.Message.ShouldBe(message, Case.Sensitive);
+        result.Message.ShouldBe(message);
         var frame = omp.Requests("_session/steering").ShouldHaveSingleItem();
         frame["params"]!["sessionId"]!.GetValue<string>().ShouldBe("native-1");
         frame["params"]!["prompt"]![0]!["text"]!.GetValue<string>().ShouldBe(Text);
@@ -89,7 +89,7 @@ public sealed class NativeSteeringHeadTests
         var result = await steering.SteerAsync(id, Text, CardSteerMode.SendNow, ct).ConfigureAwait(true);
 
         result.Outcome.ShouldBe(CardSteerOutcome.Failed);
-        result.Message.ShouldBe("No turn is running; open the session and send a message.", Case.Sensitive);
+        result.Message.ShouldBe("No turn is running; open the session and send a message.");
         omp.Requests("_session/steering").ShouldBeEmpty();
         FakeSteerPlugin.Directives(before!.StateDirectory).ShouldBeEmpty();
         head.Host.Registry!.TryGet(id, out var after).ShouldBeTrue();
@@ -118,7 +118,7 @@ public sealed class NativeSteeringHeadTests
         var result = await steering.SteerAsync(id, Text, CardSteerMode.SendNow, ct).ConfigureAwait(true);
 
         result.Outcome.ShouldBe(CardSteerOutcome.Failed);
-        result.Message.ShouldBe(expectedMessage, Case.Sensitive);
+        result.Message.ShouldBe(expectedMessage);
         result.Message.ShouldNotContain(Text, Case.Sensitive);
 
         await slot.Prompts.CancelAsync(ct).ConfigureAwait(true);

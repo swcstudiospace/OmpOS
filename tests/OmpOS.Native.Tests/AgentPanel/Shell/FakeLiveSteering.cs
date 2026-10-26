@@ -9,16 +9,16 @@ internal sealed class FakeLiveSteering : IOmpLiveSteering
     public bool Supported { get; set; } = true;
 
     /// <summary>Gets the requests received, in order.</summary>
-    public List<(string Text, OmpSteerQueue Queue)> Requests { get; } = [];
+    public List<(string Text, OmpSteerLane Queue)> Requests { get; } = [];
 
     /// <summary>Gets or sets the answer to a request. Null answers Injected on the requested queue.</summary>
-    public Func<string, OmpSteerQueue, Task<OmpSteerResult>>? Handler { get; set; }
+    public Func<string, OmpSteerLane, Task<OmpSteerResult>>? Handler { get; set; }
 
     /// <inheritdoc />
     public bool IsSupported => Supported;
 
     /// <inheritdoc />
-    public Task<OmpSteerResult> SteerAsync(string text, OmpSteerQueue queue, CancellationToken cancellationToken)
+    public Task<OmpSteerResult> SteerAsync(string text, OmpSteerLane queue, CancellationToken cancellationToken)
     {
         Requests.Add((text, queue));
         return Handler?.Invoke(text, queue) ?? Task.FromResult(new OmpSteerResult(OmpSteerOutcome.Injected, queue, null));

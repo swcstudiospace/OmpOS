@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using OmpOS.Contracts.Sandboxes;
 using OmpOS.Harness.Abstractions;
@@ -10,6 +11,7 @@ namespace OmpOS.EngineHost.Tests;
 /// The session options and the live steering of <see cref="InProcessEngineHost"/>: both stay valid while the host binds and replaces
 /// sessions, report nothing before a session is bound, forward to the bound session, and follow a session that replaces a faulted one.
 /// </summary>
+[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The host under test owns and disposes the scripted session.")]
 public sealed class HostSessionControlTests
 {
     private static readonly EngineHostDescriptor Descriptor = new() { Kind = EngineHostKind.InProcess, Isolation = Isolation.Process, Attestation = Attestation.None };
@@ -25,7 +27,7 @@ public sealed class HostSessionControlTests
         host.SessionOptions.Options.ShouldBeEmpty();
         (await host.SessionOptions.SetOptionAsync("mode", "plan", ct).ConfigureAwait(true)).Outcome.ShouldBe(OmpOptionSetOutcome.NotOpen);
         host.LiveSteering.IsSupported.ShouldBeFalse();
-        (await host.LiveSteering.SteerAsync("hi", OmpSteerQueue.FollowUp, ct).ConfigureAwait(true)).ShouldBe(new OmpSteerResult(OmpSteerOutcome.NotRunning, OmpSteerQueue.FollowUp, "No turn is running."));
+        (await host.LiveSteering.SteerAsync("hi", OmpSteerLane.FollowUp, ct).ConfigureAwait(true)).ShouldBe(new OmpSteerResult(OmpSteerOutcome.NotRunning, OmpSteerLane.FollowUp, "No turn is running."));
     }
 
     /// <summary>Once connected the host reports the session's options (and raises the change event for them), and forwards changes and steers to it.</summary>
@@ -46,12 +48,12 @@ public sealed class HostSessionControlTests
         host.LiveSteering.IsSupported.ShouldBeTrue();
 
         var set = await host.SessionOptions.SetOptionAsync("mode", "plan", ct).ConfigureAwait(true);
-        var steered = await host.LiveSteering.SteerAsync("careful", OmpSteerQueue.Steering, ct).ConfigureAwait(true);
+        var steered = await host.LiveSteering.SteerAsync("careful", OmpSteerLane.Steering, ct).ConfigureAwait(true);
 
         set.IsSet.ShouldBeTrue();
         session.Changes.ShouldBe([("mode", "plan")]);
         steered.Outcome.ShouldBe(OmpSteerOutcome.Injected);
-        session.Steers.ShouldBe([("careful", OmpSteerQueue.Steering)]);
+        session.Steers.ShouldBe([("careful", OmpSteerLane.Steering)]);
 
         session.Raise();
         changes.ShouldBe(3, "the session's own report (after the change) reaches the host's subscribers");
@@ -98,7 +100,7 @@ public sealed class HostSessionControlTests
         host.SessionOptions.Options.ShouldBeEmpty();
         host.LiveSteering.IsSupported.ShouldBeFalse();
         (await host.SessionOptions.SetOptionAsync("mode", "plan", ct).ConfigureAwait(true)).Outcome.ShouldBe(OmpOptionSetOutcome.NotOpen);
-        (await host.LiveSteering.SteerAsync("hi", OmpSteerQueue.Steering, ct).ConfigureAwait(true)).Outcome.ShouldBe(OmpSteerOutcome.NotRunning);
+        (await host.LiveSteering.SteerAsync("hi", OmpSteerLane.Steering, ct).ConfigureAwait(true)).Outcome.ShouldBe(OmpSteerOutcome.NotRunning);
     }
 
     /// <summary>A disposed host no longer follows its session.</summary>
@@ -130,7 +132,7 @@ public sealed class HostSessionControlTests
 
         public List<(string ConfigId, string Value)> Changes { get; } = [];
 
-        public List<(string Text, OmpSteerQueue Queue)> Steers { get; } = [];
+        public List<(string Text, OmpSteerLane Queue)> Steers { get; } = [];
 
         public HarnessState State { get; set; } = HarnessState.Ready;
 
@@ -146,7 +148,7 @@ public sealed class HostSessionControlTests
             return Task.FromResult(new OmpOptionSetResult(OmpOptionSetOutcome.Set, value, null));
         }
 
-        public Task<OmpSteerResult> SteerAsync(string text, OmpSteerQueue queue, CancellationToken cancellationToken)
+        public Task<OmpSteerResult> SteerAsync(string text, OmpSteerLane queue, CancellationToken cancellationToken)
         {
             Steers.Add((text, queue));
             return Task.FromResult(new OmpSteerResult(OmpSteerOutcome.Injected, queue, null));

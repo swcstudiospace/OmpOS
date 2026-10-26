@@ -91,7 +91,7 @@ public sealed class LiveOmpSteeringContractTests
         initialize.IsError.ShouldBeFalse("initialize failed: " + initialize.Describe());
         var advertised = initialize.Result ?? throw new InvalidOperationException("initialize returned no result.");
         advertised.GetProperty("_meta").GetProperty("steering").GetProperty("supported").ValueKind.ShouldBe(JsonValueKind.True, "omp did not advertise _meta.steering.supported.");
-        advertised.GetProperty("authMethods").EnumerateArray().Select(static method => method.GetProperty("id").GetString()).ShouldContain("agent");
+        advertised.GetProperty("authMethods").EnumerateArray().Select(static method => method.GetProperty("id").GetString()).ShouldContain("agent", StringComparer.Ordinal);
 
         var authenticated = await client.RequestAsync("authenticate", new JsonObject { ["methodId"] = "agent" }, RequestTimeout, cancellationToken).ConfigureAwait(true);
         authenticated.IsError.ShouldBeFalse("authenticate failed: " + authenticated.Describe());
@@ -118,7 +118,7 @@ public sealed class LiveOmpSteeringContractTests
         unknown.IsError.ShouldBeTrue("an unknown session id must be an error.");
         unknown.ErrorCode.ShouldBe((long?)InvalidParamsCode);
 
-        client.SentMethods.ShouldNotContain("session/prompt");
+        client.SentMethods.ShouldNotContain("session/prompt", StringComparer.Ordinal);
     }
 
     private static JsonObject SteerParameters(string sessionId, bool followUp)

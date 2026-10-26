@@ -40,12 +40,12 @@ public sealed class OptionChipBindingTests
             control.Report(FakeSessionOptions.Mode("plan"), FakeSessionOptions.Thinking());
             binding.Chip.ShouldBeSameAs(chip, "a change keeps the chip");
             chip.Label.ShouldBe("Plan");
-            chip.ToolTipText.ShouldBe("Mode: Plan. " + FakeSessionOptions.PlanDescription, Case.Sensitive);
+            chip.ToolTipText.ShouldBe("Mode: Plan. " + FakeSessionOptions.PlanDescription);
 
             control.Report();
             binding.Chip.ShouldBeNull();
             assigned.ShouldBeNull();
-            assignments.ShouldBe(3, "created once, kept on a change, removed once");
+            assignments.ShouldBe(2, "created once, kept on a change, removed once");
             return Task.CompletedTask;
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
@@ -87,7 +87,7 @@ public sealed class OptionChipBindingTests
 
             await chip.SelectAsync(chip.Choices[1]).ConfigureAwait(true);
 
-            chip.Notice.ShouldBe("The setting cannot be changed while a response is running.", Case.Sensitive);
+            chip.Notice.ShouldBe("The setting cannot be changed while a response is running.");
             chip.CurrentValue.ShouldBe("default");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }

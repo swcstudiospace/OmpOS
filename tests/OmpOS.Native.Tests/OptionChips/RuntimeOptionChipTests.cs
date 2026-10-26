@@ -76,7 +76,7 @@ public sealed class RuntimeOptionChipTests
 
             mode.IsEnabled.ShouldBeFalse();
             thinking.IsEnabled.ShouldBeFalse();
-            mode.ToolTipText.ShouldBe("This setting cannot be changed while a response is running.", Case.Sensitive);
+            mode.ToolTipText.ShouldBe("This setting cannot be changed while a response is running.");
 
             runtime.Composer.IsStreaming = false;
 

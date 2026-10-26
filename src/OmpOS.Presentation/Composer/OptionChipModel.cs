@@ -87,7 +87,7 @@ public sealed class OptionChipModel : ObservableModel
 
             if (_isChanging)
             {
-                return $"Changing {_displayName.ToLowerInvariant()}.";
+                return $"Changing the {_displayName} option.";
             }
 
             return CurrentDescription is { } description

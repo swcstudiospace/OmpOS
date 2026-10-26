@@ -40,11 +40,11 @@ public sealed class AgentSessionRuntimeNativeSteeringTests
             var outcome = await runtime.ViewModel.Steering.SubmitAsync("use the smaller model", SteeringMode.Steer, token).ConfigureAwait(true);
 
             outcome.ShouldBe(SteeringSubmitOutcome.Accepted);
-            native.Requests.ShouldBe([("use the smaller model", OmpSteerQueue.Steering)]);
+            native.Requests.ShouldBe([("use the smaller model", OmpSteerLane.Steering)]);
             inbox.Sent.ShouldBeEmpty("the inbox is the fallback, not a second path");
             var entry = runtime.ViewModel.Steering.History.ShouldHaveSingleItem();
             entry.DeliveryStatus.ShouldBe(SteeringDeliveryStatus.DeliveredIntoTurn);
-            entry.DeliveryText.ShouldBe("Delivered into the running turn.", Case.Sensitive);
+            entry.DeliveryText.ShouldBe("Delivered into the running turn.");
             runtime.Runs.SteersHeld.ShouldBe(0, "omp holds the steer, not OmpOS");
             recorded.ShouldHaveSingleItem().ShouldBeSameAs(entry);
 
@@ -69,10 +69,10 @@ public sealed class AgentSessionRuntimeNativeSteeringTests
             var outcome = await runtime.ViewModel.Steering.SubmitAsync("then run the formatter", SteeringMode.FollowUp, token).ConfigureAwait(true);
 
             outcome.ShouldBe(SteeringSubmitOutcome.Accepted);
-            native.Requests.ShouldBe([("then run the formatter", OmpSteerQueue.FollowUp)]);
+            native.Requests.ShouldBe([("then run the formatter", OmpSteerLane.FollowUp)]);
             var entry = runtime.ViewModel.Steering.History.ShouldHaveSingleItem();
             entry.DeliveryStatus.ShouldBe(SteeringDeliveryStatus.QueuedBehindTurn);
-            entry.DeliveryText.ShouldBe("Queued behind the running turn.", Case.Sensitive);
+            entry.DeliveryText.ShouldBe("Queued behind the running turn.");
             runtime.Runs.QueuedFollowUpCount.ShouldBe(0, "omp holds the follow-up, not OmpOS");
 
             await EndRunAsync(runtime, prompts, token).ConfigureAwait(true);
@@ -104,8 +104,8 @@ public sealed class AgentSessionRuntimeNativeSteeringTests
             outcome.ShouldBe(SteeringSubmitOutcome.Accepted);
             var entry = runtime.ViewModel.Steering.History.ShouldHaveSingleItem();
             entry.DeliveryStatus.ShouldBe(SteeringDeliveryStatus.SubmittedAsNewTurn);
-            entry.DeliveryText.ShouldBe("The turn had already ended, so your message started a new turn.", Case.Sensitive);
-            runtime.StatusText.ShouldBe("The turn had already ended, so your message started a new turn.", Case.Sensitive);
+            entry.DeliveryText.ShouldBe("The turn had already ended, so your message started a new turn.");
+            runtime.StatusText.ShouldBe("The turn had already ended, so your message started a new turn.");
             prompts.Prompts.ShouldBe(["first"], "the message waits for the turn that is ending");
 
             prompts.ReleaseFirstTurn();
@@ -175,8 +175,8 @@ public sealed class AgentSessionRuntimeNativeSteeringTests
             outcome.ShouldBe(SteeringSubmitOutcome.Failed);
             var entry = runtime.ViewModel.Steering.History.ShouldHaveSingleItem();
             entry.DeliveryStatus.ShouldBe(SteeringDeliveryStatus.Failed);
-            entry.FailureReason.ShouldBe("omp no longer has this session open, so the message was not sent.", Case.Sensitive);
-            runtime.StatusText.ShouldBe("omp no longer has this session open, so the message was not sent.", Case.Sensitive);
+            entry.FailureReason.ShouldBe("omp no longer has this session open, so the message was not sent.");
+            runtime.StatusText.ShouldBe("omp no longer has this session open, so the message was not sent.");
             recorded.ShouldBe(0);
             prompts.Prompts.ShouldBe(["first"]);
 
@@ -255,7 +255,7 @@ public sealed class AgentSessionRuntimeNativeSteeringTests
             var outcome = await runtime.ViewModel.Steering.SubmitAsync("hello", SteeringMode.Steer, token).ConfigureAwait(true);
 
             outcome.ShouldBe(SteeringSubmitOutcome.Failed);
-            runtime.ViewModel.Steering.History.Single().FailureReason.ShouldBe("This version of omp cannot take a message into a running turn.", Case.Sensitive);
+            runtime.ViewModel.Steering.History.Single().FailureReason.ShouldBe("This version of omp cannot take a message into a running turn.");
 
             await EndRunAsync(runtime, prompts, token).ConfigureAwait(true);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);

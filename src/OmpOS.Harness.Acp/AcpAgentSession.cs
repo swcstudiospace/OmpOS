@@ -37,7 +37,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
     private const string SteeringQueueName = "steering";
 
     /// <summary>The longest steering message, in UTF-8 bytes: the limit of the steering inbox, so a message fits either mechanism.</summary>
-    internal const int MaxSteerBytes = 8192;
+    public const int MaxSteerBytes = 8192;
 
     /// <summary>How long disposal waits for the agent to answer <c>session/close</c> before it stops the child anyway: the close is best-effort, and an agent that never answers it must not keep its child alive for a whole request timeout.</summary>
     private static readonly TimeSpan DisposeCloseTimeout = TimeSpan.FromSeconds(3);
@@ -73,7 +73,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
     private bool _optionChanging;
     private bool _steeringSupported;
     private bool _openFailed;
-    private IReadOnlyList<OmpSessionOption> _sessionOptions = [];
+    private OmpSessionOption[] _sessionOptions = [];
     private bool _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="AcpAgentSession"/> class. With no resolver, a request the policy admits is denied.</summary>
@@ -357,7 +357,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
     /// <returns>How the attempt ended.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="queue"/> is not a defined value.</exception>
-    public async Task<AcpSteerResult> SteerAsync(string text, AcpSteerQueue queue, CancellationToken cancellationToken)
+    public async Task<AcpSteerResult> SteerAsync(string text, AcpSteerLane queue, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(text);
         if (!Enum.IsDefined(queue))
@@ -394,7 +394,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         var parameters = new AcpFrames.SteeringParams(
             sessionId,
             [new AcpFrames.ContentBlock { Text = text }],
-            queue == AcpSteerQueue.FollowUp ? new AcpFrames.SteeringMeta(new AcpFrames.SteeringQueueMeta(FollowUpQueueName)) : null);
+            queue == AcpSteerLane.FollowUp ? new AcpFrames.SteeringMeta(new AcpFrames.SteeringQueueMeta(FollowUpQueueName)) : null);
         AcpFrames.SteeringResult answer;
         try
         {
@@ -406,11 +406,16 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
             return new AcpSteerResult(AcpSteerOutcome.Failed, queue, DescribeSteerFailure(ex));
         }
 
+        return MapSteerAnswer(answer, queue);
+    }
+
+    private static AcpSteerResult MapSteerAnswer(AcpFrames.SteeringResult answer, AcpSteerLane requested)
+    {
         var reported = answer.Queue switch
         {
-            FollowUpQueueName => AcpSteerQueue.FollowUp,
-            SteeringQueueName => AcpSteerQueue.Steering,
-            _ => queue,
+            FollowUpQueueName => AcpSteerLane.FollowUp,
+            SteeringQueueName => AcpSteerLane.Steering,
+            _ => requested,
         };
         return answer.Outcome switch
         {
@@ -422,7 +427,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
     }
 
     /// <inheritdoc />
-    async Task<OmpSteerResult> IOmpLiveSteering.SteerAsync(string text, OmpSteerQueue queue, CancellationToken cancellationToken)
+    async Task<OmpSteerResult> IOmpLiveSteering.SteerAsync(string text, OmpSteerLane queue, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(text);
         if (!Enum.IsDefined(queue))
@@ -430,7 +435,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
             throw new ArgumentOutOfRangeException(nameof(queue));
         }
 
-        var result = await SteerAsync(text, queue == OmpSteerQueue.FollowUp ? AcpSteerQueue.FollowUp : AcpSteerQueue.Steering, cancellationToken).ConfigureAwait(false);
+        var result = await SteerAsync(text, queue == OmpSteerLane.FollowUp ? AcpSteerLane.FollowUp : AcpSteerLane.Steering, cancellationToken).ConfigureAwait(false);
         var outcome = result.Outcome switch
         {
             AcpSteerOutcome.Injected => OmpSteerOutcome.Injected,
@@ -439,7 +444,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
             AcpSteerOutcome.NotRunning => OmpSteerOutcome.NotRunning,
             _ => OmpSteerOutcome.Failed,
         };
-        return new OmpSteerResult(outcome, result.Queue == AcpSteerQueue.FollowUp ? OmpSteerQueue.FollowUp : OmpSteerQueue.Steering, result.Reason);
+        return new OmpSteerResult(outcome, result.Queue == AcpSteerLane.FollowUp ? OmpSteerLane.FollowUp : OmpSteerLane.Steering, result.Reason);
     }
 
     /// <summary>Ends the session on the agent with <c>session/close</c>. Disposing the session does this best-effort.</summary>
@@ -657,7 +662,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         lock (_gate)
         {
             changed = !string.Equals(_currentModelId, model?.CurrentValue, StringComparison.Ordinal) || !_modelChoices.SequenceEqual(choices);
-            optionsChanged = _sessionOptions.Count != sessionOptions.Length || !_sessionOptions.Zip(sessionOptions, static (known, reported) => known.IsSameAs(reported)).All(static same => same);
+            optionsChanged = _sessionOptions.Length != sessionOptions.Length || !_sessionOptions.Zip(sessionOptions, static (known, reported) => known.IsSameAs(reported)).All(static same => same);
             _configOptions = options;
             _modelChoices = choices;
             _modelOptionId = model?.Id;

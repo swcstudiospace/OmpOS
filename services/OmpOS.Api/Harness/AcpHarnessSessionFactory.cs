@@ -85,7 +85,7 @@ internal sealed class AcpHarnessSessionFactory : IHarnessSessionFactory
     public IOmpSession CreateSession(string prompt)
     {
         ArgumentNullException.ThrowIfNull(prompt);
-        return _client.CreateSession(new AcpClientOptions { OmpPath = _options.Value.Acp.OmpPath });
+        return _client.CreateSession(new AcpClientOptions { OmpPath = _options.Value.Acp.OmpPath, AuthMethodId = AcpClientOptions.OmpAuthMethodId, HandshakeTimeout = AcpClientOptions.OmpHandshakeTimeout });
     }
 
     /// <inheritdoc />
@@ -111,10 +111,10 @@ internal sealed class AcpHarnessSessionFactory : IHarnessSessionFactory
                 worktrees.Manager,
                 worktrees.Repository,
                 runId,
-                workingDirectory => client.CreateSession(new AcpClientOptions { OmpPath = _options.Value.Acp.OmpPath, WorkingDirectory = workingDirectory, ApprovalPolicy = _approvalPolicy }));
+                workingDirectory => client.CreateSession(new AcpClientOptions { OmpPath = _options.Value.Acp.OmpPath, AuthMethodId = AcpClientOptions.OmpAuthMethodId, HandshakeTimeout = AcpClientOptions.OmpHandshakeTimeout, WorkingDirectory = workingDirectory, ApprovalPolicy = _approvalPolicy }));
         }
 
-        return client.CreateSession(new AcpClientOptions { OmpPath = _options.Value.Acp.OmpPath, ApprovalPolicy = _approvalPolicy });
+        return client.CreateSession(new AcpClientOptions { OmpPath = _options.Value.Acp.OmpPath, AuthMethodId = AcpClientOptions.OmpAuthMethodId, HandshakeTimeout = AcpClientOptions.OmpHandshakeTimeout, ApprovalPolicy = _approvalPolicy });
     }
 
     private static WorktreeRunSettings? CreateWorktreeSettings(WorktreesOptions? options) =>

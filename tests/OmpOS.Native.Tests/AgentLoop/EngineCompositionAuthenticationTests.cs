@@ -1,3 +1,4 @@
+using OmpOS.Harness.Acp;
 using OmpOS.Native.Engine;
 using Shouldly;
 using Xunit;
@@ -21,8 +22,9 @@ public sealed class EngineCompositionAuthenticationTests
 
         await engine.Host.ConnectAsync(ct).ConfigureAwait(true);
 
-        omp.Launches.ShouldHaveSingleItem().AuthMethodId.ShouldBe(EngineComposition.OmpAuthMethodId);
-        EngineComposition.OmpAuthMethodId.ShouldBe("agent", Case.Sensitive);
+        omp.Launches.ShouldHaveSingleItem().AuthMethodId.ShouldBe(AcpClientOptions.OmpAuthMethodId);
+        AcpClientOptions.OmpAuthMethodId.ShouldBe("agent");
+        omp.Launches.ShouldHaveSingleItem().HandshakeTimeout.ShouldBe(AcpClientOptions.OmpHandshakeTimeout);
         omp.Requests("authenticate").ShouldHaveSingleItem()["params"]!["methodId"]!.GetValue<string>().ShouldBe("agent");
         omp.Requests("session/new").ShouldHaveSingleItem();
         engine.Host.LiveSteering.IsSupported.ShouldBeTrue("omp advertised _meta.steering.supported");

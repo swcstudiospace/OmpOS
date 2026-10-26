@@ -3,6 +3,21 @@ namespace OmpOS.Harness.Acp;
 /// <summary>Options for starting an ACP session against <c>omp acp</c>.</summary>
 public sealed record AcpClientOptions
 {
+    /// <summary>
+    /// The ACP authentication method id omp advertises in <c>initialize</c>. Probed against omp 18.12.6: <c>authMethods</c> is
+    /// <c>[{id:"agent", name:"Use existing local credentials"}]</c> in every environment, and <c>authenticate {methodId:"agent"}</c> answers
+    /// <c>{}</c>, after which <c>session/new</c> works. A client that starts <c>omp acp</c> sets <see cref="AuthMethodId"/> to it; without it the
+    /// handshake of every session fails before a session exists.
+    /// </summary>
+    public const string OmpAuthMethodId = "agent";
+
+    /// <summary>
+    /// The <see cref="HandshakeTimeout"/> a client of a real <c>omp acp</c> process sets. omp 18.12.6 answers <c>initialize</c> in about 8 seconds
+    /// on an idle host (measured with a fresh home directory) and slower under load, so the 10 second default of a scripted peer would fail the
+    /// first session of a cold start before omp is up.
+    /// </summary>
+    public static readonly TimeSpan OmpHandshakeTimeout = TimeSpan.FromSeconds(45);
+
     /// <summary>Gets the path to the omp executable. <see langword="null"/> resolves <c>omp</c> from <c>PATH</c>.</summary>
     public string? OmpPath { get; init; }
 

@@ -27,8 +27,8 @@ public sealed class SteeringNativeDeliveryTextTests
 
         outcome.ShouldBe(SteeringSubmitOutcome.Accepted);
         var entry = model.History.Single();
-        entry.DeliveryText.ShouldBe(expected, Case.Sensitive);
-        entry.StatusLine.ShouldBe(expected + " \u00B7 Recorded in Substrate", Case.Sensitive);
+        entry.DeliveryText.ShouldBe(expected);
+        entry.StatusLine.ShouldBe(expected + " \u00B7 Recorded in Substrate");
         entry.DeliveryStatus.ShouldBe(status);
     }
 }

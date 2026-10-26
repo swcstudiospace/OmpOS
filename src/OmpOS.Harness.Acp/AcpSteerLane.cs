@@ -1,7 +1,7 @@
 namespace OmpOS.Harness.Acp;
 
 /// <summary>The omp queue a <c>_session/steering</c> request puts its message into.</summary>
-public enum AcpSteerQueue
+public enum AcpSteerLane
 {
     /// <summary>The steering queue (the default): the running turn takes the message at its next tool-batch or model-call boundary.</summary>
     Steering,

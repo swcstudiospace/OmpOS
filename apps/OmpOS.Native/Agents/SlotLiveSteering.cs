@@ -26,7 +26,7 @@ internal sealed class SlotLiveSteering : IOmpLiveSteering
     }
 
     /// <inheritdoc />
-    public Task<OmpSteerResult> SteerAsync(string text, OmpSteerQueue queue, CancellationToken cancellationToken)
+    public Task<OmpSteerResult> SteerAsync(string text, OmpSteerLane queue, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(text);
 

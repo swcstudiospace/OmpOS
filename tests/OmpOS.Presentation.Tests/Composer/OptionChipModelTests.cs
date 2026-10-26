@@ -57,12 +57,12 @@ public sealed class OptionChipModelTests
     {
         var chip = Chip(Accepting(), "plan");
 
-        chip.ToolTipText.ShouldBe("Mode: Plan. " + PlanDescription, Case.Sensitive);
+        chip.ToolTipText.ShouldBe("Mode: Plan. " + PlanDescription);
         chip.CurrentDescription.ShouldBe(PlanDescription);
 
         chip.Refresh([Default, Plan], "default");
 
-        chip.ToolTipText.ShouldBe("Mode: Default. Choose another.", Case.Sensitive);
+        chip.ToolTipText.ShouldBe("Mode: Default. Choose another.");
         chip.CurrentDescription.ShouldBeNull();
     }
 
@@ -123,7 +123,7 @@ public sealed class OptionChipModelTests
 
         chip.CurrentValue.ShouldBe("default");
         chip.Label.ShouldBe("Default");
-        chip.Notice.ShouldBe("The setting cannot be changed while a response is running.", Case.Sensitive);
+        chip.Notice.ShouldBe("The setting cannot be changed while a response is running.");
         chip.HasNotice.ShouldBeTrue();
     }
 
@@ -135,7 +135,7 @@ public sealed class OptionChipModelTests
 
         await chip.SelectAsync(Plan).ConfigureAwait(true);
 
-        chip.Notice.ShouldBe("Mode could not be changed.", Case.Sensitive);
+        chip.Notice.ShouldBe("Mode could not be changed.");
     }
 
     /// <summary>A run keeps the setting fixed: the chip is disabled, the tooltip says why, and nothing is asked; the end of the run enables it again.</summary>
@@ -148,7 +148,7 @@ public sealed class OptionChipModelTests
         chip.IsRunActive = true;
 
         chip.IsEnabled.ShouldBeFalse();
-        chip.ToolTipText.ShouldBe("This setting cannot be changed while a response is running.", Case.Sensitive);
+        chip.ToolTipText.ShouldBe("This setting cannot be changed while a response is running.");
         chip.SelectCommand.CanExecute(Plan).ShouldBeFalse();
         await chip.SelectAsync(Plan).ConfigureAwait(true);
         host.Requests.ShouldBeEmpty();
@@ -193,7 +193,7 @@ public sealed class OptionChipModelTests
 
         await chip.SelectCommand.ExecuteAsync(OptionChoice.Create("high", "high", null)).ConfigureAwait(true);
 
-        chip.Notice.ShouldBe("Thinking could not be changed: boom", Case.Sensitive);
+        chip.Notice.ShouldBe("Thinking could not be changed: boom");
     }
 
     /// <summary>A value with a blank name falls back to its identifier, and a blank description to none.</summary>
@@ -220,10 +220,10 @@ public sealed class OptionChipModelTests
         await chip.SelectAsync(Plan).ConfigureAwait(true);
         chip.Refresh([Default, Plan], "plan");
 
-        changed.ShouldContain(nameof(OptionChipModel.IsEnabled));
-        changed.ShouldContain(nameof(OptionChipModel.ToolTipText));
-        changed.ShouldContain(nameof(OptionChipModel.Notice));
-        changed.ShouldContain(nameof(OptionChipModel.Label));
+        changed.ShouldContain(nameof(OptionChipModel.IsEnabled), StringComparer.Ordinal);
+        changed.ShouldContain(nameof(OptionChipModel.ToolTipText), StringComparer.Ordinal);
+        changed.ShouldContain(nameof(OptionChipModel.Notice), StringComparer.Ordinal);
+        changed.ShouldContain(nameof(OptionChipModel.Label), StringComparer.Ordinal);
     }
 
     /// <summary>The composer hands its streaming state to the mode and thinking chips like it does to the model picker, also to a chip set while a response already streams.</summary>

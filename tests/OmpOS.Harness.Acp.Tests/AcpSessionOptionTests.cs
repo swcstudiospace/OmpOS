@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json.Nodes;
 using OmpOS.Harness.Abstractions;
@@ -10,6 +11,7 @@ namespace OmpOS.Harness.Acp.Tests;
 /// The generic option control of <see cref="AcpAgentSession"/> (mode, thinking and every other select option): the options parsed from
 /// <c>session/new</c>, the exact <c>session/set_config_option</c> frames, the refusals that send nothing, and the change notifications.
 /// </summary>
+[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session under test owns and disposes the scripted transport.")]
 public sealed class AcpSessionOptionTests
 {
     private const string PlanDescription = "Read-only planning mode that drafts a plan to a markdown file before any code changes";
@@ -20,6 +22,7 @@ public sealed class AcpSessionOptionTests
 
     /// <summary>Every select option of the session is listed with its id, category, current value and values (with their descriptions), in omp's order.</summary>
     [Fact]
+    [SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "The test reads the options through the interface the engine host consumes.")]
     public async Task EverySelectOptionIsListed()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -58,8 +61,7 @@ public sealed class AcpSessionOptionTests
 
         var frame = SetOptionFrames(transport).ShouldHaveSingleItem();
         AcpFixtures.Text(frame).ShouldBe(
-            string.Create(CultureInfo.InvariantCulture, $"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(frame)},\"method\":\"{SetOptionMethod}\",\"params\":{{\"sessionId\":\"{ScriptedOmpPeer.SessionId}\",\"configId\":\"mode\",\"value\":\"plan\"}}}}"),
-            Case.Sensitive);
+            string.Create(CultureInfo.InvariantCulture, $"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(frame)},\"method\":\"{SetOptionMethod}\",\"params\":{{\"sessionId\":\"{ScriptedOmpPeer.SessionId}\",\"configId\":\"mode\",\"value\":\"plan\"}}}}"));
         result.ShouldBe(new OmpOptionSetResult(OmpOptionSetOutcome.Set, "plan", null));
         session.Options.Single(static option => string.Equals(option.Id, "mode", StringComparison.Ordinal)).CurrentValue.ShouldBe("plan");
         optionChanges.ShouldBe(1);
@@ -82,8 +84,7 @@ public sealed class AcpSessionOptionTests
 
         var frame = SetOptionFrames(transport).ShouldHaveSingleItem();
         AcpFixtures.Text(frame).ShouldBe(
-            string.Create(CultureInfo.InvariantCulture, $"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(frame)},\"method\":\"{SetOptionMethod}\",\"params\":{{\"sessionId\":\"{ScriptedOmpPeer.SessionId}\",\"configId\":\"thinking\",\"value\":\"high\"}}}}"),
-            Case.Sensitive);
+            string.Create(CultureInfo.InvariantCulture, $"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(frame)},\"method\":\"{SetOptionMethod}\",\"params\":{{\"sessionId\":\"{ScriptedOmpPeer.SessionId}\",\"configId\":\"thinking\",\"value\":\"high\"}}}}"));
         result.IsSet.ShouldBeTrue();
         session.Options.Single(static option => string.Equals(option.Id, "thinking", StringComparison.Ordinal)).CurrentValue.ShouldBe("high");
     }
@@ -104,7 +105,7 @@ public sealed class AcpSessionOptionTests
         var same = await session.SetOptionAsync("mode", "default", ct).ConfigureAwait(true);
 
         unknownOption.Outcome.ShouldBe(OmpOptionSetOutcome.UnknownOption);
-        unknownOption.Message.ShouldBe("omp offers no such setting for this session.", Case.Sensitive);
+        unknownOption.Message.ShouldBe("omp offers no such setting for this session.");
         unknownValue.ShouldBe(new OmpOptionSetResult(OmpOptionSetOutcome.UnknownValue, "default", "omp does not offer that value."));
         same.ShouldBe(new OmpOptionSetResult(OmpOptionSetOutcome.Set, "default", null));
         SetOptionFrames(transport).ShouldBeEmpty();
@@ -146,7 +147,7 @@ public sealed class AcpSessionOptionTests
         var busy = await session.SetOptionAsync("mode", "plan", ct).ConfigureAwait(true);
 
         busy.Outcome.ShouldBe(OmpOptionSetOutcome.Busy);
-        busy.Message.ShouldBe("The setting cannot be changed while a response is running.", Case.Sensitive);
+        busy.Message.ShouldBe("The setting cannot be changed while a response is running.");
         SetOptionFrames(transport).ShouldBeEmpty();
 
         transport.Deliver(omp.Peer.EndPrompt("end_turn"));

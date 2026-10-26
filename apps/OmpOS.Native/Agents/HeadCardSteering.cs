@@ -99,7 +99,7 @@ internal sealed class HeadCardSteering : ICardSteering
     private async Task<CardSteerResult?> SteerNativeAsync(SessionSlot slot, string text, bool followUp, CancellationToken cancellationToken)
     {
         var sentAt = _host.Now;
-        var answer = await slot.LiveSteering.SteerAsync(text, followUp ? OmpSteerQueue.FollowUp : OmpSteerQueue.Steering, cancellationToken).ConfigureAwait(false);
+        var answer = await slot.LiveSteering.SteerAsync(text, followUp ? OmpSteerLane.FollowUp : OmpSteerLane.Steering, cancellationToken).ConfigureAwait(false);
         if (answer.Outcome == OmpSteerOutcome.Unsupported)
         {
             return null;
@@ -123,7 +123,7 @@ internal sealed class HeadCardSteering : ICardSteering
 
         return answer.Outcome switch
         {
-            OmpSteerOutcome.Injected when answer.Queue == OmpSteerQueue.FollowUp => CardSteerResult.Queued(AgentPanelCopy.DeliveryQueuedBehindTurn),
+            OmpSteerOutcome.Injected when answer.Queue == OmpSteerLane.FollowUp => CardSteerResult.Queued(AgentPanelCopy.DeliveryQueuedBehindTurn),
             OmpSteerOutcome.Injected => CardSteerResult.Delivered(AgentPanelCopy.DeliveryDeliveredIntoTurn),
             OmpSteerOutcome.PromptRequired or OmpSteerOutcome.NotRunning => CardSteerResult.Failed(NoTurnRunning),
             _ => CardSteerResult.Failed(string.IsNullOrWhiteSpace(answer.Reason) ? "omp could not take the message." : answer.Reason),

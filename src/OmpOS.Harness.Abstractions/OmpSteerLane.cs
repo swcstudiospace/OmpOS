@@ -1,7 +1,7 @@
 namespace OmpOS.Harness.Abstractions;
 
 /// <summary>The engine queue a live steering message is put into.</summary>
-public enum OmpSteerQueue
+public enum OmpSteerLane
 {
     /// <summary>The steering queue: the running turn takes the message at its next tool-batch or model-call boundary.</summary>
     Steering,

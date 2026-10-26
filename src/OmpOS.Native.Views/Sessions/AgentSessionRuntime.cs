@@ -411,7 +411,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <returns>The delivery the steering history records.</returns>
     private async Task<SteeringDelivery> DeliverNativeAsync(IOmpLiveSteering native, string text, SteeringMode mode, CancellationToken cancellationToken)
     {
-        var queue = mode == SteeringMode.FollowUp ? OmpSteerQueue.FollowUp : OmpSteerQueue.Steering;
+        var queue = mode == SteeringMode.FollowUp ? OmpSteerLane.FollowUp : OmpSteerLane.Steering;
         OmpSteerResult result;
         try
         {
@@ -425,7 +425,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         switch (result.Outcome)
         {
             case OmpSteerOutcome.Injected:
-                return new SteeringDelivery(result.Queue == OmpSteerQueue.FollowUp ? SteeringDeliveryStatus.QueuedBehindTurn : SteeringDeliveryStatus.DeliveredIntoTurn);
+                return new SteeringDelivery(result.Queue == OmpSteerLane.FollowUp ? SteeringDeliveryStatus.QueuedBehindTurn : SteeringDeliveryStatus.DeliveredIntoTurn);
             case OmpSteerOutcome.PromptRequired:
             case OmpSteerOutcome.NotRunning:
                 return await SubmitAsNewTurnAsync(text, cancellationToken).ConfigureAwait(true);

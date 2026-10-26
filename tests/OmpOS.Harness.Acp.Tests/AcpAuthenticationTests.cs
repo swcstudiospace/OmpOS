@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using OmpOS.Harness.Abstractions;
 using Shouldly;
 using Xunit;
@@ -9,6 +10,7 @@ namespace OmpOS.Harness.Acp.Tests;
 /// environment): the configured method is sent and the session opens; without a configured method the handshake still fails, and the
 /// failure is in plain words that name no type of this code base.
 /// </summary>
+[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session under test owns and disposes the scripted transport.")]
 public sealed class AcpAuthenticationTests
 {
     /// <summary>With the method configured the client sends exactly <c>authenticate {methodId:"agent"}</c> after <c>initialize</c> and before <c>session/new</c>, and the session opens.</summary>
@@ -25,8 +27,7 @@ public sealed class AcpAuthenticationTests
         transport.Sent.Select(static frame => AcpFixtures.MethodOf(frame)).ShouldBe(["initialize", "authenticate", "session/new"]);
         var authenticate = transport.Sent[1];
         AcpFixtures.Text(authenticate).ShouldBe(
-            $"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(authenticate)},\"method\":\"authenticate\",\"params\":{{\"methodId\":\"agent\"}}}}",
-            Case.Sensitive);
+            $"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(authenticate)},\"method\":\"authenticate\",\"params\":{{\"methodId\":\"agent\"}}}}");
         session.State.ShouldBe(HarnessState.Ready);
         session.SessionId.ShouldBe(AcpFixtures.CapturedSessionId);
     }
@@ -42,7 +43,7 @@ public sealed class AcpAuthenticationTests
 
         var failure = await Should.ThrowAsync<AcpRequestFailedHarnessException>(() => session.CreateAsync(ct)).ConfigureAwait(true);
 
-        failure.Message.ShouldBe("omp asked this app to sign in, but no sign-in method is set up for it.", Case.Sensitive);
+        failure.Message.ShouldBe("omp asked this app to sign in, but no sign-in method is set up for it.");
         failure.Message.ShouldNotContain("AcpClientOptions", Case.Sensitive);
         failure.Message.ShouldNotContain("AuthMethodId", Case.Sensitive);
         transport.Sent.Select(static frame => AcpFixtures.MethodOf(frame)).ShouldBe(["initialize"]);
@@ -60,7 +61,7 @@ public sealed class AcpAuthenticationTests
 
         var failure = await Should.ThrowAsync<AcpRequestFailedHarnessException>(() => session.CreateAsync(ct)).ConfigureAwait(true);
 
-        failure.Message.ShouldBe("This app's sign-in method 'oauth' is not one that omp offers.", Case.Sensitive);
+        failure.Message.ShouldBe("This app's sign-in method 'oauth' is not one that omp offers.");
         failure.Message.ShouldNotContain("AuthMethodId", Case.Sensitive);
         transport.Sent.Select(static frame => AcpFixtures.MethodOf(frame)).ShouldBe(["initialize"]);
     }

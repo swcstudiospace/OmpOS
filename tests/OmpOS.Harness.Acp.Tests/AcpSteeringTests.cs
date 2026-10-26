@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using OmpOS.Harness.Abstractions;
 using Shouldly;
 using Xunit;
@@ -8,6 +9,7 @@ namespace OmpOS.Harness.Acp.Tests;
 /// Live steering through omp's <c>_session/steering</c> extension request: the capability read from <c>initialize</c>, the exact frames
 /// of both queues, every answer omp gives, the refusals that send nothing, and the mapping onto <see cref="IOmpLiveSteering"/>.
 /// </summary>
+[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session under test owns and disposes the scripted transport.")]
 public sealed class AcpSteeringTests
 {
     private static readonly AcpClientOptions Options = new() { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent" };
@@ -26,13 +28,12 @@ public sealed class AcpSteeringTests
         await session.CreateAsync(ct).ConfigureAwait(true);
         var turn = await StartTurnAsync(session, ct).ConfigureAwait(true);
 
-        var result = await session.SteerAsync("use the failing test first", AcpSteerQueue.Steering, ct).ConfigureAwait(true);
+        var result = await session.SteerAsync("use the failing test first", AcpSteerLane.Steering, ct).ConfigureAwait(true);
 
         var frame = SteeringFrames(transport).ShouldHaveSingleItem();
         AcpFixtures.Text(frame).ShouldBe(
-            $"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(frame)},\"method\":\"{SteeringMethod}\",\"params\":{{\"sessionId\":\"{ScriptedOmpPeer.SessionId}\",\"prompt\":[{{\"type\":\"text\",\"text\":\"use the failing test first\"}}]}}}}",
-            Case.Sensitive);
-        result.ShouldBe(new AcpSteerResult(AcpSteerOutcome.Injected, AcpSteerQueue.Steering, null));
+            $"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(frame)},\"method\":\"{SteeringMethod}\",\"params\":{{\"sessionId\":\"{ScriptedOmpPeer.SessionId}\",\"prompt\":[{{\"type\":\"text\",\"text\":\"use the failing test first\"}}]}}}}");
+        result.ShouldBe(new AcpSteerResult(AcpSteerOutcome.Injected, AcpSteerLane.Steering, null));
         await EndTurnAsync(turn, peer, transport, ct).ConfigureAwait(true);
     }
 
@@ -48,13 +49,12 @@ public sealed class AcpSteeringTests
         await session.CreateAsync(ct).ConfigureAwait(true);
         var turn = await StartTurnAsync(session, ct).ConfigureAwait(true);
 
-        var result = await session.SteerAsync("then run the formatter", AcpSteerQueue.FollowUp, ct).ConfigureAwait(true);
+        var result = await session.SteerAsync("then run the formatter", AcpSteerLane.FollowUp, ct).ConfigureAwait(true);
 
         var frame = SteeringFrames(transport).ShouldHaveSingleItem();
         AcpFixtures.Text(frame).ShouldBe(
-            $"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(frame)},\"method\":\"{SteeringMethod}\",\"params\":{{\"sessionId\":\"{ScriptedOmpPeer.SessionId}\",\"prompt\":[{{\"type\":\"text\",\"text\":\"then run the formatter\"}}],\"_meta\":{{\"steering\":{{\"queue\":\"followUp\"}}}}}}}}",
-            Case.Sensitive);
-        result.ShouldBe(new AcpSteerResult(AcpSteerOutcome.Injected, AcpSteerQueue.FollowUp, null));
+            $"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(frame)},\"method\":\"{SteeringMethod}\",\"params\":{{\"sessionId\":\"{ScriptedOmpPeer.SessionId}\",\"prompt\":[{{\"type\":\"text\",\"text\":\"then run the formatter\"}}],\"_meta\":{{\"steering\":{{\"queue\":\"followUp\"}}}}}}}}");
+        result.ShouldBe(new AcpSteerResult(AcpSteerOutcome.Injected, AcpSteerLane.FollowUp, null));
         await EndTurnAsync(turn, peer, transport, ct).ConfigureAwait(true);
     }
 
@@ -70,9 +70,9 @@ public sealed class AcpSteeringTests
         await session.CreateAsync(ct).ConfigureAwait(true);
         var turn = await StartTurnAsync(session, ct).ConfigureAwait(true);
 
-        var result = await session.SteerAsync("hello", AcpSteerQueue.Steering, ct).ConfigureAwait(true);
+        var result = await session.SteerAsync("hello", AcpSteerLane.Steering, ct).ConfigureAwait(true);
 
-        result.ShouldBe(new AcpSteerResult(AcpSteerOutcome.PromptRequired, AcpSteerQueue.Steering, null));
+        result.ShouldBe(new AcpSteerResult(AcpSteerOutcome.PromptRequired, AcpSteerLane.Steering, null));
         await EndTurnAsync(turn, peer, transport, ct).ConfigureAwait(true);
     }
 
@@ -90,10 +90,10 @@ public sealed class AcpSteeringTests
         await session.CreateAsync(ct).ConfigureAwait(true);
         var turn = await StartTurnAsync(session, ct).ConfigureAwait(true);
 
-        var result = await session.SteerAsync("hello", AcpSteerQueue.Steering, ct).ConfigureAwait(true);
+        var result = await session.SteerAsync("hello", AcpSteerLane.Steering, ct).ConfigureAwait(true);
 
         result.Outcome.ShouldBe(AcpSteerOutcome.Failed);
-        result.Reason.ShouldBe(expectedReason, Case.Sensitive);
+        result.Reason.ShouldBe(expectedReason);
         await EndTurnAsync(turn, peer, transport, ct).ConfigureAwait(true);
     }
 
@@ -109,10 +109,10 @@ public sealed class AcpSteeringTests
         await session.CreateAsync(ct).ConfigureAwait(true);
         var turn = await StartTurnAsync(session, ct).ConfigureAwait(true);
 
-        var result = await session.SteerAsync("hello", AcpSteerQueue.Steering, ct).ConfigureAwait(true);
+        var result = await session.SteerAsync("hello", AcpSteerLane.Steering, ct).ConfigureAwait(true);
 
         result.Outcome.ShouldBe(AcpSteerOutcome.Failed);
-        result.Reason.ShouldBe("omp answered the message in a way this app does not understand.", Case.Sensitive);
+        result.Reason.ShouldBe("omp answered the message in a way this app does not understand.");
         await EndTurnAsync(turn, peer, transport, ct).ConfigureAwait(true);
     }
 
@@ -128,10 +128,10 @@ public sealed class AcpSteeringTests
         await session.CreateAsync(ct).ConfigureAwait(true);
         var turn = await StartTurnAsync(session, ct).ConfigureAwait(true);
 
-        var result = await session.SteerAsync("hello", AcpSteerQueue.Steering, ct).ConfigureAwait(true);
+        var result = await session.SteerAsync("hello", AcpSteerLane.Steering, ct).ConfigureAwait(true);
 
         result.Outcome.ShouldBe(AcpSteerOutcome.Failed);
-        result.Reason.ShouldBe("omp no longer has this session open, so the message was not sent.", Case.Sensitive);
+        result.Reason.ShouldBe("omp no longer has this session open, so the message was not sent.");
         await EndTurnAsync(turn, peer, transport, ct).ConfigureAwait(true);
     }
 
@@ -150,7 +150,7 @@ public sealed class AcpSteeringTests
         await session.CreateAsync(ct).ConfigureAwait(true);
         var turn = await StartTurnAsync(session, ct).ConfigureAwait(true);
 
-        var result = await session.SteerAsync("hello", AcpSteerQueue.Steering, ct).ConfigureAwait(true);
+        var result = await session.SteerAsync("hello", AcpSteerLane.Steering, ct).ConfigureAwait(true);
 
         session.IsSteeringSupported.ShouldBeFalse();
         result.Outcome.ShouldBe(AcpSteerOutcome.Unsupported);
@@ -170,7 +170,7 @@ public sealed class AcpSteeringTests
         await using var sessionScope = session.ConfigureAwait(true);
         await session.CreateAsync(ct).ConfigureAwait(true);
 
-        var result = await session.SteerAsync("hello", AcpSteerQueue.Steering, ct).ConfigureAwait(true);
+        var result = await session.SteerAsync("hello", AcpSteerLane.Steering, ct).ConfigureAwait(true);
 
         session.IsSteeringSupported.ShouldBeTrue();
         result.Outcome.ShouldBe(AcpSteerOutcome.NotRunning);
@@ -188,12 +188,12 @@ public sealed class AcpSteeringTests
         await using var sessionScope = session.ConfigureAwait(true);
 
         // Before it is open the capability is not known either, so the answer is Unsupported, not NotRunning.
-        (await session.SteerAsync("hello", AcpSteerQueue.Steering, ct).ConfigureAwait(true)).Outcome.ShouldBe(AcpSteerOutcome.Unsupported);
+        (await session.SteerAsync("hello", AcpSteerLane.Steering, ct).ConfigureAwait(true)).Outcome.ShouldBe(AcpSteerOutcome.Unsupported);
 
         await session.CreateAsync(ct).ConfigureAwait(true);
         await session.CloseSessionAsync(ct).ConfigureAwait(true);
 
-        (await session.SteerAsync("hello", AcpSteerQueue.Steering, ct).ConfigureAwait(true)).Outcome.ShouldBe(AcpSteerOutcome.NotRunning);
+        (await session.SteerAsync("hello", AcpSteerLane.Steering, ct).ConfigureAwait(true)).Outcome.ShouldBe(AcpSteerOutcome.NotRunning);
         SteeringFrames(transport).ShouldBeEmpty();
     }
 
@@ -209,15 +209,15 @@ public sealed class AcpSteeringTests
         await session.CreateAsync(ct).ConfigureAwait(true);
         var turn = await StartTurnAsync(session, ct).ConfigureAwait(true);
 
-        var blank = await session.SteerAsync("   ", AcpSteerQueue.Steering, ct).ConfigureAwait(true);
-        var tooLong = await session.SteerAsync(new string('x', AcpAgentSession.MaxSteerBytes + 1), AcpSteerQueue.Steering, ct).ConfigureAwait(true);
-        var multiByte = await session.SteerAsync(new string('\u00E9', (AcpAgentSession.MaxSteerBytes / 2) + 1), AcpSteerQueue.Steering, ct).ConfigureAwait(true);
+        var blank = await session.SteerAsync("   ", AcpSteerLane.Steering, ct).ConfigureAwait(true);
+        var tooLong = await session.SteerAsync(new string('x', AcpAgentSession.MaxSteerBytes + 1), AcpSteerLane.Steering, ct).ConfigureAwait(true);
+        var multiByte = await session.SteerAsync(new string('\u00E9', (AcpAgentSession.MaxSteerBytes / 2) + 1), AcpSteerLane.Steering, ct).ConfigureAwait(true);
         SteeringFrames(transport).ShouldBeEmpty();
-        var atLimit = await session.SteerAsync(new string('x', AcpAgentSession.MaxSteerBytes), AcpSteerQueue.Steering, ct).ConfigureAwait(true);
+        var atLimit = await session.SteerAsync(new string('x', AcpAgentSession.MaxSteerBytes), AcpSteerLane.Steering, ct).ConfigureAwait(true);
 
-        blank.ShouldBe(new AcpSteerResult(AcpSteerOutcome.Failed, AcpSteerQueue.Steering, "The message is empty."));
+        blank.ShouldBe(new AcpSteerResult(AcpSteerOutcome.Failed, AcpSteerLane.Steering, "The message is empty."));
         tooLong.Outcome.ShouldBe(AcpSteerOutcome.Failed);
-        tooLong.Reason.ShouldBe("The message is too long: the limit is 8 KiB.", Case.Sensitive);
+        tooLong.Reason.ShouldBe("The message is too long: the limit is 8 KiB.");
         multiByte.Outcome.ShouldBe(AcpSteerOutcome.Failed);
         atLimit.Outcome.ShouldBe(AcpSteerOutcome.Injected);
         SteeringFrames(transport).Count.ShouldBe(1);
@@ -237,16 +237,16 @@ public sealed class AcpSteeringTests
         var turn = await StartTurnAsync(session, ct).ConfigureAwait(true);
         IOmpLiveSteering steering = session;
 
-        var injected = await steering.SteerAsync("later", OmpSteerQueue.FollowUp, ct).ConfigureAwait(true);
+        var injected = await steering.SteerAsync("later", OmpSteerLane.FollowUp, ct).ConfigureAwait(true);
         peer.SteerResult = "{\"outcome\":\"promptRequired\"}";
-        var promptRequired = await steering.SteerAsync("now", OmpSteerQueue.Steering, ct).ConfigureAwait(true);
+        var promptRequired = await steering.SteerAsync("now", OmpSteerLane.Steering, ct).ConfigureAwait(true);
         peer.SteerResult = "{\"outcome\":\"failed\",\"reason\":\"no\"}";
-        var failed = await steering.SteerAsync("now", OmpSteerQueue.Steering, ct).ConfigureAwait(true);
+        var failed = await steering.SteerAsync("now", OmpSteerLane.Steering, ct).ConfigureAwait(true);
 
         steering.IsSupported.ShouldBeTrue();
-        injected.ShouldBe(new OmpSteerResult(OmpSteerOutcome.Injected, OmpSteerQueue.FollowUp, null));
-        promptRequired.ShouldBe(new OmpSteerResult(OmpSteerOutcome.PromptRequired, OmpSteerQueue.Steering, null));
-        failed.ShouldBe(new OmpSteerResult(OmpSteerOutcome.Failed, OmpSteerQueue.Steering, "no"));
+        injected.ShouldBe(new OmpSteerResult(OmpSteerOutcome.Injected, OmpSteerLane.FollowUp, null));
+        promptRequired.ShouldBe(new OmpSteerResult(OmpSteerOutcome.PromptRequired, OmpSteerLane.Steering, null));
+        failed.ShouldBe(new OmpSteerResult(OmpSteerOutcome.Failed, OmpSteerLane.Steering, "no"));
         await EndTurnAsync(turn, peer, transport, ct).ConfigureAwait(true);
     }
 
