@@ -25,7 +25,7 @@ public sealed class ToolApprovalRowTraceTests
         var bridge = new FaultingBridge();
         await session.RunAsync(async () =>
         {
-            var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+            var window = RunControlsHarness.Show(bridge);
             RunControlsHarness.AddRequest(window, "request-fault-attached");
             var row = RunControlsHarness.Row(window);
             var expected = $"{MainView.FaultedStatus} The bridge refused the record.";
@@ -56,11 +56,11 @@ public sealed class ToolApprovalRowTraceTests
             await session.RunAsync(async () =>
             {
                 Trace.Listeners.Add(listener);
-                var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+                var window = RunControlsHarness.Show(bridge);
                 var approval = RunControlsHarness.AddRequest(window, "request-fault-detached");
 
                 RunControlsHarness.Click(RunControlsHarness.Named(window, "Deny tool request"));
-                ShellHarness.MainViewOf(window).RunControls.Approvals.Remove(approval);
+                ShellHarness.RuntimeOf(window).RunControls.Approvals.Remove(approval);
                 ShellHarness.Settle(window);
                 window.GetVisualDescendants().OfType<ToolApprovalRowView>().ShouldBeEmpty();
 

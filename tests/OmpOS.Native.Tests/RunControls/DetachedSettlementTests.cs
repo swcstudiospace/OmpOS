@@ -25,12 +25,12 @@ public sealed class DetachedSettlementTests
         await session.RunAsync(async () =>
         {
             var bridge = new GatedBridge();
-            var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+            var window = RunControlsHarness.Show(bridge);
             var approval = RunControlsHarness.AddRequest(window, "request-1");
             var row = RunControlsHarness.Row(window);
 
             RunControlsHarness.Click(RunControlsHarness.Named(window, "Deny tool request"));
-            ShellHarness.MainViewOf(window).RunControls.Approvals.Remove(approval);
+            ShellHarness.RuntimeOf(window).RunControls.Approvals.Remove(approval);
             ShellHarness.Settle(window);
             window.GetVisualDescendants().OfType<ToolApprovalRowView>().ShouldBeEmpty();
 
@@ -62,12 +62,12 @@ public sealed class DetachedSettlementTests
             {
                 Trace.Listeners.Add(listener);
                 var bridge = new GatedBridge();
-                var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+                var window = RunControlsHarness.Show(bridge);
                 var approval = RunControlsHarness.AddRequest(window, "request-detached-untouched");
                 var row = RunControlsHarness.Row(window);
 
                 RunControlsHarness.Click(RunControlsHarness.Named(window, "Deny tool request"));
-                ShellHarness.MainViewOf(window).RunControls.Approvals.Remove(approval);
+                ShellHarness.RuntimeOf(window).RunControls.Approvals.Remove(approval);
                 ShellHarness.Settle(window);
                 window.GetVisualDescendants().OfType<ToolApprovalRowView>().ShouldBeEmpty();
 

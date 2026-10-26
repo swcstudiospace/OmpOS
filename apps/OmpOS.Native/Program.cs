@@ -1,6 +1,5 @@
 using Avalonia;
-using OmpOS.Native.Engine;
-using OmpOS.Native.Logging;
+using OmpOS.Native.Agents;
 
 namespace OmpOS.Native;
 
@@ -19,37 +18,20 @@ internal static class Program
     /// </summary>
     internal static readonly string[] ProductionAllowedKinds = ["edit", "delete", "move", "execute", "read", "search"];
 
-    /// <summary>Starts the native desktop head. The engine is composed on the first send or decision, never at launch.</summary>
+    /// <summary>
+    /// Starts the native desktop head. The Agent Panel opens at once in its Loading state; the plugins and the saved sessions are loaded
+    /// behind it, and no <c>omp</c> process starts until a prompt is sent.
+    /// </summary>
     /// <param name="args">Command-line arguments passed to the desktop lifetime.</param>
     /// <returns>The process exit code.</returns>
     [STAThread]
-    public static int Main(string[] args) => BuildAvaloniaApp(ComposeProductionEngine).StartWithClassicDesktopLifetime(args);
+    public static int Main(string[] args) => BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
 
     /// <summary>
-    /// Composes the production engine: the named-kind approval policy over <c>omp acp</c> in the working directory. The services'
-    /// log output goes to <see cref="System.Diagnostics.Trace"/>, so the stderr listener installed at startup receives it (ADR-0011).
+    /// Builds the application with the windowing platform detected at run time. The head of the Agent Panel (the engines of N sessions,
+    /// the registry and the panel) is composed when the main window opens, from the process environment, with the services' log output
+    /// going to <see cref="System.Diagnostics.Trace"/>, so the stderr listener installed at startup receives it (ADR-0011).
     /// </summary>
-    /// <returns>The composed engine. It starts no process until a prompt is submitted.</returns>
-    internal static EngineComposition ComposeProductionEngine() => EngineComposition.Compose(ProductionAllowedKinds, loggerFactory: DesktopLogging.Factory);
-
-    /// <summary>Builds the application with the windowing platform detected at run time and no engine configured.</summary>
     /// <returns>The configured application builder.</returns>
-    public static AppBuilder BuildAvaloniaApp() => BuildAvaloniaApp(composeEngine: null);
-
-    /// <summary>
-    /// Builds the application with the windowing platform detected at run time. When an engine is configured,
-    /// <paramref name="composeEngine"/> runs on the first tool-approval decision, never at launch.
-    /// </summary>
-    /// <param name="composeEngine">Composes the engine on first use. Null means no engine is configured, and approvals stay unconnected.</param>
-    /// <returns>The configured application builder.</returns>
-    public static AppBuilder BuildAvaloniaApp(Func<EngineComposition>? composeEngine)
-    {
-        if (composeEngine is null)
-        {
-            return AppBuilder.Configure<App>().UsePlatformDetect();
-        }
-
-        var engine = new Lazy<EngineComposition>(composeEngine);
-        return AppBuilder.Configure(() => new App(engine)).UsePlatformDetect();
-    }
+    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure(() => new App(AgentHead.CreateProduction)).UsePlatformDetect();
 }

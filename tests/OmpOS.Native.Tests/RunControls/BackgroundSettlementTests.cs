@@ -18,7 +18,7 @@ public sealed class BackgroundSettlementTests
         await session.RunAsync(async () =>
         {
             var bridge = new BackgroundSettlingBridge(ToolApprovalOutcome.Accepted);
-            var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+            var window = RunControlsHarness.Show(bridge);
             var approval = RunControlsHarness.AddRequest(window, "request-1");
 
             RunControlsHarness.Click(RunControlsHarness.Named(window, "Deny tool request"));

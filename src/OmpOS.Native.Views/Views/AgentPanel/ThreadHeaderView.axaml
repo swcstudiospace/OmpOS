@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:copy="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
+             xmlns:local="clr-namespace:OmpOS.Native.Views.AgentPanel"
+             x:Class="OmpOS.Native.Views.AgentPanel.ThreadHeaderView"
+             x:DataType="copy:AgentSessionViewModel">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- Keyboard order follows XAML order: Resume or Reopen, the task chip, Close, the trailing slot (left empty by the shell), then the
+       buttons of the panel notice. The chips that are not buttons are not tab stops. -->
+  <Border x:Name="HeaderFrame"
+          Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
+          Padding="{DynamicResource OmpOS.Space.Sm}"
+          AutomationProperties.Name="{x:Static local:AgentPanelViewText.HeaderName}">
+
+    <Grid RowDefinitions="Auto,Auto,Auto"
+          ColumnDefinitions="*,Auto,Auto"
+          RowSpacing="{DynamicResource OmpOS.Gap.Xs}"
+          ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
+
+      <TextBlock x:Name="TitleText"
+                 Grid.Row="0"
+                 Grid.Column="0"
+                 Text="{CompiledBinding Title}"
+                 VerticalAlignment="Center"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Heading}"
+                 FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                 TextTrimming="CharacterEllipsis"
+                 MaxLines="1"
+                 AutomationProperties.Name="{x:Static local:AgentPanelViewText.TitleName}" />
+
+      <WrapPanel Grid.Row="1"
+                 Grid.Column="0"
+                 Grid.ColumnSpan="3"
+                 Orientation="Horizontal"
+                 ItemSpacing="{DynamicResource OmpOS.Gap.Sm}"
+                 LineSpacing="{DynamicResource OmpOS.Gap.Xs}">
+
+        <local:StatusChip x:Name="StatusChipView"
+                          VerticalAlignment="Center" />
+
+        <Button x:Name="ResumeButton"
+                Classes="primary"
+                Content="{x:Static copy:AgentPanelCopy.ResumeAgent}"
+                Command="{CompiledBinding ResumeCommand}"
+                IsVisible="False"
+                AutomationProperties.Name="{x:Static copy:AgentPanelCopy.ResumeAgent}" />
+
+        <Button x:Name="ReopenButton"
+                Classes="primary"
+                Content="{x:Static copy:AgentPanelCopy.ReopenAgent}"
+                Command="{CompiledBinding ReopenCommand}"
+                IsVisible="False"
+                AutomationProperties.Name="{x:Static copy:AgentPanelCopy.ReopenAgent}" />
+
+        <Button x:Name="TaskChipButton"
+                Classes="chip-button"
+                IsVisible="False">
+          <Border Classes="chip">
+            <TextBlock x:Name="TaskChipLabel"
+                       VerticalAlignment="Center"
+                       FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                       FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                       TextWrapping="NoWrap" />
+          </Border>
+        </Button>
+
+        <Border x:Name="GraphChipView"
+                Classes="chip"
+                VerticalAlignment="Center"
+                IsVisible="False">
+          <TextBlock x:Name="GraphChipLabel"
+                     Classes="muted"
+                     VerticalAlignment="Center"
+                     FontFamily="{DynamicResource OmpOS.Font.Mono}"
+                     FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                     TextWrapping="NoWrap" />
+        </Border>
+
+        <Border x:Name="SteeringBadge"
+                Classes="chip"
+                VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal"
+                      VerticalAlignment="Center"
+                      Spacing="{DynamicResource OmpOS.Gap.Sm}">
+            <local:StageIcon IconKey="{x:Static copy:StatusIcon.Info}"
+                             VerticalAlignment="Center" />
+            <TextBlock x:Name="SteeringBadgeLabel"
+                       Text="{CompiledBinding SteeringBadgeText}"
+                       VerticalAlignment="Center"
+                       FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                       FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                       TextWrapping="NoWrap" />
+          </StackPanel>
+        </Border>
+
+      </WrapPanel>
+
+      <Button x:Name="CloseButton"
+              Grid.Row="0"
+              Grid.Column="1"
+              Content="{x:Static local:AgentPanelViewText.CloseLabel}"
+              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+              MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+              Padding="{DynamicResource OmpOS.Space.Md}"
+              AutomationProperties.Name="{x:Static local:AgentPanelViewText.CloseName}" />
+
+      <ContentControl x:Name="TrailingHost"
+                      Grid.Row="0"
+                      Grid.Column="2"
+                      VerticalAlignment="Center"
+                      IsTabStop="False"
+                      Focusable="False" />
+
+      <local:PanelNoticeView x:Name="PanelNoticeHost"
+                             Grid.Row="2"
+                             Grid.Column="0"
+                             Grid.ColumnSpan="3" />
+
+    </Grid>
+
+  </Border>
+
+</UserControl>

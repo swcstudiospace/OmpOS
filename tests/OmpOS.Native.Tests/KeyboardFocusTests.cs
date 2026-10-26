@@ -1,8 +1,10 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Media;
+using OmpOS.Native.Tests.AgentPanel.Shell;
 using Shouldly;
 using Xunit;
 
@@ -18,18 +20,23 @@ namespace OmpOS.Native.Tests;
 /// </remarks>
 public sealed class KeyboardFocusTests
 {
-    /// <summary>Tab moves focus from the session list to the transcript, the prompt, send and stop, in that order.</summary>
+    /// <summary>Tab moves focus from the session list through the thread header to the pipeline strip, the transcript, the prompt, send and stop, in that order.</summary>
     [Fact]
-    public async Task TabMovesFromSessionListThroughTranscriptPromptSendAndStop()
+    public async Task TabMovesFromSessionListThroughPipelineStripTranscriptPromptSendAndStop()
     {
         await using var session = TestAppBuilder.StartSession();
         await session.Dispatch(() =>
         {
             var window = ShellHarness.Show();
+            var main = ShellHarness.MainViewOf(window);
             ShellHarness.Rows(window).Focus();
 
+            var strip = ShellTree.NamedVisible<Button>(main, "PipelineStrip").ShouldNotBeNull();
+            var visited = TabUntil(window, strip);
+            visited.Select(control => AutomationProperties.GetName(control)).ShouldContain("Close this agent", StringComparer.Ordinal, "the header's Close control comes before the pipeline strip");
+
             ShellHarness.Press(window, Key.Tab, PhysicalKey.Tab);
-            ShellHarness.Scroll(window).IsFocused.ShouldBeTrue("the transcript follows the session list");
+            ShellHarness.Scroll(window).IsFocused.ShouldBeTrue("the transcript follows the pipeline strip, which sits directly under the header");
 
             ShellHarness.Press(window, Key.Tab, PhysicalKey.Tab);
             ShellHarness.Prompt(window).IsFocused.ShouldBeTrue("the prompt follows the transcript");
@@ -70,12 +77,14 @@ public sealed class KeyboardFocusTests
         {
             var window = ShellHarness.Show();
             ShellHarness.SkipLink(window).Focus();
-            ShellHarness.Press(window, Key.Tab, PhysicalKey.Tab);
 
-            // The first Tab from the skip link lands on the session list.
+            var main = ShellHarness.MainViewOf(window);
             var order = new Control[]
             {
+                main.FindControl<ToggleButton>("SessionsViewToggle")!,
+                main.FindControl<ToggleButton>("ToolsViewToggle")!,
                 ShellHarness.Rows(window),
+                ShellTree.NamedVisible<Button>(main, "PipelineStrip")!,
                 ShellHarness.Scroll(window),
                 ShellHarness.Prompt(window),
                 ShellHarness.Send(window),
@@ -84,9 +93,8 @@ public sealed class KeyboardFocusTests
 
             foreach (var control in order)
             {
-                control.IsFocused.ShouldBeTrue($"{control.GetType().Name} must be reached by Tab");
+                TabUntil(window, control);
                 AssertAccentRing(control);
-                ShellHarness.Press(window, Key.Tab, PhysicalKey.Tab);
             }
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
@@ -107,7 +115,7 @@ public sealed class KeyboardFocusTests
 
             ShellHarness.Status(window).Text.ShouldBe(MainView.RefusedSendStatus);
             ShellHarness.Prompt(window).Text.ShouldBe("hello");
-            ShellHarness.MainViewOf(window).Composer.Draft.ShouldBe("hello");
+            ShellHarness.ComposerModelOf(window).Draft.ShouldBe("hello");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -127,7 +135,7 @@ public sealed class KeyboardFocusTests
             await ShellHarness.DrainAsync(window).ConfigureAwait(true);
 
             ShellHarness.Status(window).Text.ShouldBeNullOrWhiteSpace();
-            ShellHarness.MainViewOf(window).Composer.Draft.ShouldStartWith("hello");
+            ShellHarness.ComposerModelOf(window).Draft.ShouldStartWith("hello");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -185,7 +193,7 @@ public sealed class KeyboardFocusTests
             await ShellHarness.DrainAsync(window).ConfigureAwait(true);
 
             ShellHarness.Status(window).Text.ShouldBe(MainView.RefusedSendStatus);
-            ShellHarness.MainViewOf(window).Composer.Draft.ShouldBe("hello");
+            ShellHarness.ComposerModelOf(window).Draft.ShouldBe("hello");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -206,6 +214,24 @@ public sealed class KeyboardFocusTests
             ShellHarness.Stop(window).IsEnabled.ShouldBeTrue();
             ShellHarness.Send(window).IsEnabled.ShouldBeTrue();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>Presses Tab until <paramref name="target"/> has focus, and returns the controls focus visited on the way, target last.</summary>
+    private static List<Control> TabUntil(MainWindow window, Control target)
+    {
+        const int MaxSteps = 16;
+        var visited = new List<Control>();
+        for (var step = 0; step < MaxSteps && !target.IsFocused; step++)
+        {
+            ShellHarness.Press(window, Key.Tab, PhysicalKey.Tab);
+            if (TopLevel.GetTopLevel(target)?.FocusManager?.GetFocusedElement() is Control focused)
+            {
+                visited.Add(focused);
+            }
+        }
+
+        target.IsFocused.ShouldBeTrue($"{target.GetType().Name} must be reached by Tab within {MaxSteps} presses");
+        return visited;
     }
 
     private static void AssertAccentRing(Control control)

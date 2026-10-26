@@ -1,5 +1,7 @@
 using System.Xml.Linq;
+using OmpOS.Native.Tests.AgentPanel.Shell;
 using OmpOS.Native.Views;
+using OmpOS.Native.Views.AgentPanel;
 using OmpOS.Presentation.Composer;
 using OmpOS.Presentation.State;
 using Shouldly;
@@ -22,9 +24,9 @@ public sealed class PresentationBindingTests
         {
             var window = ShellHarness.Show();
 
-            var main = ShellHarness.MainViewOf(window);
-            ShellHarness.Transcript(window).DataContext.ShouldBeSameAs(main.Session);
-            main.Session.ShouldBeOfType<SessionViewModel>();
+            var runtime = ShellHarness.RuntimeOf(window);
+            ShellHarness.Transcript(window).DataContext.ShouldBeSameAs(runtime.Session);
+            runtime.Session.ShouldBeOfType<SessionViewModel>();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -37,9 +39,9 @@ public sealed class PresentationBindingTests
         {
             var window = ShellHarness.Show();
 
-            var main = ShellHarness.MainViewOf(window);
-            ShellHarness.Composer(window).DataContext.ShouldBeSameAs(main.Composer);
-            main.Composer.ShouldBeOfType<ComposerViewModel>();
+            var runtime = ShellHarness.RuntimeOf(window);
+            ShellHarness.Composer(window).DataContext.ShouldBeSameAs(runtime.Composer);
+            runtime.Composer.ShouldBeOfType<ComposerViewModel>();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -58,6 +60,25 @@ public sealed class PresentationBindingTests
 
             sessionView.ShouldBeOfType<SessionView>().DataContext.ShouldBeSameAs(session);
             composerView.ShouldBeOfType<ComposerView>().DataContext.ShouldBeSameAs(composer);
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>Each Agent Panel view model maps to the view that draws it, with the model as its data context.</summary>
+    [Fact]
+    public async Task ViewMappingReturnsTheAgentPanelViewForEachPanelViewModel()
+    {
+        await using var headless = TestAppBuilder.StartSession();
+        await headless.Dispatch(() =>
+        {
+            var fixture = ShellFixture.CreateWithSession();
+            var agent = fixture.Panel.Selected!;
+
+            ViewMapping.Create(fixture.Catalog).ShouldBeOfType<AgentRailView>().DataContext.ShouldBeSameAs(fixture.Catalog);
+            ViewMapping.Create(fixture.Panel).ShouldBeOfType<PanelStateView>().DataContext.ShouldBeSameAs(fixture.Panel);
+            ViewMapping.Create(agent).ShouldBeOfType<ThreadHeaderView>().DataContext.ShouldBeSameAs(agent);
+            ViewMapping.Create(agent.Timeline).ShouldBeOfType<PipelineStripView>().DataContext.ShouldBeSameAs(agent.Timeline);
+            Should.Throw<ArgumentOutOfRangeException>(() => ViewMapping.Create(agent.Context), "the task context has no view of its own in the panel");
+            Should.Throw<ArgumentOutOfRangeException>(() => ViewMapping.Create(agent.Steering), "the steering history has no view of its own in the panel");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

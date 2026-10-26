@@ -1,12 +1,12 @@
 using Avalonia.Automation;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using OmpOS.Native.Engine;
+using OmpOS.Native.Tests.AgentPanel.Shell;
 using OmpOS.Native.Views.RunControls;
 using OmpOS.Presentation;
 using OmpOS.Presentation.Approvals;
-using OmpOS.Presentation.Runs;
 
 namespace OmpOS.Native.Tests.RunControls;
 
@@ -18,27 +18,21 @@ internal static class RunControlsHarness
     /// <summary>How many thread-pool round trips and dispatcher flushes <see cref="FlushAsync"/> performs.</summary>
     private const int FlushRounds = 3;
 
-    /// <summary>Shows a main window whose approval bridge and run input are the given dependencies.</summary>
-    /// <param name="bridge">The approval bridge the window routes decisions through.</param>
-    /// <param name="runInput">The run input the window routes steers and follow-ups through.</param>
-    /// <returns>The shown window.</returns>
-    public static MainWindow Show(IToolApprovalBridge bridge, IRunInput runInput)
+    /// <summary>Shows a main window over one selected session whose approval bridge is the given dependency.</summary>
+    /// <param name="bridge">The approval bridge the session routes decisions through.</param>
+    /// <param name="prompts">The send path of the session, or null for an unconnected one that refuses every send.</param>
+    /// <returns>The shown window. Its session is <c>session-1</c>.</returns>
+    public static MainWindow Show(IToolApprovalBridge bridge, IPromptChannel? prompts = null)
     {
-        var window = new MainWindow(bridge, runInput, MotionPreference.System);
-        window.Show();
-        ShellHarness.Settle(window);
-        return window;
+        var script = prompts is null
+            ? new SessionScript { Approvals = bridge }
+            : new SessionScript { Approvals = bridge, Prompts = prompts };
+        return ShellHarness.Show(script, MotionPreference.System);
     }
 
-    /// <summary>Shows a main window built with the production defaults, which connect no approval service and no run input.</summary>
+    /// <summary>Shows a main window over one selected session built with the production defaults, which connect no approval service and no engine.</summary>
     /// <returns>The shown window.</returns>
-    public static MainWindow ShowDefaults()
-    {
-        var window = new MainWindow(MotionPreference.System);
-        window.Show();
-        ShellHarness.Settle(window);
-        return window;
-    }
+    public static MainWindow ShowDefaults() => ShellHarness.Show(MotionPreference.System);
 
     /// <summary>Adds one pending request to the window's run controls and settles the layout.</summary>
     /// <param name="window">The shown window.</param>
@@ -49,14 +43,14 @@ internal static class RunControlsHarness
     public static PendingToolApproval AddRequest(MainWindow window, string requestId, string tool = "bash", string arguments = "command: ls")
     {
         var approval = new PendingToolApproval("session-1", requestId, tool, arguments);
-        ShellHarness.MainViewOf(window).RunControls.Approvals.Add(approval);
+        ShellHarness.RuntimeOf(window).RunControls.Approvals.Add(approval);
         ShellHarness.Settle(window);
         return approval;
     }
 
     /// <summary>Raises the click of a button, as a pointer press would.</summary>
     /// <param name="button">The button to click.</param>
-    public static void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+    public static void Click(Button button) => ShellHarness.RaiseClick(button);
 
     /// <summary>Gets the first button with the given accessible name.</summary>
     /// <param name="window">The shown window.</param>

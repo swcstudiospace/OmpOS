@@ -1,0 +1,143 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:copy="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
+             xmlns:local="clr-namespace:OmpOS.Native.Views.AgentPanel"
+             x:Class="OmpOS.Native.Views.AgentPanel.AgentRailView"
+             x:DataType="copy:SessionCatalogModel"
+             Padding="{DynamicResource OmpOS.Space.Sm}">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <Style Selector="ListBoxItem">
+      <Setter Property="MinHeight" Value="{DynamicResource OmpOS.Size.SessionRowMinHeight}" />
+      <Setter Property="Padding" Value="{DynamicResource OmpOS.Space.Sm}" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- Keyboard order follows XAML order: New agent, Filter, the agent list (one stop; Up and Down move the selection). -->
+  <DockPanel>
+
+    <StackPanel DockPanel.Dock="Top"
+                Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                Margin="0,0,0,8">
+
+      <Button x:Name="NewAgentButton"
+              Classes="primary"
+              Content="{x:Static copy:AgentPanelCopy.NewAgent}"
+              HorizontalAlignment="Stretch"
+              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+              AutomationProperties.Name="{x:Static copy:AgentPanelCopy.NewAgent}"
+              ToolTip.Tip="{x:Static local:AgentPanelViewText.NewAgentTooltip}" />
+
+      <TextBox x:Name="AgentFilter"
+               Text="{CompiledBinding Filter, Mode=TwoWay}"
+               PlaceholderText="{x:Static copy:AgentPanelCopy.FilterPlaceholder}"
+               MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+               Background="{DynamicResource OmpOS.Color.Surface}"
+               Foreground="{DynamicResource OmpOS.Color.TextPrimary}"
+               AutomationProperties.Name="{x:Static local:AgentPanelViewText.FilterName}" />
+
+    </StackPanel>
+
+    <!-- The state of the rail: loading, error, empty, or no match for the filter. It is plain text, not a tab stop. -->
+    <StackPanel x:Name="StatePanel"
+                DockPanel.Dock="Top"
+                Margin="{DynamicResource OmpOS.Space.Sm}"
+                Spacing="{DynamicResource OmpOS.Gap.Xs}"
+                IsVisible="False">
+      <TextBlock x:Name="StateHeading"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                 TextWrapping="Wrap" />
+      <TextBlock x:Name="StateBody"
+                 Classes="muted"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+
+    <ListBox x:Name="AgentRows"
+             Focusable="True"
+             SelectionMode="Single"
+             AutomationProperties.Name="{x:Static local:AgentPanelViewText.AgentSessionsName}">
+
+      <ListBox.ContextMenu>
+        <ContextMenu x:Name="RowMenu"
+                     AutomationProperties.Name="{x:Static local:AgentPanelViewText.AgentActionsName}">
+          <MenuItem x:Name="ResumeItem"
+                    Header="{x:Static copy:AgentPanelCopy.ResumeAgent}"
+                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                    AutomationProperties.Name="{x:Static copy:AgentPanelCopy.ResumeAgent}" />
+          <MenuItem x:Name="ReopenItem"
+                    Header="{x:Static copy:AgentPanelCopy.ReopenAgent}"
+                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                    AutomationProperties.Name="{x:Static copy:AgentPanelCopy.ReopenAgent}" />
+          <MenuItem x:Name="CloseItem"
+                    Header="{x:Static copy:AgentPanelCopy.CloseAgent}"
+                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                    AutomationProperties.Name="{x:Static copy:AgentPanelCopy.CloseAgent}" />
+        </ContextMenu>
+      </ListBox.ContextMenu>
+
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="copy:AgentRow">
+          <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+            <!-- The group header band, on the first row of a group only. It has no hit area and is raw to assistive technology. -->
+            <TextBlock Text="{CompiledBinding GroupHeader}"
+                       IsVisible="{CompiledBinding IsGroupStart}"
+                       Height="{DynamicResource OmpOS.Size.ChipHeight}"
+                       VerticalAlignment="Center"
+                       Classes="muted"
+                       FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                       FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                       IsHitTestVisible="False"
+                       AutomationProperties.AccessibilityView="Raw" />
+
+            <TextBlock Text="{CompiledBinding Title}"
+                       TextTrimming="CharacterEllipsis"
+                       MaxLines="1" />
+
+            <WrapPanel Orientation="Horizontal"
+                       ItemSpacing="{DynamicResource OmpOS.Gap.Xs}"
+                       LineSpacing="{DynamicResource OmpOS.Gap.Xs}">
+
+              <local:StatusChip Text="{CompiledBinding StatusText}"
+                                IconKey="{CompiledBinding IconKey}"
+                                Tone="{CompiledBinding Status, Converter={x:Static local:StatusGlyphs.RowTone}}" />
+
+              <TextBlock Text="{x:Static local:AgentPanelViewText.LongRunning}"
+                         IsVisible="{CompiledBinding IsLongRunning}"
+                         Classes="muted"
+                         VerticalAlignment="Center"
+                         FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+
+              <TextBlock Text="{CompiledBinding LastActivityText}"
+                         IsVisible="{CompiledBinding !IsStale}"
+                         Classes="muted"
+                         VerticalAlignment="Center"
+                         FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+
+              <TextBlock Text="{CompiledBinding QuietText}"
+                         IsVisible="{CompiledBinding IsStale}"
+                         Classes="tone-warning"
+                         VerticalAlignment="Center"
+                         FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+
+              <TextBlock Text="{CompiledBinding TaskTag}"
+                         IsVisible="{CompiledBinding TaskTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                         Classes="muted"
+                         VerticalAlignment="Center"
+                         FontFamily="{DynamicResource OmpOS.Font.Mono}"
+                         FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+
+            </WrapPanel>
+
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+
+    </ListBox>
+
+  </DockPanel>
+
+</UserControl>

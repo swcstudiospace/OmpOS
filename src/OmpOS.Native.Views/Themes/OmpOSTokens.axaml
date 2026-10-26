@@ -74,4 +74,15 @@
   <x:Double x:Key="OmpOS.Size.TargetMin">44</x:Double>
   <Thickness x:Key="OmpOS.Size.FocusBorder">2</Thickness>
 
+  <!-- Agent Panel sizes (46-UI-SPEC, Spacing Scale). Fixed sizes, not spacing and not colours, so they sit outside the theme variants. -->
+  <x:Double x:Key="OmpOS.Size.AgentRailWidth">280</x:Double>
+  <x:Double x:Key="OmpOS.Size.StageFlyoutWidth">360</x:Double>
+  <x:Double x:Key="OmpOS.Size.StageFlyoutMaxHeight">360</x:Double>
+  <x:Double x:Key="OmpOS.Size.ThreadMinWidth">400</x:Double>
+  <x:Double x:Key="OmpOS.Size.ThreadContentMaxWidth">880</x:Double>
+  <x:Double x:Key="OmpOS.Size.SessionRowMinHeight">64</x:Double>
+  <x:Double x:Key="OmpOS.Size.StageRowMinHeight">28</x:Double>
+  <x:Double x:Key="OmpOS.Size.ChipHeight">24</x:Double>
+  <x:Double x:Key="OmpOS.Size.IconSize">16</x:Double>
+
 </ResourceDictionary>

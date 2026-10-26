@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.VisualTree;
+using OmpOS.Native.Tests.AgentPanel.Shell;
 using OmpOS.Native.Views.Agents;
 using Shouldly;
 using Xunit;
@@ -15,7 +16,10 @@ namespace OmpOS.Native.Tests.Shell;
 /// </summary>
 public sealed class ShellAgentsTests
 {
-    /// <summary>The Agents toggle is a named tab stop that follows the transcript search, and Enter opens and closes the Agents view.</summary>
+    /// <summary>
+    /// The Agents toggle lives in the rail's Tools view, which follows the Sessions view toggle in the tab order. Inside the Tools view the
+    /// toggle is reachable by Tab, and Enter opens and closes the Agents view.
+    /// </summary>
     [Fact]
     public async Task TheAgentsViewIsReachableFromTheShell()
     {
@@ -24,21 +28,31 @@ public sealed class ShellAgentsTests
         {
             var window = ShellHarness.Show();
             var main = ShellHarness.MainViewOf(window);
+            var sessionsToggle = main.FindControl<ToggleButton>("SessionsViewToggle")!;
+            var toolsToggle = main.FindControl<ToggleButton>("ToolsViewToggle")!;
+
+            sessionsToggle.Focus();
+            ShellHarness.Press(window, Key.Tab, PhysicalKey.Tab);
+            toolsToggle.IsFocused.ShouldBeTrue("the Tools view toggle follows the Sessions view toggle");
+
+            ShellHarness.ShowToolsView(window);
             var toggle = AgentsToggle(window);
             AutomationProperties.GetName(toggle).ShouldBe("Agents");
 
-            ShellHarness.Stop(window).Focus();
-            ShellHarness.Press(window, Key.Tab, PhysicalKey.Tab);
-            SearchInput(window).IsFocused.ShouldBeTrue("the transcript search follows Stop");
+            toolsToggle.Focus();
+            for (var presses = 0; presses < 20 && !toggle.IsFocused; presses++)
+            {
+                ShellHarness.Press(window, Key.Tab, PhysicalKey.Tab);
+            }
 
-            ShellHarness.Press(window, Key.Tab, PhysicalKey.Tab);
-            toggle.IsFocused.ShouldBeTrue("the Agents toggle follows the transcript search");
+            toggle.IsFocused.ShouldBeTrue("the Agents toggle is a tab stop inside the Tools view");
 
             ShellHarness.Press(window, Key.Enter, PhysicalKey.Enter);
 
             toggle.IsChecked.ShouldBe(true);
             main.FindControl<ContentControl>("AgentsHost")!.IsVisible.ShouldBeTrue();
             main.FindControl<ContentControl>("TranscriptHost")!.IsVisible.ShouldBeFalse("the Agents view stands in for the transcript");
+            ShellTree.Named<Border>(main, "ToolHeader")!.IsVisible.ShouldBeTrue("an open tool shows its header");
 
             ShellHarness.Press(window, Key.Enter, PhysicalKey.Enter);
 
@@ -60,6 +74,7 @@ public sealed class ShellAgentsTests
             main.AgentRuns.Runs.ShouldBeEmpty();
 
             var build = main.AgentRuns.Add("build", "Build the app");
+            ShellHarness.ShowToolsView(window);
             AgentsToggle(window).IsChecked = true;
             ShellHarness.Settle(window);
 
@@ -71,9 +86,6 @@ public sealed class ShellAgentsTests
     }
 
     private static ToggleButton AgentsToggle(MainWindow window) => ShellHarness.MainViewOf(window).FindControl<ToggleButton>("AgentsToggle")!;
-
-    private static TextBox SearchInput(MainWindow window) =>
-        ((Control)ShellHarness.MainViewOf(window).FindControl<ContentControl>("SearchHost")!.Content!).FindControl<TextBox>("SearchInput")!;
 
     private static string[] RowNames(AgentsView view) => view.GetVisualDescendants()
         .OfType<Button>()

@@ -19,7 +19,7 @@ public sealed class ToolApprovalDecisionTests
         await session.Dispatch(() =>
         {
             var bridge = new ScriptedApprovalBridge();
-            var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+            var window = RunControlsHarness.Show(bridge);
 
             var approval = RunControlsHarness.AddRequest(window, "request-1");
 
@@ -38,7 +38,7 @@ public sealed class ToolApprovalDecisionTests
         await session.RunAsync(async () =>
         {
             var bridge = new ScriptedApprovalBridge(ToolApprovalOutcome.Refused);
-            var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+            var window = RunControlsHarness.Show(bridge);
             var approval = RunControlsHarness.AddRequest(window, "request-1");
 
             RunControlsHarness.Click(RunControlsHarness.Named(window, "Approve tool request"));
@@ -62,7 +62,7 @@ public sealed class ToolApprovalDecisionTests
         await session.RunAsync(async () =>
         {
             var bridge = new ScriptedApprovalBridge(ToolApprovalOutcome.Accepted);
-            var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+            var window = RunControlsHarness.Show(bridge);
             var approval = RunControlsHarness.AddRequest(window, "request-1");
 
             RunControlsHarness.Click(RunControlsHarness.Named(window, "Approve tool request"));
@@ -81,7 +81,7 @@ public sealed class ToolApprovalDecisionTests
         await session.RunAsync(async () =>
         {
             var bridge = new ScriptedApprovalBridge(ToolApprovalOutcome.Accepted);
-            var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+            var window = RunControlsHarness.Show(bridge);
             var approval = RunControlsHarness.AddRequest(window, "request-1");
 
             RunControlsHarness.Click(RunControlsHarness.Named(window, "Deny tool request"));
@@ -103,7 +103,7 @@ public sealed class ToolApprovalDecisionTests
         await session.RunAsync(async () =>
         {
             var bridge = new ScriptedApprovalBridge(ToolApprovalOutcome.Failed, ToolApprovalOutcome.AlreadyDecided);
-            var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+            var window = RunControlsHarness.Show(bridge);
             var approval = RunControlsHarness.AddRequest(window, "request-1");
 
             RunControlsHarness.Click(RunControlsHarness.Named(window, "Approve tool request"));
@@ -157,7 +157,7 @@ public sealed class ToolApprovalDecisionTests
         await using var session = TestAppBuilder.StartSession();
         await session.Dispatch(() =>
         {
-            var window = RunControlsHarness.Show(new ScriptedApprovalBridge(), new RecordingRunInput());
+            var window = RunControlsHarness.Show(new ScriptedApprovalBridge());
             RunControlsHarness.RunControlsList(window).IsVisible.ShouldBeFalse();
 
             RunControlsHarness.AddRequest(window, "request-1", "bash", "command: ls");

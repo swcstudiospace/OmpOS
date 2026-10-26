@@ -11,7 +11,7 @@ namespace OmpOS.Native.Tests;
 /// <summary>Keyboard focus on the toolbar's toggles draws the same AccentPurple focus border as the other shared controls.</summary>
 /// <remarks>
 /// Focus arrives by Tab presses, so the <c>:focus-visible</c> style applies. The toggle is the workspace tool row's
-/// <c>ConventionsToggle</c> in <c>MainView.axaml</c>, reached from the skip link in XAML order.
+/// <c>ConventionsToggle</c> in the Tools view of the rail in <c>MainView.axaml</c>, reached from the skip link in XAML order.
 /// </remarks>
 public sealed class FocusVisibleToggleTests
 {
@@ -29,6 +29,7 @@ public sealed class FocusVisibleToggleTests
         await session.Dispatch(() =>
         {
             var window = ShellHarness.Show();
+            ShellHarness.ShowToolsView(window);
             var toggle = ShellHarness.MainViewOf(window).FindControl<ToggleButton>(ToggleName)!;
 
             ShellHarness.SkipLink(window).Focus();

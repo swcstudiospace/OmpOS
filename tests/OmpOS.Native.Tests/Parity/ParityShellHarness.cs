@@ -18,24 +18,20 @@ internal static class ParityShellHarness
     /// <summary>How many layout passes settle a window, so a scroll that follows a layout change is applied.</summary>
     private const int SettlePasses = 3;
 
-    /// <summary>Creates the shell over the send path. Without one, the shell refuses every send, as an unconnected shell does.</summary>
+    /// <summary>Creates the shell over the send path of its one selected session. Without one, the shell refuses every send, as an unconnected shell does.</summary>
     /// <param name="prompts">The send path, or null when no engine is composed.</param>
-    /// <returns>The main view, not yet shown.</returns>
-    public static MainView CreateMain(IPromptChannel? prompts)
-    {
-        var workspace = Environment.CurrentDirectory;
-        return prompts is null
-            ? new MainView(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), workspace, prompts: null, MotionPreference.Full)
-            : new MainView(new UnconnectedToolApprovalBridge(), new EngineRunInput(), workspace, prompts, MotionPreference.Full);
-    }
+    /// <returns>The shell, not yet shown. Dispose it to close the window and dispose the session's send path.</returns>
+    public static ParityShell CreateMain(IPromptChannel? prompts) => new(prompts);
 
-    /// <summary>Shows the main view in a window tall enough to leave the transcript room to scroll, and settles it.</summary>
-    /// <param name="main">The main view to show.</param>
+    /// <summary>Shows the shell in a window tall enough to leave the transcript room to scroll, and settles it.</summary>
+    /// <param name="shell">The shell to show.</param>
     /// <returns>The shown window.</returns>
-    public static Window Show(MainView main)
+    public static MainWindow Show(ParityShell shell)
     {
-        var window = new Window { Content = main, Width = 900, Height = 600 };
-        window.Show();
+        ArgumentNullException.ThrowIfNull(shell);
+
+        var window = ShellHarness.Show(shell.Fixture, MotionPreference.Full);
+        shell.Window = window;
         Settle(window);
         return window;
     }
@@ -51,24 +47,24 @@ internal static class ParityShellHarness
     }
 
     /// <summary>Types the text into the composer and presses its send control, as the user does.</summary>
-    /// <param name="main">The main view that holds the composer.</param>
+    /// <param name="shell">The shown shell that holds the composer.</param>
     /// <param name="text">The draft to send.</param>
-    public static void Send(MainView main, string text)
+    public static void Send(ParityShell shell, string text)
     {
-        var composer = ComposerOf(main);
-        composer.FindControl<TextBox>("PromptInput")!.Text = text;
-        RunControlsHarness.Click(composer.FindControl<Button>("SendButton")!);
+        var window = shell.ShownWindow;
+        ShellHarness.Prompt(window).Text = text;
+        RunControlsHarness.Click(ShellHarness.Send(window));
     }
 
-    /// <summary>Gets the transcript of the main view.</summary>
-    /// <param name="main">The main view.</param>
+    /// <summary>Gets the transcript of the shown shell.</summary>
+    /// <param name="shell">The shown shell.</param>
     /// <returns>The session view the transcript host shows.</returns>
-    public static SessionView Transcript(MainView main) => (SessionView)main.FindControl<ContentControl>("TranscriptHost")!.Content!;
+    public static SessionView Transcript(ParityShell shell) => ShellHarness.Transcript(shell.ShownWindow);
 
-    /// <summary>Gets the scroll region of the transcript of the main view.</summary>
-    /// <param name="main">The main view.</param>
+    /// <summary>Gets the scroll region of the transcript of the shown shell.</summary>
+    /// <param name="shell">The shown shell.</param>
     /// <returns>The transcript's scroll viewer.</returns>
-    public static ScrollViewer Scroll(MainView main) => Transcript(main).FindControl<ScrollViewer>("TranscriptScroll")!;
+    public static ScrollViewer Scroll(ParityShell shell) => ShellHarness.Scroll(shell.ShownWindow);
 
     /// <summary>Folds user messages into the session, one stream event each, numbered from <paramref name="first"/> to <paramref name="last"/>.</summary>
     /// <param name="session">The session to fold the messages into.</param>
@@ -87,6 +83,4 @@ internal static class ParityShellHarness
     /// <returns>True when the view is at the latest output.</returns>
     public static bool IsAtLatest(ScrollViewer scroll) =>
         scroll.Offset.Y >= Math.Max(0, scroll.Extent.Height - scroll.Viewport.Height) - 1;
-
-    private static ComposerView ComposerOf(MainView main) => (ComposerView)main.FindControl<ContentControl>("ComposerHost")!.Content!;
 }

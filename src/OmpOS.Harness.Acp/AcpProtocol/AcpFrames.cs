@@ -227,14 +227,14 @@ public static class AcpFrames
         /// <summary>Gets a value indicating whether <c>session/load</c> is supported.</summary>
         public bool LoadSession { get; init; }
 
-        /// <summary>Gets the MCP transport capabilities.</summary>
-        public McpCapabilities McpCapabilities { get; init; } = new();
+        /// <summary>Gets the MCP transport capabilities, or null when the agent omitted the group.</summary>
+        public McpCapabilities? McpCapabilities { get; init; }
 
-        /// <summary>Gets the prompt content capabilities.</summary>
-        public PromptCapabilities PromptCapabilities { get; init; } = new();
+        /// <summary>Gets the prompt content capabilities, or null when the agent omitted the group.</summary>
+        public PromptCapabilities? PromptCapabilities { get; init; }
 
-        /// <summary>Gets the session management capabilities.</summary>
-        public SessionCapabilities SessionCapabilities { get; init; } = new();
+        /// <summary>Gets the session management capabilities, or null when the agent omitted the group.</summary>
+        public SessionCapabilities? SessionCapabilities { get; init; }
     }
 
     /// <summary>Result of <c>initialize</c>.</summary>

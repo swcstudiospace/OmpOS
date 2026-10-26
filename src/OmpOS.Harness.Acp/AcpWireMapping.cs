@@ -37,17 +37,17 @@ internal static class AcpWireMapping
         var map = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["loadSession"] = Flag(capabilities.LoadSession),
-            ["mcpCapabilities.http"] = Flag(capabilities.McpCapabilities.Http),
-            ["mcpCapabilities.sse"] = Flag(capabilities.McpCapabilities.Sse),
-            ["promptCapabilities.embeddedContext"] = Flag(capabilities.PromptCapabilities.EmbeddedContext),
-            ["promptCapabilities.image"] = Flag(capabilities.PromptCapabilities.Image),
+            ["mcpCapabilities.http"] = Flag(capabilities.McpCapabilities?.Http ?? false),
+            ["mcpCapabilities.sse"] = Flag(capabilities.McpCapabilities?.Sse ?? false),
+            ["promptCapabilities.embeddedContext"] = Flag(capabilities.PromptCapabilities?.EmbeddedContext ?? false),
+            ["promptCapabilities.image"] = Flag(capabilities.PromptCapabilities?.Image ?? false),
         };
 
         var session = capabilities.SessionCapabilities;
-        AddPresence(map, "sessionCapabilities.list", session.List);
-        AddPresence(map, "sessionCapabilities.fork", session.Fork);
-        AddPresence(map, "sessionCapabilities.resume", session.Resume);
-        AddPresence(map, "sessionCapabilities.close", session.Close);
+        AddPresence(map, "sessionCapabilities.list", session?.List);
+        AddPresence(map, "sessionCapabilities.fork", session?.Fork);
+        AddPresence(map, "sessionCapabilities.resume", session?.Resume);
+        AddPresence(map, "sessionCapabilities.close", session?.Close);
         return map.ToFrozenDictionary(StringComparer.Ordinal);
     }
 

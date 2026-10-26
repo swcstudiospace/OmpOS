@@ -1,8 +1,7 @@
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
-using OmpOS.Presentation.Components;
-using OmpOS.Presentation.State;
+using OmpOS.Native.Tests.AgentPanel.Shell;
 using Shouldly;
 using Xunit;
 
@@ -26,7 +25,7 @@ public sealed class AccessibilityNameTests
         {
             var window = ShellHarness.Show();
 
-            AutomationProperties.GetName(ShellHarness.Rows(window)).ShouldBe("Conversations");
+            AutomationProperties.GetName(ShellHarness.Rows(window)).ShouldBe("Agent sessions");
             AutomationProperties.GetName(ShellHarness.Scroll(window)).ShouldBe("Session transcript");
             AutomationProperties.GetName(ShellHarness.Prompt(window)).ShouldBe("Message");
             AutomationProperties.GetName(ShellHarness.Send(window)).ShouldBe("Send message");
@@ -86,26 +85,26 @@ public sealed class AccessibilityNameTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>Each session row is named by its full title, not by a default control name.</summary>
+    /// <summary>Each agent row is named by its full title, its status and its last activity, not by a default control name.</summary>
     [Fact]
     public async Task EachSessionRowIsNamedByItsFullTitle()
     {
         await using var session = TestAppBuilder.StartSession();
         await session.Dispatch(() =>
         {
-            var window = ShellHarness.Show();
-            var list = ShellHarness.List(window);
-            list.Conversations = new[]
+            var fixture = ShellFixture.CreateWithSession();
+            fixture.AddSession("a", ExpectedRowNames[0]);
+            fixture.AddSession("b", ExpectedRowNames[1]);
+            var window = ShellHarness.Show(fixture);
+
+            var names = ShellHarness.Rows(window).GetVisualDescendants().OfType<ListBoxItem>()
+                .Select(row => AutomationProperties.GetName(row) ?? string.Empty)
+                .ToList();
+
+            foreach (var title in ExpectedRowNames)
             {
-                new ConversationSummary { Id = "a", Title = "Plan the release notes for the native head" },
-                new ConversationSummary { Id = "b", Title = "Review the accessibility baseline" },
-            };
-            list.State = ConversationListState.Loaded;
-            ShellHarness.Settle(window);
-
-            var rows = ShellHarness.Rows(window).GetVisualDescendants().OfType<ListBoxItem>().ToList();
-
-            rows.Select(row => AutomationProperties.GetName(row) ?? string.Empty).ShouldBe(ExpectedRowNames);
+                names.Count(name => name.StartsWith($"{title},", StringComparison.Ordinal)).ShouldBe(1, $"the row of '{title}' is named by its full title, then its status");
+            }
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 }

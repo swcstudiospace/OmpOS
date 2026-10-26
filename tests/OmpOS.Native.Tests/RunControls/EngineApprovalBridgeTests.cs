@@ -26,7 +26,7 @@ public sealed class EngineApprovalBridgeTests
             var resolver = new PendingPermissionResolver();
             var bridge = new EngineToolApprovalBridge(resolver, []);
             var parked = ParkRequestAsync(resolver, TestContext.Current.CancellationToken);
-            var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+            var window = RunControlsHarness.Show(bridge);
             var approval = RunControlsHarness.AddRequest(window, RequestId);
 
             RunControlsHarness.Click(RunControlsHarness.Named(window, "Approve tool request"));
@@ -64,7 +64,7 @@ public sealed class EngineApprovalBridgeTests
             var resolver = new PendingPermissionResolver();
             var bridge = new EngineToolApprovalBridge(resolver, [AllowedKind]);
             var parked = ParkRequestAsync(resolver, TestContext.Current.CancellationToken);
-            var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+            var window = RunControlsHarness.Show(bridge);
             var approval = RunControlsHarness.AddRequest(window, RequestId);
 
             RunControlsHarness.Click(RunControlsHarness.Named(window, "Deny tool request"));
@@ -86,7 +86,7 @@ public sealed class EngineApprovalBridgeTests
             var resolver = new PendingPermissionResolver();
             var bridge = new EngineToolApprovalBridge(resolver, [AllowedKind]);
             var parked = ParkRequestAsync(resolver, TestContext.Current.CancellationToken);
-            var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+            var window = RunControlsHarness.Show(bridge);
             var approval = RunControlsHarness.AddRequest(window, RequestId);
 
             RunControlsHarness.Click(RunControlsHarness.Named(window, "Approve tool request"));
@@ -126,7 +126,7 @@ public sealed class EngineApprovalBridgeTests
             var bridge = new EngineToolApprovalBridge(resolver, [AllowedKind]);
             using var cancellation = new CancellationTokenSource();
             var parked = ParkRequestAsync(resolver, cancellation.Token);
-            var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+            var window = RunControlsHarness.Show(bridge);
             var approval = RunControlsHarness.AddRequest(window, RequestId);
 
             await cancellation.CancelAsync().ConfigureAwait(true);

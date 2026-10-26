@@ -2,13 +2,14 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using OmpOS.Native;
 using OmpOS.Native.Engine;
+using OmpOS.Native.Views.Sessions;
 
 namespace OmpOS.Android;
 
 /// <summary>
 /// The Avalonia application of the Android head. It loads the application XAML, which merges the token dictionary and the shared
-/// control styles, and shows the shared main view in the single-view lifetime of the activity. No approval service and no run input
-/// are connected in this build, so every decision and steer fails visibly and nothing is allowed. Sending is refused.
+/// control styles, and shows the shared main view in the single-view lifetime of the activity. No engine and no approval
+/// service are connected in this build, so every decision fails visibly and nothing is allowed. Sending is refused.
 /// </summary>
 public sealed partial class OmpOSAndroidApp : Avalonia.Application
 {
@@ -27,7 +28,8 @@ public sealed partial class OmpOSAndroidApp : Avalonia.Application
         {
             var workspaceRoot = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
             Directory.CreateDirectory(workspaceRoot);
-            singleView.MainView = new MainView(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), workspaceRoot, prompts: null, AndroidMotion.Read());
+            var motion = AndroidMotion.Read();
+            singleView.MainView = new MainView(UnconnectedAgentPanel.Create(new UnconnectedToolApprovalBridge(), workspaceRoot, motion), workspaceRoot, motion);
         }
 
         base.OnFrameworkInitializationCompleted();

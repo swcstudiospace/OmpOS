@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:copy="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
+             xmlns:local="clr-namespace:OmpOS.Native.Views.AgentPanel"
+             x:Class="OmpOS.Native.Views.AgentPanel.PanelNoticeView"
+             x:DataType="copy:AgentSessionViewModel">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The panel notice (degraded stages, no plugins, Lost, Resumed). A polite live region: errors have their own assertive one. -->
+  <Border x:Name="PanelNotice"
+          Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
+          Padding="{DynamicResource OmpOS.Space.Sm}"
+          IsVisible="{CompiledBinding HasNotice}"
+          AutomationProperties.Name="{x:Static local:AgentPanelViewText.PanelNoticeName}"
+          AutomationProperties.LiveSetting="Polite">
+
+    <DockPanel LastChildFill="True">
+
+      <local:StageIcon x:Name="NoticeIcon"
+                       DockPanel.Dock="Left"
+                       VerticalAlignment="Top"
+                       Margin="0,4,8,0" />
+
+      <WrapPanel DockPanel.Dock="Right"
+                 Orientation="Horizontal"
+                 VerticalAlignment="Center"
+                 ItemSpacing="{DynamicResource OmpOS.Gap.Sm}"
+                 LineSpacing="{DynamicResource OmpOS.Gap.Sm}">
+
+        <Button x:Name="ShowPipelineButton"
+                Content="{x:Static local:AgentPanelViewText.ShowPipeline}"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                Padding="{DynamicResource OmpOS.Space.Md}"
+                AutomationProperties.Name="{x:Static local:AgentPanelViewText.ShowPipelineName}" />
+
+        <Button x:Name="ResumeButton"
+                Classes="primary"
+                Content="{x:Static copy:AgentPanelCopy.ResumeAgent}"
+                Command="{CompiledBinding ResumeCommand}"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                AutomationProperties.Name="{x:Static copy:AgentPanelCopy.ResumeAgent}" />
+
+        <Button x:Name="DismissButton"
+                Content="{x:Static local:AgentPanelViewText.DismissNotice}"
+                Command="{CompiledBinding DismissNoticeCommand}"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                Padding="{DynamicResource OmpOS.Space.Md}"
+                AutomationProperties.Name="{x:Static local:AgentPanelViewText.DismissNotice}" />
+
+      </WrapPanel>
+
+      <TextBlock x:Name="NoticeText"
+                 Text="{CompiledBinding NoticeText}"
+                 VerticalAlignment="Center"
+                 Margin="0,0,8,0"
+                 TextWrapping="Wrap"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+
+    </DockPanel>
+
+  </Border>
+
+</UserControl>

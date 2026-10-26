@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using OmpOS.Contracts.Ui;
 using OmpOS.Native.Views;
+using OmpOS.Native.Views.AgentPanel;
 using OmpOS.Native.Views.Agents;
 using OmpOS.Native.Views.Blocks;
 using OmpOS.Native.Views.Chats;
@@ -9,6 +10,7 @@ using OmpOS.Native.Views.Explorer;
 using OmpOS.Native.Views.Mcp;
 using OmpOS.Native.Views.Search;
 using OmpOS.Native.Views.Workspace;
+using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Agents;
 using OmpOS.Presentation.Chats;
 using OmpOS.Presentation.Composer;
@@ -44,6 +46,10 @@ internal static class ViewMapping
             WorkspaceConventionsModel conventions => new WorkspaceConventionsView { DataContext = conventions },
             McpToolsModel mcpTools => new McpToolsView { DataContext = mcpTools },
             WorkspaceSearchModel workspaceSearch => new WorkspaceSearchView { DataContext = workspaceSearch },
+            SessionCatalogModel catalog => new AgentRailView { DataContext = catalog },
+            AgentPanelViewModel panel => new PanelStateView { DataContext = panel },
+            AgentSessionViewModel agentSession => new ThreadHeaderView { DataContext = agentSession },
+            StageTimelineModel timeline => new PipelineStripView { DataContext = timeline },
             _ => throw new ArgumentOutOfRangeException(
                 nameof(viewModel),
                 viewModel.GetType(),
@@ -66,6 +72,8 @@ internal static class ViewMapping
             MarkdownBlock markdown => new MarkdownBlockView(markdown),
             CodeBlock code => new CodeBlockView(code),
             ToolCallBlock toolCall => new ToolCallBlockView(toolCall),
+            ToolResultBlock result => new ToolResultBlockView(result),
+            FileEditBlock edit => new FileEditBlockView(edit),
             PermissionBlock permission => new PermissionBlockView(permission),
             PlanBlock plan => new PlanBlockView(plan),
             DiffPlaceholderBlock diff => new DiffPlaceholderView(diff),

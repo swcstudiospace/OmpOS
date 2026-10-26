@@ -150,6 +150,12 @@
         <Transitions />
       </Setter>
     </Style>
+
+    <Style Selector="Window.reduced-motion ToggleButton">
+      <Setter Property="Transitions">
+        <Transitions />
+      </Setter>
+    </Style>
   </Application.Styles>
 
 </Application>

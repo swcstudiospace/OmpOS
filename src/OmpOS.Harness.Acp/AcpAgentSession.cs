@@ -19,7 +19,7 @@ namespace OmpOS.Harness.Acp;
 /// change happens at a known point in that order. A request the policy admits waits for its decision on a task of its own,
 /// so the pump never blocks on it.
 /// </summary>
-public sealed class AcpAgentSession : IOmpSession
+public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity
 {
     private const string UpdateMethod = "session/update";
     private const string PermissionMethod = "session/request_permission";
@@ -93,6 +93,9 @@ public sealed class AcpAgentSession : IOmpSession
 
     /// <summary>Gets the ACP session identifier once the session has been created or resumed.</summary>
     public string? SessionId { get; private set; }
+
+    /// <summary>Gets the ACP session identifier once the session has been created or resumed. It is the same value as <see cref="SessionId"/>.</summary>
+    public string? NativeSessionId => SessionId;
 
     /// <summary>Gets the agent identity reported by <c>initialize</c>.</summary>
     public AcpFrames.AgentInfo? AgentInfo { get; private set; }

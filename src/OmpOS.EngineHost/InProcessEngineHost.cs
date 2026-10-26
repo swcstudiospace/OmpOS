@@ -16,17 +16,46 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     private readonly Func<IOmpSession> _sessionFactory;
     private readonly System.Threading.Lock _gate = new();
     private IOmpSession? _session;
+    private string? _resumeSessionId;
+    private string? _nativeSessionId;
     private bool _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="InProcessEngineHost"/> class.</summary>
     /// <param name="sessionFactory">Creates the session on first use (and again after a fault).</param>
     /// <param name="descriptor">The descriptor this host reports.</param>
-    public InProcessEngineHost(Func<IOmpSession> sessionFactory, EngineHostDescriptor descriptor)
+    /// <param name="resumeSessionId">
+    /// The engine session to resume instead of creating a new one. It applies to the first session this host binds: that session is
+    /// opened with <see cref="IOmpSession.ResumeAsync"/>, and every session bound after it is created fresh. Null (the default) creates a new session.
+    /// </param>
+    public InProcessEngineHost(Func<IOmpSession> sessionFactory, EngineHostDescriptor descriptor, string? resumeSessionId = null)
     {
         ArgumentNullException.ThrowIfNull(sessionFactory);
         ArgumentNullException.ThrowIfNull(descriptor);
         _sessionFactory = sessionFactory;
         Descriptor = descriptor;
+        _resumeSessionId = string.IsNullOrWhiteSpace(resumeSessionId) ? null : resumeSessionId;
+    }
+
+    /// <summary>
+    /// Occurs when the bound session reports a native session identifier that differs from the last one this host reported, which is
+    /// the first time the session has been created or resumed. Read <see cref="NativeSessionId"/> for the value. A handler that throws
+    /// does not fail the prompt.
+    /// </summary>
+    public event EventHandler? NativeSessionIdChanged;
+
+    /// <summary>
+    /// Gets the identifier the engine gave the bound session, or null until a prompt was submitted or when the session does not
+    /// implement <see cref="IOmpSessionIdentity"/>.
+    /// </summary>
+    public string? NativeSessionId
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _nativeSessionId;
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -48,14 +77,16 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     /// <param name="client">The ACP client each session is created from.</param>
     /// <param name="options">The session options (notably <c>OmpPath</c>).</param>
     /// <param name="descriptor">The descriptor to report, or the in-process default.</param>
+    /// <param name="resumeSessionId">The engine session the first prompt resumes with <c>session/load</c>, or null to create a new session.</param>
     /// <returns>A host whose sessions speak ACP over stdio.</returns>
-    public static InProcessEngineHost ForAcp(OmpAcpClient client, AcpClientOptions options, EngineHostDescriptor? descriptor = null)
+    public static InProcessEngineHost ForAcp(OmpAcpClient client, AcpClientOptions options, EngineHostDescriptor? descriptor = null, string? resumeSessionId = null)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(options);
         return new InProcessEngineHost(
             () => client.CreateSession(options),
-            descriptor ?? new EngineHostDescriptor { Kind = EngineHostKind.InProcess, Isolation = Isolation.Process, Attestation = Attestation.None });
+            descriptor ?? new EngineHostDescriptor { Kind = EngineHostKind.InProcess, Isolation = Isolation.Process, Attestation = Attestation.None },
+            resumeSessionId);
     }
 
     /// <summary>
@@ -67,19 +98,21 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     /// <param name="descriptor">The descriptor to report, or the in-process default.</param>
     /// <param name="transportFactory">Creates the transport for each session. Null spawns <c>omp acp</c>.</param>
     /// <param name="loggerFactory">Creates the loggers of the sessions and transports. Null discards their log output.</param>
+    /// <param name="resumeSessionId">The engine session the first prompt resumes with <c>session/load</c>, or null to create a new session.</param>
     /// <returns>A host whose sessions speak ACP over the transport and answer permission requests through the resolver.</returns>
     public static InProcessEngineHost ForAcp(
         AcpClientOptions options,
         IPermissionResolver? permissionResolver = null,
         EngineHostDescriptor? descriptor = null,
         Func<AcpClientOptions, IAcpTransport>? transportFactory = null,
-        ILoggerFactory? loggerFactory = null)
+        ILoggerFactory? loggerFactory = null,
+        string? resumeSessionId = null)
     {
         ArgumentNullException.ThrowIfNull(options);
         var client = transportFactory is null
             ? new OmpAcpClient(permissionResolver, loggerFactory: loggerFactory)
             : new OmpAcpClient(transportFactory, permissionResolver, loggerFactory: loggerFactory);
-        return ForAcp(client, options, descriptor);
+        return ForAcp(client, options, descriptor, resumeSessionId);
     }
 
     /// <inheritdoc />
@@ -140,7 +173,9 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
         }
 
         var fresh = await CreateSessionAsync(cancellationToken).ConfigureAwait(false);
-        return await InstallSessionAsync(fresh).ConfigureAwait(false);
+        var bound = await InstallSessionAsync(fresh).ConfigureAwait(false);
+        PublishNativeSessionId(bound);
+        return bound;
     }
 
     /// <summary>Returns the bound session when it can still serve a prompt; throws once the host is disposed.</summary>
@@ -158,9 +193,27 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     private async Task<IOmpSession> CreateSessionAsync(CancellationToken cancellationToken)
     {
         var fresh = _sessionFactory();
+        string? resumeId;
+        lock (_gate)
+        {
+            resumeId = _resumeSessionId;
+        }
+
         try
         {
-            await fresh.CreateAsync(cancellationToken).ConfigureAwait(false);
+            if (resumeId is null)
+            {
+                await fresh.CreateAsync(cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                await fresh.ResumeAsync(resumeId, cancellationToken).ConfigureAwait(false);
+                lock (_gate)
+                {
+                    // The resume succeeded: a session bound after a later fault is created fresh.
+                    _resumeSessionId = null;
+                }
+            }
         }
         catch
         {
@@ -169,6 +222,39 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
         }
 
         return fresh;
+    }
+
+    /// <summary>Records the identifier the bound session reports and raises <see cref="NativeSessionIdChanged"/> when it is new.</summary>
+    private void PublishNativeSessionId(IOmpSession session)
+    {
+        if (session is not IOmpSessionIdentity { NativeSessionId: { Length: > 0 } id })
+        {
+            return;
+        }
+
+        bool changed;
+        lock (_gate)
+        {
+            changed = !string.Equals(_nativeSessionId, id, StringComparison.Ordinal);
+            _nativeSessionId = id;
+        }
+
+        if (!changed || NativeSessionIdChanged is not { } handlers)
+        {
+            return;
+        }
+
+        foreach (var handler in handlers.GetInvocationList().Cast<EventHandler>())
+        {
+            try
+            {
+                handler(this, EventArgs.Empty);
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+                // A subscriber must never fail the prompt or hide the id from the other subscribers.
+            }
+        }
     }
 
     /// <summary>Binds a fresh session unless a concurrent caller bound a live one first, and disposes whatever is displaced or lost.</summary>

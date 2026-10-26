@@ -1,13 +1,15 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:completion="clr-namespace:OmpOS.Native.Views.Completion"
+             xmlns:copy="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
+             xmlns:panel="clr-namespace:OmpOS.Native.Views.AgentPanel"
              x:Class="OmpOS.Native.Views.ComposerView"
              Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
              Padding="{DynamicResource OmpOS.Space.Md}">
 
   <!-- Keyboard order follows XAML order: prompt, send (steer while a run is active), follow-up (only while a run is active), stop,
-       then the suggestions box while it is shown. -->
-  <Grid RowDefinitions="Auto,Auto,Auto"
+       then the suggestions box while it is shown. The hint line is text, not a tab stop. -->
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto"
         ColumnDefinitions="*,Auto,Auto,Auto"
         ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}"
         RowSpacing="{DynamicResource OmpOS.Gap.Xs}">
@@ -27,7 +29,8 @@
              Grid.Row="1"
              Grid.Column="0"
              AutomationProperties.Name="Message"
-             PlaceholderText="Type a message…"
+             AutomationProperties.HelpText="{x:Static panel:AgentPanelViewText.ComposerHint}"
+             PlaceholderText="{x:Static copy:AgentPanelCopy.ComposerPlaceholderIdle}"
              AcceptsReturn="True"
              TextWrapping="Wrap"
              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
@@ -39,6 +42,7 @@
             Grid.Row="1"
             Grid.Column="1"
             AutomationProperties.Name="Send message"
+            ToolTip.Tip="Send message"
             Width="{DynamicResource OmpOS.Size.TargetMin}"
             Height="{DynamicResource OmpOS.Size.TargetMin}"
             VerticalAlignment="Bottom">
@@ -52,16 +56,18 @@
     <Button x:Name="FollowUpButton"
             Grid.Row="1"
             Grid.Column="2"
-            Content="Follow-up"
+            Content="{x:Static panel:AgentPanelViewText.QueueFollowUp}"
+            Padding="{DynamicResource OmpOS.Space.Md}"
             MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
             VerticalAlignment="Bottom"
             IsVisible="False"
-            AutomationProperties.Name="Queue follow-up message" />
+            AutomationProperties.Name="{x:Static panel:AgentPanelViewText.QueueFollowUpName}" />
 
     <Button x:Name="StopButton"
             Grid.Row="1"
             Grid.Column="3"
             AutomationProperties.Name="Stop response"
+            ToolTip.Tip="Stop response"
             Width="{DynamicResource OmpOS.Size.TargetMin}"
             Height="{DynamicResource OmpOS.Size.TargetMin}"
             VerticalAlignment="Bottom">
@@ -70,9 +76,20 @@
                  Fill="{DynamicResource OmpOS.Color.TextPrimary}" />
     </Button>
 
+    <!-- The key map in one line. The shell hides it below 720 px of window height. -->
+    <TextBlock x:Name="HintLine"
+               Grid.Row="2"
+               Grid.Column="0"
+               Grid.ColumnSpan="4"
+               Classes="muted"
+               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+               TextWrapping="Wrap"
+               Text="{x:Static panel:AgentPanelViewText.ComposerHint}"
+               AutomationProperties.Name="{x:Static panel:AgentPanelViewText.ComposerHintName}" />
+
     <!-- The suggestions box is shown by the shell's Inline suggestions toggle. It is hidden until then, so it is no tab stop before that. -->
     <completion:InlineCompletionBox x:Name="Suggestions"
-                                    Grid.Row="2"
+                                    Grid.Row="3"
                                     Grid.Column="0"
                                     Grid.ColumnSpan="4"
                                     IsVisible="False" />

@@ -1,0 +1,91 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:copy="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
+             xmlns:local="clr-namespace:OmpOS.Native.Views.AgentPanel"
+             x:Class="OmpOS.Native.Views.AgentPanel.PanelStateView"
+             x:DataType="copy:AgentPanelViewModel">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The thread block of the panel states Empty, Loading and Error (46-UI-SPEC, States). Ready draws nothing. -->
+  <StackPanel Margin="{DynamicResource OmpOS.Space.Md}"
+              Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+    <!-- Panel error: a failed catalog load. Assertive, because the user has to act. -->
+    <Border x:Name="PanelError"
+            Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
+            Padding="{DynamicResource OmpOS.Space.Sm}"
+            IsVisible="False"
+            AutomationProperties.Name="{x:Static local:AgentPanelViewText.PanelErrorName}"
+            AutomationProperties.LiveSetting="Assertive">
+      <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource OmpOS.Gap.Sm}">
+          <local:StageIcon IconKey="{x:Static copy:StatusIcon.Cross}"
+                           VerticalAlignment="Top"
+                           Margin="0,4,0,0" />
+          <TextBlock x:Name="PanelErrorText"
+                     Text="{CompiledBinding BannerText}"
+                     Classes="tone-error"
+                     TextWrapping="Wrap"
+                     MaxWidth="{DynamicResource OmpOS.Size.ThreadContentMaxWidth}" />
+        </StackPanel>
+        <Button x:Name="RetryLoadingButton"
+                Content="{x:Static copy:AgentPanelCopy.RetryLoading}"
+                Command="{CompiledBinding RetryLoadingCommand}"
+                HorizontalAlignment="Left"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                Padding="{DynamicResource OmpOS.Space.Md}"
+                AutomationProperties.Name="{x:Static copy:AgentPanelCopy.RetryLoadingName}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Loading: static text, never a spinner. -->
+    <Border x:Name="LoadingBlock"
+            IsVisible="False"
+            HorizontalAlignment="Center"
+            Padding="{DynamicResource OmpOS.Space.Xxl}">
+      <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+      <TextBlock x:Name="LoadingHeading"
+                 Text="{x:Static copy:AgentPanelCopy.PanelLoadingHeading}"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Heading}"
+                 FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                 TextWrapping="Wrap" />
+      <TextBlock x:Name="LoadingBody"
+                 Text="{x:Static copy:AgentPanelCopy.PanelLoadingBody}"
+                 Classes="muted"
+                 TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
+    <!-- Empty: no sessions. The primary button is the only accent fill of the screen. -->
+    <Border x:Name="EmptyBlock"
+            IsVisible="False"
+            HorizontalAlignment="Center"
+            MaxWidth="{DynamicResource OmpOS.Size.ThreadContentMaxWidth}"
+            Padding="{DynamicResource OmpOS.Space.Xxl}">
+      <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+      <TextBlock x:Name="EmptyHeading"
+                 Text="{x:Static copy:AgentPanelCopy.EmptyThreadHeading}"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Heading}"
+                 FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                 TextWrapping="Wrap" />
+      <TextBlock x:Name="EmptyBody"
+                 Text="{x:Static copy:AgentPanelCopy.EmptyThreadBody}"
+                 Classes="muted"
+                 TextWrapping="Wrap" />
+      <Button x:Name="StartFirstAgentButton"
+              Classes="primary"
+              Content="{x:Static copy:AgentPanelCopy.NewAgent}"
+              HorizontalAlignment="Left"
+              Margin="0,16,0,0"
+              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+              AutomationProperties.Name="{x:Static copy:AgentPanelCopy.StartFirstAgent}" />
+      </StackPanel>
+    </Border>
+
+  </StackPanel>
+
+</UserControl>

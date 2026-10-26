@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OmpOS.Native.Views.Blocks.ToolResultBlockView">
+
+  <Border Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
+          Padding="{DynamicResource OmpOS.Space.Sm}">
+    <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+      <Grid ColumnDefinitions="*,Auto"
+            ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
+        <TextBlock x:Name="ResultTitle"
+                   Grid.Column="0"
+                   FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="ResultStatus"
+                   Grid.Column="1"
+                   Classes="muted"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                   VerticalAlignment="Center" />
+      </Grid>
+
+      <TextBlock x:Name="OutputText"
+                 TextWrapping="Wrap" />
+
+    </StackPanel>
+  </Border>
+
+</UserControl>

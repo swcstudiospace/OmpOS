@@ -182,6 +182,30 @@ public sealed class ThemeContrastTests
         TextPairs.ShouldContain(new Pair(TextSecondary, SurfaceActive));
     }
 
+    /// <summary>
+    /// The generated pair lists contain every pair the Agent Panel status chips, glyph strokes, selected-row bar and primary buttons rely on
+    /// (46-UI-SPEC, Contrast contract), so each is already measured by the theory tests above in both variants.
+    /// </summary>
+    [Fact]
+    public void ThePanelStatusPairsAreCovered()
+    {
+        string[] surfaces = [Surface, SurfaceRaised, SurfaceActive];
+        string[] statusText = [TextPrimary, TextSecondary, StatusSuccess, StatusWarning, StatusError];
+
+        foreach (var background in surfaces)
+        {
+            foreach (var foreground in statusText)
+            {
+                TextPairs.ShouldContain(new Pair(foreground, background), $"{foreground} on {background} is drawn as status text");
+            }
+
+            NonTextPairs.ShouldContain(new Pair(AccentPurple, background), $"AccentPurple on {background} is the focus ring, selected bar and glyph stroke");
+            NonTextPairs.ShouldContain(new Pair(TextSecondary, background), $"TextSecondary on {background} is the chip border");
+        }
+
+        TextPairs.ShouldContain(new Pair(AccentPurpleOn, AccentPurple), "the primary button label is AccentPurpleOn on AccentPurple");
+    }
+
     /// <summary>Every colour role sits inside a Light or Dark theme variant, however deep, so no colour is read outside the variant that selects it.</summary>
     [Fact]
     public void EveryColourRoleIsDefinedInsideAThemeVariant()

@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using OmpOS.Contracts.Ui;
 using OmpOS.GenUi;
+using OmpOS.Native.Views.AgentPanel;
 using OmpOS.Presentation.State;
 
 namespace OmpOS.Native.Views;
@@ -44,7 +45,7 @@ internal partial class SessionView : UserControl
     public event EventHandler? RetryRequested;
 
     /// <summary>Moves keyboard focus to the transcript region. The shell's skip link uses this.</summary>
-    public void FocusTranscript() => _ = TranscriptScroll.Focus();
+    public void FocusTranscript() => TranscriptScroll.FocusWhenReady();
 
     /// <summary>
     /// Scrolls the transcript so the block at <paramref name="index"/> is in view. The index is a block index of the folded

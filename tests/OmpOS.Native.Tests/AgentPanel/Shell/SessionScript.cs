@@ -1,0 +1,35 @@
+using OmpOS.Contracts.Agents;
+using OmpOS.Native.Engine;
+using OmpOS.Native.Tests.Parity;
+using OmpOS.Native.Views.Sessions;
+using OmpOS.Presentation.AgentPanel;
+using OmpOS.Presentation.Approvals;
+
+namespace OmpOS.Native.Tests.AgentPanel.Shell;
+
+/// <summary>What one session of a shell under test is made of: its send path, its approval bridge, its stage source and its task context.</summary>
+internal sealed class SessionScript
+{
+    /// <summary>Gets the send path of the session. An <see cref="UnconnectedPromptChannel"/> refuses every send.</summary>
+    public IPromptChannel Prompts { get; init; } = new UnconnectedPromptChannel();
+
+    /// <summary>Gets the bridge that records the session's tool-approval decisions.</summary>
+    public IToolApprovalBridge Approvals { get; init; } = new UnconnectedToolApprovalBridge();
+
+    /// <summary>Gets the source of the session's stage events.</summary>
+    public ScriptedStageSource Stages { get; init; } = new();
+
+    /// <summary>Gets the source of the session's task context.</summary>
+    public ITaskContextSource Context { get; init; } = new ScriptedTaskContext(null);
+
+    /// <summary>Gets the callback that records a steering entry, or null.</summary>
+    public Func<SteeringEntry, CancellationToken, Task>? RecordSteering { get; init; }
+
+    /// <summary>Gets the scripted channel when the send path is one, or fails the test.</summary>
+    public ScriptedPromptChannel Scripted => (ScriptedPromptChannel)Prompts;
+
+    /// <summary>Creates a session script over scripted turns.</summary>
+    /// <param name="turns">The turns the session's send path plays, one per prompt.</param>
+    /// <returns>The script.</returns>
+    public static SessionScript WithTurns(params ScriptedTurn[] turns) => new() { Prompts = new ScriptedPromptChannel(turns) };
+}

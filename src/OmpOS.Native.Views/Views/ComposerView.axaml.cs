@@ -6,6 +6,8 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using OmpOS.Harness.Completion;
+using OmpOS.Native.Views.AgentPanel;
+using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Composer;
 using OmpOS.Presentation.Runs;
 
@@ -24,6 +26,7 @@ internal partial class ComposerView : UserControl
 
     private int _inFlight;
     private RunInputScheduler? _runs;
+    private SteeringInputModel? _steering;
 
     /// <summary>Creates the composer with no data context and no run input.</summary>
     public ComposerView()
@@ -92,6 +95,35 @@ internal partial class ComposerView : UserControl
     /// <summary>Raised on the UI thread when the work that a key press or click started faults. The argument is the fault.</summary>
     public event EventHandler<ComposerWorkFaultedEventArgs>? WorkFaulted;
 
+    /// <summary>
+    /// Raised when Esc is pressed in the prompt while a run is active. While a handler is attached the composer does not stop the run: the
+    /// handler opens the stop confirmation bar. Without a handler Esc stops the run at once.
+    /// </summary>
+    public event EventHandler? StopConfirmationRequested;
+
+    /// <summary>Raised on the UI thread with a sentence for the session status line, for example that the queue is full.</summary>
+    public event EventHandler<ComposerStatusEventArgs>? StatusMessage;
+
+    /// <summary>
+    /// Gets or sets the steering model of the session. While it is set, a steer or follow-up goes through it, so the message reaches the
+    /// steering history and is recorded, and a refused message raises <see cref="StatusMessage"/> and keeps the draft.
+    /// </summary>
+    public SteeringInputModel? Steering
+    {
+        get => _steering;
+        set => _steering = value;
+    }
+
+    /// <summary>Gets or sets whether the hint line under the prompt is shown. The shell hides it when the window is under 720 px high.</summary>
+    public bool HintVisible
+    {
+        get => HintLine.IsVisible;
+        set => HintLine.IsVisible = value;
+    }
+
+    /// <summary>Moves keyboard focus to the prompt.</summary>
+    public void FocusPrompt() => PromptInput.FocusWhenReady();
+
     /// <summary>Copies the draft into the prompt when the data context changes.</summary>
     protected override void OnDataContextChanged(EventArgs e)
     {
@@ -121,14 +153,45 @@ internal partial class ComposerView : UserControl
         }
 
         var shift = (e.KeyModifiers & KeyModifiers.Shift) != KeyModifiers.None;
-        if (e.Key == Key.Enter && !shift)
+        var ctrl = (e.KeyModifiers & KeyModifiers.Control) != KeyModifiers.None;
+        if (e.Key == Key.Enter)
         {
-            // Handled stops the text box from inserting the newline. Shift+Enter is left alone, so it inserts one.
+            if (shift && !ctrl)
+            {
+                // Shift+Enter is left alone, so the text box inserts the newline.
+                return;
+            }
+
+            // Handled stops the text box from inserting the newline.
             e.Handled = true;
-            Track(composer, () => SubmitAsync(composer));
+            if (ctrl && shift)
+            {
+                // Ctrl+Shift+Enter queues a follow-up while a run is active and is a no-op otherwise.
+                if (_runs is { IsRunActive: true } active)
+                {
+                    Track(composer, () => FollowUpAsync(composer, active));
+                }
+            }
+            else if (ctrl)
+            {
+                // Ctrl+Enter steers while a run is active and sends otherwise.
+                Track(composer, () => _runs is { IsRunActive: true } active ? SteerAsync(composer, active) : composer.SendAsync());
+            }
+            else
+            {
+                Track(composer, () => SubmitAsync(composer));
+            }
         }
         else if (e.Key == Key.Escape)
         {
+            if (RunIsActive && StopConfirmationRequested is { } requested)
+            {
+                // The shell asks first: the stop confirmation bar decides.
+                e.Handled = true;
+                requested(this, EventArgs.Empty);
+                return;
+            }
+
             Track(composer, () => composer.HandleKeyAsync("Escape", shift));
         }
     }
@@ -145,7 +208,7 @@ internal partial class ComposerView : UserControl
     {
         if (DataContext is ComposerViewModel composer && _runs is { IsRunActive: true } runs)
         {
-            Track(composer, () => QueueFollowUpAsync(composer, runs));
+            Track(composer, () => FollowUpAsync(composer, runs));
         }
     }
 
@@ -169,10 +232,51 @@ internal partial class ComposerView : UserControl
     /// While a run is active the draft steers it, unless a follow-up already waits: then the draft queues behind that follow-up, so
     /// the messages start in the order they were sent. Otherwise the composer sends the draft as a new prompt.
     /// </summary>
-    private Task SubmitAsync(ComposerViewModel composer) =>
-        _runs is { IsRunActive: true } runs
-            ? runs.QueuedFollowUpCount > 0 ? QueueFollowUpAsync(composer, runs) : SteerDraftAsync(composer, runs)
-            : composer.SendAsync();
+    private Task SubmitAsync(ComposerViewModel composer)
+    {
+        if (_runs is not { IsRunActive: true } runs)
+        {
+            return composer.SendAsync();
+        }
+
+        // With a steering model the model keeps the send order itself: a steer queues behind waiting follow-ups.
+        return _steering is null && runs.QueuedFollowUpCount > 0 ? FollowUpAsync(composer, runs) : SteerAsync(composer, runs);
+    }
+
+    /// <summary>Steers the active run with the draft, through the steering model when one is set so the entry reaches the history.</summary>
+    private Task SteerAsync(ComposerViewModel composer, RunInputScheduler runs) =>
+        _steering is { } steering ? SubmitSteeringAsync(composer, steering, SteeringMode.Steer) : SteerDraftAsync(composer, runs);
+
+    /// <summary>Queues the draft as a follow-up behind the active run, through the steering model when one is set.</summary>
+    private Task FollowUpAsync(ComposerViewModel composer, RunInputScheduler runs) =>
+        _steering is { } steering ? SubmitSteeringAsync(composer, steering, SteeringMode.FollowUp) : QueueFollowUpAsync(composer, runs);
+
+    private async Task SubmitSteeringAsync(ComposerViewModel composer, SteeringInputModel steering, SteeringMode mode)
+    {
+        var text = composer.Draft;
+        var outcome = await steering.SubmitAsync(text, mode, CancellationToken.None).ConfigureAwait(true);
+        switch (outcome)
+        {
+            case SteeringSubmitOutcome.Accepted:
+                // Clear only the text that was accepted. Text typed while the message was in flight stays.
+                if (string.Equals(composer.Draft, text, StringComparison.Ordinal))
+                {
+                    composer.Draft = string.Empty;
+                }
+
+                break;
+            case SteeringSubmitOutcome.QueueFull:
+                // The draft stays, so the user can send it again once the queue has room.
+                StatusMessage?.Invoke(this, new ComposerStatusEventArgs(steering.RefusalText ?? AgentPanelCopy.QueueFull(RunInputScheduler.MaxQueuedMessages)));
+                break;
+            case SteeringSubmitOutcome.NoActiveRun:
+                // The run ended while the key was pressed: the text is a new prompt.
+                await composer.SendAsync().ConfigureAwait(true);
+                break;
+            default:
+                break;
+        }
+    }
 
     private static async Task SteerDraftAsync(ComposerViewModel composer, RunInputScheduler runs)
     {
@@ -259,6 +363,8 @@ internal partial class ComposerView : UserControl
         var active = RunIsActive;
         FollowUpButton.IsVisible = active;
         AutomationProperties.SetName(SendButton, active ? SteerName : SendName);
+        ToolTip.SetTip(SendButton, active ? SteerName : SendName);
+        PromptInput.PlaceholderText = active ? AgentPanelCopy.ComposerPlaceholderRunning : AgentPanelCopy.ComposerPlaceholderIdle;
 
         var label = PendingLabelText();
         PendingLabel.Text = label;
@@ -272,12 +378,7 @@ internal partial class ComposerView : UserControl
             return string.Empty;
         }
 
-        var held = _runs.SteersHeld switch
-        {
-            0 => string.Empty,
-            1 => "1 steering message is held until the active turn ends.",
-            _ => $"{_runs.SteersHeld} steering messages are held until the active turn ends.",
-        };
+        var held = AgentPanelCopy.HeldSteering(_runs.SteersHeld) ?? string.Empty;
         var pending = _runs.Pending switch
         {
             PendingRunInput.FollowUp => _runs.QueuedFollowUpCount == 1

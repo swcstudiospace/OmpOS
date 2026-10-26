@@ -6,8 +6,10 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using OmpOS.Harness.Abstractions;
+using OmpOS.Harness.Acp;
 using OmpOS.Harness.Completion;
-using OmpOS.Native.Engine;
+using OmpOS.Native.Tests.Send;
 using OmpOS.Native.Views.Completion;
 using OmpOS.Native.Views.Diff;
 using OmpOS.Native.Views.Editor;
@@ -42,8 +44,8 @@ public sealed class ShellWave7Tests
         "DiffToggle",
         "InlineEditToggle",
         "ConventionsToggle",
-        "McpToggle",
         "WorkspaceSearchToggle",
+        "McpToggle",
         "ExportToggle",
     ];
 
@@ -84,7 +86,10 @@ public sealed class ShellWave7Tests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>Tab moves from the side-chat toggle through every workspace tool toggle, in the order the shell lists them.</summary>
+    /// <summary>
+    /// Tab moves from the side-chat toggle through the inline-suggestions toggle and every workspace tool toggle, in the order the Tools
+    /// view lists them.
+    /// </summary>
     [Fact]
     public async Task WorkspaceToolTogglesFollowSideChatsInTabOrder()
     {
@@ -96,7 +101,7 @@ public sealed class ShellWave7Tests
             try
             {
                 Toggle(window, "SideChatsToggle").Focus();
-                foreach (var name in ToolToggleNames)
+                foreach (var name in ToolToggleNames.Prepend("SuggestionsToggle"))
                 {
                     ShellHarness.Press(window, Key.Tab, PhysicalKey.Tab);
                     Toggle(window, name).IsFocused.ShouldBeTrue($"{name} follows the toggle before it");
@@ -324,77 +329,79 @@ public sealed class ShellWave7Tests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>Building the application composes no engine, so none exists before the first decision.</summary>
+    /// <summary>Building the application and the head composes no engine: no transport opens before the first send.</summary>
     [Fact]
-    public void BuildingTheApplicationComposesNoEngine()
+    public async Task BuildingTheApplicationAndTheHeadStartsNoEngine()
     {
-        var composed = 0;
-
-        var builder = Program.BuildAvaloniaApp(() =>
+        var ct = TestContext.Current.CancellationToken;
+        using var workspace = new TempWorkspace();
+        var started = 0;
+        var agent = new ScriptedAgent();
+        Func<AcpClientOptions, IAcpTransport> transports = _ =>
         {
-            composed++;
-            return EngineComposition.Compose([]);
-        });
+            started++;
+            return new ScriptedAgentTransport(agent.Respond);
+        };
 
-        builder.ShouldNotBeNull();
-        composed.ShouldBe(0);
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            Program.BuildAvaloniaApp().ShouldNotBeNull();
+            var shell = await SendShell.ShowAsync(workspace.Root, transports, Program.ProductionAllowedKinds, ct).ConfigureAwait(true);
+            await using var shellScope = shell.ConfigureAwait(true);
+
+            started.ShouldBe(0, "no engine starts until the first send");
+            agent.Methods.ShouldBeEmpty();
+        }, ct).ConfigureAwait(true);
     }
 
     /// <summary>
-    /// Launch builds the window over the lazily composed engine's bridge and starts no process. The engine is composed on the first
-    /// decision, and composing it starts no process either.
+    /// Launch builds the window over the head's session and starts no process. A decision for a request that does not exist is answered
+    /// as already decided without starting an engine, and answering it starts no process either.
     /// </summary>
     [Fact]
-    public async Task LaunchOverALazyEngineBuildsTheWindowAndStartsNoProcess()
+    public async Task LaunchOverTheHeadBuildsTheWindowAndStartsNoProcess()
     {
+        var ct = TestContext.Current.CancellationToken;
         using var workspace = new TempWorkspace();
-        var composed = 0;
-        var engine = new Lazy<EngineComposition>(() =>
+        var started = 0;
+        var agent = new ScriptedAgent();
+        Func<AcpClientOptions, IAcpTransport> transports = _ =>
         {
-            composed++;
-            return EngineComposition.Compose([]);
-        });
-        var bridge = new App.ComposedApprovalBridge(engine);
+            started++;
+            return new ScriptedAgentTransport(agent.Respond);
+        };
 
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
             var before = ProcessIds();
-            var window = new MainWindow(bridge, new UnconnectedRunInput(), MotionPreference.System, workspace.Root);
-            window.Show();
-            ShellHarness.Settle(window);
-            try
-            {
-                composed.ShouldBe(0, "the engine is composed on the first decision, not at launch");
-                ProcessIds().Except(before).ShouldBeEmpty("launch starts no child process");
-                ShellHarness.MainViewOf(window).RunControls.UnavailableDetail.ShouldBeNull("the composed bridge is connected");
+            var shell = await SendShell.ShowAsync(workspace.Root, transports, [], ct).ConfigureAwait(true);
+            await using var shellScope = shell.ConfigureAwait(true);
 
-                var outcome = await bridge.DecideAsync("shell-session", "no-pending-request", ToolApprovalDecision.Deny, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            started.ShouldBe(0, "the engine starts on the first send, not at launch");
+            ProcessIds().Except(before).ShouldBeEmpty("launch starts no child process");
+            shell.RunControls.UnavailableDetail.ShouldBeNull("the head's approval bridge is connected");
 
-                outcome.ShouldBe(ToolApprovalOutcome.AlreadyDecided);
-                composed.ShouldBe(1);
-                ProcessIds().Except(before).ShouldBeEmpty("composing the engine starts no child process");
-            }
-            finally
-            {
-                window.Close();
-            }
-        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            var outcome = await shell.Approvals.DecideAsync("shell-session", "no-pending-request", ToolApprovalDecision.Deny, ct).ConfigureAwait(true);
+
+            outcome.ShouldBe(ToolApprovalOutcome.AlreadyDecided);
+            started.ShouldBe(0, "a decision starts no engine");
+            ProcessIds().Except(before).ShouldBeEmpty("deciding starts no child process");
+        }, ct).ConfigureAwait(true);
     }
 
-    /// <summary>The window built without an engine keeps the unconnected approval bridge, which reports why it cannot record decisions.</summary>
+    /// <summary>A window over a session with no engine keeps the unconnected approval bridge, which reports why it cannot record decisions.</summary>
     [Fact]
     public async Task TheDefaultWindowKeepsTheUnconnectedApprovalBridge()
     {
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            var window = new MainWindow(MotionPreference.System);
-            window.Show();
-            ShellHarness.Settle(window);
+            var window = ShellHarness.Show();
             try
             {
-                ShellHarness.MainViewOf(window).RunControls.UnavailableDetail.ShouldNotBeNullOrWhiteSpace();
+                ShellHarness.RuntimeOf(window).RunControls.UnavailableDetail.ShouldNotBeNullOrWhiteSpace();
             }
             finally
             {
@@ -405,9 +412,8 @@ public sealed class ShellWave7Tests
 
     private static MainWindow ShowWindow(string workspaceRoot)
     {
-        var window = new MainWindow(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), MotionPreference.System, workspaceRoot);
-        window.Show();
-        ShellHarness.Settle(window);
+        var window = ShellHarness.Show(script: null, MotionPreference.System, workspaceRoot: workspaceRoot);
+        ShellHarness.ShowToolsView(window);
         return window;
     }
 

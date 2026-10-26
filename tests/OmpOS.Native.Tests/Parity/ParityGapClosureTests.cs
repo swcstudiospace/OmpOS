@@ -2,7 +2,9 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using OmpOS.Contracts.Ui;
+using OmpOS.Native.Tests.AgentPanel.Shell;
 using OmpOS.Native.Views;
+using OmpOS.Native.Views.AgentPanel;
 using OmpOS.Presentation.State;
 using Shouldly;
 using Xunit;
@@ -59,18 +61,21 @@ public sealed class ParityGapClosureTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>Row 36: with no sessions, the shell's conversation list draws its empty prompt and no rows.</summary>
+    /// <summary>Row 36: with no sessions, the shell's agent rail draws its empty prompt and no rows.</summary>
     [Fact]
     public async Task ShellWithNoSessionsDrawsTheEmptyConversationListPrompt()
     {
         await using var session = TestAppBuilder.StartSession();
-        await session.Dispatch(() =>
+        await session.RunAsync(async () =>
         {
-            var window = ShellHarness.Show();
+            var fixture = ShellFixture.Create();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
+            var window = ShellHarness.Show(fixture);
+            var rail = (AgentRailView)ShellHarness.MainViewOf(window).FindControl<ContentControl>("RailHost")!.Content!;
 
             ShellHarness.Rows(window).ItemCount.ShouldBe(0);
-            ShellHarness.ListHeading(window).Text.ShouldBe("No conversations yet.");
-            ShellHarness.ListBody(window).Text.ShouldBe("Conversations you start will appear here.");
+            rail.FindControl<TextBlock>("StateHeading")!.Text.ShouldBe("No agents yet.");
+            rail.FindControl<TextBlock>("StateBody")!.Text.ShouldBe("Start an agent to work on a task.");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

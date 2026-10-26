@@ -26,6 +26,26 @@
                  AutomationProperties.LiveSetting="Polite" />
     </StackPanel>
 
+    <CheckBox x:Name="ChatScopeToggle"
+              Content="Include side chats"
+              AutomationProperties.Name="Include side chats in the search"
+              IsVisible="False" />
+
+    <TextBlock x:Name="SelectedLocation"
+               Classes="muted"
+               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+               TextTrimming="CharacterEllipsis"
+               MaxLines="1"
+               AutomationProperties.Name="Selected match location"
+               AutomationProperties.LiveSetting="Polite"
+               IsVisible="False" />
+
+    <ListBox x:Name="MatchRows"
+             MaxHeight="160"
+             AutomationProperties.Name="Search matches"
+             Focusable="True"
+             IsVisible="False" />
+
   </StackPanel>
 
 </UserControl>

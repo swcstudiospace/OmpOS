@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:copy="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
+             xmlns:local="clr-namespace:OmpOS.Native.Views.AgentPanel"
+             x:Class="OmpOS.Native.Views.AgentPanel.PipelineStripView"
+             x:DataType="copy:StageTimelineModel">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+  </UserControl.Styles>
+
+  <StackPanel>
+
+    <!-- One 44 px button of pills, one pill per plugin source in pipeline order. The pills wrap onto a second line at narrow widths.
+         Pressing it opens a flyout with the stage rows of every source: the detail text, Retry stage and the fix text. -->
+    <Button x:Name="PipelineStrip"
+            Classes="strip"
+            AutomationProperties.Name="{CompiledBinding PipelineAccessibleName}">
+      <Button.Flyout>
+        <Flyout Placement="TopEdgeAlignedLeft">
+          <local:PipelineTabView x:Name="Details"
+                                 Width="{DynamicResource OmpOS.Size.StageFlyoutWidth}"
+                                 MaxHeight="{DynamicResource OmpOS.Size.StageFlyoutMaxHeight}" />
+        </Flyout>
+      </Button.Flyout>
+      <ItemsControl x:Name="Pills"
+                    ItemsSource="{CompiledBinding Pills}"
+                    Focusable="False"
+                    IsTabStop="False">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal"
+                       ItemSpacing="{DynamicResource OmpOS.Gap.Sm}"
+                       LineSpacing="{DynamicResource OmpOS.Gap.Xs}" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="copy:PipelinePill">
+            <StackPanel Orientation="Horizontal"
+                        Spacing="{DynamicResource OmpOS.Gap.Xs}">
+              <local:StageIcon IconKey="{CompiledBinding IconKey}"
+                               VerticalAlignment="Center" />
+              <TextBlock Text="{CompiledBinding Text}"
+                         VerticalAlignment="Center"
+                         FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                         TextWrapping="NoWrap" />
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Button>
+
+    <!-- The throttled announcement of the timeline, bound as it is: this view never builds announcement text. -->
+    <TextBlock x:Name="Announcement"
+               Classes="muted"
+               Margin="{DynamicResource OmpOS.Space.Xs}"
+               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+               TextWrapping="Wrap"
+               IsVisible="False"
+               AutomationProperties.Name="{x:Static local:AgentPanelViewText.PipelineAnnouncementsName}"
+               AutomationProperties.LiveSetting="Polite" />
+
+  </StackPanel>
+
+</UserControl>

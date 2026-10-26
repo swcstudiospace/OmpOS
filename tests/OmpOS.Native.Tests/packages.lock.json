@@ -434,6 +434,13 @@
           "OmpOS.Harness.Abstractions": "[1.0.0, )"
         }
       },
+      "ompos.harness.agentloop": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
+          "OmpOS.Contracts": "[1.0.0, )"
+        }
+      },
       "ompos.harness.completion": {
         "type": "Project"
       },
@@ -472,6 +479,7 @@
           "Microsoft.Extensions.Logging": "[10.0.13, )",
           "OmpOS.EngineHost": "[1.0.0, )",
           "OmpOS.Harness.Acp": "[1.0.0, )",
+          "OmpOS.Harness.AgentLoop": "[1.0.0, )",
           "OmpOS.Native.Views": "[1.0.0, )",
           "OmpOS.Presentation": "[1.0.0, )"
         }

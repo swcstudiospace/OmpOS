@@ -1,7 +1,7 @@
 using System.Diagnostics;
+using Avalonia.Controls;
 using OmpOS.Harness.Mcp;
-using OmpOS.Native.Engine;
-using OmpOS.Native.Tests.Parity;
+using OmpOS.Native.Tests.AgentPanel.Shell;
 using OmpOS.Native.Views.Mcp;
 using OmpOS.Presentation;
 using Shouldly;
@@ -31,13 +31,18 @@ public sealed class MainViewCloseFaultStderrTests
         App.StderrTraceListener? listener = null;
         try
         {
-            await session.Dispatch(() =>
+            await session.RunAsync(async () =>
             {
                 // Installed on the UI thread after the session has started: the app's startup listener would otherwise replace it.
                 listener = App.InstallStderrTraceListener(error);
-                var main = new MainView(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), Environment.CurrentDirectory, prompts: null, MotionPreference.Full, mcpHost: new DisposeFailingMcpHost());
-                ParityShellHarness.Show(main);
+                var fixture = ShellFixture.CreateWithSession();
+                await using var fixtureScope = fixture.ConfigureAwait(true);
+                var main = new MainView(fixture.Panel, Environment.CurrentDirectory, MotionPreference.Full, mcpHost: new DisposeFailingMcpHost());
+                var window = new Window { Content = main, Width = 900, Height = 600 };
+                window.Show();
+                ShellHarness.Settle(window);
                 main.Close();
+                window.Close();
             }, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
             var text = await written.Task.WaitAsync(TraceTimeout, TestContext.Current.CancellationToken).ConfigureAwait(true);

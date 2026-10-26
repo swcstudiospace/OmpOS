@@ -1,5 +1,7 @@
 using Avalonia.Animation;
-using OmpOS.Native.Engine;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using OmpOS.Native.Tests.AgentPanel.Shell;
 using OmpOS.Presentation;
 using Shouldly;
 using Xunit;
@@ -73,10 +75,12 @@ public sealed class ReducedMotionTests
         await using var session = TestAppBuilder.StartSession();
         await session.Dispatch(() =>
         {
-            var main = new MainView(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), Environment.CurrentDirectory, prompts: null, MotionPreference.Reduced);
+            var fixture = ShellFixture.Create();
+            var main = new MainView(fixture.Panel, Environment.CurrentDirectory, MotionPreference.Reduced);
 
             main.Classes.Contains(MainView.ReducedMotionClass).ShouldBeTrue();
             main.Close();
+            fixture.Panel.Dispose();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -89,18 +93,25 @@ public sealed class ReducedMotionTests
         {
             foreach (var motion in new[] { MotionPreference.System, MotionPreference.Full })
             {
-                var main = new MainView(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), Environment.CurrentDirectory, prompts: null, motion);
+                var fixture = ShellFixture.Create();
+                var main = new MainView(fixture.Panel, Environment.CurrentDirectory, motion);
 
                 main.Classes.Contains(MainView.ReducedMotionClass).ShouldBeFalse();
                 main.Close();
+                fixture.Panel.Dispose();
             }
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
     private static IEnumerable<Animatable> SharedControls(MainWindow window)
     {
+        var main = ShellHarness.MainViewOf(window);
         yield return ShellHarness.SkipLink(window);
+        yield return ShellHarness.NewAgent(window);
         yield return ShellHarness.Rows(window);
+        yield return main.FindControl<ToggleButton>("SessionsViewToggle")!;
+        yield return main.FindControl<ToggleButton>("ToolsViewToggle")!;
+        yield return ShellTree.NamedVisible<Button>(main, "PipelineStrip")!;
         yield return ShellHarness.Scroll(window);
         yield return ShellHarness.Prompt(window);
         yield return ShellHarness.Send(window);

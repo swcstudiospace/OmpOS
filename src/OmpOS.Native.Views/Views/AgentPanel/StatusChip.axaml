@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:OmpOS.Native.Views.AgentPanel"
+             x:Class="OmpOS.Native.Views.AgentPanel.StatusChip"
+             Focusable="False"
+             HorizontalAlignment="Left"
+             VerticalAlignment="Center">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- 46-UI-SPEC, Status chip: glyph plus status words on a 24 px chip with a 1 px TextSecondary border. Colour is never the only signal. -->
+  <Border x:Name="Frame"
+          Classes="chip">
+    <StackPanel Orientation="Horizontal"
+                VerticalAlignment="Center"
+                Spacing="{DynamicResource OmpOS.Gap.Sm}">
+      <local:StageIcon x:Name="Icon"
+                       VerticalAlignment="Center" />
+      <TextBlock x:Name="Label"
+                 VerticalAlignment="Center"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                 TextWrapping="NoWrap" />
+    </StackPanel>
+  </Border>
+
+</UserControl>

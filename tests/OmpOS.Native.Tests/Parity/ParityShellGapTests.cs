@@ -3,8 +3,9 @@ using Avalonia.Controls;
 using Avalonia.VisualTree;
 using OmpOS.Contracts.Ui;
 using OmpOS.Harness.Abstractions;
+using OmpOS.Native.Tests.AgentPanel.Shell;
 using OmpOS.Native.Tests.RunControls;
-using OmpOS.Presentation.Components;
+using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.State;
 using Shouldly;
 using Xunit;
@@ -12,53 +13,57 @@ using Xunit;
 namespace OmpOS.Native.Tests.Parity;
 
 /// <summary>
-/// Native checks that close the shell rows of the Phase 21 parity inventory: the conversation list's current row and its selection callback,
-/// the engine-failure banner, the host's retry and stop wiring, and the engine event fold with its diagnostic drop. The turns run through
+/// Native checks that close the shell rows of the Phase 21 parity inventory: the agent rail's current row and its selection, the
+/// engine-failure banner, the host's retry and stop wiring, and the engine event fold with its diagnostic drop. The turns run through
 /// the shell, so the composer, the send path and the transcript are the ones the user sees.
 /// </summary>
 public sealed class ParityShellGapTests
 {
-    private static readonly ConversationSummary First = new() { Id = "c-1", Title = "First conversation" };
-    private static readonly ConversationSummary Second = new() { Id = "c-2", Title = "Second conversation" };
+    private const string FirstId = "c-1";
+    private const string FirstTitle = "First conversation";
+    private const string SecondId = "c-2";
+    private const string SecondTitle = "Second conversation";
 
-    /// <summary>Row 37: the current conversation is the list's selected row, and it is the only row marked as current.</summary>
+    /// <summary>Row 37: the current agent is the rail's selected row, and it is the only row marked as current.</summary>
     [Fact]
     public async Task CurrentConversationRowIsTheOnlyRowMarkedCurrent()
     {
         await using var session = TestAppBuilder.StartSession();
-        await session.Dispatch(() =>
+        await session.RunAsync(async () =>
         {
-            var window = ShellHarness.Show();
-            var list = ShellHarness.List(window);
-            list.Conversations = [First, Second];
-            list.SelectedId = Second.Id;
-            ShellHarness.Settle(window);
+            var fixture = ShellFixture.Create();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
+            fixture.AddSession(FirstId, FirstTitle);
+            fixture.AddSession(SecondId, SecondTitle);
+            fixture.Panel.SelectSession(SecondId);
+            var window = ShellHarness.Show(fixture);
 
-            ShellHarness.Rows(window).SelectedItem.ShouldBe(Second);
-            RowNamed(window, Second.Title).IsSelected.ShouldBeTrue("the current row is marked as selected");
-            RowNamed(window, First.Title).IsSelected.ShouldBeFalse("only the current row is marked");
+            ShellHarness.Rows(window).SelectedItem.ShouldBeOfType<AgentRow>().Id.ShouldBe(SecondId);
+            RowNamed(window, SecondTitle).IsSelected.ShouldBeTrue("the current row is marked as selected");
+            RowNamed(window, FirstTitle).IsSelected.ShouldBeFalse("only the current row is marked");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>Row 38: choosing a row reports that conversation's identifier, and the chosen row becomes the current one.</summary>
+    /// <summary>Row 38: choosing a row reports that agent's identifier, and the chosen row becomes the current one.</summary>
     [Fact]
     public async Task ChoosingARowRaisesItsIdentifier()
     {
         await using var session = TestAppBuilder.StartSession();
-        await session.Dispatch(() =>
+        await session.RunAsync(async () =>
         {
-            var window = ShellHarness.Show();
-            var list = ShellHarness.List(window);
-            list.Conversations = [First, Second];
+            var fixture = ShellFixture.Create();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
+            fixture.AddSession(FirstId, FirstTitle);
+            fixture.AddSession(SecondId, SecondTitle);
+            var window = ShellHarness.Show(fixture);
+
+            var chosen = new List<string?>();
+            fixture.Catalog.SelectionChanged += (_, e) => chosen.Add(e.SessionId);
+            ShellHarness.Rows(window).SelectedItem = fixture.Catalog.Rows.Single(row => string.Equals(row.Id, SecondId, StringComparison.Ordinal));
             ShellHarness.Settle(window);
 
-            var chosen = new List<string>();
-            list.ConversationSelected += (_, e) => chosen.Add(e.Id);
-            ShellHarness.Rows(window).SelectedIndex = 1;
-            ShellHarness.Settle(window);
-
-            chosen.ShouldBe([Second.Id]);
-            list.SelectedId.ShouldBe(Second.Id);
+            chosen.ShouldBe([SecondId]);
+            fixture.Catalog.SelectedId.ShouldBe(SecondId);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -68,35 +73,24 @@ public sealed class ParityShellGapTests
     {
         var ct = TestContext.Current.CancellationToken;
         var channel = new ScriptedPromptChannel(new ScriptedTurn([], Fault: "model link down"));
-        try
-        {
-            await using var session = TestAppBuilder.StartSession();
-            await session.RunAsync(async () =>
-            {
-                var main = ParityShellHarness.CreateMain(channel);
-                var window = ParityShellHarness.Show(main);
-                try
-                {
-                    ParityShellHarness.Send(main, "hello");
-                    await RunControlsHarness.UntilAsync(() => main.Session.State == SessionViewState.FatalError, "the failed turn", ct).ConfigureAwait(true);
-                    ParityShellHarness.Settle(window);
+        await using var channelScope = channel.ConfigureAwait(true);
 
-                    var banner = main.FindControl<TextBlock>("ErrorBanner")!;
-                    banner.IsVisible.ShouldBeTrue("the failure is shown above the transcript");
-                    banner.Text.ShouldBe("The engine stream failed: model link down");
-                    AutomationProperties.GetLiveSetting(banner).ShouldBe(AutomationLiveSetting.Assertive);
-                }
-                finally
-                {
-                    main.Close();
-                    window.Close();
-                }
-            }, ct).ConfigureAwait(true);
-        }
-        finally
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
         {
-            await channel.DisposeAsync().ConfigureAwait(true);
-        }
+            var shell = ParityShellHarness.CreateMain(channel);
+            await using var shellScope = shell.ConfigureAwait(true);
+            var window = ParityShellHarness.Show(shell);
+
+            ParityShellHarness.Send(shell, "hello");
+            await RunControlsHarness.UntilAsync(() => shell.Session.State == SessionViewState.RecoverableError, "the failed turn", ct).ConfigureAwait(true);
+            ParityShellHarness.Settle(window);
+
+            var banner = shell.Main.FindControl<TextBlock>("ErrorBanner")!;
+            banner.IsVisible.ShouldBeTrue("the failure is shown above the transcript");
+            banner.Text.ShouldBe("This turn failed: model link down");
+            AutomationProperties.GetLiveSetting(banner).ShouldBe(AutomationLiveSetting.Assertive);
+        }, ct).ConfigureAwait(true);
     }
 
     /// <summary>
@@ -111,39 +105,28 @@ public sealed class ParityShellGapTests
             new ScriptedTurn([new TextDeltaEvent("partial"), new ErrorEvent("transient", Retryable: true)]),
             new ScriptedTurn([new TextDeltaEvent("recovered"), new CompletedEvent("end_turn")]),
             new ScriptedTurn([new TextDeltaEvent("working")], HoldUntilCancelled: true));
-        try
+        await using var channelScope = channel.ConfigureAwait(true);
+
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
         {
-            await using var session = TestAppBuilder.StartSession();
-            await session.RunAsync(async () =>
-            {
-                var main = ParityShellHarness.CreateMain(channel);
-                var window = ParityShellHarness.Show(main);
-                try
-                {
-                    ParityShellHarness.Send(main, "hello");
-                    await RunControlsHarness.UntilAsync(() => IsIdle(main, SessionViewState.RecoverableError), "the recoverable failure", ct).ConfigureAwait(true);
+            var shell = ParityShellHarness.CreateMain(channel);
+            await using var shellScope = shell.ConfigureAwait(true);
+            ParityShellHarness.Show(shell);
 
-                    RunControlsHarness.Click(ParityShellHarness.Transcript(main).FindControl<Button>("SessionRetryButton")!);
-                    await RunControlsHarness.UntilAsync(() => IsIdle(main, SessionViewState.Success), "the retried turn", ct).ConfigureAwait(true);
-                    channel.Prompts.ToArray().ShouldBe(["hello", "hello"]);
+            ParityShellHarness.Send(shell, "hello");
+            await RunControlsHarness.UntilAsync(() => IsIdle(shell, SessionViewState.RecoverableError), "the recoverable failure", ct).ConfigureAwait(true);
 
-                    ParityShellHarness.Send(main, "again");
-                    await RunControlsHarness.UntilAsync(() => channel.Prompts.Count == 3 && main.Session.State == SessionViewState.Streaming, "the held turn", ct).ConfigureAwait(true);
+            RunControlsHarness.Click(ParityShellHarness.Transcript(shell).FindControl<Button>("SessionRetryButton")!);
+            await RunControlsHarness.UntilAsync(() => IsIdle(shell, SessionViewState.Success), "the retried turn", ct).ConfigureAwait(true);
+            channel.Prompts.ToArray().ShouldBe(["hello", "hello"]);
 
-                    RunControlsHarness.Click(ParityShellHarness.Transcript(main).FindControl<Button>("SessionStopButton")!);
-                    await RunControlsHarness.UntilAsync(() => channel.CancelCount == 1 && IsIdle(main, SessionViewState.Success), "the stopped turn", ct).ConfigureAwait(true);
-                }
-                finally
-                {
-                    main.Close();
-                    window.Close();
-                }
-            }, ct).ConfigureAwait(true);
-        }
-        finally
-        {
-            await channel.DisposeAsync().ConfigureAwait(true);
-        }
+            ParityShellHarness.Send(shell, "again");
+            await RunControlsHarness.UntilAsync(() => channel.Prompts.Count == 3 && shell.Session.State == SessionViewState.Streaming, "the held turn", ct).ConfigureAwait(true);
+
+            RunControlsHarness.Click(ParityShellHarness.Transcript(shell).FindControl<Button>("SessionStopButton")!);
+            await RunControlsHarness.UntilAsync(() => channel.CancelCount == 1 && IsIdle(shell, SessionViewState.Success), "the stopped turn", ct).ConfigureAwait(true);
+        }, ct).ConfigureAwait(true);
     }
 
     /// <summary>
@@ -156,43 +139,32 @@ public sealed class ParityShellGapTests
         var ct = TestContext.Current.CancellationToken;
         var channel = new ScriptedPromptChannel(new ScriptedTurn(
             [new DiagnosticEvent("slow decode"), new TextDeltaEvent("Hi"), new CompletedEvent("end_turn")]));
-        try
-        {
-            await using var session = TestAppBuilder.StartSession();
-            await session.RunAsync(async () =>
-            {
-                var main = ParityShellHarness.CreateMain(channel);
-                var window = ParityShellHarness.Show(main);
-                try
-                {
-                    ParityShellHarness.Send(main, "hello");
-                    await RunControlsHarness.UntilAsync(() => IsIdle(main, SessionViewState.Success), "the completed turn", ct).ConfigureAwait(true);
-                    ParityShellHarness.Settle(window);
+        await using var channelScope = channel.ConfigureAwait(true);
 
-                    main.Session.Tree.Blocks.OfType<MarkdownBlock>().Select(block => block.Markdown).ToArray().ShouldBe(["Hi"]);
-                    main.Session.Tree.Blocks.OfType<UnknownBlock>().ShouldBeEmpty("a diagnostic is never folded into the transcript");
-                    ParityShellHarness.Transcript(main).GetVisualDescendants().OfType<TextBlock>()
-                        .Any(text => (text.Text ?? string.Empty).Contains("slow decode", StringComparison.Ordinal))
-                        .ShouldBeFalse("a diagnostic draws nothing");
-                }
-                finally
-                {
-                    main.Close();
-                    window.Close();
-                }
-            }, ct).ConfigureAwait(true);
-        }
-        finally
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
         {
-            await channel.DisposeAsync().ConfigureAwait(true);
-        }
+            var shell = ParityShellHarness.CreateMain(channel);
+            await using var shellScope = shell.ConfigureAwait(true);
+            var window = ParityShellHarness.Show(shell);
+
+            ParityShellHarness.Send(shell, "hello");
+            await RunControlsHarness.UntilAsync(() => IsIdle(shell, SessionViewState.Success), "the completed turn", ct).ConfigureAwait(true);
+            ParityShellHarness.Settle(window);
+
+            shell.Session.Tree.Blocks.OfType<MarkdownBlock>().Select(block => block.Markdown).ToArray().ShouldBe(["Hi"]);
+            shell.Session.Tree.Blocks.OfType<UnknownBlock>().ShouldBeEmpty("a diagnostic is never folded into the transcript");
+            ParityShellHarness.Transcript(shell).GetVisualDescendants().OfType<TextBlock>()
+                .Any(text => (text.Text ?? string.Empty).Contains("slow decode", StringComparison.Ordinal))
+                .ShouldBeFalse("a diagnostic draws nothing");
+        }, ct).ConfigureAwait(true);
     }
 
     /// <summary>Whether the shell is in the state and no send is still settling, so a press is the user's next action.</summary>
-    private static bool IsIdle(MainView main, SessionViewState state) => main.Session.State == state && !main.Composer.IsStreaming;
+    private static bool IsIdle(ParityShell shell, SessionViewState state) => shell.Session.State == state && !shell.Composer.IsStreaming;
 
-    /// <summary>Gets the conversation row the list draws with the given title.</summary>
+    /// <summary>Gets the agent row the rail draws with the given title. A row's accessible name starts with its title, then its status.</summary>
     private static ListBoxItem RowNamed(MainWindow window, string title) =>
         ShellHarness.Rows(window).GetVisualDescendants().OfType<ListBoxItem>()
-            .Single(row => string.Equals(AutomationProperties.GetName(row), title, StringComparison.Ordinal));
+            .Single(row => (AutomationProperties.GetName(row) ?? string.Empty).StartsWith(title + ", ", StringComparison.Ordinal));
 }

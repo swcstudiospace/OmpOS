@@ -2,56 +2,41 @@ using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using OmpOS.Native.Engine;
+using OmpOS.Native.Agents;
 using OmpOS.Presentation;
-using OmpOS.Presentation.Approvals;
-using OmpOS.Presentation.Runs;
 
 namespace OmpOS.Native;
 
 /// <summary>
-/// The Avalonia application root. It loads the application XAML, which merges the token dictionary and the
-/// shared control styles, and opens the main window on a classic desktop lifetime. It receives the approval bridge, the run input
-/// and, when an engine is composed, the lazily composed engine the main window sends prompts through.
+/// The Avalonia application root. It loads the application XAML, which merges the token dictionary and the shared control styles, and
+/// on a classic desktop lifetime composes the head of the Agent Panel and opens the main window over it. The head is composed and its
+/// registry loaded behind the open window, so the panel shows its Loading state first; on shutdown the head stops every engine before
+/// the process ends.
 /// </summary>
 internal partial class App : Application
 {
-    private readonly IToolApprovalBridge _approvalBridge;
-    private readonly IRunInput _runInput;
-    private readonly Lazy<EngineComposition>? _engine;
+    private const int ShutdownNotRequested = 0;
+    private const int ShutdownRunning = 1;
+    private const int ShutdownDone = 2;
 
-    /// <summary>
-    /// Creates the application with the production defaults. No approval service and no run input are connected in this build,
-    /// so every decision and steer fails visibly and nothing is allowed.
-    /// </summary>
+    private readonly Func<AgentHead> _headFactory;
+    private AgentHead? _head;
+    private Task _initialisation = Task.CompletedTask;
+    private int _shutdownState;
+
+    /// <summary>Creates the application with the production head, which reads the plugins, the state and the Substrate from the process environment.</summary>
     public App()
-        : this(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput())
+        : this(AgentHead.CreateProduction)
     {
     }
 
-    /// <summary>Creates the application with the approval bridge and run input its main window uses. Sending is refused.</summary>
-    /// <param name="approvalBridge">The bridge that records each tool-approval decision.</param>
-    /// <param name="runInput">The input channel of the active run.</param>
-    /// <exception cref="ArgumentNullException">A dependency is null.</exception>
-    public App(IToolApprovalBridge approvalBridge, IRunInput runInput)
+    /// <summary>Creates the application over a head that is composed when the main window opens.</summary>
+    /// <param name="headFactory">Composes the head. It runs once, on the desktop lifetime, never in a headless test.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="headFactory"/> is null.</exception>
+    public App(Func<AgentHead> headFactory)
     {
-        ArgumentNullException.ThrowIfNull(approvalBridge);
-        ArgumentNullException.ThrowIfNull(runInput);
-
-        _approvalBridge = approvalBridge;
-        _runInput = runInput;
-    }
-
-    /// <summary>
-    /// Creates the application over an engine composed on first use. The engine is composed on the first tool-approval decision or
-    /// the first send, so launching the application composes nothing and starts no process. Decisions and sends share that engine.
-    /// </summary>
-    /// <param name="engine">The lazily composed engine.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="engine"/> is null.</exception>
-    public App(Lazy<EngineComposition> engine)
-        : this(new ComposedApprovalBridge(engine), new EngineRunInput())
-    {
-        _engine = engine;
+        ArgumentNullException.ThrowIfNull(headFactory);
+        _headFactory = headFactory;
     }
 
     /// <summary>
@@ -83,37 +68,59 @@ internal partial class App : Application
         return listener;
     }
 
-    /// <summary>Opens the main window once the desktop lifetime is available. Headless tests create their own windows.</summary>
+    /// <summary>
+    /// Composes the head and opens the main window once the desktop lifetime is available, then loads the registry behind the open
+    /// window. Headless tests create their own windows.
+    /// </summary>
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow(_approvalBridge, _runInput, MotionPreference.System, Environment.CurrentDirectory, _engine);
+            var head = _headFactory();
+            _head = head;
+            desktop.MainWindow = new MainWindow(head.Panel, MotionPreference.System, Environment.CurrentDirectory);
+            desktop.ShutdownRequested += OnShutdownRequested;
+            _initialisation = head.InitializeAsync(CancellationToken.None);
         }
 
         base.OnFrameworkInitializationCompleted();
     }
 
     /// <summary>
-    /// The approval bridge of an engine composed on first use. Each decision composes the engine if it is not composed yet, then
-    /// settles the request through the engine's own bridge.
+    /// The first request to shut down is held while the head stops every engine, so no <c>omp</c> child outlives the window; the request
+    /// is then repeated and allowed.
     /// </summary>
-    internal sealed class ComposedApprovalBridge : IToolApprovalBridge
+    private void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
     {
-        private readonly Lazy<EngineComposition> _engine;
-
-        /// <summary>Creates the bridge over a lazily composed engine.</summary>
-        /// <param name="engine">The lazily composed engine.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="engine"/> is null.</exception>
-        public ComposedApprovalBridge(Lazy<EngineComposition> engine)
+        if (_head is null || Volatile.Read(ref _shutdownState) == ShutdownDone)
         {
-            ArgumentNullException.ThrowIfNull(engine);
-            _engine = engine;
+            return;
         }
 
-        /// <inheritdoc/>
-        public async Task<ToolApprovalOutcome> DecideAsync(string sessionId, string requestId, ToolApprovalDecision decision, CancellationToken cancellationToken) =>
-            await _engine.Value.ApprovalBridge.DecideAsync(sessionId, requestId, decision, cancellationToken).ConfigureAwait(false);
+        e.Cancel = true;
+        if (Interlocked.CompareExchange(ref _shutdownState, ShutdownRunning, ShutdownNotRequested) == ShutdownNotRequested
+            && sender is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            _ = StopHeadThenShutDownAsync(_head, desktop);
+        }
+    }
+
+    private async Task StopHeadThenShutDownAsync(AgentHead head, IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        try
+        {
+            await _initialisation.WaitAsync(CancellationToken.None).ConfigureAwait(true);
+            await head.DisposeAsync().ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            Trace.TraceWarning($"Stopping the agent engines failed ({exception.GetType().Name}).");
+        }
+        finally
+        {
+            Volatile.Write(ref _shutdownState, ShutdownDone);
+            desktop.Shutdown();
+        }
     }
 
     /// <summary>

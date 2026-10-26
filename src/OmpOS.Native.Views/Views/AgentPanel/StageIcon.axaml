@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OmpOS.Native.Views.AgentPanel.StageIcon"
+             Width="{DynamicResource OmpOS.Size.IconSize}"
+             Height="{DynamicResource OmpOS.Size.IconSize}"
+             Focusable="False"
+             IsHitTestVisible="False"
+             AutomationProperties.AccessibilityView="Raw">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- A decorative glyph (46-UI-SPEC, Glyph Table): the adjacent text carries the meaning. -->
+  <Path x:Name="Glyph"
+        Width="{DynamicResource OmpOS.Size.IconSize}"
+        Height="{DynamicResource OmpOS.Size.IconSize}"
+        Stretch="Uniform"
+        StrokeThickness="1.5"
+        StrokeLineCap="Round"
+        StrokeJoin="Round" />
+
+</UserControl>

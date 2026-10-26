@@ -201,39 +201,33 @@ public sealed class ParitySessionGapTests
     public async Task ScrollTransitionsReachTheShellOncePerChange()
     {
         await using var session = TestAppBuilder.StartSession();
-        await session.Dispatch(() =>
+        await session.RunAsync(async () =>
         {
-            var main = ParityShellHarness.CreateMain(prompts: null);
-            var window = ParityShellHarness.Show(main);
-            try
+            var shell = ParityShellHarness.CreateMain(prompts: null);
+            await using var shellScope = shell.ConfigureAwait(true);
+            var window = ParityShellHarness.Show(shell);
+
+            ParityShellHarness.AppendMessages(shell.Session, 1, 40);
+            ParityShellHarness.Settle(window);
+            var scroll = ParityShellHarness.Scroll(shell);
+            var reported = new List<bool>();
+            shell.Session.PropertyChanged += (_, e) =>
             {
-                ParityShellHarness.AppendMessages(main.Session, 1, 40);
-                ParityShellHarness.Settle(window);
-                var scroll = ParityShellHarness.Scroll(main);
-                var reported = new List<bool>();
-                main.Session.PropertyChanged += (_, e) =>
+                if (string.Equals(e.PropertyName, nameof(SessionViewModel.AutoScrollPaused), StringComparison.Ordinal))
                 {
-                    if (string.Equals(e.PropertyName, nameof(SessionViewModel.AutoScrollPaused), StringComparison.Ordinal))
-                    {
-                        reported.Add(main.Session.AutoScrollPaused);
-                    }
-                };
+                    reported.Add(shell.Session.AutoScrollPaused);
+                }
+            };
 
-                scroll.Offset = new Vector(0, 0);
-                ParityShellHarness.Settle(window);
-                scroll.Offset = new Vector(0, 0);
-                ParityShellHarness.Settle(window);
-                RunControlsHarness.Click(ParityShellHarness.Transcript(main).FindControl<Button>("JumpToLatestButton")!);
-                ParityShellHarness.Settle(window);
+            scroll.Offset = new Vector(0, 0);
+            ParityShellHarness.Settle(window);
+            scroll.Offset = new Vector(0, 0);
+            ParityShellHarness.Settle(window);
+            RunControlsHarness.Click(ParityShellHarness.Transcript(shell).FindControl<Button>("JumpToLatestButton")!);
+            ParityShellHarness.Settle(window);
 
-                reported.ShouldBe([true, false], "each transition is reported once, and a scroll that stays paused is not");
-                ParityShellHarness.IsAtLatest(scroll).ShouldBeTrue("jump to latest returns to the newest output");
-            }
-            finally
-            {
-                main.Close();
-                window.Close();
-            }
+            reported.ShouldBe([true, false], "each transition is reported once, and a scroll that stays paused is not");
+            ParityShellHarness.IsAtLatest(scroll).ShouldBeTrue("jump to latest returns to the newest output");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

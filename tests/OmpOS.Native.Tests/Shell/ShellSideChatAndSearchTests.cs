@@ -2,6 +2,7 @@ using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using OmpOS.Contracts.Streaming;
 using OmpOS.Presentation.Chats;
@@ -29,24 +30,27 @@ public sealed class ShellSideChatAndSearchTests
         {
             var window = ShellHarness.Show();
             var main = ShellHarness.MainViewOf(window);
-            var feed = new Feed(main.Session);
+            var transcript = ShellHarness.SessionOf(window);
+            var feed = new Feed(transcript);
             feed.Turn(1, "Find alpha", "Alpha beta");
             ShellHarness.Settle(window);
-            var blocksBefore = main.Session.Tree.Blocks.ToArray();
+            var blocksBefore = transcript.Tree.Blocks.ToArray();
             var drawnBefore = BlockControls(window).Count;
 
+            ShellHarness.ShowToolsView(window);
             main.FindControl<ToggleButton>("SideChatsToggle")!.IsChecked = true;
             ShellHarness.Settle(window);
             SideChatHost(window).IsVisible.ShouldBeTrue();
 
             OpenSideChatButton(window).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            main.SideChats.Chats.Count.ShouldBe(1);
-            main.SideChats.Selected!.Post(SideChatAuthor.User, "a side question");
+            var sideChats = main.SideChats.ShouldNotBeNull();
+            sideChats.Chats.Count.ShouldBe(1);
+            sideChats.Selected!.Post(SideChatAuthor.User, "a side question");
             ShellHarness.Settle(window);
 
-            main.Session.Tree.Blocks.ShouldBe(blocksBefore);
+            transcript.Tree.Blocks.ShouldBe(blocksBefore);
             BlockControls(window).Count.ShouldBe(drawnBefore);
-            main.SideChats.Selected!.Messages.Count.ShouldBe(1);
+            sideChats.Selected!.Messages.Count.ShouldBe(1);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -59,7 +63,7 @@ public sealed class ShellSideChatAndSearchTests
         {
             var window = ShellHarness.Show();
             var main = ShellHarness.MainViewOf(window);
-            var feed = new Feed(main.Session);
+            var feed = new Feed(ShellHarness.SessionOf(window));
             for (var turn = 0; turn < 30; turn++)
             {
                 feed.Turn(turn, $"Question {turn}", turn == 2 ? "Answer 2 holds the needle" : $"Answer {turn} plain text");
@@ -74,10 +78,11 @@ public sealed class ShellSideChatAndSearchTests
             var offsetAtBottom = scroll.Offset.Y;
             InViewport(target, scroll).ShouldBeFalse("the matched block starts above the visible part");
 
+            OpenSearch(window);
             SearchInput(window).Text = "needle";
             ShellHarness.Settle(window);
 
-            main.Search.SelectedBlockIndex.ShouldBe(5);
+            main.Search.ShouldNotBeNull().SelectedBlockIndex.ShouldBe(5);
             scroll.Offset.Y.ShouldBeLessThan(offsetAtBottom, "the transcript scrolled toward the match");
             InViewport(target, scroll).ShouldBeTrue("the matched block is inside the scroll viewport");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -92,7 +97,8 @@ public sealed class ShellSideChatAndSearchTests
         {
             var window = ShellHarness.Show();
             var main = ShellHarness.MainViewOf(window);
-            var feed = new Feed(main.Session);
+            var transcript = ShellHarness.SessionOf(window);
+            var feed = new Feed(transcript);
             for (var turn = 0; turn < 30; turn++)
             {
                 feed.Turn(turn, $"Question {turn}", $"Answer {turn} plain text");
@@ -105,10 +111,11 @@ public sealed class ShellSideChatAndSearchTests
             scroll.Offset = new Vector(0, 0);
             ShellHarness.Settle(window);
 
+            OpenSearch(window);
             SearchInput(window).Text = "tailword";
             ShellHarness.Settle(window);
 
-            main.Search.SelectedBlockIndex.ShouldBe(main.Session.Tree.Blocks.Count);
+            main.Search.ShouldNotBeNull().SelectedBlockIndex.ShouldBe(transcript.Tree.Blocks.Count);
             scroll.Offset.Y.ShouldBe(0);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
@@ -122,17 +129,26 @@ public sealed class ShellSideChatAndSearchTests
         {
             var window = ShellHarness.Show();
             var main = ShellHarness.MainViewOf(window);
-            var feed = new Feed(main.Session);
+            var feed = new Feed(ShellHarness.SessionOf(window));
             feed.Turn(0, "Question 0", "Answer with needle");
             ShellHarness.Settle(window);
+            OpenSearch(window);
             SearchInput(window).Text = "needle";
-            main.Search.MatchCount.ShouldBe(1);
+            var search = main.Search.ShouldNotBeNull();
+            search.MatchCount.ShouldBe(1);
 
             window.Close();
             feed.Turn(1, "Question 1", "Another needle");
 
-            main.Search.MatchCount.ShouldBe(1, "a disposed search does not follow the transcript");
+            search.MatchCount.ShouldBe(1, "a disposed search does not follow the transcript");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>Opens the transcript search the way the keyboard does: Ctrl+F. The search is hidden until then.</summary>
+    private static void OpenSearch(MainWindow window)
+    {
+        ShellHarness.Press(window, Key.F, PhysicalKey.F, control: true);
+        ShellHarness.MainViewOf(window).FindControl<ContentControl>("SearchHost")!.IsVisible.ShouldBeTrue("Ctrl+F opens the transcript search");
     }
 
     private static TextBox SearchInput(MainWindow window) => Host(window, "SearchHost").FindControl<TextBox>("SearchInput")!;

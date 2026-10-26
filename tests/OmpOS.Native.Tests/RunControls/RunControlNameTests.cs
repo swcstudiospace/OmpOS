@@ -18,8 +18,8 @@ public sealed class RunControlNameTests
         await using var session = TestAppBuilder.StartSession();
         await session.Dispatch(() =>
         {
-            var window = RunControlsHarness.Show(new ScriptedApprovalBridge(), new RecordingRunInput());
-            ShellHarness.MainViewOf(window).Runs.RunStarted();
+            var window = RunControlsHarness.Show(new ScriptedApprovalBridge());
+            ShellHarness.RuntimeOf(window).Runs.RunStarted();
             RunControlsHarness.AddRequest(window, "request-1");
 
             var unnamed = window.GetVisualDescendants()
@@ -42,9 +42,9 @@ public sealed class RunControlNameTests
         await using var session = TestAppBuilder.StartSession();
         await session.Dispatch(() =>
         {
-            var window = RunControlsHarness.Show(new ScriptedApprovalBridge(), new RecordingRunInput());
+            var window = RunControlsHarness.Show(new ScriptedApprovalBridge());
             RunControlsHarness.AddRequest(window, "request-1");
-            ShellHarness.MainViewOf(window).Runs.RunStarted();
+            ShellHarness.RuntimeOf(window).Runs.RunStarted();
             ShellHarness.Settle(window);
 
             AutomationProperties.GetName(RunControlsHarness.Named(window, "Approve tool request")).ShouldBe("Approve tool request");
@@ -63,7 +63,7 @@ public sealed class RunControlNameTests
         await using var session = TestAppBuilder.StartSession();
         await session.Dispatch(() =>
         {
-            var window = RunControlsHarness.Show(new ScriptedApprovalBridge(), new RecordingRunInput());
+            var window = RunControlsHarness.Show(new ScriptedApprovalBridge());
             RunControlsHarness.AddRequest(window, "request-1");
 
             RunControlsHarness.Named(window, "Approve tool request").Focus();
@@ -83,7 +83,7 @@ public sealed class RunControlNameTests
         await session.RunAsync(async () =>
         {
             var bridge = new ScriptedApprovalBridge(ToolApprovalOutcome.Accepted);
-            var window = RunControlsHarness.Show(bridge, new RecordingRunInput());
+            var window = RunControlsHarness.Show(bridge);
             var approval = RunControlsHarness.AddRequest(window, "request-1");
 
             RunControlsHarness.Named(window, "Approve tool request").Focus();

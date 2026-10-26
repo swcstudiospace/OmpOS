@@ -1,15 +1,16 @@
+using System.ComponentModel;
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Threading;
 using Avalonia.VisualTree;
-using OmpOS.Contracts.Streaming;
-using OmpOS.Contracts.Ui;
-using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.Mcp;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Views;
+using OmpOS.Native.Views.AgentPanel;
+using OmpOS.Native.Views.Chats;
 using OmpOS.Native.Views.Diff;
 using OmpOS.Native.Views.Editor;
 using OmpOS.Native.Views.Explorer;
@@ -18,33 +19,34 @@ using OmpOS.Native.Views.InlineEditing;
 using OmpOS.Native.Views.Mcp;
 using OmpOS.Native.Views.RunControls;
 using OmpOS.Native.Views.Search;
+using OmpOS.Native.Views.Sessions;
 using OmpOS.Native.Views.Terminal;
 using OmpOS.Native.Views.Workspace;
 using OmpOS.Presentation;
+using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Agents;
-using OmpOS.Presentation.Approvals;
 using OmpOS.Presentation.Chats;
-using OmpOS.Presentation.Components;
-using OmpOS.Presentation.Composer;
 using OmpOS.Presentation.Editor;
 using OmpOS.Presentation.Export;
-using OmpOS.Presentation.Runs;
 using OmpOS.Presentation.State;
-using OmpOS.Sessions;
 using OmpOS.Workspace;
 
 namespace OmpOS.Native;
 
 /// <summary>
-/// The main content of the native head. It hosts the session list, the transcript (or the Agents view or a workspace tool that
-/// opens in its place), the status line, the run controls (pending tool approvals), the composer, the transcript search, the side
-/// chats of the session, and the workspace tools: the editor, the explorer, the terminal, the diff review, the inline edit, the
-/// workspace conventions, the MCP tools, the workspace search and the transcript export. It binds the presentation view models the
-/// web head binds. It has no window of its own: the host window shows it and closes it.
+/// The main content of the native head: the Agent Panel. It hosts two regions: the Agents rail (the session list and the tool
+/// toggles) and the thread of the selected agent (header, the one-line plugin connection row, transcript, transcript search, tool
+/// approvals, composer, side chats, or the Agents view or a workspace tool that opens in place of the transcript). There is no
+/// region beside them. It binds the presentation view models the web head binds, and holds no engine:
+/// the head creates one <see cref="AgentSessionRuntime"/> per session and the panel view model it hands in selects among them.
 /// </summary>
 /// <remarks>
-/// The workspace is the folder the view was given. Its models are created when a tool first opens and kept until the view closes,
-/// so a view that opens no tool reads no folder and starts no process.
+/// <para>
+/// Selecting a session rebinds the thread region to that session; the sessions that are not shown keep running. The workspace is the
+/// folder the view was given. Its tool models are created when a tool first opens and kept until the view closes, so a view that
+/// opens no tool reads no folder and starts no process.
+/// </para>
+/// <para>The view has no window of its own: the host window shows it and calls <see cref="Close"/> when it closes. The head owns the panel and the runtimes and disposes them.</para>
 /// </remarks>
 public partial class MainView : UserControl
 {
@@ -61,23 +63,46 @@ public partial class MainView : UserControl
     public const string ToolFailedStatus = "Could not open";
 
     /// <summary>The banner text prefix after the engine stream fails. The failure's own message follows it.</summary>
-    public const string EngineFailedBanner = "The engine stream failed:";
+    public const string EngineFailedBanner = "This turn failed:";
 
     /// <summary>The style class the view carries under <see cref="MotionPreference.Reduced"/>. A head's styles select it to remove transitions.</summary>
     public const string ReducedMotionClass = "reduced-motion";
 
-    /// <summary>The identifier of the one session this shell shows. The shell has no session transport yet, so the id is fixed.</summary>
-    private const string SessionId = "shell-session";
+    /// <summary>The window width from which the rail is wide (UI-SPEC, Responsive rules).</summary>
+    public const double WideLayoutWidth = 1200;
+
+    /// <summary>The window height under which the composer hint line is hidden (UI-SPEC, Responsive rules).</summary>
+    public const double ShortWindowHeight = 720;
 
     /// <summary>The level-one heading of a transcript exported from the shell.</summary>
     private const string ExportTitle = "OmpOS session";
 
+    /// <summary>The style class of the rail while the layout is wide.</summary>
+    private const string WideClass = "wide";
+
+    /// <summary>The region index of the Agents rail, for focus movement.</summary>
+    private const int RailRegionIndex = 0;
+
+    /// <summary>The region index of the thread, for focus movement.</summary>
+    private const int ThreadRegionIndex = 1;
+
+    private readonly AgentPanelViewModel _panel;
     private readonly WorkspaceRoot _workspace;
     private readonly EditorTabs _editorTabs = new();
     private readonly ToolEntry _editorTool;
     private readonly List<ToolEntry> _tools;
+    private readonly Dictionary<string, SessionPane> _panes = new(StringComparer.Ordinal);
+    private readonly AgentRailView _rail;
+    private readonly PanelStateView _stateView;
     private ToolEntry? _openTool;
+    private ToggleButton? _openedBy;
     private bool _syncingTools;
+    private bool _syncingRail;
+    private bool _sized;
+    private bool _wide;
+    private bool _hintVisible = true;
+    private SessionPane? _current;
+    private AgentSessionViewModel? _watched;
     private WorkspaceTree? _explorer;
     private WorkspaceCatalog? _catalog;
     private WorkspaceConventionsModel? _conventions;
@@ -85,114 +110,103 @@ public partial class MainView : UserControl
     private IMcpRegistryHost? _mcpHost;
     private McpToolRegistry? _mcpRegistry;
     private McpToolsModel? _mcpTools;
-    private readonly IPromptChannel? _prompts;
-    private readonly EngineRunInput? _queued;
-    private bool _stopRequested;
-    private string? _lastPrompt;
-    private long _nextSeq = 1;
+    private bool _closed;
+    private TopLevel? _keyHost;
 
     /// <summary>
-    /// Creates the main view with no engine connected. The view works in the current folder, and the unconnected defaults refuse every
-    /// run and every approval. Avalonia's XAML loader and the designer construct the view through this constructor.
+    /// Creates the main view over an <see cref="UnconnectedAgentPanel"/> in the current folder: no engine is connected, and every send and
+    /// every approval is refused. Avalonia's XAML loader and the designer construct the view through this constructor.
     /// </summary>
     public MainView()
-        : this(new UnconnectedToolApprovalBridge(), new UnconnectedRunInput(), Environment.CurrentDirectory, prompts: null, MotionPreference.System)
+        : this(UnconnectedAgentPanel.Create(new UnconnectedToolApprovalBridge(), workspaceRoot: null, MotionPreference.System))
     {
     }
 
-    /// <summary>
-    /// Creates the main view with the approval bridge, the run input and the send path that routes decisions and messages through it.
-    /// </summary>
-    /// <param name="approvalBridge">The bridge that records each tool-approval decision.</param>
-    /// <param name="runInput">The input channel of the active run. A composed send path needs the engine's own run input.</param>
-    /// <param name="workspaceRoot">The workspace folder the view's tools work in. It must exist.</param>
-    /// <param name="prompts">The send path of the composed engine. Null refuses every send and stop.</param>
+    /// <summary>Creates the main view over the Agent Panel the head built.</summary>
+    /// <param name="panel">The panel view model: the session rail and the selected session. The head owns it and disposes it.</param>
+    /// <param name="workspaceRoot">The workspace folder the view's tools work in, or null for the current folder. It must exist.</param>
     /// <param name="motion">The motion setting of the head. Only <see cref="MotionPreference.Reduced"/> puts the <see cref="ReducedMotionClass"/> class on the view, which the head's styles read to remove transitions.</param>
-    /// <exception cref="ArgumentNullException">A dependency is null.</exception>
-    /// <exception cref="ArgumentException"><paramref name="workspaceRoot"/> is null, empty or white space, or a composed send path has a run input other than the engine's.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="panel"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="workspaceRoot"/> is empty or white space.</exception>
     /// <exception cref="DirectoryNotFoundException"><paramref name="workspaceRoot"/> does not exist.</exception>
-    public MainView(IToolApprovalBridge approvalBridge, IRunInput runInput, string workspaceRoot, IPromptChannel? prompts, MotionPreference motion)
-        : this(approvalBridge, runInput, workspaceRoot, prompts, motion, mcpHost: null)
+    public MainView(AgentPanelViewModel panel, string? workspaceRoot = null, MotionPreference motion = MotionPreference.System)
+        : this(panel, workspaceRoot, motion, mcpHost: null)
     {
     }
 
-    /// <summary>Creates the window with an MCP host. The window disposes the host when it closes; tests inject a host whose disposal fails.</summary>
-    /// <param name="approvalBridge">The bridge that asks for tool approvals.</param>
-    /// <param name="runInput">The run input that holds the messages the active run accepts.</param>
-    /// <param name="workspaceRoot">The workspace root the window opens.</param>
-    /// <param name="prompts">The send path of the composed engine, or null when none is composed.</param>
+    /// <summary>Creates the view with an MCP host. The view disposes the host when it closes; tests inject a host whose disposal fails.</summary>
+    /// <param name="panel">The panel view model.</param>
+    /// <param name="workspaceRoot">The workspace folder, or null for the current folder.</param>
     /// <param name="motion">The motion setting of the head.</param>
-    /// <param name="mcpHost">The MCP host the window lists and disposes, or null to create the production registry when the MCP view opens.</param>
-    internal MainView(IToolApprovalBridge approvalBridge, IRunInput runInput, string workspaceRoot, IPromptChannel? prompts, MotionPreference motion, IMcpRegistryHost? mcpHost)
+    /// <param name="mcpHost">The MCP host the view lists and disposes, or null to create the production registry when the MCP view opens.</param>
+    internal MainView(AgentPanelViewModel panel, string? workspaceRoot, MotionPreference motion, IMcpRegistryHost? mcpHost)
     {
-        ArgumentNullException.ThrowIfNull(approvalBridge);
-        ArgumentNullException.ThrowIfNull(runInput);
+        ArgumentNullException.ThrowIfNull(panel);
+
+        _panel = panel;
         _mcpHost = mcpHost;
-        _workspace = new WorkspaceRoot(workspaceRoot);
+        _workspace = new WorkspaceRoot(workspaceRoot ?? Environment.CurrentDirectory);
 
         InitializeComponent();
         Classes.Set(ReducedMotionClass, motion == MotionPreference.Reduced);
 
-        // Phase 20 has no session transport. The shell starts with a loaded, empty list and a loaded, empty transcript,
-        // which are the empty states the UI-SPEC copy describes.
-        ConversationList.State = ConversationListState.Loaded;
-        ConversationList.Conversations = Array.Empty<ConversationSummary>();
+        // The rail: the sessions of the catalog, the New agent control and the loading and error copy of the panel.
+        _rail = (AgentRailView)ViewMapping.Create(panel.Catalog);
+        _rail.Panel = panel;
+        _rail.NewAgentCompleted += OnNewAgentCompleted;
+        _rail.RowActivated += OnRowActivated;
+        _rail.CloseRequested += OnRailCloseRequested;
+        RailHost.Content = _rail;
 
-        Session = new SessionViewModel();
-        Session.MarkHistoryLoaded();
-        var transcript = (SessionView)ViewMapping.Create(Session);
-        transcript.StopRequested += OnSessionStopRequested;
-        transcript.RetryRequested += OnSessionRetryRequested;
-        TranscriptHost.Content = transcript;
+        // The panel state block (empty, loading, error) sits above the thread and hides itself while the panel is ready.
+        _stateView = (PanelStateView)ViewMapping.Create(panel);
+        _stateView.NewAgentCompleted += OnNewAgentCompleted;
+        PanelStateHost.Content = _stateView;
+
+        SessionsViewToggle.IsCheckedChanged += OnRailViewToggleChanged;
+        ToolsViewToggle.IsCheckedChanged += OnRailViewToggleChanged;
+        SizeChanged += OnLayoutSizeChanged;
 
         // The Agents window: one registry of runs and one view model over it. The view opens in place of the transcript.
         AgentRuns = new AgentRunRegistry();
         Agents = new AgentsViewModel(AgentRuns);
         AgentsHost.Content = ViewMapping.Create(Agents);
         AgentsToggle.IsCheckedChanged += OnAgentsToggleChanged;
-
-        // The transcript search: one model per session. It follows the session's transcript and is disposed when the window closes.
-        Search = new TranscriptSearchModel(Session);
-        Search.MatchSelected += OnMatchSelected;
-        SearchHost.Content = ViewMapping.Create(Search);
-
-        // The side chats of this session. Opening one adds messages to the side chat panel only, never to the session's transcript.
-        SideChats = new SideChatPanel(SessionId);
-        SideChatHost.Content = ViewMapping.Create(SideChats);
         SideChatsToggle.IsCheckedChanged += OnSideChatsToggleChanged;
         SuggestionsToggle.IsCheckedChanged += OnSuggestionsToggleChanged;
-
-        RunControls = new RunControlsViewModel(approvalBridge);
-        RunControlsHost.Content = new RunControlsView { DataContext = RunControls };
-
-        Runs = new RunInputScheduler(runInput);
-        _prompts = prompts;
-
-        // A composed engine holds the messages the active run accepts behind its turn, so its run input must be the engine's own.
-        _queued = prompts is null ? null : runInput as EngineRunInput ?? throw new ArgumentException("A composed engine needs the engine's run input.", nameof(runInput));
-        Composer = new ComposerViewModel(StartTurnAsync, StopTurnAsync);
-        var composerView = (ComposerView)ViewMapping.Create(Composer);
-        composerView.Runs = Runs;
-        composerView.WorkFaulted += OnComposerWorkFaulted;
-        ComposerHost.Content = composerView;
 
         // The editor model is shared by the editor tool and the explorer, which opens files into it.
         EditorModel = new EditorViewModel(_editorTabs);
         _editorTool = new ToolEntry(EditorToggle, "Editor", () => ViewMapping.Create(EditorModel), keepView: true);
         _tools = CreateTools();
+
+        _panel.PropertyChanged += OnPanelChanged;
+        _panel.Catalog.PropertyChanged += OnCatalogChanged;
+        BindSelected();
     }
 
-    /// <summary>Gets the session view model the transcript binds.</summary>
-    public SessionViewModel Session { get; }
+    /// <summary>Gets the panel view model the view shows.</summary>
+    public AgentPanelViewModel Panel => _panel;
 
-    /// <summary>Gets the composer view model the prompt, send and stop controls bind.</summary>
-    public ComposerViewModel Composer { get; }
+    /// <summary>Listens for the keyboard map on the top level, so a shortcut works while nothing in the view has focus.</summary>
+    /// <param name="e">The attachment data.</param>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
 
-    /// <summary>Gets the pending tool-approval requests and the coordinator that sends each decision.</summary>
-    internal RunControlsViewModel RunControls { get; }
+        _keyHost = TopLevel.GetTopLevel(this);
+        _keyHost?.AddHandler(KeyDownEvent, OnKeyDownTunnel, RoutingStrategies.Tunnel);
+    }
 
-    /// <summary>Gets the scheduler that routes steering messages and queued follow-ups to the active run.</summary>
-    public RunInputScheduler Runs { get; }
+    /// <summary>Stops listening for the keyboard map.</summary>
+    /// <param name="e">The detachment data.</param>
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        _keyHost?.RemoveHandler(KeyDownEvent, OnKeyDownTunnel);
+        _keyHost = null;
+
+        base.OnDetachedFromVisualTree(e);
+    }
 
     /// <summary>Gets the registry of the agent runs the Agents window shows.</summary>
     public AgentRunRegistry AgentRuns { get; }
@@ -200,279 +214,333 @@ public partial class MainView : UserControl
     /// <summary>Gets the Agents window state: the runs that match the status filter and the open run view.</summary>
     public AgentsViewModel Agents { get; }
 
-    /// <summary>Gets the transcript search of the session. It is disposed when the window closes.</summary>
-    public TranscriptSearchModel Search { get; }
-
-    /// <summary>Gets the side chats opened from the session.</summary>
-    public SideChatPanel SideChats { get; }
-
     /// <summary>Gets the editor state the editor tool binds. The explorer opens its files here. It is disposed when the window closes.</summary>
     internal EditorViewModel EditorModel { get; }
 
-    private Task<bool> RefuseSendAsync()
-    {
-        SetStatus(RefusedSendStatus);
-        return Task.FromResult(false);
-    }
+    /// <summary>Gets the transcript search model of the selected session, or null when no session is selected.</summary>
+    internal TranscriptSearchModel? Search => _current?.Search;
 
-    /// <summary>
-    /// Stops the turn in flight through the composed host. The run then ends: messages held behind it are dropped, not sent.
-    /// With no turn running the status says so.
-    /// </summary>
-    /// <returns>A task that completes when the host has accepted the cancellation.</returns>
-    private async Task StopTurnAsync()
-    {
-        if (_prompts is not { } prompts || !Composer.IsStreaming)
-        {
-            SetStatus(NoResponseStatus);
-            return;
-        }
-
-        // The flag is raised before the cancel, so the turn's end sees it. It is lowered again only when the cancel was not accepted.
-        _stopRequested = true;
-        var accepted = false;
-        try
-        {
-            await prompts.CancelAsync(CancellationToken.None).ConfigureAwait(true);
-            accepted = true;
-        }
-        finally
-        {
-            if (!accepted)
-            {
-                _stopRequested = false;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Sends the draft to the composed host and streams the turn's events into the transcript. The turn runs in the background, so
-    /// the composer clears the draft once the host accepts the send. Without a composed engine the send is refused.
-    /// </summary>
-    /// <param name="text">The draft text the user sent.</param>
-    /// <returns>True when the host accepted the send; false when no engine is composed.</returns>
-    private Task<bool> StartTurnAsync(string text)
-    {
-        if (_prompts is not { } prompts || _queued is not { } queued)
-        {
-            return RefuseSendAsync();
-        }
-
-        // The last prompt sent is the one a retry sends again. A new send clears the banner of an earlier failure.
-        _lastPrompt = text;
-        ShowEngineFailure(null);
-
-        // The composer does not send while a response streams. The run stays active until its last turn ends, so a message sent
-        // meanwhile steers it or queues behind it.
-        Composer.IsStreaming = true;
-        Runs.RunStarted();
-        var correlationId = Guid.NewGuid().ToString("N");
-        EchoUserMessage(text, correlationId);
-        var turn = DriveTurnsAsync(prompts, queued, text, correlationId);
-
-        // The turn is not awaited. DriveTurnsAsync shows a turn's fault under that turn's own id, so this observes only what escapes it.
-        _ = turn.ContinueWith(
-            faulted => Dispatcher.UIThread.Post(() => ShowTurnFault(faulted.Exception!.InnerExceptions[0], correlationId)),
-            CancellationToken.None,
-            TaskContinuationOptions.OnlyOnFaulted,
-            TaskScheduler.Default);
-        return Task.FromResult(true);
-    }
-
-    /// <summary>
-    /// Streams one turn's events into the transcript. A fault that ends the turn is not caught here: <see cref="StartTurnAsync"/>
-    /// observes it and shows it inline.
-    /// </summary>
-    /// <param name="prompts">The send path of the composed engine.</param>
-    /// <param name="text">The prompt text.</param>
-    /// <param name="correlationId">The correlation identifier of the turn.</param>
-    /// <returns>A task that completes when the turn has ended.</returns>
-    private async Task StreamTurnAsync(IPromptChannel prompts, string text, string correlationId)
-    {
-        await foreach (var evt in prompts.SubmitAsync(text, CancellationToken.None).ConfigureAwait(true))
-        {
-            ShowTurnEvent(evt, correlationId);
-        }
-    }
-
-    /// <summary>
-    /// Runs the turns of one run in send order: the sent prompt first, then each message the run accepted behind it, one turn each.
-    /// The run ends when no message is held. A stop or a faulted turn ends it early: whatever is still held is dropped and the
-    /// transcript says how many were not sent.
-    /// </summary>
-    /// <param name="prompts">The send path of the composed engine.</param>
-    /// <param name="queued">The run input that holds the messages accepted behind the active turn.</param>
-    /// <param name="text">The prompt the run starts with.</param>
-    /// <param name="correlationId">The correlation identifier of the first turn.</param>
-    /// <returns>A task that completes when the run has ended.</returns>
-    private async Task DriveTurnsAsync(IPromptChannel prompts, EngineRunInput queued, string text, string correlationId)
-    {
-        var turnCorrelationId = correlationId;
-        try
-        {
-            while (true)
-            {
-                try
-                {
-                    await StreamTurnAsync(prompts, text, turnCorrelationId).ConfigureAwait(true);
-                }
-                catch (Exception fault) when (fault is not OperationCanceledException)
-                {
-                    // The fault ends the run. Its reason is shown under the turn that faulted, and the held messages are dropped in
-                    // the finally, so the not-sent line follows the reason.
-                    ShowTurnFault(fault, turnCorrelationId);
-                    ShowEngineFailure($"{EngineFailedBanner} {fault.Message}");
-                    return;
-                }
-
-                if (_stopRequested)
-                {
-                    return;
-                }
-
-                // The turn ended on its own. The scheduler dispatches the next follow-up if one waits; the next held message runs next.
-                await Runs.RunCompletedAsync(CancellationToken.None).ConfigureAwait(true);
-                var next = queued.TakeNext();
-                Runs.NotifySteersHeldChanged();
-                if (next is null)
-                {
-                    return;
-                }
-
-                text = next;
-                turnCorrelationId = Guid.NewGuid().ToString("N");
-                EchoUserMessage(text, turnCorrelationId);
-                if (!Runs.IsRunActive)
-                {
-                    Runs.RunStarted();
-                }
-            }
-        }
-        finally
-        {
-            // A run still active here was stopped or its turn faulted. Nothing held is sent after either.
-            var notSent = Runs.DiscardQueuedFollowUps() + queued.Discard();
-            Runs.NotifySteersHeldChanged();
-            if (Runs.IsRunActive)
-            {
-                await Runs.RunCompletedAsync(CancellationToken.None).ConfigureAwait(true);
-            }
-
-            Composer.IsStreaming = false;
-            _stopRequested = false;
-            if (notSent > 0)
-            {
-                ShowNotSent(notSent, turnCorrelationId);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Echoes a prompt the composed run has just sent into the transcript as the user's own turn. The echo is a shared
-    /// <see cref="UserMessagePayload"/> that the presentation layer folds, so it lands ahead of the reply it prompted.
-    /// </summary>
-    /// <param name="text">The prompt text that was sent.</param>
-    /// <param name="correlationId">The correlation identifier of the turn the prompt starts.</param>
-    private void EchoUserMessage(string text, string correlationId)
-    {
-        Session.ApplyEvent(new StreamEvent
-        {
-            Seq = _nextSeq,
-            SessionId = SessionId,
-            CorrelationId = correlationId,
-            Timestamp = DateTimeOffset.UtcNow,
-            Payload = new UserMessagePayload { Text = text },
-        });
-        _nextSeq++;
-    }
-
-    /// <summary>Shows the inline line that says how many held messages were not sent when the run ended.</summary>
-    /// <param name="count">The number of messages not sent.</param>
-    /// <param name="correlationId">The correlation identifier of the last turn of the run.</param>
-    private void ShowNotSent(int count, string correlationId)
-    {
-        var noun = count == 1 ? "message was" : "messages were";
-        var line = new MarkdownBlock { Id = $"not-sent-{correlationId}", Markdown = $"{count} queued {noun} not sent." };
-        ShowTurnEvent(new UiBlockEvent(line), correlationId);
-    }
-
-    /// <summary>Shows the fault that ended a turn inline with its reason. A cancelled turn is not a fault and adds no row.</summary>
-    /// <param name="fault">The exception that ended the turn.</param>
-    /// <param name="correlationId">The correlation identifier of the turn.</param>
-    private void ShowTurnFault(Exception fault, string correlationId)
-    {
-        if (fault is OperationCanceledException)
-        {
-            return;
-        }
-
-        ShowTurnEvent(new ErrorEvent(fault.Message, Retryable: false), correlationId);
-    }
-
-    /// <summary>
-    /// Shows one host event: a permission request becomes a pending approval, and every event folds into the transcript through the
-    /// shared harness projection.
-    /// </summary>
-    /// <param name="evt">The host event.</param>
-    /// <param name="correlationId">The correlation identifier of the turn.</param>
-    private void ShowTurnEvent(HarnessEvent evt, string correlationId)
-    {
-        // The id the host's resolver holds the request under is the one the bridge decides by.
-        if (evt is PermissionRequestEvent request)
-        {
-            RunControls.Approvals.Add(new PendingToolApproval(SessionId, request.RequestId ?? request.CallId, request.Name, request.PayloadJson));
-        }
-
-        foreach (var streamEvent in HarnessEventProjection.ToStreamEvents(_nextSeq, SessionId, correlationId, DateTimeOffset.UtcNow, evt))
-        {
-            Session.ApplyEvent(streamEvent);
-            _nextSeq = streamEvent.Seq + 1;
-        }
-    }
+    /// <summary>Gets the side chats of the selected session, or null when no session is selected.</summary>
+    internal SideChatPanel? SideChats => _current?.SideChats;
 
     private void SetStatus(string text)
+    {
+        if (_current?.Runtime is { } runtime)
+        {
+            runtime.ReportStatus(text);
+            return;
+        }
+
+        ShowStatus(text);
+    }
+
+    private void ShowStatus(string text)
     {
         StatusLine.Text = text;
         StatusLine.IsVisible = text.Length > 0;
     }
 
-    /// <summary>
-    /// Shows the engine-failure banner with the given text, or hides it when the text is null. The banner is an alert, so it is
-    /// announced when it appears.
-    /// </summary>
-    /// <param name="text">The banner text, or null to hide the banner.</param>
-    private void ShowEngineFailure(string? text)
+    /// <summary>Shows the feedback of the selected session's runtime: its status line text and its engine error banner.</summary>
+    private void RefreshFeedback()
     {
-        ErrorBanner.Text = text ?? string.Empty;
-        ErrorBanner.IsVisible = text is not null;
+        var runtime = _current?.Runtime;
+        ShowStatus(runtime?.StatusText ?? string.Empty);
+        var error = runtime?.ErrorText;
+        ErrorBanner.Text = error ?? string.Empty;
+        ErrorBanner.IsVisible = error is not null;
     }
 
-    /// <summary>The transcript's stop control stops the turn in flight through the composer's tracked stop, the same path its stop button takes.</summary>
-    private void OnSessionStopRequested(object? sender, EventArgs e) => (ComposerHost.Content as ComposerView)?.StopResponse();
+    private void OnPanelChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(AgentPanelViewModel.Selected):
+                BindSelected();
+                break;
+            case nameof(AgentPanelViewModel.PipelineAnnouncement):
+                ForwardAnnouncement();
+                break;
+            case nameof(AgentPanelViewModel.ActionError):
+                if (_panel.ActionError is { } failure)
+                {
+                    SetStatus(failure);
+                }
+
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void OnCatalogChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.Equals(e.PropertyName, nameof(SessionCatalogModel.Sessions), StringComparison.Ordinal))
+        {
+            PruneStalePanes();
+        }
+    }
 
     /// <summary>
-    /// Sends the last prompt again when the transcript offers retry after a recoverable failure. It does nothing while a response streams,
-    /// and before any prompt was sent.
+    /// Shows a panel-level announcement (for example that an agent was closed) in the pipeline announcement line of the session that
+    /// is shown. An announcement the session's own timeline made is already there.
     /// </summary>
-    private void OnSessionRetryRequested(object? sender, EventArgs e)
+    private void ForwardAnnouncement()
     {
-        if (_lastPrompt is not { } prompt || Composer.IsStreaming)
+        var text = _panel.PipelineAnnouncement;
+        if (text is null || _current is not { } pane)
         {
             return;
         }
 
-        _ = StartTurnAsync(prompt);
+        if (!string.Equals(pane.ViewModel.Timeline.StatusAnnouncement, text, StringComparison.Ordinal))
+        {
+            pane.ViewModel.Timeline.Announce(text);
+        }
     }
 
-    private void OnComposerWorkFaulted(object? sender, ComposerWorkFaultedEventArgs e) =>
-        SetStatus($"{FaultedStatus} {e.Exception.GetBaseException().Message}");
+    // Rebinds the thread region and the feedback lines to the selected session. The sessions that are not shown keep
+    // their own views, so a draft, a scroll position and an open search come back when the session is selected again.
+    private void BindSelected()
+    {
+        var viewModel = _panel.Selected;
+        if (_watched is not null)
+        {
+            _watched.PropertyChanged -= OnSelectedViewModelChanged;
+        }
+
+        _watched = viewModel;
+        if (viewModel is not null)
+        {
+            viewModel.PropertyChanged += OnSelectedViewModelChanged;
+        }
+
+        PruneStalePanes();
+        ShowThread();
+
+        _current = viewModel is null ? null : GetPane(viewModel);
+        var pane = _current;
+        ThreadHeaderHost.Content = pane?.Header;
+        TranscriptHost.Content = pane?.Transcript;
+        PipelineHost.Content = pane?.Strip;
+        SearchHost.Content = pane?.SearchView;
+        SearchHost.IsVisible = pane is { SearchOpen: true };
+        RunControlsHost.Content = pane?.RunControls;
+        ConfirmBarHost.Content = pane?.ConfirmBar;
+        ComposerHost.Content = pane?.Composer;
+        SideChatHost.Content = pane?.SideChatView;
+        if (pane is not null)
+        {
+            pane.Composer.SuggestionsShown = SuggestionsToggle.IsChecked == true;
+            pane.Composer.HintVisible = _hintVisible;
+        }
+
+        RefreshAvailability();
+        RefreshFeedback();
+        ForwardAnnouncement();
+    }
+
+    // When a closed or lost agent comes back (Reopen agent, Resume agent) the composer returns and focus moves to its prompt.
+    private void OnSelectedViewModelChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is not (nameof(AgentSessionViewModel.IsClosed) or nameof(AgentSessionViewModel.IsLost)))
+        {
+            return;
+        }
+
+        var hadComposer = ComposerHost.IsVisible;
+        RefreshAvailability();
+        if (!hadComposer && ComposerHost.IsVisible)
+        {
+            FocusThread();
+        }
+    }
+
+    // A closed or lost session has no engine to send to: the composer hides and the closed notice shows instead.
+    private void RefreshAvailability()
+    {
+        var viewModel = _current?.ViewModel;
+        var unavailable = viewModel is { IsClosed: true } or { IsLost: true };
+        ComposerHost.IsVisible = viewModel is not null && !unavailable;
+        ClosedNotice.IsVisible = viewModel is { IsClosed: true };
+        ClosedHeading.Text = AgentPanelCopy.ClosedHeading;
+        ClosedBody.Text = AgentPanelCopy.ClosedBody;
+    }
+
+    private SessionPane GetPane(AgentSessionViewModel viewModel)
+    {
+        if (_panes.TryGetValue(viewModel.Id, out var existing) && ReferenceEquals(existing.ViewModel, viewModel))
+        {
+            return existing;
+        }
+
+        if (existing is not null)
+        {
+            existing.Dispose();
+        }
+
+        var pane = CreatePane(viewModel);
+        _panes[viewModel.Id] = pane;
+        return pane;
+    }
+
+    private void PruneStalePanes()
+    {
+        var live = _panel.Catalog.Sessions.Select(row => row.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var id in _panes.Keys.Where(known => !live.Contains(known) && !ReferenceEquals(_panes[known], _current)).ToList())
+        {
+            _panes[id].Dispose();
+            _panes.Remove(id);
+        }
+    }
+
+    private SessionPane CreatePane(AgentSessionViewModel viewModel)
+    {
+        var runtime = AgentSessionRuntime.For(viewModel);
+        var pane = new SessionPane(viewModel, runtime)
+        {
+            Transcript = (SessionView)ViewMapping.Create(viewModel.Session),
+            Composer = (ComposerView)ViewMapping.Create(viewModel.Composer),
+            Header = (ThreadHeaderView)ViewMapping.Create(viewModel),
+            ConfirmBar = new ConfirmBarView { DataContext = viewModel },
+            Strip = new PipelineStripView { DataContext = viewModel.Timeline },
+            Search = new TranscriptSearchModel(viewModel.Session),
+            SideChats = new SideChatPanel(viewModel.Id),
+        };
+        pane.SearchView = (TranscriptSearchView)ViewMapping.Create(pane.Search);
+        pane.SideChatView = ViewMapping.Create(pane.SideChats);
+        if (runtime is not null)
+        {
+            AttachRuntime(pane, runtime);
+        }
+
+        AttachRunSummary(pane, viewModel);
+
+        pane.Composer.Steering = viewModel.Steering;
+        pane.Composer.WorkFaulted += (_, e) => ReportFor(pane, $"{FaultedStatus} {e.Exception.GetBaseException().Message}");
+        pane.Composer.StatusMessage += (_, e) => ReportFor(pane, e.Message);
+        pane.Composer.StopConfirmationRequested += (_, _) => pane.ConfirmBar.OpenStop();
+        pane.Transcript.StopRequested += (_, _) => pane.Composer.StopResponse();
+        pane.Transcript.RetryRequested += (_, _) => runtime?.RetryLastTurn();
+        pane.Search.MatchSelected += (_, e) => pane.Transcript.ScrollToBlock(e.Match.BlockIndex);
+        pane.Header.CloseClicked += (_, _) => pane.ConfirmBar.OpenClose();
+        pane.Header.ShowPipelineRequested += (_, _) => pane.Strip.ShowDetails();
+        pane.ConfirmBar.StopConfirmed += (_, _) => pane.Composer.StopResponse();
+        pane.ConfirmBar.CloseConfirmed += (_, _) =>
+        {
+            viewModel.CloseCommand.Execute(null);
+            _rail.FocusRows();
+        };
+        pane.ConfirmBar.Dismissed += (_, e) => OnConfirmBarDismissed(pane, e.Kind);
+        return pane;
+    }
+
+    private void AttachRuntime(SessionPane pane, AgentSessionRuntime runtime)
+    {
+        pane.RunControls = new RunControlsView { DataContext = runtime.RunControls };
+        pane.Composer.Runs = runtime.Runs;
+        void OnFeedback(object? sender, EventArgs e)
+        {
+            if (ReferenceEquals(_current, pane))
+            {
+                RefreshFeedback();
+            }
+        }
+
+        runtime.FeedbackChanged += OnFeedback;
+        pane.Detach += () => runtime.FeedbackChanged -= OnFeedback;
+    }
+
+    private static void AttachRunSummary(SessionPane pane, AgentSessionViewModel viewModel)
+    {
+        void OnSessionChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (string.Equals(e.PropertyName, nameof(AgentSessionViewModel.RunSummaryText), StringComparison.Ordinal))
+            {
+                pane.Strip.RunSummary = viewModel.RunSummaryText;
+            }
+        }
+
+        pane.Strip.RunSummary = viewModel.RunSummaryText;
+        viewModel.PropertyChanged += OnSessionChanged;
+        pane.Detach += () => viewModel.PropertyChanged -= OnSessionChanged;
+    }
+
+    private void ReportFor(SessionPane pane, string text)
+    {
+        if (pane.Runtime is { } runtime)
+        {
+            runtime.ReportStatus(text);
+        }
+        else if (ReferenceEquals(pane, _current))
+        {
+            ShowStatus(text);
+        }
+    }
+
+    private void OnConfirmBarDismissed(SessionPane pane, ConfirmBarKind kind)
+    {
+        if (!ReferenceEquals(pane, _current))
+        {
+            return;
+        }
+
+        if (kind == ConfirmBarKind.Stop)
+        {
+            pane.Composer.FocusPrompt();
+        }
+        else
+        {
+            pane.Header.FocusCloseButton();
+        }
+    }
+
+    private void OnNewAgentCompleted(object? sender, EventArgs e) => FocusThread();
+
+    private void OnRowActivated(object? sender, EventArgs e) => FocusThread();
+
+    // Delete on a row and the menu's Close agent land here. A running agent asks first; a quiet one closes at once.
+    private void OnRailCloseRequested(object? sender, AgentRowEventArgs e)
+    {
+        var sessionId = e.SessionId;
+        if (!string.Equals(_panel.Selected?.Id, sessionId, StringComparison.Ordinal))
+        {
+            _ = CloseUnselectedAsync(sessionId);
+            return;
+        }
+
+        if (_current is not { } pane)
+        {
+            return;
+        }
+
+        if (pane.ViewModel.RequiresCloseConfirmation)
+        {
+            pane.ConfirmBar.OpenClose();
+        }
+        else
+        {
+            pane.ViewModel.CloseCommand.Execute(null);
+        }
+    }
+
+    private async Task CloseUnselectedAsync(string sessionId)
+    {
+        try
+        {
+            await _panel.CloseSessionAsync(sessionId, CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception fault) when (fault is not OutOfMemoryException)
+        {
+            SetStatus($"{FaultedStatus} {fault.GetBaseException().Message}");
+        }
+    }
 
     private void OnSkipLinkClick(object? sender, RoutedEventArgs e)
     {
         if (AgentsToggle.IsChecked == true)
         {
             // The Agents view stands in for the transcript while it is open, so the skip link lands on its status filter.
-            _ = (AgentsHost.Content as Control)?.FindControl<ComboBox>("StatusFilter")?.Focus();
+            (AgentsHost.Content as Control)?.FindControl<ComboBox>("StatusFilter").FocusWhenReady();
             return;
         }
 
@@ -483,7 +551,231 @@ public partial class MainView : UserControl
             return;
         }
 
-        (TranscriptHost.Content as SessionView)?.FocusTranscript();
+        if (_current is { } pane)
+        {
+            pane.Transcript.FocusTranscript();
+            return;
+        }
+
+        FocusThread();
+    }
+
+    // Keyboard map (UI-SPEC, Keyboard Map). The handler runs in the tunnel phase, so it works from inside text boxes.
+    private void OnKeyDownTunnel(object? sender, KeyEventArgs e)
+    {
+        var control = (e.KeyModifiers & KeyModifiers.Control) != KeyModifiers.None;
+        var shift = (e.KeyModifiers & KeyModifiers.Shift) != KeyModifiers.None;
+        var alt = (e.KeyModifiers & KeyModifiers.Alt) != KeyModifiers.None;
+        if (alt)
+        {
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case Key.N when control && !shift:
+                e.Handled = true;
+                _ = StartNewAgentAsync();
+                break;
+            case Key.D1 when control && !shift:
+                e.Handled = true;
+                FocusRegion(RailRegionIndex);
+                break;
+            case Key.D2 when control && !shift:
+                e.Handled = true;
+                ShowThread();
+                FocusThread();
+                break;
+            case Key.F6 when !control:
+                e.Handled = true;
+                CycleRegions(backwards: shift);
+                break;
+            case Key.F when control && !shift:
+                e.Handled = true;
+                OpenSearch();
+                break;
+            case Key.Escape when !control && !shift:
+                e.Handled = DismissWithEscape();
+                break;
+            default:
+                break;
+        }
+    }
+
+    // Esc dismisses an open confirmation bar, and the transcript search. Esc in the prompt, in the filter box and elsewhere is left to those controls.
+    private bool DismissWithEscape()
+    {
+        if (_current is not { } pane)
+        {
+            return false;
+        }
+
+        if (pane.ConfirmBar.IsStopOpen || pane.ConfirmBar.IsCloseOpen)
+        {
+            var kind = pane.ConfirmBar.IsStopOpen ? ConfirmBarKind.Stop : ConfirmBarKind.Close;
+            pane.ConfirmBar.Dismiss();
+            OnConfirmBarDismissed(pane, kind);
+            return true;
+        }
+
+        if (pane.SearchOpen && IsFocusWithin(SearchHost))
+        {
+            CloseSearch(pane);
+            return true;
+        }
+
+        return false;
+    }
+
+    private async Task StartNewAgentAsync()
+    {
+        ShowThread();
+        await _panel.NewSessionCommand.ExecuteAsync(null).ConfigureAwait(true);
+        FocusThread();
+    }
+
+    private void OpenSearch()
+    {
+        if (_current is not { } pane || _openTool is not null || AgentsToggle.IsChecked == true)
+        {
+            return;
+        }
+
+        pane.SearchOpen = true;
+        SearchHost.IsVisible = true;
+        pane.SearchView.FindControl<TextBox>("SearchInput").FocusWhenReady();
+    }
+
+    private void CloseSearch(SessionPane pane)
+    {
+        pane.SearchOpen = false;
+        SearchHost.IsVisible = false;
+        pane.Transcript.FocusTranscript();
+    }
+
+    private int FocusedRegion()
+    {
+        if (IsFocusWithin(RailRegion))
+        {
+            return RailRegionIndex;
+        }
+
+        return IsFocusWithin(ThreadRegion) ? ThreadRegionIndex : -1;
+    }
+
+    private void CycleRegions(bool backwards)
+    {
+        int[] regions = [RailRegionIndex, ThreadRegionIndex];
+        var at = Array.IndexOf(regions, FocusedRegion());
+        int next;
+        if (at < 0)
+        {
+            next = backwards ? regions.Length - 1 : 0;
+        }
+        else
+        {
+            next = (at + (backwards ? regions.Length - 1 : 1)) % regions.Length;
+        }
+
+        FocusRegion(regions[next]);
+    }
+
+    private void FocusRegion(int region)
+    {
+        switch (region)
+        {
+            case RailRegionIndex:
+                if (ToolsViewScroll.IsVisible)
+                {
+                    AgentsToggle.FocusWhenReady();
+                }
+                else
+                {
+                    _rail.FocusRows();
+                }
+
+                break;
+            default:
+                FocusThread();
+                break;
+        }
+    }
+
+    // The prompt of the selected agent. A closed or lost agent has no prompt, so focus lands on its transcript. With no agent, it lands on
+    // the first control of the empty thread.
+    private void FocusThread()
+    {
+        if (_current is { } pane)
+        {
+            if (ComposerHost.IsVisible)
+            {
+                pane.Composer.FocusPrompt();
+            }
+            else
+            {
+                pane.Transcript.FocusTranscript();
+            }
+
+            return;
+        }
+
+        _stateView.FindControl<Button>("StartFirstAgentButton").FocusWhenReady();
+    }
+
+    private void OnLayoutSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        var wide = e.NewSize.Width >= WideLayoutWidth;
+        if (!_sized || wide != _wide)
+        {
+            // Crossing the width threshold switches the rail between its two widths.
+            _sized = true;
+            _wide = wide;
+            RailRegion.Classes.Set(WideClass, wide);
+        }
+
+        var hint = e.NewSize.Height >= ShortWindowHeight;
+        if (hint != _hintVisible)
+        {
+            _hintVisible = hint;
+            if (_current is { } pane)
+            {
+                pane.Composer.HintVisible = hint;
+            }
+        }
+    }
+
+    private bool IsFocusWithin(Control region)
+    {
+        var focused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() as Visual;
+        return focused is not null && (ReferenceEquals(focused, region) || region.IsVisualAncestorOf(focused));
+    }
+
+    private void OnRailViewToggleChanged(object? sender, RoutedEventArgs e)
+    {
+        if (_syncingRail || sender is not ToggleButton toggle)
+        {
+            return;
+        }
+
+        // The pair is exclusive: checking one unchecks the other, and the checked one cannot be unchecked.
+        SetRailView(tools: ReferenceEquals(toggle, ToolsViewToggle));
+    }
+
+    private void SetRailView(bool tools)
+    {
+        _syncingRail = true;
+        try
+        {
+            SessionsViewToggle.IsChecked = !tools;
+            ToolsViewToggle.IsChecked = tools;
+        }
+        finally
+        {
+            _syncingRail = false;
+        }
+
+        RailHost.IsVisible = !tools;
+        ToolsViewScroll.IsVisible = tools;
     }
 
     private void OnAgentsToggleChanged(object? sender, RoutedEventArgs e)
@@ -492,6 +784,13 @@ public partial class MainView : UserControl
         if (open)
         {
             CloseTool();
+            ToolTitle.Text = "Agents";
+            ToolHeader.IsVisible = true;
+            _openedBy = AgentsToggle;
+        }
+        else if (ReferenceEquals(_openedBy, AgentsToggle) && _openTool is null)
+        {
+            ToolHeader.IsVisible = false;
         }
 
         AgentsHost.IsVisible = open;
@@ -503,14 +802,37 @@ public partial class MainView : UserControl
 
     private void OnSuggestionsToggleChanged(object? sender, RoutedEventArgs e)
     {
-        if (ComposerHost.Content is ComposerView composer)
+        if (_current is { } pane)
         {
-            composer.SuggestionsShown = SuggestionsToggle.IsChecked == true;
+            pane.Composer.SuggestionsShown = SuggestionsToggle.IsChecked == true;
         }
     }
 
-    private void OnMatchSelected(object? sender, MatchSelectedEventArgs e) =>
-        (TranscriptHost.Content as SessionView)?.ScrollToBlock(e.Match.BlockIndex);
+    // The Close tool control of the tool header closes the open tool, or the Agents view, and returns focus to the toggle that opened it.
+    private void OnCloseToolClick(object? sender, RoutedEventArgs e)
+    {
+        var opener = _openedBy;
+        ShowThread();
+        if (opener is null)
+        {
+            return;
+        }
+
+        // The toggles live in the Tools view of the rail, so the rail shows it again when the user switched to the session list.
+        SetRailView(tools: true);
+        opener.FocusWhenReady();
+    }
+
+    // Shows the thread: the open tool and the Agents view close and the transcript returns.
+    private void ShowThread()
+    {
+        if (AgentsToggle.IsChecked == true)
+        {
+            AgentsToggle.IsChecked = false;
+        }
+
+        CloseTool();
+    }
 
     // The workspace tools, in the order their toggles sit in the XAML. Each tool's view is built when its toggle first opens it.
     private List<ToolEntry> CreateTools()
@@ -586,6 +908,9 @@ public partial class MainView : UserControl
         // Closing the Agents view first shows the transcript, which the tool then replaces.
         AgentsToggle.IsChecked = false;
         _openTool = tool;
+        _openedBy = tool.Toggle;
+        ToolTitle.Text = tool.Name;
+        ToolHeader.IsVisible = true;
         ToolHost.Content = view;
         ToolHost.IsVisible = true;
         TranscriptHost.IsVisible = false;
@@ -613,6 +938,7 @@ public partial class MainView : UserControl
             _syncingTools = false;
         }
 
+        ToolHeader.IsVisible = false;
         ToolHost.Content = null;
         ToolHost.IsVisible = false;
         TranscriptHost.IsVisible = true;
@@ -686,7 +1012,8 @@ public partial class MainView : UserControl
     }
 
     // The export view reads the transcript it was given, so it is built again on each open rather than kept.
-    private TranscriptExportView CreateExport() => new(Session.Tree, ExportTitle, new UsageHistory([]));
+    private TranscriptExportView CreateExport() =>
+        new((_current?.ViewModel.Session ?? new SessionViewModel()).Tree, ExportTitle, new UsageHistory([]));
 
     private static void FocusFirst(Control? root)
     {
@@ -697,23 +1024,33 @@ public partial class MainView : UserControl
     }
 
     /// <summary>
-    /// Stops the transcript search and the workspace models, and closes the composed send path, so the view holds no subscription.
-    /// The host calls this when its window closes. A turn still in flight is stopped before the send path is disposed.
+    /// Releases the view's subscriptions, its transcript searches and the workspace models. The host calls this when its window closes.
+    /// It does not stop the sessions: the head owns the panel and the runtimes, and disposes them.
     /// </summary>
     public void Close()
     {
-        Search.MatchSelected -= OnMatchSelected;
-        Search.Dispose();
-        EditorModel.Dispose();
-        if (_prompts is not null)
+        if (_closed)
         {
-            _ = CloseEngineAsync(_prompts).ContinueWith(
-                closed => Trace.TraceError($"OmpOS could not close the engine host: {closed.Exception!.GetBaseException()}"),
-                CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted,
-                TaskScheduler.Default);
+            return;
         }
 
+        _closed = true;
+        _panel.PropertyChanged -= OnPanelChanged;
+        _panel.Catalog.PropertyChanged -= OnCatalogChanged;
+        if (_watched is not null)
+        {
+            _watched.PropertyChanged -= OnSelectedViewModelChanged;
+            _watched = null;
+        }
+
+        foreach (var pane in _panes.Values)
+        {
+            pane.Dispose();
+        }
+
+        _panes.Clear();
+        _current = null;
+        EditorModel.Dispose();
         _conventions?.Dispose();
         _catalog?.Dispose();
         if (_mcpHost is not null)
@@ -723,27 +1060,6 @@ public partial class MainView : UserControl
                 CancellationToken.None,
                 TaskContinuationOptions.OnlyOnFaulted,
                 TaskScheduler.Default);
-        }
-    }
-
-    /// <summary>
-    /// Cancels the turn in flight, if one runs, and then disposes the composed host. The window is closing, so nothing awaits this; a
-    /// failure is traced by the caller's continuation, not shown on the status line.
-    /// </summary>
-    /// <param name="prompts">The send path of the composed engine.</param>
-    /// <returns>A task that completes when the host has been disposed.</returns>
-    private async Task CloseEngineAsync(IPromptChannel prompts)
-    {
-        try
-        {
-            if (Composer.IsStreaming)
-            {
-                await StopTurnAsync().ConfigureAwait(true);
-            }
-        }
-        finally
-        {
-            await prompts.DisposeAsync().ConfigureAwait(true);
         }
     }
 
@@ -764,5 +1080,59 @@ public partial class MainView : UserControl
 
         /// <summary>Gets the kept view, or null until the tool first opens.</summary>
         public Control? View { get; set; }
+    }
+
+    /// <summary>The views and models of one session: they are built when the session is first shown and kept until the session leaves the catalog.</summary>
+    private sealed class SessionPane(AgentSessionViewModel viewModel, AgentSessionRuntime? runtime) : IDisposable
+    {
+        /// <summary>Gets the session view model the pane shows.</summary>
+        public AgentSessionViewModel ViewModel { get; } = viewModel;
+
+        /// <summary>Gets the runtime that runs the session, or null when the view model was not built by one.</summary>
+        public AgentSessionRuntime? Runtime { get; } = runtime;
+
+        /// <summary>Gets the transcript.</summary>
+        public required SessionView Transcript { get; init; }
+
+        /// <summary>Gets the composer.</summary>
+        public required ComposerView Composer { get; init; }
+
+        /// <summary>Gets the thread header.</summary>
+        public required ThreadHeaderView Header { get; init; }
+
+        /// <summary>Gets the stop and close confirmation bars.</summary>
+        public required ConfirmBarView ConfirmBar { get; init; }
+
+        /// <summary>Gets the pipeline strip.</summary>
+        public required PipelineStripView Strip { get; init; }
+
+        /// <summary>Gets the transcript search of the session.</summary>
+        public required TranscriptSearchModel Search { get; init; }
+
+        /// <summary>Gets the side chats of the session.</summary>
+        public required SideChatPanel SideChats { get; init; }
+
+        /// <summary>Gets or sets the transcript search view.</summary>
+        public TranscriptSearchView SearchView { get; set; } = null!;
+
+        /// <summary>Gets or sets the side chat view.</summary>
+        public Control SideChatView { get; set; } = null!;
+
+        /// <summary>Gets or sets the tool-approval list, or null when the session has no runtime.</summary>
+        public RunControlsView? RunControls { get; set; }
+
+        /// <summary>Gets or sets whether the transcript search is open for this session.</summary>
+        public bool SearchOpen { get; set; }
+
+        /// <summary>Gets or sets the action that unsubscribes the pane from its runtime.</summary>
+        public Action? Detach { get; set; }
+
+        /// <summary>Unsubscribes the pane from its runtime and disposes the search.</summary>
+        public void Dispose()
+        {
+            Detach?.Invoke();
+            Detach = null;
+            Search.Dispose();
+        }
     }
 }

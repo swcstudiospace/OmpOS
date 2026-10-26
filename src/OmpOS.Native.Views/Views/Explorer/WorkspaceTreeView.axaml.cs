@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -33,6 +34,7 @@ internal partial class WorkspaceTreeView : UserControl
 
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         TreeRows.SelectionChanged += OnRowSelectionChanged;
+        TreeRows.ContainerPrepared += OnContainerPrepared;
     }
 
     /// <summary>Raised when the user activates a file. The explorer does not open it.</summary>
@@ -57,6 +59,15 @@ internal partial class WorkspaceTreeView : UserControl
         }
 
         Rebuild();
+    }
+
+    // The row's container is the tab stop, so it carries the node's name, as the text inside it does.
+    private static void OnContainerPrepared(object? sender, ContainerPreparedEventArgs e)
+    {
+        if (e.Container is ListBoxItem { Content: WorkspaceRow row } item)
+        {
+            AutomationProperties.SetName(item, row.Name);
+        }
     }
 
     private void Unbind()
