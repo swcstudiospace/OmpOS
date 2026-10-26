@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 
 namespace OmpOS.Workspace;
@@ -23,6 +24,19 @@ internal static class WorkspaceFiles
     /// <returns>The text, or the reason the file is malformed.</returns>
     public static (string? Text, string? Reason) ReadText(WorkspaceRoot root, string relativePath)
     {
+        var (text, _, reason) = ReadTextWithHash(root, relativePath);
+        return (text, reason);
+    }
+
+    /// <summary>
+    /// Reads a file as strict UTF-8 text and hashes the same bytes, so the hash always describes the text that was returned.
+    /// </summary>
+    /// <returns>
+    /// The text and the lowercase hexadecimal SHA-256 of the raw file bytes (including any byte order mark), or the reason
+    /// the file is malformed.
+    /// </returns>
+    public static (string? Text, string? Sha256, string? Reason) ReadTextWithHash(WorkspaceRoot root, string relativePath)
+    {
         string fullPath;
         try
         {
@@ -30,7 +44,7 @@ internal static class WorkspaceFiles
         }
         catch (WorkspacePathException exception)
         {
-            return (null, exception.Reason);
+            return (null, null, exception.Reason);
         }
 
         try
@@ -38,7 +52,7 @@ internal static class WorkspaceFiles
             var length = new FileInfo(fullPath).Length;
             if (length > WorkspaceConventions.MaxConventionFileBytes)
             {
-                return (null, $"the file is {length} bytes, above the {WorkspaceConventions.MaxConventionFileBytes} byte limit");
+                return (null, null, $"the file is {length} bytes, above the {WorkspaceConventions.MaxConventionFileBytes} byte limit");
             }
 
             var bytes = File.ReadAllBytes(fullPath);
@@ -49,19 +63,21 @@ internal static class WorkspaceFiles
             }
 
             var text = StrictUtf8.GetString(content);
-            return text.Trim().Length == 0 ? (null, "the file is empty") : (text, null);
+            return text.Trim().Length == 0
+                ? (null, null, "the file is empty")
+                : (text, Convert.ToHexStringLower(SHA256.HashData(bytes)), null);
         }
         catch (DecoderFallbackException)
         {
-            return (null, "the file is not valid UTF-8 text");
+            return (null, null, "the file is not valid UTF-8 text");
         }
         catch (IOException exception)
         {
-            return (null, $"the file cannot be read: {exception.Message}");
+            return (null, null, $"the file cannot be read: {exception.Message}");
         }
         catch (UnauthorizedAccessException exception)
         {
-            return (null, $"the file cannot be read: {exception.Message}");
+            return (null, null, $"the file cannot be read: {exception.Message}");
         }
     }
 

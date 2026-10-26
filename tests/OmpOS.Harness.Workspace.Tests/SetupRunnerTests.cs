@@ -5,7 +5,8 @@ namespace OmpOS.Workspace.Tests;
 
 /// <summary>
 /// Verifies that the setup file runs before an agent run, that its variables reach the run, and that a failing
-/// step stops the run before the agent starts (ADE-19).
+/// step stops the run before the agent starts (ADE-19). Each test approves the setup first; the consent gate itself is
+/// covered by <see cref="SetupRunnerConsentTests"/>.
 /// </summary>
 public sealed class SetupRunnerTests
 {
@@ -31,6 +32,8 @@ public sealed class SetupRunnerTests
 
         var result = await SetupRunner.RunAsync(
                 workspace.Root,
+                new MemorySetupConsentStore(),
+                ScriptedSetupConsentPrompt.Approving(),
                 (environment, _) =>
                 {
                     starts++;
@@ -67,6 +70,8 @@ public sealed class SetupRunnerTests
 
         var result = await SetupRunner.RunAsync(
                 workspace.Root,
+                new MemorySetupConsentStore(),
+                ScriptedSetupConsentPrompt.Approving(),
                 (_, _) =>
                 {
                     starts++;
@@ -94,6 +99,8 @@ public sealed class SetupRunnerTests
 
         var result = await SetupRunner.RunAsync(
                 workspace.Root,
+                new MemorySetupConsentStore(),
+                ScriptedSetupConsentPrompt.Approving(),
                 (_, _) =>
                 {
                     starts++;
@@ -116,6 +123,8 @@ public sealed class SetupRunnerTests
 
         var result = await SetupRunner.RunAsync(
                 workspace.Root,
+                new MemorySetupConsentStore(),
+                ScriptedSetupConsentPrompt.Approving(),
                 (_, _) =>
                 {
                     starts++;
@@ -141,6 +150,8 @@ public sealed class SetupRunnerTests
 
         var result = await SetupRunner.RunAsync(
                 workspace.Root,
+                new MemorySetupConsentStore(),
+                ScriptedSetupConsentPrompt.Approving(),
                 (_, _) =>
                 {
                     starts++;
@@ -161,6 +172,8 @@ public sealed class SetupRunnerTests
 
         var result = await SetupRunner.RunAsync(
                 workspace.Root,
+                new MemorySetupConsentStore(),
+                ScriptedSetupConsentPrompt.Approving(),
                 (_, _) =>
                 {
                     starts++;

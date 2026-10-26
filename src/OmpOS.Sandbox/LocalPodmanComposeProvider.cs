@@ -136,7 +136,7 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
         }
 
         var projectName = $"ompos-{sandboxId}";
-        var composeFile = Path.Combine(Path.GetTempPath(), $"{projectName}.yaml");
+        var composeFile = Path.Combine(Path.GetTempPath(), projectName, $"{projectName}.yaml");
         // Only PerSandboxCredentials=true issues a credential. A null name means no secret is created, attached or removed.
         string? secretName = _options.PerSandboxCredentials ? PodmanSandboxCredential.SecretNameFor(sandboxId) : null;
         var secretCreated = false;
@@ -500,7 +500,8 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
     private async Task WriteComposeFileAsync(string composeFile, string sandboxId, string projectName, string? secretName, ProvisionRequest request, CancellationToken cancellationToken)
     {
         var composeContent = GenerateComposeFile(sandboxId, projectName, secretName, request);
-        await File.WriteAllTextAsync(composeFile, composeContent, cancellationToken).ConfigureAwait(false);
+        OwnerOnlyFiles.CreateDirectory(Path.GetDirectoryName(composeFile)!);
+        await OwnerOnlyFiles.WriteTextAsync(composeFile, composeContent, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task BringUpAsync(string projectName, string composeFile, TimeSpan timeout, CancellationToken cancellationToken)
@@ -576,6 +577,27 @@ public sealed class LocalPodmanComposeProvider : ISandboxProvider
     private void DeleteComposeFile(string composeFile)
     {
         DeleteFileBestEffort(composeFile, ComposeCleanupFailed);
+        DeleteEmptyDirectoryBestEffort(Path.GetDirectoryName(composeFile)!, ComposeCleanupFailed);
+    }
+
+    private void DeleteEmptyDirectoryBestEffort(string path, Action<ILogger, string, Exception?> onFailure)
+    {
+        // The directory exists only for the compose file. It is removed only when empty, so an unrelated file is never lost.
+        try
+        {
+            if (Directory.Exists(path) && !Directory.EnumerateFileSystemEntries(path).Any())
+            {
+                Directory.Delete(path);
+            }
+        }
+        catch (IOException ex)
+        {
+            onFailure(_logger, path, ex);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            onFailure(_logger, path, ex);
+        }
     }
 
     private void DeleteFileBestEffort(string path, Action<ILogger, string, Exception?> onFailure)

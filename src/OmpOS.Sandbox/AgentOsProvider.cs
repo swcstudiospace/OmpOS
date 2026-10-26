@@ -46,9 +46,12 @@ public sealed class AgentOsProvider : ISandboxProvider
     /// Initializes a new instance of the <see cref="AgentOsProvider"/> class.
     /// </summary>
     /// <param name="httpClient">HTTP client used for hosted API calls.</param>
-    /// <param name="endpoint">Hosted API base URL, for example <c>https://api.rivet.dev</c>.</param>
+    /// <param name="endpoint">
+    /// Hosted API base URL, for example <c>https://api.rivet.dev</c>. It must be https, or http only for a loopback host
+    /// (<c>localhost</c>, <c>127.0.0.0/8</c>, <c>::1</c>); any other cleartext origin is refused at construction.
+    /// </param>
     /// <param name="namespaceName">Rivet namespace that owns the VMs.</param>
-    /// <param name="secretToken">Namespace secret token (<c>sk_</c>), sent as bearer for control-plane calls and as <c>x-rivet-token</c> for actions.</param>
+    /// <param name="secretToken">Namespace secret token (<c>sk_</c>), sent as bearer for control-plane calls and as <c>x-rivet-token</c> for actions. It is sent only to the configured origin.</param>
     /// <param name="options">Optional. When set with PerSandboxCredentials true, provisioning fails closed before any request. Null or PerSandboxCredentials false leaves provisioning unchanged.</param>
     public AgentOsProvider(HttpClient httpClient, Uri endpoint, string namespaceName, string secretToken, SandboxProviderOptions? options = null)
     {
@@ -60,6 +63,8 @@ public sealed class AgentOsProvider : ISandboxProvider
         {
             throw new ArgumentException("Endpoint must be an absolute URI.", nameof(endpoint));
         }
+
+        RequireTrustedOrigin(endpoint);
 
         _http = httpClient;
         _endpoint = new Uri(endpoint.AbsoluteUri.TrimEnd('/') + "/", UriKind.Absolute);
@@ -78,6 +83,28 @@ public sealed class AgentOsProvider : ISandboxProvider
 
     /// <inheritdoc />
     public SandboxCapability Capabilities { get; }
+
+    /// <summary>
+    /// Creates an HTTP client that never follows redirects, so the bearer token and the <c>x-rivet-token</c> header cannot
+    /// be replayed to another host by a redirect. Use it for the <c>httpClient</c> constructor argument in production.
+    /// A client from another source is still checked: a response that was served from a different origin is refused.
+    /// </summary>
+    /// <returns>A new client the caller owns and disposes.</returns>
+    public static HttpClient CreateHttpClient()
+    {
+        SocketsHttpHandler? handler = new();
+        try
+        {
+            handler.AllowAutoRedirect = false;
+            var client = new HttpClient(handler, disposeHandler: true);
+            handler = null;
+            return client;
+        }
+        finally
+        {
+            handler?.Dispose();
+        }
+    }
 
     /// <inheritdoc />
     public async Task<ProvisionResult> ProvisionAsync(ProvisionRequest request, CancellationToken cancellationToken = default)
@@ -263,9 +290,10 @@ public sealed class AgentOsProvider : ISandboxProvider
 
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(timeout);
+        HttpResponseMessage response;
         try
         {
-            return await _http.SendAsync(request, deadline.Token).ConfigureAwait(false);
+            response = await _http.SendAsync(request, deadline.Token).ConfigureAwait(false);
         }
         catch (HttpRequestException ex)
         {
@@ -275,6 +303,34 @@ public sealed class AgentOsProvider : ISandboxProvider
         {
             throw new TimeoutException("agentOS request exceeded its deadline", ex);
         }
+
+        var servedFrom = response.RequestMessage?.RequestUri;
+        var redirected = (int)response.StatusCode is >= 300 and < 400;
+        if (redirected || (servedFrom is not null && !IsConfiguredOrigin(servedFrom)))
+        {
+            response.Dispose();
+            throw new NotAvailableException("agentOS hosted API answered with a redirect or from another origin; the request is refused so the token stays on the configured origin");
+        }
+
+        return response;
+    }
+
+    private bool IsConfiguredOrigin(Uri uri) =>
+        string.Equals(uri.GetLeftPart(UriPartial.Authority), _endpoint.GetLeftPart(UriPartial.Authority), StringComparison.OrdinalIgnoreCase);
+
+    private static void RequireTrustedOrigin(Uri endpoint)
+    {
+        if (string.Equals(endpoint.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (string.Equals(endpoint.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) && endpoint.IsLoopback)
+        {
+            return;
+        }
+
+        throw new ArgumentException("Endpoint must be https, or http on a loopback host; a bearer token is never sent over cleartext to another host.", nameof(endpoint));
     }
 
     private Uri ControlPlaneUri(string path) => new(_endpoint, $"{path}?namespace={Uri.EscapeDataString(_namespace)}");

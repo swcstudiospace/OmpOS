@@ -12,9 +12,10 @@ internal static class SetupFileReader
     /// Reads the setup file under the root.
     /// </summary>
     /// <returns>
-    /// The setup and no diagnostic, or no setup and no diagnostic when the file is absent, or no setup and a diagnostic when it is malformed.
+    /// The setup, no diagnostic and the lowercase hexadecimal SHA-256 of the file bytes that were parsed; or no setup, no
+    /// diagnostic and no hash when the file is absent; or no setup, a diagnostic and no hash when it is malformed.
     /// </returns>
-    public static (WorkspaceSetup? Setup, WorkspaceDiagnostic? Diagnostic) Read(WorkspaceRoot root)
+    public static (WorkspaceSetup? Setup, WorkspaceDiagnostic? Diagnostic, string? Sha256) Read(WorkspaceRoot root)
     {
         string path;
         try
@@ -33,10 +34,10 @@ internal static class SetupFileReader
 
         if (!File.Exists(path))
         {
-            return (null, null);
+            return (null, null, null);
         }
 
-        var (text, readReason) = WorkspaceFiles.ReadText(root, WorkspaceConventions.SetupFile);
+        var (text, hash, readReason) = WorkspaceFiles.ReadTextWithHash(root, WorkspaceConventions.SetupFile);
         if (text is null)
         {
             return Rejected(readReason!);
@@ -58,7 +59,7 @@ internal static class SetupFileReader
         }
 
         var (setup, reason) = Validate(root, file);
-        return reason is null ? (setup, null) : Rejected(reason);
+        return reason is null ? (setup, null, hash) : Rejected(reason);
     }
 
     /// <summary>
@@ -151,6 +152,6 @@ internal static class SetupFileReader
         return (new SetupStep(step.Command, arguments, workingDirectory), null);
     }
 
-    private static (WorkspaceSetup? Setup, WorkspaceDiagnostic? Diagnostic) Rejected(string reason) =>
-        (null, new WorkspaceDiagnostic(WorkspaceConventions.SetupFile, reason));
+    private static (WorkspaceSetup? Setup, WorkspaceDiagnostic? Diagnostic, string? Sha256) Rejected(string reason) =>
+        (null, new WorkspaceDiagnostic(WorkspaceConventions.SetupFile, reason), null);
 }

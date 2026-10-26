@@ -98,14 +98,23 @@ A malformed file produces exactly one `WorkspaceDiagnostic` with its workspace-r
 
 ### 8. Setup run semantics
 
-`SetupRunner.RunAsync(root, startAgent, ct)` runs the setup and then, only if every step passes, invokes `startAgent` with the declared environment. Its result is:
+`SetupRunner.RunAsync(root, consentStore, consentPrompt, startAgent, ct)` checks consent, runs the setup, and then, only if every step passes, invokes `startAgent` with the declared environment. Its result is:
 
 - `Passed`, with the environment the run used, when every step exits with status zero (or there is no setup file). `startAgent` has completed.
-- `Failed`, with the zero-based index of the failing step and a reason, when a step exits non-zero, cannot start, has a working directory that is missing or escapes the root, or when the setup file is malformed. `startAgent` is never invoked, and the environment in the result is empty.
+- `Failed`, with the zero-based index of the failing step and a reason, when a step exits non-zero, cannot start, has a working directory that is missing or escapes the root, when the setup file is malformed, or when an approval could not be saved. `startAgent` is never invoked, and the environment in the result is empty.
+- `ConsentRefused`, with a reason, when the setup declares steps or environment variables and the user has not approved it (section 9). No step runs and `startAgent` is never invoked.
 
 A missing setup file means no setup, and the run starts with an empty environment. A malformed setup file fails the run. This differs from the skip rule for rules, skills and modes (section 6), and it is deliberate: silently starting an agent without the setup its workspace requires would run it in an unprepared environment.
 
 Steps run one at a time with `System.Diagnostics.Process`, an argument list, no shell, and an explicit working directory. Output is drained and bounded to 4096 characters. A failure reason keeps the first non-empty line of standard error, capped at 512 characters. Cancellation kills the step's process tree.
+
+### 9. Setup consent
+
+A setup file runs only after the user approved it for this repository. Consent is asked once per repository and is keyed by the canonical repository path plus the SHA-256 of the exact bytes of `.ompos/setup.json`, so a changed file asks again, and so does the same file in another repository. The hash is computed from the same bytes that were parsed, so the approval always describes what runs. A setup that declares no steps and no environment variables runs nothing and asks nothing; one that declares only environment variables still asks, because variables such as `LD_PRELOAD` change what the agent run executes.
+
+- `ISetupConsentStore` answers `IsGrantedAsync(key)` and records `RecordGrantAsync(key)`. `FileSetupConsentStore` keeps one versioned JSON file (`OmpOS/setup-consent.json` under the per-user application data folder), reads it afresh on every call, writes through a temporary file renamed over the target, and keeps one approval per repository (the latest). A corrupt, empty, or unknown-version file is no consent: it is moved aside as `setup-consent.json.quarantined-*` and reading never throws.
+- `ISetupConsentPrompt` asks the user; each head decides how (dialog, terminal question, web form). The default `DenyingSetupConsentPrompt` denies with a message that says no approval is recorded, so a head that cannot ask refuses the setup instead of running it.
+- If the user approves but the approval cannot be saved, the run fails before any step runs.
 
 ## Consequences
 
@@ -117,7 +126,7 @@ Steps run one at a time with `System.Diagnostics.Process`, an argument list, no 
 
 ## Open risks
 
-1. **Setup executes workspace code.** An absolute command runs a host executable, and the setup file runs with the user's privileges. Nothing in this decision asks the user to approve a setup file before its first run. The run layer must route setup through the approval path (ACP) before it is wired to a real agent. Until then, opening an untrusted repository and starting a run runs its setup.
+1. **Setup executes workspace code.** An absolute command runs a host executable, and the setup file runs with the user's privileges. Section 9 asks the user to approve a setup file once per repository and file hash before its first run, but the approval shows the commands, not what they do; an approved file still runs with full user privileges. No head implements a prompt yet, so the default prompt denies every setup, and the run layer must supply a real `ISetupConsentPrompt` before it is wired to a real agent. The setup commands are still not routed through the ACP tool-approval path.
 2. **Time of check to time of use.** `Resolve` validates a path, and the caller then opens it. A symbolic link swapped in between can redirect the open. The mitigation would be to open with no-follow semantics, which this version does not do.
 3. **Platform coverage.** Containment and link handling are tested on Linux only. Windows junctions and case-insensitive volumes (default macOS) are not tested. A case-only difference from the root path is rejected as outside the root, which is safe but may reject valid paths. The ordinal-ignore-case comparison is used on Windows only.
 4. **Setup steps have no timeout.** Only cancellation stops a step. A step that starts a background child which keeps the output pipe open can hold the run until that child exits. A per-step timeout is not included.
