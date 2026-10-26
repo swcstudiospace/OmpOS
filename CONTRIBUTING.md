@@ -36,6 +36,15 @@ dotnet restore OmpOS.Linux.slnf --force-evaluate
 4. Add a `ProjectReference` from `tests/OmpOS.ArchitectureTests` so the assembly lands in the test output.
 5. Restore with `--force-evaluate` and keep the whole suite green.
 
+## Plugin submodules
+
+- `plugins/claude-ultrathink`, `plugins/agent-swarm` and `plugins/agent-substrate` are git submodules pinned to commits on the sibling repositories. Clone with `--recurse-submodules` or run `git submodule update --init --recursive`.
+- Never edit sibling source inside OmpOS. Change it in the sibling repository, push it, then bump the pointer here.
+- Never pin a commit that is not on the sibling's remote: check `git ls-remote <url> <sha>` before committing the bump.
+- `.gitmodules` uses remote URLs, never local paths.
+- `plugins/gsd-core-omp` is tracked OmpOS code, not a submodule.
+- Full procedure, private-repository access and the CI secret: [docs/plugins.md](docs/plugins.md).
+
 ## TODO policy
 
 - A `TODO` without an owner and an open-question link is refused in review.
