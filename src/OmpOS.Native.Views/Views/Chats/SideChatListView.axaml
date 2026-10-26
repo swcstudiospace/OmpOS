@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:chats="clr-namespace:OmpOS.Presentation.Chats;assembly=OmpOS.Presentation"
+             x:Class="OmpOS.Native.Views.Chats.SideChatListView">
+
+  <StackPanel Margin="{DynamicResource OmpOS.Space.Sm}"
+              Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+    <Button x:Name="OpenSideChatButton"
+            Content="Open side chat"
+            AutomationProperties.Name="Open side chat"
+            HorizontalAlignment="Left" />
+
+    <TextBlock x:Name="EmptyText"
+               Classes="muted"
+               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+               TextWrapping="Wrap"
+               Text="No side chat open. A side chat keeps its messages out of this session's transcript." />
+
+    <ListBox x:Name="SideChatRows"
+             MaxHeight="160"
+             AutomationProperties.Name="Side chats"
+             Focusable="True">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="chats:SideChat">
+          <TextBlock Text="{CompiledBinding Title}"
+                     TextTrimming="CharacterEllipsis"
+                     MaxLines="1" />
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <ScrollViewer x:Name="MessagesScroll"
+                  AutomationProperties.Name="Side chat messages"
+                  Focusable="True"
+                  IsTabStop="True"
+                  MaxHeight="320">
+      <StackPanel x:Name="MessageHost"
+                  Spacing="{DynamicResource OmpOS.Gap.Xs}" />
+    </ScrollViewer>
+
+  </StackPanel>
+
+</UserControl>

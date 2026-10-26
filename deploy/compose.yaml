@@ -1,22 +1,49 @@
-# OmpOS local dependency stack (podman-compose 1.6.0+). The ONLY supported invocation:
-#   podman-compose --profile workflows up
+# OmpOS local backend stack. The ONLY supported invocation (podman-compose 1.6.0+):
+#   podman-compose --profile backend -f deploy/compose.yaml up -d
 # No `version:` key (Compose Spec), no runtime-specific extensions.
+# Every published port binds to 127.0.0.1. Every password is required from the environment; none has a default.
+# Local-only difference: GreptimeDB runs without user authentication (no --user-provider). Production sends the
+# OTLP Authorization Basic header from the hosting environment; this stack never configures it.
 services:
-  temporal:
-    image: docker.io/temporalio/temporal:1.9.1
-    container_name: ompos-temporal
-    command: server start-dev --ip 0.0.0.0 --db-filename /home/temporal/temporal.db
+  postgres:
+    image: docker.io/timescale/timescaledb:2.13.1-pg16@sha256:1b2b5508848bbbbd671e02aeafd75fefb57771168f0782b6842bfb2f66af444b # production parity: timescale-postgis-ssl:pg16-ts2.13
+    container_name: ompos-postgres
+    environment:
+      POSTGRES_USER: ${OMPOS_POSTGRES_USER:-ompos}
+      POSTGRES_DB: ${OMPOS_POSTGRES_DB:-ompos}
+      POSTGRES_PASSWORD: ${OMPOS_POSTGRES_PASSWORD:?set OMPOS_POSTGRES_PASSWORD}
     ports:
-      - "127.0.0.1:7233:7233" # gRPC frontend
-      - "127.0.0.1:8233:8233" # Web UI
+      - "127.0.0.1:5432:5432"
     volumes:
-      - temporal-data:/home/temporal # image user `temporal` (uid 1000) owns this path
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"]
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-p", "5432"]
       interval: 10s
       timeout: 5s
       retries: 12
       start_period: 10s
-    profiles: ["workflows"]
+    profiles: ["backend"]
+  dragonfly:
+    image: docker.io/dragonflydb/dragonfly:v1.27.1@sha256:385cb73078f4dabe43d536766842eab444f3d791b0fcf86951decdcbcda37917
+    container_name: ompos-dragonfly
+    command: ["--bind=0.0.0.0", "--dir=/data"]
+    environment:
+      DFLY_requirepass: ${OMPOS_DRAGONFLY_PASSWORD:?set OMPOS_DRAGONFLY_PASSWORD}
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - dragonfly-data:/data
+    profiles: ["backend"]
+  greptimedb:
+    image: docker.io/greptime/greptimedb:v1.1.4@sha256:9726587eac95d0360755254cd59a528dbf48abfdf268478aea6a644f62afe44c
+    container_name: ompos-greptimedb
+    command: ["standalone", "start", "--http-addr=0.0.0.0:4000", "--rpc-bind-addr=0.0.0.0:4001"]
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - greptimedb-data:/tmp/greptimedb
+    profiles: ["backend"]
 volumes:
-  temporal-data:
+  postgres-data:
+  dragonfly-data:
+  greptimedb-data:

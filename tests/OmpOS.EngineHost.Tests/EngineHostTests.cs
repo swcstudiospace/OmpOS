@@ -73,7 +73,7 @@ public sealed class EngineHostTests
         var raised = 0;
         host.MissedEventsHeld += (_, _) => raised++;
 
-        var seen = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
+        var seen = await CollectDroppedAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
         seen.Count.ShouldBe(5);
 
         await host.ReconnectAsync(ct);
@@ -95,7 +95,7 @@ public sealed class EngineHostTests
         using var http = ClientFor(handler);
         var host = new RemoteEngineHost(http);
 
-        _ = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
+        _ = await CollectDroppedAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
         await host.ReconnectAsync(ct);
         host.TakeHeldEvents().Count.ShouldBe(7);
 
@@ -179,7 +179,7 @@ public sealed class EngineHostTests
         using var http = ClientFor(handler);
         var host = new RemoteEngineHost(http);
 
-        _ = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct)).ConfigureAwait(true);
+        _ = await CollectDroppedAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct)).ConfigureAwait(true);
         await host.ReconnectAsync(ct).ConfigureAwait(true);
 
         var seen = await CollectAsync(host.SubmitPromptAsync("next prompt", new PromptOptions(), ct)).ConfigureAwait(true);
@@ -244,7 +244,7 @@ public sealed class EngineHostTests
         var raised = 0;
         host.MissedEventsHeld += (_, _) => raised++;
 
-        _ = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct)).ConfigureAwait(true);
+        _ = await CollectDroppedAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct)).ConfigureAwait(true);
 
         var hold = host.ReconnectAsync(ct);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -320,18 +320,28 @@ public sealed class EngineHostTests
         Should.Throw<InvalidOperationException>(() => host.ReconnectAsync(TestContext.Current.CancellationToken));
     }
 
-    /// <summary>Cancelling a host with no active prompt completes without throwing.</summary>
+    /// <summary>Cancelling a host with no active prompt does nothing: it sends no request, and the next prompt still runs normally.</summary>
     [Fact]
     public async Task CancelWithoutPromptCompletes()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var inProcess = InProcessEngineHost.ForInMemory(new InMemoryOmpAdapter(Scripted([])));
+        HarnessEvent[] script = [new TextDeltaEvent("Hello"), new CompletedEvent("end_turn")];
+        await using var inProcess = InProcessEngineHost.ForInMemory(new InMemoryOmpAdapter(Scripted(script)));
         using var handler = new ScriptedApiHandler();
         using var http = ClientFor(handler);
         var remote = new RemoteEngineHost(http);
 
-        await inProcess.CancelAsync(ct);
-        await remote.CancelAsync(ct);
+        await Should.NotThrowAsync(() => inProcess.CancelAsync(ct));
+        await Should.NotThrowAsync(() => remote.CancelAsync(ct));
+
+        // The remote host reached no origin for the cancel, so no prompt was posted and no stream was resumed.
+        handler.PromptPosts.ShouldBe(0);
+        handler.ResumePositions.ShouldBeEmpty();
+
+        // A cancel with nothing to cancel must not poison the host: the next prompt streams its whole script.
+        (await CollectAsync(inProcess.SubmitPromptAsync("prompt", new PromptOptions(), ct))).ShouldBe(script);
+        (await CollectDroppedAsync(remote.SubmitPromptAsync("prompt", new PromptOptions(), ct))).Count.ShouldBe(5);
+        handler.PromptPosts.ShouldBe(1);
     }
 
     /// <summary>Both hosts report exactly the descriptor they were constructed with.</summary>
@@ -411,6 +421,21 @@ public sealed class EngineHostTests
         {
             collected.Add(evt);
         }
+
+        return collected;
+    }
+
+    /// <summary>Collects a prompt whose stream drops before a terminal event: the events before the drop, then the surfaced error.</summary>
+    private static async Task<List<HarnessEvent>> CollectDroppedAsync(IAsyncEnumerable<HarnessEvent> events)
+    {
+        var collected = new List<HarnessEvent>();
+        await Should.ThrowAsync<DisconnectedHarnessException>(async () =>
+        {
+            await foreach (var evt in events.ConfigureAwait(true))
+            {
+                collected.Add(evt);
+            }
+        }).ConfigureAwait(true);
 
         return collected;
     }

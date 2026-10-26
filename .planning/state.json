@@ -1,38 +1,12 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v0.9.1",
-  "phases": [
-    {
-      "number": "1",
-      "name": "Foundation",
-      "status": "complete"
-    },
-    {
-      "number": "2",
-      "name": "Core",
-      "status": "complete"
-    },
-    {
-      "number": "3",
-      "name": "Platform",
-      "status": "complete"
-    },
-    {
-      "number": "4",
-      "name": "Surfaces",
-      "status": "complete"
-    },
-    {
-      "number": "5",
-      "name": "Verify & Handoff",
-      "status": "pending"
-    }
-  ],
+  "milestone": "v0.9.2",
+  "phases": [],
   "next": {
-    "command": "/gsd:progress",
-    "label": "Show progress",
-    "reason": "Unsure of state — showing progress"
+    "command": "/gsd:discuss-phase",
+    "label": "Discuss the first phase",
+    "reason": "Project initialized — plan your first phase"
   },
-  "updated_at": "2026-10-21T03:46:02.305Z"
+  "updated_at": "2026-10-21T10:22:28.527Z"
 }

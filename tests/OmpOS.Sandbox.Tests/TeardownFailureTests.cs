@@ -66,7 +66,7 @@ public sealed class TeardownFailureTests
     public async Task NonZeroDownExit_ThrowsTypedWithoutRawStderr()
     {
         var (provider, runner) = CreateProvider();
-        runner.EnqueueResults(Ok(), Ok("container-id-123"));
+        runner.EnqueueResults(PodmanTestData.Ok(), Ok(), Ok("0123456789ab"));
         runner.SetResult(new ProcessResult { ExitCode = 3, Stdout = string.Empty, Stderr = "leak-marker-xyz", TimedOut = false });
 
         var ct = TestContext.Current.CancellationToken;
@@ -94,7 +94,7 @@ public sealed class TeardownFailureTests
     public async Task TimedOutDown_ThrowsTyped()
     {
         var (provider, runner) = CreateProvider();
-        runner.EnqueueResults(Ok(), Ok("container-id-123"));
+        runner.EnqueueResults(PodmanTestData.Ok(), Ok(), Ok("0123456789ab"));
         runner.SetResult(new ProcessResult { ExitCode = 0, Stdout = string.Empty, Stderr = string.Empty, TimedOut = true });
 
         var ct = TestContext.Current.CancellationToken;

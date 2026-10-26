@@ -42,7 +42,7 @@ public abstract class AcpTransportContractTests<T> where T : IAcpTransport
         }
     }
 
-    /// <summary>Closing twice is safe.</summary>
+    /// <summary>Closing twice is safe, and the transport stays closed: the second close does not reopen it.</summary>
     [Fact]
     public async Task CloseIsIdempotent()
     {
@@ -54,7 +54,9 @@ public abstract class AcpTransportContractTests<T> where T : IAcpTransport
             await peer.ConnectAsync(ct).ConfigureAwait(true);
 
             await client.CloseAsync(ct).ConfigureAwait(true);
-            await client.CloseAsync(ct).ConfigureAwait(true);
+            await Should.NotThrowAsync(() => client.CloseAsync(ct)).ConfigureAwait(true);
+
+            await Should.ThrowAsync<DisconnectedHarnessException>(() => client.SendAsync(new byte[] { 1 }, ct)).ConfigureAwait(true);
         }
         finally
         {

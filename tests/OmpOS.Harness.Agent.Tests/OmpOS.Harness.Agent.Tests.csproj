@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Agent/OmpOS.Harness.Agent.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Rpc/OmpOS.Harness.Rpc.csproj" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+  <!-- The recorded RPC and ACP transcripts are linked from their own test projects, never copied. -->
+  <ItemGroup>
+    <Content Include="../OmpOS.Harness.Rpc.Tests/TestData/frames/*.ndjson" Link="TestData/frames/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../OmpOS.Harness.Rpc.Tests/TestData/frames/*.turns.json" Link="TestData/frames/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../OmpOS.Harness.Acp.Tests/TestData/frames/*.ndjson" Link="TestData/frames/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

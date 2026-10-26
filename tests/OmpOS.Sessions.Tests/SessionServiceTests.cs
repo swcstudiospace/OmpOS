@@ -10,6 +10,7 @@ namespace OmpOS.Sessions.Tests;
 public sealed class SessionServiceTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
+    private static readonly IReadOnlySet<string> BashGrant = new HashSet<string>(StringComparer.Ordinal) { "bash" };
 
     /// <summary>A new session is idle, owned by the caller, and persisted.</summary>
     [Fact]
@@ -195,8 +196,8 @@ public sealed class SessionServiceTests
         var prompt = await Should.ThrowAsync<SessionException>(() => service.SubmitPromptAsync("absent", "hi", ct)).ConfigureAwait(true);
         var steer = await Should.ThrowAsync<SessionException>(() => service.SubmitSteerAsync("absent", "hi", ct)).ConfigureAwait(true);
         var complete = await Should.ThrowAsync<SessionException>(() => service.RecordCompletionAsync("absent", SessionStatus.Completed, ct)).ConfigureAwait(true);
-        var request = await Should.ThrowAsync<SessionException>(() => service.RequestToolApprovalAsync("absent", ct)).ConfigureAwait(true);
-        var resolve = await Should.ThrowAsync<SessionException>(() => service.ResolveToolApprovalAsync("absent", approved: true, ct)).ConfigureAwait(true);
+        var request = await Should.ThrowAsync<SessionException>(() => service.RequestToolApprovalAsync("absent", "request-1", "bash", ct)).ConfigureAwait(true);
+        var resolve = await Should.ThrowAsync<SessionException>(() => service.ResolveToolApprovalAsync("absent", "request-1", approved: true, ct)).ConfigureAwait(true);
 
         prompt.Error.Code.ShouldBe(ErrorCode.SessionNotFound);
         steer.Error.Code.ShouldBe(ErrorCode.SessionNotFound);
@@ -270,13 +271,13 @@ public sealed class SessionServiceTests
         var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
         await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
 
-        await service.RequestToolApprovalAsync(session.Id, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, "request-1", "bash", ct, BashGrant).ConfigureAwait(true);
 
         var waiting = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
         waiting.ShouldNotBeNull();
         waiting.Status.ShouldBe(SessionStatus.AwaitingToolApproval);
 
-        await service.ResolveToolApprovalAsync(session.Id, approved: true, ct).ConfigureAwait(true);
+        await service.ResolveToolApprovalAsync(session.Id, "request-1", approved: true, ct).ConfigureAwait(true);
 
         var resumed = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
         resumed.ShouldNotBeNull();
@@ -301,9 +302,9 @@ public sealed class SessionServiceTests
         var service = NewService(repository);
         var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
         await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
-        await service.RequestToolApprovalAsync(session.Id, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, "request-1", "bash", ct).ConfigureAwait(true);
 
-        await service.ResolveToolApprovalAsync(session.Id, approved: false, ct).ConfigureAwait(true);
+        await service.ResolveToolApprovalAsync(session.Id, "request-1", approved: false, ct).ConfigureAwait(true);
 
         var resumed = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
         resumed.ShouldNotBeNull();
@@ -328,30 +329,30 @@ public sealed class SessionServiceTests
         var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
 
         var requestWhileIdle = await Should.ThrowAsync<SessionException>(() =>
-            service.RequestToolApprovalAsync(session.Id, ct)).ConfigureAwait(true);
+            service.RequestToolApprovalAsync(session.Id, "request-1", "bash", ct)).ConfigureAwait(true);
         requestWhileIdle.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
 
         var resolveWhileIdle = await Should.ThrowAsync<SessionException>(() =>
-            service.ResolveToolApprovalAsync(session.Id, approved: true, ct)).ConfigureAwait(true);
+            service.ResolveToolApprovalAsync(session.Id, "request-1", approved: true, ct)).ConfigureAwait(true);
         resolveWhileIdle.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
 
         await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
 
         var resolveWhileRunning = await Should.ThrowAsync<SessionException>(() =>
-            service.ResolveToolApprovalAsync(session.Id, approved: true, ct)).ConfigureAwait(true);
+            service.ResolveToolApprovalAsync(session.Id, "request-1", approved: true, ct)).ConfigureAwait(true);
         resolveWhileRunning.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
 
-        await service.RequestToolApprovalAsync(session.Id, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, "request-1", "bash", ct, BashGrant).ConfigureAwait(true);
 
         var secondRequest = await Should.ThrowAsync<SessionException>(() =>
-            service.RequestToolApprovalAsync(session.Id, ct)).ConfigureAwait(true);
+            service.RequestToolApprovalAsync(session.Id, "request-2", "bash", ct)).ConfigureAwait(true);
         secondRequest.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
 
-        await service.ResolveToolApprovalAsync(session.Id, approved: true, ct).ConfigureAwait(true);
+        await service.ResolveToolApprovalAsync(session.Id, "request-1", approved: true, ct).ConfigureAwait(true);
         await service.RecordCompletionAsync(session.Id, SessionStatus.Completed, ct).ConfigureAwait(true);
 
         var requestWhenTerminal = await Should.ThrowAsync<SessionException>(() =>
-            service.RequestToolApprovalAsync(session.Id, ct)).ConfigureAwait(true);
+            service.RequestToolApprovalAsync(session.Id, "request-3", "bash", ct)).ConfigureAwait(true);
         requestWhenTerminal.Error.Code.ShouldBe(ErrorCode.InvalidTransition);
     }
 
@@ -364,7 +365,7 @@ public sealed class SessionServiceTests
         var service = NewService(repository);
         var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
         await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
-        await service.RequestToolApprovalAsync(session.Id, ct).ConfigureAwait(true);
+        await service.RequestToolApprovalAsync(session.Id, "request-1", "bash", ct).ConfigureAwait(true);
 
         var error = await Should.ThrowAsync<SessionException>(() =>
             service.SubmitPromptAsync(session.Id, "second", ct)).ConfigureAwait(true);
@@ -450,6 +451,44 @@ public sealed class SessionServiceTests
         stored.Events.Select(static evt => evt.Payload).OfType<CompletedPayload>().ShouldBeEmpty();
     }
 
+    /// <summary>A failed completion with detail persists the detail after the standard failure message.</summary>
+    [Fact]
+    public async Task FailedCompletionWithDetailPersistsDetailInTerminalError()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
+        await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+
+        await service.RecordCompletionAsync(session.Id, SessionStatus.Failed, ct, failureDetail: "  rate limited  ").ConfigureAwait(true);
+
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Status.ShouldBe(SessionStatus.Failed);
+        stored.Events[^1].Payload.ShouldBeOfType<ErrorPayload>().Message.ShouldBe("Prompt execution failed. Detail: rate limited");
+    }
+
+    /// <summary>A failed completion with no detail, null, empty or whitespace, persists the standard failure message unchanged.</summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task FailedCompletionWithoutDetailKeepsExistingMessage(string? detail)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var service = NewService(repository);
+        var session = await service.CreateAsync("dev", ct).ConfigureAwait(true);
+        await service.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+
+        await service.RecordCompletionAsync(session.Id, SessionStatus.Failed, ct, failureDetail: detail).ConfigureAwait(true);
+
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Events[^1].Payload.ShouldBeOfType<ErrorPayload>().Message.ShouldBe(SessionService.FailedTurnMessage);
+    }
+
     /// <summary>An error streamed during the turn is its only terminal event, so settling the failed turn adds none.</summary>
     [Fact]
     public async Task StreamedErrorIsTheOnlyTerminalEventWhenTheTurnFails()
@@ -505,6 +544,54 @@ public sealed class SessionServiceTests
         await service.RecordCompletionAsync(session.Id, outcome, ct).ConfigureAwait(true);
 
         repository.SettledSaveTerminalFlags.ToArray().ShouldBe([true]);
+    }
+
+    /// <summary>A second service over the same store sees the prompt the first one started and rejects it with PromptInFlight.</summary>
+    [Fact]
+    public async Task SecondServiceInstanceRejectsPromptStartedByFirst()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var first = NewService(repository);
+        var second = NewService(repository);
+        var session = await first.CreateAsync("dev", ct).ConfigureAwait(true);
+        await first.SubmitPromptAsync(session.Id, "first", ct).ConfigureAwait(true);
+
+        var error = await Should.ThrowAsync<SessionException>(() =>
+            second.SubmitPromptAsync(session.Id, "second", ct)).ConfigureAwait(true);
+
+        error.Error.Code.ShouldBe(ErrorCode.PromptInFlight);
+        var stored = await repository.GetAsync(session.Id, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        stored.Messages.Select(static message => message.Content).ShouldBe(["first"]);
+    }
+
+    /// <summary>Concurrent prompts through two service instances over one store admit exactly one prompt per session, every round.</summary>
+    [Fact]
+    public async Task ConcurrentPromptsAcrossServiceInstancesAdmitExactlyOne()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var services = new[] { NewService(repository), NewService(repository) };
+
+        for (var round = 0; round < 20; round++)
+        {
+            var session = await services[0].CreateAsync("dev", ct).ConfigureAwait(true);
+            var outcomes = await Task.WhenAll(Enumerable.Range(0, 10).Select(i => Task.Run(async () =>
+            {
+                try
+                {
+                    await services[i % 2].SubmitPromptAsync(session.Id, $"prompt {i}", ct).ConfigureAwait(false);
+                    return true;
+                }
+                catch (SessionException ex) when (ex.Error.Code == ErrorCode.PromptInFlight)
+                {
+                    return false;
+                }
+            }, ct))).ConfigureAwait(true);
+
+            outcomes.Count(static admitted => admitted).ShouldBe(1);
+        }
     }
 
     private static SessionService NewService(ISessionRepository repository) =>

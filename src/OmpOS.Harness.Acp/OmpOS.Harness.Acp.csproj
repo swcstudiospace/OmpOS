@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 
 </Project>

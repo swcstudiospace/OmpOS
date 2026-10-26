@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../apps/OmpOS.Native/OmpOS.Native.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Native.Views/OmpOS.Native.Views.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Presentation/OmpOS.Presentation.csproj" />
+    <ProjectReference Include="../OmpOS.Parity.Support/OmpOS.Parity.Support.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Plugins/OmpOS.Harness.Plugins.csproj" />
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+</Project>

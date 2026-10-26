@@ -1,0 +1,147 @@
+{
+  "app": "http://127.0.0.1:5180/",
+  "apiOrigin": "http://127.0.0.1:5187",
+  "startedAt": "2026-10-21T17:10:28.344Z",
+  "firstRender": {
+    "rendered": true,
+    "errorBarVisible": true,
+    "exceptionCount": 0,
+    "consoleErrorCount": 2,
+    "reflectionDisabledHits": 0,
+    "exceptionSample": [],
+    "consoleErrorSample": [
+      "crit: Microsoft.AspNetCore.Components.WebAssembly.Rendering.WebAssemblyRenderer[100]\n      Unhandled exception rendering component: JsonSerializerIsReflectionDisabled\nSystem.InvalidOperationException: JsonSerializerIsReflectionDisabled\n   at System.Text.Json.ThrowHelper.ThrowInvalidOperationException_JsonSerializerIsReflectionDisabled()\n   at System.Text.Json.JsonSerializerOptions.ConfigureForJson",
+      "crit: Microsoft.AspNetCore.Components.WebAssembly.Rendering.WebAssemblyRenderer[100]\n      Unhandled exception rendering component: An exception occurred executing JS interop: JsonSerializerIsReflectionDisabled. See InnerException for more details.\nMicrosoft.JSInterop.JSException: An exception occurred executing JS interop: JsonSerializerIsReflectionDisabled. See InnerException for more details.\n "
+    ]
+  },
+  "skipLinkInitial": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BODY"
+  },
+  "shotInitial": "/tmp/smoke/initial-first-render.png",
+  "axeEmptyState": {
+    "violations": [],
+    "incomplete": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          {
+            "target": [
+              ".ompos-icon-btn"
+            ],
+            "messages": [
+              "Element content contains only non-text characters"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "label-content-name-mismatch",
+        "impact": "serious",
+        "nodes": [
+          {
+            "target": [
+              ".ompos-icon-btn"
+            ],
+            "messages": [
+              "Unable to determine if the visible text is part of the accessible name"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "iconButtonContrastEmptyState": {
+    "color": "rgb(0, 0, 0)",
+    "ownBackground": "rgb(239, 239, 239)",
+    "effectiveBackground": "rgb(239, 239, 239)",
+    "contrastRatio": 18.26,
+    "outerHTML": "<button type=\"button\" class=\"ompos-btn ompos-icon-btn\" aria-label=\"Send message\"><!--!-->➤</button>"
+  },
+  "skipLinkBeforeAxeEmpty": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BODY"
+  },
+  "shotAxeEmpty": "/tmp/smoke/axe-empty-state.png",
+  "responseCompleted": false,
+  "probeChecks": {
+    "strong": 0,
+    "appImg": 0,
+    "appScript": 0,
+    "unsupported": false
+  },
+  "errorBarAfterPrompt": true,
+  "consoleErrorsAfterPrompt": [],
+  "skipLinkAfterTabFocus": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BUTTON"
+  },
+  "shotSkipLinkFocused": "/tmp/smoke/skip-link-focused-after-tab.png",
+  "axeAfterResponse": {
+    "violations": [],
+    "incomplete": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          {
+            "target": [
+              ".ompos-icon-btn"
+            ],
+            "messages": [
+              "Element content contains only non-text characters"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "label-content-name-mismatch",
+        "impact": "serious",
+        "nodes": [
+          {
+            "target": [
+              ".ompos-icon-btn"
+            ],
+            "messages": [
+              "Unable to determine if the visible text is part of the accessible name"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "iconButtonContrastAfterResponse": {
+    "color": "rgb(0, 0, 0)",
+    "ownBackground": "rgb(239, 239, 239)",
+    "effectiveBackground": "rgb(239, 239, 239)",
+    "contrastRatio": 18.26,
+    "outerHTML": "<button type=\"button\" class=\"ompos-btn ompos-icon-btn\" aria-label=\"Send message\"><!--!-->➤</button>"
+  },
+  "skipLinkBeforeAxeAfter": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BUTTON"
+  },
+  "shotAxeAfterResponse": "/tmp/smoke/axe-after-response.png",
+  "finishedAt": "2026-10-21T17:12:03.684Z"
+}

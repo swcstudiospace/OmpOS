@@ -59,6 +59,7 @@ public sealed class ProvisionCleanupRegressionTests
     {
         var runner = new FakeProcessRunner();
         runner.EnqueueResults(
+            PodmanTestData.Ok(),
             new ProcessResult { ExitCode = 1, Stdout = string.Empty, Stderr = "container failed to start", TimedOut = false },
             Ok());
         var provider = CreateProvider(runner);
@@ -105,7 +106,7 @@ public sealed class ProvisionCleanupRegressionTests
     public async Task EmptyLookupResult_DeletesComposeFileAndAttemptsDown()
     {
         var runner = new FakeProcessRunner();
-        runner.EnqueueResults(Ok(), Ok(string.Empty), Ok());
+        runner.EnqueueResults(PodmanTestData.Ok(), Ok(), Ok(string.Empty), Ok());
         var provider = CreateProvider(runner);
 
         var ct = TestContext.Current.CancellationToken;
@@ -126,7 +127,7 @@ public sealed class ProvisionCleanupRegressionTests
     public async Task MultiLineLookupResult_FailsClosed()
     {
         var runner = new FakeProcessRunner();
-        runner.EnqueueResults(Ok(), Ok("abc123\ndef456\n"), Ok());
+        runner.EnqueueResults(PodmanTestData.Ok(), Ok(), Ok("abc123\ndef456\n"), Ok());
         var provider = CreateProvider(runner);
 
         var ct = TestContext.Current.CancellationToken;

@@ -1,0 +1,28 @@
+HO-02: podman-compose validates deploy/compose.yaml and the workflows stack boots on this host
+Date: 2026-10-21 (UTC session)
+Host: Ubuntu 24.04.4 LTS, x86_64
+Podman: 4.9.3
+podman-compose: 1.6.0
+
+$ podman-compose --profile workflows -f deploy/compose.yaml config -q
+exit 0
+
+$ podman-compose --profile workflows -f deploy/compose.yaml config --services
+temporal
+
+$ podman-compose --profile workflows -f deploy/compose.yaml up -d
+ompos-temporal started (exit 0)
+
+$ podman inspect -f '{{.State.Health.Status}}' ompos-temporal
+healthy (reached after 3 polls, 5 s apart)
+
+$ podman port ompos-temporal
+7233/tcp -> 127.0.0.1:7233
+8233/tcp -> 127.0.0.1:8233
+
+$ podman exec ompos-temporal temporal operator cluster health --address 127.0.0.1:7233
+SERVING (exit 0)
+
+Result: pass. Port bindings are loopback-only (audit M-01, TD-01 verified on a running stack).
+The container is left running for the HO-04 replay re-validation; stop it with:
+  podman-compose --profile workflows -f deploy/compose.yaml down -v

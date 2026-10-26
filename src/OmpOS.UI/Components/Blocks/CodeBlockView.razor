@@ -1,7 +1,9 @@
 @namespace OmpOS.UI.Components.Blocks
 @using OmpOS.Contracts.Ui
 @using Microsoft.JSInterop
+@using Microsoft.Extensions.Logging
 @inject IJSRuntime JS
+@inject ILogger<CodeBlockView> Logger
 <div class="ompos-block ompos-code">
     <div class="ompos-code-header">
         <span class="ompos-code-language">@Block.Language</span>
@@ -19,17 +21,26 @@
     [Parameter]
     public EventCallback<string> OnCopy { get; set; }
 
-    /// <summary>Copies the code through the clipboard, then notifies listeners.</summary>
+    private static readonly Action<ILogger, Exception?> ClipboardWriteFailed =
+        LoggerMessage.Define(
+            LogLevel.Warning,
+            new EventId(1, "ClipboardWriteFailed"),
+            "Writing a code block to the clipboard failed; the copy was not reported");
+
+    /// <summary>Copies the code through the clipboard. A refused write is logged and not reported as a copy.</summary>
     private async Task CopyAsync()
     {
         try
         {
             await JS.InvokeVoidAsync("navigator.clipboard.writeText", Block.Code);
         }
-        catch (JSException)
+        catch (JSException ex)
         {
-            // Clipboard unavailable (permissions, non-secure context): the copy callback still fires.
+            // Clipboard unavailable (permissions, non-secure context): the caller is not told the copy succeeded.
+            ClipboardWriteFailed(Logger, ex);
+            return;
         }
+
         await OnCopy.InvokeAsync(Block.Code);
     }
 }

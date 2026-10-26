@@ -14,7 +14,7 @@ namespace OmpOS.GenUi;
 /// text deltas accumulate and flush into markdown blocks at block boundaries, tool-call updates
 /// patch the matching card in place, thoughts are kept in the log but never rendered, and every
 /// other unknown shape is preserved as an <see cref="UnknownBlock"/>.
-/// In addition, <c>prompt_accepted</c> folds to exactly one <see cref="UserMessageBlock"/>
+/// In addition, <c>prompt_accepted</c> and <c>user_message</c> fold to exactly one <see cref="UserMessageBlock"/>
 /// carrying the prompt text, so the user's own turn renders ahead of the assistant output.
 /// Folding the same events from the same tree always yields the same result.
 /// </para>
@@ -51,8 +51,10 @@ public static class UiFolder
     {
         TextDeltaPayload text => state with { StreamingText = state.StreamingText + text.Delta },
         UiBlockPayload block => Append(Flush(state), block.Block),
+        UserMessagePayload user => AddBlock(state, "user", id => new UserMessageBlock { Id = id, Text = user.Text }),
         ErrorPayload error => AddBlock(state, "error", id => new ErrorBlock { Id = id, Message = error.Message, Retryable = error.Retryable }) with { CompletionReason = FailedTurnReason },
         CompletedPayload completed => Flush(state) with { CompletionReason = completed.Reason },
+        DiagnosticPayload => state,
         UnknownPayload unknown => ApplyUnknown(state, unknown),
         _ => AddBlock(state, "unknown", id => new UnknownBlock { Id = id, OriginalKind = payload.GetType().Name, Raw = ToRaw(payload) }),
     };

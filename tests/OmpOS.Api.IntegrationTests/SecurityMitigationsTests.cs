@@ -27,13 +27,13 @@ public sealed class SecurityMitigationsTests
 
         using var simple = new HttpRequestMessage(HttpMethod.Get, new Uri("/sessions", UriKind.Relative));
         simple.Headers.Add("Origin", "https://evil.example");
-        using var simpleResponse = await client.SendAsync(simple, testToken);
+        using var simpleResponse = await client.SendAsync(simple, testToken).ConfigureAwait(true);
         simpleResponse.Headers.Contains("Access-Control-Allow-Origin").ShouldBeFalse();
 
         using var preflight = new HttpRequestMessage(HttpMethod.Options, new Uri("/sessions", UriKind.Relative));
         preflight.Headers.Add("Origin", "https://evil.example");
         preflight.Headers.Add("Access-Control-Request-Method", "POST");
-        using var preflightResponse = await client.SendAsync(preflight, testToken);
+        using var preflightResponse = await client.SendAsync(preflight, testToken).ConfigureAwait(true);
         preflightResponse.Headers.Contains("Access-Control-Allow-Origin").ShouldBeFalse();
     }
 
@@ -47,7 +47,7 @@ public sealed class SecurityMitigationsTests
 
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri("/health/live", UriKind.Relative));
         request.Headers.Add("x-correlation-id", correlation);
-        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         response.Headers.GetValues("x-correlation-id").Contains(correlation, StringComparer.Ordinal).ShouldBeTrue();
     }
@@ -63,29 +63,29 @@ public sealed class SecurityMitigationsTests
 
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri("/health/live", UriKind.Relative));
         request.Headers.Add("x-correlation-id", oversized);
-        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         var echoed = string.Join(",", response.Headers.GetValues("x-correlation-id"));
         string.Equals(echoed, oversized, StringComparison.Ordinal).ShouldBeFalse("a 129-character inbound id must be replaced with a minted one");
         Guid.TryParse(echoed, out _).ShouldBeTrue("a 129-character inbound id must be replaced with a minted guid");
     }
 
-    /// <summary>Verifies a 20-character non-Guid inbound id is replaced by a minted Guid.</summary>
+    /// <summary>Verifies a 20-character inbound id containing a space is replaced by a minted Guid.</summary>
     [Fact]
     public async Task CorrelationId_NonGuidValue_IsMinted()
     {
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
-        const string Inbound = "12345678901234567890";
+        const string Inbound = "1234567890 123456789";
         Inbound.Length.ShouldBe(20);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri("/health/live", UriKind.Relative));
         request.Headers.Add("x-correlation-id", Inbound);
-        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         var echoed = string.Join(",", response.Headers.GetValues("x-correlation-id"));
-        string.Equals(echoed, Inbound, StringComparison.Ordinal).ShouldBeFalse("a non-guid inbound id must be replaced with a minted one");
-        Guid.TryParse(echoed, out _).ShouldBeTrue("a non-guid inbound id must be replaced with a minted guid");
+        string.Equals(echoed, Inbound, StringComparison.Ordinal).ShouldBeFalse("an invalid inbound id must be replaced with a minted one");
+        Guid.TryParse(echoed, out _).ShouldBeTrue("an invalid inbound id must be replaced with a minted guid");
     }
 
     /// <summary>
@@ -100,13 +100,13 @@ public sealed class SecurityMitigationsTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var response = await SessionClient.PostPromptAsync(client, id, body, testToken);
+        using var response = await SessionClient.PostPromptAsync(client, id, body, testToken).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
-        var payload = await response.Content.ReadAsStringAsync(testToken);
+        var payload = await response.Content.ReadAsStringAsync(testToken).ConfigureAwait(true);
         using var document = JsonDocument.Parse(payload);
         var root = document.RootElement;
         root.GetProperty("status").GetInt32().ShouldBe(400);
@@ -139,7 +139,7 @@ public sealed class SecurityMitigationsTests
 
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri("/health/live", UriKind.Relative));
         request.Headers.Add("x-correlation-id", padded);
-        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         var echoed = string.Join(",", response.Headers.GetValues("x-correlation-id"));
         string.Equals(echoed, padded, StringComparison.Ordinal).ShouldBeFalse("a parsable 129-character inbound id must be replaced with a minted one");
@@ -156,16 +156,19 @@ public sealed class SecurityMitigationsTests
         // Production-only: Development keeps the developer exception page by design, so this
         // test opts this host into Production where UseExceptionHandler owns the 500 path.
         using var factory = new OmpApiFactory(
+            config: JwtTestHost.ProductionConfig(),
             environment: "Production",
             configureServices: static services =>
         {
             services.AddSingleton<IStartupFilter>(new UnhandledExceptionStartupFilter());
+            JwtTestHost.InjectStaticMetadata(services);
         });
         using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("Authorization", "Bearer " + JwtTestHost.IssueToken("alice"));
         var testToken = TestContext.Current.CancellationToken;
 
-        using var response = await client.GetAsync(new Uri(UnhandledExceptionStartupFilter.BoomPath, UriKind.Relative), testToken);
-        var payload = await response.Content.ReadAsStringAsync(testToken);
+        using var response = await client.GetAsync(new Uri(UnhandledExceptionStartupFilter.BoomPath, UriKind.Relative), testToken).ConfigureAwait(true);
+        var payload = await response.Content.ReadAsStringAsync(testToken).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
         response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
@@ -193,9 +196,9 @@ public sealed class SecurityMitigationsTests
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
 
-        using var response = await client.GetAsync(new Uri("/sessions/does-not-exist", UriKind.Relative), testToken);
+        using var response = await client.GetAsync(new Uri("/sessions/does-not-exist", UriKind.Relative), testToken).ConfigureAwait(true);
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        var payload = await response.Content.ReadAsStringAsync(testToken);
+        var payload = await response.Content.ReadAsStringAsync(testToken).ConfigureAwait(true);
         if (string.IsNullOrWhiteSpace(payload))
         {
             return;
@@ -235,11 +238,11 @@ public sealed class SecurityMitigationsTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var response = await SessionClient.PostPromptAsync(client, id, "hello", testToken, "text/plain");
+        using var response = await SessionClient.PostPromptAsync(client, id, "hello", testToken, "text/plain").ConfigureAwait(true);
         response.StatusCode.ShouldBe(HttpStatusCode.UnsupportedMediaType);
-        var payload = await response.Content.ReadAsStringAsync(testToken);
+        var payload = await response.Content.ReadAsStringAsync(testToken).ConfigureAwait(true);
         if (string.IsNullOrWhiteSpace(payload))
         {
             return;

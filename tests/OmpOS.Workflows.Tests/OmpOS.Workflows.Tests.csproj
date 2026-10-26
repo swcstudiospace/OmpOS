@@ -9,8 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Temporalio" />
-    <PackageReference Include="Temporalio.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
     <PackageReference Include="xunit.v3" />
@@ -21,14 +19,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\OmpOS.Workflows\OmpOS.Workflows.csproj" />
-    <ProjectReference Include="..\..\services\OmpOS.Workflows.Worker\OmpOS.Workflows.Worker.csproj" />
     <ProjectReference Include="..\..\src\OmpOS.Contracts\OmpOS.Contracts.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="TestData/histories/session-run.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <ProjectReference Include="..\..\src\OmpOS.Harness.Abstractions\OmpOS.Harness.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

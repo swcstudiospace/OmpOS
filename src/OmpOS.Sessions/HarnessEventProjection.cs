@@ -30,6 +30,7 @@ public static class HarnessEventProjection
     private const string ToolCallUpdateKind = "tool_call_update";
     private const string PermissionRequestKind = "permission_request";
     private const string PlanKind = "plan";
+    private const string PromptAcceptedKind = "prompt_accepted";
     private const string FailedTurnReason = "error";
 
     /// <summary>Folds one harness event into the UI state.</summary>
@@ -93,6 +94,7 @@ public static class HarnessEventProjection
         ToolCallUpdateEvent update => Unknown(ToolCallUpdateKind, ("callId", update.CallId), ("status", update.Status), ("payloadJson", update.PayloadJson)),
         PermissionRequestEvent permission => Unknown(PermissionRequestKind, ("callId", permission.CallId), ("name", permission.Name), ("payloadJson", permission.PayloadJson)),
         PlanEvent plan => Unknown(PlanKind, ("markdown", plan.Markdown)),
+        DiagnosticEvent diagnostic => new DiagnosticPayload { Message = diagnostic.Message },
         _ => throw new ArgumentOutOfRangeException(nameof(evt), evt.GetType(), "No stream mapping exists for this harness event."),
     };
 
@@ -124,6 +126,8 @@ public static class HarnessEventProjection
         UiBlockPayload block => Append(Flush(state), block.Block),
         ErrorPayload error => AddBlock(state, "error", id => new ErrorBlock { Id = id, Message = error.Message, Retryable = error.Retryable }) with { CompletionReason = FailedTurnReason },
         CompletedPayload completed => Flush(state) with { CompletionReason = completed.Reason },
+        DiagnosticPayload => state,
+        UserMessagePayload user => AddBlock(state, "user", id => new UserMessageBlock { Id = id, Text = user.Text }),
         UnknownPayload unknown => ApplyUnknown(state, unknown),
         _ => throw new ArgumentOutOfRangeException(nameof(payload), payload.GetType(), "No projection exists for this payload."),
     };
@@ -175,6 +179,11 @@ public static class HarnessEventProjection
                     Id = id,
                     Steps = markdown.Split('\n').Select(static line => line.Trim()).Where(static line => line.Length > 0).ToArray(),
                 });
+
+            case PromptAcceptedKind:
+                // The user's own turn: exactly one user message carrying the prompt text, in event order.
+                // Never an unknown block, matching UiFolder.
+                return AddBlock(state, "user", id => new UserMessageBlock { Id = id, Text = ReadPromptText(raw) });
 
             default:
                 return AddBlock(state, "unknown", id => Unrecognized(id, unknown));
@@ -240,6 +249,10 @@ public static class HarnessEventProjection
         value = string.Empty;
         return false;
     }
+
+    /// <summary>Reads the prompt text from a <c>prompt_accepted</c> payload; a missing or non-string prompt yields empty text.</summary>
+    private static string ReadPromptText(JsonElement raw) =>
+        TryString(raw, "prompt", out var prompt) ? prompt : string.Empty;
 
     private static JsonElement ParseArguments(JsonElement raw)
     {

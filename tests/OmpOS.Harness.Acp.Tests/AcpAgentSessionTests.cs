@@ -149,9 +149,9 @@ public sealed class AcpAgentSessionTests
         outcome["optionId"].ShouldBeNull();
     }
 
-    /// <summary>An allowlisted kind is granted by selecting the allow option.</summary>
+    /// <summary>An allowlisted kind with no resolver is denied: the policy admits the request, but no decision can arrive to grant it.</summary>
     [Fact]
-    public async Task AllowlistedPermissionIsGrantedByAllowOption()
+    public async Task AllowlistedPermissionWithoutResolverIsDeniedByRejectOption()
     {
         var ct = TestContext.Current.CancellationToken;
         var answer = await AnswerPermissionAsync(
@@ -159,7 +159,7 @@ public sealed class AcpAgentSessionTests
             PermissionRequest("read", AllowAndRejectOptions),
             ct).ConfigureAwait(true);
 
-        JsonNode.Parse(answer)!["result"]!["outcome"]!["optionId"]!.GetValue<string>().ShouldBe("allow-once");
+        JsonNode.Parse(answer)!["result"]!["outcome"]!["optionId"]!.GetValue<string>().ShouldBe("reject-once");
     }
 
     /// <summary>A permission request outside the allowlist is denied even when the narrowing hook accepts it.</summary>
@@ -775,7 +775,7 @@ public sealed class AcpAgentSessionTests
         diagnostic.Message.ShouldContain("InvalidOperationException");
 
         (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
-        stream.Current.ShouldBeOfType<PermissionRequestEvent>();
+        stream.Current.ShouldBeOfType<DiagnosticEvent>().Message.ShouldContain("denied");
 
         transport.Deliver(AcpFixtures.Utf8($"{{\"jsonrpc\":\"2.0\",\"id\":{AcpFixtures.IdOf(prompt)},\"result\":{{\"stopReason\":\"end_turn\"}}}}"));
         (await stream.MoveNextAsync().ConfigureAwait(true)).ShouldBeTrue();
@@ -824,7 +824,7 @@ public sealed class AcpAgentSessionTests
 
             return HasMethod(frame, "session/prompt") ? [] : AcpFixtures.Reply(frame);
         });
-        await using var session = NewSession(transport);
+        await using var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent", ApprovalPolicy = new AcpApprovalPolicy(["execute"]) });
         await session.CreateAsync(ct).ConfigureAwait(true);
 
         await using var stream = session.SubmitPromptAsync("hi", new PromptOptions(), ct).GetAsyncEnumerator(ct);

@@ -18,6 +18,13 @@ public sealed class ArchUnitLayerTests
     private static readonly IReadOnlyDictionary<string, System.Reflection.Assembly> LoadedAssemblies = LoadProductAssemblies();
     private static readonly Architecture Arch = new ArchLoader().LoadAssemblies(LoadedAssemblies.Values.ToArray()).Build();
 
+    /// <summary>
+    /// Namespace of the helper types that the Avalonia XAML compiler generates into every assembly that compiles XAML. Each such
+    /// assembly generates its own copy under the same name, so the architecture loader reads the copies as one type and reports an
+    /// edge from the shared views library to the desktop head that does not exist. Only these generated types are exempt.
+    /// </summary>
+    private const string GeneratedXamlNamespace = "CompiledAvaloniaXaml";
+
     [Fact]
     public void ArchUnit_LowerLayersDoNotDependOnHigher()
     {
@@ -30,7 +37,8 @@ public sealed class ArchUnitLayerTests
                     continue;
                 }
 
-                Types().That().ResideInAssembly(fromAssembly).Should().NotDependOnAny(Types().That().ResideInAssembly(toAssembly))
+                Types().That().ResideInAssembly(fromAssembly).And().DoNotHaveFullNameStartingWith(GeneratedXamlNamespace)
+                    .Should().NotDependOnAny(Types().That().ResideInAssembly(toAssembly).And().DoNotHaveFullNameStartingWith(GeneratedXamlNamespace))
                     .Because($"{from.Key} (L{from.Value}) must not depend on {to.Key} (L{to.Value})").Check(Arch);
             }
         }
@@ -65,9 +73,9 @@ public sealed class ArchUnitLayerTests
             var candidate = Path.Combine(AppContext.BaseDirectory, name + ".dll");
             if (!File.Exists(candidate))
             {
-                // Only the MAUI head may be absent: the Linux solution filter never builds it
-                // (excluded from OmpOS.Linux.slnf; built only in the CI shells job).
-                if (!string.Equals(name, "OmpOS.App", StringComparison.Ordinal))
+                // Only the Android head may be absent: it targets net10.0-android, which the net10.0 test projects cannot reference,
+                // so it is built only in the Android CI job and never in the Linux test output.
+                if (!string.Equals(name, "OmpOS.Android", StringComparison.Ordinal))
                 {
                     throw new FileNotFoundException($"Expected built assembly for {name} at {candidate}.");
                 }

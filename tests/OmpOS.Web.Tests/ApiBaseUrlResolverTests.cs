@@ -11,8 +11,8 @@ public sealed class ApiBaseUrlResolverTests
     [Fact]
     public void QueryOverrideWinsOverConfiguration()
     {
-        ApiBaseUrlResolver.Resolve("http://127.0.0.1:5187", "https://web.ompos.local/?apiBaseUrl=https%3A%2F%2Fapi.example.com")
-            .ShouldBe("https://api.example.com");
+        ApiBaseUrlResolver.Resolve("http://127.0.0.1:5187", "https://web.ompos.local/?apiBaseUrl=https%3A%2F%2Flocalhost%3A5001")
+            .ShouldBe("https://localhost:5001");
     }
 
     /// <summary>Configuration is used when no override is present.</summary>
@@ -51,9 +51,10 @@ public sealed class ApiBaseUrlResolverTests
     [Fact]
     public void NonLoopbackHttpThrows()
     {
-        Should.Throw<InvalidOperationException>(() => ApiBaseUrlResolver.Resolve(
+        var ex = Should.Throw<InvalidOperationException>(() => ApiBaseUrlResolver.Resolve(
             "http://127.0.0.1:5187",
             "https://web.ompos.local/?apiBaseUrl=http%3A%2F%2Fevil.example%2Fapi"));
+        ex.Message.ShouldContain("apiBaseUrl");
     }
 
     /// <summary>Loopback http stays valid for local development.</summary>
@@ -102,13 +103,31 @@ public sealed class ApiBaseUrlResolverTests
             "https://web.ompos.local/?apiBaseUrl=http%3A%2F%2Fevil.example"));
     }
 
-    /// <summary>An https URL to a non-loopback host is accepted.</summary>
+    /// <summary>A loopback https override is accepted.</summary>
     [Fact]
-    public void NonLoopbackHttpsIsAccepted()
+    public void LoopbackHttpsOverrideIsAccepted()
     {
         ApiBaseUrlResolver.Resolve(
                 "http://127.0.0.1:5187",
-                "https://web.ompos.local/?apiBaseUrl=https%3A%2F%2Fapi.example.com%2Fv1")
+                "https://web.ompos.local/?apiBaseUrl=https%3A%2F%2Flocalhost%3A5001%2Fv1")
+            .ShouldBe("https://localhost:5001/v1");
+    }
+
+    /// <summary>A non-loopback https override is refused, and the error names the query parameter.</summary>
+    [Fact]
+    public void NonLoopbackHttpsOverrideThrowsNamingTheParameter()
+    {
+        var ex = Should.Throw<InvalidOperationException>(() => ApiBaseUrlResolver.Resolve(
+            "http://127.0.0.1:5187",
+            "https://web.ompos.local/?apiBaseUrl=https%3A%2F%2Fapi.example.com%2Fv1"));
+        ex.Message.ShouldContain("apiBaseUrl");
+    }
+
+    /// <summary>A non-loopback https configured value is still accepted: the loopback rule covers only the query override.</summary>
+    [Fact]
+    public void NonLoopbackHttpsConfigurationIsAccepted()
+    {
+        ApiBaseUrlResolver.Resolve("https://api.example.com/v1", "https://web.ompos.local/")
             .ShouldBe("https://api.example.com/v1");
     }
 

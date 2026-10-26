@@ -39,19 +39,29 @@ internal static class SessionClient
     /// <param name="json">The raw JSON body.</param>
     /// <param name="testToken">The test cancellation token.</param>
     /// <param name="contentType">The content type header.</param>
+    /// <param name="idempotencyKey">The Idempotency-Key header value, or null to send none.</param>
     /// <returns>The HTTP response (caller disposes).</returns>
     public static async Task<HttpResponseMessage> PostPromptAsync(
         HttpClient client,
         string sessionId,
         string json,
         CancellationToken testToken,
-        string contentType = "application/json")
+        string contentType = "application/json",
+        string? idempotencyKey = null)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(sessionId);
         ArgumentNullException.ThrowIfNull(json);
-        using var content = new StringContent(json, Encoding.UTF8, contentType);
-        return await client.PostAsync(new Uri($"/sessions/{sessionId}/prompts", UriKind.Relative), content, testToken).ConfigureAwait(false);
+        using var request = new HttpRequestMessage(HttpMethod.Post, new Uri($"/sessions/{sessionId}/prompts", UriKind.Relative))
+        {
+            Content = new StringContent(json, Encoding.UTF8, contentType),
+        };
+        if (idempotencyKey is not null)
+        {
+            request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
+        }
+
+        return await client.SendAsync(request, testToken).ConfigureAwait(true);
     }
 
     /// <summary>Reads a session, throwing when the response is not successful.</summary>

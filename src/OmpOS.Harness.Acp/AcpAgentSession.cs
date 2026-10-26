@@ -1,9 +1,12 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.Acp.AcpProtocol;
 
@@ -13,7 +16,8 @@ namespace OmpOS.Harness.Acp;
 /// An omp conversation over ACP v1. One pump task owns every inbound frame: it correlates responses by id, routes
 /// <c>session/update</c> notifications into the active prompt stream, and answers agent permission requests through
 /// <see cref="AcpApprovalPolicy"/>. Because the pump is the only reader, events arrive in wire order and every state
-/// change happens at a known point in that order.
+/// change happens at a known point in that order. A request the policy admits waits for its decision on a task of its own,
+/// so the pump never blocks on it.
 /// </summary>
 public sealed class AcpAgentSession : IOmpSession
 {
@@ -26,13 +30,24 @@ public sealed class AcpAgentSession : IOmpSession
     private const int InvalidParams = -32602;
     private const int InternalError = -32603;
 
+    private static readonly Action<ILogger, string?, Exception?> PumpFailed =
+        LoggerMessage.Define<string?>(
+            LogLevel.Error,
+            new EventId(1, "AcpPumpFailed"),
+            "The omp acp pump failed for session {SessionId}.");
+
     private static readonly string[] AllowKinds = ["allow_once", "allow_always"];
     private static readonly string[] RejectKinds = ["reject_once", "reject_always"];
+    internal static readonly TimeSpan DefaultPermissionDecisionTimeout = PermissionDecisionWindow.Default;
     private readonly IAcpTransport _transport;
     private readonly AcpClientOptions _options;
     private readonly string? _fsRoot;
+    private readonly AcpFrames.McpServerFrame[] _mcpServers;
+    private readonly IPermissionResolver? _permissionResolver;
+    private readonly TimeSpan _permissionDecisionTimeout;
     private readonly HarnessStateMachine _machine = new();
     private readonly System.Threading.Lock _gate = new();
+    private readonly ILogger<AcpAgentSession> _logger;
     private readonly Dictionary<long, PendingCall> _pending = [];
     private long _lastRequestId;
     private PromptTurn? _turn;
@@ -41,17 +56,39 @@ public sealed class AcpAgentSession : IOmpSession
     private bool _sessionClosed;
     private bool _disposed;
 
-    /// <summary>Initializes a new instance of the <see cref="AcpAgentSession"/> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="AcpAgentSession"/> class. With no resolver, a request the policy admits is denied.</summary>
     /// <param name="transport">The transport to the agent. The session opens it; the session closes it.</param>
     /// <param name="options">Session options.</param>
     public AcpAgentSession(IAcpTransport transport, AcpClientOptions options)
+        : this(transport, options, null, DefaultPermissionDecisionTimeout)
+    {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="AcpAgentSession"/> class.</summary>
+    /// <param name="transport">The transport to the agent. The session opens it; the session closes it.</param>
+    /// <param name="options">Session options.</param>
+    /// <param name="permissionResolver">
+    /// Supplies the decision for a request the approval policy admits. Null means no decision can arrive, so such a request is denied.
+    /// </param>
+    /// <param name="permissionDecisionTimeout">How long a parked request waits for its decision before it is denied.</param>
+    /// <param name="logger">Receives pump faults at Error. Null discards them.</param>
+    public AcpAgentSession(IAcpTransport transport, AcpClientOptions options, IPermissionResolver? permissionResolver, TimeSpan permissionDecisionTimeout, ILogger<AcpAgentSession>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(transport);
         ArgumentNullException.ThrowIfNull(options);
         ValidateOptions(options);
+        if (permissionDecisionTimeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(permissionDecisionTimeout), permissionDecisionTimeout, "The permission decision timeout must be positive.");
+        }
+
         _transport = transport;
         _options = options;
         _fsRoot = options.FsRoot is null ? null : Path.TrimEndingDirectorySeparator(Path.GetFullPath(options.FsRoot));
+        _mcpServers = AcpWireMapping.ToMcpFrames(options.McpServers);
+        _permissionResolver = permissionResolver;
+        _permissionDecisionTimeout = permissionDecisionTimeout;
+        _logger = logger ?? NullLogger<AcpAgentSession>.Instance;
     }
 
     /// <summary>Gets the ACP session identifier once the session has been created or resumed.</summary>
@@ -369,7 +406,7 @@ public sealed class AcpAgentSession : IOmpSession
         {
             var response = await CallAsync(
                 "session/new",
-                new AcpFrames.NewSessionParams(cwd, []),
+                new AcpFrames.NewSessionParams(cwd, _mcpServers),
                 AcpJsonContext.Default.RequestNewSessionParams,
                 _options.RequestTimeout,
                 cancellationToken).ConfigureAwait(false);
@@ -385,7 +422,7 @@ public sealed class AcpAgentSession : IOmpSession
 
         await CallAsync(
             "session/load",
-            new AcpFrames.LoadSessionParams(resumeSessionId, cwd, []),
+            new AcpFrames.LoadSessionParams(resumeSessionId, cwd, _mcpServers),
             AcpJsonContext.Default.RequestLoadSessionParams,
             _options.RequestTimeout,
             cancellationToken).ConfigureAwait(false);
@@ -482,6 +519,19 @@ public sealed class AcpAgentSession : IOmpSession
             // still ends the stream, but the real exception is kept as the cause instead of a generic close.
             failure = ex is HarnessException hex ? hex
                 : new DisconnectedHarnessException("The omp acp session failed.", SessionId, ex);
+
+            // The transport ends the pump with an exception on every close, including one this session requested.
+            // Only a fault on a session that is still open is an error.
+            bool requested;
+            lock (_gate)
+            {
+                requested = _disposed || _sessionClosed;
+            }
+
+            if (!requested)
+            {
+                PumpFailed(_logger, SessionId, ex);
+            }
         }
         finally
         {
@@ -593,10 +643,6 @@ public sealed class AcpAgentSession : IOmpSession
         await SendFrameAsync(new AcpFrames.ErrorResponse(id, error), AcpJsonContext.Default.ErrorResponse, CancellationToken.None).ConfigureAwait(false);
     }
 
-    [SuppressMessage(
-        "Design",
-        "CA1031:Do not catch general exception types",
-        Justification = "MED-01: the narrowing hook is untrusted caller code; a hook failure denies closed with a diagnostic.")]
     private async Task AnswerPermissionAsync(long id, AcpFrames.Inbound request)
     {
         var raw = request.Params;
@@ -623,10 +669,48 @@ public sealed class AcpAgentSession : IOmpSession
             toolCall.Kind ?? string.Empty,
             raw.Value.GetRawText());
         var turn = ActiveTurn();
-        bool granted;
+
+        // The policy ceiling is consulted first. A request it forbids never becomes an approval: the turn records an informational
+        // diagnostic and the agent gets its reject answer at once, so no run registers or waits on the request.
+        var granted = IsGrantedByPolicy(permission, turn);
+        if (!granted)
+        {
+            if (turn is not null)
+            {
+                WriteTurnEvent(turn, new DiagnosticEvent($"Approval policy denied permission request for call '{permission.CallId}' without a decision."));
+            }
+
+            await SendPermissionOutcomeAsync(id, parameters.Options, granted: false, CancellationToken.None).ConfigureAwait(false);
+            return;
+        }
+
+        // The policy admits the request, so it becomes a pending approval that a decision settles.
+        var requestEvent = new PermissionRequestEvent(permission.CallId, permission.Name, permission.PayloadJson, id.ToString(CultureInfo.InvariantCulture));
+        if (turn is not null)
+        {
+            WriteTurnEvent(turn, requestEvent);
+        }
+
+        if (_permissionResolver is { } resolver)
+        {
+            // Park the request under its id and keep the pump reading; the resolver's decision answers it.
+            _ = DecideParkedPermissionAsync(id, parameters.Options, requestEvent, resolver, turn);
+            return;
+        }
+
+        // An admitted request with no resolver to decide it is denied.
+        await SendPermissionOutcomeAsync(id, parameters.Options, granted: false, CancellationToken.None).ConfigureAwait(false);
+    }
+
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "MED-01: the narrowing hook is untrusted caller code; a hook failure denies closed with a diagnostic.")]
+    private bool IsGrantedByPolicy(AcpPermissionRequest permission, PromptTurn? turn)
+    {
         try
         {
-            granted = _options.ApprovalPolicy.Allows(permission);
+            return _options.ApprovalPolicy.Allows(permission);
         }
         catch (Exception ex)
         {
@@ -637,22 +721,92 @@ public sealed class AcpAgentSession : IOmpSession
                 WriteTurnEvent(turn, new DiagnosticEvent($"Approval policy failed: {ex.GetType().Name}. Denied."));
             }
 
-            granted = false;
+            return false;
         }
+    }
 
-        if (turn is not null)
+    /// <summary>
+    /// Answers a parked permission request once its decision arrives. Runs off the pump. A timeout, a cancelled wait
+    /// or a failing resolver denies the request; a failure to write the answer faults the session, as a dropped frame does.
+    /// </summary>
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "MED-01: the resolver is untrusted caller code and the transport is fallible; each failure denies closed or faults the session with its cause.")]
+    private async Task DecideParkedPermissionAsync(
+        long id,
+        IReadOnlyList<AcpFrames.PermissionOption>? options,
+        PermissionRequestEvent requestEvent,
+        IPermissionResolver resolver,
+        PromptTurn? turn)
+    {
+        var granted = false;
+        try
         {
-            WriteTurnEvent(turn, new PermissionRequestEvent(permission.CallId, permission.Name, permission.PayloadJson));
+            using var timeout = new CancellationTokenSource(_permissionDecisionTimeout);
+            var decision = await resolver.ResolveAsync(requestEvent, timeout.Token).ConfigureAwait(false);
+            granted = decision == PermissionDecision.Allow;
+        }
+        catch (OperationCanceledException)
+        {
+            // A timeout or a cancelled turn is the denial: granted stays false.
+        }
+        catch (Exception ex)
+        {
+            RecordParkedDiagnostic(turn, $"Permission decision failed: {ex.GetType().Name}. Denied.");
         }
 
-        var option = SelectOption(parameters.Options, granted);
+        try
+        {
+            await SendPermissionOutcomeAsync(id, options, granted, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            FaultAfterLostAnswer(turn, ex);
+        }
+    }
+
+    /// <summary>Records a diagnostic on a parked request's turn while the turn is still open; a settled turn's stream is complete.</summary>
+    private void RecordParkedDiagnostic(PromptTurn? turn, string message)
+    {
+        if (turn is null)
+        {
+            return;
+        }
+
+        lock (_gate)
+        {
+            if (!turn.Settled)
+            {
+                WriteTurnEvent(turn, new DiagnosticEvent(message));
+            }
+        }
+    }
+
+    private Task SendPermissionOutcomeAsync(long id, IReadOnlyList<AcpFrames.PermissionOption>? options, bool granted, CancellationToken cancellationToken)
+    {
+        var option = SelectOption(options, granted);
         var outcome = option is null
             ? new AcpFrames.PermissionOutcome("cancelled", null)
             : new AcpFrames.PermissionOutcome("selected", option.OptionId);
-        await SendFrameAsync(
+        return SendFrameAsync(
             new AcpFrames.Response<AcpFrames.PermissionResponse>(id, new AcpFrames.PermissionResponse(outcome)),
             AcpJsonContext.Default.ResponsePermissionResponse,
-            CancellationToken.None).ConfigureAwait(false);
+            cancellationToken);
+    }
+
+    /// <summary>Fails the turn and faults the session when an answer to the agent could not be written.</summary>
+    private void FaultAfterLostAnswer(PromptTurn? turn, Exception error)
+    {
+        if (turn is not null)
+        {
+            FailTurn(turn, new DisconnectedHarnessException("omp acp could not receive the answer to a permission request.", SessionId, error));
+        }
+
+        lock (_gate)
+        {
+            TryFaultLocked();
+        }
     }
 
     /// <summary>

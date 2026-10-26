@@ -1,0 +1,133 @@
+SUP-id	file	line	kind	rule-or-reason
+SUP-001	.editorconfig	395	editorconfig-severity	CA1303=none
+SUP-002	.editorconfig	398	editorconfig-severity	CA1707=none
+SUP-003	.editorconfig	399	editorconfig-severity	CS1591=none
+SUP-004	.editorconfig	400	editorconfig-severity	CA1062=none
+SUP-005	apps/OmpOS.Web/Pages/Index.razor	282	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-006	apps/OmpOS.Web/Services/ApiSessionClient.cs	95	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-007	apps/OmpOS.Web/Services/SseEventStream.cs	21	suppress-message	Naming:CA1711:Identifiers should not have incorrect suffix
+SUP-008	apps/OmpOS.Web/Services/SseEventStream.cs	335	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-009	services/OmpOS.Api/Coordination/CoordinationStartup.cs	57	pragma-disable	CA1031
+SUP-010	services/OmpOS.Api/Harness/SessionPermissionResolver.cs	72	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-011	services/OmpOS.Api/Health/SessionRepositoryCheck.cs	32	pragma-disable	CA1031
+SUP-012	services/OmpOS.Api/Idempotency/IdempotencyCompletion.cs	49	pragma-disable	CA1031
+SUP-013	services/OmpOS.Api/Services/PromptRunner.cs	215	pragma-disable	CA1031
+SUP-014	services/OmpOS.Api/Services/PromptRunner.cs	283	pragma-disable	CA1031
+SUP-015	services/OmpOS.Api/Sse/SessionChangePublisher.cs	48	pragma-disable	CA1031
+SUP-016	services/OmpOS.Api/Sse/SessionSignalSubscriber.cs	52	pragma-disable	CA1031
+SUP-017	services/OmpOS.Api/Workflows/LeaseRenewal.cs	101	pragma-disable	CA1031
+SUP-018	services/OmpOS.Api/Workflows/SessionRunReaper.cs	159	pragma-disable	CA1031
+SUP-019	src/OmpOS.Coordination.Dragonfly/DragonflySessionSignals.cs	75	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-020	src/OmpOS.Coordination/InMemorySessionSignals.cs	20	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-021	src/OmpOS.Harness.Abstractions/IHarnessSessionFactory.cs	3	pragma-disable	CA1515
+SUP-022	src/OmpOS.Harness.Acp/AcpAgentSession.cs	191	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-023	src/OmpOS.Harness.Acp/AcpAgentSession.cs	489	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-024	src/OmpOS.Harness.Acp/AcpAgentSession.cs	679	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-025	src/OmpOS.Harness.Acp/AcpAgentSession.cs	706	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-026	src/OmpOS.Harness.Acp/AcpProtocol/AcpFrames.cs	12	suppress-message	Design:CA1034:Nested types should not be visible
+SUP-027	src/OmpOS.Harness.Rpc/OmpRpcClient.cs	67	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-028	src/OmpOS.Harness.Rpc/OmpRpcSession.cs	316	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-029	src/OmpOS.Harness.Rpc/OmpRpcSession.cs	451	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-030	src/OmpOS.Harness.Rpc/RestoredQueue.cs	6	suppress-message	Naming:CA1711:Identifiers should not have incorrect suffix
+SUP-031	src/OmpOS.Parser/PromptParser.cs	35	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-032	src/OmpOS.Parser/PromptParser.cs	91	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-033	src/OmpOS.Sandbox/LocalPodmanComposeProvider.cs	126	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-034	src/OmpOS.Sandbox/LocalPodmanComposeProvider.cs	226	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-035	src/OmpOS.Sandbox/LocalPodmanComposeProvider.cs	686	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-036	src/OmpOS.Sandbox/OpenShellProvider.cs	158	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-037	src/OmpOS.Sandbox/OpenShellProvider.cs	200	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-038	src/OmpOS.Sandbox/ProcessRunner.cs	312	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-039	src/OmpOS.Sandbox/SandboxLifecycle.cs	66	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-040	src/OmpOS.Sandbox/SandboxLifecycle.cs	183	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-041	src/OmpOS.Sandbox/SandboxLifecycle.cs	228	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-042	src/OmpOS.Sandbox/SandboxLifecycle.cs	280	suppress-message	Security:CA5394:Do not use insecure randomness
+SUP-043	src/OmpOS.Sandbox/SandboxLifecycle.cs	296	suppress-message	Security:CA5394:Do not use insecure randomness
+SUP-044	src/OmpOS.SessionRuns/SessionRunActivities.cs	205	pragma-disable	CA1031
+SUP-045	src/OmpOS.SessionRuns/SessionRunActivities.cs	289	pragma-disable	CA1031
+SUP-046	src/OmpOS.Workflows/DirectSessionRunner.cs	42	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-047	src/OmpOS.Workflows/DirectSessionRunner.cs	196	suppress-message	Design:CA1031:Do not catch general exception types
+SUP-048	src/OmpOS.Workflows/DirectSessionRunner.cs	240	pragma-disable	CA1031
+SUP-049	tests/OmpOS.Api.IntegrationTests/DirectRunPermissionRoundTripTests.cs	28	suppress-message	Reliability:CA2000:Dispose objects before losing scope
+SUP-050	tests/OmpOS.Api.IntegrationTests/GuardTests.cs	28	pragma-disable	CA1031
+SUP-051	tests/OmpOS.Api.IntegrationTests/ProcessPathSerialization.cs	8	suppress-message	Design:CA1515:Consider making public types internal
+SUP-052	tests/OmpOS.EngineHost.Tests/EngineHostTests.cs	17	suppress-message	Usage:CA2007:Do not directly await a Task
+SUP-053	tests/OmpOS.EngineHost.Tests/EngineHostTests.cs	646	pragma-disable	VSTHRD003
+SUP-054	tests/OmpOS.Harness.Acp.Tests/AcpAgentSessionTests.cs	11	suppress-message	Reliability:CA2000:Dispose objects before losing scope
+SUP-055	tests/OmpOS.Harness.Acp.Tests/AcpAgentSessionTests.cs	12	suppress-message	Usage:CA2007:Do not directly await a Task
+SUP-056	tests/OmpOS.Harness.Acp.Tests/AcpAgentSessionTests.cs	13	suppress-message	Usage:MA0004:Use Task.ConfigureAwait
+SUP-057	tests/OmpOS.Harness.Acp.Tests/AcpFrameReplayTests.cs	12	suppress-message	Reliability:CA2000:Dispose objects before losing scope
+SUP-058	tests/OmpOS.Harness.Acp.Tests/AcpFrameReplayTests.cs	13	suppress-message	Usage:CA2007:Do not directly await a Task
+SUP-059	tests/OmpOS.Harness.Acp.Tests/AcpFrameReplayTests.cs	14	suppress-message	Usage:MA0004:Use Task.ConfigureAwait
+SUP-060	tests/OmpOS.Harness.Acp.Tests/AcpLiveSmokeTests.cs	25	skip-marker	skip
+SUP-061	tests/OmpOS.Harness.Acp.Tests/AcpParkedPermissionTests.cs	13	suppress-message	Reliability:CA2000:Dispose objects before losing scope
+SUP-062	tests/OmpOS.Harness.Acp.Tests/AcpParkedPermissionTests.cs	14	suppress-message	Usage:CA2007:Do not directly await a Task
+SUP-063	tests/OmpOS.Harness.Acp.Tests/AcpParkedPermissionTests.cs	15	suppress-message	Usage:MA0004:Use Task.ConfigureAwait
+SUP-064	tests/OmpOS.Harness.Acp.Tests/AcpPermissionDecisionTests.cs	14	suppress-message	Reliability:CA2000:Dispose objects before losing scope
+SUP-065	tests/OmpOS.Harness.Acp.Tests/AcpPermissionDecisionTests.cs	15	suppress-message	Usage:CA2007:Do not directly await a Task
+SUP-066	tests/OmpOS.Harness.Acp.Tests/AcpPermissionDecisionTests.cs	16	suppress-message	Usage:MA0004:Use Task.ConfigureAwait
+SUP-067	tests/OmpOS.Harness.Acp.Tests/AcpStdioTransportTests.cs	11	suppress-message	Usage:CA2007:Do not directly await a Task
+SUP-068	tests/OmpOS.Harness.Acp.Tests/AcpStdioTransportTests.cs	12	suppress-message	Usage:MA0004:Use Task.ConfigureAwait
+SUP-069	tests/OmpOS.Harness.Acp.Tests/AcpStdioTransportTests.cs	32	skip-marker	skip
+SUP-070	tests/OmpOS.Harness.Acp.Tests/AcpStdioTransportTests.cs	71	skip-marker	skip
+SUP-071	tests/OmpOS.Harness.ContractTests/AsyncStreamHelpers.cs	9	suppress-message	Design:CA1515:Consider making public types internal
+SUP-072	tests/OmpOS.Harness.ContractTests/LoopbackAcpTransport.cs	13	suppress-message	Design:CA1515:Consider making public types internal
+SUP-073	tests/OmpOS.Harness.InMemory.Tests/WebSocketOmpTransportStubTests.cs	11	suppress-message	Reliability:CA2000:Dispose objects before losing scope
+SUP-074	tests/OmpOS.Harness.InMemory.Tests/WebSocketOmpTransportStubTests.cs	12	suppress-message	Usage:CA2007:Do not directly await a Task
+SUP-075	tests/OmpOS.Harness.Rpc.Tests/OmpPinMismatchTests.cs	53	skip-marker	skip
+SUP-076	tests/OmpOS.Harness.Rpc.Tests/OmpPinMismatchTests.cs	77	skip-marker	skip
+SUP-077	tests/OmpOS.Harness.Rpc.Tests/RpcAbortAndRestoreQueueTests.cs	19	suppress-message	Usage:CA2000
+SUP-078	tests/OmpOS.Harness.Rpc.Tests/RpcAbortAndRestoreQueueTests.cs	65	suppress-message	Usage:CA2000
+SUP-079	tests/OmpOS.Harness.Rpc.Tests/RpcClientStartTests.cs	16	suppress-message	Usage:CA2000
+SUP-080	tests/OmpOS.Harness.Rpc.Tests/RpcClientStartTests.cs	34	suppress-message	Usage:CA2000
+SUP-081	tests/OmpOS.Harness.Rpc.Tests/RpcCommandCorrelationTests.cs	19	suppress-message	Usage:CA2000
+SUP-082	tests/OmpOS.Harness.Rpc.Tests/RpcHarnessSessionFactoryTests.cs	232	suppress-message	Reliability:CA2000
+SUP-083	tests/OmpOS.Harness.Rpc.Tests/RpcLiveCaptureTests.cs	18	run-filter-live	Category=Live
+SUP-084	tests/OmpOS.Harness.Rpc.Tests/RpcLiveCaptureTests.cs	42	skip-marker	skip
+SUP-085	tests/OmpOS.Harness.Rpc.Tests/RpcLiveSmokeTests.cs	29	skip-marker	skip
+SUP-086	tests/OmpOS.Harness.Rpc.Tests/RpcLiveSmokeTests.cs	56	skip-marker	skip
+SUP-087	tests/OmpOS.Harness.Rpc.Tests/RpcPromptCompletionTests.cs	19	suppress-message	Usage:CA2000
+SUP-088	tests/OmpOS.Harness.Rpc.Tests/RpcPromptCompletionTests.cs	50	suppress-message	Usage:CA2000
+SUP-089	tests/OmpOS.Harness.Rpc.Tests/RpcPromptStreamTests.cs	215	suppress-message	Usage:CA2000
+SUP-090	tests/OmpOS.Harness.Rpc.Tests/RpcPumpFailureTests.cs	19	suppress-message	Usage:CA2000
+SUP-091	tests/OmpOS.Harness.Rpc.Tests/RpcStderrFloodTests.cs	19	suppress-message	Usage:CA2000
+SUP-092	tests/OmpOS.Parser.Tests/RecognizerOrderingTests.cs	95	suppress-message	Security:CA5394:Do not use insecure randomness
+SUP-093	tests/OmpOS.Parser.Tests/RecognizerOrderingTests.cs	132	suppress-message	Security:CA5394:Do not use insecure randomness
+SUP-094	tests/OmpOS.Presentation.Tests/ComposerViewModelTests.cs	82	pragma-disable	VSTHRD003
+SUP-095	tests/OmpOS.Sandbox.Tests/CapturingLogger.cs	38	suppress-message	Design:CA1515:Consider making public types internal
+SUP-096	tests/OmpOS.Sandbox.Tests/LocalPodmanComposeProviderContractTests.cs	137	skip-marker	skip
+SUP-097	tests/OmpOS.Sandbox.Tests/ProcessRunnerCancellationRegressionTests.cs	17	skip-marker	skip
+SUP-098	tests/OmpOS.Sandbox.Tests/ProcessRunnerCancellationRegressionTests.cs	19	skip-marker	skip
+SUP-099	tests/OmpOS.Sandbox.Tests/ProcessRunnerDrainTests.cs	29	skip-marker	skip
+SUP-100	tests/OmpOS.Sandbox.Tests/ProcessRunnerDrainTests.cs	31	skip-marker	skip
+SUP-101	tests/OmpOS.Sandbox.Tests/ProcessRunnerDrainTests.cs	50	skip-marker	skip
+SUP-102	tests/OmpOS.Sandbox.Tests/ProcessRunnerLongLineRegressionTests.cs	19	skip-marker	skip
+SUP-103	tests/OmpOS.Sandbox.Tests/ProcessRunnerLongLineRegressionTests.cs	21	skip-marker	skip
+SUP-104	tests/OmpOS.Sandbox.Tests/ProcessRunnerLongLineRegressionTests.cs	22	skip-marker	skip
+SUP-105	tests/OmpOS.Sandbox.Tests/ProcessRunnerLongLineRegressionTests.cs	23	skip-marker	skip
+SUP-106	tests/OmpOS.Sandbox.Tests/ProcessRunnerOutputCapTests.cs	28	skip-marker	skip
+SUP-107	tests/OmpOS.Sandbox.Tests/ProcessRunnerOutputCapTests.cs	30	skip-marker	skip
+SUP-108	tests/OmpOS.Sandbox.Tests/ProcessRunnerOutputCapTests.cs	31	skip-marker	skip
+SUP-109	tests/OmpOS.Sandbox.Tests/ProcessRunnerOutputCapTests.cs	51	skip-marker	skip
+SUP-110	tests/OmpOS.Sandbox.Tests/ProcessRunnerOutputCapTests.cs	53	skip-marker	skip
+SUP-111	tests/OmpOS.Sandbox.Tests/ProcessRunnerStreamingTests.cs	18	skip-marker	skip
+SUP-112	tests/OmpOS.Sandbox.Tests/ProcessRunnerStreamingTests.cs	20	skip-marker	skip
+SUP-113	tests/OmpOS.Sandbox.Tests/ProductionProcessRunnerTests.cs	51	skip-marker	skip
+SUP-114	tests/OmpOS.Sandbox.Tests/ProductionProcessRunnerTests.cs	52	skip-marker	skip
+SUP-115	tests/OmpOS.Sessions.Postgres.Tests/PostgresServerFixture.cs	12	suppress-message	Design:CA1515:Consider making public types internal
+SUP-116	tests/OmpOS.Sessions.Postgres.Tests/PostgresServerGroup.cs	8	suppress-message	Design:CA1515:Consider making public types internal
+SUP-117	tests/OmpOS.Sessions.Postgres.Tests/PostgresTestDatabase.cs	44	suppress-message	Security:CA2100:Review SQL queries for security vulnerabilities
+SUP-118	tests/OmpOS.Sessions.Postgres.Tests/PostgresTestSchema.cs	68	suppress-message	Security:CA2100:Review SQL queries for security vulnerabilities
+SUP-119	tests/OmpOS.Sessions.Postgres.Tests/PostgresTwoProcessAppendTests.cs	43	skip-marker	skip
+SUP-120	tests/OmpOS.UI.Tests/ComposerDraftTests.cs	76	pragma-disable	VSTHRD003
+SUP-121	tests/OmpOS.UI.Tests/UiTestContext.cs	10	suppress-message	Design:CA1515:Consider making public types internal
+SUP-122	tests/OmpOS.Web.Tests/GatedSseContent.cs	87	pragma-disable	VSTHRD003
+SUP-123	tests/OmpOS.Workflows.Tests/DirectRunnerFixture.cs	8	suppress-message	Design:CA1515:Consider making public types internal
+SUP-124	tests/OmpOS.Workflows.Tests/DirectRunnerRetryPolicyTests.cs	16	suppress-message	Usage:CA2007:Do not directly await a Task
+SUP-125	tests/OmpOS.Workflows.Tests/DirectRunnerRetryPolicyTests.cs	17	suppress-message	Usage:MA0004:Use Task.ConfigureAwait
+SUP-126	tests/OmpOS.Workflows.Tests/DirectRunnerTests.cs	10	suppress-message	Usage:CA2007:Do not directly await a Task
+SUP-127	tests/OmpOS.Workflows.Tests/DirectRunnerTests.cs	11	suppress-message	Usage:MA0004:Use Task.ConfigureAwait
+SUP-128	tests/OmpOS.Workflows.Tests/ISessionRunWorkflowFixture.cs	8	suppress-message	Design:CA1515:Consider making public types internal
+SUP-129	tests/OmpOS.Workflows.Tests/SessionRunWorkflowContractTests.cs	16	suppress-message	Usage:CA2007:Do not directly await a Task
+SUP-130	tests/OmpOS.Workflows.Tests/SessionRunWorkflowContractTests.cs	17	suppress-message	Usage:MA0004:Use Task.ConfigureAwait
+SUP-131	tests/OmpOS.Workflows.Tests/TestSessionRunActivities.cs	14	suppress-message	Design:CA1515:Consider making public types internal
+SUP-132	tests/OmpOS.Workflows.Tests/TestWorkflowContext.cs	19	suppress-message	Security:CA5394:Do not use insecure randomness

@@ -193,6 +193,72 @@ public sealed class ProjectionReplayTests
         events[0].Payload.ShouldBeOfType<TextDeltaPayload>().Delta.ShouldBe("x");
     }
 
+    /// <summary>A persisted user_message replays to exactly one user turn, the same state the live fold reaches.</summary>
+    [Fact]
+    public void ReplayFoldsAUserMessagePayloadToOneUserTurn()
+    {
+        var log = new List<StreamEvent> { StreamOf(1, new UserMessagePayload { Text = "Ship it" }) };
+        var json = JsonSerializer.Serialize(log.ToArray(), OmpOsJsonContext.Default.StreamEventArray);
+        var replayedLog = JsonSerializer.Deserialize(json, OmpOsJsonContext.Default.StreamEventArray);
+        replayedLog.ShouldNotBeNull();
+
+        var live = log.Aggregate(ProjectionState.Empty, HarnessEventProjection.Fold);
+        var replayed = replayedLog.Aggregate(ProjectionState.Empty, HarnessEventProjection.Fold);
+
+        Snapshot(replayed).ShouldBe(Snapshot(live));
+        replayed.Blocks.Single().ShouldBeOfType<UserMessageBlock>().Text.ShouldBe("Ship it");
+    }
+
+    /// <summary>A persisted prompt_accepted replays to exactly one user turn, never an unknown block.</summary>
+    [Fact]
+    public void ReplayFoldsAPromptAcceptedPayloadToOneUserTurn()
+    {
+        using var doc = JsonDocument.Parse("{\"kind\":\"prompt_accepted\",\"prompt\":\"Do the thing\"}");
+        var log = new List<StreamEvent>
+        {
+            StreamOf(1, new UnknownPayload { OriginalKind = "prompt_accepted", Raw = doc.RootElement.Clone() }),
+        };
+        var json = JsonSerializer.Serialize(log.ToArray(), OmpOsJsonContext.Default.StreamEventArray);
+        var replayedLog = JsonSerializer.Deserialize(json, OmpOsJsonContext.Default.StreamEventArray);
+        replayedLog.ShouldNotBeNull();
+
+        var live = log.Aggregate(ProjectionState.Empty, HarnessEventProjection.Fold);
+        var replayed = replayedLog.Aggregate(ProjectionState.Empty, HarnessEventProjection.Fold);
+
+        Snapshot(replayed).ShouldBe(Snapshot(live));
+        replayed.Blocks.Single().ShouldBeOfType<UserMessageBlock>().Text.ShouldBe("Do the thing");
+    }
+
+    /// <summary>A persisted diagnostic replays without throwing and leaves the state exactly as it was before it.</summary>
+    [Fact]
+    public void ReplayIgnoresADiagnosticPayloadWithoutThrowing()
+    {
+        var log = new List<StreamEvent>
+        {
+            StreamOf(1, new TextDeltaPayload { Delta = "hi" }),
+            StreamOf(2, new DiagnosticPayload { Message = "slow tool" }),
+        };
+        var json = JsonSerializer.Serialize(log.ToArray(), OmpOsJsonContext.Default.StreamEventArray);
+        var replayedLog = JsonSerializer.Deserialize(json, OmpOsJsonContext.Default.StreamEventArray);
+        replayedLog.ShouldNotBeNull();
+
+        var replayed = replayedLog.Aggregate(ProjectionState.Empty, HarnessEventProjection.Fold);
+        var textOnly = log.Take(1).Aggregate(ProjectionState.Empty, HarnessEventProjection.Fold);
+
+        Snapshot(replayed).ShouldBe(Snapshot(textOnly));
+        replayed.StreamingText.ShouldBe("hi");
+    }
+
+    /// <summary>Wraps one payload in a stream event at the given sequence number.</summary>
+    private static StreamEvent StreamOf(long seq, StreamEventPayload payload) => new()
+    {
+        Seq = seq,
+        SessionId = SessionId,
+        CorrelationId = CorrelationId,
+        Timestamp = Stamp,
+        Payload = payload,
+    };
+
     /// <summary>Maps the harness script to stream events numbered 1..22 and appends the malformed event as Seq 23.</summary>
     private static List<StreamEvent> BuildLog()
     {

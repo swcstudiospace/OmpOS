@@ -17,7 +17,7 @@ public sealed class PodmanOverlappingTeardownRegressionTests
     public async Task StaleOverlappingTeardown_DoesNotReleaseReprovisionedKey()
     {
         var runner = new FakeProcessRunner();
-        runner.SetResult(PodmanTestData.Ok("container-id-123"));
+        runner.SetResult(PodmanTestData.Ok("0123456789ab"));
 
         var provider = PodmanTestData.CreateProvider(runner);
         var ct = TestContext.Current.CancellationToken;

@@ -1,0 +1,86 @@
+{
+  "app": "http://127.0.0.1:5180/",
+  "apiOrigin": "http://127.0.0.1:5187",
+  "startedAt": "2026-10-21T18:02:29.054Z",
+  "firstRender": {
+    "rendered": true,
+    "errorBarVisible": false,
+    "exceptionCount": 0,
+    "consoleErrorCount": 0,
+    "reflectionDisabledHits": 0,
+    "exceptionSample": [],
+    "consoleErrorSample": []
+  },
+  "skipLinkInitial": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BODY"
+  },
+  "shotInitial": "/tmp/smoke/initial-first-render.png",
+  "axeEmptyState": {
+    "violations": [],
+    "incomplete": []
+  },
+  "iconButtonContrastEmptyState": {
+    "color": "rgb(0, 0, 0)",
+    "ownBackground": "rgb(239, 239, 239)",
+    "effectiveBackground": "rgb(239, 239, 239)",
+    "contrastRatio": 18.26,
+    "outerHTML": "<button type=\"button\" class=\"ompos-btn ompos-icon-btn\" aria-label=\"Send message\"><!--!--><svg width=\"1em\" height=\"1em\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M3 3.5 21 12 3 "
+  },
+  "skipLinkBeforeAxeEmpty": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BODY"
+  },
+  "shotAxeEmpty": "/tmp/smoke/axe-empty-state.png",
+  "responseCompleted": true,
+  "probeChecks": {
+    "strong": 1,
+    "appImg": 0,
+    "appScript": 0,
+    "unsupported": false
+  },
+  "errorBarAfterPrompt": false,
+  "consoleErrorsAfterPrompt": [],
+  "skipLinkAfterTabFocus": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BUTTON"
+  },
+  "shotSkipLinkFocused": "/tmp/smoke/skip-link-focused-after-tab.png",
+  "axeAfterResponse": {
+    "violations": [],
+    "incomplete": []
+  },
+  "iconButtonContrastAfterResponse": {
+    "color": "rgb(0, 0, 0)",
+    "ownBackground": "rgb(239, 239, 239)",
+    "effectiveBackground": "rgb(239, 239, 239)",
+    "contrastRatio": 18.26,
+    "outerHTML": "<button type=\"button\" class=\"ompos-btn ompos-icon-btn\" aria-label=\"Send message\"><!--!--><svg width=\"1em\" height=\"1em\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M3 3.5 21 12 3 "
+  },
+  "skipLinkBeforeAxeAfter": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BUTTON"
+  },
+  "shotAxeAfterResponse": "/tmp/smoke/axe-after-response.png",
+  "finishedAt": "2026-10-21T18:02:36.305Z"
+}

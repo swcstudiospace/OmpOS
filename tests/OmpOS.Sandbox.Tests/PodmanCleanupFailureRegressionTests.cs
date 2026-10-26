@@ -19,6 +19,7 @@ public sealed class PodmanCleanupFailureRegressionTests
         var logger = new CapturingLogger<LocalPodmanComposeProvider>();
         var runner = new FakeProcessRunner();
         runner.EnqueueResults(
+            PodmanTestData.Ok(),
             new ProcessResult { ExitCode = 1, Stdout = string.Empty, Stderr = "container failed to start", TimedOut = false },
             new ProcessResult { ExitCode = 2, Stdout = string.Empty, Stderr = string.Empty, TimedOut = false });
         var provider = PodmanTestData.CreateProvider(runner, logger);
@@ -42,6 +43,7 @@ public sealed class PodmanCleanupFailureRegressionTests
         var logger = new CapturingLogger<LocalPodmanComposeProvider>();
         var runner = new FakeProcessRunner();
         runner.EnqueueResults(
+            PodmanTestData.Ok(),
             new ProcessResult { ExitCode = 1, Stdout = string.Empty, Stderr = "container failed to start", TimedOut = false },
             new ProcessResult { ExitCode = 124, Stdout = string.Empty, Stderr = string.Empty, TimedOut = true });
         var provider = PodmanTestData.CreateProvider(runner, logger);
@@ -65,6 +67,7 @@ public sealed class PodmanCleanupFailureRegressionTests
         var logger = new CapturingLogger<LocalPodmanComposeProvider>();
         var runner = new FakeProcessRunner();
         runner.EnqueueResults(
+            PodmanTestData.Ok(),
             new ProcessResult { ExitCode = 1, Stdout = string.Empty, Stderr = "container failed to start", TimedOut = false },
             PodmanTestData.Ok());
         var provider = PodmanTestData.CreateProvider(runner, logger);

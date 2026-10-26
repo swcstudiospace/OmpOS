@@ -12,13 +12,18 @@ public sealed class InMemoryOmpAdapter
 
     /// <summary>Initializes a new instance of the <see cref="InMemoryOmpAdapter"/> class.</summary>
     /// <param name="script">The script every session replays.</param>
-    /// <exception cref="ArgumentOutOfRangeException">The script's channel capacity is below 1.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The script's channel capacity is below 1, or its permission decision timeout is not positive.</exception>
     public InMemoryOmpAdapter(InMemoryScript script)
     {
         ArgumentNullException.ThrowIfNull(script);
         if (script.ChannelCapacity < 1)
         {
             throw new ArgumentOutOfRangeException(nameof(script), script.ChannelCapacity, "ChannelCapacity must be at least 1.");
+        }
+
+        if (script.PermissionDecisionTimeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(script), script.PermissionDecisionTimeout, "PermissionDecisionTimeout must be positive.");
         }
 
         _script = script;

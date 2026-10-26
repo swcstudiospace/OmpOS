@@ -1,6 +1,9 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Bunit;
 using Microsoft.AspNetCore.Components.Web;
 using OmpOS.GenUi;
+using OmpOS.Presentation.State;
 using OmpOS.UI.Components;
 using Shouldly;
 using Xunit;
@@ -8,7 +11,7 @@ using Xunit;
 namespace OmpOS.UI.Tests;
 
 /// <summary>Keyboard, labeling, live-region, and stylesheet accessibility assertions (UI-03).</summary>
-public sealed class AccessibilityTests : UiTestContext
+public sealed partial class AccessibilityTests : UiTestContext
 {
     /// <summary>Enter sends the draft; Shift+Enter does not send.</summary>
     [Theory]
@@ -85,29 +88,6 @@ public sealed class AccessibilityTests : UiTestContext
         css.ShouldContain("44px");
     }
 
-    /// <summary>The skip link is the first focusable element and targets the conversation region.</summary>
-    [Theory]
-    [InlineData(SessionViewState.LoadingHistory)]
-    [InlineData(SessionViewState.Empty)]
-    [InlineData(SessionViewState.Streaming)]
-    public void SkipLinkIsFirstFocusableAndTargetsConversation(SessionViewState state)
-    {
-        var cut = Render<SessionView>(parameters => parameters
-            .Add(p => p.Tree, UiTree.Empty)
-            .Add(p => p.ViewState, state)
-            .Add(p => p.AutoScrollPaused, true));
-
-        var focusable = cut.FindAll("a[href], button:not([disabled]), textarea, [tabindex]:not([tabindex='-1'])");
-        focusable.Count.ShouldBeGreaterThan(0);
-        var first = focusable[0];
-        first.TagName.ShouldBe("A");
-        first.ClassList.Contains("ompos-skip-link").ShouldBeTrue();
-        first.TextContent.ShouldBe("Skip to conversation");
-        var href = first.GetAttribute("href") ?? string.Empty;
-        href.ShouldStartWith("#");
-        cut.Find(href).ShouldNotBeNull();
-    }
-
     /// <summary>Icon-button token pairs meet WCAG AA for text glyphs (4.5:1).</summary>
     [Theory]
     [InlineData("--ompos-fg", "--ompos-bg")]
@@ -122,6 +102,77 @@ public sealed class AccessibilityTests : UiTestContext
 
         ratio.ShouldBeGreaterThanOrEqualTo(4.5, $"{foregroundToken} on {backgroundToken} must meet WCAG AA for text glyphs");
     }
+
+    /// <summary>Filled-control text tokens meet WCAG AA for text (4.5:1) on the fill they sit on.</summary>
+    [Theory]
+    [InlineData("--ompos-primary-contrast", "--ompos-primary")]
+    [InlineData("--ompos-error-contrast", "--ompos-error")]
+    public void FilledControlTextPairsMeetContrastMinimum(string foregroundToken, string backgroundToken)
+    {
+        var css = File.ReadAllText(FindCssPath());
+
+        var ratio = ContrastRatio(ParseColorToken(css, foregroundToken), ParseColorToken(css, backgroundToken));
+
+        ratio.ShouldBeGreaterThanOrEqualTo(4.5, $"{foregroundToken} on {backgroundToken} must meet WCAG AA for text");
+    }
+
+    /// <summary>The focus ring is a non-text indicator: it meets 3:1 (WCAG 1.4.11) on both surfaces the session draws on.</summary>
+    [Theory]
+    [InlineData("--ompos-focus-ring", "--ompos-bg")]
+    [InlineData("--ompos-focus-ring", "--ompos-surface")]
+    public void FocusRingMeetsNonTextContrastMinimum(string ringToken, string backgroundToken)
+    {
+        var css = File.ReadAllText(FindCssPath());
+
+        var ratio = ContrastRatio(ParseColorToken(css, ringToken), ParseColorToken(css, backgroundToken));
+
+        ratio.ShouldBeGreaterThanOrEqualTo(3.0, $"{ringToken} on {backgroundToken} must meet WCAG 1.4.11 for a focus indicator");
+    }
+
+    /// <summary>A focus-visible rule draws the ring from the token the contrast tests check, not from a literal colour.</summary>
+    [Fact]
+    public void FocusVisibleRuleUsesTheFocusRingToken()
+    {
+        var css = File.ReadAllText(FindCssPath());
+
+        FocusVisibleRingRule().IsMatch(css).ShouldBeTrue("a :focus-visible rule must use outline with var(--ompos-focus-ring)");
+    }
+
+    /// <summary>Every ratio the stylesheet comments state matches the ratio computed from the two colours, so a comment cannot go stale (phase 25.7, F-F).</summary>
+    [Fact]
+    public void StylesheetContrastCommentsMatchTheComputedRatios()
+    {
+        var css = File.ReadAllText(FindCssPath());
+        var documented = 0;
+        foreach (var line in css.Split('\n'))
+        {
+            var declaration = TokenDeclaration().Match(line);
+            if (!declaration.Success)
+            {
+                continue;
+            }
+
+            foreach (Match claim in DocumentedRatio().Matches(line))
+            {
+                var stated = double.Parse(claim.Groups["ratio"].Value, CultureInfo.InvariantCulture);
+                var computed = ContrastRatio(declaration.Groups["color"].Value, ParseColorToken(css, claim.Groups["against"].Value));
+
+                Math.Abs(computed - stated).ShouldBeLessThan(0.01, $"{declaration.Groups["token"].Value} says {stated}:1 on {claim.Groups["against"].Value}, computed {computed:0.00}:1");
+                documented++;
+            }
+        }
+
+        documented.ShouldBeGreaterThanOrEqualTo(6, "expected the six documented ratios in the token block");
+    }
+
+    [GeneratedRegex("^\\s*(?<token>--ompos-[a-z-]+):\\s*(?<color>#[0-9a-fA-F]{6});", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex TokenDeclaration();
+
+    [GeneratedRegex("(?<ratio>\\d+\\.\\d+):1 on (?<against>--ompos-[a-z-]+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex DocumentedRatio();
+
+    [GeneratedRegex("focus-visible[^{]*\\{[^}]*outline:[^;}]*var\\(--ompos-focus-ring\\)", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex FocusVisibleRingRule();
 
     private static string ParseColorToken(string css, string token)
     {

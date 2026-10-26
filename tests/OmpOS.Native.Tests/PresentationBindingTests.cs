@@ -1,0 +1,104 @@
+using System.Xml.Linq;
+using OmpOS.Native.Views;
+using OmpOS.Presentation.Composer;
+using OmpOS.Presentation.State;
+using Shouldly;
+using Xunit;
+
+namespace OmpOS.Native.Tests;
+
+/// <summary>
+/// The native head binds the same <c>OmpOS.Presentation</c> view models the web head binds, and holds no copy of them
+/// (XP-08, ADR-0004 drift guard; criterion 3, native half).
+/// </summary>
+public sealed class PresentationBindingTests
+{
+    /// <summary>The transcript's data context is the one presentation session view model the shell owns.</summary>
+    [Fact]
+    public async Task TranscriptIsBoundToThePresentationSessionViewModel()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            var window = ShellHarness.Show();
+
+            var main = ShellHarness.MainViewOf(window);
+            ShellHarness.Transcript(window).DataContext.ShouldBeSameAs(main.Session);
+            main.Session.ShouldBeOfType<SessionViewModel>();
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>The composer's data context is the one presentation composer view model the shell owns.</summary>
+    [Fact]
+    public async Task ComposerIsBoundToThePresentationComposerViewModel()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            var window = ShellHarness.Show();
+
+            var main = ShellHarness.MainViewOf(window);
+            ShellHarness.Composer(window).DataContext.ShouldBeSameAs(main.Composer);
+            main.Composer.ShouldBeOfType<ComposerViewModel>();
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>The explicit mapping returns the native view for each mapped view model type.</summary>
+    [Fact]
+    public async Task ViewMappingReturnsTheNativeViewForEachMappedType()
+    {
+        await using var headless = TestAppBuilder.StartSession();
+        await headless.Dispatch(() =>
+        {
+            var session = new SessionViewModel();
+            var composer = new ComposerViewModel(static _ => Task.FromResult(false), static () => Task.CompletedTask);
+
+            var sessionView = ViewMapping.Create(session);
+            var composerView = ViewMapping.Create(composer);
+
+            sessionView.ShouldBeOfType<SessionView>().DataContext.ShouldBeSameAs(session);
+            composerView.ShouldBeOfType<ComposerView>().DataContext.ShouldBeSameAs(composer);
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>A type with no explicit mapping is rejected, so no view is guessed.</summary>
+    [Fact]
+    public async Task ViewMappingRejectsAViewModelWithNoMapping()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            Should.Throw<ArgumentOutOfRangeException>(() => ViewMapping.Create(new object()));
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>The native assembly references OmpOS.Presentation and declares no type in the presentation namespaces.</summary>
+    [Fact]
+    public void NativeAssemblyReferencesPresentationAndDeclaresNoCopy()
+    {
+        var native = typeof(App).Assembly;
+
+        native.GetReferencedAssemblies().Select(static name => name.Name ?? string.Empty).ShouldContain("OmpOS.Presentation", StringComparer.Ordinal);
+        typeof(SessionViewModel).Assembly.GetName().Name.ShouldBe("OmpOS.Presentation");
+        native.GetTypes()
+            .Select(static type => type.FullName)
+            .Where(static name => name is not null && name.StartsWith("OmpOS.Presentation", StringComparison.Ordinal))
+            .ShouldBeEmpty();
+    }
+
+    /// <summary>The native project and the web head's Razor library both reference the one presentation project.</summary>
+    [Theory]
+    [InlineData("apps/OmpOS.Native/OmpOS.Native.csproj")]
+    [InlineData("src/OmpOS.UI/OmpOS.UI.csproj")]
+    public void HeadProjectReferencesThePresentationProject(string relativeProject)
+    {
+        var path = Path.Combine(ShellHarness.RepoRoot(), relativeProject.Replace('/', Path.DirectorySeparatorChar));
+        File.Exists(path).ShouldBeTrue($"{relativeProject} must exist");
+
+        XDocument.Load(path)
+            .Descendants("ProjectReference")
+            .Select(static element => (string?)element.Attribute("Include"))
+            .Any(static include => include is not null && include.EndsWith("OmpOS.Presentation.csproj", StringComparison.Ordinal))
+            .ShouldBeTrue($"{relativeProject} must reference OmpOS.Presentation");
+    }
+}

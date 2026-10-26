@@ -27,7 +27,12 @@ public sealed class UiBlockConverter : JsonConverter<UiBlock>
         ["unknown"] = typeof(UnknownBlock),
     };
 
-    private static readonly Dictionary<Type, string> TypeToKind = KindToType.ToDictionary(static pair => pair.Value, static pair => pair.Key);
+    // Folded-only blocks serialize under their kind so a folded tree can be written. Read never maps the kind back:
+    // a wire "user" degrades to UnknownBlock like every kind that deserialization does not produce.
+    private static readonly Dictionary<Type, string> TypeToKind = new(KindToType.ToDictionary(static pair => pair.Value, static pair => pair.Key))
+    {
+        [typeof(UserMessageBlock)] = "user",
+    };
 
     /// <inheritdoc />
     public override UiBlock? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

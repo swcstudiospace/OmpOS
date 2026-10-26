@@ -16,7 +16,7 @@ public sealed class ProcessRunnerCancellationRegressionTests
     {
         Assert.SkipUnless(OperatingSystem.IsLinux(), "Cancellation test requires a POSIX shell.");
         var ct = TestContext.Current.CancellationToken;
-        Assert.SkipUnless(await RealProcessRunner.CheckCommandExistsAsync("sh", ct), "sh not available on PATH.");
+        Assert.SkipUnless(await CommandProbe.CheckCommandExistsAsync("sh", ct), "sh not available on PATH.");
 
         var marker = Path.Combine(Path.GetTempPath(), $"ompos-cancel-{Guid.NewGuid():N}");
         try

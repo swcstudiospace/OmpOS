@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OmpOS.Native.Views.Blocks.CodeBlockView"
+             AutomationProperties.Name="Code block">
+
+  <Border Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
+          Padding="{DynamicResource OmpOS.Space.Sm}">
+    <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+      <Grid ColumnDefinitions="*,Auto"
+            ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
+        <TextBlock x:Name="LanguageLabel"
+                   Grid.Column="0"
+                   Classes="muted"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                   VerticalAlignment="Center"
+                   TextWrapping="Wrap" />
+        <Button x:Name="CopyButton"
+                Grid.Column="1"
+                AutomationProperties.Name="Copy code"
+                ToolTip.Tip="Copy code"
+                MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                Content="⧉" />
+      </Grid>
+
+      <TextBlock x:Name="CodeText"
+                 TextWrapping="Wrap" />
+
+    </StackPanel>
+  </Border>
+
+</UserControl>

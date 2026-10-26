@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/OmpOS.Native.Views/OmpOS.Native.Views.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Presentation/OmpOS.Presentation.csproj" />
+    <ProjectReference Include="../../src/OmpOS.EngineHost/OmpOS.EngineHost.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
+  </ItemGroup>
+
+</Project>

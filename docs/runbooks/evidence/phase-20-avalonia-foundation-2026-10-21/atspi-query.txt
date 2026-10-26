@@ -1,0 +1,85 @@
+desktop applications: 2
+APP xdg-desktop-portal-gtk
+APP Avalonia Application
+== controls: exact accessible name, role and tree path ==
+prompt input: name='Message' role='entry' path=1.0.1.3.0.0.1.1.2.0.0.0.0.0
+send control: name='Send message' role='push button' path=1.0.1.3.0.0.1.1.2.0.0.0.0.1
+transcript: name='Session transcript' role='scroll pane' path=1.0.1.3.0.0.1.1.0.0.0.0.0
+conversations: name='Conversations' role='list' path=1.0.1.3.0.0.1.0.0.0.0.1
+stop response: name='Stop response' role='push button' path=1.0.1.3.0.0.1.1.2.0.0.0.0.2
+session status: name='Session status' NOT FOUND
+== tree: application 'Avalonia Application' (desktop index 1) ==
+  application | Avalonia Application
+    frame | OmpOS
+      panel | WindowChrome
+      panel | Panel
+        panel | Border
+        panel | Border
+        panel | Panel
+        panel | VisualLayerManager
+          panel | ContentPresenter
+            panel | DockPanel
+              push button | Skip to conversation
+                panel | ContentPresenter
+                  panel | AccessText
+              panel | Grid
+                panel | Border
+                  unknown | ConversationListView
+                    panel | ContentPresenter
+                      panel | DockPanel
+                        panel | StackPanel
+                          label | No conversations yet.
+                          label | Conversations you start will appear here.
+                        list | Conversations
+                          panel | Border
+                            scroll pane | ScrollViewer
+                              panel | Grid
+                                panel | ScrollContentPresenter
+                                  panel | ItemsPresenter
+                                    panel | VirtualizingStackPanel
+                                panel | Panel
+                panel | Grid
+                  panel | ContentControl
+                    panel | ContentPresenter
+                      unknown | SessionView
+                        panel | ContentPresenter
+                          scroll pane | Session transcript
+                            panel | Grid
+                              panel | ScrollContentPresenter
+                                panel | StackPanel
+                                  label | No messages yet.
+                                  label | No messages yet.
+                                  label | Send a message to begin.
+                                  panel | Conversation
+                              panel | Panel
+                  panel | ContentControl
+                    panel | ContentPresenter
+                  panel | ContentControl
+                    panel | ContentPresenter
+                      unknown | ComposerView
+                        panel | ContentPresenter
+                          panel | Grid
+                            entry | Message
+                              panel | DataValidationErrors
+                                panel | DockPanel
+                                  panel | ContentPresenter
+                                    panel | Panel
+                                      panel | Border
+                                      panel | Border
+                                        panel | Grid
+                                          panel | ContentPresenter
+                                          panel | DockPanel
+                                            scroll pane | ScrollViewer
+                                              panel | Grid
+                                                panel | ScrollContentPresenter
+                                                  panel | Panel
+                                                    label | Type a message…
+                                                    panel | TextPresenter
+                                                panel | Panel
+                                          panel | ContentPresenter
+                            push button | Send message
+                              panel | ContentPresenter
+                                panel | Path
+                            push button | Stop response
+                              panel | ContentPresenter
+                                panel | Rectangle

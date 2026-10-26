@@ -1,0 +1,159 @@
+{
+  "app": "http://127.0.0.1:5180/",
+  "apiOrigin": "http://127.0.0.1:5187",
+  "commit": "d965ba6",
+  "axeCore": "4.14.0",
+  "startedAt": "2026-10-22T08:54:23.454Z",
+  "firstRender": {
+    "rendered": true,
+    "errorBarVisible": false,
+    "exceptionCount": 0,
+    "consoleErrorCount": 0,
+    "reflectionDisabledHits": 0,
+    "exceptionSample": [],
+    "consoleErrorSample": [],
+    "logErrorSample": []
+  },
+  "skipLinkInitial": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BODY",
+    "targetExists": true
+  },
+  "shotInitial": "web-first-render-d965ba6-2026-10-22.png",
+  "skipLinkBeforeAxeEmpty": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BODY",
+    "targetExists": true
+  },
+  "axeEmptyState": {
+    "axeVersion": "4.14.0",
+    "violations": [],
+    "incomplete": []
+  },
+  "iconButtonContrastEmptyState": {
+    "color": "rgb(0, 0, 0)",
+    "ownBackground": "rgb(239, 239, 239)",
+    "effectiveBackground": "rgb(239, 239, 239)",
+    "contrastRatio": 18.26,
+    "outerHTML": "<button type=\"button\" class=\"ompos-btn ompos-icon-btn\" aria-label=\"Send message\"><!--!--><svg width=\"1em\" height=\"1em\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><pat"
+  },
+  "shotAxeEmpty": "web-axe-empty-d965ba6-2026-10-22.png",
+  "newConversationClicked": true,
+  "composerReady": true,
+  "promptTyped": true,
+  "sendClicked": true,
+  "responseCompleted": true,
+  "probeChecks": {
+    "appPresent": true,
+    "strong": 1,
+    "img": 0,
+    "script": 0,
+    "unsupported": false,
+    "userTurnEscaped": true,
+    "links": [
+      {
+        "href": "#ompos-conversation",
+        "text": "Skip to conversation"
+      },
+      {
+        "href": "https://example.com/",
+        "text": "site"
+      },
+      {
+        "href": "https://evil.example/x.png",
+        "text": "pic"
+      }
+    ],
+    "announcement": "Response complete.",
+    "errorMessages": []
+  },
+  "errorBarAfterPrompt": false,
+  "consoleErrorsAfterPrompt": [],
+  "skipLinkBeforeAxeAfter": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "TEXTAREA",
+    "targetExists": true
+  },
+  "axeAfterResponse": {
+    "axeVersion": "4.14.0",
+    "violations": [],
+    "incomplete": []
+  },
+  "iconButtonContrastAfterResponse": {
+    "color": "rgb(0, 0, 0)",
+    "ownBackground": "rgb(239, 239, 239)",
+    "effectiveBackground": "rgb(239, 239, 239)",
+    "contrastRatio": 18.26,
+    "outerHTML": "<button type=\"button\" class=\"ompos-btn ompos-icon-btn\" aria-label=\"Send message\"><!--!--><svg width=\"1em\" height=\"1em\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><pat"
+  },
+  "shotAxeAfterResponse": "web-axe-after-response-d965ba6-2026-10-22.png",
+  "shotVerticalSlice": "web-vertical-slice-d965ba6-2026-10-22.webp",
+  "reload": {
+    "conversationItems": 2,
+    "openedIndex": 1,
+    "historyRendered": true,
+    "appPresent": true,
+    "strong": 1,
+    "img": 0,
+    "script": 0,
+    "unsupported": false,
+    "userTurnEscaped": true,
+    "links": [
+      {
+        "href": "#ompos-conversation",
+        "text": "Skip to conversation"
+      },
+      {
+        "href": "https://example.com/",
+        "text": "site"
+      },
+      {
+        "href": "https://evil.example/x.png",
+        "text": "pic"
+      }
+    ],
+    "announcement": "Response complete.",
+    "errorMessages": [],
+    "errorBarVisible": false,
+    "consoleErrorsSinceReload": []
+  },
+  "skipLinkAfterTabFocus": {
+    "present": true,
+    "width": 144.078125,
+    "height": 17,
+    "clip": "auto",
+    "visibility": "visible",
+    "activeIsSkip": true,
+    "active": "A",
+    "targetExists": true
+  },
+  "shotSkipLinkFocused": "web-skip-link-focused-d965ba6-2026-10-22.png",
+  "finishedAt": "2026-10-22T08:55:30.672Z",
+  "assertions": {
+    "firstRenderClean": true,
+    "responseCompleted": true,
+    "probeMarkupAsExpected": true,
+    "noErrorBarOrConsoleErrorsAfterPrompt": true,
+    "reloadHistoryRendersSame": true,
+    "axeEmptyClean": true,
+    "axeAfterResponseClean": true,
+    "iconContrastMeetsNonText": true,
+    "skipLinkFocusedOnTab": true
+  },
+  "passed": true
+}

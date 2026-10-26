@@ -72,6 +72,7 @@ public sealed class ProcessRunner : IProcessRunner
             throw new ArgumentException("ProcessSpec.Argv must contain at least the executable.", nameof(spec));
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         using var process = CreateProcess(spec);
         process.Start();
         return await ExecuteAsync(process, spec, cancellationToken).ConfigureAwait(false);
@@ -86,6 +87,7 @@ public sealed class ProcessRunner : IProcessRunner
             throw new ArgumentException("ProcessSpec.Argv must contain at least the executable.", nameof(spec));
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         using var process = CreateProcess(spec);
         process.Start();
         var stderrTask = ReadCappedAsync(process.StandardError, cancellationToken);
@@ -469,11 +471,10 @@ public sealed class ProcessRunner : IProcessRunner
             return;
         }
 
-        // Snapshot the whole descendant tree BEFORE killing anything. Killing the
-        // root first orphans grandchildren to init, after which they are no longer
-        // discoverable by parent id. Every pid below is killed by id, so later
-        // re-parenting cannot hide a snapshotted process from its SIGKILL.
-        foreach (int pid in SnapshotDescendants(rootId))
+        // Freeze the root and every descendant before enumerating them. A child that is still
+        // forking when a plain snapshot is taken would otherwise survive the kill. Every pid below
+        // is killed by id, so later re-parenting cannot hide it from its SIGKILL.
+        foreach (int pid in FreezeDescendants(process, rootId))
         {
             TryKillPid(pid);
         }
@@ -500,24 +501,97 @@ public sealed class ProcessRunner : IProcessRunner
     }
 
     /// <summary>
+    /// Stops the root and every live descendant with SIGSTOP, then returns the descendant pids.
+    /// </summary>
+    /// <remarks>
+    /// A stopped process cannot fork. The loop waits until every frozen member is observed stopped
+    /// (SIGSTOP is acted on when the target returns to user space, so a member mid-fork may still
+    /// be running) and only then scans again. A scan that finds nothing unfrozen is complete, and
+    /// every descendant found is frozen before the next scan, so children forked while the tree is
+    /// being walked are caught on a later pass.
+    /// </remarks>
+    /// <param name="process">The root child process.</param>
+    /// <param name="rootPid">The root child process id.</param>
+    /// <returns>Every frozen descendant pid, root excluded; empty off Linux.</returns>
+    private static List<int> FreezeDescendants(Process process, int rootPid)
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            return [];
+        }
+
+        var frozen = new HashSet<int>();
+        if (!process.HasExited)
+        {
+            PosixProcessSignal.TryStop(rootPid);
+            frozen.Add(rootPid);
+        }
+
+        var watch = Stopwatch.StartNew();
+        while (true)
+        {
+            if (!frozen.All(IsStoppedOrGone))
+            {
+                if (watch.Elapsed >= KillWaitBudget)
+                {
+                    // A member stuck in uninterruptible sleep cannot be frozen in time; kill what is known.
+                    break;
+                }
+
+                Thread.Sleep(1);
+                continue;
+            }
+
+            List<int> fresh = SnapshotDescendants(rootPid).Where(pid => !frozen.Contains(pid)).ToList();
+            if (fresh.Count == 0)
+            {
+                break;
+            }
+
+            foreach (int pid in fresh)
+            {
+                PosixProcessSignal.TryStop(pid);
+                frozen.Add(pid);
+            }
+        }
+
+        frozen.Remove(rootPid);
+        return frozen.ToList();
+    }
+
+    /// <summary>
+    /// Reports whether <paramref name="pid"/> can no longer fork: it is stopped, a zombie, or gone.
+    /// </summary>
+    /// <param name="pid">The process id to inspect.</param>
+    /// <returns>True when the process cannot create children.</returns>
+    private static bool IsStoppedOrGone(int pid)
+    {
+        if (!TryReadStat(pid, out _, out char state))
+        {
+            return true;
+        }
+
+        return state is 'T' or 't' or 'Z' or 'X';
+    }
+
+    /// <summary>
     /// Snapshots the live descendant pids of <paramref name="rootPid"/> without killing anything.
     /// </summary>
+    /// <remarks>
+    /// Walks the kernel's per-task children lists when present, so the cost follows the size of the tree
+    /// rather than the number of processes on the machine. Falls back to a single /proc scan otherwise.
+    /// </remarks>
     /// <param name="rootPid">The child process id to walk down from.</param>
-    /// <returns>Every descendant pid found via /proc at snapshot time, root excluded.</returns>
+    /// <returns>Every descendant pid found at snapshot time, root excluded.</returns>
     private static List<int> SnapshotDescendants(int rootPid)
     {
-        Dictionary<int, List<int>> children = BuildChildrenMap();
+        Dictionary<int, List<int>>? scanned = ChildrenFilesSupported ? null : BuildChildrenMap();
         var descendants = new List<int>();
         var pending = new Queue<int>();
         pending.Enqueue(rootPid);
         while (pending.TryDequeue(out int parent))
         {
-            if (!children.TryGetValue(parent, out List<int>? direct))
-            {
-                continue;
-            }
-
-            foreach (int child in direct)
+            foreach (int child in DirectChildren(parent, scanned))
             {
                 descendants.Add(child);
                 pending.Enqueue(child);
@@ -525,6 +599,92 @@ public sealed class ProcessRunner : IProcessRunner
         }
 
         return descendants;
+    }
+
+    /// <summary>
+    /// Reports whether the kernel exposes per-task children lists under /proc (CONFIG_PROC_CHILDREN).
+    /// </summary>
+    private static readonly bool ChildrenFilesSupported =
+        OperatingSystem.IsLinux() && File.Exists($"/proc/{Environment.ProcessId}/task/{Environment.ProcessId}/children");
+
+    /// <summary>
+    /// Returns the direct children of <paramref name="pid"/>, from the children lists or a prior /proc scan.
+    /// </summary>
+    /// <param name="pid">The parent process id.</param>
+    /// <param name="scanned">The parent-to-children map from a /proc scan, or null to read children lists directly.</param>
+    /// <returns>The direct child pids.</returns>
+    private static IEnumerable<int> DirectChildren(int pid, Dictionary<int, List<int>>? scanned)
+    {
+        if (scanned is null)
+        {
+            return ReadChildPids(pid);
+        }
+
+        if (scanned.TryGetValue(pid, out List<int>? direct))
+        {
+            return direct;
+        }
+
+        return Array.Empty<int>();
+    }
+
+    /// <summary>
+    /// Separators between pids in a per-task children list.
+    /// </summary>
+    private static readonly char[] ChildListSeparators = [' ', '\n'];
+
+    /// <summary>
+    /// Reads the direct children of <paramref name="pid"/> from its per-task children lists.
+    /// </summary>
+    /// <param name="pid">The parent process id.</param>
+    /// <returns>The direct child pids across all of the process's threads; empty when the process has exited.</returns>
+    private static List<int> ReadChildPids(int pid)
+    {
+        var children = new List<int>();
+        string[] tasks;
+        try
+        {
+            tasks = Directory.GetDirectories($"/proc/{pid}/task");
+        }
+        catch (IOException)
+        {
+            // Exited mid-walk.
+            return children;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Unreadable; treated as having no children.
+            return children;
+        }
+
+        foreach (string task in tasks)
+        {
+            string text;
+            try
+            {
+                text = File.ReadAllText(Path.Combine(task, "children"));
+            }
+            catch (IOException)
+            {
+                // Thread exited mid-walk.
+                continue;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Unreadable; treated as having no children.
+                continue;
+            }
+
+            foreach (string field in text.Split(ChildListSeparators, StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (int.TryParse(field, CultureInfo.InvariantCulture, out int child))
+                {
+                    children.Add(child);
+                }
+            }
+        }
+
+        return children;
     }
 
     /// <summary>
@@ -562,7 +722,7 @@ public sealed class ProcessRunner : IProcessRunner
                 continue;
             }
 
-            if (!TryReadParentPid(pid, out int parentPid))
+            if (!TryReadStat(pid, out int parentPid, out _))
             {
                 continue;
             }
@@ -580,14 +740,16 @@ public sealed class ProcessRunner : IProcessRunner
     }
 
     /// <summary>
-    /// Reads the parent pid of <paramref name="pid"/> from /proc.
+    /// Reads the parent pid and scheduler state letter of <paramref name="pid"/> from /proc.
     /// </summary>
     /// <param name="pid">The process id to inspect.</param>
     /// <param name="parentPid">The parent pid on success; zero otherwise.</param>
-    /// <returns>True when the parent pid was read.</returns>
-    private static bool TryReadParentPid(int pid, out int parentPid)
+    /// <param name="state">The scheduler state letter on success; NUL otherwise.</param>
+    /// <returns>True when the stat record was read and parsed.</returns>
+    private static bool TryReadStat(int pid, out int parentPid, out char state)
     {
         parentPid = 0;
+        state = '\0';
         string stat;
         try
         {
@@ -595,12 +757,12 @@ public sealed class ProcessRunner : IProcessRunner
         }
         catch (IOException)
         {
-            // Exited mid-scan or unreadable; skipped from the snapshot.
+            // Exited mid-scan or unreadable; treated as absent.
             return false;
         }
         catch (UnauthorizedAccessException)
         {
-            // Unreadable; skipped from the snapshot.
+            // Unreadable; treated as absent.
             return false;
         }
 
@@ -613,7 +775,14 @@ public sealed class ProcessRunner : IProcessRunner
         }
 
         string[] fields = stat[(close + 1)..].Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return fields.Length > 1 && int.TryParse(fields[1], CultureInfo.InvariantCulture, out parentPid);
+        if (fields.Length < 2 || fields[0].Length != 1 || !int.TryParse(fields[1], CultureInfo.InvariantCulture, out parentPid))
+        {
+            parentPid = 0;
+            return false;
+        }
+
+        state = fields[0][0];
+        return true;
     }
 
     /// <summary>

@@ -1,0 +1,5 @@
+{"events":[
+  {"id":"01J0E3","ts":"2026-10-26T08:10:03.000Z","surface":"omp","session_id":"acp-session-1","graph_id":"ut-lq1a2b3c-0f1e2d3c","kind":"note","actor":"human","summary":"operator steering LEAK-SUMMARY-1","hash":"h3","prev":"h2","payload":{"action":"steer","item":"0123456789ab","outcome":"queued","mode":"steer","length":12,"text":"LEAK-PAYLOAD-TEXT"}},
+  {"id":"01J0E2","ts":"2026-10-26T08:09:00.000Z","surface":"omp","kind":"warning","actor":"agent","summary":"LEAK-SUMMARY-2","hash":"h2","prev":"h1","payload":{"action":"lease.expired","body":"LEAK-BODY","item":{"nested":"LEAK-NESTED"}}},
+  {"id":"01J0E1","ts":"2026-10-26T08:08:00.000Z","surface":"omp","kind":"tool.call","actor":"agent","summary":"ran LEAK-SUMMARY-3","hash":"h1","prev":null}
+],"count":3,"truncated":false}

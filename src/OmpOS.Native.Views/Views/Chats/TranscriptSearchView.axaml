@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OmpOS.Native.Views.Chats.TranscriptSearchView">
+
+  <StackPanel Margin="{DynamicResource OmpOS.Space.Sm}"
+              Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+    <TextBox x:Name="SearchInput"
+             AutomationProperties.Name="Search transcript" />
+
+    <StackPanel Orientation="Horizontal"
+                Spacing="{DynamicResource OmpOS.Gap.Xs}">
+      <Button x:Name="PreviousButton"
+              Content="Previous"
+              AutomationProperties.Name="Previous match"
+              IsEnabled="False" />
+      <Button x:Name="NextButton"
+              Content="Next"
+              AutomationProperties.Name="Next match"
+              IsEnabled="False" />
+      <TextBlock x:Name="SearchCount"
+                 VerticalAlignment="Center"
+                 Classes="muted"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 AutomationProperties.Name="Search match count"
+                 AutomationProperties.LiveSetting="Polite" />
+    </StackPanel>
+
+  </StackPanel>
+
+</UserControl>

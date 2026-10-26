@@ -12,7 +12,8 @@ internal sealed record SseStreamOptions
     public TimeSpan MaxRetryDelay { get; init; } = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// Gets the maximum reconnect attempts after a mid-stream disconnect. Defaults to 10: a
+    /// Gets the maximum consecutive reconnect attempts that deliver no event after a mid-stream
+    /// disconnect. A connection that delivers an event resets the count. Defaults to 10: a
     /// persistently dead origin throws instead of spinning silently, so the surface can show
     /// the offline state. Tests override this with tighter bounds.
     /// </summary>

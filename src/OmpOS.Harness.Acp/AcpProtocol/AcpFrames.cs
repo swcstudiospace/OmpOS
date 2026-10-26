@@ -255,8 +255,48 @@ public static class AcpFrames
 
     /// <summary>Parameters of <c>session/new</c>.</summary>
     /// <param name="Cwd">The absolute working directory for the session.</param>
-    /// <param name="McpServers">MCP servers to attach, kept opaque. This client attaches none.</param>
-    public sealed record NewSessionParams(string Cwd, IReadOnlyList<JsonElement> McpServers);
+    /// <param name="McpServers">MCP servers to attach. An empty list serialises as <c>[]</c>.</param>
+    public sealed record NewSessionParams(string Cwd, IReadOnlyList<McpServerFrame> McpServers);
+
+    /// <summary>
+    /// One MCP server entry of <c>session/new</c> or <c>session/load</c>. Stdio entries set <see cref="Command"/>,
+    /// <see cref="Args"/> and <see cref="Env"/> and no <see cref="Type"/>; http and sse entries set <see cref="Type"/>,
+    /// <see cref="Url"/> and <see cref="Headers"/>. Unset members are not written. Header and env values are secrets,
+    /// so this type does not print its members.
+    /// </summary>
+    public sealed class McpServerFrame
+    {
+        /// <summary>Gets the transport type (<c>http</c> or <c>sse</c>); <see langword="null"/> for stdio entries.</summary>
+        public string? Type { get; init; }
+
+        /// <summary>Gets the server name.</summary>
+        public string Name { get; init; } = string.Empty;
+
+        /// <summary>Gets the executable of a stdio server.</summary>
+        public string? Command { get; init; }
+
+        /// <summary>Gets the arguments of a stdio server.</summary>
+        public IReadOnlyList<string>? Args { get; init; }
+
+        /// <summary>Gets the environment of a stdio server.</summary>
+        public IReadOnlyList<NameValueFrame>? Env { get; init; }
+
+        /// <summary>Gets the endpoint of an http or sse server.</summary>
+        public Uri? Url { get; init; }
+
+        /// <summary>Gets the request headers of an http or sse server.</summary>
+        public IReadOnlyList<NameValueFrame>? Headers { get; init; }
+    }
+
+    /// <summary>A <c>{name, value}</c> pair used for MCP env entries and headers.</summary>
+    public sealed class NameValueFrame
+    {
+        /// <summary>Gets the variable or header name.</summary>
+        public string Name { get; init; } = string.Empty;
+
+        /// <summary>Gets the secret value.</summary>
+        public string Value { get; init; } = string.Empty;
+    }
 
     /// <summary>Result of <c>session/new</c>. The agent's <c>configOptions</c> array is kept as an opaque element: the client never interprets option ids.</summary>
     public sealed class NewSessionResult
@@ -271,8 +311,8 @@ public static class AcpFrames
     /// <summary>Parameters of <c>session/load</c>.</summary>
     /// <param name="SessionId">The session to resume.</param>
     /// <param name="Cwd">The absolute working directory for the session.</param>
-    /// <param name="McpServers">MCP servers to attach, kept opaque. This client attaches none.</param>
-    public sealed record LoadSessionParams(string SessionId, string Cwd, IReadOnlyList<JsonElement> McpServers);
+    /// <param name="McpServers">MCP servers to attach. An empty list serialises as <c>[]</c>.</param>
+    public sealed record LoadSessionParams(string SessionId, string Cwd, IReadOnlyList<McpServerFrame> McpServers);
 
     /// <summary>Parameters of <c>session/close</c>.</summary>
     /// <param name="SessionId">The session to close.</param>

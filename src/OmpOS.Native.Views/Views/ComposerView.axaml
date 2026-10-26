@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:completion="clr-namespace:OmpOS.Native.Views.Completion"
+             x:Class="OmpOS.Native.Views.ComposerView"
+             Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
+             Padding="{DynamicResource OmpOS.Space.Md}">
+
+  <!-- Keyboard order follows XAML order: prompt, send (steer while a run is active), follow-up (only while a run is active), stop,
+       then the suggestions box while it is shown. -->
+  <Grid RowDefinitions="Auto,Auto,Auto"
+        ColumnDefinitions="*,Auto,Auto,Auto"
+        ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}"
+        RowSpacing="{DynamicResource OmpOS.Gap.Xs}">
+
+    <TextBlock x:Name="PendingLabel"
+               Grid.Row="0"
+               Grid.Column="0"
+               Grid.ColumnSpan="4"
+               Classes="muted"
+               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+               TextWrapping="Wrap"
+               IsVisible="False"
+               AutomationProperties.Name="Pending input"
+               AutomationProperties.LiveSetting="Polite" />
+
+    <TextBox x:Name="PromptInput"
+             Grid.Row="1"
+             Grid.Column="0"
+             AutomationProperties.Name="Message"
+             PlaceholderText="Type a message…"
+             AcceptsReturn="True"
+             TextWrapping="Wrap"
+             MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+             Background="{DynamicResource OmpOS.Color.Surface}"
+             Foreground="{DynamicResource OmpOS.Color.TextPrimary}"
+             />
+
+    <Button x:Name="SendButton"
+            Grid.Row="1"
+            Grid.Column="1"
+            AutomationProperties.Name="Send message"
+            Width="{DynamicResource OmpOS.Size.TargetMin}"
+            Height="{DynamicResource OmpOS.Size.TargetMin}"
+            VerticalAlignment="Bottom">
+      <Path Data="M3 3.5 21 12 3 20.5 7 12Z"
+            Fill="{DynamicResource OmpOS.Color.AccentPurple}"
+            Stretch="Uniform"
+            Width="20"
+            Height="20" />
+    </Button>
+
+    <Button x:Name="FollowUpButton"
+            Grid.Row="1"
+            Grid.Column="2"
+            Content="Follow-up"
+            MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+            VerticalAlignment="Bottom"
+            IsVisible="False"
+            AutomationProperties.Name="Queue follow-up message" />
+
+    <Button x:Name="StopButton"
+            Grid.Row="1"
+            Grid.Column="3"
+            AutomationProperties.Name="Stop response"
+            Width="{DynamicResource OmpOS.Size.TargetMin}"
+            Height="{DynamicResource OmpOS.Size.TargetMin}"
+            VerticalAlignment="Bottom">
+      <Rectangle Width="14"
+                 Height="14"
+                 Fill="{DynamicResource OmpOS.Color.TextPrimary}" />
+    </Button>
+
+    <!-- The suggestions box is shown by the shell's Inline suggestions toggle. It is hidden until then, so it is no tab stop before that. -->
+    <completion:InlineCompletionBox x:Name="Suggestions"
+                                    Grid.Row="2"
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="4"
+                                    IsVisible="False" />
+
+  </Grid>
+
+</UserControl>

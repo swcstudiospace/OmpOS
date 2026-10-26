@@ -27,8 +27,8 @@ public sealed class ProcessRunnerOutputCapTests
     {
         Assert.SkipUnless(OperatingSystem.IsLinux(), "Output cap test requires a POSIX shell.");
         var ct = TestContext.Current.CancellationToken;
-        Assert.SkipUnless(await RealProcessRunner.CheckCommandExistsAsync("sh", ct), "sh not available on PATH.");
-        Assert.SkipUnless(await RealProcessRunner.CheckCommandExistsAsync("head", ct), "head not available on PATH.");
+        Assert.SkipUnless(await CommandProbe.CheckCommandExistsAsync("sh", ct), "sh not available on PATH.");
+        Assert.SkipUnless(await CommandProbe.CheckCommandExistsAsync("head", ct), "head not available on PATH.");
 
         var runner = new ProcessRunner();
         var result = await runner.RunAsync(
@@ -50,7 +50,7 @@ public sealed class ProcessRunnerOutputCapTests
     {
         Assert.SkipUnless(OperatingSystem.IsLinux(), "Output passthrough test requires a POSIX shell.");
         var ct = TestContext.Current.CancellationToken;
-        Assert.SkipUnless(await RealProcessRunner.CheckCommandExistsAsync("sh", ct), "sh not available on PATH.");
+        Assert.SkipUnless(await CommandProbe.CheckCommandExistsAsync("sh", ct), "sh not available on PATH.");
 
         var runner = new ProcessRunner();
         var result = await runner.RunAsync(

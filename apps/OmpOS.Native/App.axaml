@@ -1,0 +1,155 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OmpOS.Native.App"
+             RequestedThemeVariant="Light">
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://OmpOS.Native.Views/Themes/OmpOSTokens.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{DynamicResource OmpOS.Color.Surface}" />
+      <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextPrimary}" />
+      <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Family}" />
+    </Style>
+
+    <Style Selector="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextPrimary}" />
+      <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Family}" />
+      <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Body}" />
+    </Style>
+
+    <Style Selector="TextBlock.muted">
+      <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextSecondary}" />
+    </Style>
+
+    <Style Selector="TextBlock.error">
+      <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.StatusError}" />
+    </Style>
+
+    <!-- Shared control chrome. The only transition is the 120 ms Button background change (UI-SPEC, Motion). -->
+    <Style Selector="Button">
+      <Setter Property="Background" Value="{DynamicResource OmpOS.Color.Surface}" />
+      <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextPrimary}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.TextSecondary}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.120" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="Button:pointerover">
+      <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceActive}" />
+    </Style>
+
+    <Style Selector="Button:pressed">
+      <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceActive}" />
+    </Style>
+
+    <Style Selector="TextBox">
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.TextSecondary}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="TextBox /template/ TextBlock#PART_Watermark">
+      <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextSecondary}" />
+    </Style>
+
+    <Style Selector="ListBox">
+      <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceRaised}" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="ListBoxItem">
+      <Setter Property="MinHeight" Value="{DynamicResource OmpOS.Size.TargetMin}" />
+      <Setter Property="Padding" Value="{DynamicResource OmpOS.Space.Sm}" />
+      <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextPrimary}" />
+    </Style>
+
+    <Style Selector="ListBoxItem:selected">
+      <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceActive}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="2,0,0,0" />
+    </Style>
+
+    <!-- Focus indicator: an AccentPurple border on the shared controls listed below, with the default adorner removed (D-20-10, OQ-32). FocusRing is reserved and unused. -->
+    <Style Selector="ListBox:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+
+    <Style Selector="ListBoxItem:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+
+    <Style Selector="ScrollViewer:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+
+    <Style Selector="TextBox:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+
+    <Style Selector="Button:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+
+    <Style Selector="ToggleButton:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+
+    <!-- Reduced motion: the window carries the reduced-motion class and these styles remove every transition
+         from the shared controls. They come after the Button transition, so they take precedence. -->
+    <Style Selector="Window.reduced-motion ListBox">
+      <Setter Property="Transitions">
+        <Transitions />
+      </Setter>
+    </Style>
+
+    <Style Selector="Window.reduced-motion ListBoxItem">
+      <Setter Property="Transitions">
+        <Transitions />
+      </Setter>
+    </Style>
+
+    <Style Selector="Window.reduced-motion ScrollViewer">
+      <Setter Property="Transitions">
+        <Transitions />
+      </Setter>
+    </Style>
+
+    <Style Selector="Window.reduced-motion TextBox">
+      <Setter Property="Transitions">
+        <Transitions />
+      </Setter>
+    </Style>
+
+    <Style Selector="Window.reduced-motion Button">
+      <Setter Property="Transitions">
+        <Transitions />
+      </Setter>
+    </Style>
+  </Application.Styles>
+
+</Application>

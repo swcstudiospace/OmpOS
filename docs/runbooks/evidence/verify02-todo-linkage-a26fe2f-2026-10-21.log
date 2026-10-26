@@ -1,0 +1,11 @@
+# command: dotnet test tests/OmpOS.ArchitectureTests/OmpOS.ArchitectureTests.csproj -c Release --filter "FullyQualifiedName~TodoMarkersLinkToOpenQuestion"
+# HEAD a26fe2f, run 2026-10-21, SDK 10.0.402
+Running tests from /root/src/repos/ompos/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll (net10.0|x64)
+/root/src/repos/ompos/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll (net10.0|x64) passed (1s 737ms)
+
+Test run summary: Passed!
+  total: 1
+  failed: 0
+  succeeded: 1
+  skipped: 0
+  duration: 2s 077ms

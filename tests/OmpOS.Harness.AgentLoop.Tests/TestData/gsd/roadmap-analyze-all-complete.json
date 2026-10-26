@@ -1,0 +1,4 @@
+{"phases": [
+  {"number": "1", "name": "First", "plan_count": 2, "summary_count": 2, "disk_status": "complete", "roadmap_complete": true},
+  {"number": "2", "name": "Second", "plan_count": 1, "summary_count": 1, "disk_status": "executed", "roadmap_complete": true}
+], "current_phase": null, "next_phase": null}

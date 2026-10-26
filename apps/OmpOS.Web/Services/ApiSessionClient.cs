@@ -23,21 +23,21 @@ internal sealed class ApiSessionClient
         _http = http;
     }
 
-    /// <summary>Creates a session for the given owner.</summary>
-    /// <param name="ownerId">The reserved owner identifier.</param>
+    /// <summary>Creates a session for the authenticated caller. The request names no owner: the API takes the owner from the caller.</summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created session.</returns>
-    internal async Task<Session> CreateSessionAsync(string ownerId, CancellationToken cancellationToken = default)
+    internal async Task<Session> CreateSessionAsync(CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(ownerId);
         using var response = await _http.PostAsJsonAsync(
             new Uri("sessions", UriKind.Relative),
-            new CreateSessionRequest { OwnerId = ownerId },
+            new CreateSessionRequest(),
             WebJsonContext.Default.CreateSessionRequest,
             cancellationToken).ConfigureAwait(false);
         await EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
-        var session = await response.Content.ReadFromJsonAsync(
+        var session = await BoundedContent.ReadJsonAsync(
+            response.Content,
             OmpOsJsonContext.Default.Session,
+            BoundedContent.MaxSuccessBytes,
             cancellationToken).ConfigureAwait(false);
         return session ?? throw new InvalidOperationException("The API returned an empty session body.");
     }
@@ -49,8 +49,10 @@ internal sealed class ApiSessionClient
     {
         using var response = await _http.GetAsync(new Uri("sessions", UriKind.Relative), cancellationToken).ConfigureAwait(false);
         await EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
-        var sessions = await response.Content.ReadFromJsonAsync(
+        var sessions = await BoundedContent.ReadJsonAsync(
+            response.Content,
             OmpOsJsonContext.Default.SessionArray,
+            BoundedContent.MaxSuccessBytes,
             cancellationToken).ConfigureAwait(false);
         return sessions ?? [];
     }
@@ -71,8 +73,10 @@ internal sealed class ApiSessionClient
         }
 
         await EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
-        return await response.Content.ReadFromJsonAsync(
+        return await BoundedContent.ReadJsonAsync(
+            response.Content,
             OmpOsJsonContext.Default.Session,
+            BoundedContent.MaxSuccessBytes,
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -107,7 +111,10 @@ internal sealed class ApiSessionClient
         string? body = null;
         try
         {
-            body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            body = await BoundedContent.ReadTextAsync(
+                response.Content,
+                BoundedContent.MaxErrorBytes,
+                cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {

@@ -5,8 +5,7 @@ namespace OmpOS.Workflows;
 /// </summary>
 /// <remarks>
 /// Implementations must provide deterministic behavior suitable for replay.
-/// The direct runner uses a real-time implementation; Temporal workflows use
-/// <c>Temporalio.Workflows.Workflow</c> static methods.
+/// The direct runner uses a real-time implementation.
 /// </remarks>
 public interface IWorkflowContext
 {

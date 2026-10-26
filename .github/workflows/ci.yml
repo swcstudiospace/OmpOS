@@ -31,6 +31,8 @@ env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
   GITLEAKS_VERSION: 8.30.1
   GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+  OMPOS_POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+  OMPOS_DRAGONFLY_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
   build-test:
@@ -39,44 +41,65 @@ jobs:
     steps:
       # Action tags verified 2026-10-20 against the GitHub releases API:
       # checkout v7.0.1, setup-dotnet v6.0.0, upload-artifact v7.0.2.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-dotnet@v6
+      - name: Plugin submodules (the public ones always; the private agent-substrate needs the SUBMODULE_TOKEN secret)
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.SUBMODULE_TOKEN }}
+        run: |
+          git submodule update --init --recursive plugins/claude-ultrathink plugins/agent-swarm
+          if [ -n "${SUBMODULE_TOKEN:-}" ]; then
+            header="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$SUBMODULE_TOKEN" | base64 -w0)"
+            echo "::add-mask::$header"
+            GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" GIT_CONFIG_VALUE_0="$header" \
+              git submodule update --init --recursive plugins/agent-substrate
+          else
+            echo "::warning::SUBMODULE_TOKEN is not set: plugins/agent-substrate is not checked out and the substrate plugin reports Unavailable. Add a read-only token for swcstudiospace/substrate as the SUBMODULE_TOKEN secret."
+          fi
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
           cache: true
           cache-dependency-path: '**/packages.lock.json'
       - run: dotnet restore OmpOS.Linux.slnf --locked-mode
       - run: dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
+      - name: Require podman (for the test services and compose validation)
+        # The Omega CI runner image ships podman; jobs have no sudo to install it.
+        run: |
+          command -v podman >/dev/null || { echo "::error::podman is not on PATH; add it to the Omega CI runner image" >&2; exit 1; }
+          podman --version
+      - name: Start test services (throwaway TimescaleDB and Dragonfly)
+        run: |
+          env_file="$(bash scripts/test-services.sh up)"
+          echo "TEST_SERVICES_ENV=$env_file" >> "$GITHUB_ENV"
       # Two test modules at a time, the runner's vCPU budget. Every concurrent
       # pool job shares the job uid's RLIMIT_NPROC, and 15 test hosts at once
       # failed to start threads ("Failed to create CoreCLR", OutOfMemory).
-      - run: dotnet test OmpOS.Linux.slnf -c Release --no-build --max-parallel-test-modules 2 --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
-      - uses: actions/upload-artifact@v7
+      - name: Test (throwaway TimescaleDB and Dragonfly for the API, session-store and coordination tests)
+        run: |
+          source "$TEST_SERVICES_ENV"
+          dotnet test OmpOS.Linux.slnf -c Release --no-build --max-parallel-test-modules 2 --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
+      - name: Stop test services
+        if: always()
+        run: |
+          bash scripts/test-services.sh down
+          if [ -n "${TEST_SERVICES_ENV:-}" ]; then rm -f "$TEST_SERVICES_ENV"; fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: test-results
           path: TestResults
       - run: dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
+      - name: Browser smoke with axe-core (needs Node and Chrome on the runner; mirrors the bootstrap step)
+        run: |
+          out_dir="$RUNNER_TEMP/web-smoke"
+          mkdir -p "$out_dir"
+          OUT_DIR="$out_dir" bash scripts/web-smoke/run-smoke.sh
       - name: Vulnerable packages (list exits 0 even on findings, so the parse is the gate)
         run: |
           dotnet list OmpOS.Linux.slnf package --vulnerable --include-transitive --format json > vuln.json
-          python3 - <<'PY'
-          import json
-          import sys
-          document = json.load(open("vuln.json"))
-          hits = [
-              package
-              for project in document["projects"]
-              for framework in project.get("frameworks", [])
-              for key in ("topLevelPackages", "transitivePackages")
-              for package in framework.get(key, [])
-              if package.get("vulnerabilities")
-          ]
-          print(json.dumps(hits, indent=1))
-          sys.exit(1 if hits else 0)
-          PY
+          python3 scripts/ci/check-vulnerable-packages.py vuln.json
       - name: Secret scan (gitleaks CLI, pinned)
         run: |
           # RUNNER_TEMP, not /tmp: jobs on one pool host share /tmp.
@@ -88,34 +111,88 @@ jobs:
           # options include --all, which with fetch-depth: 0 also scans every other branch, so one
           # branch's findings failed every PR. Each branch is still scanned by its own push run.
           "$RUNNER_TEMP/gitleaks-bin/gitleaks" git --redact --exit-code 1 --log-level warn --log-opts="--full-history HEAD" .
-      - name: Require podman (for compose validation)
-        # The Omega CI runner image ships podman; jobs have no sudo to install it.
-        run: |
-          command -v podman >/dev/null || { echo "::error::podman is not on PATH; add it to the Omega CI runner image" >&2; exit 1; }
-          podman --version
-      - name: Validate compose (podman-compose needs the podman binary and the profile)
+      - name: Validate compose (podman-compose needs the podman binary and the backend profile)
         run: |
           pipx install podman-compose==1.6.0
-          podman-compose --profile workflows -f deploy/compose.yaml config --services | grep -qx temporal
-          podman-compose --profile workflows -f deploy/compose.yaml config -q
+          services="$(podman-compose --profile backend -f deploy/compose.yaml config --services)"
+          for service in postgres dragonfly greptimedb; do
+            grep -qx "$service" <<<"$services" || { echo "error: service $service is missing from profile backend" >&2; exit 1; }
+          done
+          while read -r service; do
+            case "$service" in
+              postgres|dragonfly|greptimedb) ;;
+              *) echo "error: unexpected service $service in profile backend; only postgres, dragonfly and greptimedb are allowed" >&2; exit 1 ;;
+            esac
+          done <<<"$services"
+          podman-compose --profile backend -f deploy/compose.yaml config -q
+      - name: Boot backend profile (detached)
+        run: podman-compose --profile backend -f deploy/compose.yaml up -d
+      - name: Wait for backend services (each within 300s)
+        run: |
+          wait_ready() {
+            local name="$1"
+            shift
+            local deadline=$((SECONDS + 300))
+            until "$@" >/dev/null 2>&1; do
+              if [ "$SECONDS" -ge "$deadline" ]; then
+                echo "error: $name is not ready within 300 seconds" >&2
+                exit 1
+              fi
+              sleep 3
+            done
+          }
+          dragonfly_ping() {
+            { exec 3<>/dev/tcp/127.0.0.1/6379; } 2>/dev/null || return 1
+            printf 'AUTH %s\r\nPING\r\n' "$OMPOS_DRAGONFLY_PASSWORD" >&3
+            local auth="" pong=""
+            IFS= read -r -t 5 auth <&3 || true
+            IFS= read -r -t 5 pong <&3 || true
+            exec 3>&-
+            [ "$auth" = $'+OK\r' ] && [ "$pong" = $'+PONG\r' ]
+          }
+          wait_ready "ompos-postgres" podman exec ompos-postgres pg_isready -h 127.0.0.1 -p 5432
+          wait_ready "ompos-dragonfly" dragonfly_ping
+          wait_ready "ompos-greptimedb" curl -fsS http://127.0.0.1:4000/health
+      - name: Tear down backend profile
+        if: always()
+        run: podman-compose --profile backend -f deploy/compose.yaml down -v
 
-  shells:
-    # The MAUI head's Android target on the Omega CI pool. The runner image pre-installs the
-    # maui-android workload (the SDK directory is read-only, so there is no `dotnet workload
-    # install` step), JDK 17 and Android SDK 36. iOS and MacCatalyst need macOS and Xcode, which
-    # the Linux pool does not have; OmpOS.App.csproj adds those targets only on macOS.
+  # Builds the Android head (apps/OmpOS.Android) on the Omega CI pool (Phase 24 criterion 4). No device or emulator is needed.
+  # The workflow runs on push and pull_request, so the first green run of this job needs the branch pushed.
+  android:
+    # The runner image pre-installs the Android workloads, JDK 17 and Android SDK 36; its SDK directory is read-only.
+    # iOS and MacCatalyst need macOS and Xcode, which the Linux pool does not have.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, linux, x64, omega-ci]
     needs: build-test
-    continue-on-error: false
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
+      # Action tags as pinned by build-test above.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
-      - name: MAUI head, Android (only when the project exists)
-        if: hashFiles('apps/OmpOS.App/OmpOS.App.csproj') != ''
+      - name: Android workload (the Omega CI runner image pre-installs it, and its SDK directory is read-only)
         run: |
           dotnet workload list
-          dotnet restore apps/OmpOS.App/OmpOS.App.csproj --locked-mode
-          dotnet build apps/OmpOS.App/OmpOS.App.csproj -c Release --no-restore -warnaserror -f net10.0-android
+          dotnet workload list | grep -qi android || dotnet workload install android
+      - run: dotnet restore apps/OmpOS.Android/OmpOS.Android.csproj --locked-mode
+      - name: Vulnerable packages of the Android head (same gate as build-test)
+        run: |
+          dotnet list apps/OmpOS.Android/OmpOS.Android.csproj package --vulnerable --include-transitive --format json > vuln-android.json
+          python3 scripts/ci/check-vulnerable-packages.py vuln-android.json
+      - name: Android platform 36 and build-tools 36.0.0 (installed only when the runner lacks them)
+        run: |
+          set -eu
+          sdk="${ANDROID_HOME:?ANDROID_HOME is not set on this runner}"
+          if [ -f "$sdk/platforms/android-36/android.jar" ] && [ -x "$sdk/build-tools/36.0.0/aapt2" ]; then
+            echo "Android platform 36 and build-tools 36.0.0 are present; nothing to install."
+            exit 0
+          fi
+          sdkmanager="$sdk/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$sdkmanager" ] || { echo "error: sdkmanager not found at $sdkmanager" >&2; exit 1; }
+          # sdkmanager exits before yes finishes writing, so yes can end on SIGPIPE; only sdkmanager's status counts here.
+          set +o pipefail
+          yes | "$sdkmanager" --licenses >/dev/null
+          set -o pipefail
+          "$sdkmanager" --install "platforms;android-36" "build-tools;36.0.0"
+      - run: dotnet build apps/OmpOS.Android/OmpOS.Android.csproj -c Release --no-restore -warnaserror

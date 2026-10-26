@@ -20,7 +20,7 @@ public sealed class LocalPodmanComposeProviderContractTests : SandboxProviderCon
         _fakeRunner.SetResult(new ProcessResult
         {
             ExitCode = 0,
-            Stdout = "container-id-123",
+            Stdout = "0123456789ab",
             Stderr = string.Empty,
             TimedOut = false,
         });
@@ -34,6 +34,46 @@ public sealed class LocalPodmanComposeProviderContractTests : SandboxProviderCon
     /// <inheritdoc />
     protected override void DisposeProvider(LocalPodmanComposeProvider provider)
     {
+    }
+
+    /// <inheritdoc />
+    protected override ProvisionRequest ArrangeProvisionTimeout(LocalPodmanComposeProvider provider, ProvisionRequest request)
+    {
+        // The credential secret create (the first process) succeeds, and every later process, starting with compose up, reports its timeout.
+        _fakeRunner.EnqueueResults(new ProcessResult
+        {
+            ExitCode = 0,
+            Stdout = string.Empty,
+            Stderr = string.Empty,
+            TimedOut = false,
+        });
+        _fakeRunner.SetResult(new ProcessResult
+        {
+            ExitCode = -1,
+            Stdout = string.Empty,
+            Stderr = string.Empty,
+            TimedOut = true,
+        });
+        return request;
+    }
+
+    [Fact]
+    public async Task Provision_HandsTheRequestTimeoutToComposeUp()
+    {
+        var provider = CreateProvider();
+        try
+        {
+            var request = CreateProvisionRequest() with { Timeout = TimeSpan.FromMinutes(7) };
+
+            await provider.ProvisionAsync(request, TestContext.Current.CancellationToken);
+
+            var upSpec = _fakeRunner.Specs.Single(static s => s.Argv.Any(static a => string.Equals(a, "up", StringComparison.Ordinal)));
+            upSpec.Timeout.ShouldBe(TimeSpan.FromMinutes(7));
+        }
+        finally
+        {
+            DisposeProvider(provider);
+        }
     }
 
     [Fact]
@@ -135,25 +175,33 @@ public sealed class LocalPodmanComposeProviderContractTests : SandboxProviderCon
     {
         var ct = TestContext.Current.CancellationToken;
         Assert.SkipUnless(
-            await RealProcessRunner.CheckCommandExistsAsync("podman", ct)
-                && await RealProcessRunner.CheckCommandExistsAsync("podman-compose", ct),
+            await CommandProbe.CheckCommandExistsAsync("podman", ct)
+                && await CommandProbe.CheckCommandExistsAsync("podman-compose", ct),
             "podman or podman-compose not available");
 
         // Config-only smoke: render the repo compose file. Never starts containers
         // (no ProvisionAsync/TeardownAsync), so this cannot leave anything running.
         var composePath = FindRepoComposeFile();
-        var runner = new RealProcessRunner();
+        var runner = new ProcessRunner();
         var result = await runner.RunAsync(new ProcessSpec
         {
-            Argv = ["podman-compose", "-f", composePath, "--profile", "workflows", "config"],
+            Argv = ["podman-compose", "-f", composePath, "--profile", "backend", "config"],
             WorkingDirectory = Path.GetDirectoryName(composePath)!,
-            Environment = new Dictionary<string, string>(StringComparer.Ordinal),
+            Environment = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                // Config-only run: these values only satisfy the required variables and never start a container.
+                ["OMPOS_POSTGRES_PASSWORD"] = Guid.NewGuid().ToString("N"),
+                ["OMPOS_DRAGONFLY_PASSWORD"] = Guid.NewGuid().ToString("N"),
+            },
             Timeout = TimeSpan.FromSeconds(60),
         }, ct);
 
         result.TimedOut.ShouldBeFalse();
         result.ExitCode.ShouldBe(0);
-        result.Stdout.ShouldContain("temporal");
+        result.Stdout.ShouldContain("postgres");
+        result.Stdout.ShouldContain("dragonfly");
+        result.Stdout.ShouldContain("greptimedb");
+        result.Stdout.ShouldNotContain("temporal");
     }
 
     private static string FindRepoComposeFile()

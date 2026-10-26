@@ -2,8 +2,9 @@
 @using System.Diagnostics.CodeAnalysis
 @using Microsoft.Extensions.Logging
 @using OmpOS.Contracts.Sessions
+@using OmpOS.Presentation.Components
+@using OmpOS.Presentation.State
 @using OmpOS.UI.Components
-@using OmpOS.UI.State
 @using OmpOS.Web.Services
  @inject ApiSessionClient Api
  @inject SseEventStream EventStream
@@ -13,7 +14,8 @@
 <PageTitle>OmpOS</PageTitle>
 
 <div class="ompos-shell">
-    <ConversationList Conversations="_conversations" SelectedId="_selectedId" OnSelected="SelectSessionAsync" />
+    <a class="ompos-skip-link" href="#ompos-conversation">Skip to conversation</a>
+    <ConversationList Conversations="_conversations" SelectedId="@_selectedId" OnSelected="SelectSessionAsync" />
     <div class="ompos-main">
         <button type="button" class="ompos-btn" aria-label="New conversation" @onclick="NewSessionAsync">+ New</button>
         @if (_error is not null)
@@ -33,13 +35,36 @@
 </div>
 
 @code {
-    private const string OwnerId = "local-dev";
 
     private static readonly Action<ILogger, string, Exception?> BackgroundStreamFailed =
         LoggerMessage.Define<string>(
             LogLevel.Error,
             new EventId(1, "BackgroundStreamFailed"),
             "Background stream failed for session {SessionId}");
+
+    private static readonly Action<ILogger, Exception?> ListSessionsFailed =
+        LoggerMessage.Define(
+            LogLevel.Error,
+            new EventId(2, "ListSessionsFailed"),
+            "Listing the sessions failed");
+
+    private static readonly Action<ILogger, Exception?> CreateSessionFailed =
+        LoggerMessage.Define(
+            LogLevel.Error,
+            new EventId(3, "CreateSessionFailed"),
+            "Creating a session failed");
+
+    private static readonly Action<ILogger, string, Exception?> LoadSessionFailed =
+        LoggerMessage.Define<string>(
+            LogLevel.Error,
+            new EventId(4, "LoadSessionFailed"),
+            "Loading session {SessionId} failed");
+
+    private static readonly Action<ILogger, string, Exception?> SendPromptFailed =
+        LoggerMessage.Define<string>(
+            LogLevel.Error,
+            new EventId(5, "SendPromptFailed"),
+            "Submitting a prompt to session {SessionId} failed");
 
     private SessionViewModel _viewModel = new();
     private List<ConversationSummary> _conversations = new();
@@ -87,6 +112,7 @@
         }
         catch (Exception ex) when (ex is HttpRequestException or ApiClientException or InvalidOperationException)
         {
+            ListSessionsFailed(Logger, ex);
             _error = $"Could not reach the API: {ex.Message}";
             _viewModel.MarkOffline();
         }
@@ -97,12 +123,13 @@
         _error = null;
         try
         {
-            var session = await Api.CreateSessionAsync(OwnerId).ConfigureAwait(true);
+            var session = await Api.CreateSessionAsync().ConfigureAwait(true);
             _conversations.Insert(0, new ConversationSummary { Id = session.Id, Title = TitleFor(session) });
             await SelectSessionAsync(session.Id).ConfigureAwait(true);
         }
         catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
         {
+            CreateSessionFailed(Logger, ex);
             _error = $"Could not create a session: {ex.Message}";
         }
     }
@@ -157,6 +184,7 @@
         }
         catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
         {
+            LoadSessionFailed(Logger, sessionId, ex);
             _error = $"Could not load the session: {ex.Message}";
         }
     }
@@ -182,6 +210,7 @@
         }
         catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
         {
+            SendPromptFailed(Logger, sessionId, ex);
             _streaming = false;
             _error = $"Could not send the message: {ex.Message}";
             StateHasChanged();

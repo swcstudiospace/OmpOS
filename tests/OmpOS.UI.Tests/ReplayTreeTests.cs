@@ -6,6 +6,7 @@ using OmpOS.Contracts.Serialization;
 using OmpOS.Contracts.Streaming;
 using OmpOS.Contracts.Ui;
 using OmpOS.GenUi;
+using OmpOS.Presentation.State;
 using OmpOS.UI.Components;
 using Shouldly;
 using Xunit;

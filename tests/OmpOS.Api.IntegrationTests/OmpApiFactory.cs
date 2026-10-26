@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace OmpOS.Api.IntegrationTests;
@@ -44,7 +45,7 @@ internal sealed class OmpApiFactory : WebApplicationFactory<Program>
             builder.UseEnvironment(_environment);
         }
 
-        builder.ConfigureAppConfiguration(configuration => configuration.AddInMemoryCollection(_config));
+        builder.ConfigureAppConfiguration(configuration => configuration.AddInMemoryCollection(EffectiveConfig()));
         if (_configureServices is not null)
         {
             builder.ConfigureTestServices(_configureServices);
@@ -54,5 +55,25 @@ internal sealed class OmpApiFactory : WebApplicationFactory<Program>
         {
             builder.ConfigureLogging(logging => logging.AddProvider(_loggerProvider));
         }
+    }
+
+    /// <summary>
+    /// Development hosts get the development principal through its explicit opt-in, so tests that send unauthenticated requests keep
+    /// working. Per-test overrides win. Other environments never get the opt-in.
+    /// </summary>
+    private Dictionary<string, string?> EffectiveConfig()
+    {
+        var effective = new Dictionary<string, string?>(StringComparer.Ordinal);
+        if (_environment is null || string.Equals(_environment, Environments.Development, StringComparison.Ordinal))
+        {
+            effective["Api:Auth:AllowDevelopmentPrincipal"] = "true";
+        }
+
+        foreach (var (key, value) in _config)
+        {
+            effective[key] = value;
+        }
+
+        return effective;
     }
 }

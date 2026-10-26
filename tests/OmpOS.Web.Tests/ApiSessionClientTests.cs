@@ -14,9 +14,9 @@ public sealed class ApiSessionClientTests
 {
     private static readonly DateTimeOffset Stamp = new(2026, 10, 20, 9, 30, 0, TimeSpan.Zero);
 
-    /// <summary>Create posts the owner and returns the session.</summary>
+    /// <summary>Create names no owner in its body: the API takes the owner from the authenticated caller.</summary>
     [Fact]
-    public async Task CreateSessionPostsOwnerAndReturnsSession()
+    public async Task CreateSessionSendsNoOwnerInTheBody()
     {
         var ct = TestContext.Current.CancellationToken;
         using var handler = new ScriptedHandler();
@@ -25,7 +25,7 @@ public sealed class ApiSessionClientTests
         using var queued = JsonResponse(HttpStatusCode.Created, SampleSession());
         handler.Enqueue(queued);
 
-        var session = await client.CreateSessionAsync("local-dev", ct).ConfigureAwait(true);
+        var session = await client.CreateSessionAsync(ct).ConfigureAwait(true);
 
         session.Id.ShouldBe("s-1");
         handler.Requests.Count.ShouldBe(1);
@@ -33,7 +33,8 @@ public sealed class ApiSessionClientTests
         request.Method.ShouldBe(HttpMethod.Post);
         request.RequestUri!.AbsolutePath.ShouldBe("/sessions");
         var body = await request.Content!.ReadAsStringAsync(ct).ConfigureAwait(true);
-        body.ShouldContain("local-dev");
+        using var document = JsonDocument.Parse(body);
+        document.RootElement.EnumerateObject().Any().ShouldBeFalse();
     }
 
     /// <summary>List returns every session.</summary>
@@ -136,6 +137,24 @@ public sealed class ApiSessionClientTests
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
+    }
+
+    /// <summary>An API success body whose declared length exceeds the cap is refused before it is read.</summary>
+    [Fact]
+    public async Task OversizedApiSuccessBodyIsRefused()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var handler = new ScriptedHandler();
+        using var http = ClientHttp(handler);
+        var client = new ApiSessionClient(http);
+        using var oversized = new ByteArrayContent(Encoding.UTF8.GetBytes("[]"))
+        {
+            Headers = { ContentLength = BoundedContent.MaxSuccessBytes + 1 },
+        };
+        using var queued = new HttpResponseMessage(HttpStatusCode.OK) { Content = oversized };
+        handler.Enqueue(queued);
+
+        await Should.ThrowAsync<ApiClientException>(() => client.ListSessionsAsync(ct)).ConfigureAwait(true);
     }
 
     private static HttpClient ClientHttp(ScriptedHandler handler) =>

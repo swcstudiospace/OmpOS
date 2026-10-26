@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OmpOS.Native.Views.Blocks.PermissionBlockView"
+             AutomationProperties.Name="Permission request">
+
+  <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+    <TextBlock x:Name="Prompt"
+               FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+               TextWrapping="Wrap" />
+    <StackPanel x:Name="OptionList"
+                Spacing="{DynamicResource OmpOS.Gap.Xs}"
+                AutomationProperties.Name="Permission options" />
+    <TextBlock Classes="muted"
+               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+               TextWrapping="Wrap"
+               Text="The decision is made by policy." />
+  </StackPanel>
+
+</UserControl>

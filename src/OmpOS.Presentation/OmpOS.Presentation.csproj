@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Markdig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../OmpOS.Contracts/OmpOS.Contracts.csproj" />
+    <ProjectReference Include="../OmpOS.GenUi/OmpOS.GenUi.csproj" />
+    <ProjectReference Include="../OmpOS.Parser/OmpOS.Parser.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -28,9 +28,9 @@ public sealed class ProcessRunnerDrainTests
     {
         Assert.SkipUnless(OperatingSystem.IsLinux(), "Grandchild pipe test requires a POSIX shell.");
         var ct = TestContext.Current.CancellationToken;
-        Assert.SkipUnless(await RealProcessRunner.CheckCommandExistsAsync("sh", ct), "sh not available on PATH.");
+        Assert.SkipUnless(await CommandProbe.CheckCommandExistsAsync("sh", ct), "sh not available on PATH.");
 
-        var runner = new RealProcessRunner();
+        var runner = new ProcessRunner();
         var elapsed = Stopwatch.StartNew();
         var result = await runner.RunAsync(Spec(["/bin/sh", "-c", "sleep 30 &"], TimeSpan.FromSeconds(20)), ct);
         elapsed.Stop();
@@ -50,7 +50,7 @@ public sealed class ProcessRunnerDrainTests
         Assert.SkipUnless(OperatingSystem.IsLinux(), "Argument passthrough test requires /bin/echo.");
         var ct = TestContext.Current.CancellationToken;
 
-        var runner = new RealProcessRunner();
+        var runner = new ProcessRunner();
         var result = await runner.RunAsync(
             Spec(["/bin/echo", "hello world", "a\"b", "tab\there"], TimeSpan.FromSeconds(30)),
             ct);

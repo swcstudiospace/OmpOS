@@ -1,0 +1,11 @@
+total occurrences: 132
+  editorconfig-severity: 4
+  suppress-message: 81
+  pragma-disable: 18
+  skip-marker: 28
+  run-filter-live: 1
+occurrences with no justification in source: 4
+  .editorconfig:395 editorconfig-severity CA1303=none
+  .editorconfig:398 editorconfig-severity CA1707=none
+  .editorconfig:399 editorconfig-severity CS1591=none
+  .editorconfig:400 editorconfig-severity CA1062=none

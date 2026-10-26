@@ -1,0 +1,5 @@
+# Views that may still hold a colour literal (ColourLiteralTests). One row per file:
+#   path | reason | phase that migrates it
+# Paths are relative to the repository root. The file is empty: no view holds a colour literal under the rule
+# documented in ColourLiteralTests. A row may only be removed; a row whose file is clean fails the test, and the
+# row count may not exceed ColourLiteralTests.AllowlistBaseline.

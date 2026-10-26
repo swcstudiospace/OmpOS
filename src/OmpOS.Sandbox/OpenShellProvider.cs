@@ -121,6 +121,10 @@ grpc_endpoint = "{config.Drivers.Podman.GrpcEndpoint}"
     /// Generates the OpenShell policy YAML configuration.
     /// </summary>
     /// <param name="policy">The policy to render. Defaults to the safe-default policy when omitted.</param>
+    /// <remarks>
+    /// Every string interpolated into the document is rendered through <c>NetworkPolicyRule.ToYamlScalar</c>,
+    /// so values containing YAML syntax are quoted and escaped rather than spliced in verbatim.
+    /// </remarks>
     public static string GeneratePolicyYaml(OpenShellPolicy? policy = null)
     {
         policy ??= new OpenShellPolicy();
@@ -130,22 +134,25 @@ grpc_endpoint = "{config.Drivers.Podman.GrpcEndpoint}"
 version: {policy.Version}
 filesystem_policy:
   include_workdir: {(policy.FilesystemPolicy.IncludeWorkdir ? "true" : "false")}
-  read_only: {FormatYamlList(policy.FilesystemPolicy.ReadOnly)}
-  read_write: {FormatYamlList(policy.FilesystemPolicy.ReadWrite)}
+  read_only: {FormatYamlSequence(policy.FilesystemPolicy.ReadOnly.Select(ToScalar))}
+  read_write: {FormatYamlSequence(policy.FilesystemPolicy.ReadWrite.Select(ToScalar))}
 landlock:
-  compatibility: {policy.Landlock.Compatibility}
-network_policies: {FormatYamlList(policy.NetworkPolicies)}
+  compatibility: {ToScalar(policy.Landlock.Compatibility)}
+network_policies: {FormatYamlSequence(policy.NetworkPolicies.Select(static rule => rule?.ToString() ?? string.Empty))}
 """;
     }
 
-    private static string FormatYamlList<T>(IReadOnlyList<T> list)
+    private static string ToScalar(string? value) => NetworkPolicyRule.ToYamlScalar(value ?? string.Empty);
+
+    private static string FormatYamlSequence(IEnumerable<string> renderedItems)
     {
-        if (list.Count == 0)
+        var items = renderedItems.ToList();
+        if (items.Count == 0)
         {
             return "[]";
         }
 
-        return "\n  - " + string.Join("\n  - ", list.Select(static x => x?.ToString() ?? string.Empty));
+        return "\n  - " + string.Join("\n  - ", items);
     }
 
     [SuppressMessage(

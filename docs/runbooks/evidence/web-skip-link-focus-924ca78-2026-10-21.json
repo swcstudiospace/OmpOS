@@ -1,0 +1,14 @@
+{
+  "before": {
+    "active": "BODY"
+  },
+  "after": {
+    "activeIsSkip": true,
+    "activeTag": "A",
+    "activeText": "Skip to conversation",
+    "skipWidth": 144.078125,
+    "skipClip": "auto",
+    "skipHref": "#ompos-conversation",
+    "targetExists": true
+  }
+}

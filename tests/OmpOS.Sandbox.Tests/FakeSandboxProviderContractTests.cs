@@ -1,3 +1,4 @@
+using OmpOS.Sandbox.Abstractions;
 using OmpOS.Sandbox.Abstractions.Exceptions;
 using Shouldly;
 using Xunit;
@@ -14,6 +15,14 @@ public sealed class FakeSandboxProviderContractTests : SandboxProviderContractTe
 
     /// <inheritdoc />
     protected override void DisposeProvider(FakeSandboxProvider provider) => provider.Clear();
+
+    /// <inheritdoc />
+    protected override ProvisionRequest ArrangeProvisionTimeout(FakeSandboxProvider provider, ProvisionRequest request)
+    {
+        // The fake has no clock: a timeout that is not positive is its expired deadline.
+        ArgumentNullException.ThrowIfNull(request);
+        return request with { Timeout = TimeSpan.Zero };
+    }
 
     [Fact]
     public async Task FailProvision_InjectsFailures()

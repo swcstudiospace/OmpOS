@@ -1,0 +1,18 @@
+# Build-context exclusions for `podman build -f deploy/*.Containerfile .`
+# Host build output, local tool state and secrets must never enter an image build.
+**/bin
+**/obj
+**/TestResults
+.git
+.dotnet
+.nuget
+**/.vs
+**/node_modules
+.env
+.env.*
+**/.env
+**/.env.*
+**/*.pem
+.planning
+.swarm
+plugins

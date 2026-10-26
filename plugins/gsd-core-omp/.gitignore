@@ -1,0 +1,3 @@
+# Generated, machine-local symlinks into the installed GSD-Core (absolute targets, never committed).
+agents/*.md
+!agents/.gitkeep

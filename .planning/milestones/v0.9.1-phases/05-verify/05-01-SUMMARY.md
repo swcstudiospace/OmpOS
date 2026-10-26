@@ -135,4 +135,8 @@ Q-SB-ENCLAVE; Vercel build image → OQ-09; Podman 5.x → OQ-10.
 
 ## Requirements-completed note
 
-`requirements-completed` lists VERIFY-01 and VERIFY-03, which `05-VERIFICATION.md` (P5Verify, 2026-10-21) marks VERIFIED with evidence (clean-clone log `docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21.log`, 614 total / 0 failed; `docs/handoff.md:39-49` eleven AC rows). VERIFY-02 is excluded: the plan names it, but `05-VERIFICATION.md` marks it PARTIAL (open-question rows complete; the TODO-linkage enforcement check does not exist yet in `RepoHygieneTests.cs`).
+Re-verified at HEAD a26fe2f on 2026-10-21 (`05-VERIFICATION.md`). The re-run passes, so VERIFY-02 stays in `requirements-completed`. All three requirements are VERIFIED:
+- VERIFY-01: clean-clone run in `docs/runbooks/local-dev.md` (Clean-clone bootstrap section); log `docs/runbooks/evidence/clean-clone-bootstrap-2026-10-21.log` (615 total, 0 failed, `bootstrap: OK`).
+- VERIFY-02: `RepoHygieneTests.TodoMarkersLinkToOpenQuestion` (`tests/OmpOS.ArchitectureTests/RepoHygieneTests.cs:115`) is enforced; `docs/runbooks/evidence/gate-a26fe2f-2026-10-21.log` shows `OmpOS.ArchitectureTests` passed (lines 78 and 95).
+- VERIFY-03: `docs/handoff.md:72-82` holds one row each for AC_1 through AC_11.
+

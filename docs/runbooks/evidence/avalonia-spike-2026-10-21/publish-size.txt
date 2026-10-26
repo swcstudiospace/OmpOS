@@ -1,0 +1,12 @@
+# Browser publish, stock build (wasm-tools 10.0.13), measured 2026-10-21
+total_bytes_on_disk=33781416
+files=153
+# largest files (bytes raw, gzip-9 bytes)
+./_framework/dotnet.native.uvvf4r5096.wasm raw=8894847 gzip9=3240973
+./_framework/Avalonia.Fonts.Inter.v1zsdfcx3p.wasm raw=1892117 gzip9=932636
+./_framework/System.Private.CoreLib.nnn2kk2q92.wasm raw=1608981 gzip9=602878
+./_framework/Avalonia.Base.kmtq5l7wq3.wasm raw=1606933 gzip9=537387
+./_framework/Avalonia.Controls.lvfh377gpm.wasm raw=798997 gzip9=309015
+./_framework/Avalonia.Themes.Fluent.0kv4e6q33j.wasm raw=664341 gzip9=104715
+./_framework/OmpOSSpike.heptivd82c.wasm raw=204565 gzip9=54538
+./_framework/Avalonia.Dialogs.8z6f1db5fd.wasm raw=189717 gzip9=95587

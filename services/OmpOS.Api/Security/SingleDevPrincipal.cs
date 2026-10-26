@@ -1,9 +1,9 @@
 namespace OmpOS.Api.Security;
 
 /// <summary>
-/// No-op <see cref="IUserContext"/> for local single-developer use. Every request is the
-/// same principal; session ownership still records the name so a future multi-user
-/// provider can take over the same field. This is the documented auth extension point.
+/// Development-only <see cref="IUserContext"/>. It is registered solely behind the explicit <c>Api:Auth:AllowDevelopmentPrincipal</c>
+/// opt-in, which is refused outside the Development environment. Every request is the same principal. Hosts that do not opt in name
+/// the caller from the subject claim of a validated bearer token instead.
 /// </summary>
 internal sealed class SingleDevPrincipal : IUserContext
 {

@@ -1,0 +1,42 @@
+[
+  {
+    "turn": 1,
+    "stopReason": "completed"
+  },
+  {
+    "turn": 2,
+    "stopReason": "completed"
+  },
+  {
+    "turn": 3,
+    "stopReason": "completed"
+  },
+  {
+    "turn": 4,
+    "stopReason": "completed"
+  },
+  {
+    "turn": 5,
+    "stopReason": "completed"
+  },
+  {
+    "turn": 6,
+    "stopReason": "completed"
+  },
+  {
+    "turn": 7,
+    "stopReason": "completed"
+  },
+  {
+    "turn": 8,
+    "stopReason": "completed"
+  },
+  {
+    "turn": 9,
+    "stopReason": "completed"
+  },
+  {
+    "turn": 10,
+    "stopReason": "completed"
+  }
+]

@@ -20,6 +20,7 @@ public sealed class StreamEventPayloadConverter : JsonConverter<StreamEventPaylo
         ["ui_block"] = typeof(UiBlockPayload),
         ["error"] = typeof(ErrorPayload),
         ["diagnostic"] = typeof(DiagnosticPayload),
+        ["user_message"] = typeof(UserMessagePayload),
         ["completed"] = typeof(CompletedPayload),
         ["unknown"] = typeof(UnknownPayload),
     };

@@ -25,4 +25,13 @@ public sealed record InMemoryScript
     /// before the consumer reads overflows and surfaces <see cref="BackpressureHarnessException"/>.
     /// </summary>
     public int ChannelCapacity { get; init; } = DefaultChannelCapacity;
+
+    /// <summary>
+    /// Gets the source of decisions for <see cref="PermissionPauseStep"/> steps. Null means no decision can arrive,
+    /// so a pause ends at once without a grant.
+    /// </summary>
+    public IPermissionResolver? PermissionResolver { get; init; }
+
+    /// <summary>Gets how long a pause waits for its decision before it ends without a grant. Defaults to 30 seconds.</summary>
+    public TimeSpan PermissionDecisionTimeout { get; init; } = TimeSpan.FromSeconds(30);
 }

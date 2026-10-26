@@ -4,7 +4,7 @@
     <textarea class="ompos-composer-input"
               aria-label="Message"
               placeholder="Type a message…"
-              @bind="_draft"
+              @bind="_viewModel.Draft"
               @bind:event="oninput"
               @onkeydown="HandleKeyDown"></textarea>
     @if (IsStreaming)
@@ -13,13 +13,12 @@
     }
     else
     {
-        <button type="button" class="ompos-btn ompos-icon-btn" aria-label="Send message" @onclick="Send">➤</button>
+        <button type="button" class="ompos-btn ompos-icon-btn" aria-label="Send message" @onclick="_viewModel.SendAsync"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M3 3.5 21 12 3 20.5 7 12Z" /></svg></button>
     }
 </div>
 
 @code {
-    private string _draft = string.Empty;
-    private bool _sending;
+    private ComposerViewModel _viewModel = null!;
 
     /// <summary>Gets whether the assistant is currently streaming; Escape stops, and the stop control replaces send.</summary>
     [Parameter]
@@ -36,44 +35,17 @@
     [Parameter]
     public EventCallback OnStop { get; set; }
 
-    private async Task Send()
+    /// <inheritdoc />
+    protected override void OnInitialized()
     {
-        // A send still in flight, or one made while a response streams, leaves the draft in place.
-        if (_sending || IsStreaming || string.IsNullOrWhiteSpace(_draft))
-        {
-            return;
-        }
-
-        var text = _draft;
-        _sending = true;
-        try
-        {
-            var accepted = await OnSend(text);
-
-            // Clear only the message the host accepted. Text typed while the send was pending is not the sent text, so it stays.
-            if (accepted && string.Equals(_draft, text, StringComparison.Ordinal))
-            {
-                _draft = string.Empty;
-            }
-        }
-        finally
-        {
-            _sending = false;
-        }
+        _viewModel = new ComposerViewModel(text => OnSend(text), () => OnStop.InvokeAsync());
     }
 
-    private async Task HandleKeyDown(KeyboardEventArgs args)
+    /// <inheritdoc />
+    protected override void OnParametersSet()
     {
-        if (string.Equals(args.Key, "Escape", StringComparison.Ordinal))
-        {
-            if (IsStreaming)
-            {
-                await OnStop.InvokeAsync();
-            }
-        }
-        else if (string.Equals(args.Key, "Enter", StringComparison.Ordinal) && !args.ShiftKey)
-        {
-            await Send();
-        }
+        _viewModel.IsStreaming = IsStreaming;
     }
+
+    private Task HandleKeyDown(KeyboardEventArgs args) => _viewModel.HandleKeyAsync(args.Key, args.ShiftKey);
 }

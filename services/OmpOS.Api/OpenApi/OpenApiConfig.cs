@@ -17,6 +17,7 @@ internal static class OpenApiConfig
         {
             options.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_1;
             options.AddDocumentTransformer<FixedServersTransformer>();
+            options.AddOperationTransformer<IdempotencyKeyOperationTransformer>();
         });
         return services;
     }

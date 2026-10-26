@@ -30,14 +30,17 @@ public sealed class WebSocketOmpTransportStubTests
         await stub.DisposeAsync().ConfigureAwait(true);
     }
 
-    /// <summary>Closing an unconnected stub succeeds: there is nothing to close.</summary>
+    /// <summary>Closing an unconnected stub succeeds: there is nothing to close, and the stub still reports itself as not available.</summary>
     [Fact]
     public async Task CloseOnUnconnectedStubSucceeds()
     {
         var ct = TestContext.Current.CancellationToken;
         var stub = new WebSocketOmpTransportStub();
 
-        await stub.CloseAsync(ct).ConfigureAwait(true);
+        await Should.NotThrowAsync(() => stub.CloseAsync(ct)).ConfigureAwait(true);
+
+        var connect = await Should.ThrowAsync<ProcessStartHarnessException>(() => stub.ConnectAsync(ct)).ConfigureAwait(true);
+        connect.Message.ShouldContain("Q-HARN-WS");
 
         await stub.DisposeAsync().ConfigureAwait(true);
     }

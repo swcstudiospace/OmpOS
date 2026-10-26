@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net.ServerSentEvents;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using OmpOS.Api.Security;
 using OmpOS.Api.Sse;
 using OmpOS.Contracts.Serialization;
 using OmpOS.Sessions;
@@ -33,14 +34,15 @@ internal static class EventStreamEndpoints
         HttpContext context,
         string id,
         ISessionRepository repository,
+        IUserContext user,
         SessionEventStreamer streamer,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
-        var session = await repository.GetAsync(id, cancellationToken).ConfigureAwait(false);
+        var session = await SessionEndpoints.FindOwnedSessionAsync(id, repository, user, cancellationToken).ConfigureAwait(false);
         if (session is null)
         {
-            return TypedResults.Problem(detail: $"No session has id '{id}'.", statusCode: 404, title: "Session not found.");
+            return SessionEndpoints.SessionNotFound(id);
         }
 
         long? header = null;
@@ -48,9 +50,9 @@ internal static class EventStreamEndpoints
             && headerValues.Count > 0
             && !string.IsNullOrWhiteSpace(headerValues[0]))
         {
-            if (!long.TryParse(headerValues[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+            if (!TryParseResumePosition(headerValues[0], out var parsed))
             {
-                return TypedResults.Problem(detail: "Last-Event-ID must be an integer sequence number.", statusCode: 400, title: "Invalid resume position.");
+                return TypedResults.Problem(detail: "Last-Event-ID must be a non-negative integer sequence number.", statusCode: 400, title: "Invalid resume position.");
             }
 
             header = parsed;
@@ -59,20 +61,16 @@ internal static class EventStreamEndpoints
         long? query = null;
         if (context.Request.Query.TryGetValue("since", out var queryValues) && queryValues.Count > 0)
         {
-            if (!long.TryParse(queryValues[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+            if (!TryParseResumePosition(queryValues[0], out var parsed))
             {
-                return TypedResults.Problem(detail: "The since query value must be an integer sequence number.", statusCode: 400, title: "Invalid resume position.");
+                return TypedResults.Problem(detail: "The since query value must be a non-negative integer sequence number.", statusCode: 400, title: "Invalid resume position.");
             }
 
             query = parsed;
         }
 
-        if ((header ?? query ?? 0) < 0)
-        {
-            return TypedResults.Problem(detail: "Resume positions must be non-negative sequence numbers.", statusCode: 400, title: "Invalid resume position.");
-        }
-
-        var afterSeq = Math.Max(0, header ?? query ?? 0);
+        // Last-Event-ID takes precedence over since; absent both, delivery starts at the log head.
+        var afterSeq = header ?? query ?? 0;
         return TypedResults.ServerSentEvents(EnumerateAsync(id, afterSeq, streamer, cancellationToken));
     }
 
@@ -97,4 +95,11 @@ internal static class EventStreamEndpoints
             }
         }
     }
+
+    /// <summary>Parses a resume position: unsigned base-10 digits only, fitting in 64 bits.</summary>
+    /// <param name="value">The raw header or query value.</param>
+    /// <param name="position">The parsed sequence number when accepted.</param>
+    /// <returns>True when the value is a non-negative 64-bit integer.</returns>
+    private static bool TryParseResumePosition(string? value, out long position) =>
+        long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out position);
 }

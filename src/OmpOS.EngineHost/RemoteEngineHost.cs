@@ -3,6 +3,8 @@ using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using OmpOS.Contracts.Sandboxes;
 using OmpOS.Contracts.Serialization;
 using OmpOS.Contracts.Streaming;
@@ -13,8 +15,10 @@ namespace OmpOS.EngineHost;
 /// <summary>
 /// Mobile host: consumes the backend API only and never spawns a process. Prompts are submitted
 /// over HTTP (<c>POST /sessions</c>, <c>POST /sessions/{id}/prompts</c>) and events stream back over
-/// the resumable SSE endpoint (<c>GET /sessions/{id}/events</c>). A transport drop ends the stream
-/// without throwing. Every stream starts after the delivered cursor (exclusive, sent as <c>?since=</c> and
+/// the resumable SSE endpoint (<c>GET /sessions/{id}/events</c>). A transport drop ends a hold's stream without
+/// throwing; <see cref="ReconnectAsync"/> resumes it. A prompt's own stream that ends without a terminal event throws
+/// <see cref="DisconnectedHarnessException"/>, so a dropped turn is never reported as finished.
+/// Every stream starts after the delivered cursor (exclusive, sent as <c>?since=</c> and
 /// <c>Last-Event-ID</c>) and de-duplicates by Seq. <see cref="ReconnectAsync"/> fetches missed events and holds them until
 /// <see cref="TakeHeldEvents"/> takes them, in Seq order, each exactly once. A prompt's own stream yields only that
 /// turn's events, after its POST is accepted; held events are delivered only through <see cref="TakeHeldEvents"/>.
@@ -24,8 +28,18 @@ public sealed class RemoteEngineHost : IEngineHost
     /// <summary>The request header carrying the resume position.</summary>
     public const string LastEventIdHeader = "Last-Event-ID";
 
+    // A frame's accumulated data is capped at the same 1 MiB as a physical line.
+    private const int MaxFrameDataLength = BoundedLineReader.MaxLineLength;
+
+    private static readonly Action<ILogger, string, Exception?> StreamEndedWithoutTerminal =
+        LoggerMessage.Define<string>(
+            LogLevel.Warning,
+            new EventId(1, "RemoteStreamEndedWithoutTerminal"),
+            "The event stream for session {SessionId} ended without a terminal event after a transport drop.");
+
     private readonly HttpClient _http;
     private readonly Lock _gate = new();
+    private readonly ILogger<RemoteEngineHost> _logger;
     private CancellationTokenSource? _activeCts;
     private string? _sessionId;
 
@@ -58,7 +72,8 @@ public sealed class RemoteEngineHost : IEngineHost
     /// <summary>Initializes a new instance of the <see cref="RemoteEngineHost"/> class.</summary>
     /// <param name="httpClient">An HTTP client whose base address is the API origin. Not owned; not disposed.</param>
     /// <param name="descriptor">The descriptor to report, or the remote-only default.</param>
-    public RemoteEngineHost(HttpClient httpClient, EngineHostDescriptor? descriptor = null)
+    /// <param name="logger">Receives transport-drop warnings. Null discards them.</param>
+    public RemoteEngineHost(HttpClient httpClient, EngineHostDescriptor? descriptor = null, ILogger<RemoteEngineHost>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
         if (httpClient.BaseAddress is null)
@@ -67,6 +82,7 @@ public sealed class RemoteEngineHost : IEngineHost
         }
 
         _http = httpClient;
+        _logger = logger ?? NullLogger<RemoteEngineHost>.Instance;
         Descriptor = descriptor ?? new EngineHostDescriptor { Kind = EngineHostKind.Remote, Isolation = Isolation.Container, Attestation = Attestation.None };
     }
 
@@ -96,10 +112,21 @@ public sealed class RemoteEngineHost : IEngineHost
             // before submitting (H4), and any replay the server still sends is skipped by Seq claim below.
             await SubmitAsync(sessionId, prompt, cancellationToken).ConfigureAwait(false);
 
-            await foreach (var (seq, evt) in StreamAsync(sessionId, ResumePosition(), cancellationToken).ConfigureAwait(false))
+            var outcome = new StreamOutcome();
+            await foreach (var (seq, evt) in StreamAsync(sessionId, ResumePosition(), outcome, cancellationToken).ConfigureAwait(false))
             {
                 MarkDelivered(seq);
                 yield return evt;
+            }
+
+            // ReadFramesAsync ends a stream silently on a transport drop. A turn's own stream must not end that way,
+            // or the caller would read a dropped turn as finished. ReconnectAsync is the recovery path.
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!outcome.SawTerminal)
+            {
+                StreamEndedWithoutTerminal(_logger, sessionId, null);
+                throw new DisconnectedHarnessException("The remote event stream ended before a terminal event.", sessionId);
             }
         }
         finally
@@ -271,6 +298,7 @@ public sealed class RemoteEngineHost : IEngineHost
     private async IAsyncEnumerable<(long? Seq, HarnessEvent Event)> StreamAsync(
         string sessionId,
         long? resumeFrom,
+        StreamOutcome outcome,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         using var request = BuildStreamRequest(sessionId, resumeFrom);
@@ -288,13 +316,19 @@ public sealed class RemoteEngineHost : IEngineHost
             using var reader = new StreamReader(stream, Encoding.UTF8);
             await foreach (var (id, data) in ReadFramesAsync(reader, current.Token).ConfigureAwait(false))
             {
-                if (ProcessFrame(id, data) is not { } frame)
+                var frame = ProcessFrame(id, data, out var terminal);
+                if (terminal)
+                {
+                    outcome.SawTerminal = true;
+                }
+
+                if (frame is not { } delivered)
                 {
                     continue;
                 }
 
-                yield return frame;
-                if (frame.Event is CompletedEvent or ErrorEvent)
+                yield return delivered;
+                if (delivered.Event is CompletedEvent or ErrorEvent)
                 {
                     break;
                 }
@@ -340,7 +374,7 @@ public sealed class RemoteEngineHost : IEngineHost
             string? line;
             try
             {
-                line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                line = await BoundedLineReader.ReadLineAsync(reader, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is HttpRequestException or IOException)
             {
@@ -353,7 +387,13 @@ public sealed class RemoteEngineHost : IEngineHost
                 break;
             }
 
-            if (ConsumeLine(line, ref frameId, data))
+            var dispatch = ConsumeLine(line, ref frameId, data);
+            if (data.Length > MaxFrameDataLength)
+            {
+                throw new MalformedFrameHarnessException("A remote frame exceeds the 1 MiB transport limit.");
+            }
+
+            if (dispatch)
             {
                 yield return (frameId, data.ToString());
                 frameId = null;
@@ -402,8 +442,13 @@ public sealed class RemoteEngineHost : IEngineHost
     /// (duplicate, already claimed by the other delivery path, heartbeat residue, corrupt, or unrecognized).
     /// Moves no cursor: the caller does when it hands the event to a consumer.
     /// </summary>
-    private (long? Seq, HarnessEvent Event)? ProcessFrame(string? frameId, string data)
+    /// <param name="frameId">The frame's id line, or null when the frame carried none.</param>
+    /// <param name="data">The frame's dispatched data payload.</param>
+    /// <param name="terminal">True when the frame is a completed or error event, even if a replay has already claimed its Seq.
+    /// The server sent that frame on this stream, so the turn did end; the consumer may still receive it through the held queue.</param>
+    private (long? Seq, HarnessEvent Event)? ProcessFrame(string? frameId, string data, out bool terminal)
     {
+        terminal = false;
         if (data.Length == 0)
         {
             return null;
@@ -428,6 +473,8 @@ public sealed class RemoteEngineHost : IEngineHost
             return null;
         }
 
+        terminal = mapped is CompletedEvent or ErrorEvent;
+
         // Claiming happens after mapping, so a frame discarded above is never reserved and a later
         // resume may still deliver its Seq.
         if (seq is long known && !TryClaim(known))
@@ -436,6 +483,13 @@ public sealed class RemoteEngineHost : IEngineHost
         }
 
         return (seq, mapped);
+    }
+
+    /// <summary>Records whether a stream carried a terminal frame, whether or not that frame was yielded.</summary>
+    private sealed class StreamOutcome
+    {
+        /// <summary>Gets or sets a value indicating whether the stream carried a completed or error frame.</summary>
+        public bool SawTerminal { get; set; }
     }
 
     /// <summary>Fetches the events after <paramref name="resumeFrom"/> and holds them for the next prompt.</summary>
@@ -454,7 +508,7 @@ public sealed class RemoteEngineHost : IEngineHost
         var held = false;
         try
         {
-            await foreach (var (seq, evt) in StreamAsync(sessionId, resumeFrom, cancellationToken).ConfigureAwait(false))
+            await foreach (var (seq, evt) in StreamAsync(sessionId, resumeFrom, new StreamOutcome(), cancellationToken).ConfigureAwait(false))
             {
                 // The Seq was claimed in ProcessFrame; holding advances no cursor, only the queue.
                 lock (_gate)
@@ -541,6 +595,8 @@ public sealed class RemoteEngineHost : IEngineHost
         CompletedPayload completed => new CompletedEvent(completed.Reason),
         ErrorPayload error => new ErrorEvent(error.Message, error.Retryable),
         DiagnosticPayload diagnostic => new DiagnosticEvent(diagnostic.Message),
+        // The engine never emits user_message: the client that sent the prompt echoes it locally, so there is nothing to map.
+        UserMessagePayload => null,
         UiBlockPayload block => new UiBlockEvent(block.Block),
         UnknownPayload unknown => MapUnknown(unknown),
         _ => null,

@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
 using OmpOS.Contracts.Sandboxes;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.Acp;
@@ -55,6 +56,30 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
         return new InProcessEngineHost(
             () => client.CreateSession(options),
             descriptor ?? new EngineHostDescriptor { Kind = EngineHostKind.InProcess, Isolation = Isolation.Process, Attestation = Attestation.None });
+    }
+
+    /// <summary>
+    /// Creates a host over an ACP session whose admitted permission requests are decided by <paramref name="permissionResolver"/>.
+    /// A null resolver denies every admitted request, exactly as an <see cref="OmpAcpClient"/> built without one does.
+    /// </summary>
+    /// <param name="options">The session options, notably the approval policy and <c>OmpPath</c>.</param>
+    /// <param name="permissionResolver">Decides the permission requests the approval policy admits. Null denies them.</param>
+    /// <param name="descriptor">The descriptor to report, or the in-process default.</param>
+    /// <param name="transportFactory">Creates the transport for each session. Null spawns <c>omp acp</c>.</param>
+    /// <param name="loggerFactory">Creates the loggers of the sessions and transports. Null discards their log output.</param>
+    /// <returns>A host whose sessions speak ACP over the transport and answer permission requests through the resolver.</returns>
+    public static InProcessEngineHost ForAcp(
+        AcpClientOptions options,
+        IPermissionResolver? permissionResolver = null,
+        EngineHostDescriptor? descriptor = null,
+        Func<AcpClientOptions, IAcpTransport>? transportFactory = null,
+        ILoggerFactory? loggerFactory = null)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        var client = transportFactory is null
+            ? new OmpAcpClient(permissionResolver, loggerFactory: loggerFactory)
+            : new OmpAcpClient(transportFactory, permissionResolver, loggerFactory: loggerFactory);
+        return ForAcp(client, options, descriptor);
     }
 
     /// <inheritdoc />

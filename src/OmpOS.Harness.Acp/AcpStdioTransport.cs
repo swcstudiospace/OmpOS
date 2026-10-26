@@ -4,6 +4,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using OmpOS.Harness.Abstractions;
 
 namespace OmpOS.Harness.Acp;
@@ -21,9 +23,17 @@ public sealed class AcpStdioTransport : IAcpTransport
     private static readonly TimeSpan ExitGracePeriod = TimeSpan.FromSeconds(2);
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false);
     private static readonly byte[] NewLine = [(byte)'\n'];
+    private static readonly Action<ILogger, Exception?> StderrDrainEnded =
+        LoggerMessage.Define(
+            LogLevel.Debug,
+            new EventId(1, "AcpStderrDrainEnded"),
+            "The omp acp stderr drain ended on a pipe failure.");
 
     private readonly string _ompPath;
     private readonly string? _workingDirectory;
+    private readonly string[] _arguments;
+    private readonly KeyValuePair<string, string>[] _environment;
+    private readonly ILogger<AcpStdioTransport> _logger;
     private readonly SemaphoreSlim _writeGate = new(1, 1);
     private readonly System.Threading.Lock _gate = new();
     private readonly Channel<string> _stderr = Channel.CreateBounded<string>(new BoundedChannelOptions(StderrCapacity)
@@ -40,11 +50,49 @@ public sealed class AcpStdioTransport : IAcpTransport
     /// <summary>Initializes a new instance of the <see cref="AcpStdioTransport"/> class.</summary>
     /// <param name="ompPath">The omp executable. A bare name is resolved from <c>PATH</c>.</param>
     /// <param name="workingDirectory">The child's working directory, or <see langword="null"/> to inherit the current one.</param>
-    public AcpStdioTransport(string ompPath, string? workingDirectory = null)
+    /// <param name="logger">Receives stderr drain failures at Debug. Null discards them.</param>
+    public AcpStdioTransport(string ompPath, string? workingDirectory = null, ILogger<AcpStdioTransport>? logger = null)
+        : this(ompPath, workingDirectory, [], new Dictionary<string, string>(StringComparer.Ordinal), logger)
+    {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="AcpStdioTransport"/> class that passes extra arguments and environment variables to the child.</summary>
+    /// <param name="ompPath">The omp executable. A bare name is resolved from <c>PATH</c>.</param>
+    /// <param name="workingDirectory">The child's working directory, or <see langword="null"/> to inherit the current one.</param>
+    /// <param name="arguments">The arguments appended after <c>acp</c>, one argv element each and in order.</param>
+    /// <param name="environment">The environment variables set on the child on top of the inherited environment. Values may be secrets and are never logged.</param>
+    /// <param name="logger">Receives stderr drain failures at Debug. Null discards them.</param>
+    /// <exception cref="ArgumentException">An argument is null or an environment variable name is blank or contains <c>=</c> or NUL.</exception>
+    public AcpStdioTransport(
+        string ompPath,
+        string? workingDirectory,
+        IReadOnlyList<string> arguments,
+        IReadOnlyDictionary<string, string> environment,
+        ILogger<AcpStdioTransport>? logger = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ompPath);
+        ArgumentNullException.ThrowIfNull(arguments);
+        ArgumentNullException.ThrowIfNull(environment);
+        foreach (var argument in arguments)
+        {
+            ArgumentNullException.ThrowIfNull(argument, nameof(arguments));
+        }
+
+        foreach (var (name, value) in environment)
+        {
+            if (string.IsNullOrWhiteSpace(name) || name.Contains('=', StringComparison.Ordinal) || name.Contains('\0', StringComparison.Ordinal))
+            {
+                throw new ArgumentException("An environment variable name is blank or contains '=' or NUL.", nameof(environment));
+            }
+
+            ArgumentNullException.ThrowIfNull(value, nameof(environment));
+        }
+
         _ompPath = ompPath;
+        _logger = logger ?? NullLogger<AcpStdioTransport>.Instance;
         _workingDirectory = workingDirectory;
+        _arguments = arguments.ToArray();
+        _environment = environment.ToArray();
     }
 
     /// <summary>Gets the most recent stderr lines written by the child process.</summary>
@@ -179,6 +227,17 @@ public sealed class AcpStdioTransport : IAcpTransport
             StandardErrorEncoding = Utf8,
         };
         startInfo.ArgumentList.Add("acp");
+        foreach (var argument in _arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        // The child inherits the parent environment; an explicit entry overrides the inherited variable of the same name.
+        foreach (var (name, value) in _environment)
+        {
+            startInfo.Environment[name] = value;
+        }
+
         if (_workingDirectory is not null)
         {
             startInfo.WorkingDirectory = _workingDirectory;
@@ -206,7 +265,7 @@ public sealed class AcpStdioTransport : IAcpTransport
         catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {
             // Diagnostics only: a broken stderr pipe ends the drain without affecting the protocol stream.
-            _ = ex;
+            StderrDrainEnded(_logger, ex);
         }
         finally
         {
@@ -244,7 +303,7 @@ public sealed class AcpStdioTransport : IAcpTransport
     {
         try
         {
-            return await process.StandardOutput.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+            return await BoundedLineReader.ReadLineAsync(process.StandardOutput, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {

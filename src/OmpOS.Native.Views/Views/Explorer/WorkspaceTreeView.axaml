@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:explorer="clr-namespace:OmpOS.Native.Views.Explorer"
+             x:Class="OmpOS.Native.Views.Explorer.WorkspaceTreeView">
+
+  <DockPanel Margin="{DynamicResource OmpOS.Space.Sm}">
+
+    <TextBlock x:Name="RootText"
+               DockPanel.Dock="Top"
+               FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Open folder" />
+
+    <ListBox x:Name="TreeRows"
+             Focusable="True"
+             SelectionMode="Single"
+             AutomationProperties.Name="Workspace files">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="explorer:WorkspaceRow">
+          <TextBlock Text="{CompiledBinding Label}"
+                     Margin="{CompiledBinding Indent}"
+                     TextTrimming="CharacterEllipsis"
+                     AutomationProperties.Name="{CompiledBinding Name}" />
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+  </DockPanel>
+
+</UserControl>

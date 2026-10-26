@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using OmpOS.Api.Harness;
 using OmpOS.Harness.Abstractions;
 
 namespace OmpOS.Api.IntegrationTests;

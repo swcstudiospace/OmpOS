@@ -1,0 +1,65 @@
+{
+  "sessionId": "01a0d44e-9fbf-712a-8b22-35e967de9a3b",
+  "at": 1790357210584,
+  "engine": "claude:sonnet",
+  "host": "omp",
+  "result": {
+    "xml": "<BUILD_PROMPT/>",
+    "root": "UPLIFTED_PROMPT",
+    "source": "fallback"
+  },
+  "graph": {
+    "goal": "Understand the request, decompose it, weigh approaches, and produce an execution",
+    "nodes": [
+      {
+        "id": "n1",
+        "title": "Understand",
+        "kind": "understand",
+        "dependsOn": []
+      },
+      {
+        "id": "n2",
+        "title": "Decompose",
+        "kind": "decompose",
+        "dependsOn": [
+          "n1"
+        ]
+      },
+      {
+        "id": "n3",
+        "title": "Approaches",
+        "kind": "generate",
+        "dependsOn": [
+          "n2"
+        ]
+      },
+      {
+        "id": "n4",
+        "title": "Risks",
+        "kind": "critique",
+        "dependsOn": [
+          "n3"
+        ]
+      },
+      {
+        "id": "n5",
+        "title": "Plan",
+        "kind": "synthesize",
+        "dependsOn": [
+          "n4"
+        ]
+      }
+    ]
+  },
+  "clarifications": [],
+  "kickedOff": true,
+  "synced": false,
+  "futureField": {
+    "addedByAVendorUpdate": true,
+    "items": [
+      1,
+      2,
+      3
+    ]
+  }
+}

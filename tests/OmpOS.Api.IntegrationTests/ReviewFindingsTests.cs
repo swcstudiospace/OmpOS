@@ -21,16 +21,16 @@ public sealed class ReviewFindingsTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"finish me\"}", testToken);
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"finish me\"}", testToken).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
-        var completed = await SessionClient.WaitForStatusAsync(client, id, Contracts.Sessions.SessionStatus.Completed, TimeSpan.FromSeconds(15), testToken);
+        var completed = await SessionClient.WaitForStatusAsync(client, id, Contracts.Sessions.SessionStatus.Completed, TimeSpan.FromSeconds(15), testToken).ConfigureAwait(true);
         var terminal = completed.Events.Max(static evt => evt.Seq).ToString(CultureInfo.InvariantCulture);
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, testToken);
-        var items = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, linked.Token, terminal);
+        var items = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 50, linked.Token, terminal).ConfigureAwait(true);
         items.ShouldBeEmpty("no events exist past the terminal Seq, so the stream must close");
 
         var streamer = factory.Services.GetRequiredService<SessionEventStreamer>();
@@ -44,13 +44,13 @@ public sealed class ReviewFindingsTests
         using var factory = new OmpApiFactory(new Dictionary<string, string?>(StringComparer.Ordinal) { ["Api:RateLimit:PromptsPerMinute"] = "1" });
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var first = await SessionClient.CreateSessionAsync(client, testToken);
-        var second = await SessionClient.CreateSessionAsync(client, testToken);
+        var first = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
+        var second = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var allowed = await SessionClient.PostPromptAsync(client, first, "{\"prompt\":\"one\"}", testToken);
+        using var allowed = await SessionClient.PostPromptAsync(client, first, "{\"prompt\":\"one\"}", testToken).ConfigureAwait(true);
         allowed.StatusCode.ShouldBe(HttpStatusCode.Accepted);
 
-        using var rejected = await SessionClient.PostPromptAsync(client, second, "{\"prompt\":\"two\"}", testToken);
+        using var rejected = await SessionClient.PostPromptAsync(client, second, "{\"prompt\":\"two\"}", testToken).ConfigureAwait(true);
         rejected.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
         rejected.Headers.RetryAfter.ShouldNotBeNull();
     }
@@ -63,12 +63,12 @@ public sealed class ReviewFindingsTests
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
 
-        using var first = await PostSessionAsync(client, "{}", testToken);
+        using var first = await PostSessionAsync(client, "{}", testToken).ConfigureAwait(true);
         first.StatusCode.ShouldBe(HttpStatusCode.Created);
-        using var second = await PostSessionAsync(client, "{}", testToken);
+        using var second = await PostSessionAsync(client, "{}", testToken).ConfigureAwait(true);
         second.StatusCode.ShouldBe(HttpStatusCode.Created);
 
-        using var rejected = await PostSessionAsync(client, "{}", testToken);
+        using var rejected = await PostSessionAsync(client, "{}", testToken).ConfigureAwait(true);
         rejected.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
         rejected.Headers.RetryAfter.ShouldNotBeNull();
     }
@@ -82,7 +82,7 @@ public sealed class ReviewFindingsTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(string.Format(CultureInfo.InvariantCulture, pathTemplate, id), UriKind.Relative));
         if (lastEventId is not null)
@@ -90,7 +90,7 @@ public sealed class ReviewFindingsTests
             request.Headers.TryAddWithoutValidation("Last-Event-ID", lastEventId);
         }
 
-        using var response = await client.SendAsync(request, testToken);
+        using var response = await client.SendAsync(request, testToken).ConfigureAwait(true);
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
@@ -101,30 +101,30 @@ public sealed class ReviewFindingsTests
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
-        var id = await SessionClient.CreateSessionAsync(client, testToken);
+        var id = await SessionClient.CreateSessionAsync(client, testToken).ConfigureAwait(true);
 
-        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"finish me\"}", testToken);
+        using var accepted = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"finish me\"}", testToken).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
-        await SessionClient.WaitForStatusAsync(client, id, Contracts.Sessions.SessionStatus.Completed, TimeSpan.FromSeconds(15), testToken);
+        await SessionClient.WaitForStatusAsync(client, id, Contracts.Sessions.SessionStatus.Completed, TimeSpan.FromSeconds(15), testToken).ConfigureAwait(true);
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, testToken);
-        var items = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events?since={long.MaxValue}", 50, linked.Token);
+        var items = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events?since={long.MaxValue}", 50, linked.Token).ConfigureAwait(true);
         items.ShouldBeEmpty("afterSeq at long.MaxValue must not wrap and replay the log");
     }
 
-    /// <summary>Verifies an over-long owner id is rejected with 400 while the 256-character boundary is accepted.</summary>
+    /// <summary>Verifies a body owner id is refused with 400 at every length, so the owner can never be taken from the request.</summary>
     [Theory]
-    [InlineData(256, HttpStatusCode.Created)]
-    [InlineData(257, HttpStatusCode.BadRequest)]
-    public async Task Create_OwnerIdLength_BoundaryEnforced(int length, HttpStatusCode expected)
+    [InlineData(128)]
+    [InlineData(129)]
+    public async Task Create_OwnerIdInBody_IsRefusedAtEveryLength(int length)
     {
         using var factory = new OmpApiFactory();
         using var client = factory.CreateClient();
         var testToken = TestContext.Current.CancellationToken;
 
-        using var response = await PostSessionAsync(client, $"{{\"ownerId\":\"{new string('o', length)}\"}}", testToken);
-        response.StatusCode.ShouldBe(expected);
+        using var response = await PostSessionAsync(client, $"{{\"ownerId\":\"{new string('o', length)}\"}}", testToken).ConfigureAwait(true);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
     private static async Task<HttpResponseMessage> PostSessionAsync(HttpClient client, string json, CancellationToken testToken)

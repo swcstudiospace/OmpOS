@@ -13,9 +13,16 @@ namespace OmpOS.Api.Sse;
 /// broadcast signal; on wake a subscriber re-queries the log from its last delivered Seq. A
 /// subscriber takes its wake-up before each log read, so an append that lands during the read
 /// is never missed, and events at or below the last delivered Seq are skipped (no duplicates).
+/// A waiting subscriber also re-reads the log every <see cref="PollInterval"/> without a local wake-up. Appends made by another replica
+/// reach this stream through the session signal channel (see <see cref="SessionChangePublisher"/>); the poll is the fallback that keeps the
+/// stream correct when signals are lost or unavailable, so an append reaches it within one interval. The poll needs no listener connection,
+/// survives pooled connections and restarts, and bounds latency; the local <see cref="Notify"/> remains the fast path for appends made in this process.
 /// </summary>
 internal sealed class SessionEventStreamer
 {
+    /// <summary>How long a waiting subscriber sleeps before it re-reads the log without a local wake-up.</summary>
+    private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(200);
+
     private readonly ConcurrentDictionary<string, SessionSignal> _signals = new(StringComparer.Ordinal);
     private readonly Lock _signalLock = new();
     private readonly ISessionRepository _repository;
@@ -75,8 +82,8 @@ internal sealed class SessionEventStreamer
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                // Take the wake-up before reading the log: an append that lands during the read completes it.
-                var wake = signal.NextAsync();
+                // Take the wake-up before reading the log: an append that lands during the read cancels it.
+                var wake = signal.NextWake();
                 var delivered = false;
                 await foreach (var evt in ReplayAsync(sessionId, Floor(last), cancellationToken).ConfigureAwait(false))
                 {
@@ -108,13 +115,28 @@ internal sealed class SessionEventStreamer
                     }
                 }
 
-                await wake.WaitAsync(cancellationToken).ConfigureAwait(false);
+                await WaitForWakeOrPollAsync(wake, cancellationToken).ConfigureAwait(false);
             }
         }
         finally
         {
             Release(sessionId, signal);
         }
+    }
+
+    private static async Task WaitForWakeOrPollAsync(CancellationToken wake, CancellationToken cancellationToken)
+    {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(wake, cancellationToken);
+        try
+        {
+            await Task.Delay(PollInterval, linked.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelled by Notify (a wake) or by the caller; the check below rethrows only for the caller.
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
     }
 
     private SessionSignal Acquire(string sessionId)
@@ -138,6 +160,7 @@ internal sealed class SessionEventStreamer
             if (signal.RefCount == 0)
             {
                 _signals.TryRemove(new KeyValuePair<string, SessionSignal>(sessionId, signal));
+                signal.Dispose();
             }
         }
     }
@@ -164,13 +187,14 @@ internal sealed class SessionEventStreamer
     private static long Floor(long last) => last == long.MaxValue ? long.MaxValue : last + 1;
 
     /// <summary>
-    /// Broadcast wake-up for one session. <see cref="Notify"/> completes the current generation, so every
+    /// Broadcast wake-up for one session. <see cref="Notify"/> cancels the current generation, so every
     /// subscriber waiting on it wakes; waiters always re-query the log, so a wake carries no payload.
     /// </summary>
-    private sealed class SessionSignal
+    private sealed class SessionSignal : IDisposable
     {
         private readonly Lock _lock = new();
-        private TaskCompletionSource<bool> _generation = NewGeneration();
+        private CancellationTokenSource _generation = new();
+        private bool _disposed;
 
         /// <summary>Gets the number of streams currently holding this signal. Guarded by the streamer's lock.</summary>
         public int RefCount { get; private set; }
@@ -181,26 +205,48 @@ internal sealed class SessionEventStreamer
         /// <summary>Releases one stream's hold on this signal.</summary>
         public void Release() => RefCount--;
 
-        /// <summary>Returns the task that completes on the next <see cref="Notify"/>. Take it before reading the log.</summary>
-        /// <returns>The task for the current generation; it completes with <see langword="true"/>.</returns>
-        public Task<bool> NextAsync()
+        /// <summary>Returns the token that is cancelled by the next <see cref="Notify"/>. Take it before reading the log.</summary>
+        /// <returns>The token for the current generation.</returns>
+        public CancellationToken NextWake()
         {
             lock (_lock)
             {
-                return _generation.Task.WaitAsync(CancellationToken.None);
+                return _generation.Token;
             }
         }
 
         /// <summary>Wakes every waiter on the current generation and starts the next one.</summary>
         public void Notify()
         {
+            CancellationTokenSource woken;
             lock (_lock)
             {
-                _generation.TrySetResult(true);
-                _generation = NewGeneration();
+                if (_disposed)
+                {
+                    return;
+                }
+
+                woken = _generation;
+                _generation = new CancellationTokenSource();
             }
+
+            // Cancel outside the lock: cancellation callbacks run synchronously and must not run under it.
+            woken.Cancel();
         }
 
-        private static TaskCompletionSource<bool> NewGeneration() => new(TaskCreationOptions.RunContinuationsAsynchronously);
+        /// <summary>Disposes the current generation. Called once no stream holds the signal.</summary>
+        public void Dispose()
+        {
+            lock (_lock)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+                _generation.Dispose();
+            }
+        }
     }
 }

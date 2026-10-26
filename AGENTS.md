@@ -4,19 +4,19 @@
 
 **OmpOS**
 
-OmpOS is a chat-style agent workspace — a Grok Chat / Cursor Agent–class client whose engine is **omp** rather than Cursor. It orchestrates omp sessions and renders their streamed output as **Generative UI** (structured, interactive blocks, not plain text). It is a **Desktop ACP Harness built in C#** that grows into one full-stack product: a Blazor WebAssembly web app hosted on Vercel, .NET MAUI Blazor Hybrid native shells for macOS/Windows/iOS/Android, and a unified ASP.NET Core backend on Railway with optional Temporal durable workflows and sandboxed agent execution (Rivet agentOS → NVIDIA OpenShell on podman → attested-enclave boundary).
+OmpOS is a chat-style agent workspace — a Grok Chat / Cursor Agent–class client whose engine is **omp** rather than Cursor. It orchestrates omp sessions and renders their streamed output as **Generative UI** (structured, interactive blocks, not plain text). It is a **Desktop ACP Harness built in C#** that grows into one full-stack product: a Blazor WebAssembly web head hosted on Vercel (Avalonia.Browser failed gate G-WEB on Avalonia 12.1.4; ADR-0004), Avalonia UI native shells for Windows, macOS, Linux, iOS and Android, and a unified ASP.NET Core backend on Railway, where agent runs execute in-process through the direct runner (`DirectSessionRunner`) and sandboxed agent execution follows the layering Rivet agentOS → NVIDIA OpenShell on podman → attested-enclave boundary.
 
 **Core Value:** A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
 
 ### Constraints
 
-- **Tech stack**: C# for backend, harness, parser, sandbox, workflows and all UI (Blazor RCL shared by Blazor WASM and MAUI Blazor Hybrid) — user's explicit "built using C#"; one UI codebase avoids drift.
+- **Tech stack**: C# for backend, harness, parser, sandbox, workflows and all native UI in Avalonia UI (ADR-0004) for Windows, macOS, Linux, iOS and Android; the web head stays Blazor WebAssembly on the shared presentation layer until gate G-WEB passes; the .NET MAUI head retires after parity (v0.10.0 Phases 20 to 25) — user's explicit "built using C#"; the shared presentation layer bounds drift between the Avalonia heads and the Blazor web head (ADR-0004).
 - **Container runtime**: podman-compose / podman only; any OCI build file must build with podman — user requirement; Docker tooling must not be emitted.
 - **No invented vendor facts**: package names, versions, APIs and routes only when verified at scaffold time; everything else is an interface + stub + entry in `docs/open-questions.md` with an owner.
 - **Strictness**: nullable, warnings-as-errors, analyzers, deterministic builds, central package management with committed lockfiles, formatter in CI, no TODO without owner + open-question link.
 - **Secrets**: nothing committed; `.env.example` documents every variable; startup fails fast on missing required config.
-- **Hosting split**: Vercel serves only the static Blazor WASM publish output; the API, worker and sandbox control plane run on Railway (Vercel cannot run long-lived .NET services).
-- **Dev box limits**: MAUI heads are unverifiable on Linux → excluded from the default solution filter and built in a macOS CI job; honest reporting of what was and was not built locally.
+- **Hosting split**: Vercel serves only the static Blazor WASM publish output; the API and the sandbox control plane run on Railway (Vercel cannot run long-lived .NET services).
+- **Dev box limits**: on this Linux host the Avalonia desktop head builds with warnings as errors and its AT-SPI2 accessibility tree is readable under Xvfb (spike 2026-10-21); the Blazor WebAssembly browser publish builds with the wasm-tools workload (installed on this host), while Avalonia.Browser fails G-WEB on Avalonia 12.1.4; Android builds need the Android SDK (not installed here); iOS and macOS packaging need the Mac channel; honest reporting of what was and was not built locally.
 - **Scope discipline**: structure, wiring, contracts, foundations and one vertical slice — not the full product.
 - **Protocol fidelity**: ACP v1 (stable) and omp RPC protocol v1/v2 framing as documented in the installed omp; v2 ACP draft is out of scope.
 

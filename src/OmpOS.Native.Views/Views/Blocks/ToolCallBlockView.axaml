@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OmpOS.Native.Views.Blocks.ToolCallBlockView">
+
+  <Border Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
+          Padding="{DynamicResource OmpOS.Space.Sm}">
+    <Grid ColumnDefinitions="*,Auto"
+          ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
+      <TextBlock x:Name="ToolName"
+                 Grid.Column="0"
+                 FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                 TextWrapping="Wrap" />
+      <TextBlock x:Name="ToolStatus"
+                 Grid.Column="1"
+                 Classes="muted"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 VerticalAlignment="Center" />
+    </Grid>
+  </Border>
+
+</UserControl>

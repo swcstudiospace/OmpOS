@@ -49,6 +49,7 @@ internal sealed class SseEventStream
     /// <summary>
     /// Streams the session's events from <paramref name="sinceSeq"/> (inclusive when set),
     /// transparently resuming across disconnects until the terminal event or cancellation.
+    /// The reconnect budget counts consecutive connections that deliver no event.
     /// </summary>
     /// <param name="sessionId">The session identifier.</param>
     /// <param name="sinceSeq">The first Seq to include, or null to stream from the head.</param>
@@ -76,6 +77,12 @@ internal sealed class SseEventStream
             if (outcome.Terminal)
             {
                 yield break;
+            }
+
+            // Progress resets the budget: it bounds consecutive connections that deliver nothing, not total disconnects.
+            if (outcome.Progressed)
+            {
+                reconnects = 0;
             }
 
             if (_options.MaxReconnects.HasValue && reconnects >= _options.MaxReconnects.Value)
@@ -213,12 +220,14 @@ internal sealed class SseEventStream
     {
         foreach (var frame in parser.Feed(chunk))
         {
-            if (TryConvert(sessionId, frame, tracker, out var evt) && evt is not null)
+            var evt = ConvertFrame(sessionId, frame, tracker, out var terminal);
+            if (evt is not null)
             {
+                outcome.Progressed = true;
                 yield return evt;
             }
 
-            if (IsTerminal(frame, evt))
+            if (terminal)
             {
                 outcome.Terminal = true;
                 yield break;
@@ -243,12 +252,14 @@ internal sealed class SseEventStream
             yield break;
         }
 
-        if (TryConvert(sessionId, trailing, tracker, out var evt) && evt is not null)
+        var evt = ConvertFrame(sessionId, trailing, tracker, out var terminal);
+        if (evt is not null)
         {
+            outcome.Progressed = true;
             yield return evt;
         }
 
-        if (IsTerminal(trailing, evt))
+        if (terminal)
         {
             outcome.Terminal = true;
         }
@@ -274,45 +285,36 @@ internal sealed class SseEventStream
         return request;
     }
 
-    private static bool IsTerminal(SseFrame frame, StreamEvent? evt) =>
+    /// <summary>
+    /// A frame is terminal when its event name or its payload says so. The payload is judged on its own, so a
+    /// terminal frame stops the stream even when it carries no id or a Seq that was already delivered.
+    /// </summary>
+    private static bool IsTerminal(SseFrame frame, StreamEventPayload? payload) =>
         (frame.EventType is not null && TerminalEventTypes.Contains(frame.EventType))
-        || evt?.Payload is CompletedPayload or ErrorPayload;
+        || payload is CompletedPayload or ErrorPayload;
 
-    private static bool TryConvert(string sessionId, SseFrame frame, SeqTracker tracker, out StreamEvent? evt)
+    /// <summary>
+    /// Converts one frame to an event, or returns null when it must not surface (corrupt, duplicate, or diagnostic).
+    /// <paramref name="terminal"/> is set for every frame, independent of whether the event surfaces.
+    /// </summary>
+    private static StreamEvent? ConvertFrame(string sessionId, SseFrame frame, SeqTracker tracker, out bool terminal)
     {
-        evt = null;
-        if (string.IsNullOrEmpty(frame.Data))
+        var payload = ParsePayload(frame.Data);
+        terminal = IsTerminal(frame, payload);
+        if (payload is null
+            || !long.TryParse(frame.Id, NumberStyles.Integer, CultureInfo.InvariantCulture, out var seq)
+            || !tracker.TryAdd(seq))
         {
-            return false;
-        }
-
-        if (!long.TryParse(frame.Id, NumberStyles.Integer, CultureInfo.InvariantCulture, out var seq))
-        {
-            return false;
-        }
-
-        StreamEventPayload? payload;
-        try
-        {
-            payload = JsonSerializer.Deserialize(frame.Data, OmpOsJsonContext.Default.StreamEventPayload);
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-
-        if (payload is null || !tracker.TryAdd(seq))
-        {
-            return false;
+            return null;
         }
 
         if (payload is DiagnosticPayload)
         {
             // Non-terminal, and the web UI has no notice path: the frame is consumed (its seq is tracked) but never shown.
-            return false;
+            return null;
         }
 
-        evt = new StreamEvent
+        return new StreamEvent
         {
             Seq = seq,
             SessionId = sessionId,
@@ -320,7 +322,23 @@ internal sealed class SseEventStream
             Timestamp = DateTimeOffset.UtcNow,
             Payload = payload,
         };
-        return true;
+    }
+
+    private static StreamEventPayload? ParsePayload(string data)
+    {
+        if (string.IsNullOrEmpty(data))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize(data, OmpOsJsonContext.Default.StreamEventPayload);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     [SuppressMessage(
@@ -331,7 +349,10 @@ internal sealed class SseEventStream
     {
         try
         {
-            return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            return await BoundedContent.ReadTextAsync(
+                response.Content,
+                BoundedContent.MaxErrorBytes,
+                cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -353,5 +374,6 @@ internal sealed class SseEventStream
     private sealed class ConnectionOutcome
     {
         public bool Terminal;
+        public bool Progressed;
     }
 }
