@@ -520,3 +520,153 @@ TODO inventory (2026-10-25):
 - Other follow-ups found this run: the bootstrap cleanup runs test-services down before removing temporary files under set -e (latent; down exits 0 today); the Phase 23 smoke failed once with its evidence lost (cause unknown); .planning/state.json still names v0.9.2 (tooling; not edited).
 
 Status: paused at a blocker. Resume points: Phase 23 criterion 2 (deploy part) and criterion 3, blocked on OMPOS_API_ORIGIN (unset here) and on the Vercel and Railway deploys (Railway is paused on the account). Phase 24 criterion 4 (CI run; push not authorized, G24-2) and criteria 1 to 3 and 5 (Mac and Android 16 hardware). Phase 22 is deferred by owner decision. Milestone v0.10.0 stays open: closeout is held while criteria remain open, and cleanup keeps phase artifacts.
+
+Fold-in committed: f8b5faf (Phase 24, the vulnerability gate for the Android head). Its gate on the same content: `./bootstrap.sh` exit 0, 2270 total, 0 failed, 0 skipped, web smoke exit 0. The Phase 24 summary's fold-in section records it. These records are pause-time writes; they ride with the next commit, per the commit answer.
+
+## Ship re-request and reconciliation, 2026-10-25 (after f8b5faf)
+
+- The owner re-requested ultrathink-ship. Its assess (read-only) returned done=false. Gaps: the three uncommitted Phase 24 record files, and the GSD roadmap count. The gate refuses while v0.10.0 is open, so no PR, push or merge was made.
+- Owner answers: leave the records uncommitted; keep holding.
+- The gate's count (2 of 6) came from the top-level checklist in ROADMAP.md. Phase 25 was still unchecked there, although its status line, 25-SUMMARY.md and the audit all record it complete. The box is now checked; no goal, criterion or order changed. The count is 3 of 6, and the milestone stays open.
+- Commit counts: git rev-list reports 97 commits ahead of main; the ship tool reports 96.
+- Correction to the two entries above. The gate's count is `gsd-tools query roadmap.analyze`, which reads disk status, not the checklist. The tool's own notes tie phase completion to a `*-VERIFICATION.md` with a passing status. 20-VERIFICATION.md and 21-VERIFICATION.md pass. Phase 25 has no verification file, so the tool reads it as planned and reports a checkbox conflict for its checked box. The Phase 20 status line and the Phase 25 checkbox are accurate records, and they stay. The 2 of 6 count does not change the verdict, because Phases 22 to 24 are not complete either. To have the tool count Phase 25, the GSD verifier must run on it, and it may report gaps. Open for the owner.
+
+## Run 2026-10-25 (gsd-autonomous, uplift graph ut-mvo0031x-d8bbe878)
+
+Scope: active milestone v0.10.0 only. G-M1 (answered No, line 347) keeps v0.11.0 and later not started until v0.10.0 closes, so the spec's all-milestones default (q2) does not start them now.
+
+Read-only hold: lifted for this request; the planner result arrived with it.
+
+Identifiers (Skill() is not a tool here; G-S1 accepted): discuss gsd-discuss-phase; plan gsd-plan-phase; execute gsd-execute-phase; audit gsd-audit-milestone; complete gsd-complete-milestone; cleanup gsd-cleanup. All six exist, with gsd-autonomous, as /root/.agents/skills/<name>/SKILL.md (checked 2026-10-25).
+
+Toolchain: the gate is ./bootstrap.sh (locked restore, warnings-as-errors build, tests, format, web smoke with axe), as recorded at line 371. No separate lint or type-check command is declared beyond those. CI adds the gitleaks scan and the vulnerability gate. No install and no gate run in this pass.
+
+Git baseline (2026-10-25): branch feat/v0.9.2-hardening, HEAD f8b5faf, 36 commits ahead of origin. Run-start uncommitted files: ROADMAP.md, STATE.md, 24-SUMMARY.md, v0.10.0-MILESTONE-AUDIT.md. Edited this run, also uncommitted: 22-SUMMARY.md and 24-SUMMARY.md. Left uncommitted (q4 default; owner answer "leave them uncommitted").
+
+Kickoff: track complete reported tracking partial for ut-mvo0031x-d8bbe878. Notion rows exist from the planner. Linear refused on its free issue limit, so 0 Linear issues and 0 sub-issues. Substrate graph_register accepted (created 2026-10-25T15:50:57Z; 8 nodes, 64 steps, no Linear ids). The Implementing status, the session mark, and the Linked-issues TODO copy wait for the clarification answers.
+
+TODO intake (q3 default: roadmap phases only): TODO source not identified. The candidate tracker docs/open-questions.md (CONTRIBUTING TODO policy) is not designated as a TODO list; if the owner designates it, its open rows need outcomes before the audit. Code-comment TODOs stay backlog candidates; the first-party scan found no untracked markers (line 513).
+
+Remaining phases, document order:
+- 22 Desktop heads: deferred by owner decision (2026-10-24). Not run.
+- 23 Web head: partial. VERIFY_GATE blocked on criterion 2 (deploy part) and criterion 3. BLOCKER.
+- 24 iOS and Android heads: partial. VERIFY_GATE blocked on the CI run (no push, G24-2) and on criteria 1 to 3 and 5 (Mac channel, Android 16). BLOCKER.
+- 25 Cutover: executed in the earlier run under the owner's waiver. VERIFY_GATE pending. The waiver answer (line 384) responded to G25-1 (line 346), which named Phases 22 and 24 as the removal dependencies. ROADMAP's Depends-on list (line 477) also names Phase 23, and no waiver record names it. Phase 25's VERIFY therefore runs ahead of Phases 23 and 24 under the waiver; recorded as a deviation.
+
+Pending pause (this run): GREY q1 quality-bar scope (blocking, from the planner) and GREY Phase 23 waiver scope (new). Both go in one kickoff question call. Answers are persisted into the spec's CLARIFICATIONS and into the accepted list here.
+
+Ship: not invoked. The trigger (run finished) is not met, and the owner's ship hold (line 384) stands.
+
+Counters: Phase 25 VERIFY 0 of 3 (gsd-verifier dispatched once; verdict pending).
+Gate evidence: product code unchanged since f8b5faf; ./bootstrap.sh exit 0, total 2270, failed 0, skipped 0, web smoke exit 0 at f8b5faf (line 524).
+
+Packet status: awaiting answers to q1 and the Phase 23 waiver. The Phase 25 verdict is appended below when it returns.
+
+
+## Answers, gate, and verdict, 2026-10-25 (graph ut-mvo0031x-d8bbe878)
+
+Accepted by the owner in the kickoff question call:
+- q1, quality bar: codebase-wide uplift. This is not the planner's default (touched code only). The option's own text says it needs new roadmap phases first, which need acceptance; the next pause asks for that.
+- Phase 23 waiver: keep Phase 23 open. Phase 25 stays complete. Phase 23 is an open dependency, not a gap for Phase 25's goal (verifier reading, 25-VERIFICATION.md).
+
+Stated defaults (non-blocking): q2, v0.10.0 only, per G-M1 (line 347); q3, roadmap phases only, no TODO source designated (docs/open-questions.md is the open-questions register, not a TODO list); q4, uncommitted.
+
+Phase 25 VERIFY_GATE:
+- gsd-verifier (25-VERIFICATION.md): human_needed, 3 of 4. Criteria 1 to 3 verified against the tree. Criterion 4 needed a gate log at the phase HEAD, which the verifier was told not to run.
+- Gate re-run at f8b5faf on 2026-10-25 by the orchestrator: ./bootstrap.sh exit 0 with "bootstrap: OK" (SDK 10.0.402, locked restore, Release build, tests, format, web smoke with axe). Total 2270, failed 0, succeeded 2270, skipped 0. Smoke exit 0. Wall time 286 s. Output kept in this session, not committed.
+- Verifier re-check of criterion 4 requested.
+- QUALITY_BAR checklist for Phase 25's touched code: not written yet. The spec's VERIFY_GATE needs it before PHASE_RECORD.
+
+Records corrected this run (uncommitted): 22-SUMMARY (status with the 2026-10-24 deferral; Wayland evidence tracked, last change 8e0c5e2); 24-SUMMARY (status; criterion 4 evidence; open items; commits fe2d398 and f8b5faf); 25-SUMMARY (status; criteria table; open items; commits cf4b617, 9171508, 0bea2bf; labels).
+
+Counters: Phase 25 bootstrap gate attempts 1 of 3 (passed); verifier runs 1 (human_needed).
+
+Pending pause: GREY, roadmap scope for the codebase-wide uplift (audit-first and placement). Packet status: awaiting that answer.
+
+## Phase 25 verdict and QUALITY_BAR, 2026-10-25 (graph ut-mvo0031x-d8bbe878)
+
+- gsd-verifier re-check: passed, 4 of 4 (25-VERIFICATION.md). Criterion 4 is backed by the gate re-run at f8b5faf (exit 0, 2270 passed, 0 failed, 0 skipped, smoke exit 0).
+- Required artifacts exist and name the phase: 25-CONTEXT.md, 25-01-PLAN.md (retrospective, tasks as executed), 25-SUMMARY.md, 25-REPAIR-NOTES.md (test-only analyzer repairs, no product change).
+- QUALITY_BAR checklist recorded in 25-SUMMARY.md for the touched code. Four items fail: correctness (the dispose-failure trace is untested, MainView.axaml.cs:691, 702); maintainability (no repo dead-code check); visible focus (toolbar ToggleButtons are outside the focus-visible styles, App.axaml:85 to 114); unbounded work (the held-message queue is uncapped, EngineRunInput.cs:16, loop at MainView.axaml.cs:293).
+- VERIFY_GATE: each fail is fixed or sent to grey-area acceptance. Pending the owner's answer (kickoff packet item 3). Phase 25 stays open in these records.
+- GSD's disk-based roadmap count reads a passed VERIFICATION file as complete, so it will count Phase 25 now. These records keep it open until the owner decides the four fails.
+- ROADMAP: the Phase 25 status line and its top-level checkbox are set to the open gate.
+- Counters: Phase 25 bootstrap gate attempts 1 of 3 (passed); QUALITY_BAR run 1 (four fails recorded).
+
+Pending pause (GREY, this packet): (1) uplift scope: audit first, fix phases now, or withdraw; (2) placement: decimal phases under v0.10.0, or a new milestone after it; (3) Phase 25 fails: carry as recorded gaps, fix now, or hold. Packet status: awaiting answers.
+
+## Accepted answers, 2026-10-25 (graph ut-mvo0031x-d8bbe878)
+
+- Uplift scope: "Audit first, then fixes" (the recommended option). Accepted. Phase 25.1 is report-only; fix phases follow the audit, each needing acceptance before it runs.
+- Placement: "Decimal phases under v0.10.0" (the recommended option). Accepted. Phase 25.1 runs now; v0.10.0 stays open.
+- Phase 25 fails: "Fix now". Three fixes in Phase 25's files: a dispose-failure test, a held-message queue cap with a visible refusal and test, and a focus-visible style for the toolbar ToggleButton. The dead-code gap stays recorded, since no repo check exists; the option stated that.
+- Phase 23: kept open (2026-10-25). Phase 25 stays complete on its criteria; Phase 23 is an open dependency.
+- Correction: I recorded q4 as "uncommitted, owner answer 'leave them uncommitted'". That answer covered the records only. The standing commit answer, one commit per phase after 72000fc, governs phase code. Records stay uncommitted. Phase 25's fixes are committed as one phase commit, staged by explicit path, after the gate is green. Nothing is pushed.
+- Packet status: answered; no pause pending.
+
+## Phase 25 fixes and gate, 2026-10-25 (graph ut-mvo0031x-d8bbe878)
+
+- Fixes committed as 0be414e, with 7 files staged by explicit path: queue cap (16), engine-host dispose trace test, ToggleButton focus-visible style. The .planning records are not in the commit.
+- Gate: ./bootstrap.sh exit 0, "bootstrap: OK", 2275 passed, 0 failed, 0 skipped, web smoke exit 0 (202 s wall time).
+- QUALITY_BAR after the fixes: visible focus and unbounded work now pass. Correctness keeps one residual: the MCP registry close trace, because McpToolRegistry is sealed with no injection point (src/OmpOS.Harness.Mcp/McpToolRegistry.cs). Maintainability keeps the dead-code gap, which the owner accepted.
+- Phase 25 VERIFY_GATE: open on the MCP residual only. The ROADMAP status line and top-level checkbox stay open.
+- Phase 25.1 (codebase quality audit, decimal, under v0.10.0) is inserted in ROADMAP.md (checklist line 392; section after Phase 25) and not started. The order rule starts it after Phase 25 passes, unless the owner says otherwise.
+- Counters: Phase 25 gate attempts 2 of 3, both passed; QUALITY_BAR runs 2.
+- Pending pause (GREY, packet with two items): (1) MCP registry close trace: carry as a residual, add an injection seam now, or hold Phase 25; (2) Phase 25.1: wait for Phase 25 to close, or start now. Packet status: awaiting answers.
+
+## Phase 25 closed and seam, 2026-10-25 (graph ut-mvo0031x-d8bbe878)
+
+- Owner answers accepted: MCP close trace: add the seam now. Phase 25.1 timing: wait for Phase 25 to close.
+- MCP seam committed as 59e9dd1 (4 files, explicit paths). Gate: ./bootstrap.sh exit 0, 2276 passed, 0 failed, 0 skipped, web smoke exit 0 (237 s).
+- Phase 25 PHASE_RECORD: VERIFY_GATE passed (criteria 1 to 4 evidenced; the QUALITY_BAR has no open fail; the dead-code gap is recorded and owner-accepted). ROADMAP top-level checkbox and status line set to complete.
+- Phase 25.1 (decimal, under v0.10.0) may now start: discuss, plan, execute, VERIFY_GATE, PHASE_RECORD, in that order.
+- Packet status: answered; no pause pending.
+
+## Phase 25.1 register and fix-phase pause, 2026-10-25 (graph ut-mvo0031x-d8bbe878)
+
+- Phase 25.1 ran discuss, plan, and execute: six read-only lens scans in parallel, no product change. Register: `.planning/phases/25.1-codebase-quality-audit/25.1-FINDINGS.md`. Consolidated 130 rows: 4 High, 35 Medium, 91 Low.
+- Verified High findings: H-1 `?apiBaseUrl=` accepts any https origin (ApiBaseUrlResolver.cs:47-62); H-2 ACP stdout read without a line cap (AcpStdioTransport.cs:247); H-3 SSE reconnect budget never resets on progress (SseEventStream.cs:65,81,87; default 10 from SseStreamOptions.cs:19, so the 11th disconnect throws); H-4 Vercel installer runs unverified on every build (vercel.ts:28).
+- Corrections recorded: lens 6 re-graded from its CI-execution rule (10 High to 1 High, 8 Medium, 1 Low); ompos.css focus ring re-graded to Low (computed ratios pass 3:1); 2026-10-22 owner row 6 (apps/OmpOS.App lock file) resolved at HEAD by the Phase 25 cutover; suppression counts from the 2026-10-22 audit still unreconciled (proposed F-H).
+- Phase 25.1 status: complete (ROADMAP checkbox and status line). Fix phases F-A to F-H are proposed; none accepted yet.
+- Pending pause (GREY, packet with two items): (1) which fix phases to accept, F-A to F-H; (2) consent behaviour for repo setup steps (M-16: `.ompos/setup.json` runs without consent). Persisted here before asking. Packet status: awaiting answers.
+- Ship: still held by the owner. Milestone v0.10.0 closeout: still held (Phases 22, 23, 24 open).
+
+## Phase 25.1 pause resolved and fix phases accepted, 2026-10-26 (graph ut-mvo0031x-d8bbe878)
+
+- Owner answers: fix phases "All eight phases: F-A to F-H", run in the listed order. Repo setup steps (M-16): "Confirm once per repository".
+- ROADMAP: phases 25.2 (F-A) to 25.9 (F-H) inserted under v0.10.0 as decimal phases, each with success criteria from the register. Each runs discuss, plan, execute, one gate run, one commit with explicit paths, then PHASE_RECORD.
+- Conservative defaults for choices the owner did not make (recorded in each phase CONTEXT): F-A keeps `?apiBaseUrl=` for loopback origins only; F-D keeps ILogger in services and Trace with a configured listener in the heads; F-E consent is keyed by repository path and setup-file hash.
+- Ship: still held by the owner. Milestone v0.10.0 closeout: held until Phases 22, 23, 24 close and 25.2 to 25.9 close.
+- Next: Phase 25.2 (F-A) discuss, plan, execute.
+
+## Phase 25.2 closed, 2026-10-26 (graph ut-mvo0031x-d8bbe878)
+
+- F-A (phase 25.2) closed: commits 0ffe092 (code) and b6e7664 (call-site test, a follow-up after the criterion-4 gap was found). Gate: 2287 passed, 0 failed, 0 skipped; web smoke exit 0.
+- Decisions applied: loopback-only query override; reconnect budget resets on progress; SSE line cap 1 MiB and frame cap 4 MiB; API success bodies 16 MiB, error bodies 1 MiB.
+- Deviations recorded in 25.2-01-SUMMARY.md: JsonTypeInfo signature for BoundedContent; two stale doc comments corrected outside the agent's file list; two gate failures fixed without suppression.
+- Next: Phase 25.3 (F-B). Context and plan are written; implementation dispatch next.
+
+## Phase 25.3 closed, 2026-10-26 (graph ut-mvo0031x-d8bbe878)
+
+- F-B (phase 25.3) closed: commit 501c8db (one commit). Gate: 2302 passed, 0 failed, 0 skipped; web smoke exit 0.
+- Caps: ACP and remote lines 1 MiB characters (MalformedFrameHarnessException); remote frame data 1 MiB; version probe 4096 characters with kill; vendor bodies 4 MiB (BoundedContent in OmpOS.Sandbox.Abstractions).
+- Behaviour change recorded: lone CR no longer ends a line in the shared reader; only LF ends it.
+- Gaps recorded in 25.3-01-SUMMARY.md: duplicated bounded-content helper (web and sandbox); POSIX-only sleep in the probe test.
+- Next: Phase 25.4 (F-C): build, deploy, and image integrity. Network-dependent pins (SHAs, digests) to be checked first.
+
+## Phase 25.4 partial, 2026-10-26 (graph ut-mvo0031x-d8bbe878)
+
+- F-C (phase 25.4) committed as 523ac44 with explicit paths. Gate: 2306 passed, 0 failed, 0 skipped; axe.min.js OK; web smoke exit 0.
+- Closed: Vercel installer verified by SHA-512 (bootstrap pin); CI actions pinned by full SHA; runners ubuntu-24.04; podman exact archive version; global.json roll-forward disabled; compose and test-services digests; axe-core hash checked by run-smoke; two pin tests.
+- BLOCKED residual: PodmanDriverSection :latest. GHCR denies anonymous lookups from this host; the owner must confirm image paths and visibility or supply a pull credential. No tag guessed.
+- ACCEPTED residual: explicit Android workload version (M-30), rationale recorded.
+- Phase 25.4 is partial; the checkbox stays open. Milestone closeout and ship remain held.
+- Next: Phase 25.5 (F-D), failures that stay silent.
+
+## Phase 25.5 partial, 2026-10-26 (graph ut-mvo0031x-d8bbe878)
+
+- F-D (phase 25.5) committed as bad4e67. Gate: 2315 passed, 0 failed, 0 skipped; axe.min.js OK; web smoke exit 0.
+- Closed: M-2, M-3, M-12, M-17, M-18, M-19 with tests; ADR-0011 logging split; App startup stderr listener.
+- OPEN (1): M-4 detached-path test. The test was removed because the harness did not trace the detached decision fault; cause not isolated. Attached path tested.
+- OPEN (2): the desktop composition passes no logger, so service ILogger output is discarded in the desktop app. Owner decision: wire ILoggerFactory into the desktop composition root, or accept silent desktop service faults.
+- Phase 25.5 stays open. Next: Phase 25.6 (F-E) unless the owner decides the open items first.

@@ -1,6 +1,6 @@
 # Phase 22: Desktop Heads, Summary
 
-**Status: blocked. Criteria 3 to 5 are blocked, criterion 1 is partial, and criterion 2 is met.** Criterion 1 needs the native Wayland backend opt-in run, which is not done. Its X11 and XWayland starts are recorded. Criterion 3 needs a Windows 11 24H2 runner, and criteria 4 and 5 need the Mac channel. Phases 25 to 28 depend on this phase.
+**Status: deferred by owner decision (2026-10-24). Criteria 3 to 5 are blocked, criterion 1 is partial, and criterion 2 is met.** Criterion 1 needs the native Wayland backend opt-in run, which is not done. Its X11 and XWayland starts are recorded. Criterion 3 needs a Windows 11 24H2 runner, and criteria 4 and 5 need the Mac channel. Phases 25 to 28 depend on this phase; Phase 25 proceeded under the owner's dependency waiver (2026-10-25).
 
 The macOS scope replaces v0.9.2 Phases 15 and 16 under ADR-0004.
 
@@ -26,4 +26,4 @@ Mac channel: Yes. The macOS 26 build, the NSAccessibility inspection, signing an
 
 - 98fc3f2: Phase 22 platform records (with the Phase 20 AT-SPI2 X11 evidence)
 - 9e5913d: gate-green HEAD
-- Uncommitted: the 2026-10-24 Wayland evidence and the runbook update. No commit was made.
+- Tracked: the 2026-10-24 Wayland evidence and the runbook update are in the repository; the last change is commit 8e0c5e2.

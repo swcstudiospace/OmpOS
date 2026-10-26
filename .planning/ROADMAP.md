@@ -388,7 +388,16 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 - [ ] **Phase 22: Desktop Heads** - Linux, Windows and macOS heads with platform accessibility; macOS signing on the Mac channel
 - [ ] **Phase 23: Web Head on the Shared Presentation Layer** - Blazor WebAssembly web head, G-WEB re-measurement, Vercel static hosting
 - [ ] **Phase 24: iOS and Android Heads** - Mobile heads with platform accessibility; iOS on the Mac channel
-- [ ] **Phase 25: Cutover** - Remove the MAUI head after parity; remove the Razor component library once the web head no longer references it
+- [x] **Phase 25: Cutover** - Remove the MAUI head after parity; remove the Razor component library once the web head no longer references it
+- [x] **Phase 25.1: Codebase Quality Audit** - Report-only audit of the codebase against the QUALITY_BAR; fix phases follow the owner's acceptance of the findings
+- [x] **Phase 25.2: Web Head Trust and Stream Bounds** - Prompts and SSE only to the configured origin; SSE reconnect budget and frame sizes bounded (fix F-A)
+- [x] **Phase 25.3: Bounded Child and Vendor Reads** - Every external read path capped and tested (fix F-B)
+- [ ] **Phase 25.4: Build, Deploy, and Image Integrity** - Verified installers, pinned actions, runners, images, and smoke tooling (fix F-C; partial: PodmanDriverSection :latest blocked on GHCR access)
+- [ ] **Phase 25.5: Failures That Stay Silent** - Swallowed faults logged or surfaced; logging split recorded (fix F-D; partial: M-4 detached-path test and desktop logger wiring open)
+- [ ] **Phase 25.6: Secrets and Local Files** - Token scope, owner-only temp files, per-repository consent for setup steps (fix F-E)
+- [ ] **Phase 25.7: UI Head Accessibility** - Reduced motion, alt text, keyboard-operable error dismiss, focus contrast coverage (fix F-F)
+- [ ] **Phase 25.8: Test Quality** - Each named test asserts its claim; no fixed sleeps in settlement tests (fix F-G)
+- [ ] **Phase 25.9: Suppression and Skip Review** - Every suppression and skip marker decided; counts reconciled (fix F-H)
 
 ### Phase 20: Avalonia Foundation
 **Goal**: One shared Avalonia native project, a framework-neutral presentation layer, an accessibility baseline and plugin host contracts form the base that every head builds on.
@@ -396,6 +405,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Depends on**: Nothing (first phase of v0.10.0)
 **Mac channel**: No. The shared project and its contract tests build and run on the Linux host and the CI runners; no signing or device run is involved.
 **UI hint**: yes
+**Status (2026-10-23)**: complete. 7 of 7 criteria verified in 20-VERIFICATION.md (status passed). OQ-39 stays open; it is not a criterion failure.
 **Success Criteria** (what must be TRUE):
   1. One Avalonia 12.1.4 native project is in the solution and builds with warnings as errors. Verify: gate at phase HEAD.
   2. A presentation layer project holds the view models and state extracted from the Razor components, with no UI-framework types, and references no Avalonia, MAUI or ASP.NET Core Components assembly. Verify: contract test in the gate that fails on any such reference or UI-framework type.
@@ -475,12 +485,134 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Requirements**: XP-01 (complete), XP-10 (complete)
 **Depends on**: Phases 21, 22, 23, 24
 **Mac channel**: No. Removal and the gate run on the Linux host; the Mac-channel evidence that replaces the MAUI iOS and macOS builds is recorded in Phases 22 and 24.
-**Status (2026-10-25)**: complete. Criterion 1 is met: all 24 pending rows have a passing native Avalonia test, 10 by native behaviour tests, 1 by-design test accepted by the owner, and 13 rows implemented in the Avalonia head with tests. Criterion 2 is met: `apps/OmpOS.App` is removed from the solution and from the tree, and the search finds no reference in the solution, project or CI files. Criterion 3 is met: `src/OmpOS.UI` stays, referenced by `apps/OmpOS.Web` and `tests/OmpOS.UI.Tests`. The owner's waiver covers the dependencies on Phases 22 and 24 (2026-10-25).
+**Status (2026-10-25)**: complete. Criterion 1 is met: all 24 pending rows have a passing native Avalonia test, 10 by native behaviour tests, 1 by-design test accepted by the owner, and 13 rows implemented in the Avalonia head with tests. Criterion 2 is met: `apps/OmpOS.App` is removed from the solution and from the tree, and the search finds no reference in the solution, project or CI files. Criterion 3 is met: `src/OmpOS.UI` stays, referenced by `apps/OmpOS.Web` and `tests/OmpOS.UI.Tests`. Criterion 4 is met at commit 59e9dd1 (gate: 2276 passed, 0 failed, 0 skipped). gsd-verifier passed 4 of 4 (25-VERIFICATION.md). The owner's waiver covers the dependencies on Phases 22 and 24 (2026-10-25); Phase 23 stays an open dependency by the owner's decision (2026-10-25). The QUALITY_BAR fixes are committed (0be414e, 59e9dd1); one gap stays recorded, the dead-code check (25-SUMMARY.md).
 **Success Criteria** (what must be TRUE):
   1. Before any removal, every row of the Phase 21 parity inventory has a passing Avalonia test. Verify: gate run at phase HEAD.
   2. apps/OmpOS.App and its test projects are removed, and a repository search finds no reference to apps/OmpOS.App in the solution, project or CI files. Verify: search output in the phase record and the gate.
   3. src/OmpOS.UI and its test projects are removed only when no project in the solution references them. src/OmpOS.UI stays because the Blazor web head uses it; its removal is tracked under gate G-WEB, not under XP-01. Verify: repository search output and the gate.
   4. The gate is green at the phase HEAD. Verify: gate run at phase HEAD.
+**Plans**: TBD
+
+### Phase 25.1: Codebase Quality Audit
+**Goal**: The codebase is measured against the QUALITY_BAR, and each finding is recorded with file and line evidence, so the owner can decide which fix phases to accept. This phase changes no product code.
+**Requirements**: none; scope from the owner's uplift decision (2026-10-25)
+**Depends on**: Phase 25 (the QUALITY_BAR baseline and its recorded fixes)
+**Mac channel**: No.
+**Status (2026-10-25)**: complete. Register: .planning/phases/25.1-codebase-quality-audit/25.1-FINDINGS.md (after reconciliation: 4 High, 35 Medium, 91 Low). Fix phases F-A to F-H proposed; awaiting owner acceptance.
+**Success Criteria** (what must be TRUE):
+  1. Each QUALITY_BAR item (pattern fidelity, correctness, boundaries, security, maintainability and observability, accessibility for UI, compatibility and reproducibility) has a repository scan, with its command and result recorded. Verify: the findings register lists each scan's command and output count.
+  2. Each finding has a file and line, the QUALITY_BAR item it violates, a severity, and a proposed disposition (fix, accept, or defer). Verify: every register row has file:line evidence.
+  3. A rule the repository cannot check is recorded as a gap, not claimed. Verify: the register's gap list names each gap with its reason.
+  4. The phase changes no product code. Verify: the phase's diff touches only .planning paths.
+  5. Fix phases are proposed from the register, grouped by area, with goals and criteria; each needs the owner's acceptance before it runs. Verify: the proposal lists each fix phase with its acceptance state.
+**Plans**: 25.1-01 (complete)
+
+### Phase 25.2: Web Head Trust and Stream Bounds
+**Goal**: The web head sends prompts and streams only to the configured API origin, and its SSE client and parser stay bounded under progress and under abuse. Fixes F-A (25.1-FINDINGS.md section 8).
+**Requirements**: none; scope from the owner's acceptance of F-A (2026-10-26)
+**Depends on**: Phase 25.1 (findings register)
+**Mac channel**: No.
+**Status (2026-10-26)**: complete. Commits 0ffe092 and b6e7664; gate 2287 passed, 0 failed, 0 skipped. Record: .planning/phases/25.2-web-head-trust-and-stream-bounds/25.2-01-SUMMARY.md.
+**Success Criteria** (what must be TRUE):
+  1. The web head sends prompts and SSE only to the configured API origin; a `?apiBaseUrl=` override is honoured only for loopback origins. Verify: ApiBaseUrlResolver tests cover a non-loopback override (refused) and a loopback override (accepted).
+  2. The SSE reconnect budget resets when a connection delivers events. Verify: SseEventStream tests show a stream that drops more than MaxReconnects times with progress in between does not throw, and one with no progress throws at the budget.
+  3. SSE line and frame sizes are capped; an oversized line fails with a bounded error. Verify: SseParser test with an oversized line.
+  4. API response bodies in ApiSessionClient are size-capped. Verify: test with an oversized body.
+  5. The gate is green at the phase HEAD. Verify: ./bootstrap.sh.
+**Plans**: 25.2-01 (complete)
+
+### Phase 25.3: Bounded Child and Vendor Reads
+**Goal**: Every read of external bytes (child process output, remote frames, vendor responses) has a named cap, and an oversized input fails with a bounded error. Fixes F-B.
+**Requirements**: none; scope from the owner's acceptance of F-B (2026-10-26)
+**Depends on**: Phase 25.2
+**Mac channel**: No.
+**Status (2026-10-26)**: complete. Commit 501c8db; gate 2302 passed, 0 failed, 0 skipped. Record: .planning/phases/25.3-bounded-child-and-vendor-reads/25.3-01-SUMMARY.md.
+**Success Criteria** (what must be TRUE):
+  1. ACP child stdout lines are capped as the RPC transport caps them; an oversized line fails the session with a bounded error. Verify: AcpStdioTransport test with an oversized line.
+  2. RemoteEngineHost frame lines and frame data are capped before parse. Verify: test with an oversized frame.
+  3. `omp --version` output is capped at the launcher probe's limit. Verify: OmpVersionProbe test.
+  4. AgentOsProvider and RailwaySwarmProvider vendor response bodies are capped. Verify: provider tests with an oversized body.
+  5. The gate is green at the phase HEAD. Verify: ./bootstrap.sh.
+**Plans**: 25.3-01 (complete)
+
+### Phase 25.4: Build, Deploy, and Image Integrity
+**Goal**: Build and deploy inputs are verified or pinned: installers checked before execution, CI actions and runners pinned, images pinned by digest, and the smoke tool checks its download. Fixes F-C.
+**Requirements**: none; scope from the owner's acceptance of F-C (2026-10-26)
+**Depends on**: Phase 25.3
+**Mac channel**: No.
+**Status (2026-10-26)**: partial. Commit 523ac44; gate 2306 passed, 0 failed, 0 skipped. Blocked residual: PodmanDriverSection :latest (GHCR denies anonymous lookups). Accepted residual: Android workload version (M-30, rationale in 25.4-01-SUMMARY.md). Record: .planning/phases/25.4-build-deploy-and-image-integrity/25.4-01-SUMMARY.md.
+**Success Criteria** (what must be TRUE):
+  1. The Vercel installer is verified by SHA-256 before it runs (vercel.ts). Verify: the installCommand fails on a hash mismatch; the expected hash is committed.
+  2. CI actions are pinned by full commit SHA, and CI runners are pinned to a named image. Verify: a repository test fails on any `uses:` line without a full SHA.
+  3. global.json roll-forward and the bootstrap SDK checksum agree on the same SDK version. Verify: a check in the gate fails when they disagree.
+  4. Compose and test-services images are pinned by digest. Verify: `podman-compose config` renders and the digests match the registry.
+  5. run-smoke compares the axe-core tarball hash to a committed value and fails on mismatch. Verify: a smoke run with the committed hash passes, and a wrong expected hash fails.
+  6. The gate is green at the phase HEAD. Verify: ./bootstrap.sh.
+**Plans**: 25.4-01 (partial)
+
+### Phase 25.5: Failures That Stay Silent
+**Goal**: Each swallowed or dropped fault is logged or surfaced to its caller, and the logging split (services on ILogger, heads on Trace) is written down. Fixes F-D.
+**Requirements**: none; scope from the owner's acceptance of F-D (2026-10-26)
+**Depends on**: Phase 25.4
+**Mac channel**: No.
+**Status (2026-10-26)**: partial. Commit bad4e67; gate 2315 passed, 0 failed, 0 skipped. Open: M-4 detached-path test (removed, cause not isolated); desktop composition passes no logger, so service ILogger output is discarded in the desktop app. Record: .planning/phases/25.5-failures-that-stay-silent/25.5-01-SUMMARY.md.
+**Success Criteria** (what must be TRUE):
+  1. Each fault in M-2, M-3, M-4, M-12, M-17, M-18, and M-19 is logged or surfaced to its caller. Verify: a test per fault observes the log or the surfaced error.
+  2. Close faults in the shipped desktop app reach a configured trace listener. Verify: a test or startup check shows the listener is attached in the app host.
+  3. The logging split is recorded in a tracked document. Verify: the document names each layer and its mechanism.
+  4. The gate is green at the phase HEAD. Verify: ./bootstrap.sh.
+**Plans**: 25.5-01 (partial)
+
+### Phase 25.6: Secrets and Local Files
+**Goal**: Bearer tokens reach only https or loopback origins, compose files in shared temp directories are owner-only, and repository setup steps run only after per-repository consent. Fixes F-E.
+**Requirements**: none; scope from the owner's acceptance of F-E and the consent answer (2026-10-26)
+**Depends on**: Phase 25.5
+**Mac channel**: No.
+**Status (2026-10-26)**: not started.
+**Success Criteria** (what must be TRUE):
+  1. AgentOsProvider refuses at construction a non-loopback cleartext origin, and sends its bearer token only to the configured origin. Verify: provider tests.
+  2. Compose files written to temp directories are owner-only. Verify: a test checks the file mode.
+  3. Repository setup steps (.ompos/setup.json) run only after consent recorded per repository, keyed by repository path and steps hash; a changed file asks again. Verify: SetupRunner tests cover refusal without consent, run after consent, and re-prompt after a change.
+  4. The gate is green at the phase HEAD. Verify: ./bootstrap.sh.
+**Plans**: TBD
+
+### Phase 25.7: UI Head Accessibility
+**Goal**: The UI heads honour reduced motion, always label images, keep the error dismiss keyboard-operable, and cover the focus ring in the contrast test. Fixes F-F; OQ-34 and OQ-39 stay deferred.
+**Requirements**: none; scope from the owner's acceptance of F-F (2026-10-26)
+**Depends on**: Phase 25.6
+**Mac channel**: No.
+**Status (2026-10-26)**: not started.
+**Success Criteria** (what must be TRUE):
+  1. Android transitions honour reduced motion. Verify: the transition is removed or disabled under the reduced-motion setting; a test or static check covers it.
+  2. A2UI images always have alt text, with a fallback when the agent omits it. Verify: A2UI test with a missing alt.
+  3. The web error dismiss is a named, keyboard-operable control, and the error alert announces. Verify: web smoke axe run with zero violations and the keyboard check.
+  4. The web focus-ring contrast is covered by a test. Verify: the contrast test includes the focus-ring pair.
+  5. The gate is green at the phase HEAD. Verify: ./bootstrap.sh.
+**Plans**: TBD
+
+### Phase 25.8: Test Quality
+**Goal**: Every named test asserts what its name claims, and settlement tests use deterministic waits, not fixed sleeps. Fixes F-G.
+**Requirements**: none; scope from the owner's acceptance of F-G (2026-10-26)
+**Depends on**: Phase 25.7
+**Mac channel**: No.
+**Status (2026-10-26)**: not started.
+**Success Criteria** (what must be TRUE):
+  1. Each test named in M-8, M-9, lens 1 section 2, InMemorySessionSignalsTests:71, and RailwaySwarmProviderTests:204 asserts the behaviour its name claims, or is removed. Verify: each test fails when its behaviour breaks.
+  2. No fixed sleep remains in RunControls settlement tests. Verify: grep finds no Task.Delay or Thread.Sleep in those tests.
+  3. The gate is green at the phase HEAD. Verify: ./bootstrap.sh.
+**Plans**: TBD
+
+### Phase 25.9: Suppression and Skip Review
+**Goal**: Every suppression and skip marker in the 2026-10-22 inventory has a recorded decision, the counts reconcile with a stated scope, and each editorconfig severity override is justified or removed. Fixes F-H.
+**Requirements**: none; scope from the owner's acceptance of F-H (2026-10-26)
+**Depends on**: Phase 25.8
+**Mac channel**: No.
+**Status (2026-10-26)**: not started.
+**Success Criteria** (what must be TRUE):
+  1. Each SUP row in docs/quality/quality-bar.md section 2 has a recorded decision: keep with its justification, or fix the cause. Verify: the decision table has one row per SUP id.
+  2. The pragma and skip counts reconcile with the stated scope. Verify: the counts table names the scope for each count.
+  3. Each `.editorconfig` severity-none override is justified or removed. Verify: the .editorconfig diff and the justification text.
+  4. The gate is green at the phase HEAD. Verify: ./bootstrap.sh.
 **Plans**: TBD
 
 ## v0.11.0 ADE harness (planned)

@@ -1,6 +1,6 @@
 # Phase 24: iOS and Android Heads, Summary
 
-**Status: blocked.** Android is no longer blocked on this host. The Android SDK with platform API 36 and build-tools 36.0.0, and the .NET Android workload, are installed (2026-10-24). No head project has been created yet, and iOS needs a Mac. Correction 2026-10-24: the earlier "Android is blocked on this host" and "no SDK API 36" statements were wrong. The SDK was present under /root/Android/Sdk; only ANDROID_HOME was unset.
+**Status: partially complete (2026-10-25).** Criterion 4's local build is met: `apps/OmpOS.Android` builds with `-warnaserror` (evidence: docs/runbooks/evidence/phase-24-android-2026-10-25/). Its `android` CI job is written and has not run, because the push is not authorized (G24-2). Criteria 1 to 3 and 5 are blocked, and no iOS head project exists yet. The 2026-10-24 correction stands: the SDK was present under /root/Android/Sdk, and only ANDROID_HOME was unset.
 
 The iOS and mobile scope replaces v0.9.2 Phases 15 and 16 under ADR-0004.
 
@@ -13,18 +13,19 @@ Mac channel: Yes for iOS. The iOS build, the UIAccessibility inspection, code si
 | 1 | iOS builds net10.0-ios on iOS/iPadOS 26; build log recorded | Blocked | Needs macOS with Xcode (Mac channel) |
 | 2 | UIAccessibility returns name and role of prompt, send and transcript | Blocked | No iOS 26 run; Mac channel |
 | 3 | Code signing and device runs listed under XP-11 | Blocked | Owner-run on the Mac channel |
-| 4 | Android builds net10.0-android in CI on the Linux runner | Partial | Local prerequisites installed 2026-10-24: /root/Android/Sdk (platforms android-36, build-tools 36.0.0) and the .NET Android workload 36.1.118. No Android head project exists yet, and no CI job builds it. CI run log not recorded |
+| 4 | Android builds net10.0-android in CI on the Linux runner | Partial | Local build met (docs/runbooks/evidence/phase-24-android-2026-10-25/). The `android` job is written in ci.yml; no CI run is recorded (no push, G24-2) |
 | 5 | Android 16 AccessibilityNodeInfo returns name and role of the three controls | Blocked | No emulator or device run recorded |
 
 ## Open items
 
-- Create the Android head project, build it locally with ANDROID_HOME=/root/Android/Sdk, then add the CI job. A CI run needs a push, which is a separate decision. Owner: engineering, then owner (push). Route: ROADMAP Phase 24 criterion 4.
+- CI run of the `android` job for criterion 4. It needs a push, which is a separate decision (G24-2). Owner: owner (push). Route: ROADMAP Phase 24 criterion 4.
 - iOS build, accessibility dump, signing and device run on a Mac with Xcode. Owner: owner, Mac channel. Route: XP-11 entry in the runbook.
-- Create the iOS and Android head projects once the host blockers are resolved. Owner: engineering. Route: ROADMAP Phase 24.
+- Create the iOS head project. Its build, accessibility dump and signing need the Mac channel (XP-11). Owner: engineering, then owner. Route: ROADMAP Phase 24 criteria 1 to 3.
 
 ## Commits
 
-- No Phase 24 code commit.
+- fe2d398: shared Avalonia views library and the Android head (Phase 24 local build).
+- f8b5faf: the vulnerability gate covers the Android head (Phase 24 fold-in).
 - 1f4cb4f: ROADMAP reconciliation with the v0.9.2 audit (planning record)
 - 9e5913d: gate-green HEAD
 
@@ -54,3 +55,12 @@ Deviations:
 - D9. Criterion 4 names CI, so the `android` job is in `ci.yml`, not pushed (G24-2).
 
 Follow-ups outside this phase's scope: the Window styles of the desktop head are not carried to Android (intended; confirm on a device); the flaky terminal helper above.
+
+## Fold-in 2026-10-25 (gsd-autonomous, graph ut-mvnwnmzr-3a2a4035)
+
+- Change: the vulnerability audit now covers the Android head. `scripts/ci/check-vulnerable-packages.py` (new) is the one gate; the build-test step and the `android` job both call it. Commit f8b5faf.
+- Why: the Linux step audited `OmpOS.Linux.slnf`, which does not include `apps/OmpOS.Android`. A local listing of the Android project found no vulnerable packages, so this is a coverage gap, not a current finding.
+- Verification: the Linux and Android reports pass the gate (exit 0; each lists its project; the Android report has 6 top-level and 99 transitive packages under net10.0-android36.0). A synthetic vulnerable report fails it (exit 1, one hit). No arguments exit 2. `.github/workflows/ci.yml` parses as YAML with the new step. `./bootstrap.sh` exit 0 with 2270 passed, 0 failed, 0 skipped, and web smoke exit 0, on the tree with these files.
+- Not verified: the CI run. It needs a push, which is not authorized (G24-2), and the `android` job has never run on GitHub.
+- Deferred: the Android teardown does not call `MainView.Close` (owner decision a4, 2026-10-25). Closing the view on finish would leave a same-process relaunch with a disposed view; `OmpOSAndroidApp.axaml.cs:28` is the only place the view is built.
+- Criterion 4 is unchanged: its local build is met, and the CI run is still open.
