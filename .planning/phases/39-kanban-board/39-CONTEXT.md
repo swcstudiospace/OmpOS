@@ -4,6 +4,8 @@ Scope: ROADMAP.md Phase 39 success criterion 4 (column names) and the status voc
 Depends on: Phases 36 (complete and verified) and 37.
 Date recorded: 2026-10-26. This file records decisions and defaults only. No Phase 39 plan or code exists yet.
 
+Update 2026-10-26, after the build: the board, its views, the tabs and the head sources now exist. The sentence above ("No Phase 39 plan or code exists yet") and the "Status of the criteria" table below are the snapshot before the build and are kept as written. What was built, the criteria status and the real closing rule (OQ-79) are in `39-01-PLAN.md`, `39-SUMMARY.md` and `39-VERIFICATION.md`.
+
 ## Default column names (criterion 4)
 
 Until the owner confirms the final names, the board uses these defaults. They are CONTEXT defaults, not owner decisions. Changing a name later changes this table, the view label and nothing else: the status enumeration in code does not change.
