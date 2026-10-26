@@ -1,0 +1,125 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:cust="clr-namespace:OmpOS.Presentation.Settings.Customize;assembly=OmpOS.Presentation"
+                            xmlns:local="clr-namespace:OmpOS.Native.Views.Settings"
+                            x:Class="OmpOS.Native.Views.Settings.CustomizeCatalogView"
+                            x:DataType="cust:CustomizeCatalogPage"
+                            Focusable="False">
+
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+
+  <!-- The Rules, Skills and Commands pages share this read-only catalogue: title, scope, origin and description. -->
+  <Panel>
+
+    <local:PageStatusView x:Name="StateView" />
+
+    <ScrollViewer x:Name="ReadyPanel"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                  HorizontalAlignment="Stretch">
+
+        <TextBlock x:Name="Heading"
+                   Classes="settings-heading"
+                   Text="{CompiledBinding Title}" />
+        <TextBlock x:Name="Intro"
+                   Classes="settings-help"
+                   Text="{CompiledBinding IntroText}" />
+        <TextBlock x:Name="ReadOnlyNotice"
+                   Classes="settings-help"
+                   Text="{x:Static cust:CustomizeCopy.ReadOnlyNotice}" />
+
+        <!-- The polite live region: how many entries the page lists. -->
+        <TextBlock x:Name="CountLine"
+                   Classes="muted settings-body"
+                   Text="{CompiledBinding CountText}"
+                   AutomationProperties.LiveSetting="Polite"
+                   AutomationProperties.Name="{CompiledBinding CountText}" />
+
+        <!-- The catalogue loaded and lists nothing: the page says why and what to do. -->
+        <TextBlock x:Name="EmptyLine"
+                   Classes="muted settings-body"
+                   IsVisible="False"
+                   Text="{CompiledBinding EmptyText}" />
+
+        <!-- One sentence per file that could not be read. -->
+        <StackPanel x:Name="ProblemsBlock"
+                    IsVisible="False"
+                    Spacing="{DynamicResource OmpOS.Gap.Xs}">
+          <TextBlock Classes="settings-label tone-warning"
+                     Text="{x:Static cust:CustomizeCopy.ProblemsHeading}" />
+          <ItemsControl x:Name="ProblemRows"
+                        ItemsSource="{CompiledBinding Problems}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <TextBlock Classes="tone-warning settings-body"
+                           Text="{CompiledBinding .}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <StackPanel x:Name="TableBlock"
+                    Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+          <Grid x:Name="HeaderRow"
+                ColumnDefinitions="2*,120,3*,3*"
+                ColumnSpacing="12">
+            <TextBlock Grid.Column="0"
+                       Classes="settings-label"
+                       Text="{x:Static cust:CustomizeCopy.ColumnTitle}" />
+            <TextBlock Grid.Column="1"
+                       Classes="settings-label"
+                       Text="{x:Static cust:CustomizeCopy.ColumnScope}" />
+            <TextBlock Grid.Column="2"
+                       Classes="settings-label"
+                       Text="{x:Static cust:CustomizeCopy.ColumnOrigin}" />
+            <TextBlock Grid.Column="3"
+                       Classes="settings-label"
+                       Text="{x:Static cust:CustomizeCopy.ColumnDescription}" />
+          </Grid>
+
+          <ItemsControl x:Name="EntryRows"
+                        ItemsSource="{CompiledBinding Entries}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="cust:CustomizeEntry">
+                <Border Classes="settings-card"
+                        Margin="0,0,0,4"
+                        Padding="{DynamicResource OmpOS.Space.Sm}">
+                  <Grid ColumnDefinitions="2*,120,3*,3*"
+                        ColumnSpacing="12">
+                    <TextBlock Grid.Column="0"
+                               Classes="settings-label"
+                               Text="{CompiledBinding Title}" />
+                    <Border Grid.Column="1"
+                            Classes="chip"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top">
+                      <TextBlock Classes="settings-chip-text"
+                                 Text="{CompiledBinding ScopeLabel}" />
+                    </Border>
+                    <TextBlock Grid.Column="2"
+                               Classes="settings-mono"
+                               Text="{CompiledBinding Origin}" />
+                    <TextBlock Grid.Column="3"
+                               Classes="settings-help"
+                               Text="{CompiledBinding Description}" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Panel>
+
+</local:SettingsPageViewBase>

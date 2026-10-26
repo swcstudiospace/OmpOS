@@ -1,0 +1,64 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:set="clr-namespace:OmpOS.Presentation.Settings;assembly=OmpOS.Presentation"
+                            xmlns:local="clr-namespace:OmpOS.Native.Views.Settings"
+                            x:Class="OmpOS.Native.Views.Settings.AgentsPageView"
+                            x:DataType="set:AgentsPage"
+                            Focusable="False">
+
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+
+  <!-- The Agents page: the terminal auto-run switch, off by default, with its warning while it is on. Changing it is a draft until Save. -->
+  <Panel>
+
+    <local:PageStatusView x:Name="StateView" />
+
+    <ScrollViewer x:Name="ReadyPanel"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                  MaxWidth="640"
+                  HorizontalAlignment="Left">
+
+        <TextBlock Classes="settings-heading"
+                   Text="{x:Static set:SettingsCopy.AgentsHeading}" />
+
+        <CheckBox x:Name="AutoRunBox"
+                  Content="{x:Static set:SettingsCopy.AutoRunLabel}"
+                  AutomationProperties.Name="{x:Static set:SettingsCopy.AutoRunLabel}"
+                  AutomationProperties.HelpText="{x:Static set:SettingsCopy.AutoRunHelp}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static set:SettingsCopy.AutoRunHelp}" />
+        <TextBlock x:Name="AutoRunWarning"
+                   Classes="tone-warning settings-body"
+                   IsVisible="{CompiledBinding IsAutoRunWarningVisible}"
+                   Text="{x:Static set:SettingsCopy.AutoRunWarning}"
+                   AutomationProperties.LiveSetting="Polite"
+                   AutomationProperties.Name="{x:Static set:SettingsCopy.AutoRunWarning}" />
+
+        <TextBlock x:Name="SaveFailedHeading"
+                   Classes="tone-error settings-body"
+                   IsVisible="{CompiledBinding HasError}"
+                   Text="{x:Static set:SettingsCopy.SaveFailedHeading}"
+                   AutomationProperties.LiveSetting="Assertive"
+                   AutomationProperties.Name="{x:Static set:SettingsCopy.SaveFailedHeading}" />
+        <TextBlock x:Name="SaveFailedBody"
+                   Classes="tone-error settings-body"
+                   IsVisible="{CompiledBinding HasError}"
+                   Text="{CompiledBinding SaveError}" />
+
+        <TextBlock Classes="settings-help"
+                   Margin="0,16,0,0"
+                   Text="{x:Static set:SettingsCopy.ApprovalPolicyNote}" />
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Panel>
+
+</local:SettingsPageViewBase>

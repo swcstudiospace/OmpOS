@@ -1,0 +1,115 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:set="clr-namespace:OmpOS.Presentation.Settings;assembly=OmpOS.Presentation"
+        xmlns:local="clr-namespace:OmpOS.Native.Views.Settings"
+        x:Class="OmpOS.Native.Views.Settings.SettingsWindow"
+        x:DataType="set:SettingsWindowModel"
+        Title="{x:Static set:SettingsCopy.WindowTitle}"
+        Width="1000"
+        Height="720"
+        MinWidth="640"
+        MinHeight="480"
+        WindowStartupLocation="CenterScreen"
+        AutomationProperties.Name="{x:Static set:SettingsCopy.WindowTitle}">
+
+  <Window.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </Window.Styles>
+
+  <!-- The Settings window. Keyboard order follows XAML order: the navigation (one stop; Up, Down, Home and End move the page), the close prompt while it
+       shows, the page, then Reset, Discard, Save and Close. Esc and Ctrl+W ask the model to close: with unsaved changes the prompt opens instead. -->
+  <Grid ColumnDefinitions="220,*">
+
+    <ListBox x:Name="Navigation"
+             Grid.Column="0"
+             Classes="settings-navigation"
+             SelectionMode="Single"
+             AutomationProperties.Name="{x:Static set:SettingsCopy.NavigationName}" />
+
+    <Grid Grid.Column="1"
+          RowDefinitions="Auto,*,Auto">
+
+      <!-- The unsaved-changes prompt: Save and close, Discard and close, Keep editing. Focus moves into it and returns when it is dismissed. -->
+      <Border x:Name="ClosePrompt"
+              Grid.Row="0"
+              Classes="settings-prompt"
+              IsVisible="{CompiledBinding IsClosePromptVisible}"
+              AutomationProperties.Name="{x:Static set:SettingsCopy.ClosePromptHeading}"
+              AutomationProperties.LiveSetting="Assertive">
+        <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+          <TextBlock x:Name="ClosePromptHeading"
+                     Classes="settings-section"
+                     Text="{x:Static set:SettingsCopy.ClosePromptHeading}" />
+          <TextBlock x:Name="ClosePromptBody"
+                     Classes="settings-body"
+                     Text="{x:Static set:SettingsCopy.ClosePromptBody}" />
+          <StackPanel Orientation="Horizontal"
+                      Spacing="{DynamicResource OmpOS.Gap.Sm}">
+            <Button x:Name="PromptSaveButton"
+                    Classes="primary"
+                    Content="{x:Static set:SettingsCopy.ClosePromptSaveLabel}"
+                    AutomationProperties.Name="{x:Static set:SettingsCopy.ClosePromptSaveLabel}"
+                    Click="OnPromptSaveClick" />
+            <Button x:Name="PromptDiscardButton"
+                    Classes="destructive"
+                    Content="{x:Static set:SettingsCopy.ClosePromptDiscardLabel}"
+                    AutomationProperties.Name="{x:Static set:SettingsCopy.ClosePromptDiscardLabel}"
+                    Click="OnPromptDiscardClick" />
+            <Button x:Name="PromptKeepButton"
+                    Content="{x:Static set:SettingsCopy.ClosePromptKeepEditingLabel}"
+                    AutomationProperties.Name="{x:Static set:SettingsCopy.ClosePromptKeepEditingLabel}"
+                    Click="OnPromptKeepClick" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <ContentControl x:Name="PageHost"
+                      Grid.Row="1"
+                      IsTabStop="False"
+                      HorizontalContentAlignment="Stretch"
+                      VerticalContentAlignment="Stretch" />
+
+      <Border Grid.Row="2"
+              Classes="settings-footer">
+        <Grid ColumnDefinitions="*,Auto"
+              ColumnSpacing="12">
+
+          <!-- The polite live region: that the page has unsaved changes, or that its last save was refused. -->
+          <TextBlock x:Name="FooterLine"
+                     Grid.Column="0"
+                     Classes="muted settings-body"
+                     VerticalAlignment="Center"
+                     AutomationProperties.LiveSetting="Polite"
+                     AutomationProperties.Name="{x:Static local:SettingsViewCopy.FooterAnnouncementName}" />
+
+          <StackPanel Grid.Column="1"
+                      Orientation="Horizontal"
+                      Spacing="{DynamicResource OmpOS.Gap.Sm}">
+            <Button x:Name="ResetButton"
+                    Content="{x:Static set:SettingsCopy.ResetLabel}"
+                    AutomationProperties.Name="{x:Static set:SettingsCopy.ResetLabel}"
+                    Click="OnResetClick" />
+            <Button x:Name="DiscardButton"
+                    Content="{x:Static set:SettingsCopy.DiscardLabel}"
+                    AutomationProperties.Name="{x:Static set:SettingsCopy.DiscardLabel}"
+                    Click="OnDiscardClick" />
+            <Button x:Name="SaveButton"
+                    Classes="primary"
+                    Content="{x:Static set:SettingsCopy.SaveLabel}"
+                    AutomationProperties.Name="{x:Static set:SettingsCopy.SaveLabel}"
+                    Click="OnSaveClick" />
+            <Button x:Name="CloseButton"
+                    Content="{x:Static local:SettingsViewCopy.CloseLabel}"
+                    AutomationProperties.Name="{x:Static local:SettingsViewCopy.CloseLabel}"
+                    Click="OnCloseClick" />
+          </StackPanel>
+
+        </Grid>
+      </Border>
+
+    </Grid>
+
+  </Grid>
+
+</Window>

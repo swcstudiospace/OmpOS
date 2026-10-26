@@ -1,0 +1,55 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:set="clr-namespace:OmpOS.Presentation.Settings;assembly=OmpOS.Presentation"
+                            xmlns:local="clr-namespace:OmpOS.Native.Views.Settings"
+                            x:Class="OmpOS.Native.Views.Settings.TabPageView"
+                            x:DataType="set:TabPage"
+                            Focusable="False">
+
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+
+  <!-- The Tab page: the read-only status of inline completion. Nothing here is a tab stop except the selectable endpoint. -->
+  <Panel>
+
+    <local:PageStatusView x:Name="StateView" />
+
+    <ScrollViewer x:Name="ReadyPanel"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                  MaxWidth="640"
+                  HorizontalAlignment="Left">
+
+        <TextBlock Classes="settings-heading"
+                   Text="{x:Static set:SettingsCopy.TabHeading}" />
+
+        <TextBlock x:Name="StatusLine"
+                   Classes="settings-section"
+                   Text="{CompiledBinding StatusText}"
+                   AutomationProperties.LiveSetting="Polite"
+                   AutomationProperties.Name="{CompiledBinding StatusText}" />
+
+        <TextBlock Classes="settings-label"
+                   Margin="0,8,0,0"
+                   Text="{x:Static set:SettingsCopy.TabEndpointLabel}" />
+        <SelectableTextBlock x:Name="EndpointLine"
+                             Classes="settings-selectable settings-mono"
+                             Text="{CompiledBinding EndpointText}"
+                             AutomationProperties.Name="{CompiledBinding EndpointText}" />
+
+        <TextBlock x:Name="HowConfiguredLine"
+                   Classes="settings-help"
+                   Margin="0,8,0,0"
+                   Text="{CompiledBinding HowConfiguredText}" />
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Panel>
+
+</local:SettingsPageViewBase>

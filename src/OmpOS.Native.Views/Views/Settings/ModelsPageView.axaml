@@ -1,0 +1,197 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:set="clr-namespace:OmpOS.Presentation.Settings;assembly=OmpOS.Presentation"
+                            xmlns:models="clr-namespace:OmpOS.Presentation.Settings.Models;assembly=OmpOS.Presentation"
+                            xmlns:local="clr-namespace:OmpOS.Native.Views.Settings"
+                            x:Class="OmpOS.Native.Views.Settings.ModelsPageView"
+                            x:DataType="models:ModelsSettingsPage"
+                            Focusable="False">
+
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+
+  <!-- The Models page: the providers omp uses, grouped, with search, the custom provider form and the templates a custom provider can start from.
+       Keyboard order follows XAML order: search, Add provider, the templates, the form, then the cards group by group. -->
+  <Panel>
+
+    <local:PageStatusView x:Name="StateView" />
+
+    <ScrollViewer x:Name="ReadyPanel"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                  MaxWidth="880"
+                  HorizontalAlignment="Stretch">
+
+        <TextBlock Classes="settings-heading"
+                   Text="{x:Static models:ModelsCopy.PageTitle}" />
+
+        <Grid ColumnDefinitions="*,Auto"
+              ColumnSpacing="8">
+          <TextBox x:Name="SearchBox"
+                   Grid.Column="0"
+                   Text="{CompiledBinding SearchText, Mode=TwoWay}"
+                   PlaceholderText="{x:Static models:ModelsCopy.SearchHint}"
+                   AutomationProperties.Name="{x:Static models:ModelsCopy.SearchLabel}" />
+          <Button x:Name="AddProviderButton"
+                  Grid.Column="1"
+                  Classes="primary"
+                  Content="{x:Static models:ModelsCopy.AddProviderLabel}"
+                  AutomationProperties.Name="{x:Static models:ModelsCopy.AddProviderLabel}"
+                  Click="OnAddProviderClick" />
+        </Grid>
+
+        <!-- omp's own warning about its configuration (for example a models.yml that did not validate). -->
+        <Border x:Name="WarningBanner"
+                Classes="settings-banner"
+                IsVisible="{CompiledBinding Warning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+          <TextBlock x:Name="WarningText"
+                     Classes="tone-warning settings-body"
+                     Text="{CompiledBinding Warning}" />
+        </Border>
+
+        <TextBlock x:Name="IncompleteLine"
+                   Classes="settings-help"
+                   IsVisible="{CompiledBinding IncompleteNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Text="{CompiledBinding IncompleteNote}" />
+
+        <TextBlock x:Name="NoticeLine"
+                   Classes="tone-warning settings-body"
+                   IsVisible="{CompiledBinding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Text="{CompiledBinding Notice}" />
+
+        <!-- The templates. A template is not a provider omp knows: it starts a custom provider that is written to models.yml. -->
+        <Expander x:Name="TemplatesExpander"
+                  IsVisible="False"
+                  HorizontalAlignment="Stretch"
+                  Header="{x:Static models:ModelsCopy.TemplatesHeading}"
+                  AutomationProperties.Name="{x:Static models:ModelsCopy.TemplatesHeading}">
+          <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+            <TextBlock Classes="settings-help"
+                       Text="{x:Static models:ModelsCopy.TemplatesExplanation}" />
+            <ItemsControl x:Name="TemplateRows"
+                          ItemsSource="{CompiledBinding Templates}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:ProviderTemplate">
+                  <Border Classes="settings-card"
+                          Margin="0,0,0,8">
+                    <Grid ColumnDefinitions="*,Auto"
+                          ColumnSpacing="8">
+                      <StackPanel Grid.Column="0"
+                                  Spacing="{DynamicResource OmpOS.Gap.Xs}">
+                        <TextBlock Classes="settings-label"
+                                   Text="{CompiledBinding DisplayName}" />
+                        <WrapPanel Orientation="Horizontal"
+                                   ItemSpacing="{DynamicResource OmpOS.Gap.Sm}"
+                                   LineSpacing="{DynamicResource OmpOS.Gap.Xs}">
+                          <Border Classes="chip">
+                            <TextBlock Classes="settings-chip-text"
+                                       Text="{CompiledBinding ., Converter={x:Static local:SettingsConverters.TemplateGroup}}" />
+                          </Border>
+                          <Border Classes="chip">
+                            <TextBlock Classes="settings-chip-text"
+                                       Text="{CompiledBinding ., Converter={x:Static local:SettingsConverters.TemplateProtocol}}" />
+                          </Border>
+                        </WrapPanel>
+                        <TextBlock Classes="settings-mono"
+                                   Text="{CompiledBinding ., Converter={x:Static local:SettingsConverters.TemplateEndpoint}}" />
+                        <TextBlock Classes="settings-help"
+                                   IsVisible="{CompiledBinding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Text="{CompiledBinding Note}" />
+                      </StackPanel>
+                      <Button Grid.Column="1"
+                              Classes="use-template"
+                              VerticalAlignment="Top"
+                              Content="{x:Static models:ModelsCopy.UseTemplateLabel}"
+                              AutomationProperties.Name="{CompiledBinding ., Converter={x:Static local:SettingsConverters.UseTemplateName}}" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Expander>
+
+        <!-- The custom provider form, with Save and Cancel and the reason omp refused a save. -->
+        <Border x:Name="DraftHost"
+                Classes="settings-card"
+                IsVisible="{CompiledBinding IsDraftOpen}">
+          <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+            <local:CustomProviderFormView x:Name="DraftForm"
+                                          DataContext="{x:Null}" />
+            <TextBlock x:Name="DraftErrorLine"
+                       Classes="tone-error settings-body"
+                       IsVisible="{CompiledBinding DraftError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                       Text="{CompiledBinding DraftError}"
+                       AutomationProperties.LiveSetting="Assertive"
+                       AutomationProperties.Name="{CompiledBinding DraftError}" />
+            <StackPanel Orientation="Horizontal"
+                        Spacing="{DynamicResource OmpOS.Gap.Sm}">
+              <Button x:Name="SaveDraftButton"
+                      Classes="primary"
+                      Content="{x:Static set:SettingsCopy.SaveLabel}"
+                      AutomationProperties.Name="{x:Static set:SettingsCopy.SaveLabel}"
+                      Click="OnSaveDraftClick" />
+              <Button x:Name="CancelDraftButton"
+                      Content="{x:Static models:ModelsCopy.CancelLabel}"
+                      AutomationProperties.Name="{x:Static models:ModelsCopy.CancelLabel}"
+                      Click="OnCancelDraftClick" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- The list is empty: omp lists no provider yet. The page keeps its search, Add provider and templates. -->
+        <StackPanel x:Name="EmptyBlock"
+                    IsVisible="False"
+                    Spacing="{DynamicResource OmpOS.Gap.Xs}">
+          <TextBlock Classes="settings-section"
+                     Text="{x:Static models:ModelsCopy.EmptyTitle}" />
+          <TextBlock Classes="muted settings-body"
+                     Text="{x:Static models:ModelsCopy.EmptyText}" />
+        </StackPanel>
+
+        <TextBlock x:Name="NoMatchesLine"
+                   Classes="muted settings-body"
+                   IsVisible="{CompiledBinding HasNoMatches}"
+                   Text="{x:Static models:ModelsCopy.NoMatchesText}" />
+
+        <ItemsControl x:Name="GroupList"
+                      ItemsSource="{CompiledBinding Groups}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="models:ProviderGroupModel">
+              <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                          Margin="0,8,0,0"
+                          AutomationProperties.Name="{CompiledBinding Title}">
+                <TextBlock Classes="settings-section"
+                           Text="{CompiledBinding Title}" />
+                <TextBlock Classes="settings-help"
+                           Text="{CompiledBinding Description}" />
+                <ItemsControl ItemsSource="{CompiledBinding Cards}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:ProviderCardModel">
+                      <local:ProviderCardView />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- The polite live region: how many providers match, the result of a change, a key saved, a default set. It never contains a key. -->
+        <TextBlock x:Name="AnnouncementLine"
+                   Classes="muted settings-body"
+                   Text="{CompiledBinding Announcement}"
+                   AutomationProperties.LiveSetting="Polite"
+                   AutomationProperties.Name="{x:Static local:SettingsViewCopy.ModelsAnnouncementName}" />
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Panel>
+
+</local:SettingsPageViewBase>

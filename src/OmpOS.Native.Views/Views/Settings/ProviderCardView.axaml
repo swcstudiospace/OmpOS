@@ -1,0 +1,208 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:OmpOS.Presentation.Settings.Models;assembly=OmpOS.Presentation"
+             xmlns:local="clr-namespace:OmpOS.Native.Views.Settings"
+             x:Class="OmpOS.Native.Views.Settings.ProviderCardView"
+             x:DataType="models:ProviderCardModel"
+             Focusable="False"
+             Margin="0,0,0,8"
+             AutomationProperties.Name="{CompiledBinding DisplayName}">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- One provider card. Keyboard order follows XAML order: the model actions, Add or Replace API key (then the key entry, Save key, Cancel),
+       Test connection, Edit and Remove (then Remove provider, Keep provider). Actions that omp cannot do here have no control. -->
+  <Border Classes="settings-card">
+    <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+      <Grid ColumnDefinitions="*,Auto"
+            ColumnSpacing="8">
+        <TextBlock x:Name="NameLine"
+                   Grid.Column="0"
+                   Classes="settings-section"
+                   Text="{CompiledBinding DisplayName}" />
+        <Border Grid.Column="1"
+                Classes="chip"
+                VerticalAlignment="Top">
+          <TextBlock x:Name="StatusChipText"
+                     Classes="settings-chip-text"
+                     Text="{CompiledBinding StatusLine}" />
+        </Border>
+      </Grid>
+
+      <TextBlock x:Name="EndpointLine"
+                 Classes="muted settings-mono"
+                 IsVisible="{CompiledBinding EndpointText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding EndpointText}" />
+      <TextBlock x:Name="SourceLine"
+                 Classes="settings-help"
+                 IsVisible="{CompiledBinding SourceText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding SourceText}" />
+      <TextBlock x:Name="NoteLine"
+                 Classes="settings-help"
+                 IsVisible="{CompiledBinding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding Note}" />
+      <TextBlock x:Name="SignInLine"
+                 Classes="settings-help"
+                 IsVisible="{CompiledBinding SignInHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding SignInHint}" />
+
+      <!-- The coding plan: the published tiers, how long a paid period lasts and where the plan is described, as text that can be selected. -->
+      <StackPanel x:Name="PlanBlock"
+                  IsVisible="{CompiledBinding HasPlan}"
+                  Spacing="{DynamicResource OmpOS.Gap.Xs}">
+        <ItemsControl x:Name="PlanRows"
+                      ItemsSource="{CompiledBinding PlanLines}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <SelectableTextBlock Classes="settings-selectable"
+                                   Text="{CompiledBinding .}"
+                                   AutomationProperties.Name="{CompiledBinding .}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <SelectableTextBlock x:Name="ValidityLine"
+                             Classes="settings-selectable"
+                             IsVisible="{CompiledBinding PlanValidityText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                             Text="{CompiledBinding PlanValidityText}"
+                             AutomationProperties.Name="{CompiledBinding PlanValidityText}" />
+        <SelectableTextBlock x:Name="PlanUrlLine"
+                             Classes="settings-selectable settings-mono" />
+      </StackPanel>
+
+      <!-- The models: one row each, with the default badge or the Use as default action. -->
+      <TextBlock Classes="settings-label"
+                 Text="{x:Static models:ModelsCopy.ModelsHeading}" />
+      <TextBlock x:Name="NoModelsLine"
+                 Classes="settings-help"
+                 IsVisible="False"
+                 Text="{x:Static models:ModelsCopy.NoModelsText}" />
+      <ItemsControl x:Name="ModelRows"
+                    ItemsSource="{CompiledBinding Models}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="models:ProviderModelRow">
+            <Grid ColumnDefinitions="*,Auto,Auto"
+                  ColumnSpacing="8"
+                  Margin="0,0,0,4">
+              <TextBlock Grid.Column="0"
+                         Classes="settings-mono"
+                         VerticalAlignment="Center"
+                         Text="{CompiledBinding Selector}" />
+              <Border Grid.Column="1"
+                      Classes="chip"
+                      VerticalAlignment="Center"
+                      IsVisible="{CompiledBinding IsDefault}">
+                <TextBlock Classes="settings-chip-text"
+                           Text="{x:Static models:ModelsCopy.DefaultModelLabel}" />
+              </Border>
+              <Button Grid.Column="2"
+                      Classes="use-default"
+                      Content="{x:Static models:ModelsCopy.UseAsDefaultLabel}"
+                      IsVisible="{CompiledBinding CanUseAsDefault}"
+                      AutomationProperties.Name="{CompiledBinding UseAsDefaultName}" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- The key: Add or Replace API key opens a masked entry. The typed value lives only in the draft; it is never shown or revealed. -->
+      <Button x:Name="ApiKeyButton"
+              HorizontalAlignment="Left"
+              Content="{CompiledBinding ApiKeyActionLabel}"
+              Click="OnApiKeyClick" />
+      <StackPanel x:Name="ApiKeyEditor"
+                  x:DataType="models:ApiKeyDraft"
+                  DataContext="{x:Null}"
+                  IsVisible="False"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+        <TextBlock Classes="settings-label"
+                   Text="{CompiledBinding FieldLabel}" />
+        <TextBox x:Name="ApiKeyBox"
+                 PasswordChar="&#8226;"
+                 Text="{CompiledBinding Entry, Mode=TwoWay}"
+                 IsReadOnly="{CompiledBinding IsSaving}"
+                 AutomationProperties.Name="{CompiledBinding FieldLabel}" />
+        <TextBlock x:Name="ApiKeyProblem"
+                   Classes="tone-error settings-body"
+                   IsVisible="{CompiledBinding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Text="{CompiledBinding Error}" />
+        <TextBlock Classes="settings-help"
+                   Text="{CompiledBinding KeyStorageNote}" />
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource OmpOS.Gap.Sm}">
+          <Button x:Name="SaveKeyButton"
+                  Classes="primary"
+                  Content="{x:Static models:ModelsCopy.SaveKeyLabel}"
+                  IsEnabled="{CompiledBinding IsValid}"
+                  Click="OnSaveKeyClick" />
+          <Button x:Name="CancelKeyButton"
+                  Content="{x:Static models:ModelsCopy.CancelLabel}"
+                  Click="OnCancelKeyClick" />
+        </StackPanel>
+      </StackPanel>
+
+      <!-- Test connection, Edit and Remove. -->
+      <StackPanel Orientation="Horizontal"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+        <Button x:Name="TestButton"
+                Content="{x:Static models:ModelsCopy.TestLabel}"
+                Click="OnTestClick" />
+        <Button x:Name="EditButton"
+                Content="{x:Static models:ModelsCopy.EditLabel}"
+                IsVisible="{CompiledBinding CanEdit}"
+                Click="OnEditClick" />
+        <Button x:Name="RemoveButton"
+                Content="{x:Static models:ModelsCopy.RemoveLabel}"
+                IsVisible="False"
+                Click="OnRemoveClick" />
+      </StackPanel>
+
+      <StackPanel x:Name="RemoveConfirm"
+                  IsVisible="{CompiledBinding IsConfirmingRemove}"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+        <TextBlock x:Name="RemoveQuestionLine"
+                   Classes="settings-body"
+                   Text="{CompiledBinding RemoveQuestion}" />
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource OmpOS.Gap.Sm}">
+          <Button x:Name="ConfirmRemoveButton"
+                  Classes="destructive"
+                  Content="{x:Static models:ModelsCopy.ConfirmRemoveLabel}"
+                  Click="OnConfirmRemoveClick" />
+          <Button x:Name="KeepButton"
+                  Content="{x:Static models:ModelsCopy.KeepLabel}"
+                  Click="OnKeepClick" />
+        </StackPanel>
+      </StackPanel>
+
+      <!-- Outcomes. The test result is a polite live region; a failed action is assertive. Neither ever contains a key. -->
+      <TextBlock x:Name="TestingLine"
+                 Classes="muted settings-body"
+                 IsVisible="{CompiledBinding IsTesting}"
+                 Text="{x:Static models:ModelsCopy.TestingText}" />
+      <TextBlock x:Name="TestResultLine"
+                 Classes="settings-body"
+                 IsVisible="{CompiledBinding TestText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding TestText}"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="{CompiledBinding TestText}" />
+      <TextBlock x:Name="ActionLine"
+                 Classes="muted settings-body"
+                 IsVisible="{CompiledBinding ActionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding ActionText}"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="{CompiledBinding ActionText}" />
+      <TextBlock x:Name="ErrorLine"
+                 Classes="tone-error settings-body"
+                 IsVisible="{CompiledBinding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding ErrorText}"
+                 AutomationProperties.LiveSetting="Assertive"
+                 AutomationProperties.Name="{CompiledBinding ErrorText}" />
+
+    </StackPanel>
+  </Border>
+
+</UserControl>

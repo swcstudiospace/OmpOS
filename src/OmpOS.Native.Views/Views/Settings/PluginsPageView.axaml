@@ -1,0 +1,76 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:set="clr-namespace:OmpOS.Presentation.Settings;assembly=OmpOS.Presentation"
+                            xmlns:local="clr-namespace:OmpOS.Native.Views.Settings"
+                            x:Class="OmpOS.Native.Views.Settings.PluginsPageView"
+                            x:DataType="set:PluginsPage"
+                            Focusable="False">
+
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+
+  <!-- The Plugins page: the four always-on plugins as a read-only list. There is deliberately no switch. -->
+  <Panel>
+
+    <local:PageStatusView x:Name="StateView" />
+
+    <ScrollViewer x:Name="ReadyPanel"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                  MaxWidth="720"
+                  HorizontalAlignment="Left">
+
+        <TextBlock Classes="settings-heading"
+                   Text="{x:Static set:SettingsCopy.PluginsHeading}" />
+        <TextBlock x:Name="AlwaysOnNote"
+                   Classes="settings-help"
+                   Text="{x:Static set:SettingsCopy.PluginsAlwaysOnNote}" />
+
+        <TextBlock x:Name="EmptyText"
+                   Classes="muted settings-body"
+                   IsVisible="{CompiledBinding IsEmpty}"
+                   Text="{x:Static set:SettingsCopy.PluginsEmpty}" />
+
+        <ItemsControl x:Name="PluginRows"
+                      ItemsSource="{CompiledBinding Rows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="set:PluginRow">
+              <Border Classes="settings-card"
+                      Margin="0,0,0,8"
+                      AutomationProperties.Name="{CompiledBinding ., Converter={x:Static local:SettingsConverters.PluginSummary}}">
+                <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
+                  <Grid ColumnDefinitions="*,Auto"
+                        ColumnSpacing="8">
+                    <TextBlock Grid.Column="0"
+                               Classes="settings-label"
+                               Text="{CompiledBinding DisplayName}" />
+                    <Border Grid.Column="1"
+                            Classes="chip">
+                      <TextBlock Classes="settings-chip-text"
+                                 Text="{CompiledBinding ., Converter={x:Static local:SettingsConverters.PluginAvailability}}" />
+                    </Border>
+                  </Grid>
+                  <TextBlock Classes="settings-help"
+                             Text="{CompiledBinding Role}" />
+                  <TextBlock Classes="settings-mono"
+                             Text="{CompiledBinding ., Converter={x:Static local:SettingsConverters.PluginVersion}}" />
+                  <TextBlock Classes="settings-help"
+                             IsVisible="{CompiledBinding Detail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                             Text="{CompiledBinding Detail}" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Panel>
+
+</local:SettingsPageViewBase>

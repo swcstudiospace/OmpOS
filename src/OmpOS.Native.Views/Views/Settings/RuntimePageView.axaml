@@ -1,0 +1,65 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:set="clr-namespace:OmpOS.Presentation.Settings;assembly=OmpOS.Presentation"
+                            xmlns:local="clr-namespace:OmpOS.Native.Views.Settings"
+                            x:Class="OmpOS.Native.Views.Settings.RuntimePageView"
+                            x:DataType="set:RuntimePage"
+                            Focusable="False">
+
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+
+  <!-- The Runtime page. Keyboard order follows XAML order: idle stop entry, retention entry. Each entry is checked as it is typed. -->
+  <Panel>
+
+    <local:PageStatusView x:Name="StateView" />
+
+    <ScrollViewer x:Name="ReadyPanel"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                  MaxWidth="640"
+                  HorizontalAlignment="Left">
+
+        <TextBlock x:Name="Heading"
+                   Classes="settings-heading"
+                   Text="{x:Static set:SettingsCopy.RuntimeHeading}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static set:SettingsCopy.RuntimeDescription}" />
+
+        <TextBlock Classes="settings-label"
+                   Margin="0,8,0,0"
+                   Text="{x:Static set:SettingsCopy.IdleStopLabel}" />
+        <TextBox x:Name="IdleStopBox"
+                 AutomationProperties.Name="{x:Static set:SettingsCopy.IdleStopLabel}"
+                 AutomationProperties.HelpText="{x:Static set:SettingsCopy.IdleStopHelp}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static set:SettingsCopy.IdleStopHelp}" />
+        <TextBlock x:Name="IdleStopError"
+                   Classes="tone-error settings-body"
+                   IsVisible="False"
+                   AutomationProperties.LiveSetting="Assertive" />
+
+        <TextBlock Classes="settings-label"
+                   Margin="0,8,0,0"
+                   Text="{x:Static set:SettingsCopy.RetentionLabel}" />
+        <TextBox x:Name="RetentionBox"
+                 AutomationProperties.Name="{x:Static set:SettingsCopy.RetentionLabel}"
+                 AutomationProperties.HelpText="{x:Static set:SettingsCopy.RetentionHelp}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static set:SettingsCopy.RetentionHelp}" />
+        <TextBlock x:Name="RetentionError"
+                   Classes="tone-error settings-body"
+                   IsVisible="False"
+                   AutomationProperties.LiveSetting="Assertive" />
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Panel>
+
+</local:SettingsPageViewBase>
