@@ -1,0 +1,28 @@
+@namespace OmpOS.UI.Components.Blocks
+@using OmpOS.Contracts.Ui
+<div class="ompos-block ompos-file-edit" data-change="@ChangeText" role="group" aria-label="File edit: @Block.Path">
+    <p class="ompos-file-edit-heading">
+        <span class="ompos-file-edit-path">@Block.Path</span>
+        <span class="ompos-file-edit-change">@ChangeText</span>
+    </p>
+    @if (Block.OldText is not null)
+    {
+        <div class="ompos-file-edit-before">
+            <p class="ompos-file-edit-label">Before</p>
+            <pre class="ompos-file-edit-text" tabindex="0">@Block.OldText</pre>
+        </div>
+    }
+    <div class="ompos-file-edit-after">
+        <p class="ompos-file-edit-label">After</p>
+        <pre class="ompos-file-edit-text" tabindex="0">@Block.NewText</pre>
+    </div>
+</div>
+
+@code {
+    /// <summary>Gets the file-edit block to render. Both texts are shown verbatim and never as markup.</summary>
+    [Parameter, EditorRequired]
+    public FileEditBlock Block { get; set; } = null!;
+
+    /// <summary>"created" when the edit has no text before it, else "edited".</summary>
+    private string ChangeText => Block.OldText is null ? "created" : "edited";
+}

@@ -23,6 +23,8 @@ public sealed class SharedScenarioParityTests : UiTestContext
         ("ompos-markdown", ParityKinds.Markdown),
         ("ompos-code", ParityKinds.Code),
         ("ompos-tool-call", ParityKinds.ToolCall),
+        ("ompos-tool-result", ParityKinds.ToolResult),
+        ("ompos-file-edit", ParityKinds.FileEdit),
         ("ompos-permission", ParityKinds.Permission),
         ("ompos-plan", ParityKinds.Plan),
         ("ompos-diff", ParityKinds.Diff),
@@ -46,6 +48,18 @@ public sealed class SharedScenarioParityTests : UiTestContext
     /// <summary>A permission request shows its prompt, its options in order, and the read-only note.</summary>
     [Fact]
     public void PermissionRequestListsOptionsInOrder() => AssertScenario(ParityScenarios.PermissionRequestListsOptionsInOrder());
+
+    /// <summary>A recorded approval decision shows as text on the permission block.</summary>
+    [Fact]
+    public void PermissionDecisionShowsOutcome() => AssertScenario(ParityScenarios.PermissionDecisionShowsOutcome());
+
+    /// <summary>A tool update's output renders as a result block after the call card.</summary>
+    [Fact]
+    public void ToolResultShowsOutputAfterItsCall() => AssertScenario(ParityScenarios.ToolResultShowsOutputAfterItsCall());
+
+    /// <summary>Diff entries render as file-edit blocks with the path and both texts.</summary>
+    [Fact]
+    public void FileEditShowsPathAndBothTexts() => AssertScenario(ParityScenarios.FileEditShowsPathAndBothTexts());
 
     /// <summary>Plan steps render in order.</summary>
     [Fact]

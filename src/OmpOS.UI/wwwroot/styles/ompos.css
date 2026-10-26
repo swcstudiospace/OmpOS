@@ -38,6 +38,16 @@
   border-left: 0.25rem solid var(--ompos-error);
 }
 
+/* Tool output and file text keep their line breaks and scroll inside the block, so a long result never widens the transcript. */
+.ompos-tool-output,
+.ompos-file-edit-text {
+  margin: 0;
+  max-height: 24rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .ompos-btn {
   min-height: var(--ompos-target-size);
   min-width: var(--ompos-target-size);
@@ -102,7 +112,9 @@
 .ompos-btn:focus-visible,
 .ompos-skip-link:focus-visible,
 .ompos-composer-input:focus-visible,
-.ompos-unknown > summary:focus-visible {
+.ompos-unknown > summary:focus-visible,
+.ompos-tool-output:focus-visible,
+.ompos-file-edit-text:focus-visible {
   outline: 3px solid var(--ompos-focus-ring);
   outline-offset: 2px;
 }

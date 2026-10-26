@@ -1,0 +1,15 @@
+@namespace OmpOS.UI.Components.Blocks
+@using OmpOS.Contracts.Ui
+<div class="ompos-block ompos-tool-result" data-status="@Block.Status" role="group" aria-label="Tool result: @Block.ToolName">
+    <p class="ompos-tool-result-heading">
+        <span class="ompos-tool-name">@Block.ToolName</span>
+        <span class="ompos-tool-status">@Block.Status</span>
+    </p>
+    <pre class="ompos-tool-output" tabindex="0">@Block.Output</pre>
+</div>
+
+@code {
+    /// <summary>Gets the tool-result block to render. The output is text, shown verbatim and never as markup.</summary>
+    [Parameter, EditorRequired]
+    public ToolResultBlock Block { get; set; } = null!;
+}

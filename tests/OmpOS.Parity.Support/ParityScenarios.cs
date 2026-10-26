@@ -50,6 +50,38 @@ public static class ParityScenarios
         ],
         Block(ParityKinds.Permission, "Run shell command Allow once Deny The decision is made by policy."));
 
+    /// <summary>A recorded approval decision shows after the options, before the read-only policy note.</summary>
+    public static ParityScenario PermissionDecisionShowsOutcome() => Scenario(
+        "PermissionDecisionShowsOutcome",
+        [
+            ParityEvents.Unknown("permission_request", """{"callId":"perm-1","name":"Run shell command","payloadJson":"{\"options\":[\"Allow once\",\"Deny\"]}"}"""),
+            ParityEvents.Unknown("tool_approval_approved", """{"requestId":"perm-1"}"""),
+        ],
+        Block(ParityKinds.Permission, "Run shell command Allow once Deny Decision: Approved The decision is made by policy."));
+
+    /// <summary>A tool update carrying output text adds a result block, with the call's name and the update's status, after the card.</summary>
+    public static ParityScenario ToolResultShowsOutputAfterItsCall() => Scenario(
+        "ToolResultShowsOutputAfterItsCall",
+        [
+            ParityEvents.Unknown("tool_call", """{"callId":"call-1","name":"list_files","payloadJson":"{}"}"""),
+            ParityEvents.Unknown("tool_call_update", """{"callId":"call-1","status":"completed","payloadJson":"{\"content\":[{\"type\":\"content\",\"content\":{\"type\":\"text\",\"text\":\"3 files\"}}]}"}"""),
+            ParityEvents.Completed(),
+        ],
+        Block(ParityKinds.ToolCall, "list_files completed"),
+        Block(ParityKinds.ToolResult, "list_files completed 3 files"));
+
+    /// <summary>A tool update carrying diff entries adds one file-edit block per entry; an entry with no text before it reads as created.</summary>
+    public static ParityScenario FileEditShowsPathAndBothTexts() => Scenario(
+        "FileEditShowsPathAndBothTexts",
+        [
+            ParityEvents.Unknown("tool_call", """{"callId":"call-1","name":"edit","payloadJson":"{}"}"""),
+            ParityEvents.Unknown("tool_call_update", """{"callId":"call-1","status":"completed","payloadJson":"{\"content\":[{\"type\":\"diff\",\"path\":\"src/a.cs\",\"oldText\":\"old text\",\"newText\":\"new text\"},{\"type\":\"diff\",\"path\":\"src/b.cs\",\"newText\":\"fresh\"}]}"}"""),
+            ParityEvents.Completed(),
+        ],
+        Block(ParityKinds.ToolCall, "edit completed"),
+        Block(ParityKinds.FileEdit, "src/a.cs edited Before old text After new text"),
+        Block(ParityKinds.FileEdit, "src/b.cs created After fresh"));
+
     /// <summary>Plan steps render in order, one per non-empty line.</summary>
     public static ParityScenario PlanStepsRenderInOrder() => Scenario(
         "PlanStepsRenderInOrder",
@@ -162,6 +194,9 @@ public static class ParityScenarios
         CodeBlockFlushesStreamedText(),
         ToolCallCardTracksStatus(),
         PermissionRequestListsOptionsInOrder(),
+        PermissionDecisionShowsOutcome(),
+        ToolResultShowsOutputAfterItsCall(),
+        FileEditShowsPathAndBothTexts(),
         PlanStepsRenderInOrder(),
         ThoughtsStayOutOfTheView(),
         RetryableErrorKeepsPartialOutput(),

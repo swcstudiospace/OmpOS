@@ -14,6 +14,9 @@ namespace OmpOS.GenUi;
 /// text deltas accumulate and flush into markdown blocks at block boundaries, tool-call updates
 /// patch the matching card in place, thoughts are kept in the log but never rendered, and every
 /// other unknown shape is preserved as an <see cref="UnknownBlock"/>.
+/// A tool-call update that carries output text or file edits also yields a <see cref="ToolResultBlock"/> and one
+/// <see cref="FileEditBlock"/> per edit, replaced in place by later updates of the same call (see <c>UiToolBlocks</c>), and a
+/// <c>tool_approval_approved</c> or <c>tool_approval_denied</c> event sets <see cref="PermissionBlock.Decision"/>.
 /// In addition, <c>prompt_accepted</c> and <c>user_message</c> fold to exactly one <see cref="UserMessageBlock"/>
 /// carrying the prompt text, so the user's own turn renders ahead of the assistant output.
 /// Folding the same events from the same tree always yields the same result.
@@ -33,6 +36,8 @@ public static class UiFolder
     private const string PermissionRequestKind = "permission_request";
     private const string PlanKind = "plan";
     private const string PromptAcceptedKind = "prompt_accepted";
+    private const string ToolApprovalApprovedKind = "tool_approval_approved";
+    private const string ToolApprovalDeniedKind = "tool_approval_denied";
     private const string FailedTurnReason = "error";
 
     /// <summary>Folds one stream event into the UI tree. Replaying a log is a fold of this overload from <see cref="UiTree.Empty"/>.</summary>
@@ -86,18 +91,10 @@ public static class UiFolder
                 });
 
             case ToolCallUpdateKind when TryString(raw, "callId", out var updateId) && TryString(raw, "status", out var status):
-                {
-                    var index = FindToolCall(state.Blocks, updateId);
-                    if (index < 0)
-                    {
-                        return AddBlock(state, "unknown", id => Unrecognized(id, unknown));
-                    }
+                return ApplyToolCallUpdate(state, unknown, updateId, status);
 
-                    var existing = (ToolCallBlock)state.Blocks[index];
-                    var updated = new List<UiBlock>(state.Blocks);
-                    updated[index] = existing with { Status = status };
-                    return state with { Blocks = updated };
-                }
+            case ToolApprovalApprovedKind or ToolApprovalDeniedKind when TryString(raw, "requestId", out var decidedRequest):
+                return ApplyApprovalDecision(state, unknown, decidedRequest);
 
             case PermissionRequestKind when TryString(raw, "callId", out var permissionId) && TryString(raw, "name", out var permissionName):
                 return AddBlock(state, "permission", _ => new PermissionBlock
@@ -124,6 +121,38 @@ public static class UiFolder
         }
     }
 
+    private static UiTree ApplyToolCallUpdate(UiTree state, UnknownPayload unknown, string callId, string status)
+    {
+        var raw = unknown.Raw;
+        var index = FindToolCall(state.Blocks, callId);
+        if (index < 0)
+        {
+            return AddBlock(state, "unknown", id => Unrecognized(id, unknown));
+        }
+
+        var existing = (ToolCallBlock)state.Blocks[index];
+        var updated = new List<UiBlock>(state.Blocks);
+        updated[index] = existing with { Status = status };
+        var content = ToolUpdateContent.Read(TryString(raw, "payloadJson", out var updatePayload) ? updatePayload : "{}");
+        return UiToolBlocks.ApplyToolContent(state with { Blocks = updated }, existing, status, content);
+    }
+
+    private static UiTree ApplyApprovalDecision(UiTree state, UnknownPayload unknown, string requestId)
+    {
+        var permissionIndex = UiToolBlocks.FindUndecidedPermission(state.Blocks, requestId);
+        if (permissionIndex < 0)
+        {
+            return AddBlock(state, "unknown", id => Unrecognized(id, unknown));
+        }
+
+        return UiToolBlocks.Decide(
+            state,
+            permissionIndex,
+            string.Equals(unknown.OriginalKind, ToolApprovalApprovedKind, StringComparison.Ordinal)
+                ? ApprovalDecisions.Approved
+                : ApprovalDecisions.Denied);
+    }
+
     private static UnknownBlock Unrecognized(string id, UnknownPayload unknown) => new()
     {
         Id = id,
@@ -131,7 +160,8 @@ public static class UiFolder
         Raw = unknown.Raw,
     };
 
-    private static UiTree Flush(UiTree state)
+    /// <summary>Flushes the streamed text into a markdown block when there is any.</summary>
+    internal static UiTree Flush(UiTree state)
     {
         if (state.StreamingText.Length == 0)
         {
@@ -145,7 +175,8 @@ public static class UiFolder
         };
     }
 
-    private static UiTree Append(UiTree state, UiBlock block) =>
+    /// <summary>Appends a block after the existing ones.</summary>
+    internal static UiTree Append(UiTree state, UiBlock block) =>
         state with { Blocks = [.. state.Blocks, block] };
 
     /// <summary>Flushes streamed text, then appends a block whose identifier is derived from the flushed state.</summary>

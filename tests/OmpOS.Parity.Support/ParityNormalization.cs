@@ -37,6 +37,8 @@ public static class ParityNormalization
         MarkdownBlock => ParityKinds.Markdown,
         CodeBlock => ParityKinds.Code,
         ToolCallBlock => ParityKinds.ToolCall,
+        ToolResultBlock => ParityKinds.ToolResult,
+        FileEditBlock => ParityKinds.FileEdit,
         PermissionBlock => ParityKinds.Permission,
         PlanBlock => ParityKinds.Plan,
         DiffPlaceholderBlock => ParityKinds.Diff,

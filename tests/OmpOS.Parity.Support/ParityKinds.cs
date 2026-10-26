@@ -15,6 +15,12 @@ public static class ParityKinds
     /// <summary>A code block with its language label.</summary>
     public const string Code = "code";
 
+    /// <summary>A tool call's output text, shown as its own block after the call card.</summary>
+    public const string ToolResult = "tool_result";
+
+    /// <summary>A file change a tool call made, with the text before and after.</summary>
+    public const string FileEdit = "file_edit";
+
     /// <summary>A tool-call card with its name and status.</summary>
     public const string ToolCall = "tool_call";
 

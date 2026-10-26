@@ -347,6 +347,12 @@
           "OmpOS.Contracts": "[1.0.0, )"
         }
       },
+      "ompos.harness.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Contracts": "[1.0.0, )"
+        }
+      },
       "ompos.parity.support": {
         "type": "Project",
         "dependencies": {
@@ -367,6 +373,13 @@
           "OmpOS.Contracts": "[1.0.0, )",
           "OmpOS.GenUi": "[1.0.0, )",
           "OmpOS.Parser": "[1.0.0, )"
+        }
+      },
+      "ompos.sessions": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Contracts": "[1.0.0, )",
+          "OmpOS.Harness.Abstractions": "[1.0.0, )"
         }
       },
       "ompos.ui": {
