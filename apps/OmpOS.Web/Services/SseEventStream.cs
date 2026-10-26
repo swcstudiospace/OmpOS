@@ -49,6 +49,7 @@ internal sealed class SseEventStream
     /// <summary>
     /// Streams the session's events from <paramref name="sinceSeq"/> (inclusive when set),
     /// transparently resuming across disconnects until the terminal event or cancellation.
+    /// The reconnect budget counts consecutive connections that deliver no event.
     /// </summary>
     /// <param name="sessionId">The session identifier.</param>
     /// <param name="sinceSeq">The first Seq to include, or null to stream from the head.</param>
@@ -76,6 +77,12 @@ internal sealed class SseEventStream
             if (outcome.Terminal)
             {
                 yield break;
+            }
+
+            // Progress resets the budget: it bounds consecutive connections that deliver nothing, not total disconnects.
+            if (outcome.Progressed)
+            {
+                reconnects = 0;
             }
 
             if (_options.MaxReconnects.HasValue && reconnects >= _options.MaxReconnects.Value)
@@ -216,6 +223,7 @@ internal sealed class SseEventStream
             var evt = ConvertFrame(sessionId, frame, tracker, out var terminal);
             if (evt is not null)
             {
+                outcome.Progressed = true;
                 yield return evt;
             }
 
@@ -247,6 +255,7 @@ internal sealed class SseEventStream
         var evt = ConvertFrame(sessionId, trailing, tracker, out var terminal);
         if (evt is not null)
         {
+            outcome.Progressed = true;
             yield return evt;
         }
 
@@ -340,7 +349,10 @@ internal sealed class SseEventStream
     {
         try
         {
-            return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            return await BoundedContent.ReadTextAsync(
+                response.Content,
+                BoundedContent.MaxErrorBytes,
+                cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -362,5 +374,6 @@ internal sealed class SseEventStream
     private sealed class ConnectionOutcome
     {
         public bool Terminal;
+        public bool Progressed;
     }
 }

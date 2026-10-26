@@ -10,16 +10,24 @@ namespace OmpOS.Web.Services;
 /// </summary>
 internal sealed class SseParser
 {
+    /// <summary>The longest accepted SSE line, in characters, including a partial line still buffered.</summary>
+    internal const int MaxLineLength = 1024 * 1024;
+
+    /// <summary>The largest accepted SSE frame data, in characters, before its blank line dispatches it.</summary>
+    internal const int MaxFrameLength = 4 * 1024 * 1024;
+
     private readonly StringBuilder _lineBuffer = new();
     private readonly List<string> _dataLines = new();
     private string? _pendingId;
     private string? _pendingEventType;
+    private int _frameLength;
 
     /// <summary>
     /// Feeds one text chunk and returns every frame completed by it.
     /// </summary>
     /// <param name="chunk">The next chunk of the response body.</param>
     /// <returns>The frames whose terminating blank line arrived in this chunk.</returns>
+    /// <exception cref="ApiClientException">A line or the pending frame data exceeds its length limit.</exception>
     internal IReadOnlyList<SseFrame> Feed(string chunk)
     {
         ArgumentNullException.ThrowIfNull(chunk);
@@ -29,6 +37,7 @@ internal sealed class SseParser
         {
             if (chunk[i] == '\n')
             {
+                EnsureLineWithinLimit(_lineBuffer.Length + (i - start));
                 _lineBuffer.Append(chunk, start, i - start);
                 start = i + 1;
                 var frame = ConsumeLine(_lineBuffer.ToString());
@@ -40,6 +49,7 @@ internal sealed class SseParser
             }
         }
 
+        EnsureLineWithinLimit(_lineBuffer.Length + (chunk.Length - start));
         _lineBuffer.Append(chunk, start, chunk.Length - start);
         return frames;
     }
@@ -103,7 +113,7 @@ internal sealed class SseParser
 
         if (string.Equals(field, "data", StringComparison.Ordinal))
         {
-            _dataLines.Add(value);
+            AppendData(value);
         }
         else if (string.Equals(field, "event", StringComparison.Ordinal))
         {
@@ -121,8 +131,29 @@ internal sealed class SseParser
     {
         var frame = new SseFrame(_pendingId, _pendingEventType, string.Join('\n', _dataLines));
         _dataLines.Clear();
+        _frameLength = 0;
         _pendingId = null;
         _pendingEventType = null;
         return frame;
+    }
+
+    private void AppendData(string value)
+    {
+        // Data lines join with '\n', so every line after the first adds one separator.
+        _frameLength += value.Length + (_dataLines.Count == 0 ? 0 : 1);
+        if (_frameLength > MaxFrameLength)
+        {
+            throw new ApiClientException($"An SSE frame's data exceeds the {MaxFrameLength}-character limit.");
+        }
+
+        _dataLines.Add(value);
+    }
+
+    private static void EnsureLineWithinLimit(int length)
+    {
+        if (length > MaxLineLength)
+        {
+            throw new ApiClientException($"An SSE line exceeds the {MaxLineLength}-character limit.");
+        }
     }
 }

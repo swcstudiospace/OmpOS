@@ -7,8 +7,8 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// The API origin comes from wwwroot/appsettings.json (Api:BaseUrl) and may be
-// overridden at boot with ?apiBaseUrl=https://api-host. No host is hardcoded.
+// The API origin comes from wwwroot/appsettings.json (Api:BaseUrl). A ?apiBaseUrl= query
+// override is accepted only for loopback hosts (local development). No host is hardcoded.
 builder.Services.AddScoped(sp =>
 {
     var navigation = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();

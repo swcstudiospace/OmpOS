@@ -34,8 +34,10 @@ internal sealed class ApiSessionClient
             WebJsonContext.Default.CreateSessionRequest,
             cancellationToken).ConfigureAwait(false);
         await EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
-        var session = await response.Content.ReadFromJsonAsync(
+        var session = await BoundedContent.ReadJsonAsync(
+            response.Content,
             OmpOsJsonContext.Default.Session,
+            BoundedContent.MaxSuccessBytes,
             cancellationToken).ConfigureAwait(false);
         return session ?? throw new InvalidOperationException("The API returned an empty session body.");
     }
@@ -47,8 +49,10 @@ internal sealed class ApiSessionClient
     {
         using var response = await _http.GetAsync(new Uri("sessions", UriKind.Relative), cancellationToken).ConfigureAwait(false);
         await EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
-        var sessions = await response.Content.ReadFromJsonAsync(
+        var sessions = await BoundedContent.ReadJsonAsync(
+            response.Content,
             OmpOsJsonContext.Default.SessionArray,
+            BoundedContent.MaxSuccessBytes,
             cancellationToken).ConfigureAwait(false);
         return sessions ?? [];
     }
@@ -69,8 +73,10 @@ internal sealed class ApiSessionClient
         }
 
         await EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
-        return await response.Content.ReadFromJsonAsync(
+        return await BoundedContent.ReadJsonAsync(
+            response.Content,
             OmpOsJsonContext.Default.Session,
+            BoundedContent.MaxSuccessBytes,
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -105,7 +111,10 @@ internal sealed class ApiSessionClient
         string? body = null;
         try
         {
-            body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            body = await BoundedContent.ReadTextAsync(
+                response.Content,
+                BoundedContent.MaxErrorBytes,
+                cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
