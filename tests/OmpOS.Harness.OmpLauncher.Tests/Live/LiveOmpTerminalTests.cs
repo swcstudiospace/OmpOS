@@ -34,6 +34,16 @@ public sealed class LiveOmpTerminalTests
 
     private static readonly TimeSpan ExitTimeout = TimeSpan.FromSeconds(20);
 
+    /// <summary>omp ignores Ctrl+C while its TUI is still starting: the output must be quiet this long before the keys are sent.</summary>
+    private static readonly TimeSpan QuietPeriod = TimeSpan.FromSeconds(2);
+
+    private static readonly TimeSpan QuietTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>How long one pair of Ctrl+C gets to end omp before the next pair is tried.</summary>
+    private static readonly TimeSpan AttemptWait = TimeSpan.FromSeconds(8);
+
+    private const int CloseAttempts = 3;
+
     /// <summary>
     /// Starts the real interactive omp with the planned terminal launch, proves all four plugins are connected and the
     /// heartbeat is fresh, closes the session with two Ctrl+C, and proves the process tree is gone.
@@ -90,7 +100,7 @@ public sealed class LiveOmpTerminalTests
             }
             finally
             {
-                exitCode = await CloseWithTwoCtrlCAsync(started.Session, exit).ConfigureAwait(true);
+                exitCode = await CloseWithTwoCtrlCAsync(started.Session, exit, sink).ConfigureAwait(true);
             }
         }
 
@@ -129,7 +139,7 @@ public sealed class LiveOmpTerminalTests
             0,
             string.Create(
                 CultureInfo.InvariantCulture,
-                $"omp did not exit with code 0 within {ExitTimeout.TotalSeconds:F0} s of two Ctrl+C {CtrlCGap.TotalMilliseconds:F0} ms apart (the disposal killed it)."));
+                $"omp did not exit with code 0 within {CloseAttempts} attempts of two Ctrl+C {CtrlCGap.TotalMilliseconds:F0} ms apart, each sent after {QuietPeriod.TotalSeconds:F0} s of quiet output (the disposal killed it)."));
 
     private static void AssertTerminalCommand(OmpLaunchPlan plan, OmpTerminalCommand command)
     {
@@ -155,27 +165,39 @@ public sealed class LiveOmpTerminalTests
             "the process that wrote the connection report is not among the run's omp processes.");
     }
 
-    private static async Task<int?> CloseWithTwoCtrlCAsync(ITerminalSession session, Task<int> exit)
+    private static async Task<int?> CloseWithTwoCtrlCAsync(ITerminalSession session, Task<int> exit, LiveTerminalSink sink)
     {
-        try
+        for (var attempt = 1; attempt <= CloseAttempts; attempt++)
         {
-            await session.WriteInputAsync(CtrlC, CancellationToken.None).ConfigureAwait(true);
-            await Task.Delay(CtrlCGap, CancellationToken.None).ConfigureAwait(true);
-            await session.WriteInputAsync(CtrlC, CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (IOException)
-        {
-            // omp has already exited and no longer reads its input: the wait below returns its exit code.
+            var quiet = await sink.WaitForQuietAsync(QuietPeriod, QuietTimeout, CancellationToken.None).ConfigureAwait(true);
+            try
+            {
+                await session.WriteInputAsync(CtrlC, CancellationToken.None).ConfigureAwait(true);
+                await Task.Delay(CtrlCGap, CancellationToken.None).ConfigureAwait(true);
+                await session.WriteInputAsync(CtrlC, CancellationToken.None).ConfigureAwait(true);
+            }
+            catch (IOException)
+            {
+                // omp has already exited and no longer reads its input: the wait below returns its exit code.
+            }
+
+            try
+            {
+                var code = await exit.WaitAsync(AttemptWait, CancellationToken.None).ConfigureAwait(true);
+                TestContext.Current.TestOutputHelper?.WriteLine(string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"omp exited with code {code} after attempt {attempt} of {CloseAttempts} (output was quiet before the keys: {quiet})."));
+                return code;
+            }
+            catch (TimeoutException)
+            {
+                TestContext.Current.TestOutputHelper?.WriteLine(string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"omp was still running {AttemptWait.TotalSeconds:F0} s after attempt {attempt} of {CloseAttempts} (output was quiet before the keys: {quiet})."));
+            }
         }
 
-        try
-        {
-            return await exit.WaitAsync(ExitTimeout, CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (TimeoutException)
-        {
-            return null;
-        }
+        return null;
     }
 
     private static void Report(OmpTerminalStarted started, LiveTerminalSink sink, IReadOnlyList<LiveProcessInfo> running, LivePluginObservation observation)

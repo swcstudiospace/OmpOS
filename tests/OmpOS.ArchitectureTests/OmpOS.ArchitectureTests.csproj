@@ -18,6 +18,7 @@
     <ProjectReference Include="../../src/OmpOS.Harness.Automations/OmpOS.Harness.Automations.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Registry/OmpOS.Harness.Registry.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.OmpLauncher/OmpOS.Harness.OmpLauncher.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.OmpConfig/OmpOS.Harness.OmpConfig.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Providers/OmpOS.Harness.Providers.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Secrets/OmpOS.Harness.Secrets.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Herdr/OmpOS.Harness.Herdr.csproj" />

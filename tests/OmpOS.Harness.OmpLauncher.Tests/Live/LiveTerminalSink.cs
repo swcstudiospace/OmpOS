@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Channels;
 using OmpOS.Harness.Terminal;
@@ -20,6 +21,7 @@ internal sealed class LiveTerminalSink : IProcessOutputSink, IAsyncDisposable
     private const string LongQuery = "[0c";
     private const int RetainedCharacters = 4000;
     private const int FailureTailCharacters = 1500;
+    private static readonly TimeSpan QuietPollInterval = TimeSpan.FromMilliseconds(100);
 
     private readonly Lock _gate = new();
     private readonly StringBuilder _tail = new();
@@ -29,6 +31,7 @@ internal sealed class LiveTerminalSink : IProcessOutputSink, IAsyncDisposable
     private readonly Task _pump;
     private string _carry = string.Empty;
     private int _queries;
+    private long _lastWriteTimestamp = Stopwatch.GetTimestamp();
 
     /// <summary>Creates the sink and starts its reply pump. The pump waits until <see cref="Attach"/> is called.</summary>
     public LiveTerminalSink()
@@ -56,10 +59,35 @@ internal sealed class LiveTerminalSink : IProcessOutputSink, IAsyncDisposable
         _attached.TrySetResult(session);
     }
 
+    /// <summary>
+    /// Waits until omp has written nothing for <paramref name="quiet"/>, which is when its TUI has finished drawing and reads keys,
+    /// or until <paramref name="timeout"/> passes.
+    /// </summary>
+    /// <param name="quiet">How long the output must stay silent.</param>
+    /// <param name="timeout">The longest this call waits.</param>
+    /// <param name="cancellationToken">Cancels the wait.</param>
+    /// <returns>True when the output went quiet; false when the timeout passed first.</returns>
+    public async Task<bool> WaitForQuietAsync(TimeSpan quiet, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        var started = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(started) < timeout)
+        {
+            if (Stopwatch.GetElapsedTime(Interlocked.Read(ref _lastWriteTimestamp)) >= quiet)
+            {
+                return true;
+            }
+
+            await Task.Delay(QuietPollInterval, cancellationToken).ConfigureAwait(true);
+        }
+
+        return false;
+    }
+
     /// <inheritdoc />
     public void Write(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
+        Interlocked.Exchange(ref _lastWriteTimestamp, Stopwatch.GetTimestamp());
         int found;
         lock (_gate)
         {

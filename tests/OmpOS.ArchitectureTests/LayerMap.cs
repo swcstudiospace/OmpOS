@@ -29,6 +29,7 @@ internal static class LayerMap
         ["OmpOS.Harness.Plugins"] = 2,
         ["OmpOS.Harness.Registry"] = 2,
         ["OmpOS.Harness.OmpLauncher"] = 2,
+        ["OmpOS.Harness.OmpConfig"] = 2,
         ["OmpOS.Harness.Automations"] = 3,
         ["OmpOS.Harness.Providers"] = 2,
         ["OmpOS.Harness.Secrets"] = 2,
@@ -75,5 +76,8 @@ internal static class LayerMap
         ("OmpOS.Harness.McpGateway", "OmpOS.Harness.Mcp"),
         // intentional: the omp launcher starts omp through the terminal library's process host
         ("OmpOS.Harness.OmpLauncher", "OmpOS.Harness.Terminal"),
+        // intentional: the omp configuration client finds the omp executable through the launcher's locator and wraps API keys in the secrets library's SecretString
+        ("OmpOS.Harness.OmpConfig", "OmpOS.Harness.OmpLauncher"),
+        ("OmpOS.Harness.OmpConfig", "OmpOS.Harness.Secrets"),
     };
 }
