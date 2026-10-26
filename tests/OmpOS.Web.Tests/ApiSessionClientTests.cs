@@ -139,6 +139,24 @@ public sealed class ApiSessionClientTests
         };
     }
 
+    /// <summary>An API success body whose declared length exceeds the cap is refused before it is read.</summary>
+    [Fact]
+    public async Task OversizedApiSuccessBodyIsRefused()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var handler = new ScriptedHandler();
+        using var http = ClientHttp(handler);
+        var client = new ApiSessionClient(http);
+        using var oversized = new ByteArrayContent(Encoding.UTF8.GetBytes("[]"))
+        {
+            Headers = { ContentLength = BoundedContent.MaxSuccessBytes + 1 },
+        };
+        using var queued = new HttpResponseMessage(HttpStatusCode.OK) { Content = oversized };
+        handler.Enqueue(queued);
+
+        await Should.ThrowAsync<ApiClientException>(() => client.ListSessionsAsync(ct)).ConfigureAwait(true);
+    }
+
     private static HttpClient ClientHttp(ScriptedHandler handler) =>
         new(handler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
 }
