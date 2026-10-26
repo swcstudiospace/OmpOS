@@ -17,9 +17,11 @@ namespace OmpOS.Presentation.Export;
 /// Each block's text follows its heading verbatim, so markdown in a message stays markdown in the export.
 /// </para>
 /// <para>
-/// Tool calls, permission requests and plans are exported as their text: a tool call keeps its status, call id and raw
-/// JSON arguments, and a permission request lists its options. The streaming tail, when present, is exported last as
-/// an in-progress assistant section, because it is text the transcript has not yet folded into a block.
+/// Tool calls, tool results, file edits, permission requests and plans are exported as their text: a tool call keeps its
+/// status, call id and raw JSON arguments, a tool result its status, call id and output, a file edit its path and the text
+/// before and after, and a permission request lists its options and, once decided, its decision. The streaming tail, when
+/// present, is exported last as an in-progress assistant section, because it is text the transcript has not yet folded
+/// into a block.
 /// </para>
 /// </remarks>
 public static class TranscriptMarkdownExporter
@@ -59,6 +61,8 @@ public static class TranscriptMarkdownExporter
         CodeBlock code => code.Language.Length == 0 ? "Code" : $"Code: {OneLine(code.Language)}",
         ToolCallBlock call => $"Tool call: {OneLine(call.ToolName)}",
         PermissionBlock => "Permission request",
+        ToolResultBlock result => $"Tool result: {OneLine(result.ToolName)}",
+        FileEditBlock edit => $"File edit: {OneLine(edit.Path)}",
         PlanBlock => "Plan",
         DiffPlaceholderBlock diff => $"Diff: {OneLine(diff.Path)}",
         ErrorBlock => "Error",
@@ -76,6 +80,8 @@ public static class TranscriptMarkdownExporter
         CodeBlock code => Fence(OneLine(code.Language), Normalize(code.Code)),
         ToolCallBlock call => ToolCallBody(call),
         PermissionBlock permission => PermissionBody(permission),
+        ToolResultBlock result => ToolResultBody(result),
+        FileEditBlock edit => FileEditBody(edit),
         PlanBlock plan => PlanBody(plan),
         DiffPlaceholderBlock diff => Normalize(diff.Reason),
         ErrorBlock error => ErrorBody(error),
@@ -113,6 +119,36 @@ public static class TranscriptMarkdownExporter
             lines.AddRange(permission.Options.Select(static option => $"- {OneLine(option)}"));
         }
 
+        if (permission.Decision is { Length: > 0 } decision)
+        {
+            lines.Add(string.Empty);
+            lines.Add($"Decision: {OneLine(decision)}");
+        }
+
+        return string.Join('\n', lines);
+    }
+
+    private static string ToolResultBody(ToolResultBlock result) =>
+        $"Status: {OneLine(result.Status)}\n\nCall ID: {OneLine(result.CallId)}\n\n{Fence("text", Normalize(result.Output))}";
+
+    private static string FileEditBody(FileEditBlock edit)
+    {
+        var lines = new List<string> { $"Call ID: {OneLine(edit.CallId)}", string.Empty };
+        if (edit.OldText is null)
+        {
+            lines.Add("Created file:");
+        }
+        else
+        {
+            lines.Add("Before:");
+            lines.Add(string.Empty);
+            lines.Add(Fence(string.Empty, Normalize(edit.OldText)));
+            lines.Add(string.Empty);
+            lines.Add("After:");
+        }
+
+        lines.Add(string.Empty);
+        lines.Add(Fence(string.Empty, Normalize(edit.NewText)));
         return string.Join('\n', lines);
     }
 

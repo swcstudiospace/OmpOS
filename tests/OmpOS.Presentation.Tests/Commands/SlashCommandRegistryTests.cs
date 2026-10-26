@@ -19,14 +19,20 @@ public sealed class SlashCommandRegistryTests
         Command("fork", "Needs a completed prompt; run one first."),
     ]);
 
-    /// <summary>The shipped catalogue holds no command, so every query on it is empty and every name is unknown.</summary>
+    /// <summary>
+    /// The shipped catalogue holds exactly the commands that have a real handler, so every other documented name is unknown and
+    /// gets no suggestion that is not close to a shipped name.
+    /// </summary>
     [Fact]
-    public void ShippedCatalogueIsEmpty()
+    public void ShippedCatalogueHoldsExactlyTheCommandsWithAHandler()
     {
-        SlashCommandCatalogue.Shipped.ListAll().ShouldBeEmpty();
-        SlashCommandCatalogue.Shipped.MatchByPrefix(string.Empty).ShouldBeEmpty();
+        SlashCommandCatalogue.Shipped.ListAll().Select(command => command.Name).ShouldBe(["side"]);
+        SlashCommandCatalogue.Shipped.MatchByPrefix(string.Empty).Select(command => command.Name).ShouldBe(["side"]);
+        SlashCommandCatalogue.Shipped.MatchByPrefix("si").Select(command => command.HandlerId).ShouldBe(["chats.side.open"]);
         SlashCommandCatalogue.Shipped.Suggest("resume").ShouldBeEmpty();
         SlashCommandCatalogue.Shipped.Resolve("resume").ShouldBeOfType<SlashCommandUnknown>().Suggestions.ShouldBeEmpty();
+        SlashCommandCatalogue.Shipped.Resolve("sid").ShouldBeOfType<SlashCommandUnknown>().Suggestions.ShouldBe(["side"]);
+        SlashCommandCatalogue.Shipped.Resolve("side").ShouldBeOfType<SlashCommandAvailable>().Command.HandlerId.ShouldBe("chats.side.open");
     }
 
     /// <summary>ListAll returns the commands in ordinal name order, whatever order the registry was built in.</summary>

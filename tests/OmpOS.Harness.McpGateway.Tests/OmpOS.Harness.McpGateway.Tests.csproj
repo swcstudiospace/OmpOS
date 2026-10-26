@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/OmpOS.Harness.McpGateway/OmpOS.Harness.McpGateway.csproj" />
+    <ProjectReference Include="../OmpOS.Harness.Mcp.Fixtures/OmpOS.Harness.Mcp.Fixtures.csproj" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+</Project>

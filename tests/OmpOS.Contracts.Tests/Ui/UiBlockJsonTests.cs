@@ -21,6 +21,8 @@ public sealed class UiBlockJsonTests
         { "permission", new PermissionBlock { Id = "b4", Prompt = "Allow?", Options = ["Allow", "Deny"] } },
         { "plan", new PlanBlock { Id = "b5", Steps = ["Step one", "Step two"] } },
         { "diff", new DiffPlaceholderBlock { Id = "b6", Path = "src/a.cs", Reason = "Too large" } },
+        { "tool_result", new ToolResultBlock { Id = "b10", CallId = "call-1", ToolName = "bash", Status = "completed", Output = "a.txt" } },
+        { "file_edit", new FileEditBlock { Id = "b11", CallId = "call-2", Path = "src/a.cs", OldText = "old", NewText = "new" } },
         { "a2ui-surface", new A2uiSurfaceBlock { Id = "b8", SurfaceId = "s1", Payload = JsonDocument.Parse("""{"catalog":"core"}""").RootElement.Clone() } },
         { "error", new ErrorBlock { Id = "b7", Message = "boom", Retryable = true } },
         { "unknown", new UnknownBlock { Id = "b9", OriginalKind = "unknown", Raw = JsonDocument.Parse("""{"kind":"unknown","id":"b9","note":"kept"}""").RootElement.Clone() } },

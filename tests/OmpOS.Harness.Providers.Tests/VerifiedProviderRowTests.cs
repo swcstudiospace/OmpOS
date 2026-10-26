@@ -14,14 +14,14 @@ public sealed class VerifiedProviderRowTests
     public void OllamaLocalOpenAiRouteRowIsAccepted()
     {
         // providers-local-us.md:15 (Ollama, OpenAI-compatible local route), status verified.
-        ProviderEntryValidator.Validate(VerifiedProviderRows.OllamaLocalOpenAi).Errors.ShouldBeEmpty();
+        ProviderEntryValidator.Validate(ProviderCatalogue.OllamaLocalOpenAi).Errors.ShouldBeEmpty();
     }
 
     [Fact]
     public void OllamaLocalOpenAiRouteMatchesRow()
     {
         // providers-local-us.md:15: local base http://localhost:11434/v1/; key required by client but ignored.
-        var entry = VerifiedProviderRows.OllamaLocalOpenAi;
+        var entry = ProviderCatalogue.OllamaLocalOpenAi;
 
         entry.Transport.ShouldBe(ProviderTransport.OpenAiCompatible);
         entry.AuthType.ShouldBe(ProviderAuthType.ApiKey);
@@ -33,14 +33,14 @@ public sealed class VerifiedProviderRowTests
     public void OllamaCloudOpenAiRouteRowIsAccepted()
     {
         // providers-local-us.md:15 (Ollama, OpenAI-compatible cloud route), status verified.
-        ProviderEntryValidator.Validate(VerifiedProviderRows.OllamaCloudOpenAi).Errors.ShouldBeEmpty();
+        ProviderEntryValidator.Validate(ProviderCatalogue.OllamaCloudOpenAi).Errors.ShouldBeEmpty();
     }
 
     [Fact]
     public void OllamaCloudOpenAiRouteMatchesRow()
     {
         // providers-local-us.md:15: cloud base https://ollama.com/v1; Bearer OLLAMA_API_KEY.
-        var entry = VerifiedProviderRows.OllamaCloudOpenAi;
+        var entry = ProviderCatalogue.OllamaCloudOpenAi;
 
         entry.Transport.ShouldBe(ProviderTransport.OpenAiCompatible);
         entry.AuthType.ShouldBe(ProviderAuthType.BearerToken);
@@ -52,14 +52,14 @@ public sealed class VerifiedProviderRowTests
     public void LlamaCppLocalOpenAiRouteRowIsAccepted()
     {
         // providers-local-us.md:17 (llama.cpp server, OpenAI-compatible route), status verified.
-        ProviderEntryValidator.Validate(VerifiedProviderRows.LlamaCppLocalOpenAi).Errors.ShouldBeEmpty();
+        ProviderEntryValidator.Validate(ProviderCatalogue.LlamaCppLocalOpenAi).Errors.ShouldBeEmpty();
     }
 
     [Fact]
     public void LlamaCppLocalOpenAiRouteMatchesRow()
     {
         // providers-local-us.md:17: default base http://127.0.0.1:9931; --api-key flag; chat, responses, embeddings.
-        var entry = VerifiedProviderRows.LlamaCppLocalOpenAi;
+        var entry = ProviderCatalogue.LlamaCppLocalOpenAi;
 
         entry.Transport.ShouldBe(ProviderTransport.OpenAiCompatible);
         entry.AuthType.ShouldBe(ProviderAuthType.ApiKey);
@@ -71,14 +71,14 @@ public sealed class VerifiedProviderRowTests
     public void PerplexityRowIsAccepted()
     {
         // providers-local-us.md:36 (Perplexity, Responses route), status verified.
-        ProviderEntryValidator.Validate(VerifiedProviderRows.Perplexity).Errors.ShouldBeEmpty();
+        ProviderEntryValidator.Validate(ProviderCatalogue.Perplexity).Errors.ShouldBeEmpty();
     }
 
     [Fact]
     public void PerplexityMatchesRow()
     {
         // providers-local-us.md:36: base https://api.perplexity.ai/v1; Responses format; API key.
-        var entry = VerifiedProviderRows.Perplexity;
+        var entry = ProviderCatalogue.Perplexity;
 
         entry.Transport.ShouldBe(ProviderTransport.OpenAiCompatible);
         entry.AuthType.ShouldBe(ProviderAuthType.ApiKey);
@@ -90,14 +90,14 @@ public sealed class VerifiedProviderRowTests
     public void OpenRouterAnthropicRouteRowIsAccepted()
     {
         // providers-local-us.md:31 (OpenRouter, Anthropic route for Claude Code), status verified.
-        ProviderEntryValidator.Validate(VerifiedProviderRows.OpenRouterAnthropic).Errors.ShouldBeEmpty();
+        ProviderEntryValidator.Validate(ProviderCatalogue.OpenRouterAnthropic).Errors.ShouldBeEmpty();
     }
 
     [Fact]
     public void OpenRouterAnthropicRouteMatchesRow()
     {
         // providers-local-us.md:31: Claude Code base https://openrouter.ai/api; Bearer OPENROUTER_API_KEY.
-        var entry = VerifiedProviderRows.OpenRouterAnthropic;
+        var entry = ProviderCatalogue.OpenRouterAnthropic;
 
         entry.Transport.ShouldBe(ProviderTransport.AnthropicCompatible);
         entry.AuthType.ShouldBe(ProviderAuthType.BearerToken);
@@ -109,14 +109,14 @@ public sealed class VerifiedProviderRowTests
     public void HuggingFaceRouteRowIsAccepted()
     {
         // providers-eu-cn.md:19 (Hugging Face Inference Providers, EU-7, OpenAI-compatible route), status VERIFIED.
-        ProviderEntryValidator.Validate(VerifiedProviderRows.HuggingFaceRouter).Errors.ShouldBeEmpty();
+        ProviderEntryValidator.Validate(ProviderCatalogue.HuggingFaceRouter).Errors.ShouldBeEmpty();
     }
 
     [Fact]
     public void HuggingFaceRouteMatchesRow()
     {
         // providers-eu-cn.md:19: OpenAI-compatible (V) base https://router.huggingface.co/v1; HF token, Bearer (V).
-        var entry = VerifiedProviderRows.HuggingFaceRouter;
+        var entry = ProviderCatalogue.HuggingFaceRouter;
 
         entry.Transport.ShouldBe(ProviderTransport.OpenAiCompatible);
         entry.AuthType.ShouldBe(ProviderAuthType.BearerToken);
@@ -128,14 +128,14 @@ public sealed class VerifiedProviderRowTests
     public void DeepSeekAnthropicRouteRowIsAccepted()
     {
         // providers-eu-cn.md:22 (DeepSeek, CN-1, Anthropic route), status VERIFIED.
-        ProviderEntryValidator.Validate(VerifiedProviderRows.DeepSeekAnthropic).Errors.ShouldBeEmpty();
+        ProviderEntryValidator.Validate(ProviderCatalogue.DeepSeekAnthropic).Errors.ShouldBeEmpty();
     }
 
     [Fact]
     public void DeepSeekAnthropicRouteMatchesRow()
     {
         // providers-eu-cn.md:22: Anthropic base https://api.deepseek.com/anthropic (V); API key, Bearer (V).
-        var entry = VerifiedProviderRows.DeepSeekAnthropic;
+        var entry = ProviderCatalogue.DeepSeekAnthropic;
 
         entry.Transport.ShouldBe(ProviderTransport.AnthropicCompatible);
         entry.AuthType.ShouldBe(ProviderAuthType.BearerToken);
@@ -147,14 +147,14 @@ public sealed class VerifiedProviderRowTests
     public void MiniMaxAnthropicRouteRowIsAccepted()
     {
         // providers-eu-cn.md:26 (MiniMax M Plan, CN-5, Anthropic route), status VERIFIED.
-        ProviderEntryValidator.Validate(VerifiedProviderRows.MiniMaxAnthropic).Errors.ShouldBeEmpty();
+        ProviderEntryValidator.Validate(ProviderCatalogue.MiniMaxAnthropic).Errors.ShouldBeEmpty();
     }
 
     [Fact]
     public void MiniMaxAnthropicRouteMatchesRow()
     {
         // providers-eu-cn.md:26: Anthropic base https://api.minimax.io/anthropic (V); M Plan API key, header not stated.
-        var entry = VerifiedProviderRows.MiniMaxAnthropic;
+        var entry = ProviderCatalogue.MiniMaxAnthropic;
 
         entry.Transport.ShouldBe(ProviderTransport.AnthropicCompatible);
         entry.AuthType.ShouldBe(ProviderAuthType.ApiKey);

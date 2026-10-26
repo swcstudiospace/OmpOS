@@ -48,7 +48,8 @@ public static class TranscriptSearch
         return matches;
     }
 
-    private static void AddMatches(List<TranscriptMatch> matches, int blockIndex, string text, string query)
+    /// <summary>Appends the non-overlapping case-insensitive matches of <paramref name="query"/> in one text.</summary>
+    internal static void AddMatches(List<TranscriptMatch> matches, int blockIndex, string text, string query)
     {
         var start = 0;
         while (start <= text.Length - query.Length)

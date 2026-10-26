@@ -32,6 +32,8 @@ namespace OmpOS.Contracts.Serialization;
 [JsonSerializable(typeof(PermissionBlock))]
 [JsonSerializable(typeof(PlanBlock))]
 [JsonSerializable(typeof(DiffPlaceholderBlock))]
+[JsonSerializable(typeof(ToolResultBlock))]
+[JsonSerializable(typeof(FileEditBlock))]
 [JsonSerializable(typeof(ErrorBlock))]
 [JsonSerializable(typeof(A2uiSurfaceBlock))]
 [JsonSerializable(typeof(UnknownBlock))]

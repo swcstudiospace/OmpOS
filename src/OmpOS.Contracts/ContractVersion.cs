@@ -6,7 +6,7 @@ namespace OmpOS.Contracts;
 public static class ContractVersion
 {
     /// <summary>The current contract version (semver).</summary>
-    public const string Current = "1.0.0";
+    public const string Current = "1.1.0";
 
     /// <summary>The header carrying the contract version.</summary>
     public const string HeaderName = "X-Ompos-Contract-Version";

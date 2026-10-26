@@ -55,9 +55,6 @@ public static class AgentPanelCopy
     /// <summary>The body of a selected session with no messages.</summary>
     public const string EmptySessionBody = "Send a task. The pipeline starts when you send it.";
 
-    /// <summary>The inspector text while no agent is selected.</summary>
-    public const string InspectorEmpty = "Select an agent to see its pipeline.";
-
     /// <summary>The label of the retry button of the panel error.</summary>
     public const string RetryLoading = "Retry loading";
 

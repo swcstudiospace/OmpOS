@@ -10,21 +10,24 @@ namespace OmpOS.Harness.Registry;
 /// <remarks>
 /// Each successful mutation increments the generation by exactly one. A mutation that throws leaves the generation, the
 /// entries and the export unchanged. Mutations are serialized, so concurrent calls apply one after another. Reads of
-/// <see cref="Snapshot"/> never wait.
+/// <see cref="Snapshot"/> never wait. A writer holds an exclusive lock on a sibling lock file for its whole lifetime, so a
+/// second writer over the same export, in this process or another, is refused until the first is disposed.
 /// </remarks>
 public sealed class RegistryWriter : IDisposable
 {
     private readonly string _path;
     private readonly string _directory;
     private readonly IRegistryFileSystem _fileSystem;
+    private readonly FileStream _lock;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private State _state;
 
-    private RegistryWriter(string path, string directory, IRegistryFileSystem fileSystem, State state)
+    private RegistryWriter(string path, string directory, IRegistryFileSystem fileSystem, FileStream writerLock, State state)
     {
         _path = path;
         _directory = directory;
         _fileSystem = fileSystem;
+        _lock = writerLock;
         _state = state;
     }
 
@@ -35,15 +38,16 @@ public sealed class RegistryWriter : IDisposable
 
     /// <summary>
     /// Opens the registry whose export is at <paramref name="path"/>, or starts an empty registry at generation 0 when no export
-    /// exists.
+    /// exists. The export's directory is created and the single-writer lock is taken before the export is read.
     /// </summary>
-    /// <param name="path">The export file. Its directory is created on the first mutation.</param>
+    /// <param name="path">The export file.</param>
     /// <param name="fileSystem">The storage used for publishing. The system file system when null.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The opened writer.</returns>
     /// <exception cref="InvalidRegistryExportException">
     /// The export exists but is malformed or fails its checksum. The writer refuses to open, so the file is not overwritten.
     /// </exception>
+    /// <exception cref="RegistryWriterLockedException">Another writer already holds this export.</exception>
     public static async Task<RegistryWriter> OpenAsync(string path, IRegistryFileSystem? fileSystem, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -51,19 +55,29 @@ public sealed class RegistryWriter : IDisposable
         var directory = Path.GetDirectoryName(fullPath)
             ?? throw new ArgumentException("The path must name a file inside a directory.", nameof(path));
 
-        var state = State.Empty;
-        if (File.Exists(fullPath))
+        Directory.CreateDirectory(directory);
+        var writerLock = AcquireLock(directory, fullPath);
+        try
         {
-            var bytes = await File.ReadAllBytesAsync(fullPath, cancellationToken).ConfigureAwait(false);
-            if (!RegistryExport.TryParse(bytes, out var snapshot, out var rejection))
+            var state = State.Empty;
+            if (File.Exists(fullPath))
             {
-                throw new InvalidRegistryExportException(fullPath, rejection);
+                var bytes = await File.ReadAllBytesAsync(fullPath, cancellationToken).ConfigureAwait(false);
+                if (!RegistryExport.TryParse(bytes, out var snapshot, out var rejection))
+                {
+                    throw new InvalidRegistryExportException(fullPath, rejection);
+                }
+
+                state = State.From(snapshot);
             }
 
-            state = State.From(snapshot);
+            return new RegistryWriter(fullPath, directory, fileSystem ?? SystemRegistryFileSystem.Instance, writerLock, state);
         }
-
-        return new RegistryWriter(fullPath, directory, fileSystem ?? SystemRegistryFileSystem.Instance, state);
+        catch
+        {
+            await writerLock.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
     }
 
     /// <summary>
@@ -142,9 +156,27 @@ public sealed class RegistryWriter : IDisposable
     }
 
     /// <summary>
-    /// Releases the lock that serializes mutations. The export on disk is already current after every change.
+    /// Releases the lock that serializes mutations and the single-writer lock, so another writer may open the export. The
+    /// export on disk is already current after every change.
     /// </summary>
-    public void Dispose() => _gate.Dispose();
+    public void Dispose()
+    {
+        _gate.Dispose();
+        _lock.Dispose();
+    }
+
+    private static FileStream AcquireLock(string directory, string fullPath)
+    {
+        var lockPath = Path.Combine(directory, $".{Path.GetFileName(fullPath)}.lock");
+        try
+        {
+            return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        }
+        catch (IOException exception)
+        {
+            throw new RegistryWriterLockedException("Another writer already holds this registry export.", fullPath, exception);
+        }
+    }
 
     private static void ValidateId(string id) => ArgumentException.ThrowIfNullOrWhiteSpace(id);
 

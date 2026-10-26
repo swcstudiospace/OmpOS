@@ -10,7 +10,7 @@ public sealed class ProviderEndpointValidatorTests
     public void HttpsEndpointIsAccepted()
     {
         // Row: providers-local-us.md:15 (Ollama cloud base https://ollama.com/v1).
-        var result = ProviderEndpointValidator.Validate(VerifiedProviderRows.OllamaCloudOpenAi.BaseEndpoint, allowRemotePlainHttp: false);
+        var result = ProviderEndpointValidator.Validate(ProviderCatalogue.OllamaCloudOpenAi.BaseEndpoint, allowRemotePlainHttp: false);
 
         result.IsValid.ShouldBeTrue();
     }
@@ -19,7 +19,7 @@ public sealed class ProviderEndpointValidatorTests
     public void LocalhostHttpIsAccepted()
     {
         // Row: providers-local-us.md:15 (Ollama local base http://localhost:11434/v1/).
-        var result = ProviderEndpointValidator.Validate(VerifiedProviderRows.OllamaLocalOpenAi.BaseEndpoint, allowRemotePlainHttp: false);
+        var result = ProviderEndpointValidator.Validate(ProviderCatalogue.OllamaLocalOpenAi.BaseEndpoint, allowRemotePlainHttp: false);
 
         result.IsValid.ShouldBeTrue();
     }
@@ -28,7 +28,7 @@ public sealed class ProviderEndpointValidatorTests
     public void IPv4LoopbackHttpIsAccepted()
     {
         // Row: providers-local-us.md:17 (llama.cpp default base http://127.0.0.1:9931).
-        var result = ProviderEndpointValidator.Validate(VerifiedProviderRows.LlamaCppLocalOpenAi.BaseEndpoint, allowRemotePlainHttp: false);
+        var result = ProviderEndpointValidator.Validate(ProviderCatalogue.LlamaCppLocalOpenAi.BaseEndpoint, allowRemotePlainHttp: false);
 
         result.IsValid.ShouldBeTrue();
     }

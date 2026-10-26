@@ -95,7 +95,10 @@ public sealed class RegistryWriterTests
         await Should.ThrowAsync<IOException>(() => interrupted.AddAsync("beta", "Beta", Token));
 
         (await File.ReadAllBytesAsync(directory.ExportPath, Token)).ShouldBe(before);
-        Directory.GetFiles(directory.Path).Select(Path.GetFileName).ShouldBe(["registry.json"]);
+        Directory.GetFiles(directory.Path)
+            .Select(Path.GetFileName)
+            .Where(name => !name!.EndsWith(".lock", StringComparison.Ordinal))
+            .ShouldBe(["registry.json"]);
 
         interrupted.Snapshot.Generation.ShouldBe(1);
         interrupted.Snapshot.Entries.Select(entry => entry.Id).ShouldBe(["alpha"]);
@@ -159,5 +162,50 @@ public sealed class RegistryWriterTests
             () => RegistryWriter.OpenAsync(directory.ExportPath, null, Token));
 
         (await File.ReadAllBytesAsync(directory.ExportPath, Token)).ShouldBe(before);
+    }
+
+    [Fact]
+    public async Task SecondWriterOverTheSameExportIsRefused()
+    {
+        using var directory = new TempDirectory();
+        using var first = await RegistryWriter.OpenAsync(directory.ExportPath, null, Token);
+        await first.AddAsync("alpha", "Alpha", Token);
+        var before = await File.ReadAllBytesAsync(directory.ExportPath, Token);
+
+        var refused = await Should.ThrowAsync<RegistryWriterLockedException>(
+            () => RegistryWriter.OpenAsync(directory.ExportPath, null, Token));
+
+        refused.ExportPath.ShouldBe(Path.GetFullPath(directory.ExportPath));
+        (await File.ReadAllBytesAsync(directory.ExportPath, Token)).ShouldBe(before);
+
+        await first.AddAsync("beta", "Beta", Token);
+        first.Snapshot.Generation.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task SecondWriterIsAcceptedOnceTheFirstIsDisposed()
+    {
+        using var directory = new TempDirectory();
+        using (var first = await RegistryWriter.OpenAsync(directory.ExportPath, null, Token))
+        {
+            await first.AddAsync("alpha", "Alpha", Token);
+        }
+
+        using var second = await RegistryWriter.OpenAsync(directory.ExportPath, null, Token);
+        second.Snapshot.Generation.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task WriterThatFailsToOpenOverAMalformedExportReleasesTheLock()
+    {
+        using var directory = new TempDirectory();
+        await File.WriteAllTextAsync(directory.ExportPath, "{ not an export", Token);
+
+        await Should.ThrowAsync<InvalidRegistryExportException>(
+            () => RegistryWriter.OpenAsync(directory.ExportPath, null, Token));
+
+        // A second attempt reaches the export check again instead of being refused as locked.
+        await Should.ThrowAsync<InvalidRegistryExportException>(
+            () => RegistryWriter.OpenAsync(directory.ExportPath, null, Token));
     }
 }

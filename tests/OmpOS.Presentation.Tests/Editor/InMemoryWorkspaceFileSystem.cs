@@ -9,7 +9,7 @@ namespace OmpOS.Presentation.Tests;
 internal sealed class InMemoryWorkspaceFileSystem : IWorkspaceFileSystem
 {
     private readonly HashSet<string> _directories = new(StringComparer.Ordinal) { string.Empty };
-    private readonly HashSet<string> _files = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _files = new(StringComparer.Ordinal);
     private readonly List<string> _listed = [];
 
     /// <summary>Creates an empty file system with the given root path label.</summary>
@@ -22,17 +22,21 @@ internal sealed class InMemoryWorkspaceFileSystem : IWorkspaceFileSystem
     /// <summary>Gets the directories listed so far, in the order they were listed.</summary>
     public IReadOnlyList<string> ListedDirectories => _listed;
 
+    /// <summary>Gets the number of writes that reached a file. A refused write does not count.</summary>
+    public int WriteCount { get; private set; }
+
     /// <inheritdoc/>
     public string RootPath { get; }
 
     /// <summary>Adds a file, and any missing parent directories.</summary>
     /// <param name="relativePath">The workspace-relative path of the file.</param>
+    /// <param name="content">The text of the file.</param>
     /// <returns>This file system, for chaining.</returns>
-    public InMemoryWorkspaceFileSystem WithFile(string relativePath)
+    public InMemoryWorkspaceFileSystem WithFile(string relativePath, string content = "")
     {
         var path = WorkspacePath.Normalize(relativePath);
         AddParents(path);
-        _files.Add(path);
+        _files[path] = content;
         return this;
     }
 
@@ -62,12 +66,39 @@ internal sealed class InMemoryWorkspaceFileSystem : IWorkspaceFileSystem
             entries.Add(new WorkspaceEntry(NameOf(directory), directory, IsDirectory: true));
         }
 
-        foreach (var file in _files.Where(path => string.Equals(ParentOf(path), relativeDirectory, StringComparison.Ordinal)))
+        foreach (var file in _files.Keys.Where(path => string.Equals(ParentOf(path), relativeDirectory, StringComparison.Ordinal)))
         {
             entries.Add(new WorkspaceEntry(NameOf(file), file, IsDirectory: false));
         }
 
         return entries;
+    }
+
+    /// <inheritdoc/>
+    public string ReadFile(string relativePath)
+    {
+        var path = WorkspacePath.Normalize(relativePath);
+        return _files.TryGetValue(path, out var content)
+            ? content
+            : throw new FileNotFoundException($"No file exists at '{relativePath}'.");
+    }
+
+    /// <inheritdoc/>
+    public void WriteFile(string relativePath, string content, string expectedCurrent)
+    {
+        var path = WorkspacePath.Normalize(relativePath);
+        if (!_files.TryGetValue(path, out var current))
+        {
+            throw new FileNotFoundException($"No file exists at '{relativePath}'.");
+        }
+
+        if (!string.Equals(current, expectedCurrent, StringComparison.Ordinal))
+        {
+            throw new StaleWorkspaceFileException($"'{relativePath}' changed after it was read; nothing was written.");
+        }
+
+        _files[path] = content;
+        WriteCount++;
     }
 
     private void AddParents(string path)

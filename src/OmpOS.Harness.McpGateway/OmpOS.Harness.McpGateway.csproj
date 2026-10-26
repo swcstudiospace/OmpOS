@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../OmpOS.Harness.Mcp/OmpOS.Harness.Mcp.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OmpOS.Harness.McpGateway.Tests" />
+  </ItemGroup>
+
+</Project>

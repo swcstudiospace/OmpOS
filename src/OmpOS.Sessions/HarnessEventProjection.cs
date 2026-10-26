@@ -22,6 +22,12 @@ namespace OmpOS.Sessions;
 /// <see cref="UnknownPayload.Raw"/> object carries a <c>kind</c> member equal to that name, so the kind survives
 /// serialization. Nothing is dropped silently.
 /// </para>
+/// <para>
+/// A tool-call update that carries output text or file edits (the ACP <c>content</c> and <c>rawOutput</c> members, read by
+/// <see cref="ToolUpdateContent.Read"/>) also yields a <see cref="ToolResultBlock"/> and one <see cref="FileEditBlock"/> per
+/// edit, replaced in place by later updates of the same call. A <c>tool_approval_approved</c> or <c>tool_approval_denied</c>
+/// event sets <see cref="PermissionBlock.Decision"/> on the permission block its request identifier addresses.
+/// </para>
 /// </remarks>
 public static class HarnessEventProjection
 {
@@ -31,6 +37,8 @@ public static class HarnessEventProjection
     private const string PermissionRequestKind = "permission_request";
     private const string PlanKind = "plan";
     private const string PromptAcceptedKind = "prompt_accepted";
+    private const string ToolApprovalApprovedKind = "tool_approval_approved";
+    private const string ToolApprovalDeniedKind = "tool_approval_denied";
     private const string FailedTurnReason = "error";
 
     /// <summary>Folds one harness event into the UI state.</summary>
@@ -152,18 +160,10 @@ public static class HarnessEventProjection
                 });
 
             case ToolCallUpdateKind when TryString(raw, "callId", out var updateId) && TryString(raw, "status", out var status):
-                {
-                    var index = FindToolCall(state.Blocks, updateId);
-                    if (index < 0)
-                    {
-                        return AddBlock(state, "unknown", id => Unrecognized(id, unknown));
-                    }
+                return ApplyToolCallUpdate(state, unknown, updateId, status);
 
-                    var existing = (ToolCallBlock)state.Blocks[index];
-                    var updated = new List<UiBlock>(state.Blocks);
-                    updated[index] = existing with { Status = status };
-                    return state with { Blocks = updated };
-                }
+            case ToolApprovalApprovedKind or ToolApprovalDeniedKind when TryString(raw, "requestId", out var decidedRequest):
+                return ApplyApprovalDecision(state, unknown, decidedRequest);
 
             case PermissionRequestKind when TryString(raw, "callId", out var permissionId) && TryString(raw, "name", out var permissionName):
                 return AddBlock(state, "permission", _ => new PermissionBlock
@@ -188,6 +188,39 @@ public static class HarnessEventProjection
             default:
                 return AddBlock(state, "unknown", id => Unrecognized(id, unknown));
         }
+    }
+
+    private static ProjectionState ApplyToolCallUpdate(ProjectionState state, UnknownPayload unknown, string callId, string status)
+    {
+        var index = FindToolCall(state.Blocks, callId);
+        if (index < 0)
+        {
+            return AddBlock(state, "unknown", id => Unrecognized(id, unknown));
+        }
+
+        var existing = (ToolCallBlock)state.Blocks[index];
+        var updated = new List<UiBlock>(state.Blocks);
+        updated[index] = existing with { Status = status };
+        var content = ToolUpdateContent.Read(TryString(unknown.Raw, "payloadJson", out var updatePayload) ? updatePayload : "{}");
+        return ApplyToolContent(state with { Blocks = updated }, existing, status, content);
+    }
+
+    private static ProjectionState ApplyApprovalDecision(ProjectionState state, UnknownPayload unknown, string requestId)
+    {
+        var permissionIndex = FindUndecidedPermission(state.Blocks, requestId);
+        if (permissionIndex < 0)
+        {
+            return AddBlock(state, "unknown", id => Unrecognized(id, unknown));
+        }
+
+        var decided = new List<UiBlock>(state.Blocks);
+        decided[permissionIndex] = ((PermissionBlock)state.Blocks[permissionIndex]) with
+        {
+            Decision = string.Equals(unknown.OriginalKind, ToolApprovalApprovedKind, StringComparison.Ordinal)
+                ? ApprovalDecisions.Approved
+                : ApprovalDecisions.Denied,
+        };
+        return state with { Blocks = decided };
     }
 
     private static UnknownBlock Unrecognized(string id, UnknownPayload unknown) => new()
@@ -228,6 +261,89 @@ public static class HarnessEventProjection
         for (var i = blocks.Count - 1; i >= 0; i--)
         {
             if (blocks[i] is ToolCallBlock call && string.Equals(call.CallId, callId, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    /// <summary>
+    /// Adds the result and file-edit blocks a tool-call update carries after the transcript's blocks. A block this
+    /// call already produced (same identifier) is replaced in place, because an update's content stands for the whole
+    /// content, so a later update never appends a second copy. An update with no output and no edits changes nothing.
+    /// </summary>
+    private static ProjectionState ApplyToolContent(ProjectionState state, ToolCallBlock call, string status, ToolUpdateContent content)
+    {
+        var produced = new List<UiBlock>();
+        if (content.Output.Length > 0)
+        {
+            produced.Add(new ToolResultBlock
+            {
+                Id = $"{call.CallId}-result",
+                CallId = call.CallId,
+                ToolName = call.ToolName,
+                Status = status,
+                Output = content.Output,
+            });
+        }
+
+        for (var i = 0; i < content.Edits.Count; i++)
+        {
+            var edit = content.Edits[i];
+            produced.Add(new FileEditBlock
+            {
+                Id = $"{call.CallId}-edit-{i}",
+                CallId = call.CallId,
+                Path = edit.Path,
+                OldText = edit.OldText,
+                NewText = edit.NewText,
+            });
+        }
+
+        var current = state;
+        foreach (var block in produced)
+        {
+            var index = FindBlock(current.Blocks, block.Id);
+            if (index >= 0)
+            {
+                var replaced = new List<UiBlock>(current.Blocks) { [index] = block };
+                current = current with { Blocks = replaced };
+            }
+            else
+            {
+                current = Append(Flush(current), block);
+            }
+        }
+
+        return current;
+    }
+
+    private static int FindBlock(IReadOnlyList<UiBlock> blocks, string id)
+    {
+        for (var i = blocks.Count - 1; i >= 0; i--)
+        {
+            if (string.Equals(blocks[i].Id, id, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    /// <summary>
+    /// Finds the latest permission block with no decision that the request identifier addresses: either its own
+    /// identifier, or a run-scoped identifier of the form <c>{runId}:{blockId}</c>.
+    /// </summary>
+    private static int FindUndecidedPermission(IReadOnlyList<UiBlock> blocks, string requestId)
+    {
+        for (var i = blocks.Count - 1; i >= 0; i--)
+        {
+            if (blocks[i] is PermissionBlock { Decision: null } permission
+                && (string.Equals(permission.Id, requestId, StringComparison.Ordinal)
+                    || requestId.EndsWith(':' + permission.Id, StringComparison.Ordinal)))
             {
                 return i;
             }
