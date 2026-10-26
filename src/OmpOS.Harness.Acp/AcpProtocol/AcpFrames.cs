@@ -251,6 +251,10 @@ public static class AcpFrames
 
         /// <summary>Gets the agent capabilities.</summary>
         public AgentCapabilities AgentCapabilities { get; init; } = new();
+
+        /// <summary>Gets the opaque top-level <c>_meta</c> object, which omp uses to advertise <c>steering.supported</c>, when the agent sent one. It is read tolerantly by the session.</summary>
+        [JsonPropertyName("_meta")]
+        public JsonElement? Meta { get; init; }
     }
 
     /// <summary>Parameters of <c>session/new</c>.</summary>
@@ -468,4 +472,33 @@ public static class AcpFrames
     /// <summary>Result of a permission request.</summary>
     /// <param name="Outcome">The outcome.</param>
     public sealed record PermissionResponse(PermissionOutcome Outcome);
+
+    /// <summary>The <c>steering</c> member of the <c>_meta</c> of a <c>_session/steering</c> request.</summary>
+    /// <param name="Queue">The omp queue to put the message into: <c>followUp</c> selects the follow-up queue.</param>
+    public sealed record SteeringQueueMeta(string Queue);
+
+    /// <summary>The <c>_meta</c> object of a <c>_session/steering</c> request.</summary>
+    /// <param name="Steering">The steering routing.</param>
+    public sealed record SteeringMeta(SteeringQueueMeta Steering);
+
+    /// <summary>
+    /// Parameters of the <c>_session/steering</c> extension request. <c>_meta</c> is written only when the follow-up queue is selected.
+    /// </summary>
+    /// <param name="SessionId">The session whose running turn takes the message.</param>
+    /// <param name="Prompt">The message content blocks. This client sends exactly one text block.</param>
+    /// <param name="Meta">The routing, or <see langword="null"/> for the steering queue.</param>
+    public sealed record SteeringParams(string SessionId, IReadOnlyList<ContentBlock> Prompt, [property: JsonPropertyName("_meta")] SteeringMeta? Meta);
+
+    /// <summary>Result of <c>_session/steering</c>: <c>outcome</c> is <c>injected</c>, <c>promptRequired</c> or <c>failed</c>.</summary>
+    public sealed class SteeringResult
+    {
+        /// <summary>Gets the outcome: <c>injected</c>, <c>promptRequired</c> or <c>failed</c>.</summary>
+        public string? Outcome { get; init; }
+
+        /// <summary>Gets the queue omp used: <c>steering</c> or <c>followUp</c>.</summary>
+        public string? Queue { get; init; }
+
+        /// <summary>Gets the reason of a <c>failed</c> outcome.</summary>
+        public string? Reason { get; init; }
+    }
 }

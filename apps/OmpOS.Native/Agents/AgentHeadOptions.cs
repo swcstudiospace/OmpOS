@@ -73,8 +73,9 @@ internal sealed class AgentHeadOptions
     public TimeSpan? DetailsRefreshInterval { get; init; }
 
     /// <summary>
-    /// Gets whether the composer of a chat session delivers a steer or a follow-up through the omp steering channel at once. The default is
-    /// true. When false a steer or follow-up waits for the end of the running turn and is sent as the next prompt.
+    /// Gets whether the composer of a chat session delivers a steer or a follow-up into the running turn at once: through omp's own
+    /// <c>_session/steering</c> when omp supports it, otherwise through the omp steering inbox. The default is true. When false a steer or
+    /// follow-up waits for the end of the running turn and is sent as the next prompt.
     /// </summary>
     public bool LiveSteering { get; init; } = true;
 

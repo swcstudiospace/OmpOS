@@ -47,6 +47,8 @@ internal sealed class SessionSlot : IAsyncDisposable
         Context = new DeferredTaskContextSource(this);
         Steering = new FileSteeringChannel(scope.Current.SessionStateDirectory, owner.Clock, owner.SteeringOptions);
         Models = new SlotModelControl(ConnectModelsAsync);
+        SessionOptions = new SlotSessionOptions();
+        LiveSteering = new SlotLiveSteering();
     }
 
     /// <summary>Gets the session identifier.</summary>
@@ -72,6 +74,12 @@ internal sealed class SessionSlot : IAsyncDisposable
 
     /// <summary>Gets the model control of the session: it lists the models omp offers and switches the current one, whichever engine the slot holds now. The model chip of a chat session uses it.</summary>
     public SlotModelControl Models { get; }
+
+    /// <summary>Gets the select-style options (mode, thinking level) of the session: they follow the engine the slot holds now. The mode and thinking chips of a chat session use them.</summary>
+    public SlotSessionOptions SessionOptions { get; }
+
+    /// <summary>Gets the omp live steering of the session: it follows the engine the slot holds now and is unsupported without one or when that omp cannot take a message into a running turn. The composer and the Kanban card of a chat session use it before the steering inbox.</summary>
+    public SlotLiveSteering LiveSteering { get; }
 
     /// <summary>Gets or sets the runtime that shows the session. The engine set sets it once, right after it creates the runtime.</summary>
     public AgentSessionRuntime? Runtime { get; set; }
@@ -161,6 +169,8 @@ internal sealed class SessionSlot : IAsyncDisposable
         }
 
         Models.Bind(null);
+        SessionOptions.Bind(null);
+        LiveSteering.Bind(null);
     }
 
     /// <summary>Records that the session is closed without an engine to stop, so a prompt is refused until the session is reopened. The engine set uses it for a session that was closed before the application started.</summary>
@@ -251,6 +261,8 @@ internal sealed class SessionSlot : IAsyncDisposable
         await _lifetime.CancelAsync().ConfigureAwait(false);
         await DisposeEngineAsync(engine).ConfigureAwait(false);
         Models.Bind(null);
+        SessionOptions.Bind(null);
+        LiveSteering.Bind(null);
         if (plan is not null)
         {
             try
@@ -298,6 +310,8 @@ internal sealed class SessionSlot : IAsyncDisposable
         }
 
         Models.Bind(engine.Host.Models);
+        SessionOptions.Bind(engine.Host.SessionOptions);
+        LiveSteering.Bind(engine.Host.LiveSteering);
 
         return engine;
     }

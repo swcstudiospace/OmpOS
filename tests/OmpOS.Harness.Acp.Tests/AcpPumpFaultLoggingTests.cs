@@ -58,6 +58,24 @@ public sealed class AcpPumpFaultLoggingTests
         logger.Entries.Where(static entry => entry.Level == LogLevel.Error).ShouldBeEmpty();
     }
 
+    /// <summary>
+    /// A handshake that fails closes the transport itself, and the pump then ends with an exception because of that close. That is the
+    /// session's own doing, not a pump fault: nothing is logged at Error, while the handshake failure still reaches the caller.
+    /// </summary>
+    [Fact]
+    public async Task AFailedHandshakeThatTheSessionClosedItselfIsNotLoggedAsAPumpFault()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var logger = new CapturingLogger<AcpAgentSession>();
+        var transport = new ScriptedAcpTransport(AcpFixtures.Reply);
+        var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd }, null, TimeSpan.FromSeconds(30), logger);
+
+        await Should.ThrowAsync<AcpRequestFailedHarnessException>(() => session.CreateAsync(ct)).ConfigureAwait(true);
+        await session.DisposeAsync().ConfigureAwait(true);
+
+        logger.Entries.Where(static entry => entry.Level == LogLevel.Error).ShouldBeEmpty();
+    }
+
     private static bool HasMethod(byte[] frame, string method) =>
         string.Equals(AcpFixtures.MethodOf(frame), method, StringComparison.Ordinal);
 

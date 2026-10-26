@@ -16,6 +16,13 @@ namespace OmpOS.Native.Engine;
 /// <param name="Resolver">The resolver that holds the requests the host parked and waits on their decisions.</param>
 internal sealed record EngineComposition(InProcessEngineHost Host, IToolApprovalBridge ApprovalBridge, PendingPermissionResolver Resolver)
 {
+    /// <summary>
+    /// The ACP authentication method id omp advertises in <c>initialize</c>. Probed against omp 18.12.6: <c>authMethods</c> is
+    /// <c>[{id:"agent", name:"Use existing local credentials"}]</c> in every environment, and <c>authenticate {methodId:"agent"}</c> answers
+    /// <c>{}</c>, after which <c>session/new</c> works. Without it the handshake of every chat session fails before a session exists.
+    /// </summary>
+    internal const string OmpAuthMethodId = "agent";
+
     /// <summary>Composes an engine whose approval policy allows exactly <paramref name="allowedKinds"/>. Empty allows nothing.</summary>
     /// <param name="allowedKinds">The tool kinds the approval policy admits.</param>
     /// <param name="transportFactory">Creates the transport for each session. Null spawns <c>omp acp</c> in the working directory.</param>
@@ -27,7 +34,7 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
         ArgumentNullException.ThrowIfNull(allowedKinds);
 
         var resolver = new PendingPermissionResolver();
-        var options = new AcpClientOptions { ApprovalPolicy = new AcpApprovalPolicy(allowedKinds) };
+        var options = new AcpClientOptions { ApprovalPolicy = new AcpApprovalPolicy(allowedKinds), AuthMethodId = OmpAuthMethodId };
         var host = InProcessEngineHost.ForAcp(options, resolver, transportFactory: transportFactory, loggerFactory: loggerFactory);
         return new EngineComposition(host, new EngineToolApprovalBridge(resolver, allowedKinds), resolver);
     }
@@ -60,6 +67,7 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
         var options = new AcpClientOptions
         {
             ApprovalPolicy = new AcpApprovalPolicy(allowedKinds),
+            AuthMethodId = OmpAuthMethodId,
             OmpPath = ompPath,
             WorkingDirectory = plan.WorkingDirectory,
             ExtraArguments = plan.ExtraArguments,

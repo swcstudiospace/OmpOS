@@ -225,6 +225,15 @@ public static class AgentPanelCopy
     /// <summary>The delivery text of a steering message that reached a session with no running turn: omp started a new turn from it.</summary>
     public const string DeliveryStartedNewTurn = "Delivered. The turn had already ended, so omp started a new turn from your message.";
 
+    /// <summary>The delivery text of a steering message omp's own steering took into the turn that was running.</summary>
+    public const string DeliveryDeliveredIntoTurn = "Delivered into the running turn.";
+
+    /// <summary>The delivery text of a follow-up omp's own steering took into the turn that was running.</summary>
+    public const string DeliveryQueuedBehindTurn = "Queued behind the running turn.";
+
+    /// <summary>The delivery text of a steering message that found no running turn and was submitted as a new turn.</summary>
+    public const string DeliverySubmittedAsNewTurn = "The turn had already ended, so your message started a new turn.";
+
     /// <summary>The delivery text of a steering message a live channel queued for omp while omp has not acknowledged it yet.</summary>
     public const string DeliverySentNotAcknowledged = "Sent, omp has not acknowledged it yet";
 

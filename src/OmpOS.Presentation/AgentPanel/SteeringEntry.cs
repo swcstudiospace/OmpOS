@@ -70,6 +70,9 @@ public sealed class SteeringEntry : ObservableModel
     {
         SteeringDeliveryStatus.Delivered => AgentPanelCopy.DeliveryDelivered,
         SteeringDeliveryStatus.DeliveredStartedNewTurn => AgentPanelCopy.DeliveryStartedNewTurn,
+        SteeringDeliveryStatus.DeliveredIntoTurn => AgentPanelCopy.DeliveryDeliveredIntoTurn,
+        SteeringDeliveryStatus.QueuedBehindTurn => AgentPanelCopy.DeliveryQueuedBehindTurn,
+        SteeringDeliveryStatus.SubmittedAsNewTurn => AgentPanelCopy.DeliverySubmittedAsNewTurn,
         SteeringDeliveryStatus.HeldUntilTurnEnds => AgentPanelCopy.DeliveryHeld,
         SteeringDeliveryStatus.SentNotAcknowledged => AgentPanelCopy.DeliverySentNotAcknowledged,
         SteeringDeliveryStatus.Failed => AgentPanelCopy.DeliveryFailed(FailureReason),

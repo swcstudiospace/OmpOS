@@ -17,6 +17,8 @@ public sealed class ComposerViewModel : ObservableModel
     private bool _sending;
     private string _draft = string.Empty;
     private ModelPickerModel? _modelPicker;
+    private OptionChipModel? _modeChip;
+    private OptionChipModel? _thinkingChip;
     private bool _isStreaming;
 
     /// <summary>Creates a composer that submits drafts through <paramref name="onSend"/> and stops responses through <paramref name="onStop"/>.</summary>
@@ -41,10 +43,23 @@ public sealed class ComposerViewModel : ObservableModel
         get => _isStreaming;
         set
         {
-            if (SetProperty(ref _isStreaming, value) && _modelPicker is not null)
+            if (SetProperty(ref _isStreaming, value))
             {
-                // A run keeps the model fixed.
-                _modelPicker.IsRunActive = value;
+                // A run keeps the model, the mode and the thinking level fixed.
+                if (_modelPicker is not null)
+                {
+                    _modelPicker.IsRunActive = value;
+                }
+
+                if (_modeChip is not null)
+                {
+                    _modeChip.IsRunActive = value;
+                }
+
+                if (_thinkingChip is not null)
+                {
+                    _thinkingChip.IsRunActive = value;
+                }
             }
         }
     }
@@ -59,6 +74,38 @@ public sealed class ComposerViewModel : ObservableModel
         set
         {
             if (SetProperty(ref _modelPicker, value) && value is not null)
+            {
+                value.IsRunActive = _isStreaming;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the chip of the session's mode (<c>default</c> or <c>plan</c>), or null when omp offers no mode option or the session is
+    /// an omp terminal. While it is set, it follows <see cref="IsStreaming"/>: the mode cannot be changed while a response streams.
+    /// </summary>
+    public OptionChipModel? ModeChip
+    {
+        get => _modeChip;
+        set
+        {
+            if (SetProperty(ref _modeChip, value) && value is not null)
+            {
+                value.IsRunActive = _isStreaming;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the chip of the session's thinking level, or null when omp offers no thinking option or the session is an omp
+    /// terminal. While it is set, it follows <see cref="IsStreaming"/>: the level cannot be changed while a response streams.
+    /// </summary>
+    public OptionChipModel? ThinkingChip
+    {
+        get => _thinkingChip;
+        set
+        {
+            if (SetProperty(ref _thinkingChip, value) && value is not null)
             {
                 value.IsRunActive = _isStreaming;
             }

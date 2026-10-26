@@ -62,6 +62,8 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     private bool _terminalClosed;
     private bool _terminalLost;
     private readonly ModelPickerBinding? _modelBinding;
+    private readonly OptionChipBinding? _modeBinding;
+    private readonly OptionChipBinding? _thinkingBinding;
 
     /// <summary>Creates the runtime of one session and its view model. It starts no observation: call <see cref="StartObserving"/>.</summary>
     /// <param name="options">What the head supplies.</param>
@@ -85,6 +87,13 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             Composer.ModelPicker = _modelBinding.Picker;
         }
 
+        if (options.SessionOptions is { } sessionOptions && options.TerminalStarter is null)
+        {
+            // A terminal runs its own omp, which owns its mode and thinking level: only a chat session offers the chips.
+            _modeBinding = new OptionChipBinding(sessionOptions, "mode", "Mode", chip => Composer.ModeChip = chip);
+            _thinkingBinding = new OptionChipBinding(sessionOptions, "thinking", "Thinking", chip => Composer.ThinkingChip = chip);
+        }
+
         ViewModel = new AgentSessionViewModel(new AgentSessionOptions
         {
             Row = options.Row,
@@ -99,7 +108,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             Resume = options.Resume,
             Reopen = options.Reopen,
             ApprovalCoordinator = RunControls.Coordinator,
-            LiveSteering = options.Steering is null ? null : DeliverLiveAsync,
+            LiveSteering = options.Steering is null && options.NativeSteering is null ? null : DeliverLiveAsync,
         });
         RunControls.Approvals.CollectionChanged += OnApprovalsChanged;
         Registry.AddOrUpdate(ViewModel, this);
@@ -196,6 +205,8 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
 
         RunControls.Approvals.CollectionChanged -= OnApprovalsChanged;
         _modelBinding?.Dispose();
+        _modeBinding?.Dispose();
+        _thinkingBinding?.Dispose();
         if (Terminal is { } terminal)
         {
             terminal.PropertyChanged -= OnTerminalChanged;
@@ -375,6 +386,87 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     }
 
     /// <summary>
+    /// Delivers a steer or a follow-up into the running turn. A chat session whose omp supports live steering hands the message to omp's own
+    /// steering (see <see cref="DeliverNativeAsync"/>); a terminal, and a chat session whose omp does not support it, use the omp steering
+    /// inbox (see <see cref="DeliverThroughInboxAsync"/>).
+    /// </summary>
+    /// <param name="text">The message.</param>
+    /// <param name="mode">Steer or follow-up.</param>
+    /// <param name="cancellationToken">Cancels the delivery.</param>
+    /// <returns>The delivery the steering history records.</returns>
+    private Task<SteeringDelivery> DeliverLiveAsync(string text, SteeringMode mode, CancellationToken cancellationToken) =>
+        Terminal is null && _options.NativeSteering is { IsSupported: true } native
+            ? DeliverNativeAsync(native, text, mode, cancellationToken)
+            : DeliverThroughInboxAsync(text, mode, cancellationToken);
+
+    /// <summary>
+    /// Delivers a message through omp's own steering and reports what omp answered: injected is Delivered (a follow-up is Queued behind the
+    /// running turn), a turn that ended while the user typed makes the message a new turn of its own, and a refusal is a failed delivery with
+    /// omp's reason, so the text stays in the composer. An omp that turns out not to support steering gets the message through the inbox.
+    /// </summary>
+    /// <param name="native">The omp live steering of the session.</param>
+    /// <param name="text">The message.</param>
+    /// <param name="mode">Steer or follow-up.</param>
+    /// <param name="cancellationToken">Cancels the delivery.</param>
+    /// <returns>The delivery the steering history records.</returns>
+    private async Task<SteeringDelivery> DeliverNativeAsync(IOmpLiveSteering native, string text, SteeringMode mode, CancellationToken cancellationToken)
+    {
+        var queue = mode == SteeringMode.FollowUp ? OmpSteerQueue.FollowUp : OmpSteerQueue.Steering;
+        OmpSteerResult result;
+        try
+        {
+            result = await native.SteerAsync(text, queue, cancellationToken).ConfigureAwait(true);
+        }
+        catch (Exception fault) when (fault is not (OperationCanceledException or OutOfMemoryException))
+        {
+            return FailDelivery($"omp could not take the message: {fault.Message}");
+        }
+
+        switch (result.Outcome)
+        {
+            case OmpSteerOutcome.Injected:
+                return new SteeringDelivery(result.Queue == OmpSteerQueue.FollowUp ? SteeringDeliveryStatus.QueuedBehindTurn : SteeringDeliveryStatus.DeliveredIntoTurn);
+            case OmpSteerOutcome.PromptRequired:
+            case OmpSteerOutcome.NotRunning:
+                return await SubmitAsNewTurnAsync(text, cancellationToken).ConfigureAwait(true);
+            case OmpSteerOutcome.Unsupported:
+                return await DeliverThroughInboxAsync(text, mode, cancellationToken).ConfigureAwait(true);
+            case OmpSteerOutcome.Failed:
+            default:
+                return FailDelivery(string.IsNullOrWhiteSpace(result.Reason) ? "omp could not take the message." : result.Reason);
+        }
+    }
+
+    /// <summary>
+    /// Sends a message as a turn of its own because omp had no turn to steer: the turn ended while the user typed. omp consumed nothing and
+    /// started nothing, so this runtime owns the new turn. A run that this runtime has not closed yet takes the message as its next turn; a run that
+    /// has ended starts a new one. While the run is being stopped nothing is sent and the text stays in the composer.
+    /// </summary>
+    /// <param name="text">The message.</param>
+    /// <param name="cancellationToken">Cancels the hand-over.</param>
+    /// <returns>The delivery the steering history records.</returns>
+    private async Task<SteeringDelivery> SubmitAsNewTurnAsync(string text, CancellationToken cancellationToken)
+    {
+        if (_stopRequested)
+        {
+            return FailDelivery("The turn is being stopped, so the message was not sent. Send it again once it has stopped.");
+        }
+
+        if (Runs.IsRunActive)
+        {
+            await _queued.FollowUpAsync(text, cancellationToken).ConfigureAwait(true);
+            Runs.NotifySteersHeldChanged();
+        }
+        else if (!await StartTurnAsync(text).ConfigureAwait(true))
+        {
+            return SteeringDelivery.Failed(MainView.RefusedSendStatus);
+        }
+
+        ReportStatus(AgentPanelCopy.DeliverySubmittedAsNewTurn);
+        return new SteeringDelivery(SteeringDeliveryStatus.SubmittedAsNewTurn);
+    }
+
+    /// <summary>
     /// Delivers a steer or a follow-up through the omp steering channel and reports what the channel can prove: omp's acknowledgement
     /// decides Delivered, Failed or (no acknowledgement within <see cref="AckWait"/>) Sent but not acknowledged. A channel that cannot take
     /// the directive is a failed delivery with the channel's own plain message, which the status line shows.
@@ -383,9 +475,13 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <param name="mode">Steer or follow-up.</param>
     /// <param name="cancellationToken">Cancels the delivery.</param>
     /// <returns>The delivery the steering history records.</returns>
-    private async Task<SteeringDelivery> DeliverLiveAsync(string text, SteeringMode mode, CancellationToken cancellationToken)
+    private async Task<SteeringDelivery> DeliverThroughInboxAsync(string text, SteeringMode mode, CancellationToken cancellationToken)
     {
-        var channel = _options.Steering ?? throw new InvalidOperationException("No steering channel is composed for this session.");
+        if (_options.Steering is not { } channel)
+        {
+            return FailDelivery("This version of omp cannot take a message into a running turn.");
+        }
+
         var directive = new SteeringDirective
         {
             Mode = mode == SteeringMode.FollowUp ? SteeringDirectiveMode.FollowUp : SteeringDirectiveMode.Steer,

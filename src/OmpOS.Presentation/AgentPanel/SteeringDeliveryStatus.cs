@@ -20,4 +20,13 @@ public enum SteeringDeliveryStatus
 
     /// <summary>omp took the message while the session had no running turn, so it started a new turn from the message instead of steering one.</summary>
     DeliveredStartedNewTurn = 5,
+
+    /// <summary>omp's own steering took the message into the turn that was running: the turn delivers it at its next tool-batch or model-call boundary.</summary>
+    DeliveredIntoTurn = 6,
+
+    /// <summary>omp's own steering took the follow-up into the turn that was running: the turn takes it after the work it has already planned.</summary>
+    QueuedBehindTurn = 7,
+
+    /// <summary>The turn ended while the message was being sent, so omp took nothing and the message was submitted as a new turn of its own.</summary>
+    SubmittedAsNewTurn = 8,
 }

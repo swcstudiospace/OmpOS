@@ -27,6 +27,21 @@ internal sealed class ScriptedOmp
     /// <summary>Gets a value indicating whether a prompt streams its first chunk and then stays open until the client cancels it.</summary>
     public bool HoldAfterFirstChunk { get; init; }
 
+    /// <summary>Gets a value indicating whether <c>initialize</c> advertises <c>authMethods: [{id:"agent"}]</c>, as omp 18.12.x does in every environment.</summary>
+    public bool AdvertiseAuthentication { get; init; }
+
+    /// <summary>Gets a value indicating whether <c>initialize</c> advertises <c>_meta.steering.supported</c>, as omp 18.12.x does.</summary>
+    public bool SteeringSupported { get; init; }
+
+    /// <summary>Gets the <c>outcome</c> every <c>_session/steering</c> request is answered with: <c>injected</c>, <c>promptRequired</c> or <c>failed</c>.</summary>
+    public string SteerOutcome { get; init; } = "injected";
+
+    /// <summary>Gets the <c>reason</c> of a <c>failed</c> steering answer, or null for none.</summary>
+    public string? SteerReason { get; init; }
+
+    /// <summary>Gets the JSON-RPC error code every <c>_session/steering</c> request is answered with instead of a result, or null to answer with a result.</summary>
+    public int? SteerErrorCode { get; init; }
+
     /// <summary>Gets the transport factory to give the head.</summary>
     public Func<AcpClientOptions, IAcpTransport> TransportFactory => Create;
 
@@ -72,23 +87,37 @@ internal sealed class ScriptedOmp
 
     private static byte[] Encode(JsonObject frame) => Encoding.UTF8.GetBytes(frame.ToJsonString());
 
-    private static JsonObject Initialize() => new()
+    private JsonObject Initialize()
     {
-        ["protocolVersion"] = 1,
-        ["agentCapabilities"] = new JsonObject
+        var result = new JsonObject
         {
-            ["loadSession"] = true,
-            ["mcpCapabilities"] = new JsonObject { ["http"] = true, ["sse"] = true },
-            ["promptCapabilities"] = new JsonObject { ["embeddedContext"] = true, ["image"] = true },
-            ["sessionCapabilities"] = new JsonObject
+            ["protocolVersion"] = 1,
+            ["agentCapabilities"] = new JsonObject
             {
-                ["list"] = new JsonObject(),
-                ["fork"] = new JsonObject(),
-                ["resume"] = new JsonObject(),
-                ["close"] = new JsonObject(),
+                ["loadSession"] = true,
+                ["mcpCapabilities"] = new JsonObject { ["http"] = true, ["sse"] = true },
+                ["promptCapabilities"] = new JsonObject { ["embeddedContext"] = true, ["image"] = true },
+                ["sessionCapabilities"] = new JsonObject
+                {
+                    ["list"] = new JsonObject(),
+                    ["fork"] = new JsonObject(),
+                    ["resume"] = new JsonObject(),
+                    ["close"] = new JsonObject(),
+                },
             },
-        },
-    };
+        };
+        if (AdvertiseAuthentication)
+        {
+            result["authMethods"] = new JsonArray(new JsonObject { ["id"] = "agent", ["name"] = "Use existing local credentials" });
+        }
+
+        if (SteeringSupported)
+        {
+            result["_meta"] = new JsonObject { ["steering"] = new JsonObject { ["supported"] = true } };
+        }
+
+        return result;
+    }
 
     private TrackingTransport Create(AcpClientOptions options)
     {
@@ -129,7 +158,7 @@ internal sealed class ScriptedOmp
             switch (method)
             {
                 case "initialize":
-                    return [Encode(ResultFrame(id, Initialize()))];
+                    return [Encode(ResultFrame(id, owner.Initialize()))];
                 case "session/new":
                     _sessionId = "native-" + Interlocked.Increment(ref owner._sessions).ToString(System.Globalization.CultureInfo.InvariantCulture);
                     return [Encode(ResultFrame(id, new JsonObject { ["sessionId"] = _sessionId }))];
@@ -141,6 +170,8 @@ internal sealed class ScriptedOmp
                     return owner.HoldAfterFirstChunk
                         ? [Encode(Update(_sessionId, owner.Reply))]
                         : [Encode(Update(_sessionId, owner.Reply)), Encode(EndPrompt("end_turn"))];
+                case "_session/steering":
+                    return [Encode(owner.SteerAnswer(id, node["params"]!.AsObject()))];
                 case "session/cancel":
                     return _pendingPrompt == 0 ? [] : [Encode(EndPrompt("cancelled"))];
                 default:
@@ -169,6 +200,28 @@ internal sealed class ScriptedOmp
             _pendingPrompt = 0;
             return reply;
         }
+    }
+
+    private JsonObject SteerAnswer(long id, JsonObject parameters)
+    {
+        if (SteerErrorCode is { } code)
+        {
+            return new JsonObject
+            {
+                ["jsonrpc"] = "2.0",
+                ["id"] = id,
+                ["error"] = new JsonObject { ["code"] = code, ["message"] = "Invalid params" },
+            };
+        }
+
+        var followUp = parameters["_meta"]?["steering"]?["queue"]?.GetValue<string>() is "followUp";
+        var result = new JsonObject { ["outcome"] = SteerOutcome, ["queue"] = followUp ? "followUp" : "steering" };
+        if (SteerReason is not null)
+        {
+            result["reason"] = SteerReason;
+        }
+
+        return ResultFrame(id, result);
     }
 
     /// <summary>A transport that counts the first time it is closed or disposed.</summary>

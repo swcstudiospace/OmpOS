@@ -229,6 +229,10 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         // Only a chat session has a model to choose: a terminal's omp owns its own.
         Models = isTerminal ? null : slot.Models,
         ConnectModels = isTerminal ? null : slot.Models.ConnectAsync,
+
+        // Only a chat session has omp's own steering, mode and thinking level: a terminal steers through the inbox and its omp owns its settings.
+        NativeSteering = isTerminal || !_options.LiveSteering ? null : slot.LiveSteering,
+        SessionOptions = isTerminal ? null : slot.SessionOptions,
     };
 
     private PlannedOmpTerminalStarter CreateTerminalStarter(SessionSlot slot) => new(

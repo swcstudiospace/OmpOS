@@ -19,7 +19,7 @@ namespace OmpOS.Harness.Acp;
 /// change happens at a known point in that order. A request the policy admits waits for its decision on a task of its own,
 /// so the pump never blocks on it.
 /// </summary>
-public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpModelControl
+public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpModelControl, IOmpSessionOptions, IOmpLiveSteering
 {
     private const string UpdateMethod = "session/update";
     private const string SetConfigOptionMethod = "session/set_config_option";
@@ -32,6 +32,12 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
     private const int MethodNotFound = -32601;
     private const int InvalidParams = -32602;
     private const int InternalError = -32603;
+    private const string SteeringMethod = "_session/steering";
+    private const string FollowUpQueueName = "followUp";
+    private const string SteeringQueueName = "steering";
+
+    /// <summary>The longest steering message, in UTF-8 bytes: the limit of the steering inbox, so a message fits either mechanism.</summary>
+    internal const int MaxSteerBytes = 8192;
 
     /// <summary>How long disposal waits for the agent to answer <c>session/close</c> before it stops the child anyway: the close is best-effort, and an agent that never answers it must not keep its child alive for a whole request timeout.</summary>
     private static readonly TimeSpan DisposeCloseTimeout = TimeSpan.FromSeconds(3);
@@ -64,7 +70,10 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
     private IReadOnlyList<OmpModelChoice> _modelChoices = [];
     private string? _modelOptionId;
     private string? _currentModelId;
-    private bool _modelSwitching;
+    private bool _optionChanging;
+    private bool _steeringSupported;
+    private bool _openFailed;
+    private IReadOnlyList<OmpSessionOption> _sessionOptions = [];
     private bool _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="AcpAgentSession"/> class. With no resolver, a request the policy admits is denied.</summary>
@@ -149,6 +158,36 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
 
     /// <inheritdoc />
     public event EventHandler? ModelChanged;
+
+    /// <inheritdoc />
+    public event EventHandler? OptionsChanged;
+
+    /// <inheritdoc />
+    public IReadOnlyList<OmpSessionOption> Options
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _sessionOptions;
+            }
+        }
+    }
+
+    /// <summary>Gets a value indicating whether omp advertised <c>_meta.steering.supported</c> in its <c>initialize</c> result, so <see cref="SteerAsync"/> can reach a running turn.</summary>
+    public bool IsSteeringSupported
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _steeringSupported;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    bool IOmpLiveSteering.IsSupported => IsSteeringSupported;
 
     /// <summary>Gets the agent identity reported by <c>initialize</c>.</summary>
     public AcpFrames.AgentInfo? AgentInfo { get; private set; }
@@ -251,37 +290,156 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
                 return new OmpModelSwitchResult(OmpModelSwitchOutcome.Switched, _currentModelId, null);
             }
 
-            _modelSwitching = true;
+            _optionChanging = true;
             sessionId = SessionId!;
             optionId = _modelOptionId!;
         }
 
-        try
+        var failure = await SendOptionChangeAsync(sessionId, optionId, value, cancellationToken).ConfigureAwait(false);
+        if (failure is not null)
         {
-            var response = await CallAsync(
-                SetConfigOptionMethod,
-                new AcpFrames.SetConfigOptionParams(sessionId, optionId, value),
-                AcpJsonContext.Default.RequestSetConfigOptionParams,
-                _options.RequestTimeout,
-                cancellationToken).ConfigureAwait(false);
-            ApplyConfigOptions(ReadResult(response, AcpJsonContext.Default.ConfigOptionsResult, SetConfigOptionMethod).ConfigOptions);
-        }
-        catch (HarnessException ex)
-        {
-            return new OmpModelSwitchResult(OmpModelSwitchOutcome.Failed, CurrentModelId, $"omp could not switch the model: {ex.Message}");
-        }
-        finally
-        {
-            lock (_gate)
-            {
-                _modelSwitching = false;
-            }
+            return new OmpModelSwitchResult(OmpModelSwitchOutcome.Failed, CurrentModelId, $"omp could not switch the model: {failure}");
         }
 
         var current = CurrentModelId;
         return string.Equals(current, value, StringComparison.Ordinal)
             ? new OmpModelSwitchResult(OmpModelSwitchOutcome.Switched, current, null)
             : new OmpModelSwitchResult(OmpModelSwitchOutcome.Failed, current, "omp did not confirm the model change.");
+    }
+
+    /// <inheritdoc />
+    public async Task<OmpOptionSetResult> SetOptionAsync(string configId, string value, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(configId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+
+        string sessionId;
+        lock (_gate)
+        {
+            if (RefuseOptionSetLocked(configId, value) is { } refusal)
+            {
+                return refusal;
+            }
+
+            var option = _configOptions.First(candidate => string.Equals(candidate.Id, configId, StringComparison.Ordinal));
+            if (string.Equals(option.CurrentValue, value, StringComparison.Ordinal))
+            {
+                // The engine already has this value: nothing to ask.
+                return new OmpOptionSetResult(OmpOptionSetOutcome.Set, option.CurrentValue, null);
+            }
+
+            _optionChanging = true;
+            sessionId = SessionId!;
+        }
+
+        var failure = await SendOptionChangeAsync(sessionId, configId, value, cancellationToken).ConfigureAwait(false);
+        var current = CurrentOptionValue(configId);
+        if (failure is not null)
+        {
+            return new OmpOptionSetResult(OmpOptionSetOutcome.Failed, current, $"omp could not change the setting: {failure}");
+        }
+
+        return string.Equals(current, value, StringComparison.Ordinal)
+            ? new OmpOptionSetResult(OmpOptionSetOutcome.Set, current, null)
+            : new OmpOptionSetResult(OmpOptionSetOutcome.Failed, current, "omp did not confirm the change.");
+    }
+
+    /// <summary>
+    /// Puts a message into the turn that is running, with the omp extension request <c>_session/steering</c>. Nothing is sent when omp did not
+    /// advertise <c>_meta.steering.supported</c> (<see cref="AcpSteerOutcome.Unsupported"/>), when the session is closed or this client has
+    /// no prompt in flight (<see cref="AcpSteerOutcome.NotRunning"/>), or when the text is blank or longer than 8 KiB
+    /// (<see cref="AcpSteerOutcome.Failed"/>). omp never starts a turn from this request: <see cref="AcpSteerOutcome.PromptRequired"/> means the
+    /// caller must submit the text with <see cref="SubmitPromptAsync"/> itself.
+    /// </summary>
+    /// <param name="text">The message.</param>
+    /// <param name="queue">The omp queue to put the message into.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>How the attempt ended.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="queue"/> is not a defined value.</exception>
+    public async Task<AcpSteerResult> SteerAsync(string text, AcpSteerQueue queue, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (!Enum.IsDefined(queue))
+        {
+            throw new ArgumentOutOfRangeException(nameof(queue));
+        }
+
+        string sessionId;
+        lock (_gate)
+        {
+            if (!_steeringSupported)
+            {
+                return new AcpSteerResult(AcpSteerOutcome.Unsupported, queue, "This version of omp cannot take a message into a running turn.");
+            }
+
+            if (_disposed || _sessionClosed || _connectionLost || SessionId is null || _machine.State != HarnessState.Streaming || _turn is not { Settled: false })
+            {
+                return new AcpSteerResult(AcpSteerOutcome.NotRunning, queue, "No turn is running.");
+            }
+
+            sessionId = SessionId;
+        }
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return new AcpSteerResult(AcpSteerOutcome.Failed, queue, "The message is empty.");
+        }
+
+        if (System.Text.Encoding.UTF8.GetByteCount(text) > MaxSteerBytes)
+        {
+            return new AcpSteerResult(AcpSteerOutcome.Failed, queue, "The message is too long: the limit is 8 KiB.");
+        }
+
+        var parameters = new AcpFrames.SteeringParams(
+            sessionId,
+            [new AcpFrames.ContentBlock { Text = text }],
+            queue == AcpSteerQueue.FollowUp ? new AcpFrames.SteeringMeta(new AcpFrames.SteeringQueueMeta(FollowUpQueueName)) : null);
+        AcpFrames.SteeringResult answer;
+        try
+        {
+            var response = await CallAsync(SteeringMethod, parameters, AcpJsonContext.Default.RequestSteeringParams, _options.RequestTimeout, cancellationToken).ConfigureAwait(false);
+            answer = ReadResult(response, AcpJsonContext.Default.SteeringResult, SteeringMethod);
+        }
+        catch (HarnessException ex)
+        {
+            return new AcpSteerResult(AcpSteerOutcome.Failed, queue, DescribeSteerFailure(ex));
+        }
+
+        var reported = answer.Queue switch
+        {
+            FollowUpQueueName => AcpSteerQueue.FollowUp,
+            SteeringQueueName => AcpSteerQueue.Steering,
+            _ => queue,
+        };
+        return answer.Outcome switch
+        {
+            "injected" => new AcpSteerResult(AcpSteerOutcome.Injected, reported, null),
+            "promptRequired" => new AcpSteerResult(AcpSteerOutcome.PromptRequired, reported, null),
+            "failed" => new AcpSteerResult(AcpSteerOutcome.Failed, reported, string.IsNullOrWhiteSpace(answer.Reason) ? "omp could not take the message." : answer.Reason),
+            _ => new AcpSteerResult(AcpSteerOutcome.Failed, reported, "omp answered the message in a way this app does not understand."),
+        };
+    }
+
+    /// <inheritdoc />
+    async Task<OmpSteerResult> IOmpLiveSteering.SteerAsync(string text, OmpSteerQueue queue, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (!Enum.IsDefined(queue))
+        {
+            throw new ArgumentOutOfRangeException(nameof(queue));
+        }
+
+        var result = await SteerAsync(text, queue == OmpSteerQueue.FollowUp ? AcpSteerQueue.FollowUp : AcpSteerQueue.Steering, cancellationToken).ConfigureAwait(false);
+        var outcome = result.Outcome switch
+        {
+            AcpSteerOutcome.Injected => OmpSteerOutcome.Injected,
+            AcpSteerOutcome.PromptRequired => OmpSteerOutcome.PromptRequired,
+            AcpSteerOutcome.Unsupported => OmpSteerOutcome.Unsupported,
+            AcpSteerOutcome.NotRunning => OmpSteerOutcome.NotRunning,
+            _ => OmpSteerOutcome.Failed,
+        };
+        return new OmpSteerResult(outcome, result.Queue == AcpSteerQueue.FollowUp ? OmpSteerQueue.FollowUp : OmpSteerQueue.Steering, result.Reason);
     }
 
     /// <summary>Ends the session on the agent with <c>session/close</c>. Disposing the session does this best-effort.</summary>
@@ -373,7 +531,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
 
         // omp's own handler does not reject a switch mid-turn, but the turn runs on the model it started with; a client that lets the
         // change land mid-turn would show a model that is not the one answering, so a running prompt refuses the switch here.
-        if (_machine.State != HarnessState.Ready || _turn is not null || _modelSwitching)
+        if (_machine.State != HarnessState.Ready || _turn is not null || _optionChanging)
         {
             return new OmpModelSwitchResult(OmpModelSwitchOutcome.Busy, _currentModelId, "The model cannot be changed while a response is running.");
         }
@@ -391,6 +549,88 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         return null;
     }
 
+    /// <summary>Decides, with the gate held, whether a change of an option must be refused before anything is sent. Null means the change may go ahead.</summary>
+    private OmpOptionSetResult? RefuseOptionSetLocked(string configId, string value)
+    {
+        var current = _configOptions.FirstOrDefault(candidate => string.Equals(candidate.Id, configId, StringComparison.Ordinal));
+        if (_disposed || _sessionClosed || _connectionLost || SessionId is null || _machine.State is not (HarnessState.Ready or HarnessState.Streaming or HarnessState.Cancelling))
+        {
+            return new OmpOptionSetResult(OmpOptionSetOutcome.NotOpen, current?.CurrentValue, "The agent session is not open, so the setting cannot be changed.");
+        }
+
+        // A running prompt keeps the settings it started with, for the same reason as the model.
+        if (_machine.State != HarnessState.Ready || _turn is not null || _optionChanging)
+        {
+            return new OmpOptionSetResult(OmpOptionSetOutcome.Busy, current?.CurrentValue, "The setting cannot be changed while a response is running.");
+        }
+
+        if (current is null)
+        {
+            return new OmpOptionSetResult(OmpOptionSetOutcome.UnknownOption, null, "omp offers no such setting for this session.");
+        }
+
+        if (!current.Values.Any(candidate => string.Equals(candidate.Value, value, StringComparison.Ordinal)))
+        {
+            return new OmpOptionSetResult(OmpOptionSetOutcome.UnknownValue, current.CurrentValue, "omp does not offer that value.");
+        }
+
+        return null;
+    }
+
+    /// <summary>The wire part both the model switch and an option change share: <c>session/set_config_option</c>, then the option list omp answered with. Returns the failure text, or null when omp answered. It always clears the in-flight flag.</summary>
+    private async Task<string?> SendOptionChangeAsync(string sessionId, string optionId, string value, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await CallAsync(
+                SetConfigOptionMethod,
+                new AcpFrames.SetConfigOptionParams(sessionId, optionId, value),
+                AcpJsonContext.Default.RequestSetConfigOptionParams,
+                _options.RequestTimeout,
+                cancellationToken).ConfigureAwait(false);
+            ApplyConfigOptions(ReadResult(response, AcpJsonContext.Default.ConfigOptionsResult, SetConfigOptionMethod).ConfigOptions);
+            return null;
+        }
+        catch (HarnessException ex)
+        {
+            return ex.Message;
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                _optionChanging = false;
+            }
+        }
+    }
+
+    private string? CurrentOptionValue(string configId)
+    {
+        lock (_gate)
+        {
+            return _configOptions.FirstOrDefault(candidate => string.Equals(candidate.Id, configId, StringComparison.Ordinal))?.CurrentValue;
+        }
+    }
+
+    /// <summary>Reads <c>_meta.steering.supported</c> of the <c>initialize</c> result. Anything but a boolean <c>true</c> at that place means no support.</summary>
+    private static bool ReadSteeringSupported(JsonElement? meta) =>
+        meta is { ValueKind: JsonValueKind.Object } owner
+        && owner.TryGetProperty("steering", out var steering)
+        && steering.ValueKind == JsonValueKind.Object
+        && steering.TryGetProperty("supported", out var supported)
+        && supported.ValueKind == JsonValueKind.True;
+
+    /// <summary>Turns a failed steering request into a sentence a person can read: no type names, no wire jargon.</summary>
+    private static string DescribeSteerFailure(HarnessException failure) => failure switch
+    {
+        AcpRequestFailedHarnessException { TimedOut: true } => "omp did not answer in time.",
+        AcpRequestFailedHarnessException { ErrorCode: InvalidParams } => "omp no longer has this session open, so the message was not sent.",
+        AcpRequestFailedHarnessException { ErrorCode: MethodNotFound } => "This version of omp cannot take a message into a running turn.",
+        AcpRequestFailedHarnessException { ErrorCode: not null } => "omp refused the message.",
+        DisconnectedHarnessException => "The connection to omp was lost.",
+        _ => "omp did not take the message.",
+    };
+
     /// <summary>
     /// Replaces the stored options with the agent's report and raises <see cref="ModelChanged"/> when the model or the model list differs. A
     /// report without a <c>configOptions</c> array leaves what the session knows as it is.
@@ -406,19 +646,33 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         var model = options.FirstOrDefault(static option => string.Equals(option.Id, ModelOptionId, StringComparison.Ordinal))
             ?? options.FirstOrDefault(static option => string.Equals(option.Category, ModelOptionId, StringComparison.Ordinal));
         OmpModelChoice[] choices = model is null ? [] : model.Values.Select(static value => new OmpModelChoice(value.Value, value.Name)).ToArray();
+        var sessionOptions = options.Select(static option => new OmpSessionOption(
+            option.Id,
+            option.Name,
+            option.Category,
+            option.CurrentValue,
+            option.Values.Select(static value => new OmpSessionOptionValue(value.Value, value.Name, value.Description)).ToArray())).ToArray();
         bool changed;
+        bool optionsChanged;
         lock (_gate)
         {
             changed = !string.Equals(_currentModelId, model?.CurrentValue, StringComparison.Ordinal) || !_modelChoices.SequenceEqual(choices);
+            optionsChanged = _sessionOptions.Count != sessionOptions.Length || !_sessionOptions.Zip(sessionOptions, static (known, reported) => known.IsSameAs(reported)).All(static same => same);
             _configOptions = options;
             _modelChoices = choices;
             _modelOptionId = model?.Id;
             _currentModelId = model?.CurrentValue;
+            _sessionOptions = sessionOptions;
         }
 
         if (changed)
         {
             RaiseModelChanged();
+        }
+
+        if (optionsChanged)
+        {
+            RaiseOptionsChanged();
         }
     }
 
@@ -426,6 +680,27 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
     private void RaiseModelChanged()
     {
         if (ModelChanged is not { } handlers)
+        {
+            return;
+        }
+
+        foreach (var handler in handlers.GetInvocationList().Cast<EventHandler>())
+        {
+            try
+            {
+                handler(this, EventArgs.Empty);
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+                // A subscriber must never fail the session.
+            }
+        }
+    }
+
+    /// <summary>Raises <see cref="OptionsChanged"/>. A subscriber that throws never fails the pump or the caller, and never hides the change from the other subscribers.</summary>
+    private void RaiseOptionsChanged()
+    {
+        if (OptionsChanged is not { } handlers)
         {
             return;
         }
@@ -561,6 +836,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         {
             AgentInfo = result.AgentInfo;
             AdvertisedCapabilities = AcpWireMapping.Flatten(result.AgentCapabilities);
+            _steeringSupported = ReadSteeringSupported(result.Meta);
         }
 
         if (result.AuthMethods is { Count: > 0 } authMethods)
@@ -584,7 +860,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         if (string.IsNullOrWhiteSpace(methodId))
         {
             throw new AcpRequestFailedHarnessException(
-                "omp acp requires authentication but no AuthMethodId is configured on AcpClientOptions.",
+                "omp asked this app to sign in, but no sign-in method is set up for it.",
                 AuthenticateMethod);
         }
 
@@ -601,7 +877,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         if (!known)
         {
             throw new AcpRequestFailedHarnessException(
-                $"The configured AuthMethodId '{methodId}' is not one of the methods omp acp advertised.",
+                $"This app's sign-in method '{methodId}' is not one that omp offers.",
                 AuthenticateMethod);
         }
 
@@ -743,7 +1019,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
             bool requested;
             lock (_gate)
             {
-                requested = _disposed || _sessionClosed;
+                requested = _disposed || _sessionClosed || _openFailed;
             }
 
             if (!requested)
@@ -1566,6 +1842,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
     {
         lock (_gate)
         {
+            _openFailed = true;
             TryFaultLocked();
         }
 

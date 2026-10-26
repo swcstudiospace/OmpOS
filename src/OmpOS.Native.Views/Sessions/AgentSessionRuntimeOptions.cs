@@ -71,4 +71,17 @@ public sealed class AgentSessionRuntimeOptions
     /// without it. The model chip calls it the first time it is opened, so a session that has not sent a prompt still lists its models.
     /// </summary>
     public Func<CancellationToken, Task>? ConnectModels { get; init; }
+
+    /// <summary>
+    /// Gets the omp live steering of the session's engine, or null when the session has none (a terminal, or a head that disables live steering).
+    /// While it reports <see cref="IOmpLiveSteering.IsSupported"/>, a steer or a follow-up of a chat session goes through it and not through
+    /// <see cref="Steering"/>; <see cref="Steering"/> stays the path of a terminal and the fallback of an omp that does not support it.
+    /// </summary>
+    public IOmpLiveSteering? NativeSteering { get; init; }
+
+    /// <summary>
+    /// Gets the select-style options (mode, thinking level) of the session's engine, or null when the session offers none. A chat runtime
+    /// then shows a mode chip and a thinking chip once the engine reports those options; a terminal runtime never does.
+    /// </summary>
+    public IOmpSessionOptions? SessionOptions { get; init; }
 }

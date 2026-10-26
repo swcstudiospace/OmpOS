@@ -1,22 +1,28 @@
 using System.Globalization;
 using Microsoft.Extensions.Logging;
 using OmpOS.Contracts.Agents;
+using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.AgentLoop.Steering;
 using OmpOS.Native.Views.Kanban;
+using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Kanban;
 
 namespace OmpOS.Native.Agents;
 
 /// <summary>
-/// Steers a session from its Kanban card. The message goes into the session's own steering channel, the same one the Agent Panel composer
-/// uses, and the result reports only what omp acknowledged: delivered (or queued for the end of the turn, for a follow-up), refused with
-/// omp's reason, or sent but not acknowledged in time. A session that is not open, is closed or lost, or whose omp is not serving, fails
-/// with a plain message and nothing about the session changes. The Substrate is told that a steering action happened, through the same
-/// recorder as the composer: it carries the mode, the length and a short hash of the text, never the text, and it is never credited with
-/// the delivery.
+/// Steers a session from its Kanban card. A chat session whose omp supports live steering takes the message through omp's own
+/// <c>_session/steering</c> (the same path as the Agent Panel composer): delivered into the running turn, queued behind it, or refused
+/// with plain words, and a chat session with no turn running fails and changes nothing. A terminal session, and a chat session whose omp
+/// does not support live steering, take the message through the session's own steering inbox, and the result reports only what omp
+/// acknowledged: delivered (or queued for the end of the turn, for a follow-up), refused with omp's reason, or sent but not acknowledged in
+/// time. A session that is not open, is closed or lost, or whose omp is not serving, fails with a plain message and nothing about the
+/// session changes. The Substrate is told that a steering action happened, through the same recorder as the composer: it carries the
+/// mode, the length and a short hash of the text, never the text, and it is never credited with the delivery.
 /// </summary>
 internal sealed class HeadCardSteering : ICardSteering
 {
+    private const string NoTurnRunning = "No turn is running; open the session and send a message.";
+
     private static readonly Action<ILogger, string, Exception?> RecordFailed = LoggerMessage.Define<string>(
         LogLevel.Warning,
         new EventId(1, "CardSteeringRecordFailed"),
@@ -57,6 +63,12 @@ internal sealed class HeadCardSteering : ICardSteering
         }
 
         var followUp = mode == CardSteerMode.FollowUp;
+        if (slot.Runtime?.Kind != SessionKind.Terminal && slot.LiveSteering.IsSupported
+            && await SteerNativeAsync(slot, text, followUp, cancellationToken).ConfigureAwait(false) is { } native)
+        {
+            return native;
+        }
+
         var directive = new SteeringDirective
         {
             Mode = followUp ? SteeringDirectiveMode.FollowUp : SteeringDirectiveMode.Steer,
@@ -81,6 +93,41 @@ internal sealed class HeadCardSteering : ICardSteering
         }
 
         return result;
+    }
+
+    /// <summary>Steers a chat session through omp's own steering. Null means omp turned out not to support it, so the caller uses the inbox.</summary>
+    private async Task<CardSteerResult?> SteerNativeAsync(SessionSlot slot, string text, bool followUp, CancellationToken cancellationToken)
+    {
+        var sentAt = _host.Now;
+        var answer = await slot.LiveSteering.SteerAsync(text, followUp ? OmpSteerQueue.FollowUp : OmpSteerQueue.Steering, cancellationToken).ConfigureAwait(false);
+        if (answer.Outcome == OmpSteerOutcome.Unsupported)
+        {
+            return null;
+        }
+
+        var result = DescribeNative(answer);
+        if (result.IsAccepted)
+        {
+            await RecordAsync(slot, text, followUp, sentAt, cancellationToken).ConfigureAwait(false);
+        }
+
+        return result;
+    }
+
+    /// <summary>Turns omp's own answer into the plain message of a card. A card cannot start a turn, so a session with no running turn fails and nothing changes.</summary>
+    /// <param name="answer">What omp answered, or what the client found without asking.</param>
+    /// <returns>The result.</returns>
+    internal static CardSteerResult DescribeNative(OmpSteerResult answer)
+    {
+        ArgumentNullException.ThrowIfNull(answer);
+
+        return answer.Outcome switch
+        {
+            OmpSteerOutcome.Injected when answer.Queue == OmpSteerQueue.FollowUp => CardSteerResult.Queued(AgentPanelCopy.DeliveryQueuedBehindTurn),
+            OmpSteerOutcome.Injected => CardSteerResult.Delivered(AgentPanelCopy.DeliveryDeliveredIntoTurn),
+            OmpSteerOutcome.PromptRequired or OmpSteerOutcome.NotRunning => CardSteerResult.Failed(NoTurnRunning),
+            _ => CardSteerResult.Failed(string.IsNullOrWhiteSpace(answer.Reason) ? "omp could not take the message." : answer.Reason),
+        };
     }
 
     /// <summary>Turns the acknowledgement into the plain message of a card: a missing acknowledgement is reported as exactly that.</summary>
