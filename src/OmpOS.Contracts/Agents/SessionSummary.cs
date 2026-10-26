@@ -28,4 +28,7 @@ public sealed record SessionSummary
 
     /// <summary>Gets the absolute path of the workspace the session runs in, or null when it is unknown.</summary>
     public string? WorkspaceRoot { get; init; }
+
+    /// <summary>Gets what the session is: a chat behind the Agent Panel or an omp terminal. Defaults to <see cref="SessionKind.Chat"/>.</summary>
+    public SessionKind Kind { get; init; } = SessionKind.Chat;
 }

@@ -56,10 +56,12 @@ public sealed class OmpLaunchPlannerTests
 
     private static string[] BaseEnv() =>
     [
+        "OMPOS_CONNECTION_FILE=/state/sessions/s1/connection/report.json",
+        "OMPOS_STEER_DIR=/state/sessions/s1/steer",
         "SUBSTRATE_OMP_PENDING_DIR=/state/sessions/s1/substrate-pending",
         "SWARM_CLAUDE_STATE_DIR=/state/sessions/s1/claude-state",
         "SWARM_DIR=/state/sessions/s1/swarm",
-        "SWARM_GSD_STATE_FILE=",
+        "SWARM_GSD_STATE_FILE=/state/sessions/s1/swarm/gsd-state.md",
         "ULTRATHINK_STATE_DIR=/state/sessions/s1/ultrathink",
     ];
 
@@ -286,7 +288,7 @@ public sealed class OmpLaunchPlannerTests
     }
 
     [Fact]
-    public void SwarmGsdStateFileIsPresentWithAnEmptyValueAndAgentIdentityVariablesAreNeverSet()
+    public void SwarmGsdStateFileIsAPerSessionPathNeverEmptyAndAgentIdentityVariablesAreNeverSet()
     {
         var combinations = new[]
         {
@@ -301,8 +303,8 @@ public sealed class OmpLaunchPlannerTests
         {
             var plan = Plan(settings);
 
-            plan.Environment.ContainsKey("SWARM_GSD_STATE_FILE").ShouldBeTrue();
-            plan.Environment["SWARM_GSD_STATE_FILE"].ShouldBeEmpty();
+            plan.Environment["SWARM_GSD_STATE_FILE"].ShouldBe("/state/sessions/s1/swarm/gsd-state.md");
+            plan.ForTerminal().Environment["SWARM_GSD_STATE_FILE"].ShouldBe("/state/sessions/s1/swarm/gsd-state.md");
             plan.Environment.ContainsKey("SWARM_AGENT").ShouldBeFalse();
             plan.Environment.ContainsKey("SWARM_TASK_ID").ShouldBeFalse();
             plan.Environment.ContainsKey("SWARM_ROOT").ShouldBeFalse();
@@ -329,7 +331,7 @@ public sealed class OmpLaunchPlannerTests
         var text = Plan(Settings()).ToString();
 
         text.ShouldBe(
-            "OmpLaunchPlan { Arguments = 11, Environment = [SUBSTRATE_OMP_PENDING_DIR, SUBSTRATE_TOKENS_DIR, SUBSTRATE_URL, " +
+            "OmpLaunchPlan { Arguments = 11, Environment = [OMPOS_CONNECTION_FILE, OMPOS_STEER_DIR, SUBSTRATE_OMP_PENDING_DIR, SUBSTRATE_TOKENS_DIR, SUBSTRATE_URL, " +
             "SWARM_CLAUDE_STATE_DIR, SWARM_DIR, SWARM_GSD_STATE_FILE, ULTRATHINK_STATE_DIR], McpServers = [substrate] }");
         text.ShouldNotContain("/state/sessions");
         text.ShouldNotContain("127.0.0.1");

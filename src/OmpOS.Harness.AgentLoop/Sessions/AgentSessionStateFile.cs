@@ -163,6 +163,7 @@ internal sealed class AgentSessionStateFile
         WorkspaceRoot = record.WorkspaceRoot,
         AcpSessionId = record.AcpSessionId,
         ResumeReference = record.ResumeReference,
+        Kind = record.Kind.ToString(),
     };
 
     // A temporary file that cannot be deleted is left behind; the registry reads only its own path, so the file is never used.
@@ -186,6 +187,14 @@ internal sealed class AgentSessionStateFile
         && !int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)
             ? lifecycle
             : SessionLifecycle.Lost;
+
+    // A file written before sessions had a kind, or one with a name this build does not know, describes a chat session.
+    private static SessionKind ParseKind(string? text) =>
+        Enum.TryParse<SessionKind>(text, ignoreCase: true, out var kind)
+        && Enum.IsDefined(kind)
+        && !int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)
+            ? kind
+            : SessionKind.Chat;
 
     private byte[] ReadCapped()
     {
@@ -297,6 +306,7 @@ internal sealed class AgentSessionStateFile
             AcpSessionId = entry.AcpSessionId,
             ResumeReference = entry.ResumeReference,
             Heartbeat = entry.Heartbeat ?? lastActivity,
+            Kind = ParseKind(entry.Kind),
         };
     }
 

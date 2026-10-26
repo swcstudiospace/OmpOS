@@ -29,6 +29,52 @@ public sealed record OmpLaunchPlan
     public required IReadOnlyList<StageEvent> PlanningEvents { get; init; }
 
     /// <summary>
+    /// Gets the identifiers (see <see cref="Plugins.OmpPluginCatalog"/>) of the plugins the plan loads, in composition order.
+    /// A plugin that is switched off, missing or unhealthy is not listed. Empty when the plan was not made by the planner.
+    /// </summary>
+    public IReadOnlyList<string> LoadedPluginIds { get; init; } = [];
+
+    /// <summary>
+    /// Derives the launch of an interactive omp (a terminal session) from the plan: the same plugin arguments, environment,
+    /// working directory and planning events, never <c>acp</c> and never <c>--plugin-dir</c>, plus an optional resume and
+    /// an optional first prompt. The MCP servers of the plan are not part of it: an interactive omp reads its MCP servers
+    /// from its own configuration.
+    /// </summary>
+    /// <param name="options">The resume reference and first prompt, or null for neither.</param>
+    /// <returns>The terminal command. It is a new value; the plan is unchanged.</returns>
+    /// <exception cref="ArgumentException">
+    /// The resume reference is blank-but-not-null, starts with <c>-</c> or contains a NUL character, or the prompt starts with
+    /// <c>-</c> or <c>@</c> or contains a NUL character.
+    /// </exception>
+    public OmpTerminalCommand ForTerminal(OmpTerminalOptions? options = null)
+    {
+        var arguments = new List<string>(ExtraArguments.Count + 3);
+        arguments.AddRange(ExtraArguments);
+
+        if (options?.NativeSessionId is { } resume)
+        {
+            ValidateResume(resume);
+            arguments.Add("--resume");
+            arguments.Add(resume);
+        }
+
+        if (options?.InitialPrompt is { } prompt && !string.IsNullOrWhiteSpace(prompt))
+        {
+            ValidatePrompt(prompt);
+            arguments.Add(prompt);
+        }
+
+        return new OmpTerminalCommand
+        {
+            Arguments = arguments,
+            Environment = Environment,
+            WorkingDirectory = WorkingDirectory,
+            ConfigOverlayPath = ConfigOverlayPath,
+            PlanningEvents = PlanningEvents,
+        };
+    }
+
+    /// <summary>
     /// Describes the plan without any value: the number of arguments, the environment variable names and the MCP server names.
     /// </summary>
     /// <returns>The description.</returns>
@@ -41,5 +87,21 @@ public sealed record OmpLaunchPlan
         builder.AppendJoin(", ", McpServers.Select(server => server.Name));
         builder.Append("] }");
         return builder.ToString();
+    }
+
+    private static void ValidateResume(string resume)
+    {
+        if (string.IsNullOrWhiteSpace(resume) || resume[0] == '-' || resume.Contains('\0', StringComparison.Ordinal))
+        {
+            throw new ArgumentException("The resume reference must be a non-blank value that does not start with '-'.", nameof(resume));
+        }
+    }
+
+    private static void ValidatePrompt(string prompt)
+    {
+        if (prompt[0] is '-' or '@' || prompt.Contains('\0', StringComparison.Ordinal))
+        {
+            throw new ArgumentException("The initial prompt must not start with '-' or '@' and must not contain a NUL character.", nameof(prompt));
+        }
     }
 }

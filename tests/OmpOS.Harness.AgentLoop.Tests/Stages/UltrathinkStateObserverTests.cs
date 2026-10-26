@@ -290,6 +290,82 @@ public sealed class UltrathinkStateObserverTests
         Should.Throw<ArgumentOutOfRangeException>(() => new UltrathinkStateObserver(new UltrathinkStateObserverOptions { PollInterval = TimeSpan.Zero }));
     }
 
+    [Fact]
+    public async Task ATerminalSessionWithoutAnEngineIdWatchesTheNewestRecordAndFollowsANewerOne()
+    {
+        using var directory = new StageTempDirectory();
+        WriteRecord(directory, "old", StageFixtures.Bytes("ultrathink-session-complete.json"), new DateTime(2026, 10, 26, 10, 0, 0, DateTimeKind.Utc));
+        WriteRecord(directory, "new", StageFixtures.Bytes("ultrathink-session-fallback.json"), new DateTime(2026, 10, 26, 11, 0, 0, DateTimeKind.Utc));
+        var scope = directory.Scope(acpSessionId: null);
+        var clock = new StageFakeTimeProvider();
+
+        var run = await StartAsync(NewObserver(clock), scope, clock).ConfigureAwait(true);
+        await using var runLifetime = run.ConfigureAwait(true);
+
+        var first = run.Events.ShouldHaveSingleItem();
+        first.Status.ShouldBe(StageStatus.Degraded);
+        first.Detail.ShouldBe("Planner fell back to a basic plan: no graph");
+
+        WriteRecord(directory, "newest", StageFixtures.Bytes("ultrathink-session-partial.json"), new DateTime(2026, 10, 26, 12, 0, 0, DateTimeKind.Utc));
+        await run.StepAsync().ConfigureAwait(true);
+
+        var plan = run.Events.Last(e => string.Equals(e.StageId, "plan", StringComparison.Ordinal));
+        plan.Status.ShouldBe(StageStatus.Succeeded);
+        plan.Detail.ShouldBe("8 nodes, 4 waves, 3 clarifications");
+        run.Events.Single(e => string.Equals(e.StageId, "tracking", StringComparison.Ordinal)).Status.ShouldBe(StageStatus.Degraded);
+    }
+
+    [Fact]
+    public async Task ATerminalSessionIsPendingUntilARecordAppearsAndIgnoresFilesThatAreNotRecords()
+    {
+        using var directory = new StageTempDirectory();
+        var scope = directory.Scope(acpSessionId: null);
+        var clock = new StageFakeTimeProvider();
+
+        var run = await StartAsync(NewObserver(clock), scope, clock).ConfigureAwait(true);
+        await using var runLifetime = run.ConfigureAwait(true);
+        await run.StepAsync(2).ConfigureAwait(true);
+
+        var waiting = run.Events.ShouldHaveSingleItem();
+        waiting.Status.ShouldBe(StageStatus.Pending);
+        waiting.Detail.ShouldBe("Waiting for the planner");
+        Directory.Exists(scope.SessionStateDirectory).ShouldBeFalse();
+
+        var sessions = Path.GetDirectoryName(OmpOS.Harness.AgentLoop.Launch.SessionStateLayout.UltrathinkSessionFile(scope.SessionStateDirectory, "x"))!;
+        Directory.CreateDirectory(sessions);
+        await File.WriteAllBytesAsync(Path.Combine(sessions, "half.json.tmp"), StageFixtures.Bytes("ultrathink-session-complete.json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(sessions, "notes.txt"), "not a record", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await run.StepAsync().ConfigureAwait(true);
+        run.Events.ShouldHaveSingleItem();
+
+        WriteRecord(directory, "real", StageFixtures.Bytes("ultrathink-session-complete.json"), new DateTime(2026, 10, 26, 10, 0, 0, DateTimeKind.Utc));
+        await run.StepAsync().ConfigureAwait(true);
+
+        run.Events[^1].Status.ShouldBe(StageStatus.Succeeded);
+    }
+
+    [Fact]
+    public async Task ATerminalSessionNeverReadsAnotherSessionsRecords()
+    {
+        using var directory = new StageTempDirectory();
+        WriteRecord(directory, "theirs", StageFixtures.Bytes("ultrathink-session-complete.json"), new DateTime(2026, 10, 26, 10, 0, 0, DateTimeKind.Utc), "session-b");
+        var mine = directory.Scope("session-a", acpSessionId: null);
+        var clock = new StageFakeTimeProvider();
+
+        var run = await StartAsync(NewObserver(clock), mine, clock).ConfigureAwait(true);
+        await using var runLifetime = run.ConfigureAwait(true);
+        await run.StepAsync(2).ConfigureAwait(true);
+
+        run.Events.ShouldHaveSingleItem().Status.ShouldBe(StageStatus.Pending);
+    }
+
+    private static void WriteRecord(StageTempDirectory directory, string engineId, byte[] content, DateTime lastWriteUtc, string sessionId = "s-1")
+    {
+        StageTempDirectory.WritePlan(directory.Scope(sessionId, acpSessionId: engineId), content);
+        var path = OmpOS.Harness.AgentLoop.Launch.SessionStateLayout.UltrathinkSessionFile(directory.Scope(sessionId).SessionStateDirectory, engineId);
+        File.SetLastWriteTimeUtc(path, lastWriteUtc);
+    }
+
     private static string PlanPath(StageObservationScope scope) =>
         OmpOS.Harness.AgentLoop.Launch.SessionStateLayout.UltrathinkSessionFile(scope.SessionStateDirectory, scope.AcpSessionId!);
 }

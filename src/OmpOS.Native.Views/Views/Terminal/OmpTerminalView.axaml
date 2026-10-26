@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:term="clr-namespace:Iciclecreek.Terminal;assembly=Iciclecreek.Avalonia.Terminal"
+             x:Class="OmpOS.Native.Views.Terminal.OmpTerminalView"
+             Background="{DynamicResource OmpOS.Color.Surface}">
+  <!-- The output control's default theme is scoped to this view, so its template does not depend on the application's style list.
+       The view model owns the omp session. The control only draws its output and turns keys into input for it. -->
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Iciclecreek.Avalonia.Terminal/Themes/Generic.axaml" />
+  </UserControl.Styles>
+
+  <DockPanel>
+
+    <Border DockPanel.Dock="Top"
+            Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
+            Padding="{DynamicResource OmpOS.Space.Sm}">
+
+      <DockPanel>
+
+        <StackPanel DockPanel.Dock="Right"
+                    Orientation="Horizontal"
+                    Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+          <Button x:Name="RestartButton"
+                  Content="Restart omp"
+                  IsVisible="False"
+                  MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                  MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                  AutomationProperties.Name="Restart omp" />
+
+          <Button x:Name="CloseButton"
+                  Content="Close"
+                  MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                  MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                  AutomationProperties.Name="Close omp terminal" />
+
+        </StackPanel>
+
+        <TextBlock x:Name="StatusText"
+                   VerticalAlignment="Center"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                   TextWrapping="Wrap"
+                   AutomationProperties.Name="omp status"
+                   AutomationProperties.LiveSetting="Polite" />
+
+      </DockPanel>
+
+    </Border>
+
+    <Grid>
+
+      <term:TerminalControl x:Name="Output"
+                            FontFamily="{DynamicResource OmpOS.Font.Mono}"
+                            FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                            Background="{DynamicResource OmpOS.Color.Surface}"
+                            Foreground="{DynamicResource OmpOS.Color.TextPrimary}"
+                            Margin="{DynamicResource OmpOS.Space.Xs}"
+                            AutomationProperties.Name="omp terminal" />
+
+      <ScrollViewer x:Name="UnavailablePanel"
+                    IsVisible="False"
+                    Padding="{DynamicResource OmpOS.Space.Md}">
+
+        <SelectableTextBlock x:Name="FixText"
+                             FontFamily="{DynamicResource OmpOS.Font.Mono}"
+                             FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                             TextWrapping="Wrap"
+                             Focusable="True"
+                             AutomationProperties.Name="Why omp is unavailable" />
+
+      </ScrollViewer>
+
+    </Grid>
+
+  </DockPanel>
+
+</UserControl>

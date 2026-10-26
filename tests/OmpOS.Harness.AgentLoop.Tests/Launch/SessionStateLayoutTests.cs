@@ -24,9 +24,12 @@ public sealed class SessionStateLayoutTests
         SessionStateLayout.SwarmDirectory(Dir).ShouldBe("/state/sessions/s1/swarm");
         SessionStateLayout.SwarmLiveFile(Dir).ShouldBe("/state/sessions/s1/swarm/.swarm/live.json");
         SessionStateLayout.SwarmEventsFile(Dir).ShouldBe("/state/sessions/s1/swarm/.swarm/events.jsonl");
+        SessionStateLayout.SwarmGsdStateFile(Dir).ShouldBe("/state/sessions/s1/swarm/gsd-state.md");
         SessionStateLayout.ClaudeStateDirectory(Dir).ShouldBe("/state/sessions/s1/claude-state");
         SessionStateLayout.SubstratePendingDirectory(Dir).ShouldBe("/state/sessions/s1/substrate-pending");
         SessionStateLayout.ConfigOverlayFile(Dir).ShouldBe("/state/sessions/s1/omp-overlay.yml");
+        SessionStateLayout.SteerDirectory(Dir).ShouldBe("/state/sessions/s1/steer");
+        SessionStateLayout.ConnectionFile(Dir).ShouldBe("/state/sessions/s1/connection/report.json");
     }
 
     [Fact]
@@ -78,6 +81,8 @@ public sealed class SessionStateLayoutTests
         Should.Throw<ArgumentException>(() => SessionStateLayout.SwarmLiveFile(" "));
         Should.Throw<ArgumentException>(() => SessionStateLayout.UltrathinkSessionFile(Dir, " "));
         Should.Throw<ArgumentException>(() => SessionStateLayout.UltrathinkSessionFile("", "abc"));
+        Should.Throw<ArgumentException>(() => SessionStateLayout.SteerDirectory(" "));
+        Should.Throw<ArgumentException>(() => SessionStateLayout.ConnectionFile(""));
     }
 
     [Theory]

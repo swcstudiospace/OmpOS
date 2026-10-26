@@ -35,4 +35,7 @@ internal sealed class AgentSessionEntry
 
     /// <summary>Gets or sets the native omp session reference.</summary>
     public string? ResumeReference { get; set; }
+
+    /// <summary>Gets or sets the session kind name. A file written before sessions had a kind has none, and the session is a chat.</summary>
+    public string? Kind { get; set; }
 }

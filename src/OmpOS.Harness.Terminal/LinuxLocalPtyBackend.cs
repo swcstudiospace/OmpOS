@@ -8,20 +8,26 @@ namespace OmpOS.Harness.Terminal;
 /// <remarks>
 /// The executable and the working directory must be absolute, and the caller supplies both. No shell is chosen from the
 /// environment, and no command string is built: the arguments go to the operating system as a list. The command receives
-/// only the host variables PATH, HOME, LANG and TERM; every other host variable is removed from its environment.
+/// only the host variables PATH, HOME, LANG, TERM, PI_CODING_AGENT_DIR and OMP_PROFILE, plus the variables the caller
+/// passes explicitly in <see cref="TerminalSessionOptions.Environment"/>; every other host variable is removed from its environment.
 /// </remarks>
 public sealed class LinuxLocalPtyBackend : ITerminalBackend
 {
     /// <summary>
-    /// The only host environment variables the command receives. This is the allowlist of OmpOS.Harness.OmpLauncher's
-    /// OmpProcessStarter, and the two lists must change together.
+    /// The only host environment variables the command receives. The first four are the allowlist of OmpOS.Harness.OmpLauncher's
+    /// OmpProcessStarter. PI_CODING_AGENT_DIR and OMP_PROFILE are added because an interactive omp takes its session store and
+    /// its profile from them; they are passed only when the host has them.
     /// </summary>
-    private static readonly string[] AllowedEnvironmentVariables = ["PATH", "HOME", "LANG", "TERM"];
+    private static readonly string[] AllowedEnvironmentVariables =
+        ["PATH", "HOME", "LANG", "TERM", "PI_CODING_AGENT_DIR", "OMP_PROFILE"];
 
     /// <inheritdoc />
     /// <exception cref="PlatformNotSupportedException">The operating system is not Linux.</exception>
     /// <exception cref="ArgumentNullException">The options, the arguments or the output receiver is null.</exception>
-    /// <exception cref="ArgumentException">The executable or the working directory is not an absolute path, or an argument is null.</exception>
+    /// <exception cref="ArgumentException">
+    /// The executable or the working directory is not an absolute path, an argument is null, or an environment variable name or
+    /// value is invalid. The message never contains an environment value.
+    /// </exception>
     /// <exception cref="ArgumentOutOfRangeException">A terminal dimension is less than 1.</exception>
     /// <exception cref="FileNotFoundException">The executable does not exist.</exception>
     /// <exception cref="DirectoryNotFoundException">The working directory does not exist.</exception>
@@ -35,7 +41,7 @@ public sealed class LinuxLocalPtyBackend : ITerminalBackend
             options.WorkingDirectory,
             options.Columns,
             options.Rows,
-            ChildEnvironment(),
+            ChildEnvironment(options.Environment),
             cancellationToken).ConfigureAwait(false);
 
         try
@@ -65,6 +71,7 @@ public sealed class LinuxLocalPtyBackend : ITerminalBackend
 
         ArgumentNullException.ThrowIfNull(options.Arguments, nameof(options));
         ArgumentNullException.ThrowIfNull(options.Output, nameof(options));
+        ArgumentNullException.ThrowIfNull(options.Environment, nameof(options));
         ArgumentOutOfRangeException.ThrowIfLessThan(options.Columns, 1, nameof(options));
         ArgumentOutOfRangeException.ThrowIfLessThan(options.Rows, 1, nameof(options));
 
@@ -73,6 +80,12 @@ public sealed class LinuxLocalPtyBackend : ITerminalBackend
             throw new ArgumentException(
                 "Every argument must be a non-null string.",
                 nameof(options));
+        }
+
+        var environmentProblem = TerminalSessionOptions.FindEnvironmentProblem(options.Environment);
+        if (environmentProblem is not null)
+        {
+            throw new ArgumentException(environmentProblem, nameof(options));
         }
 
         if (!Path.IsPathFullyQualified(options.FileName))
@@ -100,9 +113,10 @@ public sealed class LinuxLocalPtyBackend : ITerminalBackend
 
     /// <summary>
     /// Builds the command's environment. Porta.Pty merges this dictionary into the inherited environment, and an empty value
-    /// removes the variable, so every host variable is blanked and the allowlisted ones are then given their host values.
+    /// removes the variable, so every host variable is blanked, the allowlisted ones are then given their host values, and the
+    /// caller's variables are applied last so that they win.
     /// </summary>
-    private static Dictionary<string, string> ChildEnvironment()
+    private static Dictionary<string, string> ChildEnvironment(IReadOnlyDictionary<string, string> extra)
     {
         var environment = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (string name in Environment.GetEnvironmentVariables().Keys)
@@ -117,6 +131,11 @@ public sealed class LinuxLocalPtyBackend : ITerminalBackend
             {
                 environment[name] = value;
             }
+        }
+
+        foreach (var (name, value) in extra)
+        {
+            environment[name] = value;
         }
 
         return environment;

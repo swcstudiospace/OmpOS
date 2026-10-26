@@ -37,6 +37,18 @@ public sealed record OmpPluginDescriptor
     /// <summary>Gets the command that repairs a missing plugin, or null when there is none.</summary>
     public string? OptionalFixCommand { get; init; }
 
+    /// <summary>
+    /// Gets the tool names omp lists once the plugin is loaded. The connection report is checked against them. Only names
+    /// found in the plugin's own source are listed.
+    /// </summary>
+    public IReadOnlyList<string> ExpectedTools { get; init; } = [];
+
+    /// <summary>
+    /// Gets the slash-command names (without the leading <c>/</c>) omp lists once the plugin is loaded. The connection report
+    /// is checked against them when omp could list its commands. Only names found in the plugin's own source are listed.
+    /// </summary>
+    public IReadOnlyList<string> ExpectedCommands { get; init; } = [];
+
     /// <summary>Gets the stage source that reports on this plugin.</summary>
     public StageSource StageSource => Role switch
     {

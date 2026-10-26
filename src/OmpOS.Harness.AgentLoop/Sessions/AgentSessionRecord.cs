@@ -46,6 +46,9 @@ public sealed record AgentSessionRecord
     /// <summary>Gets the time of the last liveness signal from the session's engine.</summary>
     public required DateTimeOffset Heartbeat { get; init; }
 
+    /// <summary>Gets what the session is: a chat behind the Agent Panel or an omp terminal. Defaults to <see cref="SessionKind.Chat"/>.</summary>
+    public SessionKind Kind { get; init; } = SessionKind.Chat;
+
     /// <summary>Returns the list-row view of the record. It carries no resume reference.</summary>
     /// <returns>The summary.</returns>
     public SessionSummary ToSummary() => new()
@@ -58,11 +61,12 @@ public sealed record AgentSessionRecord
         GraphId = GraphId,
         TaskId = TaskId,
         WorkspaceRoot = WorkspaceRoot,
+        Kind = Kind,
     };
 
     /// <summary>Returns a description of the record that names the resume reference only as present or absent.</summary>
     /// <returns>The description.</returns>
     public override string ToString() => string.Create(
         CultureInfo.InvariantCulture,
-        $"AgentSessionRecord {{ Id = {Id}, Lifecycle = {Lifecycle}, CreatedAt = {CreatedAt:O}, LastActivity = {LastActivity:O}, GraphId = {GraphId}, TaskId = {TaskId}, AcpSessionId = {AcpSessionId}, ResumeReference = {(ResumeReference is null ? "none" : "[redacted]")} }}");
+        $"AgentSessionRecord {{ Id = {Id}, Kind = {Kind}, Lifecycle = {Lifecycle}, CreatedAt = {CreatedAt:O}, LastActivity = {LastActivity:O}, GraphId = {GraphId}, TaskId = {TaskId}, AcpSessionId = {AcpSessionId}, ResumeReference = {(ResumeReference is null ? "none" : "[redacted]")} }}");
 }

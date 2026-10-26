@@ -14,6 +14,8 @@ namespace OmpOS.Harness.AgentLoop.Stages;
 /// then reports what the plan contains. A record that cannot be read is a degraded stage, never an exception, and the observer
 /// keeps polling, because the planner may rewrite the record in place (for example when issue tracking completes). The file is
 /// found only through <see cref="SessionStateLayout"/> for the scope's own directory, so one session never reads another's.
+/// When the scope has no omp session identifier (an omp terminal session) the observer reads the newest <c>*.json</c> record in
+/// the scope's own Ultrathink sessions directory instead of waiting for the identifier.
 /// </summary>
 public sealed class UltrathinkStateObserver : IStageSource
 {
@@ -146,19 +148,28 @@ public sealed class UltrathinkStateObserver : IStageSource
 
     private async Task<List<StageSnapshot>> PollAsync(StageObservationScope scope, PollState state, CancellationToken cancellationToken)
     {
+        string path;
         if (scope.AcpSessionId is null)
         {
-            return [new StageSnapshot(PlanStageId, PlanTitle, StageStatus.Pending, "Waiting for the engine session")];
-        }
+            // An omp terminal session has no ACP identifier. Its session directory is private, so the newest record in it is its own.
+            var newest = NewestRecord(scope.SessionStateDirectory);
+            if (newest is null)
+            {
+                return state.Last ?? [new StageSnapshot(PlanStageId, PlanTitle, StageStatus.Pending, "Waiting for the planner")];
+            }
 
-        string path;
-        try
-        {
-            path = SessionStateLayout.UltrathinkSessionFile(scope.SessionStateDirectory, scope.AcpSessionId);
+            path = newest;
         }
-        catch (ArgumentException)
+        else
         {
-            return Unreadable(state);
+            try
+            {
+                path = SessionStateLayout.UltrathinkSessionFile(scope.SessionStateDirectory, scope.AcpSessionId);
+            }
+            catch (ArgumentException)
+            {
+                return Unreadable(state);
+            }
         }
 
         var read = await StageFileReader.ReadAllAsync(path, UltrathinkPlanParser.MaxFileBytes, cancellationToken).ConfigureAwait(false);
@@ -190,6 +201,33 @@ public sealed class UltrathinkStateObserver : IStageSource
 
         state.LoggedUnusable = false;
         return Remember(state, Project(summary, state));
+    }
+
+    private static string? NewestRecord(string sessionStateDirectory)
+    {
+        string directory;
+        try
+        {
+            directory = Path.Combine(SessionStateLayout.UltrathinkDirectory(sessionStateDirectory), "sessions");
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+
+        try
+        {
+            return new DirectoryInfo(directory)
+                .EnumerateFiles("*.json", SearchOption.TopDirectoryOnly)
+                .OrderByDescending(static file => file.LastWriteTimeUtc)
+                .ThenByDescending(static file => file.Name, StringComparer.Ordinal)
+                .Select(static file => file.FullName)
+                .FirstOrDefault();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     private void ReportUnusable(PollState state, FileReadStatus status, Exception? error)

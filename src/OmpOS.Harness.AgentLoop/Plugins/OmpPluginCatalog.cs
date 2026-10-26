@@ -30,6 +30,17 @@ public static class OmpPluginCatalog
             Required = true,
             SubmoduleName = "claude-ultrathink",
             OptionalFixCommand = SubmoduleFix("claude-ultrathink"),
+            ExpectedCommands =
+            [
+                "ultrathink-quick",
+                "ultrathink-skip",
+                "ultrathink-off",
+                "ultrathink-on",
+                "ultrathink-track",
+                "ultrathink-status",
+                "ultrathink-ui",
+                "ultrathink-swarm",
+            ],
         },
         new OmpPluginDescriptor
         {
@@ -40,6 +51,18 @@ public static class OmpPluginCatalog
             Required = true,
             SubmoduleName = "agent-swarm",
             OptionalFixCommand = SubmoduleFix("agent-swarm"),
+            ExpectedCommands = ["swarm"],
+            ExpectedTools =
+            [
+                "swarm_status",
+                "swarm_assignment",
+                "swarm_plan",
+                "swarm_ingest",
+                "swarm_transition",
+                "swarm_gate",
+                "swarm_catalog",
+                "swarm_tool_call",
+            ],
         },
         new OmpPluginDescriptor
         {
@@ -51,6 +74,7 @@ public static class OmpPluginCatalog
             Required = false,
             SubmoduleName = "agent-substrate",
             OptionalFixCommand = SubmoduleFix("agent-substrate"),
+            ExpectedCommands = ["substrate"],
         },
         new OmpPluginDescriptor
         {
@@ -60,6 +84,7 @@ public static class OmpPluginCatalog
             RelativeDirectory = "gsd-core-omp",
             Required = false,
             OptionalFixCommand = "git restore plugins/gsd-core-omp",
+            ExpectedCommands = ["gsd-core"],
         },
     ];
 

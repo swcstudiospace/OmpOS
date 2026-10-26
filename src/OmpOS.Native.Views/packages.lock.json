@@ -220,6 +220,12 @@
           "OmpOS.Harness.Abstractions": "[1.0.0, )"
         }
       },
+      "ompos.harness.omplauncher": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Harness.Terminal": "[1.0.0, )"
+        }
+      },
       "ompos.harness.plugins": {
         "type": "Project"
       },

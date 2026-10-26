@@ -20,6 +20,7 @@
     <ProjectReference Include="../OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
     <ProjectReference Include="../OmpOS.Harness.Completion/OmpOS.Harness.Completion.csproj" />
     <ProjectReference Include="../OmpOS.Harness.Mcp/OmpOS.Harness.Mcp.csproj" />
+    <ProjectReference Include="../OmpOS.Harness.OmpLauncher/OmpOS.Harness.OmpLauncher.csproj" />
     <ProjectReference Include="../OmpOS.Harness.Plugins/OmpOS.Harness.Plugins.csproj" />
     <ProjectReference Include="../OmpOS.Harness.Terminal/OmpOS.Harness.Terminal.csproj" />
     <ProjectReference Include="../OmpOS.Harness.Workspace/OmpOS.Harness.Workspace.csproj" />

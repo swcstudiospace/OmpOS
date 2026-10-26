@@ -5,7 +5,7 @@ namespace OmpOS.Harness.OmpLauncher;
 /// <summary>
 /// Opens omp in an interactive terminal. It locates omp with <see cref="OmpLocator"/>, reads the version with
 /// <see cref="OmpVersionProbe"/>, then starts the located executable through an <see cref="ITerminalBackend"/> with the
-/// argument array and the project directory. A missing omp is returned as <see cref="OmpTerminalNotFound"/>; it never throws.
+/// argument array, the project directory and the environment variables of the request. A missing omp is returned as <see cref="OmpTerminalNotFound"/>; it never throws.
 /// </summary>
 public sealed class OmpTerminalLauncher
 {
@@ -27,7 +27,7 @@ public sealed class OmpTerminalLauncher
     /// <summary>
     /// Locates omp and starts it in a terminal session in the project directory.
     /// </summary>
-    /// <param name="request">The project directory, the omp arguments, the terminal size and the output receiver.</param>
+    /// <param name="request">The project directory, the omp arguments, the environment, the terminal size and the output receiver.</param>
     /// <param name="cancellationToken">Cancels the version probe and the spawn. A cancelled launch throws.</param>
     /// <returns>
     /// <see cref="OmpTerminalStarted"/> with the running session, <see cref="OmpTerminalNotFound"/> when omp is not
@@ -60,6 +60,12 @@ public sealed class OmpTerminalLauncher
             return new OmpTerminalLaunchFailed($"The project directory does not exist: {request.ProjectDirectory}");
         }
 
+        var environmentProblem = TerminalSessionOptions.FindEnvironmentProblem(request.Environment);
+        if (environmentProblem is not null)
+        {
+            return new OmpTerminalLaunchFailed(environmentProblem);
+        }
+
         var probe = await OmpVersionProbe.ProbeAsync(found.ExecutablePath, cancellationToken).ConfigureAwait(false);
         var version = probe is OmpVersionReported reported ? reported.Version : null;
 
@@ -69,7 +75,10 @@ public sealed class OmpTerminalLauncher
             request.ProjectDirectory,
             request.Columns,
             request.Rows,
-            request.Output);
+            request.Output)
+        {
+            Environment = request.Environment,
+        };
 
         try
         {

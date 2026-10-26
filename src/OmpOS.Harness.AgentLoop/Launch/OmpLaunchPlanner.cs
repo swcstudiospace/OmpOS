@@ -13,6 +13,12 @@ public static class OmpLaunchPlanner
     /// <summary>The name of the MCP server entry that reaches the substrate.</summary>
     public const string SubstrateMcpServerName = "substrate";
 
+    /// <summary>The environment variable that tells the omp plugin where to serve the steering inbox of the session.</summary>
+    public const string SteerDirectoryVariable = "OMPOS_STEER_DIR";
+
+    /// <summary>The environment variable that tells the omp plugin where to write its connection report.</summary>
+    public const string ConnectionFileVariable = "OMPOS_CONNECTION_FILE";
+
     /// <summary>
     /// Plans the launch of one session.
     /// </summary>
@@ -39,6 +45,7 @@ public static class OmpLaunchPlanner
         var sessionDirectory = SessionStateLayout.SessionDirectory(settings.StateRoot, sessionId);
         var now = (timeProvider ?? TimeProvider.System).GetUtcNow();
         var events = new List<StageEvent>();
+        var loaded = new List<string>(OmpPluginCatalog.BuiltIn.Count);
         var arguments = new List<string> { "--no-extensions" };
         var substrate = TryPlanSubstrate(settings);
         var substrateActive = false;
@@ -69,6 +76,7 @@ public static class OmpLaunchPlanner
                 substrateActive = true;
             }
 
+            loaded.Add(descriptor.Id);
             foreach (var entry in plugin.EntryPaths)
             {
                 arguments.Add("-e");
@@ -76,13 +84,7 @@ public static class OmpLaunchPlanner
             }
         }
 
-        string? overlayPath = null;
-        if (settings.DisableProjectMcpConfig)
-        {
-            overlayPath = SessionStateLayout.ConfigOverlayFile(sessionDirectory);
-            arguments.Add("--config");
-            arguments.Add(overlayPath);
-        }
+        var overlayPath = AddConfigOverlay(settings, sessionDirectory, arguments);
 
         return new OmpLaunchPlan
         {
@@ -91,8 +93,22 @@ public static class OmpLaunchPlanner
             McpServers = substrateActive ? [BuildMcpServer(settings, substrate.BaseAddress!)] : [],
             WorkingDirectory = workspaceRoot,
             ConfigOverlayPath = overlayPath,
+            LoadedPluginIds = loaded,
             PlanningEvents = events,
         };
+    }
+
+    private static string? AddConfigOverlay(AgentLoopSettings settings, string sessionDirectory, List<string> arguments)
+    {
+        if (!settings.DisableProjectMcpConfig)
+        {
+            return null;
+        }
+
+        var overlayPath = SessionStateLayout.ConfigOverlayFile(sessionDirectory);
+        arguments.Add("--config");
+        arguments.Add(overlayPath);
+        return overlayPath;
     }
 
     private static void ValidateInputs(AgentLoopSettings settings, IReadOnlyList<ResolvedPlugin> plugins, string sessionId, string workspaceRoot)
@@ -183,9 +199,11 @@ public static class OmpLaunchPlanner
 
         environment["ULTRATHINK_STATE_DIR"] = SessionStateLayout.UltrathinkDirectory(sessionDirectory);
         environment["SWARM_DIR"] = SessionStateLayout.SwarmDirectory(sessionDirectory);
-        environment["SWARM_GSD_STATE_FILE"] = string.Empty;
+        environment["SWARM_GSD_STATE_FILE"] = SessionStateLayout.SwarmGsdStateFile(sessionDirectory);
         environment["SWARM_CLAUDE_STATE_DIR"] = SessionStateLayout.ClaudeStateDirectory(sessionDirectory);
         environment["SUBSTRATE_OMP_PENDING_DIR"] = SessionStateLayout.SubstratePendingDirectory(sessionDirectory);
+        environment[SteerDirectoryVariable] = SessionStateLayout.SteerDirectory(sessionDirectory);
+        environment[ConnectionFileVariable] = SessionStateLayout.ConnectionFile(sessionDirectory);
 
         if (!settings.UltrathinkEnabled)
         {

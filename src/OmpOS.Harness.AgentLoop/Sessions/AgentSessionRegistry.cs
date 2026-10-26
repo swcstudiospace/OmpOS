@@ -104,10 +104,17 @@ public sealed class AgentSessionRegistry : ISessionCatalog
     /// <summary>Creates a session in the <see cref="SessionLifecycle.Created"/> state and persists it.</summary>
     /// <param name="title">The title. A blank title becomes a default title; a title longer than 200 characters is cut.</param>
     /// <param name="workspaceRoot">The absolute path of the workspace, or null when unknown.</param>
+    /// <param name="kind">What the session is. A chat behind the Agent Panel unless given.</param>
     /// <returns>The new record. Its identifier is <c>s-</c> and 26 lowercase base32 characters.</returns>
     /// <exception cref="AgentSessionLimitException">The registry already holds <see cref="MaxSessions"/> sessions.</exception>
-    public AgentSessionRecord Create(string? title, string? workspaceRoot)
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="kind"/> is not a defined session kind.</exception>
+    public AgentSessionRecord Create(string? title, string? workspaceRoot, SessionKind kind = SessionKind.Chat)
     {
+        if (!Enum.IsDefined(kind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(kind));
+        }
+
         AgentSessionRecord record;
         lock (_gate)
         {
@@ -132,6 +139,7 @@ public sealed class AgentSessionRegistry : ISessionCatalog
                 LastActivity = now,
                 Heartbeat = now,
                 WorkspaceRoot = string.IsNullOrWhiteSpace(workspaceRoot) ? null : workspaceRoot,
+                Kind = kind,
                 StateDirectory = _file.StateDirectoryFor(id),
             };
             _records[id] = record;

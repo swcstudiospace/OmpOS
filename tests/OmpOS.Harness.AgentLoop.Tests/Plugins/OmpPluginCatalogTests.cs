@@ -59,4 +59,48 @@ public sealed class OmpPluginCatalogTests
         OmpPluginCatalog.BuiltIn.Select(plugin => plugin.StageSource).ShouldBe(
             [StageSource.Ultrathink, StageSource.Swarm, StageSource.Substrate, StageSource.Gsd]);
     }
+
+    [Fact]
+    public void EachPluginListsTheNamesItsSourceRegisters()
+    {
+        var byId = OmpPluginCatalog.BuiltIn.ToDictionary(plugin => plugin.Id, StringComparer.Ordinal);
+
+        byId["ultrathink"].ExpectedCommands.ShouldBe(
+        [
+            "ultrathink-quick",
+            "ultrathink-skip",
+            "ultrathink-off",
+            "ultrathink-on",
+            "ultrathink-track",
+            "ultrathink-status",
+            "ultrathink-ui",
+            "ultrathink-swarm",
+        ]);
+        byId["ultrathink"].ExpectedTools.ShouldBeEmpty();
+        byId["swarm"].ExpectedCommands.ShouldBe(["swarm"]);
+        byId["swarm"].ExpectedTools.ShouldBe(
+        [
+            "swarm_status",
+            "swarm_assignment",
+            "swarm_plan",
+            "swarm_ingest",
+            "swarm_transition",
+            "swarm_gate",
+            "swarm_catalog",
+            "swarm_tool_call",
+        ]);
+        byId["substrate"].ExpectedCommands.ShouldBe(["substrate"]);
+        byId["substrate"].ExpectedTools.ShouldBeEmpty();
+        byId["gsd"].ExpectedCommands.ShouldBe(["gsd-core"]);
+        byId["gsd"].ExpectedTools.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void ExpectedNamesAreUniqueAndCarryNoSlashOrWhitespace()
+    {
+        var names = OmpPluginCatalog.BuiltIn.SelectMany(plugin => plugin.ExpectedCommands.Concat(plugin.ExpectedTools)).ToList();
+
+        names.Distinct(StringComparer.Ordinal).Count().ShouldBe(names.Count);
+        names.ShouldAllBe(name => name.Length > 0 && !name.StartsWith('/') && !name.Any(char.IsWhiteSpace));
+    }
 }

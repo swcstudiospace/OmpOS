@@ -103,6 +103,16 @@ public static class SessionStateLayout
         Path.Combine(SwarmDirectory(sessionStateDirectory), ".swarm", "events.jsonl");
 
     /// <summary>
+    /// Returns the file the orchestrator mirrors its GSD state lines to, the value of <c>SWARM_GSD_STATE_FILE</c>:
+    /// <c>&lt;dir&gt;/swarm/gsd-state.md</c>. It is always a path under the session directory, never an empty value, because the
+    /// pseudo-terminal backend removes a variable whose value is empty and the orchestrator would then write into the workspace's
+    /// <c>.planning/STATE.md</c>.
+    /// </summary>
+    /// <param name="sessionStateDirectory">The directory returned by <see cref="SessionDirectory"/>.</param>
+    public static string SwarmGsdStateFile(string sessionStateDirectory) =>
+        Path.Combine(SwarmDirectory(sessionStateDirectory), "gsd-state.md");
+
+    /// <summary>
     /// Returns the directory of the planner's host state, the value of <c>SWARM_CLAUDE_STATE_DIR</c>: <c>&lt;dir&gt;/claude-state</c>.
     /// </summary>
     /// <param name="sessionStateDirectory">The directory returned by <see cref="SessionDirectory"/>.</param>
@@ -114,6 +124,21 @@ public static class SessionStateLayout
     /// </summary>
     /// <param name="sessionStateDirectory">The directory returned by <see cref="SessionDirectory"/>.</param>
     public static string SubstratePendingDirectory(string sessionStateDirectory) => Under(sessionStateDirectory, "substrate-pending");
+
+    /// <summary>
+    /// Returns the steering directory of the session, the value of <c>OMPOS_STEER_DIR</c>: <c>&lt;dir&gt;/steer</c>. The omp
+    /// plugin serves <c>inbox/</c>, <c>acks/</c>, <c>done/</c> and <c>alive.json</c> inside it.
+    /// </summary>
+    /// <param name="sessionStateDirectory">The directory returned by <see cref="SessionDirectory"/>.</param>
+    public static string SteerDirectory(string sessionStateDirectory) => Under(sessionStateDirectory, "steer");
+
+    /// <summary>
+    /// Returns the file omp's plugin writes its connection report to, the value of <c>OMPOS_CONNECTION_FILE</c>:
+    /// <c>&lt;dir&gt;/connection/report.json</c>.
+    /// </summary>
+    /// <param name="sessionStateDirectory">The directory returned by <see cref="SessionDirectory"/>.</param>
+    public static string ConnectionFile(string sessionStateDirectory) =>
+        Path.Combine(Under(sessionStateDirectory, "connection"), "report.json");
 
     /// <summary>
     /// Returns the path of the omp settings overlay of the session: <c>&lt;dir&gt;/omp-overlay.yml</c>.
