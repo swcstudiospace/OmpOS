@@ -1,0 +1,67 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Styles the Kanban tab shares. Tokens only: no colour literal, no literal font family. Each Kanban view includes this file. -->
+
+  <!-- A column: a raised surface with a transparent 2 px border, so the drop highlight appears without moving anything. -->
+  <Style Selector="Border.kanban-column">
+    <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceRaised}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource OmpOS.Radius.Md}" />
+    <Setter Property="Padding" Value="{DynamicResource OmpOS.Space.Sm}" />
+    <Setter Property="MinWidth" Value="240" />
+    <Setter Property="Width" Value="280" />
+  </Style>
+  <Style Selector="TextBlock.kanban-column-header">
+    <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Display}" />
+    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Label}" />
+    <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Semibold}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+  </Style>
+  <Style Selector="Border.kanban-column.drop-target">
+    <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
+  </Style>
+
+  <!-- A card: a surface with a transparent 2 px border. The keyboard focus ring is the accent border, drawn with the same thickness. -->
+  <Style Selector="Border.kanban-card">
+    <Setter Property="Background" Value="{DynamicResource OmpOS.Color.Surface}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource OmpOS.Radius.Md}" />
+    <Setter Property="Padding" Value="{DynamicResource OmpOS.Space.Sm}" />
+  </Style>
+  <Style Selector=".kanban-card-view:focus-visible Border#Frame">
+    <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
+  </Style>
+
+  <!-- Ids are drawn in the mono face of the Greptile families. -->
+  <Style Selector="TextBlock.kanban-id">
+    <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Mono}" />
+  </Style>
+
+  <!-- Loading skeleton: static bars. The view adds skeleton-pulse only while motion is full, never under reduced motion. -->
+  <Style Selector="Border.skeleton">
+    <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceActive}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource OmpOS.Radius.Sm}" />
+    <Setter Property="Height" Value="{DynamicResource OmpOS.Size.ChipHeight}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Border.skeleton.skeleton-pulse">
+    <Style.Animations>
+      <Animation Duration="0:0:1.6" IterationCount="INFINITE">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+        <KeyFrame Cue="50%">
+          <Setter Property="Opacity" Value="0.5" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+</Styles>

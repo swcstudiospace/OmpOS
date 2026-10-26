@@ -1,0 +1,169 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pres="clr-namespace:OmpOS.Presentation.Kanban;assembly=OmpOS.Presentation"
+             xmlns:agent="clr-namespace:OmpOS.Native.Views.AgentPanel"
+             xmlns:local="clr-namespace:OmpOS.Native.Views.Kanban"
+             x:Class="OmpOS.Native.Views.Kanban.KanbanCardView"
+             x:DataType="pres:KanbanCardViewModel"
+             Classes="kanban-card-view"
+             Focusable="True"
+             IsTabStop="False"
+             Margin="0,0,0,8"
+             AutomationProperties.Name="{CompiledBinding Card.SpokenName}"
+             ToolTip.Tip="{x:Static local:KanbanCopy.CardTip}">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Kanban/KanbanStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- One task card: title and kind tag, model and provider, status chip and last activity, stale and disconnected words, the Substrate row and Steer. -->
+  <Border x:Name="Frame"
+          Classes="kanban-card">
+    <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+      <Grid ColumnDefinitions="*,Auto"
+            ColumnSpacing="8">
+        <TextBlock x:Name="TitleText"
+                   Grid.Column="0"
+                   Text="{CompiledBinding Card.Title}"
+                   FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                   TextWrapping="Wrap" />
+        <Border x:Name="KindTag"
+                Grid.Column="1"
+                Classes="chip"
+                VerticalAlignment="Top">
+          <TextBlock x:Name="KindText"
+                     Text="{CompiledBinding Card.KindText}"
+                     VerticalAlignment="Center"
+                     FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                     FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                     TextWrapping="NoWrap" />
+        </Border>
+      </Grid>
+
+      <TextBlock x:Name="ModelText"
+                 Text="{CompiledBinding Card.ModelProviderText}"
+                 Classes="muted"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap" />
+
+      <WrapPanel Orientation="Horizontal"
+                 ItemSpacing="{DynamicResource OmpOS.Gap.Sm}"
+                 LineSpacing="{DynamicResource OmpOS.Gap.Xs}">
+        <agent:StatusChip x:Name="StatusChip" />
+        <TextBlock x:Name="ActivityText"
+                   Text="{CompiledBinding Card.LastActivityText}"
+                   Classes="muted"
+                   VerticalAlignment="Center"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+      </WrapPanel>
+
+      <TextBlock x:Name="StaleText"
+                 Text="{CompiledBinding Card.StaleLabel}"
+                 IsVisible="{CompiledBinding Card.IsStale}"
+                 Classes="tone-warning"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap" />
+
+      <TextBlock x:Name="DisconnectedText"
+                 Text="{CompiledBinding Card.DisconnectedText}"
+                 IsVisible="{CompiledBinding Card.IsDisconnected}"
+                 Classes="tone-warning"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap" />
+
+      <TextBlock x:Name="ClosedText"
+                 Text="{x:Static local:KanbanCopy.Closed}"
+                 IsVisible="{CompiledBinding Card.IsClosed}"
+                 Classes="muted"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+
+      <!-- The Substrate fields. Each one reads unavailable when Substrate did not report it; ids are drawn in the mono family. -->
+      <StackPanel x:Name="SubstrateRow"
+                  Spacing="{DynamicResource OmpOS.Gap.Xs}"
+                  AutomationProperties.Name="{CompiledBinding SubstrateName}">
+        <TextBlock x:Name="TaskField"
+                   Text="{CompiledBinding TaskText}"
+                   Classes="muted"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="GraphField"
+                   Text="{CompiledBinding GraphText}"
+                   Classes="muted kanban-id"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                   TextWrapping="Wrap" />
+        <WrapPanel Orientation="Horizontal"
+                   ItemSpacing="{DynamicResource OmpOS.Gap.Sm}"
+                   LineSpacing="{DynamicResource OmpOS.Gap.Xs}">
+          <TextBlock x:Name="LessonsField"
+                     Text="{CompiledBinding LessonsText}"
+                     Classes="muted"
+                     FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+          <TextBlock x:Name="LeaseField"
+                     Text="{CompiledBinding LeaseText}"
+                     Classes="muted kanban-id"
+                     FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                     TextWrapping="Wrap" />
+        </WrapPanel>
+      </StackPanel>
+
+      <Button x:Name="SteerButton"
+              Content="{x:Static local:KanbanCopy.Steer}"
+              IsEnabled="{CompiledBinding CanSteer}"
+              IsTabStop="False"
+              HorizontalAlignment="Left"
+              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+              MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+              Padding="{DynamicResource OmpOS.Space.Md}"
+              ToolTip.Tip="{x:Static local:KanbanCopy.SteerTip}">
+        <Button.Flyout>
+          <Flyout Placement="BottomEdgeAlignedLeft">
+            <StackPanel x:Name="SteerPanel"
+                        x:DataType="pres:KanbanCardViewModel"
+                        Width="320"
+                        Spacing="{DynamicResource OmpOS.Gap.Sm}">
+              <TextBox x:Name="SteerBox"
+                       Text="{CompiledBinding SteerText, Mode=TwoWay}"
+                       PlaceholderText="{x:Static local:KanbanCopy.SteerPlaceholder}"
+                       AcceptsReturn="True"
+                       TextWrapping="Wrap"
+                       MinHeight="88"
+                       FontFamily="{DynamicResource OmpOS.Font.Family}"
+                       Background="{DynamicResource OmpOS.Color.Surface}"
+                       Foreground="{DynamicResource OmpOS.Color.TextPrimary}"
+                       AutomationProperties.Name="{x:Static local:KanbanCopy.SteerBoxName}" />
+              <WrapPanel Orientation="Horizontal"
+                         ItemSpacing="{DynamicResource OmpOS.Gap.Sm}"
+                         LineSpacing="{DynamicResource OmpOS.Gap.Sm}">
+                <Button x:Name="SendNowButton"
+                        Classes="primary"
+                        Content="{x:Static local:KanbanCopy.SendNow}"
+                        Command="{CompiledBinding SteerCommand}"
+                        CommandParameter="{x:Static pres:CardSteerMode.SendNow}"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="{x:Static local:KanbanCopy.SendNowName}" />
+                <Button x:Name="QueueButton"
+                        Content="{x:Static local:KanbanCopy.QueueNext}"
+                        Command="{CompiledBinding SteerCommand}"
+                        CommandParameter="{x:Static pres:CardSteerMode.FollowUp}"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        Padding="{DynamicResource OmpOS.Space.Md}"
+                        AutomationProperties.Name="{x:Static local:KanbanCopy.QueueNextName}" />
+              </WrapPanel>
+              <TextBlock x:Name="SteerResult"
+                         Text="{CompiledBinding SteerResultText}"
+                         IsVisible="{CompiledBinding SteerResultText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                         Classes="tone-secondary"
+                         TextWrapping="Wrap"
+                         AutomationProperties.LiveSetting="Polite"
+                         AutomationProperties.Name="{x:Static local:KanbanCopy.SteerResultName}" />
+            </StackPanel>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
+
+    </StackPanel>
+  </Border>
+
+</UserControl>

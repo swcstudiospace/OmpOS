@@ -1,0 +1,170 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pres="clr-namespace:OmpOS.Presentation.Kanban;assembly=OmpOS.Presentation"
+             xmlns:local="clr-namespace:OmpOS.Native.Views.Kanban"
+             x:Class="OmpOS.Native.Views.Kanban.KanbanBoardView"
+             x:DataType="pres:KanbanBoardModel"
+             Focusable="False"
+             AutomationProperties.Name="{x:Static local:KanbanCopy.BoardName}">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Kanban/KanbanStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The Kanban tab. Keyboard order follows XAML order: the retry button of the banner, then the current card and its Steer button (roving). -->
+  <Grid RowDefinitions="Auto,*,Auto"
+        Margin="{DynamicResource OmpOS.Space.Md}">
+
+    <!-- The sessions could not be read again, and the cards below are the last good snapshot. -->
+    <Border x:Name="ErrorBanner"
+            Grid.Row="0"
+            Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
+            Padding="{DynamicResource OmpOS.Space.Sm}"
+            Margin="0,0,0,8"
+            IsVisible="False"
+            AutomationProperties.Name="{x:Static local:KanbanCopy.BannerName}"
+            AutomationProperties.LiveSetting="Assertive">
+      <StackPanel Orientation="Horizontal"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+        <TextBlock x:Name="BannerText"
+                   Classes="tone-error"
+                   VerticalAlignment="Center"
+                   TextWrapping="Wrap" />
+        <Button x:Name="BannerRetryButton"
+                Content="{x:Static local:KanbanCopy.Retry}"
+                Command="{CompiledBinding RetryCommand}"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                Padding="{DynamicResource OmpOS.Space.Md}"
+                AutomationProperties.Name="{x:Static local:KanbanCopy.BannerRetryName}" />
+      </StackPanel>
+    </Border>
+
+    <Panel Grid.Row="1">
+
+      <!-- Loading: static text and skeleton cards. Never a spinner; the bars pulse only while motion is full. -->
+      <StackPanel x:Name="LoadingBlock"
+                  IsVisible="False"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                  AutomationProperties.Name="{x:Static local:KanbanCopy.LoadingHeading}">
+        <TextBlock x:Name="LoadingHeading"
+                   Text="{x:Static local:KanbanCopy.LoadingHeading}"
+                   FontFamily="{DynamicResource OmpOS.Font.Display}"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Heading}"
+                   FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="LoadingBody"
+                   Text="{x:Static local:KanbanCopy.LoadingBody}"
+                   Classes="muted"
+                   TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                    AutomationProperties.Name="{x:Static local:KanbanCopy.SkeletonName}">
+          <Border Classes="kanban-column"
+                  IsHitTestVisible="False">
+            <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+              <Border Classes="skeleton" />
+              <Border Classes="skeleton" />
+              <Border Classes="skeleton" />
+            </StackPanel>
+          </Border>
+          <Border Classes="kanban-column"
+                  IsHitTestVisible="False">
+            <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+              <Border Classes="skeleton" />
+              <Border Classes="skeleton" />
+              <Border Classes="skeleton" />
+            </StackPanel>
+          </Border>
+          <Border Classes="kanban-column"
+                  IsHitTestVisible="False">
+            <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+              <Border Classes="skeleton" />
+              <Border Classes="skeleton" />
+              <Border Classes="skeleton" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </StackPanel>
+
+      <!-- Empty: no session. The primary button is the only accent fill of the screen. -->
+      <StackPanel x:Name="EmptyBlock"
+                  IsVisible="False"
+                  MaxWidth="{DynamicResource OmpOS.Size.ThreadContentMaxWidth}"
+                  HorizontalAlignment="Center"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+        <TextBlock x:Name="EmptyHeading"
+                   Text="{x:Static local:KanbanCopy.EmptyHeading}"
+                   FontFamily="{DynamicResource OmpOS.Font.Display}"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Heading}"
+                   FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="EmptyBody"
+                   Text="{x:Static local:KanbanCopy.EmptyBody}"
+                   Classes="muted"
+                   TextWrapping="Wrap" />
+        <Button x:Name="StartSessionButton"
+                Classes="primary"
+                Content="{x:Static local:KanbanCopy.StartSession}"
+                Command="{CompiledBinding StartSessionCommand}"
+                HorizontalAlignment="Left"
+                Margin="0,16,0,0"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                AutomationProperties.Name="{x:Static local:KanbanCopy.StartSessionName}" />
+      </StackPanel>
+
+      <!-- Error: nothing to show. The reason and a Retry button. Assertive, because the user has to act. -->
+      <StackPanel x:Name="ErrorBlock"
+                  IsVisible="False"
+                  MaxWidth="{DynamicResource OmpOS.Size.ThreadContentMaxWidth}"
+                  HorizontalAlignment="Center"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                  AutomationProperties.Name="{x:Static local:KanbanCopy.ErrorHeading}"
+                  AutomationProperties.LiveSetting="Assertive">
+        <TextBlock x:Name="ErrorHeading"
+                   Text="{x:Static local:KanbanCopy.ErrorHeading}"
+                   FontFamily="{DynamicResource OmpOS.Font.Display}"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Heading}"
+                   FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="ErrorBody"
+                   Text="{CompiledBinding ErrorText}"
+                   Classes="tone-error"
+                   TextWrapping="Wrap" />
+        <Button x:Name="RetryButton"
+                Content="{x:Static local:KanbanCopy.Retry}"
+                Command="{CompiledBinding RetryCommand}"
+                HorizontalAlignment="Left"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                Padding="{DynamicResource OmpOS.Space.Md}"
+                AutomationProperties.Name="{x:Static local:KanbanCopy.RetryName}" />
+      </StackPanel>
+
+      <!-- Ready: the columns, scrolling horizontally. The column and card controls are built by the code-behind and kept between updates. -->
+      <ScrollViewer x:Name="ColumnsScroller"
+                    IsVisible="False"
+                    HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollBarVisibility="Auto"
+                    Focusable="False">
+        <StackPanel x:Name="ColumnsPanel"
+                    Orientation="Horizontal"
+                    Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                    AutomationProperties.Name="{x:Static local:KanbanCopy.ColumnsName}" />
+      </ScrollViewer>
+
+    </Panel>
+
+    <!-- The polite live region: a card whose status changed, and the result of a steering attempt. -->
+    <TextBlock x:Name="LiveRegion"
+               Grid.Row="2"
+               Text="{CompiledBinding Announcement}"
+               Classes="muted"
+               Margin="0,8,0,0"
+               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+               TextWrapping="Wrap"
+               AutomationProperties.LiveSetting="Polite"
+               AutomationProperties.Name="{x:Static local:KanbanCopy.LiveRegionName}" />
+
+  </Grid>
+
+</UserControl>

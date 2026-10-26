@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using OmpOS.Contracts.Agents;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Observable;
 
@@ -21,6 +22,12 @@ namespace OmpOS.Presentation.Kanban;
 /// changes nothing. A card the user placed stays in its column until its runtime status changes, then it returns to the column of the
 /// new status. A chat without a runtime status sits in Backlog.
 /// </para>
+/// <para>
+/// State: <see cref="State"/> is Loading while the head says so (<see cref="KanbanBoardOptions.StartLoading"/>, <see cref="RetryCommand"/>), Error when the catalog
+/// could not be read and the board has nothing to show, Empty when there is no session, and Ready otherwise. A session that is closed or ended
+/// is never dropped by the board (DR-5b): it stays as a card in a terminal column (Completed, Failed or Archived), and a dropped engine shows as
+/// Disconnected, which is distinct from Failed. A card leaves the board only when the catalog itself forgets the session.
+/// </para>
 /// <para>Threading: every member runs on the context that owns the models; the catalog model already dispatches its own changes there.</para>
 /// </remarks>
 public sealed class KanbanBoardModel : ObservableModel, IDisposable
@@ -31,6 +38,7 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
     private const string UnreachableText = "Session unreachable";
     private const string NoStatusText = "No status";
     private const string ModelUnknownText = "Model unknown";
+    private const string DisconnectedText = "Disconnected, the engine dropped";
 
     private static readonly RuntimeStatus[] RuntimeOrder = Enum.GetValues<RuntimeStatus>();
 
@@ -38,6 +46,13 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
     private readonly TimeProvider _timeProvider;
     private readonly KanbanBoardOptions _options;
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, KanbanCardViewModel> _models = new(StringComparer.Ordinal);
+    private readonly AgentPanelCommand _retryCommand;
+    private readonly AgentPanelCommand _startSessionCommand;
+    private List<KanbanCardViewModel> _cardModels = [];
+    private BoardState _state = BoardState.Empty;
+    private bool _loading;
+    private string _announcement = string.Empty;
     private IReadOnlyList<KanbanColumn> _columns = [];
     private List<KanbanCard> _cards = [];
     private bool _disposed;
@@ -54,10 +69,55 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
         _catalog = catalog;
         _timeProvider = timeProvider;
         _options = options ?? new KanbanBoardOptions();
+        _loading = _options.StartLoading;
+        _retryCommand = new AgentPanelCommand(
+            _ =>
+            {
+                Retry();
+                return Task.CompletedTask;
+            },
+            static _ => { });
+        _startSessionCommand = new AgentPanelCommand(
+            _ =>
+            {
+                StartSessionRequested?.Invoke(this, EventArgs.Empty);
+                return Task.CompletedTask;
+            },
+            static _ => { });
         SyncEntries();
         Rebuild();
         _catalog.PropertyChanged += OnCatalogPropertyChanged;
     }
+
+    /// <summary>Occurs when a card is activated: the owner of the sessions opens or focuses the session named by the argument.</summary>
+    public event EventHandler<SessionSelectionChangedEventArgs>? OpenSessionRequested;
+
+    /// <summary>Occurs when the user asks, from the empty board, to start a session. The owner of the sessions starts one.</summary>
+    public event EventHandler? StartSessionRequested;
+
+    /// <summary>Gets what the tab shows: loading skeleton, empty, error with retry, or the columns.</summary>
+    public BoardState State => _state;
+
+    /// <summary>
+    /// Gets the reason the sessions could not be read, or null when they could. In <see cref="BoardState.Ready"/> a text here means the cards
+    /// are the last good snapshot.
+    /// </summary>
+    public string? ErrorText => _catalog.LoadError;
+
+    /// <summary>Gets the command that reads the sessions again. It shows <see cref="BoardState.Loading"/> while it runs.</summary>
+    public AgentPanelCommand RetryCommand => _retryCommand;
+
+    /// <summary>Gets the command that raises <see cref="StartSessionRequested"/>.</summary>
+    public AgentPanelCommand StartSessionCommand => _startSessionCommand;
+
+    /// <summary>Gets the view models of the cards, in the order of <see cref="Cards"/>. A view model lives as long as its session is on the board.</summary>
+    public IReadOnlyList<KanbanCardViewModel> CardModels => _cardModels;
+
+    /// <summary>
+    /// Gets the last text for assistive technology: a card whose status changed, or the result of a steering attempt. The view shows it in a
+    /// polite live region.
+    /// </summary>
+    public string Announcement => _announcement;
 
     /// <summary>Gets the columns in board order: Backlog, one per runtime status, Archived. Every column is present, empty or not.</summary>
     public IReadOnlyList<KanbanColumn> Columns => _columns;
@@ -67,6 +127,41 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
 
     /// <summary>Gets whether the board has no chat at all.</summary>
     public bool IsEmpty => _cards.Count == 0;
+
+    /// <summary>Returns the view model of a card.</summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <returns>The view model, or null when no chat has that identifier.</returns>
+    public KanbanCardViewModel? CardModelOf(string sessionId) => _models.GetValueOrDefault(sessionId);
+
+    /// <summary>Raises <see cref="OpenSessionRequested"/> for a card.</summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <returns>True when the chat is on the board and the event was raised; false otherwise.</returns>
+    public bool RequestOpen(string sessionId)
+    {
+        ArgumentNullException.ThrowIfNull(sessionId);
+        if (!_entries.ContainsKey(sessionId))
+        {
+            return false;
+        }
+
+        OpenSessionRequested?.Invoke(this, new SessionSelectionChangedEventArgs(sessionId));
+        return true;
+    }
+
+    /// <summary>Ends <see cref="BoardState.Loading"/>: the head has restored its sessions.</summary>
+    public void CompleteLoading() => SetLoading(false);
+
+    /// <summary>
+    /// Reads the Substrate fields of every card from <see cref="KanbanBoardOptions.Details"/>. Without a source, or when Substrate reports
+    /// nothing, the fields read unavailable; nothing is invented.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <returns>A task that completes when every card has its fields.</returns>
+    public async Task RefreshDetailsAsync(CancellationToken cancellationToken)
+    {
+        var models = _cardModels.ToList();
+        await Task.WhenAll(models.Select(model => model.LoadDetailsAsync(_options.Details, cancellationToken))).ConfigureAwait(true);
+    }
 
     /// <summary>Returns the card of a chat.</summary>
     /// <param name="sessionId">The session identifier.</param>
@@ -167,13 +262,28 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
 
         _disposed = true;
         _catalog.PropertyChanged -= OnCatalogPropertyChanged;
+        foreach (var model in _models.Values)
+        {
+            model.Dispose();
+        }
     }
 
     private static DateTimeOffset Latest(DateTimeOffset left, DateTimeOffset right) => left >= right ? left : right;
 
-    private static string ColumnKeyOf(Entry entry) => entry.ActivePlacement is { } placement
-        ? KanbanColumn.KeyOf(placement.Status)
-        : entry.State is { } state ? KanbanColumn.KeyOf(state.Status) : KanbanColumn.BacklogKey;
+    private static string ColumnKeyOf(Entry entry)
+    {
+        if (entry.ActivePlacement is { } placement)
+        {
+            return KanbanColumn.KeyOf(placement.Status);
+        }
+
+        return entry.State switch
+        {
+            { Status: RuntimeStatus.Paused } when entry.IsClosed => KanbanColumn.ArchivedKey,
+            { } state => KanbanColumn.KeyOf(state.Status),
+            _ => KanbanColumn.BacklogKey,
+        };
+    }
 
     private static string ModelProviderTextOf(string? model, string? provider)
     {
@@ -193,7 +303,19 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
 
     private void OnCatalogPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (_disposed || !string.Equals(e.PropertyName, nameof(SessionCatalogModel.Sessions), StringComparison.Ordinal))
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (string.Equals(e.PropertyName, nameof(SessionCatalogModel.LoadError), StringComparison.Ordinal))
+        {
+            NotifyPropertyChanged(nameof(ErrorText));
+            UpdateState();
+            return;
+        }
+
+        if (!string.Equals(e.PropertyName, nameof(SessionCatalogModel.Sessions), StringComparison.Ordinal))
         {
             return;
         }
@@ -222,6 +344,8 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
             }
 
             entry.Title = row.Title;
+            entry.Kind = row.Summary.Kind;
+            entry.IsClosed = row.Status == AgentRowStatus.Closed;
         }
 
         foreach (var gone in _entries.Keys.Where(id => !seen.Contains(id)).ToList())
@@ -269,20 +393,138 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
             .ThenBy(card => card.Id, StringComparer.Ordinal)
             .ToList();
         var columns = BuildColumns(cards);
+        var announcements = AnnouncementsOf(cards, columns);
 
         var cardsChanged = !cards.SequenceEqual(_cards);
         var columnsChanged = !SameColumns(columns, _columns);
         if (cardsChanged)
         {
             _cards = cards;
+        }
+
+        if (columnsChanged)
+        {
+            _columns = columns;
+        }
+
+        SyncModels(cards);
+        if (cardsChanged)
+        {
             NotifyPropertyChanged(nameof(Cards));
             NotifyPropertyChanged(nameof(IsEmpty));
         }
 
         if (columnsChanged)
         {
-            _columns = columns;
             NotifyPropertyChanged(nameof(Columns));
+        }
+
+        UpdateState();
+        if (announcements.Count > 0)
+        {
+            Announce(string.Join(". ", announcements));
+        }
+    }
+
+    /// <summary>Keeps one view model per card: new cards get one, changed cards hand it the new snapshot, gone cards dispose theirs.</summary>
+    private void SyncModels(List<KanbanCard> cards)
+    {
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        var models = new List<KanbanCardViewModel>(cards.Count);
+        foreach (var card in cards)
+        {
+            ids.Add(card.Id);
+            if (_models.TryGetValue(card.Id, out var model))
+            {
+                model.Update(card);
+            }
+            else
+            {
+                model = new KanbanCardViewModel(card, _options.Steering, Announce, id => RequestOpen(id));
+                _models[card.Id] = model;
+            }
+
+            models.Add(model);
+        }
+
+        foreach (var gone in _models.Keys.Where(id => !ids.Contains(id)).ToList())
+        {
+            _models[gone].Dispose();
+            _models.Remove(gone);
+        }
+
+        if (!models.SequenceEqual(_cardModels))
+        {
+            _cardModels = models;
+            NotifyPropertyChanged(nameof(CardModels));
+        }
+    }
+
+    /// <summary>Words for each card whose status, disconnected state or column changed since the last build. A new card says nothing.</summary>
+    private List<string> AnnouncementsOf(List<KanbanCard> cards, List<KanbanColumn> columns)
+    {
+        var words = new List<string>();
+        foreach (var card in cards)
+        {
+            var before = _cards.FirstOrDefault(previous => string.Equals(previous.Id, card.Id, StringComparison.Ordinal));
+            if (before is null)
+            {
+                continue;
+            }
+
+            if (!string.Equals(before.StatusText, card.StatusText, StringComparison.Ordinal) || before.IsDisconnected != card.IsDisconnected)
+            {
+                words.Add($"{card.Title}: {card.DisconnectedText ?? card.StatusText}");
+            }
+            else if (!string.Equals(before.ColumnKey, card.ColumnKey, StringComparison.Ordinal))
+            {
+                var title = columns.First(column => string.Equals(column.Key, card.ColumnKey, StringComparison.Ordinal)).Title;
+                words.Add($"{card.Title}: moved to {title}");
+            }
+        }
+
+        return words;
+    }
+
+    private void Announce(string text)
+    {
+        _announcement = text;
+        NotifyPropertyChanged(nameof(Announcement));
+    }
+
+    private void Retry()
+    {
+        SetLoading(true);
+        try
+        {
+            _ = _catalog.Refresh();
+        }
+        finally
+        {
+            SetLoading(false);
+        }
+    }
+
+    private void SetLoading(bool value)
+    {
+        if (_loading == value)
+        {
+            return;
+        }
+
+        _loading = value;
+        UpdateState();
+    }
+
+    private void UpdateState()
+    {
+        var next = _loading
+            ? BoardState.Loading
+            : _cards.Count > 0 ? BoardState.Ready : _catalog.LoadError is not null ? BoardState.Error : BoardState.Empty;
+        if (_state != next)
+        {
+            _state = next;
+            NotifyPropertyChanged(nameof(State));
         }
     }
 
@@ -349,6 +591,7 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
         var stale = state?.IsStale == true;
         var error = state?.Status == RuntimeStatus.Unreachable;
         var name = $"{title}, {statusText}, {modelProvider}, {lastActivity}";
+        var kindText = KindTextOf(entry.Kind);
         if (stale)
         {
             name += ", " + StaleText;
@@ -357,6 +600,18 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
         if (error)
         {
             name += ", " + UnreachableText;
+        }
+
+        var disconnected = error ? DisconnectedText : null;
+        var spoken = $"{name}, {kindText}";
+        if (disconnected is not null)
+        {
+            spoken += ", " + disconnected;
+        }
+
+        if (entry.IsClosed)
+        {
+            spoken += ", closed";
         }
 
         return new KanbanCard
@@ -375,8 +630,19 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
             StaleLabel = stale ? StaleText : null,
             ErrorText = error ? UnreachableText : null,
             AccessibleName = name,
+            Kind = entry.Kind,
+            KindText = kindText,
+            IsClosed = entry.IsClosed,
+            DisconnectedText = disconnected,
+            SpokenName = spoken,
         };
     }
+
+    private static string KindTextOf(SessionKind kind) => kind switch
+    {
+        SessionKind.Terminal => "Terminal",
+        _ => "Chat",
+    };
 
     /// <summary>A placement the user made, and the runtime status the card had when it was made.</summary>
     private sealed record Placement(UserSettableStatus Status, RuntimeStatus? PlacedAt);
@@ -387,6 +653,10 @@ public sealed class KanbanBoardModel : ObservableModel, IDisposable
         internal string Title { get; set; } = string.Empty;
 
         internal DateTimeOffset LastActivity { get; set; }
+
+        internal SessionKind Kind { get; set; }
+
+        internal bool IsClosed { get; set; }
 
         internal KanbanCardState? State { get; set; }
 

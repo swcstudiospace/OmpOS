@@ -1,3 +1,5 @@
+using OmpOS.Contracts.Agents;
+
 namespace OmpOS.Presentation.Kanban;
 
 /// <summary>
@@ -56,4 +58,28 @@ public sealed record KanbanCard
 
     /// <summary>Gets the accessible name: title, status, model and provider, last activity, then the stale and error parts when present.</summary>
     public required string AccessibleName { get; init; }
+
+    /// <summary>Gets whether the session is a chat or an omp terminal.</summary>
+    public required SessionKind Kind { get; init; }
+
+    /// <summary>Gets <c>Chat</c> or <c>Terminal</c>, the words of the tag the card shows.</summary>
+    public required string KindText { get; init; }
+
+    /// <summary>Gets whether the operator closed the session. A closed session stays on the board in a terminal column.</summary>
+    public bool IsClosed { get; init; }
+
+    /// <summary>Gets whether the engine of the session dropped: the runtime status is Unreachable. This is distinct from a failed run.</summary>
+    public bool IsDisconnected => State?.Status == RuntimeStatus.Unreachable;
+
+    /// <summary><c>Disconnected, the engine dropped</c> for a disconnected session; null otherwise. It is not the Failed state.</summary>
+    public string? DisconnectedText { get; init; }
+
+    /// <summary>
+    /// Gets whether the session ended: it completed or failed, the operator closed it, or the user archived its card. An ended card stays
+    /// on the board (DR-5b); steering it fails with a message from the steering service.
+    /// </summary>
+    public bool IsEnded => IsClosed || UserStatus == UserSettableStatus.Archived || State?.Status is RuntimeStatus.Completed or RuntimeStatus.Failed;
+
+    /// <summary>Gets the name a screen reader reads for the whole card: <see cref="AccessibleName"/> plus the kind and the disconnected part.</summary>
+    public required string SpokenName { get; init; }
 }
