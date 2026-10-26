@@ -8,8 +8,8 @@ set -euo pipefail
 
 POSTGRES_NAME=ompos-test-postgres
 DRAGONFLY_NAME=ompos-test-dragonfly
-POSTGRES_IMAGE=docker.io/timescale/timescaledb:2.13.1-pg16
-DRAGONFLY_IMAGE=docker.io/dragonflydb/dragonfly:v1.27.1
+POSTGRES_IMAGE=docker.io/timescale/timescaledb:2.13.1-pg16@sha256:1b2b5508848bbbbd671e02aeafd75fefb57771168f0782b6842bfb2f66af444b
+DRAGONFLY_IMAGE=docker.io/dragonflydb/dragonfly:v1.27.1@sha256:385cb73078f4dabe43d536766842eab444f3d791b0fcf86951decdcbcda37917
 DB=ompos_test
 DB_USER=ompos
 READY_BUDGET_SECONDS=90

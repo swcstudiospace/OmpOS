@@ -126,6 +126,11 @@ IFS= read -r CDP_PORT <"$PROFILE/DevToolsActivePort"
 AXE_DIR="$WORK/axe"
 mkdir -p "$AXE_DIR"
 (cd "$AXE_DIR" && npm pack "axe-core@$AXE_VERSION" >/dev/null 2>&1 && tar -xzf "axe-core-$AXE_VERSION.tgz" package/axe.min.js)
+# Fail closed: the engine must match the committed digest before the smoke run uses it.
+if ! (cd "$AXE_DIR/package" && sha256sum -c "$ROOT/scripts/web-smoke/axe-core-$AXE_VERSION.sha256"); then
+  echo "error: axe-core $AXE_VERSION axe.min.js does not match scripts/web-smoke/axe-core-$AXE_VERSION.sha256" >&2
+  exit 1
+fi
 sha256sum "$AXE_DIR/package/axe.min.js" >"$OUT_DIR/axe-core-$AXE_VERSION-$STAMP.sha256"
 
 set +e

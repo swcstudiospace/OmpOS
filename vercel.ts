@@ -24,8 +24,11 @@ const contentSecurityPolicy = [
 
 export const config = {
   framework: null,
+  // Installs the SDK tarball pinned in bootstrap.sh (SHA-512 checked before extraction); no third-party script runs.
   installCommand:
-    "curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh && chmod +x /tmp/dotnet-install.sh && /tmp/dotnet-install.sh --jsonfile global.json --install-dir ./.dotnet",
+    "curl -fsSL https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.402/dotnet-sdk-10.0.402-linux-x64.tar.gz -o /tmp/dotnet-sdk.tar.gz && " +
+    "echo '1904a98dda2db34ba78ba3c4fb1b224455329af91c341d83547843c1839e112b04ae699ee92fa2449a8f62249196a938723078c0c60b9f65c88539d5687729c2  /tmp/dotnet-sdk.tar.gz' | sha512sum -c - && " +
+    "mkdir -p ./.dotnet && tar -xzf /tmp/dotnet-sdk.tar.gz -C ./.dotnet",
   buildCommand: "./.dotnet/dotnet publish apps/OmpOS.Web -c Release -o output",
   outputDirectory: "output/wwwroot",
   env: {

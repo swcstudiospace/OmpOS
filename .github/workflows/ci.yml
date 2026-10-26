@@ -26,14 +26,14 @@ env:
 
 jobs:
   build-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # Action tags verified 2026-10-20 against the GitHub releases API:
       # checkout v7.0.1, setup-dotnet v6.0.0, upload-artifact v7.0.2.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-dotnet@v6
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
           cache: true
@@ -42,7 +42,8 @@ jobs:
       - run: dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
       - name: Install podman (for the test services and compose validation)
         run: |
-          command -v podman >/dev/null || { sudo apt-get update -y; sudo apt-get install -y podman; }
+          # podman 4.9.3+ds1-1ubuntu0.2: noble-updates/universe amd64 in archive.ubuntu.com (checked 2026-10-26).
+          command -v podman >/dev/null || { sudo apt-get update -y; sudo apt-get install -y --no-install-recommends podman=4.9.3+ds1-1ubuntu0.2; }
       - name: Start test services (throwaway TimescaleDB and Dragonfly)
         run: |
           env_file="$(bash scripts/test-services.sh up)"
@@ -56,7 +57,7 @@ jobs:
         run: |
           bash scripts/test-services.sh down
           if [ -n "${TEST_SERVICES_ENV:-}" ]; then rm -f "$TEST_SERVICES_ENV"; fi
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: test-results
@@ -126,11 +127,11 @@ jobs:
   # Builds the Android head (apps/OmpOS.Android) on the Linux runner (Phase 24 criterion 4). No device or emulator is needed.
   # The workflow runs on push and pull_request, so the first green run of this job needs the branch pushed.
   android:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # Action tags as pinned by build-test above.
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
       - run: dotnet restore apps/OmpOS.Android/OmpOS.Android.csproj --locked-mode
