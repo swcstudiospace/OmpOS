@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -16,6 +17,7 @@ using OmpOS.Native.Views.Editor;
 using OmpOS.Native.Views.Explorer;
 using OmpOS.Native.Views.Export;
 using OmpOS.Native.Views.InlineEditing;
+using OmpOS.Native.Views.Kanban;
 using OmpOS.Native.Views.Mcp;
 using OmpOS.Native.Views.RunControls;
 using OmpOS.Native.Views.Search;
@@ -28,16 +30,19 @@ using OmpOS.Presentation.Agents;
 using OmpOS.Presentation.Chats;
 using OmpOS.Presentation.Editor;
 using OmpOS.Presentation.Export;
+using OmpOS.Presentation.Kanban;
 using OmpOS.Presentation.State;
 using OmpOS.Workspace;
 
 namespace OmpOS.Native;
 
 /// <summary>
-/// The main content of the native head: the Agent Panel. It hosts two regions: the Agents rail (the session list and the tool
-/// toggles) and the thread of the selected agent (header, the one-line plugin connection row, transcript, transcript search, tool
-/// approvals, composer, side chats, or the Agents view or a workspace tool that opens in place of the transcript). There is no
-/// region beside them. It binds the presentation view models the web head binds, and holds no engine:
+/// The main content of the native head: the Agent Panel. It hosts two regions: the Agents rail (the session list, the New agent and New
+/// omp terminal controls and the tool toggles) and the thread of the selected agent (header, the one-line plugin connection row,
+/// transcript or the omp terminal of a terminal session, transcript search, tool approvals, composer or the steer-only terminal
+/// composer, side chats, or the Agents view or a workspace tool that opens in place of the transcript). There is no region beside them.
+/// When the head supplies a Kanban board a tab strip above them switches the whole area between the Agents layout and the Kanban tab.
+/// It binds the presentation view models the web head binds, and holds no engine:
 /// the head creates one <see cref="AgentSessionRuntime"/> per session and the panel view model it hands in selects among them.
 /// </summary>
 /// <remarks>
@@ -94,6 +99,10 @@ public partial class MainView : UserControl
     private readonly Dictionary<string, SessionPane> _panes = new(StringComparer.Ordinal);
     private readonly AgentRailView _rail;
     private readonly PanelStateView _stateView;
+    private readonly KanbanBoardModel? _board;
+    private readonly KanbanBoardView? _boardView;
+    private bool _kanbanShown;
+    private bool _syncingTabs;
     private ToolEntry? _openTool;
     private ToggleButton? _openedBy;
     private bool _syncingTools;
@@ -126,11 +135,12 @@ public partial class MainView : UserControl
     /// <param name="panel">The panel view model: the session rail and the selected session. The head owns it and disposes it.</param>
     /// <param name="workspaceRoot">The workspace folder the view's tools work in, or null for the current folder. It must exist.</param>
     /// <param name="motion">The motion setting of the head. Only <see cref="MotionPreference.Reduced"/> puts the <see cref="ReducedMotionClass"/> class on the view, which the head's styles read to remove transitions.</param>
+    /// <param name="board">The Kanban board the head built over the sessions, or null for a view with no Kanban tab. The head owns it and disposes it.</param>
     /// <exception cref="ArgumentNullException"><paramref name="panel"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="workspaceRoot"/> is empty or white space.</exception>
     /// <exception cref="DirectoryNotFoundException"><paramref name="workspaceRoot"/> does not exist.</exception>
-    public MainView(AgentPanelViewModel panel, string? workspaceRoot = null, MotionPreference motion = MotionPreference.System)
-        : this(panel, workspaceRoot, motion, mcpHost: null)
+    public MainView(AgentPanelViewModel panel, string? workspaceRoot = null, MotionPreference motion = MotionPreference.System, KanbanBoardModel? board = null)
+        : this(panel, workspaceRoot, motion, mcpHost: null, board)
     {
     }
 
@@ -139,7 +149,8 @@ public partial class MainView : UserControl
     /// <param name="workspaceRoot">The workspace folder, or null for the current folder.</param>
     /// <param name="motion">The motion setting of the head.</param>
     /// <param name="mcpHost">The MCP host the view lists and disposes, or null to create the production registry when the MCP view opens.</param>
-    internal MainView(AgentPanelViewModel panel, string? workspaceRoot, MotionPreference motion, IMcpRegistryHost? mcpHost)
+    /// <param name="board">The Kanban board, or null for a view with no Kanban tab.</param>
+    internal MainView(AgentPanelViewModel panel, string? workspaceRoot, MotionPreference motion, IMcpRegistryHost? mcpHost, KanbanBoardModel? board = null)
     {
         ArgumentNullException.ThrowIfNull(panel);
 
@@ -149,11 +160,16 @@ public partial class MainView : UserControl
 
         InitializeComponent();
         Classes.Set(ReducedMotionClass, motion == MotionPreference.Reduced);
+        if (motion == MotionPreference.Reduced)
+        {
+            RemoveTabTransitions();
+        }
 
         // The rail: the sessions of the catalog, the New agent control and the loading and error copy of the panel.
         _rail = (AgentRailView)ViewMapping.Create(panel.Catalog);
         _rail.Panel = panel;
         _rail.NewAgentCompleted += OnNewAgentCompleted;
+        _rail.NewTerminalCompleted += OnNewAgentCompleted;
         _rail.RowActivated += OnRowActivated;
         _rail.CloseRequested += OnRailCloseRequested;
         RailHost.Content = _rail;
@@ -180,13 +196,42 @@ public partial class MainView : UserControl
         _editorTool = new ToolEntry(EditorToggle, "Editor", () => ViewMapping.Create(EditorModel), keepView: true);
         _tools = CreateTools();
 
+        // The Kanban tab: the tab strip exists only when the head supplied a board.
+        if (board is not null)
+        {
+            _board = board;
+            _boardView = (KanbanBoardView)ViewMapping.Create(board);
+            KanbanHost.Content = _boardView;
+            ShowKanbanTabStrip(board);
+        }
+
         _panel.PropertyChanged += OnPanelChanged;
         _panel.Catalog.PropertyChanged += OnCatalogChanged;
         BindSelected();
     }
 
+    // The tab strip is the one control of the view the head's styles do not know: it takes no transition under reduced motion.
+    private void RemoveTabTransitions()
+    {
+        TopTabs.Transitions = new Transitions();
+        AgentsTab.Transitions = new Transitions();
+        KanbanTab.Transitions = new Transitions();
+    }
+
+    // The tab strip shows only for a view that has a board; the board's requests open or start sessions in the Agents tab.
+    private void ShowKanbanTabStrip(KanbanBoardModel board)
+    {
+        TopTabs.IsVisible = true;
+        TopTabs.SelectionChanged += OnTopTabChanged;
+        board.OpenSessionRequested += OnBoardOpenSessionRequested;
+        board.StartSessionRequested += OnBoardStartSessionRequested;
+    }
+
     /// <summary>Gets the panel view model the view shows.</summary>
     public AgentPanelViewModel Panel => _panel;
+
+    /// <summary>Gets whether the Kanban tab is the selected top-level tab. It is false for a view with no board.</summary>
+    public bool IsKanbanShown => _kanbanShown;
 
     /// <summary>Listens for the keyboard map on the top level, so a shortcut works while nothing in the view has focus.</summary>
     /// <param name="e">The attachment data.</param>
@@ -320,13 +365,13 @@ public partial class MainView : UserControl
         _current = viewModel is null ? null : GetPane(viewModel);
         var pane = _current;
         ThreadHeaderHost.Content = pane?.Header;
-        TranscriptHost.Content = pane?.Transcript;
+        TranscriptHost.Content = pane is null ? null : pane.TerminalView ?? (Control)pane.Transcript;
         PipelineHost.Content = pane?.Strip;
         SearchHost.Content = pane?.SearchView;
         SearchHost.IsVisible = pane is { SearchOpen: true };
         RunControlsHost.Content = pane?.RunControls;
         ConfirmBarHost.Content = pane?.ConfirmBar;
-        ComposerHost.Content = pane?.Composer;
+        ComposerHost.Content = pane is null ? null : pane.SteerView ?? (Control)pane.Composer;
         SideChatHost.Content = pane?.SideChatView;
         if (pane is not null)
         {
@@ -424,6 +469,15 @@ public partial class MainView : UserControl
         pane.Search.MatchSelected += (_, e) => pane.Transcript.ScrollToBlock(e.Match.BlockIndex);
         pane.Header.CloseClicked += (_, _) => pane.ConfirmBar.OpenClose();
         pane.Header.ShowPipelineRequested += (_, _) => pane.Strip.ShowDetails();
+        pane.Header.TaskChipClicked += (_, _) => ShowKanbanTab(viewModel.Id);
+        if (runtime?.Terminal is { } terminal)
+        {
+            // A terminal session shows omp in the thread and steers it from a steer-only composer. The views are kept with the pane, so
+            // another tab or session never restarts omp: the runtime keeps omp running and stops it when the session closes.
+            pane.TerminalView = (OmpTerminalView)ViewMapping.Create(terminal);
+            pane.SteerView = new TerminalSteerView { DataContext = viewModel };
+            pane.SteerView.StatusMessage += (_, e) => ReportFor(pane, e.Message);
+        }
         pane.ConfirmBar.StopConfirmed += (_, _) => pane.Composer.StopResponse();
         pane.ConfirmBar.CloseConfirmed += (_, _) =>
         {
@@ -537,6 +591,12 @@ public partial class MainView : UserControl
 
     private void OnSkipLinkClick(object? sender, RoutedEventArgs e)
     {
+        if (_kanbanShown)
+        {
+            FocusBoard();
+            return;
+        }
+
         if (AgentsToggle.IsChecked == true)
         {
             // The Agents view stands in for the transcript while it is open, so the skip link lands on its status filter.
@@ -553,7 +613,15 @@ public partial class MainView : UserControl
 
         if (_current is { } pane)
         {
-            pane.Transcript.FocusTranscript();
+            if (pane.TerminalView is null)
+            {
+                pane.Transcript.FocusTranscript();
+            }
+            else
+            {
+                FocusThread();
+            }
+
             return;
         }
 
@@ -577,12 +645,27 @@ public partial class MainView : UserControl
                 e.Handled = true;
                 _ = StartNewAgentAsync();
                 break;
+            case Key.T when control && shift:
+                e.Handled = true;
+                _ = StartNewTerminalAsync();
+                break;
+            case Key.K when control && shift && _boardView is not null:
+                e.Handled = true;
+                ShowKanbanTab();
+                break;
+            case Key.A when control && shift && _boardView is not null:
+                e.Handled = true;
+                ShowAgentsTab();
+                FocusThread();
+                break;
             case Key.D1 when control && !shift:
                 e.Handled = true;
+                ShowAgentsTab();
                 FocusRegion(RailRegionIndex);
                 break;
             case Key.D2 when control && !shift:
                 e.Handled = true;
+                ShowAgentsTab();
                 ShowThread();
                 FocusThread();
                 break;
@@ -629,14 +712,109 @@ public partial class MainView : UserControl
 
     private async Task StartNewAgentAsync()
     {
+        ShowAgentsTab();
         ShowThread();
         await _panel.NewSessionCommand.ExecuteAsync(null).ConfigureAwait(true);
         FocusThread();
     }
 
+    private async Task StartNewTerminalAsync()
+    {
+        ShowAgentsTab();
+        ShowThread();
+        await _panel.NewTerminalCommand.ExecuteAsync(null).ConfigureAwait(true);
+        FocusThread();
+    }
+
+    // The top-level tabs. Selecting the Kanban tab hides the rail and the thread, which keep their state, and shows the board in their place.
+    private void SetKanbanShown(bool shown)
+    {
+        if (shown && _boardView is null)
+        {
+            return;
+        }
+
+        _kanbanShown = shown;
+        _syncingTabs = true;
+        try
+        {
+            TopTabs.SelectedItem = shown ? KanbanTab : AgentsTab;
+        }
+        finally
+        {
+            _syncingTabs = false;
+        }
+
+        RailRegion.IsVisible = !shown;
+        ThreadRegion.IsVisible = !shown;
+        KanbanHost.IsVisible = shown;
+    }
+
+    private void ShowAgentsTab() => SetKanbanShown(shown: false);
+
+    // Shows the Kanban tab and puts focus on the card of a session, or on the board when no session is named or it has no card.
+    private void ShowKanbanTab(string? sessionId = null)
+    {
+        if (_boardView is null)
+        {
+            return;
+        }
+
+        SetKanbanShown(shown: true);
+        if (sessionId is not null && _boardView.CardViewOf(sessionId) is { } card)
+        {
+            card.FocusWhenReady();
+            return;
+        }
+
+        FocusBoard();
+    }
+
+    private void FocusBoard()
+    {
+        if (_boardView is null || _boardView.FocusCards())
+        {
+            return;
+        }
+
+        if (_boardView.StartSession.IsEffectivelyVisible)
+        {
+            _boardView.StartSession.FocusWhenReady();
+            return;
+        }
+
+        KanbanTab.FocusWhenReady();
+    }
+
+    // The user chose a tab with the arrow keys or the pointer. The tab keeps the focus.
+    private void OnTopTabChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!_syncingTabs)
+        {
+            SetKanbanShown(ReferenceEquals(TopTabs.SelectedItem, KanbanTab));
+        }
+    }
+
+    // A card was activated: the session is selected in the panel, the Agents tab comes back and focus goes to the session's thread.
+    private void OnBoardOpenSessionRequested(object? sender, SessionSelectionChangedEventArgs e)
+    {
+        if (e.SessionId is not { } sessionId)
+        {
+            return;
+        }
+
+        ShowAgentsTab();
+        ShowThread();
+        _ = _panel.SelectSession(sessionId);
+        FocusThread();
+    }
+
+    // The empty board's start button runs the same command as New agent.
+    private void OnBoardStartSessionRequested(object? sender, EventArgs e) => _ = StartNewAgentAsync();
+
     private void OpenSearch()
     {
-        if (_current is not { } pane || _openTool is not null || AgentsToggle.IsChecked == true)
+        if (_current is not { } pane || pane.TerminalView is not null || _kanbanShown || _openTool is not null || AgentsToggle.IsChecked == true)
         {
             return;
         }
@@ -665,6 +843,21 @@ public partial class MainView : UserControl
 
     private void CycleRegions(bool backwards)
     {
+        if (_kanbanShown)
+        {
+            // The Kanban tab has two regions: the tabs and the board.
+            if (IsFocusWithin(TopTabs))
+            {
+                FocusBoard();
+            }
+            else
+            {
+                KanbanTab.FocusWhenReady();
+            }
+
+            return;
+        }
+
         int[] regions = [RailRegionIndex, ThreadRegionIndex];
         var at = Array.IndexOf(regions, FocusedRegion());
         int next;
@@ -707,7 +900,11 @@ public partial class MainView : UserControl
     {
         if (_current is { } pane)
         {
-            if (ComposerHost.IsVisible)
+            if (pane.TerminalView is { } terminalView)
+            {
+                terminalView.FindControl<Control>("Output").FocusWhenReady();
+            }
+            else if (ComposerHost.IsVisible)
             {
                 pane.Composer.FocusPrompt();
             }
@@ -1037,6 +1234,13 @@ public partial class MainView : UserControl
         _closed = true;
         _panel.PropertyChanged -= OnPanelChanged;
         _panel.Catalog.PropertyChanged -= OnCatalogChanged;
+        if (_board is not null)
+        {
+            _board.OpenSessionRequested -= OnBoardOpenSessionRequested;
+            _board.StartSessionRequested -= OnBoardStartSessionRequested;
+            TopTabs.SelectionChanged -= OnTopTabChanged;
+        }
+
         if (_watched is not null)
         {
             _watched.PropertyChanged -= OnSelectedViewModelChanged;
@@ -1124,6 +1328,12 @@ public partial class MainView : UserControl
         /// <summary>Gets or sets whether the transcript search is open for this session.</summary>
         public bool SearchOpen { get; set; }
 
+        /// <summary>Gets or sets the omp terminal view of a terminal session, or null for a chat. It is kept while another tab or session is shown.</summary>
+        public OmpTerminalView? TerminalView { get; set; }
+
+        /// <summary>Gets or sets the steer-only composer of a terminal session, or null for a chat.</summary>
+        public TerminalSteerView? SteerView { get; set; }
+
         /// <summary>Gets or sets the action that unsubscribes the pane from its runtime.</summary>
         public Action? Detach { get; set; }
 
@@ -1132,6 +1342,7 @@ public partial class MainView : UserControl
         {
             Detach?.Invoke();
             Detach = null;
+            TerminalView?.Release();
             Search.Dispose();
         }
     }

@@ -1,4 +1,5 @@
 using OmpOS.Contracts.Agents;
+using OmpOS.Native.Tests.Terminal;
 using OmpOS.Native.Views.Sessions;
 using OmpOS.Presentation.AgentPanel;
 
@@ -33,6 +34,15 @@ internal sealed class ScriptedShellHost(FakeAgentCatalog catalog, ShellClock clo
 
     /// <summary>Gets or sets the script of a session that New agent creates. Null creates a session over an unconnected send path.</summary>
     public Func<string, SessionScript>? NewSessionScript { get; set; }
+
+    /// <summary>Gets the identifiers of the terminal sessions New omp terminal created, in order.</summary>
+    public List<string> CreatedTerminals { get; } = [];
+
+    /// <summary>
+    /// Gets or sets the script of a terminal session that New omp terminal creates. Null creates a terminal over a fake omp starter and a
+    /// fake steering channel.
+    /// </summary>
+    public Func<string, SessionScript>? NewTerminalScript { get; set; }
 
     /// <summary>Registers the script of a session before the panel opens it.</summary>
     /// <param name="sessionId">The session identifier.</param>
@@ -76,6 +86,27 @@ internal sealed class ScriptedShellHost(FakeAgentCatalog catalog, ShellClock clo
     }
 
     /// <inheritdoc />
+    public Task<string> CreateTerminalSessionAsync(CancellationToken cancellationToken)
+    {
+        _created++;
+        var id = $"terminal-{_created}";
+        var now = clock.Now;
+        _scripts[id] = NewTerminalScript?.Invoke(id)
+            ?? new SessionScript { TerminalStarter = new FakeOmpTerminalStarter(), Steering = new FakeSteeringChannel() };
+        CreatedTerminals.Add(id);
+        catalog.Put(new SessionSummary
+        {
+            Id = id,
+            Title = $"New omp terminal {_created}",
+            Lifecycle = SessionLifecycle.Created,
+            CreatedAt = now,
+            LastActivity = now,
+            Kind = SessionKind.Terminal,
+        });
+        return Task.FromResult(id);
+    }
+
+    /// <inheritdoc />
     public AgentSessionViewModel OpenSession(AgentRow row)
     {
         var script = ScriptOf(row.Id);
@@ -93,6 +124,8 @@ internal sealed class ScriptedShellHost(FakeAgentCatalog catalog, ShellClock clo
             Stages = script.Stages,
             Context = script.Context,
             RecordSteering = script.RecordSteering,
+            Steering = script.Steering,
+            TerminalStarter = script.TerminalStarter,
             Reopen = _ => ReopenAsync(row.Id),
             Resume = _ => ResumeAsync(row.Id),
             StageRecheck = (source, _) =>

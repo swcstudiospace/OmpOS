@@ -15,6 +15,39 @@ public static class AgentPanelCopy
     /// <summary>The primary call to action in the rail and the empty state.</summary>
     public const string NewAgent = "New agent";
 
+    /// <summary>The rail control that creates an omp terminal session beside New agent.</summary>
+    public const string NewTerminal = "New omp terminal";
+
+    /// <summary>The tooltip of the New omp terminal control, with its shortcut.</summary>
+    public const string NewTerminalTooltip = "New omp terminal (Ctrl+Shift+T)";
+
+    /// <summary>The accessible name of the message box of the steer-only composer of an omp terminal session.</summary>
+    public const string TerminalMessageName = "Steer message";
+
+    /// <summary>The accessible name of the Send now control of an omp terminal session.</summary>
+    public const string SendNowName = "Send now, deliver the message into the running omp";
+
+    /// <summary>The accessible name of the Queue control of an omp terminal session.</summary>
+    public const string QueueFollowUpName = "Queue, run the message after the current turn";
+
+    /// <summary>The placeholder of the steer-only composer of an omp terminal session.</summary>
+    public const string ComposerPlaceholderTerminal = "Steer this omp terminal";
+
+    /// <summary>The label of the control that delivers a steering message into the running turn at once.</summary>
+    public const string SendNow = "Send now";
+
+    /// <summary>The label of the control that queues a message for the end of the running turn.</summary>
+    public const string QueueFollowUpLabel = "Queue";
+
+    /// <summary>The tag a terminal session shows in the rail and on its header.</summary>
+    public const string TerminalTag = "Terminal";
+
+    /// <summary>The words that name a terminal session inside its accessible name, in running text.</summary>
+    public const string TerminalAccessibleTag = "terminal";
+
+    /// <summary>The status line text when a message is sent to an omp terminal that is not running.</summary>
+    public const string TerminalNotRunning = "This omp terminal is not running. Restart omp, then send the message again.";
+
     /// <summary>The accessible name of the primary button of the empty thread.</summary>
     public const string StartFirstAgent = "Start first agent";
 
@@ -23,6 +56,15 @@ public static class AgentPanelCopy
 
     /// <summary>The composer placeholder while a run is active.</summary>
     public const string ComposerPlaceholderRunning = "Steer the running agent\u2026 It is delivered after the active turn.";
+
+    /// <summary>The composer placeholder while a run is active and its steering is delivered live into the running turn.</summary>
+    public const string ComposerPlaceholderRunningLive = "Steer the running agent\u2026 Send now delivers it into the running turn.";
+
+    /// <summary>The accessible name of the send control of a composer whose steering is delivered live into the running turn.</summary>
+    public const string ComposerSendNowName = "Send now, deliver the message into the running turn";
+
+    /// <summary>The pending line of a composer whose steering is delivered live, while a run is active and nothing is pending.</summary>
+    public const string ComposerPendingActiveLive = "A run is active. Send now delivers into the running turn; Queue follow-up runs after the run completes.";
 
     /// <summary>The placeholder of the rail filter box.</summary>
     public const string FilterPlaceholder = "Filter agents\u2026";
@@ -180,6 +222,12 @@ public static class AgentPanelCopy
     /// <summary>The delivery text of a steering message the engine took at once.</summary>
     public const string DeliveryDelivered = "Delivered";
 
+    /// <summary>The delivery text of a steering message a live channel queued for omp while omp has not acknowledged it yet.</summary>
+    public const string DeliverySentNotAcknowledged = "Sent, omp has not acknowledged it yet";
+
+    /// <summary>The delivery text prefix of a steering message that was not delivered.</summary>
+    public const string DeliveryNotDelivered = "Not delivered";
+
     /// <summary>The record text of a steering message Substrate accepted a note for.</summary>
     public const string RecordRecorded = "Recorded in Substrate";
 
@@ -212,6 +260,12 @@ public static class AgentPanelCopy
 
     /// <summary>The label of the steering kind for a follow-up.</summary>
     public const string KindFollowUp = "Follow-up";
+
+    /// <summary>Returns the delivery text of a message that was not delivered.</summary>
+    /// <param name="reason">The plain reason, or null when none is known.</param>
+    /// <returns>The text.</returns>
+    public static string DeliveryFailed(string? reason) =>
+        string.IsNullOrWhiteSpace(reason) ? DeliveryNotDelivered : $"{DeliveryNotDelivered}: {reason.TrimEnd('.', ' ')}";
 
     /// <summary>Returns the filter-matches-nothing heading.</summary>
     /// <param name="filter">The filter text.</param>
@@ -285,6 +339,12 @@ public static class AgentPanelCopy
     /// <returns>The name.</returns>
     public static string SteeringBadgeName(string badgeText) =>
         $"Steering availability: {badgeText}. Messages are delivered after the active turn.";
+
+    /// <summary>Returns the accessible name of the steering badge of a session whose steering is delivered live.</summary>
+    /// <param name="badgeText">The badge text.</param>
+    /// <returns>The name.</returns>
+    public static string LiveSteeringBadgeName(string badgeText) =>
+        $"Steering availability: {badgeText}. A steer is sent into the running turn; a queued message runs after it.";
 
     /// <summary>Returns the words of a stage status.</summary>
     /// <param name="status">The status. An undefined value reads <c>Unknown</c>.</param>

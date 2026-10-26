@@ -22,6 +22,12 @@ namespace OmpOS.Presentation.AgentPanel;
 /// (the held count rose); a steer the input took at once is <see cref="SteeringDeliveryStatus.Delivered"/>. The UI never says that Substrate
 /// delivered a message, only that it recorded one.
 /// </para>
+/// <para>
+/// Live delivery: when a head supplies a live delivery delegate (the omp steering channel), a steer or a follow-up goes through it and the
+/// scheduler's queue-after-the-turn path is not used. The delegate's <see cref="SteeringDelivery"/> is the delivery status of the entry;
+/// a failed delivery adds a <see cref="SteeringDeliveryStatus.Failed"/> entry, is never recorded, and returns
+/// <see cref="SteeringSubmitOutcome.Failed"/> so the draft stays in the composer.
+/// </para>
 /// <para>Not thread-safe: it runs on the UI context that owns the presentation models.</para>
 /// </remarks>
 public sealed class SteeringInputModel : ObservableModel, IDisposable
@@ -35,6 +41,7 @@ public sealed class SteeringInputModel : ObservableModel, IDisposable
     private readonly RunInputScheduler _scheduler;
     private readonly TimeProvider _timeProvider;
     private readonly Func<SteeringEntry, CancellationToken, Task>? _recorder;
+    private readonly Func<string, SteeringMode, CancellationToken, Task<SteeringDelivery>>? _liveDelivery;
     private readonly ObservableCollection<SteeringEntry> _history = [];
     private SteeringMode _mode = SteeringMode.Steer;
     private string? _refusalText;
@@ -49,8 +56,16 @@ public sealed class SteeringInputModel : ObservableModel, IDisposable
     /// Records an accepted entry, for example as a Substrate note event. It receives the entry, which carries the length and a hash prefix of the
     /// text; it never has to see the text. Null means entries are not recorded.
     /// </param>
+    /// <param name="liveDelivery">
+    /// Delivers a message into the running session at once, for example through the omp steering channel, and reports what the channel can
+    /// prove. Null keeps the queue-after-the-turn behaviour of the scheduler.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="scheduler"/> or <paramref name="timeProvider"/> is null.</exception>
-    public SteeringInputModel(RunInputScheduler scheduler, TimeProvider timeProvider, Func<SteeringEntry, CancellationToken, Task>? recorder = null)
+    public SteeringInputModel(
+        RunInputScheduler scheduler,
+        TimeProvider timeProvider,
+        Func<SteeringEntry, CancellationToken, Task>? recorder = null,
+        Func<string, SteeringMode, CancellationToken, Task<SteeringDelivery>>? liveDelivery = null)
     {
         ArgumentNullException.ThrowIfNull(scheduler);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -58,6 +73,7 @@ public sealed class SteeringInputModel : ObservableModel, IDisposable
         _scheduler = scheduler;
         _timeProvider = timeProvider;
         _recorder = recorder;
+        _liveDelivery = liveDelivery;
         History = new ReadOnlyObservableCollection<SteeringEntry>(_history);
         _scheduler.PropertyChanged += OnSchedulerChanged;
     }
@@ -92,6 +108,9 @@ public sealed class SteeringInputModel : ObservableModel, IDisposable
 
     /// <summary>Gets whether entries can be recorded: a recorder exists and Substrate is not known to be unreachable.</summary>
     public bool IsRecordingAvailable => _recorder is not null && _substrateReachable;
+
+    /// <summary>Gets whether a steer or a follow-up is delivered into the running session at once by a live channel, rather than queued for the end of the turn.</summary>
+    public bool IsLive => _liveDelivery is not null;
 
     /// <summary>
     /// Gets or sets whether Substrate is reachable, as the pipeline reports it. While false, new entries are marked
@@ -150,9 +169,17 @@ public sealed class SteeringInputModel : ObservableModel, IDisposable
             return SteeringSubmitOutcome.QueueFull;
         }
 
-        var delivery = await SendAsync(text, mode, cancellationToken).ConfigureAwait(true);
+        var delivery = _liveDelivery is { } live
+            ? await live(text, mode, cancellationToken).ConfigureAwait(true)
+            : new SteeringDelivery(await SendAsync(text, mode, cancellationToken).ConfigureAwait(true));
         SetProperty(ref _refusalText, null, nameof(RefusalText));
         var entry = AddEntry(text, mode, delivery);
+        if (delivery.IsFailure)
+        {
+            // Nothing reached the session, so nothing is recorded and the draft stays with the user.
+            return SteeringSubmitOutcome.Failed;
+        }
+
         await RecordAsync(entry, cancellationToken).ConfigureAwait(true);
         return SteeringSubmitOutcome.Accepted;
     }
@@ -198,19 +225,20 @@ public sealed class SteeringInputModel : ObservableModel, IDisposable
         return _scheduler.SteersHeld > heldBefore ? SteeringDeliveryStatus.HeldUntilTurnEnds : SteeringDeliveryStatus.Delivered;
     }
 
-    private SteeringEntry AddEntry(string text, SteeringMode mode, SteeringDeliveryStatus delivery)
+    private SteeringEntry AddEntry(string text, SteeringMode mode, SteeringDelivery delivery)
     {
         var now = _timeProvider.GetUtcNow();
-        var recordable = IsRecordingAvailable;
+        var recordable = IsRecordingAvailable && !delivery.IsFailure;
         _entryNumber++;
         var entry = new SteeringEntry(
             $"steer-{_entryNumber}",
             mode,
             text,
             now,
-            delivery,
+            delivery.Status,
             recordable ? SteeringRecordStatus.Recording : SteeringRecordStatus.NotRecorded,
-            now);
+            now,
+            delivery.Reason);
         _history.Insert(0, entry);
         while (_history.Count > MaxHistory)
         {

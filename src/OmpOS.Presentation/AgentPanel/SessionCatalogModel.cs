@@ -367,13 +367,13 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
             TaskTag = tag,
             TaskId = taskId.Length == 0 ? null : taskId,
             GraphId = graphId.Length == 0 ? null : graphId,
-            AccessibleName = AccessibleNameOf(title, statusText, lastActivity, isLongRunning, quietMinutes, tag),
+            AccessibleName = AccessibleNameOf(title, statusText, lastActivity, isLongRunning, quietMinutes, tag, summary.Kind == SessionKind.Terminal),
         };
     }
 
     private static string LastChars(string value, int count) => value.Length <= count ? value : value[^count..];
 
-    private static string AccessibleNameOf(string title, string statusText, string lastActivity, bool longRunning, long? quietMinutes, string? tag)
+    private static string AccessibleNameOf(string title, string statusText, string lastActivity, bool longRunning, long? quietMinutes, string? tag, bool terminal)
     {
         var name = $"{title}, {statusText}, {lastActivity}";
         if (longRunning)
@@ -384,6 +384,11 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
         if (quietMinutes is { } minutes)
         {
             name += string.Create(CultureInfo.InvariantCulture, $", quiet for {minutes} min");
+        }
+
+        if (terminal)
+        {
+            name += $", {AgentPanelCopy.TerminalAccessibleTag}";
         }
 
         return tag is null ? name : $"{name}, {tag}";

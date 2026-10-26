@@ -66,6 +66,20 @@ internal sealed class OmpTerminalViewModel : ObservableModel, IAsyncDisposable
     /// <summary>Raised on the UI thread when <see cref="CloseCommand"/> has stopped the session, so the shell can remove the terminal.</summary>
     public event EventHandler? CloseRequested;
 
+    /// <summary>
+    /// Gets or sets whether the view that shows the terminal leaves omp running when it leaves the visual tree. The default is false: a
+    /// view that is removed stops omp, so no omp child outlives it. A shell that keeps the view cached while another tab or session is
+    /// shown sets it to true, and stops omp itself through <see cref="StopAsync"/> or <see cref="DisposeAsync"/> when the session closes.
+    /// </summary>
+    public bool KeepRunningWhenDetached { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the view starts omp when it is shown and omp is not running. The default is true. A shell sets it to false for
+    /// a session that is closed or lost, so showing such a session never starts omp: the shell starts omp itself when the session reopens
+    /// or resumes.
+    /// </summary>
+    public bool AutoStart { get; set; } = true;
+
     /// <summary>Gets what the terminal is doing.</summary>
     public OmpTerminalState State
     {

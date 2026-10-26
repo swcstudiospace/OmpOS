@@ -36,6 +36,12 @@ public sealed class AgentSessionOptions
     /// <summary>Gets the callback that records an accepted steering entry, for example in Substrate, or null when none is bound.</summary>
     public Func<SteeringEntry, CancellationToken, Task>? SteeringRecorder { get; init; }
 
+    /// <summary>
+    /// Gets the callback that delivers a steer or a follow-up into the running session at once and reports what the channel can prove, or
+    /// null when messages sent during a run are queued for the end of the turn.
+    /// </summary>
+    public Func<string, SteeringMode, CancellationToken, Task<SteeringDelivery>>? LiveSteering { get; init; }
+
     /// <summary>Gets the callback that re-checks a plugin source on request, or null when stages offer no retry.</summary>
     public Func<StageSource, CancellationToken, Task>? StageRecheck { get; init; }
 

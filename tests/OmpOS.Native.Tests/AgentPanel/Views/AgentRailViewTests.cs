@@ -315,9 +315,9 @@ public sealed class AgentRailViewTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>The rail has no unnamed tab stop, and its first stops are New agent, the filter and the list, in that order.</summary>
+    /// <summary>The rail has no unnamed tab stop, and its first stops are New agent, New omp terminal, the filter and the list, in that order.</summary>
     [Fact]
-    public async Task TheTabOrderIsNewAgentFilterThenTheList()
+    public async Task TheTabOrderIsNewAgentNewTerminalFilterThenTheList()
     {
         await using var session = TestAppBuilder.StartSession();
         await session.Dispatch(() =>
@@ -325,7 +325,7 @@ public sealed class AgentRailViewTests
             var (rail, _, _, _, window) = Open();
 
             ViewHarness.Unnamed(rail).ShouldBeEmpty();
-            ViewHarness.TabOrder(rail).Take(3).ShouldBe(["New agent", "Filter agents", "Agent sessions"]);
+            ViewHarness.TabOrder(rail).Take(4).ShouldBe(["New agent", "New omp terminal", "Filter agents", "Agent sessions"]);
             var newAgent = ViewHarness.Find<Button>(rail, "NewAgentButton");
             newAgent.Classes.Contains("primary").ShouldBeTrue();
             newAgent.MinHeight.ShouldBeGreaterThanOrEqualTo(44);

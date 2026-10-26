@@ -82,6 +82,9 @@ internal sealed class SendShell : IAsyncDisposable
             TransportFactory = transportFactory,
             MaintenanceInterval = TimeSpan.Zero,
             Dispatch = RunOnUiThread,
+
+            // These tests assert the engine's own queue: a steer or follow-up waits for the end of the turn and is sent as the next prompt.
+            LiveSteering = false,
         });
         try
         {

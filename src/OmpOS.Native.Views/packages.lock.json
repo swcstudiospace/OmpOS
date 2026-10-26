@@ -210,6 +210,13 @@
           "OmpOS.Contracts": "[1.0.0, )"
         }
       },
+      "ompos.harness.agentloop": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
+          "OmpOS.Contracts": "[1.0.0, )"
+        }
+      },
       "ompos.harness.completion": {
         "type": "Project"
       },

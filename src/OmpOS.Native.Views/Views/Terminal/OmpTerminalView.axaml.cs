@@ -1,8 +1,11 @@
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace OmpOS.Native.Views.Terminal;
 
@@ -20,6 +23,7 @@ internal partial class OmpTerminalView : UserControl
 
     private OmpTerminalViewModel? _model;
     private OmpTerminalPtyBridge? _bridge;
+    private bool _awaitingTemplate;
 
     /// <summary>Creates a terminal view. It starts omp when it is loaded and its data context is an <see cref="OmpTerminalViewModel"/>.</summary>
     public OmpTerminalView()
@@ -91,7 +95,7 @@ internal partial class OmpTerminalView : UserControl
     }
 
     /// <summary>
-    /// Connects the control to the model and starts omp when it is not running yet. The control creates its emulator when its
+    /// Connects the control to the model and starts omp when it is not running yet and the model allows it (<see cref="OmpTerminalViewModel.AutoStart"/>). The control creates its emulator when its
     /// template is applied, so this runs once the view is loaded, never in the constructor, and the first start uses the grid
     /// the control really has.
     /// </summary>
@@ -102,24 +106,76 @@ internal partial class OmpTerminalView : UserControl
             return;
         }
 
+        if (!Output.GetVisualChildren().Any())
+        {
+            // The view is loaded but was never laid out, because a region above it is hidden (the Kanban tab shows instead of the thread), so
+            // the control has no template and no emulator yet. Begin again once the control gets its template, never before.
+            AwaitTemplate();
+            return;
+        }
+
         var bridge = new OmpTerminalPtyBridge(model.SetSize);
         _bridge = bridge;
         Output.AttachConnection(bridge);
         ApplyCursorColour();
 
-        var terminal = Output.Terminal ?? throw new InvalidOperationException("The terminal control has no emulator to draw into.");
+        var terminal = Output.Terminal;
         model.SetSize(terminal.Cols, terminal.Rows);
         bridge.AttachSession(model.Session);
 
-        if (model.State == OmpTerminalState.Idle)
+        if (model.State == OmpTerminalState.Idle && model.AutoStart)
         {
             _ = model.StartAsync();
         }
     }
 
-    /// <summary>Stops omp and releases the control's connection when the view leaves the visual tree.</summary>
+    private void AwaitTemplate()
+    {
+        if (_awaitingTemplate)
+        {
+            return;
+        }
+
+        _awaitingTemplate = true;
+        Output.TemplateApplied += OnOutputTemplateApplied;
+    }
+
+    private void StopAwaitingTemplate()
+    {
+        if (!_awaitingTemplate)
+        {
+            return;
+        }
+
+        _awaitingTemplate = false;
+        Output.TemplateApplied -= OnOutputTemplateApplied;
+    }
+
+    private void OnOutputTemplateApplied(object? sender, TemplateAppliedEventArgs e)
+    {
+        StopAwaitingTemplate();
+
+        // The emulator exists once the template pass is over, so begin on the next turn of the UI thread.
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (IsLoaded && _model is { } model)
+            {
+                Begin(model);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Stops omp and releases the control's connection when the view leaves the visual tree, unless the model asked to keep omp running while
+    /// the view is cached: then the connection stays, so output keeps reaching the screen while another tab or session is shown.
+    /// </summary>
     private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
+        if (_model is { KeepRunningWhenDetached: true })
+        {
+            return;
+        }
+
         Teardown();
         if (_model is not null)
         {
@@ -127,9 +183,16 @@ internal partial class OmpTerminalView : UserControl
         }
     }
 
+    /// <summary>
+    /// Releases the control's connection and the bridge of a view that a shell kept running while it was detached, because the session it
+    /// showed is closed. The model stops omp; this view never does.
+    /// </summary>
+    public void Release() => Teardown();
+
     /// <summary>Releases the control's connection and the bridge. The session is not touched here: its model stops it.</summary>
     private void Teardown()
     {
+        StopAwaitingTemplate();
         var bridge = Interlocked.Exchange(ref _bridge, null);
         if (bridge is null)
         {

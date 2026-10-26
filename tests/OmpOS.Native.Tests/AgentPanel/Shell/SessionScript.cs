@@ -1,7 +1,9 @@
 using OmpOS.Contracts.Agents;
+using OmpOS.Harness.AgentLoop.Steering;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Tests.Parity;
 using OmpOS.Native.Views.Sessions;
+using OmpOS.Native.Views.Terminal;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Approvals;
 
@@ -24,6 +26,12 @@ internal sealed class SessionScript
 
     /// <summary>Gets the callback that records a steering entry, or null.</summary>
     public Func<SteeringEntry, CancellationToken, Task>? RecordSteering { get; init; }
+
+    /// <summary>Gets the steering channel of the session, or null to queue messages sent during a run for the end of the turn.</summary>
+    public ISteeringChannel? Steering { get; init; }
+
+    /// <summary>Gets the starter of the omp terminal of the session, or null for a chat session.</summary>
+    public IOmpTerminalStarter? TerminalStarter { get; init; }
 
     /// <summary>Gets the scripted channel when the send path is one, or fails the test.</summary>
     public ScriptedPromptChannel Scripted => (ScriptedPromptChannel)Prompts;

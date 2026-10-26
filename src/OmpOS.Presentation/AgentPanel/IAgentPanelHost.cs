@@ -14,6 +14,14 @@ public interface IAgentPanelHost
     Task<string> CreateSessionAsync(CancellationToken cancellationToken);
 
     /// <summary>
+    /// Creates a session of kind <see cref="SessionKind.Terminal"/> in the registry and starts nothing: the terminal view starts omp when it
+    /// is shown. The catalog raises <see cref="ISessionCatalog.Changed"/> for the new row.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the creation.</param>
+    /// <returns>The identifier of the new terminal session.</returns>
+    Task<string> CreateTerminalSessionAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// Returns the view model of a session that is in the catalog. The panel calls it once per session and keeps the result until the
     /// session leaves the catalog. It must not throw for a session the catalog lists.
     /// </summary>

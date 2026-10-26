@@ -14,7 +14,7 @@
     </Style>
   </UserControl.Styles>
 
-  <!-- Keyboard order follows XAML order: New agent, Filter, the agent list (one stop; Up and Down move the selection). -->
+  <!-- Keyboard order follows XAML order: New agent, New omp terminal, Filter, the agent list (one stop; Up and Down move the selection). -->
   <DockPanel>
 
     <StackPanel DockPanel.Dock="Top"
@@ -28,6 +28,13 @@
               MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
               AutomationProperties.Name="{x:Static copy:AgentPanelCopy.NewAgent}"
               ToolTip.Tip="{x:Static local:AgentPanelViewText.NewAgentTooltip}" />
+
+      <Button x:Name="NewTerminalButton"
+              Content="{x:Static copy:AgentPanelCopy.NewTerminal}"
+              HorizontalAlignment="Stretch"
+              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+              AutomationProperties.Name="{x:Static copy:AgentPanelCopy.NewTerminal}"
+              ToolTip.Tip="{x:Static copy:AgentPanelCopy.NewTerminalTooltip}" />
 
       <TextBox x:Name="AgentFilter"
                Text="{CompiledBinding Filter, Mode=TwoWay}"
@@ -122,6 +129,17 @@
                          Classes="tone-warning"
                          VerticalAlignment="Center"
                          FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+
+              <Border Classes="chip"
+                      IsVisible="{CompiledBinding IsTerminal}"
+                      VerticalAlignment="Center">
+                <TextBlock Text="{x:Static copy:AgentPanelCopy.TerminalTag}"
+                           Classes="muted"
+                           VerticalAlignment="Center"
+                           FontFamily="{DynamicResource OmpOS.Font.Mono}"
+                           FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                           TextWrapping="NoWrap" />
+              </Border>
 
               <TextBlock Text="{CompiledBinding TaskTag}"
                          IsVisible="{CompiledBinding TaskTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"

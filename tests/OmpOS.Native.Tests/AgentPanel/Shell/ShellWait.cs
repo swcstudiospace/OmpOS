@@ -1,3 +1,4 @@
+using Avalonia.Controls;
 using Avalonia.Threading;
 using OmpOS.Native.Views.Sessions;
 
@@ -15,7 +16,7 @@ internal static class ShellWait
     /// <param name="cancellationToken">Cancels the wait.</param>
     /// <returns>A task that completes when the condition holds.</returns>
     /// <exception cref="TimeoutException">The condition did not hold within ten seconds.</exception>
-    public static async Task UntilAsync(MainWindow window, Func<bool> condition, string because, CancellationToken cancellationToken)
+    public static async Task UntilAsync(Window window, Func<bool> condition, string because, CancellationToken cancellationToken)
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(Limit);

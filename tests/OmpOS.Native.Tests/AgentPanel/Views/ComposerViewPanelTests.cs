@@ -25,7 +25,7 @@ public sealed class ComposerViewPanelTests
         internal int Count { get; set; }
     }
 
-    private static Rig Open(bool runActive, bool streaming = false, bool reducedMotion = false, bool withSteering = false)
+    private static Rig Open(bool runActive, bool streaming = false, bool reducedMotion = false, bool withSteering = false, bool live = false)
     {
         var sent = new List<string>();
         var stops = new StopCounter();
@@ -53,7 +53,13 @@ public sealed class ComposerViewPanelTests
         var view = new ComposerView { DataContext = composer, Runs = scheduler };
         if (withSteering)
         {
-            view.Steering = new SteeringInputModel(scheduler, new ManualTimeProvider(), static (_, _) => Task.CompletedTask);
+            view.Steering = live
+                ? new SteeringInputModel(
+                    scheduler,
+                    new ManualTimeProvider(),
+                    static (_, _) => Task.CompletedTask,
+                    static (_, _, _) => Task.FromResult(new SteeringDelivery(SteeringDeliveryStatus.Delivered)))
+                : new SteeringInputModel(scheduler, new ManualTimeProvider(), static (_, _) => Task.CompletedTask);
         }
 
         var window = ViewHarness.Show(view, reducedMotion, width: 800, height: 400);
@@ -110,6 +116,51 @@ public sealed class ComposerViewPanelTests
             AutomationProperties.GetHelpText(Prompt(rig)).ShouldBe(hint.Text);
             hint.Focusable.ShouldBeFalse("the hint is text, not a tab stop");
             AutomationProperties.GetLiveSetting(hint).ShouldBe(AutomationLiveSetting.Off);
+            rig.Window.Close();
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>With live steering the running composer says a steer is sent now and a follow-up is queued, never that it is delivered after the turn.</summary>
+    [Fact]
+    public async Task LiveSteeringShowsSendNowAndQueueWording()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            var rig = Open(runActive: true, streaming: true, withSteering: true, live: true);
+            var send = ViewHarness.Find<Button>(rig.View, "SendButton");
+            var followUp = ViewHarness.Find<Button>(rig.View, "FollowUpButton");
+            var pending = ViewHarness.Find<TextBlock>(rig.View, "PendingLabel");
+
+            Prompt(rig).PlaceholderText.ShouldBe(AgentPanelCopy.ComposerPlaceholderRunningLive);
+            Prompt(rig).PlaceholderText.ShouldNotBeNull().ShouldNotContain("after the active turn", Case.Sensitive);
+            AutomationProperties.GetName(send).ShouldBe("Send now, deliver the message into the running turn");
+            ToolTip.GetTip(send).ShouldBe("Send now");
+            followUp.Content.ShouldBe("Queue follow-up");
+            AutomationProperties.GetName(followUp).ShouldBe(AgentPanelCopy.QueueFollowUpName);
+            pending.Text.ShouldBe(AgentPanelCopy.ComposerPendingActiveLive);
+            ViewHarness.TabOrder(rig.View).ShouldBe(["Message", "Send now, deliver the message into the running turn", AgentPanelCopy.QueueFollowUpName, "Stop response"]);
+
+            await rig.Scheduler.RunCompletedAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+            ViewHarness.Settle(rig.Window);
+            Prompt(rig).PlaceholderText.ShouldBe(AgentPanelCopy.ComposerPlaceholderIdle);
+            AutomationProperties.GetName(send).ShouldBe("Send message");
+            rig.Window.Close();
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>Without live steering the old wording stays: a steer is delivered after the active turn, even with a steering model.</summary>
+    [Fact]
+    public async Task NonLiveSteeringKeepsTheAfterTheTurnWording()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            var rig = Open(runActive: true, streaming: true, withSteering: true, live: false);
+
+            Prompt(rig).PlaceholderText.ShouldBe(AgentPanelCopy.ComposerPlaceholderRunning);
+            AutomationProperties.GetName(ViewHarness.Find<Button>(rig.View, "SendButton")).ShouldBe("Steer message");
+            AutomationProperties.GetName(ViewHarness.Find<Button>(rig.View, "FollowUpButton")).ShouldBe("Queue follow-up message");
             rig.Window.Close();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }

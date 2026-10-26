@@ -18,6 +18,7 @@
     <ProjectReference Include="../OmpOS.Contracts/OmpOS.Contracts.csproj" />
     <ProjectReference Include="../OmpOS.GenUi/OmpOS.GenUi.csproj" />
     <ProjectReference Include="../OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../OmpOS.Harness.AgentLoop/OmpOS.Harness.AgentLoop.csproj" />
     <ProjectReference Include="../OmpOS.Harness.Completion/OmpOS.Harness.Completion.csproj" />
     <ProjectReference Include="../OmpOS.Harness.Mcp/OmpOS.Harness.Mcp.csproj" />
     <ProjectReference Include="../OmpOS.Harness.OmpLauncher/OmpOS.Harness.OmpLauncher.csproj" />

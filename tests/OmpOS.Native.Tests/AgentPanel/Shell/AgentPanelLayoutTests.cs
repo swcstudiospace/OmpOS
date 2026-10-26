@@ -52,7 +52,8 @@ public sealed class AgentPanelLayoutTests
             var main = ShellHarness.MainViewOf(window);
 
             var grid = main.FindControl<Grid>("RegionGrid")!;
-            grid.Children.Select(static child => ((Control)child).Name).ShouldBe(["RailRegion", "ThreadRegion"], "the panel has exactly the rail and the thread");
+            grid.Children.Where(static child => ((Control)child).IsVisible).Select(static child => ((Control)child).Name).ShouldBe(["RailRegion", "ThreadRegion"], "the panel shows exactly the rail and the thread");
+            grid.Children.Select(static child => ((Control)child).Name).ShouldBe(["RailRegion", "ThreadRegion", "KanbanHost"], "the Kanban host is the one more region, hidden until the Kanban tab shows");
             grid.ColumnDefinitions.Count.ShouldBe(2);
             main.FindControl<Border>("RailRegion")!.Bounds.Width.ShouldBe(280, 1);
             main.FindControl<Border>("ThreadRegion")!.Bounds.Width.ShouldBe(1000, 1, "the thread takes everything the rail leaves");

@@ -1,12 +1,16 @@
 using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using Avalonia.Threading;
 using OmpOS.Contracts.Agents;
 using OmpOS.Contracts.Streaming;
 using OmpOS.Contracts.Ui;
 using OmpOS.Harness.Abstractions;
+using OmpOS.Harness.AgentLoop.Steering;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Views.RunControls;
+using OmpOS.Native.Views.Terminal;
 using OmpOS.Presentation;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Approvals;
@@ -41,6 +45,9 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <summary>How long disposing waits for the stage source to end after it was cancelled.</summary>
     private static readonly TimeSpan ObservationShutdown = TimeSpan.FromSeconds(5);
 
+    /// <summary>How long a steering delivery waits for omp to acknowledge a message before the entry says it was sent and not acknowledged.</summary>
+    private static readonly TimeSpan AckWait = TimeSpan.FromSeconds(3);
+
     private readonly AgentSessionRuntimeOptions _options;
     private readonly EngineRunInput _queued = new();
     private readonly CancellationTokenSource _lifetime = new();
@@ -52,6 +59,8 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     private string _statusText = string.Empty;
     private string? _errorText;
     private int _disposed;
+    private bool _terminalClosed;
+    private bool _terminalLost;
 
     /// <summary>Creates the runtime of one session and its view model. It starts no observation: call <see cref="StartObserving"/>.</summary>
     /// <param name="options">What the head supplies.</param>
@@ -82,9 +91,20 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             Resume = options.Resume,
             Reopen = options.Reopen,
             ApprovalCoordinator = RunControls.Coordinator,
+            LiveSteering = options.Steering is null ? null : DeliverLiveAsync,
         });
         RunControls.Approvals.CollectionChanged += OnApprovalsChanged;
         Registry.AddOrUpdate(ViewModel, this);
+        if (options.TerminalStarter is { } starter)
+        {
+            // The runtime owns the terminal for as long as the session lives, so a view that is hidden by a tab or session switch leaves omp running.
+            _terminalClosed = ViewModel.IsClosed;
+            _terminalLost = ViewModel.IsLost;
+            Terminal = new OmpTerminalViewModel(starter) { KeepRunningWhenDetached = true, AutoStart = !_terminalClosed && !_terminalLost };
+            Terminal.PropertyChanged += OnTerminalChanged;
+            Terminal.CloseRequested += OnTerminalCloseRequested;
+            ViewModel.PropertyChanged += OnViewModelChanged;
+        }
     }
 
     /// <summary>Occurs on the UI context when a run started, completed or faulted.</summary>
@@ -95,6 +115,15 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
 
     /// <summary>Gets the view model of the session that the Agent Panel shows. It is created with the runtime and lives until the panel releases it.</summary>
     public AgentSessionViewModel ViewModel { get; }
+
+    /// <summary>Gets what the session is: a chat over the engine behind the Agent Panel, or an omp terminal.</summary>
+    public SessionKind Kind => Terminal is null ? SessionKind.Chat : SessionKind.Terminal;
+
+    /// <summary>
+    /// Gets the omp terminal of a terminal runtime, or null for a chat. The view starts omp when it is first shown; the runtime stops it
+    /// when the session is closed or the runtime is disposed.
+    /// </summary>
+    internal OmpTerminalViewModel? Terminal { get; }
 
     /// <summary>Gets the pending tool-approval requests of the session and the coordinator that sends each decision.</summary>
     internal RunControlsViewModel RunControls { get; }
@@ -158,6 +187,13 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         }
 
         RunControls.Approvals.CollectionChanged -= OnApprovalsChanged;
+        if (Terminal is { } terminal)
+        {
+            terminal.PropertyChanged -= OnTerminalChanged;
+            terminal.CloseRequested -= OnTerminalCloseRequested;
+            ViewModel.PropertyChanged -= OnViewModelChanged;
+        }
+
         await _lifetime.CancelAsync().ConfigureAwait(true);
         try
         {
@@ -175,11 +211,21 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         {
             try
             {
-                await _options.Prompts.DisposeAsync().ConfigureAwait(true);
+                if (Terminal is { } owned)
+                {
+                    await owned.DisposeAsync().ConfigureAwait(true);
+                }
             }
             finally
             {
-                _lifetime.Dispose();
+                try
+                {
+                    await _options.Prompts.DisposeAsync().ConfigureAwait(true);
+                }
+                finally
+                {
+                    _lifetime.Dispose();
+                }
             }
         }
     }
@@ -259,6 +305,127 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         return Task.FromResult(false);
     }
 
+    // The run of a terminal runtime is the life of its omp: steering is offered while omp runs and not before or after.
+    private void OnTerminalChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (Terminal is not { } terminal || !string.Equals(e.PropertyName, nameof(OmpTerminalViewModel.State), StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var running = terminal.State == OmpTerminalState.Running;
+        if (running && !Runs.IsRunActive)
+        {
+            Runs.RunStarted();
+        }
+        else if (!running && Runs.IsRunActive)
+        {
+            _ = Runs.RunCompletedAsync(CancellationToken.None);
+        }
+    }
+
+    // The terminal's own Close control stopped omp: the session closes like any other, so its card and its row follow.
+    private void OnTerminalCloseRequested(object? sender, EventArgs e) => ViewModel.CloseCommand.Execute(null);
+
+    // Closing the session stops omp; reopening or resuming it starts omp again in the view that is already showing the terminal. A session can
+    // learn that it was closed from its row (which notifies IsLost) before the panel calls MarkClosed, so the flags are compared, not the name.
+    // A session that is closed or lost is not started by showing it: AutoStart is off until it reopens or resumes.
+    private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (Terminal is not { } terminal
+            || e.PropertyName is not (nameof(AgentSessionViewModel.IsClosed) or nameof(AgentSessionViewModel.IsLost)))
+        {
+            return;
+        }
+
+        var wasClosed = _terminalClosed;
+        var wasLost = _terminalLost;
+        _terminalClosed = ViewModel.IsClosed;
+        _terminalLost = ViewModel.IsLost;
+        terminal.AutoStart = !_terminalClosed && !_terminalLost;
+        if (_terminalClosed && !wasClosed)
+        {
+            _ = ChangeTerminalAsync(terminal.StopAsync);
+        }
+        else if (!_terminalClosed && (wasClosed || (wasLost && !_terminalLost)) && terminal.State == OmpTerminalState.Idle)
+        {
+            _ = ChangeTerminalAsync(terminal.StartAsync);
+        }
+    }
+
+    private async Task ChangeTerminalAsync(Func<Task> change)
+    {
+        try
+        {
+            await change().ConfigureAwait(true);
+        }
+        catch (Exception fault) when (fault is not OutOfMemoryException)
+        {
+            ReportStatus($"{MainView.FaultedStatus} {fault.GetBaseException().Message}");
+        }
+    }
+
+    /// <summary>
+    /// Delivers a steer or a follow-up through the omp steering channel and reports what the channel can prove: omp's acknowledgement
+    /// decides Delivered, Failed or (no acknowledgement within <see cref="AckWait"/>) Sent but not acknowledged. A channel that cannot take
+    /// the directive is a failed delivery with the channel's own plain message, which the status line shows.
+    /// </summary>
+    /// <param name="text">The message.</param>
+    /// <param name="mode">Steer or follow-up.</param>
+    /// <param name="cancellationToken">Cancels the delivery.</param>
+    /// <returns>The delivery the steering history records.</returns>
+    private async Task<SteeringDelivery> DeliverLiveAsync(string text, SteeringMode mode, CancellationToken cancellationToken)
+    {
+        var channel = _options.Steering ?? throw new InvalidOperationException("No steering channel is composed for this session.");
+        var directive = new SteeringDirective
+        {
+            Mode = mode == SteeringMode.FollowUp ? SteeringDirectiveMode.FollowUp : SteeringDirectiveMode.Steer,
+            Text = text,
+        };
+
+        SteeringAck? ack;
+        try
+        {
+            var receipt = await channel.SendAsync(directive, cancellationToken).ConfigureAwait(true);
+            ack = await channel.WaitForAckAsync(receipt.Id, AckWait, cancellationToken).ConfigureAwait(true);
+        }
+        catch (SteeringUnavailableException unavailable)
+        {
+            return FailDelivery(unavailable.Message);
+        }
+
+        if (ack is null)
+        {
+            return new SteeringDelivery(SteeringDeliveryStatus.SentNotAcknowledged);
+        }
+
+        if (ack.Status == SteeringAckStatus.Delivered)
+        {
+            return new SteeringDelivery(mode == SteeringMode.FollowUp ? SteeringDeliveryStatus.QueuedAfterTurn : SteeringDeliveryStatus.Delivered);
+        }
+
+        var verb = ack.Status == SteeringAckStatus.Rejected ? "omp rejected the message" : "omp could not deliver the message";
+        return FailDelivery(string.Create(CultureInfo.InvariantCulture, $"{verb} ({AckReasonText(ack.Reason)})"));
+    }
+
+    private SteeringDelivery FailDelivery(string reason)
+    {
+        ReportStatus(reason);
+        return SteeringDelivery.Failed(reason);
+    }
+
+    private static string AckReasonText(SteeringAckReason? reason) => reason switch
+    {
+        SteeringAckReason.InvalidJson => "the directive was not valid JSON",
+        SteeringAckReason.InvalidSchema => "the directive did not match the schema",
+        SteeringAckReason.TooLarge => "the message is too large",
+        SteeringAckReason.BadId => "the directive identifier was not valid",
+        SteeringAckReason.Duplicate => "the directive was already sent",
+        SteeringAckReason.BlankText => "the message was blank",
+        SteeringAckReason.DeliverError => "omp refused or failed to take it",
+        _ => "no reason was given",
+    };
+
     /// <summary>
     /// Stops the turn in flight through the composed host. The run then ends: messages held behind it are dropped, not sent.
     /// With no turn running the status says so.
@@ -297,6 +464,13 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <returns>True when the host accepted the send; false when no engine is composed.</returns>
     private Task<bool> StartTurnAsync(string text)
     {
+        if (Terminal is not null && Volatile.Read(ref _disposed) == 0)
+        {
+            // A terminal has no prompt: the composer only steers a running omp, so a send with omp stopped says why it went nowhere.
+            ReportStatus(AgentPanelCopy.TerminalNotRunning);
+            return Task.FromResult(false);
+        }
+
         if (_options.Prompts is UnconnectedPromptChannel || Volatile.Read(ref _disposed) != 0)
         {
             return RefuseSendAsync();

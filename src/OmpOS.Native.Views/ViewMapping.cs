@@ -7,14 +7,17 @@ using OmpOS.Native.Views.Blocks;
 using OmpOS.Native.Views.Chats;
 using OmpOS.Native.Views.Editor;
 using OmpOS.Native.Views.Explorer;
+using OmpOS.Native.Views.Kanban;
 using OmpOS.Native.Views.Mcp;
 using OmpOS.Native.Views.Search;
+using OmpOS.Native.Views.Terminal;
 using OmpOS.Native.Views.Workspace;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Agents;
 using OmpOS.Presentation.Chats;
 using OmpOS.Presentation.Composer;
 using OmpOS.Presentation.Editor;
+using OmpOS.Presentation.Kanban;
 using OmpOS.Presentation.State;
 
 namespace OmpOS.Native;
@@ -50,6 +53,8 @@ internal static class ViewMapping
             AgentPanelViewModel panel => new PanelStateView { DataContext = panel },
             AgentSessionViewModel agentSession => new ThreadHeaderView { DataContext = agentSession },
             StageTimelineModel timeline => new PipelineStripView { DataContext = timeline },
+            KanbanBoardModel board => new KanbanBoardView { DataContext = board },
+            OmpTerminalViewModel terminal => new OmpTerminalView { DataContext = terminal },
             _ => throw new ArgumentOutOfRangeException(
                 nameof(viewModel),
                 viewModel.GetType(),

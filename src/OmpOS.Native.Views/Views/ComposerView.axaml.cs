@@ -111,7 +111,11 @@ internal partial class ComposerView : UserControl
     public SteeringInputModel? Steering
     {
         get => _steering;
-        set => _steering = value;
+        set
+        {
+            _steering = value;
+            RefreshRunState();
+        }
     }
 
     /// <summary>Gets or sets whether the hint line under the prompt is shown. The shell hides it when the window is under 720 px high.</summary>
@@ -362,9 +366,13 @@ internal partial class ComposerView : UserControl
     {
         var active = RunIsActive;
         FollowUpButton.IsVisible = active;
-        AutomationProperties.SetName(SendButton, active ? SteerName : SendName);
-        ToolTip.SetTip(SendButton, active ? SteerName : SendName);
-        PromptInput.PlaceholderText = active ? AgentPanelCopy.ComposerPlaceholderRunning : AgentPanelCopy.ComposerPlaceholderIdle;
+        var live = active && _steering is { IsLive: true };
+        AutomationProperties.SetName(SendButton, live ? AgentPanelCopy.ComposerSendNowName : active ? SteerName : SendName);
+        ToolTip.SetTip(SendButton, live ? AgentPanelCopy.SendNow : active ? SteerName : SendName);
+        AutomationProperties.SetName(FollowUpButton, live ? AgentPanelCopy.QueueFollowUpName : AgentPanelViewText.QueueFollowUpName);
+        PromptInput.PlaceholderText = !active
+            ? AgentPanelCopy.ComposerPlaceholderIdle
+            : live ? AgentPanelCopy.ComposerPlaceholderRunningLive : AgentPanelCopy.ComposerPlaceholderRunning;
 
         var label = PendingLabelText();
         PendingLabel.Text = label;
@@ -386,7 +394,9 @@ internal partial class ComposerView : UserControl
                 : $"{_runs.QueuedFollowUpCount} follow-ups are queued. They start one at a time when the active run completes.",
             PendingRunInput.Steering => "A steering message is being delivered to the active run.",
             _ => _runs.IsRunActive
-                ? "A run is active. Send waits until the active turn ends; Follow-up waits until the run completes."
+                ? _steering is { IsLive: true }
+                    ? AgentPanelCopy.ComposerPendingActiveLive
+                    : "A run is active. Send waits until the active turn ends; Follow-up waits until the run completes."
                 : string.Empty,
         };
 

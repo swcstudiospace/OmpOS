@@ -104,7 +104,7 @@ public sealed class AgentPanelKeyboardTests
             ShellHarness.Press(window, Key.I, PhysicalKey.I, shift: true, control: true);
 
             ShellHarness.Prompt(window).IsFocused.ShouldBeTrue("focus stays in the prompt");
-            main.FindControl<Grid>("RegionGrid")!.Children.Count.ShouldBe(2, "no region opens beside the rail and the thread");
+            main.FindControl<Grid>("RegionGrid")!.Children.Count(static child => ((Control)child).IsVisible).ShouldBe(2, "no region opens beside the rail and the thread");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

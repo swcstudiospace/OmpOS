@@ -18,9 +18,11 @@
     </Style>
   </UserControl.Styles>
 
-  <!-- Logical and keyboard order follows XAML order: skip link, the rail (view toggles, then the session list or the tool toggles) and
-       the thread (header, pipeline strip, panel state, transcript or the Agents or tool view that opens in its place, transcript search,
-       run controls, confirmation bars, prompt, send, stop, side chats). There is no region beside the rail and the thread. -->
+  <!-- Logical and keyboard order follows XAML order: skip link, the Agents and Kanban tabs (only when the head supplies a board), the rail
+       (view toggles, then the session list or the tool toggles) and the thread (header, pipeline strip, panel state, transcript or the omp
+       terminal, or the Agents or tool view that opens in its place, transcript search, run controls, confirmation bars, prompt or the
+       steer-only terminal composer, send, stop, side chats). The Kanban tab stands in for the rail and the thread while it is selected.
+       There is no region beside the rail and the thread. -->
   <DockPanel>
 
     <Button x:Name="SkipLink"
@@ -32,6 +34,26 @@
             Content="Skip to conversation"
             AutomationProperties.Name="Skip to conversation"
             Click="OnSkipLinkClick" />
+
+    <!-- The top-level tabs. They exist only when the head supplied a Kanban board. Arrow keys move between them; Ctrl+Shift+A and
+         Ctrl+Shift+K select them from anywhere. -->
+    <TabStrip x:Name="TopTabs"
+              DockPanel.Dock="Top"
+              IsVisible="False"
+              SelectedIndex="0"
+              Margin="{DynamicResource OmpOS.Space.Sm}"
+              AutomationProperties.Name="Main views">
+      <TabStripItem x:Name="AgentsTab"
+                    Content="Agents"
+                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                    MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                    AutomationProperties.Name="Agents" />
+      <TabStripItem x:Name="KanbanTab"
+                    Content="Kanban"
+                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                    MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                    AutomationProperties.Name="Kanban" />
+    </TabStrip>
 
     <Grid x:Name="RegionGrid" ColumnDefinitions="Auto,*">
 
@@ -271,6 +293,14 @@
 
         </Grid>
       </Border>
+
+      <!-- The Kanban tab. It covers both columns while it is selected, and the rail and the thread are hidden then, so neither is a tab stop. -->
+      <ContentControl x:Name="KanbanHost"
+                      Grid.Column="0"
+                      Grid.ColumnSpan="2"
+                      IsVisible="False"
+                      HorizontalContentAlignment="Stretch"
+                      VerticalContentAlignment="Stretch" />
 
     </Grid>
 

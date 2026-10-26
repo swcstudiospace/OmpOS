@@ -54,7 +54,7 @@ public sealed class AgentSessionViewModel : ObservableModel, IDisposable
         Composer = options.Composer;
         Timeline = new StageTimelineModel(options.Row.Id, _timeProvider, options.StageRecheck);
         Context = new TaskContextModel(options.TaskContextSource, _timeProvider);
-        Steering = new SteeringInputModel(options.Scheduler, _timeProvider, options.SteeringRecorder);
+        Steering = new SteeringInputModel(options.Scheduler, _timeProvider, options.SteeringRecorder, options.LiveSteering);
         PendingApprovals = [];
         _lastSessionState = Session.State;
         _closeCommand = new AgentPanelCommand(
@@ -149,7 +149,9 @@ public sealed class AgentSessionViewModel : ObservableModel, IDisposable
     }
 
     /// <summary>Gets the accessible name of the steering badge.</summary>
-    public string SteeringBadgeName => AgentPanelCopy.SteeringBadgeName(SteeringBadgeText);
+    public string SteeringBadgeName => Steering.IsLive
+        ? AgentPanelCopy.LiveSteeringBadgeName(SteeringBadgeText)
+        : AgentPanelCopy.SteeringBadgeName(SteeringBadgeText);
 
     /// <summary>Gets which notice the thread header shows.</summary>
     public PanelNoticeKind NoticeKind

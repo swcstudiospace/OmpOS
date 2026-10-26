@@ -31,6 +31,7 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
     private readonly Dictionary<string, AgentSessionViewModel> _sessions = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _lifetime = new();
     private readonly AgentPanelCommand _newSessionCommand;
+    private readonly AgentPanelCommand _newTerminalCommand;
     private readonly AgentPanelCommand _retryLoadingCommand;
     private AgentSessionViewModel? _selected;
     private int _initialising;
@@ -62,6 +63,9 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
         _newSessionCommand = new AgentPanelCommand(
             _ => NewSessionAsync(_lifetime.Token),
             fault => SetActionError(AgentPanelCopy.ActionFailed("start a new agent", PanelText.Plain(fault.Message, 200))));
+        _newTerminalCommand = new AgentPanelCommand(
+            _ => NewTerminalAsync(_lifetime.Token),
+            fault => SetActionError(AgentPanelCopy.ActionFailed("start a new omp terminal", PanelText.Plain(fault.Message, 200))));
         _retryLoadingCommand = new AgentPanelCommand(
             _ => RetryLoadingAsync(_lifetime.Token),
             fault => ReportLoadFailure(fault.Message),
@@ -105,6 +109,9 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
 
     /// <summary>Gets the command that creates a session and selects it. The view moves focus to the new session's prompt.</summary>
     public AgentPanelCommand NewSessionCommand => _newSessionCommand;
+
+    /// <summary>Gets the command that creates an omp terminal session and selects it. The view moves focus to the terminal.</summary>
+    public AgentPanelCommand NewTerminalCommand => _newTerminalCommand;
 
     /// <summary>Gets the command that retries loading after an error. It is enabled only in the Error state.</summary>
     public AgentPanelCommand RetryLoadingCommand => _retryLoadingCommand;
@@ -159,6 +166,17 @@ public sealed class AgentPanelViewModel : ObservableModel, IDisposable
     public async Task NewSessionAsync(CancellationToken cancellationToken)
     {
         var id = await _host.CreateSessionAsync(cancellationToken).ConfigureAwait(true);
+        _catalog.Refresh();
+        SelectSession(id);
+        SetActionError(null);
+    }
+
+    /// <summary>Creates an omp terminal session through the host, refreshes the catalog and selects the new session.</summary>
+    /// <param name="cancellationToken">Cancels the creation.</param>
+    /// <returns>A task that completes when the new session is selected.</returns>
+    public async Task NewTerminalAsync(CancellationToken cancellationToken)
+    {
+        var id = await _host.CreateTerminalSessionAsync(cancellationToken).ConfigureAwait(true);
         _catalog.Refresh();
         SelectSession(id);
         SetActionError(null);

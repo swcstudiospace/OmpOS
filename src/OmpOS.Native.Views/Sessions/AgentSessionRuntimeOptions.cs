@@ -1,5 +1,7 @@
 using OmpOS.Contracts.Agents;
+using OmpOS.Harness.AgentLoop.Steering;
 using OmpOS.Native.Engine;
+using OmpOS.Native.Views.Terminal;
 using OmpOS.Presentation;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Approvals;
@@ -44,4 +46,16 @@ public sealed class AgentSessionRuntimeOptions
 
     /// <summary>Gets the clock. Null uses <see cref="TimeProvider.System"/>.</summary>
     public TimeProvider? TimeProvider { get; init; }
+
+    /// <summary>
+    /// Gets the channel that delivers a steer or a follow-up into the running omp session of the session, or null to queue messages sent
+    /// during a run for the end of the turn. In a terminal runtime it is the only way the composer reaches omp.
+    /// </summary>
+    public ISteeringChannel? Steering { get; init; }
+
+    /// <summary>
+    /// Gets the starter of the omp terminal of the session. Non-null makes a terminal runtime: its <see cref="AgentSessionRuntime.Kind"/> is
+    /// <see cref="SessionKind.Terminal"/>, the thread shows the terminal view, and <see cref="Prompts"/> is an <see cref="UnconnectedPromptChannel"/>.
+    /// </summary>
+    public IOmpTerminalStarter? TerminalStarter { get; init; }
 }
