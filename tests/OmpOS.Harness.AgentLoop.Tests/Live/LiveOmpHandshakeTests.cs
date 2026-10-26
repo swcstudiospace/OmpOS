@@ -1,17 +1,18 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
 using OmpOS.Harness.AgentLoop.Launch;
-using OmpOS.Harness.AgentLoop.Plugins;
 using Shouldly;
 using Xunit;
 
 namespace OmpOS.Harness.AgentLoop.Tests.Live;
 
 /// <summary>
-/// Live proof of Phase 44 criterion 6: the real <c>omp</c> started with the planned arguments and environment loads the
-/// plugin commands, in an isolated home, without a model turn. The test drives <c>initialize</c> and <c>session/new</c>
-/// itself, never sends <c>session/prompt</c>, kills the child tree and checks that no process of the run remains. Excluded
-/// from the gate by its trait and skipped unless <c>OMPOS_LIVE_OMP=1</c>, so a plain test run of the project never spawns omp; run it with
+/// Live proof of Phase 44 criterion 6 and of the engine half of Phase 48 criteria 4 to 7: the real <c>omp</c> started with the
+/// planned arguments and environment loads the plugin commands, in an isolated home, without a model turn, and its plugin
+/// writes the connection report and the steering heartbeat that make all four plugins read as connected through
+/// <see cref="OmpOS.Harness.AgentLoop.Connection.PluginConnectionStageSource"/>. The test drives <c>initialize</c> and
+/// <c>session/new</c> itself, never sends <c>session/prompt</c>, kills the child tree and checks that no process of the run
+/// remains. Excluded from the gate by its trait and skipped unless <c>OMPOS_LIVE_OMP=1</c>, so a plain test run of the project never spawns omp; run it with
 /// <c>OMPOS_LIVE_OMP=1 dotnet test tests/OmpOS.Harness.AgentLoop.Tests -c Release --no-build -- --filter-trait "Category=Live"</c>.
 /// </summary>
 [Trait("Category", "Live")]
@@ -28,6 +29,9 @@ public sealed class LiveOmpHandshakeTests
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(300);
 
     private static readonly TimeSpan CollectWindow = TimeSpan.FromSeconds(6);
+
+    /// <summary>The omp plugin writes its report at <c>session_start</c>, which precedes the <c>session/new</c> result.</summary>
+    private static readonly TimeSpan ReportTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan ExitTimeout = TimeSpan.FromSeconds(20);
 
     /// <summary>
@@ -51,7 +55,7 @@ public sealed class LiveOmpHandshakeTests
         var omp = FindOnPath("omp") ?? SkipWith<string>("omp is not on PATH; the live handshake test is skipped.");
         var cancellationToken = TestContext.Current.CancellationToken;
         using var sandbox = new LiveSandbox();
-        var plan = PlanLaunch(sandbox);
+        var plan = LivePluginEvidence.PlanLaunch(sandbox, SessionId);
         sandbox.CreatePlannedDirectories(plan.Environment);
 
         var marker = "PI_CODING_AGENT_DIR=" + plan.Environment["PI_CODING_AGENT_DIR"];
@@ -65,8 +69,13 @@ public sealed class LiveOmpHandshakeTests
             await HandshakeAsync(client, plan.WorkingDirectory, cancellationToken).ConfigureAwait(true);
             await LiveAcpFrameClient.CollectAsync(CollectWindow, cancellationToken).ConfigureAwait(true);
             var running = LiveProcessScan.FindByEnvironment(marker);
-            Report(client, running);
+            var observation = await LivePluginEvidence.ObserveAsync(plan, sandbox, SessionId, ReportTimeout, cancellationToken).ConfigureAwait(true);
+            Report(client, running, observation);
             AssertLoaded(client, running, plan);
+            LivePluginEvidence.AssertConnected(observation, expectedMode: "rpc");
+            running.ShouldContain(
+                process => process.Pid == observation.Report.Pid,
+                "the process that wrote the connection report is not among the run's omp processes.");
         }
         finally
         {
@@ -75,34 +84,6 @@ public sealed class LiveOmpHandshakeTests
 
         var remaining = await LiveProcessScan.WaitForNoneAsync(marker, ExitTimeout, cancellationToken).ConfigureAwait(true);
         remaining.Select(process => process.Pid).ShouldBeEmpty("omp processes of the run survived the close.");
-    }
-
-    private static OmpLaunchPlan PlanLaunch(LiveSandbox sandbox)
-    {
-        var settings = new AgentLoopSettings
-        {
-            PluginsRoot = Path.Combine(LiveSandbox.RepositoryRoot(), "plugins"),
-            StateRoot = sandbox.StateRoot,
-            UltrathinkEnabled = true,
-            SwarmEnabled = true,
-            SubstrateEnabled = false,
-            GsdEnabled = true,
-            Profile = AgentLoopProfile.Isolated,
-            IsolatedHomeDirectory = sandbox.OmpHome,
-        };
-
-        var plugins = settings.ResolveBuiltInPlugins();
-        foreach (var plugin in plugins.Where(plugin => settings.IsEnabled(plugin.Descriptor.Id)))
-        {
-            if (plugin.Health == PluginHealth.SubmoduleNotInitialized)
-            {
-                Assert.Skip($"{plugin.Message} Fix: {plugin.Descriptor.OptionalFixCommand}");
-            }
-
-            plugin.Health.ShouldBe(PluginHealth.Ready, $"{plugin.Descriptor.Id}: {plugin.Message}");
-        }
-
-        return OmpLaunchPlanner.Plan(settings, plugins, SessionId, sandbox.Workspace, graphId: null);
     }
 
     private static async Task HandshakeAsync(LiveAcpFrameClient client, string workspace, CancellationToken cancellationToken)
@@ -152,7 +133,7 @@ public sealed class LiveOmpHandshakeTests
         plan.ExtraArguments[0].ShouldBe("--no-extensions", "the planned arguments must start with --no-extensions.");
         plan.ExtraArguments[1].ShouldBe("-e", "--no-extensions must be followed by -e.");
         plan.ExtraArguments.Contains("--plugin-dir", StringComparer.Ordinal).ShouldBeFalse("the plan must not use --plugin-dir.");
-        plan.McpServers.ShouldBeEmpty("Substrate is disabled, so no MCP server is planned.");
+        plan.McpServers.Select(server => server.Name).ShouldBe([OmpLaunchPlanner.SubstrateMcpServerName], "only the substrate MCP server is planned, and the test passes none to session/new.");
         client.SentMethods.Contains("session/prompt", StringComparer.Ordinal).ShouldBeFalse("the live handshake must never send session/prompt.");
 
         running.ShouldNotBeEmpty("no process carries the run's isolated agent directory, so the run cannot be observed.");
@@ -169,7 +150,7 @@ public sealed class LiveOmpHandshakeTests
         commands.Any(name => name.StartsWith("ultrathink-", StringComparison.Ordinal)).ShouldBeTrue("no ultrathink-* command was announced.");
     }
 
-    private static void Report(LiveAcpFrameClient client, IReadOnlyList<LiveProcessInfo> running)
+    private static void Report(LiveAcpFrameClient client, IReadOnlyList<LiveProcessInfo> running, LivePluginObservation observation)
     {
         var output = TestContext.Current.TestOutputHelper;
         if (output is null)
@@ -183,6 +164,7 @@ public sealed class LiveOmpHandshakeTests
             $"sent: {string.Join(", ", client.SentMethods)}; available_commands_update notifications: {client.CommandUpdateCount}; distinct commands: {commands.Count}"));
         output.WriteLine("commands (first " + PrintedCommandLimit.ToString(CultureInfo.InvariantCulture) + "): " + string.Join(", ", commands.Take(PrintedCommandLimit)));
         output.WriteLine("omp processes of the run: " + string.Join(", ", running.Select(process => process.Pid.ToString(CultureInfo.InvariantCulture))));
+        output.WriteLine(observation.Describe());
     }
 
     private static string? FindOnPath(string executable) =>

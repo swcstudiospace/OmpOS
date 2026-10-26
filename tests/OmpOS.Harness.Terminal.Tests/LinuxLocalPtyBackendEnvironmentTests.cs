@@ -90,6 +90,28 @@ public sealed class LinuxLocalPtyBackendEnvironmentTests
         }
     }
 
+    /// <summary>
+    /// A variable the test process really inherited from its parent, outside the allowlist, is absent in the command. A variable set with
+    /// Environment.SetEnvironmentVariable would prove nothing: .NET keeps it in a managed copy that a child never inherits.
+    /// </summary>
+    [Fact]
+    public async Task AVariableTheHostProcessInheritedStaysOutOfTheCommand()
+    {
+        var allowed = new HashSet<string>(["PATH", "HOME", "LANG", "TERM", "PI_CODING_AGENT_DIR", "OMP_PROFILE", "PWD", "OLDPWD", "SHLVL", "_"], StringComparer.Ordinal);
+        var inherited = Environment.GetEnvironmentVariables().Keys.Cast<string>()
+            .Where(name => !allowed.Contains(name) && name.Length > 0 && name.All(static character => char.IsAsciiLetterOrDigit(character) || character == '_') && !char.IsAsciiDigit(name[0]))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        inherited.Count.ShouldBeGreaterThan(0, "the test process inherits at least one variable outside the allowlist");
+
+        var output = await RunAsync(
+            "for name in " + string.Join(' ', inherited) + "; do eval \"value=\\${$name+set}\"; if [ -n \"$value\" ]; then echo \"LEAK:$name\"; fi; done; echo DONE",
+            environment: null).ConfigureAwait(true);
+
+        output.ShouldContain("DONE", Case.Sensitive);
+        output.ShouldNotContain("LEAK:", Case.Sensitive);
+    }
+
     [Theory]
     [InlineData("", "an empty name")]
     [InlineData("A=B", "A=B")]

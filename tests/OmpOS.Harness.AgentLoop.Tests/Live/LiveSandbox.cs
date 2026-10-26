@@ -53,18 +53,37 @@ internal sealed class LiveSandbox : IDisposable
         throw new DirectoryNotFoundException("OmpOS.slnx was not found above the test output directory.");
     }
 
-    /// <summary>Creates every planned environment value that is a directory path inside the sandbox.</summary>
+    /// <summary>
+    /// Creates every planned environment value that is a directory path inside the sandbox, mode 0700 like the head does for a
+    /// session. A variable whose name ends in <c>_FILE</c> names a file (for example <c>OMPOS_CONNECTION_FILE</c>), so only its
+    /// parent directory is created: the omp plugin never creates that parent and would not write its report without it.
+    /// </summary>
     /// <param name="environment">The planned environment.</param>
     public void CreatePlannedDirectories(IReadOnlyDictionary<string, string> environment)
     {
         ArgumentNullException.ThrowIfNull(environment);
         var prefix = Root + Path.DirectorySeparatorChar;
-        foreach (var value in environment.Values)
+        foreach (var (name, value) in environment)
         {
-            if (Path.IsPathRooted(value) && value.StartsWith(prefix, StringComparison.Ordinal))
+            if (!Path.IsPathRooted(value) || !value.StartsWith(prefix, StringComparison.Ordinal))
             {
-                Directory.CreateDirectory(value);
+                continue;
             }
+
+            var directory = name.EndsWith("_FILE", StringComparison.Ordinal) ? Path.GetDirectoryName(value) : value;
+            if (!string.IsNullOrEmpty(directory))
+            {
+                CreatePrivateDirectory(directory);
+            }
+        }
+    }
+
+    private static void CreatePrivateDirectory(string directory)
+    {
+        Directory.CreateDirectory(directory);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
     }
 

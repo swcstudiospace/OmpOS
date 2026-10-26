@@ -1,6 +1,6 @@
 # ADE-07 run contract change request
 
-- Status: Proposed, awaiting owner approval (ompos-maintainers)
+- Status: Implemented 2026-10-26 as a contract change (version 1.2.0) under the program direction to complete Phase 26, with the deviations in section 9. The owner decisions of section 7 are not recorded as answered (OQ-70, OQ-85).
 - Date: 2026-10-22
 - Requirements: ADE-07 (cloud runs with status and reviewable output), ADE-05 (run status filter), ADE-08 (remote control of runs from another device)
 - Risk: R-4 (hosted-API contract for cloud runs), `docs/plans/ade-harness-plan.md`
@@ -133,4 +133,16 @@ AT-01 and the 401 cases of AT-07 can be written before any run code exists, beca
 
 ## 8. Status
 
-Proposed. No endpoint, schema, test or code is implemented by this document. R-4 requires owner approval before Phase 26 starts. Until approval, the run endpoints stay out of `docs/api/openapi.json`.
+Proposed on 2026-10-22, with no endpoint, schema, test or code implemented by this document; R-4 asked for owner approval before Phase 26 starts. The endpoints were implemented on 2026-10-26 under the program direction to complete Phase 26, as described in section 9. The owner's answers to section 7 are still open.
+
+## 9. Implementation note (2026-10-26)
+
+The run resource exists in `services/OmpOS.Api` (`Endpoints/RunEndpoints.cs`) and in `docs/api/openapi.json`, with contract types in `src/OmpOS.Contracts/Runs`. The API is not deployed (Railway deploys are paused, OQ-70), so no public run endpoint exists and OD-03 is not yet needed. Tests: `CloudRunTests`, `CloudRunOwnerScopeTests`, `CloudRunOpenApiTests`, `RunContractJsonTests`.
+
+Differences from this request:
+
+- There is no list endpoint. The four operations are create, status, output and cancel.
+- Diff and transcript are one `GET /sessions/{id}/runs/{runId}/output` response. A queued or running run returns its status only; a completed, failed or cancelled run returns its transcript and the harness-reported file changes.
+- A file change is structured before and after text per file, not a unified patch. The worktree is removed when the session is disposed, so nothing is left to diff, and no diff algorithm was added to the API.
+- Run records are held in memory per process (OQ-85).
+- Cancelling a cancelled run repeats the same response; cancelling a completed or failed run returns 409.

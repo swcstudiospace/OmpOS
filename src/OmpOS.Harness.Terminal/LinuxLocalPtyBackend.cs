@@ -10,6 +10,8 @@ namespace OmpOS.Harness.Terminal;
 /// environment, and no command string is built: the arguments go to the operating system as a list. The command receives
 /// only the host variables PATH, HOME, LANG, TERM, PI_CODING_AGENT_DIR and OMP_PROFILE, plus the variables the caller
 /// passes explicitly in <see cref="TerminalSessionOptions.Environment"/>; every other host variable is removed from its environment.
+/// The pseudo-terminal helper adds the variables it is given to the environment it inherits instead of replacing it, so the command is
+/// started through <c>/usr/bin/env -u NAME ...</c>, which unsets each host variable by name. Only names reach the command line, never values.
 /// </remarks>
 public sealed class LinuxLocalPtyBackend : ITerminalBackend
 {
@@ -20,6 +22,9 @@ public sealed class LinuxLocalPtyBackend : ITerminalBackend
     /// </summary>
     private static readonly string[] AllowedEnvironmentVariables =
         ["PATH", "HOME", "LANG", "TERM", "PI_CODING_AGENT_DIR", "OMP_PROFILE"];
+
+    /// <summary>The program that unsets the inherited host variables by name and then runs the command.</summary>
+    private const string EnvProgram = "/usr/bin/env";
 
     /// <inheritdoc />
     /// <exception cref="PlatformNotSupportedException">The operating system is not Linux.</exception>
@@ -35,13 +40,14 @@ public sealed class LinuxLocalPtyBackend : ITerminalBackend
     {
         ValidateStart(options);
 
+        var childEnvironment = ChildEnvironment(options.Environment);
         var core = await PtyCore.SpawnAsync(
-            options.FileName,
-            options.Arguments,
+            EnvProgram,
+            UnsetThenRun(childEnvironment, options.FileName, options.Arguments),
             options.WorkingDirectory,
             options.Columns,
             options.Rows,
-            ChildEnvironment(options.Environment),
+            childEnvironment,
             cancellationToken).ConfigureAwait(false);
 
         try
@@ -100,6 +106,11 @@ public sealed class LinuxLocalPtyBackend : ITerminalBackend
             throw new FileNotFoundException("The executable does not exist.", options.FileName);
         }
 
+        if (!File.Exists(EnvProgram))
+        {
+            throw new FileNotFoundException("The program that clears the host environment does not exist, so no command is started with the host's variables.", EnvProgram);
+        }
+
         if (!Path.IsPathFullyQualified(options.WorkingDirectory))
         {
             throw new ArgumentException("The working directory must be an absolute path.", nameof(options));
@@ -109,6 +120,27 @@ public sealed class LinuxLocalPtyBackend : ITerminalBackend
         {
             throw new DirectoryNotFoundException($"The working directory '{options.WorkingDirectory}' does not exist.");
         }
+    }
+
+    /// <summary>
+    /// Builds the command line that unsets every blanked host variable by name, then runs the command. A blanked variable is one the
+    /// environment gives an empty value, so it is neither allowlisted nor passed explicitly. No value is ever put on the command line.
+    /// </summary>
+    private static string[] UnsetThenRun(Dictionary<string, string> environment, string fileName, IReadOnlyList<string> arguments)
+    {
+        var line = new List<string>(environment.Count * 2 + arguments.Count + 1);
+        foreach (var (name, value) in environment)
+        {
+            if (value.Length == 0)
+            {
+                line.Add("-u");
+                line.Add(name);
+            }
+        }
+
+        line.Add(fileName);
+        line.AddRange(arguments);
+        return [.. line];
     }
 
     /// <summary>

@@ -269,3 +269,11 @@ The Status line above is unchanged. This note ties the record to the later ones 
 - Candidate: the mechanism this record found feasible by source is ACP `session/new.mcpServers` on omp 18.12.5. The host-side MCP client library is a separate choice, recorded in [ADR-0014](ADR-0014-mcp-client.md). Who runs plugin code and hooks is recorded in [ADR-0013](ADR-0013-plugin-isolation.md).
 - Licence: omp (`@oh-my-pi/pi-coding-agent`) is MIT, from the `license` field of the installed package and the LICENSE file at https://github.com/can1357/oh-my-pi/blob/main/LICENSE, read 2026-10-26. SPDX: MIT.
 - Verification route: unchanged. Every finding is verified by help output or source reading only, and the next step above still needs a recorded owner approval before an ACP session is started. Open risks are the six items under "These remain" in the Verdict and the failure mode in Consequences.
+
+## Update 2026-10-26: host gateway implementation
+
+The Status line above is unchanged. A loopback gateway now exists in `src/OmpOS.Harness.McpGateway` (`McpGatewayServer`), covered by `tests/OmpOS.Harness.McpGateway.Tests`.
+
+- Verified by tests: `tools/list` offers only the tools granted to the session; an ungranted `tools/call` is refused at the gateway before the invoker, the approval gate or any server is contacted; every request needs a bearer token compared in constant time; the listener binds 127.0.0.1 only; sessions cannot use each other's grants; and the real `ModelContextProtocol` Streamable HTTP client works against it.
+- Limit found while testing: on Linux the managed `HttpListener` answers a request with an unmatched `Host` header with 404 before the gateway's own Host check can run, so that check is defence in depth and not the first line.
+- Not verified: that omp's ACP `session/new.mcpServers` connects to the gateway. That needs a live omp turn, which needs the owner's approval (OD-07). The finding "feasible, unverified" stands.
