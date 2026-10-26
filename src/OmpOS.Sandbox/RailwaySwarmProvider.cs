@@ -138,7 +138,7 @@ public sealed class RailwaySwarmProvider : ISandboxProvider
         {
             using var response = await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
             statusCode = (int)response.StatusCode;
-            payload = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            payload = await BoundedContent.ReadTextAsync(response.Content, BoundedContent.MaxVendorBodyBytes, cancellationToken).ConfigureAwait(false);
         }
         catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
         {
@@ -147,6 +147,10 @@ public sealed class RailwaySwarmProvider : ISandboxProvider
         catch (HttpRequestException ex)
         {
             throw new TeardownFailedException(sandboxId, 1, "Railway serviceDelete request failed", ex);
+        }
+        catch (InvalidDataException ex)
+        {
+            throw new TeardownFailedException(sandboxId, 1, "Railway serviceDelete returned a body over the 4 MiB limit", ex);
         }
 
         EnsureServiceDeleted(sandboxId, token, statusCode, payload);

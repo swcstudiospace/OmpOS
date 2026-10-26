@@ -24,6 +24,9 @@ public sealed class RemoteEngineHost : IEngineHost
     /// <summary>The request header carrying the resume position.</summary>
     public const string LastEventIdHeader = "Last-Event-ID";
 
+    // A frame's accumulated data is capped at the same 1 MiB as a physical line.
+    private const int MaxFrameDataLength = BoundedLineReader.MaxLineLength;
+
     private readonly HttpClient _http;
     private readonly Lock _gate = new();
     private CancellationTokenSource? _activeCts;
@@ -340,7 +343,7 @@ public sealed class RemoteEngineHost : IEngineHost
             string? line;
             try
             {
-                line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                line = await BoundedLineReader.ReadLineAsync(reader, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is HttpRequestException or IOException)
             {
@@ -353,7 +356,13 @@ public sealed class RemoteEngineHost : IEngineHost
                 break;
             }
 
-            if (ConsumeLine(line, ref frameId, data))
+            var dispatch = ConsumeLine(line, ref frameId, data);
+            if (data.Length > MaxFrameDataLength)
+            {
+                throw new MalformedFrameHarnessException("A remote frame exceeds the 1 MiB transport limit.");
+            }
+
+            if (dispatch)
             {
                 yield return (frameId, data.ToString());
                 frameId = null;

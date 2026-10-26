@@ -244,7 +244,7 @@ public sealed class AcpStdioTransport : IAcpTransport
     {
         try
         {
-            return await process.StandardOutput.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+            return await BoundedLineReader.ReadLineAsync(process.StandardOutput, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {

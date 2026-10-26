@@ -91,6 +91,36 @@ public sealed class AcpStdioTransportTests
         }
     }
 
+    /// <summary>A child line longer than the 1 MiB transport limit is refused as a malformed frame instead of being buffered.</summary>
+    [Fact]
+    [SupportedOSPlatform("linux")]
+    public async Task OversizedLineFromChildIsRejectedAsMalformed()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            Assert.Skip("The stdio fixture uses a POSIX shell script.");
+        }
+
+        var ct = TestContext.Current.CancellationToken;
+        var directory = CreateDirectory();
+        try
+        {
+            // 1,100,000 characters on one line, over the 1 MiB (1,048,576-character) limit.
+            var script = WriteScript(directory, "oversized", "head -c 1100000 /dev/zero | tr '\\0' 'a'\necho\n");
+            await using var transport = new AcpStdioTransport(script, directory);
+            await transport.ConnectAsync(ct).ConfigureAwait(true);
+
+            await using var frames = transport.ReceiveAsync(ct).GetAsyncEnumerator(ct);
+            var malformed = await Should.ThrowAsync<MalformedFrameHarnessException>(async () => await frames.MoveNextAsync().ConfigureAwait(true))
+                .ConfigureAwait(true);
+            malformed.Message.ShouldContain("1 MiB");
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static string CreateDirectory()
     {
         var directory = Path.Combine(Path.GetTempPath(), "acp-stdio-" + Guid.NewGuid().ToString("N"));

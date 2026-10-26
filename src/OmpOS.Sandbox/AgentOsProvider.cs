@@ -397,7 +397,15 @@ public sealed class AgentOsProvider : ISandboxProvider
 
     private static async Task<JsonNode?> ReadJsonAsync(HttpResponseMessage response, string operation, CancellationToken cancellationToken)
     {
-        var text = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        string text;
+        try
+        {
+            text = await BoundedContent.ReadTextAsync(response.Content, BoundedContent.MaxVendorBodyBytes, cancellationToken).ConfigureAwait(false);
+        }
+        catch (InvalidDataException ex)
+        {
+            throw new NotAvailableException($"agentOS {operation} returned a body over the 4 MiB limit", ex);
+        }
         try
         {
             return JsonNode.Parse(text);
