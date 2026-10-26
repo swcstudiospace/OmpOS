@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -88,11 +89,21 @@ internal partial class ToolApprovalRowView : UserControl
         Refresh();
 
         var attachment = CurrentAttachment();
+        var requestId = _approval.RequestId;
         var work = _coordinator.DecideAsync(_approval, decision, CancellationToken.None);
 
-        // The coordinator completes on the UI thread. Faults and settlement are posted back, scoped to this attachment.
+        // The coordinator completes on the UI thread. A fault is traced first, whether or not the row is still attached, so a fault
+        // that lands after the row has detached is never lost. Settlement is posted back, scoped to this attachment.
         _ = work.ContinueWith(
-            finished => PostWhileAttached(() => Settle(finished.Exception), attachment),
+            finished =>
+            {
+                if (finished.Exception is { } fault)
+                {
+                    Trace.TraceError($"OmpOS could not record the tool-approval decision {requestId}: {fault.GetBaseException()}");
+                }
+
+                PostWhileAttached(() => Settle(finished.Exception), attachment);
+            },
             CancellationToken.None,
             TaskContinuationOptions.None,
             TaskScheduler.Default);

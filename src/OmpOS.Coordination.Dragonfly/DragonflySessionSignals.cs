@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using StackExchange.Redis;
 
 namespace OmpOS.Coordination.Dragonfly;
@@ -19,16 +21,25 @@ namespace OmpOS.Coordination.Dragonfly;
 public sealed class DragonflySessionSignals : ISessionSignals
 {
     private readonly ISubscriber _subscriber;
+    private readonly ILogger<DragonflySessionSignals> _logger;
 
     /// <summary>The most signals one subscription buffers before the oldest is dropped.</summary>
     private const int SignalInboxCapacity = 256;
 
+    private static readonly Action<ILogger, RedisChannel, Exception?> HandlerFailed =
+        LoggerMessage.Define<RedisChannel>(
+            LogLevel.Warning,
+            new EventId(1, "SessionSignalHandlerFailed"),
+            "A session signal handler failed on channel {Channel}.");
+
     /// <summary>Creates a signal hub over the subscriber of <paramref name="multiplexer"/>.</summary>
     /// <param name="multiplexer">The connection to Dragonfly. The caller owns its lifetime.</param>
-    public DragonflySessionSignals(IConnectionMultiplexer multiplexer)
+    /// <param name="logger">Receives handler failures at Warning. Null discards them.</param>
+    public DragonflySessionSignals(IConnectionMultiplexer multiplexer, ILogger<DragonflySessionSignals>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(multiplexer);
         _subscriber = multiplexer.GetSubscriber();
+        _logger = logger ?? NullLogger<DragonflySessionSignals>.Instance;
     }
 
     /// <summary>
@@ -76,7 +87,7 @@ public sealed class DragonflySessionSignals : ISessionSignals
         "Design",
         "CA1031:Do not catch general exception types",
         Justification = "Signals are best-effort. A failing handler must not end the subscription, so the failure affects only its own delivery.")]
-    private static async Task PumpAsync(ChannelReader<string> inbox, DragonflySessionSignalSubscription subscription, Func<string, CancellationToken, ValueTask> onSignal)
+    private async Task PumpAsync(ChannelReader<string> inbox, DragonflySessionSignalSubscription subscription, Func<string, CancellationToken, ValueTask> onSignal)
     {
         while (await inbox.WaitToReadAsync(CancellationToken.None).ConfigureAwait(false))
         {
@@ -91,9 +102,10 @@ public sealed class DragonflySessionSignals : ISessionSignals
                 {
                     await onSignal(sessionId, CancellationToken.None).ConfigureAwait(false);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // Intentionally dropped: this delivery failed, and the next signal is still delivered.
+                    // This delivery failed; the subscription keeps delivering the next signal.
+                    HandlerFailed(_logger, DragonflyKeys.SignalChannel, ex);
                 }
             }
         }

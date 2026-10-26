@@ -42,6 +42,30 @@
             new EventId(1, "BackgroundStreamFailed"),
             "Background stream failed for session {SessionId}");
 
+    private static readonly Action<ILogger, Exception?> ListSessionsFailed =
+        LoggerMessage.Define(
+            LogLevel.Error,
+            new EventId(2, "ListSessionsFailed"),
+            "Listing the sessions failed");
+
+    private static readonly Action<ILogger, Exception?> CreateSessionFailed =
+        LoggerMessage.Define(
+            LogLevel.Error,
+            new EventId(3, "CreateSessionFailed"),
+            "Creating a session failed");
+
+    private static readonly Action<ILogger, string, Exception?> LoadSessionFailed =
+        LoggerMessage.Define<string>(
+            LogLevel.Error,
+            new EventId(4, "LoadSessionFailed"),
+            "Loading session {SessionId} failed");
+
+    private static readonly Action<ILogger, string, Exception?> SendPromptFailed =
+        LoggerMessage.Define<string>(
+            LogLevel.Error,
+            new EventId(5, "SendPromptFailed"),
+            "Submitting a prompt to session {SessionId} failed");
+
     private SessionViewModel _viewModel = new();
     private List<ConversationSummary> _conversations = new();
     private string? _selectedId;
@@ -88,6 +112,7 @@
         }
         catch (Exception ex) when (ex is HttpRequestException or ApiClientException or InvalidOperationException)
         {
+            ListSessionsFailed(Logger, ex);
             _error = $"Could not reach the API: {ex.Message}";
             _viewModel.MarkOffline();
         }
@@ -104,6 +129,7 @@
         }
         catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
         {
+            CreateSessionFailed(Logger, ex);
             _error = $"Could not create a session: {ex.Message}";
         }
     }
@@ -158,6 +184,7 @@
         }
         catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
         {
+            LoadSessionFailed(Logger, sessionId, ex);
             _error = $"Could not load the session: {ex.Message}";
         }
     }
@@ -183,6 +210,7 @@
         }
         catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
         {
+            SendPromptFailed(Logger, sessionId, ex);
             _streaming = false;
             _error = $"Could not send the message: {ex.Message}";
             StateHasChanged();

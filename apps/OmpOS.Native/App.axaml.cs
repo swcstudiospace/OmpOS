@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -53,8 +54,34 @@ internal partial class App : Application
         _engine = engine;
     }
 
-    /// <summary>Loads the application XAML.</summary>
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    /// <summary>
+    /// Loads the application XAML. The stderr trace listener is installed first, so traces raised from here on reach the operator.
+    /// </summary>
+    public override void Initialize()
+    {
+        InstallStderrTraceListener(Console.Error);
+        AvaloniaXamlLoader.Load(this);
+    }
+
+    /// <summary>
+    /// Installs the stderr trace listener and removes any listener this method installed before, so at most one is present. The
+    /// head reports through <see cref="Trace"/>; this listener is the operator's output in the desktop app.
+    /// </summary>
+    /// <param name="error">The writer the listener writes to. The application passes the process's standard error.</param>
+    /// <returns>The installed listener.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="error"/> is null.</exception>
+    internal static StderrTraceListener InstallStderrTraceListener(TextWriter error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        foreach (var previous in Trace.Listeners.OfType<StderrTraceListener>().ToArray())
+        {
+            Trace.Listeners.Remove(previous);
+        }
+
+        var listener = new StderrTraceListener(error);
+        Trace.Listeners.Add(listener);
+        return listener;
+    }
 
     /// <summary>Opens the main window once the desktop lifetime is available. Headless tests create their own windows.</summary>
     public override void OnFrameworkInitializationCompleted()
@@ -87,5 +114,18 @@ internal partial class App : Application
         /// <inheritdoc/>
         public async Task<ToolApprovalOutcome> DecideAsync(string sessionId, string requestId, ToolApprovalDecision decision, CancellationToken cancellationToken) =>
             await _engine.Value.ApprovalBridge.DecideAsync(sessionId, requestId, decision, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// A trace listener that writes each trace line to the given writer. The application points it at standard error, so the head's
+    /// traces reach the operator who launched it.
+    /// </summary>
+    internal sealed class StderrTraceListener(TextWriter error) : TraceListener
+    {
+        /// <inheritdoc/>
+        public override void Write(string? message) => error.Write(message);
+
+        /// <inheritdoc/>
+        public override void WriteLine(string? message) => error.WriteLine(message);
     }
 }

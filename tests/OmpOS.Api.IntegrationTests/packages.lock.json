@@ -474,6 +474,7 @@
       "ompos.harness.acp": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
           "OmpOS.Harness.Abstractions": "[1.0.0, )"
         }
       },

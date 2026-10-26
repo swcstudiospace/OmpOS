@@ -4,6 +4,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using OmpOS.Harness.Abstractions;
 
 namespace OmpOS.Harness.Acp;
@@ -21,9 +23,15 @@ public sealed class AcpStdioTransport : IAcpTransport
     private static readonly TimeSpan ExitGracePeriod = TimeSpan.FromSeconds(2);
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false);
     private static readonly byte[] NewLine = [(byte)'\n'];
+    private static readonly Action<ILogger, Exception?> StderrDrainEnded =
+        LoggerMessage.Define(
+            LogLevel.Debug,
+            new EventId(1, "AcpStderrDrainEnded"),
+            "The omp acp stderr drain ended on a pipe failure.");
 
     private readonly string _ompPath;
     private readonly string? _workingDirectory;
+    private readonly ILogger<AcpStdioTransport> _logger;
     private readonly SemaphoreSlim _writeGate = new(1, 1);
     private readonly System.Threading.Lock _gate = new();
     private readonly Channel<string> _stderr = Channel.CreateBounded<string>(new BoundedChannelOptions(StderrCapacity)
@@ -40,10 +48,12 @@ public sealed class AcpStdioTransport : IAcpTransport
     /// <summary>Initializes a new instance of the <see cref="AcpStdioTransport"/> class.</summary>
     /// <param name="ompPath">The omp executable. A bare name is resolved from <c>PATH</c>.</param>
     /// <param name="workingDirectory">The child's working directory, or <see langword="null"/> to inherit the current one.</param>
-    public AcpStdioTransport(string ompPath, string? workingDirectory = null)
+    /// <param name="logger">Receives stderr drain failures at Debug. Null discards them.</param>
+    public AcpStdioTransport(string ompPath, string? workingDirectory = null, ILogger<AcpStdioTransport>? logger = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ompPath);
         _ompPath = ompPath;
+        _logger = logger ?? NullLogger<AcpStdioTransport>.Instance;
         _workingDirectory = workingDirectory;
     }
 
@@ -206,7 +216,7 @@ public sealed class AcpStdioTransport : IAcpTransport
         catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {
             // Diagnostics only: a broken stderr pipe ends the drain without affecting the protocol stream.
-            _ = ex;
+            StderrDrainEnded(_logger, ex);
         }
         finally
         {

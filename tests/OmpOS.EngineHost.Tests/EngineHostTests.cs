@@ -73,7 +73,7 @@ public sealed class EngineHostTests
         var raised = 0;
         host.MissedEventsHeld += (_, _) => raised++;
 
-        var seen = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
+        var seen = await CollectDroppedAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
         seen.Count.ShouldBe(5);
 
         await host.ReconnectAsync(ct);
@@ -95,7 +95,7 @@ public sealed class EngineHostTests
         using var http = ClientFor(handler);
         var host = new RemoteEngineHost(http);
 
-        _ = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
+        _ = await CollectDroppedAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct));
         await host.ReconnectAsync(ct);
         host.TakeHeldEvents().Count.ShouldBe(7);
 
@@ -179,7 +179,7 @@ public sealed class EngineHostTests
         using var http = ClientFor(handler);
         var host = new RemoteEngineHost(http);
 
-        _ = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct)).ConfigureAwait(true);
+        _ = await CollectDroppedAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct)).ConfigureAwait(true);
         await host.ReconnectAsync(ct).ConfigureAwait(true);
 
         var seen = await CollectAsync(host.SubmitPromptAsync("next prompt", new PromptOptions(), ct)).ConfigureAwait(true);
@@ -244,7 +244,7 @@ public sealed class EngineHostTests
         var raised = 0;
         host.MissedEventsHeld += (_, _) => raised++;
 
-        _ = await CollectAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct)).ConfigureAwait(true);
+        _ = await CollectDroppedAsync(host.SubmitPromptAsync("prompt", new PromptOptions(), ct)).ConfigureAwait(true);
 
         var hold = host.ReconnectAsync(ct);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -411,6 +411,21 @@ public sealed class EngineHostTests
         {
             collected.Add(evt);
         }
+
+        return collected;
+    }
+
+    /// <summary>Collects a prompt whose stream drops before a terminal event: the events before the drop, then the surfaced error.</summary>
+    private static async Task<List<HarnessEvent>> CollectDroppedAsync(IAsyncEnumerable<HarnessEvent> events)
+    {
+        var collected = new List<HarnessEvent>();
+        await Should.ThrowAsync<DisconnectedHarnessException>(async () =>
+        {
+            await foreach (var evt in events.ConfigureAwait(true))
+            {
+                collected.Add(evt);
+            }
+        }).ConfigureAwait(true);
 
         return collected;
     }

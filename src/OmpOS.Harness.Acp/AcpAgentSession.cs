@@ -5,6 +5,8 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.Acp.AcpProtocol;
 
@@ -28,6 +30,12 @@ public sealed class AcpAgentSession : IOmpSession
     private const int InvalidParams = -32602;
     private const int InternalError = -32603;
 
+    private static readonly Action<ILogger, string?, Exception?> PumpFailed =
+        LoggerMessage.Define<string?>(
+            LogLevel.Error,
+            new EventId(1, "AcpPumpFailed"),
+            "The omp acp pump failed for session {SessionId}.");
+
     private static readonly string[] AllowKinds = ["allow_once", "allow_always"];
     private static readonly string[] RejectKinds = ["reject_once", "reject_always"];
     internal static readonly TimeSpan DefaultPermissionDecisionTimeout = PermissionDecisionWindow.Default;
@@ -38,6 +46,7 @@ public sealed class AcpAgentSession : IOmpSession
     private readonly TimeSpan _permissionDecisionTimeout;
     private readonly HarnessStateMachine _machine = new();
     private readonly System.Threading.Lock _gate = new();
+    private readonly ILogger<AcpAgentSession> _logger;
     private readonly Dictionary<long, PendingCall> _pending = [];
     private long _lastRequestId;
     private PromptTurn? _turn;
@@ -61,7 +70,8 @@ public sealed class AcpAgentSession : IOmpSession
     /// Supplies the decision for a request the approval policy admits. Null means no decision can arrive, so such a request is denied.
     /// </param>
     /// <param name="permissionDecisionTimeout">How long a parked request waits for its decision before it is denied.</param>
-    public AcpAgentSession(IAcpTransport transport, AcpClientOptions options, IPermissionResolver? permissionResolver, TimeSpan permissionDecisionTimeout)
+    /// <param name="logger">Receives pump faults at Error. Null discards them.</param>
+    public AcpAgentSession(IAcpTransport transport, AcpClientOptions options, IPermissionResolver? permissionResolver, TimeSpan permissionDecisionTimeout, ILogger<AcpAgentSession>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(transport);
         ArgumentNullException.ThrowIfNull(options);
@@ -76,6 +86,7 @@ public sealed class AcpAgentSession : IOmpSession
         _fsRoot = options.FsRoot is null ? null : Path.TrimEndingDirectorySeparator(Path.GetFullPath(options.FsRoot));
         _permissionResolver = permissionResolver;
         _permissionDecisionTimeout = permissionDecisionTimeout;
+        _logger = logger ?? NullLogger<AcpAgentSession>.Instance;
     }
 
     /// <summary>Gets the ACP session identifier once the session has been created or resumed.</summary>
@@ -506,6 +517,19 @@ public sealed class AcpAgentSession : IOmpSession
             // still ends the stream, but the real exception is kept as the cause instead of a generic close.
             failure = ex is HarnessException hex ? hex
                 : new DisconnectedHarnessException("The omp acp session failed.", SessionId, ex);
+
+            // The transport ends the pump with an exception on every close, including one this session requested.
+            // Only a fault on a session that is still open is an error.
+            bool requested;
+            lock (_gate)
+            {
+                requested = _disposed || _sessionClosed;
+            }
+
+            if (!requested)
+            {
+                PumpFailed(_logger, SessionId, ex);
+            }
         }
         finally
         {

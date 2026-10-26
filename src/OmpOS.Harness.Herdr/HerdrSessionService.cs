@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace OmpOS.Harness.Herdr;
 
 /// <summary>
@@ -11,20 +14,35 @@ public sealed class HerdrSessionService : IDisposable
     private readonly IHerdrSessionClient _client;
     private readonly HerdrSessionStore _store;
     private readonly HerdrHeartbeatMonitor _monitor;
+    private readonly ILogger<HerdrSessionService> _logger;
     private readonly SemaphoreSlim _createGate = new(1, 1);
     private static readonly TimeSpan CompensationTimeout = TimeSpan.FromSeconds(10);
+
+    private static readonly Action<ILogger, HerdrSessionId, Exception?> CompensationRefused =
+        LoggerMessage.Define<HerdrSessionId>(
+            LogLevel.Error,
+            new EventId(1, "HerdrCompensationRefused"),
+            "The herdr session {SessionId} could not be terminated after its record failed to persist; the server session may still run.");
+
+    private static readonly Action<ILogger, HerdrSessionId, Exception?> CompensationTimedOut =
+        LoggerMessage.Define<HerdrSessionId>(
+            LogLevel.Error,
+            new EventId(2, "HerdrCompensationTimedOut"),
+            "Terminating herdr session {SessionId} after its record failed to persist did not finish within the compensation timeout; the server session may still run.");
 
     /// <summary>Creates a service over a server client and a local store.</summary>
     /// <param name="client">The herdr server client.</param>
     /// <param name="store">The local store that persists the session records.</param>
     /// <param name="timeProvider">The clock that measures heartbeat silence. The system clock when null.</param>
-    public HerdrSessionService(IHerdrSessionClient client, HerdrSessionStore store, TimeProvider? timeProvider = null)
+    /// <param name="logger">Receives failed compensations. Null discards them.</param>
+    public HerdrSessionService(IHerdrSessionClient client, HerdrSessionStore store, TimeProvider? timeProvider = null, ILogger<HerdrSessionService>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(store);
         _client = client;
         _store = store;
         _monitor = new HerdrHeartbeatMonitor(timeProvider);
+        _logger = logger ?? NullLogger<HerdrSessionService>.Instance;
     }
 
     /// <summary>Releases the lock that serializes creates. The client and the store belong to the caller.</summary>
@@ -241,13 +259,15 @@ public sealed class HerdrSessionService : IDisposable
         {
             await _client.TerminateAsync(id, cleanup.Token).ConfigureAwait(false);
         }
-        catch (HerdrSessionException)
+        catch (HerdrSessionException ex)
         {
             // The server refused the termination. The persist failure is still the one reported.
+            CompensationRefused(_logger, id, ex);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
             // The cleanup did not finish within CompensationTimeout. The persist failure is still the one reported.
+            CompensationTimedOut(_logger, id, ex);
         }
     }
 
