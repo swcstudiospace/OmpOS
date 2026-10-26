@@ -8,7 +8,7 @@
 - v0.9.2 Hardening and hosted API: audit status `tech_debt` (2026-10-21, `.planning/v0.9.2-MILESTONE-AUDIT.md`). Phases 1-5, 7, 10, 11, 17-19 complete; 8, 9, 15, 16 superseded; 6, 12, 13, 14 blocked on external criteria. Completion awaits the owner (irreversible). Requirements in `.planning/REQUIREMENTS.md` (75 REQ-IDs).
 - v0.13.0 Cursor 1:1 workspace and provider platform: planned 2026-10-22 from the ultrathink plan (graph ut-mvjvg4gj-fb21d80f); phases 36 to 43; requirements VX-01 to VX-10 in `.planning/REQUIREMENTS.md`.
 - v0.10.0 Cross-platform UI: active. Phases 20 and 21 complete (both verified). Phase 22 blocked on external hosts: criterion 1 met on the XWayland path (2026-10-24); criteria 3 (Windows runner) and 4 and 5 (Mac channel) open. Phases 23 to 25 partial or blocked (see STATE). Requirements XP-01 to XP-11.
-- v0.14.0 Agent loop and Agent Panel: planned 2026-10-26 from the user request to connect claude-ultrathink, agent-swarm and agent-substrate to the agent loop as pinned submodules and omp plugins, add GSD-Core as an omp plugin, build the default Agent Panel and push to main; phases 44 to 47; requirements AL-01 to AL-12 in `.planning/REQUIREMENTS.md`.
+- ~~v0.14.0 Agent loop and Agent Panel~~ Superseded 2026-10-26 (DR-1: the default Cursor-style Agent Panel is the agent panel, there is no second surface) v0.14.0 Agent loop on the Omp Engine and the default Agent Panel: planned 2026-10-26 from the user request to connect claude-ultrathink, agent-swarm and agent-substrate to the agent loop as pinned submodules and omp plugins, add GSD-Core as an omp plugin, build the default Agent Panel and push to main; revised 2026-10-26 from the user message of that date: the four plugins are connected to every omp process the application starts (the engine session and the omp terminals), a running session can be live-steered, and the Kanban tab (Phase 39) and the Cursor-shaped Settings window with provider configuration (Phase 40) are the only additions beyond Cursor parity; ~~phases 44 to 47; requirements AL-01 to AL-12~~ Superseded 2026-10-26 (Phases 48 and 49 and AL-13 to AL-20 added): phases 44 to 49 (with Phases 33, 35, 39 and 40 extended); requirements AL-01 to AL-20 in `.planning/REQUIREMENTS.md`.
 
 ## Planning Rules
 
@@ -394,10 +394,10 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 - [x] **Phase 25.2: Web Head Trust and Stream Bounds** - Prompts and SSE only to the configured origin; SSE reconnect budget and frame sizes bounded (fix F-A)
 - [x] **Phase 25.3: Bounded Child and Vendor Reads** - Every external read path capped and tested (fix F-B)
 - [ ] **Phase 25.4: Build, Deploy, and Image Integrity** - Verified installers, pinned actions, runners, images, and smoke tooling (fix F-C; partial: PodmanDriverSection :latest blocked on GHCR access)
-- [ ] **Phase 25.5: Failures That Stay Silent** - Swallowed faults logged or surfaced; logging split recorded (fix F-D; partial: M-4 detached-path test and desktop logger wiring open)
-- [ ] **Phase 25.6: Secrets and Local Files** - Token scope, owner-only temp files, per-repository consent for setup steps (fix F-E)
-- [ ] **Phase 25.7: UI Head Accessibility** - Reduced motion, alt text, keyboard-operable error dismiss, focus contrast coverage (fix F-F)
-- [ ] **Phase 25.8: Test Quality** - Each named test asserts its claim; no fixed sleeps in settlement tests (fix F-G)
+- [x] **Phase 25.5: Failures That Stay Silent** - Swallowed faults logged or surfaced; logging split recorded (fix F-D; the M-4 detached-path test and the desktop logger wiring closed 2026-10-26)
+- [x] **Phase 25.6: Secrets and Local Files** - Token scope, owner-only temp files, per-repository consent for setup steps (fix F-E)
+- [x] **Phase 25.7: UI Head Accessibility** - Reduced motion, alt text, keyboard-operable error dismiss, focus contrast coverage (fix F-F)
+- [x] **Phase 25.8: Test Quality** - Each named test asserts its claim; no fixed sleeps in settlement tests (fix F-G)
 - [ ] **Phase 25.9: Suppression and Skip Review** - Every suppression and skip marker decided; counts reconciled (fix F-H)
 
 ### Phase 20: Avalonia Foundation
@@ -556,7 +556,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Requirements**: none; scope from the owner's acceptance of F-D (2026-10-26)
 **Depends on**: Phase 25.4
 **Mac channel**: No.
-**Status (2026-10-26)**: partial. Commit bad4e67; gate 2315 passed, 0 failed, 0 skipped. Open: M-4 detached-path test (removed, cause not isolated); desktop composition passes no logger, so service ILogger output is discarded in the desktop app. Record: .planning/phases/25.5-failures-that-stay-silent/25.5-01-SUMMARY.md.
+**Status (2026-10-26)**: complete. Commits bad4e67 and bf7e16b (the two open items: the M-4 detached-path test and the desktop ILoggerFactory wiring); gate 2390 passed, 0 failed, 0 skipped; web smoke exit 0. Record: .planning/phases/25.5-failures-that-stay-silent/25.5-01-SUMMARY.md.
 **Success Criteria** (what must be TRUE):
   1. Each fault in M-2, M-3, M-4, M-12, M-17, M-18, and M-19 is logged or surfaced to its caller. Verify: a test per fault observes the log or the surfaced error.
   2. Close faults in the shipped desktop app reach a configured trace listener. Verify: a test or startup check shows the listener is attached in the app host.
@@ -569,7 +569,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Requirements**: none; scope from the owner's acceptance of F-E and the consent answer (2026-10-26)
 **Depends on**: Phase 25.5
 **Mac channel**: No.
-**Status (2026-10-26)**: not started.
+**Status (2026-10-26)**: complete. Commit 1ef5051; gate 2390 passed, 0 failed, 0 skipped. Record: .planning/phases/25.6-secrets-and-local-files/25.6-01-SUMMARY.md. No head shows a setup-consent prompt yet (no head calls SetupRunner until Phase 28 criterion 5); the default prompt denies with a clear message.
 **Success Criteria** (what must be TRUE):
   1. AgentOsProvider refuses at construction a non-loopback cleartext origin, and sends its bearer token only to the configured origin. Verify: provider tests.
   2. Compose files written to temp directories are owner-only. Verify: a test checks the file mode.
@@ -582,7 +582,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Requirements**: none; scope from the owner's acceptance of F-F (2026-10-26)
 **Depends on**: Phase 25.6
 **Mac channel**: No.
-**Status (2026-10-26)**: not started.
+**Status (2026-10-26)**: complete. Commit bf7e16b (with Phase 25.5); gate 2390 passed, 0 failed, 0 skipped; web smoke exit 0 with the new dismiss-control step. Record: .planning/phases/25.7-ui-head-accessibility/25.7-01-SUMMARY.md. OQ-34 and OQ-39 stay deferred.
 **Success Criteria** (what must be TRUE):
   1. Android transitions honour reduced motion. Verify: the transition is removed or disabled under the reduced-motion setting; a test or static check covers it.
   2. A2UI images always have alt text, with a fallback when the agent omits it. Verify: A2UI test with a missing alt.
@@ -596,7 +596,7 @@ Avalonia UI for Windows, macOS, Linux, iOS and Android. The web head stays Blazo
 **Requirements**: none; scope from the owner's acceptance of F-G (2026-10-26)
 **Depends on**: Phase 25.7
 **Mac channel**: No.
-**Status (2026-10-26)**: not started.
+**Status (2026-10-26)**: complete. Commit efc4e12; gate 2390 passed, 0 failed, 0 skipped. Record: .planning/phases/25.8-test-quality/25.8-01-SUMMARY.md (each strengthened test lists the mutation that fails it).
 **Success Criteria** (what must be TRUE):
   1. Each test named in M-8, M-9, lens 1 section 2, InMemorySessionSignalsTests:71, and RailwaySwarmProviderTests:204 asserts the behaviour its name claims, or is removed. Verify: each test fails when its behaviour breaks.
   2. No fixed sleep remains in RunControls settlement tests. Verify: grep finds no Task.Delay or Thread.Sleep in those tests.
@@ -739,6 +739,7 @@ Source: user request 2026-10-22. The ADE harness must match Cursor desktop capab
   1. The terminal launches the located omp executable with an argument array and the project directory. A missing omp shows its detected path, version and install guidance while the rest of the app keeps working. Verify: gate test with a fake executable.
   2. The registry has one writer; its export carries a generation and checksum; the UI list and the omp view report the same generation. Verify: gate test.
   3. omp's MCP connections go through the host-owned MCP gateway (decision 2026-10-22), which refuses tools that are not granted. Verify: gate test that an ungranted tool call is refused at the gateway.
+  4. The terminal starts omp with the four plugins loaded (Phase 48). Verify: Phase 48 criteria 1, 2 and 3 (planner terminal launch, gate test with a fake executable, recorded exactly-once run).
 **Plans**: TBD
 
 ### Phase 34: Remote Development
@@ -755,6 +756,7 @@ Source: user request 2026-10-22. The ADE harness must match Cursor desktop capab
   1. A repository-wide review produces per-file findings; each finding is fixed or recorded with an owner and an open-question link. Verify: findings table in the phase record.
   2. Analyzer, warnings-as-errors, formatter, architecture and secret-scan checks are enforced in CI and in bootstrap, and every suppression has a row in docs/open-questions.md. Verify: gate run at phase HEAD.
   3. Decision records exist for the editor, terminal, MCP, browser pane and plugin isolation choices. Verify: docs/decisions listing.
+  4. The audit covers the Cursor-clone inventories ADE-01 to ADE-22, CX-01 to CX-08, VX-01 to VX-10 and the 34-row table in `docs/plans/vision-research/cursor-settings-window.md` (AL-20); no new inventory is created, and each row is verified, planned or recorded with an owner. Verify: findings table in the phase record, one row per inventory.
 **Plans**: TBD
 
 ## v0.13.0 Cursor 1:1 workspace and provider platform (planned, added 2026-10-22)
@@ -783,6 +785,7 @@ Phases 36 to 38 do not depend on the blocked v0.10.0 items (Phases 22, 24, 25), 
   4. The provider record and URL validator accept https, accept http only for localhost, and reject remote plain http unless explicitly allowed. Verify: gate tests.
   5. A SecretString type never renders its value in ToString or serialisation, and the canary harness fails when a registered secret reaches a stub log, transcript, crash or telemetry sink. Verify: gate canary test.
   6. The herdr session client contract and the omp adapter contract are versioned interfaces with recorded-transcript fakes; replaying a fixture twice yields the same typed event sequence; detach leaves the fake session alive. Verify: gate contract tests.
+**Cross-reference (2026-10-26)**: Greptile font consistency (AL-19) is verified in Phases 39, 40 and 46; criterion 1 here keeps the VX-01 token and licence checks.
 **Plans**: TBD
 
 ### Phase 37: Session Runtime, Streaming and Local Terminal
@@ -812,15 +815,21 @@ Phases 36 to 38 do not depend on the blocked v0.10.0 items (Phases 22, 24, 25), 
 **Plans**: TBD
 
 ### Phase 39: Kanban Board
-**Goal**: The Kanban board shows one task card per chat with its live runtime status, and status changes arrive as events.
-**Requirements**: VX-04
-**Depends on**: Phases 36, 37
+**Goal**: ~~The Kanban board shows one task card per chat with its live runtime status, and status changes arrive as events.~~ Superseded 2026-10-26 (user direction: the Kanban tab is where every opened session is shown): The Kanban board shows one task card per chat with its live runtime status, and status changes arrive as events, and the Kanban tab shows every opened session as a task card.
+**Requirements**: VX-04, AL-17, AL-18
+**Depends on**: Phases 36, 37; criteria 5 to 8 also need Phases 45 and 48 (Substrate fields, omp terminal sessions), criterion 9 needs Phase 49
 **Mac channel**: No.
 **Success Criteria** (what must be TRUE):
   1. One card per chat shows title, active model and provider, last activity time and status; statuses come from the runtime enumeration, with no client-side guesses. Verify: gate tests from fake session events.
   2. Runtime statuses are not user-draggable; only the user-settable statuses (default Backlog and Archived) accept drag. Verify: gate test.
   3. A card with a stale heartbeat shows the stale indicator with a screen-reader label; an unreachable session shows the card error state. Verify: UI test.
   4. Column names are the defaults recorded in CONTEXT until the owner confirms the final names. Verify: CONTEXT entry (owner decision).
+  5. The Kanban tab exists and is reachable from the application navigation. Verify: headless UI test that navigates from the main window to the tab.
+  6. Each opened session (Agent Panel chat or omp terminal) appears as exactly one card: opening creates it, and closing or ending moves it to its terminal column (Completed, Failed or Archived) and never removes it silently (DR-5b). Verify: gate tests from fake session events (open, close, end) for a chat and for a terminal session.
+  7. Card status mirrors the session lifecycle status using the CONTEXT defaults (Backlog, Queued, Running, Awaiting input, Needs attention, Paused, Completed, Failed, Unreachable, Archived; OQ-77 keeps the final names open and OQ-78 records the mapping default); closing or ending a session moves its card to its terminal column (OQ-79); selecting a card opens or focuses its session; status updates live without a refresh. A card shows title, model and provider, last activity, status, stale indicator and, when Substrate is reachable, task, graph, lessons count and lease holder; without Substrate these show as unavailable, never invented. Verify: gate tests from fake session events, plus tests with a fake Substrate gateway reachable and unreachable.
+  8. The tab renders loading skeleton, empty with a way to start a session, error with retry, populated, and disconnected (terminal dropped) distinctly from failed; it is keyboard navigable with visible focus, exposes labels to assistive technology, never conveys status by colour alone and honours reduced motion for live updates. The context and the steering history moved off the old Inspector region (DR-1) show in the card detail. Verify: one UI test per state, the accessibility walk over the tab, and one screenshot per state in `docs/runbooks/evidence/`.
+  9. A running session can be steered from its card (Phase 49 delivers and reports it). Verify: UI test that the card steer action calls the steering service for that session, with delivery tests in Phase 49.
+  10. Every text control on the tab resolves its family through the `OmpOS.Font.*` tokens, with no literal family in AXAML (AL-19). Verify: headless test walking the Kanban tab, and a recorded screenshot showing DM Sans.
 **Plans**: TBD
 
 ### Phase 40: Settings Window and Model Providers
@@ -834,6 +843,8 @@ Phases 36 to 38 do not depend on the blocked v0.10.0 items (Phases 22, 24, 25), 
   3. A custom provider is added from a user entry (base URL, auth header, model list, capability flags) without a code change. Verify: gate test.
   4. Cloud API-key and coding-plan entries are added only where the research verified the endpoint, auth and quota (default: verified providers only). Coding plans are separate entries with their own auth, quota display and error mapping; quota exhaustion and plan expiry produce actionable messages. Verify: catalogue tests per entry.
   5. Live validation with real credentials is blocked until the owner supplies test credentials per provider. Verify: STATE entry.
+  6. The Settings window follows the Cursor Settings structure of rows 1 to 34 of `docs/plans/vision-research/cursor-settings-window.md` (owner decision 2026-10-26, DR-6: owner decisions 1 and 2 of that research answered (a), a Cursor-shaped Settings window with per-provider fields in its Models section, expanded for providers), and its Models section surfaces provider configuration (per-provider fields, custom provider entry, local hosting probes) as criteria 2 to 4 specify; no provider is named that the research files do not verify, and no plugin enable or disable setting exists (DR-5c; the default is recorded as an open question until the user confirms). Verify: settings UI tests per section against the 34 research rows, the catalogue tests of criteria 2 to 4, and a test that no plugin switch is rendered.
+  7. Every text control in the Settings window resolves its family through the `OmpOS.Font.*` tokens, with no literal family in AXAML (AL-19). Verify: headless test walking the Settings window, and a recorded screenshot showing DM Sans.
 **Plans**: TBD
 
 ### Phase 41: Pets Companion
@@ -872,16 +883,26 @@ Phases 36 to 38 do not depend on the blocked v0.10.0 items (Phases 22, 24, 25), 
   4. The Android accessibility dump needs an Android 16 device or emulator, which this host does not have; it is recorded as blocked.
 **Plans**: TBD
 
-## v0.14.0 Agent loop and Agent Panel (planned, added 2026-10-26)
+## v0.14.0 Agent loop and Agent Panel (planned, added 2026-10-26; revised 2026-10-26)
 
-Source: user request 2026-10-26 and the ultrathink plan graph ut-mvp0bh59-2dd6ef4c (spec `/root/.omp/agent/ultrathink/sessions/01a17752-7e43-7002-8ac7-6781e5b19475.xml`). Evidence is in the discovery dossiers under `docs/plans/agent-loop/`. Decisions are recorded in `docs/decisions/ADR-0012-agent-loop-plugins.md`. Requirements AL-01 to AL-12 are in `.planning/REQUIREMENTS.md`.
+Source: user request 2026-10-26 and the ultrathink plan graph ut-mvp0bh59-2dd6ef4c (spec `/root/.omp/agent/ultrathink/sessions/01a17752-7e43-7002-8ac7-6781e5b19475.xml`); revised the same day from the user message of that date and the ultrathink plan graph ut-mvp88pnw-6e8c4d24. Evidence is in the discovery dossiers under `docs/plans/agent-loop/`. Decisions are recorded in `docs/decisions/ADR-0012-agent-loop-plugins.md`. ~~Requirements AL-01 to AL-12 are in `.planning/REQUIREMENTS.md`.~~ Superseded 2026-10-26 (AL-13 to AL-20 added): Requirements AL-01 to AL-20 are in `.planning/REQUIREMENTS.md`.
 
-Settled decisions: the three plugins run inside the omp engine and OmpOS launches omp with them and observes them (the hybrid of the ultrathink clarification q1, settled from repository evidence); the Agent Panel is built on the shared presentation layer in the Avalonia native head (q2, the MAUI head is removed); the runnable panel comes first and externally blocked phases are deferred with recorded reasons (q3). Live delivery of a steering message into a running session does not exist in agent-substrate on main (its Phase 53 is unmerged), so OmpOS delivers steering over ACP and only records it in the substrate.
+Settled decisions: the three plugins run inside the omp engine and OmpOS launches omp with them and observes them (the hybrid of the ultrathink clarification q1, settled from repository evidence); the Agent Panel is built on the shared presentation layer in the Avalonia native head (q2, the MAUI head is removed); the runnable panel comes first and externally blocked phases are deferred with recorded reasons (q3). Live delivery of a steering message into a running session does not exist in agent-substrate on main (its Phase 53 is unmerged), ~~so OmpOS delivers steering over ACP and only records it in the substrate.~~ Superseded 2026-10-26 (DR-4: omp's ACP agent cancels a running turn when a new `session/prompt` arrives, so prompting over ACP cannot deliver live; delivery is Phase 49 and queue-after-turn stays the documented fallback): OmpOS records steering in the substrate and never attributes delivery to it.
+
+Revision 2026-10-26 (source: the user message of 2026-10-26; the shared decision labels below are also used in the ADR-0012 update section and in the Phase 46 amendments):
+- DR-1 No additional Agent Panel. The default Cursor-style Agent Panel is the agent panel and stays a faithful Cursor clone. Superseded: the Inspector region (Pipeline, Context and Steering history tabs and the Inspector toggle) and any wording that calls the panel a new Cursor-class surface with its own regions. Kept: the session rail (Cursor's Agents sidebar), the thread, the composer with Cursor-style queue and send-now, the header chips and the one-line plugin connection row directly under the header. The context and steering history content moves to the Kanban card.
+- DR-2 The four plugins (Ultrathink, Substrate, Swarm, GSD-Core) are connected to every omp process the application starts, the engine session behind the Agent Panel and the omp terminals, loaded exactly once from the pinned submodules, and verified by a recorded run per plugin plus one end-to-end run without a model turn (Phase 48).
+- DR-3 The Kanban tab is the only product addition besides provider settings: one card per opened session (chat or omp terminal), live status, selecting a card opens or focuses the session, steering from the card (Phase 39).
+- DR-4 Steering reuses the existing Steer intent. Live delivery over ACP prompting is not possible (a new `session/prompt` cancels the running turn) and Substrate on the pinned commit has no live delivery (OQ-66), so the delivery mechanism is an open question with a recommended default in `docs/open-questions.md`; the requirement is written at outcome level (AL-15, AL-16, Phase 49).
+- DR-5 Defaults, non-blocking, changeable by the user: (a) Kanban columns mirror the session lifecycle status; (b) closing or ending a session moves its card to its terminal column and never removes it silently; (c) the four plugins are always on, with no enable or disable settings item (the launch planner keeps its per-plugin switches for operators and tests).
+- DR-6 Settings: the user answered owner decisions 1 and 2 of `docs/plans/vision-research/cursor-settings-window.md` with (a), a Cursor-shaped Settings window with per-provider fields in its Models section; Phase 40 carries it.
 
 - [ ] **Phase 44: Plugin Submodules and Launch Contract** - three pinned submodules, the GSD-Core omp plugin, the plugin catalog and its guard, ACP launch plumbing, repository hygiene and CI
 - [ ] **Phase 45: Agent Loop Stage Sources** - stage contracts, observers for Ultrathink, Swarm, Substrate and GSD, task context, session registry with restart resume, degradation
-- [ ] **Phase 46: Agent Panel** - the default surface: session rail, thread, pipeline strip, composer with steering, context inspector, states and accessibility
+- [ ] **Phase 46: Default Agent Panel Parity** - ~~the default surface: session rail, thread, pipeline strip, composer with steering, context inspector, states and accessibility~~ Superseded 2026-10-26 (DR-1: no inspector and no separate pipeline strip surface): the default Cursor-style Agent Panel kept faithful to Cursor: session rail, thread, composer with queue and send-now, header plugin connection row, states, accessibility and the Greptile font
 - [ ] **Phase 47: Agent Panel on the Web Head** - deferred: the hosted API runs the InMemory harness and Railway deploys are paused
+- [ ] **Phase 48: Omp Terminals with the Four Plugins** - the launch planner plans interactive omp launches, the embedded terminal starts omp through it, the four plugins load exactly once in every app-started omp process, per-plugin and end-to-end connection evidence
+- [ ] **Phase 49: Live Steering** - a running session takes a steering message from the Agent Panel composer and from its Kanban card, delivery is reported truthfully, failures leave the session unchanged and Substrate records the action
 
 ### Phase 44: Plugin Submodules and Launch Contract
 **Goal**: The three sibling projects are pinned submodules, GSD-Core is an omp plugin, and OmpOS can launch omp with the four plugins loaded, hermetically and reproducibly.
@@ -914,29 +935,65 @@ Settled decisions: the three plugins run inside the omp engine and OmpOS launche
   6. The gate is green. Verify: `./bootstrap.sh`.
 **Plans**: TBD
 
-### Phase 46: Agent Panel
-**Goal**: The application opens on a Cursor-class Agent Panel that runs several concurrent sessions through the composed loop, shows the pipeline stages, takes steering and keeps every state accessible.
-**Requirements**: AL-09, AL-10, AL-11, AL-12
+### Phase 46: Default Agent Panel Parity
+**Retitled 2026-10-26 (DR-1)**: ~~Phase 46: Agent Panel~~ Superseded 2026-10-26 (the panel is the default Cursor-style Agent Panel, not a new Cursor-class surface with an inspector); amendments are tabulated in `.planning/phases/46-agent-panel/46-CONTEXT.md` and `46-UI-SPEC.md`.
+**Goal**: ~~The application opens on a Cursor-class Agent Panel that runs several concurrent sessions through the composed loop, shows the pipeline stages, takes steering and keeps every state accessible.~~ Superseded 2026-10-26 (DR-1): The application opens on the default Cursor-style Agent Panel (session rail as the Agents sidebar, thread, composer) that runs several concurrent sessions through the composed loop on the Omp Engine, shows the plugin connection in the one-line row under its header, takes steering in the composer (delivery is Phase 49), keeps every state accessible and uses the Greptile font; there is no second agent surface.
+**Requirements**: AL-09, AL-10, AL-11, AL-12, AL-19
 **Depends on**: Phases 44, 45
 **Mac channel**: No.
 **UI hint**: yes
 **Status (2026-10-26)**: not started.
 **Success Criteria** (what must be TRUE):
-  1. The default window shows the session rail, the thread, the pipeline strip, the composer and the inspector. Verify: headless UI test and a screenshot recorded under Xvfb.
+  1. ~~The default window shows the session rail, the thread, the pipeline strip, the composer and the inspector. Verify: headless UI test and a screenshot recorded under Xvfb.~~ Superseded 2026-10-26 (DR-1: no inspector, no separate pipeline strip surface): The application opens on the default Cursor-style Agent Panel: session rail (the Agents sidebar), thread and composer, with the header chips and the one-line plugin connection row directly under the header; no region other than these exists, and there is no inspector and no second agent surface. Verify: headless UI test that no region other than rail, thread and composer (with its header) exists, plus a screenshot recorded under Xvfb.
   2. Two sessions each own an engine; selecting a session rebinds the thread, composer and approvals, and each row shows its own status. Verify: headless test with two scripted sessions.
-  3. While a run is active, a message queues as a steer or a follow-up, appears in the steering history and is recorded in the substrate. Verify: UI and presenter tests.
+  3. ~~While a run is active, a message queues as a steer or a follow-up, appears in the steering history and is recorded in the substrate. Verify: UI and presenter tests.~~ Superseded 2026-10-26 (DR-1: the steering history moves to the Kanban card; DR-4: live delivery is Phase 49): While a run is active, the composer queues a message as a follow-up or sends it now as a steer in Cursor style, and the choice is recorded in the substrate when it is reachable. Verify: UI and presenter tests.
   4. Empty, initialising, streaming, error with retry, success, each degraded mode and a resumed long-running session render their copy. Verify: one test per state.
-  5. Every tab stop has an accessible name, the keyboard map in the UI spec works, stage changes are announced through a polite live region, motion honours reduced motion, and new tokens pass the contrast tests. Verify: the accessibility walk over the opened panel and the contrast tests.
-  6. Eight screenshots (empty, streaming with pipeline, degraded, error, long-running list, narrow window, dense list, keyboard focus) are recorded under Xvfb. Verify: evidence files in `docs/runbooks/evidence/`.
+  5. ~~Every tab stop has an accessible name, the keyboard map in the UI spec works, stage changes are announced through a polite live region, motion honours reduced motion, and new tokens pass the contrast tests. Verify: the accessibility walk over the opened panel and the contrast tests.~~ Superseded 2026-10-26 (DR-1: stage changes become plugin connection changes in the header row): Every tab stop has an accessible name, the keyboard map in the UI spec works, plugin connection changes are announced through a polite live region, motion honours reduced motion, and new tokens pass the contrast tests. Verify: the accessibility walk over the opened panel and the contrast tests.
+  6. ~~Eight screenshots (empty, streaming with pipeline, degraded, error, long-running list, narrow window, dense list, keyboard focus) are recorded under Xvfb. Verify: evidence files in `docs/runbooks/evidence/`.~~ Superseded 2026-10-26 (DR-1: the inspector and the separate pipeline are gone): Eight screenshots of the default panel (empty, streaming, degraded, error, long-running list, narrow window, dense list, keyboard focus) are recorded under Xvfb; the Kanban tab states are recorded in Phase 39 criterion 8. Verify: evidence files in `docs/runbooks/evidence/`.
   7. The gate is green. Verify: `./bootstrap.sh`.
+  8. Greptile font consistency (AL-19): every text control in the Agents layout and the terminal chrome resolves its family through the `OmpOS.Font.*` tokens (DM Sans body, Anybody display, Space Mono code), with no literal family in AXAML, and the recorded screenshots show DM Sans. Verify: headless test walking the Agents layout and the terminal chrome, and the screenshots of criterion 6.
 **Plans**: TBD
 
 ### Phase 47: Agent Panel on the Web Head
-**Goal**: The Blazor web head shows the same panel through the API.
+**Goal**: ~~The Blazor web head shows the same panel through the API.~~ Superseded 2026-10-26 (DR-1 wording): The Blazor web head shows the same default panel through the API.
 **Requirements**: AL-09 (web head)
 **Depends on**: Phase 46; v0.9.2 Phase 13 (hosted routed harness)
 **Mac channel**: No.
 **Status (2026-10-26)**: deferred. The hosted API runs the InMemory harness, Railway deploys are paused, and the web head cannot spawn processes or read the plugin state, so a faithful panel needs new API endpoints for stage events. Resume when the hosted routed harness (Phase 13) is unblocked.
 **Success Criteria** (what must be TRUE):
   1. The API exposes the stage events of a session and the web head renders them with the shared presentation models. Verify: API integration test and bunit test.
+**Plans**: TBD
+
+### Phase 48: Omp Terminals with the Four Plugins
+**Goal**: Every omp process the application starts, the engine session behind the Agent Panel and each omp terminal, loads Ultrathink, Substrate, Swarm and GSD-Core exactly once from the pinned submodules, and each plugin's connection, or its failure and fix text, is visible to the user.
+**Requirements**: AL-13, AL-14
+**Depends on**: Phases 44, 45; Phase 33 (the terminal launcher)
+**Mac channel**: No.
+**UI hint**: yes
+**Status (2026-10-26)**: not started.
+**Success Criteria** (what must be TRUE):
+  1. The launch planner can plan an interactive omp (terminal) launch as well as `omp acp`, with the same plugin set, per-session state directory and environment. Verify: planner tests.
+  2. The embedded terminal starts omp through the planner (argument array, project directory), and a missing omp, a missing plugin or an uninitialised submodule shows its fix text while the rest of the app keeps working. Verify: gate test with a fake executable.
+  3. Exactly-once loading: with the user's own omp configuration present (global `config.yml` extensions and extension symlinks), each plugin is registered once in the omp process the application starts. Verify: recorded no-model-turn run against a sandbox that has a polluted global configuration, with unique command names; if omp cannot be made to load each plugin exactly once, the fallback is recorded in an open-question row (OQ-82 records the registration scope; OQ-80 records that the plugins are always on).
+  4. Ultrathink is registered with omp, active in the app-started engine session and in the app-started omp terminal, and observable in the session UI to the extent the plugin exposes it (command output, tool calls, stage chips); a load or connect failure is shown with its fix text. Verify: recorded run output (commands registered, plugin-specific probe) and a degraded-path test.
+  5. Substrate is registered with omp, active in the app-started engine session and in the app-started omp terminal, and observable in the session UI to the extent the plugin exposes it; a load or connect failure is shown with its fix text. Verify: recorded run output (commands registered, plugin-specific probe) and a degraded-path test.
+  6. Swarm is registered with omp, active in the app-started engine session and in the app-started omp terminal, and observable in the session UI to the extent the plugin exposes it; a load or connect failure is shown with its fix text. Verify: recorded run output (commands registered, plugin-specific probe) and a degraded-path test.
+  7. GSD-Core is registered with omp, active in the app-started engine session and in the app-started omp terminal, and observable in the session UI to the extent the plugin exposes it; a load or connect failure is shown with its fix text. Verify: recorded run output (commands registered, plugin-specific probe) and a degraded-path test.
+  8. End to end: starting a session from the application and opening an omp terminal for it shows all four plugins connected. Verify: the run is recorded in the runbook (`docs/runbooks/evidence/`) with the live part tagged Live and excluded from the gate.
+  9. The gate is green. Verify: `./bootstrap.sh`.
+**Plans**: TBD
+
+### Phase 49: Live Steering
+**Goal**: A running session takes a steering message from the Agent Panel composer and from its Kanban card, the session visibly takes it into account before the turn ends, delivery is reported truthfully, and a steer that cannot be delivered fails without changing the session.
+**Requirements**: AL-15, AL-16
+**Depends on**: Phases 46, 48 (the Kanban card entry point also needs Phase 39)
+**Mac channel**: No.
+**UI hint**: yes
+**Status (2026-10-26)**: not started. The delivery mechanism is an open question (DR-4; OQ-81, related OQ-59 and OQ-66). The default in force is an omp extension inbox that calls `sendUserMessage` with `deliverAs` steer, because it works over every transport and in omp terminals and reports delivery through acknowledgements; alternatives are the omp RPC mode (`steer`, `steer_subagent`) and Substrate Phase 53 once merged. Queue-after-turn is the documented fallback.
+**Success Criteria** (what must be TRUE):
+  1. A running session can be sent a steering message from the Agent Panel composer (send now) and from its Kanban card; the session visibly takes it into account before the turn ends, and the steering history shows delivered, queued or failed truthfully. Verify: tests with a fake omp that records the delivery, plus a recorded live run when a model turn is approved.
+  2. A follow-up queues for the end of the turn. Verify: presenter test with the fake omp that the follow-up is delivered only after the turn ends.
+  3. Steering a session that ended, disconnected or was never started fails with a clear message, leaves the session state unchanged and keeps the message in the composer. Verify: gate tests.
+  4. Substrate records each steering action (the existing `events_emit` note with `payload.action` `steer`); delivery is never attributed to Substrate. Verify: fake-gateway test asserting the note payload and that the delivery outcome comes from OmpOS.
+  5. The gate is green. Verify: `./bootstrap.sh`.
 **Plans**: TBD

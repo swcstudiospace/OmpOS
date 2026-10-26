@@ -65,7 +65,7 @@ Session runs execute inside the API process. No separate worker service exists.
 
 ## Agent loop
 
-The agent loop runs the Ultrathink, Swarm, Substrate and GSD-Core plugins inside `omp acp`. OmpOS launches them, observes their side channels and renders the result in the Agent Panel. Plugin details: [docs/plugins.md](plugins.md). Operation: [docs/runbooks/agent-loop.md](runbooks/agent-loop.md).
+The agent loop runs the Ultrathink, Swarm, Substrate and GSD-Core plugins inside the omp processes the application starts: `omp acp` today, and omp terminals as a verification target (Phase 48, DR-2). OmpOS launches them and observes their side channels. What they expose is shown in the default Cursor-style Agent Panel (session rail, thread, composer and a one-line plugin connection row); that panel has no inspector and no stage panels of its own (DR-1). Task context and steering history belong on the Kanban tab card (Phase 39). Plugin details: [docs/plugins.md](plugins.md). Operation: [docs/runbooks/agent-loop.md](runbooks/agent-loop.md).
 
 Contracts (`OmpOS.Contracts.Agents`, L0, no `StreamEvent` kind and no `ContractVersion` change): `StageSource` (Omp, Ultrathink, Swarm, Substrate, Gsd), `StageStatus` (Pending, Running, Succeeded, Degraded, Failed, Skipped, Unavailable), `StageEvent`, `StageObservationScope`, `IStageSource`, `SessionLifecycle` (Created, Running, Paused, Completed, Failed, Lost), `SessionSummary`, `ISessionCatalog`, `ContextNote`, `GsdPhaseInfo`, `TaskContext`, `ITaskContextSource`.
 
@@ -82,13 +82,14 @@ flowchart TB
     SB --> OB
     GS --> OB
     OB --> CS["CompositeStageSource"]
-    CS --> P["Agent Panel: stage timeline, sessions, task context"]
+    CS --> P["Default Agent Panel: session rail, thread, composer, plugin connection row"]
+    CS --> K["Kanban tab card: task context, steering history (Phase 39)"]
     ST["Steering input"] --> Q["ACP queue after the turn"]
     Q --> O
     ST --> R["Record in Substrate (events_emit, action steer)"]
 ```
 
-Steering is delivered over ACP and only recorded in Substrate; Substrate does not deliver it (OQ-66). An observer that cannot read its source emits a Degraded or Unavailable stage event instead of throwing, so the panel and the run continue.
+Steering is queued over ACP after the active turn and only recorded in Substrate; Substrate does not deliver it (OQ-66). Queue-after-turn is the fallback: live delivery into a running turn is the requirement and its mechanism is open (OQ-81, Phase 49). An observer that cannot read its source emits a Degraded or Unavailable stage event instead of throwing, so the panel and the run continue.
 
 Session state directory layout (from `SessionStateLayout`; `<stateRoot>` is `AgentLoopSettings.StateRoot`):
 
@@ -135,4 +136,4 @@ Railway project `Ultrathink`, environment `production`. The service list, variab
 - [ADR-0003](decisions/ADR-0003-workflow-routing.md): workflow routing. Superseded 2026-10-21; `DirectSessionRunner` in the API is the only run path.
 - [ADR-0004](decisions/ADR-0004-cross-platform-ui.md): cross-platform UI. Accepted 2026-10-21: Avalonia UI for the five native heads; the web head stays Blazor WebAssembly on the shared presentation layer. The MAUI head retires after parity (v0.10.0 Phase 25).
 - [Temporal removal and Railway topology (2026-10-21)](handoff.md#temporal-removal-and-railway-topology-2026-10-21): the decision text and its supersessions.
-- [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md): agent loop plugins. Accepted 2026-10-26: Ultrathink, Swarm and Substrate as pinned submodules and `plugins/gsd-core-omp` as a tracked plugin, launched inside `omp acp` with `-e`; steering delivered over ACP and recorded in Substrate.
+- [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md): agent loop plugins. Accepted 2026-10-26: Ultrathink, Swarm and Substrate as pinned submodules and `plugins/gsd-core-omp` as a tracked plugin, launched inside `omp acp` with `-e`; steering delivered over ACP and recorded in Substrate. Update 2026-10-26: no additional Agent Panel (DR-1), plugins in every app-started omp process (DR-2), live steering required with queue-after-turn as the fallback (DR-4).

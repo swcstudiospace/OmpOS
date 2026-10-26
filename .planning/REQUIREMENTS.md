@@ -286,6 +286,26 @@ Source: ADR-0004 (accepted 2026-10-21; reversible through gate G-WEB); `docs/pla
 | ADE-20 | 29 | v0.11.0 ADE harness |
 | ADE-21 | 30 | v0.11.0 ADE harness |
 | ADE-22 | 30 | v0.11.0 ADE harness |
+| AL-01 | 44 | v0.14.0 Agent loop and Agent Panel |
+| AL-02 | 44 | v0.14.0 Agent loop and Agent Panel |
+| AL-03 | 44 | v0.14.0 Agent loop and Agent Panel |
+| AL-04 | 44, 46 | v0.14.0 Agent loop and Agent Panel |
+| AL-05 | 45 | v0.14.0 Agent loop and Agent Panel |
+| AL-06 | 45 | v0.14.0 Agent loop and Agent Panel |
+| AL-07 | 45, 46, 49 | v0.14.0 Agent loop and Agent Panel (reworded 2026-10-26: live delivery is the requirement, queue after the turn is the fallback) |
+| AL-08 | 45 | v0.14.0 Agent loop and Agent Panel |
+| AL-09 | 46, 47 | v0.14.0 Agent loop and Agent Panel (reworded 2026-10-26: default Cursor-style Agent Panel, no inspector; Phase 47 deferred) |
+| AL-10 | 46 | v0.14.0 Agent loop and Agent Panel |
+| AL-11 | 46 | v0.14.0 Agent loop and Agent Panel (reworded 2026-10-26: plugin connection changes in the header row) |
+| AL-12 | 39, 46 | v0.14.0 Agent loop and Agent Panel (reworded 2026-10-26: screenshots without the inspector, plus the Kanban tab states) |
+| AL-13 | 48 | v0.14.0 Agent loop and Agent Panel (added 2026-10-26) |
+| AL-14 | 48 | v0.14.0 Agent loop and Agent Panel (added 2026-10-26) |
+| AL-15 | 46, 49 | v0.14.0 Agent loop and Agent Panel (added 2026-10-26) |
+| AL-16 | 49 | v0.14.0 Agent loop and Agent Panel (added 2026-10-26) |
+| AL-17 | 39 | v0.13.0 Cursor 1:1 workspace and provider platform, Kanban tab (added 2026-10-26) |
+| AL-18 | 39 | v0.13.0 Cursor 1:1 workspace and provider platform, Kanban tab (added 2026-10-26) |
+| AL-19 | 39, 40, 46 | v0.13.0 and v0.14.0 (added 2026-10-26; tokens and licence stay VX-01, Phase 36) |
+| AL-20 | 35 | v0.12.0 Cursor parity and quality bar (added 2026-10-26; tracked by the existing inventories) |
 
 ## Cursor parity and quality bar (CX, v0.12.0, planned 2026-10-22)
 
@@ -353,7 +373,7 @@ Source: user request 2026-10-22 and ultrathink plan graph ut-mvjvg4gj-fb21d80f. 
 
 ## Agent loop and Agent Panel (AL, v0.14.0, planned 2026-10-26)
 
-Source: user request 2026-10-26 and ultrathink plan graph ut-mvp0bh59-2dd6ef4c. Evidence: `docs/plans/agent-loop/`. Not counted in v0.9.2 completion.
+Source: user request 2026-10-26 and ultrathink plan graph ut-mvp0bh59-2dd6ef4c. Evidence: `docs/plans/agent-loop/`. Not counted in v0.9.2 completion. Revised 2026-10-26 from the user message of that date (ultrathink plan graph ut-mvp88pnw-6e8c4d24): AL-07, AL-09, AL-11 and AL-12 are reworded in place and AL-13 to AL-20 are added; the decisions DR-1 to DR-6 are recorded in `.planning/ROADMAP.md` (milestone v0.14.0).
 
 - [ ] **AL-01**: claude-ultrathink, agent-swarm and agent-substrate are git submodules of the repository, referenced by https remote URL and pinned to commits that exist on their remotes.
   - Acceptance: `.gitmodules` holds no local path; a fresh clone with `--recurse-submodules` restores them; the update procedure and each pin are documented; no sibling source is copied or edited.
@@ -374,20 +394,44 @@ Source: user request 2026-10-26 and ultrathink plan graph ut-mvp0bh59-2dd6ef4c. 
   - Acceptance: atomic versioned persistence; a corrupt or unknown-version file is quarantined and treated as empty; a session running at shutdown is Lost on the next start and can be resumed from its stored reference.
   - Verification: persistence and restart tests (Phase 45).
 - [ ] **AL-07**: The operator can steer a running session, and the steering is recorded.
-  - Acceptance: a message sent during a run queues as a steer or a follow-up and is delivered over ACP after the active turn in send order; the substrate records it as a `note` event with `payload.action` `steer` when reachable; OmpOS never claims the substrate delivered it.
-  - Verification: presenter tests and fake-gateway tests (Phases 45, 46).
+  - Acceptance: ~~a message sent during a run queues as a steer or a follow-up and is delivered over ACP after the active turn in send order;~~ Superseded 2026-10-26 (DR-4: omp's ACP agent cancels a running turn when a new `session/prompt` arrives, so prompting over ACP cannot deliver live; live delivery is the requirement, queue after the turn is the documented fallback): a steer sent during a run is delivered live into the running session (AL-15) and a follow-up is delivered after the active turn in send order; where live delivery is not available the steer queues after the active turn, is shown as queued and is never reported as delivered live; the substrate records it as a `note` event with `payload.action` `steer` when reachable; OmpOS never claims the substrate delivered it.
+  - Verification: presenter tests and fake-gateway tests (Phases 45, 46); live delivery tests with a fake omp (Phase 49).
 - [ ] **AL-08**: The task context of a session (Kanban status, workflow phase, shared memory, lessons) is readable and scoped to the session.
   - Acceptance: parts that cannot be read are listed as warnings; text is plain and length capped; one session never reads another's state.
   - Verification: scope-isolation tests (Phase 45).
-- [ ] **AL-09**: The application opens on the Agent Panel, a Cursor-class agent surface.
-  - Acceptance: session rail, thread, pipeline strip, composer with Send, Steer, Follow-up and Stop, and a collapsible inspector; every existing tool remains reachable.
-  - Verification: headless UI test and a recorded screenshot (Phase 46). The web head parity is Phase 47, deferred.
+- [ ] **AL-09**: ~~The application opens on the Agent Panel, a Cursor-class agent surface.~~ Superseded 2026-10-26 (DR-1): The application opens on the default Cursor-style Agent Panel (the session rail as the Agents sidebar, the thread and the composer); no second agent surface exists.
+  - Acceptance: ~~session rail, thread, pipeline strip, composer with Send, Steer, Follow-up and Stop, and a collapsible inspector; every existing tool remains reachable.~~ Superseded 2026-10-26 (DR-1: no inspector and no separate pipeline strip surface): session rail, thread and composer with Send, Steer (send now), Follow-up (queue) and Stop, with the header chips and the one-line plugin connection row directly under the header; no region other than these exists and there is no inspector; every existing tool remains reachable.
+  - Verification: headless UI test that no region other than rail, thread and composer (with its header) exists, and a recorded screenshot (Phase 46). The web head parity is Phase 47, deferred.
 - [ ] **AL-10**: Several sessions run concurrently, each with its own engine and status.
   - Acceptance: selecting a session rebinds the thread, composer and approvals; each row shows its own status and last activity; closing a session stops its engine.
   - Verification: headless test with two scripted sessions (Phase 46).
 - [ ] **AL-11**: The panel is operable by keyboard and by screen reader and honours reduced motion.
-  - Acceptance: every tab stop has an accessible name; the documented keyboard map works; stage changes use a polite live region and errors an assertive one; new colours pass the contrast tests.
+  - Acceptance: every tab stop has an accessible name; the documented keyboard map works; ~~stage changes use a polite live region~~ Superseded 2026-10-26 (DR-1: the stage strip is the one-line plugin connection row): plugin connection changes use a polite live region and errors an assertive one; new colours pass the contrast tests.
   - Verification: the accessibility walk over the opened panel and the contrast tests (Phase 46).
 - [ ] **AL-12**: Every panel state has its own copy and screenshot evidence.
-  - Acceptance: empty, initialising, streaming, error with retry, success, each degraded mode and a resumed session; eight screenshots recorded.
-  - Verification: one test per state and the evidence files (Phase 46).
+  - Acceptance: empty, initialising, streaming, error with retry, success, each degraded mode and a resumed session; ~~eight screenshots recorded.~~ Superseded 2026-10-26 (DR-1: the inspector is gone): eight screenshots of the default panel recorded without an inspector (empty, streaming, degraded, error, long-running list, narrow window, dense list, keyboard focus), plus one screenshot per Kanban tab state (loading, empty, error, populated, disconnected).
+  - Verification: one test per state and the evidence files in `docs/runbooks/evidence/` (Phases 39, 46).
+- [ ] **AL-13**: Ultrathink, Substrate, Swarm and GSD-Core are connected to every omp process the application starts, the engine session behind the Agent Panel and each omp terminal, each loaded exactly once from the pinned submodules.
+  - Acceptance: the launch planner plans an interactive omp (terminal) launch as well as `omp acp`, with the same plugin set, per-session state directory and environment; the embedded terminal starts omp through the planner with an argument array and the project directory; with the user's own omp configuration present (global `config.yml` extensions and extension symlinks) each plugin is registered once, with unique command names; a missing omp, a missing plugin or an uninitialised submodule shows its fix text while the rest of the application works; if omp cannot be made to load each plugin exactly once, the fallback is recorded in an open-question row.
+  - Verification: planner tests; gate test with a fake executable; a recorded no-model-turn run against a sandbox with a polluted global configuration (Phase 48).
+- [ ] **AL-14**: The connection of each plugin, and of all four together, is verified by a recorded run, and every connection failure is shown to the user.
+  - Acceptance: for each of Ultrathink, Substrate, Swarm and GSD-Core: the plugin is registered with omp, active in the app-started engine session and in the app-started omp terminal, and observable in the session UI to the extent the plugin exposes it (command output, tool calls, stage chips); a load or connect failure is shown with its fix text; starting a session from the application and opening an omp terminal for it shows all four plugins connected.
+  - Verification: per plugin, recorded run output (commands registered, plugin-specific probe) and a degraded-path test; the end-to-end run recorded in the runbook under `docs/runbooks/evidence/` with the live part tagged Live and excluded from the gate (Phase 48).
+- [ ] **AL-15**: A running session can be live-steered from the Agent Panel composer and from its Kanban card.
+  - Acceptance: a steering message sent with send now from the composer or from the card is taken into account by the session before the turn ends; a follow-up queues for the end of the turn; the steering history shows delivered, queued or failed truthfully; the substrate records each steering action as a `note` event with `payload.action` `steer`, and delivery is never attributed to the substrate. The delivery mechanism is an open question with a default recorded in `docs/open-questions.md`.
+  - Verification: tests with a fake omp that records the delivery, fake-gateway tests, and a recorded live run when a model turn is approved (Phases 46, 49).
+- [ ] **AL-16**: Steering that cannot be delivered fails clearly and leaves the session unchanged.
+  - Acceptance: steering a session that ended, disconnected or was never started shows a clear message, leaves the session state unchanged and keeps the message in the composer.
+  - Verification: gate tests (Phase 49).
+- [ ] **AL-17**: The Kanban tab shows each opened session as exactly one task card.
+  - Acceptance: the tab is reachable from the application navigation; each opened session (Agent Panel chat or omp terminal) has one card; opening creates it and closing or ending moves it to its terminal column without removing it silently; card status mirrors the session lifecycle status; selecting a card opens or focuses its session; status updates live without a refresh; a card shows title, model and provider, last activity, status, stale indicator and, when Substrate is reachable, task, graph, lessons count and lease holder, and without Substrate these show as unavailable, never invented.
+  - Verification: gate tests from fake session events, tests with a fake Substrate gateway reachable and unreachable, and a headless UI test (Phase 39).
+- [ ] **AL-18**: The Kanban tab renders every state, is accessible and updates live without breaking reduced motion.
+  - Acceptance: loading skeleton, empty with a way to start a session, error with retry, populated, and disconnected (terminal dropped) distinct from failed; keyboard navigation with visible focus; labels exposed to assistive technology; status never conveyed by colour alone; live updates honour reduced motion; runtime statuses are not draggable and only Backlog and Archived accept drag; a card can steer its session (AL-15).
+  - Verification: one UI test per state, the accessibility walk over the tab and the evidence screenshots (Phase 39).
+- [ ] **AL-19**: The Greptile font (DM Sans body, Anybody display, Space Mono code) is used consistently across the application.
+  - Acceptance: every text control in the Agents layout, the Kanban tab, the Settings window and the terminal chrome resolves its family through the `OmpOS.Font.*` tokens, with no literal family in AXAML; the recorded screenshots show DM Sans.
+  - Verification: a headless test walking those surfaces and the recorded screenshots (Phases 39, 40, 46); the token set and licence notice stay VX-01 (Phase 36).
+- [ ] **AL-20**: The application is a full Cursor desktop clone in UI, capabilities and settings, tracked by the existing inventories, with no addition beyond the Kanban tab and the expanded provider settings.
+  - Acceptance: parity is tracked by ADE-01 to ADE-22, CX-01 to CX-08, VX-01 to VX-10 and the 34-row table in `docs/plans/vision-research/cursor-settings-window.md`; no new inventory is created; the only additions beyond Cursor parity are the Kanban tab (AL-17, AL-18) and the expanded provider settings (VX-05); no plugin enable or disable setting exists until the user confirms.
+  - Verification: the Phase 35 audit of the final tree against those inventories (Phase 35 criterion 4).

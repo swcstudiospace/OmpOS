@@ -1,8 +1,22 @@
 # Phase 30 compatibility and admin: status record
 
-Scope: ADE-21 (VS Code extension compatibility) and ADE-22 (admin, analytics and team controls). Status as of 2026-10-22, at HEAD 9e5913d.
+Scope: ADE-21 (VS Code extension compatibility) and ADE-22 (admin, analytics and team controls). Re-recorded on 2026-10-26 at HEAD ccba1c1 (working tree with uncommitted changes from other teams). The first record is dated 2026-10-22 at HEAD 9e5913d; its figures stay below as history and are marked.
 
 This record states status only. Nothing in it is built, run or deployed by this document. Phase 30 has no plan files yet (`.planning/ROADMAP.md`: Plans TBD).
+
+## Re-record at HEAD ccba1c1 (2026-10-26)
+
+| Item | Status on 2026-10-26 | Evidence |
+| --- | --- | --- |
+| Criterion 1: XP-09 plugin host contract tests pass at HEAD | MET at 9e5913d; gate result for the current HEAD to be recorded by the orchestrator gate run | The XP-09 tests are `tests/OmpOS.Contracts.Tests/Plugins/ContractsUiFreeTests.cs` and `tests/OmpOS.Harness.Plugins.Tests/{PluginHostLoadTests,PluginManifestParserTests,PluginQuarantineTests,HookRunnerTests}`. They were read, not run, for this re-record. |
+| Criterion 2: Phase 26 criterion 4 cloud runs live on the hosted API | NOT MET: ADE-22 stays deferred | Phase 26 criterion 4 is NOT STARTED: `docs/api/openapi.json` has `/sessions`, `/sessions/{id}`, `/prompts`, `/tool-approvals/{requestId}` and `/events` only, and nothing returns a run diff or output. Railway deploys are paused and the sign-in authority is not configured (`docs/runbooks/hosting.md`, Known blockers 5 and 1). Tracked in OQ-61 and OQ-70. |
+| Criterion 3: ADE-21 compatibility report | NOT STARTED, blocked on the owner scope decision | OQ-60. A report with no rows would be a placeholder, so none is built. |
+| Criterion 4: ADE-22 contract tests | NOT STARTED, deferred | Criterion 2 is unmet. |
+| Criterion 5: no stub endpoint or placeholder control | MET by repository search, and now guarded by a test | A case-insensitive search of `src`, `services`, `apps` and `tests` (`.cs`, `.axaml`, `.razor`, `.csproj`) and `docs/api/openapi.json` for the two item identifiers and `vscode` found no match on 2026-10-26. The guard test is `DeferredScopeTests.DeferredAdeItemsShipNoCodeIdentifiers` in `tests/OmpOS.ArchitectureTests/DeferredScopeTests.cs`; its result is to be recorded by the orchestrator gate run. |
+
+Gate result for the current HEAD (test total, failed, skipped): to be recorded by the orchestrator gate run.
+
+## First record (2026-10-22, HEAD 9e5913d)
 
 ## Sources
 

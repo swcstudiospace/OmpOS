@@ -1,8 +1,33 @@
 # Phase 46: Agent Panel - Context
 
+> **Amended 2026-10-26 by DR-1** (user direction of 2026-10-26, recorded in `docs/decisions/ADR-0012-agent-loop-plugins.md`, section "Update 2026-10-26"). There is no additional Agent Panel: the default Cursor-style Agent Panel is the agent panel, and it has no inspector. The body below is the original specification and is not rewritten. Where the body describes a region, control or screenshot listed as Superseded in the table, the table governs. The rewritten Phase 46 goal and criteria live in `.planning/ROADMAP.md` and `.planning/REQUIREMENTS.md` (AL-09, AL-12).
+
 **Gathered:** 2026-10-26
 **Status:** Ready for planning
 **Mode:** Autonomous. No user was available. The program brief and the Agent Loop design (milestone v0.14.0) are the spec. Every choice the sources left open is listed under Assumptions with its default.
+
+## Amendments
+
+| Region, control or item | Status | Reason | Where its content goes |
+| --- | --- | --- | --- |
+| Inspector region (third column, `InspectorHost`, `InspectorTabs`, 320 px, first-run open or collapsed rule) | Superseded | DR-1: no second agent surface. The default panel has rail, thread and composer only. | Nowhere as a region. Its tab content is placed as noted in the next three rows. |
+| Pipeline tab (`Pipeline details`: stage blocks, rows, Effect lines, Retry stage, Run summary) | Superseded | DR-1. | The one-line plugin connection row keeps the per-plugin status and the fix text of an unavailable or degraded plugin (D8 copy). Stage-row detail has no home in the default panel; observability per plugin is verified in Phase 48. |
+| Context tab (`Task context details`: task, Kanban status, phase, notes, lessons, warnings) | Superseded | DR-1. | The Kanban card (task context), Phase 39 decisions D39-5 to D39-9. |
+| Steering history tab (`Steering history entries`) | Superseded | DR-1. | The Kanban card (steering history), Phase 39 and Phase 49. |
+| Inspector toggle (`InspectorToggle`), `Ctrl+Shift+I`, `Ctrl+3`, the inspector step of `F6`, Left and Right and Home and End on the inspector tab header, the inspector focus rules, inspector open and close motion | Superseded | They exist only to operate the inspector. | Removed. `F6` cycles rail and thread only; `Ctrl+1` and `Ctrl+2` are unchanged. |
+| Actions that open the inspector: task chip (opens the Context tab), pipeline strip button (opens the Pipeline tab), `Show pipeline` in the panel notice | Superseded (action only) | Their target no longer exists. The chip, the strip and the notice stay. | Whether the task chip navigates to the task's Kanban card is for Phase 39 and the rewritten Phase 46 to decide. |
+| Layout measurements and responsive rules for the inspector (three-column grid, 1200 px threshold, `OmpOS.Size.InspectorWidth`) | Superseded | No third column. The 960 x 640 window minimum of assumption 1 stays. | Two-column layout, rail and thread. |
+| Assumption 9 (Pipeline tab aggregate rows when Substrate emits no per-event rows) | Superseded | The Pipeline tab is gone. | The same question applies to the Kanban card's Substrate fields (Phase 39). |
+| Open item "Where do users switch Ultrathink, Swarm and Substrate on?" | Superseded | DR-5(c): the four plugins are always on; no settings item is added. | `docs/open-questions.md`, OQ-80. |
+| Success criterion 1 (default window shows rail, thread, pipeline strip, composer and inspector) and AL-09 acceptance (collapsible inspector) | Superseded | DR-1. | Rewritten Phase 46 criterion in `.planning/ROADMAP.md`: the application opens on rail, thread and composer, with no second agent surface and no inspector. |
+| Success criterion 3 wording "appears in the steering history" | Superseded | The steering history is on the Kanban card. Live delivery is the requirement (DR-4). | Phase 39 and Phase 49; AL-07 is reworded in `.planning/REQUIREMENTS.md`. |
+| Success criterion 6 and AL-12: eight screenshots | Superseded (the inspector ones) | Screenshots 1, 2, 3, 4 and 6 of `46-UI-SPEC.md` show the inspector or the Pipeline tab. | Re-recorded without the inspector. Screenshots 5, 7 and 8 are kept as specified. |
+| Session rail (the Agents sidebar), including rows, groups, filter, New agent and the Tools view | Kept | It is Cursor's Agents sidebar. | Unchanged. |
+| Thread: header, transcript, banners, notices, confirmation bars | Kept | Part of the default panel. | Unchanged. |
+| Composer with Send, Steer, Follow-up and Stop (Cursor-style queue and send now) | Kept | Part of the default panel. Live steering (Phase 49) changes delivery, not the controls. | Unchanged. |
+| Header chips: status, task, graph, steering badge | Kept | Part of the default panel header. | Unchanged. |
+| One-line plugin connection row (the pipeline strip) directly under the header, with its live region | Kept | Part of the default panel header, not a panel. | Unchanged, apart from the actions listed above. |
+| Success criteria 2, 4, 5 and 7 (concurrent sessions, state copy, accessibility and the gate), AL-10 and AL-11 | Kept | Unaffected by DR-1, with every inspector control removed from the accessibility walk. | Unchanged. |
 
 <domain>
 ## Phase Boundary

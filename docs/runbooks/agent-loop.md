@@ -85,6 +85,27 @@ Check in the output: `session/new` succeeded; the command list includes `swarm`,
 
 In the test suite the same check is the exact-argument and environment assertions on the launch planner; those need no omp process.
 
+## Evidence to record
+
+Empty on purpose: nothing below has been run. Tick an item only with a recorded run (command, output, date) saved under `docs/runbooks/evidence/`; record no figure that was not measured. Target behaviour: [plugins.md, Plugins in omp terminals](../plugins.md#plugins-in-omp-terminals). Criteria: Phase 48 in `.planning/ROADMAP.md`. None of these runs needs a model turn, except the part tagged Live, which is excluded from the gate.
+
+Per plugin (Ultrathink, Substrate, Swarm, GSD-Core), one block each:
+
+- [ ] Ultrathink: registered with omp (commands listed, no command twice); active in the app-started engine session; active in the app-started omp terminal; observable in the session UI as far as the plugin exposes it; load failure shows its fix text (degraded-path test).
+- [ ] Substrate: same five items.
+- [ ] Swarm: same five items.
+- [ ] GSD-Core: same five items.
+
+Exactly once:
+
+- [ ] Run against a sandbox whose global omp configuration is polluted (global `config.yml` extensions, extension symlinks): each plugin is registered once in the process the application starts, with unique command names.
+- [ ] If omp cannot be made to load each plugin once: the fallback is recorded in an open question ([OQ-82](../open-questions.md)).
+
+End to end:
+
+- [ ] Start a session from the application, open an omp terminal for it, and record that all four plugins show as connected.
+- [ ] The live part of that run is tagged Live.
+
 ## Known limits
 
 - No live Ultrathink progress. Its session file is written once planning finishes ([OQ-67](../open-questions.md)).
@@ -92,7 +113,7 @@ In the test suite the same check is the exact-argument and environment assertion
 - Loopback model discovery. Every `omp acp` start probes `127.0.0.1:11434`, `:8080` and `:1234` (ollama, llama.cpp, lm-studio) and logs `model discovery failed`. Whether this can be disabled is UNKNOWN: read `src/config/model-discovery.ts` in the installed `@oh-my-pi/pi-coding-agent` package, then try a `--config` overlay.
 - Substrate status extension polling. With `SUBSTRATE_URL` unset it polls `127.0.0.1:7410`. OmpOS omits both substrate extensions when Substrate is disabled or unhealthy.
 - An intermittent outbound HTTPS connection (TCP/443 to Cloudflare addresses) was seen in 2 of about 45 probe runs and not reproduced in 13 reruns. Its purpose is UNKNOWN ([OQ-65](../open-questions.md)).
-- Steering is recorded in Substrate, not delivered by it ([OQ-66](../open-questions.md)).
+- Steering is recorded in Substrate, not delivered by it ([OQ-66](../open-questions.md)). Over ACP a steer is queued after the active turn, which is the fallback; live delivery is the requirement and its mechanism is open ([OQ-81](../open-questions.md)).
 - Whether omp follows symlinked `agents/*.md` for `gsd-core-omp` is unconfirmed ([OQ-64](../open-questions.md)).
 - Behaviour of `/ultrathink-status`, `/swarm` and `/substrate` when executed was not verified; only their registration was.
 - Whether several concurrent `omp acp` processes share one `agent.db` safely was not stress-tested.

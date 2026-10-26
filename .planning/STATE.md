@@ -29,6 +29,14 @@ Plan: 21-01 complete. Phase 22 partial: criterion 1 met on the XWayland path (20
 Status: Paused for one owner decision: how to proceed while Phase 22 criteria 3 to 5 remain blocked. The repo gate is green on the uncommitted working tree (bootstrap OK, 2240 passed, 0 failed, 0 skipped). Nothing is committed.
 Last activity: 2026-10-24 - autonomous run: gate baseline repaired, lock files regenerated, Phase 20 verified, Phase 21 completed with owner decisions F1 to F3 implemented and independently reviewed, headless Wayland probe run for Phase 22 criterion 1, records reconciled.
 
+## Direction Update 2026-10-26 (ultrathink graph ut-mvp88pnw-6e8c4d24)
+
+The owner restated the product (chat message of 2026-10-26): OmpOS is Cursor desktop cloned in full (UI, capabilities, settings) with the Greptile font, running our own agent on the Omp Engine with four plugins (Ultrathink, Substrate, Swarm, GSD-Core). The Agent Panel is the default Cursor-style panel and no additional panel is wanted. The only additions are expanded provider settings and the Kanban tab, one task card per opened session, where Substrate shows its power; every session can be live-steered. The four plugins must be connected to every omp process the app starts, including the omp terminals.
+
+Recorded as DR-1 to DR-6 in ROADMAP.md (v0.14.0, revised 2026-10-26) and in requirements AL-07, AL-09, AL-11 to AL-20; new Phases 48 (omp terminals with the four plugins) and 49 (live steering); Phases 33, 39, 40 extended; ADR-0012 carries an update section; open questions OQ-78 to OQ-82 hold the defaults in force (columns mirror the lifecycle status, a closed session moves its card to its terminal column, the plugins are always on, live delivery by an omp extension inbox, per-process plugin flags). The inspector of the Phase 46 design is superseded; its context and steering content moves to the Kanban card.
+
+Ledger corrections: the line "Nothing is committed" above is stale. The earlier ship hold is lifted by the owner's instruction to push to main. Phases 25.5 to 25.8 and the plugin submodules, launch planner, stage observers, session registry and panel models are committed on `feat/v0.9.2-hardening` (6080d0a to ccba1c1, gate at ccba1c1: bootstrap OK, 3120 passed, 0 failed, 0 skipped). An unknown local process committed the whole working tree as "Weekly update" (324f0df, 10:29 UTC) while the Wave B agents worked; the commit was never pushed and was split into the phase-named commits by a soft reset.
+
 ## Autonomous Run 2026-10-24 (ultrathink graph ut-mvlj2cdc-609d7b5b)
 
 Scope: the active milestone is v0.10.0. The STATE frontmatter and ROADMAP agreed on it. Phases 20 to 25 are the milestone's phases. Phases 20 and 21 are complete. Phase 22 is blocked on external hosts, and the rest are partial or blocked, as the queue records.

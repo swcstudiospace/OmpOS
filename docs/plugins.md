@@ -1,6 +1,6 @@
 # Plugins
 
-OmpOS runs four plugins inside the omp engine. Three are sibling projects pinned as git submodules under `plugins/`; one is first-party and tracked in this repository. All four are omp extensions: OmpOS launches `omp acp` with them, observes what they write, and renders it in the Agent Panel. OmpOS never copies, forks or edits their source. Decision record: [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md). Evidence: [docs/plans/agent-loop/](plans/agent-loop/README.md).
+OmpOS runs four plugins inside the omp engine. Three are sibling projects pinned as git submodules under `plugins/`; one is first-party and tracked in this repository. All four are omp extensions: OmpOS launches omp with them, observes what they write, and shows what they expose in the default Cursor-style Agent Panel (session rail, thread, composer, and the one-line plugin connection row under the thread header). The panel has no stage panels or inspector of its own (DR-1, [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md#update-2026-10-26)); task context and steering history belong on the Kanban tab card (Phase 39). The target is that the plugins are connected to every omp process the application starts, engine sessions over ACP and omp terminals, as described in "Plugins in omp terminals" below. OmpOS never copies, forks or edits their source. Decision record: [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md). Evidence: [docs/plans/agent-loop/](plans/agent-loop/README.md).
 
 ## The loop
 
@@ -107,6 +107,20 @@ Per-session environment, from `SessionStateLayout`, with state under `<stateRoot
 
 `OMPOS_PLUGINS_ROOT` overrides the plugins directory. Otherwise OmpOS uses `plugins/` next to the repository root, found from the executable or the current directory.
 
+## Plugins in omp terminals
+
+This section states a target, not a result. No recorded run shows it working or failing yet; it is verified in Phase 48 (criteria in [.planning/ROADMAP.md](../.planning/ROADMAP.md), decision D44-8 in `.planning/phases/44-plugin-submodules-launch-contract/44-CONTEXT.md`).
+
+Target behaviour (DR-2):
+
+- The launch planner plans an interactive omp (terminal) launch as well as `omp acp`, with the same plugin set, per-session state directory and environment as in the Launch contract above.
+- The embedded terminal starts omp through the planner (argument array, project directory). A missing omp, a missing plugin or an uninitialised submodule shows its fix text while the rest of the application keeps working.
+- Each plugin is registered exactly once in an omp process the application starts, also when the user's own omp configuration is present (global `config.yml` extensions, extension symlinks). If omp cannot be made to load each plugin once, the fallback is recorded in an open question ([OQ-82](open-questions.md)).
+- Each of Ultrathink, Substrate, Swarm and GSD-Core is registered with omp, active in the app-started engine session and in the app-started omp terminal, and observable in the session UI to the extent the plugin exposes it. A load or connect failure is shown with its fix text.
+- Plugins are not connected to an omp terminal the user starts outside the application (the default of [OQ-82](open-questions.md)).
+
+What closes it: one recorded run per plugin, one recorded end-to-end run without a model turn, and a degraded-path test per plugin. The checklist is in the [agent loop runbook](runbooks/agent-loop.md#evidence-to-record).
+
 ## Host requirements
 
 | Plugin | Needs on the host |
@@ -134,7 +148,7 @@ Every degradation is a stage event with status Degraded or Unavailable and a pla
 
 ## Steering
 
-OmpOS owns steering. Operator text is queued over ACP and delivered after the current turn. When Substrate is reachable, OmpOS also records the action as an `events_emit` note with `payload.action` `steer`; the text itself is never sent, only its length and a 12-hex digest prefix. Substrate does not deliver the steer: live delivery (substrate Phase 53) is unmerged ([OQ-66](open-questions.md)).
+OmpOS owns steering. Operator text is queued over ACP and delivered after the current turn. This is the fallback: omp's ACP agent cancels a running turn when a new `session/prompt` arrives, so a prompt cannot deliver live, and live delivery into a running session is the requirement (DR-4, Phase 49). The delivery mechanism is open ([OQ-81](open-questions.md)). When Substrate is reachable, OmpOS also records the action as an `events_emit` note with `payload.action` `steer`; the text itself is never sent, only its length and a 12-hex digest prefix. Substrate does not deliver the steer: live delivery (substrate Phase 53) is unmerged ([OQ-66](open-questions.md)).
 
 ## Licence facts
 
