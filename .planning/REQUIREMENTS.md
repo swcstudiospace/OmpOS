@@ -306,6 +306,9 @@ Source: ADR-0004 (accepted 2026-10-21; reversible through gate G-WEB); `docs/pla
 | AL-18 | 39 | v0.13.0 Cursor 1:1 workspace and provider platform, Kanban tab (added 2026-10-26) |
 | AL-19 | 39, 40, 46 | v0.13.0 and v0.14.0 (added 2026-10-26; tokens and licence stay VX-01, Phase 36) |
 | AL-20 | 35 | v0.12.0 Cursor parity and quality bar (added 2026-10-26; tracked by the existing inventories) |
+| AL-21 | 50 | v0.14.0 (added 2026-10-26; Dark default theme and theme choice) |
+| AL-22 | 50 | v0.14.0 (added 2026-10-26; control library, density and layouts) |
+| AL-23 | 50 | v0.14.0 (added 2026-10-26; static Greptile faces) |
 
 ## Cursor parity and quality bar (CX, v0.12.0, planned 2026-10-22)
 
@@ -435,3 +438,12 @@ Source: user request 2026-10-26 and ultrathink plan graph ut-mvp0bh59-2dd6ef4c. 
 - [ ] **AL-20**: The application is a full Cursor desktop clone in UI, capabilities and settings, tracked by the existing inventories, with no addition beyond the Kanban tab and the expanded provider settings.
   - Acceptance: parity is tracked by ADE-01 to ADE-22, CX-01 to CX-08, VX-01 to VX-10 and the 34-row table in `docs/plans/vision-research/cursor-settings-window.md`; no new inventory is created; the only additions beyond Cursor parity are the Kanban tab (AL-17, AL-18) and the expanded provider settings (VX-05); no plugin enable or disable setting exists until the user confirms.
   - Verification: the Phase 35 audit of the final tree against those inventories (Phase 35 criterion 4).
+- [ ] **AL-21**: The application starts in the Dark theme and Settings > General offers System, Light and Dark; the choice persists.
+  - Acceptance: `RequestedThemeVariant` is Dark by default; the General page saves System, Light or Dark and the running window follows it; views that build colours in code re-read the tokens on a change; every text and non-text colour pair meets its contrast requirement in both variants.
+  - Verification: theme preference tests, `ThemeContrastTests` in both variants, and the screenshots in `docs/runbooks/evidence/ui-parity-2026-10-26/after-dark/` and `after-light/` (Phase 50).
+- [ ] **AL-22**: Controls, density and layouts follow the design specification `docs/plans/ui-parity/cursor-agents-window-parity.md` and keep the accessibility contract.
+  - Acceptance: buttons, inputs, toggles, tabs, list rows, chips, scrollbars, tooltips and menus are styled from OmpOS tokens; desktop controls use 32 px targets and none is smaller than 24 by 24 px; the skip link is hidden until it has focus; the rail, thread, composer, Kanban tab, omp terminal and Settings window follow section 4 of the specification; x:Name values, accessible names, tab order, the focus ring, reduced motion and the keyboard map are unchanged.
+  - Verification: control style, density and skip link tests, `KeyboardFocusTests`, `AccessibilityNameTests`, `ReducedMotionTests`, and the screenshot set (Phase 50).
+- [ ] **AL-23**: The Greptile faces are bundled as static instances and used by role: DM Sans for interface text, Anybody for display headings of 20 px and above only, Space Mono for code and identifiers.
+  - Acceptance: the font files and their licence texts are in the application assets; no Thin weight renders; every `OmpOS.Font.Display` use is 20 px or larger and semibold or heavier; no literal family exists in AXAML (AL-19).
+  - Verification: `FontResourceTests`, a typography markup test and the recorded screenshots (Phase 50).

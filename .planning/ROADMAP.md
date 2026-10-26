@@ -903,6 +903,7 @@ Revision 2026-10-26 (source: the user message of 2026-10-26; the shared decision
 - [ ] **Phase 47: Agent Panel on the Web Head** - deferred: the hosted API runs the InMemory harness and Railway deploys are paused
 - [ ] **Phase 48: Omp Terminals with the Four Plugins** - the launch planner plans interactive omp launches, the embedded terminal starts omp through it, the four plugins load exactly once in every app-started omp process, per-plugin and end-to-end connection evidence
 - [ ] **Phase 49: Live Steering** - a running session takes a steering message from the Agent Panel composer and from its Kanban card, delivery is reported truthfully, failures leave the session unchanged and Substrate records the action
+- [ ] **Phase 50: Cursor Visual Parity** - dark default theme with a System, Light and Dark choice, the control library on OmpOS tokens, static Greptile faces, compact density, a skip link that shows on focus, and the Cursor Agents-window layout for the rail, thread, composer, Kanban tab, omp terminal and Settings window, with before and after screenshots
 
 ### Phase 44: Plugin Submodules and Launch Contract
 **Goal**: The three sibling projects are pinned submodules, GSD-Core is an omp plugin, and OmpOS can launch omp with the four plugins loaded, hermetically and reproducibly.
@@ -996,4 +997,21 @@ Revision 2026-10-26 (source: the user message of 2026-10-26; the shared decision
   3. Steering a session that ended, disconnected or was never started fails with a clear message, leaves the session state unchanged and keeps the message in the composer. Verify: gate tests.
   4. Substrate records each steering action (the existing `events_emit` note with `payload.action` `steer`); delivery is never attributed to Substrate. Verify: fake-gateway test asserting the note payload and that the delivery outcome comes from OmpOS.
   5. The gate is green. Verify: `./bootstrap.sh`.
+**Plans**: TBD
+
+### Phase 50: Cursor Visual Parity
+**Goal**: The application looks and feels like Cursor's Agents window, set in the Greptile typefaces, and keeps its accessibility contract: Dark by default, a styled control library, compact density, and layouts for every view that match the design specification.
+**Requirements**: AL-21, AL-22, AL-23
+**Depends on**: Phases 39, 40, 46, 48 (the views it restyles)
+**Mac channel**: No.
+**UI hint**: yes
+**Status (2026-10-26)**: planned from the design specification `docs/plans/ui-parity/cursor-agents-window-parity.md` (15 landing steps, written from screenshots of the running application in `docs/runbooks/evidence/ui-parity-2026-10-26/before/`). Owner questions O1 to O8 of the specification are answered by its recorded defaults, except O2: the native window frame stays on every platform and a custom title bar is deferred, because it cannot be verified on this host (OQ-87 to OQ-90).
+**Success Criteria** (what must be TRUE):
+  1. The Greptile faces are bundled as static instances (DM Sans regular, medium and semibold; Anybody semibold; Space Mono regular and bold) with their licences; Anybody is used only at 20 px and above and never thin. Verify: `FontResourceTests` and a typography markup test.
+  2. The application starts in the Dark theme, Settings > General offers System, Light and Dark, the choice persists, and views that build colours in code re-read the tokens when it changes. Verify: theme preference tests and `ThemeContrastTests` green in both variants with every colour role of the specification.
+  3. Buttons, inputs, toggles, tabs, list rows, chips, scrollbars, tooltips and menus are styled from OmpOS tokens through the Fluent resource aliases; no control shows unthemed default chrome. Verify: control style tests in both variants and the screenshot set.
+  4. Desktop controls use 32 px targets (Android keeps its larger target value) and every interactive control is at least 24 by 24 px (WCAG 2.2 AA, 2.5.8); the skip link is hidden until it has focus and stays first in the tab order. Verify: density and skip link tests.
+  5. The rail, thread header and plugin connection row, transcript blocks, composer with the model chip, omp terminal, Kanban tab and Settings window follow section 4 of the specification. Verify: screenshots 01 to 05 at 1280 by 800 in Dark and Light and at 960 by 640, recorded in `docs/runbooks/evidence/ui-parity-2026-10-26/after-dark/` and `after-light/`.
+  6. The accessibility contract is unchanged: x:Name values, accessible names, tab order, the 2 px focus ring, reduced motion and the keyboard map. Verify: `KeyboardFocusTests`, `AccessibilityNameTests`, `ReducedMotionTests`, `PanelMarkupTests` green.
+  7. The gate is green. Verify: `./bootstrap.sh`.
 **Plans**: TBD
