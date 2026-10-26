@@ -3,7 +3,6 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using OmpOS.Native.Agents;
-using OmpOS.Presentation;
 
 namespace OmpOS.Native;
 
@@ -78,7 +77,9 @@ internal partial class App : Application
         {
             var head = _headFactory();
             _head = head;
-            desktop.MainWindow = new MainWindow(head.Panel, MotionPreference.System, Environment.CurrentDirectory, head.Board);
+            var window = new MainWindow(head.Panel, head.Settings.Motion, Environment.CurrentDirectory, head.Board);
+            head.Settings.Attach(window);
+            desktop.MainWindow = window;
             desktop.ShutdownRequested += OnShutdownRequested;
             _initialisation = head.InitializeAsync(CancellationToken.None);
         }

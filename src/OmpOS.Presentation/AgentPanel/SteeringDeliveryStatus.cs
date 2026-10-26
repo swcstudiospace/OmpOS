@@ -17,4 +17,7 @@ public enum SteeringDeliveryStatus
 
     /// <summary>The message did not reach the session: the channel was unavailable, or omp rejected or failed to take it.</summary>
     Failed = 4,
+
+    /// <summary>omp took the message while the session had no running turn, so it started a new turn from the message instead of steering one.</summary>
+    DeliveredStartedNewTurn = 5,
 }

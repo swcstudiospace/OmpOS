@@ -62,6 +62,37 @@ public sealed class ShellAgentsTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
+    /// <summary>
+    /// The Settings button is the last stop of the rail: Tab from the last tool toggle reaches it, and Enter on it asks for the Settings
+    /// window. It follows the Tools view toggles in the tab order documented in MainView.axaml.
+    /// </summary>
+    [Fact]
+    public async Task TheSettingsButtonIsTheLastTabStopOfTheRail()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            var window = ShellHarness.Show();
+            var main = ShellHarness.MainViewOf(window);
+            ShellHarness.ShowToolsView(window);
+            var exportToggle = main.FindControl<ToggleButton>("ExportToggle")!;
+            var settings = main.FindControl<Button>("SettingsButton")!;
+            var requested = 0;
+            main.SettingsRequested += (_, _) => requested++;
+
+            exportToggle.Focus();
+            ShellHarness.Press(window, Key.Tab, PhysicalKey.Tab);
+
+            settings.IsFocused.ShouldBeTrue("the Settings button follows the last tool toggle");
+            AutomationProperties.GetName(settings).ShouldBe("Settings");
+            ShellHarness.Press(window, Key.Enter, PhysicalKey.Enter);
+            requested.ShouldBe(1);
+
+            ShellHarness.Press(window, Key.Tab, PhysicalKey.Tab);
+            settings.IsFocused.ShouldBeFalse("nothing in the rail follows the Settings button");
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
     /// <summary>The shell's Agents view is the view of the window's own view model, and it draws the window's own registry.</summary>
     [Fact]
     public async Task TheAgentsViewDrawsTheWindowsRegistryThroughTheWindowsModel()

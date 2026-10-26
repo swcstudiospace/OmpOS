@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.Extensions.Logging;
 using OmpOS.Contracts.Agents;
 using OmpOS.Harness.AgentLoop.Steering;
+using OmpOS.Native.Views.Kanban;
 using OmpOS.Presentation.Kanban;
 
 namespace OmpOS.Native.Agents;
@@ -91,6 +92,12 @@ internal sealed class HeadCardSteering : ICardSteering
         if (ack is null)
         {
             return CardSteerResult.Queued("Sent; omp has not acknowledged it yet.");
+        }
+
+        if (ack is { Status: SteeringAckStatus.Delivered, Idle: true })
+        {
+            // No turn was running, so omp started a new turn from the message instead of steering one. A follow-up is no different.
+            return CardSteerResult.Delivered(KanbanCopy.SteerStartedNewTurn);
         }
 
         var time = _host.Now.UtcDateTime.ToString("HH:mm:ss 'UTC'", CultureInfo.InvariantCulture);

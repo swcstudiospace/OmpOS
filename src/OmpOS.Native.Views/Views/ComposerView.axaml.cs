@@ -27,6 +27,7 @@ internal partial class ComposerView : UserControl
     private int _inFlight;
     private RunInputScheduler? _runs;
     private SteeringInputModel? _steering;
+    private ComposerViewModel? _composer;
 
     /// <summary>Creates the composer with no data context and no run input.</summary>
     public ComposerView()
@@ -37,6 +38,7 @@ internal partial class ComposerView : UserControl
         SendButton.Click += OnSendClick;
         FollowUpButton.Click += OnFollowUpClick;
         StopButton.Click += OnStopClick;
+        ModelPicker.FocusReturnRequested += OnModelPickerFocusReturn;
         RefreshRunState();
     }
 
@@ -128,16 +130,38 @@ internal partial class ComposerView : UserControl
     /// <summary>Moves keyboard focus to the prompt.</summary>
     public void FocusPrompt() => PromptInput.FocusWhenReady();
 
-    /// <summary>Copies the draft into the prompt when the data context changes.</summary>
+    /// <summary>Gets the model chip of the footer. It is hidden until the composer carries a model picker that has something to offer.</summary>
+    internal ModelPickerView ModelChip => ModelPicker;
+
+    /// <summary>Copies the draft into the prompt and binds the model chip when the data context changes.</summary>
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
 
-        if (DataContext is ComposerViewModel composer)
+        if (_composer is not null)
         {
-            SyncPrompt(composer);
+            _composer.PropertyChanged -= OnComposerChanged;
+        }
+
+        _composer = DataContext as ComposerViewModel;
+        if (_composer is not null)
+        {
+            _composer.PropertyChanged += OnComposerChanged;
+            SyncPrompt(_composer);
+        }
+
+        ModelPicker.DataContext = _composer?.ModelPicker;
+    }
+
+    private void OnComposerChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.Equals(e.PropertyName, nameof(ComposerViewModel.ModelPicker), StringComparison.Ordinal))
+        {
+            ModelPicker.DataContext = _composer?.ModelPicker;
         }
     }
+
+    private void OnModelPickerFocusReturn(object? sender, EventArgs e) => FocusPrompt();
 
     private bool RunIsActive => _runs is { IsRunActive: true };
 

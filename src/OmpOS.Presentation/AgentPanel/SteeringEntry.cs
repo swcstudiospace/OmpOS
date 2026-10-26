@@ -69,6 +69,7 @@ public sealed class SteeringEntry : ObservableModel
     public string DeliveryText => DeliveryStatus switch
     {
         SteeringDeliveryStatus.Delivered => AgentPanelCopy.DeliveryDelivered,
+        SteeringDeliveryStatus.DeliveredStartedNewTurn => AgentPanelCopy.DeliveryStartedNewTurn,
         SteeringDeliveryStatus.HeldUntilTurnEnds => AgentPanelCopy.DeliveryHeld,
         SteeringDeliveryStatus.SentNotAcknowledged => AgentPanelCopy.DeliverySentNotAcknowledged,
         SteeringDeliveryStatus.Failed => AgentPanelCopy.DeliveryFailed(FailureReason),

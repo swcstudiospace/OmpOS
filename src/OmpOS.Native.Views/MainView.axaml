@@ -1,5 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:OmpOS.Native"
+             xmlns:set="clr-namespace:OmpOS.Presentation.Settings;assembly=OmpOS.Presentation"
              x:Class="OmpOS.Native.MainView">
 
   <UserControl.Styles>
@@ -80,7 +82,7 @@
                           AutomationProperties.Name="Tools view" />
           </StackPanel>
 
-          <Grid>
+          <Grid RowDefinitions="*,Auto">
             <ContentControl x:Name="RailHost" />
 
             <!-- The Tools view of the rail: every toggle that opens a tool or a panel. It stands in for the session list while Tools is checked. -->
@@ -172,6 +174,16 @@
                               AutomationProperties.Name="Transcript export" />
               </StackPanel>
             </ScrollViewer>
+
+            <!-- The rail footer: opens the Settings window. It is the last stop of the rail, after the session list or the tool toggles. Ctrl+, does the same from anywhere. -->
+            <Button x:Name="SettingsButton"
+                    Grid.Row="1"
+                    Content="{x:Static set:SettingsCopy.WindowTitle}"
+                    Margin="{DynamicResource OmpOS.Space.Xs}"
+                    HorizontalAlignment="Stretch"
+                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                    ToolTip.Tip="{x:Static local:MainView.SettingsTooltip}"
+                    AutomationProperties.Name="{x:Static set:SettingsCopy.WindowTitle}" />
           </Grid>
 
         </DockPanel>

@@ -1,3 +1,5 @@
+using OmpOS.Presentation.AgentPanel;
+
 namespace OmpOS.Native.Views.Kanban;
 
 /// <summary>
@@ -56,6 +58,9 @@ internal static class KanbanCopy
 
     /// <summary>The label of the card's steer button.</summary>
     public const string Steer = "Steer";
+
+    /// <summary>The result of a steering message that reached a session with no running turn: omp started a new turn from it.</summary>
+    public const string SteerStartedNewTurn = AgentPanelCopy.DeliveryStartedNewTurn;
 
     /// <summary>The tooltip of the steer button.</summary>
     public const string SteerTip = "Steer this session (S)";

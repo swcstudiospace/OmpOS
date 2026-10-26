@@ -54,6 +54,33 @@ public sealed class CardSteeringTests
         record!.Lifecycle.ShouldBe(SessionLifecycle.Created);
     }
 
+    /// <summary>
+    /// A message omp took while the session had no running turn started a new turn: the card says exactly that, as Delivered, for a steer and
+    /// for a follow-up. A message omp took into a running turn keeps its plain wording.
+    /// </summary>
+    [Theory]
+    [InlineData(CardSteerMode.SendNow)]
+    [InlineData(CardSteerMode.FollowUp)]
+    public async Task AMessageThatStartedANewTurnIsReportedAsExactlyThat(CardSteerMode mode)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var tree = new TempTree();
+        var head = AgentHead.Create(Options(tree, new ScriptedOmp()));
+        await using var headLifetime = head.ConfigureAwait(true);
+        await head.InitializeAsync(ct).ConfigureAwait(true);
+        var (id, directory) = await NewSessionAsync(head, ct).ConfigureAwait(true);
+        FakeSteerPlugin.WriteAlive(directory, DateTimeOffset.UtcNow);
+        var steering = new HeadCardSteering(head.Host);
+
+        var acknowledging = FakeSteerPlugin.AckNextAsync(directory, "delivered", null, ct, idle: true);
+        var result = await steering.SteerAsync(id, Text, mode, ct).ConfigureAwait(true);
+        await acknowledging.ConfigureAwait(true);
+
+        result.Outcome.ShouldBe(CardSteerOutcome.Delivered);
+        result.Message.ShouldBe("Delivered. The turn had already ended, so omp started a new turn from your message.");
+        result.Message.ShouldNotContain(Text, Case.Sensitive);
+    }
+
     /// <summary>A follow-up that omp took is reported Queued for the end of the turn, never Delivered into the running turn, and travels as a follow-up directive.</summary>
     [Fact]
     public async Task AFollowUpThatOmpTookIsReportedQueued()

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using OmpOS.Contracts.Agents;
+using OmpOS.Harness.AgentLoop.Launch;
 
 namespace OmpOS.Harness.AgentLoop.Sessions;
 
@@ -39,6 +40,11 @@ internal sealed class AgentSessionStateFile
         new EventId(4, "AgentSessionStateWriteFailed"),
         "The session state file {FileName} could not be written; the in-memory registry is unchanged and the next change retries.");
 
+    private static readonly Action<ILogger, string, Exception?> StateDirectoryNotDeleted = LoggerMessage.Define<string>(
+        LogLevel.Warning,
+        new EventId(5, "AgentSessionStateDirectoryNotDeleted"),
+        "The state directory of session {SessionId} could not be deleted; it stays on disk.");
+
     private readonly string _path;
     private readonly string _stateRoot;
     private readonly TimeProvider _clock;
@@ -61,6 +67,60 @@ internal sealed class AgentSessionStateFile
     /// <param name="id">A valid session identifier.</param>
     /// <returns>The directory path.</returns>
     public string StateDirectoryFor(string id) => Path.Combine(_stateRoot, "sessions", id);
+
+    /// <summary>
+    /// Deletes the state directory of a session: <c>&lt;stateRoot&gt;/sessions/&lt;id&gt;</c>, and nothing else. Only a valid session
+    /// identifier (one safe path segment) names a directory, the directory must be a direct child of <c>&lt;stateRoot&gt;/sessions</c> with
+    /// exactly the identifier as its name, and no link is followed: when <c>sessions</c> itself is a link nothing is deleted, and when
+    /// the entry is a link only the link is removed, never what it points at.
+    /// </summary>
+    /// <param name="id">The session identifier.</param>
+    /// <returns>True when the directory (or the link of that name) was removed; false when there was nothing safe to remove or the removal failed.</returns>
+    public bool DeleteStateDirectory(string id)
+    {
+        if (!SessionStateLayout.IsValidSessionId(id))
+        {
+            return false;
+        }
+
+        var sessions = Path.GetFullPath(Path.Combine(_stateRoot, "sessions"));
+        var directory = Path.GetFullPath(Path.Combine(sessions, id));
+        if (!string.Equals(Path.GetDirectoryName(directory), sessions, StringComparison.Ordinal)
+            || !string.Equals(Path.GetFileName(directory), id, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (new DirectoryInfo(sessions).LinkTarget is not null)
+            {
+                return false;
+            }
+
+            var entry = new DirectoryInfo(directory);
+            if (entry.LinkTarget is not null)
+            {
+                // A link is the entry itself: removing it leaves what it points at untouched.
+                entry.Delete(recursive: false);
+                return true;
+            }
+
+            if (!entry.Exists)
+            {
+                return false;
+            }
+
+            // Directory.Delete(recursive) removes a link inside the tree without entering it.
+            entry.Delete(recursive: true);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            StateDirectoryNotDeleted(_logger, id, null);
+            return false;
+        }
+    }
 
     /// <summary>Loads the records synchronously. A missing file is an empty registry; an invalid file is quarantined first.</summary>
     /// <returns>The records.</returns>

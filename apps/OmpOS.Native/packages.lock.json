@@ -300,6 +300,13 @@
           "OmpOS.Harness.Abstractions": "[1.0.0, )"
         }
       },
+      "ompos.harness.ompconfig": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Harness.OmpLauncher": "[1.0.0, )",
+          "OmpOS.Harness.Secrets": "[1.0.0, )"
+        }
+      },
       "ompos.harness.omplauncher": {
         "type": "Project",
         "dependencies": {
@@ -307,6 +314,12 @@
         }
       },
       "ompos.harness.plugins": {
+        "type": "Project"
+      },
+      "ompos.harness.providers": {
+        "type": "Project"
+      },
+      "ompos.harness.secrets": {
         "type": "Project"
       },
       "ompos.harness.terminal": {

@@ -46,6 +46,7 @@ internal sealed class SessionSlot : IAsyncDisposable
         Stages = new DeferredStageSource(this);
         Context = new DeferredTaskContextSource(this);
         Steering = new FileSteeringChannel(scope.Current.SessionStateDirectory, owner.Clock, owner.SteeringOptions);
+        Models = new SlotModelControl(ConnectModelsAsync);
     }
 
     /// <summary>Gets the session identifier.</summary>
@@ -68,6 +69,9 @@ internal sealed class SessionSlot : IAsyncDisposable
 
     /// <summary>Gets the steering channel of the session: a message put into it reaches the omp plugin of this session's omp process, which acknowledges it. It is used by the composer and by the Kanban card.</summary>
     public ISteeringChannel Steering { get; }
+
+    /// <summary>Gets the model control of the session: it lists the models omp offers and switches the current one, whichever engine the slot holds now. The model chip of a chat session uses it.</summary>
+    public SlotModelControl Models { get; }
 
     /// <summary>Gets or sets the runtime that shows the session. The engine set sets it once, right after it creates the runtime.</summary>
     public AgentSessionRuntime? Runtime { get; set; }
@@ -155,6 +159,8 @@ internal sealed class SessionSlot : IAsyncDisposable
         {
             _engine = null;
         }
+
+        Models.Bind(null);
     }
 
     /// <summary>Records that the session is closed without an engine to stop, so a prompt is refused until the session is reopened. The engine set uses it for a session that was closed before the application started.</summary>
@@ -244,6 +250,7 @@ internal sealed class SessionSlot : IAsyncDisposable
 
         await _lifetime.CancelAsync().ConfigureAwait(false);
         await DisposeEngineAsync(engine).ConfigureAwait(false);
+        Models.Bind(null);
         if (plan is not null)
         {
             try
@@ -267,6 +274,13 @@ internal sealed class SessionSlot : IAsyncDisposable
         }
     }
 
+    /// <summary>Starts the engine session of the slot so that its models are known: composes the engine when needed, then opens its omp session. It starts no prompt.</summary>
+    private async Task ConnectModelsAsync(CancellationToken cancellationToken)
+    {
+        var engine = await EngineAsync(cancellationToken).ConfigureAwait(false);
+        await engine.Host.ConnectAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     private async Task<EngineComposition> ComposeEngineAsync()
     {
         var plan = await PlanAsync(CancellationToken.None).ConfigureAwait(false);
@@ -282,6 +296,8 @@ internal sealed class SessionSlot : IAsyncDisposable
         {
             _engine = engine;
         }
+
+        Models.Bind(engine.Host.Models);
 
         return engine;
     }

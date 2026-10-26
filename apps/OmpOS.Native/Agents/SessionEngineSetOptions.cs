@@ -4,6 +4,7 @@ using OmpOS.Harness.Acp;
 using OmpOS.Harness.AgentLoop.Steering;
 using OmpOS.Harness.OmpLauncher;
 using OmpOS.Harness.Terminal;
+using OmpOS.Native.Settings.Models;
 using OmpOS.Presentation;
 
 namespace OmpOS.Native.Agents;
@@ -67,4 +68,11 @@ internal sealed class SessionEngineSetOptions
     /// sessions have no live channel: a steer or follow-up waits for the end of the running turn and is sent as the next prompt.
     /// </summary>
     public bool LiveSteering { get; init; } = true;
+
+    /// <summary>
+    /// Gets the provider API keys of the providers OmpOS wrote to <c>models.yml</c>, or null for none. They are merged into the environment of
+    /// every omp the set starts (the engine of a chat session and the omp of a terminal session), after planning, so the planner and the plan
+    /// it returns never hold a key.
+    /// </summary>
+    public ProviderKeyEnvironment? ProviderKeys { get; init; }
 }

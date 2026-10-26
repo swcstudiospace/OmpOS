@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:completion="clr-namespace:OmpOS.Native.Views.Completion"
              xmlns:copy="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
+             xmlns:local="clr-namespace:OmpOS.Native.Views"
              xmlns:panel="clr-namespace:OmpOS.Native.Views.AgentPanel"
              x:Class="OmpOS.Native.Views.ComposerView"
              Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
@@ -76,16 +77,25 @@
                  Fill="{DynamicResource OmpOS.Color.TextPrimary}" />
     </Button>
 
-    <!-- The key map in one line. The shell hides it below 720 px of window height. -->
-    <TextBlock x:Name="HintLine"
-               Grid.Row="2"
-               Grid.Column="0"
-               Grid.ColumnSpan="4"
-               Classes="muted"
-               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
-               TextWrapping="Wrap"
-               Text="{x:Static panel:AgentPanelViewText.ComposerHint}"
-               AutomationProperties.Name="{x:Static panel:AgentPanelViewText.ComposerHintName}" />
+    <!-- The footer: the model chip, then the key map in one line. The shell hides the hint below 720 px of window height; the chip stays.
+         The chip is hidden until the session reports a model, and it follows the streaming buttons in the tab order. -->
+    <Grid Grid.Row="2"
+          Grid.Column="0"
+          Grid.ColumnSpan="4"
+          ColumnDefinitions="Auto,*"
+          ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
+      <local:ModelPickerView x:Name="ModelPicker"
+                             Grid.Column="0"
+                             VerticalAlignment="Center" />
+      <TextBlock x:Name="HintLine"
+                 Grid.Column="1"
+                 Classes="muted"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 VerticalAlignment="Center"
+                 Text="{x:Static panel:AgentPanelViewText.ComposerHint}"
+                 AutomationProperties.Name="{x:Static panel:AgentPanelViewText.ComposerHintName}" />
+    </Grid>
 
     <!-- The suggestions box is shown by the shell's Inline suggestions toggle. It is hidden until then, so it is no tab stop before that. -->
     <completion:InlineCompletionBox x:Name="Suggestions"

@@ -61,6 +61,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     private int _disposed;
     private bool _terminalClosed;
     private bool _terminalLost;
+    private readonly ModelPickerBinding? _modelBinding;
 
     /// <summary>Creates the runtime of one session and its view model. It starts no observation: call <see cref="StartObserving"/>.</summary>
     /// <param name="options">What the head supplies.</param>
@@ -77,6 +78,13 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         RunControls = new RunControlsViewModel(options.Approvals);
         Runs = new RunInputScheduler(_queued);
         Composer = new ComposerViewModel(StartTurnAsync, StopTurnAsync);
+        if (options.Models is { } models && options.TerminalStarter is null)
+        {
+            // A terminal runs its own omp, which owns its model: only a chat session offers the model chip.
+            _modelBinding = new ModelPickerBinding(models, options.ConnectModels);
+            Composer.ModelPicker = _modelBinding.Picker;
+        }
+
         ViewModel = new AgentSessionViewModel(new AgentSessionOptions
         {
             Row = options.Row,
@@ -187,6 +195,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         }
 
         RunControls.Approvals.CollectionChanged -= OnApprovalsChanged;
+        _modelBinding?.Dispose();
         if (Terminal is { } terminal)
         {
             terminal.PropertyChanged -= OnTerminalChanged;
@@ -401,6 +410,12 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
 
         if (ack.Status == SteeringAckStatus.Delivered)
         {
+            // The plugin reports whether the session was idle: omp then starts a new turn from the message, and the entry says so.
+            if (ack.Idle == true)
+            {
+                return new SteeringDelivery(SteeringDeliveryStatus.DeliveredStartedNewTurn);
+            }
+
             return new SteeringDelivery(mode == SteeringMode.FollowUp ? SteeringDeliveryStatus.QueuedAfterTurn : SteeringDeliveryStatus.Delivered);
         }
 

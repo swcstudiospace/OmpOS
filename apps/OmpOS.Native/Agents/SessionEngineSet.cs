@@ -225,12 +225,17 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         TimeProvider = _options.TimeProvider,
         Steering = _options.LiveSteering || isTerminal ? slot.Steering : null,
         TerminalStarter = isTerminal ? CreateTerminalStarter(slot) : null,
+
+        // Only a chat session has a model to choose: a terminal's omp owns its own.
+        Models = isTerminal ? null : slot.Models,
+        ConnectModels = isTerminal ? null : slot.Models.ConnectAsync,
     };
 
     private PlannedOmpTerminalStarter CreateTerminalStarter(SessionSlot slot) => new(
         slot,
         () => Registry is { } registry && registry.TryGet(slot.Id, out var record) ? record.ResumeReference : null,
-        new OmpTerminalLauncher(_options.TerminalBackend ?? new LinuxLocalPtyBackend(), _options.TerminalLocator ?? OmpLocatorOptions.FromEnvironment(_options.OmpPath)));
+        new OmpTerminalLauncher(_options.TerminalBackend ?? new LinuxLocalPtyBackend(), _options.TerminalLocator ?? OmpLocatorOptions.FromEnvironment(_options.OmpPath)),
+        _options.ProviderKeys);
 
     /// <summary>
     /// Returns the slot of a session, creating it on first use: its live scope, send path, approval bridge and stage sources. The slot
@@ -334,6 +339,11 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     internal async Task<SessionPlan> BuildPlanAsync(SessionSlot slot, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(slot);
+        if (_options.ProviderKeys is { } providerKeys)
+        {
+            await providerKeys.RefreshAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         var scope = slot.Scope.Current;
         EnsureSessionLayout(scope.SessionStateDirectory);
         var plugins = Plugins;
@@ -386,8 +396,17 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     /// <param name="launch">How omp is launched for the session.</param>
     /// <param name="resumeSessionId">The omp session the first prompt resumes, or null to create a new one.</param>
     /// <returns>The engine. It starts no process until a prompt is submitted.</returns>
-    internal EngineComposition ComposeEngine(OmpLaunchPlan launch, string? resumeSessionId) =>
-        EngineComposition.Compose(_options.AllowedKinds, launch, _options.TransportFactory, _options.LoggerFactory, _options.OmpPath, resumeSessionId);
+    internal EngineComposition ComposeEngine(OmpLaunchPlan launch, string? resumeSessionId)
+    {
+        ArgumentNullException.ThrowIfNull(launch);
+
+        // The provider keys join the environment here, after the planner, so the plan the planner returned never holds a key and its own
+        // Environment stays as planned. The overlay reads the keys when omp is started, so a key saved after this point still reaches it.
+        var effective = _options.ProviderKeys is { } providerKeys
+            ? launch with { Environment = providerKeys.Overlay(launch.Environment) }
+            : launch;
+        return EngineComposition.Compose(_options.AllowedKinds, effective, _options.TransportFactory, _options.LoggerFactory, _options.OmpPath, resumeSessionId);
+    }
 
     /// <summary>Describes what a re-check of one plugin found.</summary>
     /// <param name="plugin">The plugin as it resolves now.</param>

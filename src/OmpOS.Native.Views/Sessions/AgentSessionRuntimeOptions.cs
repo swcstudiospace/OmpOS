@@ -1,4 +1,5 @@
 using OmpOS.Contracts.Agents;
+using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.AgentLoop.Steering;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Views.Terminal;
@@ -58,4 +59,16 @@ public sealed class AgentSessionRuntimeOptions
     /// <see cref="SessionKind.Terminal"/>, the thread shows the terminal view, and <see cref="Prompts"/> is an <see cref="UnconnectedPromptChannel"/>.
     /// </summary>
     public IOmpTerminalStarter? TerminalStarter { get; init; }
+
+    /// <summary>
+    /// Gets the control that reads the models of the session's engine and switches the current one, or null when the session offers none.
+    /// A chat runtime then shows a model chip in its composer; a terminal runtime never does, because its omp owns its model.
+    /// </summary>
+    public IOmpModelControl? Models { get; init; }
+
+    /// <summary>
+    /// Gets the callback that starts the engine session so that <see cref="Models"/> reports its models, or null when the models are known
+    /// without it. The model chip calls it the first time it is opened, so a session that has not sent a prompt still lists its models.
+    /// </summary>
+    public Func<CancellationToken, Task>? ConnectModels { get; init; }
 }

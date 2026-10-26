@@ -8,6 +8,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using OmpOS.Harness.Mcp;
+using OmpOS.Harness.Terminal;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Views;
 using OmpOS.Native.Views.AgentPanel;
@@ -79,6 +80,9 @@ public partial class MainView : UserControl
     /// <summary>The window height under which the composer hint line is hidden (UI-SPEC, Responsive rules).</summary>
     public const double ShortWindowHeight = 720;
 
+    /// <summary>The tooltip of the Settings button in the rail footer.</summary>
+    public const string SettingsTooltip = "Settings (Ctrl+,)";
+
     /// <summary>The level-one heading of a transcript exported from the shell.</summary>
     private const string ExportTitle = "OmpOS session";
 
@@ -104,6 +108,12 @@ public partial class MainView : UserControl
     private bool _kanbanShown;
     private bool _syncingTabs;
     private ToolEntry? _openTool;
+    private ToolEntry? _terminalTool;
+    private bool _terminalSettingsStale;
+    private Transitions? _topTabsTransitions;
+    private Transitions? _agentsTabTransitions;
+    private Transitions? _kanbanTabTransitions;
+    private bool _tabTransitionsRemoved;
     private ToggleButton? _openedBy;
     private bool _syncingTools;
     private bool _syncingRail;
@@ -190,6 +200,7 @@ public partial class MainView : UserControl
         AgentsToggle.IsCheckedChanged += OnAgentsToggleChanged;
         SideChatsToggle.IsCheckedChanged += OnSideChatsToggleChanged;
         SuggestionsToggle.IsCheckedChanged += OnSuggestionsToggleChanged;
+        SettingsButton.Click += OnSettingsClick;
 
         // The editor model is shared by the editor tool and the explorer, which opens files into it.
         EditorModel = new EditorViewModel(_editorTabs);
@@ -213,9 +224,31 @@ public partial class MainView : UserControl
     // The tab strip is the one control of the view the head's styles do not know: it takes no transition under reduced motion.
     private void RemoveTabTransitions()
     {
+        if (_tabTransitionsRemoved)
+        {
+            return;
+        }
+
+        _topTabsTransitions = TopTabs.Transitions;
+        _agentsTabTransitions = AgentsTab.Transitions;
+        _kanbanTabTransitions = KanbanTab.Transitions;
         TopTabs.Transitions = new Transitions();
         AgentsTab.Transitions = new Transitions();
         KanbanTab.Transitions = new Transitions();
+        _tabTransitionsRemoved = true;
+    }
+
+    private void RestoreTabTransitions()
+    {
+        if (!_tabTransitionsRemoved)
+        {
+            return;
+        }
+
+        TopTabs.Transitions = _topTabsTransitions;
+        AgentsTab.Transitions = _agentsTabTransitions;
+        KanbanTab.Transitions = _kanbanTabTransitions;
+        _tabTransitionsRemoved = false;
     }
 
     // The tab strip shows only for a view that has a board; the board's requests open or start sessions in the Agents tab.
@@ -232,6 +265,47 @@ public partial class MainView : UserControl
 
     /// <summary>Gets whether the Kanban tab is the selected top-level tab. It is false for a view with no board.</summary>
     public bool IsKanbanShown => _kanbanShown;
+
+    /// <summary>Occurs when the user asks for the Settings window, with the rail footer button or Ctrl+,. The host that owns the window handles it; the view has no dependency on it.</summary>
+    public event EventHandler? SettingsRequested;
+
+    /// <summary>
+    /// Gets or sets where the Terminal tool reads its settings. It is read each time the tool builds its view, so the stored auto-run choice
+    /// is the source of truth. Null builds the tool with the defaults, which never run a command without an approval.
+    /// </summary>
+    public Func<TerminalSettings>? TerminalSettingsProvider { get; set; }
+
+    /// <summary>Asks for the Settings window, as the rail button and Ctrl+, do.</summary>
+    public void RequestSettings() => SettingsRequested?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>
+    /// Applies a motion setting to the shell now: the reduced-motion class of the view and the tab strip transitions. Sessions that are
+    /// already open keep the motion they were built with.
+    /// </summary>
+    /// <param name="motion">The motion setting. Only <see cref="MotionPreference.Reduced"/> removes transitions.</param>
+    public void ApplyMotion(MotionPreference motion)
+    {
+        var reduced = motion == MotionPreference.Reduced;
+        Classes.Set(ReducedMotionClass, reduced);
+        if (reduced)
+        {
+            RemoveTabTransitions();
+        }
+        else
+        {
+            RestoreTabTransitions();
+        }
+    }
+
+    /// <summary>
+    /// Tells the Terminal tool that its settings changed. A terminal panel with no proposal waiting and no command running is built again
+    /// from the current settings at once; one that is busy keeps its settings until it is idle and the tool is opened again.
+    /// </summary>
+    public void ApplyTerminalSettings()
+    {
+        _terminalSettingsStale = true;
+        RebuildTerminalIfIdle();
+    }
 
     /// <summary>Listens for the keyboard map on the top level, so a shortcut works while nothing in the view has focus.</summary>
     /// <param name="e">The attachment data.</param>
@@ -669,6 +743,10 @@ public partial class MainView : UserControl
                 ShowThread();
                 FocusThread();
                 break;
+            case Key.OemComma when control && !shift:
+                e.Handled = true;
+                RequestSettings();
+                break;
             case Key.F6 when !control:
                 e.Handled = true;
                 CycleRegions(backwards: shift);
@@ -1038,7 +1116,7 @@ public partial class MainView : UserControl
         [
             _editorTool,
             new ToolEntry(ExplorerToggle, "Explorer", CreateExplorer, keepView: true),
-            new ToolEntry(TerminalToggle, "Terminal", () => new TerminalPanelView(_workspace.FullPath), keepView: true),
+            _terminalTool = new ToolEntry(TerminalToggle, "Terminal", () => new TerminalPanelView(_workspace.FullPath, TerminalSettingsProvider?.Invoke()), keepView: true),
             new ToolEntry(DiffToggle, "Diff review", () => new DiffReviewView(), keepView: true),
             new ToolEntry(InlineEditToggle, "Inline edit", () => new InlineEditView(), keepView: true),
             new ToolEntry(ConventionsToggle, "Conventions", CreateConventions, keepView: true),
@@ -1073,6 +1151,37 @@ public partial class MainView : UserControl
         }
     }
 
+    private void OnSettingsClick(object? sender, RoutedEventArgs e) => RequestSettings();
+
+    // A kept terminal panel holds the settings it was built with, so a changed setting rebuilds it, but only while it holds no proposal and runs no command.
+    private void RebuildTerminalIfIdle()
+    {
+        if (!_terminalSettingsStale || _terminalTool is not { } tool)
+        {
+            return;
+        }
+
+        if (tool.View is not TerminalPanelView view)
+        {
+            _terminalSettingsStale = false;
+            return;
+        }
+
+        var busy = view.FindControl<Button>("StopButton")?.IsEnabled != false || view.FindControl<Button>("ApproveButton")?.IsEnabled != false;
+        if (busy)
+        {
+            return;
+        }
+
+        _terminalSettingsStale = false;
+        tool.View = null;
+        if (ReferenceEquals(_openTool, tool))
+        {
+            tool.View = tool.Create();
+            ToolHost.Content = tool.View;
+        }
+    }
+
     // Shows a tool in place of the transcript. A kept view is shown again from the same instance, so an open terminal keeps its
     // output. A tool whose view cannot be built is not shown, and the status line says why.
     private void OpenTool(ToolEntry tool)
@@ -1080,6 +1189,11 @@ public partial class MainView : UserControl
         Control view;
         try
         {
+            if (ReferenceEquals(tool, _terminalTool))
+            {
+                RebuildTerminalIfIdle();
+            }
+
             view = tool.KeepView ? (tool.View ??= tool.Create()) : tool.Create();
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or WorkspacePathException)

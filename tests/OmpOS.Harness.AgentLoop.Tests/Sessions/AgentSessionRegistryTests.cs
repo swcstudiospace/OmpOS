@@ -459,6 +459,114 @@ public sealed partial class AgentSessionRegistryTests
     }
 
     [Fact]
+    public void DeleteStateDirectoryRemovesOnlyTheDirectoryOfAClosedSession()
+    {
+        using var directory = new SessionTestDirectory();
+        var registry = new AgentSessionRegistry(directory.StatePath, new SessionTestClock(Start));
+        var gone = registry.Create("gone", null);
+        var kept = registry.Create("kept", null);
+        foreach (var record in new[] { gone, kept })
+        {
+            Directory.CreateDirectory(Path.Combine(record.StateDirectory, "swarm"));
+            File.WriteAllText(Path.Combine(record.StateDirectory, "swarm", "live.json"), "{}");
+        }
+
+        registry.DeleteStateDirectory(gone.Id).ShouldBeFalse("a session the registry still holds keeps its directory");
+        Directory.Exists(gone.StateDirectory).ShouldBeTrue();
+
+        registry.Close(gone.Id).ShouldBeTrue();
+        registry.DeleteStateDirectory(gone.Id).ShouldBeTrue();
+
+        Directory.Exists(gone.StateDirectory).ShouldBeFalse();
+        File.Exists(Path.Combine(kept.StateDirectory, "swarm", "live.json")).ShouldBeTrue();
+        Directory.Exists(Path.GetDirectoryName(gone.StateDirectory)).ShouldBeTrue("the sessions directory itself stays");
+        registry.DeleteStateDirectory(gone.Id).ShouldBeFalse("nothing is left to delete");
+    }
+
+    [Theory]
+    [InlineData("..")]
+    [InlineData(".")]
+    [InlineData("../outside")]
+    [InlineData("..\\outside")]
+    [InlineData("a/b")]
+    [InlineData("/etc")]
+    [InlineData("sessions/../../outside")]
+    public void DeleteStateDirectoryRefusesAnIdThatIsNotOneSafeSegment(string id)
+    {
+        using var directory = new SessionTestDirectory();
+        var registry = new AgentSessionRegistry(directory.StatePath, new SessionTestClock(Start));
+        var outside = directory.PathOf("outside");
+        Directory.CreateDirectory(outside);
+        File.WriteAllText(Path.Combine(outside, "precious.txt"), "x");
+        var sibling = registry.Create("sibling", null);
+        Directory.CreateDirectory(sibling.StateDirectory);
+
+        registry.DeleteStateDirectory(id).ShouldBeFalse();
+
+        File.Exists(Path.Combine(outside, "precious.txt")).ShouldBeTrue("a path escape deletes nothing");
+        Directory.Exists(sibling.StateDirectory).ShouldBeTrue();
+        Directory.Exists(directory.Path).ShouldBeTrue();
+    }
+
+    [Fact]
+    [SupportedOSPlatform("linux")]
+    public void DeleteStateDirectoryRemovesALinkWithoutFollowingIt()
+    {
+        using var directory = new SessionTestDirectory();
+        var registry = new AgentSessionRegistry(directory.StatePath, new SessionTestClock(Start));
+        var record = registry.Create("linked", null);
+        var target = directory.PathOf("target");
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(target, "precious.txt"), "x");
+        Directory.CreateDirectory(Path.GetDirectoryName(record.StateDirectory)!);
+        Directory.CreateSymbolicLink(record.StateDirectory, target);
+        registry.Close(record.Id).ShouldBeTrue();
+
+        registry.DeleteStateDirectory(record.Id).ShouldBeTrue("the entry of that name is the link");
+
+        Directory.Exists(record.StateDirectory).ShouldBeFalse();
+        File.Exists(Path.Combine(target, "precious.txt")).ShouldBeTrue("what the link pointed at is untouched");
+    }
+
+    [Fact]
+    [SupportedOSPlatform("linux")]
+    public void DeleteStateDirectoryDoesNotEnterALinkInsideTheDirectory()
+    {
+        using var directory = new SessionTestDirectory();
+        var registry = new AgentSessionRegistry(directory.StatePath, new SessionTestClock(Start));
+        var record = registry.Create("inner", null);
+        var target = directory.PathOf("target");
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(target, "precious.txt"), "x");
+        Directory.CreateDirectory(record.StateDirectory);
+        Directory.CreateSymbolicLink(Path.Combine(record.StateDirectory, "escape"), target);
+        registry.Close(record.Id).ShouldBeTrue();
+
+        registry.DeleteStateDirectory(record.Id).ShouldBeTrue();
+
+        Directory.Exists(record.StateDirectory).ShouldBeFalse();
+        File.Exists(Path.Combine(target, "precious.txt")).ShouldBeTrue("a link inside the directory is removed, not entered");
+    }
+
+    [Fact]
+    [SupportedOSPlatform("linux")]
+    public void DeleteStateDirectoryDeletesNothingWhenTheSessionsDirectoryIsALink()
+    {
+        using var directory = new SessionTestDirectory();
+        var registry = new AgentSessionRegistry(directory.StatePath, new SessionTestClock(Start));
+        var record = registry.Create("rooted", null);
+        var elsewhere = directory.PathOf("elsewhere");
+        Directory.CreateDirectory(Path.Combine(elsewhere, record.Id));
+        File.WriteAllText(Path.Combine(elsewhere, record.Id, "precious.txt"), "x");
+        registry.Close(record.Id).ShouldBeTrue();
+        Directory.CreateSymbolicLink(Path.GetDirectoryName(record.StateDirectory)!, elsewhere);
+
+        registry.DeleteStateDirectory(record.Id).ShouldBeFalse();
+
+        File.Exists(Path.Combine(elsewhere, record.Id, "precious.txt")).ShouldBeTrue();
+    }
+
+    [Fact]
     public void CreatedIdsAreSafeLowercaseBase32DirectoryNamesAndBlankTitlesGetADefault()
     {
         using var directory = new SessionTestDirectory();

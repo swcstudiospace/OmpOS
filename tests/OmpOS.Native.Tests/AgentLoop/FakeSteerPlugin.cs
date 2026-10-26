@@ -57,8 +57,9 @@ internal static class FakeSteerPlugin
     /// <param name="status">The status code: <c>delivered</c>, <c>rejected</c> or <c>failed</c>.</param>
     /// <param name="reason">The reason code, or null for none.</param>
     /// <param name="cancellationToken">Cancels the wait.</param>
+    /// <param name="idle">What the acknowledgement says about the session at delivery: true when it had no running turn, false when it had one, null when the plugin cannot tell.</param>
     /// <returns>The directive that was acknowledged.</returns>
-    public static async Task<JsonObject> AckNextAsync(string sessionDirectory, string status, string? reason, CancellationToken cancellationToken)
+    public static async Task<JsonObject> AckNextAsync(string sessionDirectory, string status, string? reason, CancellationToken cancellationToken, bool? idle = false)
     {
         await EventuallyAsync(() => Directives(sessionDirectory).Count > 0, "a queued steering directive", cancellationToken).ConfigureAwait(true);
         var directive = Directives(sessionDirectory)[0];
@@ -72,7 +73,7 @@ internal static class FakeSteerPlugin
             ["reason"] = reason,
             ["mode"] = directive["mode"]!.GetValue<string>(),
             ["at"] = Format(DateTimeOffset.UtcNow),
-            ["idle"] = false,
+            ["idle"] = idle,
         };
         var temporary = Path.Combine(acks, id + ".tmp");
         await File.WriteAllTextAsync(temporary, ack.ToJsonString(), Utf8, cancellationToken).ConfigureAwait(true);

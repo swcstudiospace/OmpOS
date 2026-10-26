@@ -54,6 +54,48 @@ public sealed class AgentSessionRuntimeSteeringTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
+    /// <summary>
+    /// An acknowledgement that says the session was idle means omp started a new turn from the message: the entry says exactly that
+    /// instead of a plain Delivered, for a steer and for a follow-up, and an acknowledgement that says it was busy stays plain.
+    /// </summary>
+    [Theory]
+    [InlineData(SteeringMode.Steer, true, SteeringDeliveryStatus.DeliveredStartedNewTurn)]
+    [InlineData(SteeringMode.FollowUp, true, SteeringDeliveryStatus.DeliveredStartedNewTurn)]
+    [InlineData(SteeringMode.Steer, false, SteeringDeliveryStatus.Delivered)]
+    [InlineData(SteeringMode.FollowUp, false, SteeringDeliveryStatus.QueuedAfterTurn)]
+    [InlineData(SteeringMode.Steer, null, SteeringDeliveryStatus.Delivered)]
+    public async Task AnIdleSessionStartedANewTurnFromTheMessageAndTheEntrySaysSo(SteeringMode mode, bool? idle, SteeringDeliveryStatus expected)
+    {
+        await using var headless = TestAppBuilder.StartSession();
+        await headless.RunAsync(async () =>
+        {
+            var token = TestContext.Current.CancellationToken;
+            var channel = new FakeSteeringChannel
+            {
+                Acknowledge = id => new SteeringAck { Id = id, Status = SteeringAckStatus.Delivered, Idle = idle },
+            };
+            var runtime = Create(new ScriptedPromptChannel(Working), channel, static (_, _) => Task.CompletedTask);
+            await using var runtimeScope = runtime.ConfigureAwait(true);
+            await StartRunAsync(runtime, token).ConfigureAwait(true);
+
+            (await runtime.ViewModel.Steering.SubmitAsync("and then the docs", mode, token).ConfigureAwait(true)).ShouldBe(SteeringSubmitOutcome.Accepted);
+
+            var entry = runtime.ViewModel.Steering.History.ShouldHaveSingleItem();
+            entry.DeliveryStatus.ShouldBe(expected);
+            if (expected == SteeringDeliveryStatus.DeliveredStartedNewTurn)
+            {
+                entry.DeliveryText.ShouldBe("Delivered. The turn had already ended, so omp started a new turn from your message.");
+                entry.StatusLine.ShouldStartWith(entry.DeliveryText, Case.Sensitive);
+            }
+            else
+            {
+                entry.DeliveryText.ShouldNotContain("new turn", Case.Sensitive);
+            }
+
+            await StopRunAsync(runtime, token).ConfigureAwait(true);
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
     /// <summary>Queue sends a FollowUp directive the same way, and a follow-up omp took is queued after the turn, not delivered into it.</summary>
     [Fact]
     public async Task AFollowUpIsSentAsAFollowUpDirective()

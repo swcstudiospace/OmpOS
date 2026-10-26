@@ -1,8 +1,10 @@
 using Avalonia.Threading;
 using OmpOS.Native.Logging;
-using OmpOS.Presentation;
+using OmpOS.Native.Settings;
+using OmpOS.Native.Settings.Models;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Kanban;
+using OmpOS.Presentation.Settings.Models;
 
 namespace OmpOS.Native.Agents;
 
@@ -41,9 +43,11 @@ internal sealed class AgentHead : IAsyncDisposable
         bool selectMostRecent,
         Action<Action>? dispatch,
         TimeProvider clock,
-        TimeSpan detailsInterval)
+        TimeSpan detailsInterval,
+        HeadSettings settings)
     {
         Host = host;
+        Settings = settings;
         Catalog = catalog;
         _selectMostRecent = selectMostRecent;
         Panel = panel;
@@ -66,19 +70,46 @@ internal sealed class AgentHead : IAsyncDisposable
     /// <summary>Gets the Kanban board over the same sessions: one card per session, its Substrate fields and its steering.</summary>
     public KanbanBoardModel Board { get; }
 
+    /// <summary>Gets the head's side of the Settings window: the settings file, the one Settings window and the sweeper that applies the Runtime settings. The main window is connected to it with <see cref="HeadSettings.Attach"/>.</summary>
+    public HeadSettings Settings { get; }
+
     /// <summary>Builds the head of the running process: the plugins, the state and the Substrate come from the environment, and the registry's changes reach the models on the UI thread.</summary>
     /// <returns>The head. It opens nothing until <see cref="InitializeAsync"/>.</returns>
-    public static AgentHead CreateProduction() => Build(
-        new SessionEngineSetOptions
+    public static AgentHead CreateProduction()
+    {
+        var loop = AgentLoopEnvironment.Resolve();
+        var store = new FileSettingsStore(loop.StateRoot);
+
+        // The Models page and the provider keys omp is started with are built together, so a key saved on the page reaches every omp the head starts.
+        var models = ModelsSettingsComposition.Create(new ModelsSettingsCompositionOptions { StateRoot = loop.StateRoot });
+        try
         {
-            Loop = AgentLoopEnvironment.Resolve(),
-            AllowedKinds = Program.ProductionAllowedKinds,
-            LoggerFactory = DesktopLogging.Factory,
-            Motion = MotionPreference.System,
-        },
-        UiDispatch,
-        selectMostRecent: true,
-        DefaultDetailsRefreshInterval);
+            return Build(
+                new SessionEngineSetOptions
+                {
+                    Loop = loop,
+                    AllowedKinds = Program.ProductionAllowedKinds,
+                    LoggerFactory = DesktopLogging.Factory,
+                    Motion = HeadSettings.ReadOrDefaults(store).Motion,
+                    ProviderKeys = models.Keys,
+                },
+                UiDispatch,
+                selectMostRecent: true,
+                DefaultDetailsRefreshInterval,
+                store,
+                new HeadSettingsOptions
+                {
+                    ModelsPageFactory = () => new ModelsSettingsPage(models.Source),
+                    Owned = models,
+                    SweepInterval = SessionLifecycleSweeper.DefaultInterval,
+                });
+        }
+        catch
+        {
+            models.Dispose();
+            throw;
+        }
+    }
 
     /// <summary>Builds a head over explicit roots. Tests use it with a scripted transport.</summary>
     /// <param name="options">The roots and seams.</param>
@@ -113,10 +144,18 @@ internal sealed class AgentHead : IAsyncDisposable
                 SteeringOptions = options.SteeringOptions,
                 LiveSteering = options.LiveSteering,
                 TerminalLocator = options.TerminalLocator,
+                ProviderKeys = options.ProviderKeys,
             },
             options.Dispatch,
             options.SelectMostRecentSession,
-            options.DetailsRefreshInterval ?? DefaultDetailsRefreshInterval);
+            options.DetailsRefreshInterval ?? DefaultDetailsRefreshInterval,
+            new FileSettingsStore(loop.StateRoot),
+            new HeadSettingsOptions
+            {
+                ModelsPageFactory = options.ModelsPageFactory,
+                GetVariable = variables,
+                SweepInterval = options.RuntimeSweepInterval,
+            });
     }
 
     /// <summary>
@@ -156,6 +195,7 @@ internal sealed class AgentHead : IAsyncDisposable
             _loading.Dispose();
             Board.CompleteLoading();
             StartDetailsRefresh();
+            Settings.Start();
         }
     }
 
@@ -185,6 +225,7 @@ internal sealed class AgentHead : IAsyncDisposable
 #pragma warning disable VSTHRD003 // The refresh task is started by this head's own StartDetailsRefresh, so awaiting it cannot wait on work from another context.
         await Volatile.Read(ref _refreshTask).ConfigureAwait(true);
 #pragma warning restore VSTHRD003
+        await Settings.DisposeAsync().ConfigureAwait(true);
         await Host.DisposeAsync().ConfigureAwait(true);
         Board.Dispose();
         Panel.Dispose();
@@ -192,7 +233,7 @@ internal sealed class AgentHead : IAsyncDisposable
         _lifetime.Dispose();
     }
 
-    private static AgentHead Build(SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval)
+    private static AgentHead Build(SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, FileSettingsStore store, HeadSettingsOptions settingsOptions)
     {
         var host = new SessionEngineSet(options);
         SessionCatalogModel? catalog = null;
@@ -214,7 +255,8 @@ internal sealed class AgentHead : IAsyncDisposable
                     Steering = new HeadCardSteering(host, options.LoggerFactory?.CreateLogger("OmpOS.Native.Agents")),
                     StartLoading = true,
                 });
-            var head = new AgentHead(host, catalog, panel, board, panel.BeginInitialising(), selectMostRecent, dispatch, options.TimeProvider, detailsInterval);
+            var settings = HeadSettings.Create(host, store, options.TimeProvider, dispatch, settingsOptions);
+            var head = new AgentHead(host, catalog, panel, board, panel.BeginInitialising(), selectMostRecent, dispatch, options.TimeProvider, detailsInterval, settings);
 
             // The head owns the models from here on.
             catalog = null;

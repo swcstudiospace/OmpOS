@@ -258,7 +258,7 @@ public sealed class AgentSessionRegistry : ISessionCatalog
         return true;
     }
 
-    /// <summary>Removes a session from the registry. Its state directory is not deleted.</summary>
+    /// <summary>Removes a session from the registry. Its state directory is not deleted; see <see cref="DeleteStateDirectory"/>.</summary>
     /// <param name="id">The session identifier.</param>
     /// <returns>True when the session existed.</returns>
     public bool Close(string id)
@@ -277,6 +277,27 @@ public sealed class AgentSessionRegistry : ISessionCatalog
 
         RaiseChanged();
         return true;
+    }
+
+    /// <summary>
+    /// Deletes the state directory of a session that is no longer in the registry (the plugin state, steering files and the like it wrote
+    /// under <c>&lt;stateRoot&gt;/sessions/&lt;id&gt;</c>). Nothing is deleted for a session the registry still holds, for an identifier
+    /// that is not a safe single path segment, or through a link.
+    /// </summary>
+    /// <param name="id">The session identifier.</param>
+    /// <returns>True when the directory was removed.</returns>
+    public bool DeleteStateDirectory(string id)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        lock (_gate)
+        {
+            if (_records.ContainsKey(id))
+            {
+                return false;
+            }
+        }
+
+        return _file.DeleteStateDirectory(id);
     }
 
     /// <summary>Returns the record of a session.</summary>

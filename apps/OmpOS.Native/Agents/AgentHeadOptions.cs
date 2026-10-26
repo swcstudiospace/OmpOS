@@ -4,6 +4,7 @@ using OmpOS.Harness.Acp;
 using OmpOS.Harness.AgentLoop.Steering;
 using OmpOS.Harness.OmpLauncher;
 using OmpOS.Harness.Terminal;
+using OmpOS.Native.Settings.Models;
 using OmpOS.Presentation;
 
 namespace OmpOS.Native.Agents;
@@ -76,4 +77,20 @@ internal sealed class AgentHeadOptions
     /// true. When false a steer or follow-up waits for the end of the running turn and is sent as the next prompt.
     /// </summary>
     public bool LiveSteering { get; init; } = true;
+
+    /// <summary>
+    /// Gets the provider API keys that are merged into the environment of every omp the head starts, or null for none. The Models page of the
+    /// settings window and this value are built together by <see cref="ModelsSettingsComposition"/>, so a key saved there reaches omp.
+    /// </summary>
+    public ProviderKeyEnvironment? ProviderKeys { get; init; }
+
+    /// <summary>Gets how the Models page of the Settings window is built, or null for a window without one. The production head builds it over <see cref="ModelsSettingsComposition"/> instead.</summary>
+    public Func<OmpOS.Presentation.Settings.ISettingsPage>? ModelsPageFactory { get; init; }
+
+    /// <summary>
+    /// Gets how often the Runtime settings (idle stop and retention) are applied to the sessions, or null for a head that runs no sweeper, so
+    /// the Runtime settings are saved but applied to nothing (the default, which keeps tests free of a timer). The production head sets five minutes.
+    /// An infinite or non-positive value runs the sweeper without a timer: it applies the settings when they are saved and once at the start.
+    /// </summary>
+    public TimeSpan? RuntimeSweepInterval { get; init; }
 }

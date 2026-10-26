@@ -763,6 +763,9 @@
           "OmpOS.EngineHost": "[1.0.0, )",
           "OmpOS.Harness.Acp": "[1.0.0, )",
           "OmpOS.Harness.AgentLoop": "[1.0.0, )",
+          "OmpOS.Harness.OmpConfig": "[1.0.0, )",
+          "OmpOS.Harness.Providers": "[1.0.0, )",
+          "OmpOS.Harness.Secrets": "[1.0.0, )",
           "OmpOS.Native.Views": "[1.0.0, )",
           "OmpOS.Presentation": "[1.0.0, )"
         }

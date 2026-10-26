@@ -222,6 +222,9 @@ public static class AgentPanelCopy
     /// <summary>The delivery text of a steering message the engine took at once.</summary>
     public const string DeliveryDelivered = "Delivered";
 
+    /// <summary>The delivery text of a steering message that reached a session with no running turn: omp started a new turn from it.</summary>
+    public const string DeliveryStartedNewTurn = "Delivered. The turn had already ended, so omp started a new turn from your message.";
+
     /// <summary>The delivery text of a steering message a live channel queued for omp while omp has not acknowledged it yet.</summary>
     public const string DeliverySentNotAcknowledged = "Sent, omp has not acknowledged it yet";
 
