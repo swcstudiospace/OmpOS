@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using OmpOS.Presentation;
 using OmpOS.Presentation.AgentPanel;
+using OmpOS.Presentation.Kanban;
 
 namespace OmpOS.Native;
 
@@ -20,14 +21,15 @@ internal partial class MainWindow : Window
     /// <param name="panel">The panel the main view shows.</param>
     /// <param name="motion">The motion setting. Only <see cref="MotionPreference.Reduced"/> removes transitions.</param>
     /// <param name="workspaceRoot">The workspace folder the tools work in, or null for the current directory. It must exist.</param>
+    /// <param name="board">The Kanban board the main view shows on its Kanban tab, or null for a window without one.</param>
     /// <exception cref="ArgumentNullException"><paramref name="panel"/> is null.</exception>
     /// <exception cref="DirectoryNotFoundException"><paramref name="workspaceRoot"/> does not exist.</exception>
-    public MainWindow(AgentPanelViewModel panel, MotionPreference motion, string? workspaceRoot = null)
+    public MainWindow(AgentPanelViewModel panel, MotionPreference motion, string? workspaceRoot = null, KanbanBoardModel? board = null)
     {
         ArgumentNullException.ThrowIfNull(panel);
 
         InitializeComponent();
-        _main = new MainView(panel, workspaceRoot, motion);
+        _main = new MainView(panel, workspaceRoot, motion, board);
         Content = _main;
         Classes.Set(ReducedMotionClass, IsReducedMotion(motion));
     }

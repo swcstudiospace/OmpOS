@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Logging;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.Acp;
+using OmpOS.Harness.AgentLoop.Steering;
+using OmpOS.Harness.OmpLauncher;
+using OmpOS.Harness.Terminal;
 using OmpOS.Presentation;
 
 namespace OmpOS.Native.Agents;
@@ -10,6 +13,9 @@ internal sealed class SessionEngineSetOptions
 {
     /// <summary>The longest time the Substrate health check of a new session may take before the Substrate is left out of it.</summary>
     public static readonly TimeSpan DefaultHealthTimeout = TimeSpan.FromSeconds(3);
+
+    /// <summary>The longest time a steering message waits for omp to acknowledge it.</summary>
+    public static readonly TimeSpan DefaultSteerAckTimeout = TimeSpan.FromSeconds(3);
 
     /// <summary>How often the head refreshes the heartbeat of running sessions and looks for lost ones.</summary>
     public static readonly TimeSpan DefaultMaintenanceInterval = TimeSpan.FromSeconds(15);
@@ -43,4 +49,22 @@ internal sealed class SessionEngineSetOptions
 
     /// <summary>Gets how often the maintenance timer runs. A value that is not positive starts no timer.</summary>
     public TimeSpan MaintenanceInterval { get; init; } = DefaultMaintenanceInterval;
+
+    /// <summary>Gets how a terminal session starts omp: the backend that opens the pseudo-terminal. Null uses <see cref="LinuxLocalPtyBackend"/>.</summary>
+    public ITerminalBackend? TerminalBackend { get; init; }
+
+    /// <summary>Gets how omp is located for a terminal session, or null to search <c>PATH</c> and the known install places, after <see cref="OmpPath"/> when that is set.</summary>
+    public OmpLocatorOptions? TerminalLocator { get; init; }
+
+    /// <summary>Gets the longest time a steering message waits for omp to acknowledge it before it is reported as sent but not acknowledged.</summary>
+    public TimeSpan SteerAckTimeout { get; init; } = DefaultSteerAckTimeout;
+
+    /// <summary>Gets the intervals of the steering channels of the sessions, or null for the defaults.</summary>
+    public FileSteeringChannelOptions? SteeringOptions { get; init; }
+
+    /// <summary>
+    /// Gets whether the composer of a chat session delivers a steer or a follow-up through the omp steering channel at once. When false the
+    /// sessions have no live channel: a steer or follow-up waits for the end of the running turn and is sent as the next prompt.
+    /// </summary>
+    public bool LiveSteering { get; init; } = true;
 }

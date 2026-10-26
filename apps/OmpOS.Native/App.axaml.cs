@@ -78,7 +78,7 @@ internal partial class App : Application
         {
             var head = _headFactory();
             _head = head;
-            desktop.MainWindow = new MainWindow(head.Panel, MotionPreference.System, Environment.CurrentDirectory);
+            desktop.MainWindow = new MainWindow(head.Panel, MotionPreference.System, Environment.CurrentDirectory, head.Board);
             desktop.ShutdownRequested += OnShutdownRequested;
             _initialisation = head.InitializeAsync(CancellationToken.None);
         }

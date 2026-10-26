@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using OmpOS.Contracts.Agents;
 using OmpOS.EngineHost;
 using OmpOS.Harness.Abstractions;
+using OmpOS.Harness.AgentLoop.Steering;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Views.Sessions;
 using OmpOS.Presentation.AgentPanel;
@@ -44,6 +45,7 @@ internal sealed class SessionSlot : IAsyncDisposable
         Approvals = new SlotApprovalBridge(this);
         Stages = new DeferredStageSource(this);
         Context = new DeferredTaskContextSource(this);
+        Steering = new FileSteeringChannel(scope.Current.SessionStateDirectory, owner.Clock, owner.SteeringOptions);
     }
 
     /// <summary>Gets the session identifier.</summary>
@@ -63,6 +65,9 @@ internal sealed class SessionSlot : IAsyncDisposable
 
     /// <summary>Gets the task context source of the session.</summary>
     public ITaskContextSource Context { get; }
+
+    /// <summary>Gets the steering channel of the session: a message put into it reaches the omp plugin of this session's omp process, which acknowledges it. It is used by the composer and by the Kanban card.</summary>
+    public ISteeringChannel Steering { get; }
 
     /// <summary>Gets or sets the runtime that shows the session. The engine set sets it once, right after it creates the runtime.</summary>
     public AgentSessionRuntime? Runtime { get; set; }

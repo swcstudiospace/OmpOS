@@ -1,0 +1,56 @@
+using OmpOS.Harness.AgentLoop.Launch;
+using OmpOS.Harness.OmpLauncher;
+using OmpOS.Harness.Terminal;
+using OmpOS.Native.Views.Terminal;
+
+namespace OmpOS.Native.Agents;
+
+/// <summary>
+/// Starts the omp of a terminal session from the session's launch plan: the plan's plugin arguments, environment and workspace become the
+/// request of the <see cref="OmpTerminalLauncher"/>, so an app-started omp terminal loads the same plugins from the same session state as
+/// the engine behind the Agent Panel. The plan is decided once per session (the Substrate health check is asynchronous), the first time a
+/// start asks for it, and a restart reuses it. A resume reference is passed to omp only when the registry holds one.
+/// </summary>
+internal sealed class PlannedOmpTerminalStarter : IOmpTerminalStarter
+{
+    private readonly SessionSlot _slot;
+    private readonly Func<string?> _resumeReference;
+    private readonly OmpTerminalLauncher _launcher;
+
+    /// <summary>Creates the starter of one terminal session.</summary>
+    /// <param name="slot">The slot of the session, which decides the plan.</param>
+    /// <param name="resumeReference">Reads the native omp session to resume at each start, or null for a new omp session. Called on every start.</param>
+    /// <param name="launcher">Locates omp and opens the pseudo-terminal.</param>
+    /// <exception cref="ArgumentNullException">An argument is null.</exception>
+    public PlannedOmpTerminalStarter(SessionSlot slot, Func<string?> resumeReference, OmpTerminalLauncher launcher)
+    {
+        ArgumentNullException.ThrowIfNull(slot);
+        ArgumentNullException.ThrowIfNull(resumeReference);
+        ArgumentNullException.ThrowIfNull(launcher);
+        _slot = slot;
+        _resumeReference = resumeReference;
+        _launcher = launcher;
+    }
+
+    /// <inheritdoc />
+    public async Task<OmpTerminalLaunchResult> StartAsync(int columns, int rows, IProcessOutputSink output, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        SessionPlan plan;
+        try
+        {
+            plan = await _slot.PlanAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ObjectDisposedException)
+        {
+            return new OmpTerminalLaunchFailed($"The omp terminal could not be prepared: {exception.Message}");
+        }
+
+        var command = plan.Launch.ForTerminal(new OmpTerminalOptions { NativeSessionId = _resumeReference() });
+        var request = new OmpTerminalLaunchRequest(command.WorkingDirectory, command.Arguments, columns, rows, output)
+        {
+            Environment = command.Environment,
+        };
+        return await _launcher.LaunchAsync(request, cancellationToken).ConfigureAwait(false);
+    }
+}

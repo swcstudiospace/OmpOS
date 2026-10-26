@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using OmpOS.Harness.AgentLoop.Substrate;
 using OmpOS.Presentation.AgentPanel;
 
@@ -11,6 +13,8 @@ namespace OmpOS.Native.Agents;
 /// </summary>
 internal sealed class SteeringRecorderAdapter
 {
+    private const int HashPrefixChars = 12;
+
     private readonly ISteeringRecorder _recorder;
     private readonly SessionScopeProvider _scope;
 
@@ -42,15 +46,41 @@ internal sealed class SteeringRecorderAdapter
         };
     }
 
+    /// <summary>Describes a steering message that was not shown in the panel's history, for example one sent from a Kanban card. The text is read only to measure and hash it and is not kept.</summary>
+    /// <param name="text">The operator text.</param>
+    /// <param name="followUp">True for a follow-up, false for a steer.</param>
+    /// <param name="at">The time the operator sent the text.</param>
+    /// <returns>The record: mode, length, hash prefix and time.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is null.</exception>
+    public static SteeringRecord ToRecord(string text, bool followUp, DateTimeOffset at)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return new SteeringRecord
+        {
+            Mode = followUp ? "follow-up" : "steer",
+            Length = text.Length,
+            TextSha256Prefix = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)))[..HashPrefixChars],
+            At = at,
+        };
+    }
+
     /// <summary>Records one entry in the ledger.</summary>
     /// <param name="entry">The accepted steering entry.</param>
     /// <param name="cancellationToken">Cancels the recording.</param>
     /// <returns>A task that completes when the ledger stored the record.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="entry"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The ledger did not store the record. The message is the recorder's plain-text reason.</exception>
-    public async Task RecordAsync(SteeringEntry entry, CancellationToken cancellationToken)
+    public Task RecordAsync(SteeringEntry entry, CancellationToken cancellationToken) => RecordAsync(ToRecord(entry), cancellationToken);
+
+    /// <summary>Records one steering action in the ledger.</summary>
+    /// <param name="record">What to record. It carries a length and a hash prefix, never the operator text.</param>
+    /// <param name="cancellationToken">Cancels the recording.</param>
+    /// <returns>A task that completes when the ledger stored the record.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="record"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The ledger did not store the record. The message is the recorder's plain-text reason.</exception>
+    public async Task RecordAsync(SteeringRecord record, CancellationToken cancellationToken)
     {
-        var record = ToRecord(entry);
+        ArgumentNullException.ThrowIfNull(record);
         var result = await _recorder.RecordAsync(_scope.Current, record, cancellationToken).ConfigureAwait(false);
         if (result.Outcome != SteeringRecordOutcome.Recorded)
         {

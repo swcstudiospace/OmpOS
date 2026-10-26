@@ -1,13 +1,19 @@
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using OmpOS.Contracts.Agents;
+using OmpOS.Harness.AgentLoop.Connection;
 using OmpOS.Harness.AgentLoop.Gsd;
 using OmpOS.Harness.AgentLoop.Launch;
 using OmpOS.Harness.AgentLoop.Plugins;
 using OmpOS.Harness.AgentLoop.Sessions;
 using OmpOS.Harness.AgentLoop.Stages;
+using OmpOS.Harness.AgentLoop.Steering;
 using OmpOS.Harness.AgentLoop.Substrate;
+using OmpOS.Harness.OmpLauncher;
+using OmpOS.Harness.Terminal;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Views.Sessions;
+using OmpOS.Native.Views.Terminal;
 using OmpOS.Presentation.AgentPanel;
 
 namespace OmpOS.Native.Agents;
@@ -32,6 +38,8 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     private const string CancelledReason = "cancelled";
     private const UnixFileMode OwnerOnly = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
 
+    private static readonly string[] SteerSubdirectories = ["inbox", "acks", "done"];
+
     private static readonly Action<ILogger, string, Exception?> MaintenanceFailed = LoggerMessage.Define<string>(
         LogLevel.Warning,
         new EventId(1, "AgentMaintenanceFailed"),
@@ -41,6 +49,11 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         LogLevel.Warning,
         new EventId(2, "AgentSessionDisposeFailed"),
         "Disposing an agent session failed ({ExceptionType}); the other sessions are still stopped.");
+
+    private static readonly Action<ILogger, string, Exception?> TerminalNoticeFailed = LoggerMessage.Define<string>(
+        LogLevel.Warning,
+        new EventId(3, "TerminalResumeNoticeFailed"),
+        "The notice that a terminal starts a new omp session could not be published ({ExceptionType}).");
 
     private readonly SessionEngineSetOptions _options;
     private readonly ReloadableSessionCatalog _catalog = new();
@@ -100,6 +113,15 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     /// <summary>Gets the current time of the set's clock.</summary>
     internal DateTimeOffset Now => _options.TimeProvider.GetUtcNow();
 
+    /// <summary>Gets the clock of the set, which paces the steering channels of its sessions.</summary>
+    internal TimeProvider Clock => _options.TimeProvider;
+
+    /// <summary>Gets the intervals of the steering channels, or null for the defaults.</summary>
+    internal FileSteeringChannelOptions? SteeringOptions => _options.SteeringOptions;
+
+    /// <summary>Gets how long a steering message waits for omp to acknowledge it.</summary>
+    internal TimeSpan SteerAckTimeout => _options.SteerAckTimeout;
+
     /// <summary>Returns whether the operator closed a session in this application, or left it closed when it last ended, so no engine is attached.</summary>
     /// <param name="sessionId">The session.</param>
     /// <returns>True when the session is closed.</returns>
@@ -115,12 +137,28 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     public async Task<string> CreateSessionAsync(CancellationToken cancellationToken)
     {
         var registry = await EnsureRegistryAsync(cancellationToken).ConfigureAwait(false);
-        var record = registry.Create(title: null, _options.Loop.WorkspaceRoot);
+        return PrepareSession(registry, registry.Create(title: null, _options.Loop.WorkspaceRoot));
+    }
+
+    /// <summary>
+    /// Creates a session of kind terminal in the registry, titled "omp terminal N", and its private directories. No omp starts here: the
+    /// terminal view starts it through the session's planner-built launch, the same plugin set as a chat session.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the creation.</param>
+    /// <returns>The identifier of the new session.</returns>
+    public async Task<string> CreateTerminalSessionAsync(CancellationToken cancellationToken)
+    {
+        var registry = await EnsureRegistryAsync(cancellationToken).ConfigureAwait(false);
+        var number = registry.SnapshotRecords().Count(static record => record.Kind == SessionKind.Terminal) + 1;
+        var title = string.Create(CultureInfo.InvariantCulture, $"omp terminal {number}");
+        return PrepareSession(registry, registry.Create(title, _options.Loop.WorkspaceRoot, SessionKind.Terminal));
+    }
+
+    private static string PrepareSession(AgentSessionRegistry registry, AgentSessionRecord record)
+    {
         try
         {
-            // The state of a session may hold plans, notes and tokens: only its owner may enter the directory.
-            EnsurePrivateDirectory(Path.GetDirectoryName(record.StateDirectory)!);
-            EnsurePrivateDirectory(record.StateDirectory);
+            EnsureSessionLayout(record.StateDirectory);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -141,23 +179,24 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             return existing.ViewModel;
         }
 
-        var runtime = new AgentSessionRuntime(new AgentSessionRuntimeOptions
-        {
-            Row = row,
-            Prompts = slot.Prompts,
-            Approvals = slot.Approvals,
-            Scope = slot.Scope.Current,
-            Stages = slot.Stages,
-            Context = slot.Context,
-            RecordSteering = slot.RecordSteeringAsync,
-            Resume = cancellationToken => ReattachAsync(slot, cancellationToken),
-            Reopen = cancellationToken => ReattachAsync(slot, cancellationToken),
-            StageRecheck = slot.RecheckAsync,
-            Motion = _options.Motion,
-            TimeProvider = _options.TimeProvider,
-        });
+        var isTerminal = row.Summary.Kind == SessionKind.Terminal;
+        var runtime = new AgentSessionRuntime(RuntimeOptions(row, slot, isTerminal));
         slot.Runtime = runtime;
-        runtime.TurnChanged += (_, e) => OnTurnChanged(slot, e);
+        if (runtime.Terminal is { } terminal)
+        {
+            terminal.PropertyChanged += (_, e) =>
+            {
+                if (string.Equals(e.PropertyName, nameof(OmpTerminalViewModel.State), StringComparison.Ordinal))
+                {
+                    OnTerminalChanged(slot, terminal);
+                }
+            };
+        }
+        else
+        {
+            runtime.TurnChanged += (_, e) => OnTurnChanged(slot, e);
+        }
+
         if (IsClosed(row.Id))
         {
             slot.MarkEngineClosed();
@@ -167,6 +206,31 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         runtime.StartObserving();
         return runtime.ViewModel;
     }
+
+    private AgentSessionRuntimeOptions RuntimeOptions(AgentRow row, SessionSlot slot, bool isTerminal) => new()
+    {
+        Row = row,
+
+        // A terminal session has no engine behind a prompt channel: its omp is the terminal, and the composer only steers.
+        Prompts = isTerminal ? new UnconnectedPromptChannel() : slot.Prompts,
+        Approvals = slot.Approvals,
+        Scope = slot.Scope.Current,
+        Stages = slot.Stages,
+        Context = slot.Context,
+        RecordSteering = slot.RecordSteeringAsync,
+        Resume = cancellationToken => ReattachAsync(slot, cancellationToken),
+        Reopen = cancellationToken => ReattachAsync(slot, cancellationToken),
+        StageRecheck = slot.RecheckAsync,
+        Motion = _options.Motion,
+        TimeProvider = _options.TimeProvider,
+        Steering = _options.LiveSteering || isTerminal ? slot.Steering : null,
+        TerminalStarter = isTerminal ? CreateTerminalStarter(slot) : null,
+    };
+
+    private PlannedOmpTerminalStarter CreateTerminalStarter(SessionSlot slot) => new(
+        slot,
+        () => Registry is { } registry && registry.TryGet(slot.Id, out var record) ? record.ResumeReference : null,
+        new OmpTerminalLauncher(_options.TerminalBackend ?? new LinuxLocalPtyBackend(), _options.TerminalLocator ?? OmpLocatorOptions.FromEnvironment(_options.OmpPath)));
 
     /// <summary>
     /// Returns the slot of a session, creating it on first use: its live scope, send path, approval bridge and stage sources. The slot
@@ -207,6 +271,15 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
         if (slot is not null)
         {
+            if (slot.Runtime?.Terminal is { } terminal)
+            {
+                // The terminal is stopped before the engine bookkeeping so its state change runs on the caller's context; stopping it
+                // disposes the omp it started, so no child outlives the closed session.
+                slot.MarkEngineClosed();
+                slot.SetTurnActive(false);
+                await terminal.StopAsync().ConfigureAwait(false);
+            }
+
             await slot.CloseEngineAsync().ConfigureAwait(false);
         }
 
@@ -262,6 +335,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(slot);
         var scope = slot.Scope.Current;
+        EnsureSessionLayout(scope.SessionStateDirectory);
         var plugins = Plugins;
         var clock = _options.TimeProvider;
         var loop = _options.Loop;
@@ -289,7 +363,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             var substrateActive = gateway is not null && reachable;
             var recheck = new RecheckStageSource();
             var stages = new GraphTapStageSource(
-                new CompositeStageSource(StageChildren(slot, plugins, settings, events, gateway, substrateActive, recheck), clock),
+                new CompositeStageSource(StageChildren(slot, launch, plugins, settings, events, gateway, substrateActive, recheck), clock),
                 slot.OnGraphId);
             ITaskContextSource context = new ScopeFollowingTaskContextSource(
                 new GsdTaskContextSource(_gsd, substrateActive ? new SubstrateContextReader(gateway!, _logger) : null),
@@ -413,6 +487,29 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
         _catalog.Detach();
         _reloadGate.Dispose();
+    }
+
+    /// <summary>
+    /// Creates the private directories every omp process of a session needs before it starts: the session directory, the steering inbox,
+    /// acknowledgements and done directories, the connection report directory and the Swarm directory. Only their owner may enter them.
+    /// </summary>
+    /// <param name="sessionDirectory">The directory returned by <see cref="SessionStateLayout.SessionDirectory"/>.</param>
+    internal static void EnsureSessionLayout(string sessionDirectory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionDirectory);
+
+        // The state of a session may hold plans, notes and tokens: only its owner may enter the directory.
+        EnsurePrivateDirectory(Path.GetDirectoryName(sessionDirectory)!);
+        EnsurePrivateDirectory(sessionDirectory);
+        var steer = SessionStateLayout.SteerDirectory(sessionDirectory);
+        EnsurePrivateDirectory(steer);
+        foreach (var name in SteerSubdirectories)
+        {
+            EnsurePrivateDirectory(Path.Combine(steer, name));
+        }
+
+        EnsurePrivateDirectory(Path.GetDirectoryName(SessionStateLayout.ConnectionFile(sessionDirectory))!);
+        EnsurePrivateDirectory(SessionStateLayout.SwarmDirectory(sessionDirectory));
     }
 
     /// <summary>Creates a directory that only its owner may enter. An existing directory is left as it is.</summary>
@@ -569,6 +666,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
     private List<NamedStageSource> StageChildren(
         SessionSlot slot,
+        OmpLaunchPlan launch,
         IReadOnlyList<ResolvedPlugin> plugins,
         AgentLoopSettings settings,
         IReadOnlyList<StageEvent> planningEvents,
@@ -584,6 +682,10 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         {
             new("Plugin availability", StageSource.Omp, new PluginAvailabilityStageSource(plugins, settings, clock), MayComplete: true),
             new("Launch plan", StageSource.Omp, new PlanningEventsStageSource(planningEvents), MayComplete: true),
+            new(
+                "Plugin connection",
+                StageSource.Omp,
+                new PluginConnectionStageSource(PluginConnectionStageSourceOptions.ForPlan(launch), clock, factory?.CreateLogger<PluginConnectionStageSource>())),
             new(
                 "Ultrathink",
                 StageSource.Ultrathink,
@@ -619,7 +721,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     /// <param name="slot">The slot of the session.</param>
     /// <param name="cancellationToken">Cancels the call before it changes anything.</param>
     /// <returns>A completed task.</returns>
-    internal Task ReattachAsync(SessionSlot slot, CancellationToken cancellationToken)
+    internal async Task ReattachAsync(SessionSlot slot, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         slot.ReopenEngine();
@@ -628,8 +730,81 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             _closed.Remove(slot.Id);
         }
 
-        Registry?.SetLifecycle(slot.Id, SessionLifecycle.Created);
-        return Task.CompletedTask;
+        var registry = Registry;
+        var freshTerminal = registry is not null && registry.TryGet(slot.Id, out var record) && record.Kind == SessionKind.Terminal && record.ResumeReference is null;
+        registry?.SetLifecycle(slot.Id, SessionLifecycle.Created);
+        if (freshTerminal)
+        {
+            await PublishFreshTerminalNoticeAsync(slot, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Mirrors what the omp of a terminal session does into the registry: running is Running, an exit with code 0 is Completed, any other
+    /// exit and an omp that could not be started are Failed. A terminal that was stopped because its session was closed leaves the
+    /// lifecycle to the close.
+    /// </summary>
+    /// <param name="slot">The slot of the terminal session.</param>
+    /// <param name="terminal">The terminal model, in the state that changed.</param>
+    internal void OnTerminalChanged(SessionSlot slot, OmpTerminalViewModel terminal)
+    {
+        ArgumentNullException.ThrowIfNull(slot);
+        ArgumentNullException.ThrowIfNull(terminal);
+        var registry = Registry;
+        if (registry is null || slot.EngineClosed)
+        {
+            return;
+        }
+
+        switch (terminal.State)
+        {
+            case OmpTerminalState.Running:
+                slot.SetTurnActive(true);
+                registry.SetLifecycle(slot.Id, SessionLifecycle.Running);
+                break;
+            case OmpTerminalState.Exited:
+                slot.SetTurnActive(false);
+                registry.SetLifecycle(slot.Id, terminal.ExitCode == 0 ? SessionLifecycle.Completed : SessionLifecycle.Failed);
+                break;
+            case OmpTerminalState.Unavailable:
+                slot.SetTurnActive(false);
+                registry.SetLifecycle(slot.Id, SessionLifecycle.Failed);
+                break;
+            case OmpTerminalState.Idle:
+                slot.SetTurnActive(false);
+                return;
+            default:
+                return;
+        }
+
+        registry.Touch(slot.Id);
+    }
+
+    private async Task PublishFreshTerminalNoticeAsync(SessionSlot slot, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var plan = await slot.PlanAsync(cancellationToken).ConfigureAwait(false);
+            plan.Recheck.Publish(new StageEvent
+            {
+                SessionId = slot.Id,
+                Source = StageSource.Omp,
+                StageId = "terminal-resume",
+                Title = "omp terminal",
+                Status = StageStatus.Degraded,
+                Timestamp = Now,
+                Detail = "omp does not report the session of a terminal, so this terminal starts a new omp session. The earlier conversation is not resumed.",
+                GraphId = slot.Scope.Current.GraphId,
+            });
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
+        {
+            // The notice is informational: a plan that cannot be built is reported by the session's own stages.
+            if (_logger is not null)
+            {
+                TerminalNoticeFailed(_logger, exception.GetType().Name, null);
+            }
+        }
     }
 
     /// <summary>Mirrors what a runtime reports about its run into the registry: started is Running, completed is Completed (Created when the operator stopped the run), faulted is Failed.</summary>

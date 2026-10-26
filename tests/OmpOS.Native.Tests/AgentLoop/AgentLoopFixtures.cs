@@ -1,5 +1,6 @@
 using OmpOS.Contracts.Agents;
 using OmpOS.Harness.Abstractions;
+using OmpOS.Harness.OmpLauncher;
 using OmpOS.Native.Agents;
 
 namespace OmpOS.Native.Tests.AgentLoop;
@@ -17,7 +18,10 @@ internal static class AgentLoopFixtures
         HttpMessageHandler? substrate = null,
         TimeProvider? clock = null,
         TimeSpan? maintenance = null,
-        string? ompPath = null) => new()
+        string? ompPath = null,
+        TimeSpan? detailsRefresh = null,
+        TimeSpan? steerAck = null,
+        OmpLocatorOptions? terminalLocator = null) => new()
         {
             PluginsRoot = tree.Plugins,
             StateRoot = tree.State,
@@ -29,6 +33,9 @@ internal static class AgentLoopFixtures
             SelectMostRecentSession = false,
             MaintenanceInterval = maintenance ?? Timeout.InfiniteTimeSpan,
             OmpPath = ompPath,
+            DetailsRefreshInterval = detailsRefresh ?? Timeout.InfiniteTimeSpan,
+            SteerAckTimeout = steerAck,
+            TerminalLocator = terminalLocator,
         };
 
     /// <summary>Creates a session in the registry and its slot, as the panel does when the user starts an agent.</summary>

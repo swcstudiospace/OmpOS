@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Logging;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.Acp;
+using OmpOS.Harness.AgentLoop.Steering;
+using OmpOS.Harness.OmpLauncher;
+using OmpOS.Harness.Terminal;
 using OmpOS.Presentation;
 
 namespace OmpOS.Native.Agents;
@@ -52,4 +55,25 @@ internal sealed class AgentHeadOptions
 
     /// <summary>Gets a value indicating whether <see cref="AgentHead.InitializeAsync"/> selects the most recent saved session, which opens it. The default is true; a test that has no UI thread turns it off.</summary>
     public bool SelectMostRecentSession { get; init; } = true;
+
+    /// <summary>Gets how a terminal session starts omp, or null for the Linux pseudo-terminal backend.</summary>
+    public ITerminalBackend? TerminalBackend { get; init; }
+
+    /// <summary>Gets how omp is located for a terminal session, or null to search <c>PATH</c> and the known install places, after <see cref="OmpPath"/> when that is set.</summary>
+    public OmpLocatorOptions? TerminalLocator { get; init; }
+
+    /// <summary>Gets how long a steering message waits for omp to acknowledge it, or null for the default of 3 seconds.</summary>
+    public TimeSpan? SteerAckTimeout { get; init; }
+
+    /// <summary>Gets the intervals of the steering channels, or null for the defaults.</summary>
+    public FileSteeringChannelOptions? SteeringOptions { get; init; }
+
+    /// <summary>Gets how often the board reads the Substrate fields of its cards, or null for the default of 30 seconds. An infinite or non-positive value starts no timer.</summary>
+    public TimeSpan? DetailsRefreshInterval { get; init; }
+
+    /// <summary>
+    /// Gets whether the composer of a chat session delivers a steer or a follow-up through the omp steering channel at once. The default is
+    /// true. When false a steer or follow-up waits for the end of the running turn and is sent as the next prompt.
+    /// </summary>
+    public bool LiveSteering { get; init; } = true;
 }
