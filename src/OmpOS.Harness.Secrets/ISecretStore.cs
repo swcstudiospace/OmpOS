@@ -15,9 +15,10 @@ namespace OmpOS.Harness.Secrets;
 /// implementations must not throw synchronously. Implementations must be safe for concurrent use.
 /// </para>
 /// <para>
-/// Only the in-memory session implementation exists. It is not durable: its contents vanish with the process. A store
-/// backed by the operating system (Windows credential store, macOS Keychain, Linux Secret Service) implements this
-/// interface once it can be verified on a runner for that platform.
+/// Two implementations exist. <see cref="InMemorySessionSecretStore"/> is not durable: its contents vanish with the process.
+/// <see cref="OwnerOnlyFileSecretStore"/> is durable but keeps plain text protected only by file permissions. A store backed by
+/// the operating system (Windows credential store, macOS Keychain, Linux Secret Service) implements this interface once it can
+/// be verified on a runner for that platform.
 /// </para>
 /// </remarks>
 public interface ISecretStore
