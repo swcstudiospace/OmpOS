@@ -53,18 +53,20 @@ It installs the pinned SDK when missing, then runs a locked restore, a warnings-
 
 | Surface | Verifier | Scope |
 | ------- | -------- | ----- |
-| Linux (`ubuntu-latest`) | `ci.yml` job `build-test` | Everything in `OmpOS.Linux.slnf`: API, harness, sandbox, sessions, workflows, web head, EngineHost — libraries and all test suites. The worker project was removed on 2026-10-21 ([decision](docs/handoff.md#temporal-removal-and-railway-topology-2026-10-21)) |
+| Linux (Omega CI pool, `[self-hosted, linux, x64, omega-ci]`) | `ci.yml` job `build-test` | Everything in `OmpOS.Linux.slnf`: API, harness, sandbox, sessions, workflows, web head, EngineHost — libraries and all test suites. The worker project was removed on 2026-10-21 ([decision](docs/handoff.md#temporal-removal-and-railway-topology-2026-10-21)) |
 | Linux dev box | `./bootstrap.sh` | Same scope as Linux CI; the Android head is outside the Linux filter, so it is not built locally |
-| Linux (`ubuntu-latest`) | `ci.yml` job `android` | `apps/OmpOS.Android` (Android head) only: restore and `-warnaserror` build; no device or emulator needed |
+| Linux (Omega CI pool) | `ci.yml` job `android` | `apps/OmpOS.Android` (Android head) only: restore and `-warnaserror` build; no device or emulator needed |
+| macOS (human-deferred) | none in CI | The Avalonia macOS head and the iOS head need macOS and Xcode; there is no macOS runner in the pool, so they are not built in CI (Mac channel, v0.10.0 Phases 22 and 24) |
 | Inspection only (Linux) | Code review | Removed in v0.10.0 (Phase 25): the MAUI head's structure (project file, RCL sharing, `IEngineHost` registration) was inspected; its binaries were never produced on Linux |
 
 ### Android workload requirement
 
 Restoring the full `OmpOS.slnx` needs the .NET Android workload
-(`dotnet workload install android`, as the CI job `android` does). Without it,
-restore of `apps/OmpOS.Android` (which targets `net10.0-android36.0`) fails with a
-missing-workload error, so the supported Linux path is the solution filter, which
-excludes the Android head:
+(`dotnet workload install android` on a developer machine; the Omega CI runner image
+pre-installs the Android workloads and its SDK directory is read-only, so the CI job
+`android` only lists them). Without the workload, restore of `apps/OmpOS.Android`
+(which targets `net10.0-android36.0`) fails with a missing-workload error, so the
+supported Linux path is the solution filter, which excludes the Android head:
 
 ```sh
 dotnet test OmpOS.Linux.slnf -c Release
@@ -76,7 +78,7 @@ Three blockers must clear before the API or web head is exposed publicly:
 
 - **Auth provider.** The API validates OIDC bearer tokens fail-closed. Production needs `Api:Auth:Authority` (https) and `Api:Auth:Audience`. Do not expose the API publicly until an identity provider is configured for it (OD-03).
 - **Production API origin.** The web head's `connect-src` is generated at build time from one validated origin (`OMPOS_API_ORIGIN`, see `vercel.ts` and `scripts/vercel/render-csp.sh`). Set it to the production API origin, then rebuild the web head.
-- **Native macOS head (human).** The Avalonia macOS head's first warning-free build and spot-check run on a macOS runner (v0.10.0 Phase 22). The MAUI head (`apps/OmpOS.App`) and its `ci.yml` `shells` job were removed in v0.10.0 (Phase 25) after parity; the Android head (`apps/OmpOS.Android`) is built by CI job `android` instead. See [ADR-0004](docs/decisions/ADR-0004-cross-platform-ui.md).
+- **Native macOS head (human).** The Avalonia macOS head's first warning-free build and spot-check run on a macOS host (v0.10.0 Phase 22); there is no macOS runner in the Omega CI pool, so they stay with a human on a Mac. The MAUI head (`apps/OmpOS.App`) and its `ci.yml` `shells` job were removed in v0.10.0 (Phase 25) after parity; the Android head (`apps/OmpOS.Android`) is built by CI job `android` instead. See [ADR-0004](docs/decisions/ADR-0004-cross-platform-ui.md).
 
 Full per-AC verdicts and the human verification steps: [docs/handoff.md](docs/handoff.md).
 
