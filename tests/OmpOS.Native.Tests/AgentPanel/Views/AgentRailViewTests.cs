@@ -328,8 +328,8 @@ public sealed class AgentRailViewTests
             ViewHarness.TabOrder(rail).Take(4).ShouldBe(["New agent", "New omp terminal", "Filter agents", "Agent sessions"]);
             var newAgent = ViewHarness.Find<Button>(rail, "NewAgentButton");
             newAgent.Classes.Contains("primary").ShouldBeTrue();
-            newAgent.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
-            ViewHarness.Find<TextBox>(rail, "AgentFilter").MinHeight.ShouldBeGreaterThanOrEqualTo(44);
+            newAgent.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
+            ViewHarness.Find<TextBox>(rail, "AgentFilter").MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             window.Close();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }

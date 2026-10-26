@@ -45,7 +45,7 @@ public sealed class AgentPanelToolsTests
             ShellHarness.ShowToolsView(window);
 
             ShellTree.IsShown(toggle).ShouldBeTrue("the Tools view lists every toggle");
-            toggle.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
+            toggle.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -110,7 +110,7 @@ public sealed class AgentPanelToolsTests
 
             var close = main.FindControl<Button>("CloseToolButton")!;
             AutomationProperties.GetName(close).ShouldBe("Close tool");
-            close.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
+            close.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
 
             ShellHarness.Click(window, close);
 

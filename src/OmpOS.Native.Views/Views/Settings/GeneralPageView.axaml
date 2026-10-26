@@ -11,7 +11,7 @@
     <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
   </local:SettingsPageViewBase.Styles>
 
-  <!-- The General page. Keyboard order follows XAML order: the motion list (one stop; Up and Down move the choice), then the privacy statement. -->
+  <!-- The General page. Keyboard order follows XAML order: the theme list, the motion list (one stop; Up and Down move the choice), then the privacy statement. -->
   <Panel>
 
     <local:PageStatusView x:Name="StateView" />
@@ -27,6 +27,15 @@
 
         <TextBlock Classes="settings-heading"
                    Text="{x:Static set:SettingsCopy.GeneralHeading}" />
+
+        <TextBlock Classes="settings-label"
+                   Margin="0,8,0,0"
+                   Text="{x:Static set:SettingsCopy.ThemeLabel}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static set:SettingsCopy.ThemeHelp}" />
+        <ListBox x:Name="ThemeList"
+                 SelectionMode="Single"
+                 AutomationProperties.Name="{x:Static set:SettingsCopy.ThemeLabel}" />
 
         <TextBlock Classes="settings-label"
                    Margin="0,8,0,0"

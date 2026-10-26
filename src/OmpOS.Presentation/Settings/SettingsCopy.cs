@@ -92,6 +92,30 @@ public static class SettingsCopy
     /// <summary>The heading of the General page.</summary>
     public const string GeneralHeading = "General";
 
+    /// <summary>The label of the theme setting.</summary>
+    public const string ThemeLabel = "Theme";
+
+    /// <summary>The help text of the theme setting.</summary>
+    public const string ThemeHelp = "Chooses the colours OmpOS draws in. The change applies when you save.";
+
+    /// <summary>The label of the choice that follows the operating system.</summary>
+    public const string ThemeSystemLabel = "System";
+
+    /// <summary>The description of the choice that follows the operating system.</summary>
+    public const string ThemeSystemDescription = "Use the light or dark setting of the operating system.";
+
+    /// <summary>The label of the light choice.</summary>
+    public const string ThemeLightLabel = "Light";
+
+    /// <summary>The description of the light choice.</summary>
+    public const string ThemeLightDescription = "Always draw in the light colours.";
+
+    /// <summary>The label of the dark choice.</summary>
+    public const string ThemeDarkLabel = "Dark";
+
+    /// <summary>The description of the dark choice.</summary>
+    public const string ThemeDarkDescription = "Always draw in the dark colours. This is the default.";
+
     /// <summary>The label of the motion setting.</summary>
     public const string MotionLabel = "Motion";
 

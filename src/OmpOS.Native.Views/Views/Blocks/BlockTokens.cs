@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
 
 namespace OmpOS.Native.Views.Blocks;
@@ -14,6 +15,22 @@ internal static class BlockTokens
 
     /// <summary>The widest an inline image is drawn, so one large picture cannot fill the transcript.</summary>
     public const double MaxImageWidth = 480;
+
+    /// <summary>
+    /// Binds a property of a control to a design token, so the value follows the theme variant: the binding re-reads the token when the
+    /// application or the window changes variant. Use it for every colour a control built in code draws; a one-time <see cref="Get{T}"/>
+    /// would keep the colours of the variant that was showing when the control was built.
+    /// </summary>
+    /// <param name="target">The control that draws the value.</param>
+    /// <param name="property">The property to bind, for example <see cref="Border.BackgroundProperty"/>.</param>
+    /// <param name="key">The token key.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="target"/> or <paramref name="property"/> is null.</exception>
+    public static void Bind(Control target, AvaloniaProperty property, string key)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(property);
+        _ = target.Bind(property, target.GetResourceObservable(key));
+    }
 
     /// <summary>Gets a design token from the application resources.</summary>
     /// <typeparam name="T">The token's value type.</typeparam>

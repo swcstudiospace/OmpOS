@@ -147,7 +147,7 @@ public sealed class StatusGlyphTests
             label.Text.ShouldBe("Needs approval");
             label.Classes.Contains("tone-warning").ShouldBeTrue();
             label.Classes.Contains("tone-secondary").ShouldBeFalse("only the current role is applied");
-            frame.Height.ShouldBe(24);
+            frame.Height.ShouldBe(20);
             frame.BorderThickness.Left.ShouldBe(1);
             chip.GetVisualDescendants().OfType<StageIcon>().Single().IconKey.ShouldBe(StatusIcon.Alert);
             window.Close();

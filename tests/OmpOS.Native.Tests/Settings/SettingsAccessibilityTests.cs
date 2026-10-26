@@ -108,7 +108,7 @@ public sealed class SettingsAccessibilityTests
         }, ct).ConfigureAwait(true);
     }
 
-    /// <summary>Every button, entry, checkbox and drop-down the user can reach is at least 44 by 44.</summary>
+    /// <summary>Every button, entry, checkbox and drop-down the user can reach is at least the WCAG 2.2 minimum (24 by 24).</summary>
     [Fact]
     public async Task EveryInteractiveControlMeetsTheMinimumTargetSize()
     {
@@ -131,7 +131,7 @@ public sealed class SettingsAccessibilityTests
 
                 foreach (var control in SettingsTree.Visible<Control>(fixture.Window).Where(static control => control is Button or TextBox or CheckBox or ComboBox))
                 {
-                    if (control.TemplatedParent is null && (control.MinHeight < 44 || control.MinWidth < 44))
+                    if (control.TemplatedParent is null && (control.MinHeight < TargetSize.MinimumTarget || control.MinWidth < TargetSize.MinimumTarget))
                     {
                         small.Add(section + ":" + control.GetType().Name + ":" + AutomationProperties.GetName(control));
                     }

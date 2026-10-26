@@ -29,6 +29,25 @@ public sealed class FileSettingsStoreTests : IDisposable
         Directory.Exists(store.ConfigDirectory).ShouldBeFalse();
     }
 
+    /// <summary>A file with no theme member reads as the Dark default, and each theme survives a write, case-insensitively on read.</summary>
+    [Fact]
+    public void TheThemeDefaultsToDarkAndRoundTrips()
+    {
+        StoredSettings.Defaults.Theme.ShouldBe(ThemePreference.Dark);
+        var store = new FileSettingsStore(_state.PathOf("theme"));
+        store.Read().Theme.ShouldBe(ThemePreference.Dark);
+
+        foreach (var theme in new[] { ThemePreference.System, ThemePreference.Light, ThemePreference.Dark })
+        {
+            store.SetTheme(theme);
+
+            store.Read().Theme.ShouldBe(theme);
+        }
+
+        _state.Write("theme2/config/settings.json", "{\"theme\":\"LIGHT\"}");
+        new FileSettingsStore(_state.PathOf("theme2")).Read().Theme.ShouldBe(ThemePreference.Light);
+    }
+
     /// <summary>The file lives at config/settings.json below the state directory.</summary>
     [Fact]
     public void TheFileIsConfigSettingsJsonBelowTheStateDirectory()
@@ -44,12 +63,14 @@ public sealed class FileSettingsStoreTests : IDisposable
     {
         var first = new FileSettingsStore(_state.Root);
         first.SetMotion(MotionPreference.Reduced);
+        first.SetTheme(ThemePreference.Light);
         first.SetTerminalAutoRun(autoRun: true);
         first.SetRuntime(new RuntimeSettingsValues(12, 3));
 
         var read = new FileSettingsStore(_state.Root).Read();
 
         read.Motion.ShouldBe(MotionPreference.Reduced);
+        read.Theme.ShouldBe(ThemePreference.Light);
         read.TerminalAutoRun.ShouldBeTrue();
         read.Runtime.ShouldBe(new RuntimeSettingsValues(12, 3));
     }
@@ -160,6 +181,7 @@ public sealed class FileSettingsStoreTests : IDisposable
     /// <summary>A value that cannot be used is an error state named after its member, and it is never repaired by overwriting.</summary>
     [Theory]
     [InlineData("{\"motion\":\"sideways\"}", "motion")]
+    [InlineData("{\"theme\":\"sepia\"}", "theme")]
     [InlineData("{\"runtime\":{\"idleStopHours\":0}}", "runtime.idleStopHours")]
     [InlineData("{\"runtime\":{\"idleStopHours\":721}}", "runtime.idleStopHours")]
     [InlineData("{\"runtime\":{\"retentionDays\":91}}", "runtime.retentionDays")]

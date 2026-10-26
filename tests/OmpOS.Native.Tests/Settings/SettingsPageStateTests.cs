@@ -234,6 +234,39 @@ public sealed class SettingsPageStateTests
         }, ct).ConfigureAwait(true);
     }
 
+    /// <summary>The General page offers the three theme choices in the order System, Light, Dark with their words, selects the saved Dark by default, and a choice becomes the draft.</summary>
+    [Fact]
+    public async Task TheGeneralPageOffersTheThemeChoices()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var session = TestAppBuilder.StartSession();
+        await session.RunAsync(async () =>
+        {
+            using var fixture = await SettingsFixture.OpenAsync(ct).ConfigureAwait(true);
+            var view = (GeneralPageView)fixture.Show(SettingsSection.General);
+            var items = view.ThemeChoices.Items.OfType<ListBoxItem>().ToList();
+
+            items.Select(static item => ((ThemeOption)item.Tag!).Value).ToArray()
+                .ShouldBe([ThemePreference.System, ThemePreference.Light, ThemePreference.Dark]);
+            var texts = SettingsTree.Texts(view);
+            texts.ShouldContain(SettingsCopy.ThemeLabel, StringComparer.Ordinal);
+            foreach (var option in GeneralPage.ThemeOptions)
+            {
+                texts.ShouldContain(option.Label, StringComparer.Ordinal);
+                texts.ShouldContain(option.Description, StringComparer.Ordinal);
+            }
+
+            view.ThemeChoices.SelectedItem.ShouldBeSameAs(items[2]);
+            fixture.General.IsDirty.ShouldBeFalse();
+
+            view.ThemeChoices.SelectedItem = items[1];
+            fixture.Settle();
+
+            fixture.General.Theme.ShouldBe(ThemePreference.Light);
+            fixture.General.IsDirty.ShouldBeTrue();
+        }, ct).ConfigureAwait(true);
+    }
+
     /// <summary>The Rules page lists each entry with its scope and origin, says how many there are in a live region, and names a file that could not be read.</summary>
     [Fact]
     public async Task ACatalogListsItsEntriesAndTheFilesItCouldNotRead()

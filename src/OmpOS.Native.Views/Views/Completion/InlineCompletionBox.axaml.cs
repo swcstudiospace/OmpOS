@@ -9,7 +9,6 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
 using OmpOS.Harness.Completion;
-using OmpOS.Native.Views.Blocks;
 
 namespace OmpOS.Native.Views.Completion;
 
@@ -32,6 +31,7 @@ namespace OmpOS.Native.Views.Completion;
 /// </remarks>
 internal partial class InlineCompletionBox : UserControl
 {
+    private const string MutedKey = "OmpOS.Color.TextSecondary";
     private const string ShownHelp = "Press Tab to accept the suggested completion, or Escape to dismiss it.";
 
     private CompletionClient? _client;
@@ -39,7 +39,6 @@ internal partial class InlineCompletionBox : UserControl
     private CancellationTokenSource? _pending;
     private CaretBuffer? _lastAsked;
     private ShownSuggestion? _shown;
-    private IBrush? _inputBrush;
     private bool _applying;
 
     /// <summary>Creates the control with no provider, so it never sends a request until <see cref="Client"/> is set.</summary>
@@ -175,17 +174,15 @@ internal partial class InlineCompletionBox : UserControl
     private void Show(ShownSuggestion suggestion)
     {
         _shown = suggestion;
-        _inputBrush = InputBox.Foreground;
 
-        var muted = BlockTokens.Get<IBrush>("OmpOS.Color.TextSecondary");
         var text = suggestion.Position.Text;
         var caret = suggestion.Position.Caret;
         var inlines = MirrorInlines;
 
         inlines.Clear();
-        AddText(inlines, text[..caret], brush: null);
-        AddText(inlines, suggestion.Result.Text, muted);
-        AddText(inlines, text[caret..], brush: null);
+        AddText(inlines, text[..caret], host: null, brushKey: null);
+        AddText(inlines, suggestion.Result.Text, InputBox, MutedKey);
+        AddText(inlines, text[caret..], host: null, brushKey: null);
 
         InputBox.Foreground = Brushes.Transparent;
         GhostHost.IsVisible = true;
@@ -202,8 +199,7 @@ internal partial class InlineCompletionBox : UserControl
         _shown = null;
         MirrorInlines.Clear();
         GhostHost.IsVisible = false;
-        InputBox.Foreground = _inputBrush;
-        _inputBrush = null;
+        InputBox.ClearValue(TextBox.ForegroundProperty);
         AutomationProperties.SetHelpText(InputBox, string.Empty);
     }
 
@@ -272,7 +268,7 @@ internal partial class InlineCompletionBox : UserControl
     }
 
     // Writes the text as runs, with a line break for each new line, so the mirror wraps like the text box.
-    private static void AddText(InlineCollection inlines, string text, IBrush? brush)
+    private static void AddText(InlineCollection inlines, string text, Control? host, string? brushKey)
     {
         var lines = text.Split('\n');
         for (var index = 0; index < lines.Length; index++)
@@ -289,9 +285,10 @@ internal partial class InlineCompletionBox : UserControl
             }
 
             var run = new Run(line);
-            if (brush is not null)
+            if (host is not null && brushKey is not null)
             {
-                run.Foreground = brush;
+                // Bound to the token, so the ghost text follows a theme change while the suggestion is showing.
+                _ = run.Bind(TextElement.ForegroundProperty, host.GetResourceObservable(brushKey));
             }
 
             inlines.Add(run);

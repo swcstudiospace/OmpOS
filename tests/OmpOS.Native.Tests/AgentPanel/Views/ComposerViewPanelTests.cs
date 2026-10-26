@@ -180,7 +180,7 @@ public sealed class ComposerViewPanelTests
             followUp.IsEffectivelyVisible.ShouldBeTrue();
             followUp.Content.ShouldBe("Queue follow-up");
             AutomationProperties.GetName(followUp).ShouldBe("Queue follow-up message");
-            followUp.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
+            followUp.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             ViewHarness.TabOrder(rig.View).ShouldBe(["Message", "Steer message", "Queue follow-up message", "Stop response"]);
             ViewHarness.Unnamed(rig.View).ShouldBeEmpty();
 
@@ -192,7 +192,7 @@ public sealed class ComposerViewPanelTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>Send and Stop are always enabled and always in the tab order, with 44 px targets.</summary>
+    /// <summary>Send and Stop are always enabled and always in the tab order, with targets of at least the WCAG 2.2 minimum (24 px).</summary>
     [Fact]
     public async Task SendAndStopStayEnabledAndLargeEnough()
     {
@@ -205,8 +205,8 @@ public sealed class ComposerViewPanelTests
             {
                 var button = ViewHarness.Find<Button>(rig.View, name);
                 button.IsEnabled.ShouldBeTrue();
-                button.Width.ShouldBeGreaterThanOrEqualTo(44);
-                button.Height.ShouldBeGreaterThanOrEqualTo(44);
+                button.Width.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
+                button.Height.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             }
 
             ViewHarness.TabOrder(rig.View).ShouldBe(["Message", "Send message", "Stop response"]);

@@ -60,7 +60,7 @@ public sealed class KanbanBoardViewStateTests
             var start = fixture.View.StartSession;
             start.IsEffectivelyVisible.ShouldBeTrue();
             start.Classes.Contains("primary").ShouldBeTrue();
-            start.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
+            start.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             AutomationProperties.GetName(start).ShouldBe(KanbanCopy.StartSessionName);
             var raised = 0;
             fixture.Board.StartSessionRequested += (_, _) => raised++;
@@ -91,7 +91,7 @@ public sealed class KanbanBoardViewStateTests
             texts.ShouldContain("The registry is offline", StringComparer.Ordinal);
             var retry = fixture.View.Retry;
             retry.IsEffectivelyVisible.ShouldBeTrue();
-            retry.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
+            retry.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             AutomationProperties.GetName(retry).ShouldBe(KanbanCopy.RetryName);
             ViewHarness.Unnamed(fixture.View).ShouldBeEmpty();
             ViewHarness.TabOrder(fixture.View).ShouldBe([KanbanCopy.RetryName]);

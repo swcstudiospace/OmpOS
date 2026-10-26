@@ -30,7 +30,7 @@ public sealed class GeneralPageTests
     [Fact]
     public async Task ALoadFailureBecomesTheErrorState()
     {
-        var source = new ScriptedGeneralSource(new GeneralSettingsValues(MotionPreference.Full)) { LoadFailure = "preferences file is corrupt" };
+        var source = new ScriptedGeneralSource(new GeneralSettingsValues(MotionPreference.Full, ThemePreference.Dark)) { LoadFailure = "preferences file is corrupt" };
         var page = new GeneralPage(source);
 
         await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -72,9 +72,68 @@ public sealed class GeneralPageTests
         (await page.SaveAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeTrue();
 
         source.SaveCalls.ShouldBe(1);
-        source.Values.ShouldBe(new GeneralSettingsValues(MotionPreference.Reduced));
+        source.Values.ShouldBe(new GeneralSettingsValues(MotionPreference.Reduced, ThemePreference.Dark));
         page.Saved.Motion.ShouldBe(MotionPreference.Reduced);
         page.IsDirty.ShouldBeFalse();
+    }
+
+    /// <summary>The theme defaults to Dark and is offered as System, Light, Dark, in that order.</summary>
+    [Fact]
+    public async Task TheThemeDefaultsToDarkAndIsOfferedInOrder()
+    {
+        var page = new GeneralPage(new ScriptedGeneralSource(GeneralSettingsValues.Defaults));
+        await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        page.Theme.ShouldBe(ThemePreference.Dark);
+        page.SelectedThemeOption.Value.ShouldBe(ThemePreference.Dark);
+        GeneralPage.ThemeOptions.Select(option => option.Value).ToArray()
+            .ShouldBe([ThemePreference.System, ThemePreference.Light, ThemePreference.Dark]);
+        GeneralPage.ThemeOptions.Select(option => option.Label).ToArray()
+            .ShouldBe([SettingsCopy.ThemeSystemLabel, SettingsCopy.ThemeLightLabel, SettingsCopy.ThemeDarkLabel]);
+        GeneralPage.ThemeOptions.ShouldAllBe(option => option.Label.Length > 0 && option.Description.Length > 0);
+        GeneralSettingsValues.Defaults.Theme.ShouldBe(ThemePreference.Dark);
+    }
+
+    /// <summary>Choosing a theme is a draft like motion: dirty and announced, nothing reaches the source until Save, and Save keeps the motion.</summary>
+    [Fact]
+    public async Task ChoosingAThemeIsADraftUntilSaved()
+    {
+        var source = new ScriptedGeneralSource(new GeneralSettingsValues(MotionPreference.Full, ThemePreference.Dark));
+        var page = new GeneralPage(source);
+        await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        var announced = PropertyChangeRecorder.Record(page);
+
+        page.SetTheme(ThemePreference.Light);
+
+        page.Theme.ShouldBe(ThemePreference.Light);
+        page.SelectedThemeOption.Value.ShouldBe(ThemePreference.Light);
+        page.IsDirty.ShouldBeTrue();
+        announced.ShouldAnnounce(nameof(GeneralPage.Theme));
+        announced.ShouldAnnounce(nameof(GeneralPage.SelectedThemeOption));
+        announced.ShouldAnnounce(nameof(ISettingsPage.IsDirty));
+        source.SaveCalls.ShouldBe(0);
+
+        (await page.SaveAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeTrue();
+
+        source.SaveCalls.ShouldBe(1);
+        source.Values.ShouldBe(new GeneralSettingsValues(MotionPreference.Full, ThemePreference.Light));
+        page.Saved.Theme.ShouldBe(ThemePreference.Light);
+        page.IsDirty.ShouldBeFalse();
+    }
+
+    /// <summary>Discard puts the saved theme back, and an undefined theme is refused.</summary>
+    [Fact]
+    public async Task DiscardRestoresTheSavedThemeAndAnUndefinedThemeIsRefused()
+    {
+        var page = new GeneralPage(new ScriptedGeneralSource(GeneralSettingsValues.Defaults));
+        await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        page.SetTheme(ThemePreference.System);
+
+        page.Discard();
+
+        page.Theme.ShouldBe(ThemePreference.Dark);
+        page.IsDirty.ShouldBeFalse();
+        Should.Throw<ArgumentOutOfRangeException>(() => page.SetTheme((ThemePreference)42));
     }
 
     /// <summary>A rejected write keeps the draft and the old saved values, shows the reason inline, and a later save can succeed.</summary>
@@ -108,7 +167,7 @@ public sealed class GeneralPageTests
     public async Task ResetAndDiscardMoveTheDraft()
     {
         var token = TestContext.Current.CancellationToken;
-        var source = new ScriptedGeneralSource(new GeneralSettingsValues(MotionPreference.Full)) { SaveFailure = "no" };
+        var source = new ScriptedGeneralSource(new GeneralSettingsValues(MotionPreference.Full, ThemePreference.Dark)) { SaveFailure = "no" };
         var page = new GeneralPage(source);
         await page.LoadAsync(token).ConfigureAwait(true);
 

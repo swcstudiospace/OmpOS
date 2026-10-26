@@ -63,8 +63,8 @@ public sealed class ThreadHeaderViewTests
             AutomationProperties.GetName(header.FindControl<Border>("GraphChipView")!).ShouldBe("Graph ut-mvp0bh59-2dd6ef4c");
             AutomationProperties.GetName(header.FindControl<Border>("SteeringBadge")!).ShouldBe(model.SteeringBadgeName);
             AutomationProperties.GetName(HeaderButton(header, "CloseButton")).ShouldBe("Close this agent");
-            HeaderButton(header, "CloseButton").MinHeight.ShouldBeGreaterThanOrEqualTo(44);
-            HeaderButton(header, "CloseButton").MinWidth.ShouldBeGreaterThanOrEqualTo(44);
+            HeaderButton(header, "CloseButton").MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
+            HeaderButton(header, "CloseButton").MinWidth.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             HeaderButton(header, "ResumeButton").IsVisible.ShouldBeFalse();
             HeaderButton(header, "ReopenButton").IsVisible.ShouldBeFalse();
             ViewHarness.Unnamed(header).ShouldBeEmpty();
@@ -377,7 +377,7 @@ public sealed class ThreadHeaderViewTests
             reducedWindow.Close();
 
             var full = Header(model, out var fullWindow);
-            HeaderButton(full, "CloseButton").Transitions!.OfType<BrushTransition>().Single().Duration.ShouldBe(TimeSpan.FromMilliseconds(120));
+            HeaderButton(full, "CloseButton").Transitions!.OfType<BrushTransition>().Single().Duration.ShouldBe(TimeSpan.FromMilliseconds(100));
             full.FindControl<StatusChip>("StatusChipView")!.FindControl<StageIcon>("Icon")!.IsPulsing.ShouldBeTrue();
             fullWindow.Close();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);

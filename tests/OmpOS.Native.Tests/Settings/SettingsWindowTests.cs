@@ -173,7 +173,7 @@ public sealed class SettingsWindowTests
         await using var session = TestAppBuilder.StartSession();
         await session.RunAsync(async () =>
         {
-            using var fixture = await SettingsFixture.OpenAsync(ct, static f => f.GeneralSource.Values = new GeneralSettingsValues(MotionPreference.Full)).ConfigureAwait(true);
+            using var fixture = await SettingsFixture.OpenAsync(ct, static f => f.GeneralSource.Values = new GeneralSettingsValues(MotionPreference.Full, ThemePreference.Dark)).ConfigureAwait(true);
             var window = fixture.Window;
             var view = (GeneralPageView)fixture.Show(SettingsSection.General);
             ((ListBoxItem)view.Motion.SelectedItem!).Tag.ShouldBeOfType<MotionOption>().Value.ShouldBe(MotionPreference.Full);
@@ -247,7 +247,7 @@ public sealed class SettingsWindowTests
         }, ct).ConfigureAwait(true);
     }
 
-    /// <summary>Every footer button has the accessible name of its label and a target of at least 44 by 44.</summary>
+    /// <summary>Every footer button has the accessible name of its label and a target of at least the WCAG 2.2 minimum (24 by 24).</summary>
     [Fact]
     public async Task TheFooterButtonsAreNamedAndLargeEnough()
     {
@@ -264,8 +264,8 @@ public sealed class SettingsWindowTests
             AutomationProperties.GetName(window.CloseWindow).ShouldBe(SettingsViewCopy.CloseLabel);
             foreach (var button in new[] { window.Save, window.Reset, window.Discard, window.CloseWindow })
             {
-                button.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
-                button.MinWidth.ShouldBeGreaterThanOrEqualTo(44);
+                button.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
+                button.MinWidth.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             }
 
             window.Save.Classes.ShouldContain("primary", StringComparer.Ordinal);

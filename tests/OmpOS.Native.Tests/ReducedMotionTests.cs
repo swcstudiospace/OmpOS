@@ -52,7 +52,7 @@ public sealed class ReducedMotionTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>With full motion, the Button background transition is kept at 120 ms.</summary>
+    /// <summary>With full motion, the Button background transition is kept at 100 ms (spec 2.5).</summary>
     [Fact]
     public async Task FullMotionKeepsTheButtonBackgroundTransition()
     {
@@ -64,7 +64,7 @@ public sealed class ReducedMotionTests
             var transition = ShellHarness.Send(window).Transitions?.OfType<BrushTransition>().SingleOrDefault();
 
             transition.ShouldNotBeNull("the send control keeps its background transition under full motion");
-            transition.Duration.ShouldBe(TimeSpan.FromMilliseconds(120));
+            transition.Duration.ShouldBe(TimeSpan.FromMilliseconds(100));
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

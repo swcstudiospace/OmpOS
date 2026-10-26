@@ -260,7 +260,7 @@ public sealed class SettingsWindowModelTests
     [Fact]
     public async Task LoadAllLoadsEveryPageAndAFailureStaysOnItsPage()
     {
-        var general = new GeneralPage(new ScriptedGeneralSource(new GeneralSettingsValues(MotionPreference.Reduced)));
+        var general = new GeneralPage(new ScriptedGeneralSource(new GeneralSettingsValues(MotionPreference.Reduced, ThemePreference.Dark)));
         var agents = new AgentsPage(new ScriptedAgentsSource { LoadFailure = "terminal settings are unreadable" });
         var scripted = new ScriptedSettingsPage(SettingsSection.Tab);
         var window = new SettingsWindowModel([general, agents, scripted]);

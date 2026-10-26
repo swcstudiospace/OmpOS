@@ -1,77 +1,904 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-  <!-- Colour roles (20-UI-SPEC.md, Color). Each role has a Light and a Dark value; Avalonia selects the set for the
-       active theme variant. ThemeContrastTests classifies each role by its use and checks every text and non-text
-       pair the classification produces, in both variants.
+  <!-- Colour roles (20-UI-SPEC.md, Color; docs/plans/ui-parity/cursor-agents-window-parity.md, 2.1). Each role has a Light and a
+       Dark value; Avalonia selects the set for the active theme variant. ThemeContrastTests classifies each role by its use and
+       checks every text and non-text pair the classification produces, in both variants.
+       Surface order, Dark: SurfaceSunken < Surface < SurfaceRaised < Hover < Selected < SurfaceActive. Light mirrors it with
+       SurfaceRaised as the brightest. Border is a decorative hairline (no contrast requirement beyond staying visible);
+       BorderStrong draws the outline that identifies an input, a switch or a checkbox (3:1).
        FocusRing is reserved for focus indicators to bind in a later phase. No style consumes it yet: the focus
        indicators in App.axaml draw AccentPurple. -->
   <ResourceDictionary.ThemeDictionaries>
     <ResourceDictionary x:Key="Light">
-      <SolidColorBrush x:Key="OmpOS.Color.Surface">#ffffff</SolidColorBrush>
-      <SolidColorBrush x:Key="OmpOS.Color.SurfaceRaised">#f4f4f5</SolidColorBrush>
-      <SolidColorBrush x:Key="OmpOS.Color.SurfaceActive">#e4e4e7</SolidColorBrush>
-      <SolidColorBrush x:Key="OmpOS.Color.TextPrimary">#1a1a1a</SolidColorBrush>
-      <SolidColorBrush x:Key="OmpOS.Color.TextSecondary">#52525b</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.SurfaceSunken">#f0f0ee</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.Surface">#fafaf9</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.SurfaceRaised">#ffffff</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.Hover">#ebebe8</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.Selected">#e4e4e0</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.SurfaceActive">#dcdcd7</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.DiffAdded">#e2f4e7</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.DiffRemoved">#fbe6e6</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.TextPrimary">#1c1c1a</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.TextSecondary">#55555a</SolidColorBrush>
       <SolidColorBrush x:Key="OmpOS.Color.AccentPurple">#6d28d9</SolidColorBrush>
       <SolidColorBrush x:Key="OmpOS.Color.AccentPurpleOn">#ffffff</SolidColorBrush>
       <SolidColorBrush x:Key="OmpOS.Color.FocusRing">#5b21b6</SolidColorBrush>
       <SolidColorBrush x:Key="OmpOS.Color.StatusSuccess">#166534</SolidColorBrush>
       <SolidColorBrush x:Key="OmpOS.Color.StatusWarning">#92400e</SolidColorBrush>
       <SolidColorBrush x:Key="OmpOS.Color.StatusError">#b3261e</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.Border">#e0e0dc</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.BorderStrong">#6f6f6b</SolidColorBrush>
+
+      <!-- Elevation (2.5): surfaces are separated by tone and hairlines; two shadows are not colour roles, so the colour tests do not scan them. -->
+      <BoxShadows x:Key="OmpOS.Shadow.Popup">0 8 24 0 #29000000</BoxShadows>
+      <BoxShadows x:Key="OmpOS.Shadow.Card">0 1 2 0 #14000000</BoxShadows>
+
+      <!-- Fluent resource aliases (spec 3.2). Avalonia's Fluent templates read these keys; pointing them at the OmpOS roles restyles
+           every stock control through its own template states instead of fighting the template with presenter selectors.
+           StaticResource aliases are not OmpOS.Color.* keys, so the contrast tests do not scan them. -->
+      <!-- Button -->
+      <StaticResource x:Key="ButtonBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ButtonBorderBrush" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ButtonForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <!-- AccentButton (a stray Classes="accent" stays on palette) -->
+      <StaticResource x:Key="AccentButtonBackground" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBackgroundDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBackgroundPointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBackgroundPressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBorderBrush" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonBorderBrushDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonBorderBrushPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonBorderBrushPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonForeground" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="AccentButtonForegroundDisabled" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="AccentButtonForegroundPointerOver" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="AccentButtonForegroundPressed" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <!-- ToggleButton -->
+      <StaticResource x:Key="ToggleButtonBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedDisabled" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ToggleButtonBackgroundDisabled" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminate" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminateDisabled" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminatePointerOver" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminatePressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ToggleButtonBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="ToggleButtonBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ToggleButtonBorderBrush" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushChecked" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushCheckedDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushCheckedPointerOver" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushCheckedPressed" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminate" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminateDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminatePointerOver" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminatePressed" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushPointerOver" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushPressed" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminate" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminateDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminatePointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminatePressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <!-- TextBox (TextControl*) -->
+      <StaticResource x:Key="TextControlBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="TextControlBackgroundDisabled" ResourceKey="OmpOS.Color.Surface" />
+      <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="TextControlBorderBrush" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="TextControlBorderBrushDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlButtonBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="TextControlButtonBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="TextControlButtonBorderBrush" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonBorderBrushPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonBorderBrushPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlButtonForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlButtonForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <!-- ComboBox -->
+      <StaticResource x:Key="ComboBoxBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxBackgroundBorderBrushFocused" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ComboBoxBackgroundBorderBrushUnfocused" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ComboBoxBackgroundDisabled" ResourceKey="OmpOS.Color.Surface" />
+      <StaticResource x:Key="ComboBoxBackgroundPointerOver" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ComboBoxBackgroundUnfocused" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxBorderBrush" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ComboBoxBorderBrushPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxBorderBrushPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxDropDownBorderBrush" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForegroundFocused" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForegroundFocusedPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxForegroundFocused" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxForegroundFocusedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxPlaceHolderForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxPlaceHolderForegroundFocusedPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <!-- ComboBoxItem -->
+      <StaticResource x:Key="ComboBoxItemBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBackgroundDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="ComboBoxItemBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelected" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelectedDisabled" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelectedPointerOver" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelectedPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelected" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelectedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelectedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelectedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxItemForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelected" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelectedDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelectedPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelectedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <!-- TabStripItem and TabItem -->
+      <StaticResource x:Key="TabItemHeaderBackgroundDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundSelected" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundSelectedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundSelectedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundUnselected" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundUnselectedPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="TabItemHeaderBackgroundUnselectedPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="TabItemHeaderForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TabItemHeaderForegroundSelected" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundSelectedPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundSelectedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundUnselected" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TabItemHeaderForegroundUnselectedPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundUnselectedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderSelectedPipeFill" ResourceKey="OmpOS.Color.AccentPurple" />
+      <!-- ScrollBar -->
+      <StaticResource x:Key="ScrollBarBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="ScrollBarBorderBrush" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonArrowForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarButtonArrowForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarButtonArrowForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ScrollBarButtonArrowForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ScrollBarButtonBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="ScrollBarButtonBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrush" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrushDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrushPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrushPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarPanningThumbBackground" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ScrollBarThumbBackgroundColor" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ScrollBarThumbFillDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarThumbFillPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarThumbFillPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ScrollBarTrackFill" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarTrackFillPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="ScrollBarTrackStroke" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarTrackStrokePointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <!-- ToolTip -->
+      <StaticResource x:Key="ToolTipBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ToolTipBorderBrush" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ToolTipForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <!-- Flyout -->
+      <StaticResource x:Key="FlyoutBorderThemeBrush" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="FlyoutPresenterBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <!-- Menu and context-menu items -->
+      <StaticResource x:Key="MenuFlyoutItemBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="MenuFlyoutItemBackgroundDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="MenuFlyoutItemBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="MenuFlyoutItemBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="MenuFlyoutItemForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="MenuFlyoutItemForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="MenuFlyoutItemForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutPresenterBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="MenuFlyoutPresenterBorderBrush" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevron" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronSubMenuOpened" ResourceKey="OmpOS.Color.TextSecondary" />
+      <!-- ToggleSwitch -->
+      <StaticResource x:Key="ToggleSwitchContainerBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchContainerBackgroundPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchContainerBackgroundPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchContentForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleSwitchFillOff" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchFillOffPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchFillOffPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchFillOn" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchFillOnDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchFillOnPointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchFillOnPressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchHeaderForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOff" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOffDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOffPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOffPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOn" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOnDisabled" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOnPointerOver" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOnPressed" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchStrokeOff" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleSwitchStrokeOffDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ToggleSwitchStrokeOffPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchStrokeOffPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchStrokeOn" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchStrokeOnDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchStrokeOnPointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchStrokeOnPressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <!-- CheckBox -->
+      <StaticResource x:Key="CheckBoxBackgroundChecked" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundCheckedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundCheckedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundCheckedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminate" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminateDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminatePointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminatePressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUnchecked" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUncheckedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUncheckedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUncheckedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushChecked" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushCheckedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushCheckedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushCheckedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminate" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminateDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminatePointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminatePressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUnchecked" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUncheckedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUncheckedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUncheckedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillChecked" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminate" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUnchecked" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminate" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminateDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUnchecked" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundChecked" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminate" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminateDisabled" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUnchecked" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUncheckedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUncheckedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUncheckedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxForegroundChecked" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundCheckedDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxForegroundCheckedPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundCheckedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminate" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminateDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminatePointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminatePressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundUnchecked" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundUncheckedDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxForegroundUncheckedPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundUncheckedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <!-- RadioButton -->
+      <StaticResource x:Key="RadioButtonBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBackgroundDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBackgroundPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBackgroundPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrush" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrushDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrushPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrushPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFill" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFillDisabled" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFillPointerOver" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFillPressed" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStroke" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStrokeDisabled" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStrokePointerOver" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStrokePressed" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="RadioButtonForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="RadioButtonForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="RadioButtonForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFill" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillPressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStroke" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokePressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFill" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFillDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFillPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFillPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStroke" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStrokeDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStrokePointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStrokePressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <!-- List rows and shared system brushes that the Fluent templates read (defined in Fluent's base resources) -->
+      <StaticResource x:Key="SystemControlHighlightListLowBrush" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="SystemControlHighlightListMediumBrush" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="SystemControlHighlightListLowRevealBackgroundBrush" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="SystemControlHighlightListMediumRevealBackgroundBrush" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="SystemControlHighlightListAccentLowBrush" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="SystemControlHighlightListAccentMediumBrush" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="SystemControlHighlightListAccentHighBrush" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="SystemControlHighlightAltBaseHighBrush" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="SystemControlDisabledBaseMediumLowBrush" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="SystemControlErrorTextForegroundBrush" ResourceKey="OmpOS.Color.StatusError" />
+      <!-- Metrics -->
+      <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
+      <CornerRadius x:Key="OverlayCornerRadius">10</CornerRadius>
+      <Thickness x:Key="ButtonPadding">11,0</Thickness>
+      <x:Double x:Key="ControlContentThemeFontSize">13</x:Double>
+      <x:Double x:Key="TextControlThemeMinHeight">32</x:Double>
+      <Thickness x:Key="TextControlThemePadding">9,0</Thickness>
+      <Thickness x:Key="TextControlBorderThemeThickness">1</Thickness>
+      <Thickness x:Key="TextControlBorderThemeThicknessFocused">2</Thickness>
+      <x:Double x:Key="ComboBoxMinHeight">32</x:Double>
+      <Thickness x:Key="ComboBoxPadding">9,0,0,0</Thickness>
+      <Thickness x:Key="ComboBoxItemThemePadding">8,0</Thickness>
+      <x:Double x:Key="TabItemHeaderFontSize">13</x:Double>
+      <FontWeight x:Key="TabItemHeaderThemeFontWeight">Medium</FontWeight>
+      <Thickness x:Key="TabItemHeaderMargin">12,0</Thickness>
+      <x:Double x:Key="TabStripItemMinHeight">28</x:Double>
+      <x:Double x:Key="TabStripItemPipeThickness">2</x:Double>
+      <x:Double x:Key="ScrollBarSize">10</x:Double>
+      <x:Double x:Key="ToolTipContentThemeFontSize">12</x:Double>
+      <x:Double x:Key="ToolTipContentMaxWidth">360</x:Double>
+      <Thickness x:Key="ToolTipBorderThemePadding">8,4</Thickness>
+      <Thickness x:Key="FlyoutBorderThemePadding">12</Thickness>
+      <Thickness x:Key="FlyoutContentThemePadding">0</Thickness>
+      <Thickness x:Key="MenuFlyoutItemThemePaddingNarrow">8,4</Thickness>
+      <Thickness x:Key="ListBoxItemPadding">8,4</Thickness>
+      <x:Double x:Key="CheckBoxMinHeight">24</x:Double>
+      <x:Double x:Key="RadioButtonMinHeight">24</x:Double>
     </ResourceDictionary>
 
     <ResourceDictionary x:Key="Dark">
-      <SolidColorBrush x:Key="OmpOS.Color.Surface">#18181b</SolidColorBrush>
-      <SolidColorBrush x:Key="OmpOS.Color.SurfaceRaised">#27272a</SolidColorBrush>
-      <SolidColorBrush x:Key="OmpOS.Color.SurfaceActive">#3f3f46</SolidColorBrush>
-      <SolidColorBrush x:Key="OmpOS.Color.TextPrimary">#fafafa</SolidColorBrush>
-      <SolidColorBrush x:Key="OmpOS.Color.TextSecondary">#b0b0b8</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.SurfaceSunken">#141414</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.Surface">#181818</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.SurfaceRaised">#1f1f1f</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.Hover">#262626</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.Selected">#2d2d2d</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.SurfaceActive">#333333</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.DiffAdded">#132a1c</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.DiffRemoved">#301719</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.TextPrimary">#ececec</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.TextSecondary">#a3a3a3</SolidColorBrush>
       <SolidColorBrush x:Key="OmpOS.Color.AccentPurple">#a78bfa</SolidColorBrush>
-      <SolidColorBrush x:Key="OmpOS.Color.AccentPurpleOn">#18181b</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.AccentPurpleOn">#141414</SolidColorBrush>
       <SolidColorBrush x:Key="OmpOS.Color.FocusRing">#c4b5fd</SolidColorBrush>
       <SolidColorBrush x:Key="OmpOS.Color.StatusSuccess">#4ade80</SolidColorBrush>
       <SolidColorBrush x:Key="OmpOS.Color.StatusWarning">#fbbf24</SolidColorBrush>
-      <SolidColorBrush x:Key="OmpOS.Color.StatusError">#fca5a5</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.StatusError">#ff9a9a</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.Border">#2c2c2c</SolidColorBrush>
+      <SolidColorBrush x:Key="OmpOS.Color.BorderStrong">#808080</SolidColorBrush>
+
+      <BoxShadows x:Key="OmpOS.Shadow.Popup">0 8 24 0 #99000000</BoxShadows>
+      <BoxShadows x:Key="OmpOS.Shadow.Card">0 0 0 0 #00000000</BoxShadows>
+
+      <!-- Fluent resource aliases (spec 3.2). Avalonia's Fluent templates read these keys; pointing them at the OmpOS roles restyles
+           every stock control through its own template states instead of fighting the template with presenter selectors.
+           StaticResource aliases are not OmpOS.Color.* keys, so the contrast tests do not scan them. -->
+      <!-- Button -->
+      <StaticResource x:Key="ButtonBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ButtonBorderBrush" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ButtonForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <!-- AccentButton (a stray Classes="accent" stays on palette) -->
+      <StaticResource x:Key="AccentButtonBackground" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBackgroundDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBackgroundPointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBackgroundPressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBorderBrush" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonBorderBrushDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonBorderBrushPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonBorderBrushPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonForeground" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="AccentButtonForegroundDisabled" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="AccentButtonForegroundPointerOver" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="AccentButtonForegroundPressed" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <!-- ToggleButton -->
+      <StaticResource x:Key="ToggleButtonBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedDisabled" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ToggleButtonBackgroundDisabled" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminate" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminateDisabled" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminatePointerOver" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminatePressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ToggleButtonBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="ToggleButtonBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ToggleButtonBorderBrush" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushChecked" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushCheckedDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushCheckedPointerOver" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushCheckedPressed" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminate" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminateDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminatePointerOver" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminatePressed" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushPointerOver" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushPressed" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminate" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminateDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminatePointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminatePressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <!-- TextBox (TextControl*) -->
+      <StaticResource x:Key="TextControlBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="TextControlBackgroundDisabled" ResourceKey="OmpOS.Color.Surface" />
+      <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="TextControlBorderBrush" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="TextControlBorderBrushDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlButtonBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="TextControlButtonBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="TextControlButtonBorderBrush" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonBorderBrushPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonBorderBrushPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlButtonForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlButtonForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <!-- ComboBox -->
+      <StaticResource x:Key="ComboBoxBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxBackgroundBorderBrushFocused" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ComboBoxBackgroundBorderBrushUnfocused" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ComboBoxBackgroundDisabled" ResourceKey="OmpOS.Color.Surface" />
+      <StaticResource x:Key="ComboBoxBackgroundPointerOver" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ComboBoxBackgroundUnfocused" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxBorderBrush" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ComboBoxBorderBrushPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxBorderBrushPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxDropDownBorderBrush" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForegroundFocused" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForegroundFocusedPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxForegroundFocused" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxForegroundFocusedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxPlaceHolderForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxPlaceHolderForegroundFocusedPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <!-- ComboBoxItem -->
+      <StaticResource x:Key="ComboBoxItemBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBackgroundDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="ComboBoxItemBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelected" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelectedDisabled" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelectedPointerOver" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelectedPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelected" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelectedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelectedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelectedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxItemForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelected" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelectedDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelectedPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelectedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <!-- TabStripItem and TabItem -->
+      <StaticResource x:Key="TabItemHeaderBackgroundDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundSelected" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundSelectedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundSelectedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundUnselected" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundUnselectedPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="TabItemHeaderBackgroundUnselectedPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="TabItemHeaderForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TabItemHeaderForegroundSelected" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundSelectedPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundSelectedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundUnselected" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="TabItemHeaderForegroundUnselectedPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundUnselectedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderSelectedPipeFill" ResourceKey="OmpOS.Color.AccentPurple" />
+      <!-- ScrollBar -->
+      <StaticResource x:Key="ScrollBarBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="ScrollBarBorderBrush" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonArrowForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarButtonArrowForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarButtonArrowForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ScrollBarButtonArrowForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ScrollBarButtonBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="ScrollBarButtonBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrush" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrushDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrushPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrushPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarPanningThumbBackground" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ScrollBarThumbBackgroundColor" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ScrollBarThumbFillDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarThumbFillPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarThumbFillPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ScrollBarTrackFill" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarTrackFillPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="ScrollBarTrackStroke" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarTrackStrokePointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <!-- ToolTip -->
+      <StaticResource x:Key="ToolTipBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="ToolTipBorderBrush" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ToolTipForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <!-- Flyout -->
+      <StaticResource x:Key="FlyoutBorderThemeBrush" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="FlyoutPresenterBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <!-- Menu and context-menu items -->
+      <StaticResource x:Key="MenuFlyoutItemBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="MenuFlyoutItemBackgroundDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="MenuFlyoutItemBackgroundPointerOver" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="MenuFlyoutItemBackgroundPressed" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="MenuFlyoutItemForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="MenuFlyoutItemForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="MenuFlyoutItemForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForeground" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutPresenterBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />
+      <StaticResource x:Key="MenuFlyoutPresenterBorderBrush" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevron" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronSubMenuOpened" ResourceKey="OmpOS.Color.TextSecondary" />
+      <!-- ToggleSwitch -->
+      <StaticResource x:Key="ToggleSwitchContainerBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchContainerBackgroundPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchContainerBackgroundPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchContentForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleSwitchFillOff" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchFillOffPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchFillOffPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchFillOn" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchFillOnDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchFillOnPointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchFillOnPressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchHeaderForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOff" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOffDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOffPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOffPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOn" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOnDisabled" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOnPointerOver" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOnPressed" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchStrokeOff" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleSwitchStrokeOffDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="ToggleSwitchStrokeOffPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchStrokeOffPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchStrokeOn" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchStrokeOnDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchStrokeOnPointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchStrokeOnPressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <!-- CheckBox -->
+      <StaticResource x:Key="CheckBoxBackgroundChecked" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundCheckedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundCheckedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundCheckedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminate" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminateDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminatePointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminatePressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUnchecked" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUncheckedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUncheckedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUncheckedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushChecked" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushCheckedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushCheckedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushCheckedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminate" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminateDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminatePointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminatePressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUnchecked" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUncheckedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUncheckedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUncheckedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillChecked" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminate" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUnchecked" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminate" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminateDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUnchecked" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundChecked" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminate" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminateDisabled" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUnchecked" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUncheckedDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUncheckedPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUncheckedPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxForegroundChecked" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundCheckedDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxForegroundCheckedPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundCheckedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminate" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminateDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminatePointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminatePressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundUnchecked" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundUncheckedDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxForegroundUncheckedPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundUncheckedPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <!-- RadioButton -->
+      <StaticResource x:Key="RadioButtonBackground" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBackgroundDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBackgroundPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBackgroundPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrush" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrushDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrushPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrushPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFill" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFillDisabled" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFillPointerOver" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFillPressed" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStroke" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStrokeDisabled" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStrokePointerOver" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStrokePressed" ResourceKey="OmpOS.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonForeground" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="RadioButtonForegroundDisabled" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="RadioButtonForegroundPointerOver" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="RadioButtonForegroundPressed" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFill" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillPressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStroke" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokePressed" ResourceKey="OmpOS.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFill" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFillDisabled" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFillPointerOver" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFillPressed" ResourceKey="OmpOS.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStroke" ResourceKey="OmpOS.Color.BorderStrong" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStrokeDisabled" ResourceKey="OmpOS.Color.Border" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStrokePointerOver" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStrokePressed" ResourceKey="OmpOS.Color.TextSecondary" />
+      <!-- List rows and shared system brushes that the Fluent templates read (defined in Fluent's base resources) -->
+      <StaticResource x:Key="SystemControlHighlightListLowBrush" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="SystemControlHighlightListMediumBrush" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="SystemControlHighlightListLowRevealBackgroundBrush" ResourceKey="OmpOS.Color.Hover" />
+      <StaticResource x:Key="SystemControlHighlightListMediumRevealBackgroundBrush" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="SystemControlHighlightListAccentLowBrush" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="SystemControlHighlightListAccentMediumBrush" ResourceKey="OmpOS.Color.Selected" />
+      <StaticResource x:Key="SystemControlHighlightListAccentHighBrush" ResourceKey="OmpOS.Color.SurfaceActive" />
+      <StaticResource x:Key="SystemControlHighlightAltBaseHighBrush" ResourceKey="OmpOS.Color.TextPrimary" />
+      <StaticResource x:Key="SystemControlDisabledBaseMediumLowBrush" ResourceKey="OmpOS.Color.TextSecondary" />
+      <StaticResource x:Key="SystemControlErrorTextForegroundBrush" ResourceKey="OmpOS.Color.StatusError" />
+      <!-- Metrics -->
+      <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
+      <CornerRadius x:Key="OverlayCornerRadius">10</CornerRadius>
+      <Thickness x:Key="ButtonPadding">11,0</Thickness>
+      <x:Double x:Key="ControlContentThemeFontSize">13</x:Double>
+      <x:Double x:Key="TextControlThemeMinHeight">32</x:Double>
+      <Thickness x:Key="TextControlThemePadding">9,0</Thickness>
+      <Thickness x:Key="TextControlBorderThemeThickness">1</Thickness>
+      <Thickness x:Key="TextControlBorderThemeThicknessFocused">2</Thickness>
+      <x:Double x:Key="ComboBoxMinHeight">32</x:Double>
+      <Thickness x:Key="ComboBoxPadding">9,0,0,0</Thickness>
+      <Thickness x:Key="ComboBoxItemThemePadding">8,0</Thickness>
+      <x:Double x:Key="TabItemHeaderFontSize">13</x:Double>
+      <FontWeight x:Key="TabItemHeaderThemeFontWeight">Medium</FontWeight>
+      <Thickness x:Key="TabItemHeaderMargin">12,0</Thickness>
+      <x:Double x:Key="TabStripItemMinHeight">28</x:Double>
+      <x:Double x:Key="TabStripItemPipeThickness">2</x:Double>
+      <x:Double x:Key="ScrollBarSize">10</x:Double>
+      <x:Double x:Key="ToolTipContentThemeFontSize">12</x:Double>
+      <x:Double x:Key="ToolTipContentMaxWidth">360</x:Double>
+      <Thickness x:Key="ToolTipBorderThemePadding">8,4</Thickness>
+      <Thickness x:Key="FlyoutBorderThemePadding">12</Thickness>
+      <Thickness x:Key="FlyoutContentThemePadding">0</Thickness>
+      <Thickness x:Key="MenuFlyoutItemThemePaddingNarrow">8,4</Thickness>
+      <Thickness x:Key="ListBoxItemPadding">8,4</Thickness>
+      <x:Double x:Key="CheckBoxMinHeight">24</x:Double>
+      <x:Double x:Key="RadioButtonMinHeight">24</x:Double>
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
-  <!-- Type tokens (20-UI-SPEC.md, Typography). Three sizes, two weights. The bundled faces are named by their
-       avares URI; the fallbacks follow the family name after the fragment. -->
-  <FontFamily x:Key="OmpOS.Font.Family">avares://OmpOS.Native.Views/Assets/Fonts/DMSans/DMSans.ttf#DM Sans, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
-  <FontFamily x:Key="OmpOS.Font.Display">avares://OmpOS.Native.Views/Assets/Fonts/Anybody/Anybody.ttf#Anybody, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
-  <FontFamily x:Key="OmpOS.Font.Mono">avares://OmpOS.Native.Views/Assets/Fonts/SpaceMono/SpaceMono-Regular.ttf#Space Mono, Menlo, Consolas, Liberation Mono, monospace</FontFamily>
+  <!-- Type tokens (20-UI-SPEC.md, Typography; spec 2.4). The bundled faces are static instances named by their avares folder URI,
+       so Avalonia loads every weight of the family; the fallbacks follow the family name after the fragment.
+       Anybody (Display) is used only at 20 px and above, weight SemiBold. -->
+  <FontFamily x:Key="OmpOS.Font.Family">avares://OmpOS.Native.Views/Assets/Fonts/DMSans#DM Sans, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
+  <FontFamily x:Key="OmpOS.Font.Display">avares://OmpOS.Native.Views/Assets/Fonts/Anybody#Anybody, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
+  <FontFamily x:Key="OmpOS.Font.Mono">avares://OmpOS.Native.Views/Assets/Fonts/SpaceMono#Space Mono, Menlo, Consolas, Liberation Mono, monospace</FontFamily>
+  <x:Double x:Key="OmpOS.Font.Size.Small">12</x:Double>
   <x:Double x:Key="OmpOS.Font.Size.Label">13</x:Double>
-  <x:Double x:Key="OmpOS.Font.Size.Body">15</x:Double>
-  <x:Double x:Key="OmpOS.Font.Size.Heading">18</x:Double>
+  <x:Double x:Key="OmpOS.Font.Size.Body">14</x:Double>
+  <x:Double x:Key="OmpOS.Font.Size.Heading">16</x:Double>
+  <x:Double x:Key="OmpOS.Font.Size.DisplaySm">20</x:Double>
+  <x:Double x:Key="OmpOS.Font.Size.Display">24</x:Double>
+  <x:Double x:Key="OmpOS.Font.Size.Mono">12</x:Double>
+  <x:Double x:Key="OmpOS.Font.Size.MonoTerminal">13</x:Double>
   <FontWeight x:Key="OmpOS.Font.Weight.Regular">Normal</FontWeight>
+  <FontWeight x:Key="OmpOS.Font.Weight.Medium">Medium</FontWeight>
   <FontWeight x:Key="OmpOS.Font.Weight.Semibold">SemiBold</FontWeight>
-  <x:Double x:Key="OmpOS.Font.LineHeight.Label">18.2</x:Double>
-  <x:Double x:Key="OmpOS.Font.LineHeight.Body">22.5</x:Double>
-  <x:Double x:Key="OmpOS.Font.LineHeight.Heading">21.6</x:Double>
+  <x:Double x:Key="OmpOS.Font.LineHeight.Small">16</x:Double>
+  <x:Double x:Key="OmpOS.Font.LineHeight.Label">18</x:Double>
+  <x:Double x:Key="OmpOS.Font.LineHeight.Body">21</x:Double>
+  <x:Double x:Key="OmpOS.Font.LineHeight.Heading">22</x:Double>
+  <x:Double x:Key="OmpOS.Font.LineHeight.DisplaySm">26</x:Double>
+  <x:Double x:Key="OmpOS.Font.LineHeight.Display">30</x:Double>
+  <x:Double x:Key="OmpOS.Font.LineHeight.Mono">18</x:Double>
+  <x:Double x:Key="OmpOS.Font.LineHeight.MonoTerminal">17</x:Double>
 
-  <!-- Spacing tokens (multiples of 4). Uniform Thickness values: they are applied to Padding, Margin and
-       BorderThickness, which take Thickness. -->
+  <!-- Spacing tokens. Uniform Thickness values: they are applied to Padding, Margin and BorderThickness, which take Thickness. -->
+  <Thickness x:Key="OmpOS.Space.Xxs">2</Thickness>
   <Thickness x:Key="OmpOS.Space.Xs">4</Thickness>
+  <Thickness x:Key="OmpOS.Space.Compact">6</Thickness>
   <Thickness x:Key="OmpOS.Space.Sm">8</Thickness>
+  <Thickness x:Key="OmpOS.Space.Cozy">12</Thickness>
   <Thickness x:Key="OmpOS.Space.Md">16</Thickness>
   <Thickness x:Key="OmpOS.Space.Lg">24</Thickness>
   <Thickness x:Key="OmpOS.Space.Xl">32</Thickness>
   <Thickness x:Key="OmpOS.Space.Xxl">48</Thickness>
   <Thickness x:Key="OmpOS.Space.Xxxl">64</Thickness>
 
-  <!-- Corner radius scale (multiples of 4). -->
+  <!-- Corner radius scale (2.5): Sm chips and skeletons, Control buttons and inputs, Md cards, Column Kanban columns, Lg composer and popups, Pill chips and round buttons. -->
   <CornerRadius x:Key="OmpOS.Radius.Sm">4</CornerRadius>
+  <CornerRadius x:Key="OmpOS.Radius.Control">6</CornerRadius>
   <CornerRadius x:Key="OmpOS.Radius.Md">8</CornerRadius>
+  <CornerRadius x:Key="OmpOS.Radius.Column">10</CornerRadius>
   <CornerRadius x:Key="OmpOS.Radius.Lg">12</CornerRadius>
+  <CornerRadius x:Key="OmpOS.Radius.Pill">999</CornerRadius>
+
+  <!-- A transparent fill for the Fluent aliases of the variants: Transparent cannot be an OmpOS.Color.* role (every such element is a hex role). -->
+  <SolidColorBrush x:Key="OmpOS.Brush.Transparent">Transparent</SolidColorBrush>
+
+  <!-- Hairline: the width of every divider and card outline. -->
+  <Thickness x:Key="OmpOS.Border.Hairline">1</Thickness>
 
   <!-- Scalar gaps for StackPanel.Spacing and Grid.ColumnSpacing, which take double. Same values as the spacing tokens. -->
+  <x:Double x:Key="OmpOS.Gap.Xxs">2</x:Double>
   <x:Double x:Key="OmpOS.Gap.Xs">4</x:Double>
+  <x:Double x:Key="OmpOS.Gap.Compact">6</x:Double>
   <x:Double x:Key="OmpOS.Gap.Sm">8</x:Double>
+  <x:Double x:Key="OmpOS.Gap.Cozy">12</x:Double>
 
-  <!-- Fixed sizes (multiples of 4, except the 2 px focus stroke, which is a border width). -->
+  <!-- Fixed sizes (the 2 px focus stroke is a border width). TargetMin is the one place that sets the control height of every view that writes
+       MinHeight="{DynamicResource OmpOS.Size.TargetMin}": 32 on the desktop (OQ-87; WCAG 2.2 AA asks 24). The Android head overrides it with 44 in
+       its application resources, where a finger is the pointer. Control heights: ControlHeight buttons and inputs, ControlHeightSm toolbar buttons,
+       tabs and chips that are buttons; IconButton and IconButtonSm square icon buttons (24 is the WCAG 2.2 AA minimum target, SC 2.5.8). -->
   <x:Double x:Key="OmpOS.Size.SessionListWidth">240</x:Double>
-  <x:Double x:Key="OmpOS.Size.TargetMin">44</x:Double>
+  <x:Double x:Key="OmpOS.Size.TargetMin">32</x:Double>
+  <x:Double x:Key="OmpOS.Size.ControlHeight">32</x:Double>
+  <x:Double x:Key="OmpOS.Size.ControlHeightSm">28</x:Double>
+  <x:Double x:Key="OmpOS.Size.IconButton">28</x:Double>
+  <x:Double x:Key="OmpOS.Size.IconButtonSm">24</x:Double>
   <Thickness x:Key="OmpOS.Size.FocusBorder">2</Thickness>
 
   <!-- Agent Panel sizes (46-UI-SPEC, Spacing Scale). Fixed sizes, not spacing and not colours, so they sit outside the theme variants. -->
@@ -79,10 +906,19 @@
   <x:Double x:Key="OmpOS.Size.StageFlyoutWidth">360</x:Double>
   <x:Double x:Key="OmpOS.Size.StageFlyoutMaxHeight">360</x:Double>
   <x:Double x:Key="OmpOS.Size.ThreadMinWidth">400</x:Double>
-  <x:Double x:Key="OmpOS.Size.ThreadContentMaxWidth">880</x:Double>
-  <x:Double x:Key="OmpOS.Size.SessionRowMinHeight">64</x:Double>
+  <x:Double x:Key="OmpOS.Size.ThreadContentMaxWidth">760</x:Double>
+  <x:Double x:Key="OmpOS.Size.SessionRowMinHeight">48</x:Double>
   <x:Double x:Key="OmpOS.Size.StageRowMinHeight">28</x:Double>
-  <x:Double x:Key="OmpOS.Size.ChipHeight">24</x:Double>
+  <x:Double x:Key="OmpOS.Size.ChipHeight">20</x:Double>
   <x:Double x:Key="OmpOS.Size.IconSize">16</x:Double>
+  <x:Double x:Key="OmpOS.Size.IconSizeSm">14</x:Double>
+  <x:Double x:Key="OmpOS.Size.TitleBarHeight">40</x:Double>
+  <x:Double x:Key="OmpOS.Size.PipelineStripHeight">28</x:Double>
+  <x:Double x:Key="OmpOS.Size.ComposerMinHeight">72</x:Double>
+  <x:Double x:Key="OmpOS.Size.ComposerMaxHeight">220</x:Double>
+  <x:Double x:Key="OmpOS.Size.ScrollBarThumb">6</x:Double>
+  <x:Double x:Key="OmpOS.Size.SettingsNavWidth">220</x:Double>
+  <x:Double x:Key="OmpOS.Size.SettingsContentMaxWidth">720</x:Double>
+  <x:Double x:Key="OmpOS.Size.KanbanColumnWidth">280</x:Double>
 
 </ResourceDictionary>

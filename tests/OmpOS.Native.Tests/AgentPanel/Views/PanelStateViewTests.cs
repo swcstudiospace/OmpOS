@@ -56,7 +56,7 @@ public sealed class PanelStateViewTests : IDisposable
             start.Content.ShouldBe(AgentPanelCopy.NewAgent);
             AutomationProperties.GetName(start).ShouldBe(AgentPanelCopy.StartFirstAgent);
             start.Classes.Contains("primary").ShouldBeTrue();
-            start.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
+            start.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             ViewHarness.Find<Border>(view, "PanelError").IsEffectivelyVisible.ShouldBeFalse();
             window.Close();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);

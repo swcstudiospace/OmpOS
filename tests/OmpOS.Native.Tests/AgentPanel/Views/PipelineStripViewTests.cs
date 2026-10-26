@@ -29,7 +29,7 @@ public sealed class PipelineStripViewTests
         timeline.Apply(PanelFixtures.Stage(StageSource.Substrate, "brief", StageStatus.Succeeded, now, title: "Brief", sessionId: "s1"));
     }
 
-    /// <summary>The strip is one 44 px button named by the model, whose pills carry the model's texts in pipeline order.</summary>
+    /// <summary>The strip is one button, at least the WCAG 2.2 minimum (24 px), named by the model, whose pills carry the model's texts in pipeline order.</summary>
     [Fact]
     public async Task TheStripIsOneNamedButtonOfPills()
     {
@@ -44,8 +44,8 @@ public sealed class PipelineStripViewTests
             var button = ViewHarness.Find<Button>(strip, "PipelineStrip");
             AutomationProperties.GetName(button).ShouldBe(timeline.PipelineAccessibleName);
             AutomationProperties.GetName(button).ShouldStartWith(AgentPanelCopy.PipelineAccessibleNamePrefix);
-            button.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
-            button.Bounds.Height.ShouldBeGreaterThanOrEqualTo(44);
+            button.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
+            button.Bounds.Height.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             var pillTexts = ViewHarness.VisibleTexts(button);
             pillTexts.ShouldBe(timeline.Pills.Select(static pill => pill.Text));
             timeline.Pills.Count.ShouldBe(4);

@@ -7,7 +7,7 @@ using Xunit;
 namespace OmpOS.Native.Tests;
 
 /// <summary>
-/// The bundled font files behind the token dictionary (VX-01). Each family ships unmodified (its SHA-256 matches
+/// The bundled font files behind the token dictionary (VX-01). Each face ships unmodified, or as the derivation the manifest records (its SHA-256 matches
 /// <c>Theme/FontManifest.txt</c>), with its SIL OFL 1.1 notice, and its embedded name table names the copyright holder
 /// and the family the token URI uses. The sfnt and name tables are read directly from the binary with bounds checks, so
 /// no Avalonia runtime is involved and malformed input throws instead of passing silently.
@@ -20,22 +20,26 @@ public sealed class FontResourceTests
     private const int CopyrightNameId = 0;
     private const int FamilyNameId = 1;
     private const int TypographicFamilyNameId = 16;
+    private const int WeightClassOffsetInOs2 = 4;
     private const int SfntHeaderLength = 12;
     private const int TableRecordLength = 16;
     private const int NameTableHeaderLength = 6;
     private const int NameRecordLength = 12;
     private static readonly int[] TokenFamilyNameIds = [FamilyNameId, TypographicFamilyNameId];
 
-    /// <summary>The three shipped TTF files, relative to the Assets/Fonts folder.</summary>
+    /// <summary>The shipped TTF files, relative to the Assets/Fonts folder.</summary>
     public static TheoryData<string> FontFiles
     {
         get
         {
             return new TheoryData<string>
             {
-                "DMSans/DMSans.ttf",
-                "Anybody/Anybody.ttf",
+                "DMSans/DMSans-Regular.ttf",
+                "DMSans/DMSans-Medium.ttf",
+                "DMSans/DMSans-SemiBold.ttf",
+                "Anybody/Anybody-SemiBold.ttf",
                 "SpaceMono/SpaceMono-Regular.ttf",
+                "SpaceMono/SpaceMono-Bold.ttf",
             };
         }
     }
@@ -47,9 +51,12 @@ public sealed class FontResourceTests
         {
             return new TheoryData<string, string, string>
             {
-                { "DMSans/DMSans.ttf", "Copyright 2014 The DM Sans Project Authors", "DM Sans" },
-                { "Anybody/Anybody.ttf", "Copyright 2020 The Anybody Project Authors", "Anybody" },
+                { "DMSans/DMSans-Regular.ttf", "Copyright 2014 The DM Sans Project Authors", "DM Sans" },
+                { "DMSans/DMSans-Medium.ttf", "Copyright 2014 The DM Sans Project Authors", "DM Sans" },
+                { "DMSans/DMSans-SemiBold.ttf", "Copyright 2014 The DM Sans Project Authors", "DM Sans" },
+                { "Anybody/Anybody-SemiBold.ttf", "Copyright 2020 The Anybody Project Authors", "Anybody" },
                 { "SpaceMono/SpaceMono-Regular.ttf", "Copyright 2016 The Space Mono Project Authors", "Space Mono" },
+                { "SpaceMono/SpaceMono-Bold.ttf", "Copyright 2016 The Space Mono Project Authors", "Space Mono" },
             };
         }
     }
@@ -61,14 +68,17 @@ public sealed class FontResourceTests
         {
             return new TheoryData<string, string>
             {
-                { "DMSans/DMSans.ttf", "Copyright 2014 The DM Sans Project Authors" },
-                { "Anybody/Anybody.ttf", "Copyright 2020 The Anybody Project Authors" },
+                { "DMSans/DMSans-Regular.ttf", "Copyright 2014 The DM Sans Project Authors" },
+                { "DMSans/DMSans-Medium.ttf", "Copyright 2014 The DM Sans Project Authors" },
+                { "DMSans/DMSans-SemiBold.ttf", "Copyright 2014 The DM Sans Project Authors" },
+                { "Anybody/Anybody-SemiBold.ttf", "Copyright 2020 The Anybody Project Authors" },
                 { "SpaceMono/SpaceMono-Regular.ttf", "Copyright 2016 The Space Mono Project Authors" },
+                { "SpaceMono/SpaceMono-Bold.ttf", "Copyright 2016 The Space Mono Project Authors" },
             };
         }
     }
 
-    /// <summary>Each shipped TTF hashes to its manifest row, so the bytes are the upstream bytes.</summary>
+    /// <summary>Each shipped TTF hashes to its manifest row, so the bytes are the upstream bytes or the recorded derivation.</summary>
     [Theory]
     [MemberData(nameof(FontFiles))]
     public void EachFontFileHashesToItsManifestRow(string relativePath)
@@ -111,6 +121,23 @@ public sealed class FontResourceTests
         familyCandidates.ShouldContain(familyName, StringComparer.Ordinal, $"{relativePath} must name the family '{familyName}' in nameID 1 or 16");
     }
 
+    /// <summary>Every shipped face is a static instance (no fvar table) whose OS/2 weight class is the weight its file name states, because Avalonia cannot select a variable axis (R3).</summary>
+    [Theory]
+    [InlineData("DMSans/DMSans-Regular.ttf", 400)]
+    [InlineData("DMSans/DMSans-Medium.ttf", 500)]
+    [InlineData("DMSans/DMSans-SemiBold.ttf", 600)]
+    [InlineData("Anybody/Anybody-SemiBold.ttf", 600)]
+    [InlineData("SpaceMono/SpaceMono-Regular.ttf", 400)]
+    [InlineData("SpaceMono/SpaceMono-Bold.ttf", 700)]
+    public void EachShippedFaceIsAStaticInstanceOfItsStatedWeight(string relativePath, int weightClass)
+    {
+        var font = File.ReadAllBytes(FontPath(relativePath));
+
+        Should.Throw<InvalidDataException>(() => FindTable(font, "fvar"), $"{relativePath} must not be a variable font");
+        var (os2Offset, _) = FindTable(font, "OS/2");
+        ReadUInt16(font, os2Offset + WeightClassOffsetInOs2).ShouldBe((ushort)weightClass);
+    }
+
     /// <summary>The font folder holds exactly the manifest fonts and their OFL notices, so no other font file ships.</summary>
     [Fact]
     public void TheFontFolderHoldsOnlyTheManifestFontsAndTheirNotices()
@@ -120,6 +147,7 @@ public sealed class FontResourceTests
 
         var expected = ReadManifest().Keys
             .SelectMany(static relativePath => new[] { relativePath, FamilyFolder(relativePath) + "/OFL.txt" })
+            .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)
             .ToArray();
         var actual = Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
@@ -141,7 +169,7 @@ public sealed class FontResourceTests
     [Fact]
     public void TruncatedFontIsRejectedNotSkipped()
     {
-        var bytes = File.ReadAllBytes(FontPath("DMSans/DMSans.ttf"));
+        var bytes = File.ReadAllBytes(FontPath("DMSans/DMSans-Regular.ttf"));
 
         Should.Throw<InvalidDataException>(() => ReadNames(bytes[..200]));
     }

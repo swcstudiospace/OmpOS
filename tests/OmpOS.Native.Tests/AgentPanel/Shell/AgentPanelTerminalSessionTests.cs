@@ -73,7 +73,7 @@ public sealed class AgentPanelTerminalSessionTests
 
             AutomationProperties.GetName(button).ShouldBe("New omp terminal");
             ToolTip.GetTip(button).ShouldBe("New omp terminal (Ctrl+Shift+T)");
-            button.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
+            button.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             ViewHarness.TabOrder(main).ToList().IndexOf("New omp terminal").ShouldBe(ViewHarness.TabOrder(main).ToList().IndexOf("New agent") + 1, "the control follows New agent");
 
             ShellHarness.Click(window, button);
@@ -106,8 +106,8 @@ public sealed class AgentPanelTerminalSessionTests
             sendNow.Content.ShouldBe("Send now");
             queue.Content.ShouldBe("Queue");
             AutomationProperties.GetName(input).ShouldBe("Steer message");
-            sendNow.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
-            queue.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
+            sendNow.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
+            queue.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
 
             input.Text = "turn left";
             ShellHarness.Click(window, sendNow);

@@ -8,7 +8,7 @@ internal sealed class FakeGeneralSource : FakeSettingsSource<GeneralSettingsValu
 {
     /// <summary>Creates a source whose saved motion is Follow system.</summary>
     public FakeGeneralSource()
-        : base(new GeneralSettingsValues(MotionPreference.System))
+        : base(new GeneralSettingsValues(MotionPreference.System, ThemePreference.Dark))
     {
     }
 

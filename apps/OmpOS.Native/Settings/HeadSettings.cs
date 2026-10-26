@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Styling;
 using OmpOS.Native.Agents;
 using OmpOS.Presentation;
 using OmpOS.Presentation.Settings;
@@ -52,6 +54,19 @@ internal sealed class HeadSettings : IAsyncDisposable
     /// <summary>Gets the motion setting that was saved when the settings were created. A file that cannot be used gives <see cref="MotionPreference.System"/>.</summary>
     public MotionPreference Motion { get; private init; }
 
+    /// <summary>Gets the theme setting that was saved when the settings were created. A file that cannot be used gives <see cref="ThemePreference.Dark"/>.</summary>
+    public ThemePreference Theme { get; private init; }
+
+    /// <summary>Maps a theme preference to the Avalonia theme variant the application requests. System is the platform's own variant.</summary>
+    /// <param name="theme">The preference.</param>
+    /// <returns>The variant.</returns>
+    public static ThemeVariant VariantOf(ThemePreference theme) => theme switch
+    {
+        ThemePreference.System => ThemeVariant.Default,
+        ThemePreference.Light => ThemeVariant.Light,
+        _ => ThemeVariant.Dark,
+    };
+
     /// <summary>Reads the stored values, or the defaults when the file cannot be used.</summary>
     /// <param name="store">The settings file.</param>
     /// <returns>The values.</returns>
@@ -100,7 +115,7 @@ internal sealed class HeadSettings : IAsyncDisposable
         var host = new SettingsWindowHost(
             () => SettingsWindowFactory.CreateModel(windowOptions),
             options.WindowFactory ?? (static model => new AvaloniaSettingsWindow(model)));
-        return new HeadSettings(store, host, sweeper, options.SweepInterval, options.Owned, stored) { Motion = stored.Motion };
+        return new HeadSettings(store, host, sweeper, options.SweepInterval, options.Owned, stored) { Motion = stored.Motion, Theme = stored.Theme };
     }
 
     /// <summary>Starts the sweeper, which makes a first pass over the sessions the registry holds. Call it after the registry is loaded. It does nothing when the head runs no sweeper.</summary>
@@ -215,6 +230,11 @@ internal sealed class HeadSettings : IAsyncDisposable
         {
             _main?.ApplyMotion(now.Motion);
             _owner?.Classes.Set(MainView.ReducedMotionClass, now.Motion == MotionPreference.Reduced);
+        }
+
+        if (now.Theme != before.Theme && Application.Current is { } application)
+        {
+            application.RequestedThemeVariant = VariantOf(now.Theme);
         }
 
         if (now.TerminalAutoRun != before.TerminalAutoRun)

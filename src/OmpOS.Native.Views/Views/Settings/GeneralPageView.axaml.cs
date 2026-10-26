@@ -5,8 +5,8 @@ using OmpOS.Presentation.Settings;
 namespace OmpOS.Native.Views.Settings;
 
 /// <summary>
-/// The General page: the motion setting as a list of three choices, each with its label and its sentence, and the privacy statement as
-/// selectable text. A choice is a draft until the footer's Save writes it.
+/// The General page: the theme and motion settings as lists of three choices, each with its label and its sentence, and the privacy
+/// statement as selectable text. A choice is a draft until the footer's Save writes it; the running window follows a saved theme at once.
 /// </summary>
 internal partial class GeneralPageView : SettingsPageViewBase
 {
@@ -17,9 +17,13 @@ internal partial class GeneralPageView : SettingsPageViewBase
     public GeneralPageView()
     {
         InitializeComponent();
+        ThemeList.SelectionChanged += OnThemeSelectionChanged;
         MotionList.SelectionChanged += OnMotionSelectionChanged;
         Start();
     }
+
+    /// <summary>Gets the list of theme choices.</summary>
+    internal ListBox ThemeChoices => ThemeList;
 
     /// <summary>Gets the list of motion choices.</summary>
     internal ListBox Motion => MotionList;
@@ -42,6 +46,9 @@ internal partial class GeneralPageView : SettingsPageViewBase
         _syncing = true;
         try
         {
+            ThemeList.SelectedItem = ThemeList.Items
+                .OfType<ListBoxItem>()
+                .FirstOrDefault(item => item.Tag is ThemeOption option && option.Value == general.Theme);
             MotionList.SelectedItem = MotionList.Items
                 .OfType<ListBoxItem>()
                 .FirstOrDefault(item => item.Tag is MotionOption option && option.Value == general.Motion);
@@ -60,21 +67,40 @@ internal partial class GeneralPageView : SettingsPageViewBase
         }
 
         _built = page;
-        MotionList.Items.Clear();
-        foreach (var option in GeneralPage.MotionOptions)
+        Fill(ThemeList, GeneralPage.ThemeOptions.Select(static option => (option.Label, option.Description, (object)option)));
+        Fill(MotionList, GeneralPage.MotionOptions.Select(static option => (option.Label, option.Description, (object)option)));
+    }
+
+    private static void Fill(ListBox list, IEnumerable<(string Label, string Description, object Tag)> choices)
+    {
+        list.Items.Clear();
+        foreach (var (text, sentence, tag) in choices)
         {
-            var label = new TextBlock { Text = option.Label };
+            var label = new TextBlock { Text = text };
             label.Classes.Add("settings-label");
-            var description = new TextBlock { Text = option.Description };
+            var description = new TextBlock { Text = sentence };
             description.Classes.Add("settings-help");
             var content = new StackPanel();
             content.Children.Add(label);
             content.Children.Add(description);
 
-            var item = new ListBoxItem { Content = content, Tag = option };
-            AutomationProperties.SetName(item, option.Label);
-            AutomationProperties.SetHelpText(item, option.Description);
-            MotionList.Items.Add(item);
+            var item = new ListBoxItem { Content = content, Tag = tag };
+            AutomationProperties.SetName(item, text);
+            AutomationProperties.SetHelpText(item, sentence);
+            list.Items.Add(item);
+        }
+    }
+
+    private void OnThemeSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_syncing || Page is not GeneralPage page)
+        {
+            return;
+        }
+
+        if (ThemeList.SelectedItem is ListBoxItem { Tag: ThemeOption option })
+        {
+            page.SetTheme(option.Value);
         }
     }
 

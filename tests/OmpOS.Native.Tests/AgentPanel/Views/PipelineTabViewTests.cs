@@ -216,7 +216,7 @@ public sealed class PipelineTabViewTests
             var retry = retries.Single();
             retry.Content.ShouldBe(AgentPanelCopy.RetryStage);
             AutomationProperties.GetName(retry).ShouldBe("Retry Brief stage");
-            retry.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
+            retry.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             ViewHarness.TabOrder(tab).ShouldBe(["Pipeline details", "Retry Brief stage"]);
             ViewHarness.Unnamed(tab).ShouldBeEmpty();
 

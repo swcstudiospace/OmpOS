@@ -14,7 +14,7 @@ public sealed class KanbanSteerFlyoutTests
 {
     private static Task PressAsync(Button button) => ((AgentPanelCommand)button.Command!).ExecuteAsync(button.CommandParameter);
 
-    /// <summary>The flyout names its controls, makes both buttons at least 44 high and disables them while the box is blank.</summary>
+    /// <summary>The flyout names its controls, makes both buttons at least the WCAG 2.2 minimum (24 px) high and disables them while the box is blank.</summary>
     [Fact]
     public async Task TheFlyoutIsNamedAndDisabledWhileBlank()
     {
@@ -32,8 +32,8 @@ public sealed class KanbanSteerFlyoutTests
             AutomationProperties.GetName(card.QueueTrigger).ShouldBe(KanbanCopy.QueueNextName);
             card.SendNowTrigger.Content.ShouldBe(KanbanCopy.SendNow);
             card.QueueTrigger.Content.ShouldBe(KanbanCopy.QueueNext);
-            card.SendNowTrigger.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
-            card.QueueTrigger.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
+            card.SendNowTrigger.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
+            card.QueueTrigger.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             card.SendNowTrigger.Classes.Contains("primary").ShouldBeTrue();
             card.SendNowTrigger.IsEffectivelyEnabled.ShouldBeFalse();
             card.QueueTrigger.IsEffectivelyEnabled.ShouldBeFalse();

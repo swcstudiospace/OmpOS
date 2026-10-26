@@ -2,7 +2,7 @@ using OmpOS.Presentation.Settings;
 
 namespace OmpOS.Native.Settings;
 
-/// <summary>The General page's values over the head's settings file: the motion setting is read from it and saved to it. The shell applies a saved choice through <see cref="FileSettingsStore.Changed"/>.</summary>
+/// <summary>The General page's values over the head's settings file: the motion and theme settings are read from it and saved to it. The shell applies a saved choice through <see cref="FileSettingsStore.Changed"/>.</summary>
 internal sealed class GeneralSettingsSource : IGeneralSettingsSource
 {
     private readonly FileSettingsStore _store;
@@ -18,12 +18,14 @@ internal sealed class GeneralSettingsSource : IGeneralSettingsSource
 
     /// <inheritdoc/>
     public Task<GeneralSettingsValues> LoadAsync(CancellationToken cancellationToken) =>
-        SettingsTask.ReadAsync(() => new GeneralSettingsValues(_store.Read().Motion));
+        SettingsTask.ReadAsync(() => ToValues(_store.Read()));
 
     /// <inheritdoc/>
     public Task SaveAsync(GeneralSettingsValues values, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(values);
-        return SettingsTask.WriteAsync(() => _store.SetMotion(values.Motion));
+        return SettingsTask.WriteAsync(() => _store.SetGeneral(values.Motion, values.Theme));
     }
+
+    private static GeneralSettingsValues ToValues(StoredSettings stored) => new(stored.Motion, stored.Theme);
 }

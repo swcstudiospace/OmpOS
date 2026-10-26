@@ -33,6 +33,7 @@ internal sealed class FileSettingsStore
     private const UnixFileMode OwnerDirectory = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
     private const UnixFileMode OwnerFile = UnixFileMode.UserRead | UnixFileMode.UserWrite;
     private const string MotionMember = "motion";
+    private const string ThemeMember = "theme";
     private const string IdleStopMember = "runtime.idleStopHours";
     private const string RetentionMember = "runtime.retentionDays";
 
@@ -71,12 +72,22 @@ internal sealed class FileSettingsStore
     /// <summary>Saves the motion setting.</summary>
     /// <param name="motion">The setting.</param>
     /// <exception cref="SettingsSourceException">The file cannot be read or written; nothing is changed.</exception>
-    public void SetMotion(MotionPreference motion) =>
-        Update(document => document.Motion = motion switch
+    public void SetMotion(MotionPreference motion) => Update(document => document.Motion = MotionText(motion));
+
+    /// <summary>Saves the theme setting.</summary>
+    /// <param name="theme">The setting.</param>
+    /// <exception cref="SettingsSourceException">The file cannot be read or written; nothing is changed.</exception>
+    public void SetTheme(ThemePreference theme) => Update(document => document.Theme = ThemeText(theme));
+
+    /// <summary>Saves the motion and theme settings in one write, so a reader never sees one without the other.</summary>
+    /// <param name="motion">The motion setting.</param>
+    /// <param name="theme">The theme setting.</param>
+    /// <exception cref="SettingsSourceException">The file cannot be read or written; nothing is changed.</exception>
+    public void SetGeneral(MotionPreference motion, ThemePreference theme) =>
+        Update(document =>
         {
-            MotionPreference.Reduced => "reduced",
-            MotionPreference.Full => "full",
-            _ => "system",
+            document.Motion = MotionText(motion);
+            document.Theme = ThemeText(theme);
         });
 
     /// <summary>Saves the terminal auto-run choice.</summary>
@@ -110,6 +121,20 @@ internal sealed class FileSettingsStore
         });
     }
 
+    private static string MotionText(MotionPreference motion) => motion switch
+    {
+        MotionPreference.Reduced => "reduced",
+        MotionPreference.Full => "full",
+        _ => "system",
+    };
+
+    private static string ThemeText(ThemePreference theme) => theme switch
+    {
+        ThemePreference.System => "system",
+        ThemePreference.Light => "light",
+        _ => "dark",
+    };
+
     private static StoredSettings ToValues(SettingsDocument document, string path)
     {
         var motion = document.Motion switch
@@ -119,6 +144,15 @@ internal sealed class FileSettingsStore
             { } text when string.Equals(text, "reduced", StringComparison.OrdinalIgnoreCase) => MotionPreference.Reduced,
             { } text when string.Equals(text, "full", StringComparison.OrdinalIgnoreCase) => MotionPreference.Full,
             _ => throw new SettingsSourceException(HeadSettingsCopy.SettingsBadMember(path, MotionMember)),
+        };
+
+        var theme = document.Theme switch
+        {
+            null => ThemePreference.Dark,
+            { } text when string.Equals(text, "system", StringComparison.OrdinalIgnoreCase) => ThemePreference.System,
+            { } text when string.Equals(text, "light", StringComparison.OrdinalIgnoreCase) => ThemePreference.Light,
+            { } text when string.Equals(text, "dark", StringComparison.OrdinalIgnoreCase) => ThemePreference.Dark,
+            _ => throw new SettingsSourceException(HeadSettingsCopy.SettingsBadMember(path, ThemeMember)),
         };
 
         var idle = document.Runtime?.IdleStopHours ?? RuntimeSettingsLimits.DefaultIdleStopHours;
@@ -133,7 +167,7 @@ internal sealed class FileSettingsStore
             throw new SettingsSourceException(HeadSettingsCopy.SettingsBadMember(path, RetentionMember));
         }
 
-        return new StoredSettings(motion, document.Terminal?.AutoRun ?? false, new RuntimeSettingsValues(idle, retention));
+        return new StoredSettings(motion, theme, document.Terminal?.AutoRun ?? false, new RuntimeSettingsValues(idle, retention));
     }
 
     private StoredSettings ToValues(SettingsDocument document) => ToValues(document, FilePath);

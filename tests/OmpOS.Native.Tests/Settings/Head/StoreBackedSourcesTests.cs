@@ -31,6 +31,29 @@ public sealed class StoreBackedSourcesTests : IDisposable
         store.Read().Motion.ShouldBe(MotionPreference.Reduced);
     }
 
+    /// <summary>The General page shows the saved theme, and saving a theme and a motion writes both in one change.</summary>
+    [Fact]
+    public async Task TheGeneralPageReadsAndPersistsTheThemeChoice()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var store = new FileSettingsStore(_state.Root);
+        store.SetTheme(ThemePreference.Light);
+        var changes = 0;
+        store.Changed += (_, _) => changes++;
+        var page = new GeneralPage(new GeneralSettingsSource(store));
+
+        await page.LoadAsync(ct).ConfigureAwait(true);
+        page.Theme.ShouldBe(ThemePreference.Light);
+        page.SetTheme(ThemePreference.System);
+        page.SetMotion(MotionPreference.Full);
+        (await page.SaveAsync(ct).ConfigureAwait(true)).ShouldBeTrue();
+
+        var read = store.Read();
+        read.Theme.ShouldBe(ThemePreference.System);
+        read.Motion.ShouldBe(MotionPreference.Full);
+        changes.ShouldBe(1, "the theme and the motion are one write, so the shell applies them once");
+    }
+
     /// <summary>A settings file that cannot be used puts the General page in its error state with the plain message, and saving never overwrites it.</summary>
     [Fact]
     public async Task ACorruptFilePutsThePageInItsErrorState()

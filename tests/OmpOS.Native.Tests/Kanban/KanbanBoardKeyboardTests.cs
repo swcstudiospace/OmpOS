@@ -44,8 +44,8 @@ public sealed class KanbanBoardKeyboardTests
             ViewHarness.TabStops(fixture.View).OfType<KanbanCardView>().Count().ShouldBe(1);
             ViewHarness.Unnamed(fixture.View).ShouldBeEmpty();
             fixture.View.CardViews.Count(static card => card.IsTabStop).ShouldBe(1);
-            current.SteerTrigger.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
-            current.SteerTrigger.MinWidth.ShouldBeGreaterThanOrEqualTo(44);
+            current.SteerTrigger.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
+            current.SteerTrigger.MinWidth.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             AutomationProperties.GetName(current.SteerTrigger).ShouldBe($"Steer {current.Model.Card.Title}");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }

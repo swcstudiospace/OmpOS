@@ -35,7 +35,7 @@ public sealed class ModelPickerViewTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>The chip names the current model, is a named 44 px target in the footer's tab order after the buttons, and draws its text in the mono token.</summary>
+    /// <summary>The chip names the current model, is a named target of at least the WCAG minimum (24 px) in the footer's tab order after the buttons, and draws its text in the mono token.</summary>
     [Fact]
     public async Task TheChipShowsTheModelAndIsAccessible()
     {
@@ -48,8 +48,8 @@ public sealed class ModelPickerViewTests
             fixture.Chip.ChipLabel.Text.ShouldBe("anthropic / Claude Sonnet");
             AutomationProperties.GetName(fixture.Chip.Chip).ShouldBe(SonnetName);
             AutomationProperties.GetHelpText(fixture.Chip.Chip).ShouldNotBeNullOrWhiteSpace();
-            fixture.Chip.Chip.MinHeight.ShouldBeGreaterThanOrEqualTo(44);
-            fixture.Chip.Chip.MinWidth.ShouldBeGreaterThanOrEqualTo(44);
+            fixture.Chip.Chip.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
+            fixture.Chip.Chip.MinWidth.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             fixture.Chip.ChipLabel.FontFamily.ShouldBe(Token("OmpOS.Font.Mono"));
 
             var order = ViewHarness.TabOrder(fixture.View);

@@ -85,25 +85,33 @@ internal static class MarkdownAstBuilder
         return text;
     }
 
-    private static Border CodeControl(string code) => new()
+    private static Border CodeControl(string code)
     {
-        Background = BlockTokens.Get<IBrush>("OmpOS.Color.SurfaceRaised"),
-        Padding = BlockTokens.Get<Thickness>("OmpOS.Space.Sm"),
-        Child = new TextBlock
+        var border = new Border
         {
-            Text = code.TrimEnd('\n'),
-            FontFamily = BlockTokens.Monospace,
-            TextWrapping = TextWrapping.Wrap,
-        },
-    };
+            Padding = BlockTokens.Get<Thickness>("OmpOS.Space.Sm"),
+            Child = new TextBlock
+            {
+                Text = code.TrimEnd('\n'),
+                FontFamily = BlockTokens.Monospace,
+                TextWrapping = TextWrapping.Wrap,
+            },
+        };
+        BlockTokens.Bind(border, Border.BackgroundProperty, "OmpOS.Color.SurfaceRaised");
+        return border;
+    }
 
-    private static Border QuoteControl(QuoteBlock quote) => new()
+    private static Border QuoteControl(QuoteBlock quote)
     {
-        BorderBrush = BlockTokens.Get<IBrush>("OmpOS.Color.TextSecondary"),
-        BorderThickness = new Thickness(2, 0, 0, 0),
-        Padding = BlockTokens.Get<Thickness>("OmpOS.Space.Sm"),
-        Child = Stack(quote),
-    };
+        var border = new Border
+        {
+            BorderThickness = new Thickness(2, 0, 0, 0),
+            Padding = BlockTokens.Get<Thickness>("OmpOS.Space.Sm"),
+            Child = Stack(quote),
+        };
+        BlockTokens.Bind(border, Border.BorderBrushProperty, "OmpOS.Color.TextSecondary");
+        return border;
+    }
 
     private static StackPanel ListControl(ListBlock list)
     {
@@ -152,12 +160,16 @@ internal static class MarkdownAstBuilder
         return grid;
     }
 
-    private static Border RuleControl() => new()
+    private static Border RuleControl()
     {
-        Height = 1,
-        Background = BlockTokens.Get<IBrush>("OmpOS.Color.SurfaceActive"),
-        Margin = BlockTokens.Get<Thickness>("OmpOS.Space.Sm"),
-    };
+        var rule = new Border
+        {
+            Height = 1,
+            Margin = BlockTokens.Get<Thickness>("OmpOS.Space.Sm"),
+        };
+        BlockTokens.Bind(rule, Border.BackgroundProperty, "OmpOS.Color.SurfaceActive");
+        return rule;
+    }
 
     private static void AppendCellInlines(InlineCollection target, TableCell cell)
     {

@@ -19,6 +19,7 @@ public sealed class ThemeContrastTests
 {
     private const double MinimumTextContrast = 4.5;
     private const double MinimumNonTextContrast = 3.0;
+    private const double MinimumDecorativeContrast = 1.15;
     private const string ColorKeyPrefix = "OmpOS.Color.";
     private const string XamlNamespace = "http://schemas.microsoft.com/winfx/2006/xaml";
 
@@ -28,9 +29,16 @@ public sealed class ThemeContrastTests
     private const string StatusSuccess = "OmpOS.Color.StatusSuccess";
     private const string StatusWarning = "OmpOS.Color.StatusWarning";
     private const string AccentPurpleOn = "OmpOS.Color.AccentPurpleOn";
+    private const string SurfaceSunken = "OmpOS.Color.SurfaceSunken";
     private const string Surface = "OmpOS.Color.Surface";
     private const string SurfaceRaised = "OmpOS.Color.SurfaceRaised";
     private const string SurfaceActive = "OmpOS.Color.SurfaceActive";
+    private const string Hover = "OmpOS.Color.Hover";
+    private const string Selected = "OmpOS.Color.Selected";
+    private const string DiffAdded = "OmpOS.Color.DiffAdded";
+    private const string DiffRemoved = "OmpOS.Color.DiffRemoved";
+    private const string Border = "OmpOS.Color.Border";
+    private const string BorderStrong = "OmpOS.Color.BorderStrong";
     private const string AccentPurple = "OmpOS.Color.AccentPurple";
     private const string FocusRing = "OmpOS.Color.FocusRing";
 
@@ -54,25 +62,40 @@ public sealed class ThemeContrastTests
 
         /// <summary>A non-text mark (border, icon or focus indicator), drawn over a background at 3:1.</summary>
         NonText = 4,
+
+        /// <summary>
+        /// A decorative hairline (divider, card outline). WCAG 1.4.11 asks nothing of it, so it enters no product; a separate
+        /// test only keeps it visible.
+        /// </summary>
+        Decorative = 8,
     }
 
     /// <summary>
     /// Every colour role the dictionary defines, with its uses. <c>TextSecondary</c> is also a border colour, and
-    /// <c>AccentPurple</c> is also an accent fill and a border colour. <c>FocusRing</c> is reserved for focus indicators.
+    /// <c>AccentPurple</c> is also an accent fill, a border colour and the colour of links and accent words.
+    /// <c>StatusError</c> is also the border of an invalid field. <c>BorderStrong</c> outlines inputs, switches and checkboxes.
+    /// <c>FocusRing</c> is reserved for focus indicators.
     /// </summary>
     private static readonly Dictionary<string, RoleUse> RoleUses = new(StringComparer.Ordinal)
     {
         [TextPrimary] = RoleUse.Text,
         [TextSecondary] = RoleUse.Text | RoleUse.NonText,
-        [StatusError] = RoleUse.Text,
+        [StatusError] = RoleUse.Text | RoleUse.NonText,
         [StatusSuccess] = RoleUse.Text,
         [StatusWarning] = RoleUse.Text,
         [AccentPurpleOn] = RoleUse.Text,
+        [SurfaceSunken] = RoleUse.Background,
         [Surface] = RoleUse.Background,
         [SurfaceRaised] = RoleUse.Background,
+        [Hover] = RoleUse.Background,
+        [Selected] = RoleUse.Background,
         [SurfaceActive] = RoleUse.Background,
-        [AccentPurple] = RoleUse.Background | RoleUse.NonText,
+        [DiffAdded] = RoleUse.Background,
+        [DiffRemoved] = RoleUse.Background,
+        [AccentPurple] = RoleUse.Text | RoleUse.Background | RoleUse.NonText,
         [FocusRing] = RoleUse.NonText,
+        [BorderStrong] = RoleUse.NonText,
+        [Border] = RoleUse.Decorative,
     };
 
     private static readonly string[] TextForegrounds = RolesWith(RoleUse.Text);
@@ -93,6 +116,12 @@ public sealed class ThemeContrastTests
         new(AccentPurpleOn, Surface, AccentPurpleOnlyOnAccent),
         new(AccentPurpleOn, SurfaceRaised, AccentPurpleOnlyOnAccent),
         new(AccentPurpleOn, SurfaceActive, AccentPurpleOnlyOnAccent),
+        new(AccentPurpleOn, SurfaceSunken, AccentPurpleOnlyOnAccent),
+        new(AccentPurpleOn, Hover, AccentPurpleOnlyOnAccent),
+        new(AccentPurpleOn, Selected, AccentPurpleOnlyOnAccent),
+        new(AccentPurpleOn, DiffAdded, AccentPurpleOnlyOnAccent),
+        new(AccentPurpleOn, DiffRemoved, AccentPurpleOnlyOnAccent),
+        new(AccentPurple, AccentPurple, "a role has no contrast against itself"),
     };
 
     /// <summary>Non-text pairs that are not checked, each with its reason.</summary>
@@ -101,6 +130,8 @@ public sealed class ThemeContrastTests
         new(FocusRing, AccentPurple, "the focus ring is never drawn on the accent fill"),
         new(TextSecondary, AccentPurple, "no view draws a TextSecondary border or icon over the accent fill"),
         new(AccentPurple, AccentPurple, "a role has no contrast against itself"),
+        new(BorderStrong, AccentPurple, "no view draws a BorderStrong outline over the accent fill"),
+        new(StatusError, AccentPurple, "no field border is drawn over the accent fill"),
     };
 
     /// <summary>Text pairs (4.5:1): every text foreground over every background, less the reasoned exclusions.</summary>
@@ -174,6 +205,25 @@ public sealed class ThemeContrastTests
         AssertExclusions(NonTextExclusions, NonTextForegrounds, Backgrounds, "non-text");
     }
 
+    /// <summary>
+    /// The decorative <c>Border</c> hairline enters no WCAG product, but a divider must not vanish: it stays at least 1.15:1
+    /// against the three base surfaces it is drawn on, in both variants.
+    /// </summary>
+    [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void TheDecorativeBorderStaysVisibleOnTheBaseSurfaces(string variant)
+    {
+        var colours = ReadVariant(variant);
+
+        foreach (var surface in new[] { Surface, SurfaceSunken, SurfaceRaised })
+        {
+            var ratio = ContrastRatio(colours[Border], colours[surface]);
+
+            ratio.ShouldBeGreaterThanOrEqualTo(MinimumDecorativeContrast, $"{variant}: Border on {surface} is {ratio:0.00}:1");
+        }
+    }
+
     /// <summary>The text pairs cover error and secondary text on the interaction fill, which the view markup draws.</summary>
     [Fact]
     public void TheTextPairsCoverErrorAndSecondaryTextOnSurfaceActive()
@@ -225,9 +275,9 @@ public sealed class ThemeContrastTests
     [Fact]
     public void TheFontTokensNameTheBundledFaces()
     {
-        ReadTokenText("OmpOS.Font.Family").ShouldStartWith("avares://OmpOS.Native.Views/Assets/Fonts/DMSans/DMSans.ttf#DM Sans");
-        ReadTokenText("OmpOS.Font.Display").ShouldStartWith("avares://OmpOS.Native.Views/Assets/Fonts/Anybody/Anybody.ttf#Anybody");
-        ReadTokenText("OmpOS.Font.Mono").ShouldStartWith("avares://OmpOS.Native.Views/Assets/Fonts/SpaceMono/SpaceMono-Regular.ttf#Space Mono");
+        ReadTokenText("OmpOS.Font.Family").ShouldStartWith("avares://OmpOS.Native.Views/Assets/Fonts/DMSans#DM Sans");
+        ReadTokenText("OmpOS.Font.Display").ShouldStartWith("avares://OmpOS.Native.Views/Assets/Fonts/Anybody#Anybody");
+        ReadTokenText("OmpOS.Font.Mono").ShouldStartWith("avares://OmpOS.Native.Views/Assets/Fonts/SpaceMono#Space Mono");
     }
 
     /// <summary>Every colour role in both variants is a six or eight digit hex colour.</summary>

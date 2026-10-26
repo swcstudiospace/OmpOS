@@ -66,8 +66,8 @@ public sealed class ConfirmBarViewTests
             ViewHarness.VisibleTexts(bar).ShouldContain(AgentPanelCopy.StopConfirmation, StringComparer.Ordinal);
             ViewHarness.TabOrder(bar).ShouldBe(["Stop agent", "Keep running"]);
             ViewHarness.Find<Button>(bar, "StopAgentButton").IsFocused.ShouldBeTrue("Stop agent takes focus when the bar opens");
-            ViewHarness.Find<Button>(bar, "StopAgentButton").MinHeight.ShouldBeGreaterThanOrEqualTo(44);
-            ViewHarness.Find<Button>(bar, "KeepRunningButton").MinHeight.ShouldBeGreaterThanOrEqualTo(44);
+            ViewHarness.Find<Button>(bar, "StopAgentButton").MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
+            ViewHarness.Find<Button>(bar, "KeepRunningButton").MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
 
             ViewHarness.Press(window, Key.Enter, PhysicalKey.Enter);
 
