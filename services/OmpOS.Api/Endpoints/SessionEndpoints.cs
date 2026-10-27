@@ -21,7 +21,7 @@ using OmpOS.Sessions;
 namespace OmpOS.Api.Endpoints;
 
 /// <summary>
-/// Session and prompt endpoints: create, list, read, and validated prompt submission.
+/// Session and prompt endpoints: create, read, and validated prompt submission. The session list is <c>CatalogEndpoints</c>.
 /// Prompt bodies are read manually so content-type (415), size (413), and shape (400)
 /// violations map deterministically; admission rejections map from the session service.
 /// </summary>
@@ -46,7 +46,6 @@ internal static class SessionEndpoints
             .ProducesProblem(StatusCodes.Status415UnsupportedMediaType)
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .RequireRateLimiting(CreationPolicy);
-        endpoints.MapGet("/sessions", ListSessionsAsync);
         endpoints.MapGet("/sessions/{id}", GetSessionAsync)
             .ProducesProblem(StatusCodes.Status404NotFound);
         endpoints.MapPost("/sessions/{id}/prompts", SubmitPromptAsync)
@@ -111,27 +110,6 @@ internal static class SessionEndpoints
         registry.Add(session.Id);
         metrics.SessionCreated();
         return TypedResults.Created($"/sessions/{session.Id}", session);
-    }
-
-    /// <summary>Lists the sessions the caller owns, oldest first. Sessions another owner holds are never included.</summary>
-    private static async Task<Ok<Session[]>> ListSessionsAsync(
-        ISessionRepository repository,
-        SessionRegistry registry,
-        IUserContext user,
-        CancellationToken cancellationToken)
-    {
-        var found = new List<Session>();
-        foreach (var id in registry.Ids)
-        {
-            var session = await repository.GetAsync(id, cancellationToken).ConfigureAwait(false);
-            if (session is not null && string.Equals(session.OwnerId, user.Name, StringComparison.Ordinal))
-            {
-                found.Add(session);
-            }
-        }
-
-        found.Sort(static (a, b) => a.CreatedAt.CompareTo(b.CreatedAt));
-        return TypedResults.Ok(found.ToArray());
     }
 
     private static async Task<Results<Ok<Session>, ProblemHttpResult>> GetSessionAsync(

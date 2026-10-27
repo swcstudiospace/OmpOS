@@ -11,7 +11,7 @@ namespace OmpOS.Harness.InMemory;
 /// is deterministic. The session is single-prompt: a second submit while streaming is an illegal
 /// transition.
 /// </summary>
-public sealed class InMemoryOmpSession : IOmpSession
+public sealed partial class InMemoryOmpSession : IOmpSession, IOmpModelControl, IOmpSessionOptions, IOmpSessionCommands, IOmpLiveSteering
 {
     private const string CancelledReason = "cancelled";
 
