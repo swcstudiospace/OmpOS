@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320">
+  <title>OmpOS: the open agent workspace on the omp engine</title>
+  <rect width="1280" height="320" fill="#181818"/>
+  <g>
+  <g transform="translate(1090 160) scale(0.86) translate(-256 -256)" fill="none" stroke="#232130" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="256" cy="256" r="146" stroke-width="56"/>
+    <path d="M204 212L254 256L204 300" stroke-width="42"/>
+    <path d="M276 302H312" stroke-width="42"/>
+  </g>
+  </g>
+  <defs><linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c4b5fd"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+  <g transform="translate(80 96) scale(0.250000)">
+    <rect width="512" height="512" rx="116" fill="url(#tile)"/>
+    <g fill="none" stroke="#181818" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="256" cy="256" r="146" stroke-width="56"/>
+      <path d="M204 212L254 256L204 300" stroke-width="42"/>
+      <path d="M276 302H312" stroke-width="42"/>
+    </g>
+  </g>
+  <text x="242" y="146" font-family="Anybody" font-weight="600" font-size="84" fill="#ececec">Omp<tspan fill="#a78bfa">OS</tspan></text>
+  <text x="244" y="198" font-family="DM Sans" font-weight="400" font-size="26" fill="#d6d3d1">The open agent workspace on the omp engine</text>
+  <text x="244" y="238" font-family="DM Sans" font-weight="500" font-size="19" letter-spacing="0.6" fill="#a78bfa">Desktop  ·  Web  ·  Cloud  ·  Remote</text>
+  
+</svg>
