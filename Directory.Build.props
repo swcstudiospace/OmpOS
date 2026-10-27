@@ -1,4 +1,17 @@
 <Project>
+  <!-- Product and licence metadata. VersionPrefix is the single version source: the release workflow and CHANGELOG.md read it. -->
+  <PropertyGroup>
+    <Product>OmpOS</Product>
+    <Authors>SWC Studio</Authors>
+    <Company>SWC Studio</Company>
+    <Copyright>Copyright (C) 2026 SWC Studio</Copyright>
+    <VersionPrefix>0.15.0</VersionPrefix>
+    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/swcstudiospace/OmpOS</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/swcstudiospace/OmpOS</PackageProjectUrl>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>

@@ -2,6 +2,7 @@
   "name": "gsd-core-omp",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "description": "omp binding for the installed GSD-Core (@opengsd/gsd-core): registers its agents with the task tool and reports health",
   "engines": {

@@ -64,6 +64,18 @@ RUN cd /opt/omp \
  && chmod 0755 /opt/omp/dist/cli.js \
  && rm -rf /tmp/bun-cache /tmp/omp-build
 
+# Licence notices for what the final image conveys (AGPL-3.0 section 6; MIT notice duty). omp's LICENSE comes from its tarball.
+# Bun's notice file records version, licence summary and source; the full component list is on Bun's licensing page
+# (THIRD-PARTY-NOTICES.md, section 7, carries the same pointer and the source URL).
+RUN mkdir -p /licenses \
+ && for f in /opt/omp/LICENSE*; do [ -f "$f" ] && cp "$f" "/licenses/omp-$(basename "$f")"; done; \
+ printf '%s\n' \
+   "Bun ${BUN_VERSION} (/usr/local/bin/bun) is a separate program conveyed unmodified in this image." \
+   "Licence: MIT, plus statically linked components (JavaScriptCore under LGPL-2, tinycc under LGPL-2.1, zlib-ng, ICU, SQLite and others)." \
+   "Notices and component list: https://bun.sh/docs/project/licensing" \
+   "Source: https://github.com/oven-sh/bun/tree/bun-v${BUN_VERSION}" \
+   > /licenses/bun-NOTICE.txt
+
 FROM ${RUNTIME_IMAGE} AS final
 WORKDIR /app
 
@@ -75,6 +87,23 @@ COPY --from=build --chown=10001:10001 /app ./
 COPY --from=omp-runtime /usr/local/bin/bun /usr/local/bin/bun
 COPY --from=omp-runtime /opt/omp /opt/omp
 RUN ln -s /opt/omp/dist/cli.js /usr/local/bin/omp
+
+# Licences and notices for everything this image conveys, under /licenses (AGPL-3.0 section 6: LICENSE and the source offer;
+# the Bun and omp notices come from the omp-runtime stage; the .NET notices are copied when the base image ships them).
+COPY LICENSE NOTICE THIRD-PARTY-NOTICES.md /licenses/
+COPY --from=omp-runtime /licenses/ /licenses/
+RUN for d in /usr/share/dotnet /usr/lib/dotnet; do for f in LICENSE.txt ThirdPartyNotices.txt; do [ -f "$d/$f" ] && cp "$d/$f" "/licenses/dotnet-$f"; done; done; \
+ chmod -R a=rX /licenses
+
+# OCI image labels. Pass the real values at build time, for example:
+#   podman build -f deploy/api.Containerfile --build-arg OMPOS_REVISION="$(git rev-parse HEAD)" -t ompos-api:local .
+ARG OMPOS_SOURCE=https://github.com/swcstudiospace/OmpOS
+ARG OMPOS_REVISION=unknown
+ARG OMPOS_VERSION=0.15.0
+LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later" \
+      org.opencontainers.image.source="${OMPOS_SOURCE}" \
+      org.opencontainers.image.revision="${OMPOS_REVISION}" \
+      org.opencontainers.image.version="${OMPOS_VERSION}"
 
 ENV ASPNETCORE_ENVIRONMENT=Production \
     ASPNETCORE_URLS=http://[::]:8080 \

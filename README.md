@@ -1,3 +1,13 @@
+![OmpOS](assets/brand/ompos-banner.png)
+
+**OmpOS is an agent workspace for desktop, web and Android on the omp engine, with the Cursor feature set under an open licence.**
+
+[![License: AGPL-3.0-or-later](https://img.shields.io/badge/license-AGPL--3.0--or--later-6d28d9)](LICENSE)
+[![CI](https://github.com/swcstudiospace/OmpOS/actions/workflows/ci.yml/badge.svg)](https://github.com/swcstudiospace/OmpOS/actions/workflows/ci.yml)
+[![.NET 10](https://img.shields.io/badge/.NET-10-512bd4)](global.json)
+[![Avalonia 12](https://img.shields.io/badge/Avalonia-12-6d28d9)](https://avaloniaui.net/)
+[Docs: docs/README.md](docs/README.md)
+
 # OmpOS
 
 OmpOS is a Cursor-style agents workspace whose engine is **omp**. The desktop head (`apps/OmpOS.Native`, Avalonia) opens on an Agents window: a session rail, a thread and a composer, plus a Kanban tab with one card per opened session. Every omp process the application starts, a chat session through `omp acp` or an embedded omp terminal, is launched with four plugins: Ultrathink, Substrate, Swarm and GSD-Core. A running session can be steered live from the composer or from its Kanban card. The Settings window (Ctrl+,) configures model providers through omp's own configuration. The application starts in the Dark theme and can follow System or Light.
@@ -95,3 +105,11 @@ Restoring the full `OmpOS.slnx` needs the .NET Android workload (`dotnet workloa
 - [docs/open-questions.md](docs/open-questions.md): every unverified external fact, with owner.
 - [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md), [docs/runbooks/sandbox.md](docs/runbooks/sandbox.md): bootstrap, local dependencies, sandbox providers.
 - [CONTRIBUTING.md](CONTRIBUTING.md): branches, commits, formatting, lock files, TODO policy.
+
+## License
+
+OmpOS is licensed under the GNU Affero General Public License, version 3 or (at your option) any later version (SPDX: `AGPL-3.0-or-later`). Copyright (C) 2026 SWC Studio. See [LICENSE](LICENSE) for the full text and [NOTICE](NOTICE) for the notice and third-party pointers; third-party licences are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+Network use is distribution for this licence (AGPL section 13): if you run a modified OmpOS as a service that other people use over a network, you must offer those users the Corresponding Source of your version. OmpOS makes this easy: the API answers an anonymous `GET /source` with the licence, the source URL and the exact revision, and the web and desktop About pages link to the same source at <https://github.com/swcstudiospace/OmpOS>. Details for users and operators: [docs/licensing.md](docs/licensing.md).
+
+Contributions are accepted under the same licence with a Developer Certificate of Origin sign-off (`git commit -s`); see [CONTRIBUTING.md](CONTRIBUTING.md). The plugin submodules under `plugins/` and the omp engine are separate programs with their own terms.
