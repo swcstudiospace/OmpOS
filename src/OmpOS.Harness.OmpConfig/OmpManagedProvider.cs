@@ -15,11 +15,17 @@ namespace OmpOS.Harness.OmpConfig;
 /// <param name="Api">The protocol the endpoint speaks.</param>
 /// <param name="ApiKeyEnvName">The name of the environment variable that holds the key (<c>[A-Z][A-Z0-9_]*</c>), or null when <paramref name="NoAuthentication"/> is true.</param>
 /// <param name="NoAuthentication">True for an endpoint that needs no key (for example a local server); written as <c>auth: none</c>.</param>
-/// <param name="Models">The models the provider serves; at least one, ids unique.</param>
+/// <param name="Models">The models the provider serves, ids unique. At least one unless <paramref name="Discovery"/> is set, in which case omp asks the endpoint.</param>
+/// <param name="BearerAuthHeader">True to have omp send the key as <c>Authorization: Bearer</c> (<c>authHeader: true</c>), for a Bearer endpoint omp would otherwise address with another header.</param>
+/// <param name="KeyHeaderName">The name of a header that carries the key (for example <c>X-API-Key</c>), or null. The header value is the key's environment variable name, never the key.</param>
+/// <param name="Discovery">How omp discovers the models, or null when <paramref name="Models"/> lists them.</param>
 public sealed record OmpManagedProvider(
     string Id,
     Uri BaseUrl,
     OmpProviderApi Api,
     string? ApiKeyEnvName,
     bool NoAuthentication,
-    IReadOnlyList<OmpManagedModel> Models);
+    IReadOnlyList<OmpManagedModel> Models,
+    bool BearerAuthHeader = false,
+    string? KeyHeaderName = null,
+    OmpManagedDiscovery? Discovery = null);

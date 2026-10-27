@@ -30,6 +30,7 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
 
     private readonly IModelsSettingsSource _source;
     private readonly List<ProviderCardModel> _cards = [];
+    private readonly ProviderDirectoryModel _directory;
     private ModelsPageState _state = ModelsPageState.Loading;
     private string? _loadFailure;
     private string? _warning;
@@ -50,6 +51,7 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
     {
         ArgumentNullException.ThrowIfNull(source);
         _source = source;
+        _directory = new ProviderDirectoryModel(source, this);
     }
 
     /// <inheritdoc/>
@@ -84,11 +86,15 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
         {
             if (SetProperty(ref _searchText, value ?? string.Empty))
             {
+                _directory.SearchText = _searchText;
                 RebuildGroups();
-                Announcement = ModelsCopy.MatchCount(VisibleCardCount);
+                Announcement = ModelsCopy.MatchCount(VisibleCardCount + _directory.VisibleCount);
             }
         }
     }
+
+    /// <summary>Gets the provider listing: every provider, aggregator, coding plan and local runtime the page offers to set up, with region and kind filters.</summary>
+    public ProviderDirectoryModel Directory => _directory;
 
     /// <summary>Gets the groups after the search filter, in the fixed group order. A group without a card left is absent.</summary>
     public IReadOnlyList<ProviderGroupModel> Groups => _groups;
@@ -97,7 +103,7 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
     public int VisibleCardCount => _groups.Sum(group => group.Cards.Count);
 
     /// <summary>Gets a value indicating whether the page is ready and the search keeps no card.</summary>
-    public bool HasNoMatches => _state == ModelsPageState.Ready && _groups.Count == 0;
+    public bool HasNoMatches => _state == ModelsPageState.Ready && _groups.Count == 0 && _directory.VisibleCount == 0;
 
     /// <summary>Gets the sentence that says the last list refresh after a change failed, or null.</summary>
     public string? Notice => _notice;
@@ -361,7 +367,9 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
         _templates = snapshot.Templates;
         NotifyPropertyChanged(nameof(Templates));
         NotifyPropertyChanged(nameof(HasTemplates));
-        SetState(_cards.Count == 0 ? ModelsPageState.Empty : ModelsPageState.Ready);
+        _directory.Update(snapshot.Listings ?? [], _cards);
+        SetState(_cards.Count == 0 && !_directory.HasListings ? ModelsPageState.Empty : ModelsPageState.Ready);
+        NotifyPropertyChanged(nameof(HasNoMatches));
     }
 
     private void SetDefault(string? selector)

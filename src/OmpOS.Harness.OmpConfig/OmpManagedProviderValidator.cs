@@ -49,7 +49,25 @@ internal static partial class OmpManagedProviderValidator
             return authentication;
         }
 
-        return ModelsProblem(provider.Models);
+        var discovery = DiscoveryProblem(provider);
+        return discovery ?? ModelsProblem(provider.Models, provider.Discovery is not null);
+    }
+
+    private static string? DiscoveryProblem(OmpManagedProvider provider)
+    {
+        if (provider.Discovery is not null && !OmpManagedDiscovery.IsKnownType(provider.Discovery.Type))
+        {
+            return "The model discovery type is not one omp supports.";
+        }
+
+        if (provider.KeyHeaderName is not null && (provider.NoAuthentication || !HeaderNamePattern().IsMatch(provider.KeyHeaderName)))
+        {
+            return "The key header must be a valid header name and needs an API key environment variable.";
+        }
+
+        return provider.BearerAuthHeader && provider.NoAuthentication
+            ? "A Bearer header needs an API key environment variable."
+            : null;
     }
 
     private static string? AuthenticationProblem(OmpManagedProvider provider)
@@ -74,8 +92,13 @@ internal static partial class OmpManagedProviderValidator
             : "The API key setting must be the NAME of an environment variable, such as MY_PROVIDER_API_KEY. Literal keys and !command forms are not supported.";
     }
 
-    private static string? ModelsProblem(IReadOnlyList<OmpManagedModel> models)
+    private static string? ModelsProblem(IReadOnlyList<OmpManagedModel> models, bool discovered)
     {
+        if (discovered && (models is null || models.Count == 0))
+        {
+            return null;
+        }
+
         if (models is null || models.Count == 0)
         {
             return "A provider needs at least one model.";
@@ -162,6 +185,10 @@ internal static partial class OmpManagedProviderValidator
             baseUrl.UserInfo.Length == 0 &&
             !string.IsNullOrEmpty(baseUrl.Host);
     }
+
+    // RFC 9110 section 5.6.2: a header field name is a token of visible ASCII characters without separators.
+    [GeneratedRegex("^[!#$%&'*+\\-.^_`|~0-9A-Za-z]{1,64}\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex HeaderNamePattern();
 
     [GeneratedRegex("^[A-Z][A-Z0-9_]*\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex EnvNamePattern();

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../OmpOS.Harness.OmpLauncher/OmpOS.Harness.OmpLauncher.csproj" />
+    <ProjectReference Include="../OmpOS.Harness.Providers/OmpOS.Harness.Providers.csproj" />
     <ProjectReference Include="../OmpOS.Harness.Secrets/OmpOS.Harness.Secrets.csproj" />
   </ItemGroup>
 

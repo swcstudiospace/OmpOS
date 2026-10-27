@@ -44,4 +44,17 @@ public interface IModelsSettingsSource
     /// <param name="cancellationToken">Cancels the test.</param>
     /// <returns>The outcome.</returns>
     Task<ProviderTestOutcome> TestAsync(string providerId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Adds a catalogue provider that omp does not know by id, or whose route or placeholders differ from omp's own: the source writes
+    /// an OmpOS managed <c>models.yml</c> block for the route (the key is the NAME of an environment variable, never the key) and keeps
+    /// <paramref name="apiKey"/> in its own key store. The key is passed once and not kept; it is empty for a keyless runtime. The default
+    /// implementation refuses, so a head that has not been given catalogue support says so instead of failing silently.
+    /// </summary>
+    /// <param name="request">The listing, route, placeholder values and model ids.</param>
+    /// <param name="apiKey">The key, trimmed, or an empty string when the route takes none.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>The result of the write.</returns>
+    Task<ModelsActionResult> AddCatalogueProviderAsync(CatalogueProviderRequest request, string apiKey, CancellationToken cancellationToken) =>
+        Task.FromResult(ModelsActionResult.Failure(ProviderListingCopy.NotSupportedText));
 }

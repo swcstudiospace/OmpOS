@@ -207,6 +207,75 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
 
+        <!-- The provider listing: every provider, aggregator, coding plan and local runtime OmpOS knows, filtered by region and kind. The page search above
+             filters it too. Keyboard order: the two filters, then the cards section by section. -->
+        <StackPanel x:Name="ListingBlock"
+                    Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                    Margin="0,16,0,0"
+                    IsVisible="{CompiledBinding Directory.HasListings}">
+          <TextBlock x:Name="ListingHeading"
+                     Classes="settings-section"
+                     Text="{x:Static models:ProviderListingCopy.SectionTitle}" />
+          <TextBlock Classes="settings-help"
+                     Text="{x:Static models:ProviderListingCopy.SectionDescription}" />
+          <Grid ColumnDefinitions="*,*"
+                ColumnSpacing="8">
+            <ComboBox x:Name="RegionFilter"
+                      Grid.Column="0"
+                      HorizontalAlignment="Stretch"
+                      ItemsSource="{CompiledBinding Directory.RegionChoices}"
+                      SelectedIndex="{CompiledBinding Directory.SelectedRegionIndex, Mode=TwoWay}"
+                      AutomationProperties.Name="{x:Static models:ProviderListingCopy.RegionFilterLabel}" />
+            <ComboBox x:Name="KindFilter"
+                      Grid.Column="1"
+                      HorizontalAlignment="Stretch"
+                      ItemsSource="{CompiledBinding Directory.KindChoices}"
+                      SelectedIndex="{CompiledBinding Directory.SelectedKindIndex, Mode=TwoWay}"
+                      AutomationProperties.Name="{x:Static models:ProviderListingCopy.KindFilterLabel}" />
+          </Grid>
+          <TextBlock x:Name="ListingNoMatchesLine"
+                     Classes="muted settings-body"
+                     IsVisible="{CompiledBinding Directory.HasNoMatches}"
+                     Text="{x:Static models:ProviderListingCopy.NoMatchesText}" />
+          <ItemsControl x:Name="ListingSections"
+                        ItemsSource="{CompiledBinding Directory.Sections}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="models:ProviderListingSection">
+                <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                            Margin="0,8,0,0"
+                            AutomationProperties.Name="{CompiledBinding Heading}">
+                  <StackPanel Orientation="Horizontal"
+                              Spacing="{DynamicResource OmpOS.Gap.Sm}">
+                    <TextBlock Classes="settings-label"
+                               VerticalAlignment="Center"
+                               Text="{CompiledBinding Heading}" />
+                    <Border Classes="chip-count"
+                            VerticalAlignment="Center"
+                            AutomationProperties.AccessibilityView="Raw">
+                      <TextBlock Classes="settings-help"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center"
+                                 Text="{CompiledBinding Cards.Count}" />
+                    </Border>
+                  </StackPanel>
+                  <ItemsControl ItemsSource="{CompiledBinding Cards}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="models:ProviderListingCardModel">
+                        <local:ProviderListingCardView />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock x:Name="ListingAnnouncementLine"
+                     Classes="muted settings-body"
+                     Text="{CompiledBinding Directory.Announcement}"
+                     AutomationProperties.LiveSetting="Polite"
+                     AutomationProperties.Name="{x:Static models:ProviderListingCopy.AnnouncementName}" />
+        </StackPanel>
+
         <!-- The polite live region: how many providers match, the result of a change, a key saved, a default set. It never contains a key. -->
         <TextBlock x:Name="AnnouncementLine"
                    Classes="muted settings-body"

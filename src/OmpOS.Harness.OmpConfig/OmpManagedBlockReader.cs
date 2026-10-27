@@ -4,7 +4,8 @@ namespace OmpOS.Harness.OmpConfig;
 
 /// <summary>
 /// Reads a block written by <see cref="OmpManagedBlockWriter"/> back into an <see cref="OmpManagedProvider"/>. It understands only
-/// the fixed layout (a provider key, four scalar members, a <c>models:</c> list of small maps) and reports anything else as a
+/// the fixed layout (a provider key, scalar members, a one-entry <c>headers:</c> and a one-entry <c>discovery:</c> map, and a
+/// <c>models:</c> list of small maps) and reports anything else as a
 /// problem instead of guessing, so a block edited by hand to something richer is never silently reinterpreted.
 /// </summary>
 internal static class OmpManagedBlockReader
@@ -37,7 +38,7 @@ internal static class OmpManagedBlockReader
             }
             else if (!state.InModels)
             {
-                failure = ReadProviderMember(state, line);
+                failure = ReadProviderMember(state, raw, line);
             }
             else
             {
@@ -82,8 +83,24 @@ internal static class OmpManagedBlockReader
         return null;
     }
 
-    private static string? ReadProviderMember(ParseState state, string line)
+    private static string? ReadProviderMember(ParseState state, string raw, string line)
     {
+        var indent = raw.Length - raw.TrimStart().Length;
+        if (state.MemberIndent < 0)
+        {
+            state.MemberIndent = indent;
+        }
+
+        if (state.Section != ProviderSection.None)
+        {
+            if (indent > state.MemberIndent)
+            {
+                return ReadSectionLine(state, line);
+            }
+
+            state.Section = ProviderSection.None;
+        }
+
         if (string.Equals(OmpModelsLayout.StripComment(line).Trim(), "models:", StringComparison.Ordinal))
         {
             state.InModels = true;
@@ -109,9 +126,51 @@ internal static class OmpManagedBlockReader
             case "auth":
                 state.Auth = value;
                 return null;
+            case "authHeader":
+                if (!TryBool(value, out var authHeader))
+                {
+                    return "authHeader is not true or false";
+                }
+
+                state.BearerAuthHeader = authHeader;
+                return null;
+            case "headers" when value.Length == 0:
+                state.Section = ProviderSection.Headers;
+                return null;
+            case "discovery" when value.Length == 0:
+                state.Section = ProviderSection.Discovery;
+                return null;
             default:
                 return $"the member '{key}' is not one OmpOS writes";
         }
+    }
+
+    private static string? ReadSectionLine(ParseState state, string line)
+    {
+        if (!OmpModelsLayout.TrySplitKey(line, out var key, out var rest) || !TryValue(rest, out var value))
+        {
+            return "a line is not a simple 'key: value' member";
+        }
+
+        if (state.Section == ProviderSection.Discovery)
+        {
+            if (!string.Equals(key, "type", StringComparison.Ordinal))
+            {
+                return $"the discovery member '{key}' is not one OmpOS writes";
+            }
+
+            state.DiscoveryType = value;
+            return null;
+        }
+
+        if (state.HeaderName is not null)
+        {
+            return "more than one header is not something OmpOS writes";
+        }
+
+        state.HeaderName = key;
+        state.HeaderValue = value;
+        return null;
     }
 
     private static string? ReadModelLine(ParseState state, string line)
@@ -241,6 +300,11 @@ internal static class OmpManagedBlockReader
             return (null, $"the auth mode '{state.Auth}' is not supported");
         }
 
+        if (state.HeaderName is not null && (noAuthentication || !string.Equals(state.HeaderValue, state.ApiKey, StringComparison.Ordinal)))
+        {
+            return (null, "the header value is not the apiKey setting");
+        }
+
         var models = new List<OmpManagedModel>(state.Models.Count);
         foreach (var model in state.Models)
         {
@@ -252,7 +316,10 @@ internal static class OmpManagedBlockReader
             models.Add(new OmpManagedModel(model.Id, model.Name, model.Reasoning, model.AcceptsImages, model.ContextWindow, model.MaxTokens));
         }
 
-        return (new OmpManagedProvider(id, baseUrl, api, noAuthentication ? null : state.ApiKey, noAuthentication, models), null);
+        var discovery = state.DiscoveryType is null ? null : new OmpManagedDiscovery(state.DiscoveryType);
+        return (
+            new OmpManagedProvider(id, baseUrl, api, noAuthentication ? null : state.ApiKey, noAuthentication, models, state.BearerAuthHeader, state.HeaderName, discovery),
+            null);
     }
 
     private sealed class ParseState
@@ -267,6 +334,18 @@ internal static class OmpManagedBlockReader
 
         public string? Auth { get; set; }
 
+        public bool BearerAuthHeader { get; set; }
+
+        public int MemberIndent { get; set; } = -1;
+
+        public ProviderSection Section { get; set; }
+
+        public string? HeaderName { get; set; }
+
+        public string? HeaderValue { get; set; }
+
+        public string? DiscoveryType { get; set; }
+
         public ModelState? Model { get; set; }
 
         public List<ModelState> Models { get; } = [];
@@ -279,6 +358,13 @@ internal static class OmpManagedBlockReader
                 Model = null;
             }
         }
+    }
+
+    private enum ProviderSection
+    {
+        None = 0,
+        Headers,
+        Discovery,
     }
 
     private sealed class ModelState

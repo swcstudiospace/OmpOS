@@ -8,4 +8,8 @@
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Fixtures/omp-provider-ids.txt" />
+  </ItemGroup>
+
 </Project>

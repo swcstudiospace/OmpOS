@@ -70,6 +70,24 @@ internal partial class ModelsPageView : SettingsPageViewBase
     /// <summary>Gets the polite live region.</summary>
     internal TextBlock Live => AnnouncementLine;
 
+    /// <summary>Gets the block that holds the provider listing.</summary>
+    internal StackPanel Listing => ListingBlock;
+
+    /// <summary>Gets the region filter of the provider listing.</summary>
+    internal ComboBox RegionChoice => RegionFilter;
+
+    /// <summary>Gets the kind filter of the provider listing.</summary>
+    internal ComboBox KindChoice => KindFilter;
+
+    /// <summary>Gets the line shown while the filters keep no listing.</summary>
+    internal TextBlock ListingNoMatches => ListingNoMatchesLine;
+
+    /// <summary>Gets the polite live region of the provider listing.</summary>
+    internal TextBlock ListingLive => ListingAnnouncementLine;
+
+    /// <summary>Gets the listing cards that are drawn, in page order: section by section.</summary>
+    internal IReadOnlyList<ProviderListingCardView> ListingCardViews => [.. ListingSections.GetVisualDescendants().OfType<ProviderListingCardView>()];
+
     /// <summary>Gets the Use template buttons of the open template list, in list order.</summary>
     internal IReadOnlyList<Button> UseTemplateButtons =>
         [.. TemplateRows.GetVisualDescendants().OfType<Button>().Where(static button => button.Classes.Contains(UseTemplateClass))];

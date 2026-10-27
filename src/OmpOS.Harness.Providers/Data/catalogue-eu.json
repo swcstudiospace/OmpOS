@@ -1,0 +1,784 @@
+{
+  "rows": [
+    {
+      "id": "mistral",
+      "displayName": "Mistral AI La Plateforme",
+      "region": "eu",
+      "country": "FR",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "mistral",
+      "apiKeyEnv": "MISTRAL_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.mistral.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.mistral.ai/api",
+      "keyPageUrl": "https://console.mistral.ai/home?workspace_dialog=apiKeys",
+      "sourceUrl": "https://docs.mistral.ai/openapi.yaml",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Pay-as-you-go console key; use this for OmpOS. Also serves codestral-latest/codestral-2508 and Devstral 2 (same host, same key). No Anthropic endpoint documented.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "mistral-codestral",
+      "displayName": "Mistral Codestral dedicated endpoint",
+      "region": "eu",
+      "country": "FR",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "CODESTRAL_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://codestral.mistral.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": [
+            {
+              "id": "codestral-latest",
+              "name": "Codestral",
+              "reasoning": false,
+              "contextWindow": null,
+              "maxTokens": null
+            }
+          ]
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://mistral.ai/news/codestral",
+      "keyPageUrl": "https://console.mistral.ai/codestral",
+      "sourceUrl": "https://mistral.ai/news/codestral",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Personal Codestral key, not valid on api.mistral.ai (3rd-party). /v1 path and models list [INFERENCE]; 2024 beta terms, key page may be stale.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "mistral-vibe-plan",
+      "displayName": "Mistral Vibe Pro/Team plan",
+      "region": "eu",
+      "country": "FR",
+      "residencyNote": null,
+      "kind": "codingPlan",
+      "ompProviderId": null,
+      "apiKeyEnv": "MISTRAL_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.mistral.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.mistral.ai/vibe/code/overview",
+      "keyPageUrl": "https://chat.mistral.ai/code/extensions",
+      "sourceUrl": "https://help.mistral.ai/en/articles/698531",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Plan key from Code > Vibe CLI, tied to the monthly Vibe budget; differs from the PAYG console key. Vendor: use a PAYG key for API automation.",
+      "loginCommand": null,
+      "plan": {
+        "ruleText": "Plan key (Code > Vibe CLI) is tied to the plan's monthly Vibe budget and stops at exhaustion unless pay-as-you-go is on; for API automation Mistral says to use a pay-as-you-go key, not a plan key.",
+        "ruleSourceUrl": "https://help.mistral.ai/en/articles/698531",
+        "interactiveOnly": true,
+        "cloudDefaultPayAsYouGo": true,
+        "separateKey": true,
+        "planUrl": "https://mistral.ai/pricing",
+        "validityDays": null,
+        "tiers": [
+          {
+            "name": "Pro",
+            "priceText": "$14.99 per month",
+            "priceVerified": true,
+            "quotaText": "Monthly budget shared by Studio, API and Vibe; no numbers published"
+          },
+          {
+            "name": "Team",
+            "priceText": "$24.99 per user per month",
+            "priceVerified": true,
+            "quotaText": "Monthly budget shared by Studio, API and Vibe; no numbers published; $50 per month minimum"
+          }
+        ],
+        "listedTools": [
+          "Vibe CLI",
+          "VS Code extension",
+          "Vibe Code Web"
+        ]
+      }
+    },
+    {
+      "id": "umans-ai-code",
+      "displayName": "code by Umans AI",
+      "region": "eu",
+      "country": "FR",
+      "residencyNote": "Own GPUs, no training; EU-only inference on request (vendor, via research)",
+      "kind": "codingPlan",
+      "ompProviderId": "umans",
+      "apiKeyEnv": "UMANS_AI_CODING_PLAN_API_KEY",
+      "routes": [
+        {
+          "id": "anthropic",
+          "api": "anthropic-messages",
+          "baseUrl": "https://api.code.umans.ai",
+          "auth": "xApiKey",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        },
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.code.umans.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://app.umans.ai/offers/code/docs",
+      "keyPageUrl": "https://app.umans.ai/offers/code",
+      "sourceUrl": "https://app.umans.ai/offers/code",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Plan terms inconsistent across vendor pages (docs say per token, offers page $17/$42, search excerpt $20/$50). Models umans-coder, umans-flash, umans-kimi-k3, umans-glm-5.3.",
+      "loginCommand": null,
+      "plan": {
+        "ruleText": "No usage rule found in the pages read; check the vendor terms before use.",
+        "ruleSourceUrl": null,
+        "interactiveOnly": false,
+        "cloudDefaultPayAsYouGo": true,
+        "separateKey": true,
+        "planUrl": "https://app.umans.ai/offers/code",
+        "validityDays": null,
+        "tiers": [
+          {
+            "name": "Code Pro",
+            "priceText": "price unverified",
+            "priceVerified": false,
+            "quotaText": "200 effective requests per rolling 5h window, 5 concurrent; offers page $17 per month billed yearly"
+          },
+          {
+            "name": "Code Max",
+            "priceText": "price unverified",
+            "priceVerified": false,
+            "quotaText": "Unlimited tokens, 4 concurrent sessions; offers page $42 per month billed yearly"
+          }
+        ],
+        "listedTools": [
+          "Claude Code",
+          "OpenCode",
+          "omp",
+          "Cursor",
+          "Zed",
+          "Pi",
+          "Copilot BYOK",
+          "Codex"
+        ]
+      }
+    },
+    {
+      "id": "aleph-alpha-pharia",
+      "displayName": "Aleph Alpha PhariaAI / PhariaInference",
+      "region": "eu",
+      "country": "DE",
+      "residencyNote": "Customer-installed (on-prem or hosted); residency = deployment",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "PHARIA_TOKEN",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://{host}/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [
+        {
+          "name": "host",
+          "label": "Pharia inference host",
+          "example": "inference-api.pharia.example.com",
+          "help": "Hostname of your PhariaAI installation"
+        }
+      ],
+      "docsUrl": "https://docs.aleph-alpha.com/phariaai-home/latest/index.html",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.aleph-alpha.com/phariaai-home/latest/index.html",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Customer-installed: you supply your own host. No public base URL or price; models list not confirmed, enter a model id. Enterprise contact only.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "scaleway",
+      "displayName": "Scaleway Generative APIs",
+      "region": "eu",
+      "country": "FR",
+      "residencyNote": "EU data centres (Paris region)",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "SCALEWAY_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.scaleway.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": [
+            {
+              "id": "glm-5.3",
+              "name": "GLM 5.3",
+              "reasoning": false,
+              "contextWindow": null,
+              "maxTokens": null
+            },
+            {
+              "id": "deepseek-v4.1-flash",
+              "name": "DeepSeek V4.1 Flash",
+              "reasoning": false,
+              "contextWindow": null,
+              "maxTokens": null
+            }
+          ]
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://www.scaleway.com/en/docs/generative-apis/quickstart/",
+      "keyPageUrl": "https://www.scaleway.com/en/docs/iam/credentials/create-api-keys/",
+      "sourceUrl": "https://www.scaleway.com/en/docs/generative-apis/quickstart/",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "IAM secret key as Bearer. /v1/models is [INFERENCE: standard]. No native Anthropic endpoint. 1M free tokens for new customers.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "ovhcloud-ai-endpoints",
+      "displayName": "OVHcloud AI Endpoints",
+      "region": "eu",
+      "country": "FR",
+      "residencyNote": "EU; vendor: we do not store user data",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "OVHCLOUD_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        },
+        {
+          "id": "responses",
+          "api": "openai-responses",
+          "baseUrl": "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-getting-started.md",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-getting-started.md",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Anonymous 2 req/min; keyed 400 req/min/project/model; Discovery-mode projects cannot use keys. Host from prior repo read. Also supports Responses.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "ionos-ai-model-hub",
+      "displayName": "IONOS AI Model Hub",
+      "region": "eu",
+      "country": "DE",
+      "residencyNote": "Data processed in Germany (host de-txl)",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "IONOS_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://openai.inference.de-txl.ionos.com/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.ionos.com/cloud/ai/ai-model-hub.md",
+      "keyPageUrl": "https://docs.ionos.com/cloud/ai/ai-model-hub/how-tos/access-management.md",
+      "sourceUrl": "https://docs.ionos.com/cloud/ai/ai-model-hub/how-tos/text-generation.md",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Key is an IONOS Authentication Token.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "stackit-ai-model-serving",
+      "displayName": "STACKIT AI Model Serving",
+      "region": "eu",
+      "country": "DE",
+      "residencyNote": "Region eu01; no request data stored",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "STACKIT_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/getting-started/getting-started-with-shared-models/",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/getting-started/getting-started-with-shared-models/",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Auth token from STACKIT Portal. Omit tools when empty for Llama-based models (FAQ). Models-list route known from a 3rd-party integration.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "nebius-token-factory",
+      "displayName": "Nebius Token Factory",
+      "region": "eu",
+      "country": "NL",
+      "residencyNote": "DCs Finland and France (also US/UK); shared endpoints have no region guarantee",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "NEBIUS_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.tokenfactory.nebius.com/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.tokenfactory.nebius.com/quickstart",
+      "keyPageUrl": "https://tokenfactory.nebius.com/project/api-keys",
+      "sourceUrl": "https://docs.tokenfactory.nebius.com/api-reference/introduction.md",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Dedicated endpoints fix region contractually; shared ones do not.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "infomaniak-ai-tools",
+      "displayName": "Infomaniak AI Tools",
+      "region": "eu",
+      "country": "CH",
+      "residencyNote": "Switzerland (non-EU)",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "INFOMANIAK_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.infomaniak.com/2/ai/{product_id}/openai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /2/ai/{product_id}/openai/v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [
+        {
+          "name": "product_id",
+          "label": "Product ID",
+          "example": "123456",
+          "help": "From GET /1/ai"
+        }
+      ],
+      "docsUrl": "https://developer.infomaniak.com/docs/api/post/2/ai/%7Bproduct_id%7D/openai/v1/chat/completions",
+      "keyPageUrl": null,
+      "sourceUrl": "https://developer.infomaniak.com/docs/api/post/2/ai/%7Bproduct_id%7D/openai/v1/chat/completions",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "API token with ai-tools scope. Docs page is a JS shell; facts from search excerpts.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "tsystems-ai-foundation-services",
+      "displayName": "T-Systems AI Foundation Services (LLMHub)",
+      "region": "eu",
+      "country": "DE",
+      "residencyNote": "Open models in Germany; Claude/GPT via GCP/Azure EU regions; Gemini Worldwide",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "TSYSTEMS_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://llm-server.llmhub.t-systems.net/v2",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v2/models",
+          "models": []
+        },
+        {
+          "id": "responses",
+          "api": "openai-responses",
+          "baseUrl": "https://llm-server.llmhub.t-systems.net/v2",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v2/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.llmhub.t-systems.net/",
+      "keyPageUrl": "https://apikey.llmhub.t-systems.net/",
+      "sourceUrl": "https://docs.llmhub.t-systems.net/",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Changelog v1.2.3 (2026-10) announces an API transition with a Legacy endpoint: re-check the base URL before use. Also /responses.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "greenpt",
+      "displayName": "GreenPT",
+      "region": "eu",
+      "country": "NL",
+      "residencyNote": "EU endpoint processes in the EU (a US endpoint also exists)",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "GREENPT_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.greenpt.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.greenpt.ai/get-started",
+      "keyPageUrl": "https://account.greenpt.ai/api/keys",
+      "sourceUrl": "https://docs.greenpt.ai/get-started",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "EU host; US host is api.us.greenpt.ai. No Responses endpoint. Account needs any subscription tier to unlock API.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "cortecs",
+      "displayName": "Cortecs (EU LLM router)",
+      "region": "eu",
+      "country": "FR",
+      "residencyNote": null,
+      "kind": "aggregator",
+      "ompProviderId": null,
+      "apiKeyEnv": "CORTECS_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.cortecs.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        },
+        {
+          "id": "responses",
+          "api": "openai-responses",
+          "baseUrl": "https://api.cortecs.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        },
+        {
+          "id": "anthropic",
+          "api": "anthropic-messages",
+          "baseUrl": "https://api.cortecs.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.cortecs.ai/api/api-compatibility",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.cortecs.ai/api/api-compatibility",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Sovereign Cloud project setting (eu_native) restricts to EU providers. Anthropic base path is [INFERENCE] (vendor: set ANTHROPIC_BASE_URL to its base URL); Bearer assumed.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "berget-ai",
+      "displayName": "Berget AI",
+      "region": "eu",
+      "country": "SE",
+      "residencyNote": "Data stays in EU (vendor docs via 3rd party)",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "BERGET_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.berget.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models/",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.berget.ai/what-is-berget",
+      "keyPageUrl": "https://docs.berget.ai/",
+      "sourceUrl": "https://docs.berget.ai/what-is-berget",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Facts from search excerpts of vendor docs.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "regolo-ai",
+      "displayName": "Regolo.ai (Seeweb)",
+      "region": "eu",
+      "country": "IT",
+      "residencyNote": "EU GPUs; zero data retention (vendor blog)",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "REGOLO_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.regolo.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://regolo.ai/openai-replacement-eu-base-url-regolo/",
+      "keyPageUrl": null,
+      "sourceUrl": "https://regolo.ai/using-regolo-models-with-opencode/",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Models list not confirmed (inference): enter a model id. Keys are per-model Virtual Keys from the dashboard.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "evroc-think",
+      "displayName": "evroc Think",
+      "region": "eu",
+      "country": "SE",
+      "residencyNote": "EU sovereign cloud",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "EVROC_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://models.think.evroc.com/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.evroc.com/products/think/concepts.html",
+      "keyPageUrl": null,
+      "sourceUrl": "https://evroc.com/ai-services/think-models/",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Key auto-created by the evroc CLI or EVROC_API_KEY.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "nscale-serverless",
+      "displayName": "Nscale Serverless",
+      "region": "eu",
+      "country": "GB",
+      "residencyNote": "UK (not EU)",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "NSCALE_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://inference.api.nscale.com/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.nscale.com/docs/inference/serverless-models/overview",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.nscale.com/docs/inference/serverless-models/overview",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Facts from a search excerpt.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "exoscale-concrete-ai",
+      "displayName": "Exoscale Concrete AI",
+      "region": "eu",
+      "country": "CH",
+      "residencyNote": "Zones de-fra-1, at-vie-2, hr-zag-1",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "EXOSCALE_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://inference.{zone}.exoscale-cloud.com/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [
+        {
+          "name": "zone",
+          "label": "Zone",
+          "example": "de-fra-1",
+          "help": "Exoscale zone: de-fra-1, at-vie-2 or hr-zag-1"
+        }
+      ],
+      "docsUrl": "https://community.exoscale.com/product/concrete-ai/on-demand-inference/overview/",
+      "keyPageUrl": null,
+      "sourceUrl": "https://community.exoscale.com/product/concrete-ai/on-demand-inference/overview/",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "On-Demand is private preview; key scoped per model. Models list not confirmed: enter a model id. Dedicated deployment host not covered.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "gcore-everywhere-inference",
+      "displayName": "Gcore Everywhere Inference",
+      "region": "eu",
+      "country": "LU",
+      "residencyNote": "Region per deployment",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "GCORE_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://model-{deployment}.ai.gcore.dev/v1",
+          "auth": "customHeader",
+          "authHeader": "X-API-Key",
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [
+        {
+          "name": "deployment",
+          "label": "Deployment host part",
+          "example": "myname-1234-5678",
+          "help": "<name>-<project-id>-<account-id> from the Gcore portal"
+        }
+      ],
+      "docsUrl": "https://gcore.mintlify.app/edge-ai/everywhere-inference/ai-models/query-deployed-model",
+      "keyPageUrl": null,
+      "sourceUrl": "https://gcore.mintlify.app/edge-ai/everywhere-inference/ai-models/query-deployed-model",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Host is model-<name>-<project-id>-<account-id>.ai.gcore.dev; X-API-Key auth is off by default. Models list not confirmed: enter a model id.",
+      "loginCommand": null,
+      "plan": null
+    }
+  ]
+}

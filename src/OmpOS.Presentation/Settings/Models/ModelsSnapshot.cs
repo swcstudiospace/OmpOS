@@ -6,12 +6,14 @@ namespace OmpOS.Presentation.Settings.Models;
 /// <param name="Warning">A warning to show above the list (for example omp's <c>models.yml</c> validation message), or null.</param>
 /// <param name="IsComplete">False when omp lists only providers it has a credential for, so the list can be shorter than what omp supports.</param>
 /// <param name="Templates">The templates a custom provider can start from.</param>
+/// <param name="Listings">Every provider, aggregator, coding plan and local runtime the page offers to set up, in the order the source lists them. Null means none.</param>
 public sealed record ModelsSnapshot(
     IReadOnlyList<ProviderInfo> Providers,
     string? DefaultModel,
     string? Warning,
     bool IsComplete,
-    IReadOnlyList<ProviderTemplate> Templates)
+    IReadOnlyList<ProviderTemplate> Templates,
+    IReadOnlyList<ProviderListing>? Listings = null)
 {
     /// <summary>Initializes a new instance of the <see cref="ModelsSnapshot"/> class with no provider templates.</summary>
     /// <param name="providers">Every provider to show, in the order the source lists them.</param>

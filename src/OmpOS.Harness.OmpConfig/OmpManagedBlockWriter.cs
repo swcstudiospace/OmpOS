@@ -39,7 +39,35 @@ internal static class OmpManagedBlockWriter
             }
         }
 
-        lines.Add(property + "models:");
+        if (provider.BearerAuthHeader)
+        {
+            lines.Add(property + "authHeader: true");
+        }
+
+        if (provider.KeyHeaderName is not null)
+        {
+            lines.Add(property + "headers:");
+            lines.Add(Pad(childIndent + (2 * step)) + OmpYamlScalar.Quote(provider.KeyHeaderName) + ": " + OmpYamlScalar.Quote(provider.ApiKeyEnvName!));
+        }
+
+        if (provider.Discovery is not null)
+        {
+            lines.Add(property + "discovery:");
+            lines.Add(Pad(childIndent + (2 * step)) + "type: " + OmpYamlScalar.Quote(provider.Discovery.Type));
+        }
+
+        if (provider.Models.Count > 0)
+        {
+            AddModels(lines, provider, childIndent, step);
+        }
+
+        lines.Add(Pad(childIndent) + OmpModelsLayout.EndMarker + provider.Id);
+        return lines;
+    }
+
+    private static void AddModels(List<string> lines, OmpManagedProvider provider, int childIndent, int step)
+    {
+        lines.Add(Pad(childIndent + step) + "models:");
         var item = Pad(childIndent + (2 * step));
         var itemProperty = item + "  ";
         foreach (var model in provider.Models)
@@ -63,8 +91,6 @@ internal static class OmpManagedBlockWriter
             }
         }
 
-        lines.Add(Pad(childIndent) + OmpModelsLayout.EndMarker + provider.Id);
-        return lines;
     }
 
     private static string Pad(int width) => new(' ', width);
