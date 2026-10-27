@@ -28,6 +28,8 @@ x86/
 [Aa][Rr][Mm]64/
 bld/
 [Bb]in/
+# The GSD-Core omp plugin ships its probe and link scripts in its own bin/ directory: track them.
+!/plugins/gsd-core-omp/bin/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/

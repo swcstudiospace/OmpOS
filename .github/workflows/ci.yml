@@ -100,6 +100,8 @@ jobs:
           python3 scripts/ci/check-vulnerable-packages.py vuln.json
       - name: Secret scan (gitleaks CLI, pinned in scripts/ci/gitleaks.env; the same script bootstrap.sh runs)
         run: bash scripts/ci/secret-scan.sh
+      - name: Plugin tests (node:test suite of plugins/gsd-core-omp; the same script bootstrap.sh runs)
+        run: bash scripts/ci/plugin-node-tests.sh
       - name: Validate compose (podman-compose needs the podman binary and the backend profile)
         run: |
           pipx install podman-compose==1.6.0

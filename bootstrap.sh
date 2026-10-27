@@ -48,6 +48,10 @@ fi
 # flags in scripts/ci/secret-scan.sh). It fails closed, offline included, unless OMPOS_SKIP_SECRET_SCAN=1 is set.
 bash scripts/ci/secret-scan.sh
 
+# Plugin tests: the GSD-Core omp plugin (plugins/gsd-core-omp) is OmpOS-owned JavaScript with no .NET project; its node:test suite
+# is gated here and in CI by one shared script.
+bash scripts/ci/plugin-node-tests.sh
+
 dotnet --version
 dotnet restore OmpOS.Linux.slnf --locked-mode
 dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
