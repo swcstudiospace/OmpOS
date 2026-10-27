@@ -478,3 +478,77 @@ Source: user request 2026-10-26 and ultrathink plan graph ut-mvp0bh59-2dd6ef4c. 
 - [x] **AL-23**: The Greptile faces are bundled as static instances and used by role: DM Sans for interface text, Anybody for display headings of 20 px and above only, Space Mono for code and identifiers.
   - Acceptance: the font files and their licence texts are in the application assets; no Thin weight renders; every `OmpOS.Font.Display` use is 20 px or larger and semibold or heavier; no literal family exists in AXAML (AL-19).
   - Verification: `FontResourceTests`, a typography markup test and the recorded screenshots (Phase 50).
+
+## Parity and publication (PX, v0.15.0, planned 2026-10-27)
+
+Source: the user request of 2026-10-27 and the research in `docs/plans/v0.15.0-research/`. Every requirement names its phase; verification follows the gate rules of the earlier milestones (no live model turn, no external account action without a record).
+
+- [ ] **PX-01**: The default look is White and Purple.
+  - Acceptance: a new installation starts in the Light theme (white surfaces, purple `#6d28d9`) in the desktop and the web head; System, Light and Dark remain choices and persist; every colour pair keeps its contrast in both variants. Supersedes the Dark default of AL-21 (OQ-94).
+  - Verification: theme preference tests (default Light), `ThemeContrastTests`, screenshots in both themes (Phase 51).
+- [ ] **PX-02**: OmpOS has a brand set built from the Greptile typefaces.
+  - Acceptance: mark, wordmark lockup, banner (1280 by 320), social preview (1280 by 640, under 1 MB), favicons and desktop and Android icons exist under `assets/brand/` with the script that builds them; text is outlined from the bundled faces; the heads and the README use them.
+  - Verification: a script test of sizes and dimensions and review by eye (Phase 51).
+- [ ] **PX-03**: The repository is licensed AGPL-3.0-or-later.
+  - Acceptance: `LICENSE` holds the canonical text; `NOTICE` and `THIRD-PARTY-NOTICES.md` account for every shipped package, font and bundled asset; package metadata carries the SPDX expression; the README states it; OQ-93 records the reading of "AGL 3.0" and closes OQ-62.
+  - Verification: a licence check script run in the gate (Phase 51).
+- [ ] **PX-04**: The network source offer of AGPL section 13 is met on every surface.
+  - Acceptance: `GET /source` is anonymous and returns the licence, the repository URL and the commit; the web footer and About page and the desktop About show them.
+  - Verification: API integration test, bUnit test, headless view test (Phase 51).
+- [ ] **PX-05**: The GitHub repository is presented properly.
+  - Acceptance: description, homepage, topics, detected licence, security reporting, secret scanning and Dependabot security updates are set and recorded; the social preview is prepared with its manual step.
+  - Verification: `gh api` read-back saved as evidence (Phase 52).
+- [ ] **PX-06**: The standard community files exist.
+  - Acceptance: CONTRIBUTING (with the DCO rule), CODE_OF_CONDUCT, SECURITY, SUPPORT, CODEOWNERS, issue forms, a pull request template, `dependabot.yml`, release notes configuration and labels.
+  - Verification: community profile check and YAML validity tests (Phase 52).
+- [ ] **PX-07**: The changelog and the release are in place.
+  - Acceptance: `CHANGELOG.md` in Keep a Changelog form from v0.9.1 to v0.15.0; one version source; tag and GitHub Release v0.15.0.
+  - Verification: changelog check script, `gh release view` (Phases 52 and 65).
+- [ ] **PX-08**: The web head is styled in White and Purple with self-hosted Greptile faces.
+  - Acceptance: no Bootstrap; tokens mirror the desktop; woff2 fonts with their OFL texts; reduced motion; theme boot script; the shell has a top bar, rail, thread region and a drawer below 840 px.
+  - Verification: CSS contract tests, `AccessibilityTests`, bUnit tests, smoke (Phase 53).
+- [ ] **PX-09**: The web head offers the desktop's working surfaces.
+  - Acceptance: thread header with the plugin connection row, the block views, composer chips and slash palette, steering, approvals, Changes bar, Kanban, Settings, omp terminal, Cloud and Remote views.
+  - Verification: bUnit tests per component and state; smoke v2 with axe on every screen in both themes at three widths (Phase 54).
+- [ ] **PX-10**: The API serves the endpoints the screens need.
+  - Acceptance: catalog, stages, context, steering, config options, commands, changes, board, lifecycle, workspace, settings, providers (write-only credentials), hooks, automations, files, terminal stream and cloud endpoints, owner-scoped and in OpenAPI 3.1; none echoes a credential.
+  - Verification: integration tests per endpoint and a contract test against `docs/api/openapi.json` (Phases 53, 54, 60, 62).
+- [ ] **PX-11**: The web application can be seen.
+  - Acceptance: a labelled Demo build with a simulated engine and a hosted preview; a local run against the real API; screenshots of every screen in both themes at 1440, 1024 and 390 px with the method stated.
+  - Verification: fixture contract test, `curl` and a screenshot of the hosted page, the evidence folder (Phase 55).
+- [ ] **PX-12**: All Cursor slash commands resolve.
+  - Acceptance: the 92 documented tokens and aliases each have a handler kind and a visible status; `/skill-name`, custom markdown commands, `/subagent-name` and the `&` hand-off resolve; the palette of both heads lists engine, OmpOS, discovered and skill commands with their source.
+  - Verification: a test that every documented token has a handler; resolver and palette tests (Phase 56).
+- [ ] **PX-13**: The conventions of a workspace are picked up automatically.
+  - Acceptance: commands, skills, rules and subagents are discovered from `.ompos`, `.omp`, `.cursor`, `.claude`, `.codex` and `.agents` at project and user scope with precedence and diagnostics, in desktop, remote and cloud sessions.
+  - Verification: discovery tests over fixture trees per source and per environment kind (Phase 56).
+- [ ] **PX-14**: Cursor-compatible hooks run in every environment.
+  - Acceptance: 21 events, command and prompt hooks, matchers, timeouts, `failClosed`, `loop_limit`, exit code 2 as deny; blocking events enforced inside omp by an OmpOS extension; consent on a path-independent hash; Hooks page and run log; head wiring (closes OQ-84).
+  - Verification: parser, runner, consent and extension tests; a fake-omp test that a denying hook stops a tool call (Phase 57).
+- [ ] **PX-15**: A session can run on a remote host over SSH.
+  - Acceptance: profiles from `ssh -G`, preflight with fix text, `SshAcpTransport` for `omp acp`, banner tolerance, reconnect with `session/load`, remote file tree and terminal, no secret in an argument list.
+  - Verification: fake-ssh tests with canary secrets and a recorded run against a loopback `sshd` (Phase 58).
+- [ ] **PX-16**: A session can cover several repositories.
+  - Acceptance: a workspace set of several roots is validated and launched through omp's additional-directory support; worktrees per git root; explorer with one tree per root; `.code-workspace` import and export; convention merge across roots.
+  - Verification: launch, worktree and merge tests with real git, a recorded omp probe (Phase 59).
+- [ ] **PX-17**: An agent can run in the cloud on Railway and return a pull request.
+  - Acceptance: authenticated WebSocket worker bridge, durable cloud agent records, caps, idle sweeper, secret redaction, Railway client, pull request flow, heads, and a staged deployment recorded with version and state or the exact blocker.
+  - Verification: loopback and fake-worker tests, canary tests, recorded fixtures, Railway status read-back (Phase 60).
+- [ ] **PX-18**: Settings cover Cursor's configuration surface.
+  - Acceptance: each of the 50 inventory rows is built, wired to omp or listed as omitted with the reason; the new pages exist in both heads.
+  - Verification: a status test over the row ids and page tests (Phase 61).
+- [ ] **PX-19**: Settings lists every EU, US and CN provider and coding plan of the research.
+  - Acceptance: catalogue rows with base URL, authentication, API style, region, residency, omp id or `models.yml` template, links and plan terms; retired or unconfirmed vendors are not offered; writer support for all ten omp API styles; region filter; coding-plan cards with the vendor rule text; no key is ever rendered.
+  - Verification: catalogue and writer tests, an omp validation probe in a sandbox, view model tests (Phase 62).
+- [ ] **PX-20**: The remaining Cursor agent, chat, context and safety features are built or recorded.
+  - Acceptance: `@` mentions, run modes, `permissions.json`, `sandbox.json`, `.cursorignore`, `.cursor/mcp.json` import, worktree commands, file checkpoints, queue versus send now, conversation search and context ring each exist or are listed as PARTIAL with the missing piece.
+  - Verification: tests per feature and the refreshed audit (Phase 63).
+- [ ] **PX-21**: The documentation is current and published in GitBook's layout.
+  - Acceptance: `.gitbook.yaml`, `SUMMARY.md`, about 30 pages stating status honestly, README as the landing page, the owner's publish steps; the offline checker passes.
+  - Verification: `scripts/docs/check_gitbook.py` in the gate (Phase 64).
+- [ ] **PX-22**: The Cursor parity audit is refreshed against the 2026-10-27 inventory.
+  - Acceptance: every feature of the inventory has a status with evidence; counts are updated.
+  - Verification: the audit file (Phase 64).
+- [ ] **PX-23**: The release is verified and published.
+  - Acceptance: `./bootstrap.sh` green on a clean worktree, fast-forward push, tag v0.15.0, GitHub Release, deploy records, a final report separating verified from owner-dependent items.
+  - Verification: the saved log, git ancestry check, `gh release view` (Phase 65).
