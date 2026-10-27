@@ -2,47 +2,50 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:copy="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
              x:Class="OmpOS.Native.Views.Sessions.TerminalSteerView"
-             Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
-             Padding="{DynamicResource OmpOS.Space.Md}">
+             Background="{DynamicResource OmpOS.Color.Surface}">
 
   <UserControl.Styles>
-    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/ComposerStyles.axaml" />
   </UserControl.Styles>
 
-  <!-- The composer of an omp terminal. The terminal itself takes the keys; this box only steers the running omp: Send now delivers the
-       message into the running turn, Queue runs it after the turn. Keyboard order follows XAML order: the message, Send now, Queue. -->
-  <Grid ColumnDefinitions="*,Auto,Auto"
-        ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
+  <!-- The composer of an omp terminal (parity spec 4.7): the same rounded card as the chat composer, in the same content column. The
+       terminal itself takes the keys; this box only steers the running omp: Send now delivers the message into the running turn, Queue
+       runs it after the turn. The two actions sit in the card's footer at the right. Keyboard order follows XAML order: the message,
+       Send now, Queue. -->
+  <Border x:Name="SteerFrame"
+          MaxWidth="{DynamicResource OmpOS.Size.ThreadContentMaxWidth}"
+          Margin="16,8,16,16"
+          CornerRadius="{DynamicResource OmpOS.Radius.Lg}"
+          BoxShadow="{DynamicResource OmpOS.Shadow.Card}">
+    <Panel>
 
-    <TextBox x:Name="MessageInput"
-             Grid.Column="0"
-             AutomationProperties.Name="{x:Static copy:AgentPanelCopy.TerminalMessageName}"
-             PlaceholderText="{x:Static copy:AgentPanelCopy.ComposerPlaceholderTerminal}"
-             AcceptsReturn="True"
-             TextWrapping="Wrap"
-             MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-             Background="{DynamicResource OmpOS.Color.Surface}"
-             Foreground="{DynamicResource OmpOS.Color.TextPrimary}" />
+      <TextBox x:Name="MessageInput"
+               Classes="composer"
+               AutomationProperties.Name="{x:Static copy:AgentPanelCopy.TerminalMessageName}"
+               PlaceholderText="{x:Static copy:AgentPanelCopy.ComposerPlaceholderTerminal}"
+               AcceptsReturn="True"
+               TextWrapping="Wrap" />
 
-    <Button x:Name="SendNowButton"
-            Grid.Column="1"
-            Classes="primary"
-            Content="{x:Static copy:AgentPanelCopy.SendNow}"
-            Padding="{DynamicResource OmpOS.Space.Md}"
-            MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-            MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
-            VerticalAlignment="Bottom"
-            AutomationProperties.Name="{x:Static copy:AgentPanelCopy.SendNowName}" />
+      <StackPanel x:Name="SteerFooter"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  Margin="8,0,8,8"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
 
-    <Button x:Name="QueueButton"
-            Grid.Column="2"
-            Content="{x:Static copy:AgentPanelCopy.QueueFollowUpLabel}"
-            Padding="{DynamicResource OmpOS.Space.Md}"
-            MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-            MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
-            VerticalAlignment="Bottom"
-            AutomationProperties.Name="{x:Static copy:AgentPanelCopy.QueueFollowUpName}" />
+        <Button x:Name="SendNowButton"
+                Classes="primary sm"
+                Content="{x:Static copy:AgentPanelCopy.SendNow}"
+                AutomationProperties.Name="{x:Static copy:AgentPanelCopy.SendNowName}" />
 
-  </Grid>
+        <Button x:Name="QueueButton"
+                Classes="sm"
+                Content="{x:Static copy:AgentPanelCopy.QueueFollowUpLabel}"
+                AutomationProperties.Name="{x:Static copy:AgentPanelCopy.QueueFollowUpName}" />
+
+      </StackPanel>
+
+    </Panel>
+  </Border>
 
 </UserControl>

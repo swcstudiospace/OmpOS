@@ -114,16 +114,17 @@ public sealed class ThemePreferenceTests
             var quote = borders.Single(static border => border.BorderThickness.Left == 2);
             var rule = borders.Single(static border => border.Height == 1);
 
-            Colour(code.Background).ShouldBe(Role(ThemeVariant.Dark, "SurfaceRaised"));
-            Colour(quote.BorderBrush).ShouldBe(Role(ThemeVariant.Dark, "TextSecondary"));
-            Colour(rule.Background).ShouldBe(Role(ThemeVariant.Dark, "SurfaceActive"));
+            // Spec 4.6: a code block is the sunken card, a block quote has a 2 px BorderStrong bar and a rule is a 1 px Border line.
+            Colour(code.Background).ShouldBe(Role(ThemeVariant.Dark, "SurfaceSunken"));
+            Colour(quote.BorderBrush).ShouldBe(Role(ThemeVariant.Dark, "BorderStrong"));
+            Colour(rule.Background).ShouldBe(Role(ThemeVariant.Dark, "Border"));
 
             window.RequestedThemeVariant = ThemeVariant.Light;
             ShellHarness.Settle(window);
 
-            Colour(code.Background).ShouldBe(Role(ThemeVariant.Light, "SurfaceRaised"));
-            Colour(quote.BorderBrush).ShouldBe(Role(ThemeVariant.Light, "TextSecondary"));
-            Colour(rule.Background).ShouldBe(Role(ThemeVariant.Light, "SurfaceActive"));
+            Colour(code.Background).ShouldBe(Role(ThemeVariant.Light, "SurfaceSunken"));
+            Colour(quote.BorderBrush).ShouldBe(Role(ThemeVariant.Light, "BorderStrong"));
+            Colour(rule.Background).ShouldBe(Role(ThemeVariant.Light, "Border"));
             Role(ThemeVariant.Light, "SurfaceRaised").ShouldNotBe(Role(ThemeVariant.Dark, "SurfaceRaised"));
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }

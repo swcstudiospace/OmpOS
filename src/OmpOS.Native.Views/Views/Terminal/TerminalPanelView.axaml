@@ -16,34 +16,33 @@
 
       <TextBlock Text="Terminal"
                  FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
-                 FontSize="{DynamicResource OmpOS.Font.Size.Body}" />
+                 FontSize="{DynamicResource OmpOS.Font.Size.Heading}" />
 
       <TextBox x:Name="CommandInput"
+               Classes="mono"
                PlaceholderText="Command, for example /bin/sh"
-               MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                AutomationProperties.Name="Command" />
 
       <TextBox x:Name="ArgumentsInput"
+               Classes="mono"
                PlaceholderText="Arguments, one per line"
                AcceptsReturn="True"
                TextWrapping="Wrap"
-               MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                AutomationProperties.Name="Arguments, one per line" />
 
       <TextBox x:Name="DirectoryInput"
+               Classes="mono"
                PlaceholderText="Working directory, relative to the workspace (empty for the workspace root)"
-               MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                AutomationProperties.Name="Working directory" />
 
       <Button x:Name="ProposeButton"
+              Classes="primary"
               Content="Propose command"
               HorizontalAlignment="Left"
-              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
               AutomationProperties.Name="Propose command" />
 
       <TextBlock x:Name="PendingText"
-                 Classes="muted"
-                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 Classes="muted small"
                  TextWrapping="Wrap"
                  AutomationProperties.Name="Pending command"
                  AutomationProperties.LiveSetting="Polite" />
@@ -52,36 +51,47 @@
                   Spacing="{DynamicResource OmpOS.Gap.Sm}">
 
         <Button x:Name="ApproveButton"
+                Classes="primary"
                 Content="Approve"
                 IsEnabled="False"
-                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                 AutomationProperties.Name="Approve command" />
 
         <Button x:Name="DeclineButton"
                 Content="Decline"
                 IsEnabled="False"
-                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                 AutomationProperties.Name="Decline command" />
 
         <Button x:Name="StopButton"
                 Content="Stop"
                 IsEnabled="False"
-                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                 AutomationProperties.Name="Stop running command" />
 
       </StackPanel>
 
       <TextBlock x:Name="StatusText"
-                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 Classes="small"
                  TextWrapping="Wrap"
                  AutomationProperties.Name="Terminal status"
                  AutomationProperties.LiveSetting="Polite" />
 
     </StackPanel>
 
-    <term:TerminalControl x:Name="Output"
-                          Margin="{DynamicResource OmpOS.Space.Xs}"
-                          AutomationProperties.Name="Terminal output" />
+    <!-- The output sits in the same rounded frame as the omp terminal (parity spec 4.9): hairline, sunken body, mono face. -->
+    <Border CornerRadius="{DynamicResource OmpOS.Radius.Md}"
+            BorderBrush="{DynamicResource OmpOS.Color.Border}"
+            BorderThickness="{DynamicResource OmpOS.Border.Hairline}"
+            Background="{DynamicResource OmpOS.Color.SurfaceSunken}"
+            Margin="0,8,0,0"
+            ClipToBounds="True">
+      <term:TerminalControl x:Name="Output"
+                            FontFamily="{DynamicResource OmpOS.Font.Mono}"
+                            FontSize="{DynamicResource OmpOS.Font.Size.MonoTerminal}"
+                            Background="{DynamicResource OmpOS.Color.SurfaceSunken}"
+                            Foreground="{DynamicResource OmpOS.Color.TextPrimary}"
+                            SelectionBrush="{DynamicResource OmpOS.Color.Selected}"
+                            Margin="{DynamicResource OmpOS.Space.Sm}"
+                            AutomationProperties.Name="Terminal output" />
+    </Border>
 
   </DockPanel>
 

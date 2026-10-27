@@ -2,9 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="OmpOS.Native.Views.RunControls.ToolApprovalRowView">
 
-  <Border Background="{DynamicResource OmpOS.Color.Surface}"
+  <!-- The request card: a card with a hairline in the accent, as a permission request is drawn in the transcript. -->
+  <Border Classes="card"
           BorderBrush="{DynamicResource OmpOS.Color.AccentPurple}"
-          BorderThickness="1"
           Padding="{DynamicResource OmpOS.Space.Sm}">
 
     <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
@@ -15,8 +15,7 @@
                  TextWrapping="Wrap" />
 
       <TextBlock x:Name="ArgumentsText"
-                 Classes="muted"
-                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                 Classes="muted mono"
                  TextWrapping="Wrap" />
 
       <TextBlock x:Name="StatusText"
@@ -30,13 +29,13 @@
                   Spacing="{DynamicResource OmpOS.Gap.Sm}">
 
         <Button x:Name="ApproveButton"
+                Classes="primary sm"
                 Content="Approve"
-                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                 AutomationProperties.Name="Approve tool request" />
 
         <Button x:Name="DenyButton"
+                Classes="sm"
                 Content="Deny"
-                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                 AutomationProperties.Name="Deny tool request" />
 
       </StackPanel>

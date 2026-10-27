@@ -1,31 +1,39 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-  <!-- Styles the Settings window and its pages share. Tokens only: no colour literal, no literal font family, no animation.
+  <!-- Styles the Settings window and its pages share (spec 4.11). Tokens only: no colour literal, no literal font family, no animation.
        The Greptile families come from OmpOS.Font.Family (DM Sans, the default), OmpOS.Font.Mono (Space Mono: endpoints, ids,
-       model selectors) and OmpOS.Font.Display (Anybody: the large page heading). A later global restyle changes the tokens, not this file. -->
+       model selectors) and OmpOS.Font.Display (Anybody: the page title, at 20 px, never smaller). Buttons, inputs, lists, chips and
+       switches are drawn by the control library (Themes/OmpOSControls.axaml); this file holds only the Settings layout roles. -->
 
   <!-- Text roles. A class wins over the application's TextBlock style. -->
   <Style Selector="TextBlock.settings-heading">
     <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Display}" />
-    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Heading}" />
+    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.DisplaySm}" />
     <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Semibold}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
+  <!-- The sentence under the page title. -->
+  <Style Selector="TextBlock.settings-description">
+    <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextSecondary}" />
+    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Body}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Margin" Value="0,0,0,16" />
+  </Style>
   <Style Selector="TextBlock.settings-section">
     <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Family}" />
-    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Body}" />
+    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Heading}" />
     <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Semibold}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
   <Style Selector="TextBlock.settings-label">
     <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Label}" />
-    <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Semibold}" />
+    <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Medium}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
   <Style Selector="TextBlock.settings-help">
     <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextSecondary}" />
-    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Label}" />
+    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Small}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
   <Style Selector="TextBlock.settings-body">
@@ -34,11 +42,12 @@
   </Style>
   <Style Selector="TextBlock.settings-mono">
     <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Mono}" />
-    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Label}" />
+    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Mono}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
   <Style Selector="TextBlock.settings-chip-text">
-    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Label}" />
+    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Small}" />
+    <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Medium}" />
     <Setter Property="VerticalAlignment" Value="Center" />
     <Setter Property="TextWrapping" Value="NoWrap" />
   </Style>
@@ -47,84 +56,121 @@
     <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Body}" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
-
   <!-- Selectable text (plan quota lines, validity, plan address, privacy statement). It is not a TextBlock type, so it carries its own roles. -->
   <Style Selector="SelectableTextBlock.settings-selectable">
     <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Family}" />
-    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Label}" />
-    <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextPrimary}" />
+    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Small}" />
+    <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextSecondary}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
   <Style Selector="SelectableTextBlock.settings-selectable.settings-mono">
     <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Mono}" />
+    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Mono}" />
   </Style>
   <Style Selector="SelectableTextBlock.settings-selectable.settings-body">
     <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Body}" />
+    <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextPrimary}" />
   </Style>
   <Style Selector="SelectableTextBlock.settings-selectable:focus-visible">
     <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceRaised}" />
   </Style>
 
+  <!-- The page column: one column of the content width, centred in the page, with the page's own scroll bar at the window edge. -->
+  <Style Selector="StackPanel.settings-column">
+    <Setter Property="Margin" Value="32,24" />
+    <Setter Property="MaxWidth" Value="{DynamicResource OmpOS.Size.SettingsContentMaxWidth}" />
+    <!-- Stretch with a maximum width centres the column at the same width on every page; Center would size it to the page's own text. -->
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Spacing" Value="{DynamicResource OmpOS.Gap.Sm}" />
+  </Style>
+
+  <!-- A setting row: the label and its help on the left, the control on the right, a hairline below. -->
+  <Style Selector="Border.settings-row">
+    <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.Border}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="0,12" />
+    <Setter Property="MinHeight" Value="56" />
+  </Style>
+
   <!-- Surfaces. -->
   <Style Selector="Border.settings-card">
     <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceRaised}" />
-    <Setter Property="BorderBrush" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
-    <Setter Property="CornerRadius" Value="{DynamicResource OmpOS.Radius.Md}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.Border}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Border.Hairline}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource OmpOS.Radius.Column}" />
     <Setter Property="Padding" Value="{DynamicResource OmpOS.Space.Md}" />
   </Style>
   <Style Selector="Border.settings-banner">
     <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceRaised}" />
     <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.StatusWarning}" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="{DynamicResource OmpOS.Radius.Sm}" />
-    <Setter Property="Padding" Value="{DynamicResource OmpOS.Space.Sm}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Border.Hairline}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource OmpOS.Radius.Md}" />
+    <Setter Property="Padding" Value="10,8" />
   </Style>
+  <!-- The unsaved-changes prompt: a small dialog card over the top of the page column. -->
   <Style Selector="Border.settings-prompt">
     <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceRaised}" />
     <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
     <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Size.FocusBorder}" />
-    <Setter Property="CornerRadius" Value="{DynamicResource OmpOS.Radius.Md}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource OmpOS.Radius.Lg}" />
+    <Setter Property="BoxShadow" Value="{DynamicResource OmpOS.Shadow.Popup}" />
     <Setter Property="Padding" Value="{DynamicResource OmpOS.Space.Md}" />
     <Setter Property="Margin" Value="{DynamicResource OmpOS.Space.Md}" />
+    <Setter Property="MaxWidth" Value="400" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
   </Style>
+  <!-- The footer bar: 56 px, a hairline above, the dirty note on the left and the actions on the right. -->
   <Style Selector="Border.settings-footer">
     <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.Border}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+    <Setter Property="Padding" Value="16,0" />
+    <Setter Property="MinHeight" Value="56" />
+  </Style>
+  <!-- The navigation: sunken, a hairline on its right edge. -->
+  <Style Selector="Border.settings-nav">
+    <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.Border}" />
+    <Setter Property="BorderThickness" Value="0,0,1,0" />
     <Setter Property="Padding" Value="{DynamicResource OmpOS.Space.Sm}" />
+    <Setter Property="Width" Value="{DynamicResource OmpOS.Size.SettingsNavWidth}" />
+  </Style>
+  <Style Selector="ListBox.settings-navigation">
+    <Setter Property="Background" Value="{DynamicResource OmpOS.Brush.Transparent}" />
+    <Setter Property="Padding" Value="0" />
   </Style>
 
-  <!-- Every interactive control meets the minimum target size. -->
+  <!-- Every interactive control meets the minimum target size; their height, padding and fill come from the control library. -->
   <Style Selector="Button">
-    <Setter Property="MinHeight" Value="{DynamicResource OmpOS.Size.TargetMin}" />
     <Setter Property="MinWidth" Value="{DynamicResource OmpOS.Size.TargetMin}" />
-    <Setter Property="Padding" Value="{DynamicResource OmpOS.Space.Md}" />
-    <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="TextBox">
-    <Setter Property="MinHeight" Value="{DynamicResource OmpOS.Size.TargetMin}" />
     <Setter Property="MinWidth" Value="{DynamicResource OmpOS.Size.TargetMin}" />
-    <Setter Property="Background" Value="{DynamicResource OmpOS.Color.Surface}" />
-    <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextPrimary}" />
   </Style>
   <Style Selector="TextBox.settings-mono">
     <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Mono}" />
+    <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Mono}" />
   </Style>
   <Style Selector="CheckBox">
     <Setter Property="MinHeight" Value="{DynamicResource OmpOS.Size.TargetMin}" />
     <Setter Property="MinWidth" Value="{DynamicResource OmpOS.Size.TargetMin}" />
   </Style>
   <Style Selector="ComboBox">
-    <Setter Property="MinHeight" Value="{DynamicResource OmpOS.Size.TargetMin}" />
     <Setter Property="MinWidth" Value="{DynamicResource OmpOS.Size.TargetMin}" />
   </Style>
   <Style Selector="Expander">
     <Setter Property="MinHeight" Value="{DynamicResource OmpOS.Size.TargetMin}" />
   </Style>
-
-  <!-- Navigation. The selected entry already draws its accent edge in the application styles. -->
-  <Style Selector="ListBox.settings-navigation">
+  <!-- The expander header is a row of the page, not a default toggle: raised fill, hairline, label at the left. -->
+  <Style Selector="Expander /template/ ToggleButton#ExpanderHeader">
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
     <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceRaised}" />
-    <Setter Property="Padding" Value="{DynamicResource OmpOS.Space.Sm}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.Border}" />
+  </Style>
+  <Style Selector="Expander /template/ ToggleButton#ExpanderHeader /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.Border}" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
   </Style>
 
 </Styles>

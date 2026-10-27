@@ -9,16 +9,22 @@ namespace OmpOS.Native.Views.Blocks;
 /// <summary>
 /// Builds the small controls the block views share: text, headings, marked rows, code text and disclosures.
 /// Each class name is a hook for tests and styles; text is named by its content, so no control here has a separate name.
+/// Sizes come from the type tokens (prose is the Body size, code the Mono size); colours are never set here, they come from the
+/// application styles and the views' own styles, so they follow the theme variant.
 /// </summary>
 internal static class BlockControls
 {
-    /// <summary>Creates a wrapping text block.</summary>
+    /// <summary>The width of the marker column of a list row, so nested content is indented by the same step at every level.</summary>
+    private const double MarkerWidth = 20;
+
+    /// <summary>Creates a wrapping text block of prose: the Body size and line height.</summary>
     /// <param name="text">The text, shown verbatim.</param>
     /// <param name="cssClass">An optional class name.</param>
     /// <returns>The text block.</returns>
     public static TextBlock Text(string text, string? cssClass = null)
     {
         var block = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap };
+        AsBody(block);
         if (cssClass is not null)
         {
             block.Classes.Add(cssClass);
@@ -27,13 +33,13 @@ internal static class BlockControls
         return block;
     }
 
-    /// <summary>Creates a wrapping monospace text block for code or raw content.</summary>
+    /// <summary>Creates a wrapping monospace text block for code or raw content: the Mono size and line height.</summary>
     /// <param name="text">The code text, shown verbatim.</param>
     /// <returns>The text block.</returns>
     public static TextBlock Code(string text)
     {
         var block = Text(text);
-        block.FontFamily = BlockTokens.Monospace;
+        AsMono(block);
         return block;
     }
 
@@ -44,12 +50,34 @@ internal static class BlockControls
     public static InlineCollection InlinesOf(TextBlock block) =>
         block.Inlines ?? throw new InvalidOperationException("A text block always has an inline collection.");
 
-    /// <summary>Gives a text block the heading size and semibold weight.</summary>
+    /// <summary>Gives a text block the Body size and line height of prose.</summary>
+    /// <param name="block">The text block to style.</param>
+    /// <returns>The same text block.</returns>
+    public static TextBlock AsBody(TextBlock block)
+    {
+        block.FontSize = BlockTokens.Get<double>("OmpOS.Font.Size.Body");
+        block.LineHeight = BlockTokens.Get<double>("OmpOS.Font.LineHeight.Body");
+        return block;
+    }
+
+    /// <summary>Gives a text block the monospace face at the Mono size and line height.</summary>
+    /// <param name="block">The text block to style.</param>
+    /// <returns>The same text block.</returns>
+    public static TextBlock AsMono(TextBlock block)
+    {
+        block.FontFamily = BlockTokens.Monospace;
+        block.FontSize = BlockTokens.Get<double>("OmpOS.Font.Size.Mono");
+        block.LineHeight = BlockTokens.Get<double>("OmpOS.Font.LineHeight.Mono");
+        return block;
+    }
+
+    /// <summary>Gives a text block the heading size, line height and semibold weight.</summary>
     /// <param name="block">The text block to style.</param>
     /// <returns>The same text block.</returns>
     public static TextBlock AsHeading(TextBlock block)
     {
         block.FontSize = BlockTokens.Get<double>("OmpOS.Font.Size.Heading");
+        block.LineHeight = BlockTokens.Get<double>("OmpOS.Font.LineHeight.Heading");
         block.FontWeight = BlockTokens.Get<FontWeight>("OmpOS.Font.Weight.Semibold");
         return block;
     }
@@ -60,8 +88,9 @@ internal static class BlockControls
     /// <returns>The row.</returns>
     public static Grid Row(string marker, Control content)
     {
-        var markerText = Text(marker);
+        var markerText = Text(marker, "muted");
         markerText.VerticalAlignment = VerticalAlignment.Top;
+        markerText.MinWidth = MarkerWidth - BlockTokens.Get<double>("OmpOS.Gap.Sm");
         Grid.SetColumn(markerText, 0);
         Grid.SetColumn(content, 1);
 

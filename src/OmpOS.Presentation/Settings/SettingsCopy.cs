@@ -92,6 +92,9 @@ public static class SettingsCopy
     /// <summary>The heading of the General page.</summary>
     public const string GeneralHeading = "General";
 
+    /// <summary>The sentence under the title of the General page.</summary>
+    public const string GeneralDescription = "How OmpOS looks and moves, and what it says about your data.";
+
     /// <summary>The label of the theme setting.</summary>
     public const string ThemeLabel = "Theme";
 
@@ -150,6 +153,9 @@ public static class SettingsCopy
     /// <summary>The heading of the Agents page.</summary>
     public const string AgentsHeading = "Agents";
 
+    /// <summary>The sentence under the title of the Agents page.</summary>
+    public const string AgentsDescription = "How OmpOS runs the terminal commands an agent proposes.";
+
     /// <summary>The label of the terminal auto-run switch.</summary>
     public const string AutoRunLabel = "Run terminal commands without asking";
 
@@ -164,6 +170,9 @@ public static class SettingsCopy
 
     /// <summary>The heading of the Tab page.</summary>
     public const string TabHeading = "Tab";
+
+    /// <summary>The sentence under the title of the Tab page.</summary>
+    public const string TabDescription = "Whether inline completion is on and where it asks for suggestions.";
 
     /// <summary>The status line while inline completion is on.</summary>
     public const string TabStatusOn = "Inline completion is on.";
@@ -182,6 +191,9 @@ public static class SettingsCopy
 
     /// <summary>The heading of the Plugins page.</summary>
     public const string PluginsHeading = "Plugins";
+
+    /// <summary>The sentence under the title of the Plugins page.</summary>
+    public const string PluginsDescription = "The plugins OmpOS connects to every omp process it starts.";
 
     /// <summary>The line that explains why there is no switch (OQ-80).</summary>
     public const string PluginsAlwaysOnNote =

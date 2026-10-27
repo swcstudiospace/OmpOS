@@ -178,10 +178,14 @@ public sealed class KanbanCardViewTests
             var title = card.TextParts.First();
             title.FontFamily.ShouldBe(family);
             title.TextWrapping.ShouldBe(TextWrapping.Wrap);
-            card.TextParts.First(static part => string.Equals(part.Name, "ModelText", StringComparison.Ordinal)).TextWrapping.ShouldBe(TextWrapping.Wrap);
+            // Spec 4.10: the card's mono model line is one trimmed line, not wrapped.
+            var model = card.TextParts.First(static part => string.Equals(part.Name, "ModelText", StringComparison.Ordinal));
+            model.TextWrapping.ShouldBe(TextWrapping.NoWrap);
+            model.TextTrimming.ShouldBe(TextTrimming.CharacterEllipsis);
             card.TextParts.First(static part => string.Equals(part.Name, "GraphField", StringComparison.Ordinal)).FontFamily.ShouldBe(mono);
             card.TextParts.First(static part => string.Equals(part.Name, "LeaseField", StringComparison.Ordinal)).FontFamily.ShouldBe(mono);
-            fixture.View.ColumnHeaderOf("running")!.FontFamily.ShouldBe(display);
+            // Spec 4.10: the column header is DM Sans 13/600 (the Display face is kept for the 24 px empty heading only).
+            fixture.View.ColumnHeaderOf("running")!.FontFamily.ShouldBe(family);
             fixture.View.StateTexts.First(static block => string.Equals(block.Name, "EmptyHeading", StringComparison.Ordinal)).FontFamily.ShouldBe(display);
             card.Bounds.Width.ShouldBeLessThanOrEqualTo(fixture.View.ColumnOf("running")!.Bounds.Width);
 

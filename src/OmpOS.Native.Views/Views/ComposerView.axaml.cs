@@ -14,7 +14,7 @@ using OmpOS.Presentation.Runs;
 namespace OmpOS.Native.Views;
 
 /// <summary>
-/// The composer row: the prompt input, the send control, the follow-up control and the stop control. The draft, send gating and
+/// The composer card: the prompt input, the model, mode and thinking chips, and the send, follow-up and stop controls. The draft, send gating and
 /// key rules live in the bound <see cref="ComposerViewModel"/>; this view forwards key presses and clicks to it and keeps the
 /// prompt text equal to the draft. While <see cref="Runs"/> reports an active run, the send control steers that run and the
 /// follow-up control queues the draft behind it, and a label states which kind of input is pending.
@@ -39,6 +39,8 @@ internal partial class ComposerView : UserControl
         FollowUpButton.Click += OnFollowUpClick;
         StopButton.Click += OnStopClick;
         ModelPicker.FocusReturnRequested += OnModelPickerFocusReturn;
+        ModeChipView.FocusReturnRequested += OnModelPickerFocusReturn;
+        ThinkingChipView.FocusReturnRequested += OnModelPickerFocusReturn;
         RefreshRunState();
     }
 
@@ -120,7 +122,10 @@ internal partial class ComposerView : UserControl
         }
     }
 
-    /// <summary>Gets or sets whether the hint line under the prompt is shown. The shell hides it when the window is under 720 px high.</summary>
+    /// <summary>
+    /// Gets or sets whether the hint line under the card is shown. It is hidden by default: the keyboard hint is the tooltip of the prompt
+    /// and stays in its help text, so the line only shows where a shell asks for it.
+    /// </summary>
     public bool HintVisible
     {
         get => HintLine.IsVisible;
@@ -133,7 +138,13 @@ internal partial class ComposerView : UserControl
     /// <summary>Gets the model chip of the footer. It is hidden until the composer carries a model picker that has something to offer.</summary>
     internal ModelPickerView ModelChip => ModelPicker;
 
-    /// <summary>Copies the draft into the prompt and binds the model chip when the data context changes.</summary>
+    /// <summary>Gets the mode chip of the footer (Default or Plan). It is hidden until the composer carries a mode chip that has values to offer.</summary>
+    internal OptionChipView ModeChipControl => ModeChipView;
+
+    /// <summary>Gets the thinking chip of the footer. It is hidden until the composer carries a thinking chip that has values to offer.</summary>
+    internal OptionChipView ThinkingChipControl => ThinkingChipView;
+
+    /// <summary>Copies the draft into the prompt and binds the model, mode and thinking chips when the data context changes.</summary>
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
@@ -151,6 +162,8 @@ internal partial class ComposerView : UserControl
         }
 
         ModelPicker.DataContext = _composer?.ModelPicker;
+        ModeChipView.DataContext = _composer?.ModeChip;
+        ThinkingChipView.DataContext = _composer?.ThinkingChip;
     }
 
     private void OnComposerChanged(object? sender, PropertyChangedEventArgs e)
@@ -158,6 +171,14 @@ internal partial class ComposerView : UserControl
         if (string.Equals(e.PropertyName, nameof(ComposerViewModel.ModelPicker), StringComparison.Ordinal))
         {
             ModelPicker.DataContext = _composer?.ModelPicker;
+        }
+        else if (string.Equals(e.PropertyName, nameof(ComposerViewModel.ModeChip), StringComparison.Ordinal))
+        {
+            ModeChipView.DataContext = _composer?.ModeChip;
+        }
+        else if (string.Equals(e.PropertyName, nameof(ComposerViewModel.ThinkingChip), StringComparison.Ordinal))
+        {
+            ThinkingChipView.DataContext = _composer?.ThinkingChip;
         }
     }
 
@@ -390,6 +411,7 @@ internal partial class ComposerView : UserControl
     {
         var active = RunIsActive;
         FollowUpButton.IsVisible = active;
+        StopButton.Classes.Set("idle", !active);
         var live = active && _steering is { IsLive: true };
         AutomationProperties.SetName(SendButton, live ? AgentPanelCopy.ComposerSendNowName : active ? SteerName : SendName);
         ToolTip.SetTip(SendButton, live ? AgentPanelCopy.SendNow : active ? SteerName : SendName);

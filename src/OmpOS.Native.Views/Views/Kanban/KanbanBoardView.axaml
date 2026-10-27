@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:pres="clr-namespace:OmpOS.Presentation.Kanban;assembly=OmpOS.Presentation"
+             xmlns:glyphs="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
+             xmlns:agent="clr-namespace:OmpOS.Native.Views.AgentPanel"
              xmlns:local="clr-namespace:OmpOS.Native.Views.Kanban"
              x:Class="OmpOS.Native.Views.Kanban.KanbanBoardView"
              x:DataType="pres:KanbanBoardModel"
@@ -19,23 +21,23 @@
     <!-- The sessions could not be read again, and the cards below are the last good snapshot. -->
     <Border x:Name="ErrorBanner"
             Grid.Row="0"
-            Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
-            Padding="{DynamicResource OmpOS.Space.Sm}"
+            Classes="banner"
+            Background="{DynamicResource OmpOS.Color.DiffRemoved}"
             Margin="0,0,0,8"
             IsVisible="False"
             AutomationProperties.Name="{x:Static local:KanbanCopy.BannerName}"
             AutomationProperties.LiveSetting="Assertive">
       <StackPanel Orientation="Horizontal"
                   Spacing="{DynamicResource OmpOS.Gap.Sm}">
+        <agent:StageIcon IconKey="{x:Static glyphs:StatusIcon.Cross}"
+                         VerticalAlignment="Center" />
         <TextBlock x:Name="BannerText"
-                   Classes="tone-error"
                    VerticalAlignment="Center"
                    TextWrapping="Wrap" />
         <Button x:Name="BannerRetryButton"
+                Classes="sm"
                 Content="{x:Static local:KanbanCopy.Retry}"
                 Command="{CompiledBinding RetryCommand}"
-                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                Padding="{DynamicResource OmpOS.Space.Md}"
                 AutomationProperties.Name="{x:Static local:KanbanCopy.BannerRetryName}" />
       </StackPanel>
     </Border>
@@ -49,9 +51,7 @@
                   AutomationProperties.Name="{x:Static local:KanbanCopy.LoadingHeading}">
         <TextBlock x:Name="LoadingHeading"
                    Text="{x:Static local:KanbanCopy.LoadingHeading}"
-                   FontFamily="{DynamicResource OmpOS.Font.Display}"
-                   FontSize="{DynamicResource OmpOS.Font.Size.Heading}"
-                   FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                   Classes="heading"
                    TextWrapping="Wrap" />
         <TextBlock x:Name="LoadingBody"
                    Text="{x:Static local:KanbanCopy.LoadingBody}"
@@ -87,56 +87,64 @@
         </StackPanel>
       </StackPanel>
 
-      <!-- Empty: no session. The primary button is the only accent fill of the screen. -->
+      <!-- Empty: no session. One centred column (spec 4.8): the heading in the display face at 24 px, the body, then the primary button. -->
       <StackPanel x:Name="EmptyBlock"
                   IsVisible="False"
-                  MaxWidth="{DynamicResource OmpOS.Size.ThreadContentMaxWidth}"
+                  MaxWidth="420"
                   HorizontalAlignment="Center"
-                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+                  VerticalAlignment="Center"
+                  Spacing="{DynamicResource OmpOS.Gap.Cozy}">
         <TextBlock x:Name="EmptyHeading"
                    Text="{x:Static local:KanbanCopy.EmptyHeading}"
-                   FontFamily="{DynamicResource OmpOS.Font.Display}"
-                   FontSize="{DynamicResource OmpOS.Font.Size.Heading}"
-                   FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                   Classes="display"
+                   TextAlignment="Center"
                    TextWrapping="Wrap" />
         <TextBlock x:Name="EmptyBody"
                    Text="{x:Static local:KanbanCopy.EmptyBody}"
                    Classes="muted"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Body}"
+                   MaxWidth="380"
+                   TextAlignment="Center"
                    TextWrapping="Wrap" />
         <Button x:Name="StartSessionButton"
                 Classes="primary"
                 Content="{x:Static local:KanbanCopy.StartSession}"
                 Command="{CompiledBinding StartSessionCommand}"
-                HorizontalAlignment="Left"
-                Margin="0,16,0,0"
-                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                HorizontalAlignment="Center"
+                MinHeight="{DynamicResource OmpOS.Size.ControlHeight}"
                 AutomationProperties.Name="{x:Static local:KanbanCopy.StartSessionName}" />
       </StackPanel>
 
-      <!-- Error: nothing to show. The reason and a Retry button. Assertive, because the user has to act. -->
+      <!-- Error: nothing to show. The reason in a banner and a Retry button. Assertive, because the user has to act. -->
       <StackPanel x:Name="ErrorBlock"
                   IsVisible="False"
-                  MaxWidth="{DynamicResource OmpOS.Size.ThreadContentMaxWidth}"
+                  MaxWidth="420"
                   HorizontalAlignment="Center"
-                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                  VerticalAlignment="Center"
+                  Spacing="{DynamicResource OmpOS.Gap.Cozy}"
                   AutomationProperties.Name="{x:Static local:KanbanCopy.ErrorHeading}"
                   AutomationProperties.LiveSetting="Assertive">
         <TextBlock x:Name="ErrorHeading"
                    Text="{x:Static local:KanbanCopy.ErrorHeading}"
-                   FontFamily="{DynamicResource OmpOS.Font.Display}"
-                   FontSize="{DynamicResource OmpOS.Font.Size.Heading}"
-                   FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                   Classes="display"
+                   TextAlignment="Center"
                    TextWrapping="Wrap" />
-        <TextBlock x:Name="ErrorBody"
-                   Text="{CompiledBinding ErrorText}"
-                   Classes="tone-error"
-                   TextWrapping="Wrap" />
+        <Border Classes="banner"
+                Background="{DynamicResource OmpOS.Color.DiffRemoved}">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="{DynamicResource OmpOS.Gap.Sm}">
+            <agent:StageIcon IconKey="{x:Static glyphs:StatusIcon.Cross}"
+                             VerticalAlignment="Top" />
+            <TextBlock x:Name="ErrorBody"
+                       Text="{CompiledBinding ErrorText}"
+                       FontSize="{DynamicResource OmpOS.Font.Size.Body}"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
         <Button x:Name="RetryButton"
                 Content="{x:Static local:KanbanCopy.Retry}"
                 Command="{CompiledBinding RetryCommand}"
-                HorizontalAlignment="Left"
-                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                Padding="{DynamicResource OmpOS.Space.Md}"
+                HorizontalAlignment="Center"
                 AutomationProperties.Name="{x:Static local:KanbanCopy.RetryName}" />
       </StackPanel>
 
@@ -158,9 +166,8 @@
     <TextBlock x:Name="LiveRegion"
                Grid.Row="2"
                Text="{CompiledBinding Announcement}"
-               Classes="muted"
+               Classes="muted small"
                Margin="0,8,0,0"
-               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
                TextWrapping="Wrap"
                AutomationProperties.LiveSetting="Polite"
                AutomationProperties.Name="{x:Static local:KanbanCopy.LiveRegionName}" />

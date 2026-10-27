@@ -156,6 +156,7 @@ internal partial class SessionView : UserControl
         StateBody.Classes.Set("error", isError);
         StateBody.Classes.Set("muted", !isError);
         RenderControls();
+        HideAnnouncementWhenItRepeatsTheHeading();
     }
 
     /// <summary>Draws the lifecycle notice and the affordances the current state offers.</summary>
@@ -169,7 +170,22 @@ internal partial class SessionView : UserControl
         JumpToLatestButton.IsVisible = _session?.AutoScrollPaused == true;
     }
 
-    private void RenderAnnouncement() => AnnouncementText.Text = _session?.Announcement ?? string.Empty;
+    private void RenderAnnouncement()
+    {
+        AnnouncementText.Text = _session?.Announcement ?? string.Empty;
+        HideAnnouncementWhenItRepeatsTheHeading();
+    }
+
+    /// <summary>
+    /// The live announcement says what the state heading says on an empty or failed transcript, so the same sentence would be drawn twice.
+    /// The line stays in the layout tree (a screen reader still gets the live region) but takes no height and draws nothing then.
+    /// </summary>
+    private void HideAnnouncementWhenItRepeatsTheHeading()
+    {
+        var repeats = StateHeading.IsVisible && string.Equals(AnnouncementText.Text, StateHeading.Text, StringComparison.Ordinal);
+        AnnouncementText.Opacity = repeats ? 0 : 1;
+        AnnouncementText.MaxHeight = repeats ? 0 : double.PositiveInfinity;
+    }
 
     private void RenderTree()
     {

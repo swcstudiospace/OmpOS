@@ -11,6 +11,9 @@ public static class ModelsCopy
     /// <summary>The navigation label of the page.</summary>
     public const string PageTitle = "Models";
 
+    /// <summary>The sentence under the title of the page.</summary>
+    public const string PageDescription = "The model providers omp uses, their models and their keys.";
+
     /// <summary>The accessible name of the search box.</summary>
     public const string SearchLabel = "Search providers and models";
 

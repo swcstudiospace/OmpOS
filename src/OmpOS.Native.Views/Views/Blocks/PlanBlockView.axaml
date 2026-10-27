@@ -3,7 +3,11 @@
              x:Class="OmpOS.Native.Views.Blocks.PlanBlockView"
              AutomationProperties.Name="Plan">
 
-  <StackPanel x:Name="Steps"
-              Spacing="{DynamicResource OmpOS.Gap.Xs}" />
+  <!-- A plan is a card holding its numbered steps in prose size (parity spec 4.6). -->
+  <Border Classes="card"
+          Padding="12,10">
+    <StackPanel x:Name="Steps"
+                Spacing="{DynamicResource OmpOS.Gap.Xs}" />
+  </Border>
 
 </UserControl>

@@ -3,29 +3,44 @@
              x:Class="OmpOS.Native.Views.Blocks.CodeBlockView"
              AutomationProperties.Name="Code block">
 
-  <Border Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
-          Padding="{DynamicResource OmpOS.Space.Sm}">
-    <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
+  <!-- A code block is a sunken card (parity spec 4.6): a 28 px header with the language at the left and the copy icon at the right,
+       then the code in the mono face, scrolling sideways instead of wrapping. -->
+  <Border Classes="card-sunken">
+    <StackPanel>
 
       <Grid ColumnDefinitions="*,Auto"
-            ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
+            Height="28"
+            Margin="12,0,4,0">
         <TextBlock x:Name="LanguageLabel"
                    Grid.Column="0"
-                   Classes="muted"
-                   FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                   Classes="muted small"
                    VerticalAlignment="Center"
-                   TextWrapping="Wrap" />
+                   TextTrimming="CharacterEllipsis"
+                   MaxLines="1" />
         <Button x:Name="CopyButton"
                 Grid.Column="1"
+                Classes="ghost icon sm"
+                VerticalAlignment="Center"
                 AutomationProperties.Name="Copy code"
-                ToolTip.Tip="Copy code"
-                MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
-                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                Content="⧉" />
+                ToolTip.Tip="Copy code">
+          <Path Data="M5.5 5.5h7v7h-7ZM3.5 10.5v-7h7"
+                Stretch="Uniform"
+                Width="{DynamicResource OmpOS.Size.IconSize}"
+                Height="{DynamicResource OmpOS.Size.IconSize}"
+                StrokeLineCap="Round"
+                StrokeJoin="Round"
+                AutomationProperties.AccessibilityView="Raw" />
+        </Button>
       </Grid>
 
-      <TextBlock x:Name="CodeText"
-                 TextWrapping="Wrap" />
+      <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollBarVisibility="Disabled">
+        <TextBlock x:Name="CodeText"
+                   Margin="12,0,12,8"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Mono}"
+                   LineHeight="{DynamicResource OmpOS.Font.LineHeight.Mono}"
+                   TextWrapping="NoWrap" />
+      </ScrollViewer>
 
     </StackPanel>
   </Border>

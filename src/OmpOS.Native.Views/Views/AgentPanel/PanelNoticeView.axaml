@@ -9,57 +9,67 @@
     <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
   </UserControl.Styles>
 
-  <!-- The panel notice (degraded stages, no plugins, Lost, Resumed). A polite live region: errors have their own assertive one. -->
+  <!-- The panel notice (degraded stages, no plugins, Lost, Resumed). A polite live region: errors have their own assertive one. It is a
+       banner: a 3 px bar in the tone colour, a 14 px glyph, one wrapping sentence and the buttons right-aligned. -->
   <Border x:Name="PanelNotice"
-          Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
-          Padding="{DynamicResource OmpOS.Space.Sm}"
+          Classes="banner"
+          Margin="0,6,0,2"
+          Padding="0"
+          ClipToBounds="True"
           IsVisible="{CompiledBinding HasNotice}"
           AutomationProperties.Name="{x:Static local:AgentPanelViewText.PanelNoticeName}"
           AutomationProperties.LiveSetting="Polite">
 
-    <DockPanel LastChildFill="True">
+    <Grid ColumnDefinitions="Auto,*">
 
-      <local:StageIcon x:Name="NoticeIcon"
-                       DockPanel.Dock="Left"
-                       VerticalAlignment="Top"
-                       Margin="0,4,8,0" />
+      <Border x:Name="NoticeBar"
+              Classes="banner-bar bar-warning" />
 
-      <WrapPanel DockPanel.Dock="Right"
-                 Orientation="Horizontal"
-                 VerticalAlignment="Center"
-                 ItemSpacing="{DynamicResource OmpOS.Gap.Sm}"
-                 LineSpacing="{DynamicResource OmpOS.Gap.Sm}">
+      <DockPanel Grid.Column="1"
+                 LastChildFill="True"
+                 Margin="10,8">
 
-        <Button x:Name="ShowPipelineButton"
-                Content="{x:Static local:AgentPanelViewText.ShowPipeline}"
-                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                Padding="{DynamicResource OmpOS.Space.Md}"
-                AutomationProperties.Name="{x:Static local:AgentPanelViewText.ShowPipelineName}" />
+        <local:StageIcon x:Name="NoticeIcon"
+                         DockPanel.Dock="Left"
+                         Width="{DynamicResource OmpOS.Size.IconSizeSm}"
+                         Height="{DynamicResource OmpOS.Size.IconSizeSm}"
+                         VerticalAlignment="Top"
+                         Margin="0,2,8,0" />
 
-        <Button x:Name="ResumeButton"
-                Classes="primary"
-                Content="{x:Static copy:AgentPanelCopy.ResumeAgent}"
-                Command="{CompiledBinding ResumeCommand}"
-                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                AutomationProperties.Name="{x:Static copy:AgentPanelCopy.ResumeAgent}" />
+        <WrapPanel DockPanel.Dock="Right"
+                   Orientation="Horizontal"
+                   VerticalAlignment="Center"
+                   ItemSpacing="{DynamicResource OmpOS.Gap.Sm}"
+                   LineSpacing="{DynamicResource OmpOS.Gap.Sm}">
 
-        <Button x:Name="DismissButton"
-                Content="{x:Static local:AgentPanelViewText.DismissNotice}"
-                Command="{CompiledBinding DismissNoticeCommand}"
-                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                Padding="{DynamicResource OmpOS.Space.Md}"
-                AutomationProperties.Name="{x:Static local:AgentPanelViewText.DismissNotice}" />
+          <Button x:Name="ShowPipelineButton"
+                  Classes="sm"
+                  Content="{x:Static local:AgentPanelViewText.ShowPipeline}"
+                  AutomationProperties.Name="{x:Static local:AgentPanelViewText.ShowPipelineName}" />
 
-      </WrapPanel>
+          <Button x:Name="ResumeButton"
+                  Classes="primary sm"
+                  Content="{x:Static copy:AgentPanelCopy.ResumeAgent}"
+                  Command="{CompiledBinding ResumeCommand}"
+                  AutomationProperties.Name="{x:Static copy:AgentPanelCopy.ResumeAgent}" />
 
-      <TextBlock x:Name="NoticeText"
-                 Text="{CompiledBinding NoticeText}"
-                 VerticalAlignment="Center"
-                 Margin="0,0,8,0"
-                 TextWrapping="Wrap"
-                 FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
+          <Button x:Name="DismissButton"
+                  Classes="ghost sm"
+                  Content="{x:Static local:AgentPanelViewText.DismissNotice}"
+                  Command="{CompiledBinding DismissNoticeCommand}"
+                  AutomationProperties.Name="{x:Static local:AgentPanelViewText.DismissNotice}" />
 
-    </DockPanel>
+        </WrapPanel>
+
+        <TextBlock x:Name="NoticeText"
+                   Text="{CompiledBinding NoticeText}"
+                   VerticalAlignment="Center"
+                   Margin="0,0,8,0"
+                   TextWrapping="Wrap" />
+
+      </DockPanel>
+
+    </Grid>
 
   </Border>
 

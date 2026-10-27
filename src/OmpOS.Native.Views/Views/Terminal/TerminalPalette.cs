@@ -1,4 +1,8 @@
+using System.Globalization;
+using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.Styling;
+using Iciclecreek.Terminal;
 using XTerm.Options;
 
 namespace OmpOS.Native.Views.Terminal;
@@ -15,6 +19,42 @@ internal static class TerminalPalette
     /// <param name="variant">The theme variant the control is showing.</param>
     /// <returns>A new theme holding the sixteen ANSI colours. The caller sets nothing else on it.</returns>
     public static ThemeOptions For(ThemeVariant variant) => variant == ThemeVariant.Light ? Light() : Dark();
+
+    /// <summary>
+    /// Gives a terminal control the colours of the variant its owner shows: the foreground, background and cursor from the text and sunken
+    /// surface tokens, and the sixteen ANSI colours. The control is not styled by the variant, so a view calls this again whenever the variant changes.
+    /// </summary>
+    /// <param name="owner">The view that hosts the control; its theme variant and resources decide the colours.</param>
+    /// <param name="output">The terminal control, whose emulator must exist.</param>
+    /// <exception cref="ArgumentNullException">An argument is null.</exception>
+    public static void Apply(Control owner, TerminalControl output)
+    {
+        ArgumentNullException.ThrowIfNull(owner);
+        ArgumentNullException.ThrowIfNull(output);
+
+        if (owner.TryFindResource("OmpOS.Color.TextPrimary", owner.ActualThemeVariant, out var resource) && resource is ISolidColorBrush brush)
+        {
+            output.CursorColor = brush.Color;
+        }
+
+        var terminal = output.Terminal;
+        var theme = For(owner.ActualThemeVariant);
+
+        // ApplyTheme resets a colour the theme leaves unset to the emulator's own default (black on white), so the text, background and
+        // cursor of the variant are always part of the theme.
+        theme.Foreground = HexOf(owner, "OmpOS.Color.TextPrimary");
+        theme.Background = HexOf(owner, "OmpOS.Color.SurfaceSunken");
+        theme.Cursor = HexOf(owner, "OmpOS.Color.TextPrimary");
+        theme.CursorAccent = HexOf(owner, "OmpOS.Color.SurfaceSunken");
+        terminal.Options.Theme = theme;
+        terminal.Colors.ApplyTheme(theme);
+        output.Refresh();
+    }
+
+    private static string? HexOf(Control owner, string key) =>
+        owner.TryFindResource(key, owner.ActualThemeVariant, out var resource) && resource is ISolidColorBrush brush
+            ? string.Create(CultureInfo.InvariantCulture, $"#{brush.Color.R:x2}{brush.Color.G:x2}{brush.Color.B:x2}")
+            : null;
 
     private static ThemeOptions Dark() => new()
     {

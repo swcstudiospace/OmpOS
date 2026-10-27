@@ -3,14 +3,33 @@
              x:Class="OmpOS.Native.Views.Blocks.DiffPlaceholderView"
              AutomationProperties.Name="Diff placeholder">
 
-  <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
-    <TextBlock x:Name="PathText"
-               FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
-               TextWrapping="Wrap" />
-    <TextBlock x:Name="ReasonText"
-               Classes="muted"
-               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
-               TextWrapping="Wrap" />
-  </StackPanel>
+  <!-- A diff the view does not draw: the same card as a file edit, with the changed path and the reason. -->
+  <Border Classes="card"
+          Padding="10,8">
+    <Grid ColumnDefinitions="Auto,*"
+          ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
+      <Path Grid.Column="0"
+            Data="M4 2h5.5L12.5 5v9h-8.5ZM9.5 2v3h3"
+            Stroke="{DynamicResource OmpOS.Color.TextSecondary}"
+            StrokeThickness="1.5"
+            StrokeLineCap="Round"
+            StrokeJoin="Round"
+            Stretch="Uniform"
+            Width="{DynamicResource OmpOS.Size.IconSizeSm}"
+            Height="{DynamicResource OmpOS.Size.IconSizeSm}"
+            VerticalAlignment="Top"
+            Margin="0,2,0,0"
+            AutomationProperties.AccessibilityView="Raw" />
+      <StackPanel Grid.Column="1"
+                  Spacing="{DynamicResource OmpOS.Gap.Xxs}">
+        <TextBlock x:Name="PathText"
+                   Classes="strong"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="ReasonText"
+                   Classes="muted small"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </Grid>
+  </Border>
 
 </UserControl>

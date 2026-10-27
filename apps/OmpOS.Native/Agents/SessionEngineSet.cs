@@ -679,7 +679,9 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         }
         catch (SubstrateUnavailableException exception)
         {
-            return (false, $"The Substrate did not answer its health check ({exception.Reason}).");
+            // The text reaches the pipeline flyout: it names the HTTP status when there was one, never the internal reason code.
+            var status = exception.StatusCode is { } code ? $" (HTTP {code.ToString(CultureInfo.InvariantCulture)})" : string.Empty;
+            return (false, $"The Substrate did not answer its health check{status}.");
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {

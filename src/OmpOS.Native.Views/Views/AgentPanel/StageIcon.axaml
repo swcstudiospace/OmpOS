@@ -11,10 +11,9 @@
     <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
   </UserControl.Styles>
 
-  <!-- A decorative glyph (46-UI-SPEC, Glyph Table): the adjacent text carries the meaning. -->
+  <!-- A decorative glyph (46-UI-SPEC, Glyph Table): the adjacent text carries the meaning. The glyph fills the control, which is 16 px by
+       default; a chip or a pill sets Width and Height to the 14 px small size. -->
   <Path x:Name="Glyph"
-        Width="{DynamicResource OmpOS.Size.IconSize}"
-        Height="{DynamicResource OmpOS.Size.IconSize}"
         Stretch="Uniform"
         StrokeThickness="1.5"
         StrokeLineCap="Round"

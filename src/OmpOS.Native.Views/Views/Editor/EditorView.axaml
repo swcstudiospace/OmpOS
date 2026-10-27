@@ -28,7 +28,8 @@
                             IsChecked="{CompiledBinding IsSelected, Mode=OneWay}"
                             Command="{CompiledBinding SelectCommand}"
                             AutomationProperties.Name="{CompiledBinding Name}" />
-              <Button Content="×"
+              <Button Classes="ghost sm"
+                      Content="×"
                       Command="{CompiledBinding CloseCommand}"
                       AutomationProperties.Name="{CompiledBinding Name, StringFormat='Close {0}'}" />
             </StackPanel>
@@ -40,15 +41,18 @@
     <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto">
       <TextBox x:Name="FindInput"
                Grid.Column="0"
+               Classes="sm"
                PlaceholderText="Find in file"
                AutomationProperties.Name="Find in file" />
       <Button x:Name="PreviousMatchButton"
               Grid.Column="1"
+              Classes="sm"
               Content="Previous"
               IsEnabled="False"
               AutomationProperties.Name="Previous match" />
       <Button x:Name="NextMatchButton"
               Grid.Column="2"
+              Classes="sm"
               Content="Next"
               IsEnabled="False"
               AutomationProperties.Name="Next match" />
@@ -65,7 +69,10 @@
     <ae:TextEditor x:Name="CodeEditor"
                    Grid.Row="2"
                    ShowLineNumbers="True"
-                   FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                   Background="{DynamicResource OmpOS.Color.SurfaceSunken}"
+                   Foreground="{DynamicResource OmpOS.Color.TextPrimary}"
+                   FontFamily="{DynamicResource OmpOS.Font.Mono}"
+                   FontSize="{DynamicResource OmpOS.Font.Size.Mono}"
                    AutomationProperties.Name="Code editor" />
 
   </Grid>

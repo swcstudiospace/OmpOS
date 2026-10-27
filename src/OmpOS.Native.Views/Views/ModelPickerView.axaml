@@ -5,39 +5,42 @@
              IsVisible="False">
 
   <UserControl.Styles>
-    <!-- A provider heading in the list: it names a group and is not a choice. -->
+    <!-- A provider heading in the list: it names a group and is not a choice. Small, medium weight, secondary text (parity spec 4.7). -->
     <Style Selector="TextBlock.heading">
       <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextSecondary}" />
-      <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Label}" />
-      <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Semibold}" />
+      <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Small}" />
+      <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Medium}" />
     </Style>
   </UserControl.Styles>
 
-  <!-- The model chip of the composer footer. It opens a flyout with a search box and the models grouped by provider. The popup has no
-       animation, so reduced motion needs no class here. -->
+  <!-- The model chip of the composer footer: a ghost chip button with the model in the mono face and a chevron. It opens a flyout with
+       a search box and the models grouped by provider. The popup has no animation, so reduced motion needs no class here. -->
   <Button x:Name="ChipButton"
+          Classes="ghost sm"
           HorizontalContentAlignment="Left"
-          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-          MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
-          Padding="{DynamicResource OmpOS.Space.Sm}"
-          CornerRadius="{DynamicResource OmpOS.Radius.Md}"
+          MinHeight="{DynamicResource OmpOS.Size.ControlHeightSm}"
+          MinWidth="{DynamicResource OmpOS.Size.IconButtonSm}"
           AutomationProperties.Name="Model">
     <StackPanel Orientation="Horizontal"
                 Spacing="{DynamicResource OmpOS.Gap.Xs}">
       <TextBlock x:Name="LabelText"
                  FontFamily="{DynamicResource OmpOS.Font.Mono}"
-                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
-                 MaxWidth="{DynamicResource OmpOS.Size.SessionListWidth}"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Mono}"
+                 Foreground="{DynamicResource OmpOS.Color.TextPrimary}"
+                 MaxWidth="200"
                  TextTrimming="CharacterEllipsis"
                  MaxLines="1"
                  VerticalAlignment="Center" />
       <Path Data="M2 4 6 8 10 4"
             Stroke="{DynamicResource OmpOS.Color.TextSecondary}"
             StrokeThickness="1.5"
+            StrokeLineCap="Round"
+            StrokeJoin="Round"
             Stretch="Uniform"
             Width="12"
             Height="12"
-            VerticalAlignment="Center" />
+            VerticalAlignment="Center"
+            AutomationProperties.AccessibilityView="Raw" />
     </StackPanel>
 
     <Button.Flyout>
@@ -49,10 +52,8 @@
 
           <TextBox x:Name="SearchBox"
                    Grid.Row="0"
+                   Classes="sm search"
                    PlaceholderText="Search models"
-                   MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                   Background="{DynamicResource OmpOS.Color.Surface}"
-                   Foreground="{DynamicResource OmpOS.Color.TextPrimary}"
                    AutomationProperties.Name="Search models"
                    AutomationProperties.HelpText="Type to filter. Up and Down move through the models, Enter selects, Escape closes the list." />
 
@@ -84,9 +85,11 @@
                         Data="M2 8 6 12 14 4"
                         Stroke="{DynamicResource OmpOS.Color.AccentPurple}"
                         StrokeThickness="2"
+                        StrokeLineCap="Round"
+                        StrokeJoin="Round"
                         Stretch="Uniform"
-                        Width="16"
-                        Height="16"
+                        Width="{DynamicResource OmpOS.Size.IconSizeSm}"
+                        Height="{DynamicResource OmpOS.Size.IconSizeSm}"
                         VerticalAlignment="Center" />
                 </Grid>
               </DataTemplate>
@@ -98,7 +101,7 @@
                      Grid.Row="2"
                      Classes="muted"
                      FontFamily="{DynamicResource OmpOS.Font.Mono}"
-                     FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                     FontSize="{DynamicResource OmpOS.Font.Size.Small}"
                      TextWrapping="Wrap"
                      AutomationProperties.Name="Model list status"
                      AutomationProperties.LiveSetting="Polite" />

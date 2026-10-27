@@ -20,45 +20,51 @@
                   Focusable="False"
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-      <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
-                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
-                  MaxWidth="640"
-                  HorizontalAlignment="Left">
+      <StackPanel Classes="settings-column">
 
         <TextBlock Classes="settings-heading"
                    Text="{x:Static set:SettingsCopy.GeneralHeading}" />
+        <TextBlock Classes="settings-description"
+                   Text="{x:Static set:SettingsCopy.GeneralDescription}" />
 
-        <TextBlock Classes="settings-label"
+        <!-- Theme (System, Light, Dark) and Motion are lists of three choices, each with its sentence. A choice is a draft until Save. -->
+        <TextBlock Classes="settings-section"
                    Margin="0,8,0,0"
                    Text="{x:Static set:SettingsCopy.ThemeLabel}" />
         <TextBlock Classes="settings-help"
                    Text="{x:Static set:SettingsCopy.ThemeHelp}" />
-        <ListBox x:Name="ThemeList"
-                 SelectionMode="Single"
-                 AutomationProperties.Name="{x:Static set:SettingsCopy.ThemeLabel}" />
+        <Border Classes="card"
+                Padding="{DynamicResource OmpOS.Space.Xs}">
+          <ListBox x:Name="ThemeList"
+                   SelectionMode="Single"
+                   AutomationProperties.Name="{x:Static set:SettingsCopy.ThemeLabel}" />
+        </Border>
 
-        <TextBlock Classes="settings-label"
-                   Margin="0,8,0,0"
+        <TextBlock Classes="settings-section"
+                   Margin="0,16,0,0"
                    Text="{x:Static set:SettingsCopy.MotionLabel}" />
         <TextBlock Classes="settings-help"
                    Text="{x:Static set:SettingsCopy.MotionHelp}" />
-        <ListBox x:Name="MotionList"
-                 SelectionMode="Single"
-                 AutomationProperties.Name="{x:Static set:SettingsCopy.MotionLabel}" />
+        <Border Classes="card"
+                Padding="{DynamicResource OmpOS.Space.Xs}">
+          <ListBox x:Name="MotionList"
+                   SelectionMode="Single"
+                   AutomationProperties.Name="{x:Static set:SettingsCopy.MotionLabel}" />
+        </Border>
 
         <TextBlock x:Name="SaveFailedHeading"
-                   Classes="tone-error settings-body"
+                   Classes="tone-error settings-label"
                    IsVisible="{CompiledBinding HasError}"
                    Text="{x:Static set:SettingsCopy.SaveFailedHeading}"
                    AutomationProperties.LiveSetting="Assertive"
                    AutomationProperties.Name="{x:Static set:SettingsCopy.SaveFailedHeading}" />
         <TextBlock x:Name="SaveFailedBody"
-                   Classes="tone-error settings-body"
+                   Classes="tone-error small"
                    IsVisible="{CompiledBinding HasError}"
                    Text="{CompiledBinding SaveError}" />
 
         <TextBlock Classes="settings-section"
-                   Margin="0,16,0,0"
+                   Margin="0,24,0,0"
                    Text="{x:Static set:SettingsCopy.PrivacyHeading}" />
         <SelectableTextBlock x:Name="PrivacyText"
                              Classes="settings-selectable settings-body"

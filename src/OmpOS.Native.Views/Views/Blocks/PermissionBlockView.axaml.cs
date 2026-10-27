@@ -20,7 +20,7 @@ internal partial class PermissionBlockView : UserControl
         Prompt.Text = block.Prompt;
         foreach (var option in block.Options)
         {
-            OptionList.Children.Add(BlockControls.Text(option, "permission-option"));
+            OptionList.Children.Add(BlockControls.AsMono(BlockControls.Text(option, "permission-option")));
         }
     }
 }

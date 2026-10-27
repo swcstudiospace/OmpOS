@@ -131,9 +131,12 @@ public sealed class AgentPanelLayoutTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>The composer hint line is hidden when the window is under 720 px tall and nothing else changes.</summary>
+    /// <summary>
+    /// The composer hint is a tooltip at every height, so the short-window rule is gone and nothing else changes below 720 px
+    /// (cursor-agents-window-parity.md 4.1 and 4.7).
+    /// </summary>
     [Fact]
-    public async Task TheComposerHintHidesInAShortWindow()
+    public async Task TheComposerHintIsATooltipInATallAndAShortWindow()
     {
         await using var headless = TestAppBuilder.StartSession();
         await headless.Dispatch(() =>
@@ -141,11 +144,11 @@ public sealed class AgentPanelLayoutTests
             var fixture = ShellFixture.CreateWithSession();
             var window = ShellHarness.Show(fixture, width: 1280, height: 800);
 
-            ShellHarness.Composer(window).HintVisible.ShouldBeTrue();
+            ShellHarness.Composer(window).HintVisible.ShouldBeFalse("the hint is a tooltip, not a line");
 
             fixture.Resize(1280, 640);
 
-            ShellHarness.Composer(window).HintVisible.ShouldBeFalse("below 720 px the hint line is hidden");
+            ShellHarness.Composer(window).HintVisible.ShouldBeFalse("below 720 px nothing changes");
             ShellHarness.Prompt(window).IsEffectivelyVisible.ShouldBeTrue("the prompt stays");
             ShellHarness.Send(window).IsEffectivelyVisible.ShouldBeTrue("the send control stays");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);

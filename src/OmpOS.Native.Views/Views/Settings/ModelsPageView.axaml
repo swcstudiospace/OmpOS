@@ -2,6 +2,8 @@
                             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                             xmlns:set="clr-namespace:OmpOS.Presentation.Settings;assembly=OmpOS.Presentation"
                             xmlns:models="clr-namespace:OmpOS.Presentation.Settings.Models;assembly=OmpOS.Presentation"
+                            xmlns:glyphs="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
+                            xmlns:agent="clr-namespace:OmpOS.Native.Views.AgentPanel"
                             xmlns:local="clr-namespace:OmpOS.Native.Views.Settings"
                             x:Class="OmpOS.Native.Views.Settings.ModelsPageView"
                             x:DataType="models:ModelsSettingsPage"
@@ -22,13 +24,12 @@
                   Focusable="False"
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-      <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
-                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
-                  MaxWidth="880"
-                  HorizontalAlignment="Stretch">
+      <StackPanel Classes="settings-column">
 
         <TextBlock Classes="settings-heading"
                    Text="{x:Static models:ModelsCopy.PageTitle}" />
+        <TextBlock Classes="settings-description"
+                   Text="{x:Static models:ModelsCopy.PageDescription}" />
 
         <Grid ColumnDefinitions="*,Auto"
               ColumnSpacing="8">
@@ -39,7 +40,6 @@
                    AutomationProperties.Name="{x:Static models:ModelsCopy.SearchLabel}" />
           <Button x:Name="AddProviderButton"
                   Grid.Column="1"
-                  Classes="primary"
                   Content="{x:Static models:ModelsCopy.AddProviderLabel}"
                   AutomationProperties.Name="{x:Static models:ModelsCopy.AddProviderLabel}"
                   Click="OnAddProviderClick" />
@@ -49,15 +49,28 @@
         <Border x:Name="WarningBanner"
                 Classes="settings-banner"
                 IsVisible="{CompiledBinding Warning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-          <TextBlock x:Name="WarningText"
-                     Classes="tone-warning settings-body"
-                     Text="{CompiledBinding Warning}" />
+          <StackPanel Orientation="Horizontal"
+                      Spacing="{DynamicResource OmpOS.Gap.Sm}">
+            <agent:StageIcon IconKey="{x:Static glyphs:StatusIcon.Alert}"
+                             VerticalAlignment="Top" />
+            <TextBlock x:Name="WarningText"
+                       Classes="tone-warning settings-body"
+                       Text="{CompiledBinding Warning}" />
+          </StackPanel>
         </Border>
 
-        <TextBlock x:Name="IncompleteLine"
-                   Classes="settings-help"
-                   IsVisible="{CompiledBinding IncompleteNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                   Text="{CompiledBinding IncompleteNote}" />
+        <!-- omp listed fewer providers than it could: a banner with a warning glyph above the list. -->
+        <Border Classes="settings-banner"
+                IsVisible="{CompiledBinding IncompleteNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="{DynamicResource OmpOS.Gap.Sm}">
+            <agent:StageIcon IconKey="{x:Static glyphs:StatusIcon.Alert}"
+                             VerticalAlignment="Top" />
+            <TextBlock x:Name="IncompleteLine"
+                       Classes="settings-help"
+                       Text="{CompiledBinding IncompleteNote}" />
+          </StackPanel>
+        </Border>
 
         <TextBlock x:Name="NoticeLine"
                    Classes="tone-warning settings-body"
@@ -104,7 +117,7 @@
                                    Text="{CompiledBinding Note}" />
                       </StackPanel>
                       <Button Grid.Column="1"
-                              Classes="use-template"
+                              Classes="use-template sm"
                               VerticalAlignment="Top"
                               Content="{x:Static models:ModelsCopy.UseTemplateLabel}"
                               AutomationProperties.Name="{CompiledBinding ., Converter={x:Static local:SettingsConverters.UseTemplateName}}" />
@@ -166,8 +179,20 @@
               <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}"
                           Margin="0,8,0,0"
                           AutomationProperties.Name="{CompiledBinding Title}">
-                <TextBlock Classes="settings-section"
-                           Text="{CompiledBinding Title}" />
+                <StackPanel Orientation="Horizontal"
+                            Spacing="{DynamicResource OmpOS.Gap.Sm}">
+                  <TextBlock Classes="settings-section"
+                             VerticalAlignment="Center"
+                             Text="{CompiledBinding Title}" />
+                  <Border Classes="chip-count"
+                          VerticalAlignment="Center"
+                          AutomationProperties.AccessibilityView="Raw">
+                    <TextBlock Classes="settings-help"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Text="{CompiledBinding Cards.Count}" />
+                  </Border>
+                </StackPanel>
                 <TextBlock Classes="settings-help"
                            Text="{CompiledBinding Description}" />
                 <ItemsControl ItemsSource="{CompiledBinding Cards}">

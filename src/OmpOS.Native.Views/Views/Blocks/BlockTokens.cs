@@ -17,15 +17,15 @@ internal static class BlockTokens
     public const double MaxImageWidth = 480;
 
     /// <summary>
-    /// Binds a property of a control to a design token, so the value follows the theme variant: the binding re-reads the token when the
-    /// application or the window changes variant. Use it for every colour a control built in code draws; a one-time <see cref="Get{T}"/>
-    /// would keep the colours of the variant that was showing when the control was built.
+    /// Binds a property of a control, a run or a span to a design token, so the value follows the theme variant: the binding re-reads the
+    /// token when the application or the window changes variant. Use it for every colour a control built in code draws; a one-time
+    /// <see cref="Get{T}"/> would keep the colours of the variant that was showing when the control was built.
     /// </summary>
-    /// <param name="target">The control that draws the value.</param>
+    /// <param name="target">The element that draws the value.</param>
     /// <param name="property">The property to bind, for example <see cref="Border.BackgroundProperty"/>.</param>
     /// <param name="key">The token key.</param>
     /// <exception cref="ArgumentNullException"><paramref name="target"/> or <paramref name="property"/> is null.</exception>
-    public static void Bind(Control target, AvaloniaProperty property, string key)
+    public static void Bind(StyledElement target, AvaloniaProperty property, string key)
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(property);

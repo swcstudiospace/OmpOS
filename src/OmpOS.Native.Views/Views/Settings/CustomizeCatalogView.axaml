@@ -20,15 +20,13 @@
                   Focusable="False"
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-      <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
-                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
-                  HorizontalAlignment="Stretch">
+      <StackPanel Classes="settings-column">
 
         <TextBlock x:Name="Heading"
                    Classes="settings-heading"
                    Text="{CompiledBinding Title}" />
         <TextBlock x:Name="Intro"
-                   Classes="settings-help"
+                   Classes="settings-description"
                    Text="{CompiledBinding IntroText}" />
         <TextBlock x:Name="ReadOnlyNotice"
                    Classes="settings-help"
@@ -88,16 +86,16 @@
                         ItemsSource="{CompiledBinding Entries}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="cust:CustomizeEntry">
-                <Border Classes="settings-card"
-                        Margin="0,0,0,4"
-                        Padding="{DynamicResource OmpOS.Space.Sm}">
+                <Border Classes="settings-row"
+                        MinHeight="40"
+                        Padding="0,8">
                   <Grid ColumnDefinitions="2*,120,3*,3*"
                         ColumnSpacing="12">
                     <TextBlock Grid.Column="0"
-                               Classes="settings-label"
+                               Classes="settings-mono"
                                Text="{CompiledBinding Title}" />
                     <Border Grid.Column="1"
-                            Classes="chip"
+                            Classes="chip-flat"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Top">
                       <TextBlock Classes="settings-chip-text"

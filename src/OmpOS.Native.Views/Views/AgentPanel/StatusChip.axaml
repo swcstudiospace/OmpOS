@@ -10,18 +10,20 @@
     <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
   </UserControl.Styles>
 
-  <!-- 46-UI-SPEC, Status chip: glyph plus status words on a 24 px chip with a 1 px TextSecondary border. Colour is never the only signal. -->
+  <!-- The status chip (spec 3.9): a 20 px pill with a 1 px hairline, a 14 px glyph and the status words in Small 12 weight 500. The words
+       carry the meaning with the glyph; colour is never the only signal. -->
   <Border x:Name="Frame"
           Classes="chip">
     <StackPanel Orientation="Horizontal"
                 VerticalAlignment="Center"
-                Spacing="{DynamicResource OmpOS.Gap.Sm}">
+                Spacing="{DynamicResource OmpOS.Gap.Xs}">
       <local:StageIcon x:Name="Icon"
+                       Width="{DynamicResource OmpOS.Size.IconSizeSm}"
+                       Height="{DynamicResource OmpOS.Size.IconSizeSm}"
                        VerticalAlignment="Center" />
       <TextBlock x:Name="Label"
+                 Classes="small strong"
                  VerticalAlignment="Center"
-                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
-                 FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
                  TextWrapping="NoWrap" />
     </StackPanel>
   </Border>

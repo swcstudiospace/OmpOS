@@ -15,6 +15,9 @@ public static class AgentPanelCopy
     /// <summary>The primary call to action in the rail and the empty state.</summary>
     public const string NewAgent = "New agent";
 
+    /// <summary>The product name the top bar shows when the view has no workspace folder to name.</summary>
+    public const string ProductName = "OmpOS";
+
     /// <summary>The rail control that creates an omp terminal session beside New agent.</summary>
     public const string NewTerminal = "New omp terminal";
 

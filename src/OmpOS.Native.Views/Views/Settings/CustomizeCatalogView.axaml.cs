@@ -39,6 +39,11 @@ internal partial class CustomizeCatalogView : SettingsPageViewBase
         {
             ProblemsBlock.IsVisible = catalog.Problems.Count > 0;
             EmptyLine.IsVisible = catalog.State == CustomizePageState.Empty;
+
+            // "0 entries." and the empty sentence say the same thing. The count stays a live region but draws nothing while the page is empty.
+            var drawsNothing = catalog.State == CustomizePageState.Empty;
+            CountLine.Opacity = drawsNothing ? 0 : 1;
+            CountLine.MaxHeight = drawsNothing ? 0 : double.PositiveInfinity;
             TableBlock.IsVisible = catalog.State == CustomizePageState.Ready;
         }
     }

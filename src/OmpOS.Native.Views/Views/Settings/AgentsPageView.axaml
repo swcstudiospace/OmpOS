@@ -20,13 +20,12 @@
                   Focusable="False"
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-      <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
-                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
-                  MaxWidth="640"
-                  HorizontalAlignment="Left">
+      <StackPanel Classes="settings-column">
 
         <TextBlock Classes="settings-heading"
                    Text="{x:Static set:SettingsCopy.AgentsHeading}" />
+        <TextBlock Classes="settings-description"
+                   Text="{x:Static set:SettingsCopy.AgentsDescription}" />
 
         <CheckBox x:Name="AutoRunBox"
                   Content="{x:Static set:SettingsCopy.AutoRunLabel}"

@@ -531,27 +531,27 @@
   </Style>
 
   <!-- ===== Text roles (3.14). Size, weight and family come from the type tokens. ===== -->
-  <Style Selector="TextBlock.small">
+  <Style Selector=":is(TextBlock).small">
     <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Small}" />
   </Style>
-  <Style Selector="TextBlock.strong">
+  <Style Selector=":is(TextBlock).strong">
     <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Medium}" />
   </Style>
-  <Style Selector="TextBlock.heading">
+  <Style Selector=":is(TextBlock).heading">
     <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Heading}" />
     <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Semibold}" />
   </Style>
-  <Style Selector="TextBlock.display">
+  <Style Selector=":is(TextBlock).display">
     <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Display}" />
     <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Display}" />
     <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Semibold}" />
   </Style>
-  <Style Selector="TextBlock.display-sm">
+  <Style Selector=":is(TextBlock).display-sm">
     <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Display}" />
     <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.DisplaySm}" />
     <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Semibold}" />
   </Style>
-  <Style Selector="TextBlock.mono">
+  <Style Selector=":is(TextBlock).mono">
     <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Mono}" />
     <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Mono}" />
   </Style>

@@ -20,13 +20,12 @@
                   Focusable="False"
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-      <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
-                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
-                  MaxWidth="640"
-                  HorizontalAlignment="Left">
+      <StackPanel Classes="settings-column">
 
         <TextBlock Classes="settings-heading"
                    Text="{x:Static set:SettingsCopy.TabHeading}" />
+        <TextBlock Classes="settings-description"
+                   Text="{x:Static set:SettingsCopy.TabDescription}" />
 
         <TextBlock x:Name="StatusLine"
                    Classes="settings-section"
@@ -34,17 +33,27 @@
                    AutomationProperties.LiveSetting="Polite"
                    AutomationProperties.Name="{CompiledBinding StatusText}" />
 
-        <TextBlock Classes="settings-label"
-                   Margin="0,8,0,0"
-                   Text="{x:Static set:SettingsCopy.TabEndpointLabel}" />
-        <SelectableTextBlock x:Name="EndpointLine"
-                             Classes="settings-selectable settings-mono"
-                             Text="{CompiledBinding EndpointText}"
-                             AutomationProperties.Name="{CompiledBinding EndpointText}" />
+        <!-- A read-only status row: the label on the left, the endpoint on the right as selectable monospace text. -->
+        <Border Classes="settings-row">
+          <Grid ColumnDefinitions="Auto,*"
+                ColumnSpacing="16">
+            <TextBlock Grid.Column="0"
+                       Classes="settings-label"
+                       VerticalAlignment="Center"
+                       Text="{x:Static set:SettingsCopy.TabEndpointLabel}" />
+            <SelectableTextBlock x:Name="EndpointLine"
+                                 Grid.Column="1"
+                                 Classes="settings-selectable settings-mono"
+                                 HorizontalAlignment="Right"
+                                 VerticalAlignment="Center"
+                                 Text="{CompiledBinding EndpointText}"
+                                 AutomationProperties.Name="{CompiledBinding EndpointText}" />
+          </Grid>
+        </Border>
 
         <TextBlock x:Name="HowConfiguredLine"
                    Classes="settings-help"
-                   Margin="0,8,0,0"
+                   Margin="0,4,0,0"
                    Text="{CompiledBinding HowConfiguredText}" />
 
       </StackPanel>

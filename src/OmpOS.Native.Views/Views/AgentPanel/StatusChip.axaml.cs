@@ -4,7 +4,7 @@ using Avalonia.Controls;
 namespace OmpOS.Native.Views.AgentPanel;
 
 /// <summary>
-/// The chip that shows a status as words and a glyph: a 24 px bordered pill with the glyph of an <see cref="IconKey"/> and the status
+/// The chip that shows a status as words and a glyph: a 20 px bordered pill with the glyph of an <see cref="IconKey"/> and the status
 /// <see cref="Text"/> in the colour role of a <see cref="Tone"/>. It is not a tab stop; the owner names it where a name is needed.
 /// </summary>
 internal partial class StatusChip : UserControl

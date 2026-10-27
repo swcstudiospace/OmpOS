@@ -77,9 +77,6 @@ public partial class MainView : UserControl
     /// <summary>The window width from which the rail is wide (UI-SPEC, Responsive rules).</summary>
     public const double WideLayoutWidth = 1200;
 
-    /// <summary>The window height under which the composer hint line is hidden (UI-SPEC, Responsive rules).</summary>
-    public const double ShortWindowHeight = 720;
-
     /// <summary>The tooltip of the Settings button in the rail footer.</summary>
     public const string SettingsTooltip = "Settings (Ctrl+,)";
 
@@ -119,7 +116,6 @@ public partial class MainView : UserControl
     private bool _syncingRail;
     private bool _sized;
     private bool _wide;
-    private bool _hintVisible = true;
     private SessionPane? _current;
     private AgentSessionViewModel? _watched;
     private WorkspaceTree? _explorer;
@@ -169,6 +165,7 @@ public partial class MainView : UserControl
         _workspace = new WorkspaceRoot(workspaceRoot ?? Environment.CurrentDirectory);
 
         InitializeComponent();
+        ShowWorkspaceName(workspaceRoot);
         Classes.Set(ReducedMotionClass, motion == MotionPreference.Reduced);
         if (motion == MotionPreference.Reduced)
         {
@@ -219,6 +216,16 @@ public partial class MainView : UserControl
         _panel.PropertyChanged += OnPanelChanged;
         _panel.Catalog.PropertyChanged += OnCatalogChanged;
         BindSelected();
+    }
+
+    // The top bar names the workspace folder the view was given, or the product when it was given none (or a root with no folder name).
+    private void ShowWorkspaceName(string? workspaceRoot)
+    {
+        var name = string.IsNullOrWhiteSpace(workspaceRoot)
+            ? null
+            : System.IO.Path.GetFileName(_workspace.FullPath.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar));
+        WorkspaceLabel.Text = string.IsNullOrEmpty(name) ? AgentPanelCopy.ProductName : name;
+        ToolTip.SetTip(WorkspaceLabelHost, string.IsNullOrEmpty(name) ? null : _workspace.FullPath);
     }
 
     // The tab strip is the one control of the view the head's styles do not know: it takes no transition under reduced motion.
@@ -450,7 +457,7 @@ public partial class MainView : UserControl
         if (pane is not null)
         {
             pane.Composer.SuggestionsShown = SuggestionsToggle.IsChecked == true;
-            pane.Composer.HintVisible = _hintVisible;
+            pane.Composer.HintVisible = false;
         }
 
         RefreshAvailability();
@@ -1006,16 +1013,6 @@ public partial class MainView : UserControl
             _sized = true;
             _wide = wide;
             RailRegion.Classes.Set(WideClass, wide);
-        }
-
-        var hint = e.NewSize.Height >= ShortWindowHeight;
-        if (hint != _hintVisible)
-        {
-            _hintVisible = hint;
-            if (_current is { } pane)
-            {
-                pane.Composer.HintVisible = hint;
-            }
         }
     }
 

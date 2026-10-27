@@ -43,7 +43,17 @@ internal partial class TerminalPanelView : UserControl
         // The control starts its default shell when it loads unless Process is empty. This panel must never start a shell
         // itself: every process runs through the gate, so Process stays empty (ADR-0006).
         Output.Process = string.Empty;
+        ActualThemeVariantChanged += OnThemeVariantChanged;
         Refresh();
+    }
+
+    // The terminal control is not styled by the variant: its colours are values, so they are read again whenever the variant changes.
+    private void OnThemeVariantChanged(object? sender, EventArgs e)
+    {
+        if (_hookedTerminal is not null)
+        {
+            TerminalPalette.Apply(this, Output);
+        }
     }
 
     private void OnProposeClick(object? sender, RoutedEventArgs e)
@@ -218,6 +228,7 @@ internal partial class TerminalPanelView : UserControl
             var terminal = Output.Terminal ?? throw new InvalidOperationException("The terminal control has no emulator to draw into.");
             terminal.Resized += (_, _) => SizePseudoTerminal(terminal);
             _hookedTerminal = terminal;
+            TerminalPalette.Apply(this, Output);
         }
 
         SizePseudoTerminal(_hookedTerminal);

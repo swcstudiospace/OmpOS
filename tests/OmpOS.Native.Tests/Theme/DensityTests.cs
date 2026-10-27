@@ -11,7 +11,7 @@ namespace OmpOS.Native.Tests.Theme;
 /// <summary>
 /// The density contract of Phase 50 (OQ-87, spec 2.5): <c>OmpOS.Size.TargetMin</c> is 32, every interactive control the shell and the
 /// Kanban tab draw is at least the WCAG 2.2 AA target (24 by 24), and every text button and input keeps a <c>MinHeight</c> of at least
-/// the token, so one value in the token file sets the height of the whole desktop.
+/// the token (or the 28 px and 24 px control heights the specification gives the small, nav and segment variants), so one value in the token file sets the height of the whole desktop.
 /// </summary>
 public sealed class DensityTests
 {
@@ -71,6 +71,23 @@ public sealed class DensityTests
         return (double)value!;
     }
 
+    /// <summary>
+    /// The token minimum of one control. Cursor-agents-window-parity.md 3.3, 3.4, 3.6 and 3.7 fix 28 px for the <c>sm</c> buttons and
+    /// inputs, the <c>nav</c> toggles and the top tab items (<c>OmpOS.Size.ControlHeightSm</c>), and 24 px for the <c>segment</c>
+    /// toggles (the WCAG 2.2 minimum, <c>OmpOS.Size.IconButtonSm</c>); every other text control keeps <c>TargetMin</c>.
+    /// </summary>
+    private static double FloorOf(Control control, double tokenMinimum)
+    {
+        if (control.Classes.Contains("segment"))
+        {
+            return Token("OmpOS.Size.IconButtonSm");
+        }
+
+        return control.Classes.Contains("sm") || control.Classes.Contains("nav") || control is TabStripItem
+            ? Token("OmpOS.Size.ControlHeightSm")
+            : tokenMinimum;
+    }
+
     private static void Audit(Window window, string where, List<string> problems)
     {
         var tokenMinimum = Token("OmpOS.Size.TargetMin");
@@ -90,9 +107,10 @@ public sealed class DensityTests
             }
 
             var isTextControl = control is TextBox or ComboBox || (control is ContentControl { Content: string });
-            if (isTextControl && control.MinHeight < tokenMinimum)
+            var floor = FloorOf(control, tokenMinimum);
+            if (isTextControl && control.MinHeight < floor)
             {
-                problems.Add($"{name} has MinHeight {control.MinHeight:0.#}, below the TargetMin token {tokenMinimum:0.#}");
+                problems.Add($"{name} has MinHeight {control.MinHeight:0.#}, below its token minimum {floor:0.#}");
             }
         }
     }

@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:set="clr-namespace:OmpOS.Presentation.Settings;assembly=OmpOS.Presentation"
+             xmlns:glyphs="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
+             xmlns:agent="clr-namespace:OmpOS.Native.Views.AgentPanel"
              x:Class="OmpOS.Native.Views.Settings.PageStatusView"
              Focusable="False">
 
@@ -11,10 +13,7 @@
 
   <!-- The state of a settings page that is not its controls: loading, or the load failed (with Try again).
        At most one block shows at a time. Plain text and one button; the live regions say what changed. -->
-  <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
-              Spacing="{DynamicResource OmpOS.Gap.Sm}"
-              HorizontalAlignment="Left"
-              MaxWidth="640">
+  <StackPanel Classes="settings-column">
 
     <TextBlock x:Name="LoadingText"
                Classes="muted settings-body"
@@ -27,10 +26,19 @@
                 AutomationProperties.LiveSetting="Assertive">
       <TextBlock x:Name="ErrorHeading"
                  Classes="settings-section" />
-      <TextBlock x:Name="ErrorBody"
-                 Classes="tone-error settings-body" />
+      <Border Classes="banner"
+              Background="{DynamicResource OmpOS.Color.DiffRemoved}">
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource OmpOS.Gap.Sm}">
+          <agent:StageIcon IconKey="{x:Static glyphs:StatusIcon.Cross}"
+                           VerticalAlignment="Top" />
+          <TextBlock x:Name="ErrorBody"
+                     Classes="tone-error settings-body" />
+        </StackPanel>
+      </Border>
       <Button x:Name="RetryButton"
               Content="{x:Static set:SettingsCopy.RetryLabel}"
+              Classes="sm"
               HorizontalAlignment="Left"
               AutomationProperties.Name="{x:Static set:SettingsCopy.RetryLabel}"
               Click="OnRetryClick" />

@@ -237,13 +237,15 @@ public sealed class KeyboardFocusTests
     private static void AssertAccentRing(Control control)
     {
         var application = Application.Current!;
-        application.TryGetResource("OmpOS.Color.AccentPurple", application.ActualThemeVariant, out var accentBrush).ShouldBeTrue("the accent token must resolve for the active theme variant");
+        // cursor-agents-window-parity.md 3.13: primary buttons sit on the accent fill, so their 2 px ring is the TextPrimary token.
+        var token = control.Classes.Contains("primary") ? "OmpOS.Color.TextPrimary" : "OmpOS.Color.AccentPurple";
+        application.TryGetResource(token, application.ActualThemeVariant, out var accentBrush).ShouldBeTrue("the ring token must resolve for the active theme variant");
         var accent = ((ISolidColorBrush)accentBrush!).Color;
 
         var templated = (TemplatedControl)control;
         var border = templated.BorderBrush as ISolidColorBrush;
         border.ShouldNotBeNull($"{control.GetType().Name} must have a solid focus border");
-        border.Color.ShouldBe(accent, $"{control.GetType().Name} focus border must be the AccentPurple token");
+        border.Color.ShouldBe(accent, $"{control.GetType().Name} focus border must be the {token} token");
         templated.BorderThickness.ShouldBe(new Thickness(2), $"{control.GetType().Name} focus border must be OmpOS.Size.FocusBorder");
         control.FocusAdorner.ShouldBeNull($"{control.GetType().Name} must not draw the default focus adorner");
     }

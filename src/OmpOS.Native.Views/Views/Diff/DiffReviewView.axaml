@@ -3,12 +3,21 @@
              xmlns:diff="clr-namespace:OmpOS.Native.Views.Diff"
              x:Class="OmpOS.Native.Views.Diff.DiffReviewView">
 
+  <UserControl.Styles>
+    <!-- Added and removed lines are tinted, and each also carries its sign in the marker column, so colour is never the only signal. -->
+    <Style Selector="Border.diff-line.added">
+      <Setter Property="Background" Value="{DynamicResource OmpOS.Color.DiffAdded}" />
+    </Style>
+    <Style Selector="Border.diff-line.removed">
+      <Setter Property="Background" Value="{DynamicResource OmpOS.Color.DiffRemoved}" />
+    </Style>
+  </UserControl.Styles>
+
   <Grid RowDefinitions="Auto,*,Auto,Auto">
 
     <TextBlock x:Name="PendingText"
                Grid.Row="0"
                Margin="{DynamicResource OmpOS.Space.Sm}"
-               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
                TextWrapping="Wrap"
                AutomationProperties.Name="Pending hunks"
                AutomationProperties.LiveSetting="Polite" />
@@ -21,36 +30,61 @@
                     AutomationProperties.Name="Diff hunks">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="diff:DiffHunkRow">
-            <StackPanel Margin="0,0,0,12"
-                        Spacing="{DynamicResource OmpOS.Gap.Xs}">
+            <!-- One hunk is a card: a heading, its lines on the sunken surface in the mono face, and the decision row. -->
+            <Border Classes="card"
+                    ClipToBounds="True"
+                    Margin="0,0,0,12">
+              <StackPanel>
 
-              <TextBlock Text="{CompiledBinding Heading}"
-                         FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
-                         TextWrapping="Wrap" />
+                <TextBlock Text="{CompiledBinding Heading}"
+                           Classes="strong"
+                           FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                           Margin="10,8"
+                           TextWrapping="Wrap" />
 
-              <ItemsControl ItemsSource="{CompiledBinding Lines}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="diff:DiffLineRow">
-                    <TextBlock Text="{CompiledBinding Display}"
-                               FontFamily="Cascadia Code,Consolas,Menlo,monospace"
-                               TextWrapping="Wrap" />
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
+                <Border Background="{DynamicResource OmpOS.Color.SurfaceSunken}">
+                  <ItemsControl ItemsSource="{CompiledBinding Lines}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="diff:DiffLineRow">
+                        <Border Classes="diff-line"
+                                Classes.added="{CompiledBinding Marker, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=+}"
+                                Classes.removed="{CompiledBinding Marker, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=-}">
+                          <Grid ColumnDefinitions="24,*">
+                            <TextBlock Grid.Column="0"
+                                       Text="{CompiledBinding Marker}"
+                                       Classes="mono"
+                                       TextAlignment="Center"
+                                       LineHeight="{DynamicResource OmpOS.Font.LineHeight.Mono}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{CompiledBinding Line.Text}"
+                                       Classes="mono"
+                                       LineHeight="{DynamicResource OmpOS.Font.LineHeight.Mono}"
+                                       TextWrapping="Wrap" />
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </Border>
 
-              <StackPanel Orientation="Horizontal"
-                          Spacing="{DynamicResource OmpOS.Gap.Sm}">
-                <TextBlock Text="{CompiledBinding DecisionText}"
-                           VerticalAlignment="Center" />
-                <Button Content="Accept"
-                        Command="{CompiledBinding AcceptCommand}"
-                        AutomationProperties.Name="{CompiledBinding AcceptName}" />
-                <Button Content="Reject"
-                        Command="{CompiledBinding RejectCommand}"
-                        AutomationProperties.Name="{CompiledBinding RejectName}" />
+                <StackPanel Orientation="Horizontal"
+                            Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                            Margin="10,8">
+                  <TextBlock Text="{CompiledBinding DecisionText}"
+                             Classes="muted small"
+                             VerticalAlignment="Center" />
+                  <Button Classes="primary sm"
+                          Content="Accept"
+                          Command="{CompiledBinding AcceptCommand}"
+                          AutomationProperties.Name="{CompiledBinding AcceptName}" />
+                  <Button Classes="sm"
+                          Content="Reject"
+                          Command="{CompiledBinding RejectCommand}"
+                          AutomationProperties.Name="{CompiledBinding RejectName}" />
+                </StackPanel>
+
               </StackPanel>
-
-            </StackPanel>
+            </Border>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
@@ -59,16 +93,17 @@
     <TextBlock Grid.Row="2"
                Margin="{DynamicResource OmpOS.Space.Sm}"
                Text="Resulting text"
+               Classes="strong"
                FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}" />
 
     <TextBox x:Name="ResultBox"
              Grid.Row="3"
+             Classes="mono"
              Margin="{DynamicResource OmpOS.Space.Sm}"
              MaxHeight="220"
              IsReadOnly="True"
              AcceptsReturn="True"
              TextWrapping="Wrap"
-             FontFamily="Cascadia Code,Consolas,Menlo,monospace"
              AutomationProperties.Name="Resulting text" />
 
   </Grid>

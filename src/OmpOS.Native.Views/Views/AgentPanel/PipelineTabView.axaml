@@ -60,8 +60,7 @@
 
               <TextBlock Text="{CompiledBinding EmptyText}"
                          IsVisible="{CompiledBinding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                         Classes="muted"
-                         FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                         Classes="muted small"
                          TextWrapping="Wrap" />
 
               <ItemsControl ItemsSource="{CompiledBinding Rows}"
@@ -86,33 +85,26 @@
                                    TextWrapping="Wrap" />
                         <TextBlock Text="{CompiledBinding Detail}"
                                    IsVisible="{CompiledBinding ., Converter={x:Static local:PanelConverters.IsPlainDetail}}"
-                                   Classes="muted"
-                                   FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                                   Classes="muted small"
                                    TextWrapping="Wrap" />
                         <SelectableTextBlock Text="{CompiledBinding Detail}"
                                              IsVisible="{CompiledBinding ., Converter={x:Static local:PanelConverters.IsFixLine}}"
                                              IsTabStop="False"
-                                             Classes="muted"
-                                             FontFamily="{DynamicResource OmpOS.Font.Mono}"
-                                             FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                                             Classes="muted mono"
                                              TextWrapping="Wrap" />
                         <SelectableTextBlock Text="{CompiledBinding GraphId}"
                                              IsVisible="{CompiledBinding GraphId, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                              IsTabStop="False"
-                                             Classes="muted"
-                                             FontFamily="{DynamicResource OmpOS.Font.Mono}"
-                                             FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                                             Classes="muted mono"
                                              TextWrapping="Wrap" />
                         <TextBlock Text="{CompiledBinding EffectText}"
                                    IsVisible="{CompiledBinding EffectText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                   Classes="muted"
-                                   FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                                   Classes="muted small"
                                    TextWrapping="Wrap" />
-                        <Button Content="{x:Static copy:AgentPanelCopy.RetryStage}"
+                        <Button Classes="sm"
+                                Content="{x:Static copy:AgentPanelCopy.RetryStage}"
                                 IsVisible="{CompiledBinding CanRetry}"
                                 HorizontalAlignment="Left"
-                                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                                Padding="{DynamicResource OmpOS.Space.Md}"
                                 AutomationProperties.Name="{CompiledBinding RetryName}" />
                       </StackPanel>
 

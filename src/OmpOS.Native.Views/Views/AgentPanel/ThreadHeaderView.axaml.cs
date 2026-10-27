@@ -104,6 +104,9 @@ internal partial class ThreadHeaderView : UserControl
         GraphChipLabel.Text = AgentPanelViewText.GraphChip(graph);
         AutomationProperties.SetName(GraphChipView, AgentPanelViewText.GraphChip(graph));
 
+        // The second line exists only while one of its four items shows, so the header stays 40 px high otherwise.
+        ActionsRow.IsVisible = ResumeButton.IsVisible || ReopenButton.IsVisible || TaskChipButton.IsVisible || GraphChipView.IsVisible;
+
         SteeringBadge.IsVisible = session is not null;
         AutomationProperties.SetName(SteeringBadge, session?.SteeringBadgeName ?? AgentPanelCopy.SteeringBadgeName(AgentPanelCopy.SteeringUnavailable));
     }

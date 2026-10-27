@@ -15,14 +15,14 @@
 
       <TextBox x:Name="PathInput"
                Grid.Column="0"
+               Classes="mono"
                PlaceholderText="File path, for example notes/transcript.md"
-               MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                AutomationProperties.Name="Export file path" />
 
       <Button x:Name="ExportButton"
               Grid.Column="1"
+              Classes="primary"
               Content="Export"
-              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
               AutomationProperties.Name="Export transcript" />
 
     </Grid>
@@ -39,7 +39,6 @@
                FontSize="{DynamicResource OmpOS.Font.Size.Body}" />
 
     <ComboBox x:Name="PeriodSelector"
-              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
               AutomationProperties.Name="Usage period" />
 
     <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto"

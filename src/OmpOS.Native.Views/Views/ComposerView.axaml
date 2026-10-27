@@ -5,103 +5,117 @@
              xmlns:local="clr-namespace:OmpOS.Native.Views"
              xmlns:panel="clr-namespace:OmpOS.Native.Views.AgentPanel"
              x:Class="OmpOS.Native.Views.ComposerView"
-             Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
-             Padding="{DynamicResource OmpOS.Space.Md}">
+             Background="{DynamicResource OmpOS.Color.Surface}">
 
-  <!-- Keyboard order follows XAML order: prompt, send (steer while a run is active), follow-up (only while a run is active), stop,
-       then the suggestions box while it is shown. The hint line is text, not a tab stop. -->
-  <Grid RowDefinitions="Auto,Auto,Auto,Auto"
-        ColumnDefinitions="*,Auto,Auto,Auto"
-        ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}"
-        RowSpacing="{DynamicResource OmpOS.Gap.Xs}">
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/ComposerStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The composer is one rounded card in the thread's content column (parity spec 4.7). The prompt text box is the card; the footer is
+       drawn over its bottom padding: the model, mode and thinking chips at the left, then follow-up, stop and the round send at the right.
+       Keyboard order follows XAML order, which keeps the order the keyboard tests rely on: prompt, send (steer while a run is active),
+       follow-up (only while a run is active), stop, then the chips (model, mode, thinking), then the suggestions box while it is shown.
+       Grid.Column only places the controls. The keyboard hint is the prompt's tooltip; the hint line is kept for assistive technology and
+       the shell, and is hidden unless the shell asks for it. -->
+  <Grid x:Name="ComposerColumn"
+        RowDefinitions="Auto,Auto,Auto,Auto"
+        MaxWidth="{DynamicResource OmpOS.Size.ThreadContentMaxWidth}"
+        Margin="16,8,16,16">
 
     <TextBlock x:Name="PendingLabel"
-               Grid.Row="0"
-               Grid.Column="0"
-               Grid.ColumnSpan="4"
-               Classes="muted"
-               FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+               Grid.Row="1"
+               Classes="muted small"
+               Margin="4,0,4,6"
                TextWrapping="Wrap"
                IsVisible="False"
                AutomationProperties.Name="Pending input"
                AutomationProperties.LiveSetting="Polite" />
 
-    <TextBox x:Name="PromptInput"
-             Grid.Row="1"
-             Grid.Column="0"
-             AutomationProperties.Name="Message"
-             AutomationProperties.HelpText="{x:Static panel:AgentPanelViewText.ComposerHint}"
-             PlaceholderText="{x:Static copy:AgentPanelCopy.ComposerPlaceholderIdle}"
-             AcceptsReturn="True"
-             TextWrapping="Wrap"
-             MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-             Background="{DynamicResource OmpOS.Color.Surface}"
-             Foreground="{DynamicResource OmpOS.Color.TextPrimary}"
-             />
+    <Border x:Name="ComposerFrame"
+            Grid.Row="2"
+            CornerRadius="{DynamicResource OmpOS.Radius.Lg}"
+            BoxShadow="{DynamicResource OmpOS.Shadow.Card}">
+      <Panel>
 
-    <Button x:Name="SendButton"
-            Grid.Row="1"
-            Grid.Column="1"
-            AutomationProperties.Name="Send message"
-            ToolTip.Tip="Send message"
-            Width="{DynamicResource OmpOS.Size.TargetMin}"
-            Height="{DynamicResource OmpOS.Size.TargetMin}"
-            VerticalAlignment="Bottom">
-      <Path Data="M3 3.5 21 12 3 20.5 7 12Z"
-            Fill="{DynamicResource OmpOS.Color.AccentPurple}"
-            Stretch="Uniform"
-            Width="20"
-            Height="20" />
-    </Button>
+        <TextBox x:Name="PromptInput"
+                 Classes="composer"
+                 AutomationProperties.Name="Message"
+                 AutomationProperties.HelpText="{x:Static panel:AgentPanelViewText.ComposerHint}"
+                 ToolTip.Tip="{x:Static panel:AgentPanelViewText.ComposerHint}"
+                 PlaceholderText="{x:Static copy:AgentPanelCopy.ComposerPlaceholderIdle}"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap" />
 
-    <Button x:Name="FollowUpButton"
-            Grid.Row="1"
-            Grid.Column="2"
-            Content="{x:Static panel:AgentPanelViewText.QueueFollowUp}"
-            Padding="{DynamicResource OmpOS.Space.Md}"
-            MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-            VerticalAlignment="Bottom"
-            IsVisible="False"
-            AutomationProperties.Name="{x:Static panel:AgentPanelViewText.QueueFollowUpName}" />
+        <Grid x:Name="ComposerFooter"
+              VerticalAlignment="Bottom"
+              Margin="8,0,8,8"
+              ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto"
+              ColumnSpacing="{DynamicResource OmpOS.Gap.Xs}">
 
-    <Button x:Name="StopButton"
-            Grid.Row="1"
-            Grid.Column="3"
-            AutomationProperties.Name="Stop response"
-            ToolTip.Tip="Stop response"
-            Width="{DynamicResource OmpOS.Size.TargetMin}"
-            Height="{DynamicResource OmpOS.Size.TargetMin}"
-            VerticalAlignment="Bottom">
-      <Rectangle Width="14"
-                 Height="14"
-                 Fill="{DynamicResource OmpOS.Color.TextPrimary}" />
-    </Button>
+          <Button x:Name="SendButton"
+                  Grid.Column="6"
+                  Classes="round primary"
+                  AutomationProperties.Name="Send message"
+                  ToolTip.Tip="Send message"
+                  VerticalAlignment="Bottom">
+            <Path Data="M3 3.5 21 12 3 20.5 7 12Z"
+                  Stretch="Uniform"
+                  Width="14"
+                  Height="14" />
+          </Button>
 
-    <!-- The footer: the model chip, then the key map in one line. The shell hides the hint below 720 px of window height; the chip stays.
-         The chip is hidden until the session reports a model, and it follows the streaming buttons in the tab order. -->
-    <Grid Grid.Row="2"
-          Grid.Column="0"
-          Grid.ColumnSpan="4"
-          ColumnDefinitions="Auto,*"
-          ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
-      <local:ModelPickerView x:Name="ModelPicker"
-                             Grid.Column="0"
-                             VerticalAlignment="Center" />
-      <TextBlock x:Name="HintLine"
-                 Grid.Column="1"
-                 Classes="muted"
-                 FontSize="{DynamicResource OmpOS.Font.Size.Label}"
-                 TextWrapping="Wrap"
-                 VerticalAlignment="Center"
-                 Text="{x:Static panel:AgentPanelViewText.ComposerHint}"
-                 AutomationProperties.Name="{x:Static panel:AgentPanelViewText.ComposerHintName}" />
-    </Grid>
+          <Button x:Name="FollowUpButton"
+                  Grid.Column="4"
+                  Classes="sm"
+                  Content="{x:Static panel:AgentPanelViewText.QueueFollowUp}"
+                  VerticalAlignment="Bottom"
+                  IsVisible="False"
+                  AutomationProperties.Name="{x:Static panel:AgentPanelViewText.QueueFollowUpName}" />
 
-    <!-- The suggestions box is shown by the shell's Inline suggestions toggle. It is hidden until then, so it is no tab stop before that. -->
+          <Button x:Name="StopButton"
+                  Grid.Column="5"
+                  Classes="round"
+                  AutomationProperties.Name="Stop response"
+                  ToolTip.Tip="Stop response"
+                  VerticalAlignment="Bottom">
+            <Rectangle Width="12"
+                       Height="12"
+                       RadiusX="2"
+                       RadiusY="2"
+                       Fill="{DynamicResource OmpOS.Color.TextPrimary}" />
+          </Button>
+
+          <!-- The chips hide until the session reports a model, a mode or a thinking level, and stay hidden in an omp terminal. -->
+          <local:ModelPickerView x:Name="ModelPicker"
+                                 Grid.Column="0"
+                                 VerticalAlignment="Center" />
+
+          <local:OptionChipView x:Name="ModeChipView"
+                                Grid.Column="1"
+                                VerticalAlignment="Center" />
+
+          <local:OptionChipView x:Name="ThinkingChipView"
+                                Grid.Column="2"
+                                VerticalAlignment="Center" />
+
+        </Grid>
+
+      </Panel>
+    </Border>
+
+    <TextBlock x:Name="HintLine"
+               Grid.Row="3"
+               Classes="muted small"
+               Margin="4,6,4,0"
+               TextWrapping="Wrap"
+               IsVisible="False"
+               Text="{x:Static panel:AgentPanelViewText.ComposerHint}"
+               AutomationProperties.Name="{x:Static panel:AgentPanelViewText.ComposerHintName}" />
+
+    <!-- The suggestions box is shown by the shell's Inline suggestions toggle, above the card. It is hidden until then, so it is no tab stop before that. -->
     <completion:InlineCompletionBox x:Name="Suggestions"
-                                    Grid.Row="3"
-                                    Grid.Column="0"
-                                    Grid.ColumnSpan="4"
+                                    Grid.Row="0"
+                                    Margin="0,0,0,8"
                                     IsVisible="False" />
 
   </Grid>

@@ -71,6 +71,8 @@ internal partial class PanelNoticeView : UserControl
             PanelNoticeKind.None => null,
             _ => StatusIcon.Alert,
         };
+        NoticeBar.Classes.Set("bar-secondary", kind == PanelNoticeKind.Resumed);
+        NoticeBar.Classes.Set("bar-warning", kind != PanelNoticeKind.Resumed);
     }
 
     private void OnShowPipelineClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>

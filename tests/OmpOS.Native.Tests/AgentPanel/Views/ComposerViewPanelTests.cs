@@ -96,7 +96,10 @@ public sealed class ComposerViewPanelTests
         await DrainAsync(rig).ConfigureAwait(true);
     }
 
-    /// <summary>While idle the composer offers Send, the idle placeholder and the hint line, and no follow-up.</summary>
+    /// <summary>
+    /// While idle the composer offers Send, the idle placeholder and no follow-up. The hint is the tooltip and help text of the prompt, not a
+    /// visible line (cursor-agents-window-parity.md 4.7: HintLine is IsVisible=false).
+    /// </summary>
     [Fact]
     public async Task IdleShowsSendAndTheHint()
     {
@@ -111,7 +114,8 @@ public sealed class ComposerViewPanelTests
             AutomationProperties.GetName(send).ShouldBe("Send message");
             ViewHarness.Find<Button>(rig.View, "FollowUpButton").IsVisible.ShouldBeFalse();
             hint.Text.ShouldBe("Enter sends. Shift+Enter adds a line. While a run is active: Ctrl+Enter steers, Ctrl+Shift+Enter queues a follow-up, Esc stops.");
-            hint.IsEffectivelyVisible.ShouldBeTrue();
+            hint.IsEffectivelyVisible.ShouldBeFalse("the hint is a tooltip since the composer became a card (spec 4.7)");
+            ToolTip.GetTip(Prompt(rig)).ShouldBe(hint.Text);
             AutomationProperties.GetName(hint).ShouldBe("Composer hint");
             AutomationProperties.GetHelpText(Prompt(rig)).ShouldBe(hint.Text);
             hint.Focusable.ShouldBeFalse("the hint is text, not a tab stop");
@@ -408,7 +412,7 @@ public sealed class ComposerViewPanelTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>The shell can hide the hint line on a short window and move focus to the prompt.</summary>
+    /// <summary>The hint line is hidden by default (the hint is a tooltip, spec 4.7), can be shown by the shell, and focus moves to the prompt.</summary>
     [Fact]
     public async Task TheHintCanBeHiddenAndFocusMovesToThePrompt()
     {
@@ -417,7 +421,10 @@ public sealed class ComposerViewPanelTests
         {
             var rig = Open(runActive: false);
 
-            rig.View.HintVisible.ShouldBeTrue();
+            rig.View.HintVisible.ShouldBeFalse("the hint is a tooltip by default (spec 4.7)");
+            rig.View.HintVisible = true;
+            ViewHarness.Settle(rig.Window);
+            ViewHarness.Find<TextBlock>(rig.View, "HintLine").IsEffectivelyVisible.ShouldBeTrue();
             rig.View.HintVisible = false;
             ViewHarness.Settle(rig.Window);
             ViewHarness.Find<TextBlock>(rig.View, "HintLine").IsEffectivelyVisible.ShouldBeFalse();

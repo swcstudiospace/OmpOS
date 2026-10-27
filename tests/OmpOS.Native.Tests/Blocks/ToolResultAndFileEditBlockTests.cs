@@ -40,7 +40,7 @@ public sealed class ToolResultAndFileEditBlockTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>An edit of an existing file renders its path, the edit label, and the text before and after under their labels.</summary>
+    /// <summary>An edit of an existing file renders its path, the added and removed counts, the edit label and the unified diff rows: line number, sign, text (cursor-agents-window-parity.md 4.6, diff block anatomy).</summary>
     [Fact]
     public async Task RendersFileEditBlock()
     {
@@ -56,11 +56,11 @@ public sealed class ToolResultAndFileEditBlockTests
                 NewText = "int x = 2;",
             }));
 
-            TextsOf(host.Window).ShouldBe(["src/a.cs", FileEditBlockView.EditedLabel, "Before", "int x = 1;", "After", "int x = 2;"]);
+            TextsOf(host.Window).ShouldBe(["src/a.cs", "+1", "-1", FileEditBlockView.EditedLabel, "1", "-", "int x = 1;", "1", "+", "int x = 2;"]);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>A created file renders its new text alone, with no before section.</summary>
+    /// <summary>A created file renders its new text alone as added rows, with a "-0" count and no removed rows (spec 4.6, diff block anatomy).</summary>
     [Fact]
     public async Task ACreatedFileRendersItsNewTextAlone()
     {
@@ -75,7 +75,7 @@ public sealed class ToolResultAndFileEditBlockTests
                 NewText = "class A;",
             }));
 
-            TextsOf(host.Window).ShouldBe(["src/new.cs", FileEditBlockView.CreatedLabel, "class A;"]);
+            TextsOf(host.Window).ShouldBe(["src/new.cs", "+1", "-0", FileEditBlockView.CreatedLabel, "1", "+", "class A;"]);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -119,7 +119,7 @@ public sealed class ToolResultAndFileEditBlockTests
 
             view.ShouldBeOfType<FileEditBlockView>();
             using var host = new Host(view);
-            TextsOf(host.Window).ShouldBe(["src/b.cs", FileEditBlockView.EditedLabel, "Before", "a", "After", "b"]);
+            TextsOf(host.Window).ShouldBe(["src/b.cs", "+1", "-1", FileEditBlockView.EditedLabel, "1", "-", "a", "1", "+", "b"]);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

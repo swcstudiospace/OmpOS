@@ -34,6 +34,12 @@ internal partial class KanbanCardView : UserControl
         Refresh();
     }
 
+    /// <summary>Gets whether the card can be dragged: only a Backlog or Archived card can (D39-2); a runtime-status card refuses the drag.</summary>
+    internal bool IsDraggable => Model?.Card.ColumnKey is KanbanColumn.BacklogKey or KanbanColumn.ArchivedKey;
+
+    /// <summary>Gets whether the drag grip is drawn.</summary>
+    internal bool IsGripVisible => DragGrip.IsVisible;
+
     private Flyout SteerFlyout => (Flyout)SteerButton.Flyout!;
 
     /// <summary>Gets the view model the card draws, or null.</summary>
@@ -149,7 +155,7 @@ internal partial class KanbanCardView : UserControl
         }
 
         _press = null;
-        if (Model is { } model)
+        if (Model is { } model && IsDraggable)
         {
             _ = DragAsync(press, model.Id);
         }
@@ -209,6 +215,17 @@ internal partial class KanbanCardView : UserControl
         StatusChip.Tone = KanbanStatusVisuals.ToneOf(card?.Status);
         AutomationProperties.SetName(SteerButton, KanbanCopy.SteerNameFor(title));
         AutomationProperties.SetName(SteerPanel, KanbanCopy.SteerPanelNameFor(title));
+
+        // The grip and the hand cursor mark the cards that can be dragged: Backlog and Archived only.
+        var draggable = IsDraggable;
+        if (draggable != DragGrip.IsVisible)
+        {
+            DragGrip.IsVisible = draggable;
+            Cursor = draggable ? new Cursor(StandardCursorType.Hand) : null;
+        }
+
+        // Steer is always drawn; a card that cannot be steered says why in the line under the button.
+        AutomationProperties.SetHelpText(SteerButton, model?.CanSteer == false ? KanbanCopy.SteerUnavailable : null);
 
         var failed = model?.SteerFailed == true;
         SetClass(SteerResult, "tone-error", failed);

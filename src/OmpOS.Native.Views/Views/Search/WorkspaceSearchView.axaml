@@ -8,6 +8,7 @@
 
     <TextBox x:Name="PatternInput"
              x:FieldModifier="internal"
+             Classes="mono"
              PlaceholderText="Search the workspace"
              AutomationProperties.Name="Search pattern" />
 
@@ -23,6 +24,7 @@
                 AutomationProperties.Name="Ignore case" />
       <Button x:Name="SearchButton"
               x:FieldModifier="internal"
+              Classes="primary sm"
               Content="Search"
               AutomationProperties.Name="Search workspace" />
     </StackPanel>
@@ -63,12 +65,12 @@
         <DataTemplate x:DataType="ws:SearchHit">
           <StackPanel Orientation="Horizontal"
                       Spacing="{DynamicResource OmpOS.Gap.Xs}">
-            <TextBlock Classes="path"
+            <TextBlock Classes="path mono"
                        FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
                        Text="{CompiledBinding RelativePath}" />
             <TextBlock Classes="line"
                        Text="{CompiledBinding LineNumber}" />
-            <TextBlock Classes="match"
+            <TextBlock Classes="match mono"
                        TextTrimming="CharacterEllipsis"
                        Text="{CompiledBinding MatchText}" />
           </StackPanel>

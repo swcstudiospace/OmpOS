@@ -72,6 +72,7 @@ internal partial class PipelineStripView : UserControl
         var timeline = DataContext as StageTimelineModel;
         Details.DataContext = timeline;
         PipelineStrip.IsVisible = timeline is not null;
+        StripFrame.IsVisible = timeline is not null;
         var announcement = timeline?.StatusAnnouncement;
         var text = string.IsNullOrWhiteSpace(announcement) ? null : AgentPanelViewText.LatestLine(announcement);
         if (!string.Equals(Announcement.Text, text, StringComparison.Ordinal))

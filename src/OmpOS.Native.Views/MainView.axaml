@@ -1,10 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:OmpOS.Native"
+             xmlns:copy="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
+             xmlns:panel="clr-namespace:OmpOS.Native.Views.AgentPanel"
              xmlns:set="clr-namespace:OmpOS.Presentation.Settings;assembly=OmpOS.Presentation"
              x:Class="OmpOS.Native.MainView">
 
   <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
     <!-- The rail is 240 px wide below the wide layout and 280 px from 1200 px up. MainView.axaml.cs sets the wide class. -->
     <Style Selector="Border.rail">
       <Setter Property="Width" Value="{DynamicResource OmpOS.Size.SessionListWidth}" />
@@ -13,10 +16,16 @@
       <Setter Property="Width" Value="{DynamicResource OmpOS.Size.AgentRailWidth}" />
     </Style>
     <Style Selector="TextBlock.tool-group">
-      <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Label}" />
-      <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Semibold}" />
+      <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Small}" />
+      <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Medium}" />
       <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextSecondary}" />
-      <Setter Property="Margin" Value="4,8,4,0" />
+      <Setter Property="Margin" Value="8,12,8,4" />
+    </Style>
+    <!-- The tabs of the top bar: a 28 px item with 12 px side padding and a medium label (spec 3.7). -->
+    <Style Selector="TabStrip.top-tabs TabStripItem">
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Label}" />
+      <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Medium}" />
     </Style>
   </UserControl.Styles>
 
@@ -25,297 +34,360 @@
        terminal, or the Agents or tool view that opens in its place, transcript search, run controls, confirmation bars, prompt or the
        steer-only terminal composer, send, stop, side chats). The Kanban tab stands in for the rail and the thread while it is selected.
        There is no region beside the rail and the thread. -->
-  <DockPanel>
+  <Panel>
 
+    <!-- The skip link is the first stop of the tab order. It leaves the layout flow and is transparent until it has focus (spec 4.2), so
+         assistive technology still lists it and pressing it still moves focus to the conversation. -->
     <Button x:Name="SkipLink"
-            DockPanel.Dock="Top"
-            HorizontalAlignment="Left"
-            MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-            Padding="{DynamicResource OmpOS.Space.Sm}"
-            Margin="{DynamicResource OmpOS.Space.Sm}"
+            Classes="skip-link"
             Content="Skip to conversation"
             AutomationProperties.Name="Skip to conversation"
             Click="OnSkipLinkClick" />
 
-    <!-- The top-level tabs. They exist only when the head supplied a Kanban board. Arrow keys move between them; Ctrl+Shift+A and
-         Ctrl+Shift+K select them from anywhere. -->
-    <TabStrip x:Name="TopTabs"
+    <DockPanel>
+
+      <!-- The top bar: the workspace folder name on the left, the Agents and Kanban tabs in the middle. The window keeps its native frame,
+           so the two inset columns stay at 8 px. The tabs exist only when the head supplied a Kanban board; arrow keys move between them
+           and Ctrl+Shift+A and Ctrl+Shift+K select them from anywhere. -->
+      <Border x:Name="TopBar"
               DockPanel.Dock="Top"
-              IsVisible="False"
-              SelectedIndex="0"
-              Margin="{DynamicResource OmpOS.Space.Sm}"
-              AutomationProperties.Name="Main views">
-      <TabStripItem x:Name="AgentsTab"
-                    Content="Agents"
-                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                    MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
-                    AutomationProperties.Name="Agents" />
-      <TabStripItem x:Name="KanbanTab"
-                    Content="Kanban"
-                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                    MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
-                    AutomationProperties.Name="Kanban" />
-    </TabStrip>
+              Height="{DynamicResource OmpOS.Size.TitleBarHeight}"
+              Background="{DynamicResource OmpOS.Color.SurfaceSunken}"
+              BorderBrush="{DynamicResource OmpOS.Color.Border}"
+              BorderThickness="0,0,0,1">
+        <Grid ColumnDefinitions="Auto,Auto,*,Auto,*,Auto">
 
-    <Grid x:Name="RegionGrid" ColumnDefinitions="Auto,*">
+          <Border x:Name="TopBarInsetLeft"
+                  Grid.Column="0"
+                  Width="8" />
 
-      <Border x:Name="RailRegion"
-              Grid.Column="0"
-              Classes="rail"
-              Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
-              Padding="{DynamicResource OmpOS.Space.Sm}"
-              AutomationProperties.Name="Agents rail">
-        <DockPanel>
+          <DockPanel x:Name="WorkspaceLabelHost"
+                     Grid.Column="1"
+                     MaxWidth="220"
+                     VerticalAlignment="Center">
+            <Path DockPanel.Dock="Left"
+                  Classes="tone-secondary"
+                  Data="M2 4.5a1 1 0 0 1 1-1h3l1.5 1.5H13a1 1 0 0 1 1 1v5.5a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1Z"
+                  Width="{DynamicResource OmpOS.Size.IconSizeSm}"
+                  Height="{DynamicResource OmpOS.Size.IconSizeSm}"
+                  Margin="0,0,6,0"
+                  Stretch="Uniform"
+                  StrokeThickness="1.5"
+                  StrokeLineCap="Round"
+                  StrokeJoin="Round"
+                  AutomationProperties.AccessibilityView="Raw" />
+            <TextBlock x:Name="WorkspaceLabel"
+                       FontWeight="{DynamicResource OmpOS.Font.Weight.Medium}"
+                       TextTrimming="CharacterEllipsis"
+                       MaxLines="1" />
+          </DockPanel>
 
-          <StackPanel DockPanel.Dock="Top"
-                      Orientation="Horizontal"
-                      Spacing="{DynamicResource OmpOS.Gap.Sm}"
-                      Margin="0,0,0,8">
-            <ToggleButton x:Name="SessionsViewToggle"
-                          Content="Sessions"
-                          IsChecked="True"
-                          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                          AutomationProperties.Name="Sessions view" />
-            <ToggleButton x:Name="ToolsViewToggle"
-                          Content="Tools"
-                          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                          AutomationProperties.Name="Tools view" />
-          </StackPanel>
+          <TabStrip x:Name="TopTabs"
+                    Grid.Column="3"
+                    Classes="top-tabs"
+                    VerticalAlignment="Center"
+                    IsVisible="False"
+                    SelectedIndex="0"
+                    AutomationProperties.Name="Main views">
+            <TabStripItem x:Name="AgentsTab"
+                          Content="Agents"
+                          AutomationProperties.Name="Agents" />
+            <TabStripItem x:Name="KanbanTab"
+                          Content="Kanban"
+                          AutomationProperties.Name="Kanban" />
+          </TabStrip>
 
-          <Grid RowDefinitions="*,Auto">
-            <ContentControl x:Name="RailHost" />
-
-            <!-- The Tools view of the rail: every toggle that opens a tool or a panel. It stands in for the session list while Tools is checked. -->
-            <ScrollViewer x:Name="ToolsViewScroll"
-                          IsVisible="False"
-                          Focusable="False"
-                          IsTabStop="False"
-                          HorizontalScrollBarVisibility="Disabled">
-              <StackPanel x:Name="ToolsViewHost">
-                <TextBlock Classes="tool-group"
-                           Text="Panels" />
-                <ToggleButton x:Name="AgentsToggle"
-                              Content="Agents window"
-                              Margin="{DynamicResource OmpOS.Space.Xs}"
-                              HorizontalAlignment="Stretch"
-                              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                              AutomationProperties.Name="Agents" />
-                <ToggleButton x:Name="SideChatsToggle"
-                              Content="Side chats"
-                              Margin="{DynamicResource OmpOS.Space.Xs}"
-                              HorizontalAlignment="Stretch"
-                              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                              AutomationProperties.Name="Show side chats" />
-                <ToggleButton x:Name="SuggestionsToggle"
-                              Content="Inline suggestions"
-                              Margin="{DynamicResource OmpOS.Space.Xs}"
-                              HorizontalAlignment="Stretch"
-                              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                              AutomationProperties.Name="Inline suggestions" />
-
-                <TextBlock Classes="tool-group"
-                           Text="Workspace" />
-                <ToggleButton x:Name="EditorToggle"
-                              Content="Editor"
-                              Margin="{DynamicResource OmpOS.Space.Xs}"
-                              HorizontalAlignment="Stretch"
-                              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                              AutomationProperties.Name="Editor" />
-                <ToggleButton x:Name="ExplorerToggle"
-                              Content="Explorer"
-                              Margin="{DynamicResource OmpOS.Space.Xs}"
-                              HorizontalAlignment="Stretch"
-                              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                              AutomationProperties.Name="Explorer" />
-                <ToggleButton x:Name="TerminalToggle"
-                              Content="Terminal"
-                              Margin="{DynamicResource OmpOS.Space.Xs}"
-                              HorizontalAlignment="Stretch"
-                              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                              AutomationProperties.Name="Terminal" />
-                <ToggleButton x:Name="DiffToggle"
-                              Content="Diff review"
-                              Margin="{DynamicResource OmpOS.Space.Xs}"
-                              HorizontalAlignment="Stretch"
-                              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                              AutomationProperties.Name="Diff review" />
-                <ToggleButton x:Name="InlineEditToggle"
-                              Content="Inline edit"
-                              Margin="{DynamicResource OmpOS.Space.Xs}"
-                              HorizontalAlignment="Stretch"
-                              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                              AutomationProperties.Name="Inline edit" />
-                <ToggleButton x:Name="ConventionsToggle"
-                              Content="Conventions"
-                              Margin="{DynamicResource OmpOS.Space.Xs}"
-                              HorizontalAlignment="Stretch"
-                              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                              AutomationProperties.Name="Workspace conventions" />
-                <ToggleButton x:Name="WorkspaceSearchToggle"
-                              Content="Workspace search"
-                              Margin="{DynamicResource OmpOS.Space.Xs}"
-                              HorizontalAlignment="Stretch"
-                              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                              AutomationProperties.Name="Workspace search" />
-
-                <TextBlock Classes="tool-group"
-                           Text="Session" />
-                <ToggleButton x:Name="McpToggle"
-                              Content="MCP tools"
-                              Margin="{DynamicResource OmpOS.Space.Xs}"
-                              HorizontalAlignment="Stretch"
-                              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                              AutomationProperties.Name="MCP tools" />
-                <ToggleButton x:Name="ExportToggle"
-                              Content="Export"
-                              Margin="{DynamicResource OmpOS.Space.Xs}"
-                              HorizontalAlignment="Stretch"
-                              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                              AutomationProperties.Name="Transcript export" />
-              </StackPanel>
-            </ScrollViewer>
-
-            <!-- The rail footer: opens the Settings window. It is the last stop of the rail, after the session list or the tool toggles. Ctrl+, does the same from anywhere. -->
-            <Button x:Name="SettingsButton"
-                    Grid.Row="1"
-                    Content="{x:Static set:SettingsCopy.WindowTitle}"
-                    Margin="{DynamicResource OmpOS.Space.Xs}"
-                    HorizontalAlignment="Stretch"
-                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                    ToolTip.Tip="{x:Static local:MainView.SettingsTooltip}"
-                    AutomationProperties.Name="{x:Static set:SettingsCopy.WindowTitle}" />
-          </Grid>
-
-        </DockPanel>
-      </Border>
-
-      <Border x:Name="ThreadRegion"
-              Grid.Column="1"
-              MinWidth="{DynamicResource OmpOS.Size.ThreadMinWidth}"
-              Background="{DynamicResource OmpOS.Color.Surface}"
-              AutomationProperties.Name="Agent thread">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
-
-          <!-- The thread header. Its own close and resume controls come first, then the plugin connection row (the pipeline strip). -->
-          <ContentControl x:Name="ThreadHeaderHost"
-                          Grid.Row="0" />
-
-          <ContentControl x:Name="PipelineHost"
-                          Grid.Row="1" />
-
-          <!-- The panel state: the empty, loading and error blocks of the whole panel. The view hides itself while the panel is ready. -->
-          <ContentControl x:Name="PanelStateHost"
-                          Grid.Row="2" />
-
-          <!-- The closed-agent notice. A lost agent shows its notice in the thread header. -->
-          <Border x:Name="ClosedNotice"
-                  Grid.Row="3"
-                  Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
-                  Padding="{DynamicResource OmpOS.Space.Md}"
-                  IsVisible="False"
-                  AutomationProperties.Name="Agent closed notice">
-            <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
-              <TextBlock x:Name="ClosedHeading"
-                         FontSize="{DynamicResource OmpOS.Font.Size.Heading}"
-                         FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
-                         TextWrapping="Wrap" />
-              <TextBlock x:Name="ClosedBody"
-                         FontSize="{DynamicResource OmpOS.Font.Size.Body}"
-                         TextWrapping="Wrap" />
-            </StackPanel>
-          </Border>
-
-          <!-- The header of an open tool: its name and the control that closes it and returns focus to the toggle that opened it. -->
-          <Border x:Name="ToolHeader"
-                  Grid.Row="4"
-                  Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
-                  Padding="{DynamicResource OmpOS.Space.Sm}"
-                  IsVisible="False"
-                  AutomationProperties.Name="Tool header">
-            <DockPanel>
-              <Button x:Name="CloseToolButton"
-                      DockPanel.Dock="Right"
-                      Content="Close tool"
-                      MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-                      MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
-                      AutomationProperties.Name="Close tool"
-                      Click="OnCloseToolClick" />
-              <TextBlock x:Name="ToolTitle"
-                         VerticalAlignment="Center"
-                         FontSize="{DynamicResource OmpOS.Font.Size.Label}"
-                         FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}" />
-            </DockPanel>
-          </Border>
-
-          <Grid Grid.Row="5">
-            <DockPanel x:Name="TranscriptRegion">
-
-              <!-- An engine failure that ends a turn. It is an alert: assistive technology announces it at once, and the next send clears it. -->
-              <TextBlock x:Name="ErrorBanner"
-                         DockPanel.Dock="Top"
-                         Classes="error"
-                         Margin="{DynamicResource OmpOS.Space.Sm}"
-                         TextWrapping="Wrap"
-                         IsVisible="False"
-                         AutomationProperties.Name="Engine error"
-                         AutomationProperties.LiveSetting="Assertive" />
-
-              <ContentControl x:Name="TranscriptHost"
-                              HorizontalContentAlignment="Stretch"
-                              VerticalContentAlignment="Stretch" />
-            </DockPanel>
-            <ContentControl x:Name="AgentsHost"
-                            IsVisible="False" />
-            <ContentControl x:Name="ToolHost"
-                            IsVisible="False" />
-          </Grid>
-
-          <ContentControl x:Name="SearchHost"
-                          Grid.Row="6"
-                          IsVisible="False" />
-
-          <TextBlock x:Name="StatusLine"
-                     Grid.Row="7"
-                     Classes="muted"
-                     Margin="{DynamicResource OmpOS.Space.Xs}"
-                     Padding="{DynamicResource OmpOS.Space.Md}"
-                     FontSize="{DynamicResource OmpOS.Font.Size.Label}"
-                     TextWrapping="Wrap"
-                     IsVisible="False"
-                     AutomationProperties.Name="Session status"
-                     AutomationProperties.LiveSetting="Polite" />
-
-          <ContentControl x:Name="RunControlsHost"
-                          Grid.Row="8" />
-
-          <ContentControl x:Name="ConfirmBarHost"
-                          Grid.Row="9" />
-
-          <ContentControl x:Name="ComposerHost"
-                          Grid.Row="10" />
-
-          <ScrollViewer Grid.Row="11"
-                        MaxHeight="160"
-                        Focusable="False"
-                        IsTabStop="False"
-                        HorizontalScrollBarVisibility="Disabled">
-            <ContentControl x:Name="SideChatHost"
-                            IsVisible="False" />
-          </ScrollViewer>
+          <Border x:Name="TopBarInsetRight"
+                  Grid.Column="5"
+                  Width="8" />
 
         </Grid>
       </Border>
 
-      <!-- The Kanban tab. It covers both columns while it is selected, and the rail and the thread are hidden then, so neither is a tab stop. -->
-      <ContentControl x:Name="KanbanHost"
-                      Grid.Column="0"
-                      Grid.ColumnSpan="2"
-                      IsVisible="False"
-                      HorizontalContentAlignment="Stretch"
-                      VerticalContentAlignment="Stretch" />
+      <Grid x:Name="RegionGrid" ColumnDefinitions="Auto,*">
 
-    </Grid>
+        <Border x:Name="RailRegion"
+                Grid.Column="0"
+                Classes="rail"
+                Background="{DynamicResource OmpOS.Color.SurfaceSunken}"
+                BorderBrush="{DynamicResource OmpOS.Color.Border}"
+                BorderThickness="0,0,1,0"
+                Padding="8,8,8,0"
+                AutomationProperties.Name="Agents rail">
+          <DockPanel>
 
-  </DockPanel>
+            <!-- The two views of the rail as one segmented pair: two equal halves in a track. -->
+            <Border DockPanel.Dock="Top"
+                    Classes="segment-track"
+                    Margin="0,0,0,8">
+              <Grid ColumnDefinitions="*,*"
+                    ColumnSpacing="{DynamicResource OmpOS.Gap.Xxs}">
+                <ToggleButton x:Name="SessionsViewToggle"
+                              Grid.Column="0"
+                              Classes="segment"
+                              Content="Sessions"
+                              IsChecked="True"
+                              AutomationProperties.Name="Sessions view" />
+                <ToggleButton x:Name="ToolsViewToggle"
+                              Grid.Column="1"
+                              Classes="segment"
+                              Content="Tools"
+                              AutomationProperties.Name="Tools view" />
+              </Grid>
+            </Border>
+
+            <Grid RowDefinitions="*,Auto">
+              <ContentControl x:Name="RailHost" />
+
+              <!-- The Tools view of the rail: every toggle that opens a tool or a panel. It stands in for the session list while Tools is checked. -->
+              <ScrollViewer x:Name="ToolsViewScroll"
+                            IsVisible="False"
+                            Focusable="False"
+                            IsTabStop="False"
+                            HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="ToolsViewHost">
+                  <TextBlock Classes="tool-group"
+                             Text="Panels" />
+                  <ToggleButton x:Name="AgentsToggle"
+                                Classes="nav"
+                                Content="Agents window"
+                                AutomationProperties.Name="Agents" />
+                  <ToggleButton x:Name="SideChatsToggle"
+                                Classes="nav"
+                                Content="Side chats"
+                                AutomationProperties.Name="Show side chats" />
+                  <ToggleButton x:Name="SuggestionsToggle"
+                                Classes="nav"
+                                Content="Inline suggestions"
+                                AutomationProperties.Name="Inline suggestions" />
+
+                  <TextBlock Classes="tool-group"
+                             Text="Workspace" />
+                  <ToggleButton x:Name="EditorToggle"
+                                Classes="nav"
+                                Content="Editor"
+                                AutomationProperties.Name="Editor" />
+                  <ToggleButton x:Name="ExplorerToggle"
+                                Classes="nav"
+                                Content="Explorer"
+                                AutomationProperties.Name="Explorer" />
+                  <ToggleButton x:Name="TerminalToggle"
+                                Classes="nav"
+                                Content="Terminal"
+                                AutomationProperties.Name="Terminal" />
+                  <ToggleButton x:Name="DiffToggle"
+                                Classes="nav"
+                                Content="Diff review"
+                                AutomationProperties.Name="Diff review" />
+                  <ToggleButton x:Name="InlineEditToggle"
+                                Classes="nav"
+                                Content="Inline edit"
+                                AutomationProperties.Name="Inline edit" />
+                  <ToggleButton x:Name="ConventionsToggle"
+                                Classes="nav"
+                                Content="Conventions"
+                                AutomationProperties.Name="Workspace conventions" />
+                  <ToggleButton x:Name="WorkspaceSearchToggle"
+                                Classes="nav"
+                                Content="Workspace search"
+                                AutomationProperties.Name="Workspace search" />
+
+                  <TextBlock Classes="tool-group"
+                             Text="Session" />
+                  <ToggleButton x:Name="McpToggle"
+                                Classes="nav"
+                                Content="MCP tools"
+                                AutomationProperties.Name="MCP tools" />
+                  <ToggleButton x:Name="ExportToggle"
+                                Classes="nav"
+                                Content="Export"
+                                AutomationProperties.Name="Transcript export" />
+                </StackPanel>
+              </ScrollViewer>
+
+              <!-- The rail footer: a 40 px row under a hairline with the Settings gear on the right. It opens the Settings window and is the
+                   last stop of the rail, after the session list or the tool toggles. Ctrl+, does the same from anywhere. -->
+              <Border x:Name="RailFooter"
+                      Grid.Row="1"
+                      Margin="-8,0"
+                      Padding="8,0"
+                      MinHeight="{DynamicResource OmpOS.Size.TitleBarHeight}"
+                      BorderBrush="{DynamicResource OmpOS.Color.Border}"
+                      BorderThickness="0,1,0,0">
+                <Button x:Name="SettingsButton"
+                        Classes="icon ghost"
+                        MinWidth="{DynamicResource OmpOS.Size.IconButtonSm}"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        ToolTip.Tip="{x:Static local:MainView.SettingsTooltip}"
+                        AutomationProperties.Name="{x:Static set:SettingsCopy.WindowTitle}">
+                  <Path Data="M8 4.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8ZM8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1"
+                        Width="{DynamicResource OmpOS.Size.IconSize}"
+                        Height="{DynamicResource OmpOS.Size.IconSize}"
+                        Stretch="Uniform"
+                        StrokeLineCap="Round"
+                        StrokeJoin="Round"
+                        AutomationProperties.AccessibilityView="Raw" />
+                </Button>
+              </Border>
+            </Grid>
+
+          </DockPanel>
+        </Border>
+
+        <Border x:Name="ThreadRegion"
+                Grid.Column="1"
+                MinWidth="{DynamicResource OmpOS.Size.ThreadMinWidth}"
+                Background="{DynamicResource OmpOS.Color.Surface}"
+                AutomationProperties.Name="Agent thread">
+          <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
+
+            <!-- The thread header. Its own close and resume controls come first, then the plugin connection row (the pipeline strip). -->
+            <ContentControl x:Name="ThreadHeaderHost"
+                            Grid.Row="0" />
+
+            <ContentControl x:Name="PipelineHost"
+                            Grid.Row="1" />
+
+            <!-- The panel state: the empty, loading and error blocks of the whole panel. The view hides itself while the panel is ready. -->
+            <ContentControl x:Name="PanelStateHost"
+                            Grid.Row="2"
+                            Grid.RowSpan="10" />
+
+            <!-- The closed-agent notice. A lost agent shows its notice in the thread header. -->
+            <Border x:Name="ClosedNotice"
+                    Grid.Row="3"
+                    Classes="banner"
+                    Margin="16,8"
+                    Padding="0"
+                    ClipToBounds="True"
+                    IsVisible="False"
+                    AutomationProperties.Name="Agent closed notice">
+              <Grid ColumnDefinitions="Auto,*">
+                <Border Classes="banner-bar bar-secondary" />
+                <StackPanel Grid.Column="1"
+                            Margin="10,8"
+                            Spacing="{DynamicResource OmpOS.Gap.Xxs}">
+                  <TextBlock x:Name="ClosedHeading"
+                             FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                             TextWrapping="Wrap" />
+                  <TextBlock x:Name="ClosedBody"
+                             Classes="muted"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Border>
+
+            <!-- The header of an open tool: its name and the control that closes it and returns focus to the toggle that opened it. -->
+            <Border x:Name="ToolHeader"
+                    Grid.Row="4"
+                    MinHeight="36"
+                    Background="{DynamicResource OmpOS.Color.SurfaceSunken}"
+                    BorderBrush="{DynamicResource OmpOS.Color.Border}"
+                    BorderThickness="0,0,0,1"
+                    Padding="16,0"
+                    IsVisible="False"
+                    AutomationProperties.Name="Tool header">
+              <DockPanel>
+                <Button x:Name="CloseToolButton"
+                        DockPanel.Dock="Right"
+                        Classes="ghost sm"
+                        Content="Close tool"
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="Close tool"
+                        Click="OnCloseToolClick" />
+                <TextBlock x:Name="ToolTitle"
+                           VerticalAlignment="Center"
+                           FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}" />
+              </DockPanel>
+            </Border>
+
+            <Grid Grid.Row="5">
+              <DockPanel x:Name="TranscriptRegion">
+
+                <Border x:Name="ErrorFrame"
+                        DockPanel.Dock="Top"
+                        Classes="banner"
+                        Margin="16,8"
+                        Padding="0"
+                        ClipToBounds="True"
+                        Background="{DynamicResource OmpOS.Color.DiffRemoved}"
+                        IsVisible="{ReflectionBinding #ErrorBanner.IsVisible}">
+                  <Grid ColumnDefinitions="Auto,Auto,*">
+                    <Border Classes="banner-bar bar-error" />
+                    <panel:StageIcon Grid.Column="1"
+                                     IconKey="{x:Static copy:StatusIcon.Cross}"
+                                     Width="{DynamicResource OmpOS.Size.IconSizeSm}"
+                                     Height="{DynamicResource OmpOS.Size.IconSizeSm}"
+                                     VerticalAlignment="Top"
+                                     Margin="10,10,0,0" />
+                    <!-- An engine failure that ends a turn. It is an alert: assistive technology announces it at once, and the next send clears it. -->
+                    <TextBlock x:Name="ErrorBanner"
+                               Grid.Column="2"
+                               Margin="8,8,10,8"
+                               TextWrapping="Wrap"
+                               IsVisible="False"
+                               AutomationProperties.Name="Engine error"
+                               AutomationProperties.LiveSetting="Assertive" />
+                  </Grid>
+                </Border>
+
+                <ContentControl x:Name="TranscriptHost"
+                                HorizontalContentAlignment="Stretch"
+                                VerticalContentAlignment="Stretch" />
+              </DockPanel>
+              <ContentControl x:Name="AgentsHost"
+                              IsVisible="False" />
+              <ContentControl x:Name="ToolHost"
+                              IsVisible="False" />
+            </Grid>
+
+            <ContentControl x:Name="SearchHost"
+                            Grid.Row="6"
+                            IsVisible="False" />
+
+            <TextBlock x:Name="StatusLine"
+                       Grid.Row="7"
+                       Classes="muted small"
+                       Padding="16,4"
+                       TextWrapping="Wrap"
+                       IsVisible="False"
+                       AutomationProperties.Name="Session status"
+                       AutomationProperties.LiveSetting="Polite" />
+
+            <ContentControl x:Name="RunControlsHost"
+                            Grid.Row="8" />
+
+            <ContentControl x:Name="ConfirmBarHost"
+                            Grid.Row="9" />
+
+            <ContentControl x:Name="ComposerHost"
+                            Grid.Row="10" />
+
+            <ScrollViewer Grid.Row="11"
+                          MaxHeight="160"
+                          Focusable="False"
+                          IsTabStop="False"
+                          HorizontalScrollBarVisibility="Disabled">
+              <ContentControl x:Name="SideChatHost"
+                              IsVisible="False" />
+            </ScrollViewer>
+
+          </Grid>
+        </Border>
+
+        <!-- The Kanban tab. It covers both columns while it is selected, and the rail and the thread are hidden then, so neither is a tab stop. -->
+        <ContentControl x:Name="KanbanHost"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        IsVisible="False"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch" />
+
+      </Grid>
+
+    </DockPanel>
+
+  </Panel>
 
 </UserControl>

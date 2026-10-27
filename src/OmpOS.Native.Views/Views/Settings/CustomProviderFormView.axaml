@@ -32,10 +32,11 @@
     <TextBlock Classes="settings-label"
                Text="{x:Static models:ModelsCopy.FieldDisplayName}" />
     <TextBox x:Name="DisplayNameBox"
+             Classes.invalid="{CompiledBinding DisplayNameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
              Text="{CompiledBinding DisplayName, Mode=TwoWay}"
              AutomationProperties.Name="{x:Static models:ModelsCopy.FieldDisplayName}" />
     <TextBlock x:Name="DisplayNameError"
-               Classes="tone-error settings-body"
+               Classes="tone-error small"
                IsVisible="{CompiledBinding DisplayNameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                Text="{CompiledBinding DisplayNameError}" />
 
@@ -43,11 +44,12 @@
                Text="{x:Static models:ModelsCopy.FieldId}" />
     <TextBox x:Name="IdBox"
              Classes="settings-mono"
+             Classes.invalid="{CompiledBinding IdError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
              Text="{CompiledBinding Id, Mode=TwoWay}"
              IsEnabled="{CompiledBinding !IsEditing}"
              AutomationProperties.Name="{x:Static models:ModelsCopy.FieldId}" />
     <TextBlock x:Name="IdError"
-               Classes="tone-error settings-body"
+               Classes="tone-error small"
                IsVisible="{CompiledBinding IdError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                Text="{CompiledBinding IdError}" />
 
@@ -61,13 +63,14 @@
                Text="{x:Static models:ModelsCopy.FieldEndpoint}" />
     <TextBox x:Name="EndpointBox"
              Classes="settings-mono"
+             Classes.invalid="{CompiledBinding EndpointError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
              Text="{CompiledBinding EndpointText, Mode=TwoWay}"
              AutomationProperties.Name="{x:Static models:ModelsCopy.FieldEndpoint}" />
     <TextBlock x:Name="EndpointHint"
                Classes="settings-help"
                Text="{CompiledBinding EndpointHint}" />
     <TextBlock x:Name="EndpointError"
-               Classes="tone-error settings-body"
+               Classes="tone-error small"
                IsVisible="{CompiledBinding EndpointError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                Text="{CompiledBinding EndpointError}" />
 
@@ -81,13 +84,14 @@
                Text="{x:Static models:ModelsCopy.FieldModels}" />
     <TextBox x:Name="ModelsBox"
              Classes="settings-mono"
+             Classes.invalid="{CompiledBinding ModelsError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
              Text="{CompiledBinding ModelsText, Mode=TwoWay}"
              AcceptsReturn="True"
              TextWrapping="NoWrap"
              MinHeight="96"
              AutomationProperties.Name="{x:Static models:ModelsCopy.FieldModels}" />
     <TextBlock x:Name="ModelsError"
-               Classes="tone-error settings-body"
+               Classes="tone-error small"
                IsVisible="{CompiledBinding ModelsError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                Text="{CompiledBinding ModelsError}" />
 

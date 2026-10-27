@@ -17,17 +17,18 @@
   <Application.Styles>
     <FluentTheme DensityStyle="Compact" />
 
-    <Style Selector="TextBlock">
-      <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextPrimary}" />
+    <!-- No Foreground here: a text block takes its colour from its parent (the window's TextPrimary, or the button's own state colour for
+         the text a button presents), instead of a style that would win over the button's colour. -->
+    <Style Selector=":is(TextBlock)">
       <Setter Property="FontFamily" Value="{DynamicResource OmpOS.Font.Family}" />
       <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Label}" />
     </Style>
 
-    <Style Selector="TextBlock.muted">
+    <Style Selector=":is(TextBlock).muted">
       <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.TextSecondary}" />
     </Style>
 
-    <Style Selector="TextBlock.error">
+    <Style Selector=":is(TextBlock).error">
       <Setter Property="Foreground" Value="{DynamicResource OmpOS.Color.StatusError}" />
     </Style>
 

@@ -57,7 +57,45 @@
     </Style.Animations>
   </Style>
 
-  <!-- The chip shape, the buttons (primary, destructive, chip-button, strip), the focus rule and the reduced-motion overrides live in
+  <!-- The banner (notice, error, closed): a 3 px bar in the tone colour on the left of a Border.banner. The bar and the content sit in a
+       Grid inside the banner, which clips to its rounded corners. Colour is never the only signal: a glyph or the words carry the meaning. -->
+  <Style Selector="Border.banner-bar">
+    <Setter Property="Width" Value="3" />
+  </Style>
+  <Style Selector="Border.bar-warning">
+    <Setter Property="Background" Value="{DynamicResource OmpOS.Color.StatusWarning}" />
+  </Style>
+  <Style Selector="Border.bar-error">
+    <Setter Property="Background" Value="{DynamicResource OmpOS.Color.StatusError}" />
+  </Style>
+  <Style Selector="Border.bar-secondary">
+    <Setter Property="Background" Value="{DynamicResource OmpOS.Color.TextSecondary}" />
+  </Style>
+
+  <!-- The pipeline strip button as one compact line (spec 4.5): no fill at rest, 24 px high, 6 px of padding inside its transparent 2 px
+       border, hover Hover. It is declared here, after the library, so it wins over the library's taller strip. -->
+  <Style Selector="Button.strip">
+    <Setter Property="MinHeight" Value="{DynamicResource OmpOS.Size.IconButtonSm}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Padding" Value="4,0" />
+    <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource OmpOS.Brush.Transparent}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Brush.Transparent}" />
+    </Style>
+    <Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource OmpOS.Color.Hover}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Brush.Transparent}" />
+    </Style>
+    <Style Selector="^:focus-visible">
+      <Setter Property="Padding" Value="4,0" />
+    </Style>
+    <Style Selector="^:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
+    </Style>
+  </Style>
+
+  <!-- The chip shape, the buttons (primary, destructive, chip-button), the focus rule and the reduced-motion overrides live in
        Themes/OmpOSControls.axaml, which the application includes once. -->
 
 </Styles>

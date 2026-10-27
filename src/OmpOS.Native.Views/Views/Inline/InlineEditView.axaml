@@ -11,17 +11,20 @@
                AutomationProperties.Name="Edit instruction" />
 
     <TextBlock x:Name="SelectionText"
-               FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+               FontFamily="{DynamicResource OmpOS.Font.Mono}"
+               FontSize="{DynamicResource OmpOS.Font.Size.Mono}"
                TextWrapping="Wrap"
                AutomationProperties.Name="Selected text" />
 
     <TextBox x:Name="ProposalInput"
+             Classes="mono"
              AcceptsReturn="True"
              TextWrapping="Wrap"
              MinHeight="60"
              AutomationProperties.Name="Proposed replacement" />
 
     <Button x:Name="ProposeButton"
+            Classes="primary sm"
             Content="Propose"
             HorizontalAlignment="Left"
             AutomationProperties.Name="Propose replacement" />
@@ -30,11 +33,17 @@
                 IsVisible="False"
                 Spacing="{DynamicResource OmpOS.Gap.Xs}">
       <TextBlock x:Name="RemovedText"
-                 FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                 Background="{DynamicResource OmpOS.Color.DiffRemoved}"
+                 Padding="8,4"
+                 FontFamily="{DynamicResource OmpOS.Font.Mono}"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Mono}"
                  TextWrapping="Wrap"
                  AutomationProperties.Name="Removed text" />
       <TextBlock x:Name="AddedText"
-                 FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                 Background="{DynamicResource OmpOS.Color.DiffAdded}"
+                 Padding="8,4"
+                 FontFamily="{DynamicResource OmpOS.Font.Mono}"
+                 FontSize="{DynamicResource OmpOS.Font.Size.Mono}"
                  TextWrapping="Wrap"
                  AutomationProperties.Name="Added text" />
     </StackPanel>
@@ -42,14 +51,17 @@
     <StackPanel Orientation="Horizontal"
                 Spacing="{DynamicResource OmpOS.Gap.Sm}">
       <Button x:Name="AcceptButton"
+              Classes="primary sm"
               Content="Accept"
               IsEnabled="False"
               AutomationProperties.Name="Accept edit" />
       <Button x:Name="RejectButton"
+              Classes="sm"
               Content="Reject"
               IsEnabled="False"
               AutomationProperties.Name="Reject edit" />
       <Button x:Name="UndoButton"
+              Classes="ghost sm"
               Content="Undo"
               IsEnabled="False"
               AutomationProperties.Name="Undo edit" />

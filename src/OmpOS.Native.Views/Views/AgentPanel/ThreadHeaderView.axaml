@@ -10,47 +10,57 @@
   </UserControl.Styles>
 
   <!-- Keyboard order follows XAML order: Resume or Reopen, the task chip, Close, the trailing slot (left empty by the shell), then the
-       buttons of the panel notice. The chips that are not buttons are not tab stops. -->
+       buttons of the panel notice. The chips that are not buttons are not tab stops. The header is 40 px high: the title, the status
+       chip, then (right-aligned) the steering badge and Close. Resume, Reopen, the task chip and the graph chip wrap onto a second line
+       of 28 px only while one of them shows. -->
   <Border x:Name="HeaderFrame"
-          Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
-          Padding="{DynamicResource OmpOS.Space.Sm}"
+          MinHeight="{DynamicResource OmpOS.Size.TitleBarHeight}"
+          Background="{DynamicResource OmpOS.Color.Surface}"
+          BorderBrush="{DynamicResource OmpOS.Color.Border}"
+          BorderThickness="0,0,0,1"
+          Padding="16,6"
           AutomationProperties.Name="{x:Static local:AgentPanelViewText.HeaderName}">
 
     <Grid RowDefinitions="Auto,Auto,Auto"
-          ColumnDefinitions="*,Auto,Auto"
-          RowSpacing="{DynamicResource OmpOS.Gap.Xs}"
-          ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
+          ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto"
+          ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}"
+          VerticalAlignment="Center">
 
       <TextBlock x:Name="TitleText"
                  Grid.Row="0"
                  Grid.Column="0"
+                 MaxWidth="320"
                  Text="{CompiledBinding Title}"
                  VerticalAlignment="Center"
-                 FontSize="{DynamicResource OmpOS.Font.Size.Heading}"
                  FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
                  TextTrimming="CharacterEllipsis"
                  MaxLines="1"
                  AutomationProperties.Name="{x:Static local:AgentPanelViewText.TitleName}" />
 
-      <WrapPanel Grid.Row="1"
+      <local:StatusChip x:Name="StatusChipView"
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        VerticalAlignment="Center" />
+
+      <WrapPanel x:Name="ActionsRow"
+                 Grid.Row="1"
                  Grid.Column="0"
-                 Grid.ColumnSpan="3"
+                 Grid.ColumnSpan="6"
+                 Margin="0,4,0,0"
                  Orientation="Horizontal"
+                 IsVisible="False"
                  ItemSpacing="{DynamicResource OmpOS.Gap.Sm}"
                  LineSpacing="{DynamicResource OmpOS.Gap.Xs}">
 
-        <local:StatusChip x:Name="StatusChipView"
-                          VerticalAlignment="Center" />
-
         <Button x:Name="ResumeButton"
-                Classes="primary"
+                Classes="primary sm"
                 Content="{x:Static copy:AgentPanelCopy.ResumeAgent}"
                 Command="{CompiledBinding ResumeCommand}"
                 IsVisible="False"
                 AutomationProperties.Name="{x:Static copy:AgentPanelCopy.ResumeAgent}" />
 
         <Button x:Name="ReopenButton"
-                Classes="primary"
+                Classes="primary sm"
                 Content="{x:Static copy:AgentPanelCopy.ReopenAgent}"
                 Command="{CompiledBinding ReopenCommand}"
                 IsVisible="False"
@@ -58,12 +68,13 @@
 
         <Button x:Name="TaskChipButton"
                 Classes="chip-button"
+                MinHeight="{DynamicResource OmpOS.Size.ControlHeightSm}"
                 IsVisible="False">
           <Border Classes="chip">
             <TextBlock x:Name="TaskChipLabel"
                        VerticalAlignment="Center"
-                       FontSize="{DynamicResource OmpOS.Font.Size.Label}"
-                       FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                       FontSize="{DynamicResource OmpOS.Font.Size.Small}"
+                       FontWeight="{DynamicResource OmpOS.Font.Weight.Medium}"
                        TextWrapping="NoWrap" />
           </Border>
         </Button>
@@ -73,44 +84,54 @@
                 VerticalAlignment="Center"
                 IsVisible="False">
           <TextBlock x:Name="GraphChipLabel"
-                     Classes="muted"
+                     Classes="muted mono"
                      VerticalAlignment="Center"
-                     FontFamily="{DynamicResource OmpOS.Font.Mono}"
-                     FontSize="{DynamicResource OmpOS.Font.Size.Label}"
                      TextWrapping="NoWrap" />
-        </Border>
-
-        <Border x:Name="SteeringBadge"
-                Classes="chip"
-                VerticalAlignment="Center">
-          <StackPanel Orientation="Horizontal"
-                      VerticalAlignment="Center"
-                      Spacing="{DynamicResource OmpOS.Gap.Sm}">
-            <local:StageIcon IconKey="{x:Static copy:StatusIcon.Info}"
-                             VerticalAlignment="Center" />
-            <TextBlock x:Name="SteeringBadgeLabel"
-                       Text="{CompiledBinding SteeringBadgeText}"
-                       VerticalAlignment="Center"
-                       FontSize="{DynamicResource OmpOS.Font.Size.Label}"
-                       FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
-                       TextWrapping="NoWrap" />
-          </StackPanel>
         </Border>
 
       </WrapPanel>
 
+      <Border x:Name="SteeringBadge"
+              Grid.Row="0"
+              Grid.Column="3"
+              Classes="chip-flat"
+              VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    Spacing="{DynamicResource OmpOS.Gap.Xs}">
+          <local:StageIcon IconKey="{x:Static copy:StatusIcon.Info}"
+                           Width="{DynamicResource OmpOS.Size.IconSizeSm}"
+                           Height="{DynamicResource OmpOS.Size.IconSizeSm}"
+                           VerticalAlignment="Center" />
+          <TextBlock x:Name="SteeringBadgeLabel"
+                     Classes="small muted"
+                     Text="{CompiledBinding SteeringBadgeText}"
+                     VerticalAlignment="Center"
+                     TextWrapping="NoWrap" />
+        </StackPanel>
+      </Border>
+
+      <!-- Close is an icon button: the visible word is its tooltip, and its accessible name is unchanged. -->
       <Button x:Name="CloseButton"
               Grid.Row="0"
-              Grid.Column="1"
-              Content="{x:Static local:AgentPanelViewText.CloseLabel}"
-              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
-              MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
-              Padding="{DynamicResource OmpOS.Space.Md}"
-              AutomationProperties.Name="{x:Static local:AgentPanelViewText.CloseName}" />
+              Grid.Column="4"
+              Classes="icon ghost"
+              MinWidth="{DynamicResource OmpOS.Size.IconButtonSm}"
+              VerticalAlignment="Center"
+              ToolTip.Tip="{x:Static local:AgentPanelViewText.CloseLabel}"
+              AutomationProperties.Name="{x:Static local:AgentPanelViewText.CloseName}">
+        <Path Data="M4 4l8 8M12 4l-8 8"
+              Width="{DynamicResource OmpOS.Size.IconSizeSm}"
+              Height="{DynamicResource OmpOS.Size.IconSizeSm}"
+              Stretch="Uniform"
+              StrokeLineCap="Round"
+              StrokeJoin="Round"
+              AutomationProperties.AccessibilityView="Raw" />
+      </Button>
 
       <ContentControl x:Name="TrailingHost"
                       Grid.Row="0"
-                      Grid.Column="2"
+                      Grid.Column="5"
                       VerticalAlignment="Center"
                       IsTabStop="False"
                       Focusable="False" />
@@ -118,7 +139,7 @@
       <local:PanelNoticeView x:Name="PanelNoticeHost"
                              Grid.Row="2"
                              Grid.Column="0"
-                             Grid.ColumnSpan="3" />
+                             Grid.ColumnSpan="6" />
 
     </Grid>
 

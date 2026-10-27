@@ -65,6 +65,9 @@ internal static class KanbanCopy
     /// <summary>The tooltip of the steer button.</summary>
     public const string SteerTip = "Steer this session (S)";
 
+    /// <summary>The reason written under a disabled Steer button: the session has no steering service, so it cannot be steered.</summary>
+    public const string SteerUnavailable = "This session cannot be steered.";
+
     /// <summary>The label of the button that delivers the message into the running turn.</summary>
     public const string SendNow = "Send now";
 

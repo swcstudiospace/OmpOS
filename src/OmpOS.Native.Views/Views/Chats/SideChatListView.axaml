@@ -7,6 +7,7 @@
               Spacing="{DynamicResource OmpOS.Gap.Xs}">
 
     <Button x:Name="OpenSideChatButton"
+            Classes="sm"
             Content="Open side chat"
             AutomationProperties.Name="Open side chat"
             HorizontalAlignment="Left" />

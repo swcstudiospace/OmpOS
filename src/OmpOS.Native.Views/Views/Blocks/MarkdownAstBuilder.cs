@@ -21,6 +21,12 @@ namespace OmpOS.Native.Views.Blocks;
 /// </summary>
 internal static class MarkdownAstBuilder
 {
+    /// <summary>The style class of a block quote, which the markdown view mutes.</summary>
+    internal const string QuoteClass = "md-quote";
+
+    private const double HeadingOneSize = 18;
+    private const double HeadingOneLine = 24;
+
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
         .DisableHtml()
         .UseAdvancedExtensions()
@@ -49,7 +55,7 @@ internal static class MarkdownAstBuilder
 
     private static Control? BlockControl(Block block) => block switch
     {
-        HeadingBlock heading => BlockControls.AsHeading(Paragraph(heading.Inline)),
+        HeadingBlock heading => Heading(heading),
         ParagraphBlock paragraph => Paragraph(paragraph.Inline),
         FencedCodeBlock fenced => CodeControl(fenced.Lines.ToString()),
         CodeBlock code => CodeControl(code.Lines.ToString()),
@@ -81,35 +87,55 @@ internal static class MarkdownAstBuilder
     private static TextBlock Paragraph(ContainerInline? inlines)
     {
         var text = new TextBlock { TextWrapping = TextWrapping.Wrap };
+        BlockControls.AsBody(text);
         AppendInlines(BlockControls.InlinesOf(text), inlines);
         return text;
     }
 
+    /// <summary>A heading inside prose: H1 18/24, H2 16/22, H3 and deeper 14/21, all semibold, in the prose face.</summary>
+    private static TextBlock Heading(HeadingBlock heading)
+    {
+        var text = Paragraph(heading.Inline);
+        (text.FontSize, text.LineHeight) = heading.Level switch
+        {
+            1 => (HeadingOneSize, HeadingOneLine),
+            2 => (BlockTokens.Get<double>("OmpOS.Font.Size.Heading"), BlockTokens.Get<double>("OmpOS.Font.LineHeight.Heading")),
+            _ => (text.FontSize, text.LineHeight),
+        };
+        text.FontWeight = BlockTokens.Get<FontWeight>("OmpOS.Font.Weight.Semibold");
+        return text;
+    }
+
+    /// <summary>A code block of prose: the sunken card of the code-block view, scrolling sideways instead of wrapping.</summary>
     private static Border CodeControl(string code)
     {
+        var body = new TextBlock { Text = code.TrimEnd('\n'), TextWrapping = TextWrapping.NoWrap };
+        BlockControls.AsMono(body);
         var border = new Border
         {
-            Padding = BlockTokens.Get<Thickness>("OmpOS.Space.Sm"),
-            Child = new TextBlock
+            Padding = new Thickness(12, 8),
+            Child = new ScrollViewer
             {
-                Text = code.TrimEnd('\n'),
-                FontFamily = BlockTokens.Monospace,
-                TextWrapping = TextWrapping.Wrap,
+                HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+                Content = body,
             },
         };
-        BlockTokens.Bind(border, Border.BackgroundProperty, "OmpOS.Color.SurfaceRaised");
+        border.Classes.Add("card-sunken");
         return border;
     }
 
+    /// <summary>A block quote: a 2 px bar in the strong border colour; its text is muted by the markdown view's style.</summary>
     private static Border QuoteControl(QuoteBlock quote)
     {
         var border = new Border
         {
             BorderThickness = new Thickness(2, 0, 0, 0),
-            Padding = BlockTokens.Get<Thickness>("OmpOS.Space.Sm"),
+            Padding = new Thickness(12, 0, 0, 0),
             Child = Stack(quote),
         };
-        BlockTokens.Bind(border, Border.BorderBrushProperty, "OmpOS.Color.TextSecondary");
+        border.Classes.Add(QuoteClass);
+        BlockTokens.Bind(border, Border.BorderBrushProperty, "OmpOS.Color.BorderStrong");
         return border;
     }
 
@@ -127,15 +153,14 @@ internal static class MarkdownAstBuilder
         return panel;
     }
 
-    private static Grid TableControl(Table table)
+    /// <summary>A table: 1 px rules in the border colour, a sunken header row, cells padded 8 by 4, all inside one rounded outline.</summary>
+    private static Border TableControl(Table table)
     {
         var rows = table.OfType<TableRow>().ToList();
         var columns = Math.Max(1, rows.Count == 0 ? 0 : rows.Max(static row => row.OfType<TableCell>().Count()));
         var grid = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions(string.Join(',', Enumerable.Repeat("*", columns))),
-            ColumnSpacing = BlockTokens.Get<double>("OmpOS.Gap.Sm"),
-            RowSpacing = BlockTokens.Get<double>("OmpOS.Gap.Xs"),
         };
 
         for (var rowIndex = 0; rowIndex < rows.Count; rowIndex++)
@@ -145,19 +170,36 @@ internal static class MarkdownAstBuilder
             for (var column = 0; column < cells.Count; column++)
             {
                 var text = new TextBlock { TextWrapping = TextWrapping.Wrap };
+                BlockControls.AsBody(text);
                 AppendCellInlines(BlockControls.InlinesOf(text), cells[column]);
+                var cell = new Border
+                {
+                    Padding = new Thickness(8, 4),
+                    BorderThickness = new Thickness(0, 0, column < columns - 1 ? 1 : 0, rowIndex < rows.Count - 1 ? 1 : 0),
+                    Child = text,
+                };
+                BlockTokens.Bind(cell, Border.BorderBrushProperty, "OmpOS.Color.Border");
                 if (rows[rowIndex].IsHeader)
                 {
                     text.FontWeight = BlockTokens.Get<FontWeight>("OmpOS.Font.Weight.Semibold");
+                    BlockTokens.Bind(cell, Border.BackgroundProperty, "OmpOS.Color.SurfaceSunken");
                 }
 
-                Grid.SetRow(text, rowIndex);
-                Grid.SetColumn(text, column);
-                grid.Children.Add(text);
+                Grid.SetRow(cell, rowIndex);
+                Grid.SetColumn(cell, column);
+                grid.Children.Add(cell);
             }
         }
 
-        return grid;
+        var outline = new Border
+        {
+            BorderThickness = new Thickness(1),
+            CornerRadius = BlockTokens.Get<CornerRadius>("OmpOS.Radius.Md"),
+            ClipToBounds = true,
+            Child = grid,
+        };
+        BlockTokens.Bind(outline, Border.BorderBrushProperty, "OmpOS.Color.Border");
+        return outline;
     }
 
     private static Border RuleControl()
@@ -165,10 +207,22 @@ internal static class MarkdownAstBuilder
         var rule = new Border
         {
             Height = 1,
-            Margin = BlockTokens.Get<Thickness>("OmpOS.Space.Sm"),
+            Margin = new Thickness(0, 8),
         };
-        BlockTokens.Bind(rule, Border.BackgroundProperty, "OmpOS.Color.SurfaceActive");
+        BlockTokens.Bind(rule, Border.BackgroundProperty, "OmpOS.Color.Border");
         return rule;
+    }
+
+    /// <summary>Inline code: the mono face at the Mono size on the selected-fill role, which is the chip a run can draw.</summary>
+    private static Run InlineCode(string content)
+    {
+        var run = new Run(content)
+        {
+            FontFamily = BlockTokens.Monospace,
+            FontSize = BlockTokens.Get<double>("OmpOS.Font.Size.Mono"),
+        };
+        BlockTokens.Bind(run, TextElement.BackgroundProperty, "OmpOS.Color.Selected");
+        return run;
     }
 
     private static void AppendCellInlines(InlineCollection target, TableCell cell)
@@ -208,7 +262,7 @@ internal static class MarkdownAstBuilder
                 target.Add(EmphasisSpan(emphasis));
                 break;
             case CodeInline code:
-                target.Add(new Run(code.Content) { FontFamily = BlockTokens.Monospace });
+                target.Add(InlineCode(code.Content));
                 break;
             case LineBreakInline lineBreak:
                 if (lineBreak.IsHard)
@@ -286,6 +340,7 @@ internal static class MarkdownAstBuilder
         }
 
         label.TextDecorations = BlockControls.Underline();
+        BlockTokens.Bind(label, TextElement.ForegroundProperty, "OmpOS.Color.AccentPurple");
         target.Add(label);
 
         // An autolink already shows its URL as its text, and so does a link whose text is its own URL.

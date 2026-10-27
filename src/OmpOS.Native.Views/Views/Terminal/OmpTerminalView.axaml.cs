@@ -1,12 +1,11 @@
 using System.ComponentModel;
-using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
-using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using OmpOS.Presentation.AgentPanel;
 
 namespace OmpOS.Native.Views.Terminal;
 
@@ -230,12 +229,24 @@ internal partial class OmpTerminalView : UserControl
         var model = _model;
         var unavailable = model is { State: OmpTerminalState.Unavailable };
         StatusText.Text = model?.StatusText ?? string.Empty;
+        StateIcon.IconKey = GlyphOf(model);
         FixText.Text = model?.FixText ?? string.Empty;
         UnavailablePanel.IsVisible = unavailable;
         Output.IsVisible = !unavailable;
         RestartButton.IsVisible = model is { CanRestart: true };
         CloseButton.IsEnabled = model is not null;
     }
+
+    /// <summary>Chooses the glyph of the status bar for the state of omp. The status words next to it say the same thing.</summary>
+    private static string GlyphOf(OmpTerminalViewModel? model) => model?.State switch
+    {
+        OmpTerminalState.Starting => StatusIcon.Running,
+        OmpTerminalState.Running => StatusIcon.Check,
+        OmpTerminalState.Exited when model.ExitCode is null or 0 => StatusIcon.Closed,
+        OmpTerminalState.Exited => StatusIcon.Cross,
+        OmpTerminalState.Unavailable => StatusIcon.Alert,
+        _ => StatusIcon.Ring,
+    };
 
     // The terminal control is not styled by the variant: its cursor colour and ANSI palette are values, so they are read again whenever
     // the variant changes (a saved Theme setting or an operating-system switch under System).
@@ -247,40 +258,5 @@ internal partial class OmpTerminalView : UserControl
         }
     }
 
-    private void ApplyTheme()
-    {
-        ApplyCursorColour();
-        ApplyPalette();
-    }
-
-    /// <summary>Gives the cursor the theme's text colour, because the control's own default is white, which a light theme hides.</summary>
-    private void ApplyCursorColour()
-    {
-        if (this.TryFindResource("OmpOS.Color.TextPrimary", ActualThemeVariant, out var resource) && resource is ISolidColorBrush brush)
-        {
-            Output.CursorColor = brush.Color;
-        }
-    }
-
-    private string? HexOf(string key) =>
-        this.TryFindResource(key, ActualThemeVariant, out var resource) && resource is ISolidColorBrush brush
-            ? string.Create(CultureInfo.InvariantCulture, $"#{brush.Color.R:x2}{brush.Color.G:x2}{brush.Color.B:x2}")
-            : null;
-
-    /// <summary>Gives the emulator the sixteen ANSI colours of the variant, so omp's coloured output keeps its contrast in both themes.</summary>
-    private void ApplyPalette()
-    {
-        var terminal = Output.Terminal;
-        var theme = TerminalPalette.For(ActualThemeVariant);
-
-        // ApplyTheme resets a colour the theme leaves unset to the emulator's own default (black on white), so the text, background and
-        // cursor of the variant are always part of the theme.
-        theme.Foreground = HexOf("OmpOS.Color.TextPrimary");
-        theme.Background = HexOf("OmpOS.Color.SurfaceSunken");
-        theme.Cursor = HexOf("OmpOS.Color.TextPrimary");
-        theme.CursorAccent = HexOf("OmpOS.Color.SurfaceSunken");
-        terminal.Options.Theme = theme;
-        terminal.Colors.ApplyTheme(theme);
-        Output.Refresh();
-    }
+    private void ApplyTheme() => TerminalPalette.Apply(this, Output);
 }

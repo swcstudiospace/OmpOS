@@ -20,42 +20,74 @@
                   Focusable="False"
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-      <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
-                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
-                  MaxWidth="640"
-                  HorizontalAlignment="Left">
+      <StackPanel Classes="settings-column">
 
         <TextBlock x:Name="Heading"
                    Classes="settings-heading"
                    Text="{x:Static set:SettingsCopy.RuntimeHeading}" />
-        <TextBlock Classes="settings-help"
+        <TextBlock Classes="settings-description"
                    Text="{x:Static set:SettingsCopy.RuntimeDescription}" />
 
-        <TextBlock Classes="settings-label"
-                   Margin="0,8,0,0"
-                   Text="{x:Static set:SettingsCopy.IdleStopLabel}" />
-        <TextBox x:Name="IdleStopBox"
-                 AutomationProperties.Name="{x:Static set:SettingsCopy.IdleStopLabel}"
-                 AutomationProperties.HelpText="{x:Static set:SettingsCopy.IdleStopHelp}" />
-        <TextBlock Classes="settings-help"
-                   Text="{x:Static set:SettingsCopy.IdleStopHelp}" />
-        <TextBlock x:Name="IdleStopError"
-                   Classes="tone-error settings-body"
-                   IsVisible="False"
-                   AutomationProperties.LiveSetting="Assertive" />
+        <!-- Setting rows (spec 4.11): label and help on the left, the entry on the right (monospace numbers), the message under the row. -->
+        <Border Classes="settings-row">
+          <Grid ColumnDefinitions="*,Auto"
+                RowDefinitions="Auto,Auto"
+                ColumnSpacing="16"
+                RowSpacing="{DynamicResource OmpOS.Gap.Xs}">
+            <StackPanel Grid.Column="0"
+                        Spacing="{DynamicResource OmpOS.Gap.Xxs}">
+              <TextBlock Classes="settings-label"
+                         Text="{x:Static set:SettingsCopy.IdleStopLabel}" />
+              <TextBlock Classes="settings-help"
+                         MaxWidth="480"
+                         HorizontalAlignment="Left"
+                         Text="{x:Static set:SettingsCopy.IdleStopHelp}" />
+            </StackPanel>
+            <TextBox x:Name="IdleStopBox"
+                     Grid.Column="1"
+                     Classes="mono"
+                     Width="160"
+                     VerticalAlignment="Center"
+                     AutomationProperties.Name="{x:Static set:SettingsCopy.IdleStopLabel}"
+                     AutomationProperties.HelpText="{x:Static set:SettingsCopy.IdleStopHelp}" />
+            <TextBlock x:Name="IdleStopError"
+                       Grid.Row="1"
+                       Grid.ColumnSpan="2"
+                       Classes="tone-error small"
+                       IsVisible="False"
+                       AutomationProperties.LiveSetting="Assertive" />
+          </Grid>
+        </Border>
 
-        <TextBlock Classes="settings-label"
-                   Margin="0,8,0,0"
-                   Text="{x:Static set:SettingsCopy.RetentionLabel}" />
-        <TextBox x:Name="RetentionBox"
-                 AutomationProperties.Name="{x:Static set:SettingsCopy.RetentionLabel}"
-                 AutomationProperties.HelpText="{x:Static set:SettingsCopy.RetentionHelp}" />
-        <TextBlock Classes="settings-help"
-                   Text="{x:Static set:SettingsCopy.RetentionHelp}" />
-        <TextBlock x:Name="RetentionError"
-                   Classes="tone-error settings-body"
-                   IsVisible="False"
-                   AutomationProperties.LiveSetting="Assertive" />
+        <Border Classes="settings-row">
+          <Grid ColumnDefinitions="*,Auto"
+                RowDefinitions="Auto,Auto"
+                ColumnSpacing="16"
+                RowSpacing="{DynamicResource OmpOS.Gap.Xs}">
+            <StackPanel Grid.Column="0"
+                        Spacing="{DynamicResource OmpOS.Gap.Xxs}">
+              <TextBlock Classes="settings-label"
+                         Text="{x:Static set:SettingsCopy.RetentionLabel}" />
+              <TextBlock Classes="settings-help"
+                         MaxWidth="480"
+                         HorizontalAlignment="Left"
+                         Text="{x:Static set:SettingsCopy.RetentionHelp}" />
+            </StackPanel>
+            <TextBox x:Name="RetentionBox"
+                     Grid.Column="1"
+                     Classes="mono"
+                     Width="160"
+                     VerticalAlignment="Center"
+                     AutomationProperties.Name="{x:Static set:SettingsCopy.RetentionLabel}"
+                     AutomationProperties.HelpText="{x:Static set:SettingsCopy.RetentionHelp}" />
+            <TextBlock x:Name="RetentionError"
+                       Grid.Row="1"
+                       Grid.ColumnSpan="2"
+                       Classes="tone-error small"
+                       IsVisible="False"
+                       AutomationProperties.LiveSetting="Assertive" />
+          </Grid>
+        </Border>
 
       </StackPanel>
     </ScrollViewer>

@@ -24,7 +24,6 @@
 
         <ComboBox x:Name="StatusFilter"
                   MinWidth="160"
-                  MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                   AutomationProperties.Name="Filter runs by status" />
 
       </StackPanel>
@@ -38,12 +37,12 @@
 
     <Border x:Name="RunPanel"
             x:DataType="agents:AgentRun"
+            Classes="card"
             DockPanel.Dock="Bottom"
             IsVisible="False"
             Margin="{DynamicResource OmpOS.Space.Xs}"
             Padding="{DynamicResource OmpOS.Space.Sm}"
-            BorderBrush="{DynamicResource OmpOS.Color.AccentPurple}"
-            BorderThickness="1">
+            BorderBrush="{DynamicResource OmpOS.Color.AccentPurple}">
 
       <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
 
@@ -58,9 +57,9 @@
                    FontSize="{DynamicResource OmpOS.Font.Size.Label}" />
 
         <Button x:Name="CloseRunButton"
+                Classes="sm"
                 Content="Close run"
                 HorizontalAlignment="Left"
-                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                 AutomationProperties.Name="Close run" />
 
         <ScrollViewer MaxHeight="240"
@@ -85,9 +84,10 @@
                     ItemsSource="{CompiledBinding VisibleRuns}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="agents:AgentRun">
-            <Button HorizontalAlignment="Stretch"
+            <Button Classes="ghost"
+                    HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Left"
-                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                    Margin="0,1"
                     AutomationProperties.Name="{CompiledBinding AccessibleLabel}">
               <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
                 <TextBlock Text="{CompiledBinding Title}"

@@ -20,13 +20,12 @@
                   Focusable="False"
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-      <StackPanel Margin="{DynamicResource OmpOS.Space.Lg}"
-                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
-                  MaxWidth="720"
-                  HorizontalAlignment="Left">
+      <StackPanel Classes="settings-column">
 
         <TextBlock Classes="settings-heading"
                    Text="{x:Static set:SettingsCopy.PluginsHeading}" />
+        <TextBlock Classes="settings-description"
+                   Text="{x:Static set:SettingsCopy.PluginsDescription}" />
         <TextBlock x:Name="AlwaysOnNote"
                    Classes="settings-help"
                    Text="{x:Static set:SettingsCopy.PluginsAlwaysOnNote}" />
@@ -40,8 +39,7 @@
                       ItemsSource="{CompiledBinding Rows}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="set:PluginRow">
-              <Border Classes="settings-card"
-                      Margin="0,0,0,8"
+              <Border Classes="settings-row"
                       AutomationProperties.Name="{CompiledBinding ., Converter={x:Static local:SettingsConverters.PluginSummary}}">
                 <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
                   <Grid ColumnDefinitions="*,Auto"

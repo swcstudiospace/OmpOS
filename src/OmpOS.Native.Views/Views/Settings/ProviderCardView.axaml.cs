@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using OmpOS.Native.Views.AgentPanel;
+using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Settings.Models;
 
 namespace OmpOS.Native.Views.Settings;
@@ -153,9 +154,20 @@ internal partial class ProviderCardView : UserControl
         AutomationProperties.SetName(ConfirmRemoveButton, SettingsViewCopy.ForProvider(ModelsCopy.ConfirmRemoveLabel, provider));
         AutomationProperties.SetName(KeepButton, SettingsViewCopy.ForProvider(ModelsCopy.KeepLabel, provider));
 
+        StatusGlyph.IconKey = CredentialIconOf(card.Info.Credential);
         ApplyTestTone(card.TestStatus);
         MoveFocus(card);
     }
+
+    // The glyph of the credential chip: a check when omp holds a key, an alert when it holds none, an i when the source could not tell,
+    // a ring when the provider needs no key.
+    private static string CredentialIconOf(CredentialState credential) => credential switch
+    {
+        CredentialState.Present => StatusIcon.Check,
+        CredentialState.Absent => StatusIcon.Alert,
+        CredentialState.NotRequired => StatusIcon.Ring,
+        _ => StatusIcon.Info,
+    };
 
     private void ApplyTestTone(ProviderTestStatus? status)
     {

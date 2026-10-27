@@ -24,6 +24,8 @@ internal partial class AgentRailView : UserControl
     public AgentRailView()
     {
         InitializeComponent();
+        NewAgentKeys.Text = new KeyGesture(Key.N, KeyModifiers.Control).ToString(null, System.Globalization.CultureInfo.InvariantCulture);
+        NewTerminalKeys.Text = new KeyGesture(Key.T, KeyModifiers.Control | KeyModifiers.Shift).ToString(null, System.Globalization.CultureInfo.InvariantCulture);
         _catalogWatch = new ModelWatcher<SessionCatalogModel>(Refresh);
         _panelWatch = new ModelWatcher<AgentPanelViewModel>(Refresh);
 

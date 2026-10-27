@@ -302,7 +302,7 @@ internal partial class KanbanBoardView : UserControl
         header.Classes.Add("kanban-column-header");
         AutomationProperties.SetAccessibilityView(header, AccessibilityView.Raw);
         var empty = new TextBlock { TextWrapping = Avalonia.Media.TextWrapping.Wrap };
-        empty.Classes.Add("muted");
+        empty.Classes.Add("kanban-empty");
         var cards = new StackPanel();
         var content = new StackPanel();
         content.Children.Add(header);

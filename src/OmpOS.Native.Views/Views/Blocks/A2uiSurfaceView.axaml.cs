@@ -79,6 +79,7 @@ internal partial class A2uiSurfaceView : UserControl
     {
         var label = button.Label ?? string.Empty;
         var control = new Button { Content = label };
+        control.Classes.Add("sm");
         AutomationProperties.SetName(control, label.Length > 0 ? label : "Button");
         return control;
     }

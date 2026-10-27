@@ -3,9 +3,13 @@
              x:Class="OmpOS.Native.Views.Blocks.UserMessageView"
              AutomationProperties.Name="User message">
 
-  <Border Background="{DynamicResource OmpOS.Color.SurfaceRaised}"
-          Padding="{DynamicResource OmpOS.Space.Sm}">
+  <!-- The user's prompt is a rounded card across the whole column, not a right-aligned bubble (parity spec 4.6). -->
+  <Border Classes="card"
+          CornerRadius="{DynamicResource OmpOS.Radius.Column}"
+          Padding="12,10">
     <TextBlock x:Name="Body"
+               FontSize="{DynamicResource OmpOS.Font.Size.Body}"
+               LineHeight="{DynamicResource OmpOS.Font.LineHeight.Body}"
                TextWrapping="Wrap" />
   </Border>
 
