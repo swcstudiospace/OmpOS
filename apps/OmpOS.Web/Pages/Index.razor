@@ -5,6 +5,7 @@
 @using OmpOS.Presentation.Components
 @using OmpOS.Presentation.State
 @using OmpOS.UI.Components
+@using OmpOS.UI.Components.Shell
 @using OmpOS.Web.Services
  @inject ApiSessionClient Api
  @inject SseEventStream EventStream
@@ -13,26 +14,30 @@
 
 <PageTitle>OmpOS</PageTitle>
 
-<div class="ompos-shell">
-    <a class="ompos-skip-link" href="#ompos-conversation">Skip to conversation</a>
-    <ConversationList Conversations="_conversations" SelectedId="@_selectedId" OnSelected="SelectSessionAsync" />
-    <div class="ompos-main">
-        <button type="button" class="ompos-btn" aria-label="New conversation" @onclick="NewSessionAsync">+ New</button>
-        @if (_error is not null)
-        {
-            <p class="ompos-error" role="alert">@_error</p>
-        }
-        <SessionView Tree="_viewModel.Tree"
-                     ViewState="_viewModel.State"
-                     AutoScrollPaused="_viewModel.AutoScrollPaused"
-                     Announcement="@_viewModel.Announcement"
-                     OnStop="StopStreaming"
-                     OnRetry="RetryAsync"
-                     OnJumpToLatest="JumpToLatest"
-                     AutoScrollPausedChanged="OnAutoScrollPausedChanged" />
-        <Composer IsStreaming="_streaming" OnSend="SendAsync" OnStop="StopStreaming" />
-    </div>
-</div>
+<AppShell SkipLinkHref="#ompos-conversation" SkipLinkText="Skip to conversation" WorkspaceLabel="Web workspace">
+    <Rail>
+        <AgentRail Conversations="_conversations" SelectedId="@_selectedId" OnSelected="SelectSessionAsync" OnNew="NewSessionAsync" />
+    </Rail>
+    <ChildContent>
+        <div class="ompos-thread">
+            @if (_error is not null)
+            {
+                <p class="ompos-error" role="alert">@_error</p>
+            }
+            <SessionView Tree="_viewModel.Tree"
+                         ViewState="_viewModel.State"
+                         AutoScrollPaused="_viewModel.AutoScrollPaused"
+                         Announcement="@_viewModel.Announcement"
+                         OnStop="StopStreaming"
+                         OnRetry="RetryAsync"
+                         OnJumpToLatest="JumpToLatest"
+                         AutoScrollPausedChanged="OnAutoScrollPausedChanged" />
+            <div class="ompos-composer-dock">
+                <Composer IsStreaming="_streaming" OnSend="SendAsync" OnStop="StopStreaming" />
+            </div>
+        </div>
+    </ChildContent>
+</AppShell>
 
 @code {
 

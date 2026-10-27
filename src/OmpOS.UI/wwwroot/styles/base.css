@@ -1,0 +1,230 @@
+/* Reset, typography roles, focus ring, reduced motion, scrollbars, selection and the skip link. Colours, sizes and fonts come from
+   tokens.css only; this file holds no literal colour. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  background: var(--ompos-surface-raised);
+  scrollbar-color: var(--ompos-border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+body {
+  margin: 0;
+  background: var(--ompos-surface-raised);
+  color: var(--ompos-text);
+  font-family: var(--ompos-font-sans);
+  font-size: var(--ompos-font-size-body);
+  font-weight: var(--ompos-font-weight-regular);
+  line-height: var(--ompos-line-height-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+ul,
+ol,
+figure,
+blockquote {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+a {
+  color: var(--ompos-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: var(--ompos-accent-hover);
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--ompos-font-mono);
+  font-size: var(--ompos-font-size-mono);
+  line-height: var(--ompos-line-height-mono);
+}
+
+pre {
+  margin: 0;
+}
+
+::selection {
+  background: var(--ompos-accent);
+  color: var(--ompos-accent-on);
+}
+
+/* Typography roles. The display face is Anybody SemiBold at 20 px and above only. */
+.ompos-text-small {
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+.ompos-text-label {
+  font-size: var(--ompos-font-size-label);
+  line-height: var(--ompos-line-height-label);
+}
+
+.ompos-text-body {
+  font-size: var(--ompos-font-size-body);
+  line-height: var(--ompos-line-height-body);
+}
+
+.ompos-text-heading {
+  font-size: var(--ompos-font-size-heading);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-heading);
+}
+
+.ompos-display-sm {
+  font-family: var(--ompos-font-display);
+  font-size: var(--ompos-font-size-display-sm);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-display-sm);
+}
+
+.ompos-display {
+  font-family: var(--ompos-font-display);
+  font-size: var(--ompos-font-size-display);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-display);
+}
+
+.ompos-text-secondary {
+  color: var(--ompos-text-secondary);
+}
+
+.ompos-mono {
+  font-family: var(--ompos-font-mono);
+  font-size: var(--ompos-font-size-mono);
+  line-height: var(--ompos-line-height-mono);
+}
+
+/* Visible keyboard focus indicator on every interactive element: 2 px in the focus token (3:1 or better on every surface). */
+:focus-visible {
+  outline: var(--ompos-focus-width) solid var(--ompos-focus);
+  outline-offset: var(--ompos-focus-offset);
+}
+
+/* A programmatic focus target (the skip link destination) shows no ring: it is not a control. */
+[tabindex='-1']:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Reduced motion. The operating-system setting reduces motion unless the user chose Full in Settings (data-motion="full"); the
+   Reduced choice (data-motion="reduce") reduces it whatever the operating system says. Components take every duration from the
+   tokens, and the catch-all rule below stops anything that does not. */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion='full']) {
+    --ompos-duration-fast: 0ms;
+    --ompos-duration: 0ms;
+    scroll-behavior: auto;
+  }
+
+  :root:not([data-motion='full']) *,
+  :root:not([data-motion='full']) *::before,
+  :root:not([data-motion='full']) *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:root[data-motion='reduce'] {
+  --ompos-duration-fast: 0ms;
+  --ompos-duration: 0ms;
+  scroll-behavior: auto;
+}
+
+:root[data-motion='reduce'] *,
+:root[data-motion='reduce'] *::before,
+:root[data-motion='reduce'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Skip link: visually hidden until it takes keyboard focus, then a pill in the top-left corner (WCAG 2.4.1). */
+.ompos-skip-link {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.ompos-skip-link:focus {
+  position: fixed;
+  top: var(--ompos-gap-8);
+  left: var(--ompos-gap-8);
+  z-index: var(--ompos-z-skip);
+  width: auto;
+  height: auto;
+  min-height: var(--ompos-control-height);
+  padding: var(--ompos-gap-6) var(--ompos-gap-12);
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  background: var(--ompos-accent);
+  color: var(--ompos-accent-on);
+  border-radius: var(--ompos-radius-6);
+  font-weight: var(--ompos-font-weight-medium);
+  text-decoration: none;
+}
+
+/* Screen-reader-only text and the live region the session view announces through. */
+.ompos-sr-only,
+.ompos-announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -1,0 +1,12 @@
+@namespace OmpOS.UI.Components.Shell
+<footer class="ompos-footer">
+    <span class="ompos-footer-version">OmpOS @Version</span>
+    <a class="ompos-footer-source" href="@ShellInfo.SourceRepositoryUrl">Source code</a>
+    <span class="ompos-footer-licence">Licensed under <a href="@ShellInfo.LicenceUrl">@ShellInfo.LicenceId</a></span>
+</footer>
+
+@code {
+    /// <summary>Gets the version text; it defaults to the informational version of the running assembly.</summary>
+    [Parameter]
+    public string Version { get; set; } = ShellInfo.CurrentVersion;
+}

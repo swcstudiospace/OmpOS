@@ -1,0 +1,293 @@
+/* The chat surface: session transcript blocks, notices, composer and the conversation list rows. Block views are restyled here;
+   the next screens (thread header, chips, palette, approvals, Kanban, Settings, terminal) add their own files and import them
+   from ompos.css. */
+
+.ompos-session {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-8);
+  min-width: 0;
+  background: var(--ompos-surface-raised);
+  color: var(--ompos-text);
+}
+
+.ompos-session:focus {
+  outline: none;
+}
+
+.ompos-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-block {
+  min-width: 0;
+  padding: var(--ompos-gap-8) var(--ompos-gap-12);
+  background: var(--ompos-surface);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-8);
+  color: var(--ompos-text);
+  overflow-wrap: anywhere;
+}
+
+.ompos-block.ompos-user {
+  background: var(--ompos-selected);
+  border-color: transparent;
+}
+
+.ompos-block.ompos-streaming,
+.ompos-user-text {
+  white-space: pre-wrap;
+}
+
+.ompos-error {
+  border-left: 4px solid var(--ompos-error);
+}
+
+p.ompos-error {
+  padding: var(--ompos-gap-8) var(--ompos-gap-12);
+  background: var(--ompos-surface-sunken);
+  border-radius: var(--ompos-radius-6);
+}
+
+.ompos-error-message {
+  color: var(--ompos-error);
+}
+
+.ompos-empty,
+.ompos-loading,
+.ompos-transport-notice,
+.ompos-approval-notice {
+  color: var(--ompos-text-secondary);
+}
+
+.ompos-approval-notice {
+  padding: var(--ompos-gap-8) var(--ompos-gap-12);
+  background: var(--ompos-surface-sunken);
+  border-left: 4px solid var(--ompos-warning);
+  border-radius: var(--ompos-radius-6);
+  color: var(--ompos-text);
+}
+
+.ompos-tool-call {
+  display: flex;
+  align-items: center;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-tool-name,
+.ompos-file-edit-path,
+.ompos-diff-path {
+  font-family: var(--ompos-font-mono);
+  font-size: var(--ompos-font-size-mono);
+}
+
+.ompos-tool-status,
+.ompos-file-edit-change,
+.ompos-code-language,
+.ompos-file-edit-label,
+.ompos-permission-note {
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+.ompos-code-header,
+.ompos-file-edit-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-code pre,
+.ompos-markdown pre {
+  margin-top: var(--ompos-gap-4);
+  overflow: auto;
+}
+
+/* Tool output and file text keep their line breaks and scroll inside the block, so a long result never widens the transcript. */
+.ompos-tool-output,
+.ompos-file-edit-text {
+  margin: 0;
+  max-height: 24rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ompos-file-edit-before .ompos-file-edit-text {
+  background: var(--ompos-diff-removed);
+}
+
+.ompos-file-edit-after .ompos-file-edit-text {
+  background: var(--ompos-diff-added);
+}
+
+.ompos-unknown > summary {
+  cursor: pointer;
+}
+
+.ompos-a2ui-image {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Composer ------------------------------------------------------------------------------------------------------------------ */
+
+.ompos-composer {
+  display: flex;
+  gap: var(--ompos-gap-8);
+  align-items: flex-end;
+}
+
+.ompos-composer-input {
+  flex: 1;
+  min-height: var(--ompos-composer-min);
+  max-height: var(--ompos-composer-max);
+  padding: var(--ompos-gap-8) var(--ompos-gap-12);
+  background: var(--ompos-surface-raised);
+  border: 1px solid var(--ompos-border-strong);
+  border-radius: var(--ompos-radius-8);
+  color: var(--ompos-text);
+  font-size: var(--ompos-font-size-body);
+  line-height: var(--ompos-line-height-body);
+  resize: vertical;
+}
+
+.ompos-composer-input::placeholder {
+  color: var(--ompos-text-secondary);
+}
+
+.ompos-composer .ompos-icon-btn {
+  background: var(--ompos-accent);
+  border-color: var(--ompos-accent);
+  color: var(--ompos-accent-on);
+}
+
+.ompos-composer .ompos-icon-btn:hover,
+.ompos-composer .ompos-icon-btn:active {
+  background: var(--ompos-accent-hover);
+  border-color: var(--ompos-accent-hover);
+}
+
+/* Agent rail and conversation list ------------------------------------------------------------------------------------------ */
+
+.ompos-agent-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-8);
+  padding: var(--ompos-gap-8);
+}
+
+.ompos-rail-bar {
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ompos-gap-4) var(--ompos-gap-4) 0 var(--ompos-gap-8);
+}
+
+.ompos-rail-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-rail-title {
+  padding: 0 var(--ompos-gap-8);
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-small);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ompos-new-agent {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.ompos-conversation-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-2);
+}
+
+.ompos-conversation-list .ompos-empty {
+  padding: var(--ompos-gap-8);
+}
+
+.ompos-btn.ompos-conversation-item {
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--ompos-gap-8);
+  width: 100%;
+  padding: var(--ompos-gap-4) var(--ompos-gap-8);
+  background: transparent;
+  border-color: transparent;
+  font-size: var(--ompos-font-size-body);
+  font-weight: var(--ompos-font-weight-regular);
+  line-height: var(--ompos-line-height-body);
+  text-align: left;
+}
+
+.ompos-btn.ompos-conversation-item:hover {
+  background: var(--ompos-hover);
+}
+
+.ompos-btn.ompos-conversation-item.is-selected {
+  background: var(--ompos-selected);
+  font-weight: var(--ompos-font-weight-medium);
+}
+
+.ompos-conversation-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Shell chrome: top bar and footer content -------------------------------------------------------------------------------- */
+
+.ompos-logo {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  background: url('../brand/ompos-mark.svg') center / contain no-repeat;
+}
+
+.ompos-wordmark {
+  margin: 0;
+  font-family: var(--ompos-font-display);
+  font-size: var(--ompos-font-size-display-sm);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-display-sm);
+}
+
+.ompos-workspace-label {
+  overflow: hidden;
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ompos-topbar-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ompos-control-height-small);
+  padding: 0 var(--ompos-gap-4);
+  font-size: var(--ompos-font-size-label);
+  font-weight: var(--ompos-font-weight-medium);
+}
+
+.ompos-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ompos-target-min);
+}

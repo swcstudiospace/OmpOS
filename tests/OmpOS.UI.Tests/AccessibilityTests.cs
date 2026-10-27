@@ -77,74 +77,78 @@ public sealed partial class AccessibilityTests : UiTestContext
         live.TextContent.ShouldContain("Assistant is responding.");
     }
 
-    /// <summary>The bundled stylesheet carries the focus-visible ring and the reduced-motion rule.</summary>
+    /// <summary>The bundled stylesheets carry the focus-visible ring, the reduced-motion rule and the 32 px target size with a 24 px floor.</summary>
     [Fact]
     public void BundledCssHasFocusAndMotionRules()
     {
-        var css = File.ReadAllText(FindCssPath());
+        var css = string.Concat(CssSources.AllCssFiles().Select(File.ReadAllText));
 
         css.ShouldContain(":focus-visible");
         css.ShouldContain("prefers-reduced-motion");
-        css.ShouldContain("44px");
+        var light = CssSources.EffectiveTokens(CssSources.Theme.Light);
+        light["--ompos-control-height"].ShouldBe("32px");
+        light["--ompos-target-min"].ShouldBe("24px");
+        light["--ompos-focus-width"].ShouldBe("2px");
     }
 
-    /// <summary>Icon-button token pairs meet WCAG AA for text glyphs (4.5:1).</summary>
+    /// <summary>Every text role keeps WCAG AA contrast (4.5:1) on every surface role it can sit on, in every theme.</summary>
     [Theory]
-    [InlineData("--ompos-fg", "--ompos-bg")]
-    [InlineData("--ompos-surface-fg", "--ompos-surface")]
-    public void IconButtonTokenPairsMeetContrastMinimum(string foregroundToken, string backgroundToken)
+    [MemberData(nameof(TextRoleOnSurfaceCases))]
+    public void TextRolesMeetContrastMinimumOnEverySurface(string themeName, string foregroundToken, string backgroundToken)
     {
-        var css = File.ReadAllText(FindCssPath());
-        var foreground = ParseColorToken(css, foregroundToken);
-        var background = ParseColorToken(css, backgroundToken);
+        var theme = Enum.Parse<CssSources.Theme>(themeName);
+        var ratio = CssSources.ContrastRatio(CssSources.Hex(theme, foregroundToken), CssSources.Hex(theme, backgroundToken));
 
-        var ratio = ContrastRatio(foreground, background);
-
-        ratio.ShouldBeGreaterThanOrEqualTo(4.5, $"{foregroundToken} on {backgroundToken} must meet WCAG AA for text glyphs");
+        ratio.ShouldBeGreaterThanOrEqualTo(4.5, $"{foregroundToken} on {backgroundToken} in {theme} must meet WCAG AA for text");
     }
 
-    /// <summary>Filled-control text tokens meet WCAG AA for text (4.5:1) on the fill they sit on.</summary>
+    /// <summary>Filled-control text meets WCAG AA for text (4.5:1) on the accent fill and on its hover fill.</summary>
     [Theory]
-    [InlineData("--ompos-primary-contrast", "--ompos-primary")]
-    [InlineData("--ompos-error-contrast", "--ompos-error")]
-    public void FilledControlTextPairsMeetContrastMinimum(string foregroundToken, string backgroundToken)
+    [InlineData("Light", "--ompos-accent-on", "--ompos-accent")]
+    [InlineData("Light", "--ompos-accent-on", "--ompos-accent-hover")]
+    [InlineData("Dark", "--ompos-accent-on", "--ompos-accent")]
+    [InlineData("Dark", "--ompos-accent-on", "--ompos-accent-hover")]
+    [InlineData("System", "--ompos-accent-on", "--ompos-accent")]
+    [InlineData("System", "--ompos-accent-on", "--ompos-accent-hover")]
+    public void FilledControlTextPairsMeetContrastMinimum(string themeName, string foregroundToken, string backgroundToken)
     {
-        var css = File.ReadAllText(FindCssPath());
+        var theme = Enum.Parse<CssSources.Theme>(themeName);
+        var ratio = CssSources.ContrastRatio(CssSources.Hex(theme, foregroundToken), CssSources.Hex(theme, backgroundToken));
 
-        var ratio = ContrastRatio(ParseColorToken(css, foregroundToken), ParseColorToken(css, backgroundToken));
-
-        ratio.ShouldBeGreaterThanOrEqualTo(4.5, $"{foregroundToken} on {backgroundToken} must meet WCAG AA for text");
+        ratio.ShouldBeGreaterThanOrEqualTo(4.5, $"{foregroundToken} on {backgroundToken} in {theme} must meet WCAG AA for text");
     }
 
-    /// <summary>The focus ring is a non-text indicator: it meets 3:1 (WCAG 1.4.11) on both surfaces the session draws on.</summary>
+    /// <summary>The focus ring and the input outline are non-text indicators: they meet 3:1 (WCAG 1.4.11) on every surface.</summary>
     [Theory]
-    [InlineData("--ompos-focus-ring", "--ompos-bg")]
-    [InlineData("--ompos-focus-ring", "--ompos-surface")]
-    public void FocusRingMeetsNonTextContrastMinimum(string ringToken, string backgroundToken)
+    [MemberData(nameof(NonTextOnSurfaceCases))]
+    public void FocusRingAndOutlinesMeetNonTextContrastMinimum(string themeName, string indicatorToken, string backgroundToken)
     {
-        var css = File.ReadAllText(FindCssPath());
+        var theme = Enum.Parse<CssSources.Theme>(themeName);
+        var ratio = CssSources.ContrastRatio(CssSources.Hex(theme, indicatorToken), CssSources.Hex(theme, backgroundToken));
 
-        var ratio = ContrastRatio(ParseColorToken(css, ringToken), ParseColorToken(css, backgroundToken));
-
-        ratio.ShouldBeGreaterThanOrEqualTo(3.0, $"{ringToken} on {backgroundToken} must meet WCAG 1.4.11 for a focus indicator");
+        ratio.ShouldBeGreaterThanOrEqualTo(3.0, $"{indicatorToken} on {backgroundToken} in {theme} must meet WCAG 1.4.11");
     }
 
-    /// <summary>A focus-visible rule draws the ring from the token the contrast tests check, not from a literal colour.</summary>
+    /// <summary>A focus-visible rule draws a 2 px ring from the token the contrast tests check, not from a literal colour.</summary>
     [Fact]
-    public void FocusVisibleRuleUsesTheFocusRingToken()
+    public void FocusVisibleRuleUsesTheFocusToken()
     {
-        var css = File.ReadAllText(FindCssPath());
+        var css = File.ReadAllText(Path.Combine(CssSources.StylesDirectory, "base.css"));
 
-        FocusVisibleRingRule().IsMatch(css).ShouldBeTrue("a :focus-visible rule must use outline with var(--ompos-focus-ring)");
+        FocusVisibleRingRule().IsMatch(css).ShouldBeTrue("a :focus-visible rule must use outline with var(--ompos-focus)");
+        CssSources.EffectiveTokens(CssSources.Theme.Light)["--ompos-focus-width"].ShouldBe("2px");
     }
 
-    /// <summary>Every ratio the stylesheet comments state matches the ratio computed from the two colours, so a comment cannot go stale (phase 25.7, F-F).</summary>
-    [Fact]
-    public void StylesheetContrastCommentsMatchTheComputedRatios()
+    /// <summary>Every ratio the token comments state matches the ratio computed from the two colours, so a comment cannot go stale (phase 25.7, F-F).</summary>
+    [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    [InlineData("System")]
+    public void StylesheetContrastCommentsMatchTheComputedRatios(string themeName)
     {
-        var css = File.ReadAllText(FindCssPath());
+        var theme = Enum.Parse<CssSources.Theme>(themeName);
         var documented = 0;
-        foreach (var line in css.Split('\n'))
+        foreach (var line in CssSources.ThemeBlock(theme).Split('\n'))
         {
             var declaration = TokenDeclaration().Match(line);
             if (!declaration.Success)
@@ -155,15 +159,71 @@ public sealed partial class AccessibilityTests : UiTestContext
             foreach (Match claim in DocumentedRatio().Matches(line))
             {
                 var stated = double.Parse(claim.Groups["ratio"].Value, CultureInfo.InvariantCulture);
-                var computed = ContrastRatio(declaration.Groups["color"].Value, ParseColorToken(css, claim.Groups["against"].Value));
+                var computed = CssSources.ContrastRatio(declaration.Groups["color"].Value, CssSources.Hex(theme, claim.Groups["against"].Value));
 
-                Math.Abs(computed - stated).ShouldBeLessThan(0.01, $"{declaration.Groups["token"].Value} says {stated}:1 on {claim.Groups["against"].Value}, computed {computed:0.00}:1");
+                Math.Abs(computed - stated).ShouldBeLessThan(0.01, $"{declaration.Groups["token"].Value} says {stated}:1 on {claim.Groups["against"].Value} in {theme}, computed {computed:0.00}:1");
                 documented++;
             }
         }
 
-        documented.ShouldBeGreaterThanOrEqualTo(6, "expected the six documented ratios in the token block");
+        documented.ShouldBe(10, "expected the ten documented ratios in each theme block");
     }
+
+    /// <summary>Gets the (theme, text token, surface token) triples whose text contrast the stylesheet promises.</summary>
+    public static TheoryData<string, string, string> TextRoleOnSurfaceCases()
+    {
+        var data = new TheoryData<string, string, string>();
+        foreach (var theme in Enum.GetValues<CssSources.Theme>())
+        {
+            foreach (var text in TextRoles)
+            {
+                foreach (var surface in Surfaces)
+                {
+                    data.Add(theme.ToString(), text, surface);
+                }
+            }
+        }
+
+        return data;
+    }
+
+    /// <summary>Gets the (theme, indicator token, surface token) triples whose non-text contrast the stylesheet promises.</summary>
+    public static TheoryData<string, string, string> NonTextOnSurfaceCases()
+    {
+        var data = new TheoryData<string, string, string>();
+        foreach (var theme in Enum.GetValues<CssSources.Theme>())
+        {
+            foreach (var indicator in new[] { "--ompos-focus", "--ompos-border-strong" })
+            {
+                foreach (var surface in Surfaces)
+                {
+                    data.Add(theme.ToString(), indicator, surface);
+                }
+            }
+        }
+
+        return data;
+    }
+
+    private static readonly string[] TextRoles =
+    [
+        "--ompos-text",
+        "--ompos-text-secondary",
+        "--ompos-accent",
+        "--ompos-success",
+        "--ompos-warning",
+        "--ompos-error",
+    ];
+
+    private static readonly string[] Surfaces =
+    [
+        "--ompos-surface-sunken",
+        "--ompos-surface",
+        "--ompos-surface-raised",
+        "--ompos-hover",
+        "--ompos-selected",
+        "--ompos-surface-active",
+    ];
 
     [GeneratedRegex("^\\s*(?<token>--ompos-[a-z-]+):\\s*(?<color>#[0-9a-fA-F]{6});", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]
     private static partial Regex TokenDeclaration();
@@ -171,51 +231,6 @@ public sealed partial class AccessibilityTests : UiTestContext
     [GeneratedRegex("(?<ratio>\\d+\\.\\d+):1 on (?<against>--ompos-[a-z-]+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]
     private static partial Regex DocumentedRatio();
 
-    [GeneratedRegex("focus-visible[^{]*\\{[^}]*outline:[^;}]*var\\(--ompos-focus-ring\\)", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
+    [GeneratedRegex("focus-visible[^{]*\\{[^}]*outline:[^;}]*var\\(--ompos-focus\\)", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
     private static partial Regex FocusVisibleRingRule();
-
-    private static string ParseColorToken(string css, string token)
-    {
-        var declaration = css.IndexOf(token + ":", StringComparison.Ordinal);
-        declaration.ShouldBeGreaterThanOrEqualTo(0, $"stylesheet must define {token}");
-        var hash = css.IndexOf('#', declaration);
-        hash.ShouldBeGreaterThanOrEqualTo(0, $"stylesheet must define {token} as a hex color");
-        var value = css.Substring(hash, 7);
-        value.Length.ShouldBe(7);
-        value.Skip(1).All(static c => Uri.IsHexDigit(c)).ShouldBeTrue($"stylesheet must define {token} as a hex color");
-        return value;
-    }
-
-    private static double ContrastRatio(string foreground, string background)
-    {
-        var foregroundLuminance = RelativeLuminance(foreground);
-        var backgroundLuminance = RelativeLuminance(background);
-        var lighter = Math.Max(foregroundLuminance, backgroundLuminance);
-        var darker = Math.Min(foregroundLuminance, backgroundLuminance);
-        return (lighter + 0.05) / (darker + 0.05);
-    }
-
-    private static double RelativeLuminance(string hex)
-    {
-        var channel = (int offset) =>
-        {
-            var value = Convert.ToInt32(hex.Substring(offset, 2), 16) / 255.0;
-            return value <= 0.03928 ? value / 12.92 : Math.Pow((value + 0.055) / 1.055, 2.4);
-        };
-        return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
-    }
-
-    private static string FindCssPath()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "OmpOS.slnx")))
-        {
-            directory = directory.Parent;
-        }
-
-        directory.ShouldNotBeNull("OmpOS.slnx must be reachable by walking up from the test output");
-        var path = Path.Combine(directory.FullName, "src", "OmpOS.UI", "wwwroot", "styles", "ompos.css");
-        File.Exists(path).ShouldBeTrue($"bundled stylesheet must exist at {path}");
-        return path;
-    }
 }

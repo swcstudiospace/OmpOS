@@ -1,16 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OmpOS.Web</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#181818" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="OmpOS: an agent workspace for the omp coding agent." />
+    <title>OmpOS</title>
     <base href="/" />
     <link rel="preload" id="webassembly" />
-    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="css/app.css" />
+    <!-- Applies the saved theme before the first paint. It is a file, not an inline script, because the CSP forbids inline script. -->
+    <script src="_content/OmpOS.UI/scripts/theme-boot.js"></script>
+    <link rel="preload" href="_content/OmpOS.UI/fonts/DMSans/DMSans-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="_content/OmpOS.UI/fonts/DMSans/DMSans-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="_content/OmpOS.UI/styles/ompos.css" />
-    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" href="favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
     <script type="importmap"></script>
 </head>
 

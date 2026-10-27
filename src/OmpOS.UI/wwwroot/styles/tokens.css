@@ -1,0 +1,186 @@
+/* OmpOS web design tokens: White and Purple. They mirror src/OmpOS.Native.Views/Themes/OmpOSTokens.axaml, so the web head and the
+   desktop Agent Panel draw the same colours.
+
+   Themes: Light is the default on :root. Dark is selected by <html data-theme="dark">. System follows the operating system through
+   prefers-color-scheme when <html data-theme="system">. theme-boot.js sets data-theme from localStorage before the first paint.
+   The Dark values appear twice (explicit and system) because CSS cannot share one declaration list between a selector and a media
+   query: CssContractTests fails when the two lists differ.
+
+   WCAG contrast: every text role holds 4.5:1 on every surface role, the focus ring and border-strong hold 3:1 (non-text, 1.4.11).
+   The ratios in the comments are computed, and CssContractTests fails when one of them drifts from the colours it describes. */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces, darkest to brightest in Light. */
+  --ompos-surface-sunken: #f0f0ee;
+  --ompos-surface: #fafaf9;
+  --ompos-surface-raised: #ffffff;
+  --ompos-hover: #ebebe8;
+  --ompos-selected: #e4e4e0;
+  --ompos-surface-active: #dcdcd7;
+
+  /* Text and accent roles. */
+  --ompos-text: #1c1c1a; /* 16.34:1 on --ompos-surface */
+  --ompos-text-secondary: #55555a; /* 7.10:1 on --ompos-surface */
+  --ompos-accent: #6d28d9; /* 6.80:1 on --ompos-surface */
+  --ompos-accent-on: #ffffff; /* 7.10:1 on --ompos-accent */
+  --ompos-accent-hover: #5b21b6; /* 8.98:1 on --ompos-accent-on */
+  --ompos-focus: #5b21b6; /* 8.60:1 on --ompos-surface */
+
+  /* Status roles (text and glyph colours; a status is never colour alone: it also carries a word or an icon). */
+  --ompos-success: #166534; /* 6.83:1 on --ompos-surface */
+  --ompos-warning: #92400e; /* 6.79:1 on --ompos-surface */
+  --ompos-error: #b3261e; /* 6.26:1 on --ompos-surface */
+
+  /* Lines. border is a decorative hairline; border-strong outlines an input, a switch or a checkbox. */
+  --ompos-border: #e0e0dc;
+  --ompos-border-strong: #6f6f6b; /* 4.83:1 on --ompos-surface */
+
+  /* Diff backgrounds (text on them is --ompos-text). */
+  --ompos-diff-added: #e2f4e7;
+  --ompos-diff-removed: #fbe6e6;
+
+  /* Elevation and scrim: two shadows and one overlay, none of them a colour role. */
+  --ompos-shadow-popup: 0 8px 24px 0 rgb(0 0 0 / 16%);
+  --ompos-shadow-card: 0 1px 2px 0 rgb(0 0 0 / 8%);
+  --ompos-scrim: rgb(0 0 0 / 40%);
+
+  /* Typography. DM Sans is the body face, Anybody the display face (SemiBold, 20 px and above only), Space Mono the code face. */
+  --ompos-font-sans: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --ompos-font-display: 'Anybody', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --ompos-font-mono: 'Space Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --ompos-font-size-small: 12px;
+  --ompos-font-size-label: 13px;
+  --ompos-font-size-body: 14px;
+  --ompos-font-size-heading: 16px;
+  --ompos-font-size-display-sm: 20px;
+  --ompos-font-size-display: 24px;
+  --ompos-font-size-mono: 12px;
+  --ompos-font-size-terminal: 13px;
+  --ompos-line-height-small: 16px;
+  --ompos-line-height-label: 18px;
+  --ompos-line-height-body: 21px;
+  --ompos-line-height-heading: 22px;
+  --ompos-line-height-display-sm: 26px;
+  --ompos-line-height-display: 30px;
+  --ompos-line-height-mono: 18px;
+  --ompos-font-weight-regular: 400;
+  --ompos-font-weight-medium: 500;
+  --ompos-font-weight-semibold: 600;
+
+  /* Spacing and shape. */
+  --ompos-gap-2: 2px;
+  --ompos-gap-4: 4px;
+  --ompos-gap-6: 6px;
+  --ompos-gap-8: 8px;
+  --ompos-gap-12: 12px;
+  --ompos-radius-4: 4px;
+  --ompos-radius-6: 6px;
+  --ompos-radius-8: 8px;
+  --ompos-radius-10: 10px;
+  --ompos-radius-12: 12px;
+  --ompos-radius-pill: 999px;
+
+  /* Sizes. Targets are 32 px (28 px small) and never below the 24 px WCAG 2.2 minimum. */
+  --ompos-control-height: 32px;
+  --ompos-control-height-small: 28px;
+  --ompos-target-min: 24px;
+  --ompos-icon-button: 28px;
+  --ompos-icon-button-small: 24px;
+  --ompos-chip-height: 20px;
+  --ompos-titlebar-height: 40px;
+  --ompos-footer-height: 28px;
+  --ompos-pipeline-height: 28px;
+  --ompos-rail-width: 240px;
+  --ompos-thread-max: 760px;
+  --ompos-thread-min: 400px;
+  --ompos-composer-min: 72px;
+  --ompos-composer-max: 220px;
+  --ompos-settings-nav: 220px;
+  --ompos-content-max: 720px;
+  --ompos-kanban-column: 280px;
+
+  /* Focus ring. */
+  --ompos-focus-width: 2px;
+  --ompos-focus-offset: 2px;
+
+  /* Motion. data-motion="reduce" and the reduced-motion media query set the durations to zero (see base.css). */
+  --ompos-duration-fast: 120ms;
+  --ompos-duration: 200ms;
+  --ompos-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Stacking. */
+  --ompos-z-sticky: 20;
+  --ompos-z-topbar: 30;
+  --ompos-z-drawer: 40;
+  --ompos-z-popup: 50;
+  --ompos-z-dialog: 60;
+  --ompos-z-skip: 100;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --ompos-surface-sunken: #141414;
+  --ompos-surface: #181818;
+  --ompos-surface-raised: #1f1f1f;
+  --ompos-hover: #262626;
+  --ompos-selected: #2d2d2d;
+  --ompos-surface-active: #333333;
+
+  --ompos-text: #ececec; /* 15.03:1 on --ompos-surface */
+  --ompos-text-secondary: #a3a3a3; /* 7.04:1 on --ompos-surface */
+  --ompos-accent: #a78bfa; /* 6.52:1 on --ompos-surface */
+  --ompos-accent-on: #141414; /* 6.77:1 on --ompos-accent */
+  --ompos-accent-hover: #c4b5fd; /* 9.98:1 on --ompos-accent-on */
+  --ompos-focus: #c4b5fd; /* 9.62:1 on --ompos-surface */
+
+  --ompos-success: #4ade80; /* 10.19:1 on --ompos-surface */
+  --ompos-warning: #fbbf24; /* 10.64:1 on --ompos-surface */
+  --ompos-error: #ff9a9a; /* 8.74:1 on --ompos-surface */
+
+  --ompos-border: #2c2c2c;
+  --ompos-border-strong: #808080; /* 4.50:1 on --ompos-surface */
+
+  --ompos-diff-added: #132a1c;
+  --ompos-diff-removed: #301719;
+
+  --ompos-shadow-popup: 0 8px 24px 0 rgb(0 0 0 / 60%);
+  --ompos-shadow-card: 0 0 0 0 rgb(0 0 0 / 0%);
+  --ompos-scrim: rgb(0 0 0 / 60%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='system'] {
+    color-scheme: dark;
+
+    --ompos-surface-sunken: #141414;
+    --ompos-surface: #181818;
+    --ompos-surface-raised: #1f1f1f;
+    --ompos-hover: #262626;
+    --ompos-selected: #2d2d2d;
+    --ompos-surface-active: #333333;
+
+    --ompos-text: #ececec; /* 15.03:1 on --ompos-surface */
+    --ompos-text-secondary: #a3a3a3; /* 7.04:1 on --ompos-surface */
+    --ompos-accent: #a78bfa; /* 6.52:1 on --ompos-surface */
+    --ompos-accent-on: #141414; /* 6.77:1 on --ompos-accent */
+    --ompos-accent-hover: #c4b5fd; /* 9.98:1 on --ompos-accent-on */
+    --ompos-focus: #c4b5fd; /* 9.62:1 on --ompos-surface */
+
+    --ompos-success: #4ade80; /* 10.19:1 on --ompos-surface */
+    --ompos-warning: #fbbf24; /* 10.64:1 on --ompos-surface */
+    --ompos-error: #ff9a9a; /* 8.74:1 on --ompos-surface */
+
+    --ompos-border: #2c2c2c;
+    --ompos-border-strong: #808080; /* 4.50:1 on --ompos-surface */
+
+    --ompos-diff-added: #132a1c;
+    --ompos-diff-removed: #301719;
+
+    --ompos-shadow-popup: 0 8px 24px 0 rgb(0 0 0 / 60%);
+    --ompos-shadow-card: 0 0 0 0 rgb(0 0 0 / 0%);
+    --ompos-scrim: rgb(0 0 0 / 60%);
+  }
+}

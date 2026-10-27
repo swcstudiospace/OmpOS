@@ -1,0 +1,52 @@
+/* Self-hosted brand fonts (SIL OFL 1.1; the licence text sits beside each family under ../fonts/). The files are the unmodified TTF
+   glyphs repackaged as woff2 by scripts/web/make-woff2.sh. font-display: swap shows the fallback stack at once, then swaps. The
+   urls are relative to this file, so they resolve to _content/OmpOS.UI/fonts/... in the Blazor static web assets. */
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/DMSans/DMSans-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../fonts/DMSans/DMSans-Medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../fonts/DMSans/DMSans-SemiBold.woff2') format('woff2');
+}
+
+/* Anybody ships SemiBold only, and the design allows it at 20 px and above. */
+@font-face {
+  font-family: 'Anybody';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../fonts/Anybody/Anybody-SemiBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/SpaceMono/SpaceMono-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/SpaceMono/SpaceMono-Bold.woff2') format('woff2');
+}

@@ -1,0 +1,172 @@
+/* App shell grid: a 40 px top bar, then the agent rail beside the thread, then the footer strip. The document scrolls (ompos-scroll.js
+   follows the document viewport), so the top bar and the rail are sticky and the composer dock sticks above the footer.
+
+   Breakpoints (literal px because custom properties cannot appear in a media query):
+     1200 px and up   rail 280 px
+     840 to 1199 px   rail 240 px
+     below 840 px     the rail is an off-canvas drawer opened from the top bar
+     below 560 px     single column: the top bar drops the workspace label and the source link (the footer keeps the source link)
+   Insets keep the shell clear of notches and rounded corners (viewport-fit=cover in index.html). */
+
+.ompos-shell {
+  --ompos-topbar-block: calc(var(--ompos-titlebar-height) + env(safe-area-inset-top, 0px));
+  --ompos-footer-block: calc(var(--ompos-footer-height) + env(safe-area-inset-bottom, 0px));
+
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--ompos-surface-raised);
+  color: var(--ompos-text);
+}
+
+.ompos-topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--ompos-z-topbar);
+  display: flex;
+  align-items: center;
+  gap: var(--ompos-gap-8);
+  height: var(--ompos-topbar-block);
+  padding: env(safe-area-inset-top, 0px) max(var(--ompos-gap-12), env(safe-area-inset-right, 0px)) 0 max(var(--ompos-gap-12), env(safe-area-inset-left, 0px));
+  background: var(--ompos-surface-sunken);
+  border-bottom: 1px solid var(--ompos-border);
+}
+
+.ompos-topbar-spacer {
+  flex: 1;
+}
+
+.ompos-shell-body {
+  display: grid;
+  grid-template-columns: var(--ompos-rail-width) minmax(0, 1fr);
+  min-height: 0;
+}
+
+.ompos-rail {
+  position: sticky;
+  top: var(--ompos-topbar-block);
+  align-self: start;
+  height: calc(100vh - var(--ompos-topbar-block) - var(--ompos-footer-block));
+  height: calc(100dvh - var(--ompos-topbar-block) - var(--ompos-footer-block));
+  overflow-y: auto;
+  padding-left: env(safe-area-inset-left, 0px);
+  background: var(--ompos-surface);
+  border-right: 1px solid var(--ompos-border);
+}
+
+.ompos-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The thread column: transcript, notices and the composer dock, centred at the 760 px reading width. */
+.ompos-thread {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--ompos-thread-max);
+  min-width: 0;
+  margin-inline: auto;
+  padding: var(--ompos-gap-12) max(var(--ompos-gap-12), env(safe-area-inset-right, 0px)) 0 var(--ompos-gap-12);
+}
+
+.ompos-thread > .ompos-session {
+  flex: 1;
+}
+
+.ompos-composer-dock {
+  position: sticky;
+  bottom: var(--ompos-footer-block);
+  z-index: var(--ompos-z-sticky);
+  padding-block: var(--ompos-gap-8) var(--ompos-gap-12);
+  background: var(--ompos-surface-raised);
+}
+
+.ompos-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--ompos-z-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ompos-gap-4) var(--ompos-gap-12);
+  min-height: var(--ompos-footer-block);
+  padding: 0 max(var(--ompos-gap-12), env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(var(--ompos-gap-12), env(safe-area-inset-left, 0px));
+  background: var(--ompos-surface-sunken);
+  border-top: 1px solid var(--ompos-border);
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+/* Drawer controls exist only below 840 px. The compound selectors outrank the component rules loaded after this file. */
+.ompos-topbar .ompos-topbar-menu,
+.ompos-rail .ompos-rail-bar,
+.ompos-shell .ompos-scrim {
+  display: none;
+}
+
+@media (min-width: 1200px) {
+  .ompos-shell {
+    --ompos-rail-width: 280px;
+  }
+}
+
+@media (max-width: 839.98px) {
+  .ompos-shell-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ompos-topbar .ompos-topbar-menu {
+    display: inline-flex;
+  }
+
+  .ompos-rail {
+    position: fixed;
+    top: var(--ompos-topbar-block);
+    bottom: var(--ompos-footer-block);
+    left: 0;
+    z-index: var(--ompos-z-drawer);
+    width: min(var(--ompos-rail-width), 86vw);
+    height: auto;
+    border-right: 1px solid var(--ompos-border);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform var(--ompos-duration) var(--ompos-ease), visibility 0s linear var(--ompos-duration);
+  }
+
+  .ompos-shell[data-drawer='open'] .ompos-rail {
+    transform: none;
+    visibility: visible;
+    box-shadow: var(--ompos-shadow-popup);
+    transition: transform var(--ompos-duration) var(--ompos-ease), visibility 0s linear 0s;
+  }
+
+  .ompos-rail .ompos-rail-bar {
+    display: flex;
+  }
+
+  .ompos-shell[data-drawer='open'] .ompos-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--ompos-z-drawer) - 1);
+    background: var(--ompos-scrim);
+  }
+}
+
+@media (max-width: 559.98px) {
+  .ompos-topbar .ompos-workspace-label,
+  .ompos-topbar .ompos-topbar-link {
+    display: none;
+  }
+
+  .ompos-thread {
+    padding-left: max(var(--ompos-gap-8), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--ompos-gap-8), env(safe-area-inset-right, 0px));
+  }
+}

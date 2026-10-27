@@ -1,12 +1,12 @@
 @namespace OmpOS.UI.Components
-<nav class="ompos-conversation-list" aria-label="Conversations">
+<div class="ompos-conversation-list">
     @if (Conversations.Count == 0)
     {
         <p class="ompos-empty">No conversations yet.</p>
     }
     else
     {
-        <ul>
+        <ul aria-label="Conversations">
             @foreach (var conversation in Conversations)
             {
                 <li>
@@ -14,13 +14,14 @@
                             class="ompos-btn ompos-conversation-item@(conversation.Id == SelectedId ? " is-selected" : null)"
                             aria-current="@(conversation.Id == SelectedId ? "true" : null)"
                             @onclick="() => OnSelected.InvokeAsync(conversation.Id)">
-                        @conversation.Title
+                        <span class="ompos-status-dot" data-status="@(conversation.Id == SelectedId ? "active" : "idle")" aria-hidden="true"></span>
+                        <span class="ompos-conversation-title">@conversation.Title</span>
                     </button>
                 </li>
             }
         </ul>
     }
-</nav>
+</div>
 
 @code {
     /// <summary>Gets the conversations to list, in display order.</summary>
