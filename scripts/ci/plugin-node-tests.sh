@@ -10,3 +10,4 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 node --test plugins/gsd-core-omp/test/*.test.mjs
+node --test plugins/ompos-hooks-omp/test/*.test.mjs
