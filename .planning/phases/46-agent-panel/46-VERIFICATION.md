@@ -37,3 +37,5 @@ Missing for criterion 6: streaming (needs a model turn), error, long-running lis
 
 - The scripted engines (`ScriptedOmp`) stand in for omp in the panel tests. Real omp was started only for the screenshots and the live tests of Phase 48.
 - No model turn was run (OD-07). Windows, macOS, Android and the hosted deployments were not run. No screen reader was used.
+
+Update 2026-10-27: the screenshot half of criterion 8 is met: the Phase 50 captures in `docs/runbooks/evidence/ui-parity-2026-10-26/after-dark/` and `after-light/` show DM Sans and Space Mono. Criterion 6 stays not met: the 960x640 captures show the narrow layout of the empty and idle chat, not a Running session.

@@ -1,5 +1,7 @@
 # Phase 30: Later Compatibility and Admin, Summary
 
+Position 2026-10-27: the audited position is in the Phase 30 Status line of `.planning/ROADMAP.md` and in `docs/quality/cursor-parity-audit-2026-10-26.md`. The text below was written earlier and is kept as history where it conflicts.
+
 **Status: partially complete.** ADE-22 is deferred in writing because its criterion is unmet. ADE-21 is not deferred, but its scope needs an owner decision before work starts. No stub endpoint or placeholder control was added. Deferral record: this file and .planning/STATE.md Deferred Items (2026-10-22).
 
 Mac channel: No. Compatibility and admin checks run on the Linux gate.

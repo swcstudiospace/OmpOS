@@ -11,6 +11,7 @@
 - Count note: the audit states 43 tech-debt items, but its `01-foundation` block lists 11 entries (M-01 to M-04, L-01 to L-04, IN-01, IN-02, 01-VALIDATION) against a stated count of 10. All 11 are carried, so the TD group has 44 entries.
 - Supersession: tech debt is programmed into phases, not parked. This supersedes owner decision 7 in `docs/handoff.md`.
 - Gate: every HOST requirement runs after the owner decides the sign-in method (OD-03). That decision is not recorded in any source for this milestone and is not assumed here.
+- Audit marks (2026-10-27): in the ADE, CX, VX and AL sections a box is checked only where `docs/quality/cursor-parity-audit-2026-10-26.md` rates the item MET or MET-LIVE against commit `d75fd88`. PARTIAL items stay unchecked and carry an audit note; DEFERRED and NOT-STARTED items stay unchecked. A checked box does not mean a live model turn ran: none was approved after Phase 11 (OD-07).
 
 ## v1 Requirements
 
@@ -185,43 +186,51 @@ Source: ADR-0004 (accepted 2026-10-21; reversible through gate G-WEB); `docs/pla
 - [ ] **ADE-01**: Session chat with streamed generative UI blocks (parity with the current heads).
   - Acceptance: a prompt sent from the Avalonia head streams its events into the transcript as generative UI blocks. The block types match those the current RCL and MAUI heads render. After a reconnect the stream resumes from the last Seq without duplicate blocks.
   - Verification: Avalonia tests drive a fixture event stream through the head and assert the rendered block for each block type. Parity test compares the output with the recorded output of the current heads.
-- [ ] **ADE-02**: Tool approvals in the run UI, routed through the ACP permission bridge.
+  - Audit (2026-10-27): PARTIAL. Resume from the last Seq is not proven for the Avalonia head (it never reads the SSE stream); no model turn. See `docs/quality/cursor-parity-audit-2026-10-26.md` row ADE-01.
+- [x] **ADE-02**: Tool approvals in the run UI, routed through the ACP permission bridge.
   - Acceptance: a pending ACP `session/request_permission` appears in the run UI with the tool name and arguments. Approve and deny send the decision through the permission bridge (OD-01). With no decision, the request is denied by policy. An approval can only deny earlier, never allow.
   - Verification: integration test with a fake ACP transport emits `session/request_permission`. A UI test asserts the approval control. Tests assert the bridge receives the chosen decision and that a timeout produces deny.
-- [ ] **ADE-03**: Steering and follow-up prompts while a run is active.
+- [x] **ADE-03**: Steering and follow-up prompts while a run is active.
   - Acceptance: while a run is active the composer accepts a steering message, which is delivered to the active run, and a follow-up, which is queued and dispatched after the run completes. The run UI shows which kind is pending.
   - Verification: test with a fake active run. Assert the steering message reaches the run input channel and the follow-up is dispatched only after the completion event, in that order.
-- [ ] **ADE-04**: Side chats and transcript search.
+- [x] **ADE-04**: Side chats and transcript search.
   - Acceptance: a side chat opens from a session without adding messages to the main transcript. Transcript search returns every case-insensitive match in the current session, and selecting a match jumps to it.
   - Verification: unit tests of the search function on a fixed transcript fixture, asserting match count and order. UI test asserting side-chat messages do not appear in the main transcript.
 - [ ] **ADE-05**: Agents window: parallel runs with status, filter and open or close.
   - Acceptance: the Agents window lists runs with a status of running, completed, failed or cancelled. It filters by status and opens or closes a run view. Closing a view does not stop the run. Two runs execute concurrently without sharing transcript state.
   - Verification: tests with two concurrent fake runs. Assert status transitions, filter results, and that closing a view leaves the run state unchanged.
+  - Audit (2026-10-27): PARTIAL. The registry has no feeder; the rail and the Kanban tab list real sessions. See `docs/quality/cursor-parity-audit-2026-10-26.md` row ADE-05.
 - [ ] **ADE-06**: Git worktree isolation per agent run.
   - Acceptance: each agent run executes in its own git worktree under a path the operator controls. Two runs on one repository never share a working directory. Changes stay inside the worktree, and the main checkout is unchanged by a run.
   - Verification: integration test on a temporary git repository. Start two runs, write a file in each, and assert separate worktrees (`git worktree list`) and an unchanged main checkout.
+  - Audit (2026-10-27): PARTIAL. Wired into the hosted API only; the native head's runs use no worktree. See `docs/quality/cursor-parity-audit-2026-10-26.md` row ADE-06.
 - [ ] **ADE-07**: Cloud agent runs on the hosted API, with status and reviewable output.
   - Acceptance: a run started in cloud mode executes through the hosted API (`services/OmpOS.Api`). Its status moves through queued, running and completed. After completion the diff and transcript are retrievable for review.
   - Verification: API integration test on the API test host starts a cloud run, polls status until completed, and fetches the output. The test asserts the diff is present in the output.
+  - Audit (2026-10-27): PARTIAL. The contract and its tests exist; no live cloud run (OD-03, OQ-70). See `docs/quality/cursor-parity-audit-2026-10-26.md` row ADE-07.
 - [ ] **ADE-08**: Remote control and notifications from another device.
   - Acceptance: a second device lists active runs, sends a prompt or an approval, and receives a notification when a run needs approval or completes. Remote endpoints reject unauthenticated requests. Authentication uses the sign-in method chosen under OD-03.
   - Verification: API test asserts unauthenticated remote calls are rejected. End-to-end test asserts a second client receives the completion notification. This item is gated by the OD-03 decision.
-- [ ] **ADE-09**: Code editor: syntax highlighting, tabs and find.
+  - Audit (2026-10-27): PARTIAL. Only the unauthenticated rejection is tested; no pairing and no notification (OD-03, OQ-68). See `docs/quality/cursor-parity-audit-2026-10-26.md` row ADE-08.
+- [x] **ADE-09**: Code editor: syntax highlighting, tabs and find.
   - Acceptance: the editor opens workspace files in tabs. It highlights C#, TypeScript, JSON, YAML and Markdown. Find shows the match count and moves between matches.
   - Verification: Avalonia UI tests open two files in tabs, assert the find match count on a fixture, and assert highlight tokens for each listed language.
 - [ ] **ADE-10**: Workspace file tree and open folder.
   - Acceptance: opening a folder sets the workspace root used for runs. The file tree loads children when a directory is expanded and is fully keyboard navigable.
   - Verification: test on a fixture directory asserts the children of an expanded node. Test asserts that run dispatch uses the opened folder as its workspace root.
-- [ ] **ADE-11**: Diff review with accept and reject per hunk.
+  - Audit (2026-10-27): PARTIAL. The tree is mounted; there is no open-folder action. See `docs/quality/cursor-parity-audit-2026-10-26.md` row ADE-10.
+- [x] **ADE-11**: Diff review with accept and reject per hunk.
   - Acceptance: a run's changes are shown as hunks. Accepting a hunk keeps it, rejecting a hunk reverts only that hunk. After all decisions the file equals the accepted hunks applied to the original.
   - Verification: test on a fixture repository with a two-hunk change. Accept one hunk and reject the other, then assert the file content equals the expected result.
 - [ ] **ADE-12**: Inline edit on a selection.
   - Acceptance: invoking inline edit on a selection sends the selected text and the instruction to the agent. The response replaces only the selected range, and only after the user accepts it. Undo restores the original text.
   - Verification: unit test of range replacement on a fixture buffer. UI test asserts a rejected response leaves the buffer unchanged.
+  - Audit (2026-10-27): PARTIAL. The inline edit view is unbound and its client has no production caller. See `docs/quality/cursor-parity-audit-2026-10-26.md` row ADE-12.
 - [ ] **ADE-13**: Inline completion backed by a configured model provider.
   - Acceptance: with a model provider configured, a suggestion appears at the caret and accepting it inserts the text. Without a configured provider, completion is off and no request is sent.
   - Verification: test with a stub provider endpoint asserts a request is sent only when a provider is configured. Accept and dismiss behaviour is asserted in a UI test.
-- [ ] **ADE-14**: Integrated terminal; commands need approval; auto-run is opt-in.
+  - Audit (2026-10-27): PARTIAL. The completion client is never built in the application (OQ-55). See `docs/quality/cursor-parity-audit-2026-10-26.md` row ADE-13.
+- [x] **ADE-14**: Integrated terminal; commands need approval; auto-run is opt-in.
   - Acceptance: the terminal starts in the workspace directory. Each command needs approval. Auto-run is off by default and is enabled only by explicit configuration. A declined command is not executed.
   - Verification: tests with a fake process runner assert that a command with default settings stays pending until approved, that auto-run executes without a prompt only when enabled, and that a declined command never spawns a process.
 - [ ] **ADE-15**: Embedded browser pane and design mode (select an element and send it as context).
@@ -230,18 +239,22 @@ Source: ADR-0004 (accepted 2026-10-21; reversible through gate G-WEB); `docs/pla
 - [ ] **ADE-16**: MCP client: stdio and HTTP servers, a tool registry, enable and disable per session.
   - Acceptance: a stdio MCP server and an HTTP MCP server each register tools in one tool registry. Tools can be enabled or disabled per session. A disabled tool is not offered to the model.
   - Verification: integration tests with a fixture stdio server and a local HTTP fixture server. Assert the session tool list before and after a disable.
+  - Audit (2026-10-27): PARTIAL. The registry is empty in the application and the gateway is not wired (ADR-0010, ADR-0014). See `docs/quality/cursor-parity-audit-2026-10-26.md` row ADE-16.
 - [ ] **ADE-17**: Rules, skills and custom agent modes loaded from project files.
   - Acceptance: rule files, skill files and mode definitions in the project directory load into session context. A custom mode appears in the mode picker. A malformed file is reported as a diagnostic and skipped without failing the session.
   - Verification: loader tests on a fixture project directory that includes one malformed file. Assert the loaded set and the diagnostic.
-- [ ] **ADE-18**: Codebase search: text and regex first, semantic index later.
+  - Audit (2026-10-27): PARTIAL. Rules, skills and modes are loaded and listed but not fed to a session. See `docs/quality/cursor-parity-audit-2026-10-26.md` row ADE-17.
+- [x] **ADE-18**: Codebase search: text and regex first, semantic index later.
   - Acceptance: text and regex search over the workspace returns file, line and match for each hit. An invalid regex is reported as an error. A semantic index is not part of this milestone.
   - Verification: unit tests on a fixture tree assert match count, file, and line. A test asserts an invalid regex yields an error result.
 - [ ] **ADE-19**: Environment setup file for agent runs.
   - Acceptance: a setup file at the workspace root runs before an agent run starts. Its environment variables are visible to the run. A failing setup step marks the run failed before the agent starts.
   - Verification: integration test with a fixture setup file asserts the variable is visible inside the run. A second test with a failing step asserts the run is marked failed and no agent process starts.
+  - Audit (2026-10-27): PARTIAL. The setup runner has no caller (OQ-54). See `docs/quality/cursor-parity-audit-2026-10-26.md` row ADE-19.
 - [ ] **ADE-20**: Export chats and runs to Markdown; usage history.
   - Acceptance: a chat or run exports to a Markdown file with its messages in order and a heading for each block. Usage history lists runs with date, model and token counts, and totals per period.
   - Verification: export of a fixture transcript is compared with a golden Markdown file. Usage history totals are asserted against fixture runs.
+  - Audit (2026-10-27): PARTIAL. Chat export only; the usage history is always empty. See `docs/quality/cursor-parity-audit-2026-10-26.md` row ADE-20.
 - [ ] **ADE-21**: VS Code extension compatibility: planned for a later milestone (v0.11.0 Phase 30), after XP-09 ships.
   - Acceptance: no extension compatibility code ships in Phases 26 to 29. In Phase 30 the extension host consumes the XP-09 contracts and ships only after the XP-09 contract tests are green.
   - Verification: Phase 30 plan review confirms the dependency on XP-09. The XP-09 contract tests are green before any extension work is merged.
@@ -317,25 +330,30 @@ Source: user request 2026-10-22 and the ultrathink plan graph ut-mvirx2k5-37cf01
 - [ ] **CX-01**: Plugin manifests are validated against a versioned schema before any code runs, with an API version gate and quarantine of failing plugins.
   - Acceptance: a malformed or hostile manifest is rejected with a specific error and runs no code; an incompatible API version is rejected naming the plugin and the supported range; a plugin that throws asynchronously is quarantined with a persisted reason, and the host keeps running.
   - Verification: gate tests with a sentinel-writing fixture, an incompatible-version fixture and an async-throwing fixture (Phase 31).
+  - Audit (2026-10-27): PARTIAL. Library and tests only; no head loads a manifest (OQ-84). See `docs/quality/cursor-parity-audit-2026-10-26.md` row CX-01.
 - [ ] **CX-02**: Hooks run user commands on lifecycle events only after consent for the exact command.
   - Acceptance: a hook runs only after consent recorded against a hash of its exact command; editing the command forces new consent; each run records exit status, duration and truncated output; a failing hook does not block other hooks unless declared blocking.
   - Verification: gate test with zero spawned processes before consent; list, enable, disable and reorder tests (Phase 31). Cursor reference: https://cursor.com/docs/hooks (labelled beta in https://cursor.com/changelog/1-7; exit code 2 blocks an action, other failures let it proceed).
+  - Audit (2026-10-27): PARTIAL. Library, hooks view and tests only; no head wires them (OQ-84). See `docs/quality/cursor-parity-audit-2026-10-26.md` row CX-02.
 - [ ] **CX-03**: Automations run agent work on event, schedule or manual triggers, with guards that fail closed.
   - Acceptance: an automation that triggers itself is blocked at depth one and the block is recorded; chain depth is capped at 3; runs are rate limited per window and stop at a maximum runtime; an exception in the guard store refuses the run; consent is required before the first run.
   - Verification: gate tests with a fake clock and a fault-injected guard store (Phase 32). Cursor reference: https://cursor.com/docs/cloud-agent/automations.
+  - Audit (2026-10-27): PARTIAL. The engine and guards pass their tests; no head composes the engine and no view exists. See `docs/quality/cursor-parity-audit-2026-10-26.md` row CX-03.
 - [ ] **CX-04**: The embedded terminal opens an omp session in the project, and the app UI and the omp CLI read one plugin and MCP registry.
   - Acceptance: omp is launched with an argument array and the project directory; a missing omp shows its detected path, version and install guidance; one registry with a generation and checksum backs both views; omp's MCP connections go through the host-owned MCP gateway chosen 2026-10-22, which refuses ungranted tools.
   - Verification: gate tests with a fake executable; registry generation tests; a gateway refusal test (Phase 33).
+  - Audit (2026-10-27): PARTIAL. The terminal part is met; the registry and the gateway are wired into no head. See `docs/quality/cursor-parity-audit-2026-10-26.md` row CX-04.
 - [ ] **CX-05**: Remote development connects to a host over an authenticated, encrypted transport, with host-identity verification.
   - Acceptance: host identity is verified before the first connection; a changed key is refused with no auto-accept path; the disconnected state says local development remains available.
   - Verification: deferred, blocked on OD-06 (verified remote omp endpoint and WebSocket upgrade authentication) and the owner's protocol and host-key decision. No Cursor primary docs page for SSH remote development was found (https://cursor.com/docs/remote-ssh.md and https://cursor.com/docs/remote-development return 404) (Phase 34).
 - [ ] **CX-06**: The codebase meets a state-of-the-art, enterprise and production-ready bar, checked by a repository-wide review in which every finding is fixed or recorded.
   - Acceptance: every finding has a disposition (fixed, or recorded with an owner and an open-question link); no finding is silently suppressed.
   - Verification: findings table in the Phase 35 record.
-- [ ] **CX-07**: Quality gates are enforced in CI and in bootstrap: analyzers, warnings as errors, formatter, architecture tests and secret scanning.
+  - Audit (2026-10-27): PARTIAL. The Phase 25.1 register and its fix phases exist; no per-file review of the final tree. See `docs/quality/cursor-parity-audit-2026-10-26.md` row CX-06.
+- [x] **CX-07**: Quality gates are enforced in CI and in bootstrap: analyzers, warnings as errors, formatter, architecture tests and secret scanning.
   - Acceptance: each gate fails the build on violation; every suppression has a row in docs/open-questions.md.
   - Verification: gate run at Phase 35 HEAD.
-- [ ] **CX-08**: Decision records exist for the editor, terminal, MCP, browser pane and plugin isolation choices.
+- [x] **CX-08**: Decision records exist for the editor, terminal, MCP, browser pane and plugin isolation choices.
   - Acceptance: each record names the candidate chosen, its licence (SPDX, with its source URL), its verification route and its open risks.
   - Verification: docs/decisions listing (Phase 35).
 
@@ -346,104 +364,117 @@ Source: user request 2026-10-22 and ultrathink plan graph ut-mvjvg4gj-fb21d80f. 
 - [ ] **VX-01**: One Avalonia token set provides White and Purple roles in light and dark variants, with OFL typography resources and one spacing and one radius scale; no view hard-codes a colour.
   - Acceptance: every foreground and background pair in both themes meets WCAG AA (4.5:1 for text, 3:1 for non-text); the Greptile families (DM Sans, Anybody, Space Mono) ship unmodified with their OFL notice; the owner signs off the rendered look.
   - Verification: contrast test in the gate; licence files in the bundle (Phase 36). Research: `docs/plans/vision-research/greptile-font.md`.
+  - Audit (2026-10-27): PARTIAL. The owner's sign-off of the rendered look is missing. See `docs/quality/cursor-parity-audit-2026-10-26.md` row VX-01.
 - [ ] **VX-02**: One slash command registry declares each command's name, arguments, description, platform availability and handler; commands appear only with a verified reference.
   - Acceptance: an empty query lists all commands; an unknown command shows a suggestion; a command that needs an unavailable capability is shown disabled with its reason; the catalogue records the Cursor reference version and date.
-  - Verification: palette and registry tests (Phases 36, 38). Research: `docs/plans/vision-research/cursor-slash-commands.md` (86 tokens; 69 verified, 22 unverified).
-- [ ] **VX-03**: The chat window streams session output as distinct blocks with loading, empty, streaming, error and disconnected states; cancel stops a response without stopping the session.
+  - Verification: palette and registry tests (Phases 36, 38). Research: `docs/plans/vision-research/cursor-slash-commands.md` (86 tokens: 44 in the CLI reference table, 21 in Agent chat and the Agents Window, 21 in the changelog).
+  - Audit (2026-10-27): PARTIAL. The palette lists omp's commands; the OmpOS catalogue holds one command of 86 and a chat session does not list it. See `docs/quality/cursor-parity-audit-2026-10-26.md` row VX-02.
+- [x] **VX-03**: The chat window streams session output as distinct blocks with loading, empty, streaming, error and disconnected states; cancel stops a response without stopping the session.
   - Acceptance: text, tool call, tool result and file edit render as separate blocks; an error keeps the transcript and offers retry; reconnect after network loss does not duplicate blocks.
   - Verification: UI and replay tests (Phase 38).
-- [ ] **VX-04**: The Kanban board shows one task card per chat, with status taken from runtime events and never from client-side guesses.
+- [x] **VX-04**: The Kanban board shows one task card per chat, with status taken from runtime events and never from client-side guesses.
   - Acceptance: runtime statuses are read-only; user-settable statuses accept drag; a stale heartbeat shows an indicator with a screen-reader label; updates arrive without a reload.
   - Verification: gate tests from fake session events (Phases 36, 39). Column names await owner confirmation (default recorded in CONTEXT).
-- [ ] **VX-05**: The settings window and model provider registry configure local, custom, cloud, API key and coding plan entries without code changes.
+- [x] **VX-05**: The settings window and model provider registry configure local, custom, cloud, API key and coding plan entries without code changes.
   - Acceptance: Runtime settings validate floors and ceilings; a custom provider needs no code change; a coding plan is a separate entry with its own auth, quota display and error mapping; remote plain http is refused unless explicitly allowed.
   - Verification: settings and catalogue tests (Phase 40). Research: `docs/plans/vision-research/providers-local-us.md` and `providers-eu-cn.md`.
 - [ ] **VX-06**: Agent sessions run under herdr, which owns process lifetime; the client attaches, detaches and observes, and detach never terminates a session.
   - Acceptance: sessions persist locally and reattach after a client restart; heartbeat every 15 seconds, stale after three missed beats; a herdr server restart or machine reboot keeps no processes, so restored sessions resume from the stored native omp session reference (owner decision pending in STATE).
   - Verification: recorded-transcript fake tests (Phases 36, 37); the real endpoint is verified only after the owner decision. Research: `docs/plans/vision-research/herdr.md`.
+  - Audit (2026-10-27): PARTIAL. herdr has a fake only and no product consumer (OQ-76). See `docs/quality/cursor-parity-audit-2026-10-26.md` row VX-06.
 - [ ] **VX-07**: The omp engine is reached through a versioned adapter that emits typed events; no UI code depends on omp output formats.
   - Acceptance: replaying a recorded fixture twice yields the same typed event sequence; cancel leaves the session running; omp launch-time provider configuration is used only once verified.
   - Verification: fixture replay tests (Phases 36, 37).
+  - Audit (2026-10-27): PARTIAL. `Harness.Agent` is referenced by no product project; the head uses ACP. See `docs/quality/cursor-parity-audit-2026-10-26.md` row VX-07.
 - [ ] **VX-08**: Every head offers a terminal that matches its platform: a local PTY on desktop, a remote-attached terminal on mobile and web, and a Linux environment per cloud session on Railway.
   - Acceptance: desktop spawns a local shell per OS; mobile and web never spawn a local shell and show the local terminal as unavailable with a reason; the cloud environment is a persistent container with idle sleep (owner decision 2026-10-22) and restores its transcript on reattach.
   - Verification: per-target build checks and UI tests (Phases 37, 42, 43). Research: `docs/plans/vision-research/railway-cloud-desktop.md`; remote desktops need Railway's written confirmation before production.
+  - Audit (2026-10-27): PARTIAL. The Linux PTY is met; no Windows or macOS backend, and mobile and web terminals are models only (OQ-69, OQ-74). See `docs/quality/cursor-parity-audit-2026-10-26.md` row VX-08.
 - [ ] **VX-09**: A pets companion reflects session state at a glance, never blocks the chat or terminal, and respects reduced motion and a hide toggle.
   - Acceptance: hidden, idle, working, attention-needed and fallback states each have a text equivalent; reduced motion disables animation; 3D is built only after a per-target spike passes, and 2D is the default.
   - Verification: state and UI tests (Phase 41). Research: `docs/plans/vision-research/pets-feasibility.md`; the appearance needs owner sign-off.
+  - Audit (2026-10-27): PARTIAL. State model only; no companion view (OQ-72). See `docs/quality/cursor-parity-audit-2026-10-26.md` row VX-09.
 - [ ] **VX-10**: Provider keys live only in the platform secure store on desktop and mobile, or in session memory on web, and never reach logs, transcripts, crash output or telemetry.
   - Acceptance: a canary key injected into each sink is absent from every sink in the gate; web keys are cleared on reload; no key is written to browser storage.
   - Verification: canary harness tests (Phase 36); browser-run check (Phase 43). Web key storage (vault or per-session entry) is an owner decision; the default is session-only memory.
+  - Audit (2026-10-27): PARTIAL. Keys sit in an owner-only file and in omp's store, not a platform secure store (OQ-92); no web key-entry page. See `docs/quality/cursor-parity-audit-2026-10-26.md` row VX-10.
 
 ## Agent loop and Agent Panel (AL, v0.14.0, planned 2026-10-26)
 
 Source: user request 2026-10-26 and ultrathink plan graph ut-mvp0bh59-2dd6ef4c. Evidence: `docs/plans/agent-loop/`. Not counted in v0.9.2 completion. Revised 2026-10-26 from the user message of that date (ultrathink plan graph ut-mvp88pnw-6e8c4d24): AL-07, AL-09, AL-11 and AL-12 are reworded in place and AL-13 to AL-20 are added; the decisions DR-1 to DR-6 are recorded in `.planning/ROADMAP.md` (milestone v0.14.0).
 
-- [ ] **AL-01**: claude-ultrathink, agent-swarm and agent-substrate are git submodules of the repository, referenced by https remote URL and pinned to commits that exist on their remotes.
+- [x] **AL-01**: claude-ultrathink, agent-swarm and agent-substrate are git submodules of the repository, referenced by https remote URL and pinned to commits that exist on their remotes.
   - Acceptance: `.gitmodules` holds no local path; a fresh clone with `--recurse-submodules` restores them; the update procedure and each pin are documented; no sibling source is copied or edited.
   - Verification: gate test over `.gitmodules` and the gitlinks; fresh-clone run (Phase 44).
-- [ ] **AL-02**: GSD-Core is an omp plugin owned by this repository that reports its health and degrades without GSD-Core.
+- [x] **AL-02**: GSD-Core is an omp plugin owned by this repository that reports its health and degrades without GSD-Core.
   - Acceptance: the probe prints one JSON object and exits 0, 2 or 3; the plugin copies no GSD file; its agents are linked by absolute symlink and never overwrite a user agent.
   - Verification: node tests and recorded probe output (Phase 44).
-- [ ] **AL-03**: OmpOS launches `omp acp` with the four plugins loaded and nothing from the user's global omp configuration.
+- [x] **AL-03**: OmpOS launches `omp acp` with the four plugins loaded and nothing from the user's global omp configuration.
   - Acceptance: the argument order, the environment and the MCP server list are produced by a pure planner and applied by the ACP transport; tokens appear only as environment variable names; per-session state directories isolate the orchestrator.
   - Verification: planner and transport tests against a fake omp; a recorded real handshake (Phase 44).
-- [ ] **AL-04**: A missing or uninitialised plugin is reported with an actionable message and never crashes the application.
+- [x] **AL-04**: A missing or uninitialised plugin is reported with an actionable message and never crashes the application.
   - Acceptance: `SubmoduleNotInitializedException` names the plugin, the path and the exact fix; the panel shows the plugin as unavailable and the session runs as plain omp.
   - Verification: unit tests (Phase 44), panel state tests (Phase 46).
-- [ ] **AL-05**: The stages of the loop (planner, orchestrator, substrate, workflow engine) are observable as stage events with degradation.
+- [x] **AL-05**: The stages of the loop (planner, orchestrator, substrate, workflow engine) are observable as stage events with degradation.
   - Acceptance: each observer maps recorded fixtures; unknown fields are ignored; a malformed or absent input is a Degraded or Unavailable event; cancellation leaves no child process.
   - Verification: fixture, degraded-path and cancellation tests (Phase 45).
-- [ ] **AL-06**: Several long-running sessions are kept in a catalog that survives an application restart.
+- [x] **AL-06**: Several long-running sessions are kept in a catalog that survives an application restart.
   - Acceptance: atomic versioned persistence; a corrupt or unknown-version file is quarantined and treated as empty; a session running at shutdown is Lost on the next start and can be resumed from its stored reference.
   - Verification: persistence and restart tests (Phase 45).
 - [ ] **AL-07**: The operator can steer a running session, and the steering is recorded.
   - Acceptance: ~~a message sent during a run queues as a steer or a follow-up and is delivered over ACP after the active turn in send order;~~ Superseded 2026-10-26 (DR-4: omp's ACP agent cancels a running turn when a new `session/prompt` arrives, so prompting over ACP cannot deliver live; live delivery is the requirement, queue after the turn is the documented fallback): a steer sent during a run is delivered live into the running session (AL-15) and a follow-up is delivered after the active turn in send order; where live delivery is not available the steer queues after the active turn, is shown as queued and is never reported as delivered live; the substrate records it as a `note` event with `payload.action` `steer` when reachable; OmpOS never claims the substrate delivered it.
   - Verification: presenter tests and fake-gateway tests (Phases 45, 46); live delivery tests with a fake omp (Phase 49).
-- [ ] **AL-08**: The task context of a session (Kanban status, workflow phase, shared memory, lessons) is readable and scoped to the session.
+  - Audit (2026-10-27): PARTIAL. An injected delivery into a running turn is not verified live (OD-07, OQ-81). See `docs/quality/cursor-parity-audit-2026-10-26.md` row AL-07.
+- [x] **AL-08**: The task context of a session (Kanban status, workflow phase, shared memory, lessons) is readable and scoped to the session.
   - Acceptance: parts that cannot be read are listed as warnings; text is plain and length capped; one session never reads another's state.
   - Verification: scope-isolation tests (Phase 45).
-- [ ] **AL-09**: ~~The application opens on the Agent Panel, a Cursor-class agent surface.~~ Superseded 2026-10-26 (DR-1): The application opens on the default Cursor-style Agent Panel (the session rail as the Agents sidebar, the thread and the composer); no second agent surface exists.
+- [x] **AL-09**: ~~The application opens on the Agent Panel, a Cursor-class agent surface.~~ Superseded 2026-10-26 (DR-1): The application opens on the default Cursor-style Agent Panel (the session rail as the Agents sidebar, the thread and the composer); no second agent surface exists.
   - Acceptance: ~~session rail, thread, pipeline strip, composer with Send, Steer, Follow-up and Stop, and a collapsible inspector; every existing tool remains reachable.~~ Superseded 2026-10-26 (DR-1: no inspector and no separate pipeline strip surface): session rail, thread and composer with Send, Steer (send now), Follow-up (queue) and Stop, with the header chips and the one-line plugin connection row directly under the header; no region other than these exists and there is no inspector; every existing tool remains reachable.
   - Verification: headless UI test that no region other than rail, thread and composer (with its header) exists, and a recorded screenshot (Phase 46). The web head parity is Phase 47, deferred.
-- [ ] **AL-10**: Several sessions run concurrently, each with its own engine and status.
+- [x] **AL-10**: Several sessions run concurrently, each with its own engine and status.
   - Acceptance: selecting a session rebinds the thread, composer and approvals; each row shows its own status and last activity; closing a session stops its engine.
   - Verification: headless test with two scripted sessions (Phase 46).
-- [ ] **AL-11**: The panel is operable by keyboard and by screen reader and honours reduced motion.
+- [x] **AL-11**: The panel is operable by keyboard and by screen reader and honours reduced motion.
   - Acceptance: every tab stop has an accessible name; the documented keyboard map works; ~~stage changes use a polite live region~~ Superseded 2026-10-26 (DR-1: the stage strip is the one-line plugin connection row): plugin connection changes use a polite live region and errors an assertive one; new colours pass the contrast tests.
   - Verification: the accessibility walk over the opened panel and the contrast tests (Phase 46).
 - [ ] **AL-12**: Every panel state has its own copy and screenshot evidence.
   - Acceptance: empty, initialising, streaming, error with retry, success, each degraded mode and a resumed session; ~~eight screenshots recorded.~~ Superseded 2026-10-26 (DR-1: the inspector is gone): eight screenshots of the default panel recorded without an inspector (empty, streaming, degraded, error, long-running list, narrow window, dense list, keyboard focus), plus one screenshot per Kanban tab state (loading, empty, error, populated, disconnected).
   - Verification: one test per state and the evidence files in `docs/runbooks/evidence/` (Phases 39, 46).
-- [ ] **AL-13**: Ultrathink, Substrate, Swarm and GSD-Core are connected to every omp process the application starts, the engine session behind the Agent Panel and each omp terminal, each loaded exactly once from the pinned submodules.
+  - Audit (2026-10-27): PARTIAL. 2 of the 8 panel states and the populated and empty Kanban states have screenshots. See `docs/quality/cursor-parity-audit-2026-10-26.md` row AL-12.
+- [x] **AL-13**: Ultrathink, Substrate, Swarm and GSD-Core are connected to every omp process the application starts, the engine session behind the Agent Panel and each omp terminal, each loaded exactly once from the pinned submodules.
   - Acceptance: the launch planner plans an interactive omp (terminal) launch as well as `omp acp`, with the same plugin set, per-session state directory and environment; the embedded terminal starts omp through the planner with an argument array and the project directory; with the user's own omp configuration present (global `config.yml` extensions and extension symlinks) each plugin is registered once, with unique command names; a missing omp, a missing plugin or an uninitialised submodule shows its fix text while the rest of the application works; if omp cannot be made to load each plugin exactly once, the fallback is recorded in an open-question row.
   - Verification: planner tests; gate test with a fake executable; a recorded no-model-turn run against a sandbox with a polluted global configuration (Phase 48).
-- [ ] **AL-14**: The connection of each plugin, and of all four together, is verified by a recorded run, and every connection failure is shown to the user.
+- [x] **AL-14**: The connection of each plugin, and of all four together, is verified by a recorded run, and every connection failure is shown to the user.
   - Acceptance: for each of Ultrathink, Substrate, Swarm and GSD-Core: the plugin is registered with omp, active in the app-started engine session and in the app-started omp terminal, and observable in the session UI to the extent the plugin exposes it (command output, tool calls, stage chips); a load or connect failure is shown with its fix text; starting a session from the application and opening an omp terminal for it shows all four plugins connected.
   - Verification: per plugin, recorded run output (commands registered, plugin-specific probe) and a degraded-path test; the end-to-end run recorded in the runbook under `docs/runbooks/evidence/` with the live part tagged Live and excluded from the gate (Phase 48).
 - [ ] **AL-15**: A running session can be live-steered from the Agent Panel composer and from its Kanban card.
   - Acceptance: a steering message sent with send now from the composer or from the card is taken into account by the session before the turn ends; a follow-up queues for the end of the turn; the steering history shows delivered, queued or failed truthfully; the substrate records each steering action as a `note` event with `payload.action` `steer`, and delivery is never attributed to the substrate. The delivery mechanism is an open question with a default recorded in `docs/open-questions.md`.
   - Verification: tests with a fake omp that records the delivery, fake-gateway tests, and a recorded live run when a model turn is approved (Phases 46, 49).
-- [ ] **AL-16**: Steering that cannot be delivered fails clearly and leaves the session unchanged.
+  - Audit (2026-10-27): PARTIAL. No recorded live run into a running turn, and no view lists the steering history (OD-07). See `docs/quality/cursor-parity-audit-2026-10-26.md` row AL-15.
+- [x] **AL-16**: Steering that cannot be delivered fails clearly and leaves the session unchanged.
   - Acceptance: steering a session that ended, disconnected or was never started shows a clear message, leaves the session state unchanged and keeps the message in the composer.
   - Verification: gate tests (Phase 49).
 - [ ] **AL-17**: The Kanban tab shows each opened session as exactly one task card.
   - Acceptance: the tab is reachable from the application navigation; each opened session (Agent Panel chat or omp terminal) has one card; opening creates it and closing or ending moves it to its terminal column without removing it silently; card status mirrors the session lifecycle status; selecting a card opens or focuses its session; status updates live without a refresh; a card shows title, model and provider, last activity, status, stale indicator and, when Substrate is reachable, task, graph, lessons count and lease holder, and without Substrate these show as unavailable, never invented.
   - Verification: gate tests from fake session events, tests with a fake Substrate gateway reachable and unreachable, and a headless UI test (Phase 39).
+  - Audit (2026-10-27): PARTIAL. The lease holder is always unavailable. See `docs/quality/cursor-parity-audit-2026-10-26.md` row AL-17.
 - [ ] **AL-18**: The Kanban tab renders every state, is accessible and updates live without breaking reduced motion.
   - Acceptance: loading skeleton, empty with a way to start a session, error with retry, populated, and disconnected (terminal dropped) distinct from failed; keyboard navigation with visible focus; labels exposed to assistive technology; status never conveyed by colour alone; live updates honour reduced motion; runtime statuses are not draggable and only Backlog and Archived accept drag; a card can steer its session (AL-15).
   - Verification: one UI test per state, the accessibility walk over the tab and the evidence screenshots (Phase 39).
-- [ ] **AL-19**: The Greptile font (DM Sans body, Anybody display, Space Mono code) is used consistently across the application.
+  - Audit (2026-10-27): PARTIAL. Screenshots exist for populated and empty only. See `docs/quality/cursor-parity-audit-2026-10-26.md` row AL-18.
+- [x] **AL-19**: The Greptile font (DM Sans body, Anybody display, Space Mono code) is used consistently across the application.
   - Acceptance: every text control in the Agents layout, the Kanban tab, the Settings window and the terminal chrome resolves its family through the `OmpOS.Font.*` tokens, with no literal family in AXAML; the recorded screenshots show DM Sans.
   - Verification: a headless test walking those surfaces and the recorded screenshots (Phases 39, 40, 46); the token set and licence notice stay VX-01 (Phase 36).
 - [ ] **AL-20**: The application is a full Cursor desktop clone in UI, capabilities and settings, tracked by the existing inventories, with no addition beyond the Kanban tab and the expanded provider settings.
   - Acceptance: parity is tracked by ADE-01 to ADE-22, CX-01 to CX-08, VX-01 to VX-10 and the 34-row table in `docs/plans/vision-research/cursor-settings-window.md`; no new inventory is created; the only additions beyond Cursor parity are the Kanban tab (AL-17, AL-18) and the expanded provider settings (VX-05); no plugin enable or disable setting exists until the user confirms.
   - Verification: the Phase 35 audit of the final tree against those inventories (Phase 35 criterion 4).
-- [ ] **AL-21**: The application starts in the Dark theme and Settings > General offers System, Light and Dark; the choice persists.
+  - Audit (2026-10-27): PARTIAL. The audit exists; the clone is not complete (audit section 4). See `docs/quality/cursor-parity-audit-2026-10-26.md` row AL-20.
+- [x] **AL-21**: The application starts in the Dark theme and Settings > General offers System, Light and Dark; the choice persists.
   - Acceptance: `RequestedThemeVariant` is Dark by default; the General page saves System, Light or Dark and the running window follows it; views that build colours in code re-read the tokens on a change; every text and non-text colour pair meets its contrast requirement in both variants.
   - Verification: theme preference tests, `ThemeContrastTests` in both variants, and the screenshots in `docs/runbooks/evidence/ui-parity-2026-10-26/after-dark/` and `after-light/` (Phase 50).
-- [ ] **AL-22**: Controls, density and layouts follow the design specification `docs/plans/ui-parity/cursor-agents-window-parity.md` and keep the accessibility contract.
+- [x] **AL-22**: Controls, density and layouts follow the design specification `docs/plans/ui-parity/cursor-agents-window-parity.md` and keep the accessibility contract.
   - Acceptance: buttons, inputs, toggles, tabs, list rows, chips, scrollbars, tooltips and menus are styled from OmpOS tokens; desktop controls use 32 px targets and none is smaller than 24 by 24 px; the skip link is hidden until it has focus; the rail, thread, composer, Kanban tab, omp terminal and Settings window follow section 4 of the specification; x:Name values, accessible names, tab order, the focus ring, reduced motion and the keyboard map are unchanged.
   - Verification: control style, density and skip link tests, `KeyboardFocusTests`, `AccessibilityNameTests`, `ReducedMotionTests`, and the screenshot set (Phase 50).
-- [ ] **AL-23**: The Greptile faces are bundled as static instances and used by role: DM Sans for interface text, Anybody for display headings of 20 px and above only, Space Mono for code and identifiers.
+- [x] **AL-23**: The Greptile faces are bundled as static instances and used by role: DM Sans for interface text, Anybody for display headings of 20 px and above only, Space Mono for code and identifiers.
   - Acceptance: the font files and their licence texts are in the application assets; no Thin weight renders; every `OmpOS.Font.Display` use is 20 px or larger and semibold or heavier; no literal family exists in AXAML (AL-19).
   - Verification: `FontResourceTests`, a typography markup test and the recorded screenshots (Phase 50).

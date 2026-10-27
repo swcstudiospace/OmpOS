@@ -46,3 +46,5 @@ To repeat the application screenshots (Xvfb), use the method in `docs/runbooks/e
 - Linux only. Windows, macOS, Android and hosted deployments were not run.
 - A tight double Ctrl+C (50 ms apart) did not exit omp in one probe run; 150 ms did. The live test waits until the TUI is quiet.
 - The Substrate extension files are loaded in the live tests only because the planner is given an endpoint; no Substrate server answers.
+
+Update 2026-10-27: criterion 8 has a recorded run: the four flyout screenshots `app-chat-plugins-flyout-*.png` and `app-terminal-plugins-flyout-*.png` and the "Application evidence" section of the evidence README (live, no model turn; two sessions of one sandbox; Substrate group Degraded with HTTP 403 on the brief).

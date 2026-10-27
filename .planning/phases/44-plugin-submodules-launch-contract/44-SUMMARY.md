@@ -27,3 +27,5 @@ The record was written after the work. Evidence is named by file, test or commit
 1. Criterion 2: record a fresh `git clone --recurse-submodules` run (needs read access to the private `swcstudiospace/substrate` repository).
 2. Criterion 3: run the node tests and the probe, and record the three exit codes.
 3. OQ-62 (licence), OQ-63 (CI token), OQ-64 (symlinked agents), OQ-65 (intermittent outbound connection), OQ-66, OQ-67 stay open in `docs/open-questions.md`.
+
+Update 2026-10-27: criterion 3 is now met. The `plugins/gsd-core-omp/bin` scripts are tracked (`fee72a5`; the root `.gitignore` had hidden them), the node suite runs from `bootstrap.sh` and CI through `scripts/ci/plugin-node-tests.sh`, and the audit ran it on the final tree: 69 pass, 0 fail (node v24.18.0). Open item 2 above is closed. Criterion 2 (a recorded fresh-clone run with the hygiene tests) is still open; see `docs/quality/cursor-parity-audit-2026-10-26.md`.

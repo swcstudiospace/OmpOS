@@ -1,5 +1,7 @@
 # Phase 29: Browser Pane, Completion and Export, Summary
 
+Position 2026-10-27: the audited position is in the Phase 29 Status line of `.planning/ROADMAP.md` and in `docs/quality/cursor-parity-audit-2026-10-26.md`. The text below was written earlier and is kept as history where it conflicts.
+
 **Status: partially complete.** Export and usage history are done (ADE-20). The completion client is done, but its wire format needs the provider owner's confirmation (ADE-13). The browser pane is not started (ADE-15).
 
 Mac channel: No. Verification runs on the Linux gate with headless Chromium and fixture pages. No claim is made about the browser pane on the macOS and mobile heads.

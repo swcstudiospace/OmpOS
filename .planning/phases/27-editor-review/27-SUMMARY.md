@@ -1,5 +1,7 @@
 # Phase 27: Editor and Review, Summary
 
+Position 2026-10-27: the editor, tree, Diff review view and inline edit view exist in the tree since this record ("the native editor view is not built" no longer holds); Diff review is fed by the Changes bar. The audited position is in the Phase 27 Status line of `.planning/ROADMAP.md` and in `docs/quality/cursor-parity-audit-2026-10-26.md`. The text below is kept as history.
+
 **Status: partially complete.** The logic for the workspace tree, per-hunk diff review and inline edit is done. The native editor view is not built, and tabs, highlighting and find with match count (ADE-09) are not done.
 
 Mac channel: No. All editor and review tests run headless on the Linux gate.

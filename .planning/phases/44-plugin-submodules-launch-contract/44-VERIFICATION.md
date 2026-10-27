@@ -26,3 +26,5 @@ Results recorded on 2026-10-26 are in `44-SUMMARY.md`. A row marked "no recorded
 - Windows, macOS, Android and the hosted deployments were not run.
 - A live model turn was not run (OD-07). Nothing here shows that a plugin does its work when a model answers; it shows that the plugins load and that the planner builds the exact launch.
 - The CI step that checks out the private submodule needs the `SUBMODULE_TOKEN` secret (OQ-63). Without it the job warns and continues, so a green CI run does not show that the substrate plugin was present.
+
+Update 2026-10-27: criterion 3 has a result now: `bash scripts/ci/plugin-node-tests.sh` (the node suite of `plugins/gsd-core-omp`, run from `bootstrap.sh` and CI) ran on the final tree with node v24.18.0: 69 pass, 0 fail; the `bin` scripts are tracked since `fee72a5`. No probe run against a real GSD-Core install is recorded. Criterion 2 still has no recorded run with the hygiene tests.

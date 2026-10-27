@@ -6,6 +6,8 @@ verified: 2026-10-23
 gate: bootstrap OK (recorded 2026-10-23; total 2209, failed 0)
 ---
 
+Correction 2026-10-27: the theme dictionary cited below is now `src/OmpOS.Native.Views/Themes/OmpOSTokens.axaml`, and the test `KeyboardFocusTests.TabMovesFromSessionListThroughTranscriptPromptSendAndStop` is now `TabMovesFromSessionListThroughPipelineStripTranscriptPromptSendAndStop`. The rows below are kept as written.
+
 # Phase 20 (Avalonia Foundation) Verification
 
 ROADMAP criteria: `.planning/ROADMAP.md` Phase 20 section (Success Criteria 1-7).

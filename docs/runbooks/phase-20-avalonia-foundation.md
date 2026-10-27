@@ -1,5 +1,7 @@
 # Phase 20 Avalonia foundation: runbook
 
+Correction 2026-10-27: `apps/OmpOS.Native/Themes/OmpOSTokens.axaml` is now `src/OmpOS.Native.Views/Themes/OmpOSTokens.axaml`, and the keyboard test `TabMovesFromSessionListThroughTranscriptPromptSendAndStop` is now `TabMovesFromSessionListThroughPipelineStripTranscriptPromptSendAndStop`.
+
 Status as of 2026-10-22: plan waves 1 to 3 are written (`20-01`, `20-02`, `20-03` in `.planning/phases/20-avalonia-foundation/`). Wave 4 (this runbook and the AT-SPI2 evidence) is in progress. Section 3, the AT-SPI2 query for criterion 4, is recorded (X11 under Xvfb, 2026-10-22; evidence in `docs/runbooks/evidence/phase-20-avalonia-foundation-2026-10-21/`). The repo records no per-criterion pass. The wave 3 gate run of 2026-10-21 logged to `/tmp/ompos-gate-w3-20261021-224038.log`, which is not committed; `20-03-SUMMARY.md` cites it.
 
 Sources: `.planning/ROADMAP.md`, Phase 20 success criteria 1 to 7; `.planning/phases/20-avalonia-foundation/20-03-SUMMARY.md`; `.planning/phases/20-avalonia-foundation/20-04-PLAN.md`; `docs/open-questions.md` (OQ-28 to OQ-48).

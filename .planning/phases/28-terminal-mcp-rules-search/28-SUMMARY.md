@@ -1,5 +1,7 @@
 # Phase 28: Terminal, MCP, Rules and Search, Summary
 
+Position 2026-10-27: the audited position is in the Phase 28 Status line of `.planning/ROADMAP.md` and in `docs/quality/cursor-parity-audit-2026-10-26.md`. The text below was written earlier and is kept as history where it conflicts.
+
 **Status: partially complete.** The harness logic for the approval gate, the MCP client, workspace rules, search and setup is done. The terminal control and PTY are not chosen, and no native view is built.
 
 Mac channel: No. The terminal, MCP, search and setup tests run on the Linux gate.

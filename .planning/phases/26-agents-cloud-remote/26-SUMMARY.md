@@ -1,5 +1,7 @@
 # Phase 26: Agents, Worktrees, Cloud and Remote, Summary
 
+Position 2026-10-27: this record was written before the Agents window, side chats and search views and the cloud run contract existed in the tree. The audited position is in the Phase 26 Status line of `.planning/ROADMAP.md` and in `docs/quality/cursor-parity-audit-2026-10-26.md`. The text below is kept as history.
+
 **Status: partially complete.** Side chats, transcript search and the Agents window are in the UI. The worktree manager exists but is not wired into agent runs. Cloud runs and remote control are not started.
 
 Mac channel: No. Worktree, transcript and Agents tests run on the Linux gate. The remote-control check uses a second client on the Linux or Windows host.

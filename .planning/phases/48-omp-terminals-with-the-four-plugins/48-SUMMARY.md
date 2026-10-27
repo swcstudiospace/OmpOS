@@ -43,3 +43,5 @@ The record was written after the work. Statuses use: Met, Met (live, no model tu
 1. One recorded application run showing all four plugins connected in the connection row (criterion 8); needs a healthy Substrate or an accepted "Substrate off" definition by the owner.
 2. OQ-82 (registration in the user's own omp configuration, not done by design), OQ-83 (the owner's other global extensions), OQ-86 (omp version in the row).
 3. OQ-81: `injected` delivery stays unverified until a model turn is approved.
+
+Update 2026-10-27: criterion 8 is met (live, no model turn). `docs/runbooks/evidence/phase-48-omp-plugins-2026-10-26/README.md` ("Application evidence") records the application under Xvfb with the real omp: a chat session and an omp terminal session each show all four plugins "Connected to omp". They are two sessions of one sandbox, not a terminal opened for the chat session, and the Substrate group reads Degraded there (HTTP 403 on the brief). Open item 1 above is closed. The ROADMAP now marks the phase complete.

@@ -1,16 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.10.0
-milestone_name: Cross-platform UI
-status: paused
-last_updated: "2026-10-25"
-last_activity: 2026-10-25
+milestone: v0.14.0
+milestone_name: Agent loop and Agent Panel
+status: partial
+last_updated: "2026-10-27"
+last_activity: 2026-10-27
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
-  percent: 50
+  total_plans: 6
+  completed_plans: 6
+  percent: 43
 ---
 
 # Project State
@@ -20,14 +20,57 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-21)
 
 **Core value:** A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
-**Current focus:** Milestone v0.10.0 — Cross-platform UI (active). Phases 20 and 21 complete. Paused at the owner's decision on Phase 22, which is blocked on external hosts.
+**Current focus:** Milestone v0.14.0, Agent loop and Agent Panel, audited at commit `d75fd88` on 2026-10-27. The Agent Panel, the Kanban tab, omp terminals with the four plugins, live steering, the Settings window with model providers and the Cursor-style visual parity are built and verified without a model turn. The Cursor parity audit is `docs/quality/cursor-parity-audit-2026-10-26.md`; what is not done is listed in its section 4 and below.
 
 ## Current Position
 
-Phase: 21 complete (5 of 5 criteria, verified twice: 21-VERIFICATION.md passed 5/5). Phase 20 complete (7 of 7, 20-VERIFICATION.md passed).
-Plan: 21-01 complete. Phase 22 partial: criterion 1 met on the XWayland path (2026-10-24), criterion 2 met on X11 (2026-10-22), criteria 3 to 5 blocked on external hosts (Windows 11 24H2 runner; Mac channel). Phases 23 to 25 partial or blocked (see queue).
-Status: Paused for one owner decision: how to proceed while Phase 22 criteria 3 to 5 remain blocked. The repo gate is green on the uncommitted working tree (bootstrap OK, 2240 passed, 0 failed, 0 skipped). Nothing is committed.
-Last activity: 2026-10-24 - autonomous run: gate baseline repaired, lock files regenerated, Phase 20 verified, Phase 21 completed with owner decisions F1 to F3 implemented and independently reviewed, headless Wayland probe run for Phase 22 criterion 1, records reconciled.
+Phase: v0.14.0 (Phases 44 to 50): Phases 45, 48 and 50 complete; Phases 44, 46 and 49 partial; Phase 47 deferred. The earlier phases: 20, 21, 25 and 25.1 to 25.9 complete; 22 deferred by the owner; 23 and 24 partial; 26 to 33, 35, 37 to 43 partial or deferred as the audit records (Phase 36 complete as recorded). v0.9.2 Phases 6, 12, 13, 14 remain blocked on external criteria and OD-03.
+Plan: the records of Phases 25.9, 35 and 44 to 50 are written (`.planning/phases/`). Phase 34 is blocked (OD-06, OQ-75).
+Status: the code is committed through `d75fd88`. Nothing is waiting on a decision to continue; the open owner items are in the section "Final position 2026-10-27" below. The sections after it are logs of earlier runs and are kept as history where they conflict.
+Last activity: 2026-10-27 - the Cursor parity audit of the final tree, the Phase 50, 35 and 25.9 records, and the correction of the records the audit found stale (README, ROADMAP, REQUIREMENTS, STATE, the Phase 36, 40, 44, 46, 48 and 49 records, `docs/runbooks/cloud-terminals.md`).
+
+## Final position 2026-10-27
+
+Audited tree: commit `d75fd88`. Audit: `docs/quality/cursor-parity-audit-2026-10-26.md` (221 audited rows: 98 MET, 16 MET-LIVE, 70 PARTIAL, 20 DEFERRED, 3 NOT-STARTED, 14 OMITTED-BY-DECISION). The README and `docs/runbooks/running-the-desktop-app.md` describe how to run the desktop head.
+
+Built and verified without a model turn: the Agent Panel (rail, thread, composer with the model, mode and thinking chips and the slash command palette), the Kanban tab, omp terminals, the four plugins connected to every app-started omp (Phase 48), live steering by omp's `_session/steering` request or the extension inbox (Phase 49), the Settings window with eleven pages and the Models page over omp's `models.yml` (Phase 40), the Changes bar feeding the Diff review tool, and the Cursor-style restyle in Dark and Light (Phase 50).
+
+Verified (evidence is named in the audit and the phase records):
+- Whole-solution test runs at the final tree passed (F10, as reported by the main agent: Native 1450, Presentation 1133, Acp 132, EngineHost 46, Architecture 46, Api.IntegrationTests 210, Coordination 32; every other project 0 failures). No log of that run is committed.
+- The node suite of `plugins/gsd-core-omp`: 69 pass, 0 fail (node v24.18.0), run by the audit on 2026-10-27; it is gated in `bootstrap.sh` and CI.
+- Live runs against the real omp 18.12.6 with no model turn: the engine handshake, the omp terminal, the option chips, the steering wire contract on an idle session, the four `LiveOmpConfigTests`; the application under Xvfb showed all four plugins connected in a chat and in a terminal session and listed 471 slash commands.
+- 27 screenshots in each of `docs/runbooks/evidence/ui-parity-2026-10-26/after-dark/` and `after-light/`.
+
+Not verified (stated, not claimed):
+- Any live model turn (OD-07): an `injected` steering outcome, streaming and error states with a real model, a real agent edit through the Changes bar, running a palette command, provider credentials (OQ-71), plugin behaviour under a model.
+- `./bootstrap.sh`, `dotnet format --verify-no-changes` and the web smoke at `d75fd88`; a fresh clone at the final tree.
+- Windows, macOS, Android, iOS, native Wayland, hosted deployments.
+- A real herdr endpoint, a real Substrate server run (the Substrate group reads Degraded in the application run: HTTP 403 on the brief), live cloud terminals, remote development.
+- The owner's sign-off of the rendered look.
+
+Not built or not wired into a head: the browser pane (Phase 29), hooks, automations, the plugin host, herdr and the `Harness.Agent` adapter, the MCP registry and gateway, the Pets view (Phase 41), remote and mobile terminals, usage history, the setup runner, the inline completion and inline edit clients, the lease holder on Kanban cards. See the audit, section 4.
+
+Open owner items (all recorded in `docs/open-questions.md` unless noted):
+- OQ-62: the licence of OmpOS and the AGPL-3.0-or-later of the `claude-ultrathink` submodule.
+- OQ-63: the `SUBMODULE_TOKEN` repository secret for the private `agent-substrate` submodule.
+- OQ-64: whether omp's agent loader follows symlinked `agents/*.md` files, which `gsd-core-omp` relies on.
+- OQ-66: adopting `agent-substrate` Phase 53 live steering delivery once it merges.
+- OQ-71: provider credentials for live validation (Phase 40 criterion 5).
+- OQ-72: the Pets appearance sign-off, asset source and licence.
+- OQ-73: Railway's written confirmation about remote desktops (Phase 42).
+- OQ-74: who runs the Android 16 and iOS runs.
+- OQ-75: a verified remote omp endpoint and WebSocket ACP transport (OD-06).
+- OQ-76: what a herdr restart should do to a session.
+- OQ-77: the final Kanban column names (the default is in force).
+- OQ-80: whether a plugin enable or disable switch is wanted (the plugins are always on).
+- OQ-83: the owner's own global omp extensions do not load in app-started omp (`--no-extensions`).
+- OQ-84: the plugin isolation sign-off and the head wiring of the plugin host and hooks (ADR-0013 Proposed).
+- OQ-87 to OQ-91: the UI defaults of Phase 50 (32 px targets, native window frame, separate Settings window, static fonts, the four small defaults).
+- OQ-92: where providers and keys live (the default: omp's `models.yml` and `agent.db`).
+- OD-07: approval of a live model turn.
+- Still open from earlier records: OD-03 (sign-in authority, gates hosted exposure and cloud runs), OD-06, OQ-60 and OQ-61 (VS Code compatibility scope, admin controls), OQ-68 to OQ-70.
+- The unexplained local commit "Weekly update" (`324f0df`, 2026-10-26 10:29 UTC), made by a process nobody identified while the Wave B agents worked; it was never pushed and was split into the phase-named commits by a soft reset.
+
 
 ## Direction Update 2026-10-26 (ultrathink graph ut-mvp88pnw-6e8c4d24)
 
@@ -110,24 +153,31 @@ Later owner decisions, not blocking now:
 | v0.10.0 | 23 Web head | 20, 21 | Partial. Criterion 1 met. Criteria 2 and 3 blocked (OMPOS_API_ORIGIN unset; Railway deploys paused). Criterion 4 needs a repository command that reproduces G-WEB (the spike project is not in the repo). Does not depend on 22 |
 | v0.10.0 | 24 iOS and Android heads | 20, 21 | Blocked. iOS needs the Mac channel. Android needs SDK API 36 (ANDROID_HOME unset). Does not depend on 22 |
 | v0.10.0 | 25 Cutover | 21, 22, 23, 24 | Blocked on 22 and 24 |
-| v0.11.0 | 26 Agents, worktrees, cloud, remote | 21, 22 | Partial. Blocked by 22. Cloud criterion needs v0.9.2 Phase 13 (Railway pause, OD-03) |
-| v0.11.0 | 27 Editor and review | 21, 22 | Partial. Blocked by 22. Native editor view not built |
-| v0.11.0 | 28 Terminal, MCP, rules, search | 21, 22 | Partial. Blocked by 22. Terminal control and PTY not chosen |
-| v0.11.0 | 29 Browser pane, completion, export | 26, 27 | Partial. Browser pane not started (ADR R-3 open) |
-| v0.11.0 | 30 Compatibility and admin | 20, 26, 29 | Partial. ADE-22 deferred in writing. ADE-21 needs owner scope |
-| v0.12.0 | 31 Plugin manifests and hooks | 21, 28 | Planned. Blocked by 28 |
-| v0.12.0 | 32 Automations | 26, 31 | Planned |
-| v0.12.0 | 33 Omp CLI terminal and shared registry | 28 | Planned |
+| v0.11.0 | 26 Agents, worktrees, cloud, remote | 21, 22 | Partial (audited 2026-10-27). Side chats and transcript search met; the Agents window has no feeder; worktrees only in the hosted API; run contract implemented, no live cloud run (OD-03, OQ-70); remote control not started |
+| v0.11.0 | 27 Editor and review | 21, 22 | Partial. Editor and tree mounted; Diff review is fed by the Changes bar; no open-folder action; inline edit unbound |
+| v0.11.0 | 28 Terminal, MCP, rules, search | 21, 22 | Partial. Search and rules loading met; the terminal approves through its own buttons (Linux only); the MCP registry is empty; the setup runner has no caller |
+| v0.11.0 | 29 Browser pane, completion, export | 26, 27 | Partial. Browser pane not started (OQ-51); the completion client is never built; usage history empty |
+| v0.11.0 | 30 Compatibility and admin | 20, 26, 29 | Deferred in writing. ADE 22 needs live cloud runs (OD-03); ADE 21 needs owner scope (OQ-60). No stub ships |
+| v0.12.0 | 31 Plugin manifests and hooks | 21, 28 | Partial. Library, view and tests; no head wires the plugin host or hooks (OQ-84) |
+| v0.12.0 | 32 Automations | 26, 31 | Partial. Engine and guards tested; no head composes it; no view |
+| v0.12.0 | 33 Omp CLI terminal and shared registry | 28 | Partial. The terminal launches omp with the four plugins (live); the registry and the gateway are wired into no head |
 | v0.12.0 | 34 Remote development | not stated | Blocked: OD-06 (no verified remote omp endpoint) |
-| v0.12.0 | 35 Code quality bar | 20 to 33 | Planned. Runs last, audits the final tree |
-| v0.13.0 | 36 Contracts and theme foundation | 20, 21 | UNBLOCKED: its dependencies are met. Uncommitted code already exists (Harness.Providers, Harness.Secrets, Harness.Herdr, Harness.Agent, Presentation Kanban and Commands, theme font assets, and their tests, all green in the gate). It needs a CONTEXT, PLAN and VERIFICATION against the Phase 36 criteria. Does not depend on 22 |
-| v0.13.0 | 37 Session runtime and local terminal | 36 | Planned. Durability decision (VX-06) |
-| v0.13.0 | 38 Chat window and slash commands | 36, 37 | Planned. Cursor parity sign-off |
-| v0.13.0 | 39 Kanban board | 36, 37 | Planned |
-| v0.13.0 | 40 Settings and model providers | 36, 37 | Planned. Live validation needs owner credentials per provider |
-| v0.13.0 | 41 Pets companion | 36, 39 | Planned. Appearance sign-off |
-| v0.13.0 | 42 Cloud terminals on Railway | 37, 40; Phase 13 | Prototype only. Railway written confirmation; deploys paused |
-| v0.13.0 | 43 Mobile and web terminals | 36, 37, 40 | Planned. iOS needs the Mac channel |
+| v0.12.0 | 35 Code quality bar | 20 to 33 | Partial (records written 2026-10-27). Criteria 2 and 3 met; 1 and 4 partly met |
+| v0.13.0 | 36 Contracts and theme foundation | 20, 21 | Complete as recorded; audited 5 met and 1 partial (the herdr and omp adapter contracts have no product consumer) |
+| v0.13.0 | 37 Session runtime and local terminal | 36 | Partial. Criteria 3 and 4 met; 1 and 2 partial (the head uses `AgentSessionRegistry`); 5 open: restart durability (OQ-76) |
+| v0.13.0 | 38 Chat window and slash commands | 36, 37 | Partial. The palette is in the composer and lists omp's commands; one catalogue command, not listed; parity sign-off pending |
+| v0.13.0 | 39 Kanban board | 36, 37 | Partial. Criteria 1 to 6, 9 and 10 met; no lease holder is ever reported; two of five state screenshots |
+| v0.13.0 | 40 Settings and model providers | 36, 37 | Partial. Eleven pages; criterion 5 deferred (owner credentials, OQ-71); criterion 6 partly met |
+| v0.13.0 | 41 Pets companion | 36, 39 | Partial. State model only; appearance sign-off (OQ-72) |
+| v0.13.0 | 42 Cloud terminals on Railway | 37, 40; Phase 13 | Prototype only. `CloudSessionHost` over a fake; Railway written confirmation (OQ-73); deploys paused |
+| v0.13.0 | 43 Mobile and web terminals | 36, 37, 40 | Partial. Terminal models only; the Android head still references `Harness.Terminal`; iOS needs the Mac channel |
+| v0.14.0 | 44 Plugin submodules and launch contract | 21 | Partial. Criterion 2 (fresh-clone run) has no recorded run; criterion 3 met; `SUBMODULE_TOKEN` open (OQ-63) |
+| v0.14.0 | 45 Agent loop stage sources | 44 | Complete |
+| v0.14.0 | 46 Default Agent Panel parity | 44, 45 | Partial. Criterion 6 (eight screenshots) not met: 2 of 8 states recorded |
+| v0.14.0 | 47 Agent Panel on the web head | 46; Phase 13 | Deferred: the hosted API runs the InMemory harness, Railway deploys paused |
+| v0.14.0 | 48 Omp terminals with the four plugins | 44, 45; 33 | Complete (live, no model turn) |
+| v0.14.0 | 49 Live steering | 46, 48 | Partial. Criterion 1: the recorded live run into a running turn needs a model turn (OD-07) |
+| v0.14.0 | 50 Cursor visual parity | 39, 40, 46, 48 | Complete. Owner sign-off of the look pending (OQ-87 to OQ-91) |
 
 v0.9.2 Phases 6, 12, 13 and 14 remain blocked on external criteria and the owner's OD-03 sign-in decision, as recorded in ROADMAP.
 
@@ -249,17 +299,18 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-24
-Stopped at: the owner decision on Phase 22 handling (skip Phase 22 and continue, or stop). The gate is green on the working tree. Nothing is committed.
+Last session: 2026-10-27
+Stopped at: the Cursor parity audit and the record corrections of 2026-10-27; the code is committed through `d75fd88`. The earlier text of this section (2026-10-24) is superseded.
 Resume file: None
-Ship: ultrathink-ship is enabled with autoMerge on. It has NOT run. Its gate rules block shipping while roadmap phases are incomplete, and the working tree is uncommitted, so no PR was opened.
+Ship: ultrathink-ship is enabled with autoMerge on. It has NOT run for this work; its gate rules block shipping while roadmap phases are incomplete.
 
 ## Operator Next Steps
 
-- Decide Phase 22 handling. Skip it and continue with Phase 36 (v0.13), or stop until the Windows runner and the Mac channel exist.
-- Linear: upgrade the workspace or accept Notion-only tracking. Then re-run `ultrathink-mcp track complete` and the substrate `graph_register` call.
-- Host items (owner): Mac channel for Phase 22 macOS and Phase 24 iOS; a Windows 11 24H2 runner; Android SDK API 36; OMPOS_API_ORIGIN and Railway deploys before the Phase 23 smoke.
-- Review and commit the uncommitted working tree when ready. The autonomous run made no commits.
+- Superseded 2026-10-27: the Phase 22 decision was taken (the phase is deferred by the owner) and the working tree was committed. The open owner items are in the section "Final position 2026-10-27".
+- Linear: upgrade the workspace or accept Notion-only tracking, then re-run `ultrathink-mcp track complete` and the substrate `graph_register` call.
+- Host items (owner): the Mac channel for Phase 22 macOS and Phase 24 iOS; a Windows 11 24H2 runner; Android SDK API 36; `OMPOS_API_ORIGIN` and Railway deploys before the Phase 23 smoke.
+- Run `./bootstrap.sh` once at the final tree: no run is recorded for `d75fd88`.
+- Approve a bounded live model turn (OD-07) to close the steering, streaming and Changes bar rows that need one.
 
 ## Run Discovery 2026-10-24 (gsd-autonomous, graph ut-mvm12su0-1fae51f6)
 
