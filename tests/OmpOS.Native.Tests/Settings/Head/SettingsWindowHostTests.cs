@@ -17,7 +17,7 @@ public sealed class SettingsWindowHostTests : IDisposable
     /// <inheritdoc />
     public void Dispose() => _tree.Dispose();
 
-    /// <summary>The pages are in navigation order: Runtime, General, Agents, Models, Tab, Rules, Skills, Commands, Plugins.</summary>
+    /// <summary>The pages are in navigation order: Runtime, General, Agents, Models, Tab, Rules, Skills, Commands, Plugins, Network, Keyboard.</summary>
     [Fact]
     public void PagesAreInNavigationOrderWithTheModelsPageFourth()
     {
@@ -34,6 +34,8 @@ public sealed class SettingsWindowHostTests : IDisposable
             SettingsSection.Skills,
             SettingsSection.Commands,
             SettingsSection.Plugins,
+            SettingsSection.Network,
+            SettingsSection.Keyboard,
         ]);
         model.SelectedSection.ShouldBe(SettingsSection.Runtime);
     }
@@ -54,6 +56,8 @@ public sealed class SettingsWindowHostTests : IDisposable
             SettingsSection.Skills,
             SettingsSection.Commands,
             SettingsSection.Plugins,
+            SettingsSection.Network,
+            SettingsSection.Keyboard,
         ]);
     }
 

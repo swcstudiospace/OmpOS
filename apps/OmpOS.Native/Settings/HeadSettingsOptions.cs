@@ -9,6 +9,9 @@ internal sealed class HeadSettingsOptions
     /// <summary>Gets how the Models page is built, or null for a Settings window without one.</summary>
     public Func<ISettingsPage>? ModelsPageFactory { get; init; }
 
+    /// <summary>Gets the source of the Network page's diagnostics, or null for one over the provider catalogue alone.</summary>
+    public INetworkDiagnosticsSource? NetworkSource { get; init; }
+
     /// <summary>Gets what the head disposes with the settings, such as the Models page's composition, or null for nothing.</summary>
     public IDisposable? Owned { get; init; }
 

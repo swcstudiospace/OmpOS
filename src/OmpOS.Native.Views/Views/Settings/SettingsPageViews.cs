@@ -24,6 +24,8 @@ internal static class SettingsPageViews
             AgentsPage => new AgentsPageView(),
             TabPage => new TabPageView(),
             PluginsPage => new PluginsPageView(),
+            NetworkSettingsPage => new NetworkPageView(),
+            KeyboardSettingsPage => new KeyboardPageView(),
             ModelsSettingsPage => new ModelsPageView(),
             CustomizeCatalogPage => new CustomizeCatalogView(),
             _ => throw new ArgumentException("No view draws this kind of settings page.", nameof(page)),

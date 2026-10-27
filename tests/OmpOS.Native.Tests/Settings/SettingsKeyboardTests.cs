@@ -38,8 +38,8 @@ public sealed class SettingsKeyboardTests
             fixture.Model.SelectedSection.ShouldBe(SettingsSection.Models);
 
             SettingsTree.Press(window, Key.End, PhysicalKey.End);
-            fixture.Model.SelectedSection.ShouldBe(SettingsSection.Commands);
-            window.CurrentView.ShouldBeOfType<CustomizeCatalogView>();
+            fixture.Model.SelectedSection.ShouldBe(SettingsSection.Keyboard);
+            window.CurrentView.ShouldBeOfType<KeyboardPageView>();
 
             SettingsTree.Press(window, Key.Home, PhysicalKey.Home);
             fixture.Model.SelectedSection.ShouldBe(SettingsSection.Runtime);

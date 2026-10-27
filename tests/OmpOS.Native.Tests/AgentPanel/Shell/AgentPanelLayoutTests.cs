@@ -106,6 +106,28 @@ public sealed class AgentPanelLayoutTests
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
+    /// <summary>The key chip of "New omp terminal" is drawn in the wide rail and left out of the narrow one, where it would cut the label.</summary>
+    [Fact]
+    public async Task TheTerminalButtonKeepsItsLabelWholeInTheNarrowRail()
+    {
+        await using var headless = TestAppBuilder.StartSession();
+        await headless.Dispatch(() =>
+        {
+            var fixture = ShellFixture.CreateWithSession();
+            var window = ShellHarness.Show(fixture, width: 960, height: 640);
+            var main = ShellHarness.MainViewOf(window);
+            var chip = ShellTree.Named<Button>(main, "NewTerminalButton")!.GetVisualDescendants().OfType<Border>().Single(static border => border.Classes.Contains("kbd"));
+            var agentChip = ShellTree.Named<Button>(main, "NewAgentButton")!.GetVisualDescendants().OfType<Border>().Single(static border => border.Classes.Contains("kbd"));
+
+            chip.IsEffectivelyVisible.ShouldBeFalse("the narrow rail has no room for the chip beside the label");
+            agentChip.IsEffectivelyVisible.ShouldBeTrue("the shorter New agent chip still fits");
+
+            fixture.Resize(1280, 800);
+
+            chip.IsEffectivelyVisible.ShouldBeTrue("the wide rail has room for the chip");
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
     /// <summary>The rail is 240 px below 1200 px and 280 px from 1200 px up, in both directions of a resize.</summary>
     [Fact]
     public async Task CrossingTheWideThresholdSwitchesTheRailWidthBothWays()

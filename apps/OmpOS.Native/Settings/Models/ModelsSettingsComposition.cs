@@ -35,6 +35,7 @@ internal sealed class ModelsSettingsComposition : IDisposable
             TimeProvider = options.TimeProvider,
             CommandTimeout = options.CommandTimeout ?? OmpConfigOptions.DefaultCommandTimeout,
         });
+        Omp = omp;
         var secrets = options.SecretStore
             ?? new OwnerOnlyFileSecretStore(Path.Combine(options.StateRoot, SecretsDirectoryName, SecretsFileName));
         Keys = new ProviderKeyEnvironment(secrets);
@@ -50,6 +51,9 @@ internal sealed class ModelsSettingsComposition : IDisposable
 
     /// <summary>Gets the source the Models page reads and writes through.</summary>
     public IModelsSettingsSource Source => _source;
+
+    /// <summary>Gets the model configuration of omp the source reads, so the Network page's diagnostics list the endpoints of the managed providers from the same <c>models.yml</c>.</summary>
+    public OmpModelConfiguration Omp { get; }
 
     /// <summary>Gets the provider keys the head merges into the environment of every omp it starts.</summary>
     public ProviderKeyEnvironment Keys { get; }

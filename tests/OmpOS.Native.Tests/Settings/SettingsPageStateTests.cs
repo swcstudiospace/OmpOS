@@ -39,6 +39,8 @@ public sealed class SettingsPageStateTests
         SettingsSection.Plugins => SettingsCopy.PluginsHeading,
         SettingsSection.Rules => CustomizeCopy.RulesTitle,
         SettingsSection.Skills => CustomizeCopy.SkillsTitle,
+        SettingsSection.Network => NetworkCopy.Heading,
+        SettingsSection.Keyboard => KeyboardCopy.Heading,
         _ => CustomizeCopy.CommandsTitle,
     };
 
@@ -51,6 +53,7 @@ public sealed class SettingsPageStateTests
         fixture.RulesSource.LoadFailure = failure;
         fixture.SkillsSource.LoadFailure = failure;
         fixture.CommandsSource.LoadFailure = failure;
+        fixture.KeyboardSource.LoadFailure = failure;
         fixture.ModelsSource.LoadFailure = failure;
     }
 
@@ -64,6 +67,8 @@ public sealed class SettingsPageStateTests
     [InlineData(SettingsSection.Rules)]
     [InlineData(SettingsSection.Skills)]
     [InlineData(SettingsSection.Commands)]
+    [InlineData(SettingsSection.Network)]
+    [InlineData(SettingsSection.Keyboard)]
     public async Task APageShowsLoadingUntilItsValuesArrive(SettingsSection section)
     {
         var ct = TestContext.Current.CancellationToken;
@@ -96,6 +101,7 @@ public sealed class SettingsPageStateTests
     [InlineData(SettingsSection.Rules)]
     [InlineData(SettingsSection.Skills)]
     [InlineData(SettingsSection.Commands)]
+    [InlineData(SettingsSection.Keyboard)]
     public async Task AFailedLoadShowsItsReasonAndTryAgainLoadsItAgain(SettingsSection section)
     {
         var ct = TestContext.Current.CancellationToken;

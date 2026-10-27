@@ -100,6 +100,7 @@ internal sealed class AgentHead : IAsyncDisposable
                 new HeadSettingsOptions
                 {
                     ModelsPageFactory = () => new ModelsSettingsPage(models.Source),
+                    NetworkSource = NetworkDiagnosticsSource.Over(models.Omp.ModelsFile),
                     Owned = models,
                     SweepInterval = SessionLifecycleSweeper.DefaultInterval,
                 });

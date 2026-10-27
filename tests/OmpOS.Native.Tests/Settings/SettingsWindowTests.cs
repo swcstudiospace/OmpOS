@@ -24,6 +24,8 @@ public sealed class SettingsWindowTests
         (SettingsSection.Rules, CustomizeCopy.RulesTitle, typeof(CustomizeCatalogView)),
         (SettingsSection.Skills, CustomizeCopy.SkillsTitle, typeof(CustomizeCatalogView)),
         (SettingsSection.Commands, CustomizeCopy.CommandsTitle, typeof(CustomizeCatalogView)),
+        (SettingsSection.Network, NetworkCopy.Title, typeof(NetworkPageView)),
+        (SettingsSection.Keyboard, KeyboardCopy.Title, typeof(KeyboardPageView)),
     ];
 
     /// <summary>The navigation lists the pages in model order under their titles, the first is selected, and choosing an entry shows that page's view.</summary>
@@ -230,7 +232,7 @@ public sealed class SettingsWindowTests
             using var fixture = await SettingsFixture.OpenAsync(ct).ConfigureAwait(true);
             var window = fixture.Window;
 
-            foreach (var section in new[] { SettingsSection.Tab, SettingsSection.Plugins, SettingsSection.Rules, SettingsSection.Skills, SettingsSection.Commands })
+            foreach (var section in new[] { SettingsSection.Tab, SettingsSection.Plugins, SettingsSection.Rules, SettingsSection.Skills, SettingsSection.Commands, SettingsSection.Network, SettingsSection.Keyboard })
             {
                 _ = fixture.Show(section);
                 window.Save.IsVisible.ShouldBeFalse(section.ToString());

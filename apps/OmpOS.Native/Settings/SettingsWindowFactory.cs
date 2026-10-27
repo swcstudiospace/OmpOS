@@ -7,7 +7,7 @@ namespace OmpOS.Native.Settings;
 /// <summary>Builds the pages of the Settings window in navigation order and the window model over them.</summary>
 internal static class SettingsWindowFactory
 {
-    /// <summary>Creates the pages: Runtime, General, Agents, Models (when the options supply it), Tab, Rules, Skills, Commands and Plugins.</summary>
+    /// <summary>Creates the pages: Runtime, General, Agents, Models (when the options supply it), Tab, Rules, Skills, Commands, Plugins, Network and Keyboard.</summary>
     /// <param name="options">Where the values live.</param>
     /// <returns>The pages, unloaded.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
@@ -38,6 +38,8 @@ internal static class SettingsWindowFactory
         pages.Add(new SkillsSettingsPage(new SkillsSettingsSource(options.WorkspaceRoot)));
         pages.Add(new CommandsSettingsPage(new SlashCommandsSettingsSource(options.Commands ?? SlashCommandCatalogue.Shipped)));
         pages.Add(new PluginsPage(new PluginsSettingsSource(options.PluginsRoot)));
+        pages.Add(new NetworkSettingsPage(options.NetworkSource ?? new NetworkDiagnosticsSource()));
+        pages.Add(new KeyboardSettingsPage(new KeyboardSettingsSource()));
         return pages;
     }
 

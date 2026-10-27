@@ -107,6 +107,7 @@ internal sealed class HeadSettings : IAsyncDisposable
             WorkspaceRoot = engines.Loop.WorkspaceRoot,
             PluginsRoot = engines.Loop.PluginsRoot,
             ModelsPageFactory = options.ModelsPageFactory,
+            NetworkSource = options.NetworkSource,
             GetVariable = options.GetVariable,
             Commands = options.Commands,
             ApplyRuntime = values => sweeper?.Apply(values),

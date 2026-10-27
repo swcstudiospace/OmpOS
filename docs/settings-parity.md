@@ -6,7 +6,7 @@ Written 2026-10-26 from the scout plan of the same day, checked row by row again
 
 ## What exists
 
-The Settings window is a separate, non-modal window (OQ-89), opened from the rail footer button and with Ctrl+, (`SettingsWindowHost`). It has nine pages, in this order (`apps/OmpOS.Native/Settings/SettingsWindowFactory.cs`):
+The Settings window is a separate, non-modal window (OQ-89), opened from the rail footer button and with Ctrl+, (`SettingsWindowHost`). It has eleven pages, in this order (`apps/OmpOS.Native/Settings/SettingsWindowFactory.cs`):
 
 | Page | What it holds | Class (page model) | Head backing |
 |------|---------------|--------------------|--------------|
@@ -19,14 +19,16 @@ The Settings window is a separate, non-modal window (OQ-89), opened from the rai
 | Skills | Read-only list of the skill files in `.ompos/skills`. | `Customize/SkillsSettingsPage.cs` | `SkillsSettingsSource.cs`, `WorkspaceSnapshotReader.cs` |
 | Commands | Read-only list of the slash commands. | `Customize/CommandsSettingsPage.cs` | `Customize/SlashCommandsSettingsSource.cs` over `Presentation/Commands/SlashCommandRegistry` |
 | Plugins | Read-only list of the four plugins; there is deliberately no switch (OQ-80). Not a Cursor row on its own: Cursor's plugin page is row 13. | `PluginsPage.cs` | `PluginsSettingsSource.cs` |
+| Network | Run diagnostics button and its result: one unauthenticated GET per known provider endpoint, run only on request, cancellable. Not a request OmpOS makes by itself. | `NetworkSettingsPage.cs`, `INetworkDiagnosticsSource.cs`, `EndpointCheck.cs` | `NetworkDiagnosticsSource.cs` over `Harness.OmpConfig` (`OmpModelsFile.ReadManagedAsync`) and `Harness.Providers` (`ProviderCatalogue`) |
+| Keyboard | Read-only list of the shortcuts the shell handles, grouped by scope; remapping is omitted by design. | `KeyboardSettingsPage.cs`, `IKeyboardSettingsSource.cs`, `ShortcutRow.cs` | `KeyboardSettingsSource.cs` over `Native.Views/Views/Shortcuts/ShortcutCatalogue.cs` |
 
 Class paths are under `src/OmpOS.Presentation/Settings/` for the models and `apps/OmpOS.Native/Settings/` for the head. The views are in `src/OmpOS.Native.Views/Views/Settings/`.
 
-There is no Hooks, MCP, Search, Network, Keyboard Shortcuts, Subagents, Beta or Accounts page.
+There is no Hooks, MCP, Search, Subagents, Beta or Accounts page.
 
 ## The 34 rows
 
-Decisions: **Kept as a page**, **Shown inside a page**, **Omitted**. Totals: 6 kept as a page (rows 1, 7, 8, 10, 13, 17), 4 shown inside a page (rows 3, 19, 22, 26), 24 omitted.
+Decisions: **Kept as a page**, **Shown inside a page**, **Omitted**. Totals: 8 kept as a page (rows 1, 7, 8, 10, 13, 17, 18, 21), 4 shown inside a page (rows 3, 19, 22, 26), 22 omitted.
 
 | # | Cursor surface | Decision | OmpOS page and backing | Reason |
 |---|----------------|----------|------------------------|--------|
@@ -47,10 +49,10 @@ Decisions: **Kept as a page**, **Shown inside a page**, **Omitted**. Totals: 6 k
 | 15 | @Docs | Omitted | None. | Unverified in primary sources and reported as sunset. No backing. |
 | 16 | Settings > Beta | Omitted | None. | No primary source lists its contents (row marked unverified). The research's owner decision 8 has no recorded answer; DR-6 records only decisions 1 and 2. |
 | 17 | Settings > Tab | Kept as a page | Tab: read-only status (`TabPage`, `TabSettingsSource`, `CompletionSettingsLoader`; the endpoint comes from `OMPOS_COMPLETION_ENDPOINT` or the file named by `OMPOS_COMPLETION_CONFIG`; inline completion is off unless one is set). | The one real inline-completion setting is its endpoint, which is configured outside the window. Snooze, global disable, per-extension disable and key remapping are not built. |
-| 18 | Settings > Network: Run Diagnostics, HTTP compatibility mode | Omitted | None. The nearest feature is Test connection on the Models page, which asks whether a local endpoint answers. | No HTTP compatibility flag or diagnostics run exists. OmpOS sends no model requests itself; omp does (the privacy statement on General says so). |
+| 18 | Settings > Network: Run Diagnostics, HTTP compatibility mode | Kept as a page | Network: a Run diagnostics button and the result of the latest run (`NetworkSettingsPage`, `NetworkDiagnosticsSource`). The endpoints are the base URLs of the providers OmpOS manages in omp's `models.yml` (read through `OmpModelsFile.ReadManagedAsync`) and the base endpoint of every `ProviderCatalogue` row that has one, one per host and port. Each gets ONE unauthenticated GET (no header, body, key, query or user information; 5 s limit; at most 3 redirects). Any HTTP status counts as Reachable and is shown; a refused or unresolved connection is Unreachable, a missed limit Timed out, a failed secure connection TLS failed. | Diagnostics only, run on the button and never at startup; the page says what is sent. The HTTP compatibility mode has no backing in omp or OmpOS and is not built. The Models page keeps its own Test connection for local endpoints. |
 | 19 | General: Privacy Mode | Shown inside a page | General: a read-only privacy statement (`SettingsCopy.PrivacyStatement`: OmpOS sends nothing anywhere itself; requests go from omp with the providers and credentials the user configured). | There is no telemetry or training setting to toggle, so no toggle is offered. |
 | 20 | General: workspace trust | Omitted | None. | No restricted mode or policy enforcement exists. |
-| 21 | Settings > Keyboard Shortcuts | Omitted | None. Shortcuts are fixed and documented in the keyboard map of `.planning/phases/46-agent-panel/46-UI-SPEC.md`. | The research's owner decision 10 has no recorded answer. A remap screen needs a binding store that does not exist. The Keyboard page that owner option (a) names is not built. |
+| 21 | Settings > Keyboard Shortcuts | Kept as a page | Keyboard: a read-only list of the shortcuts the shell handles, grouped by scope (Application, Agents, Composer, Kanban, Settings) (`KeyboardSettingsPage`, `KeyboardSettingsSource`, `ShortcutCatalogue`). Every catalogued gesture is raised in a headless shell by `ShortcutCatalogueTests` and its effect observed; a gesture with no such test cannot be listed. | Remapping is omitted by design: a remap screen needs a binding store that does not exist, and the research's owner decision 10 has no recorded answer. The page lists the fixed map and says so. |
 | 22 | Settings > Appearance: theme, fonts | Shown inside a page | General: Theme (System, Light, Dark, default Dark) and Motion (`GeneralPage`, `FileSettingsStore`; Phase 50 added the Theme list). | Fonts are fixed by the `OmpOS.Font.*` tokens (DM Sans, Anybody, Space Mono). Font size, family and ligature settings are not built. A separate Appearance page is not built. |
 | 23 | Agents Window vs IDE layout | Omitted | None. The main window has an Agents tab and a Kanban tab (Ctrl+Shift+A, Ctrl+Shift+K). | A layout, not a setting. |
 | 24 | Cloud Agents dashboard settings | Omitted | None. | Web dashboard; gated by the owner's sign-in decision (OD-03) and the paused hosted phases. |
@@ -71,7 +73,7 @@ The scout plan (2026-10-26, before the build) proposed more pages than were buil
 
 | Scout plan | Code |
 |------------|------|
-| Pages for MCP, Hooks, Search and Network, and a Keyboard page. | None exists. MCP and Search are tools of the main window, the Hooks view is not created by any head, Network and Keyboard are not built. |
+| Pages for MCP, Hooks, Search and Network, and a Keyboard page. | MCP and Search are tools of the main window and the Hooks view is not created by any head, so those three are not pages. Network and Keyboard were built afterwards (rows 18 and 21). |
 | Subagents as a read-only list inside Agents, and a worktree note in Agents. | Neither exists; Agents holds the auto-run switch and the approval note. |
 | Appearance as a page with theme and font scale. | Theme and Motion are on General; there is no font scale. |
 | Rules need a `.mdc` loader. | The Rules and Skills pages list `.ompos/rules` and `.ompos/skills` through `Harness.Workspace`. |
@@ -82,5 +84,5 @@ The scout plan (2026-10-26, before the build) proposed more pages than were buil
 
 ## Open points
 
-- The Network and Keyboard Shortcuts pages are part of option (a) as the research words it and are not built. The reason is missing backing, not an owner decision. No row in `docs/open-questions.md` tracks them.
+- Remapping of shortcuts and an HTTP compatibility switch are not built; the Keyboard page lists a fixed map and the Network page only diagnoses. The reason is missing backing, not an owner decision.
 - No test enumerates the 34 rows. The page-level tests are listed in `.planning/phases/40-settings-window-and-model-providers/40-VERIFICATION.md`.

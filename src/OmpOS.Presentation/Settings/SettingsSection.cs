@@ -29,4 +29,10 @@ public enum SettingsSection
 
     /// <summary>The slash command catalogue.</summary>
     Commands = 8,
+
+    /// <summary>The endpoint diagnostics: one unauthenticated request per known provider endpoint, run on demand.</summary>
+    Network = 9,
+
+    /// <summary>The keyboard shortcuts the shell handles, read-only.</summary>
+    Keyboard = 10,
 }

@@ -24,10 +24,18 @@ internal sealed class SettingsFixture : IDisposable
         Rules = new RulesSettingsPage(RulesSource);
         Skills = new SkillsSettingsPage(SkillsSource);
         Commands = new CommandsSettingsPage(CommandsSource);
-        Model = new SettingsWindowModel([Runtime, Models, General, Agents, Tab, Plugins, Rules, Skills, Commands]);
+        Network = new NetworkSettingsPage(NetworkSource);
+        Keyboard = new KeyboardSettingsPage(KeyboardSource);
+        Model = new SettingsWindowModel([Runtime, Models, General, Agents, Tab, Plugins, Rules, Skills, Commands, Network, Keyboard]);
         Window = new SettingsWindow(Model);
         Runtime.Saved += (_, args) => RuntimeSaved.Add(args.Values);
     }
+
+    /// <summary>Gets the diagnostics source of the Network page.</summary>
+    internal FakeNetworkSource NetworkSource { get; } = new();
+
+    /// <summary>Gets the source of the Keyboard page.</summary>
+    internal FakeKeyboardSource KeyboardSource { get; } = new();
 
     /// <summary>Gets the source of the General page.</summary>
     internal FakeGeneralSource GeneralSource { get; } = new();
@@ -82,6 +90,12 @@ internal sealed class SettingsFixture : IDisposable
 
     /// <summary>Gets the Commands page.</summary>
     internal CommandsSettingsPage Commands { get; }
+
+    /// <summary>Gets the Network page.</summary>
+    internal NetworkSettingsPage Network { get; }
+
+    /// <summary>Gets the Keyboard page.</summary>
+    internal KeyboardSettingsPage Keyboard { get; }
 
     /// <summary>Gets the window model.</summary>
     internal SettingsWindowModel Model { get; }

@@ -15,6 +15,11 @@
     <Style Selector="Border.rail.wide">
       <Setter Property="Width" Value="{DynamicResource OmpOS.Size.AgentRailWidth}" />
     </Style>
+    <!-- The narrow rail has no room for the key chip beside "New omp terminal": the label would be cut to "New omp ...". The shortcut stays in the
+         tooltip and on the Keyboard page of Settings. -->
+    <Style Selector="Border.rail:not(.wide) Button#NewTerminalButton Border.kbd">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
     <Style Selector="TextBlock.tool-group">
       <Setter Property="FontSize" Value="{DynamicResource OmpOS.Font.Size.Small}" />
       <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Medium}" />

@@ -21,6 +21,9 @@ internal sealed class SettingsWindowOptions
     /// </summary>
     public Func<ISettingsPage>? ModelsPageFactory { get; init; }
 
+    /// <summary>Gets the source of the Network page's diagnostics, or null for one over the provider catalogue alone, with no managed provider. A run happens only when the user asks.</summary>
+    public INetworkDiagnosticsSource? NetworkSource { get; init; }
+
     /// <summary>Gets the lookup of the environment variables the Tab page reads, or null to read the process environment.</summary>
     public Func<string, string?>? GetVariable { get; init; }
 
