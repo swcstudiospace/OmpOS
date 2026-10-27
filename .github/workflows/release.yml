@@ -1,0 +1,86 @@
+# OmpOS release (Phase 52). A pushed tag v* creates the GitHub Release.
+# Runs on the Omega CI runner pool ([self-hosted, linux, x64, omega-ci]) like ci.yml, never on GitHub-hosted runners.
+# The only credential is the job's GITHUB_TOKEN; `contents: write` is granted to the release job alone.
+# The notes are the matching CHANGELOG.md section. Plugin submodules are not checked out and not attached.
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+
+jobs:
+  release:
+    runs-on: [self-hosted, linux, x64, omega-ci]
+    permissions:
+      contents: write
+    steps:
+      # Same action pin as ci.yml (checkout v7).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Tag must equal VersionPrefix and sit on main
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::tag '$TAG' is not vMAJOR.MINOR.PATCH[-prerelease]" >&2
+            exit 1
+          fi
+          version="${TAG#v}"
+          base="${version%%-*}"
+          prefix="$(sed -n 's:.*<VersionPrefix>\(.*\)</VersionPrefix>.*:\1:p' Directory.Build.props | head -n 1)"
+          if [ -z "$prefix" ]; then
+            echo "::error::Directory.Build.props has no <VersionPrefix>" >&2
+            exit 1
+          fi
+          if [ "$prefix" != "$base" ]; then
+            echo "::error::tag $TAG does not match VersionPrefix $prefix in Directory.Build.props" >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::the tagged commit is not reachable from origin/main" >&2
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "BASE_VERSION=$base" >> "$GITHUB_ENV"
+      - name: Check the changelog
+        run: bash scripts/ci/check-changelog.sh
+      - name: Release notes from CHANGELOG.md
+        run: |
+          set -euo pipefail
+          awk -v v="$BASE_VERSION" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            /^## \[/ { found = 0 }
+            /^\[[^]]+\]: / { found = 0 }
+            found { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md"; then
+            echo "::error::CHANGELOG.md has no non-empty section for $BASE_VERSION" >&2
+            exit 1
+          fi
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          pre=()
+          case "$TAG" in *-*) pre=(--prerelease) ;; esac
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "OmpOS $TAG" --notes-file "$RUNNER_TEMP/notes.md" "${pre[@]}"
+          else
+            gh release create "$TAG" --verify-tag --title "OmpOS $TAG" --notes-file "$RUNNER_TEMP/notes.md" "${pre[@]}"
+          fi

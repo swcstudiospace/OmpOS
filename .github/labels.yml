@@ -1,0 +1,68 @@
+# Repository labels. Applied by scripts/github/apply-repo-settings.sh (gh label create --force).
+# Format: a YAML list of name, color (hex without #), description.
+- name: bug
+  color: b3261e
+  description: Something is broken
+- name: enhancement
+  color: 6d28d9
+  description: New feature or improvement
+- name: documentation
+  color: 0ea5e9
+  description: Docs, GitBook, README, changelog
+- name: dependencies
+  color: 0366d6
+  description: Dependency update (NuGet, npm, GitHub Actions)
+- name: security
+  color: b3261e
+  description: Security-relevant (never put details in public issues)
+- name: desktop
+  color: c4b5fd
+  description: Avalonia desktop head
+- name: web
+  color: c4b5fd
+  description: Blazor WebAssembly web head
+- name: android
+  color: c4b5fd
+  description: Android head
+- name: api
+  color: c4b5fd
+  description: services/OmpOS.Api
+- name: hooks
+  color: c4b5fd
+  description: Cursor-compatible hooks
+- name: remote
+  color: c4b5fd
+  description: Remote environments over SSH
+- name: cloud
+  color: c4b5fd
+  description: Cloud agents on Railway
+- name: providers
+  color: c4b5fd
+  description: Model providers and coding plans
+- name: slash-commands
+  color: c4b5fd
+  description: Slash command palette and discovery
+- name: settings
+  color: c4b5fd
+  description: Settings window and parity rows
+- name: good first issue
+  color: 7057ff
+  description: Good for newcomers
+- name: help wanted
+  color: 008672
+  description: Extra attention is needed
+- name: breaking-change
+  color: b3261e
+  description: Changes a public contract or behaviour
+- name: needs-triage
+  color: e4e4e0
+  description: Not yet reviewed
+- name: blocked-external
+  color: 6f6f6b
+  description: Blocked by something outside the repository (an account, a host, a vendor)
+- name: parity
+  color: a78bfa
+  description: Cursor feature parity audit rows
+- name: ignore-for-release
+  color: e4e4e0
+  description: Excluded from generated release notes

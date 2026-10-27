@@ -1,0 +1,29 @@
+# Code owners. The last matching pattern wins. Owners must have write access to the repository.
+# Review requests are automatic; they only block a merge if a ruleset or branch protection requires
+# code-owner review (none is configured).
+
+# Default owner for everything
+*                         @SomeRandmGuyy
+
+# Repository policy, CI, release and community files
+/.github/                 @SomeRandmGuyy
+/SECURITY.md              @SomeRandmGuyy
+/CODE_OF_CONDUCT.md       @SomeRandmGuyy
+/LICENSE                  @SomeRandmGuyy
+/NOTICE                   @SomeRandmGuyy
+/CHANGELOG.md             @SomeRandmGuyy
+
+# Documentation and the published site
+/docs/                    @SomeRandmGuyy
+/gitbook/                 @SomeRandmGuyy
+/README.md                @SomeRandmGuyy
+
+# Deployment, hosting and container files
+/deploy/                  @SomeRandmGuyy
+/vercel.ts                @SomeRandmGuyy
+/scripts/                 @SomeRandmGuyy
+/bootstrap.sh             @SomeRandmGuyy
+
+# Plugins: tracked plugin code and the submodule pointers
+/plugins/                 @SomeRandmGuyy
+/.gitmodules              @SomeRandmGuyy

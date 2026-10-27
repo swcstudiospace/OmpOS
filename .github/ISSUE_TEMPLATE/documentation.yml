@@ -1,0 +1,42 @@
+name: Documentation
+description: A page is wrong, missing, unclear or out of date.
+title: "[Docs]: "
+labels: ["documentation", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Small fixes are welcome as pull requests (see CONTRIBUTING.md). Use this form when you want the maintainers to look at it.
+  - type: input
+    id: location
+    attributes:
+      label: Where is the problem?
+      description: A file path or link, for example `docs/runbooks/local-dev.md` or a page of the docs site.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem is it?
+      options:
+        - Incorrect or out of date
+        - Missing
+        - Unclear or hard to follow
+        - Broken link or image
+        - Typo
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: What is wrong, and what should it say? Never include secrets.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I agree to follow the Code of Conduct.
+          required: true

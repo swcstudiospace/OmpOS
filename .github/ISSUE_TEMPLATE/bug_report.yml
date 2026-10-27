@@ -1,0 +1,81 @@
+name: Bug report
+description: Something in OmpOS is broken or behaves differently from the documentation.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Search the open and closed issues first.
+        **Never paste secrets** (API keys, tokens, `.env` contents, `models.yml` or `agent.db` with keys). Redact them.
+        Security vulnerabilities go through the private form described in SECURITY.md, not here.
+  - type: dropdown
+    id: head
+    attributes:
+      label: Where does it happen?
+      options:
+        - Desktop head (Avalonia)
+        - Web head (Blazor WebAssembly)
+        - Android head
+        - API service (services/OmpOS.Api)
+        - Hooks
+        - Remote environments (SSH)
+        - Cloud agents
+        - Providers and models
+        - Slash commands
+        - Settings
+        - Build, CI or release
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: OmpOS version or commit
+      description: A release tag such as v0.15.0, or the commit hash (`git rev-parse --short HEAD`).
+    validations:
+      required: true
+  - type: input
+    id: omp-version
+    attributes:
+      label: omp version
+      description: Output of `omp --version`, if the problem involves the engine.
+  - type: input
+    id: environment
+    attributes:
+      label: Operating system and browser
+      description: For example "Ubuntu 24.04, X11" or "Chrome 153 on Windows 11".
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and screenshots
+      description: Redact secrets and personal paths. Paste text in a fenced code block; drag screenshots in.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched the existing issues and discussions.
+          required: true
+        - label: I removed every secret from this report.
+          required: true
+        - label: I agree to follow the Code of Conduct.
+          required: true

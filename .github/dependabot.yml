@@ -1,0 +1,55 @@
+# Dependabot version updates. Weekly, grouped, labelled; commit subjects start with "chore(deps)".
+#
+# Lock files: every project commits packages.lock.json and CI restores with --locked-mode. Dependabot's
+# NuGet updater edits Directory.Packages.props and may not regenerate the lock files, so a Dependabot pull
+# request can fail restore with NU1004. A maintainer relocks it before merging:
+#   dotnet restore OmpOS.Linux.slnf --force-evaluate -p:RestoreLockedMode=false
+# See CONTRIBUTING.md and docs/runbooks/github-setup.md.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "chore(deps)"
+    open-pull-requests-limit: 5
+    groups:
+      nuget-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "chore(deps)"
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: "/plugins/gsd-core-omp"
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "chore(deps)"
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch

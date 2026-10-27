@@ -1,0 +1,31 @@
+# Release notes categories for GitHub's generated release notes (used by "Generate release notes").
+# The release workflow publishes the notes from CHANGELOG.md; this file serves manual releases.
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+  categories:
+    - title: Breaking changes
+      labels:
+        - breaking-change
+    - title: Security
+      labels:
+        - security
+    - title: Features
+      labels:
+        - enhancement
+    - title: Fixes
+      labels:
+        - bug
+    - title: Providers and plans
+      labels:
+        - providers
+    - title: Documentation
+      labels:
+        - documentation
+    - title: Dependencies
+      labels:
+        - dependencies
+    - title: Other changes
+      labels:
+        - "*"

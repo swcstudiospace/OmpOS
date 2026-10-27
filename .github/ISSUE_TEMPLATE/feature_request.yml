@@ -1,0 +1,57 @@
+name: Feature request
+description: Propose an improvement or a new capability.
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search the issues and discussions first; ideas that are still open-ended are best started in Discussions.
+        Items already recorded as deferred or omitted by decision are listed in docs/open-questions.md and the parity audit under docs/quality/.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What are you trying to do, and what stops you today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour
+      description: What should OmpOS do? Sketches and examples are welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Desktop head (Avalonia)
+        - Web head (Blazor WebAssembly)
+        - Android head
+        - API service
+        - Hooks
+        - Remote environments
+        - Cloud agents
+        - Providers and models
+        - Slash commands
+        - Settings
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched the existing issues and discussions.
+          required: true
+        - label: I would be willing to help build or test this.
+        - label: I agree to follow the Code of Conduct.
+          required: true

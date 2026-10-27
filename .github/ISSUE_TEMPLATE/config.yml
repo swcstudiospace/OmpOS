@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability (private)
+    url: https://github.com/swcstudiospace/OmpOS/security/advisories/new
+    about: Do not open a public issue for a vulnerability. Use GitHub's private reporting; see SECURITY.md.
+  - name: Questions and ideas
+    url: https://github.com/swcstudiospace/OmpOS/discussions
+    about: Use Discussions for how-to questions, ideas and showing what you built.
+  - name: Documentation and support
+    url: https://github.com/swcstudiospace/OmpOS/blob/main/SUPPORT.md
+    about: Where to find the docs, what is supported and what to include in a report.
