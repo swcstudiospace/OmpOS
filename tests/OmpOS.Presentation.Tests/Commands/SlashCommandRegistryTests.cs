@@ -20,19 +20,29 @@ public sealed class SlashCommandRegistryTests
     ]);
 
     /// <summary>
-    /// The shipped catalogue holds exactly the commands that have a real handler, so every other documented name is unknown and
-    /// gets no suggestion that is not close to a shipped name.
+    /// The shipped catalogue holds every documented Cursor token: a token OmpOS cannot run resolves to Disabled with its reason, a token it runs resolves to Available with its handler,
+    /// and a name that Cursor does not document is unknown.
     /// </summary>
     [Fact]
-    public void ShippedCatalogueHoldsExactlyTheCommandsWithAHandler()
+    public void ShippedCatalogueResolvesEveryDocumentedTokenAndNothingElse()
     {
-        SlashCommandCatalogue.Shipped.ListAll().Select(command => command.Name).ShouldBe(["side"]);
-        SlashCommandCatalogue.Shipped.MatchByPrefix(string.Empty).Select(command => command.Name).ShouldBe(["side"]);
+        SlashCommandCatalogue.Shipped.ListAll().Count.ShouldBe(92);
+        SlashCommandCatalogue.Shipped.MatchByPrefix("si").Select(command => command.Name).ShouldBe(["side"]);
         SlashCommandCatalogue.Shipped.MatchByPrefix("si").Select(command => command.HandlerId).ShouldBe(["chats.side.open"]);
-        SlashCommandCatalogue.Shipped.Suggest("resume").ShouldBeEmpty();
-        SlashCommandCatalogue.Shipped.Resolve("resume").ShouldBeOfType<SlashCommandUnknown>().Suggestions.ShouldBeEmpty();
-        SlashCommandCatalogue.Shipped.Resolve("sid").ShouldBeOfType<SlashCommandUnknown>().Suggestions.ShouldBe(["side"]);
+        SlashCommandCatalogue.Shipped.Resolve("resume").ShouldBeOfType<SlashCommandDisabled>().Reason.ShouldContain("agent rail", Case.Sensitive);
+        SlashCommandCatalogue.Shipped.Resolve("rename").ShouldBeOfType<SlashCommandAvailable>().Command.HandlerId.ShouldBe("omp.rename");
+        SlashCommandCatalogue.Shipped.Resolve("not-a-cursor-token").ShouldBeOfType<SlashCommandUnknown>().Suggestions.ShouldBeEmpty();
+        SlashCommandCatalogue.Shipped.Resolve("sid").ShouldBeOfType<SlashCommandUnknown>().Suggestions[0].ShouldBe("side");
         SlashCommandCatalogue.Shipped.Resolve("side").ShouldBeOfType<SlashCommandAvailable>().Command.HandlerId.ShouldBe("chats.side.open");
+    }
+
+    /// <summary>A command marked unavailable must say why, and a command of the Unavailable handler kind must be marked unavailable.</summary>
+    [Fact]
+    public void RegistryRefusesAnUnavailableCommandWithoutAReasonOrAKindThatContradictsItsStatus()
+    {
+        Should.Throw<ArgumentException>(() => new SlashCommandRegistry([Command("gone") with { Status = SlashCommandStatus.Unavailable }]));
+        Should.Throw<ArgumentException>(() => new SlashCommandRegistry([Command("gone") with { Kind = SlashHandlerKind.Unavailable, DisabledReason = "Retired." }]));
+        Should.NotThrow(() => new SlashCommandRegistry([Command("gone", "Retired.") with { Kind = SlashHandlerKind.Unavailable, Status = SlashCommandStatus.Unavailable }]));
     }
 
     /// <summary>ListAll returns the commands in ordinal name order, whatever order the registry was built in.</summary>

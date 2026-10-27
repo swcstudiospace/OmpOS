@@ -142,7 +142,7 @@ public sealed class ComposerSlashPaletteViewTests
             texts.ShouldContain("/security", StringComparer.Ordinal);
             texts.ShouldContain("<plan|scan|status>", StringComparer.Ordinal);
             texts.ShouldContain("Show current model selection", StringComparer.Ordinal);
-            texts.ShouldContain(SlashPaletteCopy.SourceOmp, StringComparer.Ordinal);
+            texts.ShouldContain(SlashPaletteCopy.SourceEngine, StringComparer.Ordinal);
 
             var nameBlock = rig.Palette.GetVisualDescendants().OfType<TextBlock>().First(static block => string.Equals(block.Text, "/security", StringComparison.Ordinal));
             nameBlock.FontFamily.ShouldBe(ViewHarness.MonoFont());

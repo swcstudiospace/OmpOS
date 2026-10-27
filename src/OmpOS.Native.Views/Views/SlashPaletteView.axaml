@@ -37,7 +37,7 @@
                AutomationProperties.HelpText="{x:Static commands:SlashPaletteCopy.ListHelp}">
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="commands:SlashPaletteEntry">
-            <Grid ColumnDefinitions="Auto,Auto,*,Auto"
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto"
                   ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}"
                   AutomationProperties.Name="{CompiledBinding AutomationName}">
               <TextBlock Grid.Column="0"
@@ -63,6 +63,14 @@
                       VerticalAlignment="Center">
                 <TextBlock Classes="muted small"
                            Text="{CompiledBinding SourceLabel}"
+                           VerticalAlignment="Center" />
+              </Border>
+              <Border Grid.Column="4"
+                      Classes="chip"
+                      IsVisible="{CompiledBinding HasScope}"
+                      VerticalAlignment="Center">
+                <TextBlock Classes="muted small"
+                           Text="{CompiledBinding ScopeLabel}"
                            VerticalAlignment="Center" />
               </Border>
             </Grid>

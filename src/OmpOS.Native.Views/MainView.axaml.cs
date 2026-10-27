@@ -548,6 +548,7 @@ public partial class MainView : UserControl
         if (runtime is not null)
         {
             AttachRuntime(pane, runtime);
+            runtime.AttachSlashTargets(CreateSlashTargets(pane));
         }
 
         AttachRunSummary(pane, viewModel);
@@ -805,6 +806,29 @@ public partial class MainView : UserControl
 
         return false;
     }
+
+    /// <summary>The parts of the shell that native slash commands drive for one session: Settings, a new chat, a new terminal and a side chat.</summary>
+    private DesktopSlashTargets CreateSlashTargets(SessionPane pane) => new()
+    {
+        OpenSettings = _ =>
+        {
+            RequestSettings();
+            return true;
+        },
+        NewChat = _ => StartNewAgentAsync(),
+        NewTerminal = _ => StartNewTerminalAsync(),
+        OpenSideChat = (question, _) =>
+        {
+            var chat = pane.SideChats.Open();
+            if (question.Length > 0)
+            {
+                chat.Post(SideChatAuthor.User, question);
+            }
+
+            SideChatsToggle.IsChecked = true;
+            return Task.CompletedTask;
+        },
+    };
 
     private async Task StartNewAgentAsync()
     {

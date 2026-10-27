@@ -11,8 +11,10 @@ namespace OmpOS.Presentation.Commands;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The palette has two sources: the commands the engine advertises (<see cref="SetEngineCommands"/>) and the OmpOS catalogue it was built
-/// over. When both name the same command the engine's row wins, because the engine is the one that runs it. The list is in ordinal name
+/// The palette lists the commands the engine advertises (<see cref="SetEngineCommands"/>), the OmpOS catalogue it was built over, and the custom
+/// commands, skills and subagents that discovery found (<see cref="SetDiscovered"/>). A catalogue row that omp itself runs under the same name is
+/// dropped for the engine's row, because the engine is the one that runs it; a Cursor built-in skill row is dropped when a skill of that name was found. Any
+/// other name that two sources share is listed once per source, each with its badge, in the order the resolver tries them. The list is in ordinal name
 /// order, whatever the source.
 /// </para>
 /// <para>
@@ -27,6 +29,9 @@ public sealed class SlashPaletteModel : ObservableModel
     public const int MaxVisibleRows = 8;
 
     private readonly SlashCommandRegistry _registry;
+    private IReadOnlyList<SlashPaletteEntry> _engine = [];
+    private SlashDiscovery _discovery = SlashDiscovery.Empty;
+    private ISlashActionHost? _host;
     private IReadOnlyList<SlashPaletteEntry> _all;
     private string _draft = string.Empty;
     private string? _dismissedDraft;
@@ -46,7 +51,7 @@ public sealed class SlashPaletteModel : ObservableModel
     {
         ArgumentNullException.ThrowIfNull(registry);
         _registry = registry;
-        _all = Merge(registry, []);
+        _all = Merge();
     }
 
     /// <summary>Gets a value indicating whether the palette is showing.</summary>
@@ -130,11 +135,33 @@ public sealed class SlashPaletteModel : ObservableModel
             }
         }
 
-        _all = Merge(_registry, engine);
-        if (_isOpen)
-        {
-            Rebuild(_selectedIndex >= 0 && _selectedIndex < _entries.Count ? _entries[_selectedIndex].Name : null);
-        }
+        _engine = engine;
+        Refresh();
+    }
+
+    /// <summary>
+    /// Replaces the custom commands, skills and subagents that discovery found. Each call replaces them as a whole. A skill whose file says it is not user-invocable is not listed. While the
+    /// palette is open it lists the new rows at once and keeps the selected row selected when it is still listed.
+    /// </summary>
+    /// <param name="discovery">What discovery found.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="discovery"/> is null.</exception>
+    public void SetDiscovered(SlashDiscovery discovery)
+    {
+        ArgumentNullException.ThrowIfNull(discovery);
+
+        _discovery = discovery;
+        Refresh();
+    }
+
+    /// <summary>
+    /// Sets the head that runs native actions. A catalogue row that needs an action the head cannot run is listed disabled, with a reason, instead of as a control that does nothing. With no host (the default)
+    /// every native action row is disabled.
+    /// </summary>
+    /// <param name="host">The head's action host, or <see langword="null"/> for none.</param>
+    public void SetActionHost(ISlashActionHost? host)
+    {
+        _host = host;
+        Refresh();
     }
 
     /// <summary>
@@ -251,15 +278,54 @@ public sealed class SlashPaletteModel : ObservableModel
         return true;
     }
 
-    private static SlashPaletteEntry[] Merge(SlashCommandRegistry registry, IReadOnlyList<SlashPaletteEntry> engine)
+    private void Refresh()
     {
-        var engineNames = new HashSet<string>(engine.Select(static entry => entry.Name), StringComparer.Ordinal);
+        _all = Merge();
+        if (_isOpen)
+        {
+            Rebuild(_selectedIndex >= 0 && _selectedIndex < _entries.Count ? _entries[_selectedIndex].Name : null);
+        }
+    }
+
+    private SlashPaletteEntry[] Merge()
+    {
+        var engineNames = new HashSet<string>(_engine.Select(static entry => entry.Name), StringComparer.Ordinal);
+        var skills = _discovery.Skills.Where(static skill => skill.UserInvocable).ToArray();
+        var skillNames = new HashSet<string>(skills.Select(static skill => skill.Name), StringComparer.Ordinal);
+        foreach (var name in engineNames.Where(static name => name.StartsWith(SlashPromptComposer.SkillCommandPrefix, StringComparison.Ordinal)))
+        {
+            skillNames.Add(name[SlashPromptComposer.SkillCommandPrefix.Length..]);
+        }
+
         return
         [
-            .. engine
-                .Concat(registry.ListAll().Where(command => !engineNames.Contains(command.Name)).Select(SlashPaletteEntry.FromCatalogue))
-                .OrderBy(static entry => entry.Name, StringComparer.Ordinal),
+            .. _engine
+                .Concat(_registry.ListAll().Select(command => CatalogueRow(command, engineNames, skillNames)).OfType<SlashPaletteEntry>())
+                .Concat(_discovery.Commands.Select(SlashPaletteEntry.FromDiscovered))
+                .Concat(skills.Select(SlashPaletteEntry.FromDiscovered))
+                .Concat(_discovery.Subagents.Select(SlashPaletteEntry.FromDiscovered))
+                .OrderBy(static entry => entry.Name, StringComparer.Ordinal)
+                .ThenBy(static entry => entry.PrecedenceRank),
         ];
+    }
+
+    /// <summary>Builds the palette row of a catalogue command, or null when another source's row stands for it.</summary>
+    private SlashPaletteEntry? CatalogueRow(SlashCommandDescriptor command, HashSet<string> engineNames, HashSet<string> skillNames)
+    {
+        var row = SlashPaletteEntry.FromCatalogue(command);
+        switch (command.Kind)
+        {
+            case SlashHandlerKind.OmpDelegated when engineNames.Contains(command.Name):
+                return null;
+            case SlashHandlerKind.Skill when skillNames.Contains(command.Name):
+                return null;
+            case SlashHandlerKind.Skill when command.DisabledReason is null:
+                return row with { Source = SlashPaletteSource.Cursor, DisabledReason = SlashPaletteCopy.NoSkillInstalled(command.Name) };
+            case SlashHandlerKind.NativeAction or SlashHandlerKind.CloudHandoff when command.DisabledReason is null && _host?.CanRun(command.HandlerId) != true:
+                return row with { DisabledReason = SlashPaletteCopy.ActionNotInThisWindow };
+            default:
+                return row;
+        }
     }
 
     private static string DescribeNoMatch(string query, IReadOnlyList<string> suggestions) =>

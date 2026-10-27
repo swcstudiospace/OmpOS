@@ -34,9 +34,12 @@ internal static class SettingsWindowFactory
         }
 
         pages.Add(new TabPage(tab));
-        pages.Add(new RulesSettingsPage(new RulesSettingsSource(options.WorkspaceRoot)));
-        pages.Add(new SkillsSettingsPage(new SkillsSettingsSource(options.WorkspaceRoot)));
-        pages.Add(new CommandsSettingsPage(new SlashCommandsSettingsSource(options.Commands ?? SlashCommandCatalogue.Shipped)));
+        var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        pages.Add(new RulesSettingsPage(new RulesSettingsSource(options.WorkspaceRoot, userHome)));
+        pages.Add(new SkillsSettingsPage(new SkillsSettingsSource(options.WorkspaceRoot, userHome)));
+        pages.Add(new CommandsSettingsPage(new SlashCommandsSettingsSource(
+            options.Commands ?? SlashCommandCatalogue.Shipped,
+            new ConventionsCommandsSource(options.WorkspaceRoot, userHome))));
         pages.Add(new PluginsPage(new PluginsSettingsSource(options.PluginsRoot)));
         pages.Add(new NetworkSettingsPage(options.NetworkSource ?? new NetworkDiagnosticsSource()));
         pages.Add(new KeyboardSettingsPage(new KeyboardSettingsSource()));

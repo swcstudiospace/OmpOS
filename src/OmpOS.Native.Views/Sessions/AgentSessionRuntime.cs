@@ -14,6 +14,7 @@ using OmpOS.Native.Views.Terminal;
 using OmpOS.Presentation;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Approvals;
+using OmpOS.Presentation.Commands;
 using OmpOS.Presentation.Composer;
 using OmpOS.Presentation.Runs;
 using OmpOS.Presentation.State;
@@ -98,8 +99,10 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         if (options.SessionCommands is { } sessionCommands && options.TerminalStarter is null)
         {
             // A terminal runs its own omp, which shows its own commands in its own terminal: only a chat session offers the slash palette.
-            _slashBinding = new SlashPaletteBinding(sessionCommands, SlashPaletteBinding.EngineCommandsOnly, options.ConnectModels);
+            var host = new DesktopSlashActionHost(ComposerSlashTargets.Create(Composer, options.SlashTargets));
+            _slashBinding = new SlashPaletteBinding(sessionCommands, SlashCommandCatalogue.Shipped, options.ConnectModels, host, options.SlashDiscovery, _timeProvider);
             Composer.SlashPalette = _slashBinding.Palette;
+            _ = _slashBinding.RefreshDiscoveryAsync(CancellationToken.None);
         }
 
         ViewModel = new AgentSessionViewModel(new AgentSessionOptions
@@ -271,6 +274,19 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         }
 
         _ = StartTurnAsync(prompt);
+    }
+
+    /// <summary>
+    /// Gives the session the parts of the head that native slash commands drive (Settings, a new chat, a new terminal, a side chat). The view that shows the session calls it once the session is shown, because
+    /// those parts belong to the shell and not to the session. The palette lists the commands that now have a target as enabled. It does nothing for a terminal session, which has no slash palette.
+    /// </summary>
+    /// <param name="targets">The head's targets. The runtime adds the targets its own composer reaches.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="targets"/> is null.</exception>
+    public void AttachSlashTargets(DesktopSlashTargets targets)
+    {
+        ArgumentNullException.ThrowIfNull(targets);
+
+        _slashBinding?.SetActionHost(new DesktopSlashActionHost(ComposerSlashTargets.Create(Composer, targets)));
     }
 
     /// <summary>Shows a line of composer feedback on the status line. An empty text clears it.</summary>
@@ -585,18 +601,31 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// </summary>
     /// <param name="text">The draft text the user sent.</param>
     /// <returns>True when the host accepted the send; false when no engine is composed.</returns>
-    private Task<bool> StartTurnAsync(string text)
+    private async Task<bool> StartTurnAsync(string text)
     {
         if (Terminal is not null && Volatile.Read(ref _disposed) == 0)
         {
             // A terminal has no prompt: the composer only steers a running omp, so a send with omp stopped says why it went nowhere.
             ReportStatus(AgentPanelCopy.TerminalNotRunning);
-            return Task.FromResult(false);
+            return false;
         }
 
         if (_options.Prompts is UnconnectedPromptChannel || Volatile.Read(ref _disposed) != 0)
         {
-            return RefuseSendAsync();
+            return await RefuseSendAsync().ConfigureAwait(true);
+        }
+
+        // A slash command is resolved first: a native action runs in the head and sends nothing, a discovered command, skill or subagent becomes the prompt, and any other text is sent as typed.
+        if (_slashBinding is not null && text.Length > 0 && text[0] is '/' or '&')
+        {
+            var dispatch = await _slashBinding.DispatchAsync(text, CancellationToken.None).ConfigureAwait(true);
+            if (dispatch.Kind == SlashDispatchKind.Handled)
+            {
+                ReportStatus(dispatch.Text);
+                return true;
+            }
+
+            text = dispatch.Text;
         }
 
         // The last prompt sent is the one a retry sends again. A new send clears the banner of an earlier failure.
@@ -618,7 +647,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             CancellationToken.None,
             TaskContinuationOptions.OnlyOnFaulted,
             TaskScheduler.Default);
-        return Task.FromResult(true);
+        return true;
     }
 
     /// <summary>

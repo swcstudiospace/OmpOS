@@ -6,6 +6,7 @@ using OmpOS.Native.Views.Terminal;
 using OmpOS.Presentation;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Approvals;
+using OmpOS.Presentation.Commands;
 
 namespace OmpOS.Native.Views.Sessions;
 
@@ -92,4 +93,16 @@ public sealed class AgentSessionRuntimeOptions
     /// starts the engine session when the palette opens before the engine has advertised its commands.
     /// </summary>
     public IOmpSessionCommands? SessionCommands { get; init; }
+
+    /// <summary>
+    /// Gets the source of the custom commands, skills and subagents of the session's workspace (<c>ConventionSlashDiscoverySource</c> reads them from every convention directory), or null when the session lists none.
+    /// The runtime reads it when the session starts and again, at most every few seconds, when the slash palette opens, so a file added meanwhile appears without a restart.
+    /// </summary>
+    public ISlashDiscoverySource? SlashDiscovery { get; init; }
+
+    /// <summary>
+    /// Gets the parts of the head that native slash actions drive: Settings, a new chat, a new terminal, a side chat. The runtime adds the targets its own composer reaches (mode, model, help). A target the head leaves null
+    /// makes its command unavailable in the palette.
+    /// </summary>
+    public DesktopSlashTargets? SlashTargets { get; init; }
 }

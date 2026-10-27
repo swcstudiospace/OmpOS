@@ -53,10 +53,10 @@ public sealed class SlashPaletteEndToEndTests
             var names = binding.Palette.Entries.Select(static entry => entry.Name).ToArray();
             names.ShouldBe(["fast", "model", "security", "skill:review", "switch"]);
             var security = binding.Palette.Entries.Single(static entry => string.Equals(entry.Name, "security", StringComparison.Ordinal));
-            security.Source.ShouldBe(SlashPaletteSource.Omp);
+            security.Source.ShouldBe(SlashPaletteSource.Engine);
             security.Description.ShouldBe("Plan, run, inspect, import, and compare OMP-native security scans");
             security.InputHint.ShouldBe("<plan|scan|status>");
-            binding.Palette.Entries.ShouldAllBe(static entry => entry.Source == SlashPaletteSource.Omp, "the shipped catalogue is not listed: nothing runs it");
+            binding.Palette.Entries.ShouldAllBe(static entry => entry.Source == SlashPaletteSource.Engine, "this binding was built over the engine-only registry, so no catalogue row is listed");
             omp.Launches.ShouldBe(1);
             omp.Requests("session/prompt").ShouldBeEmpty("listing commands never sends a prompt");
             omp.Requests("session/new").Count.ShouldBe(1);

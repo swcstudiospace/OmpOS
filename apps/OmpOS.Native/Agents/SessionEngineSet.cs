@@ -12,6 +12,7 @@ using OmpOS.Harness.AgentLoop.Substrate;
 using OmpOS.Harness.OmpLauncher;
 using OmpOS.Harness.Terminal;
 using OmpOS.Native.Engine;
+using OmpOS.Native.Views.Conventions;
 using OmpOS.Native.Views.Sessions;
 using OmpOS.Native.Views.Terminal;
 using OmpOS.Presentation.AgentPanel;
@@ -237,6 +238,13 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
         // Only a chat session has a slash palette: a terminal's omp shows its own commands in its own terminal.
         SessionCommands = isTerminal ? null : slot.SessionCommands,
+
+        // Custom commands, skills and subagents of the session's workspace and of the user's home, read from every convention directory when the session starts.
+        SlashDiscovery = isTerminal
+            ? null
+            : new ConventionSlashDiscoverySource(
+                [row.Summary.WorkspaceRoot ?? _options.Loop.WorkspaceRoot],
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)),
     };
 
     private PlannedOmpTerminalStarter CreateTerminalStarter(SessionSlot slot) => new(

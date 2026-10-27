@@ -169,6 +169,8 @@ public sealed class SlashCommandRegistry
             ArgumentException.ThrowIfNullOrWhiteSpace(descriptor.DisabledReason, nameof(descriptor));
         }
 
+        ValidateStatus(descriptor);
+
         if ((descriptor.Platforms & ~DefinedPlatforms) != CommandPlatforms.None)
         {
             throw new ArgumentException(
@@ -186,6 +188,21 @@ public sealed class SlashCommandRegistry
                 throw new ArgumentException(
                     $"Slash command '{descriptor.Name}' declares argument '{argument.Name}' more than once.", nameof(descriptor));
             }
+        }
+    }
+
+    /// <summary>An unavailable command must say why, and a command with the Unavailable handler kind must be marked unavailable.</summary>
+    private static void ValidateStatus(SlashCommandDescriptor descriptor)
+    {
+        var unavailable = descriptor.Status == SlashCommandStatus.Unavailable;
+        if (unavailable && descriptor.DisabledReason is null)
+        {
+            throw new ArgumentException($"Slash command '{descriptor.Name}' is unavailable and gives no reason.", nameof(descriptor));
+        }
+
+        if (descriptor.Kind == SlashHandlerKind.Unavailable && !unavailable)
+        {
+            throw new ArgumentException($"Slash command '{descriptor.Name}' has the Unavailable handler kind but another status.", nameof(descriptor));
         }
     }
 

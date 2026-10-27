@@ -38,8 +38,8 @@ public sealed class SlashPaletteCopyTests
     [Fact]
     public void TheRowNameOmitsWhatIsAbsent()
     {
-        SlashPaletteCopy.EntryName(new SlashPaletteEntry("fast", "Toggle fast mode", "[on|off]", SlashPaletteSource.Omp))
-            .ShouldBe("/fast, [on|off], Toggle fast mode, omp");
+        SlashPaletteCopy.EntryName(new SlashPaletteEntry("fast", "Toggle fast mode", "[on|off]", SlashPaletteSource.Engine))
+            .ShouldBe("/fast, [on|off], Toggle fast mode, Engine");
         SlashPaletteCopy.EntryName(new SlashPaletteEntry("side", string.Empty, null, SlashPaletteSource.OmpOs))
             .ShouldBe("/side, OmpOS");
         Should.Throw<ArgumentNullException>(() => SlashPaletteCopy.EntryName(null!));

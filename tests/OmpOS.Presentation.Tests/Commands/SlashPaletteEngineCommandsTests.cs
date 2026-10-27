@@ -37,8 +37,8 @@ public sealed class SlashPaletteEngineCommandsTests
 
         palette.Entries.Select(entry => entry.Name).ShouldBe(["fast", "model", "security", "side", "skill:review"]);
         var security = palette.Entries.Single(entry => string.Equals(entry.Name, "security", StringComparison.Ordinal));
-        security.Source.ShouldBe(SlashPaletteSource.Omp);
-        security.SourceLabel.ShouldBe("omp");
+        security.Source.ShouldBe(SlashPaletteSource.Engine);
+        security.SourceLabel.ShouldBe("Engine");
         security.Description.ShouldBe("Plan, run, inspect, import, and compare OMP-native security scans");
         security.InputHint.ShouldBe("<plan|scan|status>");
         security.DisplayName.ShouldBe("/security");
@@ -49,7 +49,7 @@ public sealed class SlashPaletteEngineCommandsTests
         palette.Entries.Single(entry => string.Equals(entry.Name, "model", StringComparison.Ordinal)).HasInputHint.ShouldBeFalse();
     }
 
-    /// <summary>When the engine and the catalogue name the same command, the engine's row is the only one and it is tagged omp.</summary>
+    /// <summary>When the engine and the catalogue name the same command, the engine's row is the only one and it is tagged Engine.</summary>
     [Fact]
     public void TheEngineWinsAClashOfNames()
     {
@@ -59,7 +59,7 @@ public sealed class SlashPaletteEngineCommandsTests
         palette.UpdateDraft("/m");
 
         var row = palette.Entries.ShouldHaveSingleItem();
-        row.Source.ShouldBe(SlashPaletteSource.Omp);
+        row.Source.ShouldBe(SlashPaletteSource.Engine);
         row.Description.ShouldBe("Show current model selection");
         palette.Announcement.ShouldBe("1 command");
     }
@@ -183,7 +183,7 @@ public sealed class SlashPaletteEngineCommandsTests
         row.Description.ShouldBeEmpty();
         row.HasDescription.ShouldBeFalse();
         row.HasInputHint.ShouldBeTrue();
-        row.AutomationName.ShouldBe("/fast, [on], omp");
+        row.AutomationName.ShouldBe("/fast, [on], Engine");
     }
 
     /// <summary>The input hint of a catalogue command lists its declared arguments: required ones in angle brackets, optional ones in square brackets.</summary>

@@ -66,6 +66,36 @@ public sealed class SlashCommandsSettingsSourceTests
         empty.EmptyText.ShouldBe(CustomizeCopy.CommandsEmpty);
     }
 
+    /// <summary>Discovered commands and subagents are listed after the catalogue with their file and scope, and the files discovery could not use are the page's problems.</summary>
+    [Fact]
+    public async Task DiscoveredCommandsAndSubagentsAreListedWithTheirFileAndScope()
+    {
+        var discovery = new FixedDiscovery(new SlashDiscovery(
+            [
+                new SlashDiscoveredCommand("deploy", "Deploys the app.", "<env>", "Deploy $1", SlashScope.Project, ".cursor/commands/deploy.md"),
+                new SlashDiscoveredCommand("standup", string.Empty, null, "Summarise", SlashScope.User, "~/.claude/commands/standup.md"),
+            ],
+            [new SlashDiscoveredSkill("lint", "Lints.", true, "/w/.cursor/skills/lint/SKILL.md", SlashScope.Project, ".cursor/skills/lint/SKILL.md")],
+            [new SlashDiscoveredSubagent("verifier", "Verifies work.", null, ReadOnly: true, IsBackground: false, "Check.", SlashScope.Project, ".cursor/agents/verifier.md")],
+            [".cursor/commands/broken.md: malformed frontmatter: line 2: the line is not 'key: value'"]));
+        var page = new CommandsSettingsPage(new SlashCommandsSettingsSource(Registry(), discovery));
+
+        await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        page.State.ShouldBe(CustomizePageState.Ready);
+        page.Entries.Select(entry => entry.Title).ShouldBe(["/fork", "/side <topic> [model]", "/deploy <env>", "/standup", "/verifier <task>"]);
+        var deploy = page.Entries.Single(entry => entry.Title.StartsWith("/deploy", StringComparison.Ordinal));
+        deploy.Scope.ShouldBe(CustomizeScope.Project);
+        deploy.Origin.ShouldBe(".cursor/commands/deploy.md", Case.Sensitive);
+        deploy.Description.ShouldBe("Deploys the app.", Case.Sensitive);
+        var standup = page.Entries.Single(entry => string.Equals(entry.Title, "/standup", StringComparison.Ordinal));
+        standup.Scope.ShouldBe(CustomizeScope.User);
+        standup.Origin.ShouldBe("~/.claude/commands/standup.md", Case.Sensitive);
+        var verifier = page.Entries.Single(entry => entry.Title.StartsWith("/verifier", StringComparison.Ordinal));
+        verifier.Description.ShouldBe("Subagent. Verifies work.", Case.Sensitive);
+        page.Problems.ShouldHaveSingleItem().ShouldStartWith(".cursor/commands/broken.md: ", Case.Sensitive);
+    }
+
     /// <summary>A command that is available on no platform says so.</summary>
     [Fact]
     public void NoPlatformIsSaid()

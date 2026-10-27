@@ -5,11 +5,44 @@ namespace OmpOS.Presentation.Commands;
 /// <summary>Every user-facing sentence of the slash palette. The view and its tests read the same constants, so a copy change is made here and nowhere else.</summary>
 public static class SlashPaletteCopy
 {
-    /// <summary>The tag of a command the omp engine advertised.</summary>
-    public const string SourceOmp = "omp";
+    /// <summary>The badge of a command the omp engine advertised.</summary>
+    public const string SourceEngine = "Engine";
 
-    /// <summary>The tag of a command of the OmpOS catalogue.</summary>
+    /// <summary>The badge of a command of the OmpOS catalogue that OmpOS runs or forwards.</summary>
     public const string SourceOmpOs = "OmpOS";
+
+    /// <summary>The badge of a Cursor command that OmpOS lists but cannot run.</summary>
+    public const string SourceCursor = "Cursor";
+
+    /// <summary>The badge of a discovered custom command.</summary>
+    public const string SourceCommand = "Command";
+
+    /// <summary>The badge of a discovered skill.</summary>
+    public const string SourceSkill = "Skill";
+
+    /// <summary>The badge of a discovered subagent.</summary>
+    public const string SourceSubagent = "Subagent";
+
+    /// <summary>The tag of a row whose file is in the open workspace.</summary>
+    public const string ScopeProject = "project";
+
+    /// <summary>The tag of a row whose file is in the user's home directory.</summary>
+    public const string ScopeUser = "user";
+
+    /// <summary>The input hint of a skill row.</summary>
+    public const string SkillHint = "[arguments]";
+
+    /// <summary>The input hint of a subagent row.</summary>
+    public const string SubagentHint = "<task>";
+
+    /// <summary>Builds the reason a Cursor built-in skill row is disabled when no skill of that name was found.</summary>
+    /// <param name="name">The skill name.</param>
+    /// <returns>The sentence.</returns>
+    public static string NoSkillInstalled(string name) =>
+        "Cursor ships this skill inside its app. Add a SKILL.md named " + name + " under .ompos/skills to use it.";
+
+    /// <summary>The reason a native action row is disabled when the window cannot run it.</summary>
+    public const string ActionNotInThisWindow = "This window cannot run this command.";
 
     /// <summary>The accessible name of the list of commands.</summary>
     public const string ListName = "Slash commands";
@@ -56,6 +89,38 @@ public static class SlashPaletteCopy
         }
 
         parts.Add(entry.SourceLabel);
+        if (entry.HasScope)
+        {
+            parts.Add(entry.ScopeLabel);
+        }
+
         return string.Join(", ", parts);
     }
+
+    /// <summary>Returns the badge text of a source.</summary>
+    /// <param name="source">The source.</param>
+    /// <returns>The badge: Engine, OmpOS, Cursor, Command, Skill or Subagent.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="source"/> is not defined.</exception>
+    public static string SourceBadge(SlashPaletteSource source) => source switch
+    {
+        SlashPaletteSource.Engine => SourceEngine,
+        SlashPaletteSource.OmpOs => SourceOmpOs,
+        SlashPaletteSource.Cursor => SourceCursor,
+        SlashPaletteSource.Command => SourceCommand,
+        SlashPaletteSource.Skill => SourceSkill,
+        SlashPaletteSource.Subagent => SourceSubagent,
+        _ => throw new ArgumentOutOfRangeException(nameof(source), source, "The source is not defined."),
+    };
+
+    /// <summary>Returns the scope tag text.</summary>
+    /// <param name="scope">The scope.</param>
+    /// <returns><c>project</c> or <c>user</c>; empty for a built-in row.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="scope"/> is not defined.</exception>
+    public static string ScopeTag(SlashScope scope) => scope switch
+    {
+        SlashScope.BuiltIn => string.Empty,
+        SlashScope.Project => ScopeProject,
+        SlashScope.User => ScopeUser,
+        _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, "The scope is not defined."),
+    };
 }

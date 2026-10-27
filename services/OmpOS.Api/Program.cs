@@ -115,6 +115,7 @@ builder.Services.AddSingleton<IHarnessSessionFactory>(static services =>
     return services.GetRequiredService<InMemoryHarnessSessionFactory>();
 });
 builder.Services.AddSingleton<PromptRunner>();
+builder.Services.AddSessionWebServices();
 
 // The API is the composition root for session runs. Each prompt runs in this process through DirectSessionRunner, which holds
 // the session's run lease from the coordination store for the whole run. The sandbox is the in-memory fake provider.
@@ -266,6 +267,13 @@ app.MapSessionEndpoints();
 app.MapToolApprovalEndpoints();
 app.MapEventStreamEndpoints();
 app.MapRunEndpoints();
+app.MapCatalogEndpoints();
+app.MapCatalogEventEndpoints();
+app.MapStageEndpoints();
+app.MapSteeringEndpoints();
+app.MapSessionConfigEndpoints();
+app.MapChangeReviewEndpoints();
+app.MapSourceEndpoints();
 
 // Start without RunAsync's dispose-on-failure: RunAsync disposes the host when startup
 // validation throws, which races WebApplicationFactory's in-memory-host observation

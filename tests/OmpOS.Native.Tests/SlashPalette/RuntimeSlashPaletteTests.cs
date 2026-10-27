@@ -27,13 +27,17 @@ public sealed class RuntimeSlashPaletteTests
 
             runtime.Composer.Draft = "/";
             palette.IsOpen.ShouldBeTrue();
-            palette.Entries.ShouldBeEmpty("no OmpOS entry is listed: the shipped catalogue has no handler, so only what omp advertises is offered");
-            palette.Entries.ShouldNotContain(static entry => entry.Name == "security");
+            palette.Entries.ShouldNotContain(static entry => entry.Source == SlashPaletteSource.Engine, "omp has advertised nothing yet");
+            palette.Entries.Count.ShouldBe(SlashCommandCatalogue.Shipped.ListAll().Count, "every catalogue row is listed, each with its status");
+            palette.Entries.Single(static entry => string.Equals(entry.Name, "plan", StringComparison.Ordinal)).IsEnabled.ShouldBeTrue("the composer itself supplies the mode action");
+            palette.Entries.Single(static entry => string.Equals(entry.Name, "clear", StringComparison.Ordinal)).IsEnabled.ShouldBeFalse("no shell has supplied the new-chat action yet");
+            palette.Entries.Single(static entry => string.Equals(entry.Name, "goal", StringComparison.Ordinal)).DisabledReason.ShouldNotBeNullOrWhiteSpace("an unavailable token says why");
 
             control.Report(FakeSessionCommands.Typical);
 
-            palette.Entries.Select(static entry => entry.Name).ShouldBe(["fast", "model", "security", "skill:review"]);
-            palette.Entries.ShouldAllBe(static entry => entry.Source == SlashPaletteSource.Omp);
+            palette.Entries.Where(static entry => entry.Source == SlashPaletteSource.Engine).Select(static entry => entry.Name).ShouldBe(["fast", "model", "security", "skill:review"]);
+            palette.Entries.ShouldNotContain(static entry => string.Equals(entry.Name, "fast", StringComparison.Ordinal) && entry.Source == SlashPaletteSource.OmpOs, "omp runs /fast itself, so its row stands for the catalogue's");
+            palette.Entries.ShouldNotContain(static entry => string.Equals(entry.Name, "review", StringComparison.Ordinal), "omp's skill:review stands for the Cursor built-in skill row");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

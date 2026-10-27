@@ -16,19 +16,19 @@ public static class CustomizeCopy
     public const string CommandsTitle = "Commands";
 
     /// <summary>The sentence under the Rules heading.</summary>
-    public const string RulesIntro = "Rule files OmpOS found in the workspace. To change a rule, edit its file.";
+    public const string RulesIntro = "Rules and instruction files OmpOS found in the workspace and in your home folder. To change one, edit its file.";
 
     /// <summary>The sentence under the Skills heading.</summary>
-    public const string SkillsIntro = "Skill files OmpOS found in the workspace. To change a skill, edit its file.";
+    public const string SkillsIntro = "Skills OmpOS found in the workspace and in your home folder. To change one, edit its SKILL.md.";
 
     /// <summary>The sentence under the Commands heading.</summary>
-    public const string CommandsIntro = "The slash commands you can type in the composer.";
+    public const string CommandsIntro = "The slash commands you can type in the composer: OmpOS and Cursor commands, and the commands and subagents found in the workspace and in your home folder.";
 
     /// <summary>The empty state of the Rules page.</summary>
-    public const string RulesEmpty = "No rule files found. Add markdown files to .ompos/rules in your workspace and they are listed here.";
+    public const string RulesEmpty = "No rules found. Add .mdc or .md files to a rules folder inside .ompos, .omp, .cursor, .claude, .codex or .agents (in the workspace or in your home folder), or add an AGENTS.md or CLAUDE.md file.";
 
     /// <summary>The empty state of the Skills page.</summary>
-    public const string SkillsEmpty = "No skill files found. Add markdown files to .ompos/skills in your workspace and they are listed here.";
+    public const string SkillsEmpty = "No skills found. Add a folder with a SKILL.md file to a skills folder inside .ompos, .omp, .cursor, .claude, .codex or .agents (in the workspace or in your home folder).";
 
     /// <summary>The empty state of the Commands page.</summary>
     public const string CommandsEmpty = "No slash commands are registered.";
@@ -100,6 +100,11 @@ public static class CustomizeCopy
     /// <param name="disabledReason">Why it is disabled.</param>
     /// <returns>The text.</returns>
     public static string DisabledDescription(string description, string disabledReason) => $"{description} Disabled: {disabledReason}";
+
+    /// <summary>Returns the description of a discovered subagent: it says what the entry is, then what the subagent is for.</summary>
+    /// <param name="description">What the subagent is for; may be empty.</param>
+    /// <returns>The text.</returns>
+    public static string SubagentDescription(string description) => description.Length == 0 ? "Subagent." : "Subagent. " + description;
 
     private static string PlatformName(CommandPlatforms platform) => platform switch
     {
