@@ -18,6 +18,7 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     private IOmpSession? _session;
     private readonly HostModelControl _models = new();
     private readonly HostSessionOptions _sessionOptions = new();
+    private readonly HostSessionCommands _sessionCommands = new();
     private readonly HostLiveSteering _liveSteering = new();
     private readonly List<IOmpSession> _opening = [];
     private string? _resumeSessionId;
@@ -76,6 +77,13 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     /// faulted session, and the list is empty until the first session is bound or when the session's engine offers none.
     /// </summary>
     public IOmpSessionOptions SessionOptions => _sessionOptions;
+
+    /// <summary>
+    /// Gets the slash commands and skills the engine advertises for the host's session. They stay valid while the host replaces a faulted
+    /// session, and the list is empty until the first session is bound and the engine has advertised them. Reading them runs nothing: the
+    /// engine runs a command when a prompt that starts with it is sent.
+    /// </summary>
+    public IOmpSessionCommands SessionCommands => _sessionCommands;
 
     /// <summary>
     /// Gets the live steering of the host's session. It stays valid while the host replaces a faulted session; it is unsupported until
@@ -190,6 +198,7 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
             _disposed = true;
             _models.Unbind();
             _sessionOptions.Unbind();
+            _sessionCommands.Unbind();
             _liveSteering.Unbind();
             session = _session;
             _session = null;
@@ -220,6 +229,7 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
         var bound = await InstallSessionAsync(fresh).ConfigureAwait(false);
         _models.Bind(bound);
         _sessionOptions.Bind(bound);
+        _sessionCommands.Bind(bound);
         _liveSteering.Bind(bound);
         PublishNativeSessionId(bound);
         return bound;

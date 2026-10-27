@@ -112,11 +112,16 @@
                Text="{x:Static panel:AgentPanelViewText.ComposerHint}"
                AutomationProperties.Name="{x:Static panel:AgentPanelViewText.ComposerHintName}" />
 
-    <!-- The suggestions box is shown by the shell's Inline suggestions toggle, above the card. It is hidden until then, so it is no tab stop before that. -->
-    <completion:InlineCompletionBox x:Name="Suggestions"
-                                    Grid.Row="0"
-                                    Margin="0,0,0,8"
-                                    IsVisible="False" />
+    <!-- Above the card: the slash palette, shown while the draft starts with a slash and a command name is being typed (it never takes focus, so
+         it is no tab stop), and the suggestions box, shown by the shell's Inline suggestions toggle. The box is hidden until then, so it is no
+         tab stop before that either. -->
+    <StackPanel Grid.Row="0">
+      <local:SlashPaletteView x:Name="SlashPalette"
+                              Margin="0,0,0,8" />
+      <completion:InlineCompletionBox x:Name="Suggestions"
+                                      Margin="0,0,0,8"
+                                      IsVisible="False" />
+    </StackPanel>
 
   </Grid>
 

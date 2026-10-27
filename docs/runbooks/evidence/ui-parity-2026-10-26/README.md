@@ -53,3 +53,24 @@ The sandbox has network access, so the Network page showed **7 of 14 endpoints r
 - Reachable and Unreachable chips on the Network page and "Found" chips on Plugins carry the word only, no status colour (consistent with the other chips).
 - Models: the Anthropic row lists "Claude Haiku 4.5" twice in the model flyout; that is the omp catalogue's content.
 - Without a window manager the Settings window overlaps the main window at an offset (the "Tools" tab shows behind it); not an application defect.
+
+## F10 pass: slash palette (SLASH-1), the two missing Light 960 shots, the Changes bar
+Debug build of `apps/OmpOS.Native` after the F10 fix-ups, under Xvfb as above (1440x900, no window manager), real omp 18.12.6, sandbox `/tmp/f10shot/<dark|light>` (`HOME`, `PI_CODING_AGENT_DIR`, `OMPOS_STATE_DIR`; state deleted before each run; Light by `{"theme":"light"}` in `config/settings.json`). No prompt was sent.
+
+```sh
+# slash palette (both themes): xvfb-run -a -s "-screen 0 1440x900x24" sh run.sh dark|light
+sleep 15; ctrl+n (New agent), 8 s; click the model chip (450,771), 50 s (omp starts and sends available_commands_update); Escape;
+click the prompt (640,740); type "/" -> slash-palette; type "mo" -> slash-palette-filtered; ctrl+a, BackSpace, type "/zzz" -> slash-palette-nomatch
+# after typing the pointer is parked over the thread area (900,300), not outside the window: with no window manager keyboard focus follows the pointer
+# Light 960x640: xdotool windowsize 960 640 (Light), 01 empty; ctrl+n, model chip (310,611), 50 s, Escape -> 02
+```
+Files: `slash-palette-<dark|light>.png` (the list after `/`: "471 commands" in this sandbox, eight rows visible and the rest scrolls, name in Space Mono with the slash, input hint and description in muted small text, the `omp` source tag, highlight on the first row with the purple bar), `slash-palette-filtered-<dark|light>.png` (`/mo`: model, modelpreset, move, in name order), `slash-palette-nomatch-<dark|light>.png` (`/zzz`: "No commands" and "No command matches '/zzz'."), and `01-empty-panel-960x640.png` and `02-chat-session-960x640.png` in `after-light/` (the Dark pair was already there).
+The list holds only what omp advertises: the shipped OmpOS entry `side` is not listed because nothing runs it (`chats.side.open` has no handler), so every row carries the `omp` tag.
+
+### Defects seen in the captures
+- The first capture attempt parked the pointer outside the window; without a window manager the typed characters then went nowhere, so the filtered and no-match shots equalled the first one. Not an application defect: the recipe above parks the pointer over the thread area.
+- No visible defect of the palette in either theme. Observations: with 471 commands the list is long (the sandbox omp loads many skills and plugin commands); the count line and the 8-row cap keep it small. The thin scroll indicator at the right edge of the first row is the standard list scrollbar.
+
+### Changes bar (REVIEW-1)
+The real application shows the Changes bar only after a model turn that edits a file; no key or menu fills it, and the sandbox has no model credentials, so the running application cannot show it. `changes-bar-dark.png` and `changes-bar-light.png` are therefore headless renders (Avalonia.Headless on Skia with the real fonts, 1280x800) of the shell over `ChangesFixture` (a real temporary workspace folder and a session whose transcript was fed three completed edit calls: an edited C# file, a created Markdown file, an edited text file). They show the bar docked under the transcript: summary "3 files changed +5 -2", Undo all and Keep all, and per file the path in Space Mono, the counts, the kind, the status and Review, Keep and Undo. The render came from a throwaway test that is not committed; the behaviour is pinned by `tests/OmpOS.Native.Tests/Changes/ChangesBarViewTests` (Keep, Undo, Undo all, Stale, Review into the Diff review tool, Apply review, CRLF).
+No defect seen in either render.

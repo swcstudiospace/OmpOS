@@ -39,4 +39,24 @@ public interface IWorkspaceFileSystem
     /// <exception cref="FileNotFoundException">No file exists at the path.</exception>
     /// <exception cref="UnauthorizedAccessException">The path resolves outside the workspace root, through a link.</exception>
     void WriteFile(string relativePath, string content, string expectedCurrent) => throw new NotSupportedException("This workspace file system is read-only.");
+
+    /// <summary>
+    /// Creates a new text file, and any missing parent directories, when no file exists at the path. The text goes to a temporary file
+    /// in the destination directory, which then becomes the file, so a reader never sees a partial file.
+    /// </summary>
+    /// <param name="relativePath">The normalised workspace-relative path of the new file.</param>
+    /// <param name="content">The text of the file, written as UTF-8.</param>
+    /// <exception cref="NotSupportedException">The implementation is read-only. This is the default.</exception>
+    /// <exception cref="IOException">A file or directory already exists at the path.</exception>
+    /// <exception cref="UnauthorizedAccessException">The path resolves outside the workspace root, through a link.</exception>
+    void CreateFile(string relativePath, string content) => throw new NotSupportedException("This workspace file system is read-only.");
+
+    /// <summary>Deletes a file when it still holds the text the caller based the deletion on. A file that holds anything else is left untouched.</summary>
+    /// <param name="relativePath">The normalised workspace-relative path of the file.</param>
+    /// <param name="expectedCurrent">The text the file must hold now.</param>
+    /// <exception cref="NotSupportedException">The implementation is read-only. This is the default.</exception>
+    /// <exception cref="StaleWorkspaceFileException">The file no longer holds <paramref name="expectedCurrent"/>.</exception>
+    /// <exception cref="FileNotFoundException">No file exists at the path.</exception>
+    /// <exception cref="UnauthorizedAccessException">The path resolves outside the workspace root, through a link.</exception>
+    void DeleteFile(string relativePath, string expectedCurrent) => throw new NotSupportedException("This workspace file system is read-only.");
 }

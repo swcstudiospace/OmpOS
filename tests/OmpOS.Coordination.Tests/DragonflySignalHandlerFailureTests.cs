@@ -44,6 +44,14 @@ public sealed class DragonflySignalHandlerFailureTests
         var received = await delivered.Task.WaitAsync(TimeSpan.FromSeconds(10), ct).ConfigureAwait(true);
 
         received.ShouldBe(healthyId);
+
+        // The handlers of two signals can run on different threads, so the healthy one may finish before the failure of the other is logged.
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        while (DateTime.UtcNow < deadline && !logger.Entries.Any(static entry => entry.Level == LogLevel.Warning))
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(20), ct).ConfigureAwait(true);
+        }
+
         logger.Entries.Select(entry => entry.Level).ShouldContain(LogLevel.Warning);
         await subscription.DisposeAsync().ConfigureAwait(true);
     }

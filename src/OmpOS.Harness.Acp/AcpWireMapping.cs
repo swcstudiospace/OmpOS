@@ -10,7 +10,8 @@ internal static class AcpWireMapping
 {
     /// <summary>
     /// Maps one <c>session/update</c> payload. Returns <see langword="null"/> for kinds the harness does not model
-    /// (for example <c>user_message_chunk</c> or <c>available_commands_update</c>); ACP reserves room for new kinds.
+    /// (for example <c>user_message_chunk</c>); ACP reserves room for new kinds. <c>available_commands_update</c> and <c>config_option_update</c>
+    /// are session state, not turn events: <see cref="AcpAgentSession"/> reads them itself before it maps an update, so they map to nothing here.
     /// </summary>
     /// <param name="update">The raw update object.</param>
     /// <returns>The mapped event, or <see langword="null"/>.</returns>

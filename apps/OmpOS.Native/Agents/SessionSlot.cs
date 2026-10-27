@@ -48,6 +48,7 @@ internal sealed class SessionSlot : IAsyncDisposable
         Steering = new FileSteeringChannel(scope.Current.SessionStateDirectory, owner.Clock, owner.SteeringOptions);
         Models = new SlotModelControl(ConnectModelsAsync);
         SessionOptions = new SlotSessionOptions();
+        SessionCommands = new SlotSessionCommands();
         LiveSteering = new SlotLiveSteering();
     }
 
@@ -77,6 +78,9 @@ internal sealed class SessionSlot : IAsyncDisposable
 
     /// <summary>Gets the select-style options (mode, thinking level) of the session: they follow the engine the slot holds now. The mode and thinking chips of a chat session use them.</summary>
     public SlotSessionOptions SessionOptions { get; }
+
+    /// <summary>Gets the slash commands and skills omp advertises for the session: they follow the engine the slot holds now. The slash palette of a chat session uses them.</summary>
+    public SlotSessionCommands SessionCommands { get; }
 
     /// <summary>Gets the omp live steering of the session: it follows the engine the slot holds now and is unsupported without one or when that omp cannot take a message into a running turn. The composer and the Kanban card of a chat session use it before the steering inbox.</summary>
     public SlotLiveSteering LiveSteering { get; }
@@ -170,6 +174,7 @@ internal sealed class SessionSlot : IAsyncDisposable
 
         Models.Bind(null);
         SessionOptions.Bind(null);
+        SessionCommands.Bind(null);
         LiveSteering.Bind(null);
     }
 
@@ -262,6 +267,7 @@ internal sealed class SessionSlot : IAsyncDisposable
         await DisposeEngineAsync(engine).ConfigureAwait(false);
         Models.Bind(null);
         SessionOptions.Bind(null);
+        SessionCommands.Bind(null);
         LiveSteering.Bind(null);
         if (plan is not null)
         {
@@ -311,6 +317,7 @@ internal sealed class SessionSlot : IAsyncDisposable
 
         Models.Bind(engine.Host.Models);
         SessionOptions.Bind(engine.Host.SessionOptions);
+        SessionCommands.Bind(engine.Host.SessionCommands);
         LiveSteering.Bind(engine.Host.LiveSteering);
 
         return engine;

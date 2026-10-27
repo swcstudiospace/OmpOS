@@ -138,6 +138,76 @@ public sealed class LocalWorkspaceFileSystem : IWorkspaceFileSystem
         }
     }
 
+    /// <inheritdoc/>
+    public void CreateFile(string relativePath, string content)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        var normalized = WorkspacePath.Normalize(relativePath);
+        if (normalized.Length == 0)
+        {
+            throw new ArgumentException("A file path is required; the workspace root is a directory.", nameof(relativePath));
+        }
+
+        var file = Path.GetFullPath(Path.Combine(_rootFull, normalized.Replace('/', Path.DirectorySeparatorChar)));
+        if (!IsWithinRoot(file) || HasSymlinkEscape(file))
+        {
+            throw new UnauthorizedAccessException("The file resolves outside the workspace root.");
+        }
+
+        if (File.Exists(file) || Directory.Exists(file))
+        {
+            throw new IOException($"'{relativePath}' already exists; nothing was written.");
+        }
+
+        var bytes = StrictUtf8.GetBytes(content);
+        var directory = Path.GetDirectoryName(file) ?? _rootFull;
+        _ = Directory.CreateDirectory(directory);
+        var temporary = Path.Combine(directory, "." + Path.GetFileName(file) + "." + Guid.NewGuid().ToString("N") + ".tmp");
+        try
+        {
+            using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                stream.Write(bytes);
+                stream.Flush(flushToDisk: true);
+            }
+
+            // Without overwrite the move fails when a file appeared in the meantime, so the newer file wins.
+            File.Move(temporary, file, overwrite: false);
+        }
+        finally
+        {
+            if (File.Exists(temporary))
+            {
+                File.Delete(temporary);
+            }
+        }
+    }
+
+    /// <inheritdoc/>
+    public void DeleteFile(string relativePath, string expectedCurrent)
+    {
+        ArgumentNullException.ThrowIfNull(expectedCurrent);
+
+        var file = ResolveFile(relativePath);
+
+        // A link inside the root is compared by its target's text, and deleting it removes the link and leaves the target.
+        var target = new FileInfo(file).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? file;
+        var lastWrite = File.GetLastWriteTimeUtc(target);
+        var current = DecodeFile(File.ReadAllBytes(target), out _);
+        if (!string.Equals(current, expectedCurrent, StringComparison.Ordinal))
+        {
+            throw new StaleWorkspaceFileException($"'{relativePath}' changed on disk after it was read; nothing was deleted.");
+        }
+
+        if (File.GetLastWriteTimeUtc(target) != lastWrite)
+        {
+            throw new StaleWorkspaceFileException($"'{relativePath}' changed on disk while it was being deleted; nothing was deleted.");
+        }
+
+        File.Delete(file);
+    }
+
     private bool IsWithinRoot(string candidate)
     {
         if (candidate.Length < _rootFull.Length || !candidate.StartsWith(_rootFull, RootComparison))

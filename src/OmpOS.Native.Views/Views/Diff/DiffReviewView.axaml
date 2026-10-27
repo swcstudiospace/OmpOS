@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:diff="clr-namespace:OmpOS.Native.Views.Diff"
+             xmlns:copy="clr-namespace:OmpOS.Presentation.Changes;assembly=OmpOS.Presentation"
              x:Class="OmpOS.Native.Views.Diff.DiffReviewView">
 
   <UserControl.Styles>
@@ -13,16 +14,59 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="Auto,*,Auto,Auto">
+  <Panel>
+
+  <!-- While no review is shown the tool says so, instead of standing empty. The sentence takes focus so the skip link and Tab land on it. -->
+  <TextBlock x:Name="EmptyText"
+             Focusable="True"
+             Margin="{DynamicResource OmpOS.Space.Md}"
+             Classes="muted"
+             Text="{x:Static copy:ChangeCopy.NothingToReview}"
+             TextWrapping="Wrap"
+             AutomationProperties.Name="{x:Static copy:ChangeCopy.NothingToReview}" />
+
+  <Grid x:Name="ReviewContent"
+        RowDefinitions="Auto,Auto,*,Auto,Auto"
+        IsVisible="False">
+
+    <!-- The header of a review of an agent's changes: the file, the control that writes the decisions, and the result of the last write. -->
+    <Grid x:Name="ReviewHeader"
+          Grid.Row="0"
+          ColumnDefinitions="*,Auto"
+          Margin="{DynamicResource OmpOS.Space.Sm}"
+          IsVisible="False">
+      <StackPanel Grid.Column="0"
+                  Spacing="{DynamicResource OmpOS.Gap.Xxs}"
+                  VerticalAlignment="Center">
+        <TextBlock x:Name="TitleText"
+                   Classes="strong"
+                   FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="ResultText"
+                   Classes="muted small"
+                   TextWrapping="Wrap"
+                   IsVisible="False"
+                   AutomationProperties.Name="{x:Static copy:ChangeCopy.ResultName}"
+                   AutomationProperties.LiveSetting="Polite" />
+      </StackPanel>
+      <Button x:Name="ApplyButton"
+              Grid.Column="1"
+              Classes="primary sm"
+              Content="{x:Static copy:ChangeCopy.ApplyReview}"
+              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+              MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+              VerticalAlignment="Center"
+              AutomationProperties.Name="{x:Static copy:ChangeCopy.ApplyReviewName}" />
+    </Grid>
 
     <TextBlock x:Name="PendingText"
-               Grid.Row="0"
+               Grid.Row="1"
                Margin="{DynamicResource OmpOS.Space.Sm}"
                TextWrapping="Wrap"
                AutomationProperties.Name="Pending hunks"
                AutomationProperties.LiveSetting="Polite" />
 
-    <ScrollViewer Grid.Row="1"
+    <ScrollViewer Grid.Row="2"
                   HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Auto"
                   Padding="{DynamicResource OmpOS.Space.Sm}">
@@ -90,14 +134,14 @@
       </ItemsControl>
     </ScrollViewer>
 
-    <TextBlock Grid.Row="2"
+    <TextBlock Grid.Row="3"
                Margin="{DynamicResource OmpOS.Space.Sm}"
                Text="Resulting text"
                Classes="strong"
                FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}" />
 
     <TextBox x:Name="ResultBox"
-             Grid.Row="3"
+             Grid.Row="4"
              Classes="mono"
              Margin="{DynamicResource OmpOS.Space.Sm}"
              MaxHeight="220"
@@ -107,5 +151,7 @@
              AutomationProperties.Name="Resulting text" />
 
   </Grid>
+
+  </Panel>
 
 </UserControl>

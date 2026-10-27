@@ -10,27 +10,43 @@ namespace OmpOS.Presentation.Commands;
 /// keys to.
 /// </summary>
 /// <remarks>
+/// <para>
+/// The palette has two sources: the commands the engine advertises (<see cref="SetEngineCommands"/>) and the OmpOS catalogue it was built
+/// over. When both name the same command the engine's row wins, because the engine is the one that runs it. The list is in ordinal name
+/// order, whatever the source.
+/// </para>
+/// <para>
 /// The palette lists every registered command whatever its <see cref="SlashCommandDescriptor.Platforms"/>, as the registry does;
-/// the host that knows its platform filters the registry it passes in.
+/// the host that knows its platform filters the registry it passes in. It never runs a command: <see cref="Accept"/> only yields the
+/// text that completes the name. The engine runs a slash command when the prompt that starts with it is sent.
+/// </para>
 /// </remarks>
 public sealed class SlashPaletteModel : ObservableModel
 {
+    /// <summary>The number of rows a view shows before the list scrolls.</summary>
+    public const int MaxVisibleRows = 8;
+
     private readonly SlashCommandRegistry _registry;
+    private IReadOnlyList<SlashPaletteEntry> _all;
+    private string _draft = string.Empty;
+    private string? _dismissedDraft;
     private bool _isOpen;
     private string _query = string.Empty;
     private IReadOnlyList<SlashPaletteEntry> _entries = [];
     private IReadOnlyList<string> _suggestions = [];
     private string? _noMatchMessage;
+    private string? _announcement;
     private int _selectedIndex = -1;
     private string? _notice;
 
-    /// <summary>Creates a closed palette over a command registry.</summary>
+    /// <summary>Creates a closed palette over a command registry. It lists no engine command until <see cref="SetEngineCommands"/> is called.</summary>
     /// <param name="registry">The commands the palette lists.</param>
     /// <exception cref="ArgumentNullException"><paramref name="registry"/> is null.</exception>
     public SlashPaletteModel(SlashCommandRegistry registry)
     {
         ArgumentNullException.ThrowIfNull(registry);
         _registry = registry;
+        _all = Merge(registry, []);
     }
 
     /// <summary>Gets a value indicating whether the palette is showing.</summary>
@@ -53,7 +69,7 @@ public sealed class SlashPaletteModel : ObservableModel
     }
 
     /// <summary>
-    /// Gets the registered names close to <see cref="Query"/> when no command matches it. It is empty when a command matches,
+    /// Gets the listed names close to <see cref="Query"/> when no command matches it. It is empty when a command matches,
     /// when nothing is close, and while the palette is closed.
     /// </summary>
     public IReadOnlyList<string> Suggestions { get => _suggestions; private set => SetProperty(ref _suggestions, value); }
@@ -63,6 +79,12 @@ public sealed class SlashPaletteModel : ObservableModel
     /// <see langword="null"/> when a command matches or the palette is closed.
     /// </summary>
     public string? NoMatchMessage { get => _noMatchMessage; private set => SetProperty(ref _noMatchMessage, value); }
+
+    /// <summary>
+    /// Gets the sentence that says how many commands the palette lists (<see cref="SlashPaletteCopy.ResultCount"/>), or <see langword="null"/> while
+    /// the palette is closed. A view shows it in a live region so the result count is announced as the user types.
+    /// </summary>
+    public string? Announcement { get => _announcement; private set => SetProperty(ref _announcement, value); }
 
     /// <summary>Gets the index in <see cref="Entries"/> of the selected row, or -1 when there is none.</summary>
     public int SelectedIndex
@@ -87,9 +109,39 @@ public sealed class SlashPaletteModel : ObservableModel
     public string? Notice { get => _notice; private set => SetProperty(ref _notice, value); }
 
     /// <summary>
+    /// Replaces the commands the engine advertises. Each call replaces the list as a whole; a name the engine repeats keeps its first entry and a
+    /// name that is blank or holds white space is not listed. While the palette is open it lists the new commands at once and keeps the
+    /// selected command selected when it is still listed.
+    /// </summary>
+    /// <param name="commands">The commands the engine advertises, in its order.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="commands"/> or one of its entries is null.</exception>
+    public void SetEngineCommands(IReadOnlyList<SlashEngineCommand> commands)
+    {
+        ArgumentNullException.ThrowIfNull(commands);
+
+        var engine = new List<SlashPaletteEntry>(commands.Count);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var command in commands)
+        {
+            ArgumentNullException.ThrowIfNull(command, nameof(commands));
+            if (IsTypableName(command.Name) && seen.Add(command.Name))
+            {
+                engine.Add(SlashPaletteEntry.FromEngine(command));
+            }
+        }
+
+        _all = Merge(_registry, engine);
+        if (_isOpen)
+        {
+            Rebuild(_selectedIndex >= 0 && _selectedIndex < _entries.Count ? _entries[_selectedIndex].Name : null);
+        }
+    }
+
+    /// <summary>
     /// Reports the composer draft after a change. The palette opens when the draft starts with a slash and holds no white space
     /// after it, and then lists the commands that match the text after the slash. Any other draft, including the empty draft left
-    /// by a backspace over the slash, or a draft whose command name is followed by argument text, closes it.
+    /// by a backspace over the slash, or a draft whose command name is followed by argument text, closes it. A palette that
+    /// <see cref="Dismiss"/> closed stays closed until the draft changes.
     /// </summary>
     /// <param name="draft">The full draft text.</param>
     /// <exception cref="ArgumentNullException"><paramref name="draft"/> is null.</exception>
@@ -98,22 +150,13 @@ public sealed class SlashPaletteModel : ObservableModel
         ArgumentNullException.ThrowIfNull(draft);
 
         Notice = null;
-        if (!IsCommandNameDraft(draft))
+        _draft = draft;
+        if (_dismissedDraft is not null && !string.Equals(_dismissedDraft, draft, StringComparison.Ordinal))
         {
-            Close();
-            return;
+            _dismissedDraft = null;
         }
 
-        var query = draft[1..];
-        var entries = _registry.MatchByPrefix(query).Select(static command => new SlashPaletteEntry(command)).ToArray();
-        IReadOnlyList<string> suggestions = entries.Length == 0 ? _registry.Suggest(query) : [];
-
-        Query = query;
-        Entries = entries;
-        Suggestions = suggestions;
-        NoMatchMessage = entries.Length == 0 ? DescribeNoMatch(query, suggestions) : null;
-        SelectedIndex = entries.Length == 0 ? -1 : 0;
-        IsOpen = true;
+        Rebuild(null);
     }
 
     /// <summary>Moves the selection by <paramref name="delta"/> rows, wrapping past either end. It does nothing when no row is listed.</summary>
@@ -131,10 +174,20 @@ public sealed class SlashPaletteModel : ObservableModel
         NotifyPropertyChanged(nameof(SelectedEntry));
     }
 
+    /// <summary>Selects the row at <paramref name="index"/>, for example the row the user pointed at. An index outside the listed rows is ignored.</summary>
+    /// <param name="index">The index in <see cref="Entries"/>.</param>
+    public void Select(int index)
+    {
+        if (index >= 0 && index < _entries.Count)
+        {
+            SelectedIndex = index;
+        }
+    }
+
     /// <summary>
     /// Accepts the selected row. An enabled command closes the palette and yields the draft text that completes it, the slash,
     /// the name and one space, ready for arguments. A disabled command keeps the palette open, yields nothing, and sets
-    /// <see cref="Notice"/> to its reason.
+    /// <see cref="Notice"/> to its reason. Accepting runs nothing: the engine runs the command when the prompt is sent.
     /// </summary>
     /// <returns>The completed draft text, or <see langword="null"/> when nothing is selected or the command is disabled.</returns>
     public string? Accept()
@@ -154,11 +207,30 @@ public sealed class SlashPaletteModel : ObservableModel
         return "/" + entry.Name + " ";
     }
 
-    /// <summary>Closes the palette without choosing a command, as Escape does.</summary>
+    /// <summary>Closes the palette without choosing a command, as Escape does. It stays closed until the draft changes.</summary>
     public void Dismiss()
     {
         Notice = null;
+        _dismissedDraft = _draft;
         Close();
+    }
+
+    private static bool IsTypableName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return false;
+        }
+
+        foreach (var character in name)
+        {
+            if (char.IsWhiteSpace(character))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static bool IsCommandNameDraft(string draft)
@@ -179,10 +251,51 @@ public sealed class SlashPaletteModel : ObservableModel
         return true;
     }
 
+    private static SlashPaletteEntry[] Merge(SlashCommandRegistry registry, IReadOnlyList<SlashPaletteEntry> engine)
+    {
+        var engineNames = new HashSet<string>(engine.Select(static entry => entry.Name), StringComparer.Ordinal);
+        return
+        [
+            .. engine
+                .Concat(registry.ListAll().Where(command => !engineNames.Contains(command.Name)).Select(SlashPaletteEntry.FromCatalogue))
+                .OrderBy(static entry => entry.Name, StringComparer.Ordinal),
+        ];
+    }
+
     private static string DescribeNoMatch(string query, IReadOnlyList<string> suggestions) =>
         suggestions.Count == 0
             ? $"No command matches '/{query}'."
             : $"No command matches '/{query}'. Did you mean {string.Join(", ", suggestions.Select(static name => "/" + name))}?";
+
+    /// <summary>Lists what the last reported draft asks for, or closes the palette when that draft is not a command name being typed or was dismissed.</summary>
+    /// <param name="keepSelected">The name of the row to keep selected when it is still listed, or null to select the first row.</param>
+    private void Rebuild(string? keepSelected)
+    {
+        if (!IsCommandNameDraft(_draft) || (_dismissedDraft is not null && string.Equals(_dismissedDraft, _draft, StringComparison.Ordinal)))
+        {
+            Close();
+            return;
+        }
+
+        var query = _draft[1..];
+        var entries = _all.Where(entry => entry.Name.StartsWith(query, StringComparison.Ordinal)).ToArray();
+        IReadOnlyList<string> suggestions = entries.Length == 0 ? SlashCommandRegistry.SuggestAmong(_all.Select(static entry => entry.Name), query) : [];
+
+        var selected = 0;
+        if (keepSelected is not null)
+        {
+            var kept = Array.FindIndex(entries, entry => string.Equals(entry.Name, keepSelected, StringComparison.Ordinal));
+            selected = kept >= 0 ? kept : 0;
+        }
+
+        Query = query;
+        Entries = entries;
+        Suggestions = suggestions;
+        NoMatchMessage = entries.Length == 0 ? DescribeNoMatch(query, suggestions) : null;
+        Announcement = SlashPaletteCopy.ResultCount(entries.Length);
+        SelectedIndex = entries.Length == 0 ? -1 : selected;
+        IsOpen = true;
+    }
 
     private void Close()
     {
@@ -191,6 +304,7 @@ public sealed class SlashPaletteModel : ObservableModel
         Entries = [];
         Suggestions = [];
         NoMatchMessage = null;
+        Announcement = null;
         SelectedIndex = -1;
     }
 }

@@ -19,11 +19,12 @@ namespace OmpOS.Harness.Acp;
 /// change happens at a known point in that order. A request the policy admits waits for its decision on a task of its own,
 /// so the pump never blocks on it.
 /// </summary>
-public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpModelControl, IOmpSessionOptions, IOmpLiveSteering
+public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpModelControl, IOmpSessionOptions, IOmpSessionCommands, IOmpLiveSteering
 {
     private const string UpdateMethod = "session/update";
     private const string SetConfigOptionMethod = "session/set_config_option";
     private const string ConfigOptionUpdateKind = "config_option_update";
+    private const string AvailableCommandsUpdateKind = "available_commands_update";
     private const string ModelOptionId = "model";
     private const string PermissionMethod = "session/request_permission";
     private const string AuthenticateMethod = "authenticate";
@@ -74,6 +75,8 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
     private bool _steeringSupported;
     private bool _openFailed;
     private OmpSessionOption[] _sessionOptions = [];
+    private IReadOnlyList<AcpAvailableCommand> _availableCommands = [];
+    private OmpCommand[] _commands = [];
     private bool _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="AcpAgentSession"/> class. With no resolver, a request the policy admits is denied.</summary>
@@ -170,6 +173,36 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
             lock (_gate)
             {
                 return _sessionOptions;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public event EventHandler? CommandsChanged;
+
+    /// <summary>
+    /// Gets the commands the agent advertised in its latest <c>available_commands_update</c> notification, in the agent's order. Each notification
+    /// replaces the list as a whole. Empty until the session is open and the agent has advertised its commands.
+    /// </summary>
+    public IReadOnlyList<AcpAvailableCommand> AvailableCommands
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _availableCommands;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    IReadOnlyList<OmpCommand> IOmpSessionCommands.Commands
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _commands;
             }
         }
     }
@@ -681,6 +714,33 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         }
     }
 
+    /// <summary>
+    /// Replaces the stored commands with the agent's report and raises <see cref="CommandsChanged"/> when the list differs. A report without an
+    /// <c>availableCommands</c> array leaves what the session knows as it is; an empty array replaces the list with an empty one.
+    /// </summary>
+    private void ApplyAvailableCommands(JsonElement? raw)
+    {
+        if (raw is not { ValueKind: JsonValueKind.Array })
+        {
+            return;
+        }
+
+        var parsed = AcpAvailableCommandParser.Parse(raw);
+        var commands = parsed.Select(static command => new OmpCommand(command.Name, command.Description, command.InputHint)).ToArray();
+        bool changed;
+        lock (_gate)
+        {
+            changed = !_commands.SequenceEqual(commands);
+            _availableCommands = parsed;
+            _commands = commands;
+        }
+
+        if (changed)
+        {
+            RaiseCommandsChanged();
+        }
+    }
+
     /// <summary>Raises <see cref="ModelChanged"/>. A subscriber that throws never fails the pump or the caller, and never hides the change from the other subscribers.</summary>
     private void RaiseModelChanged()
     {
@@ -723,6 +783,27 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         }
     }
 
+    /// <summary>Raises <see cref="CommandsChanged"/>. A subscriber that throws never fails the pump or the caller, and never hides the change from the other subscribers.</summary>
+    private void RaiseCommandsChanged()
+    {
+        if (CommandsChanged is not { } handlers)
+        {
+            return;
+        }
+
+        foreach (var handler in handlers.GetInvocationList().Cast<EventHandler>())
+        {
+            try
+            {
+                handler(this, EventArgs.Empty);
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+                // A subscriber must never fail the session.
+            }
+        }
+    }
+
     /// <summary>
     /// Applies a <c>config_option_update</c> notification, in any session state: omp pushes one after a model or thinking change, also
     /// one that a slash command made, and while a prompt runs. Other updates and other sessions' updates are ignored.
@@ -746,6 +827,31 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         }
 
         ApplyConfigOptions(update.TryGetProperty("configOptions", out var options) ? options : null);
+    }
+
+    /// <summary>
+    /// Applies an <c>available_commands_update</c> notification, in any session state: omp advertises its commands right after <c>session/new</c>
+    /// and again after a plugin reload, also while a prompt runs. Other updates and other sessions' updates are ignored.
+    /// </summary>
+    private void TryApplyAvailableCommandsUpdate(AcpFrames.Inbound inbound)
+    {
+        if (inbound.Params is not { ValueKind: JsonValueKind.Object } parameters
+            || !parameters.TryGetProperty("update", out var update)
+            || update.ValueKind != JsonValueKind.Object
+            || !update.TryGetProperty("sessionUpdate", out var kind)
+            || !kind.ValueEquals(AvailableCommandsUpdateKind))
+        {
+            return;
+        }
+
+        var current = SessionId;
+        if (current is not null
+            && !(parameters.TryGetProperty("sessionId", out var target) && target.ValueKind == JsonValueKind.String && target.ValueEquals(current)))
+        {
+            return;
+        }
+
+        ApplyAvailableCommands(update.TryGetProperty("availableCommands", out var commands) ? commands : null);
     }
 
     private static void ValidateOptions(AcpClientOptions options)
@@ -1087,6 +1193,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
     private void HandleSessionUpdate(AcpFrames.Inbound inbound)
     {
         TryApplyConfigOptionUpdate(inbound);
+        TryApplyAvailableCommandsUpdate(inbound);
         var turn = ActiveTurn();
         if (turn is null)
         {

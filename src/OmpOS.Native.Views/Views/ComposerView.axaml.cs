@@ -41,6 +41,7 @@ internal partial class ComposerView : UserControl
         ModelPicker.FocusReturnRequested += OnModelPickerFocusReturn;
         ModeChipView.FocusReturnRequested += OnModelPickerFocusReturn;
         ThinkingChipView.FocusReturnRequested += OnModelPickerFocusReturn;
+        SlashPalette.EntryChosen += OnSlashEntryChosen;
         RefreshRunState();
     }
 
@@ -144,6 +145,9 @@ internal partial class ComposerView : UserControl
     /// <summary>Gets the thinking chip of the footer. It is hidden until the composer carries a thinking chip that has values to offer.</summary>
     internal OptionChipView ThinkingChipControl => ThinkingChipView;
 
+    /// <summary>Gets the slash palette above the card. It is hidden until the draft starts with a slash and the composer carries a palette.</summary>
+    internal SlashPaletteView SlashPaletteControl => SlashPalette;
+
     /// <summary>Copies the draft into the prompt and binds the model, mode and thinking chips when the data context changes.</summary>
     protected override void OnDataContextChanged(EventArgs e)
     {
@@ -164,6 +168,7 @@ internal partial class ComposerView : UserControl
         ModelPicker.DataContext = _composer?.ModelPicker;
         ModeChipView.DataContext = _composer?.ModeChip;
         ThinkingChipView.DataContext = _composer?.ThinkingChip;
+        SlashPalette.DataContext = _composer?.SlashPalette;
     }
 
     private void OnComposerChanged(object? sender, PropertyChangedEventArgs e)
@@ -180,6 +185,10 @@ internal partial class ComposerView : UserControl
         {
             ThinkingChipView.DataContext = _composer?.ThinkingChip;
         }
+        else if (string.Equals(e.PropertyName, nameof(ComposerViewModel.SlashPalette), StringComparison.Ordinal))
+        {
+            SlashPalette.DataContext = _composer?.SlashPalette;
+        }
     }
 
     private void OnModelPickerFocusReturn(object? sender, EventArgs e) => FocusPrompt();
@@ -194,6 +203,33 @@ internal partial class ComposerView : UserControl
         }
     }
 
+    /// <summary>
+    /// Offers a key to the slash palette. The palette takes the arrow, Enter, Tab and Escape keys while it is open, before the send and stop rules.
+    /// It only completes a command name in the draft: omp runs the command when the prompt is sent.
+    /// </summary>
+    private bool TryHandleSlashPaletteKey(ComposerViewModel composer, KeyEventArgs e)
+    {
+        if (e.KeyModifiers != KeyModifiers.None || SlashPaletteKeyName(e.Key) is not { } slashKey)
+        {
+            return false;
+        }
+
+        var before = composer.Draft;
+        if (!composer.HandleSlashPaletteKey(slashKey))
+        {
+            return false;
+        }
+
+        e.Handled = true;
+        if (!string.Equals(before, composer.Draft, StringComparison.Ordinal))
+        {
+            SyncPrompt(composer);
+            PromptInput.CaretIndex = composer.Draft.Length;
+        }
+
+        return true;
+    }
+
     private void OnPromptKeyDown(object? sender, KeyEventArgs e)
     {
         if (DataContext is not ComposerViewModel composer)
@@ -202,6 +238,12 @@ internal partial class ComposerView : UserControl
         }
 
         var shift = (e.KeyModifiers & KeyModifiers.Shift) != KeyModifiers.None;
+
+        if (TryHandleSlashPaletteKey(composer, e))
+        {
+            return;
+        }
+
         var ctrl = (e.KeyModifiers & KeyModifiers.Control) != KeyModifiers.None;
         if (e.Key == Key.Enter)
         {
@@ -243,6 +285,27 @@ internal partial class ComposerView : UserControl
 
             Track(composer, () => composer.HandleKeyAsync("Escape", shift));
         }
+    }
+
+    private static string? SlashPaletteKeyName(Key key) => key switch
+    {
+        Key.Down => "ArrowDown",
+        Key.Up => "ArrowUp",
+        Key.Enter => "Enter",
+        Key.Tab => "Tab",
+        Key.Escape => "Escape",
+        _ => null,
+    };
+
+    private void OnSlashEntryChosen(object? sender, EventArgs e)
+    {
+        if (DataContext is ComposerViewModel composer && composer.AcceptSlashEntry())
+        {
+            SyncPrompt(composer);
+            PromptInput.CaretIndex = composer.Draft.Length;
+        }
+
+        FocusPrompt();
     }
 
     private void OnSendClick(object? sender, RoutedEventArgs e)

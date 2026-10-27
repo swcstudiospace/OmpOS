@@ -64,6 +64,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     private readonly ModelPickerBinding? _modelBinding;
     private readonly OptionChipBinding? _modeBinding;
     private readonly OptionChipBinding? _thinkingBinding;
+    private readonly SlashPaletteBinding? _slashBinding;
 
     /// <summary>Creates the runtime of one session and its view model. It starts no observation: call <see cref="StartObserving"/>.</summary>
     /// <param name="options">What the head supplies.</param>
@@ -92,6 +93,13 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             // A terminal runs its own omp, which owns its mode and thinking level: only a chat session offers the chips.
             _modeBinding = new OptionChipBinding(sessionOptions, "mode", "Mode", chip => Composer.ModeChip = chip);
             _thinkingBinding = new OptionChipBinding(sessionOptions, "thinking", "Thinking", chip => Composer.ThinkingChip = chip);
+        }
+
+        if (options.SessionCommands is { } sessionCommands && options.TerminalStarter is null)
+        {
+            // A terminal runs its own omp, which shows its own commands in its own terminal: only a chat session offers the slash palette.
+            _slashBinding = new SlashPaletteBinding(sessionCommands, SlashPaletteBinding.EngineCommandsOnly, options.ConnectModels);
+            Composer.SlashPalette = _slashBinding.Palette;
         }
 
         ViewModel = new AgentSessionViewModel(new AgentSessionOptions
@@ -157,6 +165,9 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <summary>Gets the motion setting the head supplied.</summary>
     public MotionPreference Motion => _options.Motion;
 
+    /// <summary>Gets the absolute path of the workspace the session runs in. The Changes bar reads the agent's edits against it.</summary>
+    internal string WorkspaceRoot => _options.Scope.WorkspaceRoot;
+
     /// <summary>Gets the composer feedback the status line shows (a refused send, nothing to stop, a faulted action), or an empty string.</summary>
     internal string StatusText => _statusText;
 
@@ -207,6 +218,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         _modelBinding?.Dispose();
         _modeBinding?.Dispose();
         _thinkingBinding?.Dispose();
+        _slashBinding?.Dispose();
         if (Terminal is { } terminal)
         {
             terminal.PropertyChanged -= OnTerminalChanged;

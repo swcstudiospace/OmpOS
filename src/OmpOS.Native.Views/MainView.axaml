@@ -337,6 +337,13 @@
                   </Grid>
                 </Border>
 
+                <!-- The Changes bar: the files the agent changed, docked under the transcript. It stands in for nothing: it hides with the transcript
+                     while a tool or the Agents view is open, and hides itself while the session changed no file. -->
+                <ContentControl x:Name="ChangesHost"
+                                DockPanel.Dock="Bottom"
+                                HorizontalContentAlignment="Stretch"
+                                IsVisible="{ReflectionBinding #TranscriptHost.IsVisible}" />
+
                 <ContentControl x:Name="TranscriptHost"
                                 HorizontalContentAlignment="Stretch"
                                 VerticalContentAlignment="Stretch" />

@@ -27,6 +27,10 @@ internal partial class EditorView : UserControl
     private EditorText? _document;
     private TextMate.Installation? _textMate;
     private bool _loading;
+    private bool _attached;
+
+    /// <summary>Gets a value indicating whether TextMate colours the shown buffer: true while the view is in a window and the selected file has a grammar.</summary>
+    public bool IsHighlighting => _textMate is not null;
 
     /// <summary>Creates the editor with no data context.</summary>
     public EditorView()
@@ -66,7 +70,7 @@ internal partial class EditorView : UserControl
     {
         base.OnAttachedToVisualTree(e);
 
-        _textMate ??= CodeEditor.InstallTextMate(_registry);
+        _attached = true;
         LoadSelectedTab();
     }
 
@@ -75,8 +79,8 @@ internal partial class EditorView : UserControl
     {
         base.OnDetachedFromVisualTree(e);
 
-        _textMate?.Dispose();
-        _textMate = null;
+        _attached = false;
+        ReleaseTextMate();
     }
 
     private void DetachModel()
@@ -93,9 +97,22 @@ internal partial class EditorView : UserControl
 
     // Shows the selected tab's text in a fresh editor buffer and applies the grammar for its file type. Edits made while
     // the buffer is loading are not copied back, because the model already holds this text.
+    //
+    // A file without a grammar (no tab, or an extension with no scope) is drawn plain by releasing TextMate, never by clearing its grammar:
+    // clearing it makes TextMate's model emit to its listeners from this thread while the tokenizer thread of the previous grammar may be
+    // emitting too, and the two take the colouring transformer's lock and the model's listener lock in opposite orders, which hangs the UI thread.
     private void LoadSelectedTab()
     {
         var tab = _model?.SelectedTab;
+        var scope = tab is null ? null : EditorLanguages.ScopeFor(tab.RelativePath);
+        if (scope is null)
+        {
+            ReleaseTextMate();
+        }
+        else if (_attached)
+        {
+            _textMate ??= CodeEditor.InstallTextMate(_registry);
+        }
 
         _loading = true;
         try
@@ -114,7 +131,16 @@ internal partial class EditorView : UserControl
             _loading = false;
         }
 
-        _textMate?.SetGrammar(tab is null ? null : EditorLanguages.ScopeFor(tab.RelativePath));
+        if (scope is not null)
+        {
+            _textMate?.SetGrammar(scope);
+        }
+    }
+
+    private void ReleaseTextMate()
+    {
+        _textMate?.Dispose();
+        _textMate = null;
     }
 
     private void OnEditorTextChanged(object? sender, DocumentChangeEventArgs e)

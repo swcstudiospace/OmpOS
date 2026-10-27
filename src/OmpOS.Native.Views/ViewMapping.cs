@@ -4,6 +4,7 @@ using OmpOS.Native.Views;
 using OmpOS.Native.Views.AgentPanel;
 using OmpOS.Native.Views.Agents;
 using OmpOS.Native.Views.Blocks;
+using OmpOS.Native.Views.Changes;
 using OmpOS.Native.Views.Chats;
 using OmpOS.Native.Views.Editor;
 using OmpOS.Native.Views.Explorer;
@@ -14,6 +15,7 @@ using OmpOS.Native.Views.Terminal;
 using OmpOS.Native.Views.Workspace;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Agents;
+using OmpOS.Presentation.Changes;
 using OmpOS.Presentation.Chats;
 using OmpOS.Presentation.Composer;
 using OmpOS.Presentation.Editor;
@@ -49,6 +51,7 @@ internal static class ViewMapping
             WorkspaceConventionsModel conventions => new WorkspaceConventionsView { DataContext = conventions },
             McpToolsModel mcpTools => new McpToolsView { DataContext = mcpTools },
             WorkspaceSearchModel workspaceSearch => new WorkspaceSearchView { DataContext = workspaceSearch },
+            ChangeSetModel changes => new ChangesBarView { DataContext = changes },
             SessionCatalogModel catalog => new AgentRailView { DataContext = catalog },
             AgentPanelViewModel panel => new PanelStateView { DataContext = panel },
             AgentSessionViewModel agentSession => new ThreadHeaderView { DataContext = agentSession },

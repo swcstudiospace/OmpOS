@@ -12,6 +12,7 @@ using OmpOS.Harness.Terminal;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Views;
 using OmpOS.Native.Views.AgentPanel;
+using OmpOS.Native.Views.Changes;
 using OmpOS.Native.Views.Chats;
 using OmpOS.Native.Views.Diff;
 using OmpOS.Native.Views.Editor;
@@ -28,6 +29,7 @@ using OmpOS.Native.Views.Workspace;
 using OmpOS.Presentation;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Agents;
+using OmpOS.Presentation.Changes;
 using OmpOS.Presentation.Chats;
 using OmpOS.Presentation.Editor;
 using OmpOS.Presentation.Export;
@@ -106,6 +108,8 @@ public partial class MainView : UserControl
     private bool _syncingTabs;
     private ToolEntry? _openTool;
     private ToolEntry? _terminalTool;
+    private ToolEntry? _diffTool;
+    private SessionPane? _reviewPane;
     private bool _terminalSettingsStale;
     private Transitions? _topTabsTransitions;
     private Transitions? _agentsTabTransitions;
@@ -454,6 +458,7 @@ public partial class MainView : UserControl
         ConfirmBarHost.Content = pane?.ConfirmBar;
         ComposerHost.Content = pane is null ? null : pane.SteerView ?? (Control)pane.Composer;
         SideChatHost.Content = pane?.SideChatView;
+        ChangesHost.Content = pane?.ChangesView;
         if (pane is not null)
         {
             pane.Composer.SuggestionsShown = SuggestionsToggle.IsChecked == true;
@@ -534,6 +539,12 @@ public partial class MainView : UserControl
         };
         pane.SearchView = (TranscriptSearchView)ViewMapping.Create(pane.Search);
         pane.SideChatView = ViewMapping.Create(pane.SideChats);
+        pane.Changes = CreateChangeSet(pane, runtime);
+        if (pane.Changes is { } changes)
+        {
+            pane.ChangesView = (ChangesBarView)ViewMapping.Create(changes);
+        }
+
         if (runtime is not null)
         {
             AttachRuntime(pane, runtime);
@@ -1114,7 +1125,7 @@ public partial class MainView : UserControl
             _editorTool,
             new ToolEntry(ExplorerToggle, "Explorer", CreateExplorer, keepView: true),
             _terminalTool = new ToolEntry(TerminalToggle, "Terminal", () => new TerminalPanelView(_workspace.FullPath, TerminalSettingsProvider?.Invoke()), keepView: true),
-            new ToolEntry(DiffToggle, "Diff review", () => new DiffReviewView(), keepView: true),
+            _diffTool = new ToolEntry(DiffToggle, "Diff review", CreateDiffReview, keepView: true),
             new ToolEntry(InlineEditToggle, "Inline edit", () => new InlineEditView(), keepView: true),
             new ToolEntry(ConventionsToggle, "Conventions", CreateConventions, keepView: true),
             new ToolEntry(McpToggle, "MCP tools", CreateMcpTools, keepView: true),
@@ -1319,6 +1330,93 @@ public partial class MainView : UserControl
         return ViewMapping.Create(_workspaceSearch);
     }
 
+    // A chat session shows the files its agent changed in a Changes bar under the transcript. A terminal session has none: omp edits in its
+    // own terminal, and no transcript block reports the edit. Without an existing workspace folder there is nothing to read or write.
+    private ChangeSetModel? CreateChangeSet(SessionPane pane, AgentSessionRuntime? runtime)
+    {
+        if (runtime?.Terminal is not null)
+        {
+            return null;
+        }
+
+        var root = runtime?.WorkspaceRoot ?? _workspace.FullPath;
+        if (!Directory.Exists(root))
+        {
+            return null;
+        }
+
+        LocalWorkspaceFileSystem fileSystem;
+        try
+        {
+            fileSystem = new LocalWorkspaceFileSystem(root);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+
+        pane.Changes = new ChangeSetModel(fileSystem);
+        pane.Changes.ReviewRequested += (_, e) => OnChangeReviewRequested(pane, e);
+        pane.Changes.Attach(pane.ViewModel.Session);
+        return pane.Changes;
+    }
+
+    // Review on a changed file opens the Diff review tool with that file's review: every hunk accepted, so rejecting a hunk reverts it.
+    private void OnChangeReviewRequested(SessionPane pane, ChangeReviewRequestedEventArgs e)
+    {
+        if (_diffTool is not { } tool || !ReferenceEquals(pane, _current))
+        {
+            return;
+        }
+
+        _reviewPane = pane;
+        OpenTool(tool);
+        if (tool.View is DiffReviewView view)
+        {
+            view.DataContext = e.Review;
+            view.ReviewPath = e.Path;
+            view.ShowResult(string.Empty);
+        }
+    }
+
+    private DiffReviewView CreateDiffReview()
+    {
+        var view = new DiffReviewView();
+        view.ApplyRequested += OnDiffApplyRequested;
+        return view;
+    }
+
+    // Apply review writes the hunk decisions through the change set. A file that was kept or undone as a whole leaves the tool empty; a file
+    // whose hunks were partly undone shows the review of what is left. The result is read out by the status line, which stays visible.
+    private void OnDiffApplyRequested(object? sender, EventArgs e)
+    {
+        if (sender is not DiffReviewView view
+            || _reviewPane?.Changes is not { } model
+            || view.ReviewPath is not { } path
+            || view.DataContext is not DiffReview review)
+        {
+            return;
+        }
+
+        var result = model.ApplyReview(path, review);
+        SetStatus(model.Announcement);
+        switch (result.Outcome)
+        {
+            case ChangeOutcome.Kept:
+            case ChangeOutcome.Undone:
+                view.ReviewPath = null;
+                view.DataContext = null;
+                break;
+            case ChangeOutcome.PartlyUndone:
+                view.DataContext = model.CreateReview(path);
+                view.ShowResult(result.Message);
+                break;
+            default:
+                view.ShowResult(result.Message);
+                break;
+        }
+    }
+
     // The export view reads the transcript it was given, so it is built again on each open rather than kept.
     private TranscriptExportView CreateExport() =>
         new((_current?.ViewModel.Session ?? new SessionViewModel()).Tree, ExportTitle, new UsageHistory([]));
@@ -1430,6 +1528,12 @@ public partial class MainView : UserControl
         /// <summary>Gets or sets the transcript search view.</summary>
         public TranscriptSearchView SearchView { get; set; } = null!;
 
+        /// <summary>Gets or sets the review of the files the agent changed in the session, or null for a terminal session or a session with no workspace folder.</summary>
+        public ChangeSetModel? Changes { get; set; }
+
+        /// <summary>Gets or sets the Changes bar, or null when the session has no change set.</summary>
+        public ChangesBarView? ChangesView { get; set; }
+
         /// <summary>Gets or sets the side chat view.</summary>
         public Control SideChatView { get; set; } = null!;
 
@@ -1455,6 +1559,7 @@ public partial class MainView : UserControl
             Detach = null;
             TerminalView?.Release();
             Search.Dispose();
+            Changes?.Dispose();
         }
     }
 }

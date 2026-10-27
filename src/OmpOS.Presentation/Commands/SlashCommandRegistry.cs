@@ -84,8 +84,23 @@ public sealed class SlashCommandRegistry
     public IReadOnlyList<string> Suggest(string unknownName)
     {
         ArgumentNullException.ThrowIfNull(unknownName);
-        return _commands
-            .Select(descriptor => Candidate(unknownName, descriptor.Name))
+        return SuggestAmong(_commands.Select(static descriptor => descriptor.Name), unknownName);
+    }
+
+    /// <summary>
+    /// Suggests up to <see cref="MaxSuggestions"/> of the given names close to an unknown name, by the same rules as <see cref="Suggest"/>. It lets
+    /// a palette that lists more names than the registry holds (for example the commands an engine advertises) suggest among all of them.
+    /// </summary>
+    /// <param name="names">The candidate names, without the leading slash.</param>
+    /// <param name="unknownName">The name the user typed.</param>
+    /// <returns>The suggested names, best first; empty when none is close.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="names"/> or <paramref name="unknownName"/> is null.</exception>
+    public static IReadOnlyList<string> SuggestAmong(IEnumerable<string> names, string unknownName)
+    {
+        ArgumentNullException.ThrowIfNull(names);
+        ArgumentNullException.ThrowIfNull(unknownName);
+        return names
+            .Select(name => Candidate(unknownName, name))
             .Where(candidate => candidate.IsPrefix || candidate.Distance <= MaxSuggestionEditDistance)
             .OrderByDescending(candidate => candidate.IsPrefix)
             .ThenBy(candidate => candidate.Distance)

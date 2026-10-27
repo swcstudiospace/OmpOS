@@ -84,4 +84,12 @@ public sealed class AgentSessionRuntimeOptions
     /// then shows a mode chip and a thinking chip once the engine reports those options; a terminal runtime never does.
     /// </summary>
     public IOmpSessionOptions? SessionOptions { get; init; }
+
+    /// <summary>
+    /// Gets the slash commands and skills the session's engine advertises, or null when the session offers none. A chat runtime then gives its
+    /// composer a slash palette that lists them next to the OmpOS catalogue; a terminal runtime never does, because its omp shows its own commands.
+    /// The palette only lists and completes names: omp runs a command when the prompt that starts with it is sent. <see cref="ConnectModels"/>
+    /// starts the engine session when the palette opens before the engine has advertised its commands.
+    /// </summary>
+    public IOmpSessionCommands? SessionCommands { get; init; }
 }
