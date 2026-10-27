@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../OmpOS.Contracts/OmpOS.Contracts.csproj" />
+    <ProjectReference Include="../OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
+    <ProjectReference Include="../OmpOS.Harness.AgentLoop/OmpOS.Harness.AgentLoop.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OmpOS.Harness.Remote.Tests" />
+  </ItemGroup>
+
+</Project>

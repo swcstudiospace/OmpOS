@@ -22,4 +22,7 @@ public enum SessionStatus
 
     /// <summary>Execution was cancelled.</summary>
     Cancelled,
+
+    /// <summary>The connection to the engine dropped while a turn was running. The turn did not finish and was not cancelled; the session can be reloaded and the prompt sent again.</summary>
+    Interrupted,
 }

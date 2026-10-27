@@ -23,6 +23,7 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     private readonly List<IOmpSession> _opening = [];
     private string? _resumeSessionId;
     private string? _nativeSessionId;
+    private readonly bool _resumeAfterFault;
     private bool _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="InProcessEngineHost"/> class.</summary>
@@ -32,14 +33,25 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     /// The engine session to resume instead of creating a new one. It applies to the first session this host binds: that session is
     /// opened with <see cref="IOmpSession.ResumeAsync"/>, and every session bound after it is created fresh. Null (the default) creates a new session.
     /// </param>
-    public InProcessEngineHost(Func<IOmpSession> sessionFactory, EngineHostDescriptor descriptor, string? resumeSessionId = null)
+    /// <param name="resumeAfterFault">
+    /// When <see langword="true"/>, every session bound after a fault resumes the engine session this host last reported, when it reported one.
+    /// Defaults to <see langword="false"/>: a session bound after a fault is created fresh.
+    /// </param>
+    public InProcessEngineHost(Func<IOmpSession> sessionFactory, EngineHostDescriptor descriptor, string? resumeSessionId = null, bool resumeAfterFault = false)
     {
         ArgumentNullException.ThrowIfNull(sessionFactory);
         ArgumentNullException.ThrowIfNull(descriptor);
         _sessionFactory = sessionFactory;
         Descriptor = descriptor;
         _resumeSessionId = string.IsNullOrWhiteSpace(resumeSessionId) ? null : resumeSessionId;
+        _resumeAfterFault = resumeAfterFault;
     }
+
+    /// <summary>
+    /// Gets whether a session bound after a fault is opened by resuming the engine session this host last reported (see
+    /// <see cref="NativeSessionId"/>) instead of creating a new one. A reconnecting remote host needs it: a new session would silently start an empty conversation.
+    /// </summary>
+    public bool ResumesAfterFault => _resumeAfterFault;
 
     /// <summary>
     /// Occurs when the bound session reports a native session identifier that differs from the last one this host reported, which is
@@ -118,15 +130,17 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     /// <param name="options">The session options (notably <c>OmpPath</c>).</param>
     /// <param name="descriptor">The descriptor to report, or the in-process default.</param>
     /// <param name="resumeSessionId">The engine session the first prompt resumes with <c>session/load</c>, or null to create a new session.</param>
+    /// <param name="resumeAfterFault">Whether a session bound after a fault resumes the engine session last reported instead of creating a new one; see <see cref="ResumesAfterFault"/>.</param>
     /// <returns>A host whose sessions speak ACP over stdio.</returns>
-    public static InProcessEngineHost ForAcp(OmpAcpClient client, AcpClientOptions options, EngineHostDescriptor? descriptor = null, string? resumeSessionId = null)
+    public static InProcessEngineHost ForAcp(OmpAcpClient client, AcpClientOptions options, EngineHostDescriptor? descriptor = null, string? resumeSessionId = null, bool resumeAfterFault = false)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(options);
         return new InProcessEngineHost(
             () => client.CreateSession(options),
             descriptor ?? new EngineHostDescriptor { Kind = EngineHostKind.InProcess, Isolation = Isolation.Process, Attestation = Attestation.None },
-            resumeSessionId);
+            resumeSessionId,
+            resumeAfterFault);
     }
 
     /// <summary>
@@ -139,6 +153,7 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
     /// <param name="transportFactory">Creates the transport for each session. Null spawns <c>omp acp</c>.</param>
     /// <param name="loggerFactory">Creates the loggers of the sessions and transports. Null discards their log output.</param>
     /// <param name="resumeSessionId">The engine session the first prompt resumes with <c>session/load</c>, or null to create a new session.</param>
+    /// <param name="resumeAfterFault">Whether a session bound after a fault resumes the engine session last reported instead of creating a new one; see <see cref="ResumesAfterFault"/>.</param>
     /// <returns>A host whose sessions speak ACP over the transport and answer permission requests through the resolver.</returns>
     public static InProcessEngineHost ForAcp(
         AcpClientOptions options,
@@ -146,13 +161,14 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
         EngineHostDescriptor? descriptor = null,
         Func<AcpClientOptions, IAcpTransport>? transportFactory = null,
         ILoggerFactory? loggerFactory = null,
-        string? resumeSessionId = null)
+        string? resumeSessionId = null,
+        bool resumeAfterFault = false)
     {
         ArgumentNullException.ThrowIfNull(options);
         var client = transportFactory is null
             ? new OmpAcpClient(permissionResolver, loggerFactory: loggerFactory)
             : new OmpAcpClient(transportFactory, permissionResolver, loggerFactory: loggerFactory);
-        return ForAcp(client, options, descriptor, resumeSessionId);
+        return ForAcp(client, options, descriptor, resumeSessionId, resumeAfterFault);
     }
 
     /// <inheritdoc />
@@ -254,7 +270,7 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
         bool disposed;
         lock (_gate)
         {
-            resumeId = _resumeSessionId;
+            resumeId = _resumeSessionId ?? (_resumeAfterFault ? _nativeSessionId : null);
             disposed = _disposed;
             if (!disposed)
             {
