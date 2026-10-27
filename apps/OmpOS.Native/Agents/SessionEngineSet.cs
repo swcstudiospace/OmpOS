@@ -60,6 +60,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     private readonly System.Threading.Lock _gate = new();
     private readonly SemaphoreSlim _reloadGate = new(1, 1);
     private readonly Dictionary<string, SessionSlot> _slots = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string[]> _additionalDirectories = new(StringComparer.Ordinal);
     private readonly HashSet<string> _closed = new(StringComparer.Ordinal);
     private readonly GsdToolsClient _gsd;
     private readonly ILogger? _logger;
@@ -251,9 +252,13 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     /// <param name="sessionId">The session, which the registry knows.</param>
     /// <param name="workspaceRoot">The workspace to use when the registry has none for the session, or null for the head's workspace.</param>
     /// <param name="graphId">The Graph identifier to use when the registry has none for the session, or null.</param>
+    /// <param name="additionalDirectories">
+    /// The absolute paths of the other roots of a multi-root workspace (see <c>WorkspaceSet.AdditionalDirectoryPaths</c>), in order, or null
+    /// for a single-root session. They are kept for the slot's lifetime and planned as <c>--add-dir</c> arguments. Ignored when the slot exists.
+    /// </param>
     /// <returns>The slot.</returns>
     /// <exception cref="ObjectDisposedException">The set was disposed.</exception>
-    internal SessionSlot CreateSlot(string sessionId, string? workspaceRoot, string? graphId)
+    internal SessionSlot CreateSlot(string sessionId, string? workspaceRoot, string? graphId, IReadOnlyList<string>? additionalDirectories = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
         lock (_gate)
@@ -266,6 +271,11 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
             var slot = new SessionSlot(this, new SessionScopeProvider(BuildScope(sessionId, workspaceRoot, graphId)));
             _slots[sessionId] = slot;
+            if (additionalDirectories is { Count: > 0 })
+            {
+                _additionalDirectories[sessionId] = [.. additionalDirectories];
+            }
+
             return slot;
         }
     }
@@ -370,7 +380,14 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             }
 
             var settings = Settings(reachable, reason, reachable ? loop.ReadSubstrateToken() : null);
-            var launch = OmpLaunchPlanner.Plan(settings, plugins, scope.SessionId, scope.WorkspaceRoot, scope.GraphId, clock);
+            IReadOnlyList<string>? additionalDirectories;
+            lock (_gate)
+            {
+                _additionalDirectories.TryGetValue(scope.SessionId, out var kept);
+                additionalDirectories = kept;
+            }
+
+            var launch = OmpLaunchPlanner.Plan(settings, plugins, scope.SessionId, scope.WorkspaceRoot, scope.GraphId, clock, additionalDirectories);
             var events = new List<StageEvent>(launch.PlanningEvents);
             if (loop.SubstrateProblem is { } problem)
             {

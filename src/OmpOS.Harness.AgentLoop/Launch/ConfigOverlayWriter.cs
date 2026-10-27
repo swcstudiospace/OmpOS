@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace OmpOS.Harness.AgentLoop.Launch;
@@ -24,13 +25,14 @@ public sealed class ConfigOverlayWriter : IDisposable
     /// </summary>
     /// <param name="settings">What the user asked of the agent loop.</param>
     /// <param name="sessionStateDirectory">The directory returned by <see cref="SessionStateLayout.SessionDirectory"/>. It is created when missing.</param>
+    /// <param name="additionalDirectories">The other roots of a multi-root workspace (see <see cref="OmpLaunchPlan.AdditionalDirectories"/>), or null.</param>
     /// <returns>The writer that owns the file, or null when no overlay key is set and nothing was written.</returns>
     /// <exception cref="IOException">The file cannot be written.</exception>
-    public static ConfigOverlayWriter? Write(AgentLoopSettings settings, string sessionStateDirectory)
+    public static ConfigOverlayWriter? Write(AgentLoopSettings settings, string sessionStateDirectory, IReadOnlyList<string>? additionalDirectories = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionStateDirectory);
-        var content = Render(settings);
+        var content = Render(settings, additionalDirectories);
         if (content is null)
         {
             return null;
@@ -79,10 +81,14 @@ public sealed class ConfigOverlayWriter : IDisposable
     }
 
     /// <summary>
-    /// Renders the overlay as a YAML mapping, or returns null when the settings ask for no overlay key.
+    /// Renders the overlay as a YAML mapping, or returns null when the settings ask for no overlay key. The additional
+    /// directories of a multi-root session are recorded under <c>workspace.additionalDirectories</c> only when an overlay is
+    /// written for another reason: the <c>--add-dir</c> arguments of the plan are what carries them, and omp merges both
+    /// without duplicates.
     /// </summary>
     /// <param name="settings">What the user asked of the agent loop.</param>
-    internal static string? Render(AgentLoopSettings settings)
+    /// <param name="additionalDirectories">The other roots of a multi-root workspace, or null for none.</param>
+    internal static string? Render(AgentLoopSettings settings, IReadOnlyList<string>? additionalDirectories = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
         if (!settings.DisableProjectMcpConfig)
@@ -90,7 +96,53 @@ public sealed class ConfigOverlayWriter : IDisposable
             return null;
         }
 
-        return "mcp:\n  enableProjectConfig: false\n";
+        var builder = new StringBuilder("mcp:\n  enableProjectConfig: false\n");
+        if (additionalDirectories is { Count: > 0 })
+        {
+            builder.Append("workspace:\n  additionalDirectories:\n");
+            foreach (var directory in additionalDirectories)
+            {
+                builder.Append("    - ");
+                AppendQuoted(builder, directory);
+                builder.Append('\n');
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    private static void AppendQuoted(StringBuilder builder, string value)
+    {
+        builder.Append('"');
+        foreach (var character in value)
+        {
+            switch (character)
+            {
+                case '"':
+                    builder.Append("\\\"");
+                    break;
+                case '\\':
+                    builder.Append("\\\\");
+                    break;
+                case '\n':
+                    builder.Append("\\n");
+                    break;
+                case '\r':
+                    builder.Append("\\r");
+                    break;
+                case '\t':
+                    builder.Append("\\t");
+                    break;
+                case < ' ':
+                    builder.Append(CultureInfo.InvariantCulture, $"\\x{(int)character:x2}");
+                    break;
+                default:
+                    builder.Append(character);
+                    break;
+            }
+        }
+
+        builder.Append('"');
     }
 
     private static void EnsureDirectory(string directory)

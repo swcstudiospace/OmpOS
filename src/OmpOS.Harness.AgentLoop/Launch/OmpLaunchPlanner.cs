@@ -28,9 +28,15 @@ public static class OmpLaunchPlanner
     /// <param name="workspaceRoot">The absolute path of the workspace. It becomes the working directory of the child.</param>
     /// <param name="graphId">The Graph identifier of the session's plan, or null. It is only copied into the planning events.</param>
     /// <param name="timeProvider">The clock that stamps the planning events. The system clock when null.</param>
+    /// <param name="additionalDirectories">
+    /// The absolute paths of the other roots of a multi-root workspace, in order, or null for a single-root session. Each is passed
+    /// to omp as its own <c>--add-dir</c> argument (the probe in <c>docs/runbooks/evidence/multi-repo-omp-probe-2026-10-27</c> proved
+    /// that <c>omp acp</c> honours the flag), after every other argument. The workspace root itself is never one of them.
+    /// </param>
     /// <returns>The plan.</returns>
     /// <exception cref="ArgumentException">
-    /// The session identifier is unsafe, the workspace is not an absolute path, or the isolated profile has no home directory.
+    /// The session identifier is unsafe, the workspace is not an absolute path, the isolated profile has no home directory, or an
+    /// additional directory is blank, relative, contains NUL, repeats another, or is the workspace root.
     /// </exception>
     public static OmpLaunchPlan Plan(
         AgentLoopSettings settings,
@@ -38,9 +44,11 @@ public static class OmpLaunchPlanner
         string sessionId,
         string workspaceRoot,
         string? graphId,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        IReadOnlyList<string>? additionalDirectories = null)
     {
         ValidateInputs(settings, plugins, sessionId, workspaceRoot);
+        var extraDirectories = ValidateAdditionalDirectories(additionalDirectories, workspaceRoot);
 
         var sessionDirectory = SessionStateLayout.SessionDirectory(settings.StateRoot, sessionId);
         var now = (timeProvider ?? TimeProvider.System).GetUtcNow();
@@ -85,6 +93,11 @@ public static class OmpLaunchPlanner
         }
 
         var overlayPath = AddConfigOverlay(settings, sessionDirectory, arguments);
+        foreach (var directory in extraDirectories)
+        {
+            arguments.Add("--add-dir");
+            arguments.Add(directory);
+        }
 
         return new OmpLaunchPlan
         {
@@ -93,6 +106,7 @@ public static class OmpLaunchPlanner
             McpServers = substrateActive ? [BuildMcpServer(settings, substrate.BaseAddress!)] : [],
             WorkingDirectory = workspaceRoot,
             ConfigOverlayPath = overlayPath,
+            AdditionalDirectories = extraDirectories,
             LoadedPluginIds = loaded,
             PlanningEvents = events,
         };
@@ -126,6 +140,45 @@ public static class OmpLaunchPlanner
         {
             throw new ArgumentException("The isolated profile needs an isolated home directory.", nameof(settings));
         }
+    }
+
+    private static List<string> ValidateAdditionalDirectories(IReadOnlyList<string>? additionalDirectories, string workspaceRoot)
+    {
+        var validated = new List<string>(additionalDirectories?.Count ?? 0);
+        if (additionalDirectories is null)
+        {
+            return validated;
+        }
+
+        var comparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        var seen = new HashSet<string>(comparer) { TrimSeparator(workspaceRoot) };
+        foreach (var directory in additionalDirectories)
+        {
+            if (string.IsNullOrWhiteSpace(directory) || directory.Contains('\0', StringComparison.Ordinal))
+            {
+                throw new ArgumentException("An additional directory must be a non-empty path without NUL characters.", nameof(additionalDirectories));
+            }
+
+            if (!Path.IsPathRooted(directory))
+            {
+                throw new ArgumentException("An additional directory must be an absolute path.", nameof(additionalDirectories));
+            }
+
+            if (!seen.Add(TrimSeparator(directory)))
+            {
+                throw new ArgumentException("An additional directory repeats another root or the workspace root.", nameof(additionalDirectories));
+            }
+
+            validated.Add(directory);
+        }
+
+        return validated;
+    }
+
+    private static string TrimSeparator(string path)
+    {
+        var root = Path.GetPathRoot(path);
+        return path.Length > (root?.Length ?? 0) ? path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) : path;
     }
 
     private static IEnumerable<ResolvedPlugin> InCompositionOrder(IReadOnlyList<ResolvedPlugin> plugins)

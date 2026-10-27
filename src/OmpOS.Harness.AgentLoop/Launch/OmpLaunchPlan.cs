@@ -25,6 +25,12 @@ public sealed record OmpLaunchPlan
     /// <summary>Gets the absolute path of the settings overlay the caller must write before launching, or null when none is needed.</summary>
     public string? ConfigOverlayPath { get; init; }
 
+    /// <summary>
+    /// Gets the absolute paths of the other roots of a multi-root workspace, in order. Each also appears in <see cref="ExtraArguments"/> as
+    /// <c>--add-dir &lt;path&gt;</c>. Empty for a single-root session and when the plan was not made by the planner.
+    /// </summary>
+    public IReadOnlyList<string> AdditionalDirectories { get; init; } = [];
+
     /// <summary>Gets the degradations decided while planning, for example a plugin that is not initialized or a substrate that is unhealthy.</summary>
     public required IReadOnlyList<StageEvent> PlanningEvents { get; init; }
 
