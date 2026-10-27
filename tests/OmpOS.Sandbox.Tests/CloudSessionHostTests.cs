@@ -56,7 +56,7 @@ public sealed class CloudSessionHostTests
         atWindow.Count.ShouldBe(1);
         atWindow[0].ShouldBe("idle");
         again.ShouldBeEmpty();
-        client.SleepCalls.ShouldBe(1);
+        client.IdleCalls.ShouldBe(1);
         host.Get("idle")!.State.ShouldBe(CloudSessionState.Sleeping);
         host.Get("busy")!.State.ShouldBe(CloudSessionState.Running);
     }
@@ -80,7 +80,7 @@ public sealed class CloudSessionHostTests
         using var fresh = CreateHost(client, clock);
         var restore = await fresh.ReattachAsync("s1", ct).ConfigureAwait(true);
 
-        client.WakeCalls.ShouldBe(1);
+        client.EnsureAwakeCalls.ShouldBe(1);
         client.ContainersCreated.ShouldBe(1);
         client.VolumesCreated.ShouldBe(1);
         restore.Session.State.ShouldBe(CloudSessionState.Running);
@@ -158,7 +158,7 @@ public sealed class CloudSessionHostTests
 
         var restore = await host.ReattachAsync("s1", ct).ConfigureAwait(true);
 
-        client.WakeCalls.ShouldBe(0);
+        client.EnsureAwakeCalls.ShouldBe(0);
         restore.ResumeMarker.ShouldBeNull();
         restore.Transcript.Count.ShouldBe(1);
     }
@@ -202,6 +202,123 @@ public sealed class CloudSessionHostTests
         });
     }
 
+    [Fact]
+    public async Task IdleRequestMarksTheSessionSleepingAndReattachWakesOnceAndAppendsTheResumeMarker()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new FakeTimeProvider(Start);
+        var client = new FakeCloudEnvironmentClient();
+        using var host = CreateHost(client, clock);
+        await host.OpenAsync("s1", ct).ConfigureAwait(true);
+        await host.AppendAsync("s1", "user", "before idle", ct).ConfigureAwait(true);
+        clock.Advance(IdleWindow);
+
+        var idled = await host.SleepIdleAsync(ct).ConfigureAwait(true);
+        var restore = await host.ReattachAsync("s1", ct).ConfigureAwait(true);
+
+        idled.Count.ShouldBe(1);
+        idled[0].ShouldBe("s1");
+        client.IdleCalls.ShouldBe(1);
+        client.EnsureAwakeCalls.ShouldBe(1);
+        restore.Session.State.ShouldBe(CloudSessionState.Running);
+        restore.Transcript.Count.ShouldBe(2);
+        restore.Transcript[0].Text.ShouldBe("before idle");
+        restore.Transcript[1].IsResumeMarker.ShouldBeTrue();
+        restore.ResumeMarker.ShouldBe(restore.Transcript[1]);
+    }
+
+    [Fact]
+    public async Task AnIdleContainerCountsAsSleepingForOpenAndReattach()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new FakeTimeProvider(Start);
+        var inner = new FakeCloudEnvironmentClient();
+        var client = new IdleReportingClient(inner);
+        using var host = new CloudSessionHost(client, clock, new CloudSessionHostOptions { IdleWindow = IdleWindow });
+        await host.OpenAsync("s1", ct).ConfigureAwait(true);
+        clock.Advance(IdleWindow);
+
+        var idled = await host.SleepIdleAsync(ct).ConfigureAwait(true);
+
+        idled.Count.ShouldBe(1);
+        idled[0].ShouldBe("s1");
+        host.Get("s1")!.State.ShouldBe(CloudSessionState.Sleeping);
+        (await client.FindContainerAsync("s1", ct).ConfigureAwait(true))!.Phase.ShouldBe(CloudContainerPhase.Idle);
+        await Should.ThrowAsync<InvalidOperationException>(
+            () => host.OpenAsync("s1", ct)).ConfigureAwait(true);
+        await Should.ThrowAsync<InvalidOperationException>(
+            () => host.AppendAsync("s1", "user", "too early", ct)).ConfigureAwait(true);
+
+        var restore = await host.ReattachAsync("s1", ct).ConfigureAwait(true);
+
+        inner.EnsureAwakeCalls.ShouldBe(1);
+        restore.Session.State.ShouldBe(CloudSessionState.Running);
+        restore.ResumeMarker.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task AFailedWakeSurfacesTheClientExceptionLeavesTheSessionSleepingAndWritesNoMarker()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new FakeTimeProvider(Start);
+        var client = new FakeCloudEnvironmentClient();
+        using var host = CreateHost(client, clock);
+        await host.OpenAsync("s1", ct).ConfigureAwait(true);
+        await host.AppendAsync("s1", "user", "kept", ct).ConfigureAwait(true);
+        clock.Advance(IdleWindow);
+        await host.SleepIdleAsync(ct).ConfigureAwait(true);
+        client.FailEnsureAwakeTimes = 1;
+
+        var failure = await Should.ThrowAsync<CloudEnvironmentException>(
+            () => host.ReattachAsync("s1", ct)).ConfigureAwait(true);
+
+        failure.Failure.ShouldBe(CloudEnvironmentFailure.WakeTimeout);
+        host.Get("s1")!.State.ShouldBe(CloudSessionState.Sleeping);
+        var volume = await client.FindVolumeAsync("s1", ct).ConfigureAwait(true);
+        var stored = await client.ReadVolumeFileAsync(volume!.VolumeId, CloudTranscriptVolume.DefaultPath, ct).ConfigureAwait(true);
+        stored!.ShouldNotContain(CloudTranscriptEntry.ResumeMarkerKind, Case.Sensitive);
+
+        var retry = await host.ReattachAsync("s1", ct).ConfigureAwait(true);
+
+        client.EnsureAwakeCalls.ShouldBe(2);
+        retry.Transcript.Count.ShouldBe(2);
+        retry.Transcript.Count(entry => entry.IsResumeMarker).ShouldBe(1);
+    }
+
     private static CloudSessionHost CreateHost(FakeCloudEnvironmentClient client, FakeTimeProvider clock) =>
         new(client, clock, new CloudSessionHostOptions { IdleWindow = IdleWindow });
+
+    /// <summary>Reports every sleeping container as idle, as a provider that sleeps containers later on its own would.</summary>
+    private sealed class IdleReportingClient(FakeCloudEnvironmentClient inner) : ICloudEnvironmentClient
+    {
+        public async Task<CloudContainer?> FindContainerAsync(string sessionId, CancellationToken cancellationToken = default) =>
+            AsIdle(await inner.FindContainerAsync(sessionId, cancellationToken).ConfigureAwait(true));
+
+        public Task<CloudContainer> CreateContainerAsync(string sessionId, CancellationToken cancellationToken = default) =>
+            inner.CreateContainerAsync(sessionId, cancellationToken);
+
+        public Task<CloudVolume?> FindVolumeAsync(string sessionId, CancellationToken cancellationToken = default) =>
+            inner.FindVolumeAsync(sessionId, cancellationToken);
+
+        public Task<CloudVolume> CreateVolumeAsync(string sessionId, CancellationToken cancellationToken = default) =>
+            inner.CreateVolumeAsync(sessionId, cancellationToken);
+
+        public Task AttachVolumeAsync(string containerId, string volumeId, string mountPath, CancellationToken cancellationToken = default) =>
+            inner.AttachVolumeAsync(containerId, volumeId, mountPath, cancellationToken);
+
+        public async Task<CloudContainer> RequestIdleAsync(string containerId, CancellationToken cancellationToken = default) =>
+            AsIdle(await inner.RequestIdleAsync(containerId, cancellationToken).ConfigureAwait(true))!;
+
+        public Task<CloudContainer> EnsureAwakeAsync(string containerId, CancellationToken cancellationToken = default) =>
+            inner.EnsureAwakeAsync(containerId, cancellationToken);
+
+        public Task AppendVolumeFileAsync(string volumeId, string path, string text, CancellationToken cancellationToken = default) =>
+            inner.AppendVolumeFileAsync(volumeId, path, text, cancellationToken);
+
+        public Task<string?> ReadVolumeFileAsync(string volumeId, string path, CancellationToken cancellationToken = default) =>
+            inner.ReadVolumeFileAsync(volumeId, path, cancellationToken);
+
+        private static CloudContainer? AsIdle(CloudContainer? container) =>
+            container is { Phase: CloudContainerPhase.Sleeping } ? container with { Phase = CloudContainerPhase.Idle } : container;
+    }
 }

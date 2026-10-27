@@ -4,9 +4,12 @@ namespace OmpOS.Sandbox;
 /// Narrow client over a cloud environment provider (Railway in production): one container and one volume per session.
 /// </summary>
 /// <remarks>
-/// Only a volume survives sleep. A sleeping container keeps no running process, shell or in-memory state,
-/// and <see cref="WakeContainerAsync"/> starts the container's processes afresh.
-/// The live Railway implementation is blocked externally (Railway deploys paused); only fakes implement this interface today.
+/// Only a volume survives sleep. A sleeping container keeps no running process, shell or in-memory state.
+/// Railway sleeps a serverless service implicitly after roughly 5 to 10 minutes without outbound traffic and there is
+/// no stop API, so this interface cannot command sleep: <see cref="RequestIdleAsync"/> declares the container logically
+/// idle and reports what the provider says, and <see cref="EnsureAwakeAsync"/> wakes it by waiting for its readiness probe.
+/// Volume files are only reachable inside the worker container; a provider without a file endpoint throws
+/// <see cref="CloudEnvironmentException"/> with <see cref="CloudEnvironmentFailure.Unsupported"/> from the volume file methods.
 /// </remarks>
 public interface ICloudEnvironmentClient
 {
@@ -53,20 +56,29 @@ public interface ICloudEnvironmentClient
     Task AttachVolumeAsync(string containerId, string volumeId, string mountPath, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Stops a container so it costs nothing while idle. Every process in it is lost; its volume persists.
+    /// Declares a container logically idle: OmpOS stops activity in it and lets the provider put it to sleep.
     /// </summary>
     /// <param name="containerId">The container identifier.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The sleeping container.</returns>
-    Task<CloudContainer> SleepContainerAsync(string containerId, CancellationToken cancellationToken = default);
+    /// <returns>
+    /// The container with <see cref="CloudContainerPhase.Sleeping"/> when the provider reports it asleep (the in-memory fake
+    /// sleeps at once), or with <see cref="CloudContainerPhase.Idle"/> when the provider will sleep it later on its own.
+    /// </returns>
+    Task<CloudContainer> RequestIdleAsync(string containerId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Starts a sleeping container again. The processes are new; nothing that ran before sleep is restored.
+    /// Makes sure a container is serving: waits until the worker answers its readiness probe.
+    /// A failing or 502 wake request is retried for up to a configurable window (60 seconds by default) measured with the
+    /// injected <see cref="TimeProvider"/>.
     /// </summary>
     /// <param name="containerId">The container identifier.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The running container with an incremented <see cref="CloudContainer.BootGeneration"/>.</returns>
-    Task<CloudContainer> WakeContainerAsync(string containerId, CancellationToken cancellationToken = default);
+    /// <returns>
+    /// The <see cref="CloudContainerPhase.Running"/> container. For a container that was sleeping or idle,
+    /// <see cref="CloudContainer.BootGeneration"/> is incremented only when the provider reports that it actually slept.
+    /// </returns>
+    /// <exception cref="CloudEnvironmentException">The worker did not answer in time (<see cref="CloudEnvironmentFailure.WakeTimeout"/>) or the provider failed.</exception>
+    Task<CloudContainer> EnsureAwakeAsync(string containerId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Appends text to a file on a volume, creating the file when it does not exist.

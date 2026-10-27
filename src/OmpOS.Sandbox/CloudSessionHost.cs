@@ -10,8 +10,10 @@ namespace OmpOS.Sandbox;
 /// <remarks>
 /// Idle sleep is evaluated by <see cref="SleepIdleAsync"/> against the injected <see cref="TimeProvider"/>; the host starts no timer,
 /// so a caller (a scheduler or reaper) decides how often to sweep.
-/// Sleep stops every process in the container. The host persists and restores the transcript only: it never claims
-/// that processes, shell state or in-memory state survive sleep.
+/// Idle does not stop the container by itself: the host asks the provider to treat the container as idle through
+/// <see cref="ICloudEnvironmentClient.RequestIdleAsync"/>, and the provider may sleep it at once or later on its own.
+/// A sleeping or idle container may lose every process, so the host persists and restores the transcript only: it never claims
+/// that processes, shell state or in-memory state survive.
 /// </remarks>
 public sealed class CloudSessionHost : IDisposable
 {
@@ -51,7 +53,7 @@ public sealed class CloudSessionHost : IDisposable
     /// <param name="sessionId">The session identifier.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The running session.</returns>
-    /// <exception cref="InvalidOperationException">The session's container is asleep; use <see cref="ReattachAsync"/>.</exception>
+    /// <exception cref="InvalidOperationException">The session's container is asleep or idle; use <see cref="ReattachAsync"/>.</exception>
     public async Task<CloudSession> OpenAsync(string sessionId, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
@@ -59,7 +61,7 @@ public sealed class CloudSessionHost : IDisposable
         try
         {
             var container = await _client.FindContainerAsync(sessionId, cancellationToken).ConfigureAwait(false);
-            if (container is { Phase: CloudContainerPhase.Sleeping })
+            if (container is { Phase: not CloudContainerPhase.Running })
             {
                 throw new InvalidOperationException(
                     string.Create(CultureInfo.InvariantCulture, $"Session '{sessionId}' is asleep; reattach it instead of opening it."));
@@ -145,8 +147,9 @@ public sealed class CloudSessionHost : IDisposable
     }
 
     /// <summary>
-    /// Puts to sleep every running session whose last activity is at least the idle window old.
-    /// Sleeping stops the container's processes; the volume, and so the transcript, persists.
+    /// Declares idle every running session whose last activity is at least the idle window old and marks it
+    /// <see cref="CloudSessionState.Sleeping"/> when the provider reports the container sleeping or idle.
+    /// The volume, and so the transcript, persists.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The identifiers of the sessions put to sleep, in ordinal order.</returns>
@@ -163,7 +166,12 @@ public sealed class CloudSessionHost : IDisposable
             var slept = new List<string>(idle.Count);
             foreach (var session in idle)
             {
-                var container = await _client.SleepContainerAsync(session.ContainerId, cancellationToken).ConfigureAwait(false);
+                var container = await _client.RequestIdleAsync(session.ContainerId, cancellationToken).ConfigureAwait(false);
+                if (container.Phase == CloudContainerPhase.Running)
+                {
+                    continue;
+                }
+
                 _sessions[session.SessionId] = session with
                 {
                     State = CloudSessionState.Sleeping,
@@ -181,11 +189,13 @@ public sealed class CloudSessionHost : IDisposable
     }
 
     /// <summary>
-    /// Reattaches to a session, waking its container when it sleeps, and reads the transcript back from the volume.
+    /// Reattaches to a session, ensuring its container is awake when it was asleep or idle, and reads the transcript back from the volume.
     /// Works on a host that never opened the session: the client and the volume are the source of truth.
     /// </summary>
     /// <remarks>
-    /// When the container had slept, a resume marker is stored on the volume and returned as the last transcript entry.
+    /// When the container was not running, <see cref="ICloudEnvironmentClient.EnsureAwakeAsync"/> is called once, a resume marker
+    /// is stored on the volume and returned as the last transcript entry. A wake failure surfaces as the client's exception,
+    /// leaves the session as it was and writes no marker.
     /// The result never claims that processes or shell state were restored.
     /// </remarks>
     /// <param name="sessionId">The session identifier.</param>
@@ -205,10 +215,10 @@ public sealed class CloudSessionHost : IDisposable
                 ?? throw new InvalidOperationException(
                     string.Create(CultureInfo.InvariantCulture, $"Session '{sessionId}' has no volume."));
 
-            var wasAsleep = container.Phase == CloudContainerPhase.Sleeping;
+            var wasAsleep = container.Phase != CloudContainerPhase.Running;
             if (wasAsleep)
             {
-                container = await _client.WakeContainerAsync(container.ContainerId, cancellationToken).ConfigureAwait(false);
+                container = await _client.EnsureAwakeAsync(container.ContainerId, cancellationToken).ConfigureAwait(false);
             }
 
             var transcript = CreateTranscript(volume.VolumeId);
