@@ -46,7 +46,7 @@ The older table of the same file (34 rows of 2026-10-22: 8 kept as a page, 4 sho
 
 ## Blocked (OQ/OD)
 
-- The Cloud page works against a hosted API only after the sign-in authority (OD-03) exists and a Railway deploy is within the granted authority (OQ-100); nothing of OmpOS is deployed on Railway (recorded 2026-10-28).
+- The Cloud page works against a hosted API only after the sign-in authority (OD-03) exists and a Railway deploy is within the granted authority (OQ-100); the API is not deployed on Railway (recorded 2026-10-28; a staged private worker is, see `docs/runbooks/evidence/railway-ompos-worker-2026-10-28.md`).
 - Rows that need a live agent turn (applying display flags in the transcript, run mode effects) are OD-07.
 
 ## Known limits

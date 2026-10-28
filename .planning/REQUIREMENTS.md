@@ -551,7 +551,7 @@ Source: the user request of 2026-10-27 and the research in `docs/plans/v0.15.0-r
 - [ ] **PX-17**: An agent can run in the cloud on Railway and return a pull request.
   - Acceptance: authenticated WebSocket worker bridge, durable cloud agent records, caps, idle sweeper, secret redaction, Railway client, pull request flow, heads, and a staged deployment recorded with version and state or the exact blocker.
   - Verification: loopback and fake-worker tests, canary tests, recorded fixtures, Railway status read-back (Phase 60).
-  - Audit (2026-10-28): Partial. Worker bridge, control plane, Railway client and desktop page are tested in the passing gate of record (e24e6851) and the worker image ran under podman, 14 of 14 checks (`docs/runbooks/evidence/cloud-worker-container-2026-10-28/README.md`); nothing is deployed on Railway, the worker cannot clone a repository, the web head has no list or form, no live model turn (OD-07).
+  - Audit (2026-10-28): Partial. Worker bridge, control plane, Railway client and desktop page are tested in the passing gate of record (e24e6851) and the worker image ran under podman, 14 of 14 checks (`docs/runbooks/evidence/cloud-worker-container-2026-10-28/README.md`); the API is not deployed on Railway (OD-03); after the release, on 2026-10-28, a staged private worker was deployed to Railway, health-checked and handshaken without a model turn (`docs/runbooks/evidence/railway-ompos-worker-2026-10-28.md`); the worker cannot clone a repository, the web head has no list or form, no live model turn (OD-07).
 - [ ] **PX-18**: Settings cover Cursor's configuration surface.
   - Acceptance: each of the 50 inventory rows is built, wired to omp or listed as omitted with the reason; the new pages exist in both heads.
   - Verification: a status test over the row ids and page tests (Phase 61).
@@ -597,7 +597,7 @@ Source: the user request of 2026-10-27 and the research in `docs/plans/v0.15.0-r
 | PX-14 | 57 | Partial (real-omp enforcement UNVERIFIED, OD-07) |
 | PX-15 | 58 | Partial (no prompt turn; no Windows head) |
 | PX-16 | 59 | Partial (explorer, per-run worktrees, convention merge unwired) |
-| PX-17 | 60 | Partial; staged Railway deploy Blocked (OD-03, OQ-71, OQ-73, OQ-100) |
+| PX-17 | 60 | Partial; staged worker deployed and handshaken on Railway 2026-10-28, API deploy Blocked (OD-03, OQ-71, OQ-73, OQ-100, OQ-171) |
 | PX-18 | 61 | Partial (Labs page; web pages) |
 | PX-19 | 62 | Partial (writer validation by omp not committed) |
 | PX-20 | 63 | Partial (three mention sources not composed; no live omp) |

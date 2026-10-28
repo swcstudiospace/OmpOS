@@ -34,7 +34,7 @@ Status (recorded 2026-10-28): criteria 1 and 3 met; criteria 2 and 4 partial (re
 - Criterion 2: no integration test runs the extension inside a fake omp process; the closest are `HookExtensionEndToEndTests` and the cloud test, which call the bridge or the extension handler directly. Real omp enforcement is UNVERIFIED.
 - Criterion 4: OQ-84 is not closed as worded: the heads use `HooksService`, not `PluginHost` and `HookRunner`.
 - Remote ssh sessions: hook files of the remote host are not read, no bridge or extension runs there (`NoHookFiles`, a Degraded notice says so); only plugin hooks and the events omp reports apply.
-- Cloud workers: built and tested, off by default (`Worker__Hooks__Enabled`), image does not carry `plugins/ompos-hooks-omp`, no client produces the consent snapshot, not deployed.
+- Cloud workers: built and tested, off by default (`Worker__Hooks__Enabled`), image does not carry `plugins/ompos-hooks-omp`, no client produces the consent snapshot, not deployed (the staged private worker on Railway, 2026-10-28, ran no hook).
 - The hosted API does not push hook run events into the web run stream; the web Hooks page lists files only (`HooksReader`).
 - A scripted test that a hook deny stops a call before the approval policy was not written (NativeSessionWiring report).
 

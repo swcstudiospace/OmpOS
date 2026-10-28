@@ -27,7 +27,7 @@ CI on GitHub (recorded 2026-10-28, `gh run view`): the `ci` workflow ran for the
 | Web head accessibility | The gate's Demo smoke: 68 axe runs (light and dark at 1440, 1024, 390), 0 violations (recorded 2026-10-28, gate log) |
 | Remote over ssh | A live run against a loopback sshd with the real omp 18.12.6 opened a session (`docs/runbooks/evidence/remote-ssh-live-2026-10-28/README.md`); no model turn |
 | Remote over podman | A live podman test passed in the Wave 4 tree (alpine image, RemoteScripts fix) |
-| Cloud worker image | The worker image under podman, `scripts/cloud/worker-live-check.mjs`, 14 of 14 checks (`docs/runbooks/evidence/cloud-worker-container-2026-10-28/README.md`); not on Railway |
+| Cloud worker image | The worker image under podman, `scripts/cloud/worker-live-check.mjs`, 14 of 14 checks (`docs/runbooks/evidence/cloud-worker-container-2026-10-28/README.md`); after the release the same image was built by Railway and ran there as a staged private worker (health check, JWT gate, `initialize` and `session/new`; `docs/runbooks/evidence/railway-ompos-worker-2026-10-28.md`) |
 | Multi-repo launch contract | omp probe of `--add-dir` behaviour in `docs/runbooks/evidence/multi-repo-omp-probe-2026-10-27/` |
 | Hosted API and stores | Api.IntegrationTests 1027 of 1027, Coordination 32, Sessions.Postgres 58 on the final tree with throwaway podman services; the gate ran them again inside the 12215 |
 | Unit and headless tests | The gate's 12215 tests (Linux, headless) |
@@ -36,7 +36,7 @@ CI on GitHub (recorded 2026-10-28, `gh run view`): the `ci` workflow ran for the
 | Desktop wiring | Hooks, run modes, mentions, MCP import, checkpoints, queue, search, images, automations, container sessions composed into the desktop head (Phase 57 to 63 records); `OmpOS.Native.Tests` passed inside the gate |
 | Provider catalogue | 103 rows with the plan rule (Phase 62 record) |
 | Slash catalogue | 92 Cursor tokens with handlers and convention discovery (Phase 56 record) |
-| Railway | Read-only check: nothing of OmpOS is deployed; the project 'Ultrathink' has TimescaleDB, Dragonfly, GreptimeDB and two tailscale services only |
+| Railway | Read-only check made before the release: nothing of OmpOS was deployed; the project 'Ultrathink' has TimescaleDB, Dragonfly, GreptimeDB and two tailscale services only. Update 2026-10-28, after the release: a staged private worker was deployed in a separate project, `ompos-staging`, and handshaken (`docs/runbooks/evidence/railway-ompos-worker-2026-10-28.md`; the API is not deployed) |
 
 ### Unverified (built, not observed)
 
@@ -61,7 +61,7 @@ CI on GitHub (recorded 2026-10-28, `gh run view`): the `ci` workflow ran for the
 | Live model turn and provider credentials | A provider credential for one live turn (OD-07, OQ-71) |
 | Windows, macOS and Android runs | A machine for each |
 | The sign-in authority (OD-03) | The hosted API cannot be public until an identity provider is chosen; the Demo has none |
-| Railway deploy approval | Nothing is deployed; the cloud agent worker, API and web need the owner's approval and credentials (OQ-100, OQ-73, `docs/decisions/ADR-0020-cloud-agents-on-railway.md`) |
+| Railway deploy approval | At release time nothing was deployed; the cloud agent worker, API and web needed the owner's approval and credentials (OQ-100, OQ-73, `docs/decisions/ADR-0020-cloud-agents-on-railway.md`). Update 2026-10-28, after the release: a staged private worker was deployed and handshaken on Railway (`docs/runbooks/evidence/railway-ompos-worker-2026-10-28.md`); the API is not deployed (OD-03); keep or remove the billed `ompos-staging` project: OQ-171 |
 | AGPL `-only` or `-or-later` | The default taken is `AGPL-3.0-or-later` (OQ-93); the owner confirms or changes `LICENSE` notices, package metadata and README together; the licence of the submodules `agent-swarm` and `agent-substrate` is OQ-102 |
 | Owner sign-off of the look | White and Purple and the Phase 50 look have no sign-off (OQ-87 to OQ-91, OQ-94); screenshots are Linux, headless |
 
@@ -99,7 +99,7 @@ None for this phase's three criteria. Phases 51, 54, 55, 56, 57, 59, 60, 61, 62 
 
 ## Blocked (OQ/OD)
 
-OD-03 (sign-in authority), OD-07 (live model turn), OQ-100 and OQ-73 (Railway deploy), OQ-101 (GitBook connection), OQ-93 (licence form), OQ-168 (CI runner namespaces), OQ-87 to OQ-91 and OQ-94 (the look).
+OD-03 (sign-in authority), OD-07 (live model turn), OQ-100, OQ-171 and OQ-73 (Railway deploy beyond the staged worker, and whether to keep it), OQ-101 (GitBook connection), OQ-93 (licence form), OQ-168 (CI runner namespaces), OQ-87 to OQ-91 and OQ-94 (the look).
 
 ## Known limits
 

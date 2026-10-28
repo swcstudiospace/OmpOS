@@ -34,4 +34,4 @@ Recorded gate (2026-10-28, orchestrator): `OMPOS_TEST_PARALLEL_MODULES=3 OMPOS_S
 
 - The gate ran on `e24e6851`; the commits after `9d4e0075` change documentation and evidence only.
 - The `ci` workflow on GitHub has not passed (OQ-168).
-- No model turn (OD-07), no Windows, macOS or Android run, no Railway deploy, no sign-in authority (OD-03), no GitBook space.
+- No model turn (OD-07), no Windows, macOS or Android run, no Railway deploy at release time (a staged private worker was deployed and handshaken afterwards, 2026-10-28; the API is not deployed), no sign-in authority (OD-03), no GitBook space.
