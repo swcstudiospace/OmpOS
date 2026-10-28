@@ -9,8 +9,9 @@ namespace OmpOS.Harness.ContractTests;
 
 /// <summary>
 /// Replays <c>session/update</c> variants recorded from live <c>omp acp</c> turns (omp 18.12.5, OD-07) through the public
-/// ACP session. The harness does not model these kinds, so each must reach the mapper's fallback: the turn yields its
-/// <see cref="CompletedEvent"/> alone, with no mapped event and no decode diagnostic.
+/// ACP session. The harness does not model most of these kinds, so each must reach the mapper's fallback: the turn yields its
+/// <see cref="CompletedEvent"/> alone, with no mapped event and no decode diagnostic. <c>usage_update</c> is the exception since
+/// the context ring (Phase 63): it is mapped to a <see cref="ContextUsageEvent"/> and nothing else.
 /// </summary>
 public sealed class OmpLiveVariantContractTests
 {
@@ -42,15 +43,18 @@ public sealed class OmpLiveVariantContractTests
         await AssertUnmodelledVariantAsync("session-update-config-option-update.json", "config_option_update", ct).ConfigureAwait(true);
     }
 
-    /// <summary>The live <c>usage_update</c> variant is unmodelled and reaches the fallback.</summary>
+    /// <summary>The live <c>usage_update</c> variant is modelled: it becomes a <see cref="ContextUsageEvent"/> with the used and total token counts, and no fallback or diagnostic.</summary>
     [Fact]
-    public async Task UsageUpdateReachesFallback()
+    public async Task UsageUpdateBecomesAContextUsageEvent()
     {
         var ct = TestContext.Current.CancellationToken;
-        await AssertUnmodelledVariantAsync("session-update-usage-update.json", "usage_update", ct).ConfigureAwait(true);
+        await AssertVariantAsync("session-update-usage-update.json", "usage_update", [new ContextUsageEvent(28919, 1_000_000), new CompletedEvent(StopReason)], ct).ConfigureAwait(true);
     }
 
-    private static async Task AssertUnmodelledVariantAsync(string fixtureName, string expectedKind, CancellationToken ct)
+    private static Task AssertUnmodelledVariantAsync(string fixtureName, string expectedKind, CancellationToken ct) =>
+        AssertVariantAsync(fixtureName, expectedKind, [new CompletedEvent(StopReason)], ct);
+
+    private static async Task AssertVariantAsync(string fixtureName, string expectedKind, IReadOnlyList<HarnessEvent> expected, CancellationToken ct)
     {
         string update = ReadFixture(fixtureName);
         JsonNode frame = JsonNode.Parse(update)!;
@@ -73,7 +77,7 @@ public sealed class OmpLiveVariantContractTests
             await serving.ConfigureAwait(false);
         }
 
-        received.ShouldBe(new HarnessEvent[] { new CompletedEvent(StopReason) });
+        received.ShouldBe(expected);
     }
 
     private static async Task ServeOmpAsync(LoopbackAcpTransport omp, string update, CancellationToken ct)

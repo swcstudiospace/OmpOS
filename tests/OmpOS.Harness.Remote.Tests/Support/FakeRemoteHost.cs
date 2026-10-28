@@ -117,14 +117,14 @@ internal sealed class FakeRemoteHost : IDisposable
         var fixtures = Path.Combine(AppContext.BaseDirectory, "Fixtures");
         if (Options.InstallOmp)
         {
-            WriteExecutable(Path.Combine(binDirectory, "omp"), "#!/bin/sh\nexec sh " + Quote(Path.Combine(fixtures, "fake-omp")) + " \"$@\"\n");
+            FakeGuestFiles.WriteExecutable(Path.Combine(binDirectory, "omp"), "#!/bin/sh\nexec sh " + Quote(Path.Combine(fixtures, "fake-omp")) + " \"$@\"\n");
         }
 
         var overrideBin = Path.Combine(_root, "override-bin");
         _ = Directory.CreateDirectory(overrideBin);
         if (Options.UnameOutput is { } uname)
         {
-            WriteExecutable(Path.Combine(overrideBin, "uname"), "#!/bin/sh\nprintf '%s\\n' " + Quote(uname) + "\n");
+            FakeGuestFiles.WriteExecutable(Path.Combine(overrideBin, "uname"), "#!/bin/sh\nprintf '%s\\n' " + Quote(uname) + "\n");
         }
 
         var gDirectory = Path.Combine(_root, "ssh-g");
@@ -152,15 +152,6 @@ internal sealed class FakeRemoteHost : IDisposable
         }
 
         var script = "#!/bin/sh\n" + string.Join(' ', environment) + " exec sh " + Quote(Path.Combine(fixtures, "fake-ssh")) + " \"$@\"\n";
-        WriteExecutable(SshPath, script);
-    }
-
-    private static void WriteExecutable(string path, string content)
-    {
-        File.WriteAllText(path, content);
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
+        FakeGuestFiles.WriteExecutable(SshPath, script);
     }
 }

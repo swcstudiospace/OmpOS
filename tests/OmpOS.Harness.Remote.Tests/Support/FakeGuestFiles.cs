@@ -1,17 +1,56 @@
+using System.ComponentModel;
+using System.Diagnostics;
+
 namespace OmpOS.Harness.Remote.Tests;
 
 /// <summary>File helpers the fake container and WSL hosts share.</summary>
 internal static class FakeGuestFiles
 {
-    /// <summary>Writes a script and makes it executable.</summary>
+    private const string ProbeVariable = "OMPOS_TEST_EXEC_PROBE";
+    private const string ShellShebang = "#!/bin/sh\n";
+    private const int TextFileBusy = 26;
+    private const int MaximumProbeAttempts = 400;
+
+    /// <summary>
+    /// Writes a script and makes it executable. Linux refuses to execute a file that any process still holds open for writing (ETXTBSY, "Text file busy"):
+    /// a child that another test forked while this file was being written keeps that descriptor until it reaches <c>exec</c>, which on a loaded machine can
+    /// take seconds, so a test that ran the wrapper in that window failed by chance. A shell wrapper therefore starts with a line that makes it exit at once
+    /// when it is run as a probe, and this method runs that probe until the kernel accepts the file.
+    /// </summary>
     /// <param name="path">The file.</param>
     /// <param name="content">The text.</param>
     public static void WriteExecutable(string path, string content)
     {
-        File.WriteAllText(path, content);
-        if (!OperatingSystem.IsWindows())
+        var isShell = content.StartsWith(ShellShebang, StringComparison.Ordinal);
+        File.WriteAllText(path, isShell ? content.Insert(ShellShebang.Length, "[ \"${" + ProbeVariable + ":-}\" = 1 ] && exit 0\n") : content);
+        if (OperatingSystem.IsWindows())
         {
-            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            return;
+        }
+
+        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        if (isShell)
+        {
+            WaitUntilExecutable(path);
+        }
+    }
+
+    private static void WaitUntilExecutable(string path)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                var start = new ProcessStartInfo(path) { UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
+                start.Environment[ProbeVariable] = "1";
+                using var probe = Process.Start(start) ?? throw new InvalidOperationException("The probe of " + path + " did not start.");
+                _ = probe.WaitForExit(TimeSpan.FromSeconds(30));
+                return;
+            }
+            catch (Win32Exception exception) when (exception.NativeErrorCode == TextFileBusy && attempt < MaximumProbeAttempts)
+            {
+                Thread.Sleep(25);
+            }
         }
     }
 

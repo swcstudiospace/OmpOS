@@ -13,7 +13,9 @@ namespace OmpOS.Native.Tests.RunControls;
 /// <summary>Shared helpers for the run-control tests: shows a window with chosen dependencies, clicks, finds rows and waits for decisions.</summary>
 internal static class RunControlsHarness
 {
-    private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(10);
+    // A passing test returns the moment its condition holds, so the limit only bounds a failing one. It is generous because the suite runs beside
+    // other heavy processes on shared hosts (a 10 second limit failed a correct test at a load average of 70).
+    private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(60);
 
     /// <summary>How many thread-pool round trips and dispatcher flushes <see cref="FlushAsync"/> performs.</summary>
     private const int FlushRounds = 3;
