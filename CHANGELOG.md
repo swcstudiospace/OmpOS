@@ -8,6 +8,16 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+### Changed
+
+<!-- rebrand:keep-start -->
+- The product is renamed from OmpOS to Autonogrammer (milestone v0.16.0, Phase 66, mechanical pass). Renamed: the product name and display strings, the C# namespaces and assembly names, the projects and files (`Autonogrammer.slnx`, `Autonogrammer.Linux.slnf`, `src/Autonogrammer.*`, `services/Autonogrammer.*`, `apps/Autonogrammer.*`, `tests/Autonogrammer.*`), the environment variables (`OMPOS_*` to `AUTONOGRAMMER_*`), the HTTP header `X-Autonogrammer-Contract-Version`, the convention directory `.autonogrammer`, the PostgreSQL schema `autonogrammer`, the Dragonfly key prefix `autonogrammer:`, the plugin directory `plugins/autonogrammer-hooks-omp` and the Android `ApplicationId` (`com.swcstudiospace.autonogrammer`). The external omp engine names (the `omp` binary, `omp acp`, `~/.omp`, `OMP_*`, `models.yml`) and the first-party engine identifiers such as `OmpLauncher` are kept. The names of the existing GitHub, Vercel and Railway services, and the URLs that contain them, are unchanged until the owner renames those services.
+<!-- rebrand:keep-end -->
+- Migration: user data is to be migrated once from the old names (data directory, convention directories, state); that runtime migration is planned as a later unit of Phase 66 and is not part of this change, so the renamed tree does not read the old locations yet. The Android `ApplicationId` is a new identity, so an installed app does not upgrade to it.
+<!-- rebrand:keep-start -->
+- Owner actions after the rename: rename the GitHub repository, the Vercel project and the Railway services and then update the URLs; rename the `OMPOS_*` variables to `AUTONOGRAMMER_*` in Vercel, Railway, GitHub secrets and local `.env` files; recreate or migrate the podman containers, volumes, secrets and image, the PostgreSQL schema and its advisory-lock key and the Dragonfly keys, and deploy the API and the worker together; change the three plugin submodules that may read the old names in their own repositories; confirm the legal wording and the trademark.
+<!-- rebrand:keep-end -->
+
 ## [0.15.0] - 2026-10-28
 
 Cursor completeness, brand and public launch (Phases 51 to 65). No live model turn, no Windows, macOS or Android run and no Railway deploy of the API or of a cloud agent had happened when the release was cut (recorded 2026-10-28); after the release a staged private worker was deployed to Railway and exercised (see the Cloud agents entry below); items marked partial are built and tested but not exercised live. What each feature has behind it (built, wired into a head, proven by a named test or evidence folder) is recorded row by row in `docs/quality/cursor-parity-audit-2026-10-28.md`.

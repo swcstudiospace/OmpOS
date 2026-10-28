@@ -773,6 +773,153 @@ class ExclusionTests(RepoCase):
         self.assertEqual(self.report()["summary"]["symlinksSkipped"], 4)
 
 
+# --------------------------------------------------------------------------- keep markers
+
+
+class KeepMarkerTests(RepoCase):
+    START, END = "rebrand:keep-start", "rebrand:keep-end"
+
+    def block(self, *lines: str, open_="<!-- ", close=" -->") -> str:
+        return f"{open_}{self.START}{close}\n" + "".join(l + "\n" for l in lines) + f"{open_}{self.END}{close}\n"
+
+    def test_balanced_blocks_in_any_comment_syntax_survive_and_marker_lines_stay(self):
+        md = "OmpOS before\n" + self.block("OmpOS kept, OMPOS_X too") + "OmpOS after\n"
+        sh = "ompos before\n" + self.block("ompos kept", open_="# ", close="") + "ompos after\n"
+        cs = "OmpOS a;\n" + self.block("var OmpOS = 1;", open_="// ", close="") + "OmpOS b;\n"
+        self.write("a.md", md)
+        self.write("b.sh", sh)
+        self.write("c.cs", cs)
+        self.commit()
+        self.apply()
+        self.assertEqual(self.read("a.md"), "Autonogrammer before\n" + self.block("OmpOS kept, OMPOS_X too") + "Autonogrammer after\n")
+        self.assertEqual(self.read("b.sh"), "autonogrammer before\n" + self.block("ompos kept", open_="# ", close="") + "autonogrammer after\n")
+        self.assertEqual(self.read("c.cs"), "Autonogrammer a;\n" + self.block("var OmpOS = 1;", open_="// ", close="") + "Autonogrammer b;\n")
+
+    def test_two_blocks_in_one_file_and_brand_text_on_a_marker_line_are_kept(self):
+        text = (f"x OmpOS\n<!-- {self.START} OmpOS -->\nOmpOS\n<!-- {self.END} ompos -->\nmid OmpOS\n"
+               + self.block("ompos") + "tail OmpOS\n")
+        self.write("a.md", text)
+        self.commit()
+        self.apply()
+        self.assertEqual(self.read("a.md"), text.replace("x OmpOS", "x Autonogrammer").replace("mid OmpOS", "mid Autonogrammer").replace("tail OmpOS", "tail Autonogrammer"))
+
+    def test_kept_block_is_not_rewritable_for_verify_and_not_in_census(self):
+        self.write("a.md", "# t\n" + self.block("OmpOS", "OMP_X compose omp acp", "https://ompos.dev/x"))
+        self.commit()
+        rc, out, err = self.run_tool("verify")
+        self.assertEqual(rc, 0, out + err)
+        rep = self.report()
+        self.assertEqual(rep["summary"]["brandTokensToRewrite"], 0)
+        self.assertEqual(rep["summary"]["urlProtectedTokens"], 0)
+        self.assertEqual(rep["engine"]["keepPatternCounts"].get("OMP_* variables", 0), 0)
+        self.assertEqual(rep["rejected"], [])
+
+    def test_nested_markers_are_refused_with_file_and_line(self):
+        text = f"OmpOS\n<!-- {self.START} -->\nOmpOS\n<!-- {self.START} -->\nOmpOS\n<!-- {self.END} -->\n<!-- {self.END} -->\n"
+        self.write("docs/n.md", text)
+        self.commit()
+        before = self.full_state()
+        rc, out, err = self.run_tool("apply")
+        self.assertEqual(rc, 2)
+        self.assertIn("docs/n.md:4", err)
+        self.assertIn("nested", err)
+        self.assertEqual(self.full_state(), before)
+
+    def test_unbalanced_markers_are_a_hard_error_naming_file_and_line(self):
+        self.write("open.md", f"a\nb\n<!-- {self.START} -->\nOmpOS\n")
+        self.commit()
+        rc, _out, err = self.run_tool("dry-run")
+        self.assertEqual(rc, 2)
+        self.assertIn("open.md:3", err)
+        self.assertIn("never closed", err)
+        (self.repo / "open.md").unlink()
+        self.write("close.md", f"a\n<!-- {self.END} -->\nOmpOS\n")
+        self.commit()
+        for command in ("dry-run", "verify", "apply"):
+            rc, _out, err = self.run_tool(command)
+            self.assertEqual(rc, 2, command)
+            self.assertIn("close.md:2", err)
+            self.assertIn("without a matching", err)
+
+    def test_start_and_end_on_one_line_is_an_error(self):
+        self.write("one.md", f"<!-- {self.START} {self.END} -->\n")
+        self.commit()
+        rc, _out, err = self.run_tool("dry-run")
+        self.assertEqual(rc, 2)
+        self.assertIn("one.md:1", err)
+
+    def test_crlf_and_bom(self):
+        crlf = (f"OmpOS\r\n<!-- {self.START} -->\r\nOmpOS\r\n<!-- {self.END} -->\r\nompos\r\n").encode()
+        self.write("crlf.md", crlf)
+        self.write("bom.md", b"\xef\xbb\xbf" + crlf)
+        self.write("bom-first.md", b"\xef\xbb\xbf" + f"# {self.START}\r\nOmpOS\r\n# {self.END}\r\nOmpOS".encode())
+        self.commit()
+        self.apply()
+        want = f"Autonogrammer\r\n<!-- {self.START} -->\r\nOmpOS\r\n<!-- {self.END} -->\r\nautonogrammer\r\n".encode()
+        self.assertEqual(self.readb("crlf.md"), want)
+        self.assertEqual(self.readb("bom.md"), b"\xef\xbb\xbf" + want)
+        self.assertEqual(self.readb("bom-first.md"),
+                         b"\xef\xbb\xbf" + f"# {self.START}\r\nOmpOS\r\n# {self.END}\r\nAutonogrammer".encode())
+
+    def test_apply_is_idempotent_and_verify_passes(self):
+        self.write("a.md", "OmpOS\n" + self.block("OmpOS", "ompos") + "OmpOS\n")
+        self.write("src/OmpOS.X/b.cs", "// OmpOS\n" + self.block("OmpOS", open_="// ", close="") )
+        self.commit()
+        self.apply()
+        self.commit()
+        state = self.full_state()
+        self.apply()
+        self.assertEqual(self.full_state(), state)
+        rc, out, err = self.run_tool("verify")
+        self.assertEqual(rc, 0, out + err)
+
+    def test_dry_run_reports_kept_blocks_per_file_and_writes_nothing(self):
+        self.write("a.md", "x\n" + self.block("OmpOS", "ompos") + "y\n" + self.block("plain"))
+        self.write("sub/b.txt", "# " + self.START + "\nOmpOS\n# " + self.END + "\n")
+        self.write("none.txt", "OmpOS\n")
+        self.commit()
+        before = self.full_state()
+        rc, out, _err = self.run_tool("dry-run")
+        self.assertEqual(rc, 0)
+        self.assertEqual(self.full_state(), before)
+        rep = self.report()
+        self.assertEqual(rep["keptBlocks"], {
+            "a.md": [{"firstLine": 2, "lastLine": 5, "brandTokens": 2}, {"firstLine": 7, "lastLine": 9, "brandTokens": 0}],
+            "sub/b.txt": [{"firstLine": 1, "lastLine": 3, "brandTokens": 1}],
+        })
+        self.assertEqual(rep["summary"]["keepMarkerBlocks"], 3)
+        self.assertEqual(rep["summary"]["keepMarkerFiles"], 2)
+        self.assertEqual(rep["summary"]["brandTokensToRewrite"], 1)
+        self.assertIn("Keep-marker blocks left untouched: 3 in 2 files", out)
+
+    def test_files_with_excluded_content_are_not_scanned_for_markers(self):
+        self.write("scripts/rebrand/notes.md", f"mentions {self.START} without closing\n")
+        self.commit()
+        rc, out, err = self.run_tool("verify")
+        self.assertEqual(rc, 0, out + err)
+
+
+class PostRenamePlanningTests(RepoCase):
+    def test_post_rename_phase_directories_are_content_frozen_only(self):
+        frozen = ["66-x/PLAN.md", "66.1-y/a/b.md", "67-z/c.md", "69-z/c.md", "70-z/c.md", "77-z/c.md"]
+        renamed = ["65-x/PLAN.md", "66.2-x/c.md", "78-z/c.md", "6-z/c.md"]
+        for rel in frozen + renamed:
+            self.write(f".planning/phases/{rel}", "OmpOS in /root/src/repos/ompos-autonogrammer\n")
+        self.commit()
+        self.apply()
+        for rel in frozen:
+            self.assertEqual(self.read(f".planning/phases/{rel}"), "OmpOS in /root/src/repos/ompos-autonogrammer\n", rel)
+        for rel in renamed:
+            self.assertEqual(self.read(f".planning/phases/{rel}"), "Autonogrammer in /root/src/repos/autonogrammer-autonogrammer\n", rel)
+
+    def test_character_class_in_globs(self):
+        rx = rebrand.glob_to_regex("p/6[7-9]-*/**")
+        self.assertTrue(rx.match("p/68-a/b/c.md"))
+        self.assertFalse(rx.match("p/66-a/b.md"))
+        self.assertFalse(rx.match("p/6[7-9]-a/b.md"))
+        self.assertTrue(rebrand.glob_to_regex("a[b").match("a[b"))
+
+
 # --------------------------------------------------------------------------- verify
 
 

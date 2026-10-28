@@ -75,7 +75,11 @@
     {"glob": "**/LegacyBrandNames.cs", "class": "legacy-names", "content": true, "path": false, "reason": "the one file that holds the pre-rename literals (data directory name, .ompos, marker text) the C# runtime migration needs; it must survive every re-run"},
     {"glob": "scripts/rebrand/**", "class": "rename-docs", "content": true, "path": true, "reason": "the rename tool itself"},
     {"glob": "docs/runbooks/rebrand-autonogrammer.md", "class": "rename-docs", "content": true, "path": true, "reason": "the rename runbook"},
-    {"glob": "docs/plans/v0.16.0-research/01-rename-inventory.md", "class": "rename-docs", "content": true, "path": true, "reason": "the rename inventory"}
+    {"glob": "docs/plans/v0.16.0-research/01-rename-inventory.md", "class": "rename-docs", "content": true, "path": true, "reason": "the rename inventory"},
+    {"glob": ".planning/phases/66-*/**", "class": "post-rename-planning", "content": true, "path": false, "reason": "written after the rename; they name old-name literals and absolute worktree paths on purpose"},
+    {"glob": ".planning/phases/66.1-*/**", "class": "post-rename-planning", "content": true, "path": false, "reason": "written after the rename; they name old-name literals and absolute worktree paths on purpose"},
+    {"glob": ".planning/phases/6[7-9]-*/**", "class": "post-rename-planning", "content": true, "path": false, "reason": "written after the rename; they name old-name literals and absolute worktree paths on purpose"},
+    {"glob": ".planning/phases/7[0-7]-*/**", "class": "post-rename-planning", "content": true, "path": false, "reason": "written after the rename; they name old-name literals and absolute worktree paths on purpose"}
   ],
   "binaryExtensions": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".icns", ".bmp", ".ttf", ".otf", ".woff", ".woff2", ".eot", ".pdf", ".zip", ".gz", ".tgz", ".7z", ".dll", ".exe", ".so", ".dylib", ".a", ".nupkg", ".jar", ".wasm", ".mp3", ".mp4", ".mov", ".webm", ".keystore", ".jks"],
   "binaryNote": "Binary files (extension list above, or a NUL byte in the file) are never rewritten; only their path is renamed (brand-named launcher icons and brand rasters keep the old pixels).",

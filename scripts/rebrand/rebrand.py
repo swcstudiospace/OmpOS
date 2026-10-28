@@ -28,6 +28,12 @@ Flags
 The tool is stateless and idempotent: it only ever acts on what still matches, so applying it
 to an already renamed tree changes nothing and applying it to a newer base renames only the
 new content.
+
+Keep markers: in any text file, every line from one containing `rebrand:keep-start` to the next
+containing `rebrand:keep-end` (both lines included, any comment syntax) is never rewritten and never
+counted as rewritable. Unbalanced, nested or one-line markers are an error naming file and line.
+dry-run reports each file with kept blocks. Files whose content is excluded by the config are not
+scanned for markers.
 """
 
 from __future__ import annotations
@@ -60,7 +66,7 @@ class RebrandError(Exception):
 
 
 def glob_to_regex(pattern: str) -> re.Pattern[str]:
-    """Root-relative glob: * inside a segment, ** across segments, ? one char."""
+    """Root-relative glob: * inside a segment, ** across segments, ? one char, [a-z] one char of a set."""
     out: list[str] = []
     i = 0
     while i < len(pattern):
@@ -78,6 +84,9 @@ def glob_to_regex(pattern: str) -> re.Pattern[str]:
             out.append("[^/]*")
         elif c == "?":
             out.append("[^/]")
+        elif c == "[" and (j := pattern.find("]", i + 2)) > 0 and "/" not in pattern[i:j]:
+            out.append("[" + pattern[i + 1 : j].replace("\\", "\\\\") + "]")
+            i = j
         else:
             out.append(re.escape(c))
         i += 1
@@ -340,6 +349,7 @@ class Collector:
         self.url_excluded = 0
         self.url_tokens = 0
         self.vetoed: list[dict] = []
+        self.kept: dict[str, list[dict]] = {}
         self.flags: dict[str, dict] = {}
         self.article_hits: list[str] = []
         self.files_rewritten: dict[str, int] = {}
@@ -366,6 +376,42 @@ def line_of(text: str, idx: int) -> int:
     return text.count("\n", 0, idx) + 1
 
 
+KEEP_START = "rebrand:keep-start"
+KEEP_END = "rebrand:keep-end"
+
+
+def keep_blocks(rel: str, text: str) -> list[tuple[int, int, int, int]]:
+    """Keep-marker blocks of a text file: (start offset, end offset, first line, last line).
+
+    A block runs from the start of the line containing `rebrand:keep-start` to the end of the line
+    containing `rebrand:keep-end` (both marker lines included, in any comment syntax). Blocks do not
+    nest; an unbalanced, nested or one-line marker is a RebrandError that names the file and line.
+    """
+    if "rebrand:keep-" not in text:
+        return []
+    blocks: list[tuple[int, int, int, int]] = []
+    opened: tuple[int, int] | None = None
+    pos = 0
+    for lineno, line in enumerate(text.split("\n"), 1):
+        start, end = pos, pos + len(line)
+        pos = end + 1
+        has_start, has_end = KEEP_START in line, KEEP_END in line
+        if has_start and has_end:
+            raise RebrandError(f"{rel}:{lineno}: {KEEP_START} and {KEEP_END} on the same line")
+        if has_start:
+            if opened is not None:
+                raise RebrandError(f"{rel}:{lineno}: nested {KEEP_START} (the block opened at line {opened[1]} is still open)")
+            opened = (start, lineno)
+        elif has_end:
+            if opened is None:
+                raise RebrandError(f"{rel}:{lineno}: {KEEP_END} without a matching {KEEP_START}")
+            blocks.append((opened[0], end, opened[1], lineno))
+            opened = None
+    if opened is not None:
+        raise RebrandError(f"{rel}:{opened[1]}: {KEEP_START} is never closed by {KEEP_END}")
+    return blocks
+
+
 # --------------------------------------------------------------------------- per-file processing
 
 
@@ -373,6 +419,10 @@ def process_text(rel: str, text: str, cfg: Config, opts: Options, col: Collector
                  content_cls: str | None):
     """Return the list of accepted edits (empty when the content is excluded)."""
     cands = candidates(text, cfg, opts)
+    blocks = keep_blocks(rel, text) if content_cls is None else []
+    kb_spans = [(b[0], b[1], i) for i, b in enumerate(blocks)]
+    kb_starts = [b[0] for b in blocks]
+    kb_tokens = [0] * len(blocks)
     frozen_cls, frozen = cfg.frozen_ranges(rel, text) if cands else (None, [])
     fstarts = [f[0] for f in frozen]
     brand_starts = {c[0] for c in cands if c[4] == "brand"}
@@ -384,6 +434,8 @@ def process_text(rel: str, text: str, cfg: Config, opts: Options, col: Collector
                 continue  # counted by the omp census scan instead
             hits = 0
             for m in rx.finditer(text):
+                if kb_spans and overlap(kb_spans, kb_starts, m.start(), m.end()) is not None:
+                    continue
                 if left_not is not None and m.start() and left_not.match(text[m.start() - 1]):
                     continue
                 hits += 1
@@ -412,6 +464,10 @@ def process_text(rel: str, text: str, cfg: Config, opts: Options, col: Collector
     seen_url_spans: set[int] = set()
     local_tokens: collections.Counter[str] = collections.Counter()
     for s, e, old, new, src in cands:
+        if kb_spans and (kb := overlap(kb_spans, kb_starts, s, e)) is not None:
+            if src == "brand":
+                kb_tokens[kb[2]] += 1
+            continue
         if src == "brand" and col is not None and content_cls is None:
             prefix2 = text[max(0, s - 2) : s]
             if len(prefix2) == 2 and prefix2[0] in "aA" and prefix2[1] == " " and (
@@ -454,7 +510,11 @@ def process_text(rel: str, text: str, cfg: Config, opts: Options, col: Collector
     if col is not None:
         if accepted:
             col.files_rewritten[rel] = len(accepted)
-        _scan_omp_words(rel, text, cfg, opts, col, brand_starts, content_cls)
+        if blocks:
+            col.kept[rel] = [
+                {"firstLine": b[2], "lastLine": b[3], "brandTokens": kb_tokens[i]} for i, b in enumerate(blocks)
+            ]
+        _scan_omp_words(rel, text, cfg, opts, col, brand_starts, content_cls, kb_spans, kb_starts)
     return accepted
 
 
@@ -493,12 +553,14 @@ def _count_accepted(col, cfg, rel, text, s, e, old, new, src, local_tokens):
         col.engine_edits[old] += 1
 
 
-def _scan_omp_words(rel, text, cfg, opts, col, brand_starts, content_cls):
+def _scan_omp_words(rel, text, cfg, opts, col, brand_starts, content_cls, kept=(), kept_starts=()):
     """Reject scan (every ompos near-match, every other omp word) and engine-token census."""
     if content_cls == "rename-docs":
         return
     for m in _OMP_RE.finditer(text):
         i = m.start()
+        if kept and overlap(kept, kept_starts, i, i + 3) is not None:
+            continue
         if i in brand_starts:
             continue
         piece5 = text[i : i + 5]
@@ -814,6 +876,8 @@ def build_report(root: Path, cfg: Config, opts: Options, plan: Plan, command: st
             "otherOmpWords": len(col.other_omp),
             "otherOmpOccurrences": sum(v["count"] for v in col.other_omp.values()),
             "vetoedByKeepPatterns": len(col.vetoed),
+            "keepMarkerBlocks": sum(len(v) for v in col.kept.values()),
+            "keepMarkerFiles": len(col.kept),
         },
         "tokens": tokens,
         "unmappedCasings": dict(col.unmapped),
@@ -853,6 +917,7 @@ def build_report(root: Path, cfg: Config, opts: Options, plan: Plan, command: st
         "flags": [{"word": w, **v} for w, v in sorted(col.flags.items())],
         "articleHits": col.article_hits,
         "vetoed": col.vetoed,
+        "keptBlocks": {f: v for f, v in sorted(col.kept.items())},
         "nonUtf8": col.non_utf8,
         "nulText": col.nul_text,
         "ambiguities": ambiguities,
@@ -1011,6 +1076,12 @@ def render_md(rep: dict, console: bool = False) -> str:
         L.append("")
         L.append(f"## Brand tokens vetoed by an engine keep pattern: {len(rep['vetoed'])}")
         L += [f"- {v['file']}:{v['line']} {v['text']} inside {v['keep']}" for v in rep["vetoed"][:20]]
+    if rep["keptBlocks"]:
+        n_blocks = sum(len(v) for v in rep["keptBlocks"].values())
+        L.append("")
+        L.append(f"## Keep-marker blocks left untouched: {n_blocks} in {len(rep['keptBlocks'])} files")
+        L += _t([[f, "; ".join(f"{b['firstLine']}-{b['lastLine']} ({b['brandTokens']} tokens)" for b in blocks)]
+                 for f, blocks in rep["keptBlocks"].items()], ["file", "blocks (lines, brand tokens kept)"])
     L.append("")
     L.append("## Owner actions")
     L += [f"- {a}" for a in rep["ownerActions"]]
