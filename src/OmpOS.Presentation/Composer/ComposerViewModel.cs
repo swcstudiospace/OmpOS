@@ -1,4 +1,5 @@
 using OmpOS.Presentation.Commands;
+using OmpOS.Presentation.Composer.Attachments;
 using OmpOS.Presentation.Mentions;
 using OmpOS.Presentation.Observable;
 
@@ -27,6 +28,8 @@ public sealed class ComposerViewModel : ObservableModel
     private ContextRingModel? _contextRing;
     private Func<string, IReadOnlyList<MentionAttachment>, Task<bool>>? _mentionSender;
     private int _caretIndex;
+    private ComposerAttachmentsModel? _images;
+    private Func<string, IReadOnlyList<MentionAttachment>, IReadOnlyList<ComposerAttachment>, Task<bool>>? _imageSender;
 
     /// <summary>Creates a composer that submits drafts through <paramref name="onSend"/> and stops responses through <paramref name="onStop"/>.</summary>
     /// <param name="onSend">Submits the draft. Resolves to true when the host accepted the send and to false when it refused it.</param>
@@ -255,6 +258,23 @@ public sealed class ComposerViewModel : ObservableModel
         }
     }
 
+    /// <summary>Gets or sets the attached images of the message, or null when the session offers no image input. The owner of the model feeds it the capabilities of the engine and the model.</summary>
+    public ComposerAttachmentsModel? Images
+    {
+        get => _images;
+        set => SetProperty(ref _images, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the send path of a message that carries images: it receives the text, the content of each attached mention (possibly none) and the images, and resolves to true when the host
+    /// accepted the send. With no sender, a message that carries images is refused (the draft and the images stay) so an image is never dropped silently.
+    /// </summary>
+    public Func<string, IReadOnlyList<MentionAttachment>, IReadOnlyList<ComposerAttachment>, Task<bool>>? ImageSender
+    {
+        get => _imageSender;
+        set => _imageSender = value;
+    }
+
     /// <summary>
     /// Gets or sets the send path of a message that carries mentions: it receives the text and the content read for each attached item, and resolves to true when the host accepted the
     /// send. With no sender, a message that carries mentions is sent as its text alone, through the callback given to the constructor.
@@ -377,7 +397,8 @@ public sealed class ComposerViewModel : ObservableModel
     /// <returns>A task that completes when the host has answered the send.</returns>
     public async Task SendAsync()
     {
-        if (_sending || IsStreaming || string.IsNullOrWhiteSpace(Draft))
+        var hasImages = _images is { HasItems: true };
+        if (_sending || IsStreaming || (string.IsNullOrWhiteSpace(Draft) && !hasImages) || (hasImages && _imageSender is null))
         {
             return;
         }
@@ -401,9 +422,17 @@ public sealed class ComposerViewModel : ObservableModel
             }
 
             // Continue on the captured context: the code below writes Draft, which the UI binds to.
-            var accepted = attachments.Count > 0 && _mentionSender is { } sender
-                ? await sender(text, attachments).ConfigureAwait(true)
-                : await _onSend(text).ConfigureAwait(true);
+            bool accepted;
+            if (_images is { HasItems: true } images && _imageSender is { } imageSender)
+            {
+                accepted = await imageSender(text, attachments, images.Items).ConfigureAwait(true);
+            }
+            else
+            {
+                accepted = attachments.Count > 0 && _mentionSender is { } sender
+                    ? await sender(text, attachments).ConfigureAwait(true)
+                    : await _onSend(text).ConfigureAwait(true);
+            }
 
             // Clear only the message the host accepted. Text typed while the send was pending is not the sent text, so it stays.
             if (accepted && string.Equals(Draft, text, StringComparison.Ordinal))
@@ -414,6 +443,7 @@ public sealed class ComposerViewModel : ObservableModel
             if (accepted)
             {
                 _mentions?.Clear();
+                _images?.Clear();
             }
         }
         finally

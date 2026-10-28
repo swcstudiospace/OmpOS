@@ -1,9 +1,9 @@
 namespace OmpOS.Harness.Acp;
 
-/// <summary>The wire form of one prompt content block: a <c>text</c> block or an embedded <c>resource</c> block.</summary>
+/// <summary>The wire form of one prompt content block: a <c>text</c> block, an embedded <c>resource</c> block or an <c>image</c> block.</summary>
 public sealed class AcpPromptBlock
 {
-    /// <summary>Gets the block kind: <c>text</c> or <c>resource</c>.</summary>
+    /// <summary>Gets the block kind: <c>text</c>, <c>resource</c> or <c>image</c>.</summary>
     public string Type { get; init; } = "text";
 
     /// <summary>Gets the text, for text blocks.</summary>
@@ -11,6 +11,23 @@ public sealed class AcpPromptBlock
 
     /// <summary>Gets the embedded resource, for resource blocks.</summary>
     public AcpEmbeddedResource? Resource { get; init; }
+
+    /// <summary>Gets the base64 image bytes, for image blocks.</summary>
+    public string? Data { get; init; }
+
+    /// <summary>Gets the image MIME type, for image blocks.</summary>
+    public string? MimeType { get; init; }
+
+    /// <summary>Creates an image block.</summary>
+    /// <param name="mimeType">The image MIME type.</param>
+    /// <param name="base64Data">The base64 encoded image.</param>
+    /// <returns>The image block.</returns>
+    public static AcpPromptBlock ImageBlock(string mimeType, string base64Data)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(mimeType);
+        ArgumentException.ThrowIfNullOrEmpty(base64Data);
+        return new AcpPromptBlock { Type = "image", Data = base64Data, MimeType = mimeType };
+    }
 
     /// <summary>Creates a text block.</summary>
     /// <param name="text">The block text.</param>

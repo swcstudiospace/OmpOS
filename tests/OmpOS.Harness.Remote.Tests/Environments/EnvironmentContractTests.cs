@@ -78,13 +78,20 @@ public sealed class EnvironmentContractTests
         EnvironmentProfileValidator.Validate(back).ShouldBeEmpty();
     }
 
-    /// <summary>A kind this build does not know is a deserialization failure, never a profile that silently runs somewhere else.</summary>
+    /// <summary>
+    /// A kind this build does not know (a name or a number written by a newer build) is read as an undefined kind, not as a failure of the document, and the
+    /// validator rejects it: it never silently runs somewhere else, and one new profile never makes every saved profile unreadable.
+    /// </summary>
     [Fact]
-    public void AnUnknownKindIsRejectedWhenReadingJson()
+    public void AnUnknownKindIsReadAsUndefinedAndRejectedByTheValidator()
     {
         const string Json = "{\"id\":\"x\",\"displayName\":\"X\",\"kind\":\"Mainframe\"}";
 
-        Should.Throw<JsonException>(() => JsonSerializer.Deserialize(Json, EnvironmentJsonContext.Default.EnvironmentProfile));
+        var profile = JsonSerializer.Deserialize(Json, EnvironmentJsonContext.Default.EnvironmentProfile);
+
+        profile.ShouldNotBeNull();
+        Enum.IsDefined(profile.Kind).ShouldBeFalse();
+        EnvironmentProfileValidator.Validate(profile).ShouldContain(issue => issue.Property == "Kind");
     }
 
     /// <summary>Defaults: no agent forwarding, a 15 second keep-alive, no options.</summary>

@@ -32,7 +32,7 @@ public sealed record RemoteExecResult(int ExitCode, ReadOnlyMemory<byte> Output,
     {
         if (StartFailure is not null)
         {
-            return "The ssh client could not be started: " + StartFailure;
+            return "The remote client could not be started: " + StartFailure;
         }
 
         if (TimedOut)

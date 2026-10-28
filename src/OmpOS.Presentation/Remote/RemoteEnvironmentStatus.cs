@@ -50,4 +50,13 @@ public enum RemoteEnvironmentStatus
 
     /// <summary>The connection was lost while an agent turn was running: the turn did not finish and the prompt has to be sent again.</summary>
     Interrupted,
+
+    /// <summary>The container runtime (podman) or WSL (wsl.exe) is missing or its service does not answer, so no container or distribution environment can be reached.</summary>
+    RuntimeUnavailable,
+
+    /// <summary>The container exists and is stopped: starting it (an action is offered) makes it usable.</summary>
+    NotRunning,
+
+    /// <summary>The container or the WSL distribution of the environment does not exist.</summary>
+    NotFound,
 }

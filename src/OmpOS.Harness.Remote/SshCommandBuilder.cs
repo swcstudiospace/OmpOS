@@ -139,6 +139,21 @@ public sealed partial class SshCommandBuilder
         return new SshInvocation { FileName = _options.SshPath, Arguments = arguments };
     }
 
+    /// <summary>
+    /// Builds the POSIX bootstrap script of <see cref="BuildAcp"/> without the ssh arguments: the shell lines that set <c>PATH</c>, read the environment and the files
+    /// from stdin, change into the working directory and <c>exec omp acp</c>, plus the preamble bytes those lines read. The container and WSL builders run the same
+    /// script through <c>sh -c</c>, so every environment starts omp the same way and secrets never reach an argument list.
+    /// </summary>
+    /// <param name="launch">What to run.</param>
+    /// <returns>The one-line script and the preamble (or <see langword="null"/> when the launch carries no environment and no file).</returns>
+    /// <exception cref="ArgumentException">The launch holds a value that is not safe to put into a shell line.</exception>
+    internal (string Script, SshStdinPreamble? Preamble) BuildBootstrap(RemoteLaunch launch)
+    {
+        ArgumentNullException.ThrowIfNull(launch);
+        ValidateLaunch(launch);
+        return BuildLaunchScript(launch);
+    }
+
     /// <summary>Tells whether a name may be exported into a remote shell: a plain identifier that is not reserved (<c>PATH</c>, <c>IFS</c>, <c>LD_*</c> and the like).</summary>
     /// <param name="name">The variable name.</param>
     /// <returns><see langword="true"/> when the name is allowed.</returns>
