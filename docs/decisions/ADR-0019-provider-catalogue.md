@@ -1,6 +1,6 @@
 # ADR-0019: Provider catalogue: every EU, US and CN provider and coding plan as data
 
-- Status: Proposed 2026-10-27. The catalogue, the writer and the Models page model are implemented in the Phase 62 worktree; the .NET tests were written and not run when this record was written, and the head adapter that fills the listing (`ModelsSettingsSource`) is the next wave.
+- Status: Accepted 2026-10-28. The catalogue (103 rows), the writer for all 13 omp api values, the Models page model and its desktop and web adapters are implemented; the tests of `OmpOS.Harness.Providers.Tests`, `OmpOS.Presentation.Tests`, `OmpOS.Native.Tests` and `OmpOS.UI.Tests` pass in the integrated tree. No provider credential was used, so no row is live-validated (OQ-71).
 - Date: 2026-10-27
 - Owner: ompos-maintainers
 - Deciders: ompos-maintainer
