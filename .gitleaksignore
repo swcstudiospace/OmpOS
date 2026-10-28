@@ -17,3 +17,18 @@
 bdb771f78ec062f24e7ac92c515dea56524e4b74:tests/OmpOS.UI.Tests/Security/SessionKeyHolderTests.cs:generic-api-key:14
 a2b44070d2a7c7800173309adf1ad75d20a746bf:tests/OmpOS.Harness.AgentLoop.Tests/Substrate/SubstrateTestSupport.cs:generic-api-key:18
 bf04ba354a6b2c5a4682a8652b829cfbabc544a3:tests/OmpOS.Harness.AgentLoop.Tests/Launch/OmpLaunchPlannerTests.cs:generic-api-key:16
+
+# Test canaries added by the v0.15.0 work (hooks, remote environments, providers, launch planner). Each literal is a fake token whose
+# only job is to prove that a secret never reaches a log line, a hook run record, an exception message, a terminal argument or a
+# serialised form (for example "live-canary-4c9f2b7e", "tok-CANARY-91c2", "sk-test-9f8e7d6c5b4a3210" and a JWT-shaped string with
+# the public jwt.io example payload); none is a credential. Allowlisted by fingerprint, not by path, so no other finding can hide
+# behind them. History is not rewritten.
+785e79df26e8e872587084de27f037a77646815e:tests/OmpOS.Harness.Remote.Tests/Containers/PodmanLiveTests.cs:generic-api-key:75
+2e7d1f8b213cc268c627ec98fade93273081427e:tests/OmpOS.Harness.Remote.Tests/Containers/PodmanLiveTests.cs:generic-api-key:75
+23944a7cd2082d0787dd65971a4d4bab51f63de9:tests/OmpOS.Harness.AgentLoop.Tests/Hooks/HookRunRecordProjectorTests.cs:jwt:60
+23944a7cd2082d0787dd65971a4d4bab51f63de9:tests/OmpOS.Harness.Remote.Tests/RemoteTerminalLauncherTests.cs:generic-api-key:55
+23944a7cd2082d0787dd65971a4d4bab51f63de9:tests/OmpOS.Presentation.Tests/Hooks/HookRunLogModelTests.cs:generic-api-key:74
+46f6f031bf3bee06ddf34e926e7946d22935eaff:tests/OmpOS.UI.Tests/SettingsModelsPageTests.cs:generic-api-key:13
+ca7b53d77ad2abbf32725db6569a334084d94619:plugins/ompos-hooks-omp/test/helpers.mjs:generic-api-key:4
+324f0df622e04452c640263deb4e6ce5af2c40b1:tests/OmpOS.Harness.AgentLoop.Tests/Launch/OmpLaunchPlannerTests.cs:generic-api-key:16
+324f0df622e04452c640263deb4e6ce5af2c40b1:tests/OmpOS.Harness.AgentLoop.Tests/Substrate/SubstrateTestSupport.cs:generic-api-key:18
