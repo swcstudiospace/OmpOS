@@ -1,0 +1,463 @@
+# bootstrap.sh gate, 2026-10-28, commit e24e6851554ae6ea710a9841920030269f96d2be (e24e6851)
+# Clean git worktree of that commit; command: OMPOS_TEST_PARALLEL_MODULES=3 OMPOS_SMOKE_PUBLISH_TIMEOUT=2400 OMPOS_SMOKE_DEMO_TIMEOUT=3600 ./bootstrap.sh
+# Steps that ran: pinned gitleaks scan, plugin node tests, scripts/ci/repo-checks.sh, locked restore, scripts/ci/check-licences.sh, warnings-as-errors Release build,
+# dotnet test of OmpOS.Linux.slnf (throwaway TimescaleDB and Dragonfly under podman), dotnet format --verify-no-changes, web smoke (API half and Demo half) with axe-core 4.14.0.
+# Result: exit 0, "bootstrap: OK". Tests: 12215 total, 12213 succeeded, 0 failed, 2 skipped (the two tests that need a non-root user), 25 minutes.
+# The host is shared (8 cores, load average 25 to 96 from other tenants), which is why the knobs above exist.
+# Earlier runs of this branch, kept honest: 083ac50 failed 8 of 12215 tests (a Stop control missing for a streaming thread, a running agent closing without a prompt, three Demo
+# pump timeouts, two contract tests that still expected ten event cases, one ETXTBSY race in a fake podman script; all fixed); 75bc55b passed every module except OmpOS.Native.Tests,
+# where a 120 s stress test timed out at a load average of 96 and its cancelled run failed 190 later tests (the limit is now 15 minutes and the gate can cap test parallelism).
+# ---- raw output follows ----
+
+    ○
+    │╲
+    │ ○
+    ○ ░
+    ░    gitleaks
+
+secret scan: OK (gitleaks 8.30.1)
+▶ connection report content
+  ✔ lists sorted raw tool and command names with mode, pid and version (3.823571ms)
+  ✔ commandsAvailable is false and commands empty when the API has no command lister (6.267265ms)
+  ✔ a throwing tool or command lister degrades to empty lists (0.346331ms)
+  ✔ the write is atomic (tmp then rename) with mode 0600 (0.932315ms)
+  ✔ creates a missing parent directory (mode 0700) before the atomic write (1.128197ms)
+  ✔ a reporter whose directory is missing still produces the report on its first notify (10.869522ms)
+  ✔ never throws when the fs fails (0.634654ms)
+✔ connection report content (93.900962ms)
+▶ connection reporter
+  ✔ inactive without an absolute file: no fs call and no timer (1.264418ms)
+  ✔ the first notify writes; an unchanged list is not rewritten (0.980085ms)
+  ✔ a changed tool list is rewritten after the 2 s gap, not before (9.872686ms)
+  ✔ a change after the gap is rewritten immediately (0.718754ms)
+  ✔ stop cancels the pending rewrite (0.462402ms)
+✔ connection reporter (13.783427ms)
+▶ resolveGsdHome
+  ✔ honours GSD_CORE_HOME > KIMI_CONFIG_DIR > ~/.config/agents > ~/.agents (214.647695ms)
+  ✔ GSD_CORE_HOME wins even when it does not exist, and blank values are ignored (2.161393ms)
+  ✔ falls back to ~/.agents/gsd-core when nothing is installed (0.675753ms)
+✔ resolveGsdHome (225.352205ms)
+▶ listAuthoritativeAgents
+  ✔ excludes *.compact.md and names already present in the user's agents dir (184.330979ms)
+  ✔ a dangling user symlink still counts as present (91.535099ms)
+✔ listAuthoritativeAgents (276.130171ms)
+▶ linkAgents
+  ✔ creates absolute symlinks to the authoritative profiles only (13.097794ms)
+  ✔ is idempotent (4.747197ms)
+  ✔ never overwrites an existing file or a symlink to elsewhere (79.18306ms)
+  ✔ refuses a profile whose real path escapes gsdHome/agents (6.616968ms)
+  ✔ refuses unsafe file names (1.212277ms)
+  ✔ dry-run changes nothing (1.458308ms)
+  ✔ reports a conflict instead of linking when the plugin dir is the GSD agents dir (20.898808ms)
+  ✔ never throws when gsdHome is missing (1.319167ms)
+✔ linkAgents (302.99239ms)
+▶ probe
+  ✔ not installed: exit code 3, never throws (1.186388ms)
+  ✔ degraded before linking (agents missing): exit code 2; healthy after linking: exit code 0 (1390.153153ms)
+  ✔ degraded when gsd-tools is missing (28.782984ms)
+  ✔ degraded when runtime-identity fails or prints garbage (1575.25269ms)
+  ✔ a hanging runtime-identity is cut off by the timeout (310.747812ms)
+  ✔ without spawn it does not run gsd-tools (10.925163ms)
+  ✔ reports the omp link state from the plugin manager directory (92.027202ms)
+✔ probe (3409.821111ms)
+▶ syncAgents
+  ✔ links when installed and returns link=null when not, without throwing (2.103112ms)
+✔ syncAgents (2.214452ms)
+▶ bin scripts
+  ✔ probe prints one JSON object and exits 3 when GSD-Core is absent (396.85135ms)
+  ✔ probe exits 2 when degraded and reports the gsd-tools identity (600.537894ms)
+  ✔ link --dry-run reports and writes nothing; unknown flags exit 64 (612.085685ms)
+  ✔ link exits 3 when GSD-Core is not installed (203.168033ms)
+✔ bin scripts (1812.959566ms)
+▶ steering inbox delivery
+  ✔ mode steer reaches deliver and writes a delivered ack (106.090263ms)
+  ✔ mode followUp reaches deliver and writes a delivered ack (2.416913ms)
+  ✔ mode aside reaches deliver and writes a delivered ack (184.514187ms)
+  ✔ rejects invalid-json ({not json) (88.615252ms)
+  ✔ rejects invalid-schema (schema case) (2.066462ms)
+  ✔ rejects invalid-schema (schema case) (1.95432ms)
+  ✔ rejects invalid-schema (schema case) (1.278307ms)
+  ✔ rejects invalid-schema (schema case) (7.041979ms)
+  ✔ rejects invalid-schema (schema case) (8.634599ms)
+  ✔ rejects invalid-schema ([1,2]) (1.284697ms)
+  ✔ rejects bad-id (schema case) (1.058977ms)
+  ✔ rejects bad-id (schema case) (85.837636ms)
+  ✔ rejects blank-text (schema case) (1.338118ms)
+  ✔ rejects too-large (schema case) (1.583099ms)
+  ✔ rejects too-large (schema case) (1.240557ms)
+  ✔ rejects too-large (schema case) (1.655989ms)
+  ✔ a duplicate id is never delivered twice and the first ack survives (1.603249ms)
+  ✔ a duplicate of a done directive without an ack is acked rejected/duplicate (0.983447ms)
+  ✔ a file name that cannot carry an ack is quarantined without an ack (3.63762ms)
+  ✔ ignores *.tmp files and symlinks (1.479039ms)
+  ✔ delivers in file-name order (78.816207ms)
+  ✔ examines at most 64 files per pass; the rest wait for the next pass (112.090244ms)
+  ✔ acks and the heartbeat are atomic: only .tmp files are written, then renamed over the final name (94.563386ms)
+  ✔ a throwing deliver becomes a failed ack and the inbox keeps working (1.497368ms)
+  ✔ a failing fs never throws out of start, poll or stop (0.836253ms)
+✔ steering inbox delivery (795.167928ms)
+▶ steering inbox lifecycle
+  ✔ heartbeat is written at start and refreshed every 5 s by the clock (86.266949ms)
+  ✔ the poll timer delivers files that arrive later (1.750649ms)
+  ✔ stop clears timers and stops delivering and heartbeating (0.731984ms)
+  ✔ start is idempotent (0.728804ms)
+  ✔ inactive for dir undefined: no fs call at all (0.319202ms)
+  ✔ inactive for dir "": no fs call at all (0.253941ms)
+  ✔ inactive for dir "relative/steer": no fs call at all (0.233242ms)
+✔ steering inbox lifecycle (90.604093ms)
+ℹ tests 69
+ℹ suites 10
+ℹ pass 69
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7679.633083
+▶ tool name mapping
+  ✔ maps omp tools to Cursor names (12.37276ms)
+✔ tool name mapping (13.788769ms)
+▶ registration
+  ✔ registers every event without touching fs/network at load (3.5444ms)
+✔ registration (3.727241ms)
+▶ tool_call
+  ✔ bash: preToolUse then beforeShellExecution with Cursor payloads (6.266136ms)
+  ✔ MCP: beforeMCPExecution carries JSON string input and server (6.426147ms)
+  ✔ MCP detection via getAllTools sourceInfo (0.627283ms)
+  ✔ read: beforeReadFile resolves path and includes file content (0.649315ms)
+  ✔ read: unreadable file omits content (2.594635ms)
+  ✔ other tools only post preToolUse (0.377173ms)
+  ✔ deny on preToolUse short-circuits and maps reason (0.357012ms)
+  ✔ deny falls back to user_message then default (66.377196ms)
+  ✔ deny on beforeShellExecution after allow on preToolUse (0.725504ms)
+  ✔ updated_input: last wins, later payloads see it, additional_context joined (0.615863ms)
+  ✔ omp section: posts kind omp only when active; omp_result merged, block sticky (0.759575ms)
+  ✔ omp events are not posted when not in activeOmpEvents (0.316772ms)
+✔ tool_call (89.231037ms)
+▶ tool_result
+  ✔ postToolUse with tool_output JSON and duration (1.093296ms)
+  ✔ error result -> postToolUseFailure (1.92601ms)
+  ✔ bash -> afterShellExecution (0.904655ms)
+  ✔ MCP -> afterMCPExecution; updated_mcp_tool_output replaces content; details win for names (0.579004ms)
+  ✔ updated_mcp_tool_output ignored for non-MCP tools (0.525603ms)
+  ✔ edit/write/ast_edit success -> afterFileEdit; error does not (1.004445ms)
+  ✔ task -> subagentStop with followup mapped to additionalContext (3.214498ms)
+  ✔ task without agent defaults to generalPurpose and error status (0.395982ms)
+  ✔ tool_output and output truncated to 256 KiB (7.340252ms)
+  ✔ truncateUtf8 never splits multibyte characters (0.277032ms)
+  ✔ omp_result merged into tool_result (3.303798ms)
+✔ tool_result (21.240101ms)
+▶ input
+  ✔ beforeSubmitPrompt payload; allow returns nothing (0.383202ms)
+  ✔ continue:false or deny -> handled with notify (0.645873ms)
+✔ input (1.185198ms)
+▶ session events
+  ✔ session_start/session_shutdown payloads and duration (0.781404ms)
+  ✔ session_start is fire-and-forget; shutdown uses 2 s timeout (0.526502ms)
+  ✔ session_stop: followup_message -> continue + additionalContext (0.665165ms)
+  ✔ session_stop: empty followup -> nothing (0.197091ms)
+  ✔ before_subagent_spawn payload and deny (0.282002ms)
+  ✔ before_subagent_spawn omp_result passes model/note (0.275062ms)
+  ✔ session_before_compact: preCompact numbers, observe-only, cancel from omp_result (71.121754ms)
+  ✔ compaction without cancel returns nothing; auto_compaction_start sets trigger auto (0.559924ms)
+  ✔ message_end: assistant text and thinking (0.617513ms)
+  ✔ message_end for user role posts nothing (0.183692ms)
+  ✔ omp-only observers post kind omp when active (0.836924ms)
+  ✔ safeCopy bounds depth, arrays and strings (0.468392ms)
+✔ session events (77.183537ms)
+▶ inactive / inert
+  ✔ skips events not in activeEvents (0.325642ms)
+  ✔ inert without URL or token: no reads, no posts (0.218491ms)
+  ✔ no env and no filesystem or network access at load / without events (0.116641ms)
+  ✔ subagent contexts never post (0.126211ms)
+  ✔ startup file read lazily once and cached (0.190101ms)
+✔ inactive / inert (1.155536ms)
+▶ loopback guard
+  ✔ refuses http://example.com/v1/hook (0.386584ms)
+  ✔ refuses http://10.0.0.5:80/v1/hook (0.338962ms)
+  ✔ refuses https://127.0.0.1/v1/hook (0.101911ms)
+  ✔ refuses not a url (0.112151ms)
+  ✔ refuses http://127.0.0.1.evil.com/v1/hook (0.07603ms)
+  ✔ accepts http://localhost:1/v1/hook (0.151082ms)
+  ✔ accepts http://[::1]:1/v1/hook (0.09589ms)
+  ✔ accepts http://127.0.0.1:1/v1/hook (0.10518ms)
+✔ loopback guard (1.634819ms)
+▶ fail policy
+  ✔ fail-closed deny on 401 (0.511593ms)
+  ✔ fail-open on 401 when not configured fail-closed (0.263201ms)
+  ✔ fail-closed deny on 500 (0.206131ms)
+  ✔ fail-open on 500 when not configured fail-closed (1.994632ms)
+  ✔ fail-closed deny on unreachable (0.494683ms)
+  ✔ fail-open on unreachable when not configured fail-closed (0.429963ms)
+  ✔ fail-closed deny on bad json (0.499843ms)
+  ✔ fail-open on bad json when not configured fail-closed (0.205571ms)
+  ✔ fail-closed deny on non-object json (0.314991ms)
+  ✔ fail-open on non-object json when not configured fail-closed (0.178521ms)
+  ✔ beforeShellExecution fail-closed only for that event (0.221052ms)
+  ✔ non-blockable events in failClosedEvents never deny (stop, post events) (0.281952ms)
+  ✔ blockable event is still waiting after 6 s and aborts only at requestTimeoutMs (default 130000) (203.555095ms)
+  ✔ requestTimeoutMs from startup file is used and clamped to 1000..900000 (1.85768ms)
+  ✔ timeout per event: awaited ones use requestTimeoutMs, observers keep 5 s (4.777238ms)
+  ✔ timer is cleared after a successful response (0.548294ms)
+  ✔ startup file missing: all events active, nothing fail-closed (0.316352ms)
+  ✔ startup file malformed: all events active, nothing fail-closed (0.229011ms)
+  ✔ startup file wrong shape: all events active, nothing fail-closed (0.172491ms)
+  ✔ unset startup env var behaves like a missing file (0.1832ms)
+✔ fail policy (221.82792ms)
+▶ no leaks
+  ✔ nothing is written to console and the token never leaves the Authorization header (0.541554ms)
+  ✔ handlers never throw even for hostile events (1.322437ms)
+✔ no leaks (1.991222ms)
+▶ loopback end to end
+  ✔ real fetch POSTs JSON with bearer token and parses the decision (119.435038ms)
+  ✔ deny and fail-closed over real HTTP (106.740475ms)
+✔ loopback end to end (382.894964ms)
+ℹ tests 76
+ℹ suites 11
+ℹ pass 76
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1282.773209
+check-brand: ok (28 PNGs, 9 SVGs, 18 other files)
+check-changelog: /tmp/gate/CHANGELOG.md is valid (8 versions)
+141 markdown files, 73 listed in SUMMARY.md, 0 errors, 0 warnings
+docs/reference/providers.md is up to date
+repo-checks: ok
+10.0.402
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+THIRD-PARTY-NOTICES.md is up to date
+licence checks passed
+  OmpOS.Harness.Completion -> /tmp/gate/src/OmpOS.Harness.Completion/bin/Release/net10.0/OmpOS.Harness.Completion.dll
+  OmpOS.Harness.Registry -> /tmp/gate/src/OmpOS.Harness.Registry/bin/Release/net10.0/OmpOS.Harness.Registry.dll
+  OmpOS.Coordination -> /tmp/gate/src/OmpOS.Coordination/bin/Release/net10.0/OmpOS.Coordination.dll
+  OmpOS.Harness.Mcp.Fixtures -> /tmp/gate/tests/OmpOS.Harness.Mcp.Fixtures/bin/Release/net10.0/OmpOS.Harness.Mcp.Fixtures.dll
+  OmpOS.Harness.Herdr -> /tmp/gate/src/OmpOS.Harness.Herdr/bin/Release/net10.0/OmpOS.Harness.Herdr.dll
+  OmpOS.Harness.Worktrees -> /tmp/gate/src/OmpOS.Harness.Worktrees/bin/Release/net10.0/OmpOS.Harness.Worktrees.dll
+  OmpOS.Harness.Providers -> /tmp/gate/src/OmpOS.Harness.Providers/bin/Release/net10.0/OmpOS.Harness.Providers.dll
+  OmpOS.Harness.Plugins -> /tmp/gate/src/OmpOS.Harness.Plugins/bin/Release/net10.0/OmpOS.Harness.Plugins.dll
+  OmpOS.Harness.Worktrees.Tests -> /tmp/gate/tests/OmpOS.Harness.Worktrees.Tests/bin/Release/net10.0/OmpOS.Harness.Worktrees.Tests.dll
+  OmpOS.Harness.Completion.Tests -> /tmp/gate/tests/OmpOS.Harness.Completion.Tests/bin/Release/net10.0/OmpOS.Harness.Completion.Tests.dll
+  OmpOS.Harness.Workspace -> /tmp/gate/src/OmpOS.Harness.Workspace/bin/Release/net10.0/OmpOS.Harness.Workspace.dll
+  OmpOS.Harness.Registry.Tests -> /tmp/gate/tests/OmpOS.Harness.Registry.Tests/bin/Release/net10.0/OmpOS.Harness.Registry.Tests.dll
+  OmpOS.Harness.Terminal -> /tmp/gate/src/OmpOS.Harness.Terminal/bin/Release/net10.0/OmpOS.Harness.Terminal.dll
+  OmpOS.Harness.Automations -> /tmp/gate/src/OmpOS.Harness.Automations/bin/Release/net10.0/OmpOS.Harness.Automations.dll
+  OmpOS.Contracts -> /tmp/gate/src/OmpOS.Contracts/bin/Release/net10.0/OmpOS.Contracts.dll
+  OmpOS.Harness.Secrets -> /tmp/gate/src/OmpOS.Harness.Secrets/bin/Release/net10.0/OmpOS.Harness.Secrets.dll
+  OmpOS.Parser -> /tmp/gate/src/OmpOS.Parser/bin/Release/net10.0/OmpOS.Parser.dll
+  OmpOS.Harness.Abstractions -> /tmp/gate/src/OmpOS.Harness.Abstractions/bin/Release/net10.0/OmpOS.Harness.Abstractions.dll
+  OmpOS.Workflows -> /tmp/gate/src/OmpOS.Workflows/bin/Release/net10.0/OmpOS.Workflows.dll
+  OmpOS.Harness.OmpLauncher -> /tmp/gate/src/OmpOS.Harness.OmpLauncher/bin/Release/net10.0/OmpOS.Harness.OmpLauncher.dll
+  OmpOS.Harness.Plugins.Tests -> /tmp/gate/tests/OmpOS.Harness.Plugins.Tests/bin/Release/net10.0/OmpOS.Harness.Plugins.Tests.dll
+  OmpOS.Sandbox.Abstractions -> /tmp/gate/src/OmpOS.Sandbox.Abstractions/bin/Release/net10.0/OmpOS.Sandbox.Abstractions.dll
+  OmpOS.Harness.Providers.Tests -> /tmp/gate/tests/OmpOS.Harness.Providers.Tests/bin/Release/net10.0/OmpOS.Harness.Providers.Tests.dll
+  OmpOS.Harness.Automations.Tests -> /tmp/gate/tests/OmpOS.Harness.Automations.Tests/bin/Release/net10.0/OmpOS.Harness.Automations.Tests.dll
+  OmpOS.Harness.Rpc -> /tmp/gate/src/OmpOS.Harness.Rpc/bin/Release/net10.0/OmpOS.Harness.Rpc.dll
+  OmpOS.Harness.Agent -> /tmp/gate/src/OmpOS.Harness.Agent/bin/Release/net10.0/OmpOS.Harness.Agent.dll
+  OmpOS.Sessions -> /tmp/gate/src/OmpOS.Sessions/bin/Release/net10.0/OmpOS.Sessions.dll
+  OmpOS.Harness.Terminal.Tests -> /tmp/gate/tests/OmpOS.Harness.Terminal.Tests/bin/Release/net10.0/OmpOS.Harness.Terminal.Tests.dll
+  OmpOS.Harness.Secrets.Tests -> /tmp/gate/tests/OmpOS.Harness.Secrets.Tests/bin/Release/net10.0/OmpOS.Harness.Secrets.Tests.dll
+  OmpOS.GenUi -> /tmp/gate/src/OmpOS.GenUi/bin/Release/net10.0/OmpOS.GenUi.dll
+  OmpOS.Harness.Abstractions.Tests -> /tmp/gate/tests/OmpOS.Harness.Abstractions.Tests/bin/Release/net10.0/OmpOS.Harness.Abstractions.Tests.dll
+  OmpOS.Sessions.Postgres -> /tmp/gate/src/OmpOS.Sessions.Postgres/bin/Release/net10.0/OmpOS.Sessions.Postgres.dll
+  OmpOS.Harness.OmpConfig -> /tmp/gate/src/OmpOS.Harness.OmpConfig/bin/Release/net10.0/OmpOS.Harness.OmpConfig.dll
+  OmpOS.Contracts.Tests -> /tmp/gate/tests/OmpOS.Contracts.Tests/bin/Release/net10.0/OmpOS.Contracts.Tests.dll
+  OmpOS.Harness.Herdr.Tests -> /tmp/gate/tests/OmpOS.Harness.Herdr.Tests/bin/Release/net10.0/OmpOS.Harness.Herdr.Tests.dll
+  OmpOS.Parser.Tests -> /tmp/gate/tests/OmpOS.Parser.Tests/bin/Release/net10.0/OmpOS.Parser.Tests.dll
+  OmpOS.Harness.Rpc.Tests -> /tmp/gate/tests/OmpOS.Harness.Rpc.Tests/bin/Release/net10.0/OmpOS.Harness.Rpc.Tests.dll
+  OmpOS.Sessions.Tests -> /tmp/gate/tests/OmpOS.Sessions.Tests/bin/Release/net10.0/OmpOS.Sessions.Tests.dll
+  OmpOS.Harness.Workspace.Tests -> /tmp/gate/tests/OmpOS.Harness.Workspace.Tests/bin/Release/net10.0/OmpOS.Harness.Workspace.Tests.dll
+  OmpOS.Sessions.Postgres.Probe -> /tmp/gate/tests/OmpOS.Sessions.Postgres.Probe/bin/Release/net10.0/OmpOS.Sessions.Postgres.Probe.dll
+  OmpOS.Coordination.Dragonfly -> /tmp/gate/src/OmpOS.Coordination.Dragonfly/bin/Release/net10.0/OmpOS.Coordination.Dragonfly.dll
+  OmpOS.Harness.Acp -> /tmp/gate/src/OmpOS.Harness.Acp/bin/Release/net10.0/OmpOS.Harness.Acp.dll
+  OmpOS.Coordination.Tests -> /tmp/gate/tests/OmpOS.Coordination.Tests/bin/Release/net10.0/OmpOS.Coordination.Tests.dll
+  OmpOS.Sandbox -> /tmp/gate/src/OmpOS.Sandbox/bin/Release/net10.0/OmpOS.Sandbox.dll
+  OmpOS.Sessions.Postgres.Tests -> /tmp/gate/tests/OmpOS.Sessions.Postgres.Tests/bin/Release/net10.0/OmpOS.Sessions.Postgres.Tests.dll
+  OmpOS.Sandbox.Tests -> /tmp/gate/tests/OmpOS.Sandbox.Tests/bin/Release/net10.0/OmpOS.Sandbox.Tests.dll
+  OmpOS.Harness.InMemory -> /tmp/gate/src/OmpOS.Harness.InMemory/bin/Release/net10.0/OmpOS.Harness.InMemory.dll
+  OmpOS.Presentation -> /tmp/gate/src/OmpOS.Presentation/bin/Release/net10.0/OmpOS.Presentation.dll
+  OmpOS.Harness.ContractTests -> /tmp/gate/tests/OmpOS.Harness.ContractTests/bin/Release/net10.0/OmpOS.Harness.ContractTests.dll
+  OmpOS.Harness.Mcp -> /tmp/gate/src/OmpOS.Harness.Mcp/bin/Release/net10.0/OmpOS.Harness.Mcp.dll
+  OmpOS.Harness.Acp.Tests -> /tmp/gate/tests/OmpOS.Harness.Acp.Tests/bin/Release/net10.0/OmpOS.Harness.Acp.Tests.dll
+  OmpOS.Harness.McpGateway -> /tmp/gate/src/OmpOS.Harness.McpGateway/bin/Release/net10.0/OmpOS.Harness.McpGateway.dll
+  OmpOS.Harness.Agent.Tests -> /tmp/gate/tests/OmpOS.Harness.Agent.Tests/bin/Release/net10.0/OmpOS.Harness.Agent.Tests.dll
+  OmpOS.Harness.AgentLoop -> /tmp/gate/src/OmpOS.Harness.AgentLoop/bin/Release/net10.0/OmpOS.Harness.AgentLoop.dll
+  OmpOS.Parity.Support -> /tmp/gate/tests/OmpOS.Parity.Support/bin/Release/net10.0/OmpOS.Parity.Support.dll
+  OmpOS.Harness.OmpLauncher.Tests -> /tmp/gate/tests/OmpOS.Harness.OmpLauncher.Tests/bin/Release/net10.0/OmpOS.Harness.OmpLauncher.Tests.dll
+  OmpOS.Harness.Remote -> /tmp/gate/src/OmpOS.Harness.Remote/bin/Release/net10.0/OmpOS.Harness.Remote.dll
+  OmpOS.Harness.AgentLoop.Tests -> /tmp/gate/tests/OmpOS.Harness.AgentLoop.Tests/bin/Release/net10.0/OmpOS.Harness.AgentLoop.Tests.dll
+  OmpOS.Presentation.Tests -> /tmp/gate/tests/OmpOS.Presentation.Tests/bin/Release/net10.0/OmpOS.Presentation.Tests.dll
+  OmpOS.Harness.Mcp.Tests -> /tmp/gate/tests/OmpOS.Harness.Mcp.Tests/bin/Release/net10.0/OmpOS.Harness.Mcp.Tests.dll
+  OmpOS.Harness.McpGateway.Tests -> /tmp/gate/tests/OmpOS.Harness.McpGateway.Tests/bin/Release/net10.0/OmpOS.Harness.McpGateway.Tests.dll
+  OmpOS.Native.Views -> /tmp/gate/src/OmpOS.Native.Views/bin/Release/net10.0/OmpOS.Native.Views.dll
+  OmpOS.AgentWorker -> /tmp/gate/services/OmpOS.AgentWorker/bin/Release/net10.0/OmpOS.AgentWorker.dll
+  OmpOS.UI -> /tmp/gate/src/OmpOS.UI/bin/Release/net10.0/OmpOS.UI.dll
+  OmpOS.EngineHost -> /tmp/gate/src/OmpOS.EngineHost/bin/Release/net10.0/OmpOS.EngineHost.dll
+  OmpOS.Workflows.Tests -> /tmp/gate/tests/OmpOS.Workflows.Tests/bin/Release/net10.0/OmpOS.Workflows.Tests.dll
+  OmpOS.Harness.OmpConfig.Tests -> /tmp/gate/tests/OmpOS.Harness.OmpConfig.Tests/bin/Release/net10.0/OmpOS.Harness.OmpConfig.Tests.dll
+  OmpOS.SessionRuns -> /tmp/gate/src/OmpOS.SessionRuns/bin/Release/net10.0/OmpOS.SessionRuns.dll
+  OmpOS.SessionRuns.Tests -> /tmp/gate/tests/OmpOS.SessionRuns.Tests/bin/Release/net10.0/OmpOS.SessionRuns.Tests.dll
+  OmpOS.EngineHost.Tests -> /tmp/gate/tests/OmpOS.EngineHost.Tests/bin/Release/net10.0/OmpOS.EngineHost.Tests.dll
+  OmpOS.Harness.Remote.Tests -> /tmp/gate/tests/OmpOS.Harness.Remote.Tests/bin/Release/net10.0/OmpOS.Harness.Remote.Tests.dll
+  OmpOS.Native -> /tmp/gate/apps/OmpOS.Native/bin/Release/net10.0/OmpOS.Native.dll
+  OmpOS.Harness.InMemory.Tests -> /tmp/gate/tests/OmpOS.Harness.InMemory.Tests/bin/Release/net10.0/OmpOS.Harness.InMemory.Tests.dll
+  OmpOS.AgentWorker.Tests -> /tmp/gate/tests/OmpOS.AgentWorker.Tests/bin/Release/net10.0/OmpOS.AgentWorker.Tests.dll
+  OmpOS.Api -> /tmp/gate/services/OmpOS.Api/bin/Release/net10.0/OmpOS.Api.dll
+  OmpOS.Web -> /tmp/gate/apps/OmpOS.Web/bin/Release/net10.0/OmpOS.Web.dll
+  OmpOS.Web (Blazor output) -> /tmp/gate/apps/OmpOS.Web/bin/Release/net10.0/wwwroot
+  
+  GenerateOpenApiDocuments:
+    dotnet "/root/.nuget/packages/microsoft.extensions.apidescription.server/10.0.13/build/../tools/dotnet-getdocument.dll" --assembly "/tmp/gate/services/OmpOS.Api/bin/Release/net10.0/OmpOS.Api.dll" --file-list "obj/OmpOS.Api.OpenApiFiles.cache" --framework ".NETCoreApp,Version=v10.0" --output "/tmp/gate/docs/api" --project "OmpOS.Api" --assets-file "/tmp/gate/services/OmpOS.Api/obj/project.assets.json" --platform "AnyCPU" --file-name openapi --openapi-version OpenApi3_1
+  info: Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager[62]
+        User profile is available. Using '/root/.aspnet/DataProtection-Keys' as key repository; keys will not be encrypted at rest.
+  Generating document named 'v1'.
+  Using discovered `GenerateAsync` overload with version parameter.
+  info: Microsoft.AspNetCore.Mvc.Infrastructure.DefaultActionDescriptorCollectionProvider[1]
+        No action descriptors found. This may indicate an incorrectly configured application or missing application parts. To learn more, visit https://aka.ms/aspnet/mvc/app-parts
+  OmpOS.Web.Tests -> /tmp/gate/tests/OmpOS.Web.Tests/bin/Release/net10.0/OmpOS.Web.Tests.dll
+  Writing document named 'v1' to '/tmp/gate/docs/api/openapi.json'.
+  OmpOS.UI.Tests -> /tmp/gate/tests/OmpOS.UI.Tests/bin/Release/net10.0/OmpOS.UI.Tests.dll
+  OmpOS.ArchitectureTests -> /tmp/gate/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll
+  OmpOS.Api.IntegrationTests -> /tmp/gate/tests/OmpOS.Api.IntegrationTests/bin/Release/net10.0/OmpOS.Api.IntegrationTests.dll
+  OmpOS.Native.Tests -> /tmp/gate/tests/OmpOS.Native.Tests/bin/Release/net10.0/OmpOS.Native.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:20:54.68
+Running tests from /tmp/gate/tests/OmpOS.Harness.Mcp.Tests/bin/Release/net10.0/OmpOS.Harness.Mcp.Tests.dll (net10.0|x64)
+Running tests from /tmp/gate/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll (net10.0|x64)
+Running tests from /tmp/gate/tests/OmpOS.Contracts.Tests/bin/Release/net10.0/OmpOS.Contracts.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Contracts.Tests/bin/Release/net10.0/OmpOS.Contracts.Tests.dll (net10.0|x64) passed (11s 514ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.McpGateway.Tests/bin/Release/net10.0/OmpOS.Harness.McpGateway.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Mcp.Tests/bin/Release/net10.0/OmpOS.Harness.Mcp.Tests.dll (net10.0|x64) passed (50s 702ms)
+Running tests from /tmp/gate/tests/OmpOS.SessionRuns.Tests/bin/Release/net10.0/OmpOS.SessionRuns.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.SessionRuns.Tests/bin/Release/net10.0/OmpOS.SessionRuns.Tests.dll (net10.0|x64) passed (4s 784ms)
+Running tests from /tmp/gate/tests/OmpOS.Sessions.Postgres.Tests/bin/Release/net10.0/OmpOS.Sessions.Postgres.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.McpGateway.Tests/bin/Release/net10.0/OmpOS.Harness.McpGateway.Tests.dll (net10.0|x64) passed (2m 02s 727ms)
+Running tests from /tmp/gate/tests/OmpOS.Sessions.Tests/bin/Release/net10.0/OmpOS.Sessions.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Sessions.Tests/bin/Release/net10.0/OmpOS.Sessions.Tests.dll (net10.0|x64) passed (10s 001ms)
+Running tests from /tmp/gate/tests/OmpOS.Coordination.Tests/bin/Release/net10.0/OmpOS.Coordination.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Sessions.Postgres.Tests/bin/Release/net10.0/OmpOS.Sessions.Postgres.Tests.dll (net10.0|x64) passed (1m 35s 505ms)
+Running tests from /tmp/gate/tests/OmpOS.EngineHost.Tests/bin/Release/net10.0/OmpOS.EngineHost.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.EngineHost.Tests/bin/Release/net10.0/OmpOS.EngineHost.Tests.dll (net10.0|x64) passed (8s 982ms)
+/tmp/gate/tests/OmpOS.Coordination.Tests/bin/Release/net10.0/OmpOS.Coordination.Tests.dll (net10.0|x64) passed (17s 363ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Plugins.Tests/bin/Release/net10.0/OmpOS.Harness.Plugins.Tests.dll (net10.0|x64)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Providers.Tests/bin/Release/net10.0/OmpOS.Harness.Providers.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Providers.Tests/bin/Release/net10.0/OmpOS.Harness.Providers.Tests.dll (net10.0|x64) passed (9s 696ms)
+Running tests from /tmp/gate/tests/OmpOS.UI.Tests/bin/Release/net10.0/OmpOS.UI.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Plugins.Tests/bin/Release/net10.0/OmpOS.Harness.Plugins.Tests.dll (net10.0|x64) passed (17s 394ms)
+Running tests from /tmp/gate/tests/OmpOS.Web.Tests/bin/Release/net10.0/OmpOS.Web.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll (net10.0|x64) passed (3m 22s 087ms)
+Running tests from /tmp/gate/tests/OmpOS.Workflows.Tests/bin/Release/net10.0/OmpOS.Workflows.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Workflows.Tests/bin/Release/net10.0/OmpOS.Workflows.Tests.dll (net10.0|x64) passed (7s 706ms)
+Running tests from /tmp/gate/tests/OmpOS.AgentWorker.Tests/bin/Release/net10.0/OmpOS.AgentWorker.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.UI.Tests/bin/Release/net10.0/OmpOS.UI.Tests.dll (net10.0|x64) passed (37s 522ms)
+Running tests from /tmp/gate/tests/OmpOS.Api.IntegrationTests/bin/Release/net10.0/OmpOS.Api.IntegrationTests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.AgentWorker.Tests/bin/Release/net10.0/OmpOS.AgentWorker.Tests.dll (net10.0|x64) passed (53s 699ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Registry.Tests/bin/Release/net10.0/OmpOS.Harness.Registry.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Registry.Tests/bin/Release/net10.0/OmpOS.Harness.Registry.Tests.dll (net10.0|x64) passed (10s 523ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Remote.Tests/bin/Release/net10.0/OmpOS.Harness.Remote.Tests.dll (net10.0|x64)
+skipped OmpOS.Harness.Remote.Tests.RemotePreflightTests.AReadOnlyDirectoryIsReported
+  A privileged user can write to a read-only directory.
+  from /tmp/gate/tests/OmpOS.Harness.Remote.Tests/bin/Release/net10.0/OmpOS.Harness.Remote.Tests.dll (net10.0|x64)
+skipped OmpOS.Harness.Remote.Tests.RemoteConventionFileSourceTests.AnUnreadableFileIsADiagnostic
+  A privileged user can read any file, so a file cannot be made unreadable.
+  from /tmp/gate/tests/OmpOS.Harness.Remote.Tests/bin/Release/net10.0/OmpOS.Harness.Remote.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Remote.Tests/bin/Release/net10.0/OmpOS.Harness.Remote.Tests.dll (net10.0|x64) passed (1m 17s 713ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Abstractions.Tests/bin/Release/net10.0/OmpOS.Harness.Abstractions.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Abstractions.Tests/bin/Release/net10.0/OmpOS.Harness.Abstractions.Tests.dll (net10.0|x64) passed (6s 198ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Acp.Tests/bin/Release/net10.0/OmpOS.Harness.Acp.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Web.Tests/bin/Release/net10.0/OmpOS.Web.Tests.dll (net10.0|x64) passed (4m 16s 286ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Rpc.Tests/bin/Release/net10.0/OmpOS.Harness.Rpc.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Acp.Tests/bin/Release/net10.0/OmpOS.Harness.Acp.Tests.dll (net10.0|x64) passed (1m 15s 391ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Secrets.Tests/bin/Release/net10.0/OmpOS.Harness.Secrets.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Secrets.Tests/bin/Release/net10.0/OmpOS.Harness.Secrets.Tests.dll (net10.0|x64) passed (11s 691ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Agent.Tests/bin/Release/net10.0/OmpOS.Harness.Agent.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Agent.Tests/bin/Release/net10.0/OmpOS.Harness.Agent.Tests.dll (net10.0|x64) passed (8s 293ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.AgentLoop.Tests/bin/Release/net10.0/OmpOS.Harness.AgentLoop.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Rpc.Tests/bin/Release/net10.0/OmpOS.Harness.Rpc.Tests.dll (net10.0|x64) passed (1m 04s 090ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Terminal.Tests/bin/Release/net10.0/OmpOS.Harness.Terminal.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.AgentLoop.Tests/bin/Release/net10.0/OmpOS.Harness.AgentLoop.Tests.dll (net10.0|x64) passed (36s 197ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Workspace.Tests/bin/Release/net10.0/OmpOS.Harness.Workspace.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Terminal.Tests/bin/Release/net10.0/OmpOS.Harness.Terminal.Tests.dll (net10.0|x64) passed (9s 380ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Automations.Tests/bin/Release/net10.0/OmpOS.Harness.Automations.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Workspace.Tests/bin/Release/net10.0/OmpOS.Harness.Workspace.Tests.dll (net10.0|x64) passed (12s 299ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Completion.Tests/bin/Release/net10.0/OmpOS.Harness.Completion.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Completion.Tests/bin/Release/net10.0/OmpOS.Harness.Completion.Tests.dll (net10.0|x64) passed (6s 205ms)
+/tmp/gate/tests/OmpOS.Harness.Automations.Tests/bin/Release/net10.0/OmpOS.Harness.Automations.Tests.dll (net10.0|x64) passed (17s 030ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Worktrees.Tests/bin/Release/net10.0/OmpOS.Harness.Worktrees.Tests.dll (net10.0|x64)
+Running tests from /tmp/gate/tests/OmpOS.Native.Tests/bin/Release/net10.0/OmpOS.Native.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Worktrees.Tests/bin/Release/net10.0/OmpOS.Harness.Worktrees.Tests.dll (net10.0|x64) passed (24s 712ms)
+Running tests from /tmp/gate/tests/OmpOS.Parser.Tests/bin/Release/net10.0/OmpOS.Parser.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Parser.Tests/bin/Release/net10.0/OmpOS.Parser.Tests.dll (net10.0|x64) passed (5s 615ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.ContractTests/bin/Release/net10.0/OmpOS.Harness.ContractTests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.ContractTests/bin/Release/net10.0/OmpOS.Harness.ContractTests.dll (net10.0|x64) passed (6s 679ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.Herdr.Tests/bin/Release/net10.0/OmpOS.Harness.Herdr.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.Herdr.Tests/bin/Release/net10.0/OmpOS.Harness.Herdr.Tests.dll (net10.0|x64) passed (11s 316ms)
+Running tests from /tmp/gate/tests/OmpOS.Presentation.Tests/bin/Release/net10.0/OmpOS.Presentation.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Presentation.Tests/bin/Release/net10.0/OmpOS.Presentation.Tests.dll (net10.0|x64) passed (41s 305ms)
+Running tests from /tmp/gate/tests/OmpOS.Sandbox.Tests/bin/Release/net10.0/OmpOS.Sandbox.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Sandbox.Tests/bin/Release/net10.0/OmpOS.Sandbox.Tests.dll (net10.0|x64) passed (37s 610ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.InMemory.Tests/bin/Release/net10.0/OmpOS.Harness.InMemory.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.InMemory.Tests/bin/Release/net10.0/OmpOS.Harness.InMemory.Tests.dll (net10.0|x64) passed (6s 412ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.OmpConfig.Tests/bin/Release/net10.0/OmpOS.Harness.OmpConfig.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.OmpConfig.Tests/bin/Release/net10.0/OmpOS.Harness.OmpConfig.Tests.dll (net10.0|x64) passed (55s 397ms)
+Running tests from /tmp/gate/tests/OmpOS.Harness.OmpLauncher.Tests/bin/Release/net10.0/OmpOS.Harness.OmpLauncher.Tests.dll (net10.0|x64)
+/tmp/gate/tests/OmpOS.Harness.OmpLauncher.Tests/bin/Release/net10.0/OmpOS.Harness.OmpLauncher.Tests.dll (net10.0|x64) passed (21s 718ms)
+/tmp/gate/tests/OmpOS.Api.IntegrationTests/bin/Release/net10.0/OmpOS.Api.IntegrationTests.dll (net10.0|x64) passed (19m 25s 321ms)
+/tmp/gate/tests/OmpOS.Native.Tests/bin/Release/net10.0/OmpOS.Native.Tests.dll (net10.0|x64) passed (16m 00s 492ms)
+
+Test run summary: Passed!
+  /tmp/gate/tests/OmpOS.Harness.Rpc.Tests/bin/Release/net10.0/OmpOS.Harness.Rpc.Tests.dll (net10.0|x64) passed (1m 04s 090ms)
+  /tmp/gate/tests/OmpOS.Presentation.Tests/bin/Release/net10.0/OmpOS.Presentation.Tests.dll (net10.0|x64) passed (41s 305ms)
+  /tmp/gate/tests/OmpOS.UI.Tests/bin/Release/net10.0/OmpOS.UI.Tests.dll (net10.0|x64) passed (37s 522ms)
+  /tmp/gate/tests/OmpOS.Harness.AgentLoop.Tests/bin/Release/net10.0/OmpOS.Harness.AgentLoop.Tests.dll (net10.0|x64) passed (36s 197ms)
+  /tmp/gate/tests/OmpOS.Harness.McpGateway.Tests/bin/Release/net10.0/OmpOS.Harness.McpGateway.Tests.dll (net10.0|x64) passed (2m 02s 727ms)
+  /tmp/gate/tests/OmpOS.Sessions.Tests/bin/Release/net10.0/OmpOS.Sessions.Tests.dll (net10.0|x64) passed (10s 001ms)
+  /tmp/gate/tests/OmpOS.Harness.Secrets.Tests/bin/Release/net10.0/OmpOS.Harness.Secrets.Tests.dll (net10.0|x64) passed (11s 691ms)
+  /tmp/gate/tests/OmpOS.Coordination.Tests/bin/Release/net10.0/OmpOS.Coordination.Tests.dll (net10.0|x64) passed (17s 363ms)
+  /tmp/gate/tests/OmpOS.Api.IntegrationTests/bin/Release/net10.0/OmpOS.Api.IntegrationTests.dll (net10.0|x64) passed (19m 25s 321ms)
+  /tmp/gate/tests/OmpOS.Harness.Providers.Tests/bin/Release/net10.0/OmpOS.Harness.Providers.Tests.dll (net10.0|x64) passed (9s 696ms)
+  /tmp/gate/tests/OmpOS.Harness.Terminal.Tests/bin/Release/net10.0/OmpOS.Harness.Terminal.Tests.dll (net10.0|x64) passed (9s 380ms)
+  /tmp/gate/tests/OmpOS.Harness.Automations.Tests/bin/Release/net10.0/OmpOS.Harness.Automations.Tests.dll (net10.0|x64) passed (17s 030ms)
+  /tmp/gate/tests/OmpOS.Harness.Herdr.Tests/bin/Release/net10.0/OmpOS.Harness.Herdr.Tests.dll (net10.0|x64) passed (11s 316ms)
+  /tmp/gate/tests/OmpOS.Parser.Tests/bin/Release/net10.0/OmpOS.Parser.Tests.dll (net10.0|x64) passed (5s 615ms)
+  /tmp/gate/tests/OmpOS.Harness.Abstractions.Tests/bin/Release/net10.0/OmpOS.Harness.Abstractions.Tests.dll (net10.0|x64) passed (6s 198ms)
+  /tmp/gate/tests/OmpOS.Harness.OmpConfig.Tests/bin/Release/net10.0/OmpOS.Harness.OmpConfig.Tests.dll (net10.0|x64) passed (55s 397ms)
+  /tmp/gate/tests/OmpOS.Harness.Plugins.Tests/bin/Release/net10.0/OmpOS.Harness.Plugins.Tests.dll (net10.0|x64) passed (17s 394ms)
+  /tmp/gate/tests/OmpOS.ArchitectureTests/bin/Release/net10.0/OmpOS.ArchitectureTests.dll (net10.0|x64) passed (3m 22s 087ms)
+  /tmp/gate/tests/OmpOS.Harness.Workspace.Tests/bin/Release/net10.0/OmpOS.Harness.Workspace.Tests.dll (net10.0|x64) passed (12s 299ms)
+  /tmp/gate/tests/OmpOS.Harness.Agent.Tests/bin/Release/net10.0/OmpOS.Harness.Agent.Tests.dll (net10.0|x64) passed (8s 293ms)
+  /tmp/gate/tests/OmpOS.Harness.Completion.Tests/bin/Release/net10.0/OmpOS.Harness.Completion.Tests.dll (net10.0|x64) passed (6s 205ms)
+  /tmp/gate/tests/OmpOS.Harness.InMemory.Tests/bin/Release/net10.0/OmpOS.Harness.InMemory.Tests.dll (net10.0|x64) passed (6s 412ms)
+  /tmp/gate/tests/OmpOS.Web.Tests/bin/Release/net10.0/OmpOS.Web.Tests.dll (net10.0|x64) passed (4m 16s 286ms)
+  /tmp/gate/tests/OmpOS.Native.Tests/bin/Release/net10.0/OmpOS.Native.Tests.dll (net10.0|x64) passed (16m 00s 492ms)
+  /tmp/gate/tests/OmpOS.Harness.Acp.Tests/bin/Release/net10.0/OmpOS.Harness.Acp.Tests.dll (net10.0|x64) passed (1m 15s 391ms)
+  /tmp/gate/tests/OmpOS.Harness.ContractTests/bin/Release/net10.0/OmpOS.Harness.ContractTests.dll (net10.0|x64) passed (6s 679ms)
+  /tmp/gate/tests/OmpOS.AgentWorker.Tests/bin/Release/net10.0/OmpOS.AgentWorker.Tests.dll (net10.0|x64) passed (53s 699ms)
+  /tmp/gate/tests/OmpOS.Sandbox.Tests/bin/Release/net10.0/OmpOS.Sandbox.Tests.dll (net10.0|x64) passed (37s 610ms)
+  /tmp/gate/tests/OmpOS.Workflows.Tests/bin/Release/net10.0/OmpOS.Workflows.Tests.dll (net10.0|x64) passed (7s 706ms)
+  /tmp/gate/tests/OmpOS.Harness.Worktrees.Tests/bin/Release/net10.0/OmpOS.Harness.Worktrees.Tests.dll (net10.0|x64) passed (24s 712ms)
+  /tmp/gate/tests/OmpOS.Harness.Registry.Tests/bin/Release/net10.0/OmpOS.Harness.Registry.Tests.dll (net10.0|x64) passed (10s 523ms)
+  /tmp/gate/tests/OmpOS.SessionRuns.Tests/bin/Release/net10.0/OmpOS.SessionRuns.Tests.dll (net10.0|x64) passed (4s 784ms)
+  /tmp/gate/tests/OmpOS.EngineHost.Tests/bin/Release/net10.0/OmpOS.EngineHost.Tests.dll (net10.0|x64) passed (8s 982ms)
+  /tmp/gate/tests/OmpOS.Harness.OmpLauncher.Tests/bin/Release/net10.0/OmpOS.Harness.OmpLauncher.Tests.dll (net10.0|x64) passed (21s 718ms)
+  /tmp/gate/tests/OmpOS.Harness.Remote.Tests/bin/Release/net10.0/OmpOS.Harness.Remote.Tests.dll (net10.0|x64) passed (1m 17s 713ms)
+  /tmp/gate/tests/OmpOS.Harness.Mcp.Tests/bin/Release/net10.0/OmpOS.Harness.Mcp.Tests.dll (net10.0|x64) passed (50s 702ms)
+  /tmp/gate/tests/OmpOS.Contracts.Tests/bin/Release/net10.0/OmpOS.Contracts.Tests.dll (net10.0|x64) passed (11s 514ms)
+  /tmp/gate/tests/OmpOS.Sessions.Postgres.Tests/bin/Release/net10.0/OmpOS.Sessions.Postgres.Tests.dll (net10.0|x64) passed (1m 35s 505ms)
+
+  total: 12215
+  failed: 0
+  succeeded: 12213
+  skipped: 2
+  duration: 25m 17s 789ms
+commit=e24e6851 date=2026-10-28 chrome=/usr/bin/google-chrome targets=api demo
+axe.min.js: OK
+api smoke exit=0 output=/tmp/tmp.b0M65Ofhwk/web-smoke-e24e6851-2026-10-28.json
+demo smoke exit=0 output=/tmp/tmp.b0M65Ofhwk/web-smoke-demo-e24e6851-2026-10-28.json
+bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format, web smoke with axe)
+GATE EXIT=0
