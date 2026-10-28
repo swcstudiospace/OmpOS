@@ -73,7 +73,7 @@ More in the [Agent loop runbook](../runbooks/agent-loop.md).
 |---|---|---|
 | A remote profile fails preflight | `ssh` cannot reach the host, host key not trusted, or no omp there | Each diagnosis is explained in [Remote environments](../runbooks/remote-ssh.md). |
 | A container session cannot create files | An old build of the remote scripts on a BusyBox image (alpine) | Fixed in this release (`RemoteScriptsBusyBoxTests`); see [Containers and WSL](../runbooks/remote-containers.md). WSL profiles need Windows. |
-| Cloud agents do nothing | `Cloud:Enabled` is false by default and no worker exists | See [Cloud agents](../runbooks/cloud-agents.md): nothing is deployed on Railway. The desktop shows "not set up" without `OMPOS_API_BASE_URL`. |
+| Cloud agents do nothing | `Cloud:Enabled` is false by default and no control plane is deployed | See [Cloud agents](../runbooks/cloud-agents.md): the API is not deployed on Railway (only a staged private worker is). The desktop shows "not set up" without `OMPOS_API_BASE_URL`. |
 | Automations return 404 `automations_disabled` | `Automations:Enabled` is false by default in the API | The desktop scheduler needs no API: see [Automations](../reference/automations.md). |
 
 ## Docs checks

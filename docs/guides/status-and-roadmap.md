@@ -23,7 +23,8 @@ The row-by-row truth is the [Cursor parity audit of 2026-10-28](../quality/curso
 | Services | Api.IntegrationTests 1027/1027, Coordination 32 and Sessions.Postgres 58 passed on the final tree against throwaway podman services. |
 | Release gate: `./bootstrap.sh` on a clean worktree of `e24e6851` | Exit 0: secret scan, plugin node tests (69 and 76), repository checks, licence check, warnings-as-errors build, `dotnet test OmpOS.Linux.slnf` 12215 tests, 0 failed, 2 skipped (two tests that need a non-root user), 25 minutes with throwaway TimescaleDB and Dragonfly under podman, `dotnet format` clean, web smoke ([log](../runbooks/evidence/bootstrap-gate-2026-10-28-e24e6851.log); its header records the two earlier runs of the branch that failed and why). |
 | Push, tag and release | `main` fast-forwarded from `04e80d1` to `9d4e0075`; the annotated tag `v0.15.0` points at it; the `release` workflow (run 40758275112, 31 s) published the [GitHub Release v0.15.0](https://github.com/swcstudiospace/OmpOS/releases/tag/v0.15.0). |
-| Cloud worker image | The worker image under podman, 14 of 14 checks ([evidence](../runbooks/evidence/cloud-worker-container-2026-10-28/README.md)); not on Railway. |
+| Cloud worker image | The worker image under podman, 14 of 14 checks ([evidence](../runbooks/evidence/cloud-worker-container-2026-10-28/README.md)); see the next row for Railway. |
+| Staged worker on Railway | The `ompos-worker` service of the private Railway project `ompos-staging` (no domain, no TCP proxy) was built by Railway from the released tree, passed its `/healthz` check, and a real `omp acp` 18.12.5 answered `initialize` and `session/new` inside the container through the JWT-gated bridge ([evidence](../runbooks/evidence/railway-ompos-worker-2026-10-28.md)). No model turn, no clone, no API, no sleep and wake test. The deploy refusal of 2026-10-21 did not recur. |
 | Desktop on Linux | Xvfb run of the real app: 21 Settings pages render; two layout defects found and fixed ([evidence](../runbooks/evidence/desktop-app-2026-10-28/README.md)). |
 | GitHub settings | Applied with `scripts/github/apply-repo-settings.sh --apply` and read back after the push ([evidence](../runbooks/evidence/github-setup-2026-10-28/README.md)): description, homepage (the Demo URL), 15 topics, discussions on, wiki off, delete branch on merge, private vulnerability reporting, Dependabot security updates, secret scanning with push protection, 22 labels. GitHub detects the licence as AGPL-3.0; the community profile health is 100; no ruleset and no branch protection on `main`, on purpose. |
 
@@ -52,9 +53,9 @@ The row-by-row truth is the [Cursor parity audit of 2026-10-28](../quality/curso
 | Remote environments over ssh | Partial | Live loopback run passed; no real network host; remote file explorer, terminal pane, hook files and mentions not wired. |
 | Containers (podman) and WSL | Partial | Live podman test passed on Linux; WSL never ran; terminal pane and dev-container attach not wired. |
 | Multi-repo workspaces | Partial | Workspace sets and `--add-dir` wired; no live run. |
-| Cloud agents on Railway | Partial | Control plane, worker and desktop client against fakes; no Railway deploy; the worker clone bootstrap is missing. |
+| Cloud agents on Railway | Partial | Control plane, worker and desktop client against fakes; no API on Railway; a staged private worker runs there (health-checked, real `omp acp` handshake, no model turn); the worker clone bootstrap is missing. |
 | GitBook documentation site | Blocked | The repository carries the layout; the site is not published until the owner connects GitBook ([steps](../runbooks/gitbook-publish.md)). |
-| Hosted API deployment | Blocked | Needs a sign-in authority and the owner's go-ahead for Railway ([Hosting](../runbooks/hosting.md)). Nothing of OmpOS is deployed there: the Railway project "Ultrathink" holds TimescaleDB, Dragonfly, GreptimeDB and two tailscale services only. |
+| Hosted API deployment | Blocked | Needs a sign-in authority and the owner's go-ahead for Railway ([Hosting](../runbooks/hosting.md)). The API is not deployed. The Railway project "Ultrathink" holds TimescaleDB, Dragonfly, GreptimeDB and two tailscale services only; a separate private project `ompos-staging` holds the staged worker (see above). |
 
 ## What is not built
 
@@ -62,7 +63,7 @@ Cursor's accounts, teams, billing, usage dashboards and hosted services are left
 
 ## What has never been run
 
-No live model turn since the bounded Phase 11 capture (OD-07); nothing on Windows, macOS or Android; no Railway deploy; no remote host over a real network; no real provider credential.
+No live model turn since the bounded Phase 11 capture (OD-07); nothing on Windows, macOS or Android; no API or cloud agent on Railway (only a staged private worker was exercised there, without a model turn); no remote host over a real network; no real provider credential.
 
 ## The v0.15.0 roadmap
 
@@ -78,7 +79,7 @@ Milestone v0.15.0 ("Cursor completeness, brand and public launch") covers phases
 - **Live model turn:** approve one (OD-07); every "no live turn" note on these pages waits on it.
 - **Provider credentials:** supply test credentials so live validation of providers can run (OQ-71).
 - **Windows, macOS and Android runs:** the desktop on Windows and macOS, the Android head on a device or emulator (OQ-74).
-- **Sign-in authority for a public API** (OD-03), and the Railway deploy decisions: what may be deployed (OQ-100) and whether Railway permits an agent-driven desktop (OQ-73).
+- **Sign-in authority for a public API** (OD-03), and the Railway deploy decisions: what else may be deployed beyond the staged worker (OQ-100), whether to keep the `ompos-staging` project, which bills usage (OQ-171) and whether Railway permits an agent-driven desktop (OQ-73).
 - **Licence of `agent-swarm` and `agent-substrate`** (OQ-102).
 - **Trademark clearance** of the name "OmpOS" (none has been made, see [Licensing](../licensing.md)) and sign-off of the logo.
 - **Code of conduct:** a contact for conduct reports beyond GitHub's private reporting.

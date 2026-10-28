@@ -12,7 +12,7 @@ Applies to: v0.15.0
 
 OmpOS is a workspace for coding agents, aimed at the Cursor 3.27 feature set under an open licence (AGPL-3.0-or-later). Its engine is [omp](https://github.com/can1357/oh-my-pi): you open a **desktop app** or a **web app**, start several agents, watch them work, steer them while they run, review their file changes, and optionally run them in a git worktree, on another machine over `ssh`, or in the cloud. Every omp process OmpOS starts runs with four plugins: Ultrathink, Substrate, Swarm and GSD-Core.
 
-These pages say only what is implemented. Where something is built but has not been exercised live (no model turn, no Windows, macOS or Android run, no Railway deploy) the page says so, and the [parity audit](quality/cursor-parity-audit-2026-10-28.md) lists every Cursor feature with its status. The two live proofs on Linux are a real `omp acp` through a loopback `sshd` and a `podman exec` test, both recorded 2026-10-28.
+These pages say only what is implemented. Where something is built but has not been exercised live (no model turn, no Windows, macOS or Android run, no API on Railway; only a staged private worker ran there) the page says so, and the [parity audit](quality/cursor-parity-audit-2026-10-28.md) lists every Cursor feature with its status. The two live proofs on Linux are a real `omp acp` through a loopback `sshd` and a `podman exec` test, both recorded 2026-10-28.
 
 Try the web app without installing anything: the **Demo** at <https://ompos-web.vercel.app> is a static build with a simulated engine (no backend, no model, no secret).
 
@@ -51,7 +51,7 @@ Try the web app without installing anything: the **Demo** at <https://ompos-web.
 | Remote environments over ssh | Partial (live loopback run passed) | [Remote environments](runbooks/remote-ssh.md) |
 | Containers (podman) and WSL | Partial (live podman test passed; WSL never ran) | [Containers and WSL](runbooks/remote-containers.md) |
 | Multi-repo workspaces | Partial | [Multi-repo](runbooks/multi-repo.md) |
-| Cloud agents on Railway | Partial (fakes only) | [Cloud agents](runbooks/cloud-agents.md) |
+| Cloud agents on Railway | Partial (fakes only; a staged private worker ran on Railway) | [Cloud agents](runbooks/cloud-agents.md) |
 | Run modes and permissions | Partial | [Run modes](reference/run-modes.md) |
 | MCP servers and presets | Partial | [MCP servers](reference/mcp.md) |
 | Checkpoints, worktrees, queue, modes, side chats, fork | Partial | [Checkpoints and worktrees](reference/checkpoints-and-worktrees.md) |

@@ -41,7 +41,7 @@ Applies to: v0.15.0
 | Plugin | One of the four omp extensions OmpOS launches with: Ultrathink, Substrate, Swarm, GSD-Core. |
 | Presentation layer | `OmpOS.Presentation`: view models with no UI framework, shared by every head. |
 | Profile (remote) | A saved remote environment: an `ssh` host and how to start omp there. |
-| Railway | The hosting platform intended for the API, the cloud agent worker and PostgreSQL. Nothing is deployed yet. |
+| Railway | The hosting platform intended for the API, the cloud agent worker and PostgreSQL. Only a staged private worker runs there (2026-10-28); the API is not deployed. |
 | Run | One turn of work, from your prompt to the agent stopping. |
 | Run mode | Auto-review, Allowlist or Run Everything. |
 | Session | The append-only log, status and catalogue entry behind an agent. |

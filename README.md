@@ -12,7 +12,7 @@
 
 OmpOS is a Cursor-class workspace for coding agents on the **omp** engine: a desktop app, a web app, cloud agents and remote environments, under an open licence (AGPL-3.0-or-later). You start several agents, watch them work, steer them while they run and review their file changes. Every omp process OmpOS starts runs with four plugins: Ultrathink, Substrate, Swarm and GSD-Core. OmpOS has no model of its own: you bring a provider and a key, chosen from a catalogue of 103 European, US, Chinese, global and local providers and coding plans.
 
-Be clear about maturity: this is pre-1.0 software. The desktop app is built and verified on Linux without a model turn; **no live model turn has been run** since a bounded capture in Phase 11, nothing was run on Windows, macOS or Android, and nothing of OmpOS is deployed to Railway. The one public deployment is the web **Demo**, <https://ompos-web.vercel.app>: a static build whose engine is simulated in the browser (no backend, no model, no secret). The tables below say what is Built, Partial or Blocked.
+Be clear about maturity: this is pre-1.0 software. The desktop app is built and verified on Linux without a model turn; **no live model turn has been run** since a bounded capture in Phase 11, nothing was run on Windows, macOS or Android, and neither the API nor a cloud agent a user can start is deployed to Railway (a private staged worker is: see the Cloud agents row). The one public deployment is the web **Demo**, <https://ompos-web.vercel.app>: a static build whose engine is simulated in the browser (no backend, no model, no secret). The tables below say what is Built, Partial or Blocked.
 
 ## Screenshots
 
@@ -73,7 +73,7 @@ Status words: **Built** = implemented, reachable from a head and covered by test
 | Remote environments over ssh | Partial | A live run through a loopback `sshd` with the real omp passed on Linux; no real network host; remote file explorer and terminal pane not wired |
 | Containers (podman) and WSL | Partial | A live podman test passed on Linux (alpine); WSL never ran |
 | Multi-repo workspaces | Partial | Workspace sets and `--add-dir` wired; no live run |
-| Cloud agents on Railway | Partial | Control plane and desktop client against fakes; the worker image runs under podman with a real omp ([14 of 14 checks](docs/runbooks/evidence/cloud-worker-container-2026-10-28/README.md)); no Railway deploy, no clone bootstrap |
+| Cloud agents on Railway | Partial | Control plane and desktop client against fakes; the worker image runs under podman with a real omp ([14 of 14 checks](docs/runbooks/evidence/cloud-worker-container-2026-10-28/README.md)); a staged private worker runs on Railway (health-checked, real `omp acp` answers `initialize` and `session/new` through its JWT bridge, no model turn; [evidence](docs/runbooks/evidence/railway-ompos-worker-2026-10-28.md)); the API is not deployed (OD-03), no clone bootstrap |
 | GitBook documentation site | Blocked | Published after the owner connects GitBook |
 | Cursor accounts, teams, billing | Omitted | No accounts by design |
 
@@ -153,7 +153,7 @@ The documentation is in [docs/README.md](docs/README.md): guides for the desktop
 | Linux, headless Chrome (recorded 2026-10-28) | `scripts/web-demo/capture.mjs`, `scripts/web-smoke/smoke-demo.mjs` | The capture of the locally built Demo and of the live Demo URL: no console error, no failed request; the smoke: 68 axe runs, 0 violations (Wave 5 tree) |
 | Linux, throwaway podman services (recorded 2026-10-28) | `scripts/test-services.sh` | Api.IntegrationTests 1027, Coordination 32 and Sessions.Postgres 58 passed on the final tree |
 
-Live tests against the real omp (no model turn) are opt-in: `OMPOS_LIVE_OMP=1`, trait `Category=Live`. Nothing in this repository has been verified with a model turn, on Windows, macOS or Android, or on Railway.
+Live tests against the real omp (no model turn) are opt-in: `OMPOS_LIVE_OMP=1`, trait `Category=Live`. Nothing in this repository has been verified with a model turn or on Windows, macOS or Android; on Railway only the staged private worker has been exercised (health check and an `initialize` and `session/new` handshake, no model turn).
 
 ## License
 

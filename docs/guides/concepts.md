@@ -67,7 +67,7 @@ File edits the agent makes appear in the **Changes** bar with Keep and Undo per 
 | In a git worktree | A run can work in its own worktree (worktree commands in the desktop window) | Partial; no live run |
 | On another machine | Your own `ssh`, omp on the remote host: [Remote environments](../runbooks/remote-ssh.md) | Partial; a live run through a loopback `sshd` passed (no prompt turn) |
 | In a container or WSL | `podman exec` into a running container, or a WSL distribution: [Containers and WSL](../runbooks/remote-containers.md) | Partial; a live podman test passed on Linux; WSL never ran |
-| In the cloud | A cloud agent on Railway through the API and a worker: [Cloud agents](../runbooks/cloud-agents.md) | Partial, fakes only |
+| In the cloud | A cloud agent on Railway through the API and a worker: [Cloud agents](../runbooks/cloud-agents.md) | Partial, fakes only; a staged private worker ran on Railway |
 | On the API host | The hosted API runs sessions in process for the web head | Built; in-memory harness echo, no live model turn |
 
 ## Hooks, MCP and commands

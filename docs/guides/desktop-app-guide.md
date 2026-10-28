@@ -70,7 +70,7 @@ These are wired into the desktop head and covered by unit and wiring tests with 
 | Remote environments over ssh | Wired; a live loopback run passed; no remote file explorer, terminal pane, hook files or mentions | [Remote environments](../runbooks/remote-ssh.md) |
 | Containers (podman) and WSL | Wired; a live podman test passed on Linux; WSL never ran | [Containers and WSL](../runbooks/remote-containers.md) |
 | Several folders in one session | Workspace sets dialog and `--add-dir` | [Multi-repo](../runbooks/multi-repo.md) |
-| Cloud agents on Railway | Wired when `OMPOS_API_BASE_URL` is set; fakes only | [Cloud agents](../runbooks/cloud-agents.md) |
+| Cloud agents on Railway | Wired when `OMPOS_API_BASE_URL` is set; fakes only; no deployed control plane | [Cloud agents](../runbooks/cloud-agents.md) |
 | Automations | Settings page and cron scheduler; consent on the first run | [Automations](../reference/automations.md) |
 | Local and cloud terminals | Built (Linux) | [Local terminal](../runbooks/local-terminal.md), [Cloud terminals](../runbooks/cloud-terminals.md) |
 

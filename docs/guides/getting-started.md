@@ -4,7 +4,7 @@ description: "Install, build and run OmpOS: the desktop app on Linux, the web he
 
 # Getting started
 
-Status: Built on Linux (desktop and web run from a clean clone); Windows, macOS, Android and a hosted deployment were not run
+Status: Built on Linux (desktop and web run from a clean clone); Windows, macOS, Android and a hosted deployment of the API were not run
 
 Last verified: 2026-10-28
 
@@ -19,7 +19,7 @@ OmpOS is a workspace for coding agents whose engine is [omp](https://github.com/
 | Run the web app against a local API | [Web with a local API](#web-app-with-a-local-api) |
 | Build and test the whole repository | [Local development](../runbooks/local-dev.md) |
 
-> **Be aware.** No live model turn has been run since a bounded capture in Phase 11. Everything below starts, renders and exchanges messages with the real omp, but "an agent finished a real coding task with a model" is not something the project has demonstrated. The web Demo uses a simulated engine and says so on screen. Nothing was run on Windows, macOS or Android, and nothing of OmpOS is deployed to Railway.
+> **Be aware.** No live model turn has been run since a bounded capture in Phase 11. Everything below starts, renders and exchanges messages with the real omp, but "an agent finished a real coding task with a model" is not something the project has demonstrated. The web Demo uses a simulated engine and says so on screen. Nothing was run on Windows, macOS or Android, and neither the API nor a cloud agent a user can start is deployed to Railway (a private staged worker is, see [Cloud agents](../runbooks/cloud-agents.md)).
 
 ## Requirements
 
