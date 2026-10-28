@@ -1,0 +1,100 @@
+/* omp terminal view: the xterm.js screen (vendored under lib/xterm, no CDN), its status line and the steer-only composer below it.
+   The screen's colours are read from tokens.css by scripts/ompos-terminal.js, so a theme switch reaches it. */
+@import url('../lib/xterm/xterm.css');
+
+.ompos-terminal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-8);
+  min-width: 0;
+  padding: 16px;
+}
+
+.ompos-terminal-frame {
+  overflow: hidden;
+  background: var(--ompos-surface-sunken);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-8);
+}
+
+.ompos-terminal-status {
+  display: flex;
+  align-items: center;
+  gap: var(--ompos-gap-8);
+  min-height: var(--ompos-footer-height);
+  padding: 0 10px;
+  background: var(--ompos-surface-raised);
+  border-bottom: 1px solid var(--ompos-border);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+.ompos-terminal-status-text {
+  flex: 1;
+  margin: 0;
+}
+
+.ompos-terminal-status[data-state='live'] .ompos-terminal-status-text {
+  color: var(--ompos-success);
+}
+
+.ompos-terminal-status[data-state='reconnecting'] .ompos-terminal-status-text,
+.ompos-terminal-status[data-state='unavailable'] .ompos-terminal-status-text {
+  color: var(--ompos-warning);
+}
+
+.ompos-terminal-screen {
+  height: min(60dvh, 520px);
+  min-height: 240px;
+  padding: var(--ompos-gap-8);
+  background: var(--ompos-surface-sunken);
+}
+
+.ompos-terminal-screen .xterm {
+  height: 100%;
+}
+
+.ompos-terminal-unavailable {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-8);
+  padding: 16px;
+}
+
+.ompos-terminal-unavailable-heading {
+  font-size: var(--ompos-font-size-label);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-label);
+}
+
+.ompos-terminal-unavailable-reason {
+  margin: 0;
+  font-family: var(--ompos-font-mono);
+  font-size: var(--ompos-font-size-mono);
+  line-height: var(--ompos-line-height-mono);
+  overflow-wrap: anywhere;
+}
+
+.ompos-terminal-steer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-terminal-steer-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-terminal-steer-result[data-failed='true'] {
+  color: var(--ompos-error);
+}
+
+.ompos-terminal-help {
+  margin: 0;
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}

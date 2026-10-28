@@ -3,7 +3,7 @@ namespace OmpOS.Web.Services;
 /// <summary>
 /// A failed API call: the HTTP status code plus the response body, if any.
 /// </summary>
-internal sealed class ApiClientException : Exception
+internal class ApiClientException : Exception
 {
     /// <summary>Initializes a new instance of the <see cref="ApiClientException"/> class.</summary>
     public ApiClientException()
@@ -30,6 +30,17 @@ internal sealed class ApiClientException : Exception
     /// <param name="body">The response body, if any.</param>
     internal ApiClientException(System.Net.HttpStatusCode statusCode, string? body)
         : base($"API request failed with {(int)statusCode} {statusCode}{(string.IsNullOrEmpty(body) ? "." : $": {body}")}")
+    {
+        StatusCode = statusCode;
+        Body = body;
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="ApiClientException"/> class with an explicit message that carries no response body.</summary>
+    /// <param name="statusCode">The HTTP status code.</param>
+    /// <param name="message">The failure message.</param>
+    /// <param name="body">The response body, if any. It is kept on <see cref="Body"/> and never copied into the message.</param>
+    protected ApiClientException(System.Net.HttpStatusCode statusCode, string message, string? body)
+        : base(message)
     {
         StatusCode = statusCode;
         Body = body;

@@ -57,7 +57,7 @@ One row per SUP id. Full text of each decision is the SUP row in `docs/open-ques
 | SUP-002 | .editorconfig | `CA1707` | `.editorconfig` | kept | Test naming convention; scoped to tests. |
 | SUP-003 | .editorconfig | `CS1591` | `.editorconfig` | kept | Test projects publish no API; scoped to tests. |
 | SUP-004 | .editorconfig | `CA1062` | `.editorconfig` | kept | Test helpers take trusted arguments; scoped to tests. |
-| SUP-005 | SuppressMessage | `CA1031` | `apps/OmpOS.Web/Pages/Index.razor` | kept | Failure boundary: a catch-all is the contract. |
+| SUP-005 | SuppressMessage | `CA1031` | `apps/OmpOS.Web/Pages/Index.razor` | fixed | Removed: the page no longer starts the stream; the workbench shows faults in its error state (Phase 53). |
 | SUP-006 | SuppressMessage | `CA1031` | `apps/OmpOS.Web/Services/ApiSessionClient.cs` | kept | Failure boundary: a catch-all is the contract. |
 | SUP-007 | SuppressMessage | `CA1711` | `apps/OmpOS.Web/Services/SseEventStream.cs` | kept | Naming or nesting contract recorded in the SUP row. |
 | SUP-008 | SuppressMessage | `CA1031` | `apps/OmpOS.Web/Services/SseEventStream.cs` | kept | Failure boundary: a catch-all is the contract. |

@@ -1,0 +1,398 @@
+/* The composer: one rounded card in the thread column. The prompt is the card; the footer holds the model, mode and thinking chips on the
+   left and the send controls on the right. The slash palette, the chip lists and the model picker open above and below the card. Colours,
+   sizes and fonts come from tokens.css only. */
+
+.ompos-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+}
+
+.ompos-composer-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--ompos-surface-raised);
+  border: 1px solid var(--ompos-border-strong);
+  border-radius: var(--ompos-radius-12);
+  box-shadow: var(--ompos-shadow-card);
+}
+
+.ompos-composer-card:focus-within {
+  border-color: var(--ompos-focus);
+}
+
+.ompos-composer-input {
+  width: 100%;
+  min-height: var(--ompos-composer-min);
+  max-height: var(--ompos-composer-max);
+  padding: var(--ompos-gap-12) var(--ompos-gap-12) var(--ompos-gap-4);
+  background: transparent;
+  border: 0;
+  border-radius: var(--ompos-radius-12) var(--ompos-radius-12) 0 0;
+  color: var(--ompos-text);
+  font-size: var(--ompos-font-size-body);
+  line-height: var(--ompos-line-height-body);
+  field-sizing: content;
+  resize: none;
+}
+
+.ompos-composer-input:focus-visible {
+  outline: none;
+}
+
+.ompos-composer-input::placeholder {
+  color: var(--ompos-text-secondary);
+}
+
+.ompos-composer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ompos-gap-8);
+  padding: var(--ompos-gap-4) var(--ompos-gap-8) var(--ompos-gap-8);
+}
+
+.ompos-composer-chips,
+.ompos-composer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ompos-gap-4);
+  min-width: 0;
+}
+
+.ompos-composer-actions {
+  justify-content: flex-end;
+}
+
+.ompos-composer .ompos-icon-btn {
+  background: var(--ompos-accent);
+  border-color: var(--ompos-accent);
+  border-radius: var(--ompos-radius-pill);
+  color: var(--ompos-accent-on);
+}
+
+.ompos-composer .ompos-icon-btn:hover,
+.ompos-composer .ompos-icon-btn:active {
+  background: var(--ompos-accent-hover);
+  border-color: var(--ompos-accent-hover);
+}
+
+.ompos-composer .ompos-icon-btn.ompos-stop-btn {
+  background: var(--ompos-surface-raised);
+  border-color: var(--ompos-border-strong);
+  color: var(--ompos-text);
+}
+
+.ompos-composer .ompos-icon-btn.ompos-stop-btn:hover {
+  background: var(--ompos-hover);
+}
+
+/* Text under the card: what is pending, why a send was refused, the character count and the keyboard hint. The hint is for the keyboard:
+   it shows while the focus is inside the composer and stays available to assistive technology otherwise. */
+.ompos-composer-pending,
+.ompos-composer-status,
+.ompos-composer-count,
+.ompos-composer-hint {
+  margin: 0;
+  padding: 0 var(--ompos-gap-4);
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+.ompos-composer-pending:empty {
+  display: none;
+}
+
+.ompos-composer-status {
+  color: var(--ompos-error);
+}
+
+.ompos-composer:not(:focus-within) .ompos-composer-hint {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Chips ---------------------------------------------------------------------------------------------------------------------- */
+
+.ompos-chip-menu {
+  position: relative;
+}
+
+.ompos-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ompos-gap-4);
+  min-height: var(--ompos-control-height-small);
+  min-width: var(--ompos-target-min);
+  padding: 0 var(--ompos-gap-8);
+  background: var(--ompos-surface-sunken);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-pill);
+  color: var(--ompos-text);
+  font-size: var(--ompos-font-size-small);
+  font-weight: var(--ompos-font-weight-medium);
+  line-height: var(--ompos-line-height-small);
+}
+
+.ompos-chip-btn:hover {
+  background: var(--ompos-hover);
+}
+
+.ompos-chip-btn[aria-expanded='true'] {
+  background: var(--ompos-selected);
+}
+
+.ompos-chip-btn[aria-disabled='true'] {
+  opacity: 0.6;
+}
+
+.ompos-chip-value {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ompos-chip-list {
+  position: absolute;
+  bottom: calc(100% + var(--ompos-gap-4));
+  left: 0;
+  z-index: var(--ompos-z-popup);
+  min-width: 12rem;
+  max-width: min(22rem, 90vw);
+  max-height: 16rem;
+  margin: 0;
+  padding: var(--ompos-gap-4);
+  overflow-y: auto;
+  list-style: none;
+  background: var(--ompos-surface-raised);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-8);
+  box-shadow: var(--ompos-shadow-popup);
+}
+
+.ompos-chip-option {
+  display: flex;
+  flex-direction: column;
+  min-height: var(--ompos-control-height);
+  padding: var(--ompos-gap-4) var(--ompos-gap-8);
+  border-radius: var(--ompos-radius-6);
+  cursor: pointer;
+  font-size: var(--ompos-font-size-label);
+}
+
+.ompos-chip-option.is-active,
+.ompos-chip-option:hover {
+  background: var(--ompos-hover);
+}
+
+.ompos-chip-option[aria-selected='true'] {
+  background: var(--ompos-selected);
+  font-weight: var(--ompos-font-weight-semibold);
+}
+
+.ompos-chip-option-description,
+.ompos-chip-notice,
+.ompos-model-state {
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+.ompos-chip-notice {
+  position: absolute;
+  bottom: calc(100% + var(--ompos-gap-4));
+  left: 0;
+  z-index: var(--ompos-z-popup);
+  width: max-content;
+  max-width: 20rem;
+  margin: 0;
+  padding: var(--ompos-gap-4) var(--ompos-gap-8);
+  background: var(--ompos-surface-raised);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-6);
+}
+
+.ompos-chip-heading {
+  padding: var(--ompos-gap-6) var(--ompos-gap-8) var(--ompos-gap-2);
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  font-weight: var(--ompos-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ompos-model-picker {
+  position: absolute;
+  bottom: calc(100% + var(--ompos-gap-4));
+  left: 0;
+  z-index: var(--ompos-z-popup);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+  width: min(24rem, 90vw);
+  padding: var(--ompos-gap-8);
+  background: var(--ompos-surface-raised);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-8);
+  box-shadow: var(--ompos-shadow-popup);
+}
+
+.ompos-model-picker .ompos-chip-list {
+  position: static;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+/* Slash palette ------------------------------------------------------------------------------------------------------------------ */
+
+.ompos-slash-palette {
+  position: absolute;
+  bottom: calc(100% + var(--ompos-gap-4));
+  left: 0;
+  right: 0;
+  z-index: var(--ompos-z-popup);
+  padding: var(--ompos-gap-4);
+  background: var(--ompos-surface-raised);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-8);
+  box-shadow: var(--ompos-shadow-popup);
+}
+
+.ompos-slash-list {
+  max-height: 16rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.ompos-slash-option {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--ompos-gap-8);
+  min-height: var(--ompos-control-height);
+  padding: var(--ompos-gap-4) var(--ompos-gap-8);
+  border-radius: var(--ompos-radius-6);
+  cursor: pointer;
+  font-size: var(--ompos-font-size-label);
+}
+
+.ompos-slash-option.is-active,
+.ompos-slash-option:hover {
+  background: var(--ompos-hover);
+}
+
+.ompos-slash-option[aria-selected='true'] {
+  background: var(--ompos-selected);
+}
+
+.ompos-slash-option.is-disabled {
+  cursor: default;
+}
+
+.ompos-slash-name {
+  font-family: var(--ompos-font-mono);
+  font-size: var(--ompos-font-size-mono);
+  font-weight: var(--ompos-font-weight-semibold);
+}
+
+.ompos-slash-hint,
+.ompos-slash-description,
+.ompos-slash-reason,
+.ompos-slash-message {
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+.ompos-slash-description,
+.ompos-slash-reason {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ompos-slash-reason {
+  color: var(--ompos-warning);
+}
+
+.ompos-badge-source,
+.ompos-badge-scope {
+  padding: 0 var(--ompos-gap-6);
+  background: var(--ompos-surface-sunken);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-pill);
+  color: var(--ompos-text);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+.ompos-slash-message {
+  margin: 0;
+  padding: var(--ompos-gap-4) var(--ompos-gap-8);
+}
+
+/* Steering history -------------------------------------------------------------------------------------------------------------- */
+
+.ompos-steering-details {
+  padding: 0 var(--ompos-gap-4);
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+}
+
+.ompos-steering-details > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ompos-target-min);
+  cursor: pointer;
+}
+
+.ompos-steering-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ompos-steering-entry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ompos-gap-4) var(--ompos-gap-8);
+  padding: var(--ompos-gap-4) var(--ompos-gap-8);
+  background: var(--ompos-surface-sunken);
+  border-radius: var(--ompos-radius-6);
+  color: var(--ompos-text);
+}
+
+.ompos-steering-header {
+  color: var(--ompos-text-secondary);
+  font-weight: var(--ompos-font-weight-medium);
+}
+
+.ompos-steering-text {
+  flex-basis: 100%;
+  overflow-wrap: anywhere;
+}
+
+.ompos-steering-status[data-failed='true'],
+.ompos-steering-reason {
+  color: var(--ompos-error);
+}
+
+.ompos-steering-held {
+  margin: 0;
+  color: var(--ompos-warning);
+}

@@ -1,9 +1,5 @@
-using System.Net;
-using System.Text;
 using Bunit;
-using Microsoft.Extensions.DependencyInjection;
 using OmpOS.UI.Components;
-using OmpOS.Web.Services;
 using Shouldly;
 using Xunit;
 
@@ -19,6 +15,7 @@ public sealed class SendControlAndSkipLinkTests : BunitContext
     [Fact]
     public void SendControlHasNoTextAndIsNamedByItsLabel()
     {
+        JSInterop.Mode = JSRuntimeMode.Loose;
         var cut = Render<Composer>(parameters => parameters
             .Add(p => p.OnSend, (string _) => Task.FromResult(true)));
 
@@ -34,7 +31,8 @@ public sealed class SendControlAndSkipLinkTests : BunitContext
     [Fact]
     public void SkipLinkIsTheFirstFocusableElementInTheShell()
     {
-        var cut = RenderShellWithSession();
+        using var host = new DemoTestHost();
+        var cut = RenderShellWithSession(host);
 
         var focusable = cut.FindAll(FocusableSelector);
         focusable.Count.ShouldBeGreaterThan(1);
@@ -48,7 +46,8 @@ public sealed class SendControlAndSkipLinkTests : BunitContext
     [Fact]
     public void SkipLinkTargetExistsAndAcceptsProgrammaticFocus()
     {
-        var cut = RenderShellWithSession();
+        using var host = new DemoTestHost();
+        var cut = RenderShellWithSession(host);
 
         var href = cut.Find("a.ompos-skip-link").GetAttribute("href") ?? string.Empty;
         href.ShouldStartWith("#");
@@ -56,37 +55,16 @@ public sealed class SendControlAndSkipLinkTests : BunitContext
         target.GetAttribute("tabindex").ShouldBe("-1");
     }
 
-    /// <summary>Renders the Web shell against a scripted API that creates one session, and waits until its conversation is listed.</summary>
+    /// <summary>Renders the Web page over the Demo workbench and waits until the shell and the composer are on the page.</summary>
+    /// <param name="host">The Demo host the page reads.</param>
     /// <returns>The rendered shell.</returns>
-    private IRenderedComponent<OmpOS.Web.Pages.Index> RenderShellWithSession()
+    private IRenderedComponent<OmpOS.Web.Pages.Index> RenderShellWithSession(DemoTestHost host)
     {
-        using var apiHandler = new ScriptedHandler();
-        using var sseHandler = new ScriptedHandler();
-        using var listResponse = JsonResponse("[]");
-        using var createdResponse = JsonResponse(SessionJson);
-        using var fetchedResponse = JsonResponse(SessionJson);
-        apiHandler.Enqueue(listResponse);
-        apiHandler.Enqueue(createdResponse);
-        apiHandler.Enqueue(fetchedResponse);
-        using var apiHttp = new HttpClient(apiHandler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
-        using var sseHttp = new HttpClient(sseHandler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
-        Services.AddSingleton(new ApiSessionClient(apiHttp));
-        Services.AddSingleton(new SseEventStream(sseHttp));
+        DemoPageSetup.Register(Services, host);
         JSInterop.Mode = JSRuntimeMode.Loose;
 
         var cut = Render<OmpOS.Web.Pages.Index>();
-        cut.WaitForAssertion(() => cut.Find("button.ompos-conversation-item").ShouldNotBeNull());
+        cut.WaitForAssertion(() => cut.Find("textarea").ShouldNotBeNull(), TimeSpan.FromSeconds(10));
         return cut;
     }
-
-    /// <summary>Builds a JSON success response for a scripted API call.</summary>
-    /// <param name="json">The response body.</param>
-    /// <returns>The queued response message.</returns>
-    private static HttpResponseMessage JsonResponse(string json) => new(HttpStatusCode.OK)
-    {
-        Content = new StringContent(json, Encoding.UTF8, "application/json"),
-    };
-
-    /// <summary>Gets a minimal session body for the create and get round-trips.</summary>
-    private const string SessionJson = """{"id":"send-control-skip-link-test","ownerId":"local-dev","createdAt":"2026-10-21T00:00:00+00:00","updatedAt":"2026-10-21T00:00:00+00:00","status":"Idle","sandboxId":null,"messages":[],"events":[]}""";
 }

@@ -1,0 +1,83 @@
+@namespace OmpOS.UI.Components.Shell
+<div class="ompos-tabs ompos-viewtabs" role="tablist" aria-label="Views" @onkeydown="OnKeyDownAsync">
+    <button type="button"
+            role="tab"
+            id="@AgentsTabId"
+            class="ompos-tab"
+            aria-selected="@(IsAgents ? "true" : "false")"
+            aria-controls="@PanelId"
+            aria-keyshortcuts="Control+Shift+A"
+            tabindex="@(IsAgents ? 0 : -1)"
+            @ref="_agents"
+            @onclick="() => SelectAsync(AgentsView)">Agents</button>
+    <button type="button"
+            role="tab"
+            id="@KanbanTabId"
+            class="ompos-tab"
+            aria-selected="@(IsAgents ? "false" : "true")"
+            aria-controls="@PanelId"
+            aria-keyshortcuts="Control+Shift+K"
+            tabindex="@(IsAgents ? -1 : 0)"
+            @ref="_kanban"
+            @onclick="() => SelectAsync(KanbanView)">Kanban</button>
+</div>
+
+@code {
+    /// <summary>The value of <see cref="Selected"/> for the Agents view.</summary>
+    public const string AgentsView = "agents";
+
+    /// <summary>The value of <see cref="Selected"/> for the Kanban view.</summary>
+    public const string KanbanView = "kanban";
+
+    /// <summary>The identifier of the Agents tab.</summary>
+    public const string AgentsTabId = "ompos-tab-agents";
+
+    /// <summary>The identifier of the Kanban tab.</summary>
+    public const string KanbanTabId = "ompos-tab-kanban";
+
+    /// <summary>The identifier of the view panel the tabs control.</summary>
+    public const string PanelId = "ompos-view-panel";
+
+    private ElementReference _agents;
+    private ElementReference _kanban;
+
+    /// <summary>Gets the selected view: <see cref="AgentsView"/> or <see cref="KanbanView"/>.</summary>
+    [Parameter]
+    public string Selected { get; set; } = AgentsView;
+
+    /// <summary>Gets the callback invoked with the view the user chose.</summary>
+    [Parameter]
+    public EventCallback<string> SelectedChanged { get; set; }
+
+    private bool IsAgents => !string.Equals(Selected, KanbanView, StringComparison.Ordinal);
+
+    /// <summary>Moves keyboard focus to the selected tab.</summary>
+    /// <returns>A task that completes when the focus request has been sent.</returns>
+    public ValueTask FocusSelectedAsync() => (IsAgents ? _agents : _kanban).FocusAsync();
+
+    private async Task SelectAsync(string view)
+    {
+        if (!string.Equals(view, Selected, StringComparison.Ordinal))
+        {
+            await SelectedChanged.InvokeAsync(view).ConfigureAwait(true);
+        }
+    }
+
+    private async Task OnKeyDownAsync(KeyboardEventArgs args)
+    {
+        string? target = args.Key switch
+        {
+            "ArrowRight" or "ArrowLeft" => IsAgents ? KanbanView : AgentsView,
+            "Home" => AgentsView,
+            "End" => KanbanView,
+            _ => null,
+        };
+        if (target is null)
+        {
+            return;
+        }
+
+        await SelectAsync(target).ConfigureAwait(true);
+        await (string.Equals(target, AgentsView, StringComparison.Ordinal) ? _agents : _kanban).FocusAsync().ConfigureAwait(true);
+    }
+}

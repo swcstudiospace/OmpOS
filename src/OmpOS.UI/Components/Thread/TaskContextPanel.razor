@@ -1,0 +1,58 @@
+@namespace OmpOS.UI.Components.Thread
+@using OmpOS.Presentation.AgentPanel
+<section class="ompos-task-context" aria-label="Task context details">
+    <h3 class="ompos-pipeline-heading">Task context</h3>
+    @if (Context.Heading is { } heading)
+    {
+        <p class="ompos-task-context-heading">@heading</p>
+    }
+
+    @if (Context.Body is { } body)
+    {
+        <p class="ompos-task-context-body">@body</p>
+    }
+
+    @if (Context.HasCard)
+    {
+        <dl class="ompos-task-card">
+            <dt>Task</dt>
+            <dd>@Context.Title</dd>
+            @if (Context.KanbanStatus is { Length: > 0 } kanban)
+            {
+                <dt>@AgentPanelViewText.KanbanLabel</dt>
+                <dd>@kanban</dd>
+            }
+
+            @if (Context.GraphId is { Length: > 0 } graph)
+            {
+                <dt>@AgentPanelViewText.GraphLabel</dt>
+                <dd><code>@graph</code></dd>
+            }
+
+            @if (Context.WorkflowText.Length > 0)
+            {
+                <dt>@AgentPanelViewText.WorkflowLabel</dt>
+                <dd>@Context.WorkflowText</dd>
+            }
+        </dl>
+        <NoteList List="Context.SharedMemory" />
+        <NoteList List="Context.Lessons" />
+    }
+
+    @if (Context.WarningsHeader is { } warningsHeader)
+    {
+        <p class="ompos-task-context-warnings">@warningsHeader</p>
+        <ul class="ompos-task-warnings">
+            @foreach (var warning in Context.Warnings)
+            {
+                <li>@warning</li>
+            }
+        </ul>
+    }
+</section>
+
+@code {
+    /// <summary>Gets the task context of the session.</summary>
+    [Parameter, EditorRequired]
+    public TaskContextModel Context { get; set; } = null!;
+}

@@ -1,0 +1,230 @@
+@namespace OmpOS.UI.Components.Kanban
+@inherits ObservableComponent
+@using OmpOS.Presentation.Kanban
+@{
+    var card = Model.Card;
+    var tab = IsCurrent ? 0 : -1;
+    var reason = SteerReason;
+    var domId = DomIdOf(card.Id);
+}
+<li class="ompos-kanban-card" data-card-id="@card.Id" data-status="@card.StatusText">
+    <div class="ompos-kanban-card-head">
+        <h4 class="ompos-kanban-card-title">
+            <button type="button" class="ompos-kanban-card-open" @ref="_open" data-kanban-nav tabindex="@tab"
+                    aria-label="@card.SpokenName" @onclick="OpenAsync" @onkeydown="KeyDownAsync">@card.Title</button>
+        </h4>
+        <span class="ompos-chip">@card.KindText</span>
+    </div>
+    <p class="ompos-kanban-meta ompos-kanban-model">@card.ModelProviderText</p>
+    <div class="ompos-kanban-status">
+        <span class="ompos-kanban-status-chip" data-tone="@ToneOf(card.Status)"><KanbanStatusIcon Status="card.Status" />@card.StatusText</span>
+        <span class="ompos-kanban-meta">@card.LastActivityText</span>
+    </div>
+    @if (card.StaleLabel is { } stale)
+    {
+        <p class="ompos-kanban-warn"><KanbanStatusIcon Status="RuntimeStatus.NeedsAttention" />@stale</p>
+    }
+    @if (card.DisconnectedText is { } disconnected)
+    {
+        <p class="ompos-kanban-warn"><KanbanStatusIcon Status="RuntimeStatus.Unreachable" />@disconnected</p>
+    }
+    @if (card.IsClosed)
+    {
+        <p class="ompos-kanban-meta">@KanbanCopy.Closed</p>
+    }
+    <ul class="ompos-kanban-substrate" aria-label="@KanbanCopy.SubstrateListNameFor(card.Title)">
+        <li>@Model.TaskText</li>
+        <li>@Model.GraphText</li>
+        <li>@Model.LessonsText</li>
+        <li>@Model.LeaseText</li>
+    </ul>
+    <div class="ompos-kanban-actions">
+        <button type="button" class="ompos-btn ompos-btn--small" @ref="_steerButton" data-kanban-nav tabindex="@tab"
+                aria-label="@KanbanCopy.SteerNameFor(card.Title)"
+                aria-expanded="@(_steerOpen && reason is null ? "true" : "false")"
+                aria-controls="@(_steerOpen && reason is null ? "ompos-steer-" + domId : null)"
+                aria-disabled="@(reason is null ? null : "true")"
+                aria-describedby="@(reason is null ? null : "ompos-steer-reason-" + domId)"
+                @onclick="ToggleSteerAsync" @onkeydown="KeyDownAsync">@KanbanCopy.Steer</button>
+        @if (!string.Equals(card.ColumnKey, KanbanColumn.BacklogKey, StringComparison.Ordinal))
+        {
+            <button type="button" class="ompos-btn ompos-btn--small ompos-btn--ghost" data-kanban-nav tabindex="@tab"
+                    aria-label="@KanbanCopy.MoveToBacklogNameFor(card.Title)"
+                    @onclick="() => OnMoveToBacklog.InvokeAsync(card.Id)" @onkeydown="KeyDownAsync">@KanbanCopy.MoveToBacklog</button>
+        }
+        @if (!string.Equals(card.ColumnKey, KanbanColumn.ArchivedKey, StringComparison.Ordinal))
+        {
+            <button type="button" class="ompos-btn ompos-btn--small ompos-btn--ghost" data-kanban-nav tabindex="@tab"
+                    aria-label="@KanbanCopy.ArchiveNameFor(card.Title)"
+                    @onclick="() => OnArchive.InvokeAsync(card.Id)" @onkeydown="KeyDownAsync">@KanbanCopy.Archive</button>
+        }
+    </div>
+    @if (reason is not null)
+    {
+        <p id="@("ompos-steer-reason-" + domId)" class="ompos-kanban-meta">@reason</p>
+    }
+    @if (_steerOpen && reason is null)
+    {
+        <div id="@("ompos-steer-" + domId)" class="ompos-kanban-steer" role="group" aria-label="@KanbanCopy.SteerPanelNameFor(card.Title)" @onkeydown="SteerKeyDownAsync">
+            <textarea class="ompos-textarea" rows="3" @ref="_steerInput" aria-label="@KanbanCopy.SteerBoxName"
+                      placeholder="@KanbanCopy.SteerPlaceholder" value="@Model.SteerText" @oninput="OnSteerInput"></textarea>
+            <div class="ompos-kanban-steer-buttons">
+                <button type="button" class="ompos-btn ompos-btn--small" aria-label="@KanbanCopy.QueueNextName"
+                        disabled="@(!Model.SteerCommand.CanExecute(CardSteerMode.FollowUp))"
+                        @onclick="() => SendAsync(CardSteerMode.FollowUp)">@KanbanCopy.QueueNext</button>
+                <button type="button" class="ompos-btn ompos-btn--small ompos-btn--primary" aria-label="@KanbanCopy.SendNowName"
+                        disabled="@(!Model.SteerCommand.CanExecute(CardSteerMode.SendNow))"
+                        @onclick="() => SendAsync(CardSteerMode.SendNow)">@KanbanCopy.SendNow</button>
+                <button type="button" class="ompos-btn ompos-btn--small ompos-btn--ghost" aria-label="@KanbanCopy.SteerCloseName"
+                        @onclick="CloseSteerAsync">@KanbanCopy.SteerClose</button>
+            </div>
+            <p class="ompos-kanban-meta ompos-kanban-steer-result" role="status" aria-live="polite"
+               data-failed="@(Model.SteerFailed ? "true" : "false")">@Model.SteerResultText</p>
+        </div>
+    }
+</li>
+
+@code {
+    private ElementReference _open;
+    private ElementReference _steerButton;
+    private ElementReference _steerInput;
+    private KanbanCardViewModel? _watched;
+    private bool _steerOpen;
+    private bool _focusSteerInput;
+
+    /// <summary>Gets the view model of the card.</summary>
+    [Parameter, EditorRequired]
+    public KanbanCardViewModel Model { get; set; } = default!;
+
+    /// <summary>Gets whether this card holds the board's roving tab stop (its buttons are in the tab order; the others are reached with the arrow keys).</summary>
+    [Parameter]
+    public bool IsCurrent { get; set; }
+
+    /// <summary>Gets whether the board has asked this card to take keyboard focus after the next render.</summary>
+    [Parameter]
+    public bool TakeFocus { get; set; }
+
+    /// <summary>Gets the callback invoked once the card has taken the focus it was asked for.</summary>
+    [Parameter]
+    public EventCallback OnFocusTaken { get; set; }
+
+    /// <summary>Gets the callback invoked with the session identifier when the card is opened.</summary>
+    [Parameter]
+    public EventCallback<string> OnOpen { get; set; }
+
+    /// <summary>Gets the callback invoked with the key the user pressed on a card control; the board moves the focus.</summary>
+    [Parameter]
+    public EventCallback<KeyboardEventArgs> OnNavigate { get; set; }
+
+    /// <summary>Gets the callback invoked with the session identifier when the card is moved to Backlog.</summary>
+    [Parameter]
+    public EventCallback<string> OnMoveToBacklog { get; set; }
+
+    /// <summary>Gets the callback invoked with the session identifier when the card is moved to Archived.</summary>
+    [Parameter]
+    public EventCallback<string> OnArchive { get; set; }
+
+    private string? SteerReason => !Model.CanSteer ? KanbanCopy.SteerUnavailable : Model.Card.IsEnded ? KanbanCopy.SteerEnded : null;
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_watched, Model))
+        {
+            StopObserving(_watched);
+            _watched = Model;
+        }
+
+        Observe(Model);
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusSteerInput && _steerOpen)
+        {
+            _focusSteerInput = false;
+            await _steerInput.FocusAsync().ConfigureAwait(true);
+        }
+
+        if (TakeFocus)
+        {
+            await _open.FocusAsync().ConfigureAwait(true);
+            await OnFocusTaken.InvokeAsync().ConfigureAwait(true);
+        }
+    }
+
+    private static string DomIdOf(string id) => string.Concat(id.Select(static ch => char.IsAsciiLetterOrDigit(ch) || ch is '-' or '_' ? ch : '-'));
+
+    private static string ToneOf(RuntimeStatus? status) => status switch
+    {
+        RuntimeStatus.Queued or RuntimeStatus.Running => "primary",
+        RuntimeStatus.AwaitingInput or RuntimeStatus.NeedsAttention or RuntimeStatus.Unreachable => "warning",
+        RuntimeStatus.Completed => "success",
+        RuntimeStatus.Failed => "error",
+        _ => "secondary",
+    };
+
+    private Task OpenAsync() => OnOpen.InvokeAsync(Model.Id);
+
+    private async Task KeyDownAsync(KeyboardEventArgs args)
+    {
+        if (args.CtrlKey || args.AltKey || args.MetaKey)
+        {
+            return;
+        }
+
+        if (string.Equals(args.Key, "s", StringComparison.OrdinalIgnoreCase))
+        {
+            await OpenSteerAsync().ConfigureAwait(true);
+            return;
+        }
+
+        await OnNavigate.InvokeAsync(args).ConfigureAwait(true);
+    }
+
+    private Task ToggleSteerAsync()
+    {
+        if (SteerReason is not null)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (_steerOpen)
+        {
+            _steerOpen = false;
+            return Task.CompletedTask;
+        }
+
+        return OpenSteerAsync();
+    }
+
+    private Task OpenSteerAsync()
+    {
+        if (SteerReason is null && !_steerOpen)
+        {
+            _steerOpen = true;
+            _focusSteerInput = true;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task CloseSteerAsync()
+    {
+        _steerOpen = false;
+        await _steerButton.FocusAsync().ConfigureAwait(true);
+    }
+
+    private async Task SteerKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (string.Equals(args.Key, "Escape", StringComparison.Ordinal))
+        {
+            await CloseSteerAsync().ConfigureAwait(true);
+        }
+    }
+
+    private void OnSteerInput(ChangeEventArgs args) => Model.SteerText = args.Value?.ToString() ?? string.Empty;
+
+    private Task SendAsync(CardSteerMode mode) => Model.SteerCommand.ExecuteAsync(mode);
+}

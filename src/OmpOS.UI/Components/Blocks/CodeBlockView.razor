@@ -9,7 +9,8 @@
         <span class="ompos-code-language">@Block.Language</span>
         <button type="button" class="ompos-btn ompos-icon-btn" aria-label="Copy code" @onclick="CopyAsync">⧉</button>
     </div>
-    <pre><code>@Block.Code</code></pre>
+    <span class="ompos-sr-only" role="status" aria-live="polite">@(_copied ? "Copied to clipboard" : null)</span>
+    <pre tabindex="0"><code>@Block.Code</code></pre>
 </div>
 
 @code {
@@ -20,6 +21,8 @@
     /// <summary>Gets the callback invoked with the code text when the copy control is activated.</summary>
     [Parameter]
     public EventCallback<string> OnCopy { get; set; }
+
+    private bool _copied;
 
     private static readonly Action<ILogger, Exception?> ClipboardWriteFailed =
         LoggerMessage.Define(
@@ -41,6 +44,7 @@
             return;
         }
 
+        _copied = true;
         await OnCopy.InvokeAsync(Block.Code);
     }
 }

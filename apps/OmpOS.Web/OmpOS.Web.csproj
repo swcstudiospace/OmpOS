@@ -3,9 +3,28 @@
   <PropertyGroup>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <CompressionEnabled>false</CompressionEnabled>
+    <!-- No fingerprinted framework files and no import map. The SDK writes the import map into index.html as an inline script, which the CSP (script-src 'self') forbids, so a CSP-conformant host never booted the page; found by the Demo browser run. The framework files keep plain names, so hosts revalidate them (see vercel.ts) instead of caching them as immutable. blazor.webassembly.js is still referenced with its fingerprint placeholder. -->
+    <WasmFingerprintAssets>false</WasmFingerprintAssets>
     <!-- Blazor's HeadOutlet interop deserializes through the reflection path. With the repo-wide switch off (Directory.Build.props), first render throws JsonSerializerIsReflectionDisabled. Re-verified 2026-10-21 by the browser smoke with this switch set to false: the first render still throws (evidence: docs/runbooks/evidence/web-reflection-off-2026-10-21.json). Tracked as Q-WEB-REFLECTION (scoped override). The Blazor WebAssembly SDK does not force this on, so this explicit true is the only source for this head. -->
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <!-- Demo build switch (ADR-0017). false (the default): Demo/** is not compiled and appsettings.demo.json is not published, so a production bundle holds no demo code. true: the head answers every API route from in-browser fixtures. -->
+    <OmpOSDemo Condition="'$(OmpOSDemo)' == ''">false</OmpOSDemo>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(OmpOSDemo)' == 'true'">
+    <DefineConstants>$(DefineConstants);OMPOS_DEMO</DefineConstants>
+    <WasmApplicationEnvironmentName>demo</WasmApplicationEnvironmentName>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(OmpOSDemo)' != 'true'">
+    <Compile Remove="Demo\**" />
+    <Content Remove="wwwroot\appsettings.demo.json" />
+    <None Remove="wwwroot\appsettings.demo.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="OmpOSDemo" Value="$(OmpOSDemo)" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />

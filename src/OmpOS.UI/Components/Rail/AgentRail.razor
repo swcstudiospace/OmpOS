@@ -1,0 +1,436 @@
+@namespace OmpOS.UI.Components.Rail
+@using Microsoft.JSInterop
+@using OmpOS.Presentation.AgentPanel
+@using OmpOS.UI.Components.Shell
+@using OmpOS.UI.Components.Thread
+@inherits ObservableComponent
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<div class="ompos-agent-rail">
+    <div class="ompos-rail-header">
+        <h2 class="ompos-rail-title">Agents</h2>
+        <button type="button" class="ompos-btn ompos-btn--primary ompos-new-agent" aria-label="New conversation" @onclick="NewAgentAsync"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14" /></svg>New conversation</button>
+        <button type="button" class="ompos-btn ompos-btn--ghost ompos-new-terminal" aria-label="@AgentPanelCopy.NewTerminal" @onclick="NewTerminalAsync"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 4l4 4-4 4M8 12.5h5.5" /></svg>@AgentPanelCopy.NewTerminal</button>
+        <input type="search"
+               class="ompos-input ompos-agent-filter"
+               aria-label="Filter agents"
+               placeholder="@AgentPanelCopy.FilterPlaceholder"
+               autocomplete="off"
+               maxlength="@SessionCatalogModel.MaxFilterChars"
+               value="@Panel.Catalog.Filter"
+               @oninput="OnFilterInput"
+               @onkeydown="OnFilterKeyDown" />
+    </div>
+
+    @if (Panel.ActionError is { } actionError)
+    {
+        <p class="ompos-rail-alert" role="alert">@actionError</p>
+    }
+
+    @if (_error is not null)
+    {
+        <p class="ompos-rail-alert" role="alert">@_error</p>
+    }
+
+    @if (Panel.State == PanelState.Loading)
+    {
+        <div class="ompos-rail-state" data-state="loading" role="status">
+            <p class="ompos-rail-state-heading">@AgentPanelCopy.RailLoading</p>
+        </div>
+    }
+    else if (Panel.State == PanelState.Error)
+    {
+        <div class="ompos-rail-state" data-state="error">
+            @if (Panel.BannerText is { } banner)
+            {
+                <p class="ompos-rail-alert" role="alert">@banner</p>
+            }
+            <p class="ompos-rail-state-heading">@AgentPanelCopy.RailErrorHeading</p>
+            <p class="ompos-rail-state-body">@AgentPanelCopy.RailErrorBody</p>
+            <button type="button" class="ompos-btn ompos-btn--small" aria-label="@AgentPanelCopy.RetryLoadingName" @onclick="RetryLoadingAsync">@AgentPanelCopy.RetryLoading</button>
+        </div>
+    }
+    else if (Catalog.TotalCount == 0)
+    {
+        <div class="ompos-rail-state" data-state="empty">
+            <p class="ompos-rail-state-heading">@AgentPanelCopy.EmptyRailHeading</p>
+            <p class="ompos-rail-state-body">@AgentPanelCopy.EmptyRailBody</p>
+        </div>
+    }
+    else if (Catalog.HasNoMatches)
+    {
+        <div class="ompos-rail-state" data-state="no-match" role="status">
+            <p class="ompos-rail-state-heading">@Catalog.NoMatchHeading</p>
+            <p class="ompos-rail-state-body">@Catalog.NoMatchBody</p>
+        </div>
+    }
+
+    @if (_confirmRow is { } confirmRow)
+    {
+        <ConfirmBar Kind="close"
+                    AccessibleName="@AgentPanelViewText.ConfirmCloseName"
+                    Message="@AgentPanelCopy.CloseConfirmation(confirmRow.Title)"
+                    ConfirmLabel="@AgentPanelCopy.CloseAgent"
+                    CancelLabel="@AgentPanelCopy.KeepAgentOpen"
+                    OnConfirm="ConfirmCloseAsync"
+                    OnCancel="CancelClose" />
+    }
+
+    @if (Rows.Count > 0)
+    {
+        <ul class="ompos-agent-groups" aria-label="@AgentPanelViewText.AgentSessionsName" @ref="_list" @onkeydown="OnRowsKeyDown">
+            @foreach (var group in Groups)
+            {
+                <li class="ompos-agent-group" data-group="@group.Key.ToString().ToLowerInvariant()">
+                    <h3 class="ompos-agent-group-header" id="@GroupId(group.Key)">@AgentRowStatusMap.HeaderOf(group.Key)</h3>
+                    <ul class="ompos-agent-items" aria-labelledby="@GroupId(group.Key)">
+                        @foreach (var row in group)
+                        {
+                            var selected = string.Equals(row.Id, Catalog.SelectedId, StringComparison.Ordinal);
+                            <li class="ompos-agent-item">
+                                <button type="button"
+                                        class="ompos-agent-row@(selected ? " is-selected" : null)"
+                                        data-row-id="@row.Id"
+                                        data-status="@StatusName(row.Status)"
+                                        tabindex="@(string.Equals(row.Id, TabStopId, StringComparison.Ordinal) ? 0 : -1)"
+                                        aria-current="@(selected ? "true" : null)"
+                                        aria-label="@RowName(row)"
+                                        @onfocus="() => _focusedId = row.Id"
+                                        @onclick="() => OpenAsync(row)">
+                                    <StatusGlyph IconKey="@row.IconKey" />
+                                    <span class="ompos-agent-main">
+                                        <span class="ompos-agent-line">
+                                            <span class="ompos-agent-title">@row.Title</span>
+                                            <span class="ompos-agent-time" data-stale="@(row.IsStale ? "true" : null)">@(row.IsStale && row.QuietText is not null ? row.QuietText : row.LastActivityText)</span>
+                                        </span>
+                                        <span class="ompos-agent-meta">
+                                            <span class="ompos-agent-status" data-tone="@StatusGlyphs.ToneOf(row.Status)">@row.StatusText</span>@(" ")
+                                            @if (row.IsLongRunning)
+                                            {
+                                                <span class="ompos-agent-flag">@AgentPanelViewText.LongRunning</span>@(" ")
+                                            }
+                                            @if (!string.IsNullOrEmpty(row.TaskTag))
+                                            {
+                                                <span class="ompos-agent-tag">@row.TaskTag</span>@(" ")
+                                            }
+                                            @if (row.IsTerminal)
+                                            {
+                                                <span class="ompos-agent-tag">@AgentPanelCopy.TerminalTag</span>@(" ")
+                                            }
+                                        </span>
+                                    </span>
+                                </button>
+                                @if (selected && Panel.Selected is { } session && string.Equals(session.Id, row.Id, StringComparison.Ordinal))
+                                {
+                                    <div class="ompos-agent-actions" role="group" aria-label="@AgentPanelViewText.AgentActionsName">
+                                        @if (row.Status == AgentRowStatus.Closed)
+                                        {
+                                            <button type="button" class="ompos-btn ompos-btn--small" @onclick="() => session.ReopenCommand.ExecuteAsync(null)">@AgentPanelCopy.ReopenAgent</button>
+                                        }
+                                        else
+                                        {
+                                            @if (row.IsLost)
+                                            {
+                                                <button type="button" class="ompos-btn ompos-btn--small" @onclick="() => session.ResumeCommand.ExecuteAsync(null)">@AgentPanelCopy.ResumeAgent</button>
+                                            }
+                                            <button type="button" class="ompos-btn ompos-btn--small ompos-btn--ghost" aria-label="@AgentPanelViewText.CloseName" @onclick="() => RequestCloseAsync(row)">@AgentPanelViewText.CloseLabel</button>
+                                        }
+                                    </div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </li>
+            }
+        </ul>
+    }
+
+    <div class="ompos-sr-only" role="status" aria-live="polite" aria-atomic="true">@Panel.PipelineAnnouncement @_announcement</div>
+
+    <div class="ompos-rail-footer">
+        <button type="button" class="ompos-btn ompos-btn--ghost ompos-rail-settings" aria-label="Settings" aria-keyshortcuts="Control+Comma" @onclick="() => OnOpenSettings.InvokeAsync()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11M5.5 3v3M10.5 6.5v3M6.5 10v3" /></svg>Settings</button>
+    </div>
+</div>
+
+@code {
+    private const string ModulePath = "./_content/OmpOS.UI/scripts/ompos-keys.js";
+
+    private ElementReference _list;
+    private IJSObjectReference? _module;
+    private int _guardToken;
+    private bool _guarded;
+    private bool _disposed;
+    private string? _focusedId;
+    private string? _announcement;
+    private string? _error;
+    private AgentRow? _confirmRow;
+
+    /// <summary>Gets the Agent Panel view model the rail draws: the rows, the loading and error state and the commands.</summary>
+    [Parameter, EditorRequired]
+    public AgentPanelViewModel Panel { get; set; } = null!;
+
+    /// <summary>Gets the callback invoked after the user opened an agent by click or Enter, so the page can move the focus to its thread. The argument is the session identifier.</summary>
+    [Parameter]
+    public EventCallback<string> OnOpened { get; set; }
+
+    /// <summary>Gets the callback invoked after a new agent was started; the page moves the focus to the new thread.</summary>
+    [Parameter]
+    public EventCallback OnNewCompleted { get; set; }
+
+    /// <summary>Gets the callback invoked after a new omp terminal was started.</summary>
+    [Parameter]
+    public EventCallback OnNewTerminalCompleted { get; set; }
+
+    /// <summary>Gets the callback invoked when the Settings button is pressed.</summary>
+    [Parameter]
+    public EventCallback OnOpenSettings { get; set; }
+
+    /// <summary>Gets the shell that hosts the rail, so a pick closes the drawer on a narrow screen.</summary>
+    [CascadingParameter]
+    public AppShell? Shell { get; set; }
+
+    private SessionCatalogModel Catalog => Panel.Catalog;
+
+    private IReadOnlyList<AgentRow> Rows => Catalog.Rows;
+
+    private IEnumerable<IGrouping<AgentRowGroup, AgentRow>> Groups => Rows.GroupBy(static row => row.Group);
+
+    // The roving tabindex stop: the row the focus last rested on, else the selected row, else the first row.
+    private string? TabStopId
+    {
+        get
+        {
+            if (_focusedId is not null && Rows.Any(row => string.Equals(row.Id, _focusedId, StringComparison.Ordinal)))
+            {
+                return _focusedId;
+            }
+
+            if (Catalog.SelectedId is not null && Rows.Any(row => string.Equals(row.Id, Catalog.SelectedId, StringComparison.Ordinal)))
+            {
+                return Catalog.SelectedId;
+            }
+
+            return Rows.Count > 0 ? Rows[0].Id : null;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        Observe(Panel);
+        Observe(Panel.Catalog);
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
+        var listShown = Rows.Count > 0;
+        if (listShown && !_guarded)
+        {
+            _guardToken = await _module.InvokeAsync<int>("guardList", _list).ConfigureAwait(true);
+            _guarded = true;
+        }
+        else if (!listShown && _guarded)
+        {
+            await _module.InvokeVoidAsync("release", _guardToken).ConfigureAwait(true);
+            _guarded = false;
+        }
+    }
+
+    private static string GroupId(AgentRowGroup group) => "ompos-agent-group-" + group.ToString().ToLowerInvariant();
+
+    private static string StatusName(AgentRowStatus status) => status.ToString().ToLowerInvariant();
+
+    private async Task OpenAsync(AgentRow row)
+    {
+        _error = null;
+        _focusedId = row.Id;
+        Panel.SelectSession(row.Id);
+        _announcement = "Opened " + row.Title + ".";
+        await OnOpened.InvokeAsync(row.Id).ConfigureAwait(true);
+        if (Shell is not null)
+        {
+            await Shell.CloseDrawerAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async Task NewAgentAsync()
+    {
+        _error = null;
+        await Panel.NewSessionCommand.ExecuteAsync(null).ConfigureAwait(true);
+        await OnNewCompleted.InvokeAsync().ConfigureAwait(true);
+        if (Shell is not null)
+        {
+            await Shell.CloseDrawerAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async Task NewTerminalAsync()
+    {
+        _error = null;
+        await Panel.NewTerminalCommand.ExecuteAsync(null).ConfigureAwait(true);
+        await OnNewTerminalCompleted.InvokeAsync().ConfigureAwait(true);
+        if (Shell is not null)
+        {
+            await Shell.CloseDrawerAsync().ConfigureAwait(true);
+        }
+    }
+
+    private Task RetryLoadingAsync() => Panel.RetryLoadingCommand.ExecuteAsync(null);
+
+    private void OnFilterInput(ChangeEventArgs args) => Catalog.Filter = args.Value?.ToString() ?? string.Empty;
+
+    private void OnFilterKeyDown(KeyboardEventArgs args)
+    {
+        if (string.Equals(args.Key, "Escape", StringComparison.Ordinal) && Catalog.Filter.Length > 0)
+        {
+            Catalog.Filter = string.Empty;
+        }
+    }
+
+    private async Task OnRowsKeyDown(KeyboardEventArgs args)
+    {
+        if (args.CtrlKey || args.AltKey || args.MetaKey || args.ShiftKey || Rows.Count == 0)
+        {
+            return;
+        }
+
+        var current = Rows.ToList().FindIndex(row => string.Equals(row.Id, TabStopId, StringComparison.Ordinal));
+        switch (args.Key)
+        {
+            case "ArrowDown":
+                await MoveFocusAsync(Math.Min(current + 1, Rows.Count - 1)).ConfigureAwait(true);
+                break;
+            case "ArrowUp":
+                await MoveFocusAsync(Math.Max(current - 1, 0)).ConfigureAwait(true);
+                break;
+            case "Home":
+                await MoveFocusAsync(0).ConfigureAwait(true);
+                break;
+            case "End":
+                await MoveFocusAsync(Rows.Count - 1).ConfigureAwait(true);
+                break;
+            case "Delete" when current >= 0:
+                await RequestCloseAsync(Rows[current]).ConfigureAwait(true);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private async Task MoveFocusAsync(int index)
+    {
+        if (index < 0 || index >= Rows.Count || _module is null)
+        {
+            return;
+        }
+
+        _focusedId = Rows[index].Id;
+        await _module.InvokeVoidAsync("focusItem", _list, _focusedId).ConfigureAwait(true);
+    }
+
+    /// <summary>The accessible name of a row: the words the row shows, in the order it shows them, so the visible label is part of the name (WCAG 2.5.3).</summary>
+    private static string RowName(AgentRow row)
+    {
+        var parts = new List<string> { row.Title, row.IsStale && row.QuietText is not null ? row.QuietText : row.LastActivityText, row.StatusText };
+        if (row.IsLongRunning)
+        {
+            parts.Add(AgentPanelViewText.LongRunning);
+        }
+
+        if (!string.IsNullOrEmpty(row.TaskTag))
+        {
+            parts.Add(row.TaskTag);
+        }
+
+        if (row.IsTerminal)
+        {
+            parts.Add(AgentPanelCopy.TerminalTag);
+        }
+
+        return string.Join(", ", parts);
+    }
+
+    private bool NeedsConfirmation(AgentRow row) =>
+        Panel.Selected is { } selected && string.Equals(selected.Id, row.Id, StringComparison.Ordinal)
+            ? selected.RequiresCloseConfirmation
+            : row.Group is AgentRowGroup.NeedsYou or AgentRowGroup.Running;
+
+    private async Task RequestCloseAsync(AgentRow row)
+    {
+        if (row.Status == AgentRowStatus.Closed)
+        {
+            return;
+        }
+
+        if (NeedsConfirmation(row))
+        {
+            _confirmRow = row;
+            return;
+        }
+
+        await CloseAsync(row).ConfigureAwait(true);
+    }
+
+    private async Task ConfirmCloseAsync()
+    {
+        var row = _confirmRow;
+        _confirmRow = null;
+        if (row is not null)
+        {
+            await CloseAsync(row).ConfigureAwait(true);
+        }
+    }
+
+    private void CancelClose() => _confirmRow = null;
+
+    private async Task CloseAsync(AgentRow row)
+    {
+        try
+        {
+            _error = null;
+            await Panel.CloseSessionAsync(row.Id, CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception fault) when (fault is not OutOfMemoryException)
+        {
+            _error = AgentPanelCopy.ActionFailed("close the agent", fault.Message);
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        _disposed = true;
+        base.Dispose(disposing);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        Dispose();
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (_guarded)
+            {
+                await _module.InvokeVoidAsync("release", _guardToken).ConfigureAwait(false);
+            }
+
+            await _module.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the listeners went with it.
+        }
+    }
+}

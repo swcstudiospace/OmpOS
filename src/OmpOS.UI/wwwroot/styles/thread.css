@@ -1,0 +1,396 @@
+/* The thread chrome above and below the transcript: the header, the notices, the pipeline strip and its details, the confirmation bars,
+   the run summary and the closed-agent note. Colours, sizes and fonts come from tokens.css only. */
+
+.ompos-thread-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+  padding-bottom: var(--ompos-gap-8);
+  border-bottom: 1px solid var(--ompos-border);
+}
+
+.ompos-thread-heading,
+.ompos-thread-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ompos-gap-8);
+  min-width: 0;
+}
+
+.ompos-thread-title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--ompos-font-size-heading);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-heading);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ompos-thread-heading .ompos-spacer {
+  flex: 1;
+}
+
+.ompos-thread-workspace {
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-label);
+}
+
+.ompos-status-chip .ompos-glyph,
+.ompos-steering-badge .ompos-glyph {
+  width: 12px;
+  height: 12px;
+}
+
+.ompos-panel-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ompos-gap-8);
+  margin: 0;
+  padding: var(--ompos-gap-8) var(--ompos-gap-12);
+  background: var(--ompos-surface-sunken);
+  border-left: 4px solid var(--ompos-warning);
+  border-radius: var(--ompos-radius-6);
+  font-size: var(--ompos-font-size-label);
+}
+
+.ompos-panel-notice[data-kind='error'] {
+  border-left-color: var(--ompos-error);
+}
+
+.ompos-panel-notice[data-kind='resumed'] {
+  border-left-color: var(--ompos-success);
+}
+
+.ompos-panel-notice-text {
+  margin: 0;
+}
+
+.ompos-thread-notice {
+  margin: 0;
+  padding: var(--ompos-gap-4) var(--ompos-gap-12);
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-label);
+}
+
+/* Confirmation bars (stop and close). */
+.ompos-confirm-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ompos-gap-8);
+  padding: var(--ompos-gap-8) var(--ompos-gap-12);
+  background: var(--ompos-surface-sunken);
+  border: 1px solid var(--ompos-border-strong);
+  border-radius: var(--ompos-radius-8);
+}
+
+.ompos-confirm-text {
+  flex: 1;
+  min-width: 12rem;
+  margin: 0;
+  font-size: var(--ompos-font-size-label);
+}
+
+.ompos-confirm-actions {
+  display: flex;
+  gap: var(--ompos-gap-8);
+}
+
+/* Pipeline strip: one line of plugin pills that opens the stage details. */
+.ompos-pipeline {
+  position: relative;
+  border-bottom: 1px solid var(--ompos-border);
+}
+
+.ompos-pipeline-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ompos-gap-4) var(--ompos-gap-12);
+  min-height: var(--ompos-pipeline-height);
+}
+
+.ompos-pipeline-strip {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ompos-control-height-small);
+  padding: 0 var(--ompos-gap-4);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ompos-radius-6);
+  color: var(--ompos-text);
+}
+
+.ompos-pipeline-strip:hover {
+  background: var(--ompos-hover);
+}
+
+.ompos-pipeline-strip[aria-expanded='true'] {
+  background: var(--ompos-selected);
+}
+
+.ompos-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--ompos-gap-2) var(--ompos-gap-12);
+}
+
+.ompos-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ompos-gap-4);
+  font-size: var(--ompos-font-size-small);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-small);
+  white-space: nowrap;
+}
+
+.ompos-pill .ompos-glyph {
+  width: 14px;
+  height: 14px;
+}
+
+.ompos-pipeline-latest {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ompos-pipeline-latest:empty {
+  display: none;
+}
+
+.ompos-pipeline-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-12);
+  max-height: 24rem;
+  margin: var(--ompos-gap-4) 0 var(--ompos-gap-8);
+  padding: var(--ompos-gap-12);
+  overflow-y: auto;
+  background: var(--ompos-surface-raised);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-8);
+  box-shadow: var(--ompos-shadow-popup);
+  font-size: var(--ompos-font-size-label);
+}
+
+.ompos-pipeline-heading {
+  margin: 0;
+  font-size: var(--ompos-font-size-label);
+  font-weight: var(--ompos-font-weight-semibold);
+}
+
+.ompos-stage-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+}
+
+.ompos-stage-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-stage-rollup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ompos-gap-4);
+}
+
+.ompos-stage-empty {
+  margin: 0;
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+}
+
+.ompos-stage-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ompos-stage-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--ompos-gap-8);
+  min-height: var(--ompos-control-height-small);
+}
+
+.ompos-stage-row[data-depth='1'] {
+  padding-left: 16px;
+}
+
+.ompos-stage-row[data-depth='2'] {
+  padding-left: 32px;
+}
+
+.ompos-stage-row[data-depth='3'] {
+  padding-left: 48px;
+}
+
+.ompos-stage-row[data-depth='4'] {
+  padding-left: 64px;
+}
+
+.ompos-stage-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ompos-gap-2);
+  min-width: 0;
+}
+
+.ompos-stage-title {
+  font-weight: var(--ompos-font-weight-medium);
+}
+
+.ompos-stage-detail,
+.ompos-stage-effect {
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+}
+
+.ompos-stage-fix,
+.ompos-stage-graph,
+.ompos-task-card code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-family: var(--ompos-font-mono);
+  font-size: var(--ompos-font-size-mono);
+}
+
+.ompos-task-context {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+}
+
+.ompos-task-context-heading {
+  margin: 0;
+  font-weight: var(--ompos-font-weight-semibold);
+}
+
+.ompos-task-context-body,
+.ompos-note-empty,
+.ompos-note-meta,
+.ompos-note-more {
+  margin: 0;
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+}
+
+.ompos-task-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ompos-gap-2) var(--ompos-gap-12);
+  margin: 0;
+}
+
+.ompos-task-card dt {
+  color: var(--ompos-text-secondary);
+}
+
+.ompos-task-card dd {
+  margin: 0;
+}
+
+.ompos-note-list ul,
+.ompos-task-warnings {
+  margin: 0;
+  padding-left: var(--ompos-gap-12);
+}
+
+.ompos-note-list-heading {
+  margin: 0;
+  font-size: var(--ompos-font-size-small);
+  font-weight: var(--ompos-font-weight-semibold);
+}
+
+.ompos-run-summary {
+  margin: 0;
+  padding: var(--ompos-gap-8) var(--ompos-gap-12);
+  background: var(--ompos-surface-sunken);
+  border-left: 4px solid var(--ompos-success);
+  border-radius: var(--ompos-radius-6);
+  font-size: var(--ompos-font-size-label);
+}
+
+.ompos-closed-note {
+  padding: var(--ompos-gap-12);
+  background: var(--ompos-surface-sunken);
+  border-radius: var(--ompos-radius-8);
+  color: var(--ompos-text);
+}
+
+.ompos-closed-note p {
+  margin: 0;
+}
+
+/* Tool approvals ------------------------------------------------------------------------------------------------------------ */
+
+.ompos-approvals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-approval {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+  padding: var(--ompos-gap-8) var(--ompos-gap-12);
+  background: var(--ompos-surface);
+  border: 1px solid var(--ompos-accent);
+  border-radius: var(--ompos-radius-8);
+}
+
+.ompos-approval[data-status='allowed'],
+.ompos-approval[data-status='denied'] {
+  border-color: var(--ompos-border);
+}
+
+.ompos-approval p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ompos-approval-tool {
+  font-weight: var(--ompos-font-weight-semibold);
+}
+
+.ompos-approval code {
+  font-family: var(--ompos-font-mono);
+  font-size: var(--ompos-font-size-mono);
+}
+
+.ompos-approval-label,
+.ompos-approval-hint {
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+}
+
+.ompos-approval-message[data-fault='true'] {
+  color: var(--ompos-error);
+}
+
+.ompos-approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ompos-gap-8);
+}

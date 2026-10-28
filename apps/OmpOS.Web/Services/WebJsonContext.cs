@@ -12,6 +12,8 @@ namespace OmpOS.Web.Services;
     UseStringEnumConverter = true)]
 [JsonSerializable(typeof(CreateSessionRequest))]
 [JsonSerializable(typeof(SubmitPromptRequest))]
+[JsonSerializable(typeof(ToolDecisionRequest))]
+[JsonSerializable(typeof(ApiProblemBody))]
 internal sealed partial class WebJsonContext : JsonSerializerContext
 {
 }

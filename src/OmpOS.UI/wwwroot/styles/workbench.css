@@ -1,0 +1,78 @@
+/* Workbench regions: the view tabs in the top bar, the view panel, the panel states and the permanent demo banner. */
+
+.ompos-topbar-tabs {
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+  margin-left: var(--ompos-gap-12);
+}
+
+.ompos-viewtabs {
+  border-bottom: 0;
+}
+
+.ompos-viewtabs .ompos-tab {
+  min-width: var(--ompos-target-min);
+}
+
+.ompos-view-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ompos-view-panel:focus {
+  outline: none;
+}
+
+.ompos-panel-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ompos-gap-8);
+  width: 100%;
+  max-width: var(--ompos-thread-max);
+  margin: var(--ompos-gap-12) auto;
+  padding: var(--ompos-gap-12);
+}
+
+.ompos-panel-state-heading {
+  margin: 0;
+  font-size: var(--ompos-font-size-heading);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-heading);
+}
+
+.ompos-panel-state p {
+  margin: 0;
+  color: var(--ompos-text-secondary);
+}
+
+/* The demo banner is permanent: no close control, and it sticks under the top bar so the page scrolling to follow a streaming reply never moves it out of sight. */
+.ompos-demo-banner {
+  position: sticky;
+  top: var(--ompos-topbar-block);
+  z-index: var(--ompos-z-sticky);
+  padding: var(--ompos-gap-6) var(--ompos-gap-12);
+  background: var(--ompos-selected);
+  border-bottom: 1px solid var(--ompos-border-strong);
+  color: var(--ompos-text);
+  font-size: var(--ompos-font-size-label);
+  font-weight: var(--ompos-font-weight-medium);
+  text-align: center;
+}
+
+@media (max-width: 559.98px) {
+  .ompos-topbar-tabs {
+    margin-left: 0;
+  }
+
+  .ompos-viewtabs .ompos-tab {
+    padding: 0 var(--ompos-gap-8);
+  }
+
+  .ompos-review-panel {
+    width: 100vw;
+  }
+}

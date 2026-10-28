@@ -275,7 +275,7 @@ function clickSelector(selector) {
 }
 
 function clickConversation(index) {
-  const items = document.querySelectorAll(".ompos-conversation-item");
+  const items = document.querySelectorAll(".ompos-agent-row");
   if (!items[index]) return false;
   items[index].click();
   return true;
@@ -408,8 +408,8 @@ try {
   await openPage(APP_URL);
   await waitFor(`!!document.querySelector(".ompos-shell")`, 60000);
   const errorsBeforeReload = consoleErrors.length;
-  await waitFor(`!!document.querySelector(".ompos-conversation-item")`, 30000);
-  const conversationItems = await evalValue(`document.querySelectorAll(".ompos-conversation-item").length`);
+  await waitFor(`!!document.querySelector(".ompos-agent-row")`, 30000);
+  const conversationItems = await evalValue(`document.querySelectorAll(".ompos-agent-row").length`);
   // Index.razor selects the first listed conversation on load, which can be an empty session created on
   // first load. Open each listed conversation until one renders its stored history.
   let openedIndex = -1;

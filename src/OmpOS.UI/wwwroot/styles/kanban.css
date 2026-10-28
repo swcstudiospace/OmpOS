@@ -1,0 +1,304 @@
+/* Kanban tab: ten columns on a horizontally scrolling board, one card per session. Colours, sizes and fonts come from tokens.css only.
+   Every column keeps its full width (--ompos-kanban-column) and the board scrolls, so no column is ever cut off. */
+
+.ompos-kanban {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-12);
+  min-width: 0;
+  padding: 16px;
+}
+
+.ompos-kanban-title {
+  font-size: var(--ompos-font-size-heading);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-heading);
+}
+
+.ompos-kanban-hint {
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+/* Panel states: a centred column, as wide as 420 px. */
+.ompos-kanban-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ompos-gap-12);
+  width: 100%;
+  max-width: 420px;
+  margin: 48px auto;
+  text-align: center;
+}
+
+.ompos-kanban-state-heading {
+  font-family: var(--ompos-font-display);
+  font-size: var(--ompos-font-size-display);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-display);
+}
+
+.ompos-kanban-state-body {
+  color: var(--ompos-text-secondary);
+}
+
+.ompos-kanban-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ompos-gap-8);
+  padding: var(--ompos-gap-8) var(--ompos-gap-12);
+  background: var(--ompos-surface-sunken);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-8);
+  font-size: var(--ompos-font-size-label);
+  line-height: var(--ompos-line-height-label);
+}
+
+.ompos-kanban-banner[data-tone='error'] {
+  color: var(--ompos-error);
+}
+
+.ompos-kanban-skeleton {
+  display: flex;
+  gap: var(--ompos-gap-8);
+  width: 100%;
+}
+
+.ompos-kanban-skeleton-bar {
+  flex: 1;
+  height: 12px;
+  background: var(--ompos-surface-active);
+  border-radius: var(--ompos-radius-4);
+}
+
+/* The board. It scrolls sideways; a column never shrinks below its own width. */
+.ompos-kanban-columns {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ompos-gap-8);
+  padding-bottom: var(--ompos-gap-8);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.ompos-kanban-column {
+  flex: 0 0 var(--ompos-kanban-column);
+  min-width: 240px;
+  padding: var(--ompos-gap-8);
+  background: var(--ompos-surface-sunken);
+  border: 2px solid transparent;
+  border-radius: var(--ompos-radius-10);
+}
+
+.ompos-kanban-column-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ompos-gap-8);
+  min-height: 28px;
+  margin-bottom: var(--ompos-gap-8);
+}
+
+.ompos-kanban-column-title {
+  font-family: var(--ompos-font-sans);
+  font-size: var(--ompos-font-size-label);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-label);
+  white-space: nowrap;
+}
+
+.ompos-kanban-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 var(--ompos-gap-6);
+  background: var(--ompos-selected);
+  border-radius: var(--ompos-radius-pill);
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+.ompos-kanban-column-empty {
+  padding: var(--ompos-gap-12) var(--ompos-gap-8);
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+  text-align: center;
+}
+
+.ompos-kanban-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ompos-kanban-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-6);
+  padding: var(--ompos-gap-8) 10px;
+  background: var(--ompos-surface-raised);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-8);
+  box-shadow: var(--ompos-shadow-card);
+}
+
+.ompos-kanban-card:hover {
+  background: var(--ompos-hover);
+}
+
+.ompos-kanban-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-kanban-card-title {
+  min-width: 0;
+  font-size: var(--ompos-font-size-label);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-label);
+}
+
+.ompos-kanban-card-open {
+  display: -webkit-box;
+  min-height: var(--ompos-control-height);
+  max-width: 100%;
+  padding: var(--ompos-gap-4) 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  color: var(--ompos-text);
+  font: inherit;
+  text-align: left;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+.ompos-kanban-card-open:hover {
+  text-decoration: underline;
+}
+
+.ompos-kanban-meta {
+  margin: 0;
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+  overflow-wrap: anywhere;
+}
+
+.ompos-kanban-model {
+  font-family: var(--ompos-font-mono);
+  font-size: var(--ompos-font-size-mono);
+  line-height: var(--ompos-line-height-mono);
+}
+
+.ompos-kanban-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-kanban-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ompos-gap-4);
+  height: var(--ompos-chip-height);
+  padding: 0 var(--ompos-gap-8);
+  border: 1px solid var(--ompos-border-strong);
+  border-radius: var(--ompos-radius-pill);
+  font-size: var(--ompos-font-size-small);
+  font-weight: var(--ompos-font-weight-medium);
+  line-height: var(--ompos-line-height-small);
+  white-space: nowrap;
+}
+
+.ompos-kanban-status-chip[data-tone='primary'] {
+  color: var(--ompos-accent);
+}
+
+.ompos-kanban-status-chip[data-tone='success'] {
+  color: var(--ompos-success);
+}
+
+.ompos-kanban-status-chip[data-tone='warning'] {
+  color: var(--ompos-warning);
+}
+
+.ompos-kanban-status-chip[data-tone='error'] {
+  color: var(--ompos-error);
+}
+
+.ompos-kanban-warn {
+  display: flex;
+  align-items: center;
+  gap: var(--ompos-gap-4);
+  margin: 0;
+  color: var(--ompos-warning);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+.ompos-kanban-substrate {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ompos-gap-2) var(--ompos-gap-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+.ompos-kanban-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ompos-gap-4);
+  margin-top: var(--ompos-gap-2);
+}
+
+.ompos-kanban-steer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-8);
+  padding-top: var(--ompos-gap-8);
+  border-top: 1px solid var(--ompos-border);
+}
+
+.ompos-kanban-steer-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-kanban-steer-result[data-failed='true'] {
+  color: var(--ompos-error);
+}
+
+.ompos-kanban-live {
+  min-height: var(--ompos-line-height-small);
+  margin: 0;
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+@media (max-width: 559.98px) {
+  .ompos-kanban {
+    padding: var(--ompos-gap-8);
+  }
+}

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Validates the one API origin the hosted web head may call and prints its CSP connect-src value.
 #
-# Input:  OMPOS_API_ORIGIN                     https://host[:port] only
+# Input:  OMPOS_DEMO=1                         Demo build (ADR-0017): the web head answers every API route in the browser, so it
+#                                              needs no API origin; prints connect-src 'self' and ignores OMPOS_API_ORIGIN
+#         OMPOS_API_ORIGIN                     https://host[:port] only
 #         OMPOS_API_ORIGIN_ALLOW_LOOPBACK=1    local development only: also accepts http://127.0.0.1:<port>
 # Output: on success, exactly one line: connect-src 'self' <origin>
 # Exit:   0 on success; 1 on any invalid or missing origin. The origin value is never printed,
@@ -12,6 +14,13 @@ fail() {
   printf 'render-csp: %s\n' "$1" >&2
   exit 1
 }
+
+# The Demo makes no network call, so its CSP allows nothing but the page's own origin. Only the literal 1 selects it: any other value
+# (empty, 0, true) is a normal build and still fails closed without an origin below.
+if [[ "${OMPOS_DEMO-}" == "1" ]]; then
+  printf "connect-src 'self'\n"
+  exit 0
+fi
 
 origin="${OMPOS_API_ORIGIN-}"
 

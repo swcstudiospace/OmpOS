@@ -1,0 +1,162 @@
+@namespace OmpOS.UI.Components.Settings
+@inherits ObservableComponent
+@using OmpOS.Presentation.Settings
+<div class="ompos-settings-page-frame">
+    <div class="ompos-settings-page-header">
+        <h3 class="ompos-settings-page-title" id="ompos-settings-page-title">@Title</h3>
+        @if (!string.IsNullOrEmpty(Description))
+        {
+            <p class="ompos-settings-page-description">@Description</p>
+        }
+    </div>
+    <div class="ompos-settings-page-content">@ChildContent</div>
+    @if (Editable)
+    {
+        <div class="ompos-settings-footer">
+            <p class="ompos-settings-saveline" role="status" aria-live="polite" data-state="@SaveState">@SaveLine</p>
+            <div class="ompos-settings-footer-buttons">
+                <button type="button" class="ompos-btn ompos-btn--ghost" @onclick="ResetAsync">@SettingsCopy.ResetLabel</button>
+                <button type="button" class="ompos-btn ompos-btn--ghost" disabled="@(!Page.IsDirty)" @onclick="DiscardAsync">@SettingsCopy.DiscardLabel</button>
+                <button type="button" class="ompos-btn ompos-btn--primary" disabled="@(!Page.IsDirty || _saving)" @onclick="SaveAsync">@SettingsCopy.SaveLabel</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private ISettingsPage? _watched;
+    private bool _wasDirty;
+    private bool _saving;
+    private bool _saved;
+
+    /// <summary>Gets the page the frame edits; it supplies the dirty and error state of the footer.</summary>
+    [Parameter, EditorRequired]
+    public ISettingsPage Page { get; set; } = default!;
+
+    /// <summary>Gets the page title, drawn in the display face.</summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>Gets the sentence under the title, or null.</summary>
+    [Parameter]
+    public string? Description { get; set; }
+
+    /// <summary>Gets whether the page has a draft: true shows the footer with Reset, Discard and Save and the persistent save line.</summary>
+    [Parameter]
+    public bool Editable { get; set; } = true;
+
+    /// <summary>Gets the controls of the page.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Gets the window the page belongs to; saving and resetting go through it so its unsaved-changes flag follows.</summary>
+    [CascadingParameter]
+    public SettingsWindowModel? Window { get; set; }
+
+    private string SaveState => _saving ? "saving" : HasInvalidEntries ? "error" : Page.IsDirty ? "dirty" : _saved ? "saved" : "clean";
+
+    private bool HasInvalidEntries => Page.HasError;
+
+    private string SaveLine
+    {
+        get
+        {
+            if (_saving)
+            {
+                return SettingsWebCopy.Saving;
+            }
+
+            if (Page is SettingsPageBase { SaveError.Length: > 0 } failed)
+            {
+                return SettingsCopy.SaveFailedHeading + ". " + failed.SaveError;
+            }
+
+            if (Page.HasError)
+            {
+                return SettingsWebCopy.FixEntries;
+            }
+
+            if (Page.IsDirty)
+            {
+                return SettingsCopy.UnsavedBadge;
+            }
+
+            return _saved ? SettingsWebCopy.Saved : string.Empty;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_watched, Page))
+        {
+            StopObserving(_watched);
+            _watched = Page;
+        }
+
+        Observe(Page);
+    }
+
+    /// <inheritdoc />
+    protected override bool ShouldRender()
+    {
+        if (Page.IsDirty && !_wasDirty)
+        {
+            _saved = false;
+        }
+
+        _wasDirty = Page.IsDirty;
+        return true;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        bool saved;
+        try
+        {
+            saved = Window is null
+                ? await Page.SaveAsync(CancellationToken.None).ConfigureAwait(true)
+                : await Window.SaveAsync(Page.Section, CancellationToken.None).ConfigureAwait(true);
+        }
+        finally
+        {
+            _saving = false;
+        }
+
+        _saved = saved && !Page.IsDirty;
+    }
+
+    private Task ResetAsync()
+    {
+        _saved = false;
+        if (Window is null)
+        {
+            Page.Reset();
+        }
+        else
+        {
+            Window.ResetSection(Page.Section);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task DiscardAsync()
+    {
+        _saved = false;
+        Page.Discard();
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            StopObserving(_watched);
+        }
+
+        base.Dispose(disposing);
+    }
+}

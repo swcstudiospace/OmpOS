@@ -1,144 +1,155 @@
 using System.Net;
 using System.Text;
-using Bunit;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
+using OmpOS.Contracts.Catalog;
+using OmpOS.Contracts.Sessions;
+using OmpOS.Presentation.State;
 using OmpOS.Web.Services;
 using Shouldly;
 using Xunit;
 
 namespace OmpOS.Web.Tests;
 
-/// <summary>The composer returns to idle on every terminal path: a completed turn and a refused send.</summary>
-public sealed class ComposerBusyTests : BunitContext
+/// <summary>
+/// The composer returns to idle on every terminal path: a completed turn and a refused send. These ran against the old page with scripted
+/// HTTP; they now run against the workbench with scripted HTTP, because the page only mounts the workbench's view models.
+/// </summary>
+public sealed class ComposerBusyTests
 {
-    /// <summary>The bound for every bUnit wait. The 1 s default is too short for a loaded host, so waits get 10 s.</summary>
-    private static readonly TimeSpan LoadedHostWait = TimeSpan.FromSeconds(10);
+    private const string Id = "composer-busy-test";
 
-    /// <summary>A completed turn flips the composer back from Stop to Send with no error shown.</summary>
+    /// <summary>A completed turn flips the composer back from streaming to idle with no error shown.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
     [Fact]
     public async Task CompletedTurnReleasesTheComposer()
     {
-        using var apiHandler = new ScriptedHandler();
-        using var sseHandler = new ScriptedHandler();
-        using var listed = Json("[]");
-        using var created = Json(SessionJson);
-        using var fetched = Json(SessionJson);
-        using var accepted = Accepted();
-        apiHandler.Enqueue(listed);
-        apiHandler.Enqueue(created);
-        apiHandler.Enqueue(fetched);
-        apiHandler.Enqueue(accepted);
-        var gate = new GatedSseContent(
+        using var handler = new RoutedHandler();
+        using var gate = new GatedSseContent(
             SseFixtures.Frame(SseFixtures.Text(1, "hi"), "text_delta"),
             SseFixtures.Frame(SseFixtures.Completed(2), "completed"));
-        using var streamed = Sse(gate);
-        sseHandler.Enqueue(streamed);
-        using var apiHttp = new HttpClient(apiHandler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
-        using var sseHttp = new HttpClient(sseHandler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
-        Services.AddSingleton(new ApiSessionClient(apiHttp));
-        Services.AddSingleton(new SseEventStream(sseHttp));
-        JSInterop.Mode = JSRuntimeMode.Loose;
-        var cut = Render<OmpOS.Web.Pages.Index>();
-        await WaitForSessionLoadedAsync(cut).ConfigureAwait(true);
+        ScriptBoot(handler);
+        handler.On(HttpMethod.Post, $"/sessions/{Id}/prompts", _ => new HttpResponseMessage(HttpStatusCode.Accepted));
+        handler.On(HttpMethod.Get, $"/sessions/{Id}/events", _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = gate });
+        using var http = new HttpClient(handler, disposeHandler: false) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
+        var workbench = NewWorkbench(http);
+        await using var scope = workbench.ConfigureAwait(true);
+        await workbench.StartAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await workbench.Panel.NewSessionAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        var session = workbench.Panel.Selected.ShouldNotBeNull();
 
-        await cut.Find("textarea").InputAsync(new ChangeEventArgs { Value = "hello" }).ConfigureAwait(true);
-        await cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" }).ConfigureAwait(true);
-        await cut.WaitForAssertionAsync(() =>
-        {
-            cut.Find("button[aria-label='Stop response']").ShouldNotBeNull();
-            return Task.CompletedTask;
-        }, LoadedHostWait).ConfigureAwait(true);
+        session.Composer.Draft = "hello";
+        await session.Composer.SendAsync().ConfigureAwait(true);
+        session.Composer.IsStreaming.ShouldBeTrue("the composer shows Stop while the turn streams");
 
         gate.Release();
-        await cut.WaitForAssertionAsync(() =>
-        {
-            cut.Find("button[aria-label='Send message']").ShouldNotBeNull();
-            return Task.CompletedTask;
-        }, LoadedHostWait).ConfigureAwait(true);
-        cut.FindAll("[role='alert']").ShouldBeEmpty();
+        await WaitUntilAsync(session.Composer, () => !session.Composer.IsStreaming).ConfigureAwait(true);
+
+        session.Session.State.ShouldBe(SessionViewState.Success);
+        session.Session.LastError.ShouldBeNull();
     }
 
     /// <summary>A refused send shows the error and leaves the composer idle instead of stuck.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
     [Fact]
     public async Task RefusedSendShowsErrorAndKeepsComposerIdle()
     {
-        using var apiHandler = new ScriptedHandler();
-        using var sseHandler = new ScriptedHandler();
-        using var listed = Json("[]");
-        using var created = Json(SessionJson);
-        using var fetched = Json(SessionJson);
-        using var refused = Refused();
-        apiHandler.Enqueue(listed);
-        apiHandler.Enqueue(created);
-        apiHandler.Enqueue(fetched);
-        apiHandler.Enqueue(refused);
-        using var apiHttp = new HttpClient(apiHandler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
-        using var sseHttp = new HttpClient(sseHandler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
-        Services.AddSingleton(new ApiSessionClient(apiHttp));
-        Services.AddSingleton(new SseEventStream(sseHttp));
-        JSInterop.Mode = JSRuntimeMode.Loose;
-        var cut = Render<OmpOS.Web.Pages.Index>();
-        await WaitForSessionLoadedAsync(cut).ConfigureAwait(true);
-
-        await cut.Find("textarea").InputAsync(new ChangeEventArgs { Value = "hello" }).ConfigureAwait(true);
-        await cut.Find("textarea").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" }).ConfigureAwait(true);
-
-        await cut.WaitForAssertionAsync(() =>
+        using var handler = new RoutedHandler();
+        ScriptBoot(handler);
+        handler.On(HttpMethod.Post, $"/sessions/{Id}/prompts", _ => new HttpResponseMessage(HttpStatusCode.InternalServerError)
         {
-            cut.Find("p.ompos-error").TextContent.ShouldContain("Could not send");
-            cut.Find("button[aria-label='Send message']").ShouldNotBeNull();
-            return Task.CompletedTask;
-        }, LoadedHostWait).ConfigureAwait(true);
+            Content = new StringContent("""{"title":"Prompt execution failed.","status":500}""", Encoding.UTF8, "application/problem+json"),
+        });
+        using var http = new HttpClient(handler, disposeHandler: false) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
+        var workbench = NewWorkbench(http);
+        await using var scope = workbench.ConfigureAwait(true);
+        await workbench.StartAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await workbench.Panel.NewSessionAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        var session = workbench.Panel.Selected.ShouldNotBeNull();
+
+        session.Composer.Draft = "hello";
+        await session.Composer.SendAsync().ConfigureAwait(true);
+
+        session.Session.State.ShouldBe(SessionViewState.RecoverableError);
+        session.Session.LastError.ShouldNotBeNull().ShouldContain("Prompt execution failed");
+        session.Composer.IsStreaming.ShouldBeFalse();
+        session.Composer.Draft.ShouldBe("hello");
     }
 
-    /// <summary>
-    /// Waits until the page has loaded its session. The page shows the empty-state paragraph only after the session's
-    /// history is applied, and it sets the selected session in the same step, so the send that follows is accepted.
-    /// The harness does not re-render the page when its asynchronous load completes, so each pass yields to queued work
-    /// and then requests a render. The loop is bounded by <see cref="LoadedHostWait"/>.
-    /// </summary>
-    /// <param name="cut">The rendered page.</param>
-    private static async Task WaitForSessionLoadedAsync(IRenderedComponent<OmpOS.Web.Pages.Index> cut)
+    private static WebWorkbench NewWorkbench(HttpClient http)
     {
-        var deadline = DateTime.UtcNow + LoadedHostWait;
-        while (cut.FindAll("p.ompos-empty").Count == 0 && DateTime.UtcNow < deadline)
+        var time = new ManualTimeProvider();
+        return new WebWorkbench(
+            new OmpApiClient(http),
+            new UserEventFeed(http, new SseStreamOptions { MaxReconnects = null }, time),
+            new NoJsRuntime(),
+            time,
+            new WebWorkbenchOptions(IsDemo: false, ApiHost: "127.0.0.1:5187"),
+            []);
+    }
+
+    private static async Task WaitUntilAsync(System.ComponentModel.INotifyPropertyChanged source, Func<bool> condition)
+    {
+        var reached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            await Task.Delay(10).ConfigureAwait(true);
-            cut.Render(_ => { });
+            if (condition())
+            {
+                _ = reached.TrySetResult();
+            }
         }
 
-        cut.Find("p.ompos-empty").ShouldNotBeNull();
+        source.PropertyChanged += OnChanged;
+        try
+        {
+            if (!condition())
+            {
+                await reached.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            }
+        }
+        finally
+        {
+            source.PropertyChanged -= OnChanged;
+        }
     }
 
-    /// <summary>Builds a JSON success response for a scripted API call.</summary>
-    /// <param name="json">The response body.</param>
-    /// <returns>The queued response message.</returns>
-    private static HttpResponseMessage Json(string json) => new(HttpStatusCode.OK)
+    /// <summary>Scripts everything the workbench reads while it boots and while it opens the one session this test creates.</summary>
+    /// <param name="handler">The handler to script.</param>
+    private static void ScriptBoot(RoutedHandler handler)
+    {
+        var listed = 0;
+        var entry = new SessionCatalogEntry
+        {
+            Id = Id,
+            OwnerId = "local-dev",
+            CreatedAt = DateTimeOffset.UnixEpoch,
+            UpdatedAt = DateTimeOffset.UnixEpoch,
+            Status = SessionStatus.Idle,
+            Messages = [],
+            Events = [],
+            Kind = CatalogSessionKind.Agent,
+            RowStatus = CatalogRowStatus.Ready,
+            Group = CatalogRowGroup.Idle,
+            LastActivityAt = DateTimeOffset.UnixEpoch,
+            Closed = false,
+        };
+        handler.On(HttpMethod.Get, "/sessions", _ => Json(++listed == 1 ? "[]" : JsonSerializer.Serialize(new[] { entry }, CatalogJsonContext.Default.SessionCatalogEntryArray)));
+        handler.OnProblem(HttpMethod.Get, "/workspace", HttpStatusCode.NotFound, null, "Not found.", "No workspace.");
+        handler.OnProblem(HttpMethod.Get, "/source", HttpStatusCode.NotFound, null, "Not found.", "No source.");
+        handler.On(HttpMethod.Get, "/events", _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ChunkedSseContent([string.Empty]) });
+        handler.On(HttpMethod.Post, "/sessions", _ => Json(
+            $$"""{"id":"{{Id}}","ownerId":"local-dev","createdAt":"2026-10-21T00:00:00+00:00","updatedAt":"2026-10-21T00:00:00+00:00","status":"Idle","messages":[],"events":[]}""",
+            HttpStatusCode.Created));
+        handler.OnJson(HttpMethod.Get, $"/sessions/{Id}", $$"""{"id":"{{Id}}","ownerId":"local-dev","createdAt":"2026-10-21T00:00:00+00:00","updatedAt":"2026-10-21T00:00:00+00:00","status":"Idle","messages":[],"events":[]}""");
+        handler.OnJson(HttpMethod.Get, $"/sessions/{Id}/stages", $$"""{"sessionId":"{{Id}}","available":false,"reason":"none","stages":[]}""");
+        handler.OnJson(HttpMethod.Get, $"/sessions/{Id}/context", $$"""{"sessionId":"{{Id}}","available":false,"reason":"none"}""");
+        handler.OnJson(HttpMethod.Get, $"/sessions/{Id}/config-options", $$"""{"sessionId":"{{Id}}","available":false,"live":false,"reason":"none","options":[]}""");
+        handler.OnJson(HttpMethod.Get, $"/sessions/{Id}/commands", $$"""{"sessionId":"{{Id}}","available":false,"live":false,"reason":"none","commands":[]}""");
+        handler.OnJson(HttpMethod.Get, $"/sessions/{Id}/changes", $$"""{"sessionId":"{{Id}}","workspaceAvailable":false,"changes":[]}""");
+        handler.OnJson(HttpMethod.Get, $"/sessions/{Id}/tool-approvals", $$"""{"sessionId":"{{Id}}","approvals":[]}""");
+    }
+
+    private static HttpResponseMessage Json(string json, HttpStatusCode status = HttpStatusCode.OK) => new(status)
     {
         Content = new StringContent(json, Encoding.UTF8, "application/json"),
     };
-
-    /// <summary>Builds the accepted response for a scripted prompt submit.</summary>
-    /// <returns>The queued response message.</returns>
-    private static HttpResponseMessage Accepted() => new(HttpStatusCode.Accepted);
-
-    /// <summary>Builds the refused response for a scripted prompt submit.</summary>
-    /// <returns>The queued response message.</returns>
-    private static HttpResponseMessage Refused() => new(HttpStatusCode.InternalServerError)
-    {
-        Content = new StringContent("busy", Encoding.UTF8, "application/json"),
-    };
-
-    /// <summary>Builds the SSE response serving the given content.</summary>
-    /// <param name="content">The event-stream content.</param>
-    /// <returns>The queued response message.</returns>
-    private static HttpResponseMessage Sse(HttpContent content) => new(HttpStatusCode.OK)
-    {
-        Content = content,
-    };
-
-    /// <summary>Gets a minimal session body for the create/get round-trips.</summary>
-    private const string SessionJson = """{"id":"composer-busy-test","ownerId":"local-dev","createdAt":"2026-10-21T00:00:00+00:00","updatedAt":"2026-10-21T00:00:00+00:00","status":"Idle","sandboxId":null,"messages":[],"events":[]}""";
 }

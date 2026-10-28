@@ -1,0 +1,186 @@
+@namespace OmpOS.UI.Components.Settings
+@inherits ObservableComponent
+@using OmpOS.Presentation.Settings.Models
+<li class="ompos-provider-card ompos-provider-listing" data-listing="@Model.Id" data-region="@Model.Region" data-kind="@Model.Kind">
+    <div class="ompos-provider-card-head">
+        <h5 class="ompos-provider-card-title">@Model.DisplayName</h5>
+        <span class="ompos-chip">@Model.RegionText</span>
+        <span class="ompos-chip">@Model.KindText</span>
+    </div>
+    @if (Model.CountryText is not null)
+    {
+        <p class="ompos-settings-help">@CountryLine</p>
+    }
+    <p class="ompos-settings-help ompos-provider-status" data-verify="@(Model.VerifyBeforeUse ? "true" : "false")">
+        @Model.StatusText
+        @if (Model.VerifyMark is { } mark)
+        {
+            <span class="ompos-chip ompos-chip--warning">@mark</span>
+        }
+    </p>
+    @if (!string.IsNullOrWhiteSpace(Model.Note))
+    {
+        <p class="ompos-settings-help">@Model.Note</p>
+    }
+    @if (Model.ConfiguredText is { } configured)
+    {
+        <p class="ompos-settings-help" data-configured="true">@configured</p>
+    }
+    @if (Model.IsSignInOnly)
+    {
+        <p class="ompos-settings-help">@Model.SignInText</p>
+    }
+    @if (Model.HasPlan)
+    {
+        <div class="ompos-provider-plan" role="group" aria-label="@(Model.DisplayName + " plan")">
+            <p class="ompos-settings-help ompos-provider-rule">@Model.PlanRuleText</p>
+            <ul class="ompos-provider-tags" aria-label="@(Model.DisplayName + " plan terms")">
+                @foreach (var tag in Model.PlanTags)
+                {
+                    <li><span class="ompos-chip @(Model.IsInteractiveOnly && tag == ProviderListingCopy.InteractiveOnlyTag ? "ompos-chip--warning" : string.Empty)">@tag</span></li>
+                }
+            </ul>
+            @if (Model.PlanTierLines.Count > 0)
+            {
+                <ul class="ompos-settings-plain-list" aria-label="@(Model.DisplayName + " tiers")">
+                    @foreach (var line in Model.PlanTierLines)
+                    {
+                        <li class="ompos-settings-help">@line</li>
+                    }
+                </ul>
+            }
+            @if (Model.PlanHostText is { } hostText)
+            {
+                <p class="ompos-settings-help">@hostText</p>
+            }
+            <SettingsExternalLink Url="Model.PlanUrl" Label="@ProviderListingCopy.PlanPageActionLabel" Subject="@Model.DisplayName" />
+            <SettingsExternalLink Url="Model.PlanRuleSourceUrl" Label="@SettingsWebCopy.PlanRuleSource" Subject="@Model.DisplayName" />
+        </div>
+    }
+    @if (Model.Routes.Count > 0)
+    {
+        if (Model.HasRouteChoice)
+        {
+            <div class="ompos-settings-field">
+                <label class="ompos-settings-label" for="@RouteId">@ProviderListingCopy.RouteLabel</label>
+                <select id="@RouteId" class="ompos-select" aria-label="@Model.RouteFieldName" @onchange="OnRouteChanged">
+                    @foreach (var route in Model.Routes)
+                    {
+                        <option value="@route.Id" selected="@(ReferenceEquals(route, Model.SelectedRoute))">@route.Label</option>
+                    }
+                </select>
+            </div>
+        }
+
+        <p class="ompos-settings-mono ompos-provider-endpoint">@Model.BaseAddressText</p>
+        <p class="ompos-settings-help">@Model.AuthText</p>
+    }
+    @foreach (var input in Model.UrlInputs)
+    {
+        var inputId = UrlInputId(input);
+        <SettingsField For="@inputId" Label="@input.Label" Help="@input.Help" Error="@input.Error">
+            <input id="@inputId" class="ompos-input ompos-settings-mono" type="text" autocomplete="off" spellcheck="false" placeholder="@input.Hint"
+                   aria-label="@input.FieldName" value="@input.Value"
+                   aria-invalid="@(input.Error is null ? null : "true")"
+                   aria-describedby="@SettingsField.DescribedBy(inputId, !string.IsNullOrEmpty(input.Help))"
+                   @oninput="e => input.Value = e.Value?.ToString() ?? string.Empty" />
+        </SettingsField>
+    }
+    <div class="ompos-settings-actions">
+        <SettingsExternalLink Url="Model.DocsUrl" Label="@ProviderListingCopy.DocsActionLabel" Subject="@Model.DisplayName" />
+        <SettingsExternalLink Url="Model.KeyPageUrl" Label="@ProviderListingCopy.KeyPageActionLabel" Subject="@Model.DisplayName" />
+    </div>
+    <p class="ompos-settings-help">@Model.SourceText</p>
+    @if (Model.CanBeginSetup)
+    {
+        <div class="ompos-settings-actions">
+            <button type="button" class="ompos-btn ompos-btn--small" disabled="@Model.IsBusy" aria-label="@Model.SetupActionName" @onclick="Model.BeginSetup">@ProviderListingCopy.SetupActionLabel</button>
+        </div>
+    }
+    @if (Model.IsSetupOpen)
+    {
+        <div class="ompos-settings-confirm" role="group" aria-label="@Model.SetupActionName">
+            @if (Model.HasModelIdsField)
+            {
+                <SettingsField For="@ModelIdsId" Label="@ProviderListingCopy.ModelIdsLabel" Help="@Model.ModelIdsHelp">
+                    <input id="@ModelIdsId" class="ompos-input ompos-settings-mono" type="text" autocomplete="off" spellcheck="false"
+                           aria-label="@Model.ModelIdsFieldName" value="@Model.ModelIdsText"
+                           aria-describedby="@SettingsField.DescribedBy(ModelIdsId, true)"
+                           @oninput="e => Model.ModelIdsText = e.Value?.ToString() ?? string.Empty" />
+                </SettingsField>
+            }
+            @if (Model.TakesKey && Model.ApiKey is { } draft)
+            {
+                <ApiKeyField Draft="draft" InputId="@KeyId" ShowActions="false" />
+            }
+            <div class="ompos-settings-actions">
+                <button type="button" class="ompos-btn ompos-btn--small ompos-btn--primary" disabled="@Model.IsBusy" aria-label="@Model.AddActionName" @onclick="AddAsync">@ProviderListingCopy.AddActionLabel</button>
+                <button type="button" class="ompos-btn ompos-btn--small ompos-btn--ghost" @onclick="Model.CancelSetup">@ProviderListingCopy.CancelActionLabel</button>
+            </div>
+        </div>
+    }
+    <p class="ompos-settings-help ompos-provider-result" role="status" aria-live="polite">@Model.ActionText</p>
+    @if (!string.IsNullOrEmpty(Model.ErrorText))
+    {
+        <p class="ompos-settings-error-text" role="alert">@Model.ErrorText</p>
+    }
+</li>
+
+@code {
+    private ProviderListingCardModel? _watched;
+
+    /// <summary>Gets the listing card model: one provider, aggregator, coding plan or local runtime of the directory.</summary>
+    [Parameter, EditorRequired]
+    public ProviderListingCardModel Model { get; set; } = default!;
+
+    private string CountryLine => Model.ResidencyText is { } residency ? Model.CountryText + " - " + residency : Model.CountryText ?? string.Empty;
+
+    private string RouteId => "ompos-route-" + DomIdOf(Model.Id);
+
+    private string ModelIdsId => "ompos-model-ids-" + DomIdOf(Model.Id);
+
+    private string KeyId => "ompos-listing-key-" + DomIdOf(Model.Id);
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_watched, Model))
+        {
+            StopObserving(_watched);
+            _watched = Model;
+        }
+
+        Observe(Model);
+        foreach (var input in Model.UrlInputs)
+        {
+            Observe(input);
+        }
+    }
+
+    private string UrlInputId(ProviderListingUrlInput input) => "ompos-url-" + DomIdOf(Model.Id) + "-" + DomIdOf(input.Name);
+
+    private static string DomIdOf(string id) => string.Concat(id.Select(static ch => char.IsAsciiLetterOrDigit(ch) || ch is '-' or '_' ? ch : '-'));
+
+    private void OnRouteChanged(ChangeEventArgs args)
+    {
+        var id = args.Value?.ToString();
+        var route = Model.Routes.FirstOrDefault(candidate => string.Equals(candidate.Id, id, StringComparison.Ordinal));
+        if (route is not null)
+        {
+            Model.SelectedRoute = route;
+        }
+    }
+
+    private Task AddAsync() => Model.SaveAsync();
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            StopObserving(_watched);
+        }
+
+        base.Dispose(disposing);
+    }
+}

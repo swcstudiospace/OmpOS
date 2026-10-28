@@ -1,341 +1,75 @@
 @page "/"
-@using System.Diagnostics.CodeAnalysis
 @using Microsoft.Extensions.Logging
-@using OmpOS.Contracts.Sessions
-@using OmpOS.Presentation.Components
-@using OmpOS.Presentation.State
-@using OmpOS.UI.Components
+@using OmpOS.Presentation.AgentPanel
+@using OmpOS.Presentation.Changes
 @using OmpOS.UI.Components.Shell
 @using OmpOS.Web.Services
- @inject ApiSessionClient Api
- @inject SseEventStream EventStream
+@implements IDisposable
+@inject WebWorkbench Workbench
 @inject ILogger<Index> Logger
- @implements IAsyncDisposable
 
 <PageTitle>OmpOS</PageTitle>
 
-<AppShell SkipLinkHref="#ompos-conversation" SkipLinkText="Skip to conversation" WorkspaceLabel="Web workspace">
-    <Rail>
-        <AgentRail Conversations="_conversations" SelectedId="@_selectedId" OnSelected="SelectSessionAsync" OnNew="NewSessionAsync" />
-    </Rail>
-    <ChildContent>
-        <div class="ompos-thread">
-            @if (_error is not null)
-            {
-                <p class="ompos-error" role="alert">@_error</p>
-            }
-            <SessionView Tree="_viewModel.Tree"
-                         ViewState="_viewModel.State"
-                         AutoScrollPaused="_viewModel.AutoScrollPaused"
-                         Announcement="@_viewModel.Announcement"
-                         OnStop="StopStreaming"
-                         OnRetry="RetryAsync"
-                         OnJumpToLatest="JumpToLatest"
-                         AutoScrollPausedChanged="OnAutoScrollPausedChanged" />
-            <div class="ompos-composer-dock">
-                <Composer IsStreaming="_streaming" OnSend="SendAsync" OnStop="StopStreaming" />
-            </div>
-        </div>
-    </ChildContent>
-</AppShell>
+@if (_startFailure is not null)
+{
+    <p class="ompos-error" role="alert">@_startFailure</p>
+}
+
+<WorkbenchView Panel="Workbench.Panel"
+               Board="Workbench.Board"
+               Settings="Workbench.Settings"
+               IsDemo="Workbench.IsDemo"
+               Source="Workbench.Source"
+               Workspace="Workbench.Workspace"
+               ChangesFactory="ChangesFor"
+               RetryAsync="Workbench.RetryAsync" />
 
 @code {
-
-    private static readonly Action<ILogger, string, Exception?> BackgroundStreamFailed =
-        LoggerMessage.Define<string>(
-            LogLevel.Error,
-            new EventId(1, "BackgroundStreamFailed"),
-            "Background stream failed for session {SessionId}");
-
-    private static readonly Action<ILogger, Exception?> ListSessionsFailed =
+    private static readonly Action<ILogger, Exception?> StartFailed =
         LoggerMessage.Define(
             LogLevel.Error,
-            new EventId(2, "ListSessionsFailed"),
-            "Listing the sessions failed");
+            new EventId(1, "WorkbenchStartFailed"),
+            "Starting the workbench failed");
 
-    private static readonly Action<ILogger, Exception?> CreateSessionFailed =
-        LoggerMessage.Define(
-            LogLevel.Error,
-            new EventId(3, "CreateSessionFailed"),
-            "Creating a session failed");
-
-    private static readonly Action<ILogger, string, Exception?> LoadSessionFailed =
-        LoggerMessage.Define<string>(
-            LogLevel.Error,
-            new EventId(4, "LoadSessionFailed"),
-            "Loading session {SessionId} failed");
-
-    private static readonly Action<ILogger, string, Exception?> SendPromptFailed =
-        LoggerMessage.Define<string>(
-            LogLevel.Error,
-            new EventId(5, "SendPromptFailed"),
-            "Submitting a prompt to session {SessionId} failed");
-
-    private SessionViewModel _viewModel = new();
-    private List<ConversationSummary> _conversations = new();
-    private string? _selectedId;
-    private string? _error;
-    private bool _streaming;
-    private CancellationTokenSource? _streamCts;
-    private string? _lastPrompt;
-    // The delivered cursor per session: the Seq of the last event shown for that session (an exclusive resume point).
-    private readonly Dictionary<string, long> _cursors = new(StringComparer.Ordinal);
+    private readonly CancellationTokenSource _lifetime = new();
+    private string? _startFailure;
     private bool _disposed;
-
-    /// <inheritdoc />
-    public ValueTask DisposeAsync()
-    {
-        if (_disposed)
-        {
-            return ValueTask.CompletedTask;
-        }
-
-        _disposed = true;
-        _streamCts?.Cancel();
-        _streamCts?.Dispose();
-        GC.SuppressFinalize(this);
-        return ValueTask.CompletedTask;
-    }
 
     /// <inheritdoc />
     protected override async Task OnInitializedAsync()
     {
+        Workbench.Changed += OnWorkbenchChanged;
         try
         {
-            var sessions = await Api.ListSessionsAsync().ConfigureAwait(true);
-            _conversations = sessions
-                .Select(s => new ConversationSummary { Id = s.Id, Title = TitleFor(s) })
-                .ToList();
-            if (_conversations.Count == 0)
-            {
-                await NewSessionAsync().ConfigureAwait(true);
-            }
-            else
-            {
-                await SelectSessionAsync(_conversations[0].Id).ConfigureAwait(true);
-            }
+            await Workbench.StartAsync(_lifetime.Token).ConfigureAwait(true);
         }
-        catch (Exception ex) when (ex is HttpRequestException or ApiClientException or InvalidOperationException)
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
         {
-            ListSessionsFailed(Logger, ex);
-            _error = $"Could not reach the API: {ex.Message}";
-            _viewModel.MarkOffline();
+            // The page went away while the workbench started; nothing is left to show.
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            StartFailed(Logger, ex);
+            _startFailure = "OmpOS could not start. " + ex.Message;
         }
     }
 
-    private async Task NewSessionAsync()
+    /// <inheritdoc />
+    public void Dispose()
     {
-        _error = null;
-        try
-        {
-            var session = await Api.CreateSessionAsync().ConfigureAwait(true);
-            _conversations.Insert(0, new ConversationSummary { Id = session.Id, Title = TitleFor(session) });
-            await SelectSessionAsync(session.Id).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
-        {
-            CreateSessionFailed(Logger, ex);
-            _error = $"Could not create a session: {ex.Message}";
-        }
-    }
-
-    private async Task SelectSessionAsync(string sessionId)
-    {
-        StopStreaming();
-        _error = null;
-        try
-        {
-            var session = await Api.GetSessionAsync(sessionId).ConfigureAwait(true);
-            if (session is null)
-            {
-                _error = "That session no longer exists.";
-                return;
-            }
-
-            var fresh = new SessionViewModel();
-            var replayed = new SeqTracker();
-            long? lastLoaded = null;
-            foreach (var evt in session.Events.OrderBy(static e => e.Seq))
-            {
-                if (!replayed.TryAdd(evt.Seq))
-                {
-                    continue;
-                }
-
-                fresh.ApplyEvent(evt);
-                lastLoaded = evt.Seq;
-            }
-
-            fresh.MarkHistoryLoaded();
-            if (session.Status == SessionStatus.AwaitingToolApproval)
-            {
-                // The server session status is the only authority for the awaiting-approval
-                // state; permission events during streaming never enter it.
-                fresh.MarkAwaitingApproval();
-            }
-
-            _viewModel = fresh;
-            _selectedId = sessionId;
-
-            // Loading history is authoritative: the session's cursor becomes its last loaded event.
-            if (lastLoaded is long loaded)
-            {
-                _cursors[sessionId] = loaded;
-            }
-            else
-            {
-                _cursors.Remove(sessionId);
-            }
-        }
-        catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
-        {
-            LoadSessionFailed(Logger, sessionId, ex);
-            _error = $"Could not load the session: {ex.Message}";
-        }
-    }
-
-    private async Task<bool> SendAsync(string prompt)
-    {
-        if (_selectedId is null || _streaming)
-        {
-            return false;
-        }
-
-        var sessionId = _selectedId;
-        // Set before the first await, so a second Enter cannot start a concurrent send while this one is submitting.
-        _streaming = true;
-        _error = null;
-        _lastPrompt = prompt;
-        // OnSend is a plain Func, so completing it renders only the composer: request the parent render that
-        // flips the composer to Stop here, and again on every terminal path below.
-        StateHasChanged();
-        try
-        {
-            await Api.SubmitPromptAsync(sessionId, prompt).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is HttpRequestException or ApiClientException)
-        {
-            SendPromptFailed(Logger, sessionId, ex);
-            _streaming = false;
-            _error = $"Could not send the message: {ex.Message}";
-            StateHasChanged();
-            return false;
-        }
-
-        // Acceptance is the POST itself, not the first stream event: the reply streams in the background,
-        // so the composer can clear its draft now.
-        _ = StreamInBackgroundAsync(sessionId);
-        return true;
-    }
-
-    private async Task RetryAsync()
-    {
-        if (_selectedId is null || _lastPrompt is null || _streaming)
+        if (_disposed)
         {
             return;
         }
 
-        await SendAsync(_lastPrompt).ConfigureAwait(true);
+        _disposed = true;
+        Workbench.Changed -= OnWorkbenchChanged;
+        _lifetime.Cancel();
+        _lifetime.Dispose();
     }
 
-    private void StopStreaming()
-    {
-        _streamCts?.Cancel();
-    }
+    // The workbench owns one change set per opened session, fed from the API; null until the session is opened.
+    private ChangeSetModel? ChangesFor(AgentSessionViewModel session) => Workbench.ChangesOf(session.Id);
 
-    private void JumpToLatest()
-    {
-        _viewModel.ResumeAutoScroll();
-    }
-
-    private void OnAutoScrollPausedChanged(bool paused)
-    {
-        if (paused)
-        {
-            _viewModel.PauseAutoScroll();
-        }
-        else
-        {
-            _viewModel.ResumeAutoScroll();
-        }
-    }
-
-    private async Task StreamFromAsync(string sessionId)
-    {
-        StopStreaming();
-        _streamCts?.Dispose();
-        var cts = _streamCts = new CancellationTokenSource();
-        var token = cts.Token;
-        try
-        {
-            // The cursor is exclusive (the last event this session delivered). The SSE client takes the first Seq to
-            // include, so the stream asks for the Seq after the cursor.
-            long? sinceSeq = _cursors.TryGetValue(sessionId, out var cursor) ? cursor + 1 : (long?)null;
-            await foreach (var evt in EventStream.StreamSessionAsync(sessionId, sinceSeq, token).ConfigureAwait(true))
-            {
-                if (_selectedId != sessionId)
-                {
-                    // The user switched conversations: this event belongs to a session that is no longer on screen.
-                    break;
-                }
-
-                _viewModel.ApplyEvent(evt);
-                _cursors[sessionId] = evt.Seq;
-                StateHasChanged();
-            }
-        }
-        catch (OperationCanceledException) when (token.IsCancellationRequested)
-        {
-            // Stop is an intentional user action, not an error.
-        }
-        catch (ApiClientException ex)
-        {
-            _error = $"The stream failed: {ex.Message}";
-            _viewModel.MarkOffline();
-        }
-        catch (HttpRequestException ex)
-        {
-            _error = $"Lost connection to the API: {ex.Message}";
-            _viewModel.MarkOffline();
-        }
-        finally
-        {
-            // A stream replaced by a newer send must not clear the flag the newer stream holds. Clearing
-            // renders the parent: the background loop holds no EventCallback, so without this the composer
-            // would keep showing Stop after the terminal event, the error, or the stop.
-            if (ReferenceEquals(_streamCts, cts))
-            {
-                _streaming = false;
-                StateHasChanged();
-            }
-        }
-    }
-
-    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "The stream runs fire-and-forget, so no caller can observe a fault. Every fault is logged and shown in the page's visible error state instead of escaping unobserved.")]
-    private async Task StreamInBackgroundAsync(string sessionId)
-    {
-        try
-        {
-            await StreamFromAsync(sessionId).ConfigureAwait(true);
-        }
-        catch (Exception ex)
-        {
-            BackgroundStreamFailed(Logger, sessionId, ex);
-            _error = $"The stream stopped unexpectedly: {ex.Message}";
-            _viewModel.MarkOffline();
-            StateHasChanged();
-        }
-    }
-
-    private static string TitleFor(Session session)
-    {
-        var first = session.Messages.FirstOrDefault(m => m.Content.Length > 0);
-        if (first is not null)
-        {
-            var text = first.Content.Trim();
-            return text.Length <= 48 ? text : text[..48] + "…";
-        }
-
-        return session.Id.Length <= 12 ? session.Id : session.Id[..12] + "…";
-    }
+    private void OnWorkbenchChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
 }

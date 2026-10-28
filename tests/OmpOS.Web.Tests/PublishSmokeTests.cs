@@ -40,6 +40,15 @@ public sealed class PublishSmokeTests
         File.Exists(Path.Combine(wwwroot, "index.html")).ShouldBeTrue("Publish output must contain wwwroot/index.html.");
         Directory.Exists(Path.Combine(wwwroot, "_framework")).ShouldBeTrue("Publish output must contain wwwroot/_framework/.");
         File.Exists(Path.Combine(wwwroot, "appsettings.json")).ShouldBeTrue("Publish output must contain wwwroot/appsettings.json.");
+
+        // A production bundle holds no Demo code (ADR-0017): no Demo settings file, and no assembly in the bundle names the Demo handler.
+        File.Exists(Path.Combine(wwwroot, "appsettings.demo.json")).ShouldBeFalse("A production bundle must not carry the Demo settings file.");
+        var marker = System.Text.Encoding.UTF8.GetBytes("DemoApiHandler");
+        foreach (var assembly in Directory.EnumerateFiles(Path.Combine(wwwroot, "_framework"), "OmpOS*", SearchOption.AllDirectories))
+        {
+            var bytes = await File.ReadAllBytesAsync(assembly, ct).ConfigureAwait(true);
+            bytes.AsSpan().IndexOf(marker).ShouldBe(-1, $"{Path.GetFileName(assembly)} must not contain the Demo handler type.");
+        }
     }
 
     private static DirectoryInfo RepoRoot()

@@ -1,39 +1,33 @@
-using System.Net;
-using System.Text;
 using Bunit;
-using Microsoft.Extensions.DependencyInjection;
-using OmpOS.Web.Services;
 using Shouldly;
 using Xunit;
 
 namespace OmpOS.Web.Tests;
 
-/// <summary>The web head's page is the app shell: landmarks, the agent rail around the existing conversation list, the thread in main, and the source offer in the footer (PX-08).</summary>
+/// <summary>The web page is the shell: one banner, the Agents navigation, the main region with the composer, the footer with the source offer, and the top bar controls. The page mounts the workbench, here over the Demo.</summary>
 public sealed class ShellLayoutTests : BunitContext
 {
-    /// <summary>The page exposes banner, an Agents navigation, main and contentinfo; the New button and the conversations sit in the navigation, the transcript and composer in main.</summary>
+    /// <summary>The page has the banner, the Agents navigation, the main region and the composer.</summary>
     [Fact]
     public void PageIsTheShellWithRailThreadAndFooter()
     {
-        var cut = RenderPageWithOneSession();
+        using var host = new DemoTestHost();
+        var cut = RenderPage(host);
 
-        cut.FindAll("header").Count.ShouldBe(1);
-        var nav = cut.Find("nav[aria-label='Agents']");
-        nav.QuerySelector("button[aria-label='New conversation']").ShouldNotBeNull();
-        nav.QuerySelectorAll("button.ompos-conversation-item").Length.ShouldBe(1);
+        cut.FindAll("header").Count(static header => header.Closest("main") is null).ShouldBe(1, "one banner: a header inside main (the thread header) is not a banner landmark");
+        cut.Find("nav[aria-label='Agents']").ShouldNotBeNull();
         var main = cut.Find("main#main");
-        main.QuerySelector("section#ompos-conversation").ShouldNotBeNull();
         main.QuerySelector("textarea[aria-label='Message']").ShouldNotBeNull();
-        main.QuerySelector("button[aria-label='New conversation']").ShouldBeNull();
-        cut.FindAll("nav").Count.ShouldBe(1, "the conversation list lives inside the Agents navigation, not in a second navigation landmark");
         cut.Find(".ompos-shell").ShouldNotBeNull();
+        cut.Find("footer").ShouldNotBeNull();
     }
 
-    /// <summary>Every screen carries the AGPL source offer: the repository link, the licence and the version.</summary>
+    /// <summary>The footer carries the source offer and the licence.</summary>
     [Fact]
     public void FooterCarriesTheSourceOffer()
     {
-        var cut = RenderPageWithOneSession();
+        using var host = new DemoTestHost();
+        var cut = RenderPage(host);
 
         var footer = cut.Find("footer");
         footer.QuerySelector("a[href='https://github.com/swcstudiospace/OmpOS']").ShouldNotBeNull();
@@ -41,11 +35,12 @@ public sealed class ShellLayoutTests : BunitContext
         footer.QuerySelector(".ompos-footer-version")!.TextContent.ShouldStartWith("OmpOS ");
     }
 
-    /// <summary>The theme switch sits in the top bar, and the top bar names the workspace and links the source.</summary>
+    /// <summary>The top bar holds the theme switch, the workspace label and the source link.</summary>
     [Fact]
     public void TopBarHoldsTheThemeSwitchWorkspaceAndSourceLink()
     {
-        var cut = RenderPageWithOneSession();
+        using var host = new DemoTestHost();
+        var cut = RenderPage(host);
 
         var header = cut.Find("header");
         header.QuerySelectorAll(".ompos-theme-switch button").Length.ShouldBe(3);
@@ -53,37 +48,12 @@ public sealed class ShellLayoutTests : BunitContext
         header.QuerySelector("a.ompos-topbar-link[href='https://github.com/swcstudiospace/OmpOS']").ShouldNotBeNull();
     }
 
-    /// <summary>Renders the page against a scripted API that creates one session, and waits until its conversation is listed.</summary>
-    /// <returns>The rendered page.</returns>
-    private IRenderedComponent<OmpOS.Web.Pages.Index> RenderPageWithOneSession()
+    private IRenderedComponent<OmpOS.Web.Pages.Index> RenderPage(DemoTestHost host)
     {
-        using var apiHandler = new ScriptedHandler();
-        using var sseHandler = new ScriptedHandler();
-        using var listResponse = JsonResponse("[]");
-        using var createdResponse = JsonResponse(SessionJson);
-        using var fetchedResponse = JsonResponse(SessionJson);
-        apiHandler.Enqueue(listResponse);
-        apiHandler.Enqueue(createdResponse);
-        apiHandler.Enqueue(fetchedResponse);
-        using var apiHttp = new HttpClient(apiHandler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
-        using var sseHttp = new HttpClient(sseHandler) { BaseAddress = new Uri("http://127.0.0.1:5187/", UriKind.Absolute) };
-        Services.AddSingleton(new ApiSessionClient(apiHttp));
-        Services.AddSingleton(new SseEventStream(sseHttp));
+        DemoPageSetup.Register(Services, host);
         JSInterop.Mode = JSRuntimeMode.Loose;
-
         var cut = Render<OmpOS.Web.Pages.Index>();
-        cut.WaitForAssertion(() => cut.Find("button.ompos-conversation-item").ShouldNotBeNull());
+        cut.WaitForAssertion(() => cut.Find("main#main textarea[aria-label='Message']").ShouldNotBeNull(), TimeSpan.FromSeconds(10));
         return cut;
     }
-
-    /// <summary>Builds a JSON success response for a scripted API call.</summary>
-    /// <param name="json">The response body.</param>
-    /// <returns>The queued response message.</returns>
-    private static HttpResponseMessage JsonResponse(string json) => new(HttpStatusCode.OK)
-    {
-        Content = new StringContent(json, Encoding.UTF8, "application/json"),
-    };
-
-    /// <summary>Gets a minimal session body for the create and get round-trips.</summary>
-    private const string SessionJson = """{"id":"shell-layout-test","ownerId":"local-dev","createdAt":"2026-10-27T00:00:00+00:00","updatedAt":"2026-10-27T00:00:00+00:00","status":"Idle","sandboxId":null,"messages":[],"events":[]}""";
 }

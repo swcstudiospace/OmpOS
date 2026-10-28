@@ -13,6 +13,11 @@
     {
         <span class="ompos-workspace-label">@WorkspaceLabel</span>
     }
+    @if (Tabs is not null)
+    {
+        <div class="ompos-topbar-tabs">@Tabs</div>
+    }
+
     <div class="ompos-topbar-spacer"></div>
     <a class="ompos-topbar-link" href="@ShellInfo.SourceRepositoryUrl">Source</a>
     <ThemeSwitch />
@@ -24,6 +29,10 @@
     /// <summary>Gets the workspace name shown beside the wordmark; nothing is shown when it is empty.</summary>
     [Parameter]
     public string? WorkspaceLabel { get; set; }
+
+    /// <summary>Gets the content shown between the workspace name and the controls, such as the view tabs.</summary>
+    [Parameter]
+    public RenderFragment? Tabs { get; set; }
 
     /// <summary>Gets whether the agent drawer is open; it sets <c>aria-expanded</c> on the drawer button.</summary>
     [Parameter]

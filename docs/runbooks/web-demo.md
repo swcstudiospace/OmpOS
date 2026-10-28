@@ -1,0 +1,61 @@
+# Web head runbook: real API, Demo, and static Demo deployment
+
+The web head (`apps/OmpOS.Web`, Blazor WebAssembly) can run in three ways. The decision is [ADR-0017](../decisions/ADR-0017-web-head-demo-mode.md). Nothing here deploys anything public: the API must stay private until sign-in (OD-03) exists ([hosting runbook](hosting.md)).
+
+## 1. The real API and the web head, both on this machine
+
+The API refuses the development principal and the in-memory harness outside Development, so this is a loopback-only setup.
+
+```bash
+ASPNETCORE_ENVIRONMENT=Development Harness__Adapter=InMemory Sessions__Store=InMemory Coordination__Store=InMemory \
+  Api__Auth__AllowDevelopmentPrincipal=true Api__Cors__Origins__0=http://127.0.0.1:5180 \
+  dotnet run --project services/OmpOS.Api --urls http://127.0.0.1:5187
+dotnet publish apps/OmpOS.Web -c Release -o /tmp/ompos-web
+python3 -m http.server 5180 --bind 127.0.0.1 --directory /tmp/ompos-web/wwwroot
+```
+
+Open `http://127.0.0.1:5180/`. The page reads its API origin from `wwwroot/appsettings.json` (`Api:BaseUrl`, default `http://127.0.0.1:5187`); a loopback page may override it with `?apiBaseUrl=http://127.0.0.1:<port>`. The in-memory harness answers with an echo, not a model. `scripts/web-smoke/run-smoke.sh` does the same with a headless browser and axe.
+
+Optional configuration of the API for the web head: `Api:Workspace:Root` (an absolute folder: accepting or rejecting a change then writes the file, only when it still holds the text the agent wrote) and `GIT_SHA` (shown as the source revision).
+
+## 2. The Demo (no backend)
+
+The Demo is a build of the same head whose HTTP client is answered inside the browser.
+
+```bash
+scripts/vercel/build-demo.sh            # publishes with -p:OmpOSDemo=true into output/demo
+scripts/web-demo/serve-demo.sh          # http://127.0.0.1:5190/ (DEMO_PORT to change), loopback only
+```
+
+What it shows: the workspace `acme-shop` and six agents: one running (its scripted answer streams markdown, code, a tool call and a diff as soon as the page opens), one waiting for a tool approval, one completed with three changed files, one failed with a retryable error, one closed, and one omp terminal (scripted output). The rail, the Kanban board (ten columns), the Settings dialog, steering, the model and mode chips, the slash palette (20 engine commands), the Changes bar and the stage timeline all work. Sending a prompt gets a scripted reply labelled "Demo". Accepting or rejecting a change, approving a tool, closing and reopening an agent change the in-memory state and nothing else; reloading the page starts over.
+
+Honest limits: no model is called, no file exists, nothing leaves the page, the Content-Security-Policy allows only the page's own origin (`connect-src 'self'`). Changing the model during a running turn is refused with the same 409 the API gives; between turns the Demo allows it.
+
+A normal (non-Demo) build must contain no Demo code. Check it:
+
+```bash
+dotnet publish apps/OmpOS.Web -c Release -o /tmp/ompos-prod
+grep -c DemoApiHandler /tmp/ompos-prod/wwwroot/_framework/OmpOS.Web*   # every count must be 0
+test ! -e /tmp/ompos-prod/wwwroot/appsettings.demo.json
+```
+
+## 3. Deploying the static Demo
+
+`scripts/vercel/build-demo.sh [dir]` writes the published `wwwroot` plus a static `vercel.json` (Content-Security-Policy `connect-src 'self'`, revalidated `_framework` cache (plain file names, no import map), SPA rewrite to `/index.html`). Any static host works; on Vercel:
+
+```bash
+scripts/vercel/build-demo.sh
+cd output/demo && vercel deploy        # a preview: Deployment Protection stays on; use a Shareable Link to show it
+```
+
+Alternatively set `OMPOS_DEMO=1` in a Vercel project that builds from the repository: `vercel.ts` then runs `dotnet publish ... -p:OmpOSDemo=true` and needs no `OMPOS_API_ORIGIN`. Without `OMPOS_DEMO=1` the build still fails closed unless `OMPOS_API_ORIGIN` is a valid `https://host[:port]`.
+
+Never point a hosted page at the development API through a tunnel: that would publish the development principal (ADR-0017).
+
+## 4. Tests
+
+```bash
+dotnet test tests/OmpOS.Web.Tests
+```
+
+The Demo sources are compiled into the test project, so the Demo handler is tested on a manual clock (`ManualTimeProvider`) without a browser or a network. `OpenApiCoverageTests` reads `docs/api/openapi.json`, which the API build regenerates: build the API first.

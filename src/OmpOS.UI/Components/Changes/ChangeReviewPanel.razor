@@ -1,0 +1,134 @@
+@namespace OmpOS.UI.Components.Changes
+@using OmpOS.Presentation.Changes
+@using OmpOS.Presentation.Editor
+@using OmpOS.UI.Components.Blocks
+@inherits ObservableComponent
+<aside class="ompos-review-panel" aria-labelledby="@_headingId" @onkeydown="OnKeyDownAsync">
+    <div class="ompos-review-head">
+        <h3 class="ompos-review-title" id="@_headingId" tabindex="-1" @ref="_heading">@Path</h3>
+        <button type="button" class="ompos-icon-btn" aria-label="Close review" @onclick="() => OnClose.InvokeAsync()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 4l8 8M12 4l-8 8" /></svg></button>
+    </div>
+    @if (Review.Hunks.Count == 0)
+    {
+        <p class="ompos-review-empty">@ChangeCopy.NothingToReview</p>
+    }
+    else
+    {
+        <p class="ompos-review-pending" role="status">@PendingText</p>
+        @foreach (var hunk in Review.Hunks)
+        {
+            <section class="ompos-review-hunk" data-decision="@hunk.Decision.ToString().ToLowerInvariant()" aria-label="@("Hunk " + (hunk.Index + 1))">
+                <div class="ompos-review-hunk-head">
+                    <span class="ompos-review-hunk-title">Hunk @(hunk.Index + 1) of @Review.Hunks.Count</span>
+                    <span class="ompos-review-hunk-decision">@DecisionText(hunk.Decision)</span>
+                    <button type="button" class="ompos-btn ompos-btn--small" aria-pressed="@(hunk.Decision == HunkDecision.Accept ? "true" : "false")" aria-label="@("Accept hunk " + (hunk.Index + 1))" @onclick="() => Review.Decide(hunk.Index, HunkDecision.Accept)">Accept</button>
+                    <button type="button" class="ompos-btn ompos-btn--small" aria-pressed="@(hunk.Decision == HunkDecision.Reject ? "true" : "false")" aria-label="@("Reject hunk " + (hunk.Index + 1))" @onclick="() => Review.Decide(hunk.Index, HunkDecision.Reject)">Reject</button>
+                </div>
+                <DiffView Diff="SingleHunk(hunk)" Path="@Path" ShowModeSwitch="false" />
+            </section>
+        }
+
+        <div class="ompos-review-footer">
+            <button type="button" class="ompos-btn ompos-btn--primary" aria-label="@ChangeCopy.ApplyReviewName" @onclick="ApplyAsync">@ChangeCopy.ApplyReview</button>
+        </div>
+    }
+
+    @if (_result is { } result)
+    {
+        <p class="ompos-review-result" role="status" data-outcome="@result.Outcome.ToString().ToLowerInvariant()" aria-label="@ChangeCopy.ResultName">@result.Message</p>
+    }
+</aside>
+
+@code {
+    private static int s_nextId;
+
+    private readonly string _headingId = "ompos-review-" + System.Threading.Interlocked.Increment(ref s_nextId).ToString(System.Globalization.CultureInfo.InvariantCulture);
+    private readonly Dictionary<HunkReview, UnifiedDiff> _single = [];
+    private ElementReference _heading;
+    private ChangeResult? _result;
+
+    /// <summary>Gets the workspace-relative path of the file under review.</summary>
+    [Parameter, EditorRequired]
+    public string Path { get; set; } = string.Empty;
+
+    /// <summary>Gets the review: one decision per hunk of the diff between the file before the agent and after it.</summary>
+    [Parameter, EditorRequired]
+    public DiffReview Review { get; set; } = null!;
+
+    /// <summary>Gets the change set that writes the reviewed hunks.</summary>
+    [Parameter, EditorRequired]
+    public ChangeSetModel Model { get; set; } = null!;
+
+    /// <summary>Gets the callback invoked when the panel closes: by its button, by Escape, or after the review was applied.</summary>
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private string PendingText => Review.PendingCount == 0
+        ? "Every hunk has a decision."
+        : string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{Review.PendingCount} of {Review.Hunks.Count} hunks wait for a decision. A hunk with no decision is undone when the review is applied.");
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        Observe(Review);
+        foreach (var hunk in Review.Hunks)
+        {
+            Observe(hunk);
+        }
+    }
+
+    /// <inheritdoc />
+    protected override bool ShouldRender()
+    {
+        foreach (var hunk in Review.Hunks)
+        {
+            Observe(hunk);
+        }
+
+        return true;
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _heading.FocusAsync().ConfigureAwait(true);
+        }
+    }
+
+    private static string DecisionText(HunkDecision decision) => decision switch
+    {
+        HunkDecision.Accept => "Accepted",
+        HunkDecision.Reject => "Rejected",
+        _ => "No decision",
+    };
+
+    private UnifiedDiff SingleHunk(HunkReview hunk)
+    {
+        if (!_single.TryGetValue(hunk, out var diff))
+        {
+            diff = new UnifiedDiff(null, null, [hunk.Hunk]);
+            _single[hunk] = diff;
+        }
+
+        return diff;
+    }
+
+    private async Task ApplyAsync()
+    {
+        _result = Model.ApplyReview(Path, Review);
+        if (_result.Outcome is ChangeOutcome.Kept or ChangeOutcome.Undone or ChangeOutcome.PartlyUndone)
+        {
+            await OnClose.InvokeAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async Task OnKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (string.Equals(args.Key, "Escape", StringComparison.Ordinal))
+        {
+            await OnClose.InvokeAsync().ConfigureAwait(true);
+        }
+    }
+}

@@ -1,0 +1,622 @@
+/* Settings dialog: a centred two-pane dialog (navigation 220 px, page up to 720 px) that becomes full screen below 840 px. Colours, sizes and
+   fonts come from tokens.css only. Every control is at least --ompos-control-height (32 px) high. */
+
+html[data-dialog-open] body {
+  overflow: hidden;
+}
+
+.ompos-settings-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ompos-z-dialog);
+  background: var(--ompos-scrim);
+}
+
+.ompos-settings {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: var(--ompos-z-dialog);
+  display: flex;
+  flex-direction: column;
+  width: min(960px, calc(100vw - 2 * var(--ompos-gap-12)));
+  height: min(680px, calc(100dvh - 2 * var(--ompos-gap-12)));
+  overflow: hidden;
+  background: var(--ompos-surface-raised);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-12);
+  box-shadow: var(--ompos-shadow-popup);
+  color: var(--ompos-text);
+  transform: translate(-50%, -50%);
+}
+
+.ompos-settings:focus {
+  outline: none;
+}
+
+.ompos-settings-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ompos-gap-8);
+  padding: var(--ompos-gap-8) var(--ompos-gap-12) var(--ompos-gap-8) 16px;
+  border-bottom: 1px solid var(--ompos-border);
+}
+
+.ompos-settings-title {
+  font-family: var(--ompos-font-display);
+  font-size: var(--ompos-font-size-display-sm);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-display-sm);
+}
+
+.ompos-settings-body {
+  display: grid;
+  flex: 1;
+  grid-template-columns: var(--ompos-settings-nav) minmax(0, 1fr);
+  min-height: 0;
+}
+
+.ompos-settings-nav {
+  padding: var(--ompos-gap-8);
+  overflow-y: auto;
+  background: var(--ompos-surface-sunken);
+  border-right: 1px solid var(--ompos-border);
+}
+
+.ompos-settings-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ompos-settings-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ompos-gap-8);
+  width: 100%;
+  min-height: var(--ompos-control-height);
+  padding: var(--ompos-gap-4) var(--ompos-gap-8);
+  background: transparent;
+  border: 0;
+  border-radius: var(--ompos-radius-6);
+  color: var(--ompos-text);
+  font-size: var(--ompos-font-size-body);
+  line-height: var(--ompos-line-height-body);
+  text-align: left;
+}
+
+.ompos-settings-nav-item:hover {
+  background: var(--ompos-hover);
+}
+
+.ompos-settings-nav-item[aria-current='page'] {
+  background: var(--ompos-selected);
+  font-weight: var(--ompos-font-weight-medium);
+}
+
+.ompos-settings-dirty-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--ompos-accent);
+  border-radius: var(--ompos-radius-pill);
+}
+
+.ompos-settings-page {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--ompos-surface-raised);
+}
+
+.ompos-settings-page-frame {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.ompos-settings-page-header {
+  max-width: var(--ompos-content-max);
+  padding: 24px 32px 0;
+}
+
+.ompos-settings-page-title {
+  font-family: var(--ompos-font-display);
+  font-size: var(--ompos-font-size-display-sm);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-display-sm);
+}
+
+.ompos-settings-page-description {
+  margin-top: var(--ompos-gap-4);
+  color: var(--ompos-text-secondary);
+}
+
+.ompos-settings-page-content {
+  flex: 1;
+  width: 100%;
+  max-width: var(--ompos-content-max);
+  padding: 16px 32px 24px;
+}
+
+.ompos-settings-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ompos-gap-8);
+  padding: var(--ompos-gap-8) 16px;
+  background: var(--ompos-surface-raised);
+  border-top: 1px solid var(--ompos-border);
+}
+
+.ompos-settings-footer-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-settings-saveline {
+  flex: 1;
+  min-width: 200px;
+  margin: 0;
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+.ompos-settings-saveline[data-state='error'] {
+  color: var(--ompos-error);
+}
+
+.ompos-settings-saveline[data-state='saved'] {
+  color: var(--ompos-success);
+}
+
+/* Setting rows: label and help on the left, the control on the right, a hairline between rows. */
+.ompos-settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--ompos-gap-12);
+  min-height: 56px;
+  padding: var(--ompos-gap-12) 0;
+  border-bottom: 1px solid var(--ompos-border);
+}
+
+.ompos-settings-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-2);
+  max-width: 480px;
+}
+
+.ompos-settings-row-control {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--ompos-gap-6);
+}
+
+.ompos-settings-label {
+  font-size: var(--ompos-font-size-label);
+  font-weight: var(--ompos-font-weight-medium);
+  line-height: var(--ompos-line-height-label);
+}
+
+.ompos-settings-help {
+  margin: 0;
+  color: var(--ompos-text-secondary);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+  overflow-wrap: anywhere;
+}
+
+.ompos-settings-error {
+  margin: 0;
+  color: var(--ompos-error);
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+}
+
+.ompos-settings-error-text {
+  margin: 0;
+  color: var(--ompos-error);
+  font-size: var(--ompos-font-size-label);
+  line-height: var(--ompos-line-height-label);
+}
+
+.ompos-settings-row[data-invalid='true'] .ompos-input {
+  border-color: var(--ompos-error);
+}
+
+.ompos-settings-number {
+  width: 120px;
+  font-family: var(--ompos-font-mono);
+  font-size: var(--ompos-font-size-mono);
+  text-align: right;
+}
+
+.ompos-settings-mono {
+  font-family: var(--ompos-font-mono);
+  font-size: var(--ompos-font-size-mono);
+  line-height: var(--ompos-line-height-mono);
+  overflow-wrap: anywhere;
+}
+
+.ompos-settings-kbd {
+  padding: var(--ompos-gap-2) var(--ompos-gap-6);
+  background: var(--ompos-surface-sunken);
+  border: 1px solid var(--ompos-border-strong);
+  border-radius: var(--ompos-radius-4);
+  font-family: var(--ompos-font-mono);
+  font-size: var(--ompos-font-size-mono);
+  line-height: var(--ompos-line-height-mono);
+  white-space: nowrap;
+}
+
+/* A 32 px switch: the shared toggle is 24 px high, so the settings version is taller and keeps its thumb centred. */
+.ompos-settings-toggle {
+  width: 52px;
+  height: var(--ompos-control-height);
+}
+
+.ompos-settings-toggle::before {
+  top: 7px;
+  left: 7px;
+}
+
+.ompos-settings-toggle[aria-checked='true']::before {
+  transform: translateX(20px);
+}
+
+.ompos-settings .ompos-segment {
+  min-height: var(--ompos-control-height);
+}
+
+.ompos-settings .ompos-btn--small {
+  min-height: var(--ompos-control-height);
+}
+
+.ompos-settings-warning {
+  margin: var(--ompos-gap-8) 0;
+  color: var(--ompos-warning);
+  font-size: var(--ompos-font-size-label);
+  line-height: var(--ompos-line-height-label);
+}
+
+.ompos-settings-section-title {
+  margin: 24px 0 var(--ompos-gap-8);
+  font-size: var(--ompos-font-size-heading);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-heading);
+}
+
+.ompos-settings-subheading {
+  margin: var(--ompos-gap-12) 0 var(--ompos-gap-4);
+  font-size: var(--ompos-font-size-label);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-label);
+}
+
+.ompos-settings-privacy {
+  max-width: 480px;
+  margin: 0;
+}
+
+.ompos-settings-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ompos-gap-8);
+  margin: var(--ompos-gap-12) 0;
+  color: var(--ompos-text-secondary);
+}
+
+.ompos-settings-state--error {
+  color: var(--ompos-text);
+}
+
+.ompos-settings-banner {
+  margin: var(--ompos-gap-8) 0;
+  padding: var(--ompos-gap-8) var(--ompos-gap-12);
+  background: var(--ompos-surface-sunken);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-8);
+  font-size: var(--ompos-font-size-label);
+  line-height: var(--ompos-line-height-label);
+}
+
+.ompos-settings-banner[data-tone='warning'] {
+  color: var(--ompos-warning);
+}
+
+.ompos-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ompos-gap-8);
+  margin: var(--ompos-gap-8) 0;
+}
+
+.ompos-settings-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ompos-control-height);
+  font-size: var(--ompos-font-size-label);
+}
+
+/* Lists and tables. */
+.ompos-settings-plain-list,
+.ompos-settings-problems,
+.ompos-provider-list,
+.ompos-provider-tags {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ompos-provider-tags {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.ompos-settings-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ompos-settings-list-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ompos-gap-8);
+  min-height: 40px;
+  padding: var(--ompos-gap-8) 0;
+  border-bottom: 1px solid var(--ompos-border);
+}
+
+.ompos-settings-list-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ompos-gap-2);
+  min-width: 0;
+}
+
+.ompos-settings-table-wrap {
+  overflow-x: auto;
+}
+
+.ompos-settings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
+  text-align: left;
+}
+
+.ompos-settings-table th,
+.ompos-settings-table td {
+  padding: var(--ompos-gap-8);
+  border-bottom: 1px solid var(--ompos-border);
+  vertical-align: top;
+}
+
+.ompos-settings-table th[scope='col'] {
+  color: var(--ompos-text-secondary);
+  font-weight: var(--ompos-font-weight-medium);
+}
+
+.ompos-settings-table th[scope='row'] {
+  font-weight: var(--ompos-font-weight-regular);
+}
+
+/* Toolbar and form controls. */
+.ompos-settings-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--ompos-gap-12);
+  margin: var(--ompos-gap-8) 0;
+}
+
+.ompos-settings-toolbar-search {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+  min-width: 200px;
+}
+
+.ompos-settings-toolbar-filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+  min-width: 140px;
+}
+
+.ompos-settings-field,
+.ompos-settings-key {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+  margin: var(--ompos-gap-8) 0;
+}
+
+.ompos-settings-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+  margin: var(--ompos-gap-8) 0;
+  padding: 0;
+  border: 0;
+}
+
+.ompos-settings-check {
+  display: flex;
+  align-items: center;
+  gap: var(--ompos-gap-8);
+  min-height: var(--ompos-control-height);
+  font-size: var(--ompos-font-size-body);
+}
+
+.ompos-settings-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--ompos-accent);
+}
+
+.ompos-settings-confirm {
+  margin: var(--ompos-gap-8) 0;
+  padding: var(--ompos-gap-8) var(--ompos-gap-12);
+  background: var(--ompos-surface-sunken);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-8);
+}
+
+/* Provider cards. */
+.ompos-provider-group {
+  margin: var(--ompos-gap-12) 0;
+}
+
+.ompos-provider-card,
+.ompos-provider-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+  padding: var(--ompos-gap-12);
+  background: var(--ompos-surface-raised);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-10);
+}
+
+.ompos-provider-form {
+  margin: var(--ompos-gap-12) 0;
+}
+
+.ompos-provider-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-provider-card-title {
+  margin-right: auto;
+  font-size: var(--ompos-font-size-body);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-body);
+}
+
+.ompos-provider-endpoint {
+  margin: 0;
+}
+
+.ompos-provider-model {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-provider-plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ompos-gap-4);
+  padding: var(--ompos-gap-8);
+  background: var(--ompos-surface-sunken);
+  border-radius: var(--ompos-radius-8);
+}
+
+/* The unsaved-changes prompt sits over the dialog. */
+.ompos-settings-prompt-scrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--ompos-scrim);
+}
+
+.ompos-settings-prompt {
+  width: min(400px, 100%);
+  padding: 16px;
+  background: var(--ompos-surface-raised);
+  border: 1px solid var(--ompos-border);
+  border-radius: var(--ompos-radius-12);
+  box-shadow: var(--ompos-shadow-popup);
+}
+
+.ompos-settings-prompt-title {
+  margin-bottom: var(--ompos-gap-8);
+  font-size: var(--ompos-font-size-heading);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-heading);
+}
+
+/* Below 840 px the dialog fills the screen and the navigation becomes a row of entries above the page. */
+@media (max-width: 839.98px) {
+  .ompos-settings {
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    transform: none;
+  }
+
+  .ompos-settings-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .ompos-settings-nav {
+    padding: var(--ompos-gap-4) var(--ompos-gap-8);
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: 0;
+    border-bottom: 1px solid var(--ompos-border);
+  }
+
+  .ompos-settings-nav-list {
+    flex-direction: row;
+  }
+
+  .ompos-settings-nav-item {
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .ompos-settings-page-header,
+  .ompos-settings-page-content {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .ompos-settings-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ompos-settings-row-control {
+    align-items: flex-start;
+  }
+}

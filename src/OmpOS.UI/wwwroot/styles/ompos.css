@@ -1,5 +1,5 @@
 /* OmpOS web stylesheet: the single entry the web head links (index.html). The order matters: tokens first, then fonts and the
-   base, then the layout and the shared controls, then the chat surface. A new screen adds its own file here, after chat.css.
+   base, then the layout and the shared controls, then the chat surface, then the rail, the thread chrome, the composer, the review panel and the workbench regions. A new screen adds its own file here, after chat.css.
    The @import urls are relative to this file, so they resolve inside _content/OmpOS.UI/styles/. */
 
 @import url('tokens.css');
@@ -8,3 +8,11 @@
 @import url('layout.css');
 @import url('components.css');
 @import url('chat.css');
+@import url('rail.css');
+@import url('thread.css');
+@import url('composer.css');
+@import url('review.css');
+@import url('workbench.css');
+@import url('kanban.css');
+@import url('settings.css');
+@import url('terminal.css');

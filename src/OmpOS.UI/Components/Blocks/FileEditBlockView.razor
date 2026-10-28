@@ -1,5 +1,6 @@
 @namespace OmpOS.UI.Components.Blocks
 @using OmpOS.Contracts.Ui
+@using OmpOS.Presentation.Changes
 <div class="ompos-block ompos-file-edit" data-change="@ChangeText" role="group" aria-label="File edit: @Block.Path">
     <p class="ompos-file-edit-heading">
         <span class="ompos-file-edit-path">@Block.Path</span>
@@ -16,12 +17,26 @@
         <p class="ompos-file-edit-label">After</p>
         <pre class="ompos-file-edit-text" tabindex="0">@Block.NewText</pre>
     </div>
+    @if (CanDiff)
+    {
+        <button type="button" class="ompos-btn ompos-btn--small ompos-file-edit-diff-toggle" aria-label="@((_showDiff ? "Hide diff for " : "Show diff for ") + Block.Path)" aria-expanded="@(_showDiff ? "true" : "false")" @onclick="ToggleDiff">@(_showDiff ? "Hide diff" : "Show diff")</button>
+        @if (_showDiff)
+        {
+            <DiffView Diff="ChangeDiff.Create(Block.OldText ?? string.Empty, Block.NewText)" Path="@Block.Path" />
+        }
+    }
 </div>
 
 @code {
     /// <summary>Gets the file-edit block to render. Both texts are shown verbatim and never as markup.</summary>
     [Parameter, EditorRequired]
     public FileEditBlock Block { get; set; } = null!;
+
+    private bool _showDiff;
+
+    private bool CanDiff => !string.Equals(Block.OldText ?? string.Empty, Block.NewText, StringComparison.Ordinal);
+
+    private void ToggleDiff() => _showDiff = !_showDiff;
 
     /// <summary>"created" when the edit has no text before it, else "edited".</summary>
     private string ChangeText => Block.OldText is null ? "created" : "edited";

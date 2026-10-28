@@ -4,6 +4,11 @@
     <None Include="TestData/**/*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- The Demo sources are compiled into the tests so the Demo handler is tested even though the production web head excludes them (OmpOSDemo=false). DemoRegistration needs the web head's implicit usings and is covered by the composition tests below instead. -->
+  <ItemGroup Condition="'$(OmpOSDemo)' != 'true'">
+    <Compile Include="../../apps/OmpOS.Web/Demo/**/*.cs" Exclude="../../apps/OmpOS.Web/Demo/DemoRegistration.cs" LinkBase="Demo" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="../../apps/OmpOS.Web/OmpOS.Web.csproj" />
     <PackageReference Include="bunit" />

@@ -1,6 +1,6 @@
-/* The chat surface: session transcript blocks, notices, composer and the conversation list rows. Block views are restyled here;
-   the next screens (thread header, chips, palette, approvals, Kanban, Settings, terminal) add their own files and import them
-   from ompos.css. */
+/* The chat surface: session transcript blocks, notices, the conversation list rows and the shell chrome. Block views are restyled here;
+   the composer, the agent rail, the thread chrome, the review panel and the workbench regions have their own files (composer.css,
+   rail.css, thread.css, review.css, workbench.css), imported from ompos.css. */
 
 .ompos-session {
   display: flex;
@@ -132,44 +132,6 @@ p.ompos-error {
 .ompos-a2ui-image {
   max-width: 100%;
   height: auto;
-}
-
-/* Composer ------------------------------------------------------------------------------------------------------------------ */
-
-.ompos-composer {
-  display: flex;
-  gap: var(--ompos-gap-8);
-  align-items: flex-end;
-}
-
-.ompos-composer-input {
-  flex: 1;
-  min-height: var(--ompos-composer-min);
-  max-height: var(--ompos-composer-max);
-  padding: var(--ompos-gap-8) var(--ompos-gap-12);
-  background: var(--ompos-surface-raised);
-  border: 1px solid var(--ompos-border-strong);
-  border-radius: var(--ompos-radius-8);
-  color: var(--ompos-text);
-  font-size: var(--ompos-font-size-body);
-  line-height: var(--ompos-line-height-body);
-  resize: vertical;
-}
-
-.ompos-composer-input::placeholder {
-  color: var(--ompos-text-secondary);
-}
-
-.ompos-composer .ompos-icon-btn {
-  background: var(--ompos-accent);
-  border-color: var(--ompos-accent);
-  color: var(--ompos-accent-on);
-}
-
-.ompos-composer .ompos-icon-btn:hover,
-.ompos-composer .ompos-icon-btn:active {
-  background: var(--ompos-accent-hover);
-  border-color: var(--ompos-accent-hover);
 }
 
 /* Agent rail and conversation list ------------------------------------------------------------------------------------------ */

@@ -7,6 +7,7 @@
         <a class="ompos-skip-link" href="@SkipLinkHref">@SkipLinkText</a>
         <TopBar @ref="_topBar"
                 WorkspaceLabel="@WorkspaceLabel"
+                Tabs="TopBarTabs"
                 DrawerOpen="_drawerOpen"
                 OnDrawerToggle="ToggleDrawerAsync" />
         <div class="ompos-shell-body">
@@ -25,7 +26,7 @@
                 @ChildContent
             </main>
         </div>
-        <ShellFooter />
+        <ShellFooter Version="@(Version ?? ShellInfo.CurrentVersion)" />
     </div>
 </CascadingValue>
 
@@ -48,6 +49,14 @@
     /// <summary>Gets the content of the <c>main</c> landmark.</summary>
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Gets the content the top bar shows between the workspace name and the controls, such as the view tabs. Nothing is shown when it is null.</summary>
+    [Parameter]
+    public RenderFragment? TopBarTabs { get; set; }
+
+    /// <summary>Gets the version text of the footer; it defaults to the informational version of the running assembly.</summary>
+    [Parameter]
+    public string? Version { get; set; }
 
     /// <summary>Gets the workspace name the top bar shows.</summary>
     [Parameter]

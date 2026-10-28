@@ -1,6 +1,8 @@
 @namespace OmpOS.UI.Components.Blocks
 @using OmpOS.Contracts.Ui
+@using OmpOS.UI.Components.Rail
 <div class="ompos-block ompos-tool-call" data-status="@Block.Status">
+    <StatusGlyph IconKey="@ToolStatusIcon.Of(Block.Status)" />
     <span class="ompos-tool-name">@Block.ToolName</span>
     <span class="ompos-tool-status">@Block.Status</span>
 </div>

@@ -1,0 +1,283 @@
+@namespace OmpOS.UI.Components.Kanban
+@inherits ObservableComponent
+@implements IAsyncDisposable
+@using Microsoft.JSInterop
+@using OmpOS.Presentation.Kanban
+@inject IJSRuntime JS
+<section class="ompos-kanban" @ref="_root" aria-labelledby="ompos-kanban-heading" data-state="@StateName">
+    <h2 id="ompos-kanban-heading" class="ompos-kanban-title">@KanbanCopy.Heading</h2>
+    @switch (Board.State)
+    {
+        case BoardState.Loading:
+            <div class="ompos-kanban-state" aria-busy="true">
+                <h3 class="ompos-kanban-state-heading">@KanbanCopy.LoadingHeading</h3>
+                <p class="ompos-kanban-state-body">@KanbanCopy.LoadingBody</p>
+                <div class="ompos-kanban-skeleton" aria-hidden="true">
+                    <span class="ompos-kanban-skeleton-bar"></span>
+                    <span class="ompos-kanban-skeleton-bar"></span>
+                    <span class="ompos-kanban-skeleton-bar"></span>
+                </div>
+            </div>
+            break;
+        case BoardState.Empty:
+            <div class="ompos-kanban-state">
+                <h3 class="ompos-kanban-state-heading">@KanbanCopy.EmptyHeading</h3>
+                <p class="ompos-kanban-state-body">@KanbanCopy.EmptyBody</p>
+                <button type="button" class="ompos-btn ompos-btn--primary" aria-label="@KanbanCopy.NewAgentName" @onclick="StartAsync">@KanbanCopy.NewAgent</button>
+            </div>
+            break;
+        case BoardState.Error:
+            <div class="ompos-kanban-state">
+                <h3 class="ompos-kanban-state-heading">@KanbanCopy.ErrorHeading</h3>
+                <p class="ompos-kanban-state-body" role="alert">@Board.ErrorText</p>
+                <button type="button" class="ompos-btn" aria-label="@KanbanCopy.RetryName" @onclick="RetryAsync">@KanbanCopy.Retry</button>
+            </div>
+            break;
+        default:
+            if (Board.ErrorText is { Length: > 0 } lastError)
+            {
+                <div class="ompos-kanban-banner" data-tone="error" role="alert">
+                    <span>@KanbanCopy.BannerLead @lastError</span>
+                    <button type="button" class="ompos-btn ompos-btn--small" aria-label="@KanbanCopy.BannerRetryName" @onclick="RetryAsync">@KanbanCopy.Retry</button>
+                </div>
+            }
+
+            if (!AnySubstrateAvailable)
+            {
+                <p class="ompos-kanban-hint" data-substrate="unavailable">@KanbanCopy.SubstrateUnavailable</p>
+            }
+
+            <p class="ompos-kanban-hint">@KanbanCopy.KeyboardHelp</p>
+            <div class="ompos-kanban-columns" role="group" aria-label="@KanbanCopy.ColumnsName">
+                @foreach (var column in Board.Columns)
+                {
+                    <div class="ompos-kanban-column" role="group" aria-label="@column.AccessibleName" data-column="@column.Key" @key="column.Key">
+                        <div class="ompos-kanban-column-header">
+                            <h3 class="ompos-kanban-column-title">@column.Title</h3>
+                            <span class="ompos-kanban-count">@column.Count</span>
+                        </div>
+                        @if (column.Cards.Count == 0)
+                        {
+                            <p class="ompos-kanban-column-empty">@KanbanCopy.EmptyColumn</p>
+                        }
+                        else
+                        {
+                            <ul class="ompos-kanban-cards">
+                                @foreach (var card in column.Cards)
+                                {
+                                    var model = Board.CardModelOf(card.Id);
+                                    if (model is null)
+                                    {
+                                        continue;
+                                    }
+
+                                    var cardId = card.Id;
+                                    <KanbanCardView @key="cardId"
+                                                    Model="model"
+                                                    IsCurrent="string.Equals(cardId, CurrentId, StringComparison.Ordinal)"
+                                                    TakeFocus="string.Equals(cardId, _pendingFocusId, StringComparison.Ordinal)"
+                                                    OnFocusTaken="FocusTakenAsync"
+                                                    OnOpen="OpenAsync"
+                                                    OnNavigate="args => NavigateAsync(cardId, args)"
+                                                    OnMoveToBacklog="id => MoveAsync(id, KanbanColumn.BacklogKey)"
+                                                    OnArchive="id => MoveAsync(id, KanbanColumn.ArchivedKey)" />
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+            </div>
+            break;
+    }
+    <p class="ompos-kanban-live" role="status" aria-live="polite" aria-atomic="true">@Board.Announcement</p>
+</section>
+
+@code {
+    private const string ModulePath = "./_content/OmpOS.UI/scripts/ompos-kanban.js";
+
+    private ElementReference _root;
+    private IJSObjectReference? _module;
+    private int? _token;
+    private KanbanBoardModel? _watched;
+    private string? _currentId;
+    private string? _pendingFocusId;
+
+    /// <summary>Gets the board model the tab renders: its columns, cards, state and announcements.</summary>
+    [Parameter, EditorRequired]
+    public KanbanBoardModel Board { get; set; } = default!;
+
+    /// <summary>
+    /// Gets the callback invoked with the session identifier when a card is opened. When the host gives none, the card asks the board
+    /// (<see cref="KanbanBoardModel.RequestOpen"/>), which raises <see cref="KanbanBoardModel.OpenSessionRequested"/>.
+    /// </summary>
+    [Parameter]
+    public EventCallback<string> OnOpenSession { get; set; }
+
+    private string StateName => Board.State switch
+    {
+        BoardState.Loading => "loading",
+        BoardState.Empty => "empty",
+        BoardState.Error => "error",
+        _ => "ready",
+    };
+
+    private bool AnySubstrateAvailable => Board.CardModels.Count == 0 || Board.CardModels.Any(static model => model.IsSubstrateAvailable);
+
+    private string? CurrentId
+    {
+        get
+        {
+            if (_currentId is not null && Board.CardOf(_currentId) is not null)
+            {
+                return _currentId;
+            }
+
+            return Board.Columns.SelectMany(static column => column.Cards).Select(static card => card.Id).FirstOrDefault();
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_watched, Board))
+        {
+            StopObserving(_watched);
+            _watched = Board;
+        }
+
+        Observe(Board);
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        try
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
+            _token = await _module.InvokeAsync<int>("attach", _root).ConfigureAwait(true);
+        }
+        catch (JSException)
+        {
+            // Without the module the arrow keys still move the focus; the page may also scroll, which is only a nuisance.
+        }
+    }
+
+    private Task StartAsync() => Board.StartSessionCommand.ExecuteAsync(null);
+
+    private Task RetryAsync() => Board.RetryCommand.ExecuteAsync(null);
+
+    private async Task OpenAsync(string sessionId)
+    {
+        _currentId = sessionId;
+        if (OnOpenSession.HasDelegate)
+        {
+            await OnOpenSession.InvokeAsync(sessionId).ConfigureAwait(true);
+        }
+        else
+        {
+            _ = Board.RequestOpen(sessionId);
+        }
+    }
+
+    private Task FocusTakenAsync()
+    {
+        _pendingFocusId = null;
+        return Task.CompletedTask;
+    }
+
+    private Task MoveAsync(string sessionId, string columnKey)
+    {
+        if (Board.Move(sessionId, columnKey) == KanbanMoveOutcome.Moved)
+        {
+            _currentId = sessionId;
+            _pendingFocusId = sessionId;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task NavigateAsync(string sessionId, KeyboardEventArgs args)
+    {
+        var target = TargetOf(sessionId, args.Key);
+        if (target is not null && !string.Equals(target, sessionId, StringComparison.Ordinal))
+        {
+            _currentId = target;
+            _pendingFocusId = target;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Finds the card a navigation key leads to: Up and Down inside the column, Left and Right to the neighbouring non-empty column, Home and End to the ends of the column.</summary>
+    private string? TargetOf(string sessionId, string key)
+    {
+        var columns = Board.Columns.Where(static column => column.Cards.Count > 0).ToList();
+        var columnIndex = columns.FindIndex(column => column.Cards.Any(card => string.Equals(card.Id, sessionId, StringComparison.Ordinal)));
+        if (columnIndex < 0)
+        {
+            return null;
+        }
+
+        var cards = columns[columnIndex].Cards;
+        var row = cards.ToList().FindIndex(card => string.Equals(card.Id, sessionId, StringComparison.Ordinal));
+        switch (key)
+        {
+            case "ArrowDown":
+                return row + 1 < cards.Count ? cards[row + 1].Id : null;
+            case "ArrowUp":
+                return row > 0 ? cards[row - 1].Id : null;
+            case "Home":
+                return cards[0].Id;
+            case "End":
+                return cards[^1].Id;
+            case "ArrowRight":
+                return columnIndex + 1 < columns.Count ? CardAt(columns[columnIndex + 1], row) : null;
+            case "ArrowLeft":
+                return columnIndex > 0 ? CardAt(columns[columnIndex - 1], row) : null;
+            default:
+                return null;
+        }
+    }
+
+    private static string CardAt(KanbanColumn column, int row) => column.Cards[Math.Min(row, column.Cards.Count - 1)].Id;
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            StopObserving(_watched);
+        }
+
+        base.Dispose(disposing);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        Dispose();
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (_token is { } token)
+            {
+                await _module.InvokeVoidAsync("detach", token).ConfigureAwait(true);
+            }
+
+            await _module.DisposeAsync().ConfigureAwait(true);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The page is gone, and the module went with it.
+        }
+    }
+}

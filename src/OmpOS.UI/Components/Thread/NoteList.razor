@@ -1,0 +1,28 @@
+@namespace OmpOS.UI.Components.Thread
+@using OmpOS.Presentation.AgentPanel
+<div class="ompos-note-list">
+    <h4 class="ompos-note-list-heading">@List.Header</h4>
+    @if (List.IsEmpty)
+    {
+        <p class="ompos-note-empty">@List.EmptyText</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var note in List.Visible)
+            {
+                <li class="ompos-note"><span class="ompos-note-text">@note.DisplayText</span> <span class="ompos-note-meta">@note.MetaText</span></li>
+            }
+        </ul>
+        @if (List.MoreText is { } more)
+        {
+            <p class="ompos-note-more">@more</p>
+        }
+    }
+</div>
+
+@code {
+    /// <summary>Gets the notes to list.</summary>
+    [Parameter, EditorRequired]
+    public ContextNoteList List { get; set; } = null!;
+}

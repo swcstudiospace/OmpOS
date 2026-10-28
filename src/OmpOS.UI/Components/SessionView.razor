@@ -1,9 +1,10 @@
 @namespace OmpOS.UI.Components
 @using OmpOS.GenUi
+@using OmpOS.Presentation.AgentPanel
 @using Microsoft.JSInterop
 @implements IAsyncDisposable
 @inject IJSRuntime JS
-<section class="ompos-session" id="ompos-conversation" aria-label="Session" tabindex="-1">
+<section class="ompos-session" id="ompos-conversation" aria-label="Session" tabindex="-1" data-state="@ViewState.ToString().ToLowerInvariant()">
     <div class="ompos-announcement" aria-live="polite">@Announcement</div>
     @if (ViewState == SessionViewState.LoadingHistory)
     {
@@ -11,7 +12,7 @@
     }
     else if (ViewState == SessionViewState.Empty)
     {
-        <p class="ompos-empty">No messages yet. Send a message to begin.</p>
+        <p class="ompos-empty"><strong class="ompos-empty-heading">@AgentPanelCopy.EmptySessionHeading</strong> <span class="ompos-empty-body">@AgentPanelCopy.EmptySessionBody</span></p>
     }
     else
     {
@@ -27,8 +28,8 @@
         </div>
         @if (ViewState == SessionViewState.AwaitingApproval)
         {
-            // Read-only notice: the server session status is the only authority for this state,
-            // and there is deliberately no approval action on the client (Q-HARN-PERMISSION).
+            // Read-only notice: the server session status is the only authority for this state. The decision itself
+            // is made in the pending approvals under the transcript (ToolApprovalList), never in this view.
             <p class="ompos-approval-notice" role="status">Approval needed to continue. The decision is made by policy.</p>
         }
         else if (ViewState == SessionViewState.Reconnecting)

@@ -7,7 +7,7 @@ Inputs (all read from this checkout and the local NuGet cache; nothing is fetche
   * every packages.lock.json in the repository (resolved versions),
   * <nuget cache>/<id>/<version>/<id>.nuspec for licence, copyright and project data,
   * licence and notice files shipped inside the cached packages,
-  * font directories (OFL.txt), vendored JavaScript banners, bundled images,
+  * font directories (OFL.txt), vendored JavaScript (banners, wwwroot/lib/*/VERSION.txt), bundled images,
   * deploy/*.Containerfile pins (Bun, omp), .gitmodules, plugins/*/package.json.
 
 Usage:
@@ -266,6 +266,29 @@ def bootstrap_rows():
     return rows
 
 
+def vendored_js_rows():
+    """Vendored JavaScript libraries: every wwwroot/lib/<name>/VERSION.txt block (name, package, version, licence, licence-file)."""
+    rows = []
+    for path in walk(REPO):
+        if path.name != "VERSION.txt" or path.parent.parent.name != "lib" or path.parent.parent.parent.name != "wwwroot":
+            continue
+        rel = path.parent.relative_to(REPO).as_posix()
+        for block in read_text(path).split("\n\n"):
+            fields = dict(re.findall(r"^([a-z-]+):\s*(.+)$", block, flags=re.MULTILINE))
+            if not {"name", "package", "version", "licence", "licence-file"} <= fields.keys():
+                continue
+            if fields["licence"] not in KNOWN_SPDX:
+                raise Undetermined(f"  - {rel}/VERSION.txt: licence {fields['licence']} of {fields['package']} has no text in scripts/legal/license-texts")
+            licence_file = path.parent / fields["licence-file"]
+            if not licence_file.is_file():
+                raise Undetermined(f"  - {rel}: licence file {fields['licence-file']} of {fields['package']} is missing")
+            copyright_line = next((ln.strip() for ln in read_text(licence_file).splitlines() if ln.strip().lower().startswith("copyright")), "")
+            if not copyright_line:
+                raise Undetermined(f"  - {rel}/{fields['licence-file']} has no copyright line")
+            rows.append({"dir": rel, "name": fields["name"], "package": fields["package"], "version": fields["version"], "licence": fields["licence"], "copyright": copyright_line})
+    return rows
+
+
 def image_rows():
     """Bundled images with the provenance this repository can state."""
     rows = []
@@ -342,10 +365,11 @@ def render(cache: Path) -> str:
     problems.extend(f"  - {p}" for p in font_problems)
     try:
         bootstrap = bootstrap_rows()
+        vendored = vendored_js_rows()
         npm = npm_section()
     except Undetermined as error:
         problems.append(str(error))
-        bootstrap, npm = [], None
+        bootstrap, vendored, npm = [], [], None
     if problems:
         raise Undetermined("\n".join(problems))
 
@@ -436,6 +460,8 @@ def render(cache: Path) -> str:
         w(f"| plugins/gsd-core-omp | {cell(str(npm.get('version', '')))} | {cell(str(npm.get('license', 'not declared')))} | first-party OmpOS code; declares no npm dependencies |")
     for b in bootstrap:
         w(f"| Bootstrap (`{b['dir']}`) | {b['version']} | MIT | {cell(b['copyright'])}; read from the banner of bootstrap.css; MIT text in section 8 |")
+    for v in vendored:
+        w(f"| {cell(v['name'])} (`{v['dir']}`) | {v['version']} | {v['licence']} | npm package {cell(v['package'])}, vendored unmodified, no CDN; {cell(v['copyright'])}; read from its licence file; MIT text in section 8 |")
     for axe in axe_rows():
         w(f"| axe-core (`scripts/web-smoke/{axe}`) | from the file name | MPL-2.0 | smoke-test tool downloaded at test time with `npm pack`; never committed or shipped, so its text is not reproduced |")
     w("")

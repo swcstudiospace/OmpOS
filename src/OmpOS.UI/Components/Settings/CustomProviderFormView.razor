@@ -1,0 +1,125 @@
+@namespace OmpOS.UI.Components.Settings
+@inherits ObservableComponent
+@using OmpOS.Presentation.Settings.Models
+<div class="ompos-provider-form" role="group" aria-labelledby="ompos-custom-provider-title">
+    <h5 class="ompos-provider-card-title" id="ompos-custom-provider-title">@Draft.Title</h5>
+    <p class="ompos-settings-help">@ModelsCopy.CustomProviderWriteNotice</p>
+    @if (Draft.TemplateNote is { } templateNote)
+    {
+        <p class="ompos-settings-help">@templateNote</p>
+    }
+    @if (Draft.TemplateRemark is { } remark)
+    {
+        <p class="ompos-settings-help">@remark</p>
+    }
+    <SettingsField For="ompos-custom-name" Label="@ModelsCopy.FieldDisplayName" Error="@Draft.DisplayNameError">
+        <input id="ompos-custom-name" class="ompos-input" type="text" autocomplete="off" value="@Draft.DisplayName"
+               aria-invalid="@(Draft.DisplayNameError is null ? null : "true")"
+               aria-describedby="@SettingsField.DescribedBy("ompos-custom-name", false)"
+               @oninput="e => Draft.DisplayName = e.Value?.ToString() ?? string.Empty" />
+    </SettingsField>
+    <SettingsField For="ompos-custom-id" Label="@ModelsCopy.FieldId" Error="@Draft.IdError">
+        <input id="ompos-custom-id" class="ompos-input ompos-settings-mono" type="text" autocomplete="off" spellcheck="false" value="@Draft.Id" disabled="@Draft.IsEditing"
+               aria-invalid="@(Draft.IdError is null ? null : "true")"
+               aria-describedby="@SettingsField.DescribedBy("ompos-custom-id", false)"
+               @oninput="e => Draft.Id = e.Value?.ToString() ?? string.Empty" />
+    </SettingsField>
+    <SettingsField For="ompos-custom-protocol" Label="@ModelsCopy.FieldProtocol">
+        <select id="ompos-custom-protocol" class="ompos-select" @onchange="OnProtocolChanged">
+            @foreach (var protocol in Enum.GetValues<CustomProviderProtocol>())
+            {
+                <option value="@protocol" selected="@(Draft.Protocol == protocol)">@ModelsCopy.ProtocolLabel(protocol)</option>
+            }
+        </select>
+    </SettingsField>
+    <SettingsField For="ompos-custom-endpoint" Label="@ModelsCopy.FieldEndpoint" Help="@Draft.EndpointHint" Error="@Draft.EndpointError">
+        <input id="ompos-custom-endpoint" class="ompos-input ompos-settings-mono" type="text" autocomplete="off" spellcheck="false" value="@Draft.EndpointText"
+               aria-invalid="@(Draft.EndpointError is null ? null : "true")"
+               aria-describedby="@SettingsField.DescribedBy("ompos-custom-endpoint", true)"
+               @oninput="e => Draft.EndpointText = e.Value?.ToString() ?? string.Empty" />
+    </SettingsField>
+    <SettingsField For="ompos-custom-auth" Label="@ModelsCopy.FieldAuth" Help="@ModelsCopy.CustomKeyHint">
+        <select id="ompos-custom-auth" class="ompos-select" aria-describedby="@SettingsField.DescribedBy("ompos-custom-auth", true)" @onchange="OnAuthChanged">
+            @foreach (var auth in Enum.GetValues<CustomProviderAuth>())
+            {
+                <option value="@auth" selected="@(Draft.Auth == auth)">@ModelsCopy.AuthChoiceLabel(auth)</option>
+            }
+        </select>
+    </SettingsField>
+    <SettingsField For="ompos-custom-models" Label="@ModelsCopy.FieldModels" Error="@Draft.ModelsError">
+        <textarea id="ompos-custom-models" class="ompos-textarea ompos-settings-mono" rows="4" spellcheck="false" value="@Draft.ModelsText"
+                  aria-invalid="@(Draft.ModelsError is null ? null : "true")"
+                  aria-describedby="@SettingsField.DescribedBy("ompos-custom-models", false)"
+                  @oninput="e => Draft.ModelsText = e.Value?.ToString() ?? string.Empty"></textarea>
+    </SettingsField>
+    <fieldset class="ompos-settings-fieldset">
+        <legend class="ompos-settings-label">@ModelsCopy.FieldCapabilities</legend>
+        <label class="ompos-settings-check"><input type="checkbox" checked="@Draft.SupportsChat" @onchange="e => Draft.SupportsChat = (bool)(e.Value ?? false)" />@ModelsCopy.CapabilityChat</label>
+        <label class="ompos-settings-check"><input type="checkbox" checked="@Draft.SupportsResponses" @onchange="e => Draft.SupportsResponses = (bool)(e.Value ?? false)" />@ModelsCopy.CapabilityResponses</label>
+        <label class="ompos-settings-check"><input type="checkbox" checked="@Draft.SupportsEmbeddings" @onchange="e => Draft.SupportsEmbeddings = (bool)(e.Value ?? false)" />@ModelsCopy.CapabilityEmbeddings</label>
+    </fieldset>
+    <label class="ompos-settings-check"><input type="checkbox" checked="@Draft.AllowRemotePlainHttp" aria-describedby="ompos-custom-plain-http-help" @onchange="e => Draft.AllowRemotePlainHttp = (bool)(e.Value ?? false)" />@ModelsCopy.FieldAllowPlainHttp</label>
+    <p class="ompos-settings-help" id="ompos-custom-plain-http-help">@ModelsCopy.AllowPlainHttpHint</p>
+    @if (!string.IsNullOrEmpty(Error))
+    {
+        <p class="ompos-settings-error-text" role="alert">@Error</p>
+    }
+    <div class="ompos-settings-actions">
+        <button type="button" class="ompos-btn ompos-btn--small ompos-btn--ghost" aria-label="@SettingsWebCopy.CancelProviderName" @onclick="OnCancel">@SettingsWebCopy.CancelProvider</button>
+    </div>
+</div>
+
+@code {
+    private CustomProviderDraft? _watched;
+
+    /// <summary>Gets the draft the form edits.</summary>
+    [Parameter, EditorRequired]
+    public CustomProviderDraft Draft { get; set; } = default!;
+
+    /// <summary>Gets the reason the last save was refused, or null.</summary>
+    [Parameter]
+    public string? Error { get; set; }
+
+    /// <summary>Gets the callback invoked when the user closes the form without saving.</summary>
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_watched, Draft))
+        {
+            StopObserving(_watched);
+            _watched = Draft;
+        }
+
+        Observe(Draft);
+    }
+
+    private void OnProtocolChanged(ChangeEventArgs args)
+    {
+        if (Enum.TryParse<CustomProviderProtocol>(args.Value?.ToString(), out var protocol))
+        {
+            Draft.Protocol = protocol;
+        }
+    }
+
+    private void OnAuthChanged(ChangeEventArgs args)
+    {
+        if (Enum.TryParse<CustomProviderAuth>(args.Value?.ToString(), out var auth))
+        {
+            Draft.Auth = auth;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            StopObserving(_watched);
+        }
+
+        base.Dispose(disposing);
+    }
+}

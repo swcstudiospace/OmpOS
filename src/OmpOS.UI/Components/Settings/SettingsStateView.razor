@@ -1,0 +1,28 @@
+@namespace OmpOS.UI.Components.Settings
+@using OmpOS.Presentation.Settings
+@if (Loading)
+{
+    <p class="ompos-settings-state" role="status" aria-busy="true">@SettingsCopy.LoadingText</p>
+}
+else if (!string.IsNullOrEmpty(Error))
+{
+    <div class="ompos-settings-state ompos-settings-state--error">
+        <h4 class="ompos-settings-section-title">@SettingsCopy.LoadFailedHeading</h4>
+        <p role="alert">@Error</p>
+        <button type="button" class="ompos-btn" @onclick="OnRetry">@SettingsCopy.RetryLabel</button>
+    </div>
+}
+
+@code {
+    /// <summary>Gets whether the page is still loading.</summary>
+    [Parameter]
+    public bool Loading { get; set; }
+
+    /// <summary>Gets the reason the page could not be loaded, or null.</summary>
+    [Parameter]
+    public string? Error { get; set; }
+
+    /// <summary>Gets the callback invoked when the user asks to load the page again.</summary>
+    [Parameter]
+    public EventCallback OnRetry { get; set; }
+}

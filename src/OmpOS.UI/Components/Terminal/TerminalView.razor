@@ -1,0 +1,355 @@
+@namespace OmpOS.UI.Components.Terminal
+@implements IAsyncDisposable
+@using Microsoft.JSInterop
+@using OmpOS.Presentation.Kanban
+@using OmpOS.Presentation.Terminal
+@inject IJSRuntime JS
+@inject IServiceProvider Services
+<section class="ompos-terminal" aria-label="@TerminalCopy.RegionName" data-state="@StateName">
+    <div class="ompos-terminal-frame">
+        @if (_state == TerminalViewState.Unavailable)
+        {
+            <div class="ompos-terminal-unavailable">
+                <h2 class="ompos-terminal-unavailable-heading">@TerminalCopy.UnavailableHeading</h2>
+                <p class="ompos-terminal-unavailable-reason" role="status">@_reason</p>
+            </div>
+        }
+        else
+        {
+            <div class="ompos-terminal-status" data-state="@StateName">
+                <p class="ompos-terminal-status-text" role="status" aria-live="polite">@StatusText</p>
+                @if (_state == TerminalViewState.Ended && _connectionLost)
+                {
+                    <button type="button" class="ompos-btn ompos-btn--small" aria-label="@TerminalCopy.ReconnectName" @onclick="ReconnectAsync">@TerminalCopy.Reconnect</button>
+                }
+            </div>
+            <div class="ompos-terminal-screen" @ref="_host" role="group" aria-label="@TerminalCopy.ScreenName"></div>
+        }
+    </div>
+    <div class="ompos-terminal-steer" role="group" aria-label="@TerminalCopy.SteerName">
+        @if (_steering is null)
+        {
+            <p class="ompos-terminal-help">@TerminalCopy.SteerUnavailable</p>
+        }
+        else
+        {
+            <textarea class="ompos-textarea" rows="3" maxlength="@TerminalCopy.MaxSteerChars" aria-label="@TerminalCopy.SteerBoxName"
+                      placeholder="@TerminalCopy.SteerPlaceholder" value="@_steerText" @oninput="OnSteerInput"></textarea>
+            <div class="ompos-terminal-steer-buttons">
+                <button type="button" class="ompos-btn" aria-label="@TerminalCopy.FollowUpName" disabled="@(!CanSend)"
+                        @onclick="() => SteerAsync(CardSteerMode.FollowUp)">@TerminalCopy.FollowUp</button>
+                <button type="button" class="ompos-btn ompos-btn--primary" aria-label="@TerminalCopy.SendNowName" disabled="@(!CanSend)"
+                        @onclick="() => SteerAsync(CardSteerMode.SendNow)">@TerminalCopy.SendNow</button>
+            </div>
+            <p class="ompos-terminal-help">@TerminalCopy.SteerHelp</p>
+        }
+        <p class="ompos-terminal-help ompos-terminal-steer-result" role="status" aria-live="polite" data-failed="@(_steerFailed ? "true" : "false")">@_steerResult</p>
+    </div>
+</section>
+
+@code {
+    private const string ModulePath = "./_content/OmpOS.UI/scripts/ompos-terminal.js";
+    private const int MaxReconnects = 5;
+    private static readonly TimeSpan MaxReconnectDelay = TimeSpan.FromSeconds(30);
+
+    private readonly CancellationTokenSource _lifetime = new();
+    private readonly TerminalChunkSequencer _sequencer = new();
+    private ElementReference _host;
+    private IJSObjectReference? _module;
+    private int? _token;
+    private IRemoteTerminalTransport? _transport;
+    private TimeProvider _time = TimeProvider.System;
+    private Task _pump = Task.CompletedTask;
+    private ICardSteering? _steering;
+    private TerminalViewState _state = TerminalViewState.Connecting;
+    private string _reason = TerminalAvailability.WebReason;
+    private bool _connectionLost;
+    private bool _started;
+    private bool _disposed;
+    private string _steerText = string.Empty;
+    private string _steerResult = string.Empty;
+    private bool _steerFailed;
+    private bool _sending;
+
+    /// <summary>Gets the identifier of the terminal session to attach to.</summary>
+    [Parameter, EditorRequired]
+    public string SessionId { get; set; } = string.Empty;
+
+    /// <summary>Gets the steering service the composer sends through. When the host gives none, the view asks the service provider; without one the composer says steering is unavailable.</summary>
+    [Parameter]
+    public ICardSteering? Steering { get; set; }
+
+    /// <summary>Gets the pause before the first reconnect attempt; each further attempt doubles it, up to 30 seconds. After five failed attempts in a row the view stops and offers Reconnect.</summary>
+    [Parameter]
+    public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(1);
+
+    /// <summary>Gets the current state of the view.</summary>
+    public TerminalViewState State => _state;
+
+    private string StateName => _state switch
+    {
+        TerminalViewState.Connecting => "connecting",
+        TerminalViewState.Live => "live",
+        TerminalViewState.Reconnecting => "reconnecting",
+        TerminalViewState.Ended => "ended",
+        _ => "unavailable",
+    };
+
+    private string StatusText => _state switch
+    {
+        TerminalViewState.Connecting => TerminalCopy.Connecting,
+        TerminalViewState.Live => TerminalCopy.Connected,
+        TerminalViewState.Reconnecting => TerminalCopy.Reconnecting,
+        TerminalViewState.Ended => _connectionLost ? TerminalCopy.ConnectionLost : TerminalCopy.Ended,
+        _ => _reason,
+    };
+
+    private bool CanSend => !_sending && _steerText.Trim().Length > 0;
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        _transport = Services.GetService(typeof(IRemoteTerminalTransport)) as IRemoteTerminalTransport;
+        _time = Services.GetService(typeof(TimeProvider)) as TimeProvider ?? TimeProvider.System;
+        if (_transport is null)
+        {
+            _state = TerminalViewState.Unavailable;
+            _reason = TerminalAvailability.WebReason;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet() =>
+        _steering = Steering ?? Services.GetService(typeof(ICardSteering)) as ICardSteering;
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_started || _transport is null || _state == TerminalViewState.Unavailable)
+        {
+            return;
+        }
+
+        _started = true;
+        try
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
+            _token = await _module.InvokeAsync<int>("create", _host).ConfigureAwait(true);
+        }
+        catch (JSException)
+        {
+            await SetStateAsync(TerminalViewState.Unavailable, TerminalCopy.ScreenFailed, connectionLost: false).ConfigureAwait(true);
+            return;
+        }
+
+        _pump = PumpAsync(_transport, _lifetime.Token);
+    }
+
+    private async Task SetStateAsync(TerminalViewState state, string? reason, bool connectionLost)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _state = state;
+        _connectionLost = connectionLost;
+        if (reason is not null)
+        {
+            _reason = reason;
+        }
+
+        await InvokeAsync(StateHasChanged).ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Reads the stream until it ends: accepted chunks are written to the screen in order, duplicates are dropped, a gap or a broken
+    /// connection attaches again after the last accepted chunk, and the view gives up after <see cref="MaxReconnects"/> failures in a row.
+    /// A stream that completes normally is a finished terminal.
+    /// </summary>
+    private async Task PumpAsync(IRemoteTerminalTransport transport, CancellationToken cancellationToken)
+    {
+        var failures = 0;
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var broken = false;
+            try
+            {
+                await foreach (var chunk in transport.AttachAsync(SessionId, _sequencer.Acked, cancellationToken).ConfigureAwait(true))
+                {
+                    var outcome = _sequencer.Accept(chunk);
+                    if (outcome == TerminalChunkOutcome.Duplicate)
+                    {
+                        continue;
+                    }
+
+                    if (outcome == TerminalChunkOutcome.Gap)
+                    {
+                        broken = true;
+                        break;
+                    }
+
+                    failures = 0;
+                    await WriteAsync(chunk.Text).ConfigureAwait(true);
+                    if (_state != TerminalViewState.Live)
+                    {
+                        await SetStateAsync(TerminalViewState.Live, null, connectionLost: false).ConfigureAwait(true);
+                    }
+                }
+
+                if (!broken)
+                {
+                    await SetStateAsync(TerminalViewState.Ended, null, connectionLost: false).ConfigureAwait(true);
+                    return;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (NotSupportedException unsupported)
+            {
+                await SetStateAsync(TerminalViewState.Unavailable, unsupported.Message, connectionLost: false).ConfigureAwait(true);
+                return;
+            }
+            catch (JSException)
+            {
+                await SetStateAsync(TerminalViewState.Unavailable, TerminalCopy.ScreenFailed, connectionLost: false).ConfigureAwait(true);
+                return;
+            }
+            catch (Exception lost) when (lost is IOException or HttpRequestException)
+            {
+                broken = true;
+            }
+            catch (Exception fault) when (fault is not OutOfMemoryException)
+            {
+                await SetStateAsync(TerminalViewState.Unavailable, TerminalCopy.StreamFailed, connectionLost: false).ConfigureAwait(true);
+                return;
+            }
+
+            failures++;
+            if (failures > MaxReconnects)
+            {
+                await SetStateAsync(TerminalViewState.Ended, null, connectionLost: true).ConfigureAwait(true);
+                return;
+            }
+
+            await SetStateAsync(TerminalViewState.Reconnecting, null, connectionLost: false).ConfigureAwait(true);
+            try
+            {
+                await Task.Delay(DelayFor(failures), _time, cancellationToken).ConfigureAwait(true);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+        }
+    }
+
+    private TimeSpan DelayFor(int failure)
+    {
+        var factor = Math.Pow(2, Math.Min(failure - 1, 10));
+        var delay = TimeSpan.FromTicks((long)Math.Min(ReconnectDelay.Ticks * factor, MaxReconnectDelay.Ticks));
+        return delay < TimeSpan.Zero ? TimeSpan.Zero : delay;
+    }
+
+    private async Task WriteAsync(string text)
+    {
+        if (_module is null || _token is not { } token)
+        {
+            return;
+        }
+
+        await _module.InvokeVoidAsync("write", _lifetime.Token, token, text).ConfigureAwait(true);
+    }
+
+    private async Task ReconnectAsync()
+    {
+        if (_transport is null || _state != TerminalViewState.Ended || !_connectionLost)
+        {
+            return;
+        }
+
+        await SetStateAsync(TerminalViewState.Connecting, null, connectionLost: false).ConfigureAwait(true);
+        _pump = PumpAsync(_transport, _lifetime.Token);
+    }
+
+    private void OnSteerInput(ChangeEventArgs args) => _steerText = args.Value?.ToString() ?? string.Empty;
+
+    private async Task SteerAsync(CardSteerMode mode)
+    {
+        var steering = _steering;
+        var text = _steerText.Trim();
+        if (steering is null || text.Length == 0 || _sending)
+        {
+            return;
+        }
+
+        _sending = true;
+        CardSteerResult result;
+        try
+        {
+            result = await steering.SteerAsync(SessionId, text, mode, _lifetime.Token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception fault) when (fault is not OutOfMemoryException)
+        {
+            result = CardSteerResult.Failed(TerminalCopy.SteerFailed);
+        }
+        finally
+        {
+            _sending = false;
+        }
+
+        if (result.IsAccepted)
+        {
+            _steerText = string.Empty;
+        }
+
+        _steerFailed = !result.IsAccepted;
+        _steerResult = result.Message;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        await _lifetime.CancelAsync().ConfigureAwait(true);
+        try
+        {
+            await _pump.ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            // The pump stopped because the view is going away.
+        }
+
+        _lifetime.Dispose();
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (_token is { } token)
+            {
+                await _module.InvokeVoidAsync("dispose", token).ConfigureAwait(true);
+            }
+
+            await _module.DisposeAsync().ConfigureAwait(true);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The page is gone, and the module went with it.
+        }
+    }
+}

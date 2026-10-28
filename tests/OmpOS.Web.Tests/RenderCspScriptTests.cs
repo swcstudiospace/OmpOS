@@ -12,6 +12,7 @@ public sealed class RenderCspScriptTests
 {
     private const string OriginVariable = "OMPOS_API_ORIGIN";
     private const string LoopbackVariable = "OMPOS_API_ORIGIN_ALLOW_LOOPBACK";
+    private const string DemoVariable = "OMPOS_DEMO";
     private static readonly TimeSpan ProcessTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>A valid https origin, with or without an explicit port, prints the exact connect-src line.</summary>
@@ -123,6 +124,56 @@ public sealed class RenderCspScriptTests
         result.StandardError.ShouldNotContain("deploy-user");
     }
 
+    /// <summary>The Demo build needs no API origin and allows only the page's own origin.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task DemoBuildEmitsSelfOnlyWithoutAnOrigin()
+    {
+        var result = await RunScriptAsync(origin: null, allowLoopback: null, demo: "1");
+
+        result.ExitCode.ShouldBe(0, $"render-csp.sh must accept a Demo build without an origin. STDERR:\n{result.StandardError}");
+        result.StandardOutput.ShouldBe("connect-src 'self'\n");
+        result.StandardError.ShouldBe(string.Empty);
+    }
+
+    /// <summary>The Demo ignores an origin: it never reaches the policy, even a hostile one.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task DemoBuildIgnoresAnyOrigin()
+    {
+        var result = await RunScriptAsync("https://*.evil.example", allowLoopback: null, demo: "1");
+
+        result.ExitCode.ShouldBe(0);
+        result.StandardOutput.ShouldBe("connect-src 'self'\n");
+    }
+
+    /// <summary>Only the literal 1 selects the Demo: any other value is a normal build and still fails closed without an origin.</summary>
+    /// <param name="demo">The value of OMPOS_DEMO.</param>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Theory]
+    [InlineData("0")]
+    [InlineData("")]
+    [InlineData("true")]
+    [InlineData("yes")]
+    public async Task OnlyTheLiteralOneSelectsTheDemo(string demo)
+    {
+        var result = await RunScriptAsync(origin: null, allowLoopback: null, demo: demo);
+
+        result.ExitCode.ShouldNotBe(0, "a normal build must still fail closed without OMPOS_API_ORIGIN.");
+        result.StandardOutput.ShouldBe(string.Empty);
+        result.StandardError.ShouldContain(OriginVariable);
+    }
+
+    /// <summary>A normal build with an origin is unchanged when OMPOS_DEMO is unset.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task NormalBuildStillPrintsItsOrigin()
+    {
+        var result = await RunScriptAsync("https://api.ompos.example", allowLoopback: null, demo: null);
+
+        result.StandardOutput.ShouldBe("connect-src 'self' https://api.ompos.example\n");
+    }
+
     private static void AssertRejected(ScriptResult result, string origin)
     {
         result.ExitCode.ShouldNotBe(0, "render-csp.sh must reject an origin outside the allowed form.");
@@ -130,7 +181,7 @@ public sealed class RenderCspScriptTests
         result.StandardError.Contains(origin, StringComparison.Ordinal).ShouldBeFalse("The rejection message must not echo the origin value.");
     }
 
-    private static async Task<ScriptResult> RunScriptAsync(string? origin, string? allowLoopback)
+    private static async Task<ScriptResult> RunScriptAsync(string? origin, string? allowLoopback, string? demo = null)
     {
         var ct = TestContext.Current.CancellationToken;
         var root = RepoRoot();
@@ -149,6 +200,7 @@ public sealed class RenderCspScriptTests
         // Set or clear both variables so an operator's shell environment cannot change the outcome.
         SetOrRemove(startInfo.Environment, OriginVariable, origin);
         SetOrRemove(startInfo.Environment, LoopbackVariable, allowLoopback);
+        SetOrRemove(startInfo.Environment, DemoVariable, demo);
 
         using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("bash did not start.");
         var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
