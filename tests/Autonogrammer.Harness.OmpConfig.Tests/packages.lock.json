@@ -201,27 +201,27 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "ompos.harness.ompconfig": {
+      "autonogrammer.harness.ompconfig": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.OmpLauncher": "[0.15.0, )",
-          "OmpOS.Harness.Providers": "[0.15.0, )",
-          "OmpOS.Harness.Secrets": "[0.15.0, )"
+          "Autonogrammer.Harness.OmpLauncher": "[0.15.0, )",
+          "Autonogrammer.Harness.Providers": "[0.15.0, )",
+          "Autonogrammer.Harness.Secrets": "[0.15.0, )"
         }
       },
-      "ompos.harness.omplauncher": {
+      "autonogrammer.harness.omplauncher": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Terminal": "[0.15.0, )"
+          "Autonogrammer.Harness.Terminal": "[0.15.0, )"
         }
       },
-      "ompos.harness.providers": {
+      "autonogrammer.harness.providers": {
         "type": "Project"
       },
-      "ompos.harness.secrets": {
+      "autonogrammer.harness.secrets": {
         "type": "Project"
       },
-      "ompos.harness.terminal": {
+      "autonogrammer.harness.terminal": {
         "type": "Project",
         "dependencies": {
           "Porta.Pty": "[2.2.3, )"

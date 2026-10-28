@@ -210,14 +210,14 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "ompos.contracts": {
+      "autonogrammer.contracts": {
         "type": "Project"
       },
-      "ompos.parser": {
+      "autonogrammer.parser": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
-          "OmpOS.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

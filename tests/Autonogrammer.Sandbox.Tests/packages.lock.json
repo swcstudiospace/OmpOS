@@ -251,23 +251,23 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "ompos.contracts": {
+      "autonogrammer.contracts": {
         "type": "Project"
       },
-      "ompos.sandbox": {
+      "autonogrammer.sandbox": {
         "type": "Project",
         "dependencies": {
+          "Autonogrammer.Sandbox.Abstractions": "[0.15.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.Options": "[10.0.13, )",
-          "OmpOS.Sandbox.Abstractions": "[0.15.0, )",
           "YamlDotNet": "[16.3.0, )"
         }
       },
-      "ompos.sandbox.abstractions": {
+      "autonogrammer.sandbox.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

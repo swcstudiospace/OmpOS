@@ -201,38 +201,38 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "ompos.contracts": {
+      "autonogrammer.contracts": {
         "type": "Project"
       },
-      "ompos.harness.abstractions": {
+      "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
-      "ompos.harness.acp": {
+      "autonogrammer.harness.acp": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
-      "ompos.harness.contracttests": {
+      "autonogrammer.harness.contracttests": {
         "type": "Project",
         "dependencies": {
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.Acp": "[0.15.0, )",
           "Microsoft.Testing.Extensions.TrxReport": "[2.5.1, )",
-          "OmpOS.Harness.Abstractions": "[0.15.0, )",
-          "OmpOS.Harness.Acp": "[0.15.0, )",
           "Shouldly": "[4.3.0, )",
           "coverlet.MTP": "[10.1.0, )",
           "xunit.v3": "[4.0.2, )"
         }
       },
-      "ompos.harness.inmemory": {
+      "autonogrammer.harness.inmemory": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[0.15.0, )",
-          "OmpOS.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

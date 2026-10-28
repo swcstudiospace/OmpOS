@@ -201,7 +201,7 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "ompos.harness.terminal": {
+      "autonogrammer.harness.terminal": {
         "type": "Project",
         "dependencies": {
           "Porta.Pty": "[2.2.3, )"

@@ -201,32 +201,32 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "ompos.contracts": {
+      "autonogrammer.contracts": {
         "type": "Project"
       },
-      "ompos.harness.abstractions": {
+      "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
-      "ompos.harness.acp": {
+      "autonogrammer.harness.acp": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
-      "ompos.harness.agent": {
+      "autonogrammer.harness.agent": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
       },
-      "ompos.harness.rpc": {
+      "autonogrammer.harness.rpc": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

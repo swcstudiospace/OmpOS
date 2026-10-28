@@ -210,43 +210,43 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "ompos.contracts": {
+      "autonogrammer.contracts": {
         "type": "Project"
       },
-      "ompos.harness.abstractions": {
+      "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
-      "ompos.sandbox.abstractions": {
+      "autonogrammer.sandbox.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
-      "ompos.sessionruns": {
+      "autonogrammer.sessionruns": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Contracts": "[0.15.0, )",
-          "OmpOS.Harness.Abstractions": "[0.15.0, )",
-          "OmpOS.Sandbox.Abstractions": "[0.15.0, )",
-          "OmpOS.Sessions": "[0.15.0, )",
-          "OmpOS.Workflows": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Sandbox.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Sessions": "[0.15.0, )",
+          "Autonogrammer.Workflows": "[0.15.0, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
-      "ompos.sessions": {
+      "autonogrammer.sessions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[0.15.0, )",
-          "OmpOS.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
       },
-      "ompos.workflows": {
+      "autonogrammer.workflows": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

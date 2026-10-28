@@ -35,23 +35,23 @@
         "resolved": "18.12.1",
         "contentHash": "sQt7NpnselT1gP1a7bTfhmfHYV0jbavst/8mOoWTMSjXhXzWPssqgBoIwrxNsgJUa7XQzD2raSRMAFfmlepxNw=="
       },
-      "ompos.contracts": {
+      "autonogrammer.contracts": {
         "type": "Project"
       },
-      "ompos.harness.abstractions": {
+      "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
-      "ompos.harness.acp": {
+      "autonogrammer.harness.acp": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
-      "ompos.harness.plugins": {
+      "autonogrammer.harness.plugins": {
         "type": "Project"
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {

@@ -231,16 +231,16 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "ompos.coordination": {
+      "autonogrammer.coordination": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )"
         }
       },
-      "ompos.coordination.dragonfly": {
+      "autonogrammer.coordination.dragonfly": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Coordination": "[0.15.0, )",
+          "Autonogrammer.Coordination": "[0.15.0, )",
           "StackExchange.Redis": "[3.4.5, )"
         }
       },

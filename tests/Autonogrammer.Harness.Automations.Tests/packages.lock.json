@@ -201,13 +201,13 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "ompos.harness.automations": {
+      "autonogrammer.harness.automations": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Plugins": "[0.15.0, )"
+          "Autonogrammer.Harness.Plugins": "[0.15.0, )"
         }
       },
-      "ompos.harness.plugins": {
+      "autonogrammer.harness.plugins": {
         "type": "Project"
       },
       "Microsoft.Extensions.Configuration": {

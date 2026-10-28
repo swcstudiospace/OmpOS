@@ -201,7 +201,7 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "ompos.harness.secrets": {
+      "autonogrammer.harness.secrets": {
         "type": "Project"
       },
       "Microsoft.Extensions.Configuration": {

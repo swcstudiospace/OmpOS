@@ -235,31 +235,31 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "ompos.contracts": {
+      "autonogrammer.contracts": {
         "type": "Project"
       },
-      "ompos.harness.abstractions": {
+      "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
-      "ompos.harness.acp": {
+      "autonogrammer.harness.acp": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
-      "ompos.harness.mcp": {
+      "autonogrammer.harness.mcp": {
         "type": "Project",
         "dependencies": {
-          "ModelContextProtocol": "[2.3.0, )",
-          "OmpOS.Harness.Abstractions": "[0.15.0, )",
-          "OmpOS.Harness.Acp": "[0.15.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.Acp": "[0.15.0, )",
+          "ModelContextProtocol": "[2.3.0, )"
         }
       },
-      "ompos.harness.mcp.fixtures": {
+      "autonogrammer.harness.mcp.fixtures": {
         "type": "Project",
         "dependencies": {
           "ModelContextProtocol": "[2.3.0, )"

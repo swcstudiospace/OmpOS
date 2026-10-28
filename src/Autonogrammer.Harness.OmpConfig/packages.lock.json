@@ -26,19 +26,19 @@
         "resolved": "18.12.1",
         "contentHash": "sQt7NpnselT1gP1a7bTfhmfHYV0jbavst/8mOoWTMSjXhXzWPssqgBoIwrxNsgJUa7XQzD2raSRMAFfmlepxNw=="
       },
-      "ompos.harness.omplauncher": {
+      "autonogrammer.harness.omplauncher": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Terminal": "[0.15.0, )"
+          "Autonogrammer.Harness.Terminal": "[0.15.0, )"
         }
       },
-      "ompos.harness.providers": {
+      "autonogrammer.harness.providers": {
         "type": "Project"
       },
-      "ompos.harness.secrets": {
+      "autonogrammer.harness.secrets": {
         "type": "Project"
       },
-      "ompos.harness.terminal": {
+      "autonogrammer.harness.terminal": {
         "type": "Project",
         "dependencies": {
           "Porta.Pty": "[2.2.3, )"

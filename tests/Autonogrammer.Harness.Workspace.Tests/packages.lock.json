@@ -201,7 +201,7 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "ompos.harness.workspace": {
+      "autonogrammer.harness.workspace": {
         "type": "Project"
       },
       "Microsoft.Extensions.Configuration": {

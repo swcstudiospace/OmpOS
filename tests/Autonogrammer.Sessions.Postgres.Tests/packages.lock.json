@@ -229,51 +229,51 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
-      "ompos.contracts": {
+      "autonogrammer.contracts": {
         "type": "Project"
       },
-      "ompos.harness.abstractions": {
+      "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
-      "ompos.sessions": {
+      "autonogrammer.sessions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[0.15.0, )",
-          "OmpOS.Harness.Abstractions": "[0.15.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
       },
-      "ompos.sessions.postgres": {
+      "autonogrammer.sessions.postgres": {
         "type": "Project",
         "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Sessions": "[0.15.0, )",
           "Microsoft.Extensions.Configuration.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
-          "Npgsql": "[10.0.3, )",
-          "OmpOS.Contracts": "[0.15.0, )",
-          "OmpOS.Harness.Abstractions": "[0.15.0, )",
-          "OmpOS.Sessions": "[0.15.0, )"
+          "Npgsql": "[10.0.3, )"
         }
       },
-      "ompos.sessions.postgres.probe": {
+      "autonogrammer.sessions.postgres.probe": {
         "type": "Project",
         "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Sessions": "[0.15.0, )",
+          "Autonogrammer.Sessions.Postgres": "[0.15.0, )",
           "Microsoft.Extensions.Configuration": "[10.0.13, )",
           "Microsoft.Extensions.DependencyInjection": "[10.0.13, )",
-          "Npgsql": "[10.0.3, )",
-          "OmpOS.Contracts": "[0.15.0, )",
-          "OmpOS.Sessions": "[0.15.0, )",
-          "OmpOS.Sessions.Postgres": "[0.15.0, )"
+          "Npgsql": "[10.0.3, )"
         }
       },
-      "ompos.sessions.tests": {
+      "autonogrammer.sessions.tests": {
         "type": "Project",
         "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Sessions": "[0.15.0, )",
           "Microsoft.Testing.Extensions.TrxReport": "[2.5.1, )",
-          "OmpOS.Contracts": "[0.15.0, )",
-          "OmpOS.Harness.Abstractions": "[0.15.0, )",
-          "OmpOS.Sessions": "[0.15.0, )",
           "Shouldly": "[4.3.0, )",
           "coverlet.MTP": "[10.1.0, )",
           "xunit.v3": "[4.0.2, )"
