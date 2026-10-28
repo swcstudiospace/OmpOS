@@ -140,7 +140,7 @@ internal sealed class FakeContainerHost : IDisposable
             "FAKE_PODMAN_MODE=" + q(Options.Mode),
             "FAKE_PODMAN_BANNER=" + q(Options.Banner ? "1" : string.Empty),
             "FAKE_PODMAN_START_FAIL=" + q(Options.StartFails ? "1" : string.Empty),
-            "FAKE_PODMAN_PATH=" + q(overrideBin + ":/usr/local/bin:/usr/bin:/bin"),
+            "FAKE_PODMAN_PATH=" + q(overrideBin + ":/usr/bin:/bin"),
             "FAKE_OMP_VERSION=" + q(Options.OmpVersion),
             "FAKE_OMP_NOISE=" + q(Options.NoiseAfterHandshake ? "1" : string.Empty),
         };

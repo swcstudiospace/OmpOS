@@ -38,9 +38,6 @@ public sealed class ContainerProfileEditor : ObservableModel
     /// <summary>Gets the heading of the form.</summary>
     public string Heading => IsNew ? ContainerCopy.AddContainerHeading : ContainerCopy.EditContainerHeading;
 
-    /// <summary>Gets the hint under the workspace folder field.</summary>
-    public string WorkspaceFolderHint => ContainerCopy.WorkspaceFolderHint;
-
     /// <summary>Gets whether every field is acceptable.</summary>
     public bool IsValid => _issues.Count == 0;
 
@@ -158,7 +155,7 @@ public sealed class ContainerProfileEditor : ObservableModel
     {
         const string Prefix = "Container.";
         var name = property.StartsWith(Prefix, StringComparison.Ordinal) ? property[Prefix.Length..] : property;
-        return name == nameof(EnvironmentProfile.Id) ? nameof(Container) : name;
+        return string.Equals(name, nameof(EnvironmentProfile.Id), StringComparison.Ordinal) ? nameof(Container) : name;
     }
 
     private void Change(ref string field, string value, [CallerMemberName] string? propertyName = null)

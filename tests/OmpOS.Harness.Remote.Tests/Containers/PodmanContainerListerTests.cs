@@ -33,7 +33,7 @@ public sealed class PodmanContainerListerTests
         containers[0].ShouldBe(new ContainerSummary("aaa111", "devbox", "registry.example/dev:1", "running", "/home/me/proj"));
         containers[1].DevContainerFolder.ShouldBeNull();
         containers[1].IsRunning.ShouldBeFalse();
-        containers[2].State.ShouldBe("running", Case.Sensitive);
+        containers[2].State.ShouldBe("running");
         string.Join(' ', containers.Select(container => container.ToString())).ShouldNotContain("hunter2", Case.Sensitive);
     }
 

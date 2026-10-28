@@ -26,7 +26,7 @@ public sealed class DevContainerResolverTests
 
     private static string Container(string id, string name, string state, string? folder) =>
         "{\"Id\":\"" + id + "\",\"Names\":[\"" + name + "\"],\"Image\":\"registry.example/dev:1\",\"State\":\"" + state + "\",\"Labels\":"
-        + (folder is null ? "null" : "{\"devcontainer.local_folder\":" + JsonSerializer.Serialize(folder) + "}") + "}";
+        + (folder is null ? "null" : "{\"devcontainer.local_folder\":\"" + JsonEncodedText.Encode(folder) + "\"}") + "}";
 
     private static DevContainerResolver Resolver(FakeContainerHost host) => new(new PodmanContainerLister(host.ClientOptions));
 
@@ -36,7 +36,7 @@ public sealed class DevContainerResolverTests
           "name": "My Dev",
           /* the image */
           "image": "registry.example/dev:1",
-          "remoteUser": "vscode",
+          "remoteUser": "dev",
           "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
         }
         """;
@@ -51,13 +51,13 @@ public sealed class DevContainerResolverTests
         var definition = await DevContainerResolver.ReadDefinitionAsync(folder, Token).ConfigureAwait(true);
 
         definition.ShouldNotBeNull();
-        definition.Name.ShouldBe("My Dev", Case.Sensitive);
-        definition.WorkspaceFolder.ShouldBe("/workspaces/my proj", Case.Sensitive);
-        definition.RemoteUser.ShouldBe("vscode", Case.Sensitive);
-        definition.EffectiveUser.ShouldBe("vscode", Case.Sensitive);
+        definition.Name.ShouldBe("My Dev");
+        definition.WorkspaceFolder.ShouldBe("/workspaces/my proj");
+        definition.RemoteUser.ShouldBe("dev");
+        definition.EffectiveUser.ShouldBe("dev");
         definition.BuildKind.ShouldBe(DevContainerBuildKind.Image);
-        definition.Image.ShouldBe("registry.example/dev:1", Case.Sensitive);
-        definition.ConfigPath.ShouldBe(Path.Combine(folder, ".devcontainer", "devcontainer.json"), Case.Sensitive);
+        definition.Image.ShouldBe("registry.example/dev:1");
+        definition.ConfigPath.ShouldBe(Path.Combine(folder, ".devcontainer", "devcontainer.json"));
     }
 
     /// <summary>Without a workspaceFolder the devcontainer default <c>/workspaces/&lt;folder name&gt;</c> applies, and the container user is the fallback user.</summary>
@@ -70,9 +70,9 @@ public sealed class DevContainerResolverTests
         var definition = await DevContainerResolver.ReadDefinitionAsync(folder, Token).ConfigureAwait(true);
 
         definition.ShouldNotBeNull();
-        definition.WorkspaceFolder.ShouldBe("/workspaces/my proj", Case.Sensitive);
+        definition.WorkspaceFolder.ShouldBe("/workspaces/my proj");
         definition.RemoteUser.ShouldBeNull();
-        definition.EffectiveUser.ShouldBe("worker", Case.Sensitive);
+        definition.EffectiveUser.ShouldBe("worker");
         definition.BuildKind.ShouldBe(DevContainerBuildKind.None);
     }
 
@@ -87,7 +87,7 @@ public sealed class DevContainerResolverTests
         using var relative = TempDirectory.Create();
         var notAbsolute = await DevContainerResolver.ReadDefinitionAsync(Project(relative, "{ \"workspaceFolder\": \"work\" }"), Token).ConfigureAwait(true);
 
-        withLocal.ShouldNotBeNull().WorkspaceFolder.ShouldBe("/mnt" + Path.Combine(directory.Path, "my proj"), Case.Sensitive);
+        withLocal.ShouldNotBeNull().WorkspaceFolder.ShouldBe("/mnt" + Path.Combine(directory.Path, "my proj"));
         unresolved.ShouldNotBeNull().WorkspaceFolder.ShouldBeNull();
         notAbsolute.ShouldNotBeNull().WorkspaceFolder.ShouldBeNull();
     }
@@ -129,7 +129,7 @@ public sealed class DevContainerResolverTests
 
         var definition = await DevContainerResolver.ReadDefinitionAsync(folder, Token).ConfigureAwait(true);
 
-        definition.ShouldNotBeNull().Name.ShouldBe("Root", Case.Sensitive);
+        definition.ShouldNotBeNull().Name.ShouldBe("Root");
     }
 
     /// <summary>A folder without a definition gives null; a damaged, oversized or non-object definition is an error that says so.</summary>
@@ -170,13 +170,13 @@ public sealed class DevContainerResolverTests
 
         resolution.Outcome.ShouldBe(DevContainerOutcome.Found);
         var profile = resolution.Profile.ShouldNotBeNull();
-        profile.Container.ShouldBe("devbox", Case.Sensitive);
-        profile.RemoteUser.ShouldBe("vscode", Case.Sensitive);
-        profile.WorkspaceFolder.ShouldBe("/workspaces/my proj", Case.Sensitive);
+        profile.Container.ShouldBe("devbox");
+        profile.RemoteUser.ShouldBe("dev");
+        profile.WorkspaceFolder.ShouldBe("/workspaces/my proj");
         EnvironmentProfileValidator.Validate(profile).ShouldBeEmpty();
         var call = host.PodmanCalls().ShouldHaveSingleItem();
         call.ShouldContain("label=devcontainer.local_folder=" + folder, StringComparer.Ordinal);
-        call[0].ShouldBe("ps", Case.Sensitive);
+        call[0].ShouldBe("ps");
     }
 
     /// <summary>A trailing separator on the folder does not hide the container.</summary>
@@ -238,7 +238,7 @@ public sealed class DevContainerResolverTests
 
         resolution.Outcome.ShouldBe(DevContainerOutcome.NotRunning);
         resolution.Profile.ShouldBeNull();
-        resolution.Containers.ShouldHaveSingleItem().Name.ShouldBe("devbox", Case.Sensitive);
+        resolution.Containers.ShouldHaveSingleItem().Name.ShouldBe("devbox");
         resolution.FixText.ShouldNotBeNull().ShouldContain("podman start devbox", Case.Sensitive);
     }
 

@@ -25,7 +25,7 @@ public sealed class AutomationContractJsonTests
             Target = new AutomationTargetInfo
             {
                 Kind = "cloud",
-                Repositories = [new AutomationRepositoryInfo { Url = "https://github.com/acme/widgets", Branch = "main" }],
+                Repositories = [new AutomationRepositoryInfo { Address = "https://github.com/acme/widgets", Branch = "main" }],
                 SecretRefs = ["NPM_TOKEN"],
             },
             AllowedTools = ["pull_request_create"],
@@ -52,7 +52,7 @@ public sealed class AutomationContractJsonTests
         json.ShouldNotContain("null", Case.Sensitive);
         json.ShouldNotContain("webhookSecret\"", Case.Sensitive);
         var back = JsonSerializer.Deserialize(json, AutomationsJsonContext.Default.AutomationInfo)!;
-        JsonSerializer.Serialize(back, AutomationsJsonContext.Default.AutomationInfo).ShouldBe(json, Case.Sensitive);
+        JsonSerializer.Serialize(back, AutomationsJsonContext.Default.AutomationInfo).ShouldBe(json);
         back.Triggers[1].Branches.ShouldBe(["main", "release/*"]);
         back.LastRun!.DurationSeconds.ShouldBe(2);
     }
@@ -65,9 +65,9 @@ public sealed class AutomationContractJsonTests
 
         with.ShouldContain("\"webhookSecret\":\"whsec_abc\"", Case.Sensitive);
         without.ShouldNotContain("webhookSecret\"", Case.Sensitive);
-        typeof(AutomationInfo).GetProperties().Select(static property => property.Name).ShouldNotContain("WebhookSecret");
-        typeof(AutomationRunInfo).GetProperties().Select(static property => property.Name).ShouldNotContain("WebhookSecret");
-        typeof(AutomationListResponse).GetProperties().Select(static property => property.Name).ShouldNotContain("WebhookSecret");
+        typeof(AutomationInfo).GetProperties().Select(static property => property.Name).ShouldNotContain("WebhookSecret", StringComparer.Ordinal);
+        typeof(AutomationRunInfo).GetProperties().Select(static property => property.Name).ShouldNotContain("WebhookSecret", StringComparer.Ordinal);
+        typeof(AutomationListResponse).GetProperties().Select(static property => property.Name).ShouldNotContain("WebhookSecret", StringComparer.Ordinal);
     }
 
     [Fact]
@@ -77,11 +77,11 @@ public sealed class AutomationContractJsonTests
 
         var request = JsonSerializer.Deserialize(Json, AutomationsJsonContext.Default.SaveAutomationRequest)!;
 
-        request.Name.ShouldBe("n", Case.Sensitive);
+        request.Name.ShouldBe("n");
         request.Enabled.ShouldBeNull();
         request.Target.ShouldBeNull();
         request.MaxRunsPerHour.ShouldBeNull();
-        request.Triggers!.ShouldHaveSingleItem().Kind.ShouldBe("webhook", Case.Sensitive);
+        request.Triggers!.ShouldHaveSingleItem().Kind.ShouldBe("webhook");
         request.Triggers[0].Flavour.ShouldBeNull();
     }
 
@@ -96,7 +96,7 @@ public sealed class AutomationContractJsonTests
 
         runs.ShouldContain("\"status\":\"timed_out\"", Case.Sensitive);
         runs.ShouldNotContain("finishedAt", Case.Sensitive);
-        preview.ShouldBe("{\"nextRuns\":[\"2026-10-28T09:00:00+00:00\"]}", Case.Sensitive);
-        hook.ShouldBe("{\"status\":\"accepted\",\"runId\":\"r1\"}", Case.Sensitive);
+        preview.ShouldBe("{\"nextRuns\":[\"2026-10-28T09:00:00+00:00\"]}");
+        hook.ShouldBe("{\"status\":\"accepted\",\"runId\":\"r1\"}");
     }
 }

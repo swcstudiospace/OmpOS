@@ -1,3 +1,4 @@
+using System.Globalization;
 using OmpOS.Presentation.Automations;
 using Shouldly;
 using Xunit;
@@ -27,9 +28,9 @@ public sealed class AutomationEditorSaveTests
 
         var save = manager.Saves.Single();
         save.Id.ShouldBeNull();
-        save.Draft.Name.ShouldBe("Nightly triage", Case.Sensitive);
-        save.Draft.TargetKind.ShouldBe("local", Case.Sensitive);
-        model.SavedEntry.ShouldNotBeNull().Id.ShouldBe("auto-1", Case.Sensitive);
+        save.Draft.Name.ShouldBe("Nightly triage");
+        save.Draft.TargetKind.ShouldBe("local");
+        model.SavedEntry.ShouldNotBeNull().Id.ShouldBe("auto-1");
         model.IsEdit.ShouldBeTrue();
         model.IsSaving.ShouldBeFalse();
         model.SaveFailure.ShouldBeEmpty();
@@ -39,7 +40,7 @@ public sealed class AutomationEditorSaveTests
         await model.SaveAsync(Token).ConfigureAwait(true);
 
         manager.Saves.Count.ShouldBe(2);
-        manager.Saves[1].Id.ShouldBe("auto-1", Case.Sensitive);
+        manager.Saves[1].Id.ShouldBe("auto-1");
         manager.Snapshot().Count.ShouldBe(1);
     }
 
@@ -56,8 +57,8 @@ public sealed class AutomationEditorSaveTests
 
         await model.SaveAsync(Token).ConfigureAwait(true);
 
-        model.RevealedSecret.ShouldBe(Canary, Case.Sensitive);
-        model.WebhookPath.ShouldBe("/webhooks/auto-1", Case.Sensitive);
+        model.RevealedSecret.ShouldBe(Canary);
+        model.WebhookPath.ShouldBe("/webhooks/auto-1");
         model.HasWebhookSecret.ShouldBeTrue();
 
         model.AcknowledgeSecret();
@@ -97,12 +98,12 @@ public sealed class AutomationEditorSaveTests
 
         await model.SaveAsync(Token).ConfigureAwait(true);
 
-        model.SaveFailure.ShouldBe("An automation with this name already exists.", Case.Sensitive);
+        model.SaveFailure.ShouldBe("An automation with this name already exists.");
         model.SavedEntry.ShouldBeNull();
         model.IsEdit.ShouldBeFalse();
         model.IsSaving.ShouldBeFalse();
         model.CanSave.ShouldBeTrue();
-        model.Name.ShouldBe("Nightly triage", Case.Sensitive);
+        model.Name.ShouldBe("Nightly triage");
         model.RevealedSecret.ShouldBeEmpty();
         raised.ShouldBe(0);
 
@@ -141,7 +142,7 @@ public sealed class AutomationEditorSaveTests
         model.IsSaving.ShouldBeTrue();
         model.CanSave.ShouldBeFalse();
         await source.CancelAsync().ConfigureAwait(true);
-        await Should.ThrowAsync<OperationCanceledException>(() => pending).ConfigureAwait(true);
+        await Should.ThrowAsync<OperationCanceledException>(() => pending.WaitAsync(Token)).ConfigureAwait(true);
 
         model.IsSaving.ShouldBeFalse();
         model.SaveFailure.ShouldBeEmpty();
@@ -175,13 +176,13 @@ public sealed class AutomationEditorSaveTests
 
         await model.SaveAsync(Token).ConfigureAwait(true);
 
-        model.RevealedSecret.ShouldBe(Canary, Case.Sensitive);
+        model.RevealedSecret.ShouldBe(Canary);
         var saved = model.SavedEntry.ShouldNotBeNull();
         var row = new HostedAutomationRowModel(saved);
         var result = new AutomationSaveResult(saved, Canary);
         var visible = new List<string>
         {
-            model.ToString() ?? string.Empty,
+            Convert.ToString(model, CultureInfo.InvariantCulture)!,
             saved.ToString(),
             saved.Draft.ToString(),
             saved.WebhookPath,
@@ -189,13 +190,13 @@ public sealed class AutomationEditorSaveTests
             model.SaveFailure,
             model.WhyDisabled,
             model.CronPreviewError,
-            row.ToString() ?? string.Empty,
+            Convert.ToString(row, CultureInfo.InvariantCulture)!,
             row.TriggerText,
             row.TargetText,
             row.LastResultText,
             row.WebhookText,
             row.AccessibleName,
-            result.ToString() ?? string.Empty,
+            Convert.ToString(result, CultureInfo.InvariantCulture)!,
             result.Entry.ToString(),
         };
         visible.AddRange(model.Errors.Values);
@@ -225,7 +226,7 @@ public sealed class AutomationEditorSaveTests
         model.Name = "Again";
         await model.SaveAsync(Token).ConfigureAwait(true);
 
-        model.SaveFailure.ShouldBe("The service is busy.", Case.Sensitive);
+        model.SaveFailure.ShouldBe("The service is busy.");
         model.SaveFailure.ShouldNotContain(Canary, Case.Sensitive);
         model.RevealedSecret.ShouldBeEmpty();
     }
@@ -244,10 +245,10 @@ public sealed class AutomationEditorSaveTests
 
         await model.RotateSecretAsync(Token).ConfigureAwait(true);
 
-        manager.Calls.ShouldContain("Rotate:auto-1");
-        model.RevealedSecret.ShouldBe(Canary, Case.Sensitive);
+        manager.Calls.ShouldContain("Rotate:auto-1", StringComparer.Ordinal);
+        model.RevealedSecret.ShouldBe(Canary);
         model.SaveFailure.ShouldBeEmpty();
-        model.ToString().ShouldNotContain(Canary, Case.Sensitive);
+        Convert.ToString(model, CultureInfo.InvariantCulture)!.ShouldNotContain(Canary, Case.Sensitive);
 
         model.AcknowledgeSecret();
         model.RevealedSecret.ShouldBeEmpty();
@@ -267,7 +268,7 @@ public sealed class AutomationEditorSaveTests
 
         await model.RotateSecretAsync(Token).ConfigureAwait(true);
 
-        model.SaveFailure.ShouldBe("The secret store is read-only.", Case.Sensitive);
+        model.SaveFailure.ShouldBe("The secret store is read-only.");
         model.RevealedSecret.ShouldBeEmpty();
 
         var fresh = ValidLocal(manager);
@@ -289,9 +290,9 @@ public sealed class AutomationEditorSaveTests
         model.Prompt = "A new prompt.";
         await model.SaveAsync(Token).ConfigureAwait(true);
 
-        manager.Saves.Single().Id.ShouldBe("nightly", Case.Sensitive);
-        manager.Saves.Single().Draft.Prompt.ShouldBe("A new prompt.", Case.Sensitive);
-        manager.Snapshot().Single().Draft.Prompt.ShouldBe("A new prompt.", Case.Sensitive);
+        manager.Saves.Single().Id.ShouldBe("nightly");
+        manager.Saves.Single().Draft.Prompt.ShouldBe("A new prompt.");
+        manager.Snapshot().Single().Draft.Prompt.ShouldBe("A new prompt.");
     }
 
     private static AutomationEditorModel ValidLocal(FakeAutomationsManager manager) =>

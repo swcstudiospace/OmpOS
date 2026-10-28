@@ -11,7 +11,7 @@ public sealed class PodmanExecCommandBuilderTests
 {
     private static readonly ContainerProfile Profile = new() { Container = "devbox", WorkspaceFolder = "/workspaces/app" };
 
-    private static RemoteLaunch Launch(string workingDirectory = "/workspaces/app", string state = "/home/vscode/.ompos/sessions/s1", string ompPath = "omp", IReadOnlyList<string>? arguments = null, IReadOnlyDictionary<string, string>? environment = null, IReadOnlySet<string>? secrets = null) =>
+    private static RemoteLaunch Launch(string workingDirectory = "/workspaces/app", string state = "/home/dev/.ompos/sessions/s1", string ompPath = "omp", IReadOnlyList<string>? arguments = null, IReadOnlyDictionary<string, string>? environment = null, IReadOnlySet<string>? secrets = null) =>
         LaunchFactory.Create(workingDirectory, state, ompPath, arguments, environment, secrets);
 
     /// <summary>A session runs <c>podman exec -i</c> with the container after a double dash, then <c>sh -c</c> and the bootstrap script as the last argument.</summary>
@@ -45,9 +45,9 @@ public sealed class PodmanExecCommandBuilderTests
     [Fact]
     public void TheRemoteUserIsPassedWithU()
     {
-        var invocation = new PodmanExecCommandBuilder().BuildAcp(Profile with { RemoteUser = "vscode" }, Launch());
+        var invocation = new PodmanExecCommandBuilder().BuildAcp(Profile with { RemoteUser = "dev" }, Launch());
 
-        invocation.Arguments.Take(6).ToArray().ShouldBe(["exec", "-i", "-u", "vscode", "--", "devbox"]);
+        invocation.Arguments.Take(6).ToArray().ShouldBe(["exec", "-i", "-u", "dev", "--", "devbox"]);
     }
 
     /// <summary>The podman path of the profile overrides the one of the options.</summary>
@@ -109,7 +109,7 @@ public sealed class PodmanExecCommandBuilderTests
     [Fact]
     public void AReverseForwardIsRefused()
     {
-        var launch = LaunchFactory.Create("/workspaces/app", "/home/vscode/.ompos/sessions/s1", forwards: [new ReverseForward(41000, "127.0.0.1", 7000)]);
+        var launch = LaunchFactory.Create("/workspaces/app", "/home/dev/.ompos/sessions/s1", forwards: [new ReverseForward(41000, "127.0.0.1", 7000)]);
 
         Should.Throw<ArgumentException>(() => new PodmanExecCommandBuilder().BuildAcp(Profile, launch));
     }

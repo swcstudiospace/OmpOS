@@ -44,7 +44,7 @@ public sealed class ComposerAttachmentsTests
 
         model.Add([1, 2, 3, 4], "image/png", "fake.png").Error.ShouldBe(AttachmentError.UnsupportedType);
         model.Add(Png(20), null, "photo.txt").Succeeded.ShouldBeTrue();
-        model.Items[0].MimeType.ShouldBe("image/png", Case.Sensitive);
+        model.Items[0].MimeType.ShouldBe("image/png");
         model.Add(Png(20), "text/plain", "x.png").Error.ShouldBe(AttachmentError.UnsupportedType);
     }
 
@@ -55,7 +55,7 @@ public sealed class ComposerAttachmentsTests
         var model = new ComposerAttachmentsModel(null, new AttachmentLimits(MaxCount: 3, MaxBytes: 100, MaxTotalBytes: 150));
 
         model.Add(Png(101), null, "a.png").Error.ShouldBe(AttachmentError.TooLarge);
-        model.Notice.ShouldBe(AttachmentCopy.TooLarge(100), Case.Sensitive);
+        model.Notice.ShouldBe(AttachmentCopy.TooLarge(100));
         model.Add(Png(100), null, "a.png").Succeeded.ShouldBeTrue();
         model.Add(Png(60), null, "b.png").Error.ShouldBe(AttachmentError.TotalTooLarge);
         model.Add(Png(20), null, "c.png").Succeeded.ShouldBeTrue();
@@ -85,12 +85,12 @@ public sealed class ComposerAttachmentsTests
 
         var result = model.Add(Png(2048), null, "C:\\users\\me\\sh\tot.png");
 
-        result.Attachment!.Name.ShouldBe("shot.png", Case.Sensitive);
-        result.Attachment.AltText.ShouldBe("shot.png", Case.Sensitive);
-        result.Attachment.AccessibleName.ShouldBe("Image shot.png, 2 KB", Case.Sensitive);
-        result.Attachment.RemoveName.ShouldBe("Remove image shot.png", Case.Sensitive);
+        result.Attachment!.Name.ShouldBe("shot.png");
+        result.Attachment.AltText.ShouldBe("shot.png");
+        result.Attachment.AccessibleName.ShouldBe("Image shot.png, 2 KB");
+        result.Attachment.RemoveName.ShouldBe("Remove image shot.png");
         result.Attachment.HasThumbnail.ShouldBeTrue();
-        result.Attachment.Thumbnail![1].ShouldBe((byte)64);
+        result.Attachment.Thumbnail.Span[1].ShouldBe((byte)64);
     }
 
     /// <summary>Remove drops one attachment; Clear drops all.</summary>
@@ -138,7 +138,7 @@ public sealed class ComposerAttachmentsTests
 
         result.Error.ShouldBe(AttachmentError.Refused);
         model.CanAttach.ShouldBeFalse();
-        model.DisabledReason.ShouldBe(AttachmentCopy.ModelRefuses, Case.Sensitive);
+        model.DisabledReason.ShouldBe(AttachmentCopy.ModelRefuses);
         model.HasItems.ShouldBeFalse();
     }
 
@@ -191,6 +191,6 @@ public sealed class ComposerAttachmentsTests
         composer.ImageSender = (_, _, _) => Task.FromResult(false);
         await composer.SendAsync().ConfigureAwait(true);
         images.HasItems.ShouldBeTrue();
-        composer.Draft.ShouldBe("look", Case.Sensitive);
+        composer.Draft.ShouldBe("look");
     }
 }

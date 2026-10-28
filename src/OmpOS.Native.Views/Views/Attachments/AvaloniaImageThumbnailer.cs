@@ -16,7 +16,7 @@ internal sealed class AvaloniaImageThumbnailer : IImageThumbnailer
             using var source = new MemoryStream(data, writable: false);
             using var small = Bitmap.DecodeToWidth(source, maxEdge, BitmapInterpolationMode.HighQuality);
             using var target = new MemoryStream();
-            small.Save(target);
+            small.Save(target, PngBitmapEncoderOptions.Default);
             return target.ToArray();
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or NotSupportedException or IOException)

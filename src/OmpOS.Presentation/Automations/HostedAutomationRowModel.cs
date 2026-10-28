@@ -17,11 +17,15 @@ public sealed class HostedAutomationRowModel
 
     /// <summary>Creates the row for one automation.</summary>
     /// <param name="entry">The automation as the manager reports it.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="entry"/> or its draft is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="entry"/> is null.</exception>
+    /// <exception cref="ArgumentException">The entry's draft is null.</exception>
     public HostedAutomationRowModel(HostedAutomationEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        ArgumentNullException.ThrowIfNull(entry.Draft);
+        if (entry.Draft is null)
+        {
+            throw new ArgumentException("The entry has no draft.", nameof(entry));
+        }
 
         var draft = entry.Draft;
         Id = entry.Id;
@@ -145,7 +149,7 @@ public sealed class HostedAutomationRowModel
             return AutomationsCopy.CloudTargetNoRepository;
         }
 
-        var text = AutomationsCopy.CloudTargetNoRepository + ": " + RepositoryPath(draft.Repositories[0].Url);
+        var text = AutomationsCopy.CloudTargetNoRepository + ": " + RepositoryPath(draft.Repositories[0].Address);
         return draft.Repositories.Count == 1
             ? text
             : text + " (+" + (draft.Repositories.Count - 1).ToString(CultureInfo.InvariantCulture) + " more)";

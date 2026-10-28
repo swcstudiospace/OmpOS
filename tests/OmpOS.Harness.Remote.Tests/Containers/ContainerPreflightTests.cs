@@ -182,7 +182,7 @@ public sealed class ContainerPreflightTests
 
         var diagnosis = Only(report);
         diagnosis.Kind.ShouldBe(RemoteDiagnosisKind.OmpMissing);
-        diagnosis.Summary.ShouldBe("omp was not found inside the container.", Case.Sensitive);
+        diagnosis.Summary.ShouldBe("omp was not found inside the container.");
         diagnosis.FixText.ShouldContain("dev container definition", Case.Sensitive);
     }
 

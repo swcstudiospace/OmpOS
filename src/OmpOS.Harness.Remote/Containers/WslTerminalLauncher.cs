@@ -66,7 +66,7 @@ public sealed class WslTerminalLauncher
     /// <returns>The running terminal session.</returns>
     /// <exception cref="FileNotFoundException">wsl.exe was not found.</exception>
     /// <exception cref="ArgumentException">The command carries data for the stdin preamble: a terminal cannot send it.</exception>
-    public Task<ITerminalSession> StartAsync(
+    public static Task<ITerminalSession> StartAsync(
         ITerminalBackend backend,
         RemoteTerminalCommand command,
         IProcessOutputSink output,

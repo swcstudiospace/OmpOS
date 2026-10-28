@@ -28,9 +28,15 @@ public sealed class WebhookTrigger
         ArgumentNullException.ThrowIfNull(clock);
         _clock = clock;
         _options = options ?? new WebhookTriggerOptions();
-        ArgumentOutOfRangeException.ThrowIfLessThan(_options.MaxBodyBytes, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(_options.MaxBodyBytes, WebhookTriggerOptions.MaxBodyBytesCeiling);
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(_options.ReplayWindow, TimeSpan.Zero);
+        if (_options.MaxBodyBytes < 1 || _options.MaxBodyBytes > WebhookTriggerOptions.MaxBodyBytesCeiling)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), _options.MaxBodyBytes, "The body cap must be 1 to 262144 bytes.");
+        }
+
+        if (_options.ReplayWindow <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), _options.ReplayWindow, "The replay window must be positive.");
+        }
     }
 
     /// <summary>Gets the largest body accepted, in bytes.</summary>

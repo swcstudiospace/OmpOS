@@ -40,9 +40,9 @@ public sealed class NewSessionTargetContainerTests
 
         model.Options.Select(option => option.Id).ShouldBe(["local", "ssh:s", "container:c", "wsl:w", "cloud"]);
         model.Options.Select(option => option.Kind).ShouldBe([SessionTargetKind.Local, SessionTargetKind.Ssh, SessionTargetKind.Container, SessionTargetKind.Wsl, SessionTargetKind.Cloud]);
-        model.Options[2].Label.ShouldBe("container: Dev c", Case.Sensitive);
-        model.Options[2].Detail.ShouldBe("devbox Folder in the container: /workspaces/app", Case.Sensitive);
-        model.Options[3].Detail.ShouldBe("Ubuntu-24.04 Folder in the distribution: /home/dev/app", Case.Sensitive);
+        model.Options[2].Label.ShouldBe("container: Dev c");
+        model.Options[2].Detail.ShouldBe("devbox Folder in the container: /workspaces/app");
+        model.Options[3].Detail.ShouldBe("Ubuntu-24.04 Folder in the distribution: /home/dev/app");
 
         model.IncludeWsl = false;
 
@@ -59,7 +59,7 @@ public sealed class NewSessionTargetContainerTests
 
         model.IncludeWsl = false;
 
-        model.Selected.ShouldNotBeNull().Id.ShouldBe("local", Case.Sensitive);
+        model.Selected.ShouldNotBeNull().Id.ShouldBe("local");
     }
 
     /// <summary>A container that was never tested can start (starting connects to it); the target carries the profile and the folder inside the container.</summary>
@@ -70,12 +70,12 @@ public sealed class NewSessionTargetContainerTests
         model.Select("container:c");
 
         model.CanStart.ShouldBeTrue();
-        model.Validation.Message.ShouldBe(RemoteCopy.TargetUntested, Case.Sensitive);
+        model.Validation.Message.ShouldBe(RemoteCopy.TargetUntested);
         model.TryGetTarget(out var target).ShouldBeTrue();
         target.ShouldNotBeNull();
         target.Kind.ShouldBe(SessionTargetKind.Container);
-        target.ProfileId.ShouldBe("c", Case.Sensitive);
-        target.RemoteWorkspaceRoot.ShouldBe("/workspaces/app", Case.Sensitive);
+        target.ProfileId.ShouldBe("c");
+        target.RemoteWorkspaceRoot.ShouldBe("/workspaces/app");
     }
 
     /// <summary>A WSL target carries the workspace path in the distribution.</summary>
@@ -87,7 +87,7 @@ public sealed class NewSessionTargetContainerTests
 
         model.TryGetTarget(out var target).ShouldBeTrue();
 
-        target.ShouldNotBeNull().RemoteWorkspaceRoot.ShouldBe("/home/dev/app", Case.Sensitive);
+        target.ShouldNotBeNull().RemoteWorkspaceRoot.ShouldBe("/home/dev/app");
         target.Kind.ShouldBe(SessionTargetKind.Wsl);
     }
 
@@ -108,7 +108,7 @@ public sealed class NewSessionTargetContainerTests
 
         model.CanStart.ShouldBe(canStart);
         model.TryGetTarget(out _).ShouldBe(canStart);
-        model.Selected.ShouldNotBeNull().StatusLabel.ShouldBe(words, Case.Sensitive);
+        model.Selected.ShouldNotBeNull().StatusLabel.ShouldBe(words);
         if (!canStart)
         {
             model.Validation.Message.ShouldStartWith(RemoteCopy.TargetBlockedPrefix, Case.Sensitive);
@@ -138,9 +138,9 @@ public sealed class NewSessionTargetContainerTests
 
         model.SetProfiles([Container("c"), Container("d", "other")]);
 
-        model.Options.Single(option => option.Id == "container:c").StatusLabel.ShouldBe("Container not running", Case.Sensitive);
-        model.Options.Single(option => option.Id == "container:c").AccessibleName.ShouldContain("Container not running", Case.Sensitive);
-        model.Options.Single(option => option.Id == "container:d").StatusLabel.ShouldBeEmpty();
+        model.Options.Single(option => string.Equals(option.Id, "container:c", StringComparison.Ordinal)).StatusLabel.ShouldBe("Container not running");
+        model.Options.Single(option => string.Equals(option.Id, "container:c", StringComparison.Ordinal)).AccessibleName.ShouldContain("Container not running", Case.Sensitive);
+        model.Options.Single(option => string.Equals(option.Id, "container:d", StringComparison.Ordinal)).StatusLabel.ShouldBeEmpty();
     }
 
     /// <summary>A container profile without its container details, and unknown kinds, are left out of the picker.</summary>

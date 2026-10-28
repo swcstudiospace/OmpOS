@@ -195,6 +195,14 @@ public static class RemoteDiagnosisCatalog
             RemoteDiagnosisKind.RequiredToolMissing => (
                 $"The remote machine has no '{name}' command, which OmpOS needs.",
                 "Install the standard tool on the remote machine (coreutils provides mktemp) and test the connection again."),
+            _ => ContainerTextFor(kind, subject),
+        };
+    }
+
+    private static (string Summary, string Fix) ContainerTextFor(RemoteDiagnosisKind kind, string? subject)
+    {
+        return kind switch
+        {
             RemoteDiagnosisKind.ContainerRuntimeMissing => (
                 "podman is not installed or cannot be started on this machine.",
                 "Install podman (https://podman.io) or set its full path in the profile (Podman path). OmpOS uses podman only."),

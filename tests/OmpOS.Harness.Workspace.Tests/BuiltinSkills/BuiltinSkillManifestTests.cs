@@ -72,7 +72,7 @@ public sealed class BuiltinSkillManifestTests
         var set = await DiscoverBundleAsync().ConfigureAwait(true);
 
         var found = entry.ShouldNotBeNull();
-        found.Name.ShouldBe(token, Case.Sensitive);
+        found.Name.ShouldBe(token);
         set.Skills.Count(skill => string.Equals(skill.Name, token, StringComparison.Ordinal)).ShouldBe(1);
     }
 

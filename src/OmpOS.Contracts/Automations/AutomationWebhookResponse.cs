@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace OmpOS.Contracts.Automations;
 
 /// <summary>The body of the webhook receiver's success answers.</summary>
@@ -7,5 +9,6 @@ public sealed record AutomationWebhookResponse
     public required string Status { get; init; }
 
     /// <summary>Gets the identifier of the run that started, for <c>accepted</c>.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? RunId { get; init; }
 }

@@ -77,15 +77,15 @@ public sealed class AutomationStoreTests
         var read = await store.GetAsync(automation.Id, Token).ConfigureAwait(true);
 
         read.ShouldNotBeNull();
-        read.Id.ShouldBe(automation.Id, Case.Sensitive);
-        read.Owner.ShouldBe(automation.Owner, Case.Sensitive);
-        read.Name.ShouldBe(automation.Name, Case.Sensitive);
-        read.Prompt.ShouldBe(automation.Prompt, Case.Sensitive);
+        read.Id.ShouldBe(automation.Id);
+        read.Owner.ShouldBe(automation.Owner);
+        read.Name.ShouldBe(automation.Name);
+        read.Prompt.ShouldBe(automation.Prompt);
         read.Enabled.ShouldBe(automation.Enabled);
-        read.TimeZone.ShouldBe(automation.TimeZone, Case.Sensitive);
+        read.TimeZone.ShouldBe(automation.TimeZone);
         read.Triggers.Count.ShouldBe(3);
         read.Triggers[0].Kind.ShouldBe(AutomationTriggerKind.Cron);
-        read.Triggers[0].Cron.ShouldBe("0 9 * * mon-fri", Case.Sensitive);
+        read.Triggers[0].Cron.ShouldBe("0 9 * * mon-fri");
         read.Triggers[1].Flavour.ShouldBe(WebhookFlavour.GitHub);
         read.Triggers[1].Events.ShouldBe(["push", "pull_request"]);
         read.Triggers[1].Actions.ShouldBe(["opened", "merged"]);
@@ -96,9 +96,9 @@ public sealed class AutomationStoreTests
         read.Target.Repositories[0].ShouldBe(new AutomationRepository("https://github.com/acme/widgets", "main", "develop"));
         read.Target.Repositories[1].ShouldBe(new AutomationRepository("https://github.com/acme/gadgets"));
         read.Target.SecretRefs.ShouldBe(["NPM_TOKEN", "DEPLOY_KEY"]);
-        read.Target.EnvironmentId.ShouldBe("node-22", Case.Sensitive);
-        read.Target.Model.ShouldBe("claude-sonnet", Case.Sensitive);
-        read.Target.Mode.ShouldBe("agent", Case.Sensitive);
+        read.Target.EnvironmentId.ShouldBe("node-22");
+        read.Target.Model.ShouldBe("claude-sonnet");
+        read.Target.Mode.ShouldBe("agent");
         read.AllowedTools.ShouldBe([AutomationTools.PullRequestCreate, AutomationTools.PullRequestComment]);
         read.MaxConcurrentRuns.ShouldBe(2);
         read.MaxRunsPerHour.ShouldBe(7);
@@ -143,7 +143,7 @@ public sealed class AutomationStoreTests
 
         await store.SaveAsync(automation with { Name = "Renamed" }, Token).ConfigureAwait(true);
 
-        (await store.GetAsync(automation.Id, Token).ConfigureAwait(true))!.Name.ShouldBe("Renamed", Case.Sensitive);
+        (await store.GetAsync(automation.Id, Token).ConfigureAwait(true))!.Name.ShouldBe("Renamed");
         (await store.GetHistoryAsync(automation.Id, Token).ConfigureAwait(true)).Count.ShouldBe(1);
         (await store.GetScheduleCursorAsync(automation.Id, Token).ConfigureAwait(true)).ShouldBe(Kit.Start.AddHours(2));
     }
@@ -164,7 +164,7 @@ public sealed class AutomationStoreTests
         var history = await store.GetHistoryAsync("aut_0001", Token).ConfigureAwait(true);
         history.Select(static entry => entry.RunId).ShouldBe(["second", "first"]);
         history[1].Status.ShouldBe(AutomationRunStatus.Failed);
-        history[1].Error.ShouldBe("boom", Case.Sensitive);
+        history[1].Error.ShouldBe("boom");
 
         for (var index = 0; index < 150; index++)
         {
@@ -173,8 +173,8 @@ public sealed class AutomationStoreTests
 
         history = await store.GetHistoryAsync("aut_0001", Token).ConfigureAwait(true);
         history.Count.ShouldBe(AutomationLimits.MaxHistoryEntries);
-        history[0].RunId.ShouldBe("bulk149", Case.Sensitive);
-        history[^1].RunId.ShouldBe("bulk50", Case.Sensitive);
+        history[0].RunId.ShouldBe("bulk149");
+        history[^1].RunId.ShouldBe("bulk50");
     }
 
     [Theory]
@@ -262,7 +262,7 @@ public sealed class AutomationStoreTests
         await Should.ThrowAsync<InvalidDataException>(async () => await store.ListAsync(Token).ConfigureAwait(true)).ConfigureAwait(true);
         await Should.ThrowAsync<InvalidDataException>(async () => await store.SaveAsync(TestAutomations.Make(), Token).ConfigureAwait(true)).ConfigureAwait(true);
 
-        (await File.ReadAllTextAsync(path, Token).ConfigureAwait(true)).ShouldBe(content, Case.Sensitive);
+        (await File.ReadAllTextAsync(path, Token).ConfigureAwait(true)).ShouldBe(content);
     }
 
     [Fact]
@@ -281,6 +281,7 @@ public sealed class AutomationStoreTests
         if (OperatingSystem.IsWindows())
         {
             Assert.Skip("Unix file modes do not exist on Windows.");
+            return;
         }
 
         using var directory = new TempDirectory();
@@ -307,7 +308,7 @@ public sealed class AutomationStoreTests
         }
 
         using var second = new FileAutomationSecretStore(path);
-        (await second.GetAsync("webhook:aut_1", Token).ConfigureAwait(true)).ShouldBe("whsec_one_rotated", Case.Sensitive);
+        (await second.GetAsync("webhook:aut_1", Token).ConfigureAwait(true)).ShouldBe("whsec_one_rotated");
         (await second.GetAsync("webhook:aut_2", Token).ConfigureAwait(true)).ShouldBeNull();
         (await second.GetAsync("webhook:aut_3", Token).ConfigureAwait(true)).ShouldBeNull();
         if (!OperatingSystem.IsWindows())
@@ -325,7 +326,7 @@ public sealed class AutomationStoreTests
         using var store = new FileAutomationSecretStore(path);
 
         await Should.ThrowAsync<InvalidDataException>(async () => await store.GetAsync("webhook:x", Token).ConfigureAwait(true)).ConfigureAwait(true);
-        (await File.ReadAllTextAsync(path, Token).ConfigureAwait(true)).ShouldBe("[1,2,3]", Case.Sensitive);
+        (await File.ReadAllTextAsync(path, Token).ConfigureAwait(true)).ShouldBe("[1,2,3]");
     }
 
     [Fact]
@@ -335,7 +336,7 @@ public sealed class AutomationStoreTests
 
         await store.SetAsync("webhook:a", "value-a", Token).ConfigureAwait(true);
 
-        (await store.GetAsync("webhook:a", Token).ConfigureAwait(true)).ShouldBe("value-a", Case.Sensitive);
+        (await store.GetAsync("webhook:a", Token).ConfigureAwait(true)).ShouldBe("value-a");
         await store.DeleteAsync("webhook:a", Token).ConfigureAwait(true);
         (await store.GetAsync("webhook:a", Token).ConfigureAwait(true)).ShouldBeNull();
         await Should.ThrowAsync<ArgumentException>(async () => await store.SetAsync("webhook:a", string.Empty, Token).ConfigureAwait(true)).ConfigureAwait(true);

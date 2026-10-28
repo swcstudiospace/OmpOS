@@ -13,7 +13,7 @@ public sealed class RunningContainerPicker : ObservableModel
 {
     private readonly IContainerLister _lister;
     private readonly ObservableCollection<RunningContainerItem> _items = [];
-    private IReadOnlySet<string> _savedContainers = new HashSet<string>(StringComparer.Ordinal);
+    private HashSet<string> _savedContainers = new HashSet<string>(StringComparer.Ordinal);
     private IReadOnlySet<string> _takenIds = new HashSet<string>(StringComparer.Ordinal);
     private RunningContainerPickerState _state = RunningContainerPickerState.Idle;
     private RunningContainerItem? _selected;

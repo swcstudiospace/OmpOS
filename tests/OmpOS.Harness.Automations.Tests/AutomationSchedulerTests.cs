@@ -32,7 +32,8 @@ public sealed class AutomationSchedulerTests
     [Fact]
     public async Task A_run_starts_at_its_occurrence_with_that_occurrence_in_its_context()
     {
-        await using var fixture = new RunnerFixture();
+        var fixture = new RunnerFixture();
+        await using var fixtureScope = fixture.ConfigureAwait(true);
         var scheduler = await CreateAsync(fixture, TestAutomations.Make()).ConfigureAwait(true);
         (await TickAndSettleAsync(scheduler, fixture, "aut_0001").ConfigureAwait(true)).ShouldBe(0);
 
@@ -48,7 +49,8 @@ public sealed class AutomationSchedulerTests
     [Fact]
     public async Task A_run_never_starts_before_its_occurrence()
     {
-        await using var fixture = new RunnerFixture();
+        var fixture = new RunnerFixture();
+        await using var fixtureScope = fixture.ConfigureAwait(true);
         var scheduler = await CreateAsync(fixture, TestAutomations.Make()).ConfigureAwait(true);
         _ = await TickAndSettleAsync(scheduler, fixture, "aut_0001").ConfigureAwait(true);
 
@@ -63,7 +65,8 @@ public sealed class AutomationSchedulerTests
     [Fact]
     public async Task An_occurrence_is_handled_once_however_often_the_scheduler_looks()
     {
-        await using var fixture = new RunnerFixture();
+        var fixture = new RunnerFixture();
+        await using var fixtureScope = fixture.ConfigureAwait(true);
         var scheduler = await CreateAsync(fixture, TestAutomations.Make()).ConfigureAwait(true);
         _ = await TickAndSettleAsync(scheduler, fixture, "aut_0001").ConfigureAwait(true);
         fixture.Clock.Advance(TimeSpan.FromDays(1));
@@ -79,7 +82,8 @@ public sealed class AutomationSchedulerTests
     [Fact]
     public async Task A_late_occurrence_runs_once_within_five_minutes_and_is_skipped_after()
     {
-        await using var fixture = new RunnerFixture();
+        var fixture = new RunnerFixture();
+        await using var fixtureScope = fixture.ConfigureAwait(true);
         var scheduler = await CreateAsync(fixture, TestAutomations.Make()).ConfigureAwait(true);
         _ = await TickAndSettleAsync(scheduler, fixture, "aut_0001").ConfigureAwait(true);
 
@@ -96,13 +100,14 @@ public sealed class AutomationSchedulerTests
         history[0].Status.ShouldBe(AutomationRunStatus.Skipped);
         history[0].Source.ShouldBe(AutomationRunSource.Cron);
         history[0].Error.ShouldNotBeNull().ShouldContain("more than 5 minutes late", Case.Sensitive);
-        history[0].Error.ShouldContain("2026-10-24 09:00 UTC", Case.Sensitive);
+        history[0].Error.ShouldNotBeNull().ShouldContain("2026-10-24 09:00 UTC", Case.Sensitive);
     }
 
     [Fact]
     public async Task Several_missed_occurrences_fold_into_a_single_run_when_the_latest_is_inside_the_window()
     {
-        await using var fixture = new RunnerFixture();
+        var fixture = new RunnerFixture();
+        await using var fixtureScope = fixture.ConfigureAwait(true);
         var scheduler = await CreateAsync(fixture, TestAutomations.Make([TestAutomations.Cron("*/10 * * * *")])).ConfigureAwait(true);
         _ = await TickAndSettleAsync(scheduler, fixture, "aut_0001").ConfigureAwait(true);
 
@@ -116,7 +121,8 @@ public sealed class AutomationSchedulerTests
     [Fact]
     public async Task Several_missed_occurrences_beyond_the_window_are_one_skipped_entry_not_many()
     {
-        await using var fixture = new RunnerFixture();
+        var fixture = new RunnerFixture();
+        await using var fixtureScope = fixture.ConfigureAwait(true);
         var scheduler = await CreateAsync(fixture, TestAutomations.Make([TestAutomations.Cron("*/10 * * * *")])).ConfigureAwait(true);
         _ = await TickAndSettleAsync(scheduler, fixture, "aut_0001").ConfigureAwait(true);
 
@@ -130,7 +136,8 @@ public sealed class AutomationSchedulerTests
     [Fact]
     public async Task A_disabled_automation_does_not_run_and_does_not_catch_up_when_it_is_enabled()
     {
-        await using var fixture = new RunnerFixture();
+        var fixture = new RunnerFixture();
+        await using var fixtureScope = fixture.ConfigureAwait(true);
         var disabled = TestAutomations.Make([TestAutomations.Cron("* * * * *")], enabled: false);
         var scheduler = await CreateAsync(fixture, disabled).ConfigureAwait(true);
         _ = await TickAndSettleAsync(scheduler, fixture, "aut_0001").ConfigureAwait(true);
@@ -149,7 +156,8 @@ public sealed class AutomationSchedulerTests
     [Fact]
     public async Task Two_triggers_due_at_the_same_instant_start_one_run()
     {
-        await using var fixture = new RunnerFixture();
+        var fixture = new RunnerFixture();
+        await using var fixtureScope = fixture.ConfigureAwait(true);
         var automation = TestAutomations.Make([TestAutomations.Cron("0 9 * * *"), TestAutomations.Cron("0 9 * * 1-5"), TestAutomations.Cron("0 */3 * * *")]);
         var scheduler = await CreateAsync(fixture, automation with { MaxConcurrentRuns = 4 }).ConfigureAwait(true);
         _ = await TickAndSettleAsync(scheduler, fixture, "aut_0001").ConfigureAwait(true);
@@ -164,7 +172,8 @@ public sealed class AutomationSchedulerTests
     [Fact]
     public async Task A_second_occurrence_while_the_first_run_is_still_going_is_skipped_by_the_concurrency_guard()
     {
-        await using var fixture = new RunnerFixture();
+        var fixture = new RunnerFixture();
+        await using var fixtureScope = fixture.ConfigureAwait(true);
         var scheduler = await CreateAsync(fixture, TestAutomations.Make([TestAutomations.Cron("* * * * *")])).ConfigureAwait(true);
         fixture.Target.Hold = true;
         _ = await scheduler.TickAsync(Token).ConfigureAwait(true);
@@ -182,7 +191,8 @@ public sealed class AutomationSchedulerTests
     [Fact]
     public async Task A_restart_neither_repeats_a_handled_occurrence_nor_loses_one_inside_the_window()
     {
-        await using var fixture = new RunnerFixture();
+        var fixture = new RunnerFixture();
+        await using var fixtureScope = fixture.ConfigureAwait(true);
         var first = await CreateAsync(fixture, TestAutomations.Make()).ConfigureAwait(true);
         _ = await TickAndSettleAsync(first, fixture, "aut_0001").ConfigureAwait(true);
         fixture.Clock.Advance(TimeSpan.FromDays(1));
@@ -200,7 +210,8 @@ public sealed class AutomationSchedulerTests
     [Fact]
     public async Task An_automation_whose_zone_or_expression_is_unusable_is_left_alone()
     {
-        await using var fixture = new RunnerFixture();
+        var fixture = new RunnerFixture();
+        await using var fixtureScope = fixture.ConfigureAwait(true);
         var badZone = TestAutomations.Make([TestAutomations.Cron("* * * * *")], id: "aut_zone", timeZone: "Mars/Olympus");
         var badCron = TestAutomations.Make([TestAutomations.Cron("not a cron")], id: "aut_cron");
         var scheduler = await CreateAsync(fixture, badZone).ConfigureAwait(true);
@@ -216,7 +227,8 @@ public sealed class AutomationSchedulerTests
     [Fact]
     public async Task A_webhook_only_automation_is_never_started_by_the_scheduler()
     {
-        await using var fixture = new RunnerFixture();
+        var fixture = new RunnerFixture();
+        await using var fixtureScope = fixture.ConfigureAwait(true);
         var scheduler = await CreateAsync(fixture, TestAutomations.Make([TestAutomations.GenericHook()])).ConfigureAwait(true);
         _ = await scheduler.TickAsync(Token).ConfigureAwait(true);
 
@@ -228,7 +240,8 @@ public sealed class AutomationSchedulerTests
     [Fact]
     public async Task The_loop_ends_without_an_exception_when_it_is_cancelled()
     {
-        await using var fixture = new RunnerFixture();
+        var fixture = new RunnerFixture();
+        await using var fixtureScope = fixture.ConfigureAwait(true);
         var scheduler = new AutomationScheduler(fixture.Store, fixture.Runner, fixture.Clock);
         using var source = CancellationTokenSource.CreateLinkedTokenSource(Token);
         await source.CancelAsync().ConfigureAwait(true);

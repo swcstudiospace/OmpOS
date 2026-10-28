@@ -4,7 +4,7 @@ namespace OmpOS.Harness.Mcp.Templates;
 
 /// <summary>
 /// The presets the MCP page offers next to the blank stdio and HTTP skeletons. Every preset in <see cref="Default"/> was read from the vendor's own documentation (the page is named in
-/// <see cref="McpPreset.DocumentationUrl"/>); a preset that could not be confirmed is <see cref="McpPresetStatus.Unverified"/> and appears only in <see cref="All"/>. No preset holds a credential: a remote
+/// <see cref="McpPreset.DocumentationAddress"/>); a preset that could not be confirmed is <see cref="McpPresetStatus.Unverified"/> and appears only in <see cref="All"/>. No preset holds a credential: a remote
 /// server signs in through OAuth, or reads its token from a named environment variable.
 /// </summary>
 public static class McpTemplateCatalog

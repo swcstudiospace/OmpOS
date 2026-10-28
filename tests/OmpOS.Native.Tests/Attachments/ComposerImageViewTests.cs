@@ -121,8 +121,8 @@ public sealed class ComposerImageViewTests
             using var rig = Open();
             var attach = rig.View.AttachButtonControl;
             attach.IsVisible.ShouldBeTrue();
-            AutomationProperties.GetName(attach).ShouldBe(AttachmentCopy.AttachName, Case.Sensitive);
-            ViewHarness.TabOrder(rig.View).ShouldContain(AttachmentCopy.AttachName);
+            AutomationProperties.GetName(attach).ShouldBe(AttachmentCopy.AttachName);
+            ViewHarness.TabOrder(rig.View).ShouldContain(AttachmentCopy.AttachName, StringComparer.Ordinal);
 
             ViewHarness.Click(rig.Window, attach);
             await SettleWorkAsync(rig).ConfigureAwait(true);
@@ -131,10 +131,10 @@ public sealed class ComposerImageViewTests
             rig.Picker.LastLimit.ShouldBe(rig.Images!.Limits.MaxBytes);
             rig.Images.Items.Select(i => i.Name).ShouldBe(["one.png"]);
             rig.View.ImageStripHost.IsVisible.ShouldBeTrue();
-            rig.View.ImageNoticeText.Text.ShouldBe(AttachmentCopy.Unsupported, Case.Sensitive);
-            ViewHarness.TabOrder(rig.View).ShouldContain("Image one.png, 12 B");
+            rig.View.ImageNoticeText.Text.ShouldBe(AttachmentCopy.Unsupported);
+            ViewHarness.TabOrder(rig.View).ShouldContain("Image one.png, 12 B", StringComparer.Ordinal);
             ViewHarness.Unnamed(rig.View).ShouldBeEmpty();
-            AutomationProperties.GetName(rig.View.ImageStripList).ShouldBe(AttachmentCopy.StripName, Case.Sensitive);
+            AutomationProperties.GetName(rig.View.ImageStripList).ShouldBe(AttachmentCopy.StripName);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -188,7 +188,7 @@ public sealed class ComposerImageViewTests
             rig.View.AddImages([new PickedImage("a.png", PngHead, null), new PickedImage("b.png", PngHead, null)]);
             ViewHarness.Settle(rig.Window);
 
-            var thumb = rig.View.ImageStripList.GetVisualDescendants().OfType<Button>().First(b => AutomationProperties.GetName(b).StartsWith("Image a.png", StringComparison.Ordinal));
+            var thumb = rig.View.ImageStripList.GetVisualDescendants().OfType<Button>().First(b => AutomationProperties.GetName(b)?.StartsWith("Image a.png", StringComparison.Ordinal) == true);
             thumb.Focus();
             ViewHarness.Press(rig.Window, Key.Delete, PhysicalKey.Delete);
             rig.Images!.Items.Select(i => i.Name).ShouldBe(["b.png"]);
@@ -213,15 +213,15 @@ public sealed class ComposerImageViewTests
             rig.Images!.SetCapabilities(true, VisionSupport.No);
             ViewHarness.Settle(rig.Window);
             rig.View.AttachButtonControl.IsEnabled.ShouldBeFalse();
-            rig.View.ImageNoticeText.Text.ShouldBe(AttachmentCopy.ModelRefuses, Case.Sensitive);
+            rig.View.ImageNoticeText.Text.ShouldBe(AttachmentCopy.ModelRefuses);
             AutomationProperties.GetLiveSetting(rig.View.ImageNoticeText).ShouldBe(AutomationLiveSetting.Polite);
-            AutomationProperties.GetHelpText(rig.View.AttachButtonControl).ShouldBe(AttachmentCopy.ModelRefuses, Case.Sensitive);
+            AutomationProperties.GetHelpText(rig.View.AttachButtonControl).ShouldBe(AttachmentCopy.ModelRefuses);
 
             rig.Images.SetCapabilities(null, VisionSupport.Unknown);
             rig.View.AddImages([new PickedImage("a.png", PngHead, null)]);
             ViewHarness.Settle(rig.Window);
             rig.View.AttachButtonControl.IsEnabled.ShouldBeTrue();
-            rig.View.ImageNoticeText.Text.ShouldBe(AttachmentCopy.ModelMayIgnore, Case.Sensitive);
+            rig.View.ImageNoticeText.Text.ShouldBe(AttachmentCopy.ModelMayIgnore);
             return Task.CompletedTask;
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }

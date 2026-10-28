@@ -99,7 +99,7 @@ public sealed class AutomationRunner : IAsyncDisposable
             var task = Task.Run(() => ExecuteAsync(automation, entry, trigger), CancellationToken.None);
             _running[runId] = task;
             _ = task.ContinueWith(
-                _ => _running.TryRemove(runId, out _),
+                _ => _running.TryRemove(new KeyValuePair<string, Task>(runId, task)),
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);

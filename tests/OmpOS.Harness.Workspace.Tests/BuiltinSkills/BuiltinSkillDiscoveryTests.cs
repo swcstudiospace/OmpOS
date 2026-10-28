@@ -29,7 +29,7 @@ public sealed class BuiltinSkillDiscoveryTests
             ("audit", ConventionScope.Builtin, string.Empty, string.Empty, "builtin:skills/audit/SKILL.md"),
             ("review", ConventionScope.Builtin, string.Empty, string.Empty, "builtin:skills/review/SKILL.md"),
         ]);
-        set.Skills[1].Description.ShouldBe("Built-in review.", Case.Sensitive);
+        set.Skills[1].Description.ShouldBe("Built-in review.");
         set.Diagnostics.ShouldBeEmpty();
     }
 
@@ -46,11 +46,11 @@ public sealed class BuiltinSkillDiscoveryTests
 
         var winner = set.Skills.ShouldHaveSingleItem();
         winner.Scope.ShouldBe(ConventionScope.Project);
-        winner.Description.ShouldBe("Our review.", Case.Sensitive);
+        winner.Description.ShouldBe("Our review.");
         var note = set.Diagnostics.ShouldHaveSingleItem();
         note.Kind.ShouldBe(ConventionDiagnosticKind.Duplicate);
         note.Item.ShouldBe(ConventionItemKind.Skill);
-        note.Origin.ShouldBe("builtin:skills/review/SKILL.md", Case.Sensitive);
+        note.Origin.ShouldBe("builtin:skills/review/SKILL.md");
         note.Reason.ShouldContain(".cursor/skills/review/SKILL.md", Case.Sensitive);
     }
 
@@ -67,7 +67,7 @@ public sealed class BuiltinSkillDiscoveryTests
 
         var winner = set.Skills.ShouldHaveSingleItem();
         winner.Scope.ShouldBe(ConventionScope.User);
-        winner.Origin.ShouldBe("~/.agents/skills/review/SKILL.md", Case.Sensitive);
+        winner.Origin.ShouldBe("~/.agents/skills/review/SKILL.md");
         set.Diagnostics.ShouldHaveSingleItem().Reason.ShouldContain("~/.agents/skills/review/SKILL.md", Case.Sensitive);
     }
 
@@ -137,10 +137,10 @@ public sealed class BuiltinSkillDiscoveryTests
 
         var set = await DiscoverAsync(new InMemoryConventionFileSource(), new InMemoryConventionFileSource(), new BuiltinSkillSource(bundle.RootPath)).ConfigureAwait(true);
 
-        set.Skills.ShouldHaveSingleItem().Name.ShouldBe("review", Case.Sensitive);
+        set.Skills.ShouldHaveSingleItem().Name.ShouldBe("review");
         var problem = set.Diagnostics.ShouldHaveSingleItem();
         problem.Kind.ShouldBe(ConventionDiagnosticKind.Malformed);
-        problem.Origin.ShouldBe("builtin:skills/broken/SKILL.md", Case.Sensitive);
+        problem.Origin.ShouldBe("builtin:skills/broken/SKILL.md");
     }
 
     /// <summary>The frontmatter flags of a bundled skill are read like those of any other skill.</summary>

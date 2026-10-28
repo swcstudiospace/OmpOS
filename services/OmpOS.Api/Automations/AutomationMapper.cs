@@ -48,7 +48,7 @@ internal static class AutomationMapper
             {
                 Kind = targetKind,
                 Repositories = (target.Repositories ?? []).Where(static repository => repository is not null)
-                    .Select(static repository => new AutomationRepository(repository.Url ?? string.Empty, repository.Branch, repository.BaseBranch)).ToArray(),
+                    .Select(static repository => new AutomationRepository(repository.Address ?? string.Empty, repository.Branch, repository.BaseBranch)).ToArray(),
                 SecretRefs = target.SecretRefs ?? [],
                 EnvironmentId = target.EnvironmentId,
                 Model = target.Model,
@@ -81,7 +81,7 @@ internal static class AutomationMapper
             Target = new AutomationTargetInfo
             {
                 Kind = automation.Target.Kind == AutomationTargetKind.Local ? "local" : "cloud",
-                Repositories = automation.Target.Repositories.Select(static repository => new AutomationRepositoryInfo { Url = repository.Url, Branch = repository.Branch, BaseBranch = repository.BaseBranch }).ToArray(),
+                Repositories = automation.Target.Repositories.Select(static repository => new AutomationRepositoryInfo { Address = repository.Address, Branch = repository.Branch, BaseBranch = repository.BaseBranch }).ToArray(),
                 SecretRefs = automation.Target.SecretRefs,
                 EnvironmentId = automation.Target.EnvironmentId,
                 Model = automation.Target.Model,

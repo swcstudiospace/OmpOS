@@ -28,7 +28,7 @@ internal static class StorageImageReader
                     break;
                 }
 
-                buffer.Write(chunk, 0, read);
+                await buffer.WriteAsync(chunk.AsMemory(0, read), cancellationToken).ConfigureAwait(true);
             }
 
             return new PickedImage(file.Name, buffer.ToArray(), null);

@@ -20,19 +20,19 @@ public sealed class AutomationEditorValidationTests
         var model = new AutomationEditorModel(new FakeAutomationsManager(), null);
 
         model.IsEdit.ShouldBeFalse();
-        model.TimeZone.ShouldBe("UTC", Case.Sensitive);
+        model.TimeZone.ShouldBe("UTC");
         model.Enabled.ShouldBeTrue();
         model.AllowPullRequestCreate.ShouldBeTrue();
         model.AllowPullRequestComment.ShouldBeFalse();
         model.AllowRequestReviewers.ShouldBeFalse();
-        model.MaxConcurrentRunsText.ShouldBe("1", Case.Sensitive);
-        model.MaxRunsPerHourText.ShouldBe("12", Case.Sensitive);
-        model.MaxRuntimeMinutesText.ShouldBe("30", Case.Sensitive);
-        model.TargetKind.ShouldBe("local", Case.Sensitive);
+        model.MaxConcurrentRunsText.ShouldBe("1");
+        model.MaxRunsPerHourText.ShouldBe("12");
+        model.MaxRuntimeMinutesText.ShouldBe("30");
+        model.TargetKind.ShouldBe("local");
         model.SupportedTargetKinds.ShouldBe(["local", "cloud"]);
         model.Errors.ShouldBeEmpty();
         model.CanSave.ShouldBeFalse();
-        model.WhyDisabled.ShouldBe(AutomationsCopy.SaveBlockedPrefix + "Name, Prompt, Triggers.", Case.Sensitive);
+        model.WhyDisabled.ShouldBe(AutomationsCopy.SaveBlockedPrefix + "Name, Prompt, Triggers.");
         model.RevealedSecret.ShouldBeEmpty();
         model.SavedEntry.ShouldBeNull();
     }
@@ -54,7 +54,7 @@ public sealed class AutomationEditorValidationTests
     {
         var cloudOnly = new AutomationEditorModel(new FakeAutomationsManager { SupportedTargetKinds = ["cloud"] }, null);
 
-        cloudOnly.TargetKind.ShouldBe("cloud", Case.Sensitive);
+        cloudOnly.TargetKind.ShouldBe("cloud");
         cloudOnly.IsCloudTarget.ShouldBeTrue();
     }
 
@@ -69,14 +69,14 @@ public sealed class AutomationEditorValidationTests
         model.CanSave.ShouldBeTrue();
 
         model.Name = new string('a', 101);
-        model.Errors["name"].ShouldBe(AutomationsCopy.NameTooLong, Case.Sensitive);
+        model.Errors["name"].ShouldBe(AutomationsCopy.NameTooLong);
         model.CanSave.ShouldBeFalse();
 
         model.Name = " " + new string('a', 100) + " ";
         model.Errors.ContainsKey("name").ShouldBeFalse();
 
         model.Name = "   ";
-        model.Errors["name"].ShouldBe(AutomationsCopy.NameRequired, Case.Sensitive);
+        model.Errors["name"].ShouldBe(AutomationsCopy.NameRequired);
     }
 
     /// <summary>A prompt of 20000 characters is accepted and one of 20001 is refused; blank is refused.</summary>
@@ -89,10 +89,10 @@ public sealed class AutomationEditorValidationTests
         model.Errors.ContainsKey("prompt").ShouldBeFalse();
 
         model.Prompt = new string('p', 20001);
-        model.Errors["prompt"].ShouldBe(AutomationsCopy.PromptTooLong, Case.Sensitive);
+        model.Errors["prompt"].ShouldBe(AutomationsCopy.PromptTooLong);
 
         model.Prompt = " \n ";
-        model.Errors["prompt"].ShouldBe(AutomationsCopy.PromptRequired, Case.Sensitive);
+        model.Errors["prompt"].ShouldBe(AutomationsCopy.PromptRequired);
         model.CanSave.ShouldBeFalse();
     }
 
@@ -103,7 +103,7 @@ public sealed class AutomationEditorValidationTests
         var model = ValidLocal(new FakeAutomationsManager());
 
         model.CronText = string.Empty;
-        model.Errors["triggers"].ShouldBe(AutomationsCopy.TriggersRequired, Case.Sensitive);
+        model.Errors["triggers"].ShouldBe(AutomationsCopy.TriggersRequired);
         model.CanSave.ShouldBeFalse();
 
         model.WebhookEnabled = true;
@@ -123,7 +123,7 @@ public sealed class AutomationEditorValidationTests
         model.WebhookEnabled = true;
 
         model.WebhookFlavour = "gitlab";
-        model.Errors["webhook"].ShouldBe(AutomationsCopy.WebhookFlavourInvalid, Case.Sensitive);
+        model.Errors["webhook"].ShouldBe(AutomationsCopy.WebhookFlavourInvalid);
 
         model.WebhookFlavour = "github";
         model.Errors.ContainsKey("webhook").ShouldBeFalse();
@@ -146,7 +146,7 @@ public sealed class AutomationEditorValidationTests
         model.Errors.ContainsKey("webhook").ShouldBeFalse();
 
         model.WebhookEventsText = "push, bad event";
-        model.Errors["webhook"].ShouldBe(AutomationsCopy.WebhookFilterInvalid, Case.Sensitive);
+        model.Errors["webhook"].ShouldBe(AutomationsCopy.WebhookFilterInvalid);
         model.Errors["webhook"].ShouldNotContain("bad event", Case.Sensitive);
 
         model.WebhookEventsText = "push";
@@ -168,7 +168,7 @@ public sealed class AutomationEditorValidationTests
 
         model.TargetKind = "local";
 
-        model.Errors["target"].ShouldBe(AutomationsCopy.TargetUnsupported, Case.Sensitive);
+        model.Errors["target"].ShouldBe(AutomationsCopy.TargetUnsupported);
         model.CanSave.ShouldBeFalse();
 
         model.TargetKind = "mainframe";
@@ -182,7 +182,7 @@ public sealed class AutomationEditorValidationTests
         var model = ValidLocal(new FakeAutomationsManager());
 
         model.TargetKind = "cloud";
-        model.Errors["repositories"].ShouldBe(AutomationsCopy.RepositoriesRequired, Case.Sensitive);
+        model.Errors["repositories"].ShouldBe(AutomationsCopy.RepositoriesRequired);
         model.CanSave.ShouldBeFalse();
 
         model.RepositoriesText = Repository(1);
@@ -207,7 +207,7 @@ public sealed class AutomationEditorValidationTests
         model.CanSave.ShouldBeTrue();
 
         model.RepositoriesText = Repositories(17);
-        model.Errors["repositories"].ShouldBe(AutomationsCopy.RepositoriesTooMany, Case.Sensitive);
+        model.Errors["repositories"].ShouldBe(AutomationsCopy.RepositoriesTooMany);
         model.CanSave.ShouldBeFalse();
 
         model.RepositoriesText = Repositories(16) + "\n\n  \n";
@@ -244,7 +244,7 @@ public sealed class AutomationEditorValidationTests
         model.CanSave.ShouldBe(valid);
         if (!valid)
         {
-            model.Errors["repositories"].ShouldBe(AutomationsCopy.RepositoryInvalid, Case.Sensitive);
+            model.Errors["repositories"].ShouldBe(AutomationsCopy.RepositoryInvalid);
             model.Errors["repositories"].ShouldNotContain("hunter2", Case.Sensitive);
         }
     }
@@ -270,7 +270,7 @@ public sealed class AutomationEditorValidationTests
         model.CanSave.ShouldBe(valid);
         if (!valid)
         {
-            model.Errors["secrets"].ShouldBe(AutomationsCopy.SecretNameInvalid, Case.Sensitive);
+            model.Errors["secrets"].ShouldBe(AutomationsCopy.SecretNameInvalid);
         }
     }
 
@@ -360,7 +360,7 @@ public sealed class AutomationEditorValidationTests
         model.RepositoriesText = string.Empty;
         model.Name = " ";
 
-        model.WhyDisabled.ShouldBe(AutomationsCopy.SaveBlockedPrefix + "Name, Repositories, Limits.", Case.Sensitive);
+        model.WhyDisabled.ShouldBe(AutomationsCopy.SaveBlockedPrefix + "Name, Repositories, Limits.");
     }
 
     /// <summary>
@@ -415,16 +415,16 @@ public sealed class AutomationEditorValidationTests
 
         var draft = model.ToDraft();
 
-        draft.Name.ShouldBe("Nightly triage", Case.Sensitive);
-        draft.Prompt.ShouldBe("Triage new issues.\n", Case.Sensitive);
+        draft.Name.ShouldBe("Nightly triage");
+        draft.Prompt.ShouldBe("Triage new issues.\n");
         draft.Enabled.ShouldBeFalse();
-        draft.TimeZone.ShouldBe("Europe/Berlin", Case.Sensitive);
-        draft.TargetKind.ShouldBe("cloud", Case.Sensitive);
+        draft.TimeZone.ShouldBe("Europe/Berlin");
+        draft.TargetKind.ShouldBe("cloud");
         draft.Triggers.Count.ShouldBe(2);
-        draft.Triggers[0].Kind.ShouldBe("cron", Case.Sensitive);
-        draft.Triggers[0].Cron.ShouldBe("0 9 * * 1-5", Case.Sensitive);
-        draft.Triggers[1].Kind.ShouldBe("webhook", Case.Sensitive);
-        draft.Triggers[1].Flavour.ShouldBe("github", Case.Sensitive);
+        draft.Triggers[0].Kind.ShouldBe("cron");
+        draft.Triggers[0].Cron.ShouldBe("0 9 * * 1-5");
+        draft.Triggers[1].Kind.ShouldBe("webhook");
+        draft.Triggers[1].Flavour.ShouldBe("github");
         draft.Triggers[1].Events.ShouldBe(["push", "pull_request"]);
         draft.Triggers[1].Actions.ShouldBe(["opened"]);
         draft.Triggers[1].Branches.ShouldBe(["main", "release/*"]);
@@ -434,9 +434,9 @@ public sealed class AutomationEditorValidationTests
             new AutomationRepositoryDraft("https://github.com/owner/lib", string.Empty, string.Empty),
         ]);
         draft.SecretRefs.ShouldBe(["API_KEY", "TOKEN"]);
-        draft.EnvironmentId.ShouldBe("env-1", Case.Sensitive);
-        draft.Model.ShouldBe("model-x", Case.Sensitive);
-        draft.Mode.ShouldBe("plan", Case.Sensitive);
+        draft.EnvironmentId.ShouldBe("env-1");
+        draft.Model.ShouldBe("model-x");
+        draft.Mode.ShouldBe("plan");
         draft.AllowedTools.ShouldBe(["pull_request_comment", "pull_request_request_reviewers"]);
         draft.MaxConcurrentRuns.ShouldBe(3);
         draft.MaxRunsPerHour.ShouldBe(20);
@@ -455,7 +455,7 @@ public sealed class AutomationEditorValidationTests
 
         var draft = model.ToDraft();
 
-        draft.TimeZone.ShouldBe("UTC", Case.Sensitive);
+        draft.TimeZone.ShouldBe("UTC");
         draft.Triggers[1].Events.ShouldBeEmpty();
     }
 
@@ -472,9 +472,9 @@ public sealed class AutomationEditorValidationTests
         model.Name = "Release notes";
         model.Name = "Release notes";
 
-        properties.ShouldContain("Name");
-        properties.ShouldContain("CanSave");
-        properties.ShouldContain("WhyDisabled");
+        properties.ShouldContain("Name", StringComparer.Ordinal);
+        properties.ShouldContain("CanSave", StringComparer.Ordinal);
+        properties.ShouldContain("WhyDisabled", StringComparer.Ordinal);
         changed.ShouldBe(1);
     }
 

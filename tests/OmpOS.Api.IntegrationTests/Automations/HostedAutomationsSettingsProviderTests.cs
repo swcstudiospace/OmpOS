@@ -18,11 +18,12 @@ public sealed class HostedAutomationsSettingsProviderTests
     private readonly InMemoryAutomationStore _store = new();
     private readonly InMemoryAutomationSecretStore _secrets = new();
 
-    private static IHttpContextAccessor AccessorFor(string? owner)
+    private static HttpContextAccessor AccessorFor(string? owner)
     {
         if (owner is null)
         {
-            return new HttpContextAccessor();
+            // The accessor keeps its context in a static async-local: a new one would see the context an earlier accessor of this flow set.
+            return new HttpContextAccessor { HttpContext = null };
         }
 
         var services = new ServiceCollection();
@@ -68,8 +69,8 @@ public sealed class HostedAutomationsSettingsProviderTests
         var list = await Provider("alice").ListAsync(Token).ConfigureAwait(true);
 
         var info = list.ShouldNotBeNull().ShouldHaveSingleItem();
-        info.Id.ShouldBe(alices.Id, Case.Sensitive);
-        info.Trigger.ShouldBe("cron 0 9 * * *; GitHub webhook", Case.Sensitive);
+        info.Id.ShouldBe(alices.Id);
+        info.Trigger.ShouldBe("cron 0 9 * * *; GitHub webhook");
         info.Enabled.ShouldBeTrue();
         info.MaxRuntimeSeconds.ShouldBe(1200);
         info.LastRun.ShouldBeNull();
@@ -93,8 +94,8 @@ public sealed class HostedAutomationsSettingsProviderTests
         var info = (await Provider("alice").ListAsync(Token).ConfigureAwait(true)).ShouldNotBeNull().ShouldHaveSingleItem();
 
         var last = info.LastRun.ShouldNotBeNull();
-        last.Outcome.ShouldBe(outcome, Case.Sensitive);
-        last.Reason.ShouldBe("why", Case.Sensitive);
+        last.Outcome.ShouldBe(outcome);
+        last.Reason.ShouldBe("why");
         last.RecordedAt.ShouldBe(_clock.GetUtcNow().AddSeconds(3));
     }
 

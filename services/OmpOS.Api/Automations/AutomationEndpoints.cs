@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
 using OmpOS.Api.Options;
 using OmpOS.Api.Security;
@@ -10,8 +11,8 @@ using OmpOS.Harness.Automations.Hosted;
 namespace OmpOS.Api.Automations;
 
 /// <summary>
-/// The automation routes. They are mapped only when <c>Automations:Enabled</c> is true, so a default host answers 404 for every one of
-/// them, including the webhook receiver. The management routes are owner-scoped: an automation of another owner reads as absent. The
+/// The automation routes. They are always mapped (the OpenAPI document describes them); <see cref="AutomationDisabledMiddleware"/> answers 404
+/// <c>automations_disabled</c> for every one of them, including the webhook receiver, while <c>Automations:Enabled</c> is false. The management routes are owner-scoped: an automation of another owner reads as absent. The
 /// receiver <c>POST /hooks/automations/{id}</c> is anonymous and authenticates by signature; every authentication failure answers the
 /// same 401, whichever check failed. Problems carry a stable code in <c>type</c> (<c>/problems/{code}</c>). The list of full definitions is
 /// <c>GET /automations/definitions</c> because <c>GET /automations</c> belongs to the settings summary.
@@ -20,19 +21,27 @@ internal static class AutomationEndpoints
 {
     private const int MaxPreviewCount = 20;
 
-    /// <summary>Maps the automation routes, once per host. A second call, or a call when automations are off, maps nothing.</summary>
+    /// <summary>Maps the automation routes, once per host. A second call maps nothing.</summary>
     /// <param name="endpoints">The route builder.</param>
     /// <returns>The route builder.</returns>
     public static IEndpointRouteBuilder MapAutomationEndpoints(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
-        var services = endpoints.ServiceProvider;
-        if (!services.GetRequiredService<IOptions<AutomationOptions>>().Value.Enabled || !services.GetRequiredService<AutomationEndpointsMapped>().TryMark())
+        if (!endpoints.ServiceProvider.GetRequiredService<AutomationEndpointsMapped>().TryMark())
         {
             return endpoints;
         }
 
-        endpoints.MapPost("/automations", CreateAsync)
+        var routes = endpoints.MapGroup(string.Empty).WithMetadata(AutomationRouteMarker.Instance);
+        MapCollectionRoutes(routes);
+        MapItemRoutes(routes);
+        MapWebhookReceiver(routes);
+        return endpoints;
+    }
+
+    private static void MapCollectionRoutes(RouteGroupBuilder routes)
+    {
+        routes.MapPost("/automations", CreateAsync)
             .WithTags("Automations")
             .WithSummary("Creates an automation: a prompt, triggers (cron, webhook) and a target. A webhook secret is generated and shown once in the answer.")
             .Accepts<SaveAutomationRequest>("application/json")
@@ -42,23 +51,27 @@ internal static class AutomationEndpoints
             .ProducesProblem(StatusCodes.Status415UnsupportedMediaType)
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
-        endpoints.MapGet("/automations/definitions", ListAsync)
+        routes.MapGet("/automations/definitions", ListAsync)
             .WithTags("Automations")
             .WithSummary("Lists the caller's automations with their next run and last run, newest first.")
             .Produces<AutomationListResponse>()
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
-        endpoints.MapGet("/automations/cron-preview", CronPreview)
+        routes.MapGet("/automations/cron-preview", CronPreview)
             .WithTags("Automations")
             .WithSummary("Shows the next occurrences of a cron expression in a time zone.")
             .Produces<AutomationCronPreviewResponse>()
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
-        endpoints.MapGet("/automations/{id}", GetAsync)
+        routes.MapGet("/automations/{id}", GetAsync)
             .WithTags("Automations")
             .WithSummary("Reads one automation.")
             .Produces<AutomationInfo>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
-        endpoints.MapPut("/automations/{id}", ReplaceAsync)
+    }
+
+    private static void MapItemRoutes(RouteGroupBuilder routes)
+    {
+        routes.MapPut("/automations/{id}", ReplaceAsync)
             .WithTags("Automations")
             .WithSummary("Replaces an automation's definition. The webhook secret is kept; one is generated when the first webhook trigger is added.")
             .Accepts<SaveAutomationRequest>("application/json")
@@ -66,40 +79,44 @@ internal static class AutomationEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
-        endpoints.MapDelete("/automations/{id}", DeleteAsync)
+        routes.MapDelete("/automations/{id}", DeleteAsync)
             .WithTags("Automations")
             .WithSummary("Deletes an automation with its history and its webhook secret.")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
-        endpoints.MapPut("/automations/{id}/enabled", SetEnabledAsync)
+        routes.MapPut("/automations/{id}/enabled", SetEnabledAsync)
             .WithTags("Automations")
             .WithSummary("Turns an automation's triggers on or off. A run by hand stays possible while it is off.")
             .Accepts<SetAutomationEnabledRequest>("application/json")
             .Produces<AutomationInfo>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
-        endpoints.MapPost("/automations/{id}/webhook-secret", RotateSecretAsync)
+        routes.MapPost("/automations/{id}/webhook-secret", RotateSecretAsync)
             .WithTags("Automations")
             .WithSummary("Replaces the webhook secret. The new secret is shown once; the old one stops working at once.")
             .Produces<AutomationSaveResponse>()
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
-        endpoints.MapPost("/automations/{id}/runs", RunNowAsync)
+        routes.MapPost("/automations/{id}/runs", RunNowAsync)
             .WithTags("Automations")
             .WithSummary("Runs an automation now, whether or not it is enabled. The run continues in the background.")
             .Produces<AutomationRunInfo>(StatusCodes.Status202Accepted)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
-        endpoints.MapGet("/automations/{id}/runs", RunsAsync)
+        routes.MapGet("/automations/{id}/runs", RunsAsync)
             .WithTags("Automations")
             .WithSummary("Reads an automation's run history, newest first.")
             .Produces<AutomationRunListResponse>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireRateLimiting(AutomationApiRateLimiterPolicy.PolicyName);
-        endpoints.MapPost("/hooks/automations/{id}", ReceiveAsync)
+    }
+
+    private static void MapWebhookReceiver(RouteGroupBuilder routes)
+    {
+        routes.MapPost("/hooks/automations/{id}", ReceiveAsync)
             .WithTags("Automations")
             .WithSummary("The webhook receiver. Anonymous, authenticated by HMAC-SHA256 signature; every authentication failure answers the same 401.")
             .AllowAnonymous()
@@ -110,7 +127,6 @@ internal static class AutomationEndpoints
             .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .RequireRateLimiting(AutomationWebhookRateLimiterPolicy.PolicyName);
-        return endpoints;
     }
 
     private static async Task<IResult> CreateAsync(
@@ -161,7 +177,7 @@ internal static class AutomationEndpoints
         return TypedResults.Ok(new AutomationListResponse { Automations = automations });
     }
 
-    private static IResult CronPreview(string? expression, string? timeZone, int? count, TimeProvider clock)
+    private static Ok<AutomationCronPreviewResponse> CronPreview(string? expression, string? timeZone, int? count, TimeProvider clock)
     {
         if (!CronExpression.TryParse(expression, out var parsed, out var error))
         {
@@ -353,7 +369,7 @@ internal static class AutomationEndpoints
                     (string?)null,
                     new AutomationWebhookResponse { Status = "accepted", RunId = receipt.RunId });
             case WebhookOutcome.Accepted:
-                AutomationLog.WebhookRunRefused(logger, id, receipt.Refusal.ToString());
+                AutomationLog.WebhookRunRefused(logger, id, receipt.Refusal?.ToString() ?? string.Empty);
                 return WebProblems.Of(StatusCodes.Status429TooManyRequests, "automation_limit", "The automation did not start.", "The automation reached its concurrency limit or its runs-per-hour cap.");
             case WebhookOutcome.Ping:
                 return TypedResults.Ok(new AutomationWebhookResponse { Status = "pong" });
@@ -414,19 +430,19 @@ internal static class AutomationEndpoints
         return AutomationMapper.ToInfo(automation, history.Count == 0 ? null : history[0], hasSecret, clock.GetUtcNow());
     }
 
-    private static IResult Invalid(IReadOnlyList<AutomationValidationIssue> issues) =>
+    private static ProblemHttpResult Invalid(IReadOnlyList<AutomationValidationIssue> issues) =>
         WebProblems.Of(
             StatusCodes.Status400BadRequest,
             "invalid_automation",
             "Invalid automation.",
             string.Join('\n', issues.Select(static issue => string.Create(CultureInfo.InvariantCulture, $"{issue.Field}: {issue.Message}"))));
 
-    private static IResult NotFound() =>
+    private static ProblemHttpResult NotFound() =>
         WebProblems.Of(StatusCodes.Status404NotFound, "automation_not_found", "Automation not found.", "No automation of yours has that id.");
 
-    private static IResult TooLarge() =>
+    private static ProblemHttpResult TooLarge() =>
         WebProblems.Of(StatusCodes.Status413PayloadTooLarge, "webhook_too_large", "Request body too large.", "The request body exceeds the webhook size limit of 256 KiB.");
 
-    private static IResult Unauthorized() =>
+    private static ProblemHttpResult Unauthorized() =>
         WebProblems.Of(StatusCodes.Status401Unauthorized, "webhook_unauthorized", "Webhook not authorized.", "The delivery could not be authenticated.");
 }

@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -7,7 +6,6 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using OmpOS.Native.Views.Attachments;
-using OmpOS.Presentation.Composer;
 using OmpOS.Presentation.Composer.Attachments;
 
 namespace OmpOS.Native.Views;

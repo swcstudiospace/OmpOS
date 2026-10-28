@@ -26,7 +26,7 @@ public sealed class HostedAutomationRowModelTests
 
         var row = new HostedAutomationRowModel(AutomationFixtures.Entry(draft: draft));
 
-        row.TriggerText.ShouldBe("Schedule: 0 9 * * 1-5 (Europe/Berlin); Webhook: GitHub push, pull request", Case.Sensitive);
+        row.TriggerText.ShouldBe("Schedule: 0 9 * * 1-5 (Europe/Berlin); Webhook: GitHub push, pull request");
     }
 
     /// <summary>A generic webhook, a GitHub webhook without events and an automation without trigger each have their own words.</summary>
@@ -37,9 +37,9 @@ public sealed class HostedAutomationRowModelTests
         var github = AutomationFixtures.Draft() with { Triggers = [AutomationFixtures.Webhook("github")] };
         var none = AutomationFixtures.Draft() with { Triggers = [] };
 
-        new HostedAutomationRowModel(AutomationFixtures.Entry(draft: generic)).TriggerText.ShouldBe("Webhook", Case.Sensitive);
-        new HostedAutomationRowModel(AutomationFixtures.Entry(draft: github)).TriggerText.ShouldBe("Webhook: GitHub", Case.Sensitive);
-        new HostedAutomationRowModel(AutomationFixtures.Entry(draft: none)).TriggerText.ShouldBe(AutomationsCopy.NoTriggers, Case.Sensitive);
+        new HostedAutomationRowModel(AutomationFixtures.Entry(draft: generic)).TriggerText.ShouldBe("Webhook");
+        new HostedAutomationRowModel(AutomationFixtures.Entry(draft: github)).TriggerText.ShouldBe("Webhook: GitHub");
+        new HostedAutomationRowModel(AutomationFixtures.Entry(draft: none)).TriggerText.ShouldBe(AutomationsCopy.NoTriggers);
     }
 
     /// <summary>A cloud automation names its first repository by owner and name, counts the others, and a local one says local session.</summary>
@@ -58,11 +58,11 @@ public sealed class HostedAutomationRowModelTests
         var local = AutomationFixtures.Draft() with { TargetKind = "local", Repositories = [] };
 
         new HostedAutomationRowModel(AutomationFixtures.Entry(draft: AutomationFixtures.Draft())).TargetText
-            .ShouldBe("Cloud agent: owner/repo", Case.Sensitive);
+            .ShouldBe("Cloud agent: owner/repo");
         new HostedAutomationRowModel(AutomationFixtures.Entry(draft: two)).TargetText
-            .ShouldBe("Cloud agent: owner/app (+1 more)", Case.Sensitive);
-        new HostedAutomationRowModel(AutomationFixtures.Entry(draft: none)).TargetText.ShouldBe("Cloud agent", Case.Sensitive);
-        new HostedAutomationRowModel(AutomationFixtures.Entry(draft: local)).TargetText.ShouldBe("Local session", Case.Sensitive);
+            .ShouldBe("Cloud agent: owner/app (+1 more)");
+        new HostedAutomationRowModel(AutomationFixtures.Entry(draft: none)).TargetText.ShouldBe("Cloud agent");
+        new HostedAutomationRowModel(AutomationFixtures.Entry(draft: local)).TargetText.ShouldBe("Local session");
     }
 
     /// <summary>The next run is shown in UTC whatever the offset it came with, and an unscheduled automation says so.</summary>
@@ -72,15 +72,15 @@ public sealed class HostedAutomationRowModelTests
         var scheduled = AutomationFixtures.Entry(nextRunAt: new DateTimeOffset(2026, 11, 1, 10, 0, 0, TimeSpan.FromHours(1)));
         var unscheduled = AutomationFixtures.Entry(nextRunAt: null);
 
-        new HostedAutomationRowModel(scheduled).NextRunText.ShouldBe("Next run: 2026-11-01 09:00 UTC", Case.Sensitive);
-        new HostedAutomationRowModel(unscheduled).NextRunText.ShouldBe("Next run: not scheduled", Case.Sensitive);
+        new HostedAutomationRowModel(scheduled).NextRunText.ShouldBe("Next run: 2026-11-01 09:00 UTC");
+        new HostedAutomationRowModel(unscheduled).NextRunText.ShouldBe("Next run: not scheduled");
     }
 
     /// <summary>An automation that has not run says so.</summary>
     [Fact]
     public void AutomationThatNeverRanSaysSo()
     {
-        new HostedAutomationRowModel(AutomationFixtures.Entry()).LastResultText.ShouldBe("Last run: never", Case.Sensitive);
+        new HostedAutomationRowModel(AutomationFixtures.Entry()).LastResultText.ShouldBe("Last run: never");
     }
 
     /// <summary>Each finished status reads in its own words with the start time in UTC.</summary>
@@ -96,7 +96,7 @@ public sealed class HostedAutomationRowModelTests
     {
         var entry = AutomationFixtures.Entry(lastRun: AutomationFixtures.Run("run-1", status));
 
-        new HostedAutomationRowModel(entry).LastResultText.ShouldBe(expected, Case.Sensitive);
+        new HostedAutomationRowModel(entry).LastResultText.ShouldBe(expected);
     }
 
     /// <summary>No status is left without words: a status added later fails here instead of reading as unknown.</summary>
@@ -120,9 +120,9 @@ public sealed class HostedAutomationRowModelTests
         var succeeded = AutomationFixtures.Run("run-2", HostedRunStatus.Succeeded, summary: "Labelled 3 issues");
 
         new HostedAutomationRowModel(AutomationFixtures.Entry(lastRun: failed)).LastResultText
-            .ShouldBe("Last run: failed at 2026-10-28 09:00:05 UTC (clone failed)", Case.Sensitive);
+            .ShouldBe("Last run: failed at 2026-10-28 09:00:05 UTC (clone failed)");
         new HostedAutomationRowModel(AutomationFixtures.Entry(lastRun: succeeded)).LastResultText
-            .ShouldBe("Last run: succeeded at 2026-10-28 09:00:05 UTC (Labelled 3 issues)", Case.Sensitive);
+            .ShouldBe("Last run: succeeded at 2026-10-28 09:00:05 UTC (Labelled 3 issues)");
     }
 
     /// <summary>The toggle names the change it makes, and every action's accessible name carries the automation name.</summary>
@@ -133,19 +133,19 @@ public sealed class HostedAutomationRowModelTests
         var off = new HostedAutomationRowModel(AutomationFixtures.Entry(draft: AutomationFixtures.Draft() with { Name = "Weekly digest", Enabled = false }));
 
         on.IsEnabled.ShouldBeTrue();
-        on.ToggleText.ShouldBe("Turn off", Case.Sensitive);
-        on.EnabledText.ShouldBe("Enabled", Case.Sensitive);
+        on.ToggleText.ShouldBe("Turn off");
+        on.EnabledText.ShouldBe("Enabled");
         off.IsEnabled.ShouldBeFalse();
-        off.ToggleText.ShouldBe("Turn on", Case.Sensitive);
-        off.EnabledText.ShouldBe("Disabled", Case.Sensitive);
+        off.ToggleText.ShouldBe("Turn on");
+        off.EnabledText.ShouldBe("Disabled");
 
         foreach (var name in new[] { on.ToggleName, on.RunNowName, on.EditName, on.DeleteName, on.AccessibleName, off.ToggleName })
         {
             name.ShouldContain("Weekly digest", Case.Sensitive);
         }
 
-        on.ToggleName.ShouldNotBe(off.ToggleName, Case.Sensitive);
-        new[] { on.RunNowName, on.EditName, on.DeleteName, on.ToggleName }.Distinct().Count().ShouldBe(4);
+        on.ToggleName.ShouldNotBe(off.ToggleName, StringComparer.Ordinal);
+        new[] { on.RunNowName, on.EditName, on.DeleteName, on.ToggleName }.Distinct(StringComparer.Ordinal).Count().ShouldBe(4);
     }
 
     /// <summary>The webhook path shows labelled when there is one and is empty otherwise; a row never holds a secret because an entry has none.</summary>
@@ -156,8 +156,8 @@ public sealed class HostedAutomationRowModelTests
             AutomationFixtures.Entry(draft: AutomationFixtures.Draft() with { Triggers = [AutomationFixtures.Webhook()] }, webhookPath: "/webhooks/auto-1", hasSecret: true));
         var without = new HostedAutomationRowModel(AutomationFixtures.Entry());
 
-        withHook.WebhookPath.ShouldBe("/webhooks/auto-1", Case.Sensitive);
-        withHook.WebhookText.ShouldBe("Webhook path: /webhooks/auto-1", Case.Sensitive);
+        withHook.WebhookPath.ShouldBe("/webhooks/auto-1");
+        withHook.WebhookText.ShouldBe("Webhook path: /webhooks/auto-1");
         without.WebhookPath.ShouldBeEmpty();
         without.WebhookText.ShouldBeEmpty();
     }

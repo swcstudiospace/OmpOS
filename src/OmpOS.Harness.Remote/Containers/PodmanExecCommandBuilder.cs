@@ -137,7 +137,7 @@ public sealed class PodmanExecCommandBuilder
         return new SshInvocation
         {
             FileName = ExecutableOf(podmanPath),
-            Arguments = ["ps", "-a", "--filter", DevContainerResolver.LocalFolderLabel + "=" + localFolder, "--format", "json"],
+            Arguments = ["ps", "-a", "--filter", "label=" + DevContainerResolver.LocalFolderLabel + "=" + localFolder, "--format", "json"],
         };
     }
 

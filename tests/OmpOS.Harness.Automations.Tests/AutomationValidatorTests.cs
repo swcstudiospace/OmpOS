@@ -32,7 +32,7 @@ public sealed class AutomationValidatorTests
     [InlineData("two\nlines")]
     public void A_blank_name_or_one_with_a_control_character_is_refused(string name)
     {
-        Fields(TestAutomations.Make() with { Name = name }).ShouldContain("name");
+        Fields(TestAutomations.Make() with { Name = name }).ShouldContain("name", StringComparer.Ordinal);
     }
 
     [Theory]
@@ -49,7 +49,7 @@ public sealed class AutomationValidatorTests
     [Fact]
     public void A_blank_prompt_is_refused()
     {
-        Fields(TestAutomations.Make() with { Prompt = "  " }).ShouldContain("prompt");
+        Fields(TestAutomations.Make() with { Prompt = "  " }).ShouldContain("prompt", StringComparer.Ordinal);
     }
 
     [Theory]
@@ -65,9 +65,9 @@ public sealed class AutomationValidatorTests
     [Fact]
     public void Between_one_and_eight_triggers_are_required()
     {
-        Fields(TestAutomations.Make([])).ShouldContain("triggers");
-        Fields(TestAutomations.Make(Enumerable.Repeat(TestAutomations.Cron("0 9 * * *"), 8).ToArray())).ShouldNotContain("triggers");
-        Fields(TestAutomations.Make(Enumerable.Repeat(TestAutomations.Cron("0 9 * * *"), 9).ToArray())).ShouldContain("triggers");
+        Fields(TestAutomations.Make([])).ShouldContain("triggers", StringComparer.Ordinal);
+        Fields(TestAutomations.Make(Enumerable.Repeat(TestAutomations.Cron("0 9 * * *"), 8).ToArray())).ShouldNotContain("triggers", StringComparer.Ordinal);
+        Fields(TestAutomations.Make(Enumerable.Repeat(TestAutomations.Cron("0 9 * * *"), 9).ToArray())).ShouldContain("triggers", StringComparer.Ordinal);
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public sealed class AutomationValidatorTests
         var issues = AutomationValidator.Validate(TestAutomations.Make([TestAutomations.Cron("61 * * * *")]));
 
         var issue = issues.ShouldHaveSingleItem();
-        issue.Field.ShouldBe("cron", Case.Sensitive);
+        issue.Field.ShouldBe("cron");
         issue.Message.ShouldContain("minute", Case.Sensitive);
         issue.Message.ShouldNotContain("61", Case.Sensitive);
     }
@@ -84,9 +84,9 @@ public sealed class AutomationValidatorTests
     [Fact]
     public void Only_one_webhook_trigger_of_each_flavour_is_allowed()
     {
-        Fields(TestAutomations.Make([TestAutomations.GenericHook(), TestAutomations.GitHubHook()])).ShouldNotContain("webhook");
-        Fields(TestAutomations.Make([TestAutomations.GenericHook(), TestAutomations.GenericHook()])).ShouldContain("webhook");
-        Fields(TestAutomations.Make([TestAutomations.GitHubHook(), TestAutomations.GitHubHook(events: ["push"])])).ShouldContain("webhook");
+        Fields(TestAutomations.Make([TestAutomations.GenericHook(), TestAutomations.GitHubHook()])).ShouldNotContain("webhook", StringComparer.Ordinal);
+        Fields(TestAutomations.Make([TestAutomations.GenericHook(), TestAutomations.GenericHook()])).ShouldContain("webhook", StringComparer.Ordinal);
+        Fields(TestAutomations.Make([TestAutomations.GitHubHook(), TestAutomations.GitHubHook(events: ["push"])])).ShouldContain("webhook", StringComparer.Ordinal);
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public sealed class AutomationValidatorTests
     {
         var generic = new AutomationTriggerSpec { Kind = AutomationTriggerKind.Webhook, Flavour = WebhookFlavour.Generic, Branches = ["main"] };
 
-        Fields(TestAutomations.Make([generic])).ShouldContain("webhook");
+        Fields(TestAutomations.Make([generic])).ShouldContain("webhook", StringComparer.Ordinal);
     }
 
     [Theory]
@@ -126,16 +126,16 @@ public sealed class AutomationValidatorTests
     [Fact]
     public void A_filter_list_with_a_repeat_or_more_than_sixteen_entries_is_refused()
     {
-        Fields(TestAutomations.Make([TestAutomations.GitHubHook(actions: ["opened", "opened"])])).ShouldContain("webhook");
+        Fields(TestAutomations.Make([TestAutomations.GitHubHook(actions: ["opened", "opened"])])).ShouldContain("webhook", StringComparer.Ordinal);
         var seventeen = Enumerable.Range(0, 17).Select(static index => "a" + index.ToString(System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-        Fields(TestAutomations.Make([TestAutomations.GitHubHook(actions: seventeen)])).ShouldContain("webhook");
-        Fields(TestAutomations.Make([TestAutomations.GitHubHook(actions: seventeen[..16])])).ShouldNotContain("webhook");
+        Fields(TestAutomations.Make([TestAutomations.GitHubHook(actions: seventeen)])).ShouldContain("webhook", StringComparer.Ordinal);
+        Fields(TestAutomations.Make([TestAutomations.GitHubHook(actions: seventeen[..16])])).ShouldNotContain("webhook", StringComparer.Ordinal);
     }
 
     [Fact]
     public void A_cloud_target_needs_between_one_and_sixteen_repositories()
     {
-        UserAutomation With(int count) => TestAutomations.Make() with
+        static UserAutomation With(int count) => TestAutomations.Make() with
         {
             Target = new AutomationTargetSpec
             {
@@ -143,10 +143,10 @@ public sealed class AutomationValidatorTests
             },
         };
 
-        Fields(With(0)).ShouldContain("repositories");
-        Fields(With(1)).ShouldNotContain("repositories");
-        Fields(With(16)).ShouldNotContain("repositories");
-        Fields(With(17)).ShouldContain("repositories");
+        Fields(With(0)).ShouldContain("repositories", StringComparer.Ordinal);
+        Fields(With(1)).ShouldNotContain("repositories", StringComparer.Ordinal);
+        Fields(With(16)).ShouldNotContain("repositories", StringComparer.Ordinal);
+        Fields(With(17)).ShouldContain("repositories", StringComparer.Ordinal);
     }
 
     [Theory]
@@ -158,9 +158,9 @@ public sealed class AutomationValidatorTests
     [InlineData("https://github.com", false)]
     [InlineData("git@github.com:acme/widgets.git", false)]
     [InlineData("not a url", false)]
-    public void Repository_urls_are_https_without_credentials_query_or_fragment(string url, bool valid)
+    public void Repository_urls_are_https_without_credentials_query_or_fragment(string address, bool valid)
     {
-        var automation = TestAutomations.Make() with { Target = new AutomationTargetSpec { Repositories = [new AutomationRepository(url)] } };
+        var automation = TestAutomations.Make() with { Target = new AutomationTargetSpec { Repositories = [new AutomationRepository(address)] } };
 
         Fields(automation).Contains("repositories", StringComparer.Ordinal).ShouldBe(!valid);
     }
@@ -179,9 +179,9 @@ public sealed class AutomationValidatorTests
         var local = TestAutomations.Make() with { Target = new AutomationTargetSpec { Kind = AutomationTargetKind.Local } };
 
         Fields(local).ShouldBeEmpty();
-        Fields(local with { Target = local.Target with { Repositories = [new AutomationRepository("https://github.com/acme/widgets")] } }).ShouldContain("target");
-        Fields(local with { Target = local.Target with { SecretRefs = ["TOKEN"] } }).ShouldContain("target");
-        Fields(local with { Target = local.Target with { EnvironmentId = "dev" } }).ShouldContain("target");
+        Fields(local with { Target = local.Target with { Repositories = [new AutomationRepository("https://github.com/acme/widgets")] } }).ShouldContain("target", StringComparer.Ordinal);
+        Fields(local with { Target = local.Target with { SecretRefs = ["TOKEN"] } }).ShouldContain("target", StringComparer.Ordinal);
+        Fields(local with { Target = local.Target with { EnvironmentId = "dev" } }).ShouldContain("target", StringComparer.Ordinal);
     }
 
     [Theory]
@@ -204,11 +204,11 @@ public sealed class AutomationValidatorTests
     {
         var automation = TestAutomations.Make();
 
-        Fields(automation with { Target = automation.Target with { SecretRefs = ["A", "A"] } }).ShouldContain("secrets");
+        Fields(automation with { Target = automation.Target with { SecretRefs = ["A", "A"] } }).ShouldContain("secrets", StringComparer.Ordinal);
         var thirtyThree = Enumerable.Range(0, 33).Select(static index => "S" + index.ToString(System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-        Fields(automation with { Target = automation.Target with { SecretRefs = thirtyThree } }).ShouldContain("secrets");
-        Fields(automation with { Target = automation.Target with { SecretRefs = thirtyThree[..32] } }).ShouldNotContain("secrets");
-        Fields(automation with { Target = automation.Target with { SecretRefs = ["A" + new string('x', 64)] } }).ShouldContain("secrets");
+        Fields(automation with { Target = automation.Target with { SecretRefs = thirtyThree } }).ShouldContain("secrets", StringComparer.Ordinal);
+        Fields(automation with { Target = automation.Target with { SecretRefs = thirtyThree[..32] } }).ShouldNotContain("secrets", StringComparer.Ordinal);
+        Fields(automation with { Target = automation.Target with { SecretRefs = ["A" + new string('x', 64)] } }).ShouldContain("secrets", StringComparer.Ordinal);
     }
 
     [Fact]
@@ -218,8 +218,8 @@ public sealed class AutomationValidatorTests
 
         Fields(automation with { AllowedTools = [] }).ShouldBeEmpty();
         Fields(automation with { AllowedTools = [.. AutomationTools.Known] }).ShouldBeEmpty();
-        Fields(automation with { AllowedTools = ["shell"] }).ShouldContain("tools");
-        Fields(automation with { AllowedTools = [AutomationTools.PullRequestCreate, AutomationTools.PullRequestCreate] }).ShouldContain("tools");
+        Fields(automation with { AllowedTools = ["shell"] }).ShouldContain("tools", StringComparer.Ordinal);
+        Fields(automation with { AllowedTools = [AutomationTools.PullRequestCreate, AutomationTools.PullRequestCreate] }).ShouldContain("tools", StringComparer.Ordinal);
     }
 
     [Theory]

@@ -1765,6 +1765,74 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Automations"
+        ],
+        "summary": "Creates an automation: a prompt, triggers (cron, webhook) and a target. A webhook secret is generated and shown once in the answer.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAutomationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationSaveResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/workspace/tree": {
@@ -3301,10 +3369,626 @@
           }
         }
       }
+    },
+    "/automations/definitions": {
+      "get": {
+        "tags": [
+          "Automations"
+        ],
+        "summary": "Lists the caller's automations with their next run and last run, newest first.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/automations/cron-preview": {
+      "get": {
+        "tags": [
+          "Automations"
+        ],
+        "summary": "Shows the next occurrences of a cron expression in a time zone.",
+        "parameters": [
+          {
+            "name": "expression",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timeZone",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationCronPreviewResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/automations/{id}": {
+      "get": {
+        "tags": [
+          "Automations"
+        ],
+        "summary": "Reads one automation.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Automations"
+        ],
+        "summary": "Replaces an automation's definition. The webhook secret is kept; one is generated when the first webhook trigger is added.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAutomationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationSaveResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Automations"
+        ],
+        "summary": "Deletes an automation with its history and its webhook secret.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/automations/{id}/enabled": {
+      "put": {
+        "tags": [
+          "Automations"
+        ],
+        "summary": "Turns an automation's triggers on or off. A run by hand stays possible while it is off.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAutomationEnabledRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/automations/{id}/webhook-secret": {
+      "post": {
+        "tags": [
+          "Automations"
+        ],
+        "summary": "Replaces the webhook secret. The new secret is shown once; the old one stops working at once.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationSaveResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/automations/{id}/runs": {
+      "post": {
+        "tags": [
+          "Automations"
+        ],
+        "summary": "Runs an automation now, whether or not it is enabled. The run continues in the background.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationRunInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Automations"
+        ],
+        "summary": "Reads an automation's run history, newest first.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationRunListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hooks/automations/{id}": {
+      "post": {
+        "tags": [
+          "Automations"
+        ],
+        "summary": "The webhook receiver. Anonymous, authenticated by HMAC-SHA256 signature; every authentication failure answers the same 401.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationWebhookResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationWebhookResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AutomationCronPreviewResponse": {
+        "required": [
+          "nextRuns"
+        ],
+        "type": "object",
+        "properties": {
+          "nextRuns": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Gets the next occurrences, in UTC, soonest first. Empty when the expression is invalid or never fires."
+          },
+          "error": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets why the expression or the time zone is invalid, or null when both are valid."
+          }
+        },
+        "description": "The body of `GET /automations/cron-preview`: the next occurrences of a cron expression."
+      },
+      "AutomationInfo": {
+        "required": [
+          "id",
+          "name",
+          "prompt",
+          "enabled",
+          "triggers",
+          "target",
+          "allowedTools",
+          "maxConcurrentRuns",
+          "maxRunsPerHour",
+          "timeZone",
+          "maxRuntimeMinutes",
+          "createdAt",
+          "updatedAt",
+          "hasWebhookSecret"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the identifier."
+          },
+          "name": {
+            "type": "string",
+            "description": "Gets the display name."
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Gets the instructions each run starts with."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether triggers start runs."
+          },
+          "triggers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AutomationTriggerInfo"
+            },
+            "description": "Gets the triggers."
+          },
+          "target": {
+            "description": "Gets where the runs execute.",
+            "$ref": "#/components/schemas/AutomationTargetInfo"
+          },
+          "allowedTools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the tools a run may use."
+          },
+          "maxConcurrentRuns": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets how many runs may be active at once.",
+            "format": "int32"
+          },
+          "maxRunsPerHour": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets how many runs may start in any rolling hour.",
+            "format": "int32"
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "Gets the time zone cron triggers are evaluated in."
+          },
+          "maxRuntimeMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the longest a run may last, in minutes.",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Gets when the automation was created.",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "Gets when the automation was last changed.",
+            "format": "date-time"
+          },
+          "nextRunAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets when the next cron trigger fires, or null when the automation is off, has no cron trigger or none fires.",
+            "format": "date-time"
+          },
+          "lastRun": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets the most recent run, or null when it has none.",
+                "$ref": "#/components/schemas/AutomationRunInfo"
+              }
+            ]
+          },
+          "webhookPath": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the path of the webhook receiver, `/hooks/automations/{id}`, or null when the automation has no webhook trigger. Prefix it with the API origin."
+          },
+          "hasWebhookSecret": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether a webhook secret is stored. The value is shown once, when it is created or rotated."
+          }
+        },
+        "description": "An automation as the API reports it. It never carries the webhook secret."
+      },
       "AutomationLastRunInfo": {
         "required": [
           "outcome",
@@ -3329,6 +4013,22 @@
         },
         "description": "The latest run attempt of an automation."
       },
+      "AutomationListResponse": {
+        "required": [
+          "automations"
+        ],
+        "type": "object",
+        "properties": {
+          "automations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AutomationInfo"
+            },
+            "description": "Gets the automations."
+          }
+        },
+        "description": "The body of `GET /automations/definitions`: the caller's automations, newest first."
+      },
       "AutomationPauseInfo": {
         "required": [
           "guard",
@@ -3351,6 +4051,135 @@
           }
         },
         "description": "The pause a guard placed on an automation."
+      },
+      "AutomationRepositoryInfo": {
+        "required": [
+          "address"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Gets the HTTPS clone URL, for example `https://github.com/owner/repo`. No credentials, query or fragment."
+          },
+          "branch": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the branch the agent starts from. When absent the repository's default branch is used."
+          },
+          "baseBranch": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the branch a pull request targets. When absent it is the branch the agent started from."
+          }
+        },
+        "description": "A repository a cloud automation works in."
+      },
+      "AutomationRunInfo": {
+        "required": [
+          "runId",
+          "trigger",
+          "summary",
+          "status",
+          "startedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "string",
+            "description": "Gets the run identifier."
+          },
+          "trigger": {
+            "type": "string",
+            "description": "Gets what started the run: `manual`, `cron` or `webhook`."
+          },
+          "summary": {
+            "type": "string",
+            "description": "Gets one line that says what happened, for example `push to main by octocat (3 commits)`. Taken from outside OmpOS for webhook runs: show it as text."
+          },
+          "status": {
+            "type": "string",
+            "description": "Gets how the run stands or ended: `running`, `succeeded`, `launched`, `failed`, `timed_out`, `cancelled` or `skipped`."
+          },
+          "startedAt": {
+            "type": "string",
+            "description": "Gets when the run started.",
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets when the run ended, or null while it runs.",
+            "format": "date-time"
+          },
+          "durationSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "Gets how long the run lasted, in seconds, or null while it runs.",
+            "format": "double"
+          },
+          "error": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets why a run failed, timed out or was skipped. Never holds a secret."
+          },
+          "externalId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the identifier of what the run created, for example the cloud agent (see `GET /cloud/agents/{id}`)."
+          }
+        },
+        "description": "One run of an automation."
+      },
+      "AutomationRunListResponse": {
+        "required": [
+          "runs"
+        ],
+        "type": "object",
+        "properties": {
+          "runs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AutomationRunInfo"
+            },
+            "description": "Gets the runs."
+          }
+        },
+        "description": "The body of `GET /automations/{id}/runs`: the run history, newest first, at most 100."
+      },
+      "AutomationSaveResponse": {
+        "required": [
+          "automation"
+        ],
+        "type": "object",
+        "properties": {
+          "automation": {
+            "description": "Gets the automation after the change.",
+            "$ref": "#/components/schemas/AutomationInfo"
+          },
+          "webhookSecret": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the webhook signing secret that this call generated, shown this once. Absent when the call generated none."
+          }
+        },
+        "description": "The answer of a create, replace or secret rotation. It is the only place a webhook secret ever appears."
       },
       "AutomationsResponse": {
         "required": [
@@ -3379,6 +4208,137 @@
           }
         },
         "description": "The answer of `GET /automations`: the automations the host configured. The API starts no run."
+      },
+      "AutomationTargetInfo": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the kind of target: `cloud` (a cloud agent) or `local` (a desktop session; the API host has none). Default `cloud`."
+          },
+          "repositories": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AutomationRepositoryInfo"
+            },
+            "description": "Gets the repositories a cloud agent works in, 1 to 16 for a cloud target."
+          },
+          "secretRefs": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the names of the cloud secrets (see `PUT /cloud/secrets/{name}`) to load into the agent. Names only, never values."
+          },
+          "environmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the name of a saved cloud environment definition."
+          },
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the model hint passed to the agent."
+          },
+          "mode": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the engine mode hint passed to the agent."
+          }
+        },
+        "description": "Where an automation runs and what the run starts with. Secrets are named, never carried."
+      },
+      "AutomationTriggerInfo": {
+        "required": [
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "Gets the kind of trigger: `cron` or `webhook`."
+          },
+          "cron": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the five-field cron expression of a cron trigger, for example `0 9 * * mon-fri`."
+          },
+          "flavour": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the sender a webhook trigger accepts: `generic` (default) or `github`."
+          },
+          "events": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the GitHub events a webhook accepts: `push`, `pull_request`. Empty accepts both."
+          },
+          "actions": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the pull request actions a GitHub webhook accepts, for example `opened`, `synchronize`, `merged`. Empty accepts every action."
+          },
+          "branches": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the branch globs a GitHub webhook accepts (the pushed branch or the pull request's base branch). Empty accepts every branch."
+          }
+        },
+        "description": "One trigger of an automation. The automation runs when any of its triggers fires."
+      },
+      "AutomationWebhookResponse": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Gets what the receiver did: `accepted` (a run started), `ignored` (authentic, but no trigger wants it or the automation is off), `pong` (a GitHub ping)."
+          },
+          "runId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the identifier of the run that started, for `accepted`."
+          }
+        },
+        "description": "The body of the webhook receiver's success answers."
       },
       "BoardCard": {
         "required": [
@@ -5865,6 +6825,101 @@
         },
         "description": "The part of a session's record that belongs to one run: the messages and the stream events of that run's turn, in the order they were recorded."
       },
+      "SaveAutomationRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the display name, 1 to 100 characters."
+          },
+          "prompt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the instructions each run starts with, 1 to 20000 characters."
+          },
+          "enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Gets a value indicating whether triggers start runs. Default false: a new automation is created off."
+          },
+          "triggers": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AutomationTriggerInfo"
+            },
+            "description": "Gets the triggers, 1 to 8."
+          },
+          "target": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets where the runs execute. Default: a cloud agent.",
+                "$ref": "#/components/schemas/AutomationTargetInfo"
+              }
+            ]
+          },
+          "allowedTools": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the tools a run may use: `pull_request_create`, `pull_request_comment`, `pull_request_request_reviewers`. When absent only `pull_request_create` is allowed."
+          },
+          "maxConcurrentRuns": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Gets how many runs may be active at once, 1 to 4. Default 1.",
+            "format": "int32"
+          },
+          "maxRunsPerHour": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Gets how many runs may start in any rolling hour, 1 to 60. Default 12.",
+            "format": "int32"
+          },
+          "timeZone": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the IANA time zone cron triggers are evaluated in. Default `UTC`."
+          },
+          "maxRuntimeMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Gets the longest a run may last, in minutes, 1 to 360. Default 30.",
+            "format": "int32"
+          }
+        },
+        "description": "The body of `POST /automations` and `PUT /automations/{id}`. A PUT replaces the whole definition."
+      },
       "Session": {
         "required": [
           "id",
@@ -6293,6 +7348,19 @@
           "Interrupted"
         ],
         "description": "Lifecycle states of an agent session."
+      },
+      "SetAutomationEnabledRequest": {
+        "required": [
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether triggers start runs."
+          }
+        },
+        "description": "The body of `PUT /automations/{id}/enabled`."
       },
       "SetConfigOptionRequest": {
         "type": "object",
@@ -7048,6 +8116,9 @@
     },
     {
       "name": "Workspace settings"
+    },
+    {
+      "name": "Automations"
     },
     {
       "name": "Providers"

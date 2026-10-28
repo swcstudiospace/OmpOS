@@ -10,6 +10,10 @@
              x:Class="OmpOS.Native.Views.ComposerView"
              Background="{DynamicResource OmpOS.Color.Surface}">
 
+  <UserControl.Resources>
+    <att:ThumbnailConverter x:Key="ThumbnailConverter" />
+  </UserControl.Resources>
+
   <UserControl.Styles>
     <StyleInclude Source="avares://OmpOS.Native.Views/Views/ComposerStyles.axaml" />
   </UserControl.Styles>
@@ -242,13 +246,13 @@
                           Width="20"
                           Height="20"
                           AutomationProperties.AccessibilityView="Raw" />
-                    <Image Source="{CompiledBinding Thumbnail, Converter={x:Static att:ThumbnailConverter.Instance}}"
+                    <Image Source="{CompiledBinding Thumbnail, Converter={StaticResource ThumbnailConverter}}"
                            Stretch="UniformToFill"
                            IsVisible="{CompiledBinding HasThumbnail}"
                            AutomationProperties.AccessibilityView="Raw" />
                   </Panel>
                 </Button>
-                <Button Classes="ghost sm attachment-remove"
+                <Button Classes="ghost attachment-remove"
                         MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                         MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
                         AutomationProperties.Name="{CompiledBinding RemoveName}"

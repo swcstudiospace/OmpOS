@@ -12,7 +12,8 @@ public sealed class AutomationRunEndpointTests
     [Fact]
     public async Task Run_now_returns_202_starts_a_cloud_agent_for_the_owner_and_records_a_launched_run()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var created = await host.CreateAsync(cancellationToken: Token).ConfigureAwait(true);
         var id = created.GetProperty("automation").GetProperty("id").GetString()!;
         using var client = host.Client();
@@ -21,20 +22,20 @@ public sealed class AutomationRunEndpointTests
         var accepted = await AutomationApiHost.ReadAsync(response, Token).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Accepted);
-        accepted.GetProperty("status").GetString().ShouldBe("running", Case.Sensitive);
-        accepted.GetProperty("trigger").GetString().ShouldBe("manual", Case.Sensitive);
+        accepted.GetProperty("status").GetString().ShouldBe("running");
+        accepted.GetProperty("trigger").GetString().ShouldBe("manual");
         var runs = await host.SettledRunsAsync(id, cancellationToken: Token).ConfigureAwait(true);
         var run = runs.EnumerateArray().Single();
-        run.GetProperty("runId").GetString().ShouldBe(accepted.GetProperty("runId").GetString(), Case.Sensitive);
-        run.GetProperty("status").GetString().ShouldBe("launched", Case.Sensitive);
+        run.GetProperty("runId").GetString().ShouldBe(accepted.GetProperty("runId").GetString());
+        run.GetProperty("status").GetString().ShouldBe("launched");
         run.GetProperty("externalId").GetString().ShouldStartWith("agent-", Case.Sensitive);
         run.GetProperty("durationSeconds").GetDouble().ShouldBeGreaterThanOrEqualTo(0);
 
         var launch = host.Launcher.Launches.ShouldHaveSingleItem();
-        launch.Owner.ShouldBe(AutomationApiHost.Alice, Case.Sensitive);
-        launch.Key.ShouldBe(run.GetProperty("runId").GetString(), Case.Sensitive);
-        launch.Request.Name.ShouldBe("Nightly review", Case.Sensitive);
-        launch.Request.Repositories!.Single().Url.ShouldBe("https://github.com/acme/widgets", Case.Sensitive);
+        launch.Owner.ShouldBe(AutomationApiHost.Alice);
+        launch.Key.ShouldBe(run.GetProperty("runId").GetString());
+        launch.Request.Name.ShouldBe("Nightly review");
+        launch.Request.Repositories!.Single().Address.ShouldBe("https://github.com/acme/widgets");
         launch.Request.SecretRefs.ShouldBe(["NPM_TOKEN"]);
         launch.Prompt.ShouldStartWith("Review the changes of the last day.", Case.Sensitive);
         launch.Prompt.ShouldContain("Trigger: Run now.", Case.Sensitive);
@@ -44,7 +45,8 @@ public sealed class AutomationRunEndpointTests
     [Fact]
     public async Task A_disabled_automation_can_still_be_run_by_hand()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var created = await host.CreateAsync(AutomationApiHost.CreateBody(enabled: false), cancellationToken: Token).ConfigureAwait(true);
         var id = created.GetProperty("automation").GetProperty("id").GetString()!;
         using var client = host.Client();
@@ -58,7 +60,8 @@ public sealed class AutomationRunEndpointTests
     [Fact]
     public async Task A_failing_launch_is_a_failed_run_with_the_launcher_message_and_no_secret()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         host.Launcher.FailWith = "The cloud agent was refused (agent_limit_reached).";
         var created = await host.CreateAsync(cancellationToken: Token).ConfigureAwait(true);
         var id = created.GetProperty("automation").GetProperty("id").GetString()!;
@@ -69,15 +72,16 @@ public sealed class AutomationRunEndpointTests
         var runs = await host.SettledRunsAsync(id, cancellationToken: Token).ConfigureAwait(true);
 
         var run = runs.EnumerateArray().Single();
-        run.GetProperty("status").GetString().ShouldBe("failed", Case.Sensitive);
-        run.GetProperty("error").GetString().ShouldBe("The cloud agent was refused (agent_limit_reached).", Case.Sensitive);
+        run.GetProperty("status").GetString().ShouldBe("failed");
+        run.GetProperty("error").GetString().ShouldBe("The cloud agent was refused (agent_limit_reached).");
         runs.ToString().ShouldNotContain(secret, Case.Sensitive);
     }
 
     [Fact]
     public async Task A_second_run_while_the_first_is_going_is_a_409_and_the_attempt_is_in_the_history_as_skipped()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         host.Launcher.Hold = true;
         var created = await host.CreateAsync(cancellationToken: Token).ConfigureAwait(true);
         var id = created.GetProperty("automation").GetProperty("id").GetString()!;
@@ -88,12 +92,12 @@ public sealed class AutomationRunEndpointTests
 
         first.StatusCode.ShouldBe(HttpStatusCode.Accepted);
         second.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        (await AutomationApiHost.ProblemCodeAsync(second, Token).ConfigureAwait(true)).ShouldBe("automation_busy", Case.Sensitive);
+        (await AutomationApiHost.ProblemCodeAsync(second, Token).ConfigureAwait(true)).ShouldBe("automation_busy");
         using var history = await client.GetAsync(new Uri($"/automations/{id}/runs", UriKind.Relative), Token).ConfigureAwait(true);
         var runs = (await AutomationApiHost.ReadAsync(history, Token).ConfigureAwait(true)).GetProperty("runs");
         runs.GetArrayLength().ShouldBe(2);
-        runs[0].GetProperty("status").GetString().ShouldBe("skipped", Case.Sensitive);
-        runs[1].GetProperty("status").GetString().ShouldBe("running", Case.Sensitive);
+        runs[0].GetProperty("status").GetString().ShouldBe("skipped");
+        runs[1].GetProperty("status").GetString().ShouldBe("running");
         host.Launcher.Release();
         _ = await host.SettledRunsAsync(id, cancellationToken: Token).ConfigureAwait(true);
     }
@@ -101,7 +105,8 @@ public sealed class AutomationRunEndpointTests
     [Fact]
     public async Task The_hourly_cap_is_a_409_with_its_own_code_until_the_hour_passes()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var body = AutomationApiHost.CreateBody().Replace("\"enabled\":true", "\"enabled\":true,\"maxRunsPerHour\":2", StringComparison.Ordinal);
         var created = await host.CreateAsync(body, cancellationToken: Token).ConfigureAwait(true);
         var id = created.GetProperty("automation").GetProperty("id").GetString()!;
@@ -116,7 +121,7 @@ public sealed class AutomationRunEndpointTests
 
         using var capped = await AutomationApiHost.SendAsync(client, HttpMethod.Post, $"/automations/{id}/runs", null, Token).ConfigureAwait(true);
         capped.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        (await AutomationApiHost.ProblemCodeAsync(capped, Token).ConfigureAwait(true)).ShouldBe("automation_hourly_cap", Case.Sensitive);
+        (await AutomationApiHost.ProblemCodeAsync(capped, Token).ConfigureAwait(true)).ShouldBe("automation_hourly_cap");
 
         host.Clock.Advance(TimeSpan.FromMinutes(61));
         using var again = await AutomationApiHost.SendAsync(client, HttpMethod.Post, $"/automations/{id}/runs", null, Token).ConfigureAwait(true);
@@ -127,7 +132,8 @@ public sealed class AutomationRunEndpointTests
     [Fact]
     public async Task The_history_is_newest_first_and_shows_the_last_run_on_the_automation()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var created = await host.CreateAsync(cancellationToken: Token).ConfigureAwait(true);
         var id = created.GetProperty("automation").GetProperty("id").GetString()!;
         using var client = host.Client();
@@ -145,6 +151,6 @@ public sealed class AutomationRunEndpointTests
         var automation = await AutomationApiHost.ReadAsync(get, Token).ConfigureAwait(true);
 
         runs.EnumerateArray().Select(static run => run.GetProperty("runId").GetString()).ShouldBe(runIds.AsEnumerable().Reverse());
-        automation.GetProperty("lastRun").GetProperty("runId").GetString().ShouldBe(runIds[2], Case.Sensitive);
+        automation.GetProperty("lastRun").GetProperty("runId").GetString().ShouldBe(runIds[2]);
     }
 }

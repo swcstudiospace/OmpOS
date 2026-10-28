@@ -125,7 +125,7 @@ public static class AutomationValidator
 
         foreach (var repository in target.Repositories)
         {
-            if (!IsCloneUrl(repository.Url)
+            if (!IsCloneUrl(repository.Address)
                 || (repository.Branch is not null && !AutomationNames.IsBranchText(repository.Branch))
                 || (repository.BaseBranch is not null && !AutomationNames.IsBranchText(repository.BaseBranch)))
             {

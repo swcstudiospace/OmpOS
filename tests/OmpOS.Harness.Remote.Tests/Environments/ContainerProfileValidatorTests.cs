@@ -16,7 +16,7 @@ public sealed class ContainerProfileValidatorTests
     public void ValidProfilesPass()
     {
         EnvironmentProfileValidator.Validate(Container()).ShouldBeEmpty();
-        EnvironmentProfileValidator.Validate(Container() with { RemoteUser = "vscode", PodmanPath = "/usr/bin/podman", OmpPath = "/opt/omp/bin/omp" }).ShouldBeEmpty();
+        EnvironmentProfileValidator.Validate(Container() with { RemoteUser = "dev", PodmanPath = "/usr/bin/podman", OmpPath = "/opt/omp/bin/omp" }).ShouldBeEmpty();
         EnvironmentProfileValidator.Validate(Distro()).ShouldBeEmpty();
         EnvironmentProfileValidator.Validate(Distro() with { User = "dev", OmpPath = "omp" }).ShouldBeEmpty();
         EnvironmentProfileValidator.IsValid(Container()).ShouldBeTrue();
@@ -42,7 +42,7 @@ public sealed class ContainerProfileValidatorTests
     public void ContainerReferencesAreChecked(string value, bool expected)
     {
         ContainerProfileRules.IsValidContainerReference(value).ShouldBe(expected);
-        EnvironmentProfileValidator.Validate(Container() with { Container = value }).Any(issue => issue.Property == "Container.Container").ShouldBe(!expected);
+        EnvironmentProfileValidator.Validate(Container() with { Container = value }).Any(issue => string.Equals(issue.Property, "Container.Container", StringComparison.Ordinal)).ShouldBe(!expected);
     }
 
     /// <summary>A reference longer than 128 characters is refused.</summary>
@@ -55,7 +55,7 @@ public sealed class ContainerProfileValidatorTests
 
     /// <summary>The user inside a container or distribution is a plain name or number; anything an option or a shell would read specially is refused.</summary>
     [Theory]
-    [InlineData("vscode", true)]
+    [InlineData("dev", true)]
     [InlineData("1000", true)]
     [InlineData("root", true)]
     [InlineData("-u", false)]
@@ -66,8 +66,8 @@ public sealed class ContainerProfileValidatorTests
     [InlineData("", false)]
     public void InnerUsersAreChecked(string value, bool expected)
     {
-        EnvironmentProfileValidator.Validate(Container() with { RemoteUser = value }).Any(issue => issue.Property == "Container.RemoteUser").ShouldBe(!expected);
-        EnvironmentProfileValidator.Validate(Distro() with { User = value }).Any(issue => issue.Property == "Wsl.User").ShouldBe(!expected);
+        EnvironmentProfileValidator.Validate(Container() with { RemoteUser = value }).Any(issue => string.Equals(issue.Property, "Container.RemoteUser", StringComparison.Ordinal)).ShouldBe(!expected);
+        EnvironmentProfileValidator.Validate(Distro() with { User = value }).Any(issue => string.Equals(issue.Property, "Wsl.User", StringComparison.Ordinal)).ShouldBe(!expected);
     }
 
     /// <summary>A workspace folder is an absolute POSIX path inside the container, free of control characters and parent segments.</summary>
@@ -82,8 +82,8 @@ public sealed class ContainerProfileValidatorTests
     [InlineData("/workspaces/a\tb", false)]
     public void WorkspaceFoldersAreChecked(string value, bool expected)
     {
-        EnvironmentProfileValidator.Validate(Container() with { WorkspaceFolder = value }).Any(issue => issue.Property == "Container.WorkspaceFolder").ShouldBe(!expected);
-        EnvironmentProfileValidator.Validate(Distro() with { WorkspacePath = value }).Any(issue => issue.Property == "Wsl.WorkspacePath").ShouldBe(!expected);
+        EnvironmentProfileValidator.Validate(Container() with { WorkspaceFolder = value }).Any(issue => string.Equals(issue.Property, "Container.WorkspaceFolder", StringComparison.Ordinal)).ShouldBe(!expected);
+        EnvironmentProfileValidator.Validate(Distro() with { WorkspacePath = value }).Any(issue => string.Equals(issue.Property, "Wsl.WorkspacePath", StringComparison.Ordinal)).ShouldBe(!expected);
     }
 
     /// <summary>The podman path is a plain command name or a full path on this computer; a relative path or an option is refused.</summary>
@@ -98,7 +98,7 @@ public sealed class ContainerProfileValidatorTests
     public void PodmanPathsAreChecked(string value, bool expected)
     {
         ContainerProfileRules.IsValidPodmanPath(value).ShouldBe(expected);
-        EnvironmentProfileValidator.Validate(Container() with { PodmanPath = value }).Any(issue => issue.Property == "Container.PodmanPath").ShouldBe(!expected);
+        EnvironmentProfileValidator.Validate(Container() with { PodmanPath = value }).Any(issue => string.Equals(issue.Property, "Container.PodmanPath", StringComparison.Ordinal)).ShouldBe(!expected);
     }
 
     /// <summary>The omp path inside the environment follows the rule of the ssh remote omp path.</summary>
@@ -110,8 +110,8 @@ public sealed class ContainerProfileValidatorTests
     [InlineData("o m p", false)]
     public void OmpPathsAreChecked(string value, bool expected)
     {
-        EnvironmentProfileValidator.Validate(Container() with { OmpPath = value }).Any(issue => issue.Property == "Container.OmpPath").ShouldBe(!expected);
-        EnvironmentProfileValidator.Validate(Distro() with { OmpPath = value }).Any(issue => issue.Property == "Wsl.OmpPath").ShouldBe(!expected);
+        EnvironmentProfileValidator.Validate(Container() with { OmpPath = value }).Any(issue => string.Equals(issue.Property, "Container.OmpPath", StringComparison.Ordinal)).ShouldBe(!expected);
+        EnvironmentProfileValidator.Validate(Distro() with { OmpPath = value }).Any(issue => string.Equals(issue.Property, "Wsl.OmpPath", StringComparison.Ordinal)).ShouldBe(!expected);
     }
 
     /// <summary>A WSL distribution name is a plain name; an option, a space or a shell character is refused.</summary>
@@ -127,7 +127,7 @@ public sealed class ContainerProfileValidatorTests
     public void DistributionNamesAreChecked(string value, bool expected)
     {
         ContainerProfileRules.IsValidWslDistribution(value).ShouldBe(expected);
-        EnvironmentProfileValidator.Validate(Distro() with { Distro = value }).Any(issue => issue.Property == "Wsl.Distro").ShouldBe(!expected);
+        EnvironmentProfileValidator.Validate(Distro() with { Distro = value }).Any(issue => string.Equals(issue.Property, "Wsl.Distro", StringComparison.Ordinal)).ShouldBe(!expected);
     }
 
     /// <summary>An environment carries the details of its own kind and no other: a profile never holds a second destination that could be picked by mistake.</summary>

@@ -29,7 +29,7 @@ public sealed class EnvironmentKindWireTests
             Id = "container-devbox",
             DisplayName = "Dev box",
             Kind = EnvironmentKind.Container,
-            Container = new ContainerProfile { Container = "devbox", RemoteUser = "vscode", WorkspaceFolder = "/workspaces/app", PodmanPath = "/usr/bin/podman", OmpPath = "/opt/omp" },
+            Container = new ContainerProfile { Container = "devbox", RemoteUser = "dev", WorkspaceFolder = "/workspaces/app", PodmanPath = "/usr/bin/podman", OmpPath = "/opt/omp" },
         };
 
         var json = JsonSerializer.Serialize(profile, EnvironmentJsonContext.Default.EnvironmentProfile);

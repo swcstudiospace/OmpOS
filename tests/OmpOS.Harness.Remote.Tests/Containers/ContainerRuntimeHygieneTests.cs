@@ -45,7 +45,7 @@ public sealed class ContainerRuntimeHygieneTests
             Path.Combine("src", "OmpOS.Presentation", "Remote", "RunningContainerPicker.cs"),
             Path.Combine("src", "OmpOS.Presentation", "Remote", "RuntimeEnvironmentsViewModel.cs"),
             Path.Combine("docs", "runbooks", "remote-containers.md"),
-            Path.Combine("docs", "decisions", "ADR-0015-addendum-containers.md"),
+            Path.Combine("docs", "decisions", "addendum-ADR-0015-containers.md"),
         ];
         foreach (var file in single)
         {
@@ -88,7 +88,7 @@ public sealed class ContainerRuntimeHygieneTests
     [Fact]
     public void ThePodmanOptionsOfferNoOtherRuntime()
     {
-        new PodmanClientOptions().PodmanPath.ShouldBe("podman", Case.Sensitive);
+        new PodmanClientOptions().PodmanPath.ShouldBe("podman");
         typeof(PodmanClientOptions).GetProperties().Select(property => property.Name).ShouldBe(["PodmanPath", "CommandTimeout"], ignoreOrder: true);
     }
 }

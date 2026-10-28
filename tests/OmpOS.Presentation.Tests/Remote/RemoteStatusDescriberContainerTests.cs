@@ -49,6 +49,6 @@ public sealed class RemoteStatusDescriberContainerTests
     {
         RemoteStatusDescriber.DetailOf(RemoteEnvironmentStatus.NotRunning).ShouldContain("never starts a container on its own", Case.Sensitive);
         new[] { RemoteEnvironmentStatus.RuntimeUnavailable, RemoteEnvironmentStatus.NotRunning, RemoteEnvironmentStatus.NotFound }
-            .Select(RemoteStatusDescriber.LabelOf).ShouldBeUnique();
+            .Select(RemoteStatusDescriber.LabelOf).ShouldBeUnique(StringComparer.Ordinal);
     }
 }

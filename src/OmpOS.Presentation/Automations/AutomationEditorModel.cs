@@ -829,10 +829,10 @@ public sealed class AutomationEditorModel : ObservableModel
     {
         if (repository.Branch.Length == 0 && repository.BaseBranch.Length == 0)
         {
-            return repository.Url;
+            return repository.Address;
         }
 
-        var text = repository.Url + " " + DashIfEmpty(repository.Branch);
+        var text = repository.Address + " " + DashIfEmpty(repository.Branch);
         return repository.BaseBranch.Length == 0 ? text : text + " " + repository.BaseBranch;
     }
 

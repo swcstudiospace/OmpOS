@@ -30,8 +30,8 @@ public sealed class CronExpressionParseTests
         CronExpression.TryParse(text, out var expression, out var error).ShouldBeTrue(error);
 
         expression.ShouldNotBeNull();
-        expression.Source.ShouldBe(text.Trim(), Case.Sensitive);
-        error.ShouldBe(string.Empty, Case.Sensitive);
+        expression.Source.ShouldBe(text.Trim());
+        error.ShouldBe(string.Empty);
     }
 
     [Theory]
@@ -103,6 +103,6 @@ public sealed class CronExpressionParseTests
     public void Parse_throws_FormatException_for_an_invalid_expression()
     {
         Should.Throw<FormatException>(() => CronExpression.Parse("nonsense"));
-        CronExpression.Parse("0 0 * * *").Source.ShouldBe("0 0 * * *", Case.Sensitive);
+        CronExpression.Parse("0 0 * * *").Source.ShouldBe("0 0 * * *");
     }
 }

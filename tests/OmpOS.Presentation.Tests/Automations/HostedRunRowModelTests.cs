@@ -21,7 +21,7 @@ public sealed class HostedRunRowModelTests
     {
         var run = AutomationFixtures.Run("run-1", HostedRunStatus.Succeeded, duration: TimeSpan.FromSeconds(seconds));
 
-        new HostedRunRowModel(run).DurationText.ShouldBe(expected, Case.Sensitive);
+        new HostedRunRowModel(run).DurationText.ShouldBe(expected);
     }
 
     /// <summary>A run in progress says running whether or not a duration is known; a finished run without a duration says nothing.</summary>
@@ -31,7 +31,7 @@ public sealed class HostedRunRowModelTests
         var running = AutomationFixtures.Run("run-1", HostedRunStatus.Running, duration: TimeSpan.FromSeconds(3));
         var unknown = AutomationFixtures.Run("run-2", HostedRunStatus.Failed, duration: null);
 
-        new HostedRunRowModel(running).DurationText.ShouldBe("running", Case.Sensitive);
+        new HostedRunRowModel(running).DurationText.ShouldBe("running");
         new HostedRunRowModel(unknown).DurationText.ShouldBeEmpty();
     }
 
@@ -49,7 +49,7 @@ public sealed class HostedRunRowModelTests
         var row = new HostedRunRowModel(AutomationFixtures.Run("run-1", status));
 
         row.Status.ShouldBe(status);
-        row.StatusText.ShouldBe(expected, Case.Sensitive);
+        row.StatusText.ShouldBe(expected);
     }
 
     /// <summary>What started the run reads as a sentence, and an unknown trigger is named rather than hidden.</summary>
@@ -60,7 +60,7 @@ public sealed class HostedRunRowModelTests
     [InlineData("api", "Started by api")]
     public void TriggerReadsAsASentence(string trigger, string expected)
     {
-        new HostedRunRowModel(AutomationFixtures.Run("run-1", HostedRunStatus.Succeeded, trigger)).TriggerText.ShouldBe(expected, Case.Sensitive);
+        new HostedRunRowModel(AutomationFixtures.Run("run-1", HostedRunStatus.Succeeded, trigger)).TriggerText.ShouldBe(expected);
     }
 
     /// <summary>The start time is shown to the second in UTC, whatever offset it came with.</summary>
@@ -72,7 +72,7 @@ public sealed class HostedRunRowModelTests
             StartedAt = new DateTimeOffset(2026, 10, 28, 11, 0, 5, TimeSpan.FromHours(2)),
         };
 
-        new HostedRunRowModel(entry).WhenText.ShouldBe("2026-10-28 09:00:05 UTC", Case.Sensitive);
+        new HostedRunRowModel(entry).WhenText.ShouldBe("2026-10-28 09:00:05 UTC");
     }
 
     /// <summary>The summary, the error and the agent show when present; a run without a summary says so and one without an agent shows none.</summary>
@@ -87,10 +87,10 @@ public sealed class HostedRunRowModelTests
             externalId: "agent-9"));
         var bare = new HostedRunRowModel(AutomationFixtures.Run("run-2", HostedRunStatus.Succeeded));
 
-        full.SummaryText.ShouldBe("Opened a pull request", Case.Sensitive);
-        full.ErrorText.ShouldBe("push rejected", Case.Sensitive);
-        full.AgentText.ShouldBe("Agent: agent-9", Case.Sensitive);
-        bare.SummaryText.ShouldBe(AutomationsCopy.NoSummary, Case.Sensitive);
+        full.SummaryText.ShouldBe("Opened a pull request");
+        full.ErrorText.ShouldBe("push rejected");
+        full.AgentText.ShouldBe("Agent: agent-9");
+        bare.SummaryText.ShouldBe(AutomationsCopy.NoSummary);
         bare.ErrorText.ShouldBeEmpty();
         bare.AgentText.ShouldBeEmpty();
     }
@@ -102,7 +102,7 @@ public sealed class HostedRunRowModelTests
         var finished = new HostedRunRowModel(AutomationFixtures.Run("run-1", HostedRunStatus.Succeeded, duration: TimeSpan.FromSeconds(65)));
         var unknown = new HostedRunRowModel(AutomationFixtures.Run("run-2", HostedRunStatus.Failed));
 
-        finished.AccessibleName.ShouldBe("Succeeded, 2026-10-28 09:00:05 UTC, took 1 min 5 s, Started by the schedule", Case.Sensitive);
-        unknown.AccessibleName.ShouldBe("Failed, 2026-10-28 09:00:05 UTC, Started by the schedule", Case.Sensitive);
+        finished.AccessibleName.ShouldBe("Succeeded, 2026-10-28 09:00:05 UTC, took 1 min 5 s, Started by the schedule");
+        unknown.AccessibleName.ShouldBe("Failed, 2026-10-28 09:00:05 UTC, Started by the schedule");
     }
 }

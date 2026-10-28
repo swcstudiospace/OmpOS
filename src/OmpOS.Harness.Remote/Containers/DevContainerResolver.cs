@@ -69,6 +69,7 @@ public sealed class DevContainerResolver
     /// <exception cref="ArgumentException">The folder is not an absolute path without control characters.</exception>
     public async Task<DevContainerResolution> ResolveAsync(string localFolder, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(localFolder);
         RequireFolder(localFolder);
         DevContainerDefinition? definition;
         try
@@ -115,8 +116,12 @@ public sealed class DevContainerResolver
             };
         }
 
-        var folder = TrimFolder(localFolder);
-        var containers = listing.Containers
+        return Classify(definition, definition.WorkspaceFolder, TrimFolder(localFolder), listing.Containers);
+    }
+
+    private static DevContainerResolution Classify(DevContainerDefinition definition, string workspaceFolder, string folder, IReadOnlyList<ContainerSummary> candidates)
+    {
+        var containers = candidates
             .Where(container => container.DevContainerFolder is { } labelled && string.Equals(TrimFolder(labelled), folder, StringComparison.Ordinal))
             .ToList();
         var running = containers.Where(container => container.IsRunning).ToList();
@@ -161,7 +166,7 @@ public sealed class DevContainerResolver
             {
                 Container = running[0].Name,
                 RemoteUser = definition.EffectiveUser is { } user && ContainerProfileRules.IsValidInnerUser(user) ? user : null,
-                WorkspaceFolder = definition.WorkspaceFolder,
+                WorkspaceFolder = workspaceFolder,
             },
         };
     }

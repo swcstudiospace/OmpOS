@@ -6,7 +6,7 @@ An automation is a prompt that OmpOS runs for you when something happens: a cron
 
 ## Turn it on
 
-Automations live in the OmpOS API. They are off by default: with `Automations:Enabled` false no route exists (including the webhook receiver), nothing is scheduled, and the settings summary `GET /automations` keeps saying that no engine is configured.
+Automations live in the OmpOS API. They are off by default: with `Automations:Enabled` false every automation route answers 404 `automations_disabled` (including the webhook receiver), nothing is scheduled, and the settings summary `GET /automations` keeps saying that no engine is configured.
 
 | Key | Default | Meaning |
 | --- | --- | --- |

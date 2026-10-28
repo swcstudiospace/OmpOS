@@ -35,7 +35,7 @@ internal sealed class CloudAutomationTarget : IAutomationTarget
         {
             Name = Truncate(request.Automation.Name),
             Repositories = target.Repositories
-                .Select(static repository => new CloudRepository { Url = repository.Url, Branch = repository.Branch, BaseBranch = repository.BaseBranch })
+                .Select(static repository => new CloudRepository { Address = repository.Address, Branch = repository.Branch, BaseBranch = repository.BaseBranch })
                 .ToArray(),
             SecretRefs = target.SecretRefs.Count == 0 ? null : target.SecretRefs,
             EnvironmentId = target.EnvironmentId,

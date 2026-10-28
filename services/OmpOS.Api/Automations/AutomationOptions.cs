@@ -1,7 +1,7 @@
 namespace OmpOS.Api.Automations;
 
 /// <summary>
-/// The <c>Automations</c> configuration section. Automations are off by default: with <see cref="Enabled"/> false no route is mapped,
+/// The <c>Automations</c> configuration section. Automations are off by default: with <see cref="Enabled"/> false every automation route answers 404,
 /// no schedule runs and the settings answer <c>GET /automations</c> keeps saying that none is configured. The API process that has this
 /// on must be the only one that schedules (see <c>docs/reference/automations.md</c>): two schedulers on one store would fire a cron
 /// occurrence twice.

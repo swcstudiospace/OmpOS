@@ -40,20 +40,20 @@ public sealed class AutomationCloudTargetTests
         var result = await target.RunAsync(Request(Automation(spec)), Token).ConfigureAwait(true);
 
         result.Status.ShouldBe(AutomationRunStatus.Launched);
-        result.ExternalId.ShouldBe("agent-01234567", Case.Sensitive);
+        result.ExternalId.ShouldBe("agent-01234567");
         var launch = launcher.Launches.ShouldHaveSingleItem();
-        launch.Owner.ShouldBe("alice", Case.Sensitive);
-        launch.Key.ShouldBe("0123456789abcdef", Case.Sensitive);
-        launch.Prompt.ShouldBe("the prompt", Case.Sensitive);
+        launch.Owner.ShouldBe("alice");
+        launch.Key.ShouldBe("0123456789abcdef");
+        launch.Prompt.ShouldBe("the prompt");
         launch.Request.Repositories!.Count.ShouldBe(2);
-        launch.Request.Repositories[0].Url.ShouldBe("https://github.com/acme/widgets", Case.Sensitive);
-        launch.Request.Repositories[0].Branch.ShouldBe("main", Case.Sensitive);
-        launch.Request.Repositories[0].BaseBranch.ShouldBe("develop", Case.Sensitive);
+        launch.Request.Repositories[0].Address.ShouldBe("https://github.com/acme/widgets");
+        launch.Request.Repositories[0].Branch.ShouldBe("main");
+        launch.Request.Repositories[0].BaseBranch.ShouldBe("develop");
         launch.Request.Repositories[1].Branch.ShouldBeNull();
         launch.Request.SecretRefs.ShouldBe(["NPM_TOKEN"]);
-        launch.Request.EnvironmentId.ShouldBe("node-22", Case.Sensitive);
-        launch.Request.Model.ShouldBe("claude-sonnet", Case.Sensitive);
-        launch.Request.Mode.ShouldBe("plan", Case.Sensitive);
+        launch.Request.EnvironmentId.ShouldBe("node-22");
+        launch.Request.Model.ShouldBe("claude-sonnet");
+        launch.Request.Mode.ShouldBe("plan");
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public sealed class AutomationCloudTargetTests
         var result = await target.RunAsync(Request(Automation()), Token).ConfigureAwait(true);
 
         result.Status.ShouldBe(AutomationRunStatus.Failed);
-        result.Error.ShouldBe("The cloud agent was refused (agent_limit_reached).", Case.Sensitive);
+        result.Error.ShouldBe("The cloud agent was refused (agent_limit_reached).");
         result.ExternalId.ShouldBeNull();
     }
 

@@ -12,22 +12,22 @@ public sealed class ContainerTerminalLauncherTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static ContainerProfile Container() => new() { Container = "devbox", WorkspaceFolder = "/workspaces/it's app", RemoteUser = "vscode" };
+    private static ContainerProfile Container() => new() { Container = "devbox", WorkspaceFolder = "/workspaces/it's app", RemoteUser = "dev" };
 
     private static RemoteLaunch CanaryLaunch() =>
         LaunchFactory.Create(
             "/workspaces/app",
-            "/home/vscode/.ompos/state/s1",
+            "/home/dev/.ompos/state/s1",
             "/opt/omp/bin/omp",
-            ["-e", "/opt/plugins/a", "--config", "/home/vscode/.ompos/state/s1/config.yml"],
+            ["-e", "/opt/plugins/a", "--config", "/home/dev/.ompos/state/s1/config.yml"],
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["ULTRATHINK_STATE_DIR"] = "/home/vscode/.ompos/state/s1",
+                ["ULTRATHINK_STATE_DIR"] = "/home/dev/.ompos/state/s1",
                 ["OMPOS_PROVIDER_TOKEN"] = Secret,
                 ["MULTI"] = "a\nb",
             },
             new HashSet<string>(StringComparer.Ordinal) { "OMPOS_PROVIDER_TOKEN" },
-            [new RemoteFile("/home/vscode/.ompos/state/s1/config.yml", "k: v")]);
+            [new RemoteFile("/home/dev/.ompos/state/s1/config.yml", "k: v")]);
 
     /// <summary>The shell terminal is <c>podman exec -it</c> with the user, the container, and a script that changes into the folder and starts the login shell.</summary>
     [Fact]
@@ -36,7 +36,7 @@ public sealed class ContainerTerminalLauncherTests
         var command = new ContainerTerminalLauncher().BuildShell(Container());
 
         command.Invocation.FileName.ShouldBe("podman");
-        command.Invocation.Arguments.Take(7).ToArray().ShouldBe(["exec", "-it", "-u", "vscode", "--", "devbox", "sh"]);
+        command.Invocation.Arguments.Take(7).ToArray().ShouldBe(["exec", "-it", "-u", "dev", "--", "devbox", "sh"]);
         command.Invocation.Arguments[^1].ShouldContain("cd '/workspaces/it'\\''s app' || exit 71", Case.Sensitive);
         command.Invocation.Arguments[^1].ShouldEndWith("exec \"${SHELL:-/bin/sh}\" -l", Case.Sensitive);
         command.Invocation.Preamble.ShouldBeNull();
@@ -80,10 +80,11 @@ public sealed class ContainerTerminalLauncherTests
         var backend = new RecordingTerminalBackend();
         var command = launcher.BuildShell(host.Profile);
 
-        await using var session = await launcher.StartAsync(backend, command, new DiscardingOutputSink(), 120, 30, null, Token).ConfigureAwait(true);
+        var session = await ContainerTerminalLauncher.StartAsync(backend, command, new DiscardingOutputSink(), 120, 30, null, Token).ConfigureAwait(true);
+        await using var sessionScope = session.ConfigureAwait(true);
 
         var started = backend.Started.ShouldHaveSingleItem();
-        started.FileName.ShouldBe(host.PodmanPath, Case.Sensitive);
+        started.FileName.ShouldBe(host.PodmanPath);
         started.Arguments.ShouldBe(command.Invocation.Arguments);
         started.Columns.ShouldBe(120);
         started.Rows.ShouldBe(30);
@@ -104,8 +105,8 @@ public sealed class ContainerTerminalLauncherTests
             OmittedEnvironmentNames = [],
         };
 
-        await Should.ThrowAsync<FileNotFoundException>(() => missing.StartAsync(backend, command, new DiscardingOutputSink(), 80, 24, null, Token)).ConfigureAwait(true);
-        await Should.ThrowAsync<ArgumentException>(() => new ContainerTerminalLauncher(host.ClientOptions).StartAsync(backend, withPreamble, new DiscardingOutputSink(), 80, 24, null, Token)).ConfigureAwait(true);
+        await Should.ThrowAsync<FileNotFoundException>(() => ContainerTerminalLauncher.StartAsync(backend, command, new DiscardingOutputSink(), 80, 24, null, Token)).ConfigureAwait(true);
+        await Should.ThrowAsync<ArgumentException>(() => ContainerTerminalLauncher.StartAsync(backend, withPreamble, new DiscardingOutputSink(), 80, 24, null, Token)).ConfigureAwait(true);
 
         backend.Started.ShouldBeEmpty();
     }
@@ -121,7 +122,7 @@ public sealed class ContainerTerminalLauncherTests
 
         result.StartFailure.ShouldBeNull();
         result.ExitCode.ShouldBe(0, result.StandardError);
-        host.PodmanCalls().ShouldHaveSingleItem().ShouldContain("-it");
+        host.PodmanCalls().ShouldHaveSingleItem().ShouldContain("-it", StringComparer.Ordinal);
     }
 
     /// <summary>The WSL shell terminal is <c>wsl.exe -d distro -u user --exec sh -c script</c>; the omp terminal leaves secrets out.</summary>
@@ -156,9 +157,10 @@ public sealed class ContainerTerminalLauncherTests
             OmittedEnvironmentNames = [],
         };
 
-        await using var session = await launcher.StartAsync(backend, command, new DiscardingOutputSink(), 100, 40, null, Token).ConfigureAwait(true);
-        await Should.ThrowAsync<ArgumentException>(() => launcher.StartAsync(backend, withPreamble, new DiscardingOutputSink(), 80, 24, null, Token)).ConfigureAwait(true);
+        var session = await WslTerminalLauncher.StartAsync(backend, command, new DiscardingOutputSink(), 100, 40, null, Token).ConfigureAwait(true);
+        await using var sessionScope = session.ConfigureAwait(true);
+        await Should.ThrowAsync<ArgumentException>(() => WslTerminalLauncher.StartAsync(backend, withPreamble, new DiscardingOutputSink(), 80, 24, null, Token)).ConfigureAwait(true);
 
-        backend.Started.ShouldHaveSingleItem().FileName.ShouldBe(host.WslPath, Case.Sensitive);
+        backend.Started.ShouldHaveSingleItem().FileName.ShouldBe(host.WslPath);
     }
 }

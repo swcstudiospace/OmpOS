@@ -43,7 +43,7 @@ public sealed class McpTemplateCatalogTests
         var ids = McpTemplateCatalog.All.Select(preset => preset.Id).ToList();
 
         ids.Distinct(StringComparer.Ordinal).Count().ShouldBe(ids.Count);
-        ids.ShouldAllBe(id => McpServerNames.IsValid(id) && string.Equals(id, id.ToLowerInvariant(), StringComparison.Ordinal));
+        ids.ShouldAllBe(id => McpServerNames.IsValid(id) && !id.Any(char.IsUpper));
     }
 
     /// <summary>A remote preset is an https address without user information and without a credential in it, and a stdio preset has a command and arguments.</summary>
@@ -56,7 +56,7 @@ public sealed class McpTemplateCatalogTests
             preset.Description.ShouldNotBeNullOrWhiteSpace(preset.Id);
             if (preset.Kind == McpTemplateKind.Http)
             {
-                var uri = new Uri(preset.Url.ShouldNotBeNull(), UriKind.Absolute);
+                var uri = new Uri(preset.Address.ShouldNotBeNull(), UriKind.Absolute);
                 uri.Scheme.ShouldBe("https", preset.Id);
                 uri.UserInfo.ShouldBeEmpty(preset.Id);
                 uri.Query.ShouldBeEmpty(preset.Id);
@@ -67,7 +67,7 @@ public sealed class McpTemplateCatalogTests
             {
                 preset.Command.ShouldNotBeNullOrWhiteSpace(preset.Id);
                 preset.Args.ShouldNotBeEmpty(preset.Id);
-                preset.Url.ShouldBeNull(preset.Id);
+                preset.Address.ShouldBeNull(preset.Id);
                 preset.Auth.ShouldBe(McpPresetAuth.None, preset.Id);
             }
         }
@@ -98,7 +98,7 @@ public sealed class McpTemplateCatalogTests
     {
         foreach (var preset in McpTemplateCatalog.All)
         {
-            new Uri(preset.DocumentationUrl, UriKind.Absolute).Scheme.ShouldBe("https", preset.Id);
+            new Uri(preset.DocumentationAddress, UriKind.Absolute).Scheme.ShouldBe("https", preset.Id);
             DateOnly.TryParseExact(preset.VerifiedOn, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _).ShouldBeTrue(preset.Id);
         }
     }
@@ -122,7 +122,7 @@ public sealed class McpTemplateCatalogTests
     [MemberData(nameof(DefaultIds))]
     public void AVerifiedPresetIsFoundById(string id)
     {
-        McpTemplateCatalog.Find(id).ShouldNotBeNull().Id.ShouldBe(id, Case.Sensitive);
+        McpTemplateCatalog.Find(id).ShouldNotBeNull().Id.ShouldBe(id);
     }
 
     /// <summary>An id that differs in case or is unknown finds nothing, and a null id is refused.</summary>

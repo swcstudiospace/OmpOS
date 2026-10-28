@@ -36,8 +36,8 @@ public sealed class WebhookTriggerTests
         decision.Outcome.ShouldBe(WebhookOutcome.Accepted);
         var context = decision.Context.ShouldNotBeNull();
         context.Source.ShouldBe(AutomationRunSource.Webhook);
-        context.Payload.ShouldBe("""{"deploy":"v1.2"}""", Case.Sensitive);
-        context.Summary.ShouldBe("Webhook delivery d-77", Case.Sensitive);
+        context.Payload.ShouldBe("""{"deploy":"v1.2"}""");
+        context.Summary.ShouldBe("Webhook delivery d-77");
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public sealed class WebhookTriggerTests
         var decision = _trigger.Evaluate(Generic(), WebhookSender.Secret, request);
 
         decision.Outcome.ShouldBe(WebhookOutcome.Unauthorized);
-        decision.Reason.ShouldBe("bad_signature", Case.Sensitive);
+        decision.Reason.ShouldBe("bad_signature");
         decision.Context.ShouldBeNull();
     }
 
@@ -81,7 +81,7 @@ public sealed class WebhookTriggerTests
         var decision = _trigger.Evaluate(Generic(), WebhookSender.Secret, request);
 
         decision.Outcome.ShouldBe(WebhookOutcome.Unauthorized);
-        decision.Reason.ShouldBe("missing_signature", Case.Sensitive);
+        decision.Reason.ShouldBe("missing_signature");
     }
 
     [Theory]
@@ -115,7 +115,7 @@ public sealed class WebhookTriggerTests
         decision.Outcome.ShouldBe(expected);
         if (expected == WebhookOutcome.Unauthorized)
         {
-            decision.Reason.ShouldBe("stale_timestamp", Case.Sensitive);
+            decision.Reason.ShouldBe("stale_timestamp");
         }
     }
 
@@ -236,7 +236,7 @@ public sealed class WebhookTriggerTests
         var decision = _trigger.Evaluate(Generic(enabled: false), WebhookSender.Secret, good);
 
         decision.Outcome.ShouldBe(WebhookOutcome.Ignored);
-        decision.Reason.ShouldBe("automation_disabled", Case.Sensitive);
+        decision.Reason.ShouldBe("automation_disabled");
     }
 
     [Fact]
@@ -248,7 +248,7 @@ public sealed class WebhookTriggerTests
 
         decision.Outcome.ShouldBe(WebhookOutcome.Accepted);
         var context = decision.Context.ShouldNotBeNull();
-        context.Summary.ShouldBe("push to main by octocat (1 commits)", Case.Sensitive);
+        context.Summary.ShouldBe("push to main by octocat (1 commits)");
         context.Payload.ShouldContain("repository: acme/widgets", Case.Sensitive);
         context.Payload.ShouldContain("branch: main", Case.Sensitive);
         context.Payload.ShouldContain("- abc123def456 Fix the thing  Long body", Case.Sensitive);
@@ -299,7 +299,7 @@ public sealed class WebhookTriggerTests
         var decision = _trigger.Evaluate(GitHub(), WebhookSender.Secret, request);
 
         decision.Outcome.ShouldBe(WebhookOutcome.Ignored);
-        decision.Reason.ShouldBe("event_filter", Case.Sensitive);
+        decision.Reason.ShouldBe("event_filter");
     }
 
     [Fact]
@@ -311,7 +311,7 @@ public sealed class WebhookTriggerTests
         var pull = _trigger.Evaluate(automation, WebhookSender.Secret, WebhookSender.GitHub("pull_request", WebhookSender.PullRequestPayload("opened"), delivery: "p2"));
 
         push.Outcome.ShouldBe(WebhookOutcome.Ignored);
-        push.Reason.ShouldBe("filter_mismatch", Case.Sensitive);
+        push.Reason.ShouldBe("filter_mismatch");
         pull.Outcome.ShouldBe(WebhookOutcome.Accepted);
     }
 
@@ -335,7 +335,7 @@ public sealed class WebhookTriggerTests
         decision.Outcome.ShouldBe(accepted ? WebhookOutcome.Accepted : WebhookOutcome.Ignored);
         if (!accepted)
         {
-            decision.Reason.ShouldBe("filter_mismatch", Case.Sensitive);
+            decision.Reason.ShouldBe("filter_mismatch");
         }
     }
 
@@ -348,8 +348,8 @@ public sealed class WebhookTriggerTests
         var tagDecision = _trigger.Evaluate(GitHub(), WebhookSender.Secret, tag);
         var deletedDecision = _trigger.Evaluate(GitHub(), WebhookSender.Secret, deleted);
 
-        tagDecision.Reason.ShouldBe("not_a_branch", Case.Sensitive);
-        deletedDecision.Reason.ShouldBe("branch_deleted", Case.Sensitive);
+        tagDecision.Reason.ShouldBe("not_a_branch");
+        deletedDecision.Reason.ShouldBe("branch_deleted");
         tagDecision.Outcome.ShouldBe(WebhookOutcome.Ignored);
         deletedDecision.Outcome.ShouldBe(WebhookOutcome.Ignored);
     }
@@ -389,7 +389,7 @@ public sealed class WebhookTriggerTests
         var openedDecision = _trigger.Evaluate(automation, WebhookSender.Secret, opened);
 
         openedDecision.Outcome.ShouldBe(WebhookOutcome.Ignored);
-        openedDecision.Reason.ShouldBe("fork_pull_request", Case.Sensitive);
+        openedDecision.Reason.ShouldBe("fork_pull_request");
         _trigger.Evaluate(automation, WebhookSender.Secret, merged).Outcome.ShouldBe(WebhookOutcome.Accepted);
     }
 
@@ -404,7 +404,7 @@ public sealed class WebhookTriggerTests
         var decision = _trigger.Evaluate(GitHub(), WebhookSender.Secret, request);
 
         decision.Outcome.ShouldBe(WebhookOutcome.Ignored);
-        decision.Reason.ShouldBe("bad_payload", Case.Sensitive);
+        decision.Reason.ShouldBe("bad_payload");
     }
 
     [Fact]

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace OmpOS.Contracts.Automations;
 
 /// <summary>An automation as the API reports it. It never carries the webhook secret.</summary>
@@ -43,12 +45,15 @@ public sealed record AutomationInfo
     public required DateTimeOffset UpdatedAt { get; init; }
 
     /// <summary>Gets when the next cron trigger fires, or null when the automation is off, has no cron trigger or none fires.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public DateTimeOffset? NextRunAt { get; init; }
 
     /// <summary>Gets the most recent run, or null when it has none.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public AutomationRunInfo? LastRun { get; init; }
 
     /// <summary>Gets the path of the webhook receiver, <c>/hooks/automations/{id}</c>, or null when the automation has no webhook trigger. Prefix it with the API origin.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? WebhookPath { get; init; }
 
     /// <summary>Gets a value indicating whether a webhook secret is stored. The value is shown once, when it is created or rotated.</summary>

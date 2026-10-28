@@ -27,7 +27,8 @@ public sealed class AutomationWebhookReceiverTests
     public async Task An_authentic_delivery_starts_a_run_whose_history_names_the_webhook()
     {
         var (receiver, runner, automation) = await ArrangeAsync().ConfigureAwait(true);
-        await using var scope = runner;
+        var scope = runner;
+        await using var scopeScope = scope.ConfigureAwait(true);
 
         var receipt = await receiver.HandleAsync(automation.Id, WebhookSender.Generic("""{"a":1}""", _clock.GetUtcNow()), Token).ConfigureAwait(true);
 
@@ -41,7 +42,7 @@ public sealed class AutomationWebhookReceiverTests
 
         var entry = (await _store.GetHistoryAsync(automation.Id, Token).ConfigureAwait(true)).ShouldHaveSingleItem();
         entry.Source.ShouldBe(AutomationRunSource.Webhook);
-        entry.RunId.ShouldBe(receipt.RunId, Case.Sensitive);
+        entry.RunId.ShouldBe(receipt.RunId);
         _target.Requests.ShouldHaveSingleItem().Prompt.ShouldContain("""{"a":1}""", Case.Sensitive);
     }
 
@@ -51,7 +52,8 @@ public sealed class AutomationWebhookReceiverTests
     public async Task An_unknown_automation_is_unauthorized_and_starts_nothing(string id)
     {
         var (receiver, runner, _) = await ArrangeAsync().ConfigureAwait(true);
-        await using var scope = runner;
+        var scope = runner;
+        await using var scopeScope = scope.ConfigureAwait(true);
 
         var receipt = await receiver.HandleAsync(id, WebhookSender.Generic("{}", _clock.GetUtcNow()), Token).ConfigureAwait(true);
 
@@ -64,7 +66,8 @@ public sealed class AutomationWebhookReceiverTests
     public async Task A_forged_delivery_starts_nothing()
     {
         var (receiver, runner, automation) = await ArrangeAsync().ConfigureAwait(true);
-        await using var scope = runner;
+        var scope = runner;
+        await using var scopeScope = scope.ConfigureAwait(true);
 
         var receipt = await receiver.HandleAsync(automation.Id, WebhookSender.Generic("{}", _clock.GetUtcNow(), secret: "whsec_wrong"), Token).ConfigureAwait(true);
 
@@ -77,7 +80,8 @@ public sealed class AutomationWebhookReceiverTests
     public async Task A_deleted_secret_means_the_automation_no_longer_accepts_deliveries()
     {
         var (receiver, runner, automation) = await ArrangeAsync().ConfigureAwait(true);
-        await using var scope = runner;
+        var scope = runner;
+        await using var scopeScope = scope.ConfigureAwait(true);
         await _secrets.DeleteAsync(AutomationSecrets.WebhookReference(automation.Id), Token).ConfigureAwait(true);
 
         var receipt = await receiver.HandleAsync(automation.Id, WebhookSender.Generic("{}", _clock.GetUtcNow()), Token).ConfigureAwait(true);
@@ -89,7 +93,8 @@ public sealed class AutomationWebhookReceiverTests
     public async Task An_authentic_delivery_that_a_guard_refuses_reports_the_guard_and_the_run_is_skipped()
     {
         var (receiver, runner, automation) = await ArrangeAsync().ConfigureAwait(true);
-        await using var scope = runner;
+        var scope = runner;
+        await using var scopeScope = scope.ConfigureAwait(true);
         _target.Hold = true;
 
         var first = await receiver.HandleAsync(automation.Id, WebhookSender.Generic("{}", _clock.GetUtcNow(), delivery: "one"), Token).ConfigureAwait(true);
@@ -109,7 +114,8 @@ public sealed class AutomationWebhookReceiverTests
     {
         var automation = TestAutomations.Make([TestAutomations.GitHubHook(branches: ["main"])]);
         var (receiver, runner, _) = await ArrangeAsync(automation).ConfigureAwait(true);
-        await using var scope = runner;
+        var scope = runner;
+        await using var scopeScope = scope.ConfigureAwait(true);
 
         var ping = await receiver.HandleAsync(automation.Id, WebhookSender.GitHub("ping", "{}", delivery: "a"), Token).ConfigureAwait(true);
         var other = await receiver.HandleAsync(automation.Id, WebhookSender.GitHub("push", WebhookSender.PushPayload("develop"), delivery: "b"), Token).ConfigureAwait(true);
@@ -124,7 +130,8 @@ public sealed class AutomationWebhookReceiverTests
     {
         var automation = TestAutomations.Make([TestAutomations.GenericHook()], enabled: false);
         var (receiver, runner, _) = await ArrangeAsync(automation).ConfigureAwait(true);
-        await using var scope = runner;
+        var scope = runner;
+        await using var scopeScope = scope.ConfigureAwait(true);
 
         var receipt = await receiver.HandleAsync(automation.Id, WebhookSender.Generic("{}", _clock.GetUtcNow()), Token).ConfigureAwait(true);
 

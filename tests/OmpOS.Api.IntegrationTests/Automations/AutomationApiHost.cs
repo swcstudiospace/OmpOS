@@ -5,14 +5,17 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OmpOS.Api.Automations;
+using OmpOS.Api.IntegrationTests.Cloud;
 using OmpOS.Api.Options;
 using OmpOS.Api.Security;
+using OmpOS.Api.Serialization;
 using Shouldly;
 
 namespace OmpOS.Api.IntegrationTests.Automations;
@@ -80,15 +83,17 @@ internal sealed class AutomationApiHost : IAsyncDisposable
         builder.Services.AddOptions<ApiOptions>().BindConfiguration(ApiOptions.SectionName);
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<IUserContext>(static provider => new AuthenticatedUserContext(provider.GetRequiredService<IHttpContextAccessor>()));
-        builder.Services.AddAuthentication(AutomationOwnerAuthHandler.Scheme).AddScheme<AuthenticationSchemeOptions, AutomationOwnerAuthHandler>(AutomationOwnerAuthHandler.Scheme, null);
+        builder.Services.AddAuthentication(TestOwnerAuthHandler.SchemeName).AddScheme<AuthenticationSchemeOptions, TestOwnerAuthHandler>(TestOwnerAuthHandler.SchemeName, null);
         builder.Services.AddAuthorizationBuilder().SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
         builder.Services.AddRateLimiter(static _ => { });
         builder.Services.AddSingleton<ICloudAgentLauncher>(launcher);
+        builder.Services.ConfigureHttpJsonOptions(static options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default));
         builder.Services.AddAutomationServices();
         var app = builder.Build();
         app.UseAuthentication();
         app.UseRateLimiter();
         app.UseAuthorization();
+        app.UseMiddleware<AutomationDisabledMiddleware>();
         _ = app.MapAutomationEndpoints();
         await app.StartAsync(cancellationToken).ConfigureAwait(false);
         return new AutomationApiHost(app, clock, launcher, logs);
@@ -102,7 +107,7 @@ internal sealed class AutomationApiHost : IAsyncDisposable
         var client = _app.GetTestClient();
         if (owner is not null)
         {
-            client.DefaultRequestHeaders.Add(AutomationOwnerAuthHandler.Header, owner);
+            client.DefaultRequestHeaders.Add(TestOwnerAuthHandler.Header, owner);
         }
 
         return client;
@@ -146,8 +151,8 @@ internal sealed class AutomationApiHost : IAsyncDisposable
     /// <param name="enabled">Whether the automation is enabled.</param>
     /// <returns>The JSON text.</returns>
     public static string CreateBody(string? triggers = null, bool enabled = true) =>
-        $$"""
-        {"name":"Nightly review","prompt":"Review the changes of the last day.","enabled":{{(enabled ? "true" : "false")}},"triggers":{{triggers ?? """[{"kind":"cron","cron":"0 9 * * *"},{"kind":"webhook"}]"""}},"target":{"repositories":[{"url":"https://github.com/acme/widgets"}],"secretRefs":["NPM_TOKEN"]}}
+        $$$"""
+        {"name":"Nightly review","prompt":"Review the changes of the last day.","enabled":{{{(enabled ? "true" : "false")}}},"triggers":{{{triggers ?? """[{"kind":"cron","cron":"0 9 * * *"},{"kind":"webhook"}]"""}}},"target":{"repositories":[{"address":"https://github.com/acme/widgets"}],"secretRefs":["NPM_TOKEN"]}}
         """;
 
     /// <summary>Parses JSON text.</summary>
@@ -239,5 +244,5 @@ internal sealed class AutomationApiHost : IAsyncDisposable
     }
 
     private static string Sign(string secret, byte[] data) =>
-        "sha256=" + Convert.ToHexString(HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), data)).ToLowerInvariant();
+        "sha256=" + Convert.ToHexStringLower(HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), data));
 }

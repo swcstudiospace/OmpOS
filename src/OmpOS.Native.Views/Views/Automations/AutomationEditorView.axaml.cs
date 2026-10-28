@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using OmpOS.Native.Views.AgentPanel;
 using OmpOS.Presentation.Automations;
@@ -214,7 +215,7 @@ internal partial class AutomationEditorView : UserControl
         _ = CopySecretAsync(clipboard, model.RevealedSecret);
     }
 
-    private async Task CopySecretAsync(Avalonia.Input.Platform.IClipboard clipboard, string secret)
+    private async Task CopySecretAsync(IClipboard clipboard, string secret)
     {
         await clipboard.SetTextAsync(secret).ConfigureAwait(true);
         SecretCopiedText.Text = AutomationsCopy.SecretCopied;

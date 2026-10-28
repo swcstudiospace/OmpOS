@@ -22,7 +22,8 @@ public sealed class AutomationWebhookEndpointTests
     [Fact]
     public async Task A_correctly_signed_delivery_needs_no_login_starts_a_run_and_returns_202_with_its_id()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var (id, secret) = await CreateHookAsync(host).ConfigureAwait(true);
         using var anonymous = host.Client(owner: null);
         using var request = host.GenericDelivery(id, secret, "{\"deploy\":\"v2\"}");
@@ -31,18 +32,19 @@ public sealed class AutomationWebhookEndpointTests
         var body = await AutomationApiHost.ReadAsync(response, Token).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Accepted);
-        body.GetProperty("status").GetString().ShouldBe("accepted", Case.Sensitive);
+        body.GetProperty("status").GetString().ShouldBe("accepted");
         var runs = await host.SettledRunsAsync(id, cancellationToken: Token).ConfigureAwait(true);
         var run = runs.EnumerateArray().Single();
-        run.GetProperty("runId").GetString().ShouldBe(body.GetProperty("runId").GetString(), Case.Sensitive);
-        run.GetProperty("trigger").GetString().ShouldBe("webhook", Case.Sensitive);
+        run.GetProperty("runId").GetString().ShouldBe(body.GetProperty("runId").GetString());
+        run.GetProperty("trigger").GetString().ShouldBe("webhook");
         host.Launcher.Launches.ShouldHaveSingleItem().Prompt.ShouldContain("{\"deploy\":\"v2\"}", Case.Sensitive);
     }
 
     [Fact]
     public async Task Every_authentication_failure_is_the_same_401()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var (id, secret) = await CreateHookAsync(host).ConfigureAwait(true);
         var cronOnly = await host.CreateAsync(AutomationApiHost.CreateBody("""[{"kind":"cron","cron":"0 9 * * *"}]"""), cancellationToken: Token).ConfigureAwait(true);
         var cronId = cronOnly.GetProperty("automation").GetProperty("id").GetString()!;
@@ -86,7 +88,8 @@ public sealed class AutomationWebhookEndpointTests
     [Fact]
     public async Task A_replayed_delivery_is_a_409_and_starts_no_second_run()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var (id, secret) = await CreateHookAsync(host).ConfigureAwait(true);
         using var anonymous = host.Client(owner: null);
         using var first = host.GenericDelivery(id, secret);
@@ -98,14 +101,15 @@ public sealed class AutomationWebhookEndpointTests
 
         firstResponse.StatusCode.ShouldBe(HttpStatusCode.Accepted);
         replayResponse.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        (await AutomationApiHost.ProblemCodeAsync(replayResponse, Token).ConfigureAwait(true)).ShouldBe("webhook_replayed", Case.Sensitive);
+        (await AutomationApiHost.ProblemCodeAsync(replayResponse, Token).ConfigureAwait(true)).ShouldBe("webhook_replayed");
         host.Launcher.Launches.Count.ShouldBe(1);
     }
 
     [Fact]
     public async Task A_body_over_256_KiB_is_a_413_before_any_authentication_and_a_body_at_the_cap_is_served()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var (id, secret) = await CreateHookAsync(host).ConfigureAwait(true);
         using var anonymous = host.Client(owner: null);
         using var atCap = host.GenericDelivery(id, secret, new string('x', 256 * 1024));
@@ -119,13 +123,14 @@ public sealed class AutomationWebhookEndpointTests
         served.StatusCode.ShouldBe(HttpStatusCode.Accepted);
         refused.StatusCode.ShouldBe(HttpStatusCode.RequestEntityTooLarge);
         refusedUnknown.StatusCode.ShouldBe(HttpStatusCode.RequestEntityTooLarge);
-        (await AutomationApiHost.ProblemCodeAsync(refused, Token).ConfigureAwait(true)).ShouldBe("webhook_too_large", Case.Sensitive);
+        (await AutomationApiHost.ProblemCodeAsync(refused, Token).ConfigureAwait(true)).ShouldBe("webhook_too_large");
     }
 
     [Fact]
     public async Task A_chunked_body_over_the_cap_is_refused_without_a_content_length()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var (id, _) = await CreateHookAsync(host).ConfigureAwait(true);
         using var anonymous = host.Client(owner: null);
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri($"/hooks/automations/{id}", UriKind.Relative))
@@ -143,7 +148,8 @@ public sealed class AutomationWebhookEndpointTests
     [Fact]
     public async Task A_disabled_automation_answers_an_authentic_delivery_with_ignored_and_runs_nothing()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var (id, secret) = await CreateHookAsync(host, enabled: false).ConfigureAwait(true);
         using var anonymous = host.Client(owner: null);
         using var request = host.GenericDelivery(id, secret);
@@ -151,14 +157,15 @@ public sealed class AutomationWebhookEndpointTests
         using var response = await anonymous.SendAsync(request, Token).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await AutomationApiHost.ReadAsync(response, Token).ConfigureAwait(true)).GetProperty("status").GetString().ShouldBe("ignored", Case.Sensitive);
+        (await AutomationApiHost.ReadAsync(response, Token).ConfigureAwait(true)).GetProperty("status").GetString().ShouldBe("ignored");
         host.Launcher.Launches.ShouldBeEmpty();
     }
 
     [Fact]
     public async Task A_github_push_to_a_listed_branch_runs_with_a_summary_and_other_branches_are_ignored()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var (id, secret) = await CreateHookAsync(host, """[{"kind":"webhook","flavour":"github","events":["push"],"branches":["main","release/*"]}]""").ConfigureAwait(true);
         using var anonymous = host.Client(owner: null);
         using var main = AutomationApiHost.GitHubDelivery(id, secret, "push", PushPayload("main"), "d-1");
@@ -169,9 +176,9 @@ public sealed class AutomationWebhookEndpointTests
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
         ignored.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await AutomationApiHost.ReadAsync(ignored, Token).ConfigureAwait(true)).GetProperty("status").GetString().ShouldBe("ignored", Case.Sensitive);
+        (await AutomationApiHost.ReadAsync(ignored, Token).ConfigureAwait(true)).GetProperty("status").GetString().ShouldBe("ignored");
         var runs = await host.SettledRunsAsync(id, cancellationToken: Token).ConfigureAwait(true);
-        runs.EnumerateArray().Single().GetProperty("summary").GetString().ShouldBe("push to main by octocat (1 commits)", Case.Sensitive);
+        runs.EnumerateArray().Single().GetProperty("summary").GetString().ShouldBe("push to main by octocat (1 commits)");
         var launch = host.Launcher.Launches.ShouldHaveSingleItem();
         launch.Prompt.ShouldContain("BEGIN UNTRUSTED TRIGGER DATA", Case.Sensitive);
         launch.Prompt.ShouldContain("branch: main", Case.Sensitive);
@@ -180,7 +187,8 @@ public sealed class AutomationWebhookEndpointTests
     [Fact]
     public async Task A_github_ping_is_answered_with_pong_and_a_pull_request_from_a_fork_is_ignored()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var (id, secret) = await CreateHookAsync(host, """[{"kind":"webhook","flavour":"github"}]""").ConfigureAwait(true);
         using var anonymous = host.Client(owner: null);
         using var ping = AutomationApiHost.GitHubDelivery(id, secret, "ping", "{\"zen\":\"x\"}", "d-ping");
@@ -190,16 +198,17 @@ public sealed class AutomationWebhookEndpointTests
         using var forked = await anonymous.SendAsync(fork, Token).ConfigureAwait(true);
 
         pong.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await AutomationApiHost.ReadAsync(pong, Token).ConfigureAwait(true)).GetProperty("status").GetString().ShouldBe("pong", Case.Sensitive);
+        (await AutomationApiHost.ReadAsync(pong, Token).ConfigureAwait(true)).GetProperty("status").GetString().ShouldBe("pong");
         forked.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await AutomationApiHost.ReadAsync(forked, Token).ConfigureAwait(true)).GetProperty("status").GetString().ShouldBe("ignored", Case.Sensitive);
+        (await AutomationApiHost.ReadAsync(forked, Token).ConfigureAwait(true)).GetProperty("status").GetString().ShouldBe("ignored");
         host.Launcher.Launches.ShouldBeEmpty();
     }
 
     [Fact]
     public async Task An_authentic_delivery_the_concurrency_guard_refuses_is_a_429()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         host.Launcher.Hold = true;
         var (id, secret) = await CreateHookAsync(host).ConfigureAwait(true);
         using var anonymous = host.Client(owner: null);
@@ -212,7 +221,7 @@ public sealed class AutomationWebhookEndpointTests
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
         refused.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
-        (await AutomationApiHost.ProblemCodeAsync(refused, Token).ConfigureAwait(true)).ShouldBe("automation_limit", Case.Sensitive);
+        (await AutomationApiHost.ProblemCodeAsync(refused, Token).ConfigureAwait(true)).ShouldBe("automation_limit");
         host.Launcher.Release();
         _ = await host.SettledRunsAsync(id, cancellationToken: Token).ConfigureAwait(true);
     }
@@ -220,7 +229,8 @@ public sealed class AutomationWebhookEndpointTests
     [Fact]
     public async Task The_receiver_is_rate_limited_for_every_caller_valid_or_not()
     {
-        await using var host = await AutomationApiHost.StartAsync(new Dictionary<string, string?> { ["Automations:WebhookRequestsPerMinute"] = "3" }, Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(new Dictionary<string, string?>(StringComparer.Ordinal) { ["Automations:WebhookRequestsPerMinute"] = "3" }, Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         using var anonymous = host.Client(owner: null);
         var statuses = new List<HttpStatusCode>();
         string? retryAfter = null;
@@ -238,13 +248,14 @@ public sealed class AutomationWebhookEndpointTests
 
         statuses.Take(3).ShouldAllBe(static status => status == HttpStatusCode.Unauthorized);
         statuses.Skip(3).ShouldAllBe(static status => status == HttpStatusCode.TooManyRequests);
-        retryAfter.ShouldBe("60", Case.Sensitive);
+        retryAfter.ShouldBe("60");
     }
 
     [Fact]
     public async Task No_response_and_no_log_line_ever_holds_the_secret_a_signature_or_the_body()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var (id, secret) = await CreateHookAsync(host).ConfigureAwait(true);
         using var anonymous = host.Client(owner: null);
         var texts = new List<string>();
@@ -292,7 +303,8 @@ public sealed class AutomationWebhookEndpointTests
     [Fact]
     public async Task When_automations_are_off_no_route_exists_including_the_receiver()
     {
-        await using var host = await AutomationApiHost.StartAsync(new Dictionary<string, string?> { ["Automations:Enabled"] = "false" }, Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(new Dictionary<string, string?>(StringComparer.Ordinal) { ["Automations:Enabled"] = "false" }, Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         using var owner = host.Client();
         using var anonymous = host.Client(owner: null);
 

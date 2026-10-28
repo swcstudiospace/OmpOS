@@ -62,7 +62,7 @@ public sealed class AutomationEditorRoundTripTests
         var model = new AutomationEditorModel(new FakeAutomationsManager(), AutomationFixtures.Entry(draft: original, webhookPath: "/webhooks/auto-1", hasSecret: true));
 
         AssertSame(model.ToDraft(), original);
-        model.WebhookPath.ShouldBe("/webhooks/auto-1", Case.Sensitive);
+        model.WebhookPath.ShouldBe("/webhooks/auto-1");
         model.HasWebhookSecret.ShouldBeTrue();
         model.IsEdit.ShouldBeTrue();
         model.WebhookEnabled.ShouldBeTrue();
@@ -86,7 +86,7 @@ public sealed class AutomationEditorRoundTripTests
 
         var draft = model.ToDraft();
 
-        model.CronText.ShouldBe("0 9 * * 1-5", Case.Sensitive);
+        model.CronText.ShouldBe("0 9 * * 1-5");
         model.AllowPullRequestCreate.ShouldBeTrue();
         AssertSame(draft, original);
     }
@@ -113,15 +113,15 @@ public sealed class AutomationEditorRoundTripTests
 
         var model = new AutomationEditorModel(new FakeAutomationsManager(), entry);
 
-        model.Name.ShouldBe("Nightly triage", Case.Sensitive);
-        model.CronText.ShouldBe("0 9 * * 1-5", Case.Sensitive);
+        model.Name.ShouldBe("Nightly triage");
+        model.CronText.ShouldBe("0 9 * * 1-5");
         model.WebhookEnabled.ShouldBeTrue();
-        model.WebhookFlavour.ShouldBe("github", Case.Sensitive);
-        model.WebhookEventsText.ShouldBe("push", Case.Sensitive);
-        model.TargetKind.ShouldBe("cloud", Case.Sensitive);
-        model.RepositoriesText.ShouldBe("https://github.com/owner/app work main\nhttps://github.com/owner/lib - develop", Case.Sensitive);
-        model.SecretRefsText.ShouldBe("API_KEY, TOKEN", Case.Sensitive);
-        model.MaxConcurrentRunsText.ShouldBe("2", Case.Sensitive);
+        model.WebhookFlavour.ShouldBe("github");
+        model.WebhookEventsText.ShouldBe("push");
+        model.TargetKind.ShouldBe("cloud");
+        model.RepositoriesText.ShouldBe("https://github.com/owner/app work main\nhttps://github.com/owner/lib - develop");
+        model.SecretRefsText.ShouldBe("API_KEY, TOKEN");
+        model.MaxConcurrentRunsText.ShouldBe("2");
         model.Errors.ShouldBeEmpty();
         model.RevealedSecret.ShouldBeEmpty();
         model.SavedEntry.ShouldBeNull();
@@ -145,14 +145,14 @@ public sealed class AutomationEditorRoundTripTests
 
     private static void AssertSame(AutomationDraft actual, AutomationDraft expected)
     {
-        actual.Name.ShouldBe(expected.Name, Case.Sensitive);
-        actual.Prompt.ShouldBe(expected.Prompt, Case.Sensitive);
+        actual.Name.ShouldBe(expected.Name);
+        actual.Prompt.ShouldBe(expected.Prompt);
         actual.Enabled.ShouldBe(expected.Enabled);
-        actual.TimeZone.ShouldBe(expected.TimeZone, Case.Sensitive);
-        actual.TargetKind.ShouldBe(expected.TargetKind, Case.Sensitive);
-        actual.EnvironmentId.ShouldBe(expected.EnvironmentId, Case.Sensitive);
-        actual.Model.ShouldBe(expected.Model, Case.Sensitive);
-        actual.Mode.ShouldBe(expected.Mode, Case.Sensitive);
+        actual.TimeZone.ShouldBe(expected.TimeZone);
+        actual.TargetKind.ShouldBe(expected.TargetKind);
+        actual.EnvironmentId.ShouldBe(expected.EnvironmentId);
+        actual.Model.ShouldBe(expected.Model);
+        actual.Mode.ShouldBe(expected.Mode);
         actual.MaxConcurrentRuns.ShouldBe(expected.MaxConcurrentRuns);
         actual.MaxRunsPerHour.ShouldBe(expected.MaxRunsPerHour);
         actual.MaxRuntimeMinutes.ShouldBe(expected.MaxRuntimeMinutes);
@@ -165,9 +165,9 @@ public sealed class AutomationEditorRoundTripTests
         {
             var left = actual.Triggers[index];
             var right = expected.Triggers[index];
-            left.Kind.ShouldBe(right.Kind, Case.Sensitive);
-            left.Cron.ShouldBe(right.Cron, Case.Sensitive);
-            left.Flavour.ShouldBe(right.Flavour, Case.Sensitive);
+            left.Kind.ShouldBe(right.Kind);
+            left.Cron.ShouldBe(right.Cron);
+            left.Flavour.ShouldBe(right.Flavour);
             left.Events.ToArray().ShouldBe(right.Events.ToArray());
             left.Actions.ToArray().ShouldBe(right.Actions.ToArray());
             left.Branches.ToArray().ShouldBe(right.Branches.ToArray());

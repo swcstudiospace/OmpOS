@@ -18,7 +18,7 @@ public sealed class RuntimeEnvironmentsViewModelTests
         Id = id,
         DisplayName = "Box " + name,
         Kind = EnvironmentKind.Container,
-        Container = new ContainerProfile { Container = name, RemoteUser = "vscode", WorkspaceFolder = "/workspaces/app" },
+        Container = new ContainerProfile { Container = name, RemoteUser = "dev", WorkspaceFolder = "/workspaces/app" },
     };
 
     private static EnvironmentProfile Wsl(string id = "wsl-ubuntu") => new()
@@ -80,17 +80,17 @@ public sealed class RuntimeEnvironmentsViewModelTests
         page.State.ShouldBe(RemoteEnvironmentsState.Ready);
         page.Rows.Select(row => row.Id).ShouldBe(["container-devbox", "wsl-ubuntu"]);
         var container = page.Rows[0];
-        container.KindLabel.ShouldBe("Container", Case.Sensitive);
-        container.DestinationText.ShouldBe("devbox as vscode", Case.Sensitive);
-        container.RootText.ShouldBe("Folder in the container: /workspaces/app", Case.Sensitive);
-        container.LastUsedText.ShouldBe("Last used 2026-10-27 09:30 UTC", Case.Sensitive);
-        container.StatusLabel.ShouldBe("Not checked", Case.Sensitive);
-        container.AccessibleName.ShouldBe("Box devbox, Container, devbox as vscode, Not checked", Case.Sensitive);
+        container.KindLabel.ShouldBe("Container");
+        container.DestinationText.ShouldBe("devbox as dev");
+        container.RootText.ShouldBe("Folder in the container: /workspaces/app");
+        container.LastUsedText.ShouldBe("Last used 2026-10-27 09:30 UTC");
+        container.StatusLabel.ShouldBe("Not checked");
+        container.AccessibleName.ShouldBe("Box devbox, Container, devbox as dev, Not checked");
         var wsl = page.Rows[1];
-        wsl.KindLabel.ShouldBe("WSL", Case.Sensitive);
-        wsl.DestinationText.ShouldBe("Ubuntu-24.04", Case.Sensitive);
-        wsl.RootText.ShouldBe("Folder in the distribution: /home/dev/app", Case.Sensitive);
-        wsl.LastUsedText.ShouldBe("Not used yet", Case.Sensitive);
+        wsl.KindLabel.ShouldBe("WSL");
+        wsl.DestinationText.ShouldBe("Ubuntu-24.04");
+        wsl.RootText.ShouldBe("Folder in the distribution: /home/dev/app");
+        wsl.LastUsedText.ShouldBe("Not used yet");
     }
 
     /// <summary>A load that fails is the Error state with the reason, and does not throw.</summary>
@@ -128,7 +128,7 @@ public sealed class RuntimeEnvironmentsViewModelTests
         store.Profiles.ShouldHaveSingleItem().Profile.Kind.ShouldBe(EnvironmentKind.Container);
         page.Rows.ShouldHaveSingleItem();
         page.Selected.ShouldBeSameAs(page.Rows[0]);
-        page.Announcement.ShouldBe("Saved Dev box.", Case.Sensitive);
+        page.Announcement.ShouldBe("Saved Dev box.");
     }
 
     /// <summary>Adding from the picker opens the pre-filled form and saves the container.</summary>
@@ -147,8 +147,8 @@ public sealed class RuntimeEnvironmentsViewModelTests
 
         var profile = store.Profiles.ShouldHaveSingleItem().Profile;
         var details = profile.Container.ShouldNotBeNull();
-        details.Container.ShouldBe("devbox", Case.Sensitive);
-        details.WorkspaceFolder.ShouldBe("/workspaces/proj", Case.Sensitive);
+        details.Container.ShouldBe("devbox");
+        details.WorkspaceFolder.ShouldBe("/workspaces/proj");
     }
 
     /// <summary>A WSL environment can be added only where WSL exists; elsewhere the form does not open and the note says why.</summary>
@@ -172,7 +172,7 @@ public sealed class RuntimeEnvironmentsViewModelTests
         editor.WorkspacePath = "/home/dev/app";
         (await page.SaveEditAsync(Token).ConfigureAwait(true)).ShouldBeTrue();
 
-        store.Profiles.ShouldHaveSingleItem().Profile.Wsl.ShouldNotBeNull().Distro.ShouldBe("Ubuntu-24.04", Case.Sensitive);
+        store.Profiles.ShouldHaveSingleItem().Profile.Wsl.ShouldNotBeNull().Distro.ShouldBe("Ubuntu-24.04");
     }
 
     /// <summary>Editing a row opens the form of its kind with its values; cancelling closes it without saving.</summary>
@@ -184,10 +184,10 @@ public sealed class RuntimeEnvironmentsViewModelTests
         await page.LoadAsync(Token).ConfigureAwait(true);
 
         page.StartEdit(page.Rows[0]);
-        page.ContainerEditor.ShouldNotBeNull().Container.ShouldBe("devbox", Case.Sensitive);
+        page.ContainerEditor.ShouldNotBeNull().Container.ShouldBe("devbox");
         page.WslEditor.ShouldBeNull();
         page.StartEdit(page.Rows[1]);
-        page.WslEditor.ShouldNotBeNull().Distro.ShouldBe("Ubuntu-24.04", Case.Sensitive);
+        page.WslEditor.ShouldNotBeNull().Distro.ShouldBe("Ubuntu-24.04");
         page.ContainerEditor.ShouldBeNull();
         page.CancelEdit();
 
@@ -228,10 +228,10 @@ public sealed class RuntimeEnvironmentsViewModelTests
 
         var row = page.Rows[0];
         row.Status.ShouldBe(RemoteEnvironmentStatus.Ready);
-        row.EnvironmentText.ShouldBe("omp 18.12.6, Linux x86_64", Case.Sensitive);
+        row.EnvironmentText.ShouldBe("omp 18.12.6, Linux x86_64");
         row.HasDiagnoses.ShouldBeFalse();
         row.IsBusy.ShouldBeFalse();
-        runtime.ContainerTests.ShouldHaveSingleItem().Container.ShouldBe("devbox", Case.Sensitive);
+        runtime.ContainerTests.ShouldHaveSingleItem().Container.ShouldBe("devbox");
     }
 
     /// <summary>A WSL row is tested with the WSL test, not the container one.</summary>
@@ -244,7 +244,7 @@ public sealed class RuntimeEnvironmentsViewModelTests
 
         await page.TestAsync(page.Rows[0], Token).ConfigureAwait(true);
 
-        runtime.WslTests.ShouldHaveSingleItem().Distro.ShouldBe("Ubuntu-24.04", Case.Sensitive);
+        runtime.WslTests.ShouldHaveSingleItem().Distro.ShouldBe("Ubuntu-24.04");
         runtime.ContainerTests.ShouldBeEmpty();
     }
 
@@ -269,9 +269,9 @@ public sealed class RuntimeEnvironmentsViewModelTests
         row.Status.ShouldBe(expected);
         row.CanStartContainer.ShouldBe(canStart);
         var finding = row.Diagnoses.ShouldHaveSingleItem();
-        finding.Summary.ShouldBe("Summary text.", Case.Sensitive);
-        finding.FixText.ShouldBe("Fix text.", Case.Sensitive);
-        finding.SeverityLabel.ShouldBe("Error", Case.Sensitive);
+        finding.Summary.ShouldBe("Summary text.");
+        finding.FixText.ShouldBe("Fix text.");
+        finding.SeverityLabel.ShouldBe("Error");
         page.Announcement.ShouldContain(row.StatusLabel, Case.Sensitive);
     }
 
@@ -334,7 +334,7 @@ public sealed class RuntimeEnvironmentsViewModelTests
         var started = await page.StartContainerAsync(row, Token).ConfigureAwait(true);
 
         started.ShouldBeTrue();
-        runtime.Starts.ShouldHaveSingleItem().Container.ShouldBe("devbox", Case.Sensitive);
+        runtime.Starts.ShouldHaveSingleItem().Container.ShouldBe("devbox");
         row.Status.ShouldBe(RemoteEnvironmentStatus.NotChecked);
         row.HasDiagnoses.ShouldBeFalse();
         row.CanStartContainer.ShouldBeFalse();
@@ -355,7 +355,7 @@ public sealed class RuntimeEnvironmentsViewModelTests
         runtime.StartProblem = new RemoteDiagnosis { Kind = RemoteDiagnosisKind.ContainerMissing, Severity = DiagnosisSeverity.Error, Summary = "Gone.", FixText = "Create it." };
         (await page.StartContainerAsync(row, Token).ConfigureAwait(true)).ShouldBeFalse();
         row.Status.ShouldBe(RemoteEnvironmentStatus.NotFound);
-        row.Diagnoses.ShouldHaveSingleItem().Summary.ShouldBe("Gone.", Case.Sensitive);
+        row.Diagnoses.ShouldHaveSingleItem().Summary.ShouldBe("Gone.");
 
         runtime.ContainerReport = Failure(RemoteDiagnosisKind.ContainerNotRunning);
         await page.TestAsync(row, Token).ConfigureAwait(true);

@@ -431,6 +431,7 @@
           "OmpOS.Coordination.Dragonfly": "[0.15.0, )",
           "OmpOS.Harness.Abstractions": "[0.15.0, )",
           "OmpOS.Harness.Acp": "[0.15.0, )",
+          "OmpOS.Harness.Automations": "[0.15.0, )",
           "OmpOS.Harness.InMemory": "[0.15.0, )",
           "OmpOS.Harness.OmpConfig": "[0.15.0, )",
           "OmpOS.Harness.OmpLauncher": "[0.15.0, )",
@@ -482,6 +483,12 @@
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
           "OmpOS.Harness.Abstractions": "[0.15.0, )"
+        }
+      },
+      "ompos.harness.automations": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Harness.Plugins": "[0.15.0, )"
         }
       },
       "ompos.harness.inmemory": {

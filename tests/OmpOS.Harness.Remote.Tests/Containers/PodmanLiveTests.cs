@@ -109,6 +109,6 @@ public sealed class PodmanLiveTests
         var text = await fileSystem.ReadFileAsync("ompos-live-file.txt", 1024, ct).ConfigureAwait(true);
         await fileSystem.DeleteFileAsync("ompos-live-file.txt", text, ct).ConfigureAwait(true);
 
-        text.ShouldBe("made in the container", Case.Sensitive);
+        text.ShouldBe("made in the container");
     }
 }

@@ -16,8 +16,9 @@ internal static class EnvironmentIds
     internal static string Make(string prefix, string name, IReadOnlySet<string> taken)
     {
         var builder = new StringBuilder(prefix);
-        foreach (var character in name.ToLowerInvariant())
+        foreach (var original in name)
         {
+            var character = char.ToLowerInvariant(original);
             _ = builder.Append(char.IsAsciiLetterOrDigit(character) || character is '.' or '_' or '-' ? character : '-');
         }
 

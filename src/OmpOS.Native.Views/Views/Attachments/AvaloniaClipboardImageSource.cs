@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
+using Avalonia.Media.Imaging;
 
 namespace OmpOS.Native.Views.Attachments;
 
@@ -32,7 +33,7 @@ internal sealed class AvaloniaClipboardImageSource : IClipboardImageSource
 
         cancellationToken.ThrowIfCancellationRequested();
         using var stream = new MemoryStream();
-        bitmap.Save(stream);
+        bitmap.Save(stream, PngBitmapEncoderOptions.Default);
         return new PickedImage("pasted-image.png", stream.ToArray(), "image/png");
     }
 }

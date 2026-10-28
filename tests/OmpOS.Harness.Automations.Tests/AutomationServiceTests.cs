@@ -1,3 +1,4 @@
+using System.Globalization;
 using OmpOS.Harness.Automations.Hosted;
 using Shouldly;
 using Xunit;
@@ -33,7 +34,7 @@ public sealed class AutomationServiceTests
         var automation = change.Automation.ShouldNotBeNull();
         automation.Id.ShouldStartWith("aut_", Case.Sensitive);
         automation.Id.Length.ShouldBe(4 + 32);
-        automation.Owner.ShouldBe(TestAutomations.Alice, Case.Sensitive);
+        automation.Owner.ShouldBe(TestAutomations.Alice);
         automation.CreatedAt.ShouldBe(Kit.Start);
         automation.UpdatedAt.ShouldBe(Kit.Start);
         automation.AllowedTools.ShouldBe([AutomationTools.PullRequestCreate]);
@@ -50,7 +51,7 @@ public sealed class AutomationServiceTests
         var first = await _service.CreateAsync(TestAutomations.Alice, TestAutomations.Draft(), Token).ConfigureAwait(true);
         var second = await _service.CreateAsync(TestAutomations.Alice, TestAutomations.Draft(), Token).ConfigureAwait(true);
 
-        first.Automation!.Id.ShouldNotBe(second.Automation!.Id, Case.Sensitive);
+        first.Automation!.Id.ShouldNotBe(second.Automation!.Id, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -58,7 +59,7 @@ public sealed class AutomationServiceTests
     {
         var change = await _service.CreateAsync(TestAutomations.Alice, TestAutomations.Draft() with { Name = "  Padded  " }, Token).ConfigureAwait(true);
 
-        change.Automation!.Name.ShouldBe("Padded", Case.Sensitive);
+        change.Automation!.Name.ShouldBe("Padded");
     }
 
     [Fact]
@@ -121,7 +122,7 @@ public sealed class AutomationServiceTests
         var secret = change.WebhookSecret.ShouldNotBeNull();
         secret.ShouldStartWith("whsec_", Case.Sensitive);
         secret.Length.ShouldBeGreaterThanOrEqualTo(40);
-        (await _secrets.GetAsync(AutomationSecrets.WebhookReference(change.Automation!.Id), Token).ConfigureAwait(true)).ShouldBe(secret, Case.Sensitive);
+        (await _secrets.GetAsync(AutomationSecrets.WebhookReference(change.Automation!.Id), Token).ConfigureAwait(true)).ShouldBe(secret);
         (await _service.HasWebhookSecretAsync(change.Automation, Token).ConfigureAwait(true)).ShouldBeTrue();
         change.Automation.HasWebhook.ShouldBeTrue();
     }
@@ -132,7 +133,7 @@ public sealed class AutomationServiceTests
         var one = await _service.CreateAsync(TestAutomations.Alice, TestAutomations.Draft(TestAutomations.GenericHook()), Token).ConfigureAwait(true);
         var two = await _service.CreateAsync(TestAutomations.Alice, TestAutomations.Draft(TestAutomations.GenericHook()), Token).ConfigureAwait(true);
 
-        one.WebhookSecret.ShouldNotBe(two.WebhookSecret, Case.Sensitive);
+        one.WebhookSecret.ShouldNotBe(two.WebhookSecret, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -146,11 +147,11 @@ public sealed class AutomationServiceTests
 
         replaced.Succeeded.ShouldBeTrue();
         replaced.WebhookSecret.ShouldBeNull();
-        replaced.Automation!.Name.ShouldBe("Renamed", Case.Sensitive);
-        replaced.Automation.Id.ShouldBe(id, Case.Sensitive);
+        replaced.Automation!.Name.ShouldBe("Renamed");
+        replaced.Automation.Id.ShouldBe(id);
         replaced.Automation.CreatedAt.ShouldBe(Kit.Start);
         replaced.Automation.UpdatedAt.ShouldBe(Kit.Start.AddHours(1));
-        (await _secrets.GetAsync(AutomationSecrets.WebhookReference(id), Token).ConfigureAwait(true)).ShouldBe(created.WebhookSecret, Case.Sensitive);
+        (await _secrets.GetAsync(AutomationSecrets.WebhookReference(id), Token).ConfigureAwait(true)).ShouldBe(created.WebhookSecret);
     }
 
     [Fact]
@@ -178,7 +179,7 @@ public sealed class AutomationServiceTests
 
         refused.Succeeded.ShouldBeFalse();
         (await _store.GetAsync(id, Token).ConfigureAwait(true)).ShouldBe(created.Automation);
-        (await _secrets.GetAsync(AutomationSecrets.WebhookReference(id), Token).ConfigureAwait(true)).ShouldBe(created.WebhookSecret, Case.Sensitive);
+        (await _secrets.GetAsync(AutomationSecrets.WebhookReference(id), Token).ConfigureAwait(true)).ShouldBe(created.WebhookSecret);
     }
 
     [Fact]
@@ -190,7 +191,7 @@ public sealed class AutomationServiceTests
         var rotated = await _service.RotateWebhookSecretAsync(TestAutomations.Alice, automation.Id, Token).ConfigureAwait(true);
 
         var fresh = rotated.WebhookSecret.ShouldNotBeNull();
-        fresh.ShouldNotBe(created.WebhookSecret, Case.Sensitive);
+        fresh.ShouldNotBe(created.WebhookSecret, StringComparer.Ordinal);
         var trigger = new WebhookTrigger(_clock);
         var oldSignature = WebhookSender.Generic("{}", _clock.GetUtcNow(), created.WebhookSecret!);
         var newSignature = WebhookSender.Generic("{}", _clock.GetUtcNow(), fresh);
@@ -249,11 +250,11 @@ public sealed class AutomationServiceTests
         var surfaces = new List<string>
         {
             created.Automation.ToString(),
-            created.ToString()!,
+            Convert.ToString(created, CultureInfo.InvariantCulture)!,
             string.Join('|', (await _service.ListAsync(TestAutomations.Alice, Token).ConfigureAwait(true)).Select(static automation => automation.ToString())),
             (await _service.GetAsync(TestAutomations.Alice, id, Token).ConfigureAwait(true))!.ToString(),
-            (await _service.SetEnabledAsync(TestAutomations.Alice, id, true, Token).ConfigureAwait(true)).ToString()!,
-            (await _service.ReplaceAsync(TestAutomations.Alice, id, TestAutomations.Draft(TestAutomations.GenericHook()), Token).ConfigureAwait(true)).ToString()!,
+            Convert.ToString(await _service.SetEnabledAsync(TestAutomations.Alice, id, true, Token).ConfigureAwait(true), CultureInfo.InvariantCulture)!,
+            Convert.ToString(await _service.ReplaceAsync(TestAutomations.Alice, id, TestAutomations.Draft(TestAutomations.GenericHook()), Token).ConfigureAwait(true), CultureInfo.InvariantCulture)!,
         };
         var replaced = await _service.ReplaceAsync(TestAutomations.Alice, id, TestAutomations.Draft(TestAutomations.GenericHook()), Token).ConfigureAwait(true);
         replaced.WebhookSecret.ShouldBeNull();
@@ -266,7 +267,7 @@ public sealed class AutomationServiceTests
         }
 
         // The one place a person ever sees it again is a rotation, which replaces it.
-        (await _service.RotateWebhookSecretAsync(TestAutomations.Alice, id, Token).ConfigureAwait(true)).WebhookSecret.ShouldNotBe(secret, Case.Sensitive);
+        (await _service.RotateWebhookSecretAsync(TestAutomations.Alice, id, Token).ConfigureAwait(true)).WebhookSecret.ShouldNotBe(secret, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -276,7 +277,8 @@ public sealed class AutomationServiceTests
         var secret = created.WebhookSecret.ShouldNotBeNull();
         var automation = created.Automation!;
         var target = new ScriptedTarget { Throw = new InvalidOperationException("boom") };
-        await using var runner = new AutomationRunner(_store, [target], _clock);
+        var runner = new AutomationRunner(_store, [target], _clock);
+        await using var runnerScope = runner.ConfigureAwait(true);
         var receiver = new AutomationWebhookReceiver(_store, _secrets, new WebhookTrigger(_clock), runner);
 
         var receipt = await receiver.HandleAsync(automation.Id, WebhookSender.Generic("""{"event":"deploy"}""", _clock.GetUtcNow(), secret), Token).ConfigureAwait(true);
@@ -287,7 +289,7 @@ public sealed class AutomationServiceTests
         }
 
         var start = await runner.StartAsync(automation, AutomationTriggerContext.Manual(), Token).ConfigureAwait(true);
-        _ = await start.Completion!.ConfigureAwait(true);
+        _ = await start.Completion!.WaitAsync(Token).ConfigureAwait(true);
 
         receipt.Outcome.ShouldBe(WebhookOutcome.Accepted);
         foreach (var request in target.Requests)

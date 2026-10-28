@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -47,7 +48,7 @@ internal static class WebhookSignature
 
         var expected = HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), signed);
         Span<byte> provided = stackalloc byte[32];
-        if (!Convert.TryFromHexString(header.AsSpan(WebhookHeaders.SignaturePrefix.Length), provided, out var written) || written != provided.Length)
+        if (Convert.FromHexString(header.AsSpan(WebhookHeaders.SignaturePrefix.Length), provided, out _, out var written) != OperationStatus.Done || written != provided.Length)
         {
             return false;
         }

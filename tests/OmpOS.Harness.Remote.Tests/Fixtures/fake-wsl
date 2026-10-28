@@ -63,4 +63,11 @@ if [ -n "$FAKE_WSL_PATH" ]; then
   PATH="$FAKE_WSL_PATH"
   export PATH
 fi
+# The "guest" has no /usr/local/bin: the developer machine that runs the tests may have a real omp there, which the PATH line of the
+# script appends and which must never be found instead of the fixture (or instead of "no omp installed").
+if [ $# -ge 3 ] && [ "$1" = "sh" ] && [ "$2" = "-c" ]; then
+  script=$(printf '%s' "$3" | sed 's#/usr/local/bin#/nonexistent-ompos-bin#g')
+  shift 3
+  exec sh -c "$script" "$@"
+fi
 exec "$@"

@@ -12,7 +12,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task Create_returns_201_with_a_location_the_next_run_a_webhook_path_and_the_secret_once()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         using var client = host.Client();
 
         using var response = await AutomationApiHost.SendAsync(client, HttpMethod.Post, "/automations", AutomationApiHost.CreateBody(), Token).ConfigureAwait(true);
@@ -21,14 +22,14 @@ public sealed class AutomationManagementTests
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         var automation = body.GetProperty("automation");
         var id = automation.GetProperty("id").GetString()!;
-        response.Headers.Location!.ToString().ShouldBe("/automations/" + id, Case.Sensitive);
+        response.Headers.Location!.ToString().ShouldBe("/automations/" + id);
         automation.GetProperty("enabled").GetBoolean().ShouldBeTrue();
         automation.GetProperty("nextRunAt").GetDateTimeOffset().ShouldBe(new DateTimeOffset(2026, 10, 28, 9, 0, 0, TimeSpan.Zero));
-        automation.GetProperty("webhookPath").GetString().ShouldBe("/hooks/automations/" + id, Case.Sensitive);
+        automation.GetProperty("webhookPath").GetString().ShouldBe("/hooks/automations/" + id);
         automation.GetProperty("hasWebhookSecret").GetBoolean().ShouldBeTrue();
         automation.GetProperty("allowedTools").EnumerateArray().Select(static tool => tool.GetString()).ShouldBe(["pull_request_create"]);
         automation.GetProperty("maxConcurrentRuns").GetInt32().ShouldBe(1);
-        automation.GetProperty("target").GetProperty("kind").GetString().ShouldBe("cloud", Case.Sensitive);
+        automation.GetProperty("target").GetProperty("kind").GetString().ShouldBe("cloud");
         automation.GetProperty("target").GetProperty("secretRefs").EnumerateArray().Select(static name => name.GetString()).ShouldBe(["NPM_TOKEN"]);
         body.GetProperty("webhookSecret").GetString().ShouldStartWith("whsec_", Case.Sensitive);
         automation.TryGetProperty("webhookSecret", out _).ShouldBeFalse();
@@ -37,7 +38,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task A_cron_only_automation_has_no_webhook_path_and_no_secret()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
 
         var created = await host.CreateAsync(AutomationApiHost.CreateBody("""[{"kind":"cron","cron":"*/5 * * * *"}]"""), cancellationToken: Token).ConfigureAwait(true);
 
@@ -49,9 +51,10 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task A_new_automation_is_off_unless_the_request_turns_it_on_and_an_off_automation_has_no_next_run()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
 
-        var created = await host.CreateAsync("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"0 9 * * *"}],"target":{"repositories":[{"url":"https://github.com/acme/widgets"}]}}""", cancellationToken: Token).ConfigureAwait(true);
+        var created = await host.CreateAsync("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"0 9 * * *"}],"target":{"repositories":[{"address":"https://github.com/acme/widgets"}]}}""", cancellationToken: Token).ConfigureAwait(true);
 
         var automation = created.GetProperty("automation");
         automation.GetProperty("enabled").GetBoolean().ShouldBeFalse();
@@ -61,7 +64,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task Get_and_list_show_the_automation_without_ever_showing_the_secret()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var created = await host.CreateAsync(cancellationToken: Token).ConfigureAwait(true);
         var secret = created.GetProperty("webhookSecret").GetString()!;
         var id = created.GetProperty("automation").GetProperty("id").GetString()!;
@@ -78,7 +82,7 @@ public sealed class AutomationManagementTests
         using var listResponse = await client.GetAsync(new Uri("/automations/definitions", UriKind.Relative), Token).ConfigureAwait(true);
         var list = (await AutomationApiHost.ReadAsync(listResponse, Token).ConfigureAwait(true)).GetProperty("automations");
         list.GetArrayLength().ShouldBe(1);
-        list[0].GetProperty("id").GetString().ShouldBe(id, Case.Sensitive);
+        list[0].GetProperty("id").GetString().ShouldBe(id);
         list[0].GetProperty("hasWebhookSecret").GetBoolean().ShouldBeTrue();
         foreach (var text in surfaces)
         {
@@ -92,7 +96,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task Another_owners_automation_reads_as_absent_on_every_route()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var created = await host.CreateAsync(cancellationToken: Token).ConfigureAwait(true);
         var id = created.GetProperty("automation").GetProperty("id").GetString()!;
         using var bob = host.Client(AutomationApiHost.Bob);
@@ -113,7 +118,7 @@ public sealed class AutomationManagementTests
             using var response = await AutomationApiHost.SendAsync(bob, method, path, body, Token).ConfigureAwait(true);
 
             response.StatusCode.ShouldBe(HttpStatusCode.NotFound, $"{method} {path}");
-            (await AutomationApiHost.ProblemCodeAsync(response, Token).ConfigureAwait(true)).ShouldBe("automation_not_found", Case.Sensitive);
+            (await AutomationApiHost.ProblemCodeAsync(response, Token).ConfigureAwait(true)).ShouldBe("automation_not_found");
         }
 
         using var list = await bob.GetAsync(new Uri("/automations/definitions", UriKind.Relative), Token).ConfigureAwait(true);
@@ -126,7 +131,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task Management_routes_need_authentication()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         using var anonymous = host.Client(owner: null);
 
         foreach (var (method, path, body) in new (HttpMethod, string, string?)[]
@@ -144,28 +150,29 @@ public sealed class AutomationManagementTests
     }
 
     [Theory]
-    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"61 * * * *"}],"target":{"repositories":[{"url":"https://github.com/acme/w"}]}}""", "cron")]
-    [InlineData("""{"name":"","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"target":{"repositories":[{"url":"https://github.com/acme/w"}]}}""", "name")]
-    [InlineData("""{"name":"n","prompt":"p","triggers":[],"target":{"repositories":[{"url":"https://github.com/acme/w"}]}}""", "triggers")]
-    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"sms"}],"target":{"repositories":[{"url":"https://github.com/acme/w"}]}}""", "triggers")]
-    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"webhook","flavour":"gitlab"}],"target":{"repositories":[{"url":"https://github.com/acme/w"}]}}""", "webhook")]
-    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"target":{"kind":"mainframe","repositories":[{"url":"https://github.com/acme/w"}]}}""", "target")]
+    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"61 * * * *"}],"target":{"repositories":[{"address":"https://github.com/acme/w"}]}}""", "cron")]
+    [InlineData("""{"name":"","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"target":{"repositories":[{"address":"https://github.com/acme/w"}]}}""", "name")]
+    [InlineData("""{"name":"n","prompt":"p","triggers":[],"target":{"repositories":[{"address":"https://github.com/acme/w"}]}}""", "triggers")]
+    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"sms"}],"target":{"repositories":[{"address":"https://github.com/acme/w"}]}}""", "triggers")]
+    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"webhook","flavour":"gitlab"}],"target":{"repositories":[{"address":"https://github.com/acme/w"}]}}""", "webhook")]
+    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"target":{"kind":"mainframe","repositories":[{"address":"https://github.com/acme/w"}]}}""", "target")]
     [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"target":{"repositories":[]}}""", "repositories")]
-    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"target":{"repositories":[{"url":"http://github.com/acme/w"}]}}""", "repositories")]
-    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"target":{"repositories":[{"url":"https://github.com/acme/w"}],"secretRefs":["1bad"]}}""", "secrets")]
-    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"allowedTools":["shell"],"target":{"repositories":[{"url":"https://github.com/acme/w"}]}}""", "tools")]
-    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"maxRunsPerHour":0,"target":{"repositories":[{"url":"https://github.com/acme/w"}]}}""", "limits")]
-    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"timeZone":"Mars/Olympus","target":{"repositories":[{"url":"https://github.com/acme/w"}]}}""", "timeZone")]
+    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"target":{"repositories":[{"address":"http://github.com/acme/w"}]}}""", "repositories")]
+    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"target":{"repositories":[{"address":"https://github.com/acme/w"}],"secretRefs":["1bad"]}}""", "secrets")]
+    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"allowedTools":["shell"],"target":{"repositories":[{"address":"https://github.com/acme/w"}]}}""", "tools")]
+    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"maxRunsPerHour":0,"target":{"repositories":[{"address":"https://github.com/acme/w"}]}}""", "limits")]
+    [InlineData("""{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"timeZone":"Mars/Olympus","target":{"repositories":[{"address":"https://github.com/acme/w"}]}}""", "timeZone")]
     public async Task An_invalid_definition_is_a_400_that_names_the_field(string body, string field)
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         using var client = host.Client();
 
         using var response = await AutomationApiHost.SendAsync(client, HttpMethod.Post, "/automations", body, Token).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await AutomationApiHost.ReadAsync(response, Token).ConfigureAwait(true);
-        problem.GetProperty("type").GetString().ShouldBe("/problems/invalid_automation", Case.Sensitive);
+        problem.GetProperty("type").GetString().ShouldBe("/problems/invalid_automation");
         problem.GetProperty("detail").GetString()!.Split('\n').ShouldContain(line => line.StartsWith(field + ": ", StringComparison.Ordinal));
         using var list = await client.GetAsync(new Uri("/automations/definitions", UriKind.Relative), Token).ConfigureAwait(true);
         (await AutomationApiHost.ReadAsync(list, Token).ConfigureAwait(true)).GetProperty("automations").GetArrayLength().ShouldBe(0);
@@ -174,7 +181,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task A_local_target_is_refused_because_this_api_cannot_run_it()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         using var client = host.Client();
 
         using var response = await AutomationApiHost.SendAsync(
@@ -185,20 +193,21 @@ public sealed class AutomationManagementTests
             Token).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await AutomationApiHost.ReadAsync(response, Token).ConfigureAwait(true)).GetProperty("detail").GetString().ShouldContain("cannot run local automations", Case.Sensitive);
+        (await AutomationApiHost.ReadAsync(response, Token).ConfigureAwait(true)).GetProperty("detail").GetString().ShouldNotBeNull().ShouldContain("cannot run local automations", Case.Sensitive);
     }
 
     [Fact]
     public async Task The_validation_message_never_repeats_a_repository_url_with_a_credential()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         using var client = host.Client();
 
         using var response = await AutomationApiHost.SendAsync(
             client,
             HttpMethod.Post,
             "/automations",
-            """{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"target":{"repositories":[{"url":"https://user:hunter2@github.com/acme/w"}]}}""",
+            """{"name":"n","prompt":"p","triggers":[{"kind":"cron","cron":"* * * * *"}],"target":{"repositories":[{"address":"https://user:hunter2@github.com/acme/w"}]}}""",
             Token).ConfigureAwait(true);
 
         (await response.Content.ReadAsStringAsync(Token).ConfigureAwait(true)).ShouldNotContain("hunter2", Case.Insensitive);
@@ -207,7 +216,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task A_body_that_is_not_json_or_not_an_object_is_refused()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         using var client = host.Client();
 
         using var wrongType = new HttpRequestMessage(HttpMethod.Post, new Uri("/automations", UriKind.Relative)) { Content = new StringContent("name=x", System.Text.Encoding.UTF8, "text/plain") };
@@ -223,7 +233,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task Replace_changes_the_definition_keeps_the_secret_and_returns_none()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var created = await host.CreateAsync(cancellationToken: Token).ConfigureAwait(true);
         var id = created.GetProperty("automation").GetProperty("id").GetString()!;
         using var client = host.Client();
@@ -232,8 +243,8 @@ public sealed class AutomationManagementTests
         var body = await AutomationApiHost.ReadAsync(response, Token).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        body.GetProperty("automation").GetProperty("name").GetString().ShouldBe("Weekly review", Case.Sensitive);
-        body.GetProperty("automation").GetProperty("id").GetString().ShouldBe(id, Case.Sensitive);
+        body.GetProperty("automation").GetProperty("name").GetString().ShouldBe("Weekly review");
+        body.GetProperty("automation").GetProperty("id").GetString().ShouldBe(id);
         body.GetProperty("automation").GetProperty("hasWebhookSecret").GetBoolean().ShouldBeTrue();
         body.TryGetProperty("webhookSecret", out _).ShouldBeFalse();
     }
@@ -241,7 +252,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task Rotating_the_secret_shows_the_new_one_once_and_the_old_one_stops_working()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var created = await host.CreateAsync(cancellationToken: Token).ConfigureAwait(true);
         var id = created.GetProperty("automation").GetProperty("id").GetString()!;
         var oldSecret = created.GetProperty("webhookSecret").GetString()!;
@@ -251,7 +263,7 @@ public sealed class AutomationManagementTests
         var newSecret = (await AutomationApiHost.ReadAsync(rotate, Token).ConfigureAwait(true)).GetProperty("webhookSecret").GetString()!;
 
         rotate.StatusCode.ShouldBe(HttpStatusCode.OK);
-        newSecret.ShouldNotBe(oldSecret, Case.Sensitive);
+        newSecret.ShouldNotBe(oldSecret, StringComparer.Ordinal);
         using var anonymous = host.Client(owner: null);
         using var withOld = host.GenericDelivery(id, oldSecret);
         using var withNew = host.GenericDelivery(id, newSecret);
@@ -262,7 +274,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task Rotating_an_automation_without_a_webhook_is_a_400()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var created = await host.CreateAsync(AutomationApiHost.CreateBody("""[{"kind":"cron","cron":"0 9 * * *"}]"""), cancellationToken: Token).ConfigureAwait(true);
         using var client = host.Client();
 
@@ -274,7 +287,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task Enabling_and_disabling_changes_the_next_run()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var created = await host.CreateAsync(cancellationToken: Token).ConfigureAwait(true);
         var id = created.GetProperty("automation").GetProperty("id").GetString()!;
         using var client = host.Client();
@@ -293,7 +307,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task Delete_removes_the_automation_and_its_webhook_stops_accepting_deliveries()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         var created = await host.CreateAsync(cancellationToken: Token).ConfigureAwait(true);
         var id = created.GetProperty("automation").GetProperty("id").GetString()!;
         var secret = created.GetProperty("webhookSecret").GetString()!;
@@ -312,7 +327,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task An_owner_may_not_create_more_than_fifty_automations()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         for (var index = 0; index < 50; index++)
         {
             _ = await host.CreateAsync(AutomationApiHost.CreateBody("""[{"kind":"cron","cron":"0 9 * * *"}]"""), cancellationToken: Token).ConfigureAwait(true);
@@ -328,7 +344,8 @@ public sealed class AutomationManagementTests
     [Fact]
     public async Task Cron_preview_lists_the_next_occurrences_and_explains_a_bad_expression_or_zone()
     {
-        await using var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        var host = await AutomationApiHost.StartAsync(cancellationToken: Token).ConfigureAwait(true);
+        await using var hostScope = host.ConfigureAwait(true);
         using var client = host.Client();
 
         using var good = await client.GetAsync(new Uri("/automations/cron-preview?expression=0%209%20*%20*%20*&count=3", UriKind.Relative), Token).ConfigureAwait(true);
@@ -346,8 +363,8 @@ public sealed class AutomationManagementTests
         goodBody.TryGetProperty("error", out _).ShouldBeFalse();
         var badBody = await AutomationApiHost.ReadAsync(bad, Token).ConfigureAwait(true);
         badBody.GetProperty("nextRuns").GetArrayLength().ShouldBe(0);
-        badBody.GetProperty("error").GetString().ShouldContain("minute", Case.Sensitive);
-        (await AutomationApiHost.ReadAsync(zone, Token).ConfigureAwait(true)).GetProperty("error").GetString().ShouldContain("time zone", Case.Sensitive);
+        badBody.GetProperty("error").GetString().ShouldNotBeNull().ShouldContain("minute", Case.Sensitive);
+        (await AutomationApiHost.ReadAsync(zone, Token).ConfigureAwait(true)).GetProperty("error").GetString().ShouldNotBeNull().ShouldContain("time zone", Case.Sensitive);
         (await AutomationApiHost.ReadAsync(many, Token).ConfigureAwait(true)).GetProperty("nextRuns").GetArrayLength().ShouldBe(20);
     }
 }

@@ -8,7 +8,7 @@ internal sealed class FakeCloudAgentLauncher : ICloudAgentLauncher
 {
     private readonly Lock _gate = new();
     private readonly List<Launch> _launches = [];
-    private TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>Gets or sets a failure text every launch fails with, or null to succeed.</summary>
     public string? FailWith { get; set; }

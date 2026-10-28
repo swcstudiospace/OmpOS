@@ -19,7 +19,7 @@ internal static class WebhookSender
     /// <param name="data">The signed bytes.</param>
     /// <returns>The header value.</returns>
     public static string Sign(string secret, byte[] data) =>
-        "sha256=" + Convert.ToHexString(HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), data)).ToLowerInvariant();
+        "sha256=" + Convert.ToHexStringLower(HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), data));
 
     /// <summary>Builds a generic delivery signed over <c>timestamp.body</c>.</summary>
     /// <param name="body">The body text.</param>
@@ -101,7 +101,7 @@ internal static class WebhookSender
     /// <param name="title">The pull request title.</param>
     /// <returns>The JSON text.</returns>
     public static string PullRequestPayload(string action, string baseBranch = "main", bool merged = false, string headRepository = "acme/widgets", string title = "Add a feature") =>
-        $$"""
-        {"action":"{{action}}","pull_request":{"number":42,"title":"{{title}}","merged":{{(merged ? "true" : "false")}},"user":{"login":"octocat"},"html_url":"https://github.com/acme/widgets/pull/42","base":{"ref":"{{baseBranch}}","repo":{"full_name":"acme/widgets"}},"head":{"ref":"feature","repo":{"full_name":"{{headRepository}}"}}}}
+        $$$$"""
+        {"action":"{{{{action}}}}","pull_request":{"base":{"ref":"{{{{baseBranch}}}}","repo":{"full_name":"acme/widgets"}},"head":{"ref":"feature","repo":{"full_name":"{{{{headRepository}}}}"}},"number":42,"title":"{{{{title}}}}","merged":{{{{(merged ? "true" : "false")}}}},"html_url":"https://github.com/acme/widgets/pull/42","user":{"login":"octocat"}}}
         """;
 }

@@ -36,7 +36,7 @@ public sealed class BuiltinSkillSourceTests
 
         source.FolderExists.ShouldBeTrue();
         list.Entries.Select(entry => (entry.Name, entry.IsDirectory)).ShouldBe([("audit", true), ("review", true)]);
-        read.Text.ShouldBe("---\nname: review\n---\nReview.\n", Case.Sensitive);
+        read.Text.ShouldBe("---\nname: review\n---\nReview.\n");
     }
 
     /// <summary>A file next to the <c>skills</c> folder is outside the source and is refused, so the bundled folder cannot be used to read the rest of the install.</summary>
@@ -62,7 +62,7 @@ public sealed class BuiltinSkillSourceTests
     {
         var source = BuiltinSkillSource.CreateDefault();
 
-        source.SkillsPath.ShouldBe(Path.Combine(Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory), "skills"), Case.Sensitive);
+        source.SkillsPath.ShouldBe(Path.Combine(Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory), "skills"));
     }
 
     /// <summary>A blank base directory is a programming error.</summary>

@@ -54,9 +54,9 @@ public sealed class AutomationEditorPreviewTests
 
         await model.PreviewCronAsync(Token).ConfigureAwait(true);
 
-        model.CronPreviewError.ShouldBe("A cron expression has five fields.", Case.Sensitive);
+        model.CronPreviewError.ShouldBe("A cron expression has five fields.");
         model.CronPreviewLines.ShouldBeEmpty();
-        model.Errors["cron"].ShouldBe("A cron expression has five fields.", Case.Sensitive);
+        model.Errors["cron"].ShouldBe("A cron expression has five fields.");
         model.CanSave.ShouldBeFalse();
         model.WhyDisabled.ShouldContain("Schedule", Case.Sensitive);
 
@@ -80,7 +80,7 @@ public sealed class AutomationEditorPreviewTests
 
         await model.PreviewCronAsync(Token).ConfigureAwait(true);
 
-        model.CronPreviewError.ShouldBe(AutomationsCopy.CronNeverRuns, Case.Sensitive);
+        model.CronPreviewError.ShouldBe(AutomationsCopy.CronNeverRuns);
         model.CronPreviewLines.ShouldBeEmpty();
         model.CanSave.ShouldBeFalse();
     }
@@ -113,7 +113,7 @@ public sealed class AutomationEditorPreviewTests
 
         await model.PreviewCronAsync(Token).ConfigureAwait(true);
 
-        model.CronPreviewError.ShouldBe("The scheduler is unreachable.", Case.Sensitive);
+        model.CronPreviewError.ShouldBe("The scheduler is unreachable.");
         model.CronPreviewLines.ShouldBeEmpty();
         model.IsPreviewing.ShouldBeFalse();
     }
@@ -149,7 +149,7 @@ public sealed class AutomationEditorPreviewTests
 
         var pending = model.PreviewCronAsync(source.Token);
         await source.CancelAsync().ConfigureAwait(true);
-        await Should.ThrowAsync<OperationCanceledException>(() => pending).ConfigureAwait(true);
+        await Should.ThrowAsync<OperationCanceledException>(() => pending.WaitAsync(Token)).ConfigureAwait(true);
 
         model.CronPreviewLines.Count.ShouldBe(2);
         model.IsPreviewing.ShouldBeFalse();

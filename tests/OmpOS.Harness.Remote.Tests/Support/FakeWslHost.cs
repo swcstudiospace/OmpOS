@@ -123,7 +123,7 @@ internal sealed class FakeWslHost : IDisposable
             "FAKE_OMP_LOG=" + q(OmpLogPath),
             "FAKE_WSL_DIR=" + q(WslDirectory),
             "FAKE_WSL_BANNER=" + q(Options.Banner ? "1" : string.Empty),
-            "FAKE_WSL_PATH=" + q(overrideBin + ":/usr/local/bin:/usr/bin:/bin"),
+            "FAKE_WSL_PATH=" + q(overrideBin + ":/usr/bin:/bin"),
             "FAKE_OMP_VERSION=" + q(Options.OmpVersion),
         };
         foreach (var (name, value) in Options.ExtraEnvironment)

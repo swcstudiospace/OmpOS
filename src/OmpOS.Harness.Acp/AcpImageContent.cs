@@ -38,7 +38,7 @@ public static class AcpImageContent
             }
 
             used += image.Data.Length;
-            blocks.Add(AcpPromptBlock.ImageBlock(image.MimeType, Convert.ToBase64String(image.Data)));
+            blocks.Add(AcpPromptBlock.ImageBlock(image.MimeType, Convert.ToBase64String(image.Data.Span)));
         }
 
         if (omitted.Count > 0)

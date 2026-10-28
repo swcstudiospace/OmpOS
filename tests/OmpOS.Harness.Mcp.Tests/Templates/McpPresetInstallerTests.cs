@@ -31,18 +31,18 @@ public sealed class McpPresetInstallerTests
 
         files.Writes.ShouldBe([OwnedPath]);
         var server = set.Servers.ShouldHaveSingleItem();
-        server.Name.ShouldBe(preset.Id, Case.Sensitive);
+        server.Name.ShouldBe(preset.Id);
         server.Format.ShouldBe(McpConfigFormat.OmpOs);
         server.UnresolvedVariables.ShouldBeEmpty();
         if (preset.Kind == McpTemplateKind.Http)
         {
             server.Transport.ShouldBe(McpTransportKind.Http);
-            server.Url.ShouldBe(new Uri(preset.Url.ShouldNotBeNull(), UriKind.Absolute));
+            server.Url.ShouldBe(new Uri(preset.Address.ShouldNotBeNull(), UriKind.Absolute));
         }
         else
         {
             server.Transport.ShouldBe(McpTransportKind.Stdio);
-            server.Command.ShouldBe(preset.Command, Case.Sensitive);
+            server.Command.ShouldBe(preset.Command);
             server.Args.ShouldBe(preset.Args.Select(argument => argument.Replace("${workspaceFolder}", McpTestContext.Root, StringComparison.Ordinal)));
         }
     }
@@ -61,7 +61,7 @@ public sealed class McpPresetInstallerTests
         files.Text(OwnedPath).ShouldNotContain("ghp_example", Case.Sensitive);
         unset.Servers.Single().IsComplete.ShouldBeFalse();
         unset.Servers.Single().UnresolvedVariables.ShouldBe(["env:GITHUB_PERSONAL_ACCESS_TOKEN"]);
-        set.Servers.Single().Headers["Authorization"].ShouldBe("Bearer ghp_example", Case.Sensitive);
+        set.Servers.Single().Headers["Authorization"].ShouldBe("Bearer ghp_example");
     }
 
     /// <summary>An OAuth preset holds no header at all: the sign-in happens in the browser.</summary>
@@ -109,7 +109,7 @@ public sealed class McpPresetInstallerTests
 
         failure.Message.ShouldContain(expected, Case.Sensitive);
         files.Writes.ShouldBeEmpty();
-        files.Text(OwnedPath).ShouldBe(existing, Case.Sensitive);
+        files.Text(OwnedPath).ShouldBe(existing);
     }
 
     /// <summary>An oversize or unreadable file is refused, and a write failure becomes a catalog exception.</summary>
@@ -137,7 +137,7 @@ public sealed class McpPresetInstallerTests
     public async Task AnIncompletePresetIsRejectedBeforeAnythingIsWritten()
     {
         var files = new MemoryMcpFileStore();
-        var noUrl = Preset("linear") with { Url = " " };
+        var noUrl = Preset("linear") with { Address = " " };
         var noCommand = Preset("fetch") with { Command = " " };
         var noVariable = Preset("github") with { TokenVariable = " " };
         var installer = new McpPresetInstaller(files);
@@ -159,6 +159,6 @@ public sealed class McpPresetInstallerTests
         await new McpPresetInstaller(files).AddPresetAsync(OwnedPath, Preset("vercel"), "vercel", Token).ConfigureAwait(true);
 
         files.Writes.ShouldBe([OwnedPath]);
-        files.Text(other).ShouldBe("""{ "mcpServers": { "a": { "command": "a" } } }""", Case.Sensitive);
+        files.Text(other).ShouldBe("""{ "mcpServers": { "a": { "command": "a" } } }""");
     }
 }

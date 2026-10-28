@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace OmpOS.Contracts.Automations;
 
 /// <summary>One run of an automation.</summary>
@@ -19,14 +21,18 @@ public sealed record AutomationRunInfo
     public required DateTimeOffset StartedAt { get; init; }
 
     /// <summary>Gets when the run ended, or null while it runs.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public DateTimeOffset? FinishedAt { get; init; }
 
     /// <summary>Gets how long the run lasted, in seconds, or null while it runs.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public double? DurationSeconds { get; init; }
 
     /// <summary>Gets why a run failed, timed out or was skipped. Never holds a secret.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Error { get; init; }
 
     /// <summary>Gets the identifier of what the run created, for example the cloud agent (see <c>GET /cloud/agents/{id}</c>).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ExternalId { get; init; }
 }

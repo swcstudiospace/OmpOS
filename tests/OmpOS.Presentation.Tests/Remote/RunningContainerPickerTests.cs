@@ -33,7 +33,7 @@ public sealed class RunningContainerPickerTests
         picker.State.ShouldBe(RunningContainerPickerState.Ready);
         picker.IsReady.ShouldBeTrue();
         picker.Items.Select(item => item.Name).ShouldBe(["devbox", "db"]);
-        picker.Announcement.ShouldBe("2 running container(s).", Case.Sensitive);
+        picker.Announcement.ShouldBe("2 running container(s).");
         lister.Calls.ShouldBe(1);
     }
 
@@ -48,9 +48,9 @@ public sealed class RunningContainerPickerTests
         var devbox = picker.Items[0];
         devbox.IsDevContainer.ShouldBeTrue();
         devbox.AlreadyAdded.ShouldBeTrue();
-        devbox.Detail.ShouldBe("registry.example/dev:1, dev container, already added", Case.Sensitive);
-        devbox.AccessibleName.ShouldBe("devbox. registry.example/dev:1, dev container, already added", Case.Sensitive);
-        picker.Items[1].Detail.ShouldBe("registry.example/dev:1", Case.Sensitive);
+        devbox.Detail.ShouldBe("registry.example/dev:1, dev container, already added");
+        devbox.AccessibleName.ShouldBe("devbox. registry.example/dev:1, dev container, already added");
+        picker.Items[1].Detail.ShouldBe("registry.example/dev:1");
         picker.Items[1].IsDevContainer.ShouldBeFalse();
     }
 
@@ -80,8 +80,8 @@ public sealed class RunningContainerPickerTests
 
         picker.State.ShouldBe(RunningContainerPickerState.Error);
         picker.IsError.ShouldBeTrue();
-        picker.StateText.ShouldBe("podman is not installed.", Case.Sensitive);
-        picker.Problem.ShouldNotBeNull().FixText.ShouldBe("Install podman.", Case.Sensitive);
+        picker.StateText.ShouldBe("podman is not installed.");
+        picker.Problem.ShouldNotBeNull().FixText.ShouldBe("Install podman.");
 
         lister.Failure = new IOException("boom");
         await picker.RefreshAsync([], Token).ConfigureAwait(true);
@@ -122,11 +122,11 @@ public sealed class RunningContainerPickerTests
         var plain = picker.BeginAdd().ShouldNotBeNull();
 
         picker.CanAdd.ShouldBeTrue();
-        dev.Container.ShouldBe("devbox", Case.Sensitive);
-        dev.DisplayName.ShouldBe("devbox", Case.Sensitive);
-        dev.WorkspaceFolder.ShouldBe("/workspaces/my proj", Case.Sensitive);
+        dev.Container.ShouldBe("devbox");
+        dev.DisplayName.ShouldBe("devbox");
+        dev.WorkspaceFolder.ShouldBe("/workspaces/my proj");
         dev.IsValid.ShouldBeTrue();
-        plain.Container.ShouldBe("db", Case.Sensitive);
+        plain.Container.ShouldBe("db");
         plain.WorkspaceFolder.ShouldBeEmpty();
         plain.IsValid.ShouldBeFalse();
         plain.Issues.ShouldContain(issue => issue.Field == "WorkspaceFolder");
@@ -141,10 +141,10 @@ public sealed class RunningContainerPickerTests
         picker.Selected = picker.Items[0];
 
         await picker.RefreshAsync([Saved("container-devbox", "elsewhere")], Token).ConfigureAwait(true);
-        picker.Selected.ShouldNotBeNull().Name.ShouldBe("devbox", Case.Sensitive);
+        picker.Selected.ShouldNotBeNull().Name.ShouldBe("devbox");
         var editor = picker.BeginAdd().ShouldNotBeNull();
         editor.TryBuild(out var profile).ShouldBeTrue();
 
-        profile.ShouldNotBeNull().Id.ShouldBe("container-devbox-2", Case.Sensitive);
+        profile.ShouldNotBeNull().Id.ShouldBe("container-devbox-2");
     }
 }

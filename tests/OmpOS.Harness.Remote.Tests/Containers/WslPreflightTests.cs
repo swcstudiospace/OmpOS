@@ -116,7 +116,7 @@ public sealed class WslPreflightTests
 
         var report = await RunAsync(host, cancellationToken: ct).ConfigureAwait(true);
 
-        Only(report).Summary.ShouldBe("omp was not found in the WSL distribution.", Case.Sensitive);
+        Only(report).Summary.ShouldBe("omp was not found in the WSL distribution.");
     }
 
     /// <summary>The host adapter reports WSL as unavailable on a system without WSL, without running anything.</summary>

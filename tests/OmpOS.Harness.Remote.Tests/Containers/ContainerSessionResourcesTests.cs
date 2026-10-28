@@ -37,18 +37,19 @@ public sealed class ContainerSessionResourcesTests
 
         using var resources = await ContainerSessionResources.CreateAsync(host.Profile, Plan(), Options(directory.Path), null, host.ClientOptions, null, Token).ConfigureAwait(true);
 
-        resources.Launch.WorkingDirectory.ShouldBe(host.WorkspaceDirectory, Case.Sensitive);
+        resources.Launch.WorkingDirectory.ShouldBe(host.WorkspaceDirectory);
         resources.Launch.StateDirectory.ShouldStartWith(host.HomeDirectory, Case.Sensitive);
         resources.Launch.ReverseForwards.ShouldBeEmpty();
-        resources.Launch.OmpPath.ShouldBe("omp", Case.Sensitive);
+        resources.Launch.OmpPath.ShouldBe("omp");
         var local = new AcpClientOptions { FsRoot = "/local/ws", ExtraArguments = ["--x"], WorkingDirectory = "/local/ws", OmpPath = "/usr/bin/omp" };
         var adjusted = resources.ApplyTo(local);
         adjusted.FsRoot.ShouldBeNull();
-        adjusted.WorkingDirectory.ShouldBe(host.WorkspaceDirectory, Case.Sensitive);
+        adjusted.WorkingDirectory.ShouldBe(host.WorkspaceDirectory);
         adjusted.ExtraArguments.ShouldBeEmpty();
         adjusted.OmpPath.ShouldBeNull();
         adjusted.EnvironmentVariables.ShouldBeEmpty();
-        await using var transport = resources.TransportFactory(adjusted);
+        var transport = resources.TransportFactory(adjusted);
+        await using var transportScope = transport.ConfigureAwait(true);
         transport.ShouldNotBeNull();
         host.PodmanCalls().Count.ShouldBe(1);
     }
@@ -62,7 +63,7 @@ public sealed class ContainerSessionResourcesTests
 
         using var resources = await ContainerSessionResources.CreateAsync(host.Profile with { OmpPath = "/opt/omp/bin/omp" }, Plan(), Options(directory.Path), null, host.ClientOptions, null, Token).ConfigureAwait(true);
 
-        resources.Launch.OmpPath.ShouldBe("/opt/omp/bin/omp", Case.Sensitive);
+        resources.Launch.OmpPath.ShouldBe("/opt/omp/bin/omp");
     }
 
     /// <summary>
@@ -94,9 +95,9 @@ public sealed class ContainerSessionResourcesTests
     {
         using var directory = TempDirectory.Create();
         using var host = FakeContainerHost.Create();
-        File.WriteAllText(Path.Combine(host.WorkspaceDirectory, "a.txt"), "x");
+        await File.WriteAllTextAsync(Path.Combine(host.WorkspaceDirectory, "a.txt"), "x", Token).ConfigureAwait(true);
         _ = Directory.CreateDirectory(Path.Combine(host.WorkspaceDirectory, ".claude", "commands"));
-        File.WriteAllText(Path.Combine(host.WorkspaceDirectory, ".claude", "commands", "ship.md"), "Ship it\n");
+        await File.WriteAllTextAsync(Path.Combine(host.WorkspaceDirectory, ".claude", "commands", "ship.md"), "Ship it\n", Token).ConfigureAwait(true);
         using var resources = await ContainerSessionResources.CreateAsync(host.Profile, Plan(), Options(directory.Path), null, host.ClientOptions, null, Token).ConfigureAwait(true);
 
         var entries = await resources.FileSystem.ListDirectoryAsync(string.Empty, Token).ConfigureAwait(true);
@@ -104,8 +105,8 @@ public sealed class ContainerSessionResourcesTests
         var set = await setup.DiscoverAsync(Token).ConfigureAwait(true);
 
         entries.Select(entry => entry.Name).Order(StringComparer.Ordinal).ToArray().ShouldBe([".claude", "a.txt"]);
-        set.Commands.ShouldHaveSingleItem().Name.ShouldBe("ship", Case.Sensitive);
-        setup.UserHome.ShouldBe(host.HomeDirectory, Case.Sensitive);
+        set.Commands.ShouldHaveSingleItem().Name.ShouldBe("ship");
+        setup.UserHome.ShouldBe(host.HomeDirectory);
     }
 
     /// <summary>A stopped container fails before any session exists, with an IOException that says the home directory could not be read.</summary>
@@ -138,15 +139,15 @@ public sealed class ContainerSessionResourcesTests
     {
         using var directory = TempDirectory.Create();
         using var host = FakeWslHost.Create();
-        File.WriteAllText(Path.Combine(host.WorkspaceDirectory, "a.txt"), "x");
+        await File.WriteAllTextAsync(Path.Combine(host.WorkspaceDirectory, "a.txt"), "x", Token).ConfigureAwait(true);
 
         using var resources = await WslSessionResources.CreateAsync(host.Profile, Plan([new AgentMcpServerSpec { Name = "gateway", Url = new Uri("http://localhost:8123/mcp") }]), Options(directory.Path), null, host.ClientOptions, null, Token).ConfigureAwait(true);
 
-        resources.Launch.WorkingDirectory.ShouldBe(host.WorkspaceDirectory, Case.Sensitive);
+        resources.Launch.WorkingDirectory.ShouldBe(host.WorkspaceDirectory);
         resources.Launch.StateDirectory.ShouldStartWith(host.HomeDirectory, Case.Sensitive);
         resources.Launch.ReverseForwards.ShouldBeEmpty();
         resources.Launch.McpServers.ShouldHaveSingleItem().Url.ToString().ShouldBe("http://localhost:8123/mcp");
         resources.ApplyTo(new AcpClientOptions { FsRoot = "/x", WorkingDirectory = "/x" }).FsRoot.ShouldBeNull();
-        (await resources.FileSystem.ListDirectoryAsync(string.Empty, Token).ConfigureAwait(true)).ShouldHaveSingleItem().Name.ShouldBe("a.txt", Case.Sensitive);
+        (await resources.FileSystem.ListDirectoryAsync(string.Empty, Token).ConfigureAwait(true)).ShouldHaveSingleItem().Name.ShouldBe("a.txt");
     }
 }

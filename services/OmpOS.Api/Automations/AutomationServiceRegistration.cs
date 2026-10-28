@@ -9,7 +9,7 @@ using OmpOS.Harness.Automations.Hosted;
 
 namespace OmpOS.Api.Automations;
 
-/// <summary>Registers the automation services. Automations are off by default: with <c>Automations:Enabled</c> false the services are registered but no route is mapped and the hosted service does nothing.</summary>
+/// <summary>Registers the automation services. Automations are off by default: with <c>Automations:Enabled</c> false the services are registered, every route answers 404 and the hosted service does nothing.</summary>
 internal static class AutomationServiceRegistration
 {
     /// <summary>

@@ -83,7 +83,7 @@ public sealed class McpPresetInstaller
     {
         if (preset.Kind == McpTemplateKind.Http)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(preset.Url, nameof(preset));
+            ArgumentException.ThrowIfNullOrWhiteSpace(preset.Address, nameof(preset));
         }
         else
         {
@@ -126,9 +126,9 @@ public sealed class McpPresetInstaller
             var bytes = existing.Span.StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]) ? existing[3..] : existing;
             document = JsonDocument.Parse(bytes, ReadOptions);
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
-            throw new McpCatalogException("The .ompos/mcp.json file is not valid JSON. Fix it first.");
+            throw new McpCatalogException("The .ompos/mcp.json file is not valid JSON. Fix it first.", ex);
         }
 
         using (document)
@@ -185,7 +185,7 @@ public sealed class McpPresetInstaller
         writer.WriteStartObject(name);
         if (preset.Kind == McpTemplateKind.Http)
         {
-            writer.WriteString("url", preset.Url);
+            writer.WriteString("url", preset.Address);
             if (preset.Auth == McpPresetAuth.BearerToken)
             {
                 writer.WriteStartObject("headers");

@@ -138,7 +138,12 @@ public sealed class WslProfileEditor : ObservableModel
     {
         const string Prefix = "Wsl.";
         var name = property.StartsWith(Prefix, StringComparison.Ordinal) ? property[Prefix.Length..] : property;
-        return name == nameof(EnvironmentProfile.Id) ? nameof(Distro) : name == nameof(WslProfile.User) ? nameof(User) : name;
+        if (string.Equals(name, nameof(EnvironmentProfile.Id), StringComparison.Ordinal))
+        {
+            return nameof(Distro);
+        }
+
+        return string.Equals(name, nameof(WslProfile.User), StringComparison.Ordinal) ? nameof(User) : name;
     }
 
     private void Change(ref string field, string value, [CallerMemberName] string? propertyName = null)

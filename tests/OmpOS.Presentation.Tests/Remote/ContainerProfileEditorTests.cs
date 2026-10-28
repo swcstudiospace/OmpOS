@@ -8,7 +8,7 @@ namespace OmpOS.Presentation.Tests;
 /// <summary>The container and WSL forms: live problems per field, the identifier made from the name, fields that are blank meaning "not set", and no field for a secret or another runtime.</summary>
 public sealed class ContainerProfileEditorTests
 {
-    private static IReadOnlySet<string> Taken(params string[] ids) => new HashSet<string>(ids, StringComparer.Ordinal);
+    private static HashSet<string> Taken(params string[] ids) => new HashSet<string>(ids, StringComparer.Ordinal);
 
     /// <summary>An empty new container form shows a problem on the name and the folder, and builds nothing.</summary>
     [Fact]
@@ -17,7 +17,7 @@ public sealed class ContainerProfileEditorTests
         var editor = ContainerProfileEditor.ForNew(Taken());
 
         editor.IsNew.ShouldBeTrue();
-        editor.Heading.ShouldBe("Add a container", Case.Sensitive);
+        editor.Heading.ShouldBe("Add a container");
         editor.IsValid.ShouldBeFalse();
         editor.Issues.Select(issue => issue.Field).ShouldBe(["Container", "DisplayName", "WorkspaceFolder"], ignoreOrder: true);
         editor.TryBuild(out var profile).ShouldBeFalse();
@@ -41,8 +41,8 @@ public sealed class ContainerProfileEditorTests
         editor.Issues.ShouldBeEmpty();
         editor.TryBuild(out var profile).ShouldBeTrue();
         profile.ShouldNotBeNull();
-        profile.Id.ShouldBe("container-devbox", Case.Sensitive);
-        profile.DisplayName.ShouldBe("Dev box", Case.Sensitive);
+        profile.Id.ShouldBe("container-devbox");
+        profile.DisplayName.ShouldBe("Dev box");
         profile.Kind.ShouldBe(EnvironmentKind.Container);
         profile.Container.ShouldBe(new ContainerProfile { Container = "devbox", WorkspaceFolder = "/workspaces/my app", OmpPath = "/opt/omp/bin/omp" });
         EnvironmentProfileValidator.Validate(profile).ShouldBeEmpty();
@@ -73,7 +73,7 @@ public sealed class ContainerProfileEditorTests
 
         editor.TryBuild(out var profile).ShouldBeTrue();
 
-        profile.ShouldNotBeNull().Id.ShouldBe("container-devbox-3", Case.Sensitive);
+        profile.ShouldNotBeNull().Id.ShouldBe("container-devbox-3");
     }
 
     /// <summary>Editing keeps the identifier and shows the stored values; changing a value shows a problem live.</summary>
@@ -85,19 +85,19 @@ public sealed class ContainerProfileEditorTests
             Id = "keep-this-id",
             DisplayName = "Dev box",
             Kind = EnvironmentKind.Container,
-            Container = new ContainerProfile { Container = "devbox", RemoteUser = "vscode", WorkspaceFolder = "/workspaces/app", PodmanPath = "/usr/bin/podman" },
+            Container = new ContainerProfile { Container = "devbox", RemoteUser = "dev", WorkspaceFolder = "/workspaces/app", PodmanPath = "/usr/bin/podman" },
         };
 
         var editor = ContainerProfileEditor.ForEdit(existing);
         editor.Container = "renamed";
 
         editor.IsNew.ShouldBeFalse();
-        editor.Heading.ShouldBe("Edit a container", Case.Sensitive);
-        editor.RemoteUser.ShouldBe("vscode", Case.Sensitive);
-        editor.PodmanPath.ShouldBe("/usr/bin/podman", Case.Sensitive);
+        editor.Heading.ShouldBe("Edit a container");
+        editor.RemoteUser.ShouldBe("dev");
+        editor.PodmanPath.ShouldBe("/usr/bin/podman");
         editor.TryBuild(out var profile).ShouldBeTrue();
-        profile.ShouldNotBeNull().Id.ShouldBe("keep-this-id", Case.Sensitive);
-        profile.Container.ShouldNotBeNull().Container.ShouldBe("renamed", Case.Sensitive);
+        profile.ShouldNotBeNull().Id.ShouldBe("keep-this-id");
+        profile.Container.ShouldNotBeNull().Container.ShouldBe("renamed");
         editor.Container = "-bad";
         editor.IsValid.ShouldBeFalse();
     }
@@ -118,9 +118,9 @@ public sealed class ContainerProfileEditorTests
     public void TheWslFormBuildsAndValidates()
     {
         var editor = WslProfileEditor.ForNew(Taken("wsl-ubuntu-24.04"), "Ubuntu-24.04");
-        editor.Heading.ShouldBe("Add a WSL distribution", Case.Sensitive);
+        editor.Heading.ShouldBe("Add a WSL distribution");
         editor.IsValid.ShouldBeFalse();
-        editor.Issues.ShouldHaveSingleItem().Field.ShouldBe("WorkspacePath", Case.Sensitive);
+        editor.Issues.ShouldHaveSingleItem().Field.ShouldBe("WorkspacePath");
 
         editor.WorkspacePath = "/home/dev/app";
         editor.User = "dev";
@@ -128,7 +128,7 @@ public sealed class ContainerProfileEditorTests
 
         editor.TryBuild(out var profile).ShouldBeTrue();
         profile.ShouldNotBeNull();
-        profile.Id.ShouldBe("wsl-ubuntu-24.04-2", Case.Sensitive);
+        profile.Id.ShouldBe("wsl-ubuntu-24.04-2");
         profile.Kind.ShouldBe(EnvironmentKind.Wsl);
         profile.Wsl.ShouldBe(new WslProfile { Distro = "Ubuntu-24.04", User = "dev", WorkspacePath = "/home/dev/app", OmpPath = "omp" });
 
@@ -146,8 +146,8 @@ public sealed class ContainerProfileEditorTests
         var editor = WslProfileEditor.ForEdit(existing);
 
         editor.IsNew.ShouldBeFalse();
-        editor.Heading.ShouldBe("Edit a WSL distribution", Case.Sensitive);
+        editor.Heading.ShouldBe("Edit a WSL distribution");
         editor.TryBuild(out var profile).ShouldBeTrue();
-        profile.ShouldNotBeNull().Id.ShouldBe("wsl-1", Case.Sensitive);
+        profile.ShouldNotBeNull().Id.ShouldBe("wsl-1");
     }
 }

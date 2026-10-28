@@ -40,7 +40,7 @@ public sealed class HostedAutomationsViewModelTests
         model.IsBusy.ShouldBeFalse();
         model.LoadFailure.ShouldBeEmpty();
         model.Rows.Select(row => row.Name).ShouldBe(["Nightly triage", "Weekly digest"]);
-        model.Rows[1].ToggleText.ShouldBe(AutomationsCopy.TurnOnLabel, Case.Sensitive);
+        model.Rows[1].ToggleText.ShouldBe(AutomationsCopy.TurnOnLabel);
         model.SelectedRow.ShouldBeNull();
         model.History.ShouldBeEmpty();
     }
@@ -85,7 +85,7 @@ public sealed class HostedAutomationsViewModelTests
         await model.LoadAsync(Token).ConfigureAwait(true);
 
         model.State.ShouldBe(HostedAutomationsViewState.Error);
-        model.LoadFailure.ShouldBe("The service did not answer.", Case.Sensitive);
+        model.LoadFailure.ShouldBe("The service did not answer.");
         model.Rows.ShouldBeEmpty();
 
         manager.Fail("List", null);
@@ -134,7 +134,7 @@ public sealed class HostedAutomationsViewModelTests
         var pending = model.LoadAsync(source.Token);
         model.State.ShouldBe(HostedAutomationsViewState.Loading);
         await source.CancelAsync().ConfigureAwait(true);
-        await Should.ThrowAsync<OperationCanceledException>(() => pending).ConfigureAwait(true);
+        await Should.ThrowAsync<OperationCanceledException>(() => pending.WaitAsync(Token)).ConfigureAwait(true);
 
         model.State.ShouldBe(HostedAutomationsViewState.Ready);
         model.Rows.Count.ShouldBe(1);
@@ -169,18 +169,18 @@ public sealed class HostedAutomationsViewModelTests
 
         await model.SelectAsync("nightly", Token).ConfigureAwait(true);
 
-        model.SelectedId.ShouldBe("nightly", Case.Sensitive);
-        model.SelectedRow.ShouldNotBeNull().Name.ShouldBe("Nightly triage", Case.Sensitive);
+        model.SelectedId.ShouldBe("nightly");
+        model.SelectedRow.ShouldNotBeNull().Name.ShouldBe("Nightly triage");
         model.History.Select(run => run.RunId).ShouldBe(["run-2", "run-1"]);
-        model.History[0].StatusText.ShouldBe("Failed", Case.Sensitive);
-        model.History[0].DurationText.ShouldBe("took 2 min 5 s", Case.Sensitive);
-        model.History[0].ErrorText.ShouldBe("clone failed", Case.Sensitive);
-        model.History[1].SummaryText.ShouldBe("Labelled 3 issues", Case.Sensitive);
+        model.History[0].StatusText.ShouldBe("Failed");
+        model.History[0].DurationText.ShouldBe("took 2 min 5 s");
+        model.History[0].ErrorText.ShouldBe("clone failed");
+        model.History[1].SummaryText.ShouldBe("Labelled 3 issues");
 
         var calls = manager.Calls.Count;
         await model.SelectAsync("unknown", Token).ConfigureAwait(true);
         manager.Calls.Count.ShouldBe(calls);
-        model.SelectedId.ShouldBe("nightly", Case.Sensitive);
+        model.SelectedId.ShouldBe("nightly");
     }
 
     /// <summary>A history that cannot be read shows the reason as an action failure and an empty history, and the selection stays.</summary>
@@ -194,9 +194,9 @@ public sealed class HostedAutomationsViewModelTests
 
         await model.SelectAsync("nightly", Token).ConfigureAwait(true);
 
-        model.ActionFailure.ShouldBe("The run log is unreadable.", Case.Sensitive);
+        model.ActionFailure.ShouldBe("The run log is unreadable.");
         model.History.ShouldBeEmpty();
-        model.SelectedId.ShouldBe("nightly", Case.Sensitive);
+        model.SelectedId.ShouldBe("nightly");
     }
 
     /// <summary>Toggle writes the opposite state and reads the list again, so the row shows the new toggle.</summary>
@@ -211,11 +211,11 @@ public sealed class HostedAutomationsViewModelTests
         await model.ToggleAsync("paused", Token).ConfigureAwait(true);
         await model.ToggleAsync("nightly", Token).ConfigureAwait(true);
 
-        manager.Calls.ShouldContain("SetEnabled:paused:on");
-        manager.Calls.ShouldContain("SetEnabled:nightly:off");
+        manager.Calls.ShouldContain("SetEnabled:paused:on", StringComparer.Ordinal);
+        manager.Calls.ShouldContain("SetEnabled:nightly:off", StringComparer.Ordinal);
         manager.CountOf("List").ShouldBe(listCalls + 2);
         RowOf(model, "paused").IsEnabled.ShouldBeTrue();
-        RowOf(model, "nightly").ToggleText.ShouldBe(AutomationsCopy.TurnOnLabel, Case.Sensitive);
+        RowOf(model, "nightly").ToggleText.ShouldBe(AutomationsCopy.TurnOnLabel);
         model.ActionFailure.ShouldBeEmpty();
         model.IsBusy.ShouldBeFalse();
     }
@@ -232,7 +232,7 @@ public sealed class HostedAutomationsViewModelTests
 
         await model.ToggleAsync("nightly", Token).ConfigureAwait(true);
 
-        model.ActionFailure.ShouldBe("The change was refused.", Case.Sensitive);
+        model.ActionFailure.ShouldBe("The change was refused.");
         model.Rows.Single().IsEnabled.ShouldBeTrue();
         manager.CountOf("List").ShouldBe(listCalls);
 
@@ -252,7 +252,7 @@ public sealed class HostedAutomationsViewModelTests
         await model.ToggleAsync("nightly", Token).ConfigureAwait(true);
 
         model.State.ShouldBe(HostedAutomationsViewState.Ready);
-        model.ActionFailure.ShouldBe("The list is unreachable.", Case.Sensitive);
+        model.ActionFailure.ShouldBe("The list is unreachable.");
         model.Rows.Count.ShouldBe(1);
     }
 
@@ -272,11 +272,11 @@ public sealed class HostedAutomationsViewModelTests
 
         await model.RunNowAsync("nightly", Token).ConfigureAwait(true);
 
-        manager.Calls.ShouldContain("RunNow:nightly");
-        model.Notice.ShouldBe(AutomationsCopy.RunNotice("Nightly triage", HostedRunStatus.Launched), Case.Sensitive);
+        manager.Calls.ShouldContain("RunNow:nightly", StringComparer.Ordinal);
+        model.Notice.ShouldBe(AutomationsCopy.RunNotice("Nightly triage", HostedRunStatus.Launched));
         model.Notice.ShouldContain("Nightly triage", Case.Sensitive);
-        model.History.Single().RunId.ShouldBe("run-manual", Case.Sensitive);
-        model.History.Single().AgentText.ShouldBe("Agent: agent-7", Case.Sensitive);
+        model.History.Single().RunId.ShouldBe("run-manual");
+        model.History.Single().AgentText.ShouldBe("Agent: agent-7");
         model.Rows.Single().LastResultText.ShouldStartWith("Last run: launched at", Case.Sensitive);
         model.ActionFailure.ShouldBeEmpty();
     }
@@ -293,7 +293,7 @@ public sealed class HostedAutomationsViewModelTests
 
         await model.RunNowAsync("nightly", Token).ConfigureAwait(true);
 
-        model.ActionFailure.ShouldBe("The hourly limit is reached.", Case.Sensitive);
+        model.ActionFailure.ShouldBe("The hourly limit is reached.");
         model.Notice.ShouldBeEmpty();
         manager.CountOf("List").ShouldBe(listCalls);
     }
@@ -311,7 +311,7 @@ public sealed class HostedAutomationsViewModelTests
         var pending = model.ToggleAsync("nightly", source.Token);
         model.IsBusy.ShouldBeTrue();
         await source.CancelAsync().ConfigureAwait(true);
-        await Should.ThrowAsync<OperationCanceledException>(() => pending).ConfigureAwait(true);
+        await Should.ThrowAsync<OperationCanceledException>(() => pending.WaitAsync(Token)).ConfigureAwait(true);
 
         model.IsBusy.ShouldBeFalse();
         model.ActionFailure.ShouldBeEmpty();
@@ -329,8 +329,8 @@ public sealed class HostedAutomationsViewModelTests
         model.RequestDelete("nightly");
 
         model.IsConfirmingDelete.ShouldBeTrue();
-        model.PendingDeleteId.ShouldBe("nightly", Case.Sensitive);
-        model.PendingDeleteText.ShouldBe(AutomationsCopy.DeleteWarning("Nightly triage"), Case.Sensitive);
+        model.PendingDeleteId.ShouldBe("nightly");
+        model.PendingDeleteText.ShouldBe(AutomationsCopy.DeleteWarning("Nightly triage"));
         manager.CountOf("Delete").ShouldBe(0);
 
         model.CancelDelete();
@@ -358,12 +358,12 @@ public sealed class HostedAutomationsViewModelTests
 
         await model.ConfirmDeleteAsync(Token).ConfigureAwait(true);
 
-        manager.Calls.ShouldContain("Delete:nightly");
+        manager.Calls.ShouldContain("Delete:nightly", StringComparer.Ordinal);
         model.Rows.Select(row => row.Id).ShouldBe(["paused"]);
         model.SelectedId.ShouldBeEmpty();
         model.History.ShouldBeEmpty();
         model.IsConfirmingDelete.ShouldBeFalse();
-        model.Notice.ShouldBe(AutomationsCopy.DeletedNotice("Nightly triage"), Case.Sensitive);
+        model.Notice.ShouldBe(AutomationsCopy.DeletedNotice("Nightly triage"));
         model.State.ShouldBe(HostedAutomationsViewState.Ready);
     }
 
@@ -393,7 +393,7 @@ public sealed class HostedAutomationsViewModelTests
 
         await model.ConfirmDeleteAsync(Token).ConfigureAwait(true);
 
-        model.ActionFailure.ShouldBe("A run is still in progress.", Case.Sensitive);
+        model.ActionFailure.ShouldBe("A run is still in progress.");
         model.Notice.ShouldBeEmpty();
         model.Rows.Count.ShouldBe(1);
         model.IsConfirmingDelete.ShouldBeFalse();
@@ -413,7 +413,7 @@ public sealed class HostedAutomationsViewModelTests
         model.BeginEdit("nightly");
         var editor = model.Editor.ShouldNotBeNull();
         editor.IsEdit.ShouldBeTrue();
-        editor.Name.ShouldBe("Nightly triage", Case.Sensitive);
+        editor.Name.ShouldBe("Nightly triage");
 
         model.CloseEditor();
         model.Editor.ShouldBeNull();
@@ -440,10 +440,10 @@ public sealed class HostedAutomationsViewModelTests
         await model.SaveEditorAsync(Token).ConfigureAwait(true);
 
         model.State.ShouldBe(HostedAutomationsViewState.Ready);
-        model.Rows.Single().Name.ShouldBe("Release notes", Case.Sensitive);
-        model.SelectedRow.ShouldNotBeNull().Name.ShouldBe("Release notes", Case.Sensitive);
+        model.Rows.Single().Name.ShouldBe("Release notes");
+        model.SelectedRow.ShouldNotBeNull().Name.ShouldBe("Release notes");
         model.Editor.ShouldBeNull();
-        model.Notice.ShouldBe(AutomationsCopy.SavedNotice("Release notes"), Case.Sensitive);
+        model.Notice.ShouldBe(AutomationsCopy.SavedNotice("Release notes"));
         manager.Saves.Single().Id.ShouldBeNull();
     }
 
@@ -470,7 +470,7 @@ public sealed class HostedAutomationsViewModelTests
         await model.SaveEditorAsync(Token).ConfigureAwait(true);
 
         model.Editor.ShouldBeSameAs(editor);
-        editor.RevealedSecret.ShouldBe(canary, Case.Sensitive);
+        editor.RevealedSecret.ShouldBe(canary);
         model.Rows.Single().WebhookText.ShouldContain("/webhooks/", Case.Sensitive);
         EverythingTheListShows(model).ShouldNotContain(canary, Case.Sensitive);
 

@@ -28,12 +28,12 @@ public sealed class PodmanRemoteExecTests
         var failed = await exec.RunAsync("echo oops >&2; exit 7", ReadOnlyMemory<byte>.Empty, 10, Token).ConfigureAwait(true);
 
         echoed.Succeeded.ShouldBeTrue();
-        echoed.OutputText().ShouldBe("hello", Case.Sensitive);
-        capped.OutputText().ShouldBe("0123", Case.Sensitive);
+        echoed.OutputText().ShouldBe("hello");
+        capped.OutputText().ShouldBe("0123");
         capped.OutputTruncated.ShouldBeTrue();
         failed.ExitCode.ShouldBe(7);
         failed.IsConnectionFailure.ShouldBeFalse();
-        failed.Error.Trim().ShouldBe("oops", Case.Sensitive);
+        failed.Error.Trim().ShouldBe("oops");
     }
 
     /// <summary>The home directory is the one of the user inside the container, and the workspace root is the profile's folder.</summary>
@@ -43,9 +43,9 @@ public sealed class PodmanRemoteExecTests
         using var host = FakeContainerHost.Create();
         using var exec = new PodmanRemoteExec(host.Profile, host.ClientOptions);
 
-        (await exec.ResolveHomeDirectoryAsync(Token).ConfigureAwait(true)).ShouldBe(host.HomeDirectory, Case.Sensitive);
-        exec.WorkspaceRoot.ShouldBe(host.WorkspaceDirectory, Case.Sensitive);
-        ((IRemoteExec)exec).WorkspaceRoot.ShouldBe(host.WorkspaceDirectory, Case.Sensitive);
+        (await exec.ResolveHomeDirectoryAsync(Token).ConfigureAwait(true)).ShouldBe(host.HomeDirectory);
+        exec.WorkspaceRoot.ShouldBe(host.WorkspaceDirectory);
+        ((IRemoteExec)exec).WorkspaceRoot.ShouldBe(host.WorkspaceDirectory);
     }
 
     /// <summary>
@@ -119,11 +119,11 @@ public sealed class PodmanRemoteExecTests
         var path = fixture.Write("f.txt", "one");
         var fileSystem = fixture.FileSystem();
 
-        (await fileSystem.ReadFileAsync("f.txt", Cap, Token).ConfigureAwait(true)).ShouldBe("one", Case.Sensitive);
+        (await fileSystem.ReadFileAsync("f.txt", Cap, Token).ConfigureAwait(true)).ShouldBe("one");
         await fileSystem.WriteFileAsync("f.txt", "two", "one", Token).ConfigureAwait(true);
         await Should.ThrowAsync<StaleWorkspaceFileException>(() => fileSystem.WriteFileAsync("f.txt", "three", "one", Token)).ConfigureAwait(true);
 
-        (await File.ReadAllTextAsync(path, Token).ConfigureAwait(true)).ShouldBe("two", Case.Sensitive);
+        (await File.ReadAllTextAsync(path, Token).ConfigureAwait(true)).ShouldBe("two");
     }
 
     /// <summary>Create makes parents and refuses an existing path; delete checks the expected text.</summary>
@@ -140,7 +140,7 @@ public sealed class PodmanRemoteExecTests
         await Should.ThrowAsync<StaleWorkspaceFileException>(() => fileSystem.DeleteFileAsync("gone.txt", "other", Token)).ConfigureAwait(true);
         await fileSystem.DeleteFileAsync("gone.txt", "bye", Token).ConfigureAwait(true);
 
-        File.ReadAllText(Path.Combine(fixture.Workspace, "new", "deep", "f.txt")).ShouldBe("made", Case.Sensitive);
+        (await File.ReadAllTextAsync(Path.Combine(fixture.Workspace, "new", "deep", "f.txt"), Token).ConfigureAwait(true)).ShouldBe("made");
         File.Exists(Path.Combine(fixture.Workspace, "gone.txt")).ShouldBeFalse();
     }
 
@@ -149,7 +149,7 @@ public sealed class PodmanRemoteExecTests
     public async Task ContainmentHoldsOverPodman()
     {
         using var fixture = ContainerFixture.Create();
-        File.WriteAllText(fixture.Outside.Combine("secret.txt"), "TOP-SECRET");
+        await File.WriteAllTextAsync(fixture.Outside.Combine("secret.txt"), "TOP-SECRET", Token).ConfigureAwait(true);
         File.CreateSymbolicLink(Path.Combine(fixture.Workspace, "escape"), fixture.Outside.Path);
         var fileSystem = fixture.FileSystem();
 
@@ -182,12 +182,12 @@ public sealed class PodmanRemoteExecTests
         _ = fixture.Write(".claude/commands/ship.md", "Ship it\n");
         var homeCommands = Path.Combine(fixture.Host.HomeDirectory, ".claude", "commands");
         _ = Directory.CreateDirectory(homeCommands);
-        File.WriteAllText(Path.Combine(homeCommands, "review.md"), "Review it\n");
+        await File.WriteAllTextAsync(Path.Combine(homeCommands, "review.md"), "Review it\n", Token).ConfigureAwait(true);
 
         var setup = await RemoteConventionSources.CreateAsync(fixture.Exec, null, Token).ConfigureAwait(true);
         var set = await setup.DiscoverAsync(Token).ConfigureAwait(true);
 
-        setup.UserHome.ShouldBe(fixture.Host.HomeDirectory, Case.Sensitive);
+        setup.UserHome.ShouldBe(fixture.Host.HomeDirectory);
         setup.Roots.ShouldBe([fixture.Workspace]);
         set.Commands.Select(command => command.Name).Order(StringComparer.Ordinal).ToArray().ShouldBe(["review", "ship"]);
     }
@@ -198,16 +198,16 @@ public sealed class PodmanRemoteExecTests
     {
         using var host = FakeWslHost.Create();
         using var exec = new WslRemoteExec(host.Profile, host.ClientOptions);
-        File.WriteAllText(Path.Combine(host.WorkspaceDirectory, "f.txt"), "one");
+        await File.WriteAllTextAsync(Path.Combine(host.WorkspaceDirectory, "f.txt"), "one", Token).ConfigureAwait(true);
         var fileSystem = new RemoteWorkspaceFileSystem(exec);
 
         var entries = await fileSystem.ListDirectoryAsync(string.Empty, Token).ConfigureAwait(true);
         await fileSystem.WriteFileAsync("f.txt", "two", "one", Token).ConfigureAwait(true);
 
-        entries.ShouldHaveSingleItem().Name.ShouldBe("f.txt", Case.Sensitive);
-        File.ReadAllText(Path.Combine(host.WorkspaceDirectory, "f.txt")).ShouldBe("two", Case.Sensitive);
-        (await exec.ResolveHomeDirectoryAsync(Token).ConfigureAwait(true)).ShouldBe(host.HomeDirectory, Case.Sensitive);
-        exec.WorkspaceRoot.ShouldBe(host.WorkspaceDirectory, Case.Sensitive);
+        entries.ShouldHaveSingleItem().Name.ShouldBe("f.txt");
+        (await File.ReadAllTextAsync(Path.Combine(host.WorkspaceDirectory, "f.txt"), Token).ConfigureAwait(true)).ShouldBe("two");
+        (await exec.ResolveHomeDirectoryAsync(Token).ConfigureAwait(true)).ShouldBe(host.HomeDirectory);
+        exec.WorkspaceRoot.ShouldBe(host.WorkspaceDirectory);
     }
 
     /// <summary>A distribution that does not exist is a connection failure with wsl's words; a missing wsl.exe is a start failure.</summary>
