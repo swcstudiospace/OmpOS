@@ -20,6 +20,20 @@ Autonogrammer is a chat-style agent workspace — a Grok Chat / Cursor Agent–c
 - **Scope discipline**: structure, wiring, contracts, foundations and one vertical slice — not the full product.
 - **Protocol fidelity**: ACP v1 (stable) and omp RPC protocol v1/v2 framing as documented in the installed omp; v2 ACP draft is out of scope.
 
+### Product surfaces: Code and Cowork
+
+- **Code** is the Cursor-style workspace: agent rail, thread, composer, Changes bar and the Kanban tab.
+- **Cowork** is the chat-style surface with Artifacts, Browser Use, Computer Use and Dispatch.
+- Cowork sessions never create a Kanban card and never appear on the Kanban; the design enforces this in the data layer through `SessionSurface` (ADR-0032).
+- Status: milestone v0.16.0 is in progress and design only so far (ADR-0030 to ADR-0037 are Proposed). Cowork, Artifacts, Browser Use, Computer Use, Dispatch and `SessionSurface` are not built yet. Plan: `docs/plans/v0.16.0-research/briefs/00-index.md`; ADRs: `docs/decisions/ADR-0030` to `ADR-0037`.
+
+### Accounts
+
+- Sign-in is Supabase passwordless (email code and magic link) on the shared Spectrum Web Co project (ADR-0030).
+- Code works signed out; Cowork, Dispatch and the account view require sign-in.
+- Clients never hold Railway credentials; the API owns them.
+- Status: planned in ADR-0030, in progress; no sign-in client exists in the heads yet.
+
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:research/STACK.md -->
@@ -145,7 +159,7 @@ Autonogrammer is a chat-style agent workspace — a Grok Chat / Cursor Agent–c
 ## Stack Patterns by Variant
 
 - Use `DirectSessionRunner` in-process; no `Temporalio` worker is registered and the `workflows` compose profile is not started.
-- Because the Temporal packages still compile in, keep them in a separate `Autonogrammer.Workflows.Temporal` project so the contracts/services layers never reference `Temporalio`.
+- Temporal was removed after Phase 3 (`docs/architecture.md`); the in-process run path is `DirectSessionRunner` in `Autonogrammer.Workflows`, and no `Autonogrammer.Workflows.Temporal` project exists. The next bullet records the historical wiring.
 - `AddTemporalClient(...)` + `AddHostedTemporalWorker("autonogrammer-sessions").AddWorkflow<SessionRunWorkflow>().AddScopedActivities<SessionRunActivities>()`; wire `Temporalio.Extensions.OpenTelemetry` into the shared `TracerProvider`.
 - Local: `temporalio/temporal:1.9.1` via compose profile; CI: Testcontainers starts the same image under Podman.
 - Shell out to `podman` with explicit `--format json` and parse with STJ source-gen types; never parse human output. Idempotency keys map to container labels (`io.autonogrammer.session=<id>`) so the orphan reaper is a `podman ps --filter label=…` query.
