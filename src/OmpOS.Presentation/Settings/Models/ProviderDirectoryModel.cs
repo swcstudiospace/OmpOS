@@ -29,6 +29,7 @@ public sealed class ProviderDirectoryModel : ObservableModel
     private IReadOnlyList<string> _regionChoices = [ProviderListingCopy.AllChoice];
     private IReadOnlyList<string> _kindChoices = [ProviderListingCopy.AllChoice];
     private string _announcement = string.Empty;
+    private bool _replacingChoices;
 
     /// <summary>Initializes a new instance of the <see cref="ProviderDirectoryModel"/> class.</summary>
     /// <param name="source">The source every card action goes through.</param>
@@ -68,8 +69,8 @@ public sealed class ProviderDirectoryModel : ObservableModel
         get => _region is { } region ? _regions.IndexOf(region) + 1 : 0;
         set
         {
-            // A list control reports -1 while it rebuilds its items; that is not a choice.
-            if (value < 0)
+            // A list control reports -1, or falls back to its first item, while it rebuilds its items; neither is a choice.
+            if (value < 0 || _replacingChoices)
             {
                 return;
             }
@@ -85,7 +86,7 @@ public sealed class ProviderDirectoryModel : ObservableModel
         get => _kind is { } kind ? Array.IndexOf(KindOrder, kind) + 1 : 0;
         set
         {
-            if (value < 0)
+            if (value < 0 || _replacingChoices)
             {
                 return;
             }
@@ -258,8 +259,17 @@ public sealed class ProviderDirectoryModel : ObservableModel
         NotifyPropertyChanged(nameof(Sections));
         NotifyPropertyChanged(nameof(VisibleCount));
         NotifyPropertyChanged(nameof(HasNoMatches));
-        NotifyPropertyChanged(nameof(RegionChoices));
-        NotifyPropertyChanged(nameof(KindChoices));
+        _replacingChoices = true;
+        try
+        {
+            NotifyPropertyChanged(nameof(RegionChoices));
+            NotifyPropertyChanged(nameof(KindChoices));
+        }
+        finally
+        {
+            _replacingChoices = false;
+        }
+
         NotifyPropertyChanged(nameof(SelectedRegionIndex));
         NotifyPropertyChanged(nameof(SelectedKindIndex));
     }

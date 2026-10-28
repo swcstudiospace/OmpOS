@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
+using OmpOS.Api.Cloud;
 using OmpOS.Api.Coordination;
 using OmpOS.Api.Endpoints;
 using OmpOS.Api.Harness;
@@ -17,6 +18,8 @@ using OmpOS.Api.Persistence;
 using OmpOS.Api.Security;
 using OmpOS.Api.Serialization;
 using OmpOS.Api.Services;
+using OmpOS.Api.Services.Providers;
+using OmpOS.Api.Services.WorkspaceSettings;
 using OmpOS.Api.Sse;
 using OmpOS.Api.Telemetry;
 using OmpOS.Api.Workflows;
@@ -116,6 +119,9 @@ builder.Services.AddSingleton<IHarnessSessionFactory>(static services =>
 });
 builder.Services.AddSingleton<PromptRunner>();
 builder.Services.AddSessionWebServices();
+builder.Services.AddCloudAgentServices();
+builder.Services.AddProviderServices();
+builder.Services.AddWorkspaceSettingsServices();
 
 // The API is the composition root for session runs. Each prompt runs in this process through DirectSessionRunner, which holds
 // the session's run lease from the coordination store for the whole run. The sandbox is the in-memory fake provider.
@@ -240,6 +246,7 @@ if (authOptions.AllowDevelopmentPrincipal)
 
 app.UseRateLimiter();
 app.UseAuthorization();
+app.UseMiddleware<CloudDisabledMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -274,6 +281,9 @@ app.MapSteeringEndpoints();
 app.MapSessionConfigEndpoints();
 app.MapChangeReviewEndpoints();
 app.MapSourceEndpoints();
+app.MapWorkspaceSettingsEndpoints();
+app.MapProviderEndpoints();
+app.MapCloudAgentEndpoints();
 
 // Start without RunAsync's dispose-on-failure: RunAsync disposes the host when startup
 // validation throws, which races WebApplicationFactory's in-memory-host observation

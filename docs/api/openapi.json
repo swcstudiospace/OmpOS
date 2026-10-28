@@ -1526,10 +1526,1860 @@
           }
         }
       }
+    },
+    "/workspace/conventions": {
+      "get": {
+        "tags": [
+          "Workspace settings"
+        ],
+        "summary": "Lists the commands, skills, rules, subagents, hooks files and MCP files of the server workspace, with precedence and diagnostics.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConventionsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/runtime": {
+      "get": {
+        "tags": [
+          "Workspace settings"
+        ],
+        "summary": "Reads the effective limits and options of the API as read-only values.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeSettingsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/plugins": {
+      "get": {
+        "tags": [
+          "Workspace settings"
+        ],
+        "summary": "Reads the plugin connection check and the plugin inventory of the API.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginsSettingsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/network": {
+      "get": {
+        "tags": [
+          "Workspace settings"
+        ],
+        "summary": "Lists the upstreams the API is configured for. The API sends no request, so nothing is checked.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkSettingsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hooks": {
+      "get": {
+        "tags": [
+          "Workspace settings"
+        ],
+        "summary": "Reads the effective hooks, the files they came from, the loading problems and the consent state. No hook is started.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HooksResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/automations": {
+      "get": {
+        "tags": [
+          "Workspace settings"
+        ],
+        "summary": "Reads the automations of the host, or reports that none is configured. No run is started.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspace/tree": {
+      "get": {
+        "tags": [
+          "Workspace settings"
+        ],
+        "summary": "Lists one folder of the server workspace. Secret files and links that leave the workspace are not listed.",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceTreeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspace/file": {
+      "get": {
+        "tags": [
+          "Workspace settings"
+        ],
+        "summary": "Reads one UTF-8 text file of the server workspace, up to 1 MiB. Binary and secret files are refused.",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceFileResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers": {
+      "get": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Lists the provider catalogue, filtered by region, kind and search text, with whether the service has a key for each provider. No key is ever returned.",
+        "parameters": [
+          {
+            "name": "region",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvidersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/{id}": {
+      "get": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Reads one catalogue provider with whether the service has a key for it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/{id}/credential": {
+      "put": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Hands an API key to omp. Write-only; disabled unless the operator sets Providers:AllowCredentialWrite.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCredentialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/default": {
+      "put": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Makes a model the default for new chats. Disabled unless the operator sets Providers:AllowConfigWrite.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetDefaultModelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultModelResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/custom": {
+      "post": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Adds an OpenAI- or Anthropic-compatible endpoint to omp. https is required except on this machine; link-local and metadata addresses and user information are refused. Disabled unless the operator sets Providers:AllowConfigWrite.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomProviderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomProviderInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/custom/{id}": {
+      "delete": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Removes a custom endpoint the caller added. Disabled unless the operator sets Providers:AllowConfigWrite.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/{id}/test": {
+      "post": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Asks whether something answers at the provider's address. Sends no key; skipped unless the operator sets Providers:AllowLiveTest.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderTestResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/agents": {
+      "post": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Creates a cloud agent bound to repositories, a branch and secret references, and starts provisioning its worker.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCloudAgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAgentResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAgentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Lists the caller's cloud agents, newest first.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAgentListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/agents/{id}": {
+      "get": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Reads one cloud agent.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAgentResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Deletes a cloud agent and removes its worker and volume. The session log stays.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/agents/{id}/prompts": {
+      "post": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Sends a prompt to a cloud agent. The run executes on the agent's worker; its events stream from /cloud/agents/{id}/events.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloudPromptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudPromptAccepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/agents/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Cancels the run in flight on this server instance.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAgentResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/agents/{id}/stop": {
+      "post": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Stops a cloud agent: cancels its run and lets its worker sleep. A wake request starts it again.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAgentResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/agents/{id}/wake": {
+      "post": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Wakes an idle, stopped, failed or orphaned cloud agent. The worker comes up in the background; poll the agent until it is running.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAgentResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAgentResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/agents/{id}/events": {
+      "get": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Streams the agent's events: the same kinds, ids and resume rules as GET /sessions/{id}/events.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/agents/{id}/pull-request": {
+      "post": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Opens a pull request from the agent's branch. It is ready for review unless a draft is requested and allowed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCloudPullRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudPullRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/secrets": {
+      "get": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Lists the caller's secrets by name. Values are never returned.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudSecretListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/secrets/{name}": {
+      "get": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Tells whether a secret exists and when it was written. The value is write-only.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudSecretInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Stores or replaces a secret. It reaches an agent's environment only at provisioning and is redacted from output.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloudSecretValueRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudSecretInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Deletes a secret. Agents that were already provisioned keep the value in their environment until they are deleted.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/limits": {
+      "get": {
+        "tags": [
+          "Cloud"
+        ],
+        "summary": "Reports the caller's caps and how much of them is used.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudLimitsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AutomationLastRunInfo": {
+        "required": [
+          "outcome",
+          "reason",
+          "recordedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "description": "Gets how the attempt ended: `succeeded`, `failed`, `timed-out`, `cancelled`, `blocked` or `refused`."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Gets a human-readable reason, or an empty string."
+          },
+          "recordedAt": {
+            "type": "string",
+            "description": "Gets when the attempt was recorded.",
+            "format": "date-time"
+          }
+        },
+        "description": "The latest run attempt of an automation."
+      },
+      "AutomationPauseInfo": {
+        "required": [
+          "guard",
+          "reason",
+          "howToResume"
+        ],
+        "type": "object",
+        "properties": {
+          "guard": {
+            "type": "string",
+            "description": "Gets the name of the guard that paused the automation."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Gets why the guard paused it."
+          },
+          "howToResume": {
+            "type": "string",
+            "description": "Gets what an operator does to resume the automation."
+          }
+        },
+        "description": "The pause a guard placed on an automation."
+      },
+      "AutomationsResponse": {
+        "required": [
+          "available",
+          "automations"
+        ],
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether this API has an automation engine configured."
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a plain sentence that says why automations are unavailable, or null."
+          },
+          "automations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceAutomationInfo"
+            },
+            "description": "Gets the automations; empty when unavailable."
+          }
+        },
+        "description": "The answer of `GET /automations`: the automations the host configured. The API starts no run."
+      },
       "BoardCard": {
         "required": [
           "id",
@@ -1770,6 +3620,434 @@
         ],
         "description": "The review state of a change."
       },
+      "CloudAgentError": {
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Gets the stable machine-readable code, for example `wake_timeout`."
+          },
+          "message": {
+            "type": "string",
+            "description": "Gets a short human-readable explanation."
+          }
+        },
+        "description": "Why a cloud agent is in CloudAgentStatus.Failed or CloudAgentStatus.Orphaned. The message never carries a secret value."
+      },
+      "CloudAgentListResponse": {
+        "required": [
+          "agents"
+        ],
+        "type": "object",
+        "properties": {
+          "agents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CloudAgentResponse"
+            },
+            "description": "Gets the agents."
+          }
+        },
+        "description": "The body of `GET /cloud/agents`: the caller's agents, newest first."
+      },
+      "CloudAgentResponse": {
+        "required": [
+          "id",
+          "name",
+          "status",
+          "createdAt",
+          "repositories",
+          "branch",
+          "sessionId",
+          "pullRequests",
+          "lastActivityAt",
+          "idleMinutes",
+          "computeSeconds",
+          "secretRefs"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the agent identifier."
+          },
+          "name": {
+            "type": "string",
+            "description": "Gets the display name."
+          },
+          "status": {
+            "description": "Gets the lifecycle status.",
+            "$ref": "#/components/schemas/CloudAgentStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Gets when the agent was created.",
+            "format": "date-time"
+          },
+          "repositories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CloudRepository"
+            },
+            "description": "Gets the repositories the agent works in."
+          },
+          "workerRef": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets an opaque reference to the worker, or null while none exists. It is not a provider identifier and cannot be used to reach the worker."
+          },
+          "branch": {
+            "type": "string",
+            "description": "Gets the branch the agent pushes to in every repository."
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Gets the identifier of the session that holds the agent's event log: `GET /sessions/{sessionId}` reads it, and `GET /cloud/agents/{id}/events` streams it."
+          },
+          "pullRequests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CloudPullRequest"
+            },
+            "description": "Gets the pull requests the agent opened. Empty until one is."
+          },
+          "pullRequest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets the most recent pull request, or null. It mirrors the Cursor API's single `pullRequest` member.",
+                "$ref": "#/components/schemas/CloudPullRequest"
+              }
+            ]
+          },
+          "lastActivityAt": {
+            "type": "string",
+            "description": "Gets when the agent last started or finished a run, or was created.",
+            "format": "date-time"
+          },
+          "idleAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets when the agent went idle, or null while it is not idle.",
+            "format": "date-time"
+          },
+          "idleMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the minutes without activity after which the agent goes idle.",
+            "format": "int32"
+          },
+          "computeSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets the seconds the worker was awake for this agent, including the current stretch.",
+            "format": "double"
+          },
+          "secretRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the names of the secrets loaded into the agent. Never values."
+          },
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the model hint, or null."
+          },
+          "mode": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the mode hint, or null."
+          },
+          "error": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets why the agent failed or is orphaned, or null.",
+                "$ref": "#/components/schemas/CloudAgentError"
+              }
+            ]
+          }
+        },
+        "description": "One cloud agent as the API shows it. No field holds a secret, a token or a provider identifier."
+      },
+      "CloudAgentStatus": {
+        "enum": [
+          "provisioning",
+          "starting",
+          "running",
+          "idle",
+          "stopping",
+          "stopped",
+          "failed",
+          "deleting",
+          "orphaned",
+          "limit_reached"
+        ],
+        "description": "Where a cloud agent is in its life. The wire value is the lower-case member name, with an underscore in CloudAgentStatus.LimitReached."
+      },
+      "CloudLimitsResponse": {
+        "required": [
+          "maxAgents",
+          "maxConcurrentRunning",
+          "agents",
+          "running",
+          "defaultIdleMinutes",
+          "maxComputeSecondsPerAgent",
+          "computeSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "maxAgents": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets how many agents the caller may own.",
+            "format": "int32"
+          },
+          "maxConcurrentRunning": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets how many agents may be provisioning, starting or running at once.",
+            "format": "int32"
+          },
+          "agents": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets how many agents the caller owns now.",
+            "format": "int32"
+          },
+          "running": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets how many of them are provisioning, starting or running now.",
+            "format": "int32"
+          },
+          "defaultIdleMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the idle window applied when a request names none, in minutes.",
+            "format": "int32"
+          },
+          "maxComputeSecondsPerAgent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the compute seconds one agent may use, or 0 for no limit.",
+            "format": "int64"
+          },
+          "computeSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets the compute seconds all the caller's agents used so far.",
+            "format": "double"
+          }
+        },
+        "description": "The body of `GET /cloud/limits`: the caller's caps and what they use of them."
+      },
+      "CloudPromptAccepted": {
+        "required": [
+          "agentId",
+          "sessionId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "agentId": {
+            "type": "string",
+            "description": "Gets the agent identifier."
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Gets the session whose log receives the run's events."
+          },
+          "status": {
+            "description": "Gets the status the agent had when the prompt was accepted.",
+            "$ref": "#/components/schemas/CloudAgentStatus"
+          }
+        },
+        "description": "The 202 body of `POST /cloud/agents/{id}/prompts`."
+      },
+      "CloudPromptRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the prompt text. Required, not blank, within the configured prompt length."
+          }
+        },
+        "description": "The body of `POST /cloud/agents/{id}/prompts`."
+      },
+      "CloudPullRequest": {
+        "required": [
+          "repository",
+          "number",
+          "url",
+          "branch",
+          "baseBranch",
+          "draft",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "repository": {
+            "type": "string",
+            "description": "Gets the clone URL of the repository the pull request is in."
+          },
+          "number": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the pull request number.",
+            "format": "int32"
+          },
+          "url": {
+            "type": "string",
+            "description": "Gets the web URL of the pull request.",
+            "format": "uri"
+          },
+          "branch": {
+            "type": "string",
+            "description": "Gets the branch the agent pushed (always `ompos/cloud/&lt;agent id&gt;`)."
+          },
+          "baseBranch": {
+            "type": "string",
+            "description": "Gets the branch the pull request targets."
+          },
+          "draft": {
+            "type": "boolean",
+            "description": "Gets whether the pull request was opened as a draft."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Gets when the control plane opened it.",
+            "format": "date-time"
+          }
+        },
+        "description": "A pull request a cloud agent opened."
+      },
+      "CloudRepository": {
+        "required": [
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Gets the HTTPS clone URL, for example `https://github.com/owner/repo`. No credentials, query or fragment."
+          },
+          "branch": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the branch the agent starts from. When absent the repository's default branch is used."
+          },
+          "baseBranch": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the branch a pull request targets. When absent it is the branch the agent started from."
+          }
+        },
+        "description": "One repository a cloud agent works in."
+      },
+      "CloudSecretInfo": {
+        "required": [
+          "name",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Gets the secret name, which is also the name of the environment variable it becomes in the worker."
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "Gets when the secret was last written.",
+            "format": "date-time"
+          }
+        },
+        "description": "What the API tells about a stored secret: that it exists and when it was last written, never its value or its length."
+      },
+      "CloudSecretListResponse": {
+        "required": [
+          "secrets"
+        ],
+        "type": "object",
+        "properties": {
+          "secrets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CloudSecretInfo"
+            },
+            "description": "Gets the secrets, ordered by name."
+          }
+        },
+        "description": "The body of `GET /cloud/secrets`: the caller's secrets by name."
+      },
+      "CloudSecretValueRequest": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the secret value, 4 to 8 192 characters. Values shorter than 4 characters cannot be redacted reliably and are refused."
+          }
+        },
+        "description": "The body of `PUT /cloud/secrets/{name}`. The value is write-only: no endpoint returns it."
+      },
       "ConfigOption": {
         "required": [
           "id",
@@ -1866,6 +4144,542 @@
         },
         "description": "One piece of shared context, a remembered fact or a lesson from earlier work. The text is untrusted, plain text."
       },
+      "ConventionCommandInfo": {
+        "required": [
+          "name",
+          "description",
+          "template",
+          "scope",
+          "sourceDirectory",
+          "origin"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Gets the command name."
+          },
+          "description": {
+            "type": "string",
+            "description": "Gets the description, which may be empty."
+          },
+          "argumentHint": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the hint for the text typed after the name, or null."
+          },
+          "template": {
+            "type": "string",
+            "description": "Gets the prompt template."
+          },
+          "scope": {
+            "description": "Gets where the item lives.",
+            "$ref": "#/components/schemas/ConventionScopeKind"
+          },
+          "sourceDirectory": {
+            "type": "string",
+            "description": "Gets the convention directory that holds the file, for example `.cursor`, or an empty string for a file at the root itself."
+          },
+          "directoryRank": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Gets the position of string ConventionCommandInfo.SourceDirectory in the precedence order (`.ompos` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
+            "format": "int32"
+          },
+          "origin": {
+            "type": "string",
+            "description": "Gets the path to show: relative to the workspace folder, or `~/` relative for a user file. It is never an absolute server path."
+          }
+        },
+        "description": "A custom slash command the workspace holds. It lists only the winner of a name; the files that lost are diagnostics."
+      },
+      "ConventionConfigFileInfo": {
+        "required": [
+          "scope",
+          "sourceDirectory",
+          "origin"
+        ],
+        "type": "object",
+        "properties": {
+          "scope": {
+            "description": "Gets where the item lives.",
+            "$ref": "#/components/schemas/ConventionScopeKind"
+          },
+          "sourceDirectory": {
+            "type": "string",
+            "description": "Gets the convention directory that holds the file, for example `.cursor`, or an empty string for a file at the root itself."
+          },
+          "directoryRank": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Gets the position of string ConventionConfigFileInfo.SourceDirectory in the precedence order (`.ompos` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
+            "format": "int32"
+          },
+          "origin": {
+            "type": "string",
+            "description": "Gets the path to show: relative to the workspace folder, or `~/` relative for a user file. It is never an absolute server path."
+          }
+        },
+        "description": "A hooks or MCP configuration file that exists. It is listed and not parsed here; `GET /hooks` parses the hooks files."
+      },
+      "ConventionDiagnosticCode": {
+        "enum": [
+          "malformed",
+          "too-large",
+          "unreadable",
+          "escapes-root",
+          "duplicate",
+          "invalid"
+        ],
+        "description": "Why a convention file produced no item or lost to another item."
+      },
+      "ConventionDiagnosticInfo": {
+        "required": [
+          "item",
+          "origin",
+          "code",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/ConventionItemType"
+          },
+          "origin": {
+            "type": "string",
+            "description": "Gets the path to show, relative to the workspace folder or `~/` relative."
+          },
+          "code": {
+            "description": "Gets what went wrong.",
+            "$ref": "#/components/schemas/ConventionDiagnosticCode"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Gets one plain sentence that says why. It holds no absolute server path."
+          }
+        },
+        "description": "A problem found while discovering conventions."
+      },
+      "ConventionItemType": {
+        "enum": [
+          "command",
+          "skill",
+          "rule",
+          "subagent",
+          "config"
+        ],
+        "description": "The kind of convention file an item or a diagnostic belongs to."
+      },
+      "ConventionRuleInfo": {
+        "required": [
+          "name",
+          "type",
+          "description",
+          "globs",
+          "alwaysApply",
+          "scopeDirectory",
+          "scope",
+          "sourceDirectory",
+          "origin"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Gets the rule name: its path under the `rules` folder without the extension, or the path of an instruction file."
+          },
+          "type": {
+            "description": "Gets the form of the file.",
+            "$ref": "#/components/schemas/ConventionRuleType"
+          },
+          "description": {
+            "type": "string",
+            "description": "Gets the description, which may be empty."
+          },
+          "globs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the globs the rule is tied to; empty when it is not tied to files."
+          },
+          "alwaysApply": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the rule always applies."
+          },
+          "scopeDirectory": {
+            "type": "string",
+            "description": "Gets the folder, relative to the workspace folder, that a nested rule applies to; empty for the root and for user rules."
+          },
+          "scope": {
+            "description": "Gets where the item lives.",
+            "$ref": "#/components/schemas/ConventionScopeKind"
+          },
+          "sourceDirectory": {
+            "type": "string",
+            "description": "Gets the convention directory that holds the file, for example `.cursor`, or an empty string for a file at the root itself."
+          },
+          "directoryRank": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Gets the position of string ConventionRuleInfo.SourceDirectory in the precedence order (`.ompos` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
+            "format": "int32"
+          },
+          "origin": {
+            "type": "string",
+            "description": "Gets the path to show: relative to the workspace folder, or `~/` relative for a user file. It is never an absolute server path."
+          }
+        },
+        "description": "A rule or an instruction file the workspace holds."
+      },
+      "ConventionRuleType": {
+        "enum": [
+          "mdc",
+          "markdown",
+          "agents-file",
+          "claude-file",
+          "cursor-rules"
+        ],
+        "description": "The form of a rule file."
+      },
+      "ConventionScopeKind": {
+        "enum": [
+          "project",
+          "user"
+        ],
+        "description": "Where a discovered convention item lives."
+      },
+      "ConventionSkillInfo": {
+        "required": [
+          "name",
+          "description",
+          "paths",
+          "disableModelInvocation",
+          "userInvocable",
+          "scopeDirectory",
+          "scope",
+          "sourceDirectory",
+          "origin"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Gets the skill name."
+          },
+          "description": {
+            "type": "string",
+            "description": "Gets the description, which may be empty."
+          },
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the globs that scope the skill; empty when it applies everywhere."
+          },
+          "disableModelInvocation": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the model may not pick the skill by itself."
+          },
+          "userInvocable": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the skill is offered after a slash."
+          },
+          "scopeDirectory": {
+            "type": "string",
+            "description": "Gets the folder, relative to the workspace folder, that a nested skill is scoped to; empty for the root and for user skills."
+          },
+          "scope": {
+            "description": "Gets where the item lives.",
+            "$ref": "#/components/schemas/ConventionScopeKind"
+          },
+          "sourceDirectory": {
+            "type": "string",
+            "description": "Gets the convention directory that holds the file, for example `.cursor`, or an empty string for a file at the root itself."
+          },
+          "directoryRank": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Gets the position of string ConventionSkillInfo.SourceDirectory in the precedence order (`.ompos` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
+            "format": "int32"
+          },
+          "origin": {
+            "type": "string",
+            "description": "Gets the path to show: relative to the workspace folder, or `~/` relative for a user file. It is never an absolute server path."
+          }
+        },
+        "description": "A skill the workspace holds."
+      },
+      "ConventionsResponse": {
+        "required": [
+          "available",
+          "includesUserScope",
+          "commands",
+          "skills",
+          "rules",
+          "subagents",
+          "hookFiles",
+          "mcpFiles",
+          "diagnostics"
+        ],
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the API has a workspace folder it could read. When false, every list is empty and string? ConventionsResponse.Reason says why."
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a plain sentence that says why the conventions are unavailable, or null."
+          },
+          "includesUserScope": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the user directories of the API process home were read (`Api:Workspace:IncludeUserScope`)."
+          },
+          "commands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConventionCommandInfo"
+            },
+            "description": "Gets the custom commands: project items then user items, each in name order."
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConventionSkillInfo"
+            },
+            "description": "Gets the skills."
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConventionRuleInfo"
+            },
+            "description": "Gets the rules and instruction files."
+          },
+          "subagents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConventionSubagentInfo"
+            },
+            "description": "Gets the subagent definitions."
+          },
+          "hookFiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConventionConfigFileInfo"
+            },
+            "description": "Gets the `hooks.json` files, highest precedence first."
+          },
+          "mcpFiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConventionConfigFileInfo"
+            },
+            "description": "Gets the `mcp.json` files, highest precedence first."
+          },
+          "diagnostics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConventionDiagnosticInfo"
+            },
+            "description": "Gets every problem: malformed, oversize or unreadable files, refused symbolic links, and items that lost to a duplicate."
+          }
+        },
+        "description": "The answer of `GET /workspace/conventions`: the commands, skills, rules, subagents, hooks files and MCP files of the server workspace, with the precedence winner of each name and every diagnostic."
+      },
+      "ConventionSubagentInfo": {
+        "required": [
+          "name",
+          "description",
+          "readOnly",
+          "isBackground",
+          "instructions",
+          "scope",
+          "sourceDirectory",
+          "origin"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Gets the subagent name."
+          },
+          "description": {
+            "type": "string",
+            "description": "Gets the description, which may be empty."
+          },
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the model the subagent asks for, or null."
+          },
+          "readOnly": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the subagent must not change files."
+          },
+          "isBackground": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the subagent runs in the background."
+          },
+          "instructions": {
+            "type": "string",
+            "description": "Gets the subagent's instructions."
+          },
+          "scope": {
+            "description": "Gets where the item lives.",
+            "$ref": "#/components/schemas/ConventionScopeKind"
+          },
+          "sourceDirectory": {
+            "type": "string",
+            "description": "Gets the convention directory that holds the file, for example `.cursor`, or an empty string for a file at the root itself."
+          },
+          "directoryRank": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Gets the position of string ConventionSubagentInfo.SourceDirectory in the precedence order (`.ompos` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
+            "format": "int32"
+          },
+          "origin": {
+            "type": "string",
+            "description": "Gets the path to show: relative to the workspace folder, or `~/` relative for a user file. It is never an absolute server path."
+          }
+        },
+        "description": "A subagent definition the workspace holds."
+      },
+      "CreateCloudAgentRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the display name, 1 to 100 characters. When absent the agent is named after its first repository."
+          },
+          "repositories": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CloudRepository"
+            },
+            "description": "Gets the repositories the agent works in, 1 to 16. The first is the primary one: the agent starts there."
+          },
+          "environmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the name of a saved environment definition to use instead of the repository's own `environment.json`."
+          },
+          "secretRefs": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the names of the secrets (see `PUT /cloud/secrets/{name}`) to load into the agent's environment. Names only, never values."
+          },
+          "idleMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Gets the minutes without activity after which the agent goes idle. When absent the server default (15) applies.",
+            "format": "int32"
+          },
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the model the agent should use, passed to the engine as a hint. Optional."
+          },
+          "mode": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the engine mode (for example `agent` or `plan`), passed as a hint. Optional."
+          }
+        },
+        "description": "The body of `POST /cloud/agents`. The shape follows the Cursor Cloud Agents API v1 where it fits."
+      },
+      "CreateCloudPullRequestRequest": {
+        "type": "object",
+        "properties": {
+          "repository": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the clone URL of the repository to open the pull request in. When absent the agent's primary repository is used."
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the pull request title. Required, 1 to 256 characters."
+          },
+          "body": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the pull request description. Optional, up to 65 536 characters."
+          },
+          "baseBranch": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the target branch. When absent the repository entry's base branch, its start branch, or the default branch is used, in that order."
+          },
+          "draft": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Gets whether to open a draft. When absent the pull request is ready for review. The server setting `Cloud:PullRequests:NeverDraft` overrides `true`."
+          }
+        },
+        "description": "The body of `POST /cloud/agents/{id}/pull-request`."
+      },
       "CreateSessionRequest": {
         "type": "object",
         "properties": {
@@ -1878,6 +4692,147 @@
           }
         },
         "description": "Request body for `POST /sessions`. The owner is never taken from the body; it is the caller's subject."
+      },
+      "CredentialResponse": {
+        "required": [
+          "providerId",
+          "configured"
+        ],
+        "type": "object",
+        "properties": {
+          "providerId": {
+            "type": "string",
+            "description": "Gets the provider the key was written for."
+          },
+          "configured": {
+            "description": "Gets whether omp now holds a credential for the provider.",
+            "$ref": "#/components/schemas/ProviderConfiguredState"
+          }
+        },
+        "description": "The answer of a credential write. It repeats no part of the key."
+      },
+      "CustomProviderInfo": {
+        "required": [
+          "id",
+          "displayName",
+          "protocol",
+          "baseUrl",
+          "modelIds",
+          "configured"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the provider id as omp uses it in a model selector."
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Gets the name shown for the endpoint."
+          },
+          "protocol": {
+            "description": "Gets the wire protocol.",
+            "$ref": "#/components/schemas/CustomProviderProtocol"
+          },
+          "baseUrl": {
+            "type": "string",
+            "description": "Gets the base URL as the service wrote it to omp's configuration."
+          },
+          "modelIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the model ids."
+          },
+          "keyEnvName": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the name of the environment variable the operator sets to the key, or null when the endpoint needs no key."
+          },
+          "configured": {
+            "description": "Gets whether the service sees that variable set.",
+            "$ref": "#/components/schemas/ProviderConfiguredState"
+          }
+        },
+        "description": "A custom endpoint the caller added. It names the environment variable of its key and never holds one."
+      },
+      "CustomProviderProtocol": {
+        "enum": [
+          "openai",
+          "anthropic"
+        ],
+        "description": "The wire protocol of a custom endpoint."
+      },
+      "CustomProviderRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the provider id: lower-case letters, digits, dot, underscore and hyphen, at most 64 characters. Required."
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the name shown for the endpoint, at most 80 characters. Defaults to the id."
+          },
+          "protocol": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets the wire protocol. Required.",
+                "$ref": "#/components/schemas/CustomProviderProtocol"
+              }
+            ]
+          },
+          "baseUrl": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the base URL. Required."
+          },
+          "modelIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the model ids, at least one and at most 50."
+          },
+          "keyRequired": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Gets a value indicating whether the endpoint needs a key. Defaults to true; the key itself is never part of this request."
+          }
+        },
+        "description": "The body of `POST /providers/custom`: an OpenAI- or Anthropic-compatible endpoint. The base URL must be https, except for a host on\nthis machine; a link-local or metadata address, a name for one and a URL with user information are refused."
+      },
+      "DefaultModelResponse": {
+        "required": [
+          "model"
+        ],
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Gets the default model as `provider/model`."
+          }
+        },
+        "description": "The answer of `PUT /models/default`."
       },
       "GsdPhaseInfo": {
         "required": [
@@ -1920,6 +4875,55 @@
         },
         "description": "The workflow phase a session works on, as the workflow engine's planning files record it."
       },
+      "HooksResponse": {
+        "required": [
+          "available",
+          "consentRecorded",
+          "hooks",
+          "sources",
+          "diagnostics"
+        ],
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the API has a workspace folder whose hooks it could read."
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a plain sentence that says why the hooks are unavailable, or null."
+          },
+          "consentRecorded": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the API knows the recorded consent of each hook. It is false: consent is recorded by the head that runs the hook, so bool WorkspaceHookInfo.PreConsented is the only consent the API reports."
+          },
+          "hooks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceHookInfo"
+            },
+            "description": "Gets every hook in merge order, including disabled hooks."
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceHookSourceInfo"
+            },
+            "description": "Gets the files the hooks were read from, in merge order."
+          },
+          "diagnostics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceHookDiagnosticInfo"
+            },
+            "description": "Gets the problems found while loading."
+          }
+        },
+        "description": "The answer of `GET /hooks`: the effective hooks, the files they came from, the loading problems and the consent state. The API never starts a hook."
+      },
       "Message": {
         "required": [
           "role",
@@ -1943,6 +4947,50 @@
           }
         },
         "description": "A single chat message inside a session."
+      },
+      "NetworkEndpointInfo": {
+        "required": [
+          "name",
+          "host"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Gets what the upstream is for, for example `Sign-in authority`."
+          },
+          "host": {
+            "type": "string",
+            "description": "Gets the upstream as host or host:port. It never holds a scheme, a path, a query or credentials."
+          }
+        },
+        "description": "One upstream the API is configured to talk to."
+      },
+      "NetworkSettingsResponse": {
+        "required": [
+          "checked",
+          "reason",
+          "endpoints"
+        ],
+        "type": "object",
+        "properties": {
+          "checked": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether any upstream was contacted. It is always false: the API sends nothing."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Gets one plain sentence that says why the upstreams are not checked."
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkEndpointInfo"
+            },
+            "description": "Gets the configured upstreams."
+          }
+        },
+        "description": "The answer of `GET /settings/network`: the upstreams the API is configured for. The API makes no outbound call to answer, so every entry is unchecked."
       },
       "PendingToolApproval": {
         "required": [
@@ -2022,6 +5070,27 @@
           "unavailable"
         ],
         "description": "The result of the workspace plugin check."
+      },
+      "PluginsSettingsResponse": {
+        "required": [
+          "check",
+          "plugins"
+        ],
+        "type": "object",
+        "properties": {
+          "check": {
+            "description": "Gets the plugin check result. Its status is `unavailable` when the API has no plugin inventory.",
+            "$ref": "#/components/schemas/PluginCheckResult"
+          },
+          "plugins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspacePluginInfo"
+            },
+            "description": "Gets the plugins in composition order; empty when the API has no inventory."
+          }
+        },
+        "description": "The answer of `GET /settings/plugins`: the workspace plugin check and the plugin inventory the API has."
       },
       "ProblemDetails": {
         "type": "object",
@@ -2104,6 +5173,449 @@
           }
         },
         "description": "Request body for `POST /sessions/{id}/prompts`."
+      },
+      "ProviderConfiguredState": {
+        "enum": [
+          "configured",
+          "not-configured",
+          "not-required",
+          "unknown"
+        ],
+        "description": "Whether the service already has what it needs to call a provider. It says a key is present, never that it works."
+      },
+      "ProviderKind": {
+        "enum": [
+          "api",
+          "aggregator",
+          "coding-plan",
+          "local"
+        ],
+        "description": "What a catalogue provider sells or runs."
+      },
+      "ProviderPlanInfo": {
+        "required": [
+          "ruleText",
+          "interactiveOnly",
+          "separateKey",
+          "planUrl",
+          "tiers",
+          "listedTools"
+        ],
+        "type": "object",
+        "properties": {
+          "ruleText": {
+            "type": "string",
+            "description": "Gets the vendor's rule for using the plan key."
+          },
+          "ruleSourceUrl": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the page that states the rule, or null.",
+            "format": "uri"
+          },
+          "interactiveOnly": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the vendor limits the key to interactive use in named tools."
+          },
+          "separateKey": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the plan has a key of its own."
+          },
+          "planUrl": {
+            "type": "string",
+            "description": "Gets the page of the plan.",
+            "format": "uri"
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderPlanTierInfo"
+            },
+            "description": "Gets the tiers."
+          },
+          "listedTools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the tools the vendor lists for the plan."
+          }
+        },
+        "description": "The terms of a coding plan provider."
+      },
+      "ProviderPlanTierInfo": {
+        "required": [
+          "name",
+          "priceText",
+          "priceVerified"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Gets the tier name."
+          },
+          "priceText": {
+            "type": "string",
+            "description": "Gets the price as text."
+          },
+          "priceVerified": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the research verified the price."
+          },
+          "quotaText": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the published usage limits as text, or null when the vendor publishes none."
+          }
+        },
+        "description": "One tier of a coding plan."
+      },
+      "ProviderRegion": {
+        "enum": [
+          "europe",
+          "united-states",
+          "china",
+          "global",
+          "local"
+        ],
+        "description": "The part of the world a catalogue provider belongs to. It groups the list; it is not a residency claim."
+      },
+      "ProviderRouteInfo": {
+        "required": [
+          "id",
+          "api",
+          "baseUrlTemplate",
+          "auth",
+          "takesKey",
+          "discoversModels",
+          "needsUserModels",
+          "documentedModels"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the route slug, unique inside its provider."
+          },
+          "api": {
+            "type": "string",
+            "description": "Gets the omp `api` value the route speaks, for example `openai-completions`."
+          },
+          "baseUrlTemplate": {
+            "type": "string",
+            "description": "Gets the base URL or URL template. A placeholder is written `{name}`."
+          },
+          "auth": {
+            "type": "string",
+            "description": "Gets how the key is sent, as words: `Bearer`, `x-api-key`, `header NAME` or `none`."
+          },
+          "takesKey": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the route takes a key."
+          },
+          "discoversModels": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether omp may discover the models of the route."
+          },
+          "needsUserModels": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the user has to name a model id."
+          },
+          "documentedModels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the example models the vendor documents."
+          }
+        },
+        "description": "One way to reach a catalogue provider."
+      },
+      "ProvidersResponse": {
+        "required": [
+          "providers",
+          "total",
+          "custom",
+          "ompInstalled",
+          "credentialWritesEnabled",
+          "configWritesEnabled",
+          "liveTestsEnabled"
+        ],
+        "type": "object",
+        "properties": {
+          "providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderSummary"
+            },
+            "description": "Gets the catalogue providers that match the filters, in catalogue order."
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets how many providers the catalogue holds before the filters.",
+            "format": "int32"
+          },
+          "custom": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomProviderInfo"
+            },
+            "description": "Gets the custom endpoints the caller added."
+          },
+          "ompInstalled": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether omp is installed on the service."
+          },
+          "credentialWritesEnabled": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the operator allows keys to be written through the API."
+          },
+          "configWritesEnabled": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the operator allows custom endpoints and the default model to be changed through the API."
+          },
+          "liveTestsEnabled": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the operator allows live tests."
+          },
+          "defaultModel": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the default model as `provider/model`, or null when omp reports none or cannot be read."
+          }
+        },
+        "description": "The answer of `GET /providers`: the catalogue rows that match the filters, the caller's custom endpoints and what the service allows."
+      },
+      "ProviderSummary": {
+        "required": [
+          "id",
+          "displayName",
+          "region",
+          "kind",
+          "status",
+          "statusDate",
+          "takesKey",
+          "signInOnly",
+          "routes",
+          "urlVariables",
+          "sourceUrl",
+          "configured"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the provider slug, unique in the catalogue."
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Gets the name shown on the card."
+          },
+          "region": {
+            "description": "Gets the part of the world the provider belongs to.",
+            "$ref": "#/components/schemas/ProviderRegion"
+          },
+          "country": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the ISO 3166-1 alpha-2 country of the vendor or host, or null."
+          },
+          "residencyNote": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets what the vendor states about where data is processed, or null. OmpOS does not verify it."
+          },
+          "kind": {
+            "description": "Gets what the provider sells or runs.",
+            "$ref": "#/components/schemas/ProviderKind"
+          },
+          "status": {
+            "description": "Gets how far the research verified the provider.",
+            "$ref": "#/components/schemas/ProviderVerification"
+          },
+          "statusDate": {
+            "type": "string",
+            "description": "Gets the date the status was established.",
+            "format": "date"
+          },
+          "ompProviderId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the id omp knows the provider by, or null when omp has no native provider for it."
+          },
+          "apiKeyEnv": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the name of the environment variable that carries the key, or null. A name, never a value."
+          },
+          "takesKey": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the provider takes an API key."
+          },
+          "signInOnly": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the provider signs in through omp and takes no key."
+          },
+          "loginCommand": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the omp command that signs in for a sign-in provider, or null."
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderRouteInfo"
+            },
+            "description": "Gets the ways to reach the provider; the first is the default."
+          },
+          "urlVariables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderUrlVariableInfo"
+            },
+            "description": "Gets the placeholders the base URLs hold."
+          },
+          "docsUrl": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the vendor documentation, or null.",
+            "format": "uri"
+          },
+          "keyPageUrl": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the page where a key is created, or null.",
+            "format": "uri"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "description": "Gets the page the row was read on.",
+            "format": "uri"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a short caveat, or null. An unverified provider always has one."
+          },
+          "plan": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets the plan terms of a coding plan, or null.",
+                "$ref": "#/components/schemas/ProviderPlanInfo"
+              }
+            ]
+          },
+          "configured": {
+            "description": "Gets whether the service has a key or sign-in for the provider.",
+            "$ref": "#/components/schemas/ProviderConfiguredState"
+          }
+        },
+        "description": "One provider, aggregator, coding plan or local runtime of the catalogue, with whether the service has a key for it. A summary holds\nno key: it names the environment variable that carries one."
+      },
+      "ProviderTestResponse": {
+        "required": [
+          "providerId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "providerId": {
+            "type": "string",
+            "description": "Gets the provider that was tested."
+          },
+          "status": {
+            "description": "Gets the outcome.",
+            "$ref": "#/components/schemas/ProviderTestStatus"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the reason for a skipped, blocked or unreachable outcome, or null."
+          }
+        },
+        "description": "The answer of `POST /providers/{id}/test`."
+      },
+      "ProviderTestStatus": {
+        "enum": [
+          "skipped",
+          "reachable",
+          "unauthorized",
+          "unreachable",
+          "blocked"
+        ],
+        "description": "The outcome of a provider test. A test never sends a key, so it says only whether something answers at the address."
+      },
+      "ProviderUrlVariableInfo": {
+        "required": [
+          "name",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Gets the placeholder name."
+          },
+          "label": {
+            "type": "string",
+            "description": "Gets the label of the input."
+          },
+          "example": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets an example value, or null."
+          },
+          "help": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a short sentence that says where the user finds the value, or null."
+          }
+        },
+        "description": "A named placeholder in the base URL of a route."
+      },
+      "ProviderVerification": {
+        "enum": [
+          "verified",
+          "partial",
+          "unverified"
+        ],
+        "description": "How far the research verified a catalogue provider."
       },
       "Run": {
         "required": [
@@ -2215,6 +5727,119 @@
           "Cancelled"
         ],
         "description": "Lifecycle states of a hosted run. A run moves from Queued to Running and ends in exactly one of Completed, Failed or Cancelled."
+      },
+      "RuntimeSettingsResponse": {
+        "required": [
+          "harnessAdapter",
+          "sessionStore",
+          "coordinationStore",
+          "runLeaseSeconds",
+          "runLeaseRenewSeconds",
+          "maxPromptLength",
+          "maxRequestBodyBytes",
+          "promptsPerMinute",
+          "sessionsPerMinute",
+          "workspaceRequestsPerMinute",
+          "workspaceConfigured",
+          "includesUserScope",
+          "maxWorkspaceFileBytes"
+        ],
+        "type": "object",
+        "properties": {
+          "harnessAdapter": {
+            "type": "string",
+            "description": "Gets the harness adapter name (`InMemory` or `Acp`)."
+          },
+          "sessionStore": {
+            "type": "string",
+            "description": "Gets the session store name (`InMemory` or `Postgres`)."
+          },
+          "coordinationStore": {
+            "type": "string",
+            "description": "Gets the coordination store name (`InMemory` or `Dragonfly`)."
+          },
+          "runLeaseSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets how long a run lease lasts without renewal, in seconds.",
+            "format": "double"
+          },
+          "runLeaseRenewSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets how often the owner of a run lease renews it, in seconds.",
+            "format": "double"
+          },
+          "maxPromptLength": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the largest accepted prompt, in characters.",
+            "format": "int32"
+          },
+          "maxRequestBodyBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the largest accepted request body, in bytes.",
+            "format": "int64"
+          },
+          "promptsPerMinute": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the prompt submissions allowed per minute.",
+            "format": "int32"
+          },
+          "sessionsPerMinute": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the session creations allowed per minute.",
+            "format": "int32"
+          },
+          "workspaceRequestsPerMinute": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the workspace and settings reads allowed per minute.",
+            "format": "int32"
+          },
+          "workspaceConfigured": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the API has a workspace folder."
+          },
+          "includesUserScope": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the user directories of the API process home are read."
+          },
+          "maxWorkspaceFileBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the largest file `GET /workspace/file` returns, in bytes.",
+            "format": "int32"
+          }
+        },
+        "description": "The answer of `GET /settings/runtime`: the effective limits and options of the API as read-only values. It holds no secret, no connection string and no path."
       },
       "RunTranscript": {
         "required": [
@@ -2682,6 +6307,36 @@
         },
         "description": "The body of `PUT /sessions/{id}/config-options/{optionId}`."
       },
+      "SetCredentialRequest": {
+        "type": "object",
+        "properties": {
+          "apiKey": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the API key. Required, no whitespace, within 512 characters."
+          },
+          "planRuleAccepted": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the user confirmed that they read the vendor's rule text. Required for a coding plan provider."
+          }
+        },
+        "description": "The body of `PUT /providers/{id}/credential`. The key is write-only: no response, log or problem repeats it."
+      },
+      "SetDefaultModelRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the model as `provider/model`. Required."
+          }
+        },
+        "description": "The body of `PUT /models/default`."
+      },
       "SourceInfo": {
         "required": [
           "licence",
@@ -2970,6 +6625,273 @@
         },
         "description": "The context of the task a session works on: its Kanban status, the workflow phase, and what the substrate shares with the\nsession. Every part is optional. A part that cannot be read is absent and the reason is listed in IReadOnlyList&lt;string&gt; TaskContext.Warnings."
       },
+      "WorkspaceAutomationInfo": {
+        "required": [
+          "id",
+          "trigger",
+          "enabled",
+          "maxRuntimeSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the automation identifier."
+          },
+          "trigger": {
+            "type": "string",
+            "description": "Gets what starts the automation, in words."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the automation is enabled."
+          },
+          "maxRuntimeSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets the longest a single run may last, in seconds.",
+            "format": "double"
+          },
+          "lastRun": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets the latest run attempt, or null when there is none.",
+                "$ref": "#/components/schemas/AutomationLastRunInfo"
+              }
+            ]
+          },
+          "pause": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets the pause a guard placed on the automation, or null.",
+                "$ref": "#/components/schemas/AutomationPauseInfo"
+              }
+            ]
+          }
+        },
+        "description": "One automation."
+      },
+      "WorkspaceEntryKind": {
+        "enum": [
+          "file",
+          "directory"
+        ],
+        "description": "The kind of an entry of a workspace folder listing."
+      },
+      "WorkspaceFileResponse": {
+        "required": [
+          "path",
+          "size",
+          "content"
+        ],
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Gets the file as a workspace-relative path with `/` separators."
+          },
+          "size": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the size of the file in bytes.",
+            "format": "int64"
+          },
+          "content": {
+            "type": "string",
+            "description": "Gets the UTF-8 text of the file."
+          }
+        },
+        "description": "The answer of `GET /workspace/file`: the text of one file."
+      },
+      "WorkspaceHookDiagnosticInfo": {
+        "required": [
+          "severity",
+          "file",
+          "location",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "severity": {
+            "type": "string",
+            "description": "Gets `warning` or `error`."
+          },
+          "file": {
+            "type": "string",
+            "description": "Gets the file the problem is in."
+          },
+          "location": {
+            "type": "string",
+            "description": "Gets a JSON path such as `$.hooks.preToolUse[0].command`, or `$`."
+          },
+          "message": {
+            "type": "string",
+            "description": "Gets what is wrong. It holds no absolute server path."
+          }
+        },
+        "description": "One problem found while loading a hook file."
+      },
+      "WorkspaceHookInfo": {
+        "required": [
+          "id",
+          "pluginId",
+          "scope",
+          "eventName",
+          "isOmpEvent",
+          "type",
+          "enabled",
+          "failClosed",
+          "blocking",
+          "preConsented",
+          "timeoutSeconds",
+          "workingDirectory",
+          "sourceFile"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the hook identifier."
+          },
+          "pluginId": {
+            "type": "string",
+            "description": "Gets the id the Hooks page groups the hook under."
+          },
+          "scope": {
+            "type": "string",
+            "description": "Gets the scope of the file the hook came from, for example `project` or `user`."
+          },
+          "eventName": {
+            "type": "string",
+            "description": "Gets the event name the hook runs on."
+          },
+          "isOmpEvent": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the event is an omp extension event."
+          },
+          "type": {
+            "type": "string",
+            "description": "Gets how the hook decides: `command` or `prompt`."
+          },
+          "command": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the command line of a command hook, or null."
+          },
+          "args": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the argument list of a command hook that has one, or null."
+          },
+          "matcher": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the matcher text, or null."
+          },
+          "matcherProblem": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets why the matcher is invalid, or null."
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the free-text description, or null."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the file leaves the hook on."
+          },
+          "failClosed": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether a failure of the hook blocks the action."
+          },
+          "blocking": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the hook guards an action."
+          },
+          "preConsented": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the hook needs no consent because a tamper-resistant managed file declares it."
+          },
+          "timeoutSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets the hook timeout in seconds.",
+            "format": "double"
+          },
+          "workingDirectory": {
+            "type": "string",
+            "description": "Gets the directory the hook would run in, relative to the workspace folder or `~/` relative."
+          },
+          "sourceFile": {
+            "type": "string",
+            "description": "Gets the file the hook came from, relative to the workspace folder or `~/` relative."
+          }
+        },
+        "description": "One hook of the effective hook set. Nothing here starts the hook."
+      },
+      "WorkspaceHookSourceInfo": {
+        "required": [
+          "scope",
+          "file",
+          "format",
+          "priority"
+        ],
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "description": "Gets the scope of the file."
+          },
+          "file": {
+            "type": "string",
+            "description": "Gets the file, relative to the workspace folder or `~/` relative."
+          },
+          "format": {
+            "type": "string",
+            "description": "Gets how the file is read."
+          },
+          "priority": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the position of the file in merge order; lower runs first.",
+            "format": "int32"
+          }
+        },
+        "description": "One hook configuration file that was found."
+      },
       "WorkspaceInfo": {
         "required": [
           "name",
@@ -2994,6 +6916,102 @@
           }
         },
         "description": "The answer of `GET /workspace`: what the top bar of the web head shows."
+      },
+      "WorkspacePluginInfo": {
+        "required": [
+          "id",
+          "displayName",
+          "role",
+          "found"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the plugin identifier."
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Gets the name shown to the user."
+          },
+          "role": {
+            "type": "string",
+            "description": "Gets the plugin's role in a short phrase."
+          },
+          "version": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the plugin version, or null when it is not known."
+          },
+          "found": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the plugin was found and healthy."
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a line of detail, or null. It holds no path and no credential."
+          }
+        },
+        "description": "One plugin of the workspace plugin inventory."
+      },
+      "WorkspaceTreeEntry": {
+        "required": [
+          "name",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Gets the entry name, without its folder."
+          },
+          "kind": {
+            "description": "Gets whether the entry is a file or a folder.",
+            "$ref": "#/components/schemas/WorkspaceEntryKind"
+          },
+          "size": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Gets the size of a file in bytes, or null for a folder.",
+            "format": "int64"
+          }
+        },
+        "description": "One entry of a workspace folder listing."
+      },
+      "WorkspaceTreeResponse": {
+        "required": [
+          "path",
+          "entries",
+          "truncated"
+        ],
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Gets the folder as a workspace-relative path with `/` separators; empty for the workspace folder itself."
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceTreeEntry"
+            },
+            "description": "Gets the entries in ordinal name order."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the folder holds more entries than the listing returns."
+          }
+        },
+        "description": "The answer of `GET /workspace/tree`: the entries of one folder. Secret files and links that leave the workspace are not listed."
       }
     }
   },
@@ -3027,6 +7045,15 @@
     },
     {
       "name": "Source"
+    },
+    {
+      "name": "Workspace settings"
+    },
+    {
+      "name": "Providers"
+    },
+    {
+      "name": "Cloud"
     }
   ]
 }

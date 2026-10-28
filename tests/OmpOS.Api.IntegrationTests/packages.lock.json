@@ -432,6 +432,12 @@
           "OmpOS.Harness.Abstractions": "[0.15.0, )",
           "OmpOS.Harness.Acp": "[0.15.0, )",
           "OmpOS.Harness.InMemory": "[0.15.0, )",
+          "OmpOS.Harness.OmpConfig": "[0.15.0, )",
+          "OmpOS.Harness.OmpLauncher": "[0.15.0, )",
+          "OmpOS.Harness.Plugins": "[0.15.0, )",
+          "OmpOS.Harness.Providers": "[0.15.0, )",
+          "OmpOS.Harness.Secrets": "[0.15.0, )",
+          "OmpOS.Harness.Workspace": "[0.15.0, )",
           "OmpOS.Harness.Worktrees": "[0.15.0, )",
           "OmpOS.Parser": "[0.15.0, )",
           "OmpOS.Sandbox": "[0.15.0, )",
@@ -484,6 +490,38 @@
           "OmpOS.Contracts": "[0.15.0, )",
           "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
+      },
+      "ompos.harness.ompconfig": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Harness.OmpLauncher": "[0.15.0, )",
+          "OmpOS.Harness.Providers": "[0.15.0, )",
+          "OmpOS.Harness.Secrets": "[0.15.0, )"
+        }
+      },
+      "ompos.harness.omplauncher": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Harness.Terminal": "[0.15.0, )"
+        }
+      },
+      "ompos.harness.plugins": {
+        "type": "Project"
+      },
+      "ompos.harness.providers": {
+        "type": "Project"
+      },
+      "ompos.harness.secrets": {
+        "type": "Project"
+      },
+      "ompos.harness.terminal": {
+        "type": "Project",
+        "dependencies": {
+          "Porta.Pty": "[2.2.3, )"
+        }
+      },
+      "ompos.harness.workspace": {
+        "type": "Project"
       },
       "ompos.harness.worktrees": {
         "type": "Project"
@@ -771,6 +809,12 @@
         "resolved": "2.5.1",
         "contentHash": "FAMaFFWnULW+hDHMb40Qzhcgz9cAU2/EtgRCBNX/DdQoKo0sPG2EiY+w7bQdl/BgHnf/DbpXLbf5Xy0o15M8NA=="
       },
+      "Microsoft.Windows.Console.ConPTY": {
+        "type": "CentralTransitive",
+        "requested": "[1.24.260710001, )",
+        "resolved": "1.24.260710001",
+        "contentHash": "JR1xAkZbNnAALBjzFpqSwEx7YZfD1LI228jF9j9cgKknBPCiFy9mpphlgH+TpTN8vajTUpcgg9Miy5Y8eUAH9g=="
+      },
       "Npgsql": {
         "type": "CentralTransitive",
         "requested": "[10.0.3, )",
@@ -827,6 +871,15 @@
         "contentHash": "sJF0pjXDlROVcOz/zOihIlbC8mtb5/zm2q3zs0z+qWUtoZnlFJlHHZ1pHNUJ7VVZu3FmD8EwYGGglw5sbVr8jQ==",
         "dependencies": {
           "OpenTelemetry.Api.ProviderBuilderExtensions": "[1.20.0, 2.0.0)"
+        }
+      },
+      "Porta.Pty": {
+        "type": "CentralTransitive",
+        "requested": "[2.2.3, )",
+        "resolved": "2.2.3",
+        "contentHash": "Q+U4BOiKQP8AR68Fjy6h+rLlcXcH5ao+qwIO7xAejO0U4MqFqM9/SdtcG/cZwOlQydciagiA0I7HWVRkfealyQ==",
+        "dependencies": {
+          "Microsoft.Windows.Console.ConPTY": "1.24.260710001"
         }
       },
       "Scalar.AspNetCore": {
