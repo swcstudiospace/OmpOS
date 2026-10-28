@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.swcstudiospace.ompos">
   <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="36" />
-  <application android:label="OmpOS" android:theme="@style/OmpOSTheme" />
+  <application android:label="OmpOS" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:theme="@style/OmpOSTheme" />
 </manifest>

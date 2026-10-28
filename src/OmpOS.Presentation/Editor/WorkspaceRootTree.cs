@@ -8,24 +8,37 @@ namespace OmpOS.Presentation.Editor;
 /// </summary>
 public sealed class WorkspaceRootTree : ObservableModel
 {
-    private readonly WorkspaceRootSource _source;
+    private readonly Func<IWorkspaceFileSystem>? _open;
+    private readonly Func<CancellationToken, Task<IAsyncWorkspaceFileSystem>>? _openAsync;
     private string? _error;
     private bool _isExpanded = true;
 
     internal WorkspaceRootTree(WorkspaceRootSource source)
     {
-        _source = source;
+        Id = source.Id;
+        DisplayName = source.DisplayName;
+        IsPrimary = source.IsPrimary;
+        _open = source.Open;
+        Tree = new WorkspaceTree();
+    }
+
+    internal WorkspaceRootTree(AsyncWorkspaceRootSource source)
+    {
+        Id = source.Id;
+        DisplayName = source.DisplayName;
+        IsPrimary = source.IsPrimary;
+        _openAsync = source.Open;
         Tree = new WorkspaceTree();
     }
 
     /// <summary>Gets the stable identifier of the root.</summary>
-    public string Id => _source.Id;
+    public string Id { get; }
 
     /// <summary>Gets the root name shown on the row.</summary>
-    public string DisplayName => _source.DisplayName;
+    public string DisplayName { get; }
 
     /// <summary>Gets whether this is the primary root, the working directory of the run.</summary>
-    public bool IsPrimary => _source.IsPrimary;
+    public bool IsPrimary { get; }
 
     /// <summary>Gets the tree of the root's folder. It is empty until the root opens successfully.</summary>
     public WorkspaceTree Tree { get; }
@@ -55,9 +68,33 @@ public sealed class WorkspaceRootTree : ObservableModel
 
     internal void Open()
     {
+        if (_open is null)
+        {
+            throw new InvalidOperationException("This root is reached asynchronously: open it with OpenAsync.");
+        }
+
         try
         {
-            Tree.OpenFolder(_source.Open());
+            Tree.OpenFolder(_open());
+            Error = null;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException or ArgumentException)
+        {
+            Error = $"{DisplayName}: {exception.Message}";
+        }
+    }
+
+    internal async Task OpenAsync(CancellationToken cancellationToken)
+    {
+        if (_openAsync is null)
+        {
+            throw new InvalidOperationException("This root is reached synchronously: open it with Open.");
+        }
+
+        try
+        {
+            var fileSystem = await _openAsync(cancellationToken).ConfigureAwait(true);
+            await Tree.OpenFolderAsync(fileSystem, cancellationToken).ConfigureAwait(true);
             Error = null;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException or ArgumentException)

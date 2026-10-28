@@ -33,6 +33,12 @@ public static class OmpLaunchPlanner
     /// to omp as its own <c>--add-dir</c> argument (the probe in <c>docs/runbooks/evidence/multi-repo-omp-probe-2026-10-27</c> proved
     /// that <c>omp acp</c> honours the flag), after every other argument. The workspace root itself is never one of them.
     /// </param>
+    /// <param name="hookBridge">
+    /// The loopback endpoint of the session's hook bridge, or null when hooks are off for the session. When it is present and its plugin
+    /// (<see cref="HookBridgePlugin"/>) is ready, <c>-e &lt;plugins/ompos-hooks-omp&gt;</c> is added after the other plugins and the environment gets
+    /// <c>OMPOS_HOOKS_URL</c>, <c>OMPOS_HOOKS_TOKEN</c> and <c>OMPOS_HOOKS_STARTUP_FILE</c>. A plugin that is missing or unhealthy is left out
+    /// like any other: the plan then carries a degraded planning event, no hook variable, and <see cref="OmpLaunchPlan.HooksBridgeLoaded"/> is false.
+    /// </param>
     /// <returns>The plan.</returns>
     /// <exception cref="ArgumentException">
     /// The session identifier is unsafe, the workspace is not an absolute path, the isolated profile has no home directory, or an
@@ -45,7 +51,8 @@ public static class OmpLaunchPlanner
         string workspaceRoot,
         string? graphId,
         TimeProvider? timeProvider = null,
-        IReadOnlyList<string>? additionalDirectories = null)
+        IReadOnlyList<string>? additionalDirectories = null,
+        HookBridgeEndpoint? hookBridge = null)
     {
         ValidateInputs(settings, plugins, sessionId, workspaceRoot);
         var extraDirectories = ValidateAdditionalDirectories(additionalDirectories, workspaceRoot);
@@ -88,19 +95,21 @@ public static class OmpLaunchPlanner
             AddEntryPaths(plugin, arguments);
         }
 
+        var hooksLoaded = AddHookBridge(hookBridge, sessionId, graphId, now, arguments, events);
         var overlayPath = AddConfigOverlay(settings, sessionDirectory, arguments);
         AddDirectories(extraDirectories, arguments);
 
         return new OmpLaunchPlan
         {
             ExtraArguments = arguments,
-            Environment = BuildEnvironment(settings, sessionDirectory, substrateActive ? substrate.BaseAddress : null),
+            Environment = BuildEnvironment(settings, sessionDirectory, substrateActive ? substrate.BaseAddress : null, hooksLoaded ? hookBridge : null),
             McpServers = substrateActive ? [BuildMcpServer(settings, substrate.BaseAddress!)] : [],
             WorkingDirectory = workspaceRoot,
             ConfigOverlayPath = overlayPath,
             AdditionalDirectories = extraDirectories,
             LoadedPluginIds = loaded,
             PlanningEvents = events,
+            HooksBridgeLoaded = hooksLoaded,
         };
     }
 
@@ -120,6 +129,24 @@ public static class OmpLaunchPlanner
             arguments.Add("--add-dir");
             arguments.Add(directory);
         }
+    }
+
+    private static bool AddHookBridge(HookBridgeEndpoint? hookBridge, string sessionId, string? graphId, DateTimeOffset now, List<string> arguments, List<StageEvent> events)
+    {
+        if (hookBridge is null)
+        {
+            return false;
+        }
+
+        var plugin = hookBridge.Plugin;
+        if (plugin.Health != PluginHealth.Ready)
+        {
+            events.Add(PluginStageEvents.Create(plugin.Descriptor, sessionId, graphId, PluginStageEvents.StatusFor(plugin.Health), plugin.Message + " Hooks cannot block or observe tool calls in this session.", now));
+            return false;
+        }
+
+        AddEntryPaths(plugin, arguments);
+        return true;
     }
 
     private static string? AddConfigOverlay(AgentLoopSettings settings, string sessionDirectory, List<string> arguments)
@@ -251,7 +278,7 @@ public static class OmpLaunchPlanner
 
     private static SubstratePlan Unusable(StageStatus status, string detail) => new(null, new SubstrateProblem(status, detail));
 
-    private static Dictionary<string, string> BuildEnvironment(AgentLoopSettings settings, string sessionDirectory, string? substrateBase)
+    private static Dictionary<string, string> BuildEnvironment(AgentLoopSettings settings, string sessionDirectory, string? substrateBase, HookBridgeEndpoint? hookBridge)
     {
         var environment = new Dictionary<string, string>(StringComparer.Ordinal);
         if (settings.IsolatedHomeDirectory is { } home && !string.IsNullOrWhiteSpace(home))
@@ -267,6 +294,13 @@ public static class OmpLaunchPlanner
         environment["SUBSTRATE_OMP_PENDING_DIR"] = SessionStateLayout.SubstratePendingDirectory(sessionDirectory);
         environment[SteerDirectoryVariable] = SessionStateLayout.SteerDirectory(sessionDirectory);
         environment[ConnectionFileVariable] = SessionStateLayout.ConnectionFile(sessionDirectory);
+        if (hookBridge is not null)
+        {
+            foreach (var pair in hookBridge.Environment)
+            {
+                environment[pair.Key] = pair.Value;
+            }
+        }
 
         if (!settings.UltrathinkEnabled)
         {

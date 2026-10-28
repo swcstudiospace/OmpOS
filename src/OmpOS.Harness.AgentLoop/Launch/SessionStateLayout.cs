@@ -141,6 +141,26 @@ public static class SessionStateLayout
         Path.Combine(Under(sessionStateDirectory, "connection"), "report.json");
 
     /// <summary>
+    /// Returns the directory of the session's hooks state: <c>&lt;dir&gt;/hooks</c>. It holds the bridge startup file and the run log, and is
+    /// created private to the owner (mode 0700) by the bridge server and the run log.
+    /// </summary>
+    /// <param name="sessionStateDirectory">The directory returned by <see cref="SessionDirectory"/>.</param>
+    public static string HooksDirectory(string sessionStateDirectory) => Under(sessionStateDirectory, "hooks");
+
+    /// <summary>
+    /// Returns the startup file the hook bridge writes for the omp extension, the value of <c>OMPOS_HOOKS_STARTUP_FILE</c>:
+    /// <c>&lt;dir&gt;/hooks/startup.json</c>. It holds event names only, never the bearer token.
+    /// </summary>
+    /// <param name="sessionStateDirectory">The directory returned by <see cref="SessionDirectory"/>.</param>
+    public static string HooksStartupFile(string sessionStateDirectory) => Path.Combine(HooksDirectory(sessionStateDirectory), "startup.json");
+
+    /// <summary>
+    /// Returns the append-only run log of the session's hooks: <c>&lt;dir&gt;/hooks/runs.jsonl</c> (the previous generation is <c>runs.jsonl.1</c>).
+    /// </summary>
+    /// <param name="sessionStateDirectory">The directory returned by <see cref="SessionDirectory"/>.</param>
+    public static string HooksRunLogFile(string sessionStateDirectory) => Path.Combine(HooksDirectory(sessionStateDirectory), "runs.jsonl");
+
+    /// <summary>
     /// Returns the path of the omp settings overlay of the session: <c>&lt;dir&gt;/omp-overlay.yml</c>.
     /// </summary>
     /// <param name="sessionStateDirectory">The directory returned by <see cref="SessionDirectory"/>.</param>

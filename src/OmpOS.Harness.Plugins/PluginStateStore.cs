@@ -148,6 +148,21 @@ public sealed class PluginStateStore : IDisposable
     }
 
     /// <summary>
+    /// Withdraws the consent for a command hash and persists it. A hash without consent is left unchanged.
+    /// </summary>
+    /// <param name="commandHash">The hash whose consent is withdrawn.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    public async Task RevokeConsentAsync(string commandHash, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(commandHash);
+        await MutateAsync(
+            state => state.ConsentedHashes.Contains(commandHash)
+                ? state with { ConsentedHashes = state.ConsentedHashes.Remove(commandHash) }
+                : state,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Sets whether a hook is disabled and persists it.
     /// </summary>
     /// <param name="hookId">The hook identifier.</param>

@@ -43,11 +43,23 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
     /// <summary>How long disposal waits for the agent to answer <c>session/close</c> before it stops the child anyway: the close is best-effort, and an agent that never answers it must not keep its child alive for a whole request timeout.</summary>
     private static readonly TimeSpan DisposeCloseTimeout = TimeSpan.FromSeconds(3);
 
+    /// <summary>How long a <c>sessionEnd</c> hook may delay the close of a session.</summary>
+    private static readonly TimeSpan HookSessionEndTimeout = TimeSpan.FromSeconds(5);
+
+    /// <summary>The largest file whose previous text is read to describe an <c>afterFileEdit</c>; a larger file is reported without a previous text.</summary>
+    private const long MaxHookCompareBytes = 2L * 1024 * 1024;
+
     private static readonly Action<ILogger, string?, Exception?> PumpFailed =
         LoggerMessage.Define<string?>(
             LogLevel.Error,
             new EventId(1, "AcpPumpFailed"),
             "The omp acp pump failed for session {SessionId}.");
+
+    private static readonly Action<ILogger, string, string, Exception?> HookGateFailed =
+        LoggerMessage.Define<string, string>(
+            LogLevel.Warning,
+            new EventId(2, "AcpHookGateFailed"),
+            "The hook gate failed at {Point} with {ExceptionType}; the action was allowed.");
 
     private static readonly string[] AllowKinds = ["allow_once", "allow_always"];
     private static readonly string[] RejectKinds = ["reject_once", "reject_always"];
@@ -61,6 +73,9 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
     private readonly HarnessStateMachine _machine = new();
     private readonly System.Threading.Lock _gate = new();
     private readonly ILogger<AcpAgentSession> _logger;
+    private readonly IAcpHookGate? _hookGate;
+    private readonly AcpHookSignals? _hookSignals;
+    private int _endNotified;
     private readonly Dictionary<long, PendingCall> _pending = [];
     private long _lastRequestId;
     private PromptTurn? _turn;
@@ -112,6 +127,8 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         _permissionResolver = permissionResolver;
         _permissionDecisionTimeout = permissionDecisionTimeout;
         _logger = logger ?? NullLogger<AcpAgentSession>.Instance;
+        _hookGate = options.HookGate;
+        _hookSignals = options.HookGate is null ? null : new AcpHookSignals(options.HookGate, TimeProvider.System);
     }
 
     /// <summary>Gets the ACP session identifier once the session has been created or resumed.</summary>
@@ -256,24 +273,56 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         PromptOptions options,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(prompt);
-        ArgumentNullException.ThrowIfNull(options);
-        if (options.Steer)
+        ValidateSubmit(prompt, options);
+        var (hookedPrompt, refusal) = await ApplyBeforePromptGateAsync(prompt, cancellationToken).ConfigureAwait(false);
+        if (refusal is not null)
         {
-            throw new NotSupportedException("ACP v1 has no steer operation. Cancel the in-flight prompt, then submit.");
+            foreach (var refused in refusal)
+            {
+                yield return refused;
+            }
+
+            yield break;
         }
 
         var turn = BeginTurn();
         var finished = false;
         try
         {
-            await StartPromptAsync(turn, prompt, cancellationToken).ConfigureAwait(false);
-            await foreach (var harnessEvent in turn.Events.Reader.ReadAllAsync(cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
+            await StartPromptAsync(turn, hookedPrompt, cancellationToken).ConfigureAwait(false);
+            while (true)
             {
-                yield return harnessEvent;
-            }
+                var held = new HeldTerminalEvent(_hookGate is not null);
+                await foreach (var harnessEvent in turn.Events.Reader.ReadAllAsync(cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
+                {
+                    // With a hook gate the terminal event is held back until the stop hooks have run: a follow-up continues the same stream.
+                    if (!held.TryHold(harnessEvent))
+                    {
+                        yield return harnessEvent;
+                    }
+                }
 
-            finished = true;
+                var (notice, followUp, final) = await EndHeldTurnAsync(held, cancellationToken).ConfigureAwait(false);
+                if (followUp is not null)
+                {
+                    if (!string.IsNullOrEmpty(notice))
+                    {
+                        yield return new DiagnosticEvent(notice);
+                    }
+
+                    turn = BeginTurn();
+                    await StartPromptAsync(turn, followUp, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                if (final is not null)
+                {
+                    yield return final;
+                }
+
+                finished = true;
+                break;
+            }
         }
         finally
         {
@@ -503,6 +552,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         }
 
         await CloseRemoteAsync(sessionId, _options.RequestTimeout, cancellationToken).ConfigureAwait(false);
+        await NotifySessionClosedAsync("user_close").ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -533,6 +583,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
             FailTurn(turn, new DisconnectedHarnessException("The ACP session was disposed while a prompt was streaming.", sessionId));
         }
 
+        await NotifySessionClosedAsync("user_close").ConfigureAwait(false);
         if (closeRemote && sessionId is not null)
         {
             try
@@ -902,6 +953,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
             _pumpTask = PumpAsync();
             await InitializeAsync(cancellationToken).ConfigureAwait(false);
             await OpenSessionAsync(resumeSessionId, cancellationToken).ConfigureAwait(false);
+            await NotifySessionOpenedAsync(resumeSessionId is not null, cancellationToken).ConfigureAwait(false);
             lock (_gate)
             {
                 _machine.TransitionTo(HarnessState.Ready);
@@ -1214,6 +1266,8 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
                 throw new JsonException("session/update carries no update object.");
             }
 
+            _hookSignals?.OnUpdate(notification.Update);
+
             if (AcpWireMapping.MapSessionUpdate(notification.Update) is { } harnessEvent)
             {
                 WriteTurnEvent(turn, harnessEvent);
@@ -1250,18 +1304,44 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         await SendFrameAsync(new AcpFrames.ErrorResponse(id, error), AcpJsonContext.Default.ErrorResponse, CancellationToken.None).ConfigureAwait(false);
     }
 
-    private async Task AnswerPermissionAsync(long id, AcpFrames.Inbound request)
+    private static AcpFrames.PermissionRequestParams? ParsePermissionParams(JsonElement? raw)
     {
-        var raw = request.Params;
-        AcpFrames.PermissionRequestParams? parameters = null;
         try
         {
-            parameters = raw?.Deserialize(AcpJsonContext.Default.PermissionRequestParams);
+            return raw?.Deserialize(AcpJsonContext.Default.PermissionRequestParams);
         }
         catch (JsonException)
         {
-            parameters = null;
+            return null;
         }
+    }
+
+    private async Task<bool> HookDeniesPermissionAsync(long id, AcpFrames.PermissionRequestParams parameters, AcpPermissionRequest permission, PromptTurn? turn)
+    {
+        if (_hookGate is null)
+        {
+            return false;
+        }
+
+        var hookVerdict = await AskGateAsync("BeforePermission", gate => gate.BeforePermissionAsync(permission, CancellationToken.None)).ConfigureAwait(false);
+        if (!hookVerdict.Denied)
+        {
+            return false;
+        }
+
+        if (turn is not null)
+        {
+            WriteTurnEvent(turn, new DiagnosticEvent($"A hook denied permission request for call '{permission.CallId}': {hookVerdict.DenialText}"));
+        }
+
+        await SendPermissionOutcomeAsync(id, parameters.Options, granted: false, CancellationToken.None).ConfigureAwait(false);
+        return true;
+    }
+
+    private async Task AnswerPermissionAsync(long id, AcpFrames.Inbound request)
+    {
+        var raw = request.Params;
+        var parameters = ParsePermissionParams(raw);
 
         if (parameters?.ToolCall is not { } toolCall || raw is null)
         {
@@ -1276,6 +1356,12 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
             toolCall.Kind ?? string.Empty,
             raw.Value.GetRawText());
         var turn = ActiveTurn();
+
+        // A hook may deny before the approval policy is consulted. It can only tighten: the policy still decides everything it admits.
+        if (await HookDeniesPermissionAsync(id, parameters, permission, turn).ConfigureAwait(false))
+        {
+            return;
+        }
 
         // The policy ceiling is consulted first. A request it forbids never becomes an approval: the turn records an informational
         // diagnostic and the agent gets its reject answer at once, so no run registers or waits on the request.
@@ -1458,6 +1544,16 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
             return;
         }
 
+        if (_hookGate is not null)
+        {
+            var hookVerdict = await AskGateAsync("BeforeReadFile", gate => gate.BeforeReadFileAsync(fullPath, string.Join("\n", lines), CancellationToken.None)).ConfigureAwait(false);
+            if (hookVerdict.Denied)
+            {
+                await SendFsErrorAsync(id, InvalidParams, $"{FsReadMethod} was denied by a hook: {hookVerdict.DenialText}").ConfigureAwait(false);
+                return;
+            }
+        }
+
         var start = (parameters.Line ?? 1) - 1;
         var selected = lines.Skip(start);
         if (parameters.Limit.HasValue)
@@ -1521,10 +1617,14 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
             return;
         }
 
+        var previousContent = _hookGate is null ? null : await ReadPreviousContentAsync(fullPath).ConfigureAwait(false);
+
         if (!await TryWriteFsFileAsync(id, fullPath, parameters.Content).ConfigureAwait(false))
         {
             return;
         }
+
+        await NotifyFileWrittenAsync(fullPath, previousContent, parameters.Content).ConfigureAwait(false);
 
         await SendFrameAsync(
             new AcpFrames.Response<AcpFrames.FsWriteResult>(id, new AcpFrames.FsWriteResult()),
@@ -1783,6 +1883,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
     /// <summary>Runs on the pump. Completes the turn: an error ends it with an <see cref="ErrorEvent"/> alone; a result ends it with a <see cref="CompletedEvent"/> carrying its stop reason.</summary>
     private void OnPromptResponse(PromptTurn turn, AcpFrames.Inbound response)
     {
+        _hookSignals?.FlushText();
         if (response.Error is { } error)
         {
             Settle(turn);
@@ -2035,6 +2136,188 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         catch (JsonException ex)
         {
             throw new AcpRequestFailedHarnessException($"omp acp answered '{method}' with an unreadable result.", method, ex);
+        }
+    }
+
+    private async Task NotifySessionOpenedAsync(bool resumed, CancellationToken cancellationToken)
+    {
+        if (_hookGate is not { } gate || SessionId is not { } sessionId)
+        {
+            return;
+        }
+
+        try
+        {
+            await gate.SessionOpenedAsync(sessionId, resumed, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not (OutOfMemoryException or OperationCanceledException))
+        {
+            HookGateFailed(_logger, "SessionOpened", ex.GetType().Name, null);
+        }
+    }
+
+    /// <summary>Tells the gate the session ended, once, with a bound so a slow <c>sessionEnd</c> hook cannot hold the disposal.</summary>
+    private async Task NotifySessionClosedAsync(string reason)
+    {
+        if (_hookGate is not { } gate || SessionId is null || Interlocked.Exchange(ref _endNotified, 1) != 0)
+        {
+            return;
+        }
+
+        using var limit = new CancellationTokenSource(HookSessionEndTimeout);
+        try
+        {
+            await gate.SessionClosedAsync(reason, limit.Token).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            HookGateFailed(_logger, "SessionClosed", ex.GetType().Name, null);
+        }
+    }
+
+    private static void ValidateSubmit(string prompt, PromptOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(prompt);
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.Steer)
+        {
+            throw new NotSupportedException("ACP v1 has no steer operation. Cancel the in-flight prompt, then submit.");
+        }
+    }
+
+    /// <summary>Runs the <c>BeforePrompt</c> hooks. Returns the prompt with the hook context in front of it, or the events that refuse the prompt.</summary>
+    private async Task<(string Prompt, HarnessEvent[]? Refusal)> ApplyBeforePromptGateAsync(string prompt, CancellationToken cancellationToken)
+    {
+        if (_hookGate is null)
+        {
+            return (prompt, null);
+        }
+
+        var verdict = await AskGateAsync("BeforePrompt", gate => gate.BeforePromptAsync(prompt, cancellationToken)).ConfigureAwait(false);
+        if (verdict.Denied)
+        {
+            return (prompt, [new DiagnosticEvent("A hook stopped this prompt: " + verdict.DenialText), new CompletedEvent("refusal")]);
+        }
+
+        return (string.IsNullOrEmpty(verdict.PromptContext) ? prompt : verdict.PromptContext + "\n\n" + prompt, null);
+    }
+
+    /// <summary>Runs the stop hooks for a turn whose terminal event was held. Returns the follow-up prompt (and the notice to show) when the hooks continue the turn, else the terminal event to deliver, or nothing when the stream ended without one.</summary>
+    private async Task<(string? Notice, string? FollowUp, HarnessEvent? Final)> EndHeldTurnAsync(HeldTerminalEvent held, CancellationToken cancellationToken)
+    {
+        var completed = held.Completed;
+        var failed = held.Failed;
+        if (completed is null && failed is null)
+        {
+            return (null, null, null);
+        }
+
+        var decision = await EndTurnWithGateAsync(completed?.Reason ?? "error", cancellationToken).ConfigureAwait(false);
+        if (completed is not null && !string.IsNullOrEmpty(decision.FollowUpPrompt))
+        {
+            return (decision.Notice, decision.FollowUpPrompt, null);
+        }
+
+        return (null, null, (HarnessEvent?)completed ?? failed);
+    }
+
+    /// <summary>Holds back the terminal event of a turn while the stop hooks decide whether the turn continues.</summary>
+    private sealed class HeldTerminalEvent(bool enabled)
+    {
+        /// <summary>Gets the held completion, or null.</summary>
+        public CompletedEvent? Completed { get; private set; }
+
+        /// <summary>Gets the held error, or null.</summary>
+        public ErrorEvent? Failed { get; private set; }
+
+        /// <summary>Holds a terminal event when holding is enabled. Returns true when the event was held.</summary>
+        public bool TryHold(HarnessEvent harnessEvent)
+        {
+            if (!enabled)
+            {
+                return false;
+            }
+
+            switch (harnessEvent)
+            {
+                case CompletedEvent done:
+                    Completed = done;
+                    return true;
+                case ErrorEvent error:
+                    Failed = error;
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    }
+
+    /// <summary>Runs the stop hooks of a turn that ended. A failing gate ends the turn as it ended.</summary>
+    private async Task<AcpTurnEndDecision> EndTurnWithGateAsync(string stopReason, CancellationToken cancellationToken)
+    {
+        if (_hookGate is not { } gate)
+        {
+            return AcpTurnEndDecision.End;
+        }
+
+        try
+        {
+            return await gate.TurnEndedAsync(stopReason, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not (OutOfMemoryException or OperationCanceledException))
+        {
+            HookGateFailed(_logger, "TurnEnded", ex.GetType().Name, null);
+            return AcpTurnEndDecision.End;
+        }
+    }
+
+    /// <summary>Asks the gate a question. A gate that throws allows the action: the failure policy of a hook (<c>failClosed</c>) lives inside the gate.</summary>
+    private async Task<AcpHookVerdict> AskGateAsync(string point, Func<IAcpHookGate, ValueTask<AcpHookVerdict>> ask)
+    {
+        try
+        {
+            return await ask(_hookGate!).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not (OutOfMemoryException or OperationCanceledException))
+        {
+            HookGateFailed(_logger, point, ex.GetType().Name, null);
+            return AcpHookVerdict.Allow;
+        }
+    }
+
+    /// <summary>Reads the text a file has before the agent overwrites it, for the <c>afterFileEdit</c> hooks. Null when the file does not exist or is too large to compare.</summary>
+    private static async Task<string?> ReadPreviousContentAsync(string fullPath)
+    {
+        try
+        {
+            var info = new FileInfo(fullPath);
+            if (!info.Exists || info.Length > MaxHookCompareBytes)
+            {
+                return null;
+            }
+
+            return await File.ReadAllTextAsync(fullPath, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private async Task NotifyFileWrittenAsync(string fullPath, string? previousContent, string content)
+    {
+        if (_hookGate is not { } gate)
+        {
+            return;
+        }
+
+        try
+        {
+            await gate.AfterFileWriteAsync(fullPath, previousContent, content, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            HookGateFailed(_logger, "AfterFileWrite", ex.GetType().Name, null);
         }
     }
 

@@ -3,6 +3,7 @@
              xmlns:completion="clr-namespace:OmpOS.Native.Views.Completion"
              xmlns:copy="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
              xmlns:local="clr-namespace:OmpOS.Native.Views"
+             xmlns:mentions="clr-namespace:OmpOS.Presentation.Mentions;assembly=OmpOS.Presentation"
              xmlns:panel="clr-namespace:OmpOS.Native.Views.AgentPanel"
              x:Class="OmpOS.Native.Views.ComposerView"
              Background="{DynamicResource OmpOS.Color.Surface}">
@@ -18,7 +19,7 @@
        Grid.Column only places the controls. The keyboard hint is the prompt's tooltip; the hint line is kept for assistive technology and
        the shell, and is hidden unless the shell asks for it. -->
   <Grid x:Name="ComposerColumn"
-        RowDefinitions="Auto,Auto,Auto,Auto"
+        RowDefinitions="Auto,Auto,Auto,Auto,Auto"
         MaxWidth="{DynamicResource OmpOS.Size.ThreadContentMaxWidth}"
         Margin="16,8,16,16">
 
@@ -32,7 +33,7 @@
                AutomationProperties.LiveSetting="Polite" />
 
     <Border x:Name="ComposerFrame"
-            Grid.Row="2"
+            Grid.Row="3"
             CornerRadius="{DynamicResource OmpOS.Radius.Lg}"
             BoxShadow="{DynamicResource OmpOS.Shadow.Card}">
       <Panel>
@@ -104,7 +105,7 @@
     </Border>
 
     <TextBlock x:Name="HintLine"
-               Grid.Row="3"
+               Grid.Row="4"
                Classes="muted small"
                Margin="4,6,4,0"
                TextWrapping="Wrap"
@@ -112,16 +113,76 @@
                Text="{x:Static panel:AgentPanelViewText.ComposerHint}"
                AutomationProperties.Name="{x:Static panel:AgentPanelViewText.ComposerHintName}" />
 
-    <!-- Above the card: the slash palette, shown while the draft starts with a slash and a command name is being typed (it never takes focus, so
-         it is no tab stop), and the suggestions box, shown by the shell's Inline suggestions toggle. The box is hidden until then, so it is no
-         tab stop before that either. -->
+    <!-- Above the card: the mention picker, shown while the caret is in an @ or # token (it never takes focus, so it is no tab stop), the slash palette, shown while the draft
+         starts with a slash and a command name is being typed (it never takes focus either), and the suggestions box, shown by the shell's Inline suggestions toggle. The box
+         is hidden until then, so it is no tab stop before that either. -->
     <StackPanel Grid.Row="0">
+      <local:MentionPickerView x:Name="MentionPicker"
+                               Margin="0,0,0,8" />
       <local:SlashPaletteView x:Name="SlashPalette"
                               Margin="0,0,0,8" />
       <completion:InlineCompletionBox x:Name="Suggestions"
                                       Margin="0,0,0,8"
                                       IsVisible="False" />
     </StackPanel>
+
+    <!-- The attached items and the context ring, above the card. It is declared last, so its remove buttons come after the footer chips in the keyboard order the tests rely on,
+         and it is placed in the row above the card. A chip is the name in the mono face, its size and a remove button; the ring shows the window usage and the estimate of the
+         attached items. The row is hidden while there is neither a chip nor a ring to show. -->
+    <Grid x:Name="ContextRow"
+          Grid.Row="2"
+          ColumnDefinitions="*,Auto"
+          ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}"
+          Margin="4,0,4,6"
+          IsVisible="False">
+      <ItemsControl x:Name="MentionChips"
+                    Grid.Column="0"
+                    AutomationProperties.Name="{x:Static mentions:MentionCopy.ChipsName}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="mentions:MentionChip">
+            <Border Classes="mention-chip"
+                    Margin="0,0,4,4"
+                    AutomationProperties.Name="{CompiledBinding AccessibleName}">
+              <StackPanel Orientation="Horizontal"
+                          Spacing="{DynamicResource OmpOS.Gap.Xs}">
+                <TextBlock Classes="mono small"
+                           Text="{CompiledBinding Label}"
+                           MaxWidth="260"
+                           MaxLines="1"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
+                <TextBlock Classes="muted small"
+                           Text="{CompiledBinding SizeText}"
+                           IsVisible="{CompiledBinding HasSize}"
+                           VerticalAlignment="Center" />
+                <Button Classes="ghost chip-remove"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="{CompiledBinding RemoveName}"
+                        ToolTip.Tip="{CompiledBinding RemoveName}">
+                  <Path Data="M2 2 10 10M10 2 2 10"
+                        Stroke="{DynamicResource OmpOS.Color.TextSecondary}"
+                        StrokeThickness="1.5"
+                        StrokeLineCap="Round"
+                        Stretch="Uniform"
+                        Width="10"
+                        Height="10"
+                        AutomationProperties.AccessibilityView="Raw" />
+                </Button>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <local:ContextRingView x:Name="ContextRing"
+                             Grid.Column="1"
+                             VerticalAlignment="Top" />
+    </Grid>
 
   </Grid>
 

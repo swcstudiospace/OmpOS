@@ -41,6 +41,12 @@ public sealed record OmpLaunchPlan
     public IReadOnlyList<string> LoadedPluginIds { get; init; } = [];
 
     /// <summary>
+    /// Gets a value indicating whether the plan loads the hooks bridge extension (<c>-e plugins/ompos-hooks-omp</c>) and sets its environment. False
+    /// when the plan was made without a <see cref="HookBridgeEndpoint"/> or the extension is missing or unhealthy.
+    /// </summary>
+    public bool HooksBridgeLoaded { get; init; }
+
+    /// <summary>
     /// Derives the launch of an interactive omp (a terminal session) from the plan: the same plugin arguments, environment,
     /// working directory and planning events, never <c>acp</c> and never <c>--plugin-dir</c>, plus an optional resume and
     /// an optional first prompt. The MCP servers of the plan are not part of it: an interactive omp reads its MCP servers

@@ -752,19 +752,31 @@ public sealed class HookBridgeServer : IAsyncDisposable
         try
         {
             var (completed, value) = await call.WaitAsync(linked.Token).ConfigureAwait(false);
-            return completed ? (GuardState.Completed, value) : (GuardState.Failed, default);
+            if (completed)
+            {
+                return (GuardState.Completed, value);
+            }
+
+            // The guarded call ends without a value both when it failed and when its token was cancelled; when the wait itself won the race against
+            // the cancellation it did not throw, so the token tells which of the two happened.
+            if (!linked.IsCancellationRequested)
+            {
+                return (GuardState.Failed, default);
+            }
         }
         catch (OperationCanceledException) when (linked.IsCancellationRequested)
         {
-            if (stop.IsCancellationRequested)
-            {
-                return (GuardState.Stopped, default);
-            }
-
-            var timeoutMs = _options.HandlerTimeout.TotalMilliseconds;
-            GuardTimedOut(_logger, role, SafeEventName(request.Event), timeoutMs, null);
-            return (GuardState.TimedOut, default);
+            // Stopped or timed out: decided below.
         }
+
+        if (stop.IsCancellationRequested)
+        {
+            return (GuardState.Stopped, default);
+        }
+
+        var timeoutMs = _options.HandlerTimeout.TotalMilliseconds;
+        GuardTimedOut(_logger, role, SafeEventName(request.Event), timeoutMs, null);
+        return (GuardState.TimedOut, default);
     }
 
     // Never throws, so that a call whose wait was abandoned cannot fault later with nobody to observe it.

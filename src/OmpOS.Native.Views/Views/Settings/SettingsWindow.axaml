@@ -5,6 +5,7 @@
         x:Class="OmpOS.Native.Views.Settings.SettingsWindow"
         x:DataType="set:SettingsWindowModel"
         Title="{x:Static set:SettingsCopy.WindowTitle}"
+        Icon="avares://OmpOS.Native.Views/Assets/Brand/ompos-mark-256.png"
         Width="960"
         Height="680"
         MinWidth="720"

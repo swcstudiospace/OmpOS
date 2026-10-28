@@ -6,7 +6,7 @@ namespace OmpOS.ArchitectureTests;
 /// <summary>
 /// Phase 30 criterion 5 guard: the two deferred items (VS Code extension compatibility, and admin, analytics and team controls)
 /// ship no stub endpoint, placeholder control or other code identifier. Only the deferral records under docs/ and .planning/ may
-/// name them. The needles are assembled at run time so this file does not match its own scan.
+/// name them (the editor-settings folder name excepted, see <see cref="AllowedFolder"/>). The needles are assembled at run time so this file does not match its own scan.
 /// </summary>
 public sealed class DeferredScopeTests
 {
@@ -16,6 +16,12 @@ public sealed class DeferredScopeTests
         "ADE-" + "22",
         "vs" + "code",
     ];
+
+    /// <summary>
+    /// The editor-settings folder (assembled at run time, like the needles). Reading <c>mcp.json</c> from it and treating it as a protected
+    /// path are shipped v0.15.0 features, not VS Code extension compatibility, so the folder name alone is not an offence.
+    /// </summary>
+    private const string AllowedFolder = "." + "vs" + "code";
 
     private static readonly string[] CodeRoots = ["src", "services", "apps", "tests"];
 
@@ -89,7 +95,8 @@ public sealed class DeferredScopeTests
             var lines = File.ReadAllLines(file);
             for (var index = 0; index < lines.Length; index++)
             {
-                if (Needles.Any(needle => lines[index].Contains(needle, StringComparison.OrdinalIgnoreCase)))
+                var scanned = lines[index].Replace(AllowedFolder, string.Empty, StringComparison.OrdinalIgnoreCase);
+                if (Needles.Any(needle => scanned.Contains(needle, StringComparison.OrdinalIgnoreCase)))
                 {
                     offenders.Add($"{Path.GetRelativePath(repoRoot, file)}:{index + 1}: {lines[index].Trim()}");
                 }

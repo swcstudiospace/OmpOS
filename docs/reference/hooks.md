@@ -4,7 +4,7 @@ Hooks let your own scripts watch and steer the agent: block a shell command, rew
 
 The design decisions are in [ADR-0016](../decisions/ADR-0016-hooks-execution-model.md). This page is the reference.
 
-> **Status of this release.** The hook library, the loopback bridge and the omp extension are built and unit tested. They have not been run against a live omp session, and the application heads do not yet start the bridge or the omp extension, so no hook fires in the product until that wiring lands (open question OQ-84). The "Status" column of the event table says what each event can do once it is wired.
+> **Status of this release.** The hook library, the loopback bridge, the omp extension, the ACP tap, the hooks service and the Hooks page are built and unit tested. They have not been run against a live omp session, and the application heads do not yet construct the hooks service, so no hook fires in the product until that wiring lands (open question OQ-84). The "Status" column of the event table says what each event can do once it is wired and which part produces it: the omp extension ("extension") or the ACP tap in the host ("ACP"). [Who fires what](#who-fires-what) explains how the two share the work.
 
 ## Where hooks are read from
 
@@ -136,6 +136,20 @@ A hook that guards an action (a permission event) and has no consent, or whose s
 
 If OmpOS itself fails to start a hook (the shell is missing, the runner throws), the source of the hook is quarantined and stays so across restarts until you lift it with a reason. A hook that merely exits non-zero does not quarantine anything.
 
+## The Hooks page
+
+Settings has a Hooks page. It lists the effective hooks by scope in priority order and, inside a scope, by file. Each row shows the event, the matcher, the command and one state: not available (Tab events), unknown event, quarantined, disabled, needs your approval, running, last run failed, or ready, with the last run's outcome and duration.
+
+- **Run hooks** switches every hook off at once. With it off the page lists nothing and no session starts a bridge or a gate.
+- **Review** opens the consent card: the exact command (or the numbered arguments, or the prompt text), whether it runs through a shell, the matcher, the timeout, the names of the environment variables it adds, what happens if it fails, and what changed since the version you approved. **Approve this hook** records consent for exactly that; **Trust all hooks in this folder** does the same for every hook that needs it and later edits ask again.
+- A folder you have not trusted is not read: its hook files are only named, with **Trust this folder**. Trusting the folder approves no hook.
+- **Enabled** switches one hook on or off in OmpOS's own state. A Cursor or Claude file is never written.
+- A quarantined source is listed with its reason; lifting it needs a reason of your own, which is recorded.
+- Problems found in a hook file are listed with the file, the place in it and the reason.
+- The run log under the list shows the newest runs first, filterable by outcome, with credentials removed from the output, and copies as JSON.
+
+In a conversation a denial shows as `denied by hook <name>: <message>` under the tool call it denied, injected context shows as a collapsed **Hook context** row, and a continuation shows as `Hook continued the conversation (n of loop_limit)`.
+
 ## Matchers
 
 The matcher is tested against one value per call:
@@ -146,11 +160,11 @@ The matcher is tested against one value per call:
 | `subagentStart`, `subagentStop` | the subagent type, such as `generalPurpose`, `explore`, `shell` |
 | `beforeShellExecution`, `afterShellExecution` | the full command string |
 | `beforeMCPExecution`, `afterMCPExecution` | `tool_name` (an OmpOS choice; Cursor documents no value) |
-| `beforeReadFile` | `Read` |
-| `afterFileEdit` | `Write` |
+| `beforeReadFile` | `Read` **Producer:** the extension. ACP fallback: `fs/read_text_file`, with the whole file as `content`; a deny answers the agent with an error and sends no content. |
+| `afterFileEdit` | `Write` **Producer:** the extension. ACP fallback: `fs/write_text_file`; `edits` holds the part of the text that changed (common head and tail removed), and the write has already happened. |
 | `beforeTabFileRead` / `afterTabFileEdit` | `TabRead` / `TabWrite` |
-| `beforeSubmitPrompt` | `UserPromptSubmit` |
-| `stop` | `Stop` |
+| `beforeSubmitPrompt` | `UserPromptSubmit` **Producer:** the ACP tap, always, right before `session/prompt` is written: a denial or `continue: false` sends nothing and ends the turn with a refusal. The extension adds the `input` event only for an interactive terminal. |
+| `stop` | `Stop` **Producer:** the ACP tap when the extension is not connected, at the end of an ACP turn: a follow-up is sent as the next `session/prompt` inside the same event stream, bounded by `loop_limit`, and only a completed turn continues. With the extension, `session_stop` continues the same omp turn. |
 | `afterAgentResponse` / `afterAgentThought` | `AgentResponse` / `AgentThought` |
 | `sessionStart`, `sessionEnd`, `preCompact`, `workspaceOpen` | none: only an empty matcher or `*` matches |
 
@@ -186,29 +200,40 @@ Facts are from https://cursor.com/docs/hooks (read 2026-10-27). "Blocks" means a
 
 | Event | Fires | Fields in the input (after the common ones) | Honoured output | Blocks | Status |
 | --- | --- | --- | --- | --- | --- |
-| `sessionStart` | A conversation starts | `session_id`, `is_background_agent`, `composer_mode` | `env`, `additional_context` | no | Partial: from omp `session_start`. `env` reaches later hooks; omp has no hook to put `additional_context` into the first prompt, so the host must do that |
-| `sessionEnd` | A conversation ends | `session_id`, `reason`, `duration_ms`, `is_background_agent`, `final_status`, `error_message` | none | no | Partial: from omp `session_shutdown`, reason always `user_close`, the extension waits at most 2 s |
-| `preToolUse` | Before any tool | `tool_name`, `tool_input`, `tool_use_id`, `cwd`, `agent_message` | `permission` (allow/deny), `user_message`, `agent_message`, `updated_input` | yes | Built: omp `tool_call`. `tool_name` is mapped to Cursor's names (`bash` to `Shell`, `read` to `Read`, `edit`/`write` to `Write`, `grep`/`find`/`glob` to `Grep`, `task` to `Task`, `mcp__*` to `MCP:<tool>`); `Delete` never occurs |
-| `postToolUse` | After a tool succeeded | `tool_name`, `tool_input`, `tool_output`, `tool_use_id`, `cwd`, `duration` | `additional_context`, `updated_mcp_tool_output` | rewrites output of MCP tools | Built: omp `tool_result` |
-| `postToolUseFailure` | After a tool failed | `tool_name`, `tool_input`, `tool_use_id`, `cwd`, `error_message`, `failure_type`, `duration`, `is_interrupt` | `additional_context` | no | Partial: `failure_type` is always `error`, `is_interrupt` always false |
-| `subagentStart` | Before a subagent spawns | `subagent_type`, `task`, `subagent_model`, `tool_call_id`, `is_parallel_worker` | `permission` (ask counts as deny), `user_message` | yes | Partial: from omp `before_subagent_spawn`; `task` is empty, `subagent_id`, `parent_conversation_id` and `git_branch` are not sent |
-| `subagentStop` | After a subagent finished | `subagent_type`, `status`, `task`, `summary`, `duration_ms`, `loop_count`, `modified_files` | `followup_message` (only when `status` is `completed`, bounded by `loop_limit`) | follow-up only | Partial: from the `task` tool result; the follow-up is appended to that result as context for the parent agent, the subagent is not re-run; `message_count`, `tool_call_count`, `description` and `agent_transcript_path` are not sent |
-| `beforeShellExecution` | Before a shell command | `command`, `cwd`, `sandbox` | `permission` (allow/deny/ask), `user_message`, `agent_message` | yes | Built: omp `bash` tool, `sandbox` is always false |
-| `afterShellExecution` | After a shell command | `command`, `output`, `duration`, `sandbox` | none | no | Built |
-| `beforeMCPExecution` | Before an MCP tool | `tool_name`, `tool_input` (JSON string), `mcp_server_name` | `permission` (allow/deny/ask), `user_message`, `agent_message` | yes | Partial: server and tool names are parsed from omp's `mcp__<server>_<tool>`; wrong for a server name that contains `_`; `url` and `command` are not sent |
-| `afterMCPExecution` | After an MCP tool | `tool_name`, `tool_input`, `mcp_server_name`, `result_json`, `duration` | none | no | Partial: same name limit |
+| `sessionStart` | A conversation starts | `session_id`, `is_background_agent`, `composer_mode` | `env`, `additional_context` | no | Partial: from omp `session_start`. `env` reaches later hooks; omp has no hook to put `additional_context` into the first prompt, so the host must do that **Producer:** ACP when the extension is not connected (after `session/new` or `session/load`, before the first prompt); the extension otherwise. Either way the `additional_context` is put in front of the next prompt by the host. |
+| `sessionEnd` | A conversation ends | `session_id`, `reason`, `duration_ms`, `is_background_agent`, `final_status`, `error_message` | none | no | Partial: from omp `session_shutdown`, reason always `user_close`, the extension waits at most 2 s **Producer:** ACP when the extension is not connected (the session closes or is disposed, reason `user_close`, at most 5 s); the extension otherwise. |
+| `preToolUse` | Before any tool | `tool_name`, `tool_input`, `tool_use_id`, `cwd`, `agent_message` | `permission` (allow/deny), `user_message`, `agent_message`, `updated_input` | yes | Built: omp `tool_call`. `tool_name` is mapped to Cursor's names (`bash` to `Shell`, `read` to `Read`, `edit`/`write` to `Write`, `grep`/`find`/`glob` to `Grep`, `task` to `Task`, `mcp__*` to `MCP:<tool>`); `Delete` never occurs **Producer:** the extension. ACP fallback: only for a call omp asks permission for (`session/request_permission`); a deny rejects the request before the approval policy is asked, and `ask` leaves the decision to the ordinary approval prompt. A call omp never asks about (yolo mode, read-tier tools) is invisible to `preToolUse` without the extension. |
+| `postToolUse` | After a tool succeeded | `tool_name`, `tool_input`, `tool_output`, `tool_use_id`, `cwd`, `duration` | `additional_context`, `updated_mcp_tool_output` | rewrites output of MCP tools | Built: omp `tool_result` **Producer:** the extension. ACP fallback: observe-only, from a `tool_call_update` that completed. |
+| `postToolUseFailure` | After a tool failed | `tool_name`, `tool_input`, `tool_use_id`, `cwd`, `error_message`, `failure_type`, `duration`, `is_interrupt` | `additional_context` | no | Partial: `failure_type` is always `error`, `is_interrupt` always false **Producer:** the extension. ACP fallback: observe-only, from a `tool_call_update` that failed. |
+| `subagentStart` | Before a subagent spawns | `subagent_type`, `task`, `subagent_model`, `tool_call_id`, `is_parallel_worker` | `permission` (ask counts as deny), `user_message` | yes | Partial: from omp `before_subagent_spawn`; `task` is empty, `subagent_id`, `parent_conversation_id` and `git_branch` are not sent **Producer:** the extension only. |
+| `subagentStop` | After a subagent finished | `subagent_type`, `status`, `task`, `summary`, `duration_ms`, `loop_count`, `modified_files` | `followup_message` (only when `status` is `completed`, bounded by `loop_limit`) | follow-up only | Partial: from the `task` tool result; the follow-up is appended to that result as context for the parent agent, the subagent is not re-run; `message_count`, `tool_call_count`, `description` and `agent_transcript_path` are not sent **Producer:** the extension only. |
+| `beforeShellExecution` | Before a shell command | `command`, `cwd`, `sandbox` | `permission` (allow/deny/ask), `user_message`, `agent_message` | yes | Built: omp `bash` tool, `sandbox` is always false **Producer:** the extension. ACP fallback: a permission request of kind `execute`. |
+| `afterShellExecution` | After a shell command | `command`, `output`, `duration`, `sandbox` | none | no | Built **Producer:** the extension. ACP fallback: observe-only, from the completed update of an `execute` call. |
+| `beforeMCPExecution` | Before an MCP tool | `tool_name`, `tool_input` (JSON string), `mcp_server_name` | `permission` (allow/deny/ask), `user_message`, `agent_message` | yes | Partial: server and tool names are parsed from omp's `mcp__<server>_<tool>`; wrong for a server name that contains `_`; `url` and `command` are not sent **Producer:** the extension only. |
+| `afterMCPExecution` | After an MCP tool | `tool_name`, `tool_input`, `mcp_server_name`, `result_json`, `duration` | none | no | Partial: same name limit **Producer:** the extension only. |
 | `beforeReadFile` | Before the agent reads a file | `file_path`, `content`, `attachments` | `permission` (allow/deny), `user_message` | yes | Partial: from omp `read`; `content` is the first 256 KiB when the file is a readable regular file, otherwise absent; prompt attachments are not reported |
 | `afterFileEdit` | After the agent edited a file | `file_path`, `edits` | none | no | Partial: `edits` is best effort from the tool input and may be empty |
 | `beforeSubmitPrompt` | After you send a prompt, before the agent gets it | `prompt`, `attachments` | `continue`, `user_message` | yes | Partial: from omp `input`, which omp fires only for its own interactive terminal; the ACP prompt path needs the host to run the hook before `session/prompt` (a later unit); `attachments` is always empty from the extension |
-| `preCompact` | Before the context is compacted | `trigger`, `context_usage_percent`, `context_tokens`, `context_window_size`, `message_count`, `messages_to_compact`, `is_first_compaction` | `user_message` | no (observe only, as in Cursor) | Partial: from omp `session_before_compact` and `auto_compaction_start`; only the numbers omp exposes are sent, `trigger` is inferred |
+| `preCompact` | Before the context is compacted | `trigger`, `context_usage_percent`, `context_tokens`, `context_window_size`, `message_count`, `messages_to_compact`, `is_first_compaction` | `user_message` | no (observe only, as in Cursor) | Partial: from omp `session_before_compact` and `auto_compaction_start`; only the numbers omp exposes are sent, `trigger` is inferred **Producer:** the extension only (ACP has no signal for it). |
 | `stop` | The agent loop ends | `status`, `loop_count` | `followup_message` (bounded by `loop_limit`) | follow-up only | Partial: from omp `session_stop`, which continues the same turn with the follow-up as context; `status` is always `completed` from the extension. The host can also run it when an ACP turn ends (a later unit) |
-| `afterAgentResponse` | After an assistant message | `text` | none | no | Built: omp `message_end` |
-| `afterAgentThought` | After a thinking block | `text`, `duration_ms` | none | no | Partial: from omp `message_end` thinking blocks; `duration_ms` is not available |
+| `afterAgentResponse` | After an assistant message | `text` | none | no | Built: omp `message_end` **Producer:** the extension. ACP fallback: the message chunks of a turn, aggregated until the message ends. |
+| `afterAgentThought` | After a thinking block | `text`, `duration_ms` | none | no | Partial: from omp `message_end` thinking blocks; `duration_ms` is not available **Producer:** the extension. ACP fallback: the thinking chunks, aggregated, with the time from the first to the last chunk as `duration_ms`. |
 | `beforeTabFileRead` | Before Tab reads a file | `file_path`, `content` | `permission` (allow/deny) | yes | **Not available**: OmpOS has no Tab inline-completion engine |
 | `afterTabFileEdit` | After Tab edited a file | `file_path`, `edits` with ranges | none | no | **Not available**: same reason |
-| `workspaceOpen` | A workspace opened or its folders changed | none (no conversation fields) | `pluginPaths` | no | Not wired yet: the dispatcher supports it; no head fires it and nothing loads the returned plugin directories |
+| `workspaceOpen` | A workspace opened or its folders changed | none (no conversation fields) | `pluginPaths` | no | Not wired yet: the dispatcher supports it; no head fires it and nothing loads the returned plugin directories The hooks service runs it for a head that asks (`IHooksSession.DispatchAsync`); no head does yet. |
 
 Cursor's cloud agents run 14 of the 21 events. OmpOS runs hooks in hosted runs from the checkout and the managed file only, never user hooks; which events a hosted run produces is decided with that wiring.
+
+## Who fires what
+
+Two parts of OmpOS produce hook events, and they never both produce the same event for a session:
+
+- The **omp extension** (`plugins/ompos-hooks-omp`) runs inside omp. It sees every tool call before omp's own approval gate, so it is the only part that can block a call omp would run without asking. The host connects it by starting a loopback bridge per session, with a random token, and passing `-e plugins/ompos-hooks-omp` and three `OMPOS_HOOKS_*` variables to omp.
+- The **ACP tap** runs in the host and sees the Agent Client Protocol traffic of the session: the prompt, permission requests, `fs/*` calls, `session/update` and the end of each turn.
+
+When the extension is connected, the tap fires only what the extension cannot see: `beforeSubmitPrompt`, and the context that a `sessionStart` hook added. When it is not connected (the plugin folder is missing, or the bridge could not start) the tap is the fallback for every event it can produce, and the Hooks page and the plan's planning event say so. The tap cannot block what ACP never asks about, so the fallback is weaker, not equivalent.
+
+A hook can only tighten. The approval policy and omp's own approval modes still decide what is allowed; an allow from a hook never bypasses them.
 
 ## Loop limits
 

@@ -63,13 +63,13 @@ public sealed class SlashPaletteMarkupTests
         }
     }
 
-    /// <summary>The composer view hosts the palette in the row above the card (row 0, the row of the suggestions box) and names no literal font.</summary>
+    /// <summary>The composer view hosts the palette in the row above the card (row 0, the row of the suggestions box, after the mention picker) and names no literal font.</summary>
     [Fact]
     public void TheComposerHostsThePaletteAboveTheCard()
     {
         var markup = Markup("ComposerView.axaml");
 
-        Regex.IsMatch(markup, "<StackPanel Grid\\.Row=\"0\">\\s*<local:SlashPaletteView x:Name=\"SlashPalette\"", RegexOptions.NonBacktracking | RegexOptions.CultureInvariant).ShouldBeTrue();
+        Regex.IsMatch(markup, "<StackPanel Grid\\.Row=\"0\">\\s*(?:<local:MentionPickerView [^>]*/>\\s*)?<local:SlashPaletteView x:Name=\"SlashPalette\"", RegexOptions.NonBacktracking | RegexOptions.CultureInvariant).ShouldBeTrue();
         LiteralFont.Matches(markup).ShouldBeEmpty();
     }
 }

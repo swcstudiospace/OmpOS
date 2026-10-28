@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:panel="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
+             x:Class="OmpOS.Native.Views.ConversationSearchView"
+             AutomationProperties.Name="{x:Static panel:ConversationSearchCopy.DialogName}"
+             IsVisible="False">
+
+  <UserControl.Styles>
+    <!-- Focus stays in the query box: the arrow keys move the highlight of this list from there, so no row is a tab stop. -->
+    <Style Selector="ListBox.search-list ListBoxItem">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="MinHeight" Value="{DynamicResource OmpOS.Size.TargetMin}" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- The conversation search overlay of the Agents rail (Cmd/Ctrl+K): a query box over a list of the conversations whose title or messages match, each with a snippet of the
+       first match. The count line is the live region. The overlay has no animation, so reduced motion needs no class here. -->
+  <Border Classes="card"
+          Padding="8">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+          RowSpacing="{DynamicResource OmpOS.Gap.Sm}">
+
+      <TextBox x:Name="QueryInput"
+               Grid.Row="0"
+               Classes="sm search"
+               MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+               PlaceholderText="{x:Static panel:ConversationSearchCopy.QueryName}"
+               AutomationProperties.Name="{x:Static panel:ConversationSearchCopy.QueryName}"
+               AutomationProperties.HelpText="{x:Static panel:ConversationSearchCopy.QueryHelp}" />
+
+      <TextBlock x:Name="CountText"
+                 Grid.Row="1"
+                 Classes="muted small"
+                 IsVisible="False"
+                 AutomationProperties.Name="{x:Static panel:ConversationSearchCopy.CountName}"
+                 AutomationProperties.LiveSetting="Polite" />
+
+      <ListBox x:Name="ResultList"
+               Grid.Row="2"
+               Classes="search-list"
+               Focusable="False"
+               IsTabStop="False"
+               MaxHeight="360"
+               AutomationProperties.Name="{x:Static panel:ConversationSearchCopy.ListName}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="panel:ConversationSearchResult">
+            <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xxs}"
+                        Margin="8,4"
+                        AutomationProperties.Name="{CompiledBinding AutomationName}">
+              <TextBlock Text="{CompiledBinding Title}"
+                         FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                         MaxLines="1"
+                         TextTrimming="CharacterEllipsis" />
+              <TextBlock Classes="muted small"
+                         Text="{CompiledBinding Snippet}"
+                         IsVisible="{CompiledBinding HasSnippet}"
+                         MaxLines="2"
+                         TextWrapping="Wrap"
+                         TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+
+      <TextBlock x:Name="EmptyText"
+                 Grid.Row="3"
+                 Classes="muted small"
+                 TextWrapping="Wrap" />
+    </Grid>
+  </Border>
+
+</UserControl>

@@ -142,9 +142,16 @@ public sealed class HookRunLog : IDisposable
     {
         var path = _path!;
         var directory = Path.GetDirectoryName(path);
-        if (!string.IsNullOrEmpty(directory))
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
-            Directory.CreateDirectory(directory);
+            if (OperatingSystem.IsWindows())
+            {
+                Directory.CreateDirectory(directory);
+            }
+            else
+            {
+                Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
         }
 
         if (_currentBytes < 0)
@@ -158,7 +165,20 @@ public sealed class HookRunLog : IDisposable
             _currentBytes = 0;
         }
 
-        var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read, 4096, useAsync: true);
+        var streamOptions = new FileStreamOptions
+        {
+            Mode = FileMode.Append,
+            Access = FileAccess.Write,
+            Share = FileShare.Read,
+            BufferSize = 4096,
+            Options = FileOptions.Asynchronous,
+        };
+        if (!OperatingSystem.IsWindows())
+        {
+            streamOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        }
+
+        var stream = new FileStream(path, streamOptions);
         await using (stream.ConfigureAwait(false))
         {
             await stream.WriteAsync(line, cancellationToken).ConfigureAwait(false);

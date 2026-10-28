@@ -16,24 +16,24 @@ using Xunit;
 namespace OmpOS.Native.Tests.Settings.Head;
 
 /// <summary>
-/// The theme setting (spec 2.6): the application starts Dark, a saved choice changes the running window at once, System follows the
+/// The theme setting (spec 2.6): the application starts Light (OQ-94), a saved choice changes the running window at once, System follows the
 /// platform, and controls built in code re-read the tokens when the variant changes.
 /// </summary>
 public sealed class ThemePreferenceTests
 {
     private const string Markdown = "```\ncode\n```\n\n> quoted\n\n---";
 
-    /// <summary>The application requests Dark before any setting is read, so the first frame is dark.</summary>
+    /// <summary>The application requests Light before any setting is read, so the first frame is light.</summary>
     [Fact]
-    public async Task TheApplicationStartsDark()
+    public async Task TheApplicationStartsLight()
     {
         await using var session = TestAppBuilder.StartSession();
         await session.Dispatch(() =>
         {
-            Application.Current!.RequestedThemeVariant.ShouldBe(ThemeVariant.Dark);
+            Application.Current!.RequestedThemeVariant.ShouldBe(ThemeVariant.Light);
             var window = ShellHarness.Show();
 
-            window.ActualThemeVariant.ShouldBe(ThemeVariant.Dark);
+            window.ActualThemeVariant.ShouldBe(ThemeVariant.Light);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -68,16 +68,19 @@ public sealed class ThemePreferenceTests
         var settings = HeadSettings.Create(engines, store, TimeProvider.System, dispatch: null, new HeadSettingsOptions { GetVariable = static _ => null });
         try
         {
-            settings.Theme.ShouldBe(ThemePreference.Dark, "a missing file gives the Dark default");
+            settings.Theme.ShouldBe(ThemePreference.Light, "a missing file gives the Light default");
             await using var session = TestAppBuilder.StartSession();
             await session.Dispatch(() =>
             {
                 var window = ShellHarness.Show();
                 settings.Attach(window);
+                window.ActualThemeVariant.ShouldBe(ThemeVariant.Light);
+
+                store.SetTheme(ThemePreference.Dark);
+                Application.Current!.RequestedThemeVariant.ShouldBe(ThemeVariant.Dark);
                 window.ActualThemeVariant.ShouldBe(ThemeVariant.Dark);
 
                 store.SetTheme(ThemePreference.Light);
-                Application.Current!.RequestedThemeVariant.ShouldBe(ThemeVariant.Light);
                 window.ActualThemeVariant.ShouldBe(ThemeVariant.Light);
 
                 store.SetTheme(ThemePreference.System);

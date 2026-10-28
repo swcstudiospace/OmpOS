@@ -111,13 +111,13 @@ public static class SettingsCopy
     public const string ThemeLightLabel = "Light";
 
     /// <summary>The description of the light choice.</summary>
-    public const string ThemeLightDescription = "Always draw in the light colours.";
+    public const string ThemeLightDescription = "Always draw in the light colours. This is the default.";
 
     /// <summary>The label of the dark choice.</summary>
     public const string ThemeDarkLabel = "Dark";
 
     /// <summary>The description of the dark choice.</summary>
-    public const string ThemeDarkDescription = "Always draw in the dark colours. This is the default.";
+    public const string ThemeDarkDescription = "Always draw in the dark colours.";
 
     /// <summary>The label of the motion setting.</summary>
     public const string MotionLabel = "Motion";

@@ -15,6 +15,7 @@ public sealed class WorkspaceTree : ObservableModel
 {
     private readonly ObservableCollection<WorkspaceNode> _roots = [];
     private IWorkspaceFileSystem? _fileSystem;
+    private IAsyncWorkspaceFileSystem? _asyncFileSystem;
     private string? _rootPath;
     private WorkspaceNode? _selected;
 
@@ -51,6 +52,7 @@ public sealed class WorkspaceTree : ObservableModel
 
         var roots = LoadChildren(fileSystem, string.Empty, parent: null);
         _fileSystem = fileSystem;
+        _asyncFileSystem = null;
         RootPath = fileSystem.RootPath;
         _roots.Clear();
         foreach (var root in roots)
@@ -137,6 +139,102 @@ public sealed class WorkspaceTree : ObservableModel
         }
 
         return node;
+    }
+
+    /// <summary>
+    /// Opens a folder whose files are listed without blocking (a remote machine) as the workspace root and lists its children. The first row is
+    /// selected. Use <see cref="ExpandAsync"/>, <see cref="ExpandPathAsync"/> and <see cref="HandleKeyAsync"/> for the directories of such a tree.
+    /// </summary>
+    /// <param name="fileSystem">The file system that lists the folder.</param>
+    /// <param name="cancellationToken">Cancels the listing. The tree is unchanged then.</param>
+    /// <returns>A task that completes when the folder is open.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="fileSystem"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The file system returned an entry that is not directly under the root. The tree is unchanged.</exception>
+    public async Task OpenFolderAsync(IAsyncWorkspaceFileSystem fileSystem, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(fileSystem);
+
+        var entries = await fileSystem.ListDirectoryAsync(string.Empty, cancellationToken).ConfigureAwait(true);
+        var roots = BuildChildren(entries, string.Empty, parent: null);
+        _fileSystem = null;
+        _asyncFileSystem = fileSystem;
+        RootPath = fileSystem.RootPath;
+        _roots.Clear();
+        foreach (var root in roots)
+        {
+            _roots.Add(root);
+        }
+
+        Selected = VisibleRows().FirstOrDefault();
+    }
+
+    /// <summary>Expands a directory of a tree opened with <see cref="OpenFolderAsync"/>, listing its children on the first expansion.</summary>
+    /// <param name="node">A directory row of this tree.</param>
+    /// <param name="cancellationToken">Cancels the listing. The directory stays collapsed then.</param>
+    /// <returns>A task that completes when the directory is expanded.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="node"/> is a file or does not belong to this tree.</exception>
+    /// <exception cref="InvalidOperationException">No folder is open.</exception>
+    public async Task ExpandAsync(WorkspaceNode node, CancellationToken cancellationToken)
+    {
+        RequireDirectoryRow(node);
+
+        if (!node.IsLoaded)
+        {
+            var entries = await RequireAsyncFileSystem().ListDirectoryAsync(node.RelativePath, cancellationToken).ConfigureAwait(true);
+            node.SetChildren(BuildChildren(entries, node.RelativePath, node));
+        }
+
+        node.IsExpanded = true;
+    }
+
+    /// <summary>The asynchronous form of <see cref="ExpandPath"/>: expands each directory along a workspace-relative path and returns the last one.</summary>
+    /// <param name="relativeDirectory">The workspace-relative path of a directory. It must not be empty.</param>
+    /// <param name="cancellationToken">Cancels the listing.</param>
+    /// <returns>The directory's row.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="relativeDirectory"/> is null.</exception>
+    /// <exception cref="ArgumentException">The path escapes the root, is empty, or names no directory. Nothing is listed for an escaping path.</exception>
+    /// <exception cref="InvalidOperationException">No folder is open.</exception>
+    public async Task<WorkspaceNode> ExpandPathAsync(string relativeDirectory, CancellationToken cancellationToken)
+    {
+        var path = WorkspacePath.Normalize(relativeDirectory);
+        if (path.Length == 0)
+        {
+            throw new ArgumentException("Name a directory inside the workspace. The root is always expanded.", nameof(relativeDirectory));
+        }
+
+        var segments = path.Split('/');
+        var node = FindDirectory(_roots, segments[0], relativeDirectory);
+        await ExpandAsync(node, cancellationToken).ConfigureAwait(true);
+        for (var index = 1; index < segments.Length; index++)
+        {
+            node = FindDirectory(node.Children, segments[index], relativeDirectory);
+            await ExpandAsync(node, cancellationToken).ConfigureAwait(true);
+        }
+
+        return node;
+    }
+
+    /// <summary>
+    /// The asynchronous form of <see cref="HandleKey"/>: applies a key to the selection. A directory that has to be listed first (Right or Enter on
+    /// a directory that was never expanded) is listed without blocking, and then the key is applied as <see cref="HandleKey"/> applies it.
+    /// </summary>
+    /// <param name="key">The key.</param>
+    /// <param name="cancellationToken">Cancels the listing.</param>
+    /// <returns>The file to open when <paramref name="key"/> is <see cref="WorkspaceKey.Enter"/> on a file; otherwise null.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="key"/> is not defined.</exception>
+    public async Task<WorkspaceEntry?> HandleKeyAsync(WorkspaceKey key, CancellationToken cancellationToken)
+    {
+        if (Enum.IsDefined(key)
+            && key is WorkspaceKey.Right or WorkspaceKey.Enter
+            && _asyncFileSystem is not null
+            && Selected is { IsDirectory: true, IsLoaded: false } node)
+        {
+            var entries = await _asyncFileSystem.ListDirectoryAsync(node.RelativePath, cancellationToken).ConfigureAwait(true);
+            node.SetChildren(BuildChildren(entries, node.RelativePath, node));
+        }
+
+        return HandleKey(key);
     }
 
     /// <summary>Lists the visible rows in display order: each expanded directory's children follow it.</summary>
@@ -294,7 +392,11 @@ public sealed class WorkspaceTree : ObservableModel
 
     private List<WorkspaceNode> LoadChildren(IWorkspaceFileSystem fileSystem, string parentPath, WorkspaceNode? parent)
     {
-        var entries = fileSystem.ListDirectory(parentPath);
+        return BuildChildren(fileSystem.ListDirectory(parentPath), parentPath, parent);
+    }
+
+    private List<WorkspaceNode> BuildChildren(IReadOnlyList<WorkspaceEntry> entries, string parentPath, WorkspaceNode? parent)
+    {
         foreach (var entry in entries)
         {
             if (!WorkspacePath.IsPlainName(entry.Name)
@@ -313,7 +415,14 @@ public sealed class WorkspaceTree : ObservableModel
 
     private IWorkspaceFileSystem RequireFileSystem()
     {
-        return _fileSystem ?? throw new InvalidOperationException("No folder is open.");
+        return _fileSystem ?? throw new InvalidOperationException(
+            _asyncFileSystem is null ? "No folder is open." : "This folder was opened asynchronously: expand its directories with ExpandAsync.");
+    }
+
+    private IAsyncWorkspaceFileSystem RequireAsyncFileSystem()
+    {
+        return _asyncFileSystem ?? throw new InvalidOperationException(
+            _fileSystem is null ? "No folder is open." : "This folder was opened synchronously: expand its directories with Expand.");
     }
 
     private void RequireDirectoryRow(WorkspaceNode node)

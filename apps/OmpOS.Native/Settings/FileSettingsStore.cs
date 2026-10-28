@@ -148,7 +148,7 @@ internal sealed class FileSettingsStore
 
         var theme = document.Theme switch
         {
-            null => ThemePreference.Dark,
+            null => ThemePreference.Light,
             { } text when string.Equals(text, "system", StringComparison.OrdinalIgnoreCase) => ThemePreference.System,
             { } text when string.Equals(text, "light", StringComparison.OrdinalIgnoreCase) => ThemePreference.Light,
             { } text when string.Equals(text, "dark", StringComparison.OrdinalIgnoreCase) => ThemePreference.Dark,

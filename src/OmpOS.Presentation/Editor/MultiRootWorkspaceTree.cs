@@ -86,6 +86,67 @@ public sealed class MultiRootWorkspaceTree : ObservableModel
         NotifyPropertyChanged(nameof(FailedRoots));
     }
 
+    /// <summary>
+    /// Opens every root of an explorer whose folders are reached without blocking (an ssh host), one root after the other. Each root is opened on its own: a failure
+    /// is recorded on that root and the rest still open. The previous roots are replaced when every root has been tried.
+    /// </summary>
+    /// <param name="sources">The roots, in display order.</param>
+    /// <param name="cancellationToken">Cancels the opening. The previous roots stay then.</param>
+    /// <returns>A task that completes when every root has been tried.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="sources"/> or one of its entries is null.</exception>
+    /// <exception cref="ArgumentException">Two roots share an identifier or a name (ignoring case), or a name is blank. Nothing is changed.</exception>
+    public async Task OpenAsync(IReadOnlyList<AsyncWorkspaceRootSource> sources, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(sources);
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var source in sources)
+        {
+            if (source is null || source.Open is null)
+            {
+                throw new ArgumentException("A root source and its open delegate must not be null.", nameof(sources));
+            }
+
+            ArgumentException.ThrowIfNullOrWhiteSpace(source.Id, nameof(sources));
+            ArgumentException.ThrowIfNullOrWhiteSpace(source.DisplayName, nameof(sources));
+            if (!ids.Add(source.Id) || !names.Add(source.DisplayName.Trim()))
+            {
+                throw new ArgumentException($"The root '{source.DisplayName}' repeats an identifier or a name.", nameof(sources));
+            }
+        }
+
+        var opened = sources.Select(source => new WorkspaceRootTree(source)).ToList();
+        foreach (var root in opened)
+        {
+            await root.OpenAsync(cancellationToken).ConfigureAwait(true);
+        }
+
+        _roots.Clear();
+        foreach (var root in opened)
+        {
+            _roots.Add(root);
+        }
+
+        SelectedRoot = opened.FirstOrDefault();
+        NotifyPropertyChanged(nameof(FailedRoots));
+    }
+
+    /// <summary>
+    /// Opens one asynchronously reached root again, for example after the connection came back. Other roots are untouched. When the root fails again it
+    /// keeps its previous tree and records the error.
+    /// </summary>
+    /// <param name="rootId">The identifier of the root.</param>
+    /// <param name="cancellationToken">Cancels the opening.</param>
+    /// <returns>A task that completes when the root has been tried.</returns>
+    /// <exception cref="ArgumentException">No root has the identifier.</exception>
+    /// <exception cref="InvalidOperationException">The root was opened with <see cref="Open"/>: use <see cref="Refresh"/>.</exception>
+    public async Task RefreshAsync(string rootId, CancellationToken cancellationToken)
+    {
+        var root = RequireRoot(rootId);
+        await root.OpenAsync(cancellationToken).ConfigureAwait(true);
+        NotifyPropertyChanged(nameof(FailedRoots));
+    }
+
     /// <summary>Selects a root.</summary>
     /// <param name="rootId">The identifier of the root.</param>
     /// <exception cref="ArgumentException">No root has the identifier.</exception>

@@ -117,6 +117,40 @@ public sealed partial class SshCommandBuilder
         return new SshInvocation { FileName = _options.SshPath, Arguments = arguments };
     }
 
+    /// <summary>
+    /// Builds the ssh invocation of an interactive terminal on the remote machine: a pseudo-terminal (<c>-tt</c>), no <c>BatchMode</c> (the terminal is
+    /// where the user answers a host key or passphrase prompt) and a short POSIX script that runs through <c>sh -c</c>. Nothing secret may be in the script:
+    /// stdin is the user's keyboard, so no preamble can travel.
+    /// </summary>
+    /// <param name="profile">The remote machine.</param>
+    /// <param name="script">One line of POSIX shell, for example <c>cd '/work' &amp;&amp; exec "${SHELL:-/bin/sh}" -l</c>.</param>
+    /// <returns>The invocation, without a preamble.</returns>
+    /// <exception cref="ArgumentException">The profile is not valid, or the script is empty or spans several lines.</exception>
+    public SshInvocation BuildTerminal(SshProfile profile, string script)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentException.ThrowIfNullOrWhiteSpace(script);
+        ValidateProfile(profile);
+
+        var arguments = BaseArguments(profile, interactive: true, []);
+        arguments.Add("--");
+        arguments.Add(Destination(profile));
+        arguments.Add(WrapForRemoteShell(script));
+        return new SshInvocation { FileName = _options.SshPath, Arguments = arguments };
+    }
+
+    /// <summary>Tells whether a name may be exported into a remote shell: a plain identifier that is not reserved (<c>PATH</c>, <c>IFS</c>, <c>LD_*</c> and the like).</summary>
+    /// <param name="name">The variable name.</param>
+    /// <returns><see langword="true"/> when the name is allowed.</returns>
+    internal static bool IsAllowedEnvironmentName(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return EnvironmentNamePattern().IsMatch(name)
+            && !ReservedEnvironmentNames.Contains(name)
+            && !name.StartsWith("LD_", StringComparison.Ordinal)
+            && !name.StartsWith("DYLD_", StringComparison.Ordinal);
+    }
+
     private static string Destination(SshProfile profile) => profile.Hostname ?? profile.Alias;
 
     private static string WrapForRemoteShell(string script) => "exec sh -c " + PosixQuoting.Quote(script);

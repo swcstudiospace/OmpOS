@@ -1,0 +1,81 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mentions="clr-namespace:OmpOS.Presentation.Mentions;assembly=OmpOS.Presentation"
+             x:Class="OmpOS.Native.Views.MentionPickerView"
+             IsVisible="False">
+
+  <UserControl.Styles>
+    <!-- Focus stays in the prompt: the arrow keys move the highlight of this list from there, so no row is a tab stop. A row is one target tall (32 px). -->
+    <Style Selector="ListBox.mention-list ListBoxItem">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- The mention picker of the composer: a card above the prompt, the popup of the prompt's combobox. Rows are grouped (Files, Folders, Terminals ...); each shows the name in the
+       mono face and a muted detail. The count line is the picker's live region, and the message line carries the empty, error, unavailable and confirmation texts. The popup has no
+       animation, so reduced motion needs no class here. -->
+  <Border x:Name="PickerFrame"
+          Classes="card"
+          Padding="4">
+    <Grid RowDefinitions="Auto,Auto,Auto">
+
+      <TextBlock x:Name="CountText"
+                 Grid.Row="0"
+                 Classes="muted small"
+                 Margin="8,4"
+                 AutomationProperties.Name="{x:Static mentions:MentionCopy.CountName}"
+                 AutomationProperties.LiveSetting="Polite" />
+
+      <ListBox x:Name="RowList"
+               Grid.Row="1"
+               Classes="mention-list"
+               Focusable="False"
+               IsTabStop="False"
+               AutomationProperties.Name="{x:Static mentions:MentionCopy.ListName}"
+               AutomationProperties.HelpText="{x:Static mentions:MentionCopy.ListHelp}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="mentions:MentionPickerRow">
+            <StackPanel AutomationProperties.Name="{CompiledBinding AutomationName}">
+              <TextBlock Classes="muted small"
+                         Margin="8,6,8,2"
+                         Text="{CompiledBinding GroupTitle}"
+                         IsVisible="{CompiledBinding IsGroupStart}"
+                         AutomationProperties.AccessibilityView="Raw" />
+              <Grid ColumnDefinitions="Auto,*"
+                    ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}"
+                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                    Margin="8,0">
+                <TextBlock Grid.Column="0"
+                           Classes="mono"
+                           Text="{CompiledBinding Label}"
+                           MaxLines="1"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1"
+                           Classes="muted small"
+                           Text="{CompiledBinding Detail}"
+                           IsVisible="{CompiledBinding HasDetail}"
+                           MaxLines="1"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
+              </Grid>
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+
+      <!-- Nothing matches, a source failed or is unavailable, or a file that may hold secrets needs confirming: the reason, in one live region. -->
+      <TextBlock x:Name="MessageText"
+                 Grid.Row="2"
+                 Classes="muted small"
+                 Margin="8,4"
+                 TextWrapping="Wrap"
+                 IsVisible="False"
+                 AutomationProperties.Name="{x:Static mentions:MentionCopy.MessageName}"
+                 AutomationProperties.LiveSetting="Polite" />
+    </Grid>
+  </Border>
+
+</UserControl>

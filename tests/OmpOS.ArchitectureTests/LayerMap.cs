@@ -86,5 +86,14 @@ internal static class LayerMap
         // intentional: the remote transport speaks ACP and materialises the AgentLoop launch plan on the remote host
         ("OmpOS.Harness.Remote", "OmpOS.Harness.Acp"),
         ("OmpOS.Harness.Remote", "OmpOS.Harness.AgentLoop"),
+        // intentional: the remote file system and convention source read through the workspace library's file abstractions, launch through the terminal library's process host, and report through the presentation layer's models
+        ("OmpOS.Harness.Remote", "OmpOS.Harness.Terminal"),
+        ("OmpOS.Harness.Remote", "OmpOS.Harness.Workspace"),
+        ("OmpOS.Harness.Remote", "OmpOS.Presentation"),
+        // intentional: the hook bridge taps the ACP update stream and installs its plugin through the plugin library
+        ("OmpOS.Harness.AgentLoop", "OmpOS.Harness.Acp"),
+        ("OmpOS.Harness.AgentLoop", "OmpOS.Harness.Plugins"),
+        // intentional: the MCP catalog maps configured servers to ACP mcpServers entries
+        ("OmpOS.Harness.Mcp", "OmpOS.Harness.Acp"),
     };
 }

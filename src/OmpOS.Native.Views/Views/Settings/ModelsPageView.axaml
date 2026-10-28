@@ -223,15 +223,13 @@
             <ComboBox x:Name="RegionFilter"
                       Grid.Column="0"
                       HorizontalAlignment="Stretch"
-                      ItemsSource="{CompiledBinding Directory.RegionChoices}"
-                      SelectedIndex="{CompiledBinding Directory.SelectedRegionIndex, Mode=TwoWay}"
-                      AutomationProperties.Name="{x:Static models:ProviderListingCopy.RegionFilterLabel}" />
+                      AutomationProperties.Name="{x:Static models:ProviderListingCopy.RegionFilterLabel}"
+                      SelectionChanged="OnRegionFilterChanged" />
             <ComboBox x:Name="KindFilter"
                       Grid.Column="1"
                       HorizontalAlignment="Stretch"
-                      ItemsSource="{CompiledBinding Directory.KindChoices}"
-                      SelectedIndex="{CompiledBinding Directory.SelectedKindIndex, Mode=TwoWay}"
-                      AutomationProperties.Name="{x:Static models:ProviderListingCopy.KindFilterLabel}" />
+                      AutomationProperties.Name="{x:Static models:ProviderListingCopy.KindFilterLabel}"
+                      SelectionChanged="OnKindFilterChanged" />
           </Grid>
           <TextBlock x:Name="ListingNoMatchesLine"
                      Classes="muted settings-body"

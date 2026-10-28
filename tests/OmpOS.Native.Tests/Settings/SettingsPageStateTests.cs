@@ -240,7 +240,7 @@ public sealed class SettingsPageStateTests
         }, ct).ConfigureAwait(true);
     }
 
-    /// <summary>The General page offers the three theme choices in the order System, Light, Dark with their words, selects the saved Dark by default, and a choice becomes the draft.</summary>
+    /// <summary>The General page offers the three theme choices in the order System, Light, Dark with their words, selects the saved Light by default, and a choice becomes the draft.</summary>
     [Fact]
     public async Task TheGeneralPageOffersTheThemeChoices()
     {
@@ -262,13 +262,13 @@ public sealed class SettingsPageStateTests
                 texts.ShouldContain(option.Description, StringComparer.Ordinal);
             }
 
-            view.ThemeChoices.SelectedItem.ShouldBeSameAs(items[2]);
+            view.ThemeChoices.SelectedItem.ShouldBeSameAs(items[1]);
             fixture.General.IsDirty.ShouldBeFalse();
 
-            view.ThemeChoices.SelectedItem = items[1];
+            view.ThemeChoices.SelectedItem = items[2];
             fixture.Settle();
 
-            fixture.General.Theme.ShouldBe(ThemePreference.Light);
+            fixture.General.Theme.ShouldBe(ThemePreference.Dark);
             fixture.General.IsDirty.ShouldBeTrue();
         }, ct).ConfigureAwait(true);
     }
