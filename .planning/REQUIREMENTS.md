@@ -604,3 +604,469 @@ Source: the user request of 2026-10-27 and the research in `docs/plans/v0.15.0-r
 | PX-21 | 64 | Met (GitBook space not created, owner, OQ-101) |
 | PX-22 | 64 | Met |
 | PX-23 | 65 | Met (GitHub `ci` fails at test services, OQ-168; the local gate passed) |
+
+## v0.16.0 Autonogrammer: accounts, Cowork and Dispatch (planned, added 2026-10-28)
+
+Source: the user request of 2026-10-28, the ultrathink plan graph ut-mvs8ru79-82536fbd, ADR-0030 to ADR-0037 and the phase briefs in `docs/plans/v0.16.0-research/briefs/` (index `00-index.md`, scaffold manifest `00-scaffold-manifest.md`). Requirement ids are `AG-<phase>-<n>`, written verbatim from each brief; `AG-SC-1` to `AG-SC-6` are derived from the scaffold manifest (Phase 66.1). Verification follows the gate rules of the earlier milestones: no live model turn (OD-07), no live Supabase, no Railway deploy, no Windows, macOS or Android run is claimed.
+
+### Scaffold (AG-SC, Phase 66.1)
+
+- [ ] **AG-SC-1**: Create the 21 source projects (3 at L1, 15 at L2, 3 at L3) and the 19 test projects of `docs/plans/v0.16.0-research/briefs/00-scaffold-manifest.md`, each with a csproj of only `ItemGroup`s, `InternalsVisibleTo` for its test project and an `AssemblyMarker.cs` only, so that every project builds with no behaviour.
+- [ ] **AG-SC-2**: Register every new project in `tests/Autonogrammer.ArchitectureTests/LayerMap.cs` (21 `Layers` rows) and declare exactly the six `SameLayerAllowed` tuples of the manifest (`Accounts` to `Harness.Secrets`; `Harness.Secrets.Os` to `Harness.Secrets`; `Cowork` to `Harness.AgentLoop`; `Cowork.Artifacts.Stores` to `Cowork.Artifacts`; `UI` to `Cowork.Artifacts`; `Cowork.Memory.Postgres` to `Cowork.Memory`), each with an `// intentional:` comment and no other tuple.
+- [ ] **AG-SC-3**: Register every new project in `Autonogrammer.slnx` and `Autonogrammer.Linux.slnf` (40 lines each), add the 21 `ProjectReference` lines to the architecture test project, one row per project in `docs/architecture.md` and a `CHANGELOG.md` entry under Unreleased, and add the `ProjectReference` and `PackageReference` edits to the existing projects listed in section 3 of the manifest.
+- [ ] **AG-SC-4**: `ProcessSpawningAssemblies` in `ProjectGraphTests.cs` gains `Harness.BrowserUse`, `Harness.ComputerUse.MacOS`, `Harness.Isolation` and `Harness.Notifications`; `Directory.Packages.props` pins `System.Security.Cryptography.ProtectedData` 10.0.13, `PuppeteerSharp` 25.15.0 and `Avalonia.Controls.DataGrid` 12.1.2 with their `Label` groups, and relabels the `Avalonia.Controls.WebView` group from spike to production.
+- [ ] **AG-SC-5**: `ContractVersion.Current` is bumped ONCE from 1.5.0 to 1.6.0 in the scaffold step (no phase edits it), the Contracts folders are added additively, and the step checks that no type in `Contracts/Plugins` references a `Contracts/Ui` type (if the check fails the single bump becomes 2.0.0).
+- [ ] **AG-SC-6**: ONE relock (`--force-evaluate`) commits the new and changed `packages.lock.json` files, ONE notices regeneration updates `THIRD-PARTY-NOTICES.md`, the locked restore passes and the gate of report 09 section 5 is green on a scaffold commit that adds no behaviour.
+
+### Rebrand (66) (AG-66)
+
+- [ ] **AG-66-1**: `rebrand.py dry-run` runs on a clean tree with `obj/` and `bin/` deleted, writes its report outside the repository, and exits 0 (exit 2 means collisions and blocks apply).
+- [ ] **AG-66-2**: `apply` runs with the default `--engine-adapters keep` and without `--urls`, moves paths with `git mv`, ends with `post-apply verification: clean`, and commits nothing itself.
+- [ ] **AG-66-3**: `verify --baseline <dry-run json>` passes: nothing left to rename, rejected near-match counts and every `keepPatternCounts` entry (including bare `omp`) equal to the baseline; `git grep -c compose` is equal before and after.
+- [ ] **AG-66-4**: The three runbook acceptance probes (s.2) hold: the `autonogrammer` grep lists only protected URLs, `git ls-files | grep -i autonogrammer` lists only evidence, milestone and legal paths, `git grep -c 'omp acp'` is unchanged outside excluded zones.
+- [ ] **AG-66-5**: The rename is one commit `rename: Autonogrammer to Autonogrammer (mechanical, tools: scripts/rebrand)`; the regenerate output (s.4) is a second commit; neither mixes hand-written code.
+- [ ] **AG-66-6**: After the regenerate commit `dotnet restore --locked-mode`, `dotnet build ... -warnaserror`, `dotnet format ... --verify-no-changes --no-restore` and the Linux test set are green, and `docs/api/openapi.json` equals the served document.
+- [ ] **AG-66-7**: User data directory: one shared resolver returns the `Autonogrammer` directory; a legacy `Autonogrammer` directory is moved once, atomically, leaving a marker file; a new file is never overwritten; the legacy directory is never read afterwards (runbook s.7 item 1).
+- [ ] **AG-66-8**: `.autonogrammer` discovery: order `.autonogrammer`, legacy `.autonogrammer` (read-only, deprecated), `.omp` (unchanged); a legacy-only directory is read with a one-time notice and a documented move command; nothing is ever written into a legacy directory; legacy-only `permissions.json` and `sandbox.json` are never silently ignored (s.7 item 2).
+- [ ] **AG-66-9**: `models.yml` markers: read, update and removal recognise `# autonogrammer:begin/end <id>` and `# autonogrammer:begin/end <id>`; a legacy block is rewritten under the new markers in the same write, never both, no duplicated provider entries; unmanaged bytes and comments are preserved (s.7 item 3).
+- [ ] **AG-66-10**: Old-name literals exist only in files named `LegacyBrandNames.cs`, one per project that needs them; the architecture or a unit test fails on any other `autonogrammer` literal under `src/`, `services/`, `apps/` (guards the freeze in runbook s.6).
+- [ ] **AG-66-11**: `AGENTS.md` and `README.md` use the new name and match the tree; `CLAUDE.md` exists, is minimal, and imports `AGENTS.md`; `CHANGELOG.md` has the rename entry under `## [Unreleased]` and no released section changed.
+- [ ] **AG-66-12**: `scripts/test-services.sh` creates only `autonogrammer-test-*` containers, so it cannot touch another session's `autonogrammer-test-*` containers; `down` removes only its own two.
+- [ ] **AG-66-13**: The desktop head window title is `Autonogrammer` (`apps/Autonogrammer.Native/MainWindow.axaml`), checked by a launch under a private Xvfb display.
+- [ ] **AG-66-14**: The owner-action list of runbook s.5 is delivered with the result, each item marked open; nothing in the tree claims an external rename happened.
+
+### Accounts (67) (AG-67)
+
+- [ ] **AG-67-1**: The desktop head signs in with an email one-time code (6 to 10 digits) through POST /otp and POST /verify with type email.
+- [ ] **AG-67-2**: The desktop head also signs in through a magic link with PKCE and a one-shot loopback listener on 127.0.0.1 with a path nonce, falling back cleanly to the code.
+- [ ] **AG-67-3**: First-time email users (F1, signup email without a code) see a specific hint and a working link-then-new-code path whichever owner actions are done.
+- [ ] **AG-67-4**: The web head signs in by code or by link, holds tokens and the PKCE verifier in memory only, and hands the returned code to the asking tab over a BroadcastChannel.
+- [ ] **AG-67-5**: A hand-written GoTrue client in `Autonogrammer.Accounts` has typed models, source-generated JSON and results (no exceptions) for expected failures, and uses no Supabase SDK.
+- [ ] **AG-67-6**: Refresh is single flight, writes the rotated refresh token to the store before publishing it, and adopts a token rotated by another process under a cross-process lock.
+- [ ] **AG-67-7**: Startup never waits on the network; a stored session starts SignedIn and refreshes in the background; Offline is a notice, not a sign-out.
+- [ ] **AG-67-8**: Sign-out clears local state first, then revokes with scope=local; sign out everywhere (global) and others are separate, confirmed actions.
+- [ ] **AG-67-9**: Every failure maps to one of the AuthErrorKind values with its own fixed message and never shows raw exception or server text.
+- [ ] **AG-67-10**: `Autonogrammer.Harness.Secrets.Os` implements ISecretStore with libsecret on Linux, Keychain Services on macOS and DPAPI on Windows, reporting typed Unavailable, Locked, Denied.
+- [ ] **AG-67-11**: When the OS store fails the session is memory-only with a visible notice; the owner-only file store is used for accounts only after an explicit consent setting, and never for a device private key.
+- [ ] **AG-67-12**: A first launch of a Code-only user makes no keyring call (setting `account.hasStoredSession`).
+- [ ] **AG-67-13**: The API validates Supabase tokens with ES256 pinned, issuer and audience authenticated, rejects is_anonymous and a role other than authenticated, and takes the owner from sub.
+- [ ] **AG-67-14**: GET /auth/config is anonymous and serves project URL, publishable key, enabled methods and timings; the validator refuses a secret key and a non-https URL.
+- [ ] **AG-67-15**: Every rate-limit policy partitions by sub; unauthenticated callers share one partition.
+- [ ] **AG-67-16**: With open sign-up, WorkspaceAccess denies every caller when Api:Workspace:Owners is empty unless the development principal is on.
+- [ ] **AG-67-17**: OpenAPI declares the bearer scheme, security [] on the anonymous operations (`/auth/config`, `/source`, the webhook receiver and `/cowork/artifact-render/{ticket}` with its own limiter partition), scheme `DispatchDevice` on `/dispatch/devices/{id}/connect`, and 401 and 403 responses.
+- [ ] **AG-67-18**: The `accounts` row (ADR-0031 M0004, no email stored; `AccountResponse.email` comes from the token's `email` claim) is created on the first authenticated request and `AccountEnrollmentMiddleware` upserts `last_seen_at` only, at most one write per sub per 10 minutes, and never blocks a request.
+- [ ] **AG-67-19**: GET /account, /account/sessions, /account/sessions/{id} and /account/board are owner-scoped; an item of another owner is the same 404 as an absent one.
+- [ ] **AG-67-20**: GET /board is replaced by GET /account/board and every caller moves in the same change.
+- [ ] **AG-67-21**: SessionRegistry and SessionLifecycleStore are deleted and their callers use the repository (brief 68), so a restart keeps the list.
+- [ ] **AG-67-22**: A Cowork session appears in /account/sessions and nowhere on the board, /sessions or the catalog event stream.
+- [ ] **AG-67-23**: Both heads draw exactly one of SignedOut, AwaitingLink (resend cooldown, expiry countdown, change email), SigningIn (cancelable), SignedIn (identity, devices, sign out) and Error, accessibly.
+- [ ] **AG-67-24**: The hosted web CSP gains a second validated connect-src origin for the auth host and the web head refuses a config whose project origin differs.
+
+### Data plane (68) (AG-68)
+
+- [ ] **AG-68-1**: Every Dragonfly key and channel is built by `DragonflyKeyspace` under the prefix `autonogrammer:v1:`, with a mandatory TTL of at most 24 h in the same command.
+- [ ] **AG-68-2**: Autonogrammer uses its own pinned Dragonfly service, with no ACL user as the isolation boundary and no eviction.
+- [ ] **AG-68-3**: The schema, database and test names are `autonogrammer`, `autonogrammer` and `autonogrammer_test`; no first-party source contains the old physical names.
+- [ ] **AG-68-4**: Migrations up to the compiled head (M0001 to M0010; phase 68 U3 authors M0001 to M0009, M0006 carries the artifact tables and M0009 the ADR-0037 projects, instructions and memory tables, and M0010 `dispatch_device_state` is authored and registered in the runner list by phase 74 U2) are numbered, checksummed, additive, each with a down step, run by `Autonogrammer.Api migrate` under one advisory lock with the migrator role only.
+- [ ] **AG-68-5**: The runtime role `autonogrammer_app` has DML only (INSERT and SELECT only on `dispatch_audit`); a role test proves it cannot run DDL or read another schema.
+- [ ] **AG-68-6**: `ISessionRepository.ListByOwnerAsync` and `SetClosedAsync`, `Session.Surface` and `Session.ClosedAt` exist in the in-memory and Postgres stores.
+- [ ] **AG-68-7**: Telemetry goes to GreptimeDB database `autonogrammer` with source `Autonogrammer.Api` and `autonogrammer.*` instruments, using only the pinned OpenTelemetry 1.20.0 packages.
+- [ ] **AG-68-8**: `Autonogrammer.Resilience` gives every Postgres, Dragonfly and ledger call a deadline, bounded jittered retry (idempotent calls only), circuit breaker and bulkhead, on an injected `TimeProvider`.
+- [ ] **AG-68-9**: Dragonfly outages fail closed (503 `data_plane_unavailable`, never a separate coordination problem type) for leases, idempotency and device nonces, and open for signals and presence; rate limits degrade to the in-process limiter.
+- [ ] **AG-68-10**: `GET /status/data-plane` and the 503 problem `data_plane_unavailable` expose only component, state and a closed reason enum.
+- [ ] **AG-68-11**: The ledger sink is off by default, outbox-fed, writes only through `SubstrateGateway.EmitEventAsync`, and sends only the closed field set (no personal data).
+- [ ] **AG-68-12**: No client build, head or log holds a data-plane credential, connection string or pepper; configuration errors name the key, never the value.
+- [ ] **AG-68-13**: Throwaway containers and variables are named `autonogrammer-test-*` and `AUTONOGRAMMER_TEST_*`; live tests are trait- and variable-gated; `GateParityTests` covers the test-services calls.
+- [ ] **AG-68-14**: Account erasure deletes owner rows from every user-content table (including `cowork_memory_entries`, `cowork_memory_settings`, `cowork_instructions`, `cowork_projects`) and the tenant's Dragonfly keys, and leaves only keyed-hash audit rows.
+
+### Surface switch and Cowork sessions (69) (AG-69)
+
+- [ ] **AG-69-1**: A window-level `SurfaceHost` is the content of `MainWindow` and holds `MainView` (Code) and `CoworkView`; a window built without Cowork services shows no switch.
+- [ ] **AG-69-2**: The switch is a two-item segmented control with the semantics of ADR-0032 D1 (Web tablist, Native toggle group, polite activity chip) and the shortcuts Ctrl+Shift+1 (Code) and Ctrl+Shift+2 (Cowork), each in the shortcut catalogue with a test.
+- [ ] **AG-69-3**: The last surface persists as `shell.surface` in `config/settings.json` (Native) and `autonogrammer.surface` in `localStorage` (Web) and is restored only when Cowork is available.
+- [ ] **AG-69-4**: Switching changes visibility only; no session of either surface is stopped, and `SurfaceActivityModel` shows running, needs-approval and failed counts of the hidden surface.
+- [ ] **AG-69-5**: The Web head gets `SurfaceTabs`, a `Surface` fragment in `TopBar`, the route `/cowork` and a Cowork workbench shell with rail and empty, signed-out and error states.
+- [ ] **AG-69-6**: `CoworkSessionRegistry` keeps Cowork sessions in `<stateRoot>/cowork/<account>/sessions.json`, separate from `<stateRoot>/sessions.json`, with its own 200-session cap and `RecoverAfterRestart`.
+- [ ] **AG-69-7**: Cowork has its own contract types (`CoworkSessionSummary`, `ICoworkSessionCatalog`) in `Autonogrammer.Contracts.Cowork`; none is an `ISessionCatalog` or `SessionSummary`.
+- [ ] **AG-69-8**: The Cowork layout (rail, conversation host, dock host with a tab strip) has framework-free models in `Autonogrammer.Presentation.Cowork` and two renderers, with no Kanban tab.
+- [ ] **AG-69-9**: `CodeBoardSource` is the only caller of the repository list for the board and passes `SessionSurface.Code`; `PUT` and `DELETE /cowork/sessions/{id}` store summary rows with `surface = cowork`.
+- [ ] **AG-69-10**: Architecture tests and behavioural tests make the Kanban rule fail the build when broken (ADR-0032 D2).
+- [ ] **AG-69-11**: `CoworkSessionSync` pushes Cowork summaries to the API and keeps the latest per session while offline.
+- [ ] **AG-69-12**: Each surface's top bar ends in a `HeaderEndSlot` bound to one `SurfaceChromeModel` (Presentation, `Cowork` folder; Native `SurfaceHost` and the Web `TopBar` place it) that ADR-0030 and ADR-0036 fill with the account menu and the Devices entry; the slot has a test that an entry added once appears in both surfaces in the same place and is keyboard reachable.
+- [ ] **AG-69-13**: `IDockPanel` is a content contract; `CoworkDockHost` (unit 3) hosts a registered list of panels with a tab strip and one visible panel, and each provider (Artifacts, Browser Use) registers its panel; there is no single fixed dock slot (ADR-0032 D3).
+
+### Cowork chat core and tool host (70) (AG-70)
+
+- [ ] **AG-70-1**: `CoworkSessionProfile` produces the omp launch of a Cowork session: `--no-extensions`, an approval mode from the Cowork permission mode, `--add-dir` per trusted folder, an absolute `--append-system-prompt` file path, and a `--config` overlay with `browser.enabled: false` and `computer.enabled: false`.
+- [ ] **AG-70-2**: `CoworkPermissionResolver` denies paths outside the trusted and Storage folders, always asks before a delete, allows `mcp__cowork_*` tools at the omp level, and follows Manual, Auto or Skip (`CoworkPermissionMode`; Auto is shown as "Auto (rules)") for the rest.
+- [ ] **AG-70-3**: `CoworkSessionHost` implements `IAgentPanelHost` over the Cowork registry and composes engines with `EngineComposition.Compose`, never through the Code planner.
+- [ ] **AG-70-4**: A Cowork conversation supports send, stop, retry, steer, resume from history (`session/load`), file attachments and image attachments, and refuses images with a specific message when the model reads none.
+- [ ] **AG-70-5**: Tool-call updates carry images: `ToolUpdateContent.Images`, an image block in the transcript fold, the views, the export and the web projection, with alt text.
+- [ ] **AG-70-6**: `Autonogrammer.Cowork.Abstractions` holds exactly the contract of ADR-0032 D5 and nothing else.
+- [ ] **AG-70-7**: `CoworkToolHost` runs the eight-step call sequence of D5 for every call and enforces the descriptor rules and result caps.
+- [ ] **AG-70-8**: `McpGatewayServer.Start(registry, invoker, coworkTools)` serves Cowork tools beside registry tools with disjoint names and maps results, images included, to `CallToolResult`.
+- [ ] **AG-70-9**: `CoworkPolicyGate`, `CoworkApprovalBroker`, the grant store and the audit hook implement D6; `EveryCallOnExecutingDevice` is never satisfied by a grant, a mode or a remote decision.
+- [ ] **AG-70-10**: `CoworkToolServer` starts one loopback gateway for Cowork, health-checks it before `session/new` and degrades with a visible notice, never by failing the session.
+- [ ] **AG-70-11**: Cowork conversation models and views (Native and Web) show the transcript, composer, approval cards, provider status chips and the dock host.
+- [ ] **AG-70-12**: `FakeCoworkToolProvider` and a contract test base let ADR-0033, 0034 and 0035 prove their providers against the same rules.
+- [ ] **AG-70-13**: The host taints a session when a result carries untrusted content, raises `CoworkToolEvent`s (started, approval requested, completed, failed, denied), and in a tainted session Auto and Skip no longer apply to actuating calls or to `edit`, `delete`, `move` and `execute` (tests in units 1 and 3).
+- [ ] **AG-70-14**: `ConfigOverlayWriter.WriteYaml(sessionStateDirectory, yaml)` (new, `Autonogrammer.Harness.AgentLoop/Launch`, owner-only mode, deleted on dispose) writes the Cowork overlay; the Cowork environment holds provider keys only and `CoworkPathBoundary` refuses the secrets, `~/.omp`, `~/.ssh` and account folders as trusted folders (tests in units 3 and 4).
+
+### Cowork Artifacts (71) (AG-71)
+
+- [ ] **AG-71-1**: An artifact has a host-generated id, a fixed kind (Markdown, Code, Html, Svg, Mermaid, Csv, Image), a validated title and media type, and an optional session link.
+- [ ] **AG-71-2**: Versions are write-once, numbered from 1, each with a content SHA-256, a parent number and parent hash, an author set by the host, and a change note.
+- [ ] **AG-71-3**: Update requires the base version, rejects a stale base with the latest number, and returns the existing version when the new bytes hash the same.
+- [ ] **AG-71-4**: Every read re-verifies the hash and the parent link and refuses to render a version that fails.
+- [ ] **AG-71-5**: Copy creates a new artifact with `DerivedFrom`; a user edit of a text kind saves a new version with author User.
+- [ ] **AG-71-6**: Export writes one version as a file or an artifact as a deterministic zip, with safe defaults (sanitised SVG, neutralised CSV formulas, restricted HTML wrapper) and sanitised entry names.
+- [ ] **AG-71-7**: Diff of text kinds uses DiffPlex under line and size caps and is cancellable; binary kinds diff as metadata.
+- [ ] **AG-71-8**: The `artifact` tool family (`create`, `update` with `edits`, `read`, `list`) is provided through the host-owned MCP gateway with typed error codes, a write rate limit and `from_file` under the folder grants.
+- [ ] **AG-71-9**: Limits (size per kind, versions, artifacts and bytes per account, title) are validated options and fail with typed results, never truncation.
+- [ ] **AG-71-10**: Markdown renders through the existing Markdig no-HTML pipeline; Code through read-only AvaloniaEdit or escaped `pre`; neither runs script.
+- [ ] **AG-71-11**: SVG passes an in-house XML allowlist sanitiser (DTD prohibited, no external reference, no script, no event attribute) and shows as an inert image.
+- [ ] **AG-71-12**: CSV renders from a capped RFC 4180 preview as text cells with formula-like cells marked.
+- [ ] **AG-71-13**: Images are validated by magic number, size and pixel caps before display and are never SVG.
+- [ ] **AG-71-14**: Html and Mermaid run only in an isolated surface whose CSP is produced by one tested `ArtifactDocumentPolicy`.
+- [ ] **AG-71-15**: The desktop surface uses NativeWebView with the post-message bridge off, a private non-persistent store, cancelled navigation and new windows, and no message subscription.
+- [ ] **AG-71-16**: The web head uses a sandboxed iframe: `srcdoc` for static Html and Mermaid, and an API-served ticketed render document with its own response CSP for interactive Html.
+- [ ] **AG-71-17**: Network access is requested per version, shown to the user, approved per session or per version, default off; storage access is not offered.
+- [ ] **AG-71-18**: The surface is destroyed when hidden, stopped or signed out, and every blocked navigation is reported.
+- [ ] **AG-71-19**: A local file store is authoritative on desktop; the API keeps the account listing; sync is one setting, off by default (metadata only until the user enables it; the web head shows a "sync is off" state for the artifact list), idempotent by hash, and a divergent number forks to a copy.
+- [ ] **AG-71-20**: API routes are owner-scoped (another owner's id is 404), content is always served as an attachment octet-stream, and render tickets are 60 s, version-bound HMACs.
+- [ ] **AG-71-21**: The panel is a labelled region with a named toolbar, a polite live region, non-colour diff markers, focus escape controls and no new colour role.
+- [ ] **AG-71-22**: `ArtifactBlock` is an additive transcript block that opens the panel and degrades to `UnknownBlock` in old readers.
+- [ ] **AG-71-23**: A hostile payload corpus is test data for every kind, every renderer and every tool argument, and every entry has an asserted outcome.
+- [ ] **AG-71-24**: Create, update, grant and revoke emit a counter and an audit event (`artifact.created`, `artifact.updated`, `artifact.grant`, `artifact.revoke`, in the closed `cowork_events.kind` list fixed by phase 68 U3) carrying hashes and origins, never content, titles or account ids.
+
+### Cowork Browser Use (72) (AG-72)
+
+- [ ] **AG-72-1**: The agent browser is a host-owned Chromium process connected over a pipe (no debugging port) and used through PuppeteerSharp 25.15.0 as CDP client only.
+- [ ] **AG-72-2**: Chromium starts with an allow-listed environment, argument-list arguments, the sandbox on, and a fresh 0700 profile per Cowork session wiped at its end.
+- [ ] **AG-72-3**: Chromium is found (configured, managed, system) or acquired only through a user-confirmed, checksum-verified step; nothing downloads silently and nothing is bundled.
+- [ ] **AG-72-4**: Every browser request passes a per-session loopback egress guard that resolves names itself, denies private, loopback, link-local and metadata addresses, and pins the connection to the validated address.
+- [ ] **AG-72-5**: Top-level navigations, including redirects, pass a navigation gate; the requested origin is covered by the host gate (stage 1) and any other origin by a provider approval card (stage 2); Strict mode allows only listed hosts.
+- [ ] **AG-72-6**: Frames from `Page.startScreencast` reach a pane through `IBrowserPaneFeed` with bounded rate and size; the desktop feed is built, the Web and Android feed is not (ADR-0036 D13) and those heads show `RemoteViewUnavailable`.
+- [ ] **AG-72-7**: The user can take over the pane with pointer and keyboard on the desktop that runs the browser, and leaves keyboard capture with F6.
+- [ ] **AG-72-8**: `BrowserToolProvider : ICoworkToolProvider` offers `browser_navigate`, `browser_click`, `browser_type`, `browser_scroll`, `browser_read`, `browser_screenshot`, `browser_wait`, `browser_back` and `browser_close` with hybrid element-ref and coordinate grounding and the Effect classes of ADR-0034 D7.
+- [ ] **AG-72-9**: `browser_screenshot` returns one bounded image (default 1280x800, at most 3 MiB, at most 40 per session) the model receives and the pane shows in an Agent view strip.
+- [ ] **AG-72-10**: A model that cannot read images gets a specific degraded state and a vision-model chooser fed by omp's model listing (`ModelReadsImages`).
+- [ ] **AG-72-11**: Every page-derived block sets `IsUntrusted`, carries a per-result random-id marker, passes a visibility and invisible-Unicode filter, and is capped at 20,000 characters.
+- [ ] **AG-72-12**: Sensitive fields, form submits, downloads, popups, dialogs, permissions and file choosers follow the ADR-0034 matrix; downloads are denied by default and uploads do not exist.
+- [ ] **AG-72-13**: An indicator outside the page frame states that the agent controls the browser, with a Stop control that cancels in-flight calls and revokes control.
+- [ ] **AG-72-14**: Dispatch-origin turns use the browser only when `AllowDispatchSessions` is on, with `Open` mode ignored and sensitive actions `MustBeLocal`.
+- [ ] **AG-72-15**: Every limit (actions per minute, calls, screenshots, tabs, memory, idle, wall time) is a validated option, and logs and audit targets carry no page text, typed text or query string.
+- [ ] **AG-72-16**: A local test site and a 19-page hostile corpus prove the host invariants on this Linux host, headless and under a private Xvfb.
+
+### Cowork Computer Use (73) (AG-73)
+
+- [ ] **AG-73-1**: `IComputerUseBackend` exposes availability, permissions, displays, windows (z-order), pointer, capture, input primitives, release-all and clipboard text, all async with `CancellationToken` last.
+- [ ] **AG-73-2**: `IComputerActionGate` is the only route to injection; the executor needs a single-use ticket and an architecture test forbids any other reference to the backend.
+- [ ] **AG-73-3**: The gate evaluates in the ADR-0035 D3 order and every refusal carries a stable `DenialCode` and a message id.
+- [ ] **AG-73-4**: Grants are (session, `AppIdentity`, tier, origin, expiry); tiers are `ViewOnly`, `ClickOnly`, `Full`; the model cannot create a grant.
+- [ ] **AG-73-5**: A data catalogue sets category defaults and a built-in denylist (terminals, password managers, system settings, trading and wallets, own process) that users may extend and never reduce.
+- [ ] **AG-73-6**: `computer.list_windows` returns titles only for granted applications; hard-denied chords (launchers, run dialogs, kill chord) are refused.
+- [ ] **AG-73-7**: Sensitivity classification (credential titles, deletion, purchase, mail and messaging raised above `ViewOnly`, clipboard, first action per application, Dispatch origin) forces local confirmation.
+- [ ] **AG-73-8**: `IComputerApprovalPrompt` shows host-observed facts only, defaults focus to Deny, never auto-allows, and times out to deny after 120 s.
+- [ ] **AG-73-9**: No primitive is injected while a prompt is open; own-process windows are denied as targets and masked in model frames; an optional security phrase shows in prompt and indicator.
+- [ ] **AG-73-10**: `ComputerUseOptions` (`Enabled=false`) validate on start, name keys never values, and cover rate (60 per minute, burst 10), step limit (300, +100), failure pause (5), text cap (2000) and takeover threshold (24 px).
+- [ ] **AG-73-11**: A global-hotkey kill switch on its own thread and OS connection is verified before arming; a trip revokes, releases all input, cancels the turn, updates the indicator and writes an audit record.
+- [ ] **AG-73-12**: A top-most indicator is visible while armed or acting and the gate denies when it is not in the window list; pointer displacement over the threshold pauses with `UserTookOver`.
+- [ ] **AG-73-13**: `ComputerAuditLog` writes owner-only JSON Lines with a `prev` SHA-256 chain, write-ahead before injection, denies on write failure, records typed text as length and hash only, keeps 30 days.
+- [ ] **AG-73-14**: The frame pipeline maps coordinates (`CoordinateMap`), masks non-granted and own windows (`VisibleRegionMasker`), downscales to the model profile, encodes PNG under the byte cap and tracks the per-session image budget.
+- [ ] **AG-73-15**: `ComputerToolProvider` (`ProviderId` `computer`) implements `ICoworkToolProvider` of ADR-0032 for the 15 `computer_*` tools with descriptor mapping, host-observed previews, untrusted blocks, and the Cowork `--config` overlay (owned by the Cowork profile) sets `computer.enabled=false` and `browser.enabled=false`.
+- [ ] **AG-73-16**: The X11 backend captures with `XGetImage`, injects with XTest, lists displays (XRandR) and windows (EWMH, `XQueryTree` fallback) and types text including unmapped characters.
+- [ ] **AG-73-17**: The X11 hotkey grabs the chord on a second connection and reports `KillSwitchUnavailable` on `BadAccess`.
+- [ ] **AG-73-18**: Wayland sessions and platforms without a backend report typed unavailable states with remediation message ids and register no tools.
+- [ ] **AG-73-19**: The Windows backend uses `SendInput`, GDI capture, UIPI and secure-desktop detection and `RegisterHotKey`, and builds warning-free on Linux.
+- [ ] **AG-73-20**: The macOS backend uses CGEvent, the system `screencapture`, CoreFoundation window listing and Carbon hotkey, and builds warning-free on Linux.
+- [ ] **AG-73-21**: `IComputerPermissionAdvisor` turns permission and availability states into guidance with Settings deep links and a bounded status poll.
+- [ ] **AG-73-22**: No relay operation reaches a backend primitive; there is no `computer.*` relay operation (ADR-0036); a `cowork.task` whose `toolClasses` contains `computer_use`, on a desktop with `Cowork:ComputerUse:Enabled` and `Cowork:ComputerUse:AllowDispatchSessions`, registers `computer_*`, every other session registers none and `code.prompt` never does; approvals are local-only, `Cowork:ComputerUse:AllowDispatchSessions=false` by default, Dispatch grants end with the command and within 30 minutes.
+- [ ] **AG-73-23**: A Computer Use settings page and opt-in dialog (provider disclosure, grants, denylist additions, kill chord, security phrase, audit) are accessible and tested headless.
+- [ ] **AG-73-24**: The serialised scaffold step registers every project (slnx, slnf, `LayerMap`, architecture reference, locks, test projects); phase 73 adds code only and edits a registry file only for rows the scaffold manifest marks "per phase" (`docs/architecture.md` prose, parity audit rows); docs, changelog and `THIRD-PARTY-NOTICES.md` unchanged (no new package).
+
+### Dispatch relay (74) (AG-74)
+
+- [ ] **AG-74-1**: A desktop pairs under the signed-in account and receives a device id plus an API-signed ES256 credential (own key variable) bound to a device-held P-256 key stored only in the OS secret store.
+- [ ] **AG-74-2**: Pairing requires a full sign-in no older than 10 minutes (newest non-refresh `amr` entry of the authenticated principal); Dispatch never re-validates user tokens.
+- [ ] **AG-74-3**: Devices can be listed, renamed and revoked (one or all); each carries a capability list with versions, presence and last seen.
+- [ ] **AG-74-4**: The hub is a WebSocket endpoint in `Autonogrammer.Api`; the newest connection of a device wins (close 4009); the hello challenge is single use (Dragonfly `auth` nonce).
+- [ ] **AG-74-5**: Every command is a signed envelope (commandId, per-device seq, userId, deviceId, issuedAt, expiresAt, nonce, capability, payload at most 64 KiB, ES256 signature over canonical bytes), signed at delivery.
+- [ ] **AG-74-6**: Per-device `seq` is strictly increasing and gap-free at allocation; delivery is at-least-once; the device applies each command once.
+- [ ] **AG-74-7**: Acknowledgement states received, accepted, running, completed and failed carry a typed reason from a closed set.
+- [ ] **AG-74-8**: A command for an offline device queues for at most 5 minutes and is then expired and never delivered.
+- [ ] **AG-74-9**: No `computer.*` operation exists; Computer Use is a tool class named in the `toolClasses` of a `cowork.task` payload (`computer_use` is a capability flag and never a command capability; ADR-0035 D12 registers `computer_*` only for such a task on a desktop with `Cowork:ComputerUse:Enabled` and `Cowork:ComputerUse:AllowDispatchSessions`, and never for `code.prompt`), needs a local approval at task start and per action (ADR-0035), and cannot be approved remotely.
+- [ ] **AG-74-10**: Revocation closes the socket within 2 seconds, fails queued and running commands, and makes the desktop end dispatched sessions and withdraw grants; "Sign out everywhere" revokes all devices.
+- [ ] **AG-74-11**: Reconnect uses full-jitter backoff, unbounded, ceiling 30 seconds, with close-code specific behaviour.
+- [ ] **AG-74-12**: Per-account rate limits (partitioned by `sub`), a per-device queue cap and a per-account device cap hold.
+- [ ] **AG-74-13**: Every state change writes a `dispatch_audit` row in the same transaction; the ledger copy is ADR-0031's outbox, default off.
+- [ ] **AG-74-14**: Presence is a Dragonfly TTL key under `autonogrammer:v1:presence`; first launch is one replica; the validator refuses unsafe multi-replica and in-memory settings.
+- [ ] **AG-74-15**: The Devices and Dispatch views show no_devices, device_offline, queued with expiry, command_pending_approval, running with cancel, failed with reason, completed with summary, and every degraded state, accessibly.
+- [ ] **AG-74-16**: Controllers use HTTPS POST plus SSE with `Last-Event-ID` resume only; no browser WebSocket.
+- [ ] **AG-74-17**: The feature is off by default (404 `dispatch_disabled`); the desktop shows a persistent "Remote task running" strip.
+- [ ] **AG-74-18**: Dispatch-started sessions use `SessionSurface.Code` or `Cowork` of ADR-0030 and reach the Cowork session host of ADR-0032; Cowork rows never enter the Code catalog.
+
+### Cowork parity A (75) (AG-75)
+
+- [ ] **AG-75-1**: A user can create, list, rename, archive and hard-delete projects (at most 200, name at most 100 characters) and bind local folders to them without uploading a file.
+- [ ] **AG-75-2**: The API stores projects, global instructions and memory per account (`sub`), answers 404 for another account's row, and is rate limited per user.
+- [ ] **AG-75-3**: Global instructions (at most 8 KiB) and project instructions (at most 16 KiB) are built with the memory brief (at most 4 KiB) into one standing-context block delivered as an embedded resource at the start of the first prompt, with a fixed paragraph of at most 2 KiB in the system-prompt file, inside the 8 KiB total apportioned in `CoworkSystemPromptOptions` (base 4 KiB, standing context 2 KiB, browser 1 KiB, computer 1 KiB).
+- [ ] **AG-75-4**: Memory entries are scoped to an account or a project, full-text searchable, capped (1,000 entries, 1,000 characters, 20 agent saves per session per hour) and hard-deleted on request.
+- [ ] **AG-75-5**: `MemoryContentPolicy` refuses never-saved classes always and sensitive categories unless the user opted in, before every write, and says why to the agent and the user.
+- [ ] **AG-75-6**: `MemoryMode` is the session's fixed memory-off flag; Off removes the provider and the brief; pause, reset, per-entry delete and JSON export exist.
+- [ ] **AG-75-7**: The agent reaches memory through the `memory` tool provider (`memory_recall`, `memory_save`, `memory_forget`, all `ByPolicy`), so Manual and Auto ask for save and forget.
+- [ ] **AG-75-8**: A scheduled task can target a Cowork or Code session with a preset schedule, an approval mode and optional project and folders; a missed run folds into one late run within 24 hours.
+- [ ] **AG-75-9**: An unattended run that needs approval waits, notifies and is cancelled after `UnattendedApprovalTimeout` (30 minutes), and the run writes `schedule.run`, `schedule.late` and `schedule.waiting_for_approval` events (the closed `cowork_events.kind` list of phase 68 U3); Skip is refused without a FilesystemIsolated session.
+- [ ] **AG-75-10**: Projects, instructions, memory and scheduled tasks have view models and desktop views (projects and memory also on the web) with accessible names, keyboard paths and specific degraded states.
+- [ ] **AG-75-11**: `docs/parity/cowork-parity.md` exists with rows C1 to C31 and K01 to K20 and this phase's rows graded with evidence.
+
+### Cowork parity B (76) (AG-76)
+
+- [ ] **AG-76-1**: A user can install a plugin bundle (Anthropic layout) from a local folder or `.zip` into user or project scope, enable or disable it, and see which of its components load; a project-scope bundle is off until enabled.
+- [ ] **AG-76-2**: Install refuses path traversal, symbolic links, files over 2 MiB, more than 2,000 files or 50 MiB, and a malformed manifest, each with a named error.
+- [ ] **AG-76-3**: Bundle skills reach omp through `skills.customDirectories`; commands join the palette as `/<plugin>:<command>`; agents are listed; `.mcp.json` servers join the MCP catalog off until confirmed one by one; hooks are listed and never run.
+- [ ] **AG-76-4**: A per-skill enable switch excludes a disabled skill at launch; a built-in `/create-plugin` skill ships.
+- [ ] **AG-76-5**: A connector card shows state; Check connection (user action only) lists tools; each tool and server is Always allow, Needs approval or Blocked, stored as permission rules.
+- [ ] **AG-76-6**: `CoworkPermissionMode` gains `Auto`; Auto allows what the rules and the read-only list allow, asks otherwise, behaves like Manual for tool-provider and MCP calls and in a tainted session; the UI says "Auto (rules)"; the default stays Manual. "Mode" means only `CoworkPermissionMode` (Manual, Auto, Skip); other timeouts and policies use their own names (`CoworkToolHostOptions.ApprovalTimeout`, `Dispatch:CommandApprovalTimeout`, `UnattendedApprovalTimeout`, `BrowserUse:PolicyMode`).
+- [ ] **AG-76-7**: Skip needs a FilesystemIsolated session or a per-session acknowledgement (ADR-0037 D10; an agreed amendment of ADR-0032 D4, written into ADR-0032 when it is accepted).
+- [ ] **AG-76-8**: In every Cowork mode the ACP kind `delete` and shell commands recognised as deleting ask; the Cowork resolver also applies `Mcp(...)` allow and deny rules from the permission files.
+- [ ] **AG-76-9**: Trusted folders gain an access mode (read-only or read-write) and a scope (session, project, global); `CoworkPathBoundary` also refuses `/`, the home directory itself and system directories.
+- [ ] **AG-76-10**: The omp child starts through a process wrapper from a launch contribution: bubblewrap on Linux, `sandbox-exec` on macOS, a job object on Windows, with a probe, a reported level and named degraded states.
+- [ ] **AG-76-11**: The sub-agent panel lists `task` tool calls from the ACP stream with status, elapsed time and the number running, accessibly.
+- [ ] **AG-76-12**: A usage meter sums `usage_update` and per-turn usage into per-session and per-day views and a local ledger; the export history is no longer empty.
+- [ ] **AG-76-13**: Notifications fan out to an in-app centre and OS sinks (Linux, macOS) with focus suppression, coalescing, Do-not-disturb and title-only privacy by default.
+- [ ] **AG-76-14**: The phase's rows of `docs/parity/cowork-parity.md` are graded with evidence.
+
+### Hardening and integration (77) (AG-77)
+
+- [ ] **AG-77-1**: `VersionPrefix` in `Directory.Build.props` is `0.16.0`, and the API and worker Containerfile version `ARG` defaults (`AUTONOGRAMMER_VERSION` before the rename, `AUTONOGRAMMER_VERSION` after) equal it. The change is ONE commit, made after every other unit; `git log -S'<VersionPrefix>0.16.0'` finds exactly that commit.
+- [ ] **AG-77-2**: After that commit `dotnet restore Autonogrammer.Linux.slnf --locked-mode` succeeds with the committed locks and the Android project restores on its own. The relock is run once; no later commit touches a `packages.lock.json`.
+- [ ] **AG-77-3**: `CHANGELOG.md` has a `## [0.16.0]` section built from the Unreleased lines of the phases and a compare link; `Unreleased` is empty; `bash scripts/ci/check-changelog.sh` passes.
+- [ ] **AG-77-4**: `ContractVersion.Current` is `1.6.0` and no commit after the scaffold commit touches `ContractVersion.cs` (R9: the bump is the scaffold step's, never this phase's).
+- [ ] **AG-77-5**: Six runbooks exist, are listed in `docs/SUMMARY.md` and pass `scripts/docs/check_gitbook.py`: `accounts.md`, `data-plane.md`, `cowork.md`, `dispatch.md`, `browser-use.md`, `computer-use.md` (under `docs/runbooks/`), plus `v0.16.0-owner-actions.md`. Every page has front matter, one H1 and a Status line; ADR-0030 to ADR-0037, the three audit documents (AG-77-8, 10, 13) and every page a phase promised (`reference/cowork-projects-memory.md`, `reference/cowork-extensions.md`, `reference/cowork-safety.md`, `runbooks/cowork-isolation.md`) are listed too.
+- [ ] **AG-77-6**: Each runbook has: what it does, how to enable it, a table of every option variable, how to verify, the degraded states with their user text, owner actions, what cannot be verified. A test fails when a `Dispatch__`, `Accounts__`, `DataPlane__` or `Cowork__` variable of `.env.example` is missing from a runbook table.
+- [ ] **AG-77-7**: `README.md`, `docs/architecture.md`, `docs/guides/{status-and-roadmap,desktop-app-guide,web-app-guide,settings-guide,troubleshooting-and-faq,glossary,concepts}.md`, `docs/reference/api.md`, `docs/settings-parity.md` describe the Cowork surface, accounts, the data plane and Dispatch with their real status (off by default, nothing run live). `docs/architecture.md` has one row per `src/*` and `services/*` project; a test fails on a project directory without a row.
+- [ ] **AG-77-8**: `docs/parity/cowork-parity.md` has rows C1 to C31 and K01 to K20 exactly once. A test fails on: an empty cell, a Status outside MET, MET-LIVE, PARTIAL, DEFERRED, NOT-STARTED, OMITTED-BY-DECISION; an empty Evidence cell; an empty Gap cell on any row that is not MET; a MET row whose Evidence names no test class that `grep` finds under `tests/`; a MET-LIVE row without a path to a recorded run; a counts block that differs from the counts regenerated by `scripts/docs/parity_counts.py --check`.
+- [ ] **AG-77-9**: The same test has fixture cases for each failure above (one bad file each) and passes on the real file; a row cannot be graded by hand against the script.
+- [ ] **AG-77-10**: `docs/quality/v0.16.0-security-review.md` has a scope table (one row per area of the Threat model section below, result and evidence) and a findings table: id, phase, area, severity (Critical, High, Medium, Low, Info), finding, evidence (file and test), status (open, fixed, accepted), owner action.
+- [ ] **AG-77-11**: No finding of severity Critical or High is `open` or `accepted`: it is `fixed` with a named regression test. A Medium or Low `accepted` needs an OQ id. The test of AG-77-8 reads this table too. No phase PR merges while this is false.
+- [ ] **AG-77-12**: With the shipped default configuration the API boots, `Dispatch`, Cowork and Accounts routes answer their disabled problem type (`dispatch_disabled`, `cowork_disabled`, accounts disabled) or 404, and each options validator refuses the unsafe values its brief names (in-memory presence with two replicas, a missing signing key with the feature on, a file key store). One integration test per module.
+- [ ] **AG-77-13**: `docs/quality/v0.16.0-accessibility-pass.md` has a matrix of surface by check; every cell holds a result with the test or file that shows it, or "cannot be checked here" with the reason. Automated checks (names, roles, keyboard order, focus return, aria-live, reduced motion, contrast tokens) exist as tests for each surface of U5.
+- [ ] **AG-77-14**: `./bootstrap.sh` exits 0 on the final integrated tree; the command, the date, the commit and the counts are recorded in `docs/runbooks/evidence/v0.16.0-gate-<date>/README.md`. A Live-category test is skipped with its stated reason, never run and never counted as passed.
+- [ ] **AG-77-15**: After the replay of U7: `python3 scripts/rebrand/rebrand.py verify --baseline <dry-run json>` reports clean; the acceptance probes of the runbook (section 2) list only protected paths and URLs; ADR numbers, OQ ids, migration numbers (M0001 and up) and `ContractVersion` have no duplicate or fork; generated files (locks, notices, OpenAPI) are regenerated, never merged by hand.
+- [ ] **AG-77-16**: One PR (or the repo's stacked equivalent) with the template completed (gate, tests, docs, CHANGELOG, OQ rows, DCO sign-off, light and dark screenshots for UI), CI green on every required check, every review thread (including Greptile, if it reviewed) answered; the PR description states what was not verified.
+- [ ] **AG-77-17**: `docs/runbooks/v0.16.0-owner-actions.md` lists every owner action in the ADR-0030 table form (action and place, needed for, what the product does when it is not done) and the PR performs none of them.
+
+### Traceability (AG)
+
+| REQ-ID | Phase | Status (2026-10-28) |
+|--------|-------|---------------------|
+| AG-SC-1 | 66.1 | Planned |
+| AG-SC-2 | 66.1 | Planned |
+| AG-SC-3 | 66.1 | Planned |
+| AG-SC-4 | 66.1 | Planned |
+| AG-SC-5 | 66.1 | Planned |
+| AG-SC-6 | 66.1 | Planned |
+| AG-66-1 | 66 | Planned |
+| AG-66-2 | 66 | Planned |
+| AG-66-3 | 66 | Planned |
+| AG-66-4 | 66 | Planned |
+| AG-66-5 | 66 | Planned |
+| AG-66-6 | 66 | Planned |
+| AG-66-7 | 66 | Planned |
+| AG-66-8 | 66 | Planned |
+| AG-66-9 | 66 | Planned |
+| AG-66-10 | 66 | Planned |
+| AG-66-11 | 66 | Planned |
+| AG-66-12 | 66 | Planned |
+| AG-66-13 | 66 | Planned |
+| AG-66-14 | 66 | Planned |
+| AG-67-1 | 67 | Planned |
+| AG-67-2 | 67 | Planned |
+| AG-67-3 | 67 | Planned |
+| AG-67-4 | 67 | Planned |
+| AG-67-5 | 67 | Planned |
+| AG-67-6 | 67 | Planned |
+| AG-67-7 | 67 | Planned |
+| AG-67-8 | 67 | Planned |
+| AG-67-9 | 67 | Planned |
+| AG-67-10 | 67 | Planned |
+| AG-67-11 | 67 | Planned |
+| AG-67-12 | 67 | Planned |
+| AG-67-13 | 67 | Planned |
+| AG-67-14 | 67 | Planned |
+| AG-67-15 | 67 | Planned |
+| AG-67-16 | 67 | Planned |
+| AG-67-17 | 67 | Planned |
+| AG-67-18 | 67 | Planned |
+| AG-67-19 | 67 | Planned |
+| AG-67-20 | 67 | Planned |
+| AG-67-21 | 67 | Planned |
+| AG-67-22 | 67 | Planned |
+| AG-67-23 | 67 | Planned |
+| AG-67-24 | 67 | Planned |
+| AG-68-1 | 68 | Planned |
+| AG-68-2 | 68 | Planned |
+| AG-68-3 | 68 | Planned |
+| AG-68-4 | 68 | Planned |
+| AG-68-5 | 68 | Planned |
+| AG-68-6 | 68 | Planned |
+| AG-68-7 | 68 | Planned |
+| AG-68-8 | 68 | Planned |
+| AG-68-9 | 68 | Planned |
+| AG-68-10 | 68 | Planned |
+| AG-68-11 | 68 | Planned |
+| AG-68-12 | 68 | Planned |
+| AG-68-13 | 68 | Planned |
+| AG-68-14 | 68 | Planned |
+| AG-69-1 | 69 | Planned |
+| AG-69-2 | 69 | Planned |
+| AG-69-3 | 69 | Planned |
+| AG-69-4 | 69 | Planned |
+| AG-69-5 | 69 | Planned |
+| AG-69-6 | 69 | Planned |
+| AG-69-7 | 69 | Planned |
+| AG-69-8 | 69 | Planned |
+| AG-69-9 | 69 | Planned |
+| AG-69-10 | 69 | Planned |
+| AG-69-11 | 69 | Planned |
+| AG-69-12 | 69 | Planned |
+| AG-69-13 | 69 | Planned |
+| AG-70-1 | 70 | Planned |
+| AG-70-2 | 70 | Planned |
+| AG-70-3 | 70 | Planned |
+| AG-70-4 | 70 | Planned |
+| AG-70-5 | 70 | Planned |
+| AG-70-6 | 70 | Planned |
+| AG-70-7 | 70 | Planned |
+| AG-70-8 | 70 | Planned |
+| AG-70-9 | 70 | Planned |
+| AG-70-10 | 70 | Planned |
+| AG-70-11 | 70 | Planned |
+| AG-70-12 | 70 | Planned |
+| AG-70-13 | 70 | Planned |
+| AG-70-14 | 70 | Planned |
+| AG-71-1 | 71 | Planned |
+| AG-71-2 | 71 | Planned |
+| AG-71-3 | 71 | Planned |
+| AG-71-4 | 71 | Planned |
+| AG-71-5 | 71 | Planned |
+| AG-71-6 | 71 | Planned |
+| AG-71-7 | 71 | Planned |
+| AG-71-8 | 71 | Planned |
+| AG-71-9 | 71 | Planned |
+| AG-71-10 | 71 | Planned |
+| AG-71-11 | 71 | Planned |
+| AG-71-12 | 71 | Planned |
+| AG-71-13 | 71 | Planned |
+| AG-71-14 | 71 | Planned |
+| AG-71-15 | 71 | Planned |
+| AG-71-16 | 71 | Planned |
+| AG-71-17 | 71 | Planned |
+| AG-71-18 | 71 | Planned |
+| AG-71-19 | 71 | Planned |
+| AG-71-20 | 71 | Planned |
+| AG-71-21 | 71 | Planned |
+| AG-71-22 | 71 | Planned |
+| AG-71-23 | 71 | Planned |
+| AG-71-24 | 71 | Planned |
+| AG-72-1 | 72 | Planned |
+| AG-72-2 | 72 | Planned |
+| AG-72-3 | 72 | Planned |
+| AG-72-4 | 72 | Planned |
+| AG-72-5 | 72 | Planned |
+| AG-72-6 | 72 | Planned |
+| AG-72-7 | 72 | Planned |
+| AG-72-8 | 72 | Planned |
+| AG-72-9 | 72 | Planned |
+| AG-72-10 | 72 | Planned |
+| AG-72-11 | 72 | Planned |
+| AG-72-12 | 72 | Planned |
+| AG-72-13 | 72 | Planned |
+| AG-72-14 | 72 | Planned |
+| AG-72-15 | 72 | Planned |
+| AG-72-16 | 72 | Planned |
+| AG-73-1 | 73 | Planned |
+| AG-73-2 | 73 | Planned |
+| AG-73-3 | 73 | Planned |
+| AG-73-4 | 73 | Planned |
+| AG-73-5 | 73 | Planned |
+| AG-73-6 | 73 | Planned |
+| AG-73-7 | 73 | Planned |
+| AG-73-8 | 73 | Planned |
+| AG-73-9 | 73 | Planned |
+| AG-73-10 | 73 | Planned |
+| AG-73-11 | 73 | Planned |
+| AG-73-12 | 73 | Planned |
+| AG-73-13 | 73 | Planned |
+| AG-73-14 | 73 | Planned |
+| AG-73-15 | 73 | Planned |
+| AG-73-16 | 73 | Planned |
+| AG-73-17 | 73 | Planned |
+| AG-73-18 | 73 | Planned |
+| AG-73-19 | 73 | Planned |
+| AG-73-20 | 73 | Planned |
+| AG-73-21 | 73 | Planned |
+| AG-73-22 | 73 | Planned |
+| AG-73-23 | 73 | Planned |
+| AG-73-24 | 73 | Planned |
+| AG-74-1 | 74 | Planned |
+| AG-74-2 | 74 | Planned |
+| AG-74-3 | 74 | Planned |
+| AG-74-4 | 74 | Planned |
+| AG-74-5 | 74 | Planned |
+| AG-74-6 | 74 | Planned |
+| AG-74-7 | 74 | Planned |
+| AG-74-8 | 74 | Planned |
+| AG-74-9 | 74 | Planned |
+| AG-74-10 | 74 | Planned |
+| AG-74-11 | 74 | Planned |
+| AG-74-12 | 74 | Planned |
+| AG-74-13 | 74 | Planned |
+| AG-74-14 | 74 | Planned |
+| AG-74-15 | 74 | Planned |
+| AG-74-16 | 74 | Planned |
+| AG-74-17 | 74 | Planned |
+| AG-74-18 | 74 | Planned |
+| AG-75-1 | 75 | Planned |
+| AG-75-2 | 75 | Planned |
+| AG-75-3 | 75 | Planned |
+| AG-75-4 | 75 | Planned |
+| AG-75-5 | 75 | Planned |
+| AG-75-6 | 75 | Planned |
+| AG-75-7 | 75 | Planned |
+| AG-75-8 | 75 | Planned |
+| AG-75-9 | 75 | Planned |
+| AG-75-10 | 75 | Planned |
+| AG-75-11 | 75 | Planned |
+| AG-76-1 | 76 | Planned |
+| AG-76-2 | 76 | Planned |
+| AG-76-3 | 76 | Planned |
+| AG-76-4 | 76 | Planned |
+| AG-76-5 | 76 | Planned |
+| AG-76-6 | 76 | Planned |
+| AG-76-7 | 76 | Planned |
+| AG-76-8 | 76 | Planned |
+| AG-76-9 | 76 | Planned |
+| AG-76-10 | 76 | Planned |
+| AG-76-11 | 76 | Planned |
+| AG-76-12 | 76 | Planned |
+| AG-76-13 | 76 | Planned |
+| AG-76-14 | 76 | Planned |
+| AG-77-1 | 77 | Planned |
+| AG-77-2 | 77 | Planned |
+| AG-77-3 | 77 | Planned |
+| AG-77-4 | 77 | Planned |
+| AG-77-5 | 77 | Planned |
+| AG-77-6 | 77 | Planned |
+| AG-77-7 | 77 | Planned |
+| AG-77-8 | 77 | Planned |
+| AG-77-9 | 77 | Planned |
+| AG-77-10 | 77 | Planned |
+| AG-77-11 | 77 | Planned |
+| AG-77-12 | 77 | Planned |
+| AG-77-13 | 77 | Planned |
+| AG-77-14 | 77 | Planned |
+| AG-77-15 | 77 | Planned |
+| AG-77-16 | 77 | Planned |
+| AG-77-17 | 77 | Planned |

@@ -8,7 +8,11 @@ OmpOS is a chat-style agent workspace — a Grok Chat / Cursor Agent–class cli
 
 A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
 
-## Current Milestone: v0.9.2 Hardening and hosted API
+## Current Milestone: v0.16.0 Autonogrammer: accounts, Cowork and Dispatch
+
+**Update 2026-10-28:** the active milestone is v0.16.0 (13 planned phases: 66, 66.1 and 67 to 77), developed on branch `feat/autonogrammer`. It renames the product to Autonogrammer as a hard cutover (the external omp engine names stay), adds Supabase passwordless accounts, a Cowork surface beside Code (chat on the local omp engine, artifacts, Browser Use, Computer Use, projects, memory, plugins) and the Dispatch relay in the existing API. Scope, requirements and phases are in `.planning/ROADMAP.md` and `.planning/REQUIREMENTS.md` (AG-*); nothing is deployed and no live run is claimed. The goal and features below are the earlier v0.9.2 milestone text and are kept as history.
+
+### Earlier milestone: v0.9.2 Hardening and hosted API
 
 **Goal:** Close every v0.9.1 audit tech-debt item, the owner-deferred items OD-1 to OD-13, the human-only items HO-2 and HO-3 that run on this host (HO-4 superseded 2026-10-21), and the hosting path (Railway API, Vercel web) once the owner decides the sign-in method. Temporal Cloud is not part of the hosting path: Temporal is removed (superseded 2026-10-21, docs/handoff.md).
 

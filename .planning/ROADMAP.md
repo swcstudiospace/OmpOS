@@ -10,6 +10,7 @@
 - v0.10.0 Cross-platform UI: active. Phases 20 and 21 complete (both verified). Phase 22 blocked on external hosts: criterion 1 met on the XWayland path (2026-10-24); criteria 3 (Windows runner) and 4 and 5 (Mac channel) open. Phases 23 to 25 partial or blocked (see STATE). Requirements XP-01 to XP-11.
 - ~~v0.14.0 Agent loop and Agent Panel~~ Superseded 2026-10-26 (DR-1: the default Cursor-style Agent Panel is the agent panel, there is no second surface) v0.14.0 Agent loop on the Omp Engine and the default Agent Panel: planned 2026-10-26 from the user request to connect claude-ultrathink, agent-swarm and agent-substrate to the agent loop as pinned submodules and omp plugins, add GSD-Core as an omp plugin, build the default Agent Panel and push to main; revised 2026-10-26 from the user message of that date: the four plugins are connected to every omp process the application starts (the engine session and the omp terminals), a running session can be live-steered, and the Kanban tab (Phase 39) and the Cursor-shaped Settings window with provider configuration (Phase 40) are the only additions beyond Cursor parity; ~~phases 44 to 47; requirements AL-01 to AL-12~~ Superseded 2026-10-26 (Phases 48 and 49 and AL-13 to AL-20 added): phases 44 to 49 (with Phases 33, 35, 39 and 40 extended); requirements AL-01 to AL-20 in `.planning/REQUIREMENTS.md`.
 - Position at commit `d75fd88` (audited 2026-10-27, `docs/quality/cursor-parity-audit-2026-10-26.md`): the Agent Panel, the Kanban tab, omp terminals with the four plugins, live steering, the Settings window with model providers and the Cursor-style restyle (Phase 50) are built and verified without a model turn. Not built or not wired: the browser pane (Phase 29), hooks, automations, the plugin host, herdr and the MCP gateway in any head, the Pets view, remote and mobile terminals, usage history. No live model turn was approved after Phase 11 (OD-07), and nothing was run on Windows, macOS, Android or a hosted deployment.
+- v0.16.0 Autonogrammer: accounts, Cowork and Dispatch: planned 2026-10-28 from the user request and the ultrathink plan graph ut-mvs8ru79-82536fbd; phases 66, 66.1 (scaffold) and 67 to 77; requirements AG-66-* to AG-77-* and AG-SC-1 to AG-SC-6 in `.planning/REQUIREMENTS.md`. Developed on branch `feat/autonogrammer` in its own worktree; the v0.15.0 line of phases 51 to 65 belongs to a separate session on another branch.
 
 ## Planning Rules
 
@@ -1280,3 +1281,247 @@ Build status (2026-10-28, updated after the release): the code of Phases 51 to 6
 | 63. Cursor Feature Completion | `63-SUMMARY.md` | Partial (pull request, browser, terminal-output and side-chat mentions not composed; criterion 2 met with caveats) | - |
 | 64. Documentation and GitBook | `64-SUMMARY.md` | Complete with caveats (GitBook space not created: owner, OQ-101) | 2026-10-28 |
 | 65. Integration and Release v0.15.0 | `65-SUMMARY.md` | Complete with caveats (gate passed, pushed, tagged, released; GitHub `ci` fails at test services, OQ-168) | 2026-10-28 |
+
+## v0.16.0 Autonogrammer: accounts, Cowork and Dispatch (planned, added 2026-10-28)
+
+Source: user request 2026-10-28 and the ultrathink plan graph ut-mvs8ru79-82536fbd. The research is in `docs/plans/v0.16.0-research/` (reports 01 to 09, briefs 66 to 77 with `00-index.md` and `00-scaffold-manifest.md`); decisions are ADR-0030 to ADR-0037. Owner answers: q1 rename everything as a hard cutover while keeping the external omp engine names; q2 reuse the Spectrum Web Co Supabase project. Defaults in force: Code works signed out; offline Dispatch commands queue for 5 minutes; Computer Use always needs local approval. Requirements AG-66-* to AG-77-* and AG-SC-1 to AG-SC-6 are in `.planning/REQUIREMENTS.md`.
+
+Settled decisions:
+- SD-1 Rename scope. Every name the project owns changes to Autonogrammer as a hard cutover (owner answer q1): paths, contents, identifiers, containers, schema, headers, the Android id. The external omp engine names are kept: bare `omp`, `omp acp`, `~/.omp`, `OMP_*`, `models.yml` and first-party engine identifiers such as `OmpLauncher`. URLs and hostnames of GitHub, Vercel and Railway that still carry the former name are protected until the owner renames those services (owner actions, runbook `docs/runbooks/rebrand-autonogrammer.md` section 5). The tool is `scripts/rebrand/rebrand.py`; the mechanical pass is commit `4af7d83`.
+- SD-2 Supabase. Sign-in reuses the Spectrum Web Co Supabase project (owner answer q2): passwordless email one-time code and magic link. We change nothing in the Supabase dashboard; the dashboard steps are owner actions (brief 67). No live key exists, so nothing is called live (ADR-0030).
+- SD-3 One API. The existing `Autonogrammer.Api` is extended (accounts, Cowork, artifacts, Dispatch relay); no new service is created. The migration one-shot is the API image started with `migrate` (ADR-0031 D5).
+- SD-4 Local agent and relay. The Cowork agent is the local desktop omp over ACP; Dispatch is a relay in the API through which desktops connect outbound only (ADR-0032, ADR-0036).
+- SD-5 Platforms. Linux X11 is verified here (private Xvfb). Windows, macOS and Android code is compile-checked only and is marked unmeasured, never claimed run.
+- SD-6 Scaffold first. Phase 66.1 performs ALL project creation and registry edits once, before parallel work; phase units add code and edit a registry file only for rows the manifest marks per phase (Reconciliation R17).
+- SD-7 One contract bump. `ContractVersion.Current` moves from 1.5.0 to 1.6.0 once, in Phase 66.1; no phase edits it (R9).
+- SD-8 Cowork never on the Kanban. `SessionSurface { Code, Cowork }` (column `surface text NOT NULL DEFAULT 'code'`) separates the surfaces; `ListByOwnerAsync` requires the surface; a Cowork session can never be a Kanban card in the registry, the models, the API repository or the routes (ADR-0032 D2).
+- SD-9 Nothing deployed. Nothing is deployed on Railway and deploys stay paused (OQ-73). Hosted steps, live Supabase calls and live omp turns (OD-07) are owner actions; no criterion claims them.
+- SD-10 Concurrent session isolation. This milestone lives on branch `feat/autonogrammer` in its own git worktree, separate from the checkout that another session uses for the v0.15.0 line. It is replayed onto the other line by re-running `scripts/rebrand`, not by merge (runbook section 3).
+
+Execution order and parallel waves (from `briefs/00-index.md`): Phase 66, then Phase 66.1 (scaffold), then Phase 68 in parallel with Phase 67 units 1 to 3, then Phase 69, then Phase 70, then Phases 71, 72, 73 and 75 in parallel, then Phases 74 and 76, then Phase 77. Phase 67 units 4 to 6 follow Phase 68 unit 3 and the `SurfaceHost` chrome slot of Phases 69 and 70; the Dispatch-facing requirements of Phase 73 close after Phase 74. The orchestrator runs `./bootstrap.sh` once after each wave.
+
+Nothing in this milestone is built yet; every phase below is planned.
+
+- [ ] **Phase 66: Rebrand to Autonogrammer** - one mechanical pass renames every owned name, three C# migrations keep existing user data, regenerated files, one gate run
+- [ ] **Phase 66.1: Scaffold: projects, registration and contract bump** - ONE serialised step creates and registers the 21 source and 19 test projects with AssemblyMarker.cs only, the LayerMap rows and six tuples, the package pins and the single ContractVersion bump 1.5.0 to 1.6.0
+- [ ] **Phase 67: Accounts: Supabase passwordless sign-in** - email code and magic link against the shared Supabase project, OS-store tokens on desktop, owner-scoped account and sessions API; Code works signed out
+- [ ] **Phase 68: Data plane: names, schema and resilience** - physical names cut over to autonogrammer, additive reversible migrations M0001 to M0010, least-privilege roles, GreptimeDB telemetry, bounded resilience, default-off ledger sink
+- [ ] **Phase 69: Surface switch and Cowork sessions** - Code or Cowork switch in the title bar and web top bar, the Cowork layout and the Cowork session model that can never reach the Kanban
+- [ ] **Phase 70: Cowork chat core and tool host** - Cowork conversation on omp over ACP with attachments, a Cowork profile and the one governed tool host that Artifacts, Browser Use and Computer Use plug into
+- [ ] **Phase 71: Cowork Artifacts** - immutable hash-chained artifact versions rendered only through inert renderers or an isolated surface; list, diff, copy, edit and export from any signed-in head
+- [ ] **Phase 72: Cowork Browser Use** - host-launched isolated Chromium over a CDP pipe, `browser_*` tools with vision, egress guard, two-stage approvals, visible Stop and a hostile-page corpus
+- [ ] **Phase 73: Cowork Computer Use** - desktop control behind one policy gate with per-application grants, local approval, kill switch, indicator and local audit; X11 verified under Xvfb, Windows and macOS compile-checked
+- [ ] **Phase 74: Dispatch relay** - signed-in clients send tasks to the account's registered desktops through a relay in the existing API; desktops connect outbound only; Devices and Dispatch surfaces
+- [ ] **Phase 75: Cowork parity A: projects, memory, schedules** - projects, global and per-project instructions, account memory the user controls, scheduled tasks the desktop runs while awake
+- [ ] **Phase 76: Cowork parity B: plugins, Auto mode, isolation** - plugin bundles and skills, connector cards, Auto (rules) mode, an OS launch wrapper that confines writes, sub-agent progress, usage meter, notifications
+- [ ] **Phase 77: Hardening, docs and integration** - one version bump, final docs, a parity audit with no empty row, a written security and accessibility review, the full gate, integration with the other line, a PR and the owner-action list
+
+### Phase 66: Rebrand to Autonogrammer
+**Goal**: Every name the project owns changes from the former name to Autonogrammer in one mechanical pass (paths, contents, identifiers, containers, schema, headers, Android id), existing users keep their data through three C# migrations, the generated files are regenerated, and the renamed tree is built and gated once. Not delivered: new artwork, the trademark decision, external renames (GitHub, Vercel, Railway, domain), `--urls`, a store identity for Android (runbook section 5 items are owner actions).
+**Requirements**: AG-66-1 to AG-66-14
+**Depends on**: None. The mechanical pass of `scripts/rebrand` is commit `4af7d83` on `feat/autonogrammer`; this phase keeps the requirements and checks of brief 66 (the runtime migrations, the regenerate commit, the gate) until they are verified and recorded. Brief 77 needs this phase applied.
+**Mac channel**: No. Windows and macOS paths (data directory move, hook paths) are compile-checked only; the Android build and `ApplicationId` are not built here.
+**UI hint**: no
+**Success Criteria** (what must be TRUE):
+  1. The rebrand tool is correct and its verification reports a clean tree. Verify: `python3 -m unittest scripts/rebrand/test_rebrand.py` passes; `python3 scripts/rebrand/rebrand.py verify --baseline /tmp/ag-recon/rebrand-report/rebrand-report.json` reports clean; the three probes of runbook s.2 give the stated results (the first lists protected URLs only).
+  2. The renamed tree builds warning-free, is format-clean, restores in locked mode and the Linux test set is green. Verify: `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` and `dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore` clean; `dotnet restore Autonogrammer.Linux.slnf --locked-mode` clean; full Linux test run (`bootstrap.sh` gate) green, with `bash scripts/test-services.sh up` for the service-backed tests.
+  3. The web smoke passes under the new names. Verify: Web smoke with non-colliding ports: `API_PORT=5287 WEB_PORT=5280 DEMO_PORT=5291 bash scripts/web-smoke/run-smoke.sh` (defaults are 5187, 5180, 5191; pick free ports, check with `ss -ltn` first).
+  4. The desktop window title is Autonogrammer. Verify: Window title: build `apps/Autonogrammer.Native`, start `Xvfb :97 -screen 0 1280x800x24 &` (pick a free display; never `:99`, another session uses it; check `ls /tmp/.X11-unix`), run the head with `DISPLAY=:97` and a sandbox profile as in the desktop evidence page, read the title with `xdotool getwindowname` or `xprop -root _NET_ACTIVE_WINDOW`, expect `Autonogrammer`; stop the head and Xvfb. Alternative that needs no display: an Avalonia.Headless test asserting `MainWindow.Title == "Autonogrammer"`.
+  5. The licence and brand checks pass and the leak-scan fingerprints of the relocated recorded frames are recorded. Verify: `bash scripts/ci/check-licences.sh`, `bash scripts/ci/check-brand.sh` pass; `.gitleaksignore` fingerprints for the relocated recorded frames added after the rename commit exists (runbook s.5 item 6).
+**Plans**: `66-01-PLAN.md` in `.planning/phases/66-rebrand-to-autonogrammer/`
+
+### Phase 66.1: Scaffold: projects, registration and contract bump
+**Goal**: ONE serialised scaffold step creates and registers every new project of the milestone before any parallel feature work starts (Reconciliation R17 of `docs/plans/v0.16.0-research/briefs/00-index.md`): 21 source projects (3 at L1, 15 at L2, 3 at L3) and 19 test projects, each building with `AssemblyMarker.cs` only; the LayerMap rows and the six declared `SameLayerAllowed` tuples; `ProcessSpawningAssemblies`; the `Directory.Packages.props` pins; one `ContractVersion` bump from 1.5.0 to 1.6.0; one relock and one notices regeneration. The scaffold commit adds no behaviour, so every later unit is file-disjoint. No service is new.
+**Requirements**: AG-SC-1 to AG-SC-6
+**Depends on**: Phase 66 (the scaffold writes post-rename names). Source: `docs/plans/v0.16.0-research/briefs/00-scaffold-manifest.md`.
+**Mac channel**: No.
+**UI hint**: no
+**Success Criteria** (what must be TRUE):
+  1. Create and register the 21 source and 19 test projects with `AssemblyMarker.cs` only. Verify: `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` is clean (manifest section 4, step 8).
+  2. The LayerMap rows, the six tuples and `ProcessSpawningAssemblies` hold. Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release` (LayerMap, `ProjectGraphTests`, decision records, suppression ledger).
+  3. Every project is registered in the solution files, the architecture project, `docs/architecture.md` and `CHANGELOG.md`. Verify: `bash scripts/ci/repo-checks.sh` (brand, changelog, docs checks) and the build above.
+  4. The package pins are added and licences stay accepted. Verify: `bash scripts/ci/check-licences.sh` after the restore.
+  5. `ContractVersion.Current` is 1.6.0 and was bumped once; no `Contracts/Plugins` type references a `Contracts/Ui` type. Verify: `dotnet test --project tests/Autonogrammer.Contracts.Tests -c Release` and the scaffold check of manifest section 4 step 1.
+  6. One relock and one notices regeneration are committed and the gate is green. Verify: `dotnet restore Autonogrammer.Linux.slnf --locked-mode`, `python3 scripts/legal/generate-third-party-notices.py --check`, then `./bootstrap.sh`.
+**Plans**: `66.1-01-PLAN.md` in `.planning/phases/66.1-scaffold-projects-and-registration/`
+
+### Phase 67: Accounts: Supabase passwordless sign-in
+**Goal**: A person can sign in on the desktop and web heads with an email code or a magic link against the shared Supabase project, stay signed in across restarts on desktop with the token in the operating system store, and read their own account and sessions through the owner-scoped API. Code mode keeps working signed out; Cowork, Dispatch and the account surface need an account.
+**Requirements**: AG-67-1 to AG-67-24
+**Depends on**: Phase 66.1; Phase 68 (units 4 and 5 need unit 3: the surface column and the repository methods; units 1 to 3 and 6 do not); Phases 69 and 70 (the `SurfaceHost` chrome slot for the account menu). Brief: `67-accounts.md`; ADR-0030.
+**Mac channel**: No. Windows DPAPI and macOS Keychain stores are compile-checked only; no live Supabase call is possible here.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The Accounts library (GoTrue client, one-time code, PKCE link, session state) passes its offline tests. Verify: `dotnet test --project tests/Autonogrammer.Accounts.Tests -c Release --filter-not-trait "Category=Live"` passes.
+  2. The OS secret stores and the desktop sign-in adapters pass their tests. Verify: `dotnet test --project tests/Autonogrammer.Harness.Secrets.Os.Tests -c Release --filter-not-trait "Category=Live"` and `dotnet test --project tests/Autonogrammer.Accounts.Desktop.Tests -c Release --filter-not-trait "Category=Live"` pass.
+  3. The Linux keyring round trip works on this host or skips with a stated reason. Verify: `AUTONOGRAMMER_LIVE_KEYRING=1 dotnet test --project tests/Autonogrammer.Harness.Secrets.Os.Tests -c Release --no-build --filter-trait "Category=Live"` stores, reads, lists and removes a throwaway item in this host's keyring, or skips with a stated reason.
+  4. The API account endpoints are owner-scoped and the OpenAPI document equals the served one. Verify: `dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release --filter-not-trait "Category=Live"` passes, including `GuardTests` OpenAPI equality.
+  5. The account surfaces of every head pass their tests. Verify: `dotnet test --project tests/Autonogrammer.Presentation.Tests -c Release`, `... tests/Autonogrammer.Native.Tests ...`, `... tests/Autonogrammer.UI.Tests ...` and `... tests/Autonogrammer.Web.Tests ...` pass.
+  6. The architecture rules hold (layers, project graph, decision records, suppression ledger, TODO scan). Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release` passes (LayerMap, project graph, ADR structure, suppression ledger, TODO scan).
+  7. The build is warning-free and the licence check accepts the new package. Verify: `dotnet build Autonogrammer.Linux.slnf -c Release -warnaserror` is clean; `bash scripts/ci/check-licences.sh` accepts the new package.
+  8. The restore passes in locked mode after the relock. Verify: `CI=true dotnet restore Autonogrammer.Linux.slnf --locked-mode` passes after the relock.
+**Plans**: `67-01-PLAN.md` in `.planning/phases/67-accounts-supabase-passwordless-sign-in/`
+
+### Phase 68: Data plane: names, schema and resilience
+**Goal**: Cut every Autonogrammer-owned physical data name over to `autonogrammer` now (nothing is deployed), add the additive PostgreSQL/TimescaleDB schema that accounts, Cowork and Dispatch need with a reversible migration runner and least-privilege roles, move telemetry to GreptimeDB database `autonogrammer`, wrap every store call in bounded resilience with specific degraded states, and define the optional default-off audit path to the Substrate ledger. Plugin and Substrate namespaces are never touched.
+**Requirements**: AG-68-1 to AG-68-14
+**Depends on**: Phase 66.1. Consumed by Phase 67 (M0003), Phase 74 (M0005, M0008 and its own M0010) and Phase 75 (M0009). Brief: `68-data-plane.md`; ADR-0031.
+**Mac channel**: No. Head banners on Windows, macOS and Android are not run; the Railway private network, the Timescale edition and any hosted deploy are not reachable (OQ-73).
+**UI hint**: no
+**Success Criteria** (what must be TRUE):
+  1. The build and locked restore pass and no new package appears in the licence check. Verify: `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` and `dotnet restore Autonogrammer.Linux.slnf --locked-mode` pass; `bash scripts/ci/check-licences.sh` passes with no new package.
+  2. The whole Linux test set passes against the throwaway services. Verify: `source "$(bash scripts/test-services.sh up)"; dotnet test Autonogrammer.Linux.slnf -c Release --no-build -- --filter-not-trait "Category=Live"` passes.
+  3. No first-party source holds an old physical data name. Verify: `grep -rniE "autonogrammer:|schema autonogrammer|autonogrammer_test|autonogrammer\.(sessions|cloud)" src services tests scripts deploy .env.example` returns nothing outside the allowed external omp tokens.
+  4. Telemetry reaches the GreptimeDB database `autonogrammer` (live, gated to a machine with podman). Verify: `AUTONOGRAMMER_LIVE_GREPTIME=1 dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release --no-build --filter-trait "Category=Live"` after `bash scripts/test-services.sh up --with-greptime` passes on a machine with podman.
+  5. ADR-0031 is indexed and the decision-record tests pass. Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*DecisionRecordTests*"` passes with ADR-0031 indexed.
+**Plans**: `68-01-PLAN.md` in `.planning/phases/68-data-plane-names-schema-and-resilience/`
+
+### Phase 69: Surface switch and Cowork sessions
+**Goal**: A signed-in user switches between Code and Cowork from the title bar of the Native head and the top bar of the Web head, by keyboard or pointer, with accessible semantics and a remembered choice; both surfaces keep running when hidden; Cowork has its own layout, its own session store and its own list, and a Cowork session can never create, update or appear as a Kanban card, in the desktop registry, the models, the API repository or the API routes.
+**Requirements**: AG-69-1 to AG-69-13
+**Depends on**: Phase 67 (account state through the `ICoworkAccountGate` port); Phase 68 (`ListByOwnerAsync`, the `surface` column). Brief: `69-mode-shell-and-cowork-sessions.md`; ADR-0032.
+**Mac channel**: No. Windows and macOS rendering and the macOS Meta shortcuts are compile-checked only.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. Cowork can never reach the Kanban and the project graph holds. Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*CoworkSurfaceIsolationTests*"` and `-- --filter-class "*ProjectGraphTests*"` pass.
+  2. The Cowork session model and the presentation layer pass their tests. Verify: `dotnet test --project tests/Autonogrammer.Cowork.Tests -c Release` and `dotnet test --project tests/Autonogrammer.Presentation.Tests -c Release` pass.
+  3. The Native head switches surfaces, Cowork never appears on the Kanban, and the existing Kanban, motion and settings tests still pass unchanged apart from the harness helper. Verify: `dotnet test --project tests/Autonogrammer.Native.Tests -c Release -- --filter-class "*Surface*"` and `-- --filter-class "*CoworkKanbanIsolationTests*"` pass, and the existing `KanbanHeadTests`, `HeadMotionTests`, `SettingsEntryTests` still pass unchanged apart from the harness helper.
+  4. The UI and Web heads pass their tests. Verify: `dotnet test --project tests/Autonogrammer.UI.Tests -c Release` and `dotnet test --project tests/Autonogrammer.Web.Tests -c Release` pass.
+  5. The Cowork session endpoints and the board surface filter pass against the throwaway services. Verify: `scripts/test-services.sh up` then `dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release` passes (`CoworkSessionEndpointsTests`, `AccountBoardSurfaceTests`).
+  6. The build is warning-free and the notices check is clean (no new package). Verify: `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` is clean; `python3 scripts/legal/generate-third-party-notices.py --check` is clean (no new package).
+**Plans**: `69-01-PLAN.md` in `.planning/phases/69-surface-switch-and-cowork-sessions/`
+
+### Phase 70: Cowork chat core and tool host
+**Goal**: A signed-in user holds a Cowork conversation with the local omp engine: streaming, stop, retry, steering, history after a restart, file and image attachments, a Cowork profile (system prompt, permissions, folder boundary) that differs from Code, and one governed seam, the tool host, through which Artifacts, Browser Use and Computer Use hand tools to omp, with approvals, caps, audit and images that reach both the model and the transcript.
+**Requirements**: AG-70-1 to AG-70-14
+**Depends on**: Phase 69 (units 1 to 3); Phase 67 (the account gate); Phase 68 (the audit writer; a null audit is used until it lands). Brief: `70-cowork-chat-core.md`; ADR-0032.
+**Mac channel**: No. Windows and macOS path rules and the composer on those heads are compile-checked only; no live omp turn (OD-07).
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The tool host, gate, limiter, profile, permission and fake-provider contract tests pass. Verify: `dotnet test --project tests/Autonogrammer.Cowork.Tests -c Release` passes (tool host, gate, limiter, profile, permissions, fake provider contract tests).
+  2. The MCP gateway passes, including the real MCP client image test. Verify: `dotnet test --project tests/Autonogrammer.Harness.McpGateway.Tests -c Release` passes, including the real MCP client image test.
+  3. The Native head's Cowork chat passes its tests. Verify: `dotnet test --project tests/Autonogrammer.Native.Tests -c Release -- --filter-class "*Cowork*"` passes.
+  4. Image fold and replay parity hold in the presentation, UI and session projects. Verify: `dotnet test --project tests/Autonogrammer.Presentation.Tests -c Release`, `tests/Autonogrammer.UI.Tests` and `tests/Autonogrammer.Sessions.Tests` pass (image fold and replay parity).
+  5. The project graph holds, the build is warning-free and the notices check is clean (no new package). Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*ProjectGraphTests*"` passes; `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` is clean; `python3 scripts/legal/generate-third-party-notices.py --check` is clean (no new package).
+**Plans**: `70-01-PLAN.md` in `.planning/phases/70-cowork-chat-core-and-tool-host/`
+
+### Phase 71: Cowork Artifacts
+**Goal**: Cowork shows what the agent makes (markdown, code, HTML pages and small apps, SVG, Mermaid, CSV, images) in a panel beside the chat, as immutable hash-chained versions the user can diff, copy, edit, export and list from any signed-in head. Generated content is untrusted: it renders only in-process through renderers that cannot execute it, or in an isolated surface with a restrictive CSP, no network by default, no navigation and no bridge to the app.
+**Requirements**: AG-71-1 to AG-71-24
+**Depends on**: Phases 67, 68 and 70 (`Cowork.Abstractions`, `IDockPanel`, `ToolUpdateImage`); ADR-0009 and ADR-0010. Brief: `71-artifacts.md`; ADR-0033.
+**Mac channel**: No. Windows WebView2, macOS WKWebView and Android WebView are compile-checked only; a private Xvfb run on WebKitGTK is the Linux evidence.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. Every hostile corpus entry is rendered inert and the artifact library passes. Verify: `dotnet test --project tests/Autonogrammer.Cowork.Artifacts.Tests -c Release --filter-not-trait "Category=Live"` passes, including every hostile corpus entry.
+  2. The Postgres artifact stores pass against the throwaway services. Verify: `dotnet test --project tests/Autonogrammer.Cowork.Artifacts.Stores.Tests -c Release --filter-not-trait "Category=Live"` passes with `scripts/test-services.sh up` sourced.
+  3. The artifact endpoints pass and the OpenAPI document is fresh. Verify: `dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release -- --filter-class "*Artifact*"` passes and `docs/api/openapi.json` is fresh.
+  4. The heads' artifact panels pass their tests. Verify: `dotnet test --project tests/Autonogrammer.Presentation.Tests`, `Native.Tests`, `UI.Tests`, `Web.Tests` with `-- --filter-class "*Artifact*"` pass.
+  5. The architecture tests pass (LayerMap, graph, decision records, suppression ledger). Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release` passes (LayerMap, graph, decision records, suppression ledger).
+  6. The artifact page of the web smoke makes no outbound request, no navigation and no parent access from the hostile fixtures. Verify: `OUT_DIR="$(mktemp -d)" bash scripts/web-smoke/run-smoke.sh` passes with the artifact page: no outbound request, no navigation, no parent access from the hostile fixtures.
+  7. The licence check and the notices check exit 0. Verify: `bash scripts/ci/check-licences.sh` and `python3 scripts/legal/generate-third-party-notices.py --check` exit 0.
+**Plans**: `71-01-PLAN.md` in `.planning/phases/71-cowork-artifacts/`
+
+### Phase 72: Cowork Browser Use
+**Goal**: The Cowork agent can browse: a host-launched, isolated Chromium driven over a CDP pipe by PuppeteerSharp, shown as a live pane on the desktop head (the Web and Android panes render the same models and wait for a relay feed, which ADR-0036 holds back), exposed to omp as `browser_*` tools with vision, under an egress guard, two-stage approvals, a visible Stop and a hostile-page test corpus.
+**Requirements**: AG-72-1 to AG-72-16
+**Depends on**: Phase 70 (and Phase 69); Phases 68 and 67; ADR-0036 D13 (no relay frames). Brief: `72-browser-use.md`; ADR-0034.
+**Mac channel**: No. Windows and macOS launch, pipe handles, proxy and a downloaded browser are compile-checked only; the Linux criteria run on `google-chrome` with a private Xvfb.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The browser library passes its offline tests. Verify: `dotnet test --project tests/Autonogrammer.Harness.BrowserUse.Tests -c Release --filter-not-trait "Category=Live"` passes.
+  2. The live browser tests pass with a headless Chromium on this host. Verify: `AUTONOGRAMMER_LIVE_BROWSER=1 CHROME_BIN=/usr/bin/google-chrome AUTONOGRAMMER_BROWSER_ALLOW_NO_SANDBOX=1 dotnet test --project tests/Autonogrammer.Harness.BrowserUse.Tests -c Release --filter-trait "Category=Live"` passes (headless; this host is uid 0, hence the sandbox switch).
+  3. The headful smoke passes under a private Xvfb. Verify: `AUTONOGRAMMER_LIVE_BROWSER=1 AUTONOGRAMMER_BROWSER_ALLOW_NO_SANDBOX=1 xvfb-run -a dotnet test --project tests/Autonogrammer.Harness.BrowserUse.Tests -c Release --filter-trait "Category=Live" -- --filter-class "*HeadfulSmokeLiveTests*"` passes.
+  4. The heads, architecture graph, notices and decision records pass and the build is warning-free. Verify: `dotnet test --project tests/Autonogrammer.Presentation.Tests -c Release`, `tests/Autonogrammer.Native.Tests`, `tests/Autonogrammer.UI.Tests` and `tests/Autonogrammer.ArchitectureTests -- --filter-class "*ProjectGraphTests*"` pass; `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` is clean; `python3 scripts/legal/generate-third-party-notices.py --check` passes; `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*DecisionRecordTests*"` passes.
+  5. A live omp turn with the gateway, an image result and `browser.enabled: false` is recorded in the runbook as an owner-approved run, or stays stated as not run. Verify: A live omp turn with the gateway, an image result and `browser.enabled: false` is a separate owner-approved run (ADR-0010, OD-07), recorded in `docs/runbooks/browser-use.md`.
+**Plans**: `72-01-PLAN.md` in `.planning/phases/72-cowork-browser-use/`
+
+### Phase 73: Cowork Computer Use
+**Goal**: Cowork can look at and operate the user's own desktop (X11 verified here under a private Xvfb; Windows and macOS compile-checked) through 15 computer tools (`computer_*` descriptors) behind one policy gate, with per-application grants, local approval, a kill switch, an always-visible indicator and a local audit log. Off by default, never in Code mode, never in the cloud, never remotely approvable.
+**Requirements**: AG-73-1 to AG-73-24
+**Depends on**: Phases 67 and 70; Phase 72 (optional); Phase 74 for the Dispatch-facing requirements only (relay refusals, the capability flag, `AllowDispatchSessions`), which close after both phases land. Brief: `73-computer-use.md`; ADR-0035.
+**Mac channel**: No. Windows (SendInput, UIPI, GDI) and macOS (TCC, CGEvent, `screencapture`) are compile-checked only; Wayland portals and AT-SPI are not exercised.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The Computer Use core passes its offline tests. Verify: `nice -n 15 dotnet test --project tests/Autonogrammer.Harness.ComputerUse.Tests -c Release --filter-not-trait "Category=Live"` passes.
+  2. The X11 backend passes its live tests under a private Xvfb, or each test skips with a stated reason. Verify: `AUTONOGRAMMER_LIVE_X11=1 nice -n 15 dotnet test --project tests/Autonogrammer.Harness.ComputerUse.X11.Tests -c Release --filter-trait "Category=Live"` passes, or each test reports `Assert.Skip("Xvfb not found")`. The fixture starts `Xvfb -displayfd 3 -nolisten tcp -screen 0 1280x800x24` on a free display, passes the display name to the backend options and never reads or sets the session `DISPLAY`.
+  3. The live X11 cases (pointer, click, typing, capture, hotkey, second grab, window listing) behave as the brief states. Verify: Live cases: `xdotool` moves the pointer and the backend reads it; the backend clicks a fixture and `xev` logs the button event; `type` of `Hello, ünï` reaches `xev` as the same keysyms; `scrot` and the backend frames of a fixed `xterm` agree within a per-channel tolerance; the hotkey fires on `xdotool key ctrl+alt+shift+Escape`; a second grab reports `KillSwitchUnavailable`; a bare Xvfb lists windows through `XQueryTree`.
+  4. The Windows and macOS backends compile warning-free on Linux. Verify: `nice -n 15 dotnet build src/Autonogrammer.Harness.ComputerUse.Windows/Autonogrammer.Harness.ComputerUse.Windows.csproj -c Release --no-restore -warnaserror -nodeReuse:false -m:1` and the same for `.MacOS` pass.
+  5. The project graph, the Computer Use boundary and the decision records hold (ADR-0035 indexed). Verify: `nice -n 15 dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*ProjectGraphTests*"` and `-- --filter-class "*ComputerUseBoundaryTests*"` pass; `-- --filter-class "*DecisionRecordTests*"` passes with ADR-0035 indexed.
+  6. The licence check and notices check pass unchanged (no package added). Verify: `bash scripts/ci/check-licences.sh` and `python3 scripts/legal/generate-third-party-notices.py --check` pass unchanged (no package added).
+**Plans**: `73-01-PLAN.md` in `.planning/phases/73-cowork-computer-use/`
+
+### Phase 74: Dispatch relay
+**Goal**: A signed-in client (phone app, web app, another desktop) sends tasks to one of the account's registered desktops through a relay in the existing `Autonogrammer.Api`; desktops connect outbound only. Delivered: contracts, API (registry, hub, feed), desktop connector, and the Devices and Dispatch surfaces for the Native head (shared with Android) and the Web head. Not delivered: a full mobile app, push, screen streaming, transcript mirroring.
+**Requirements**: AG-74-1 to AG-74-18
+**Depends on**: Phase 67 (`IAccountSession`, `Secrets.Os`, `IAccountFeature`); Phase 68 (M0005, M0008, keyspace, `ITenantHasher`, `IAuditLedger`, `accounts.feed_seq`); Phases 69 and 70 (the chrome slot, the Cowork host); Phases 72 and 73 (tool classes, `AllowDispatchSessions`). Brief: `74-dispatch.md`; ADR-0036.
+**Mac channel**: No. The Android build, a real phone, Windows and macOS (credential store, desktop head) are compile-checked only; Android as a controller stays compile-only (OQ-429).
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The Dispatch contracts pass their tests. Verify: `dotnet test --project tests/Autonogrammer.Contracts.Tests -c Release -- --filter-class "*Dispatch*"` passes.
+  2. The relay API and the Postgres Dispatch store pass against the throwaway services. Verify: `bash scripts/test-services.sh up`, then `dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release -- --filter-class "*Dispatch*"` and `dotnet test --project tests/Autonogrammer.Sessions.Postgres.Tests -c Release -- --filter-class "*Dispatch*"` pass.
+  3. The desktop connector and the client pass with no sleeps (manual `TimeProvider`). Verify: `dotnet test --project tests/Autonogrammer.Dispatch.Desktop.Tests -c Release` and `...Dispatch.Client.Tests` pass with no sleeps (manual `TimeProvider`).
+  4. The Dispatch presentation and the heads' Devices and Dispatch surfaces pass their tests. Verify: `dotnet test --project tests/Autonogrammer.Presentation.Tests -c Release -- --filter-class "*Dispatch*"`, and the same filter for `UI.Tests`, `Native.Tests`, `Web.Tests`, pass.
+  5. The architecture tests pass (LayerMap, ADR-0036 record, Web free of process-spawning references, no TODO without an OQ row). Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release` passes (LayerMap, `DecisionRecordTests` for ADR-0036 and the README row, Web free of process-spawning references, no TODO marker without an OQ row).
+  6. The build and format are clean and the OpenAPI document is regenerated and equal to the served one. Verify: `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` and `dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore` are clean; `docs/api/openapi.json` is regenerated and `GuardTests` equality holds.
+**Plans**: `74-01-PLAN.md` in `.planning/phases/74-dispatch-relay/`
+
+### Phase 75: Cowork parity A: projects, memory, schedules
+**Goal**: A signed-in user keeps projects (name, instructions, context links, local folders), global and per-project instructions, and an account memory they control, and can schedule recurring tasks that the desktop runs while it is awake. Everything is listed, editable and deletable by the user, and nothing leaves the account store except by the user's request.
+**Requirements**: AG-75-1 to AG-75-11
+**Depends on**: Phase 67; Phase 68 (unit 3 writes M0009); Phases 69 and 70 (project store, host, profile, tool host); ADR-0010 and ADR-0014. Brief: `75-cowork-parity-a.md`; ADR-0037.
+**Mac channel**: No. Windows and macOS are not run; a task waking from real sleep and omp honouring `memory.backend: off` are not observed (OD-07).
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The build is warning-free after a locked restore. Verify: `dotnet restore Autonogrammer.Linux.slnf --locked-mode`, then `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror`.
+  2. The Postgres memory store passes against the throwaway services. Verify: `TEST_SERVICES_ENV="$(bash scripts/test-services.sh up)"; source "$TEST_SERVICES_ENV"`, then `dotnet test --project tests/Autonogrammer.Cowork.Memory.Postgres.Tests -c Release --no-build`.
+  3. The Cowork, memory, automations, agent loop, presentation, Native, UI, Web and API tests pass. Verify: `dotnet test --project tests/<name> -c Release --no-build --filter-not-trait "Category=Live"` for `Autonogrammer.Cowork.Tests`, `Autonogrammer.Cowork.Memory.Tests`, `Autonogrammer.Harness.Automations.Tests`, `Autonogrammer.Harness.AgentLoop.Tests`, `Autonogrammer.Presentation.Tests`, `Autonogrammer.Native.Tests`, `Autonogrammer.UI.Tests`, `Autonogrammer.Web.Tests`, `Autonogrammer.Api.IntegrationTests`.
+  4. The architecture tests pass (layers, same-layer tuple, process-ban naming, suppression ledger, unlinked-marker rule). Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release --no-build` (layers, same-layer tuple, process-ban naming, suppression ledger, unlinked-marker rule).
+  5. The repository checks, licence check and format check pass. Verify: `bash scripts/ci/repo-checks.sh`, `bash scripts/ci/check-licences.sh`, `dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore`.
+  6. The full gate passes and a parity row is MET only when a named passing test class covers it. Verify: `./bootstrap.sh` is the full gate. A parity row is MET only if a named test class above covers it.
+**Plans**: `75-01-PLAN.md` in `.planning/phases/75-cowork-parity-projects-memory-schedules/`
+
+### Phase 76: Cowork parity B: plugins, Auto mode, isolation
+**Goal**: Cowork and Code sessions share one extension and safety layer: content plugin bundles and skills, connector cards with a three-state tool permission matrix, an Auto (rules) approval mode with deletion protection and folder access modes for Cowork, an OS-level launch wrapper that confines writes, a sub-agent progress view, a local usage meter and desktop notifications. Nothing here claims to match Anthropic's classifiers or VM; each limit is stated on the screen that shows the feature.
+**Requirements**: AG-76-1 to AG-76-14
+**Depends on**: Phase 75 (unit 75-06: `ILaunchContributor`, `LaunchContribution`, `docs/parity/cowork-parity.md`); Phases 69 and 70. Brief: `76-cowork-parity-b.md`; ADR-0037.
+**Mac channel**: No. macOS `sandbox-exec` and `osascript`, Windows job objects and OS notification display are not run; a real `bwrap` run needs a host that allows user namespaces (OQ-168).
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The build is warning-free after a locked restore. Verify: `dotnet restore Autonogrammer.Linux.slnf --locked-mode`, then `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror`.
+  2. The plugin bundle, isolation, notification, Cowork, agent loop, MCP, ACP, workspace, presentation, Native and architecture tests pass. Verify: `dotnet test --project tests/<name> -c Release --no-build --filter-not-trait "Category=Live"` for `Autonogrammer.Harness.PluginBundles.Tests`, `Autonogrammer.Harness.Isolation.Tests`, `Autonogrammer.Harness.Notifications.Tests`, `Autonogrammer.Cowork.Tests`, `Autonogrammer.Harness.AgentLoop.Tests`, `Autonogrammer.Harness.Mcp.Tests`, `Autonogrammer.Harness.Acp.Tests`, `Autonogrammer.Harness.Workspace.Tests`, `Autonogrammer.Presentation.Tests`, `Autonogrammer.Native.Tests`, `Autonogrammer.ArchitectureTests`.
+  3. A real `bwrap` run passes on a host that allows it; without the variable the tests skip and do not fail. Verify: On a host where `bwrap --version` works and user namespaces are allowed: `AUTONOGRAMMER_LIVE_ISOLATION=1 dotnet test --project tests/Autonogrammer.Harness.Isolation.Tests -c Release --no-build --filter-trait "Category=Live"`. Without the variable the tests skip, they do not fail.
+  4. The repository checks, licence check and format check pass and the full gate is run. Verify: `bash scripts/ci/repo-checks.sh`, `bash scripts/ci/check-licences.sh`, `dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore`; `./bootstrap.sh` is the full gate.
+  5. A parity row is MET only with a named passing test class; rows that depend on omp consuming a flag stay PARTIAL until a live run is recorded. Verify: A row of `docs/parity/cowork-parity.md` is MET only with a named passing test class; rows that depend on omp consuming a flag stay PARTIAL until a live run is recorded.
+**Plans**: `76-01-PLAN.md` in `.planning/phases/76-cowork-parity-plugins-auto-isolation/`
+
+### Phase 77: Hardening, docs and integration
+**Goal**: After phases 67 to 76 have landed and the rename (phase 66) is applied, bring milestone v0.16.0 to a shippable state: one version bump, final documentation, a parity audit that cannot contain an empty row, a written security review and accessibility pass over the new surfaces, the full gate, integration with the other line of work, a PR, and the list of actions only the owner can do. Not delivered: any live run (OD-07 is not approved; no Supabase, no Railway), Windows or macOS runs, a release tag, any rename outside the repository.
+**Requirements**: AG-77-1 to AG-77-17
+**Depends on**: Phases 67 to 76 landed and Phase 66 applied. Brief: `77-hardening-and-integration.md`; ADR-0037 D14; all of ADR-0030 to ADR-0037.
+**Mac channel**: No. No live run (OD-07 not approved; no Supabase, no Railway) and no Windows or macOS runner; the `VersionPrefix` bump and relock of the lock files are done once, at the end.
+**UI hint**: no
+**Success Criteria** (what must be TRUE):
+  1. The Cowork audit guard passes and its fixture failures are proven. Verify: `dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*CoworkAudit*"` passes, with fixture failures proven (AG-77-9).
+  2. The parity counts, docs and changelog checks pass. Verify: `python3 scripts/docs/parity_counts.py --check` and `bash scripts/ci/check-docs.sh` and `bash scripts/ci/check-changelog.sh` pass.
+  3. The version bump commit touches only the version files and locks and the locked restore passes. Verify: `dotnet restore Autonogrammer.Linux.slnf --locked-mode` passes after the bump commit; `git diff --stat` of that commit shows only the version files and locks.
+  4. The security findings table has no open or accepted Critical or High row and the accessibility matrix has no empty cell. Verify: The security findings table has no Critical or High row `open` or `accepted`; the accessibility matrix has no empty cell.
+  5. The full gate exits 0, the evidence page is committed and CI is green on the PR. Verify: `./bootstrap.sh` exits 0 and the evidence page is committed; CI is green on the PR.
+**Plans**: `77-01-PLAN.md` in `.planning/phases/77-hardening-docs-and-integration/`
+
+### Progress (v0.16.0)
+
+| Phase | Records | Status | Completed |
+|-------|---------|--------|-----------|
+| 66. Rebrand to Autonogrammer | - | Planned | - |
+| 66.1. Scaffold: projects, registration and contract bump | - | Planned | - |
+| 67. Accounts: Supabase passwordless sign-in | - | Planned | - |
+| 68. Data plane: names, schema and resilience | - | Planned | - |
+| 69. Surface switch and Cowork sessions | - | Planned | - |
+| 70. Cowork chat core and tool host | - | Planned | - |
+| 71. Cowork Artifacts | - | Planned | - |
+| 72. Cowork Browser Use | - | Planned | - |
+| 73. Cowork Computer Use | - | Planned | - |
+| 74. Dispatch relay | - | Planned | - |
+| 75. Cowork parity A: projects, memory, schedules | - | Planned | - |
+| 76. Cowork parity B: plugins, Auto mode, isolation | - | Planned | - |
+| 77. Hardening, docs and integration | - | Planned | - |

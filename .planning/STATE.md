@@ -1,16 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.15.0
-milestone_name: Cursor completeness, brand and public launch
-status: released
+milestone: v0.16.0
+milestone_name: Autonogrammer: accounts, Cowork and Dispatch
+status: planned
 last_updated: "2026-10-28"
 last_activity: 2026-10-28
 progress:
-  total_phases: 15
-  completed_phases: 5
-  total_plans: 15
-  completed_plans: 15
-  percent: 33
+  total_phases: 13
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -23,6 +23,35 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 **Current focus:** Milestone v0.15.0, Cursor completeness, brand and public launch (Phases 51 to 65), released 2026-10-28 as v0.15.0: `./bootstrap.sh` passed on a clean worktree of `e24e6851` (12215 tests, 0 failed, 2 skipped), `origin/main` was fast-forwarded to `9d4e0075`, the tag `v0.15.0` and the GitHub Release exist (https://github.com/swcstudiospace/OmpOS/releases/tag/v0.15.0). Five phases are complete (52, 53, 58, 64, 65; 52, 58, 64 and 65 with caveats), ten are Partial, and none is claimed that needs a live model turn, Windows, macOS, Android, a Railway deploy of the API or of a cloud agent, the sign-in authority or a GitBook publish (after the release a staged private worker was deployed to Railway and handshaken; see "Final position 2026-10-28"). The GitHub `ci` workflow failed for both release pushes at 'Start test services' (OQ-168); the local gate is the gate of record. The previous focus, v0.14.0 (audited at `d75fd88` on 2026-10-27), is in the section "Final position 2026-10-27". The audit of the final tree is `docs/quality/cursor-parity-audit-2026-10-28.md` (re-graded at `7535859`); the records are `.planning/phases/51-*` to `65-*`.
 
 ## Current Position
+
+Phase: v0.16.0 Autonogrammer: accounts, Cowork and Dispatch (Phases 66, 66.1 and 67 to 77, 13 phases): planned 2026-10-28, none started. The milestone runs on branch `feat/autonogrammer` in its own git worktree; the mechanical rename is commit `4af7d83`. The v0.15.0 line of Phases 51 to 65 belongs to a separate session on another branch and is out of scope here; the sections below describe it as history.
+Plan: the roadmap section, the requirements (AG-66-* to AG-77-*, AG-SC-1 to AG-SC-6) and the research (`docs/plans/v0.16.0-research/`, ADR-0030 to ADR-0037) are written; the phase directories and `NN-01-PLAN.md` files are not (another task creates them). Execution order: 66, 66.1, then 68 with 67 units 1 to 3, 69, 70, then 71, 72, 73 and 75 in parallel, then 74 and 76, then 77.
+Status: nothing is built. No criterion is claimed that needs a live Supabase call, a live omp turn (OD-07), a Railway deploy, Windows, macOS or Android.
+Last activity: 2026-10-28 - planning records for v0.16.0 written (ROADMAP section, REQUIREMENTS section and traceability, STATE direction update, PROJECT current milestone).
+
+## Direction Update 2026-10-28 (ultrathink graph ut-mvs8ru79-82536fbd)
+
+Owner decisions (answers of 2026-10-28):
+- q1, rename: everything is renamed to Autonogrammer as a hard cutover, keeping the external omp engine names (bare `omp`, `omp acp`, `~/.omp`, `OMP_*`, `models.yml`, first-party engine identifiers such as `OmpLauncher`). GitHub, Vercel and Railway URLs and hostnames that still carry the former name are protected until the owner renames those services.
+- q2, accounts: the Spectrum Web Co Supabase project is reused for sign-in; we change nothing in its dashboard.
+
+Defaults taken (the owner may override):
+- Code mode works signed out; Cowork, Dispatch and the account surface need an account.
+- Offline Dispatch commands queue for 5 minutes.
+- Computer Use always needs local approval.
+
+Blockers (stated, not claimed):
+- Railway deploys are paused (OQ-73): nothing of Autonogrammer is deployed, so no hosted step runs.
+- No live Supabase publishable key exists: sign-in is verified against fakes only; the dashboard steps are owner actions.
+- No live omp turn is approved (OD-07): the gateway, overlay keys and tool calls through omp are not observed.
+- No Windows, macOS or Android host: those backends and heads are compile-checked only.
+
+Isolation facts:
+- This milestone lives on branch `feat/autonogrammer` in its own git worktree. Another live session works in the sibling checkouts of the same repository; nothing of them is read, written or built from here.
+- The milestone is replayed onto the other line by re-running `scripts/rebrand`, not by merge (`docs/runbooks/rebrand-autonogrammer.md` section 3).
+- The host is shared and loaded; every dotnet command runs through the serialising wrapper.
+
+### Previous milestone: v0.15.0 (released 2026-10-28)
 
 Phase: v0.15.0 (Phases 51 to 65), released: Phases 52, 53, 58, 64 and 65 complete (52, 58, 64 and 65 with caveats); Phases 51, 54 to 57 and 59 to 63 partial, Phase 60 criterion 4 partial (a staged private worker was deployed to Railway and handshaken after the release; the API is not deployed). v0.14.0 (Phases 44 to 50): Phases 45, 48 and 50 complete; Phases 44, 46 and 49 partial; Phase 47 deferred (the web head Agent Panel surfaces were built under Phases 53 and 54). Phase 34 is superseded in part by Phase 58 (OD-06 and OQ-75 answered by design). The earlier phases: 20, 21, 25 and 25.1 to 25.9 complete; 22 deferred by the owner; 23 and 24 partial; 26 to 33, 35, 37 to 43 partial or deferred as the audit records. v0.9.2 Phases 6, 12, 13, 14 remain blocked on external criteria and OD-03.
 Plan: the records of Phases 51 to 65 are written and were updated after the release (`NN-01-PLAN.md`, `NN-SUMMARY.md`, `NN-VERIFICATION.md` in `.planning/phases/`); the final report with the verified, unverified and owner items is `65-SUMMARY.md`.
