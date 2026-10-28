@@ -180,10 +180,10 @@ Validation failures are 400 `invalid_automation`; `detail` has one `field: messa
 | AU-01 Automations (prompt, tools, repository scope) | **Built** for cloud targets: prompt, triggers, allowed tools, 1 to 16 repositories. No "no repository" mode yet; a template gallery and the `/automate` skill are not built. |
 | AU-02 Scheduled trigger | **Built.** Cron expression, time zone, never early. Presets are the `@` names; the editor has no preset picker yet. |
 | AU-03 Source-control triggers | **Partial.** GitHub push and pull request (opened, synchronize, reopened, ready for review, merged) on the webhook receiver. Not built: GitLab, Bitbucket, comments, labels, CI and review events. Fork pull requests are ignored except merged, as in Cursor. |
-| AU-04 Slack triggers | Omitted (needs a hosted Slack app). |
+| AU-04 Slack triggers | Not built (needs a hosted Slack app); no decision record omits it. |
 | AU-05 Webhook trigger | **Built.** A private signed endpoint per automation. |
-| AU-06 Linear, AU-07 Sentry, AU-08 PagerDuty | Omitted (hosted integrations). A webhook trigger can receive their webhooks if the sender can sign with HMAC-SHA256. |
+| AU-06 Linear, AU-07 Sentry, AU-08 PagerDuty | Not built (hosted integrations). A webhook trigger can receive their webhooks if the sender can sign with HMAC-SHA256. |
 | AU-09 Automation tools | **Partial.** Pull request create, comment and request reviewers by name, enforced by the target. Not built: Send to Slack, Read Slack channels, MCP servers per automation, Memories. |
-| AU-10 Run as / Share | Omitted. An automation runs as its owner and is private to them. |
+| AU-10 Run as / Share | Not built. An automation runs as its owner and is private to them. |
 | AU-11 to AU-16 Bugbot, its config, rules, autofix, API and pricing | Omitted: Cursor-hosted. |
 | AU-17 Security agents, AU-18 PR routing and approval, AU-19 Rollouts | Omitted: Cursor-hosted. |

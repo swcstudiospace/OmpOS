@@ -804,6 +804,8 @@ Drift found between the records and the audited tree. This audit edits no other 
 | `docs/quality/cursor-parity-audit-2026-10-26.md` section 4 | It lists hooks, automations and the MCP registry as unwired and remote development as deferred with no stub; the previous audit stays as the dated record | none (dated) |
 | `docs/plans/v0.15.0-research/01-cursor-agent-chat.md` row AC-144 and finding N1 | Research says OmpOS ADE-12 clones a retired Cursor flow; `InlineEditView` is still mounted as a tool in `MainView` without a model | Owner of ADE-12 |
 
+Fixed after this audit: the page count and the rows S02, S23 and S36 of `docs/settings-parity.md`, the sentence on the web action host in `docs/reference/slash-commands.md`, and the Omitted labels of AU-04, AU-06 to AU-08 and AU-10 in `docs/reference/automations.md` (they now read Not built). The remaining rows are left as dated records or belong to the owner named in the table.
+
 Not audited: ADR bodies beyond their status, `docs/api/`, `.planning/**`.
 
 ## 25. Final counts by status per family

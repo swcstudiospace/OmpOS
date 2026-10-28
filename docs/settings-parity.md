@@ -6,7 +6,7 @@ Written 2026-10-26 from the scout plan of the same day, checked row by row again
 
 ## What exists
 
-The Settings window is a separate, non-modal window (OQ-89), opened from the rail footer button and with Ctrl+, (`SettingsWindowHost`). It has eleven pages, in this order (`apps/OmpOS.Native/Settings/SettingsWindowFactory.cs`):
+The Settings window is a separate, non-modal window (OQ-89), opened from the rail footer button and with Ctrl+, (`SettingsWindowHost`). It has twenty-two pages: the eleven below, in this order, and the eleven added by v0.15.0 (see "v0.15.0" below), the last of which, Automations, appears when the head supplies an automations manager (`apps/OmpOS.Native/Settings/SettingsWindowFactory.cs`):
 
 | Page | What it holds | Class (page model) | Head backing |
 |------|---------------|--------------------|--------------|
@@ -24,7 +24,7 @@ The Settings window is a separate, non-modal window (OQ-89), opened from the rai
 
 Class paths are under `src/OmpOS.Presentation/Settings/` for the models and `apps/OmpOS.Native/Settings/` for the head. The views are in `src/OmpOS.Native.Views/Views/Settings/`.
 
-Since v0.15.0 there are ten further pages (Display, Run mode, Hooks, MCP, Workspaces, Worktrees, Ignore, Remote, Cloud, Privacy); see "v0.15.0" below. There is no Search, Subagents, Beta or Accounts page.
+Since v0.15.0 there are eleven further pages (Display, Run mode, Hooks, MCP, Workspaces, Worktrees, Ignore, Remote, Cloud, Privacy and Automations); see "v0.15.0" below. There is no Search, Subagents, Beta or Accounts page.
 
 ## The 34 rows
 
@@ -96,7 +96,7 @@ Source of the rows: `docs/plans/v0.15.0-research/03-cursor-settings-slash.md`, T
 | ID | Cursor option | Status | Page | Key | Note |
 |----|---------------|--------|------|-----|------|
 | S01 | cli-config.json version | Omitted | - | - | OmpOS does not read or write cli-config.json. Its own file `config/settings.json` carries `schemaVersion`. |
-| S02 | editor.vimMode | Partial | Display | `display.vimMode` | The flag is stored and `/vim` flips it. No prompt box applies vim keys yet. |
+| S02 | editor.vimMode | Partial | Display | `display.vimMode` | The flag is stored on the Display page. `/vim` is Unavailable in the slash catalogue and no prompt box applies vim keys yet. |
 | S03 | permissions.allow / deny tokens | Partial | RunMode | `permissions.json` | The page edits the terminal and MCP allowlists and shows the tokens read from the files. Deny rules are read, not edited. |
 | S04 | approvalMode | Wired | RunMode | omp `--approval-mode` | The page stores the run mode in `~/.ompos/run-mode.json`; the launch mapper turns it into `always-ask`, `always-ask-cached` or `yolo`. The session pipeline applies it. |
 | S05 | sandbox.mode / networkAccess / readBoundary | Partial | RunMode | `sandbox.json readBoundary` | Only the read boundary exists and it binds the tool calls omp asks OmpOS about. There is no OS sandbox and no sandbox network mode. |
@@ -117,7 +117,7 @@ Source of the rows: `docs/plans/v0.15.0-research/03-cursor-settings-slash.md`, T
 | S20 | Design Mode | Omitted | - | - | No browser Design Mode; it has no settings. |
 | S21 | Optimize For (Router) | Omitted | - | - | Cursor inference. |
 | S22 | Router admin controls | Omitted | - | - | Team admin. |
-| S23 | Skills as Custom Modes | Partial | Skills | - | The Skills page lists skills. A mode is chosen from the slash palette, not set here. |
+| S23 | Skills as Custom Modes | Partial | Skills | - | The Skills page lists skills. A mode is chosen with the mode chip of a session, not set here; choosing one with Alt+Enter in the palette is not built. |
 | S24 | SKILL.md frontmatter | Partial | Skills | - | Skills are listed; frontmatter fields are not shown or edited. |
 | S25 | Skill discovery folders | Partial | Skills | - | The slash palette reads the six convention folders; the page lists what discovery finds. |
 | S26 | Rule frontmatter matrix | Partial | Rules | - | Rules are listed read-only; the matrix is not shown. |
@@ -130,7 +130,7 @@ Source of the rows: `docs/plans/v0.15.0-research/03-cursor-settings-slash.md`, T
 | S33 | workbench.reduceMotion | Built | General | `motion` | Motion: follow system, reduce or full. |
 | S34 | Chat Width | Omitted | - | - | The transcript column width is fixed by layout tokens. |
 | S35 | New-agent default environment | Partial | Remote | - | The environment picker lists saved ssh environments; no default-environment setting. |
-| S36 | Queue versus steer | Partial | - | - | Behaviour is built (Tab queues, Enter steers); there is no setting for the default. |
+| S36 | Queue versus steer | Partial | - | - | Behaviour is built (Tab queues, Ctrl+Enter steers now, Enter sends); there is no setting for the default. |
 | S37 | Conversation search | Partial | - | - | The search model and overlay are built; it is not a setting. |
 | S38 | Context usage tray | Partial | - | - | The context ring model is built; it is not a setting. |
 | S39 | BYOK rules | Wired | Models | omp `auth import` | Write-only key fields, the provider listing, the plan-rule tick box and the operator's key-entry switch. |

@@ -24,7 +24,7 @@ A text that starts with `&` and a space hands the rest to a cloud agent (the CLI
 
 | Kind | What happens when the command is sent |
 |---|---|
-| NativeAction | The window runs a named action through `ISlashActionHost`: open Settings, start a new chat or terminal, switch mode, filter the model picker, open a side chat, open the palette. The desktop head implements the host (`DesktopSlashActionHost`); the web head implements it in a later wave. An action the window cannot run is listed disabled. |
+| NativeAction | The window runs a named action through `ISlashActionHost`: open Settings, start a new chat or terminal, switch mode, filter the model picker, open a side chat, open the palette. The desktop head implements the host (`DesktopSlashActionHost`); the web head implements it too (`WebSlashActionHost`). An action the window cannot run is listed disabled. |
 | OmpDelegated | The text goes to omp as the prompt, and omp runs the command. Only commands that omp 18.12.6 handles over ACP are delegated: `rename`, `compact`, `mcp`, `plugins` (alias `plugin`), `wt` (alias `worktree`), `add-dir`, `context`, `usage`, `fast`. A Cursor alias that omp names differently is rewritten (`/summarize` is sent as `/compact`). |
 | Skill | A skill file named like the token is run: omp is told to read the `SKILL.md` and follow it (or gets `/skill:<name>` when it advertises the skill). OmpOS ships its own wording for the built-in skills (`assets/skills/<name>/SKILL.md`, listed in `docs/reference/builtin-skills.md`) in the `skills` folder next to the desktop application; a project or user `SKILL.md` of the same name takes over. The remote and API-hosted sessions cannot read that folder, so there a `SKILL.md` of the same name must be installed. |
 | CloudHandoff | The task is handed to a cloud agent through the `cloud.handoff` action, after the repository and the cost are confirmed in a dialog. Partial: it needs the OmpOS API address and a sign-in. |
@@ -46,7 +46,7 @@ A text that starts with `&` and a space hands the rest to a cloud agent (the CLI
 | `workspace.save`, `workspace.load` | `WorkspaceSetSlashHandler` over the workspace set store | `/save-workspace`, `/load-workspace` |
 | `display.lineNumbers`, `display.statusIndicators` | `DisplayToggleSlashHandler` over `DisplaySettings` | `/line-numbers`, `/status-indicators` |
 
-A native command whose action the window cannot run is listed disabled. The web head implements `ISlashActionHost` in a later wave.
+A native command whose action the window cannot run is listed disabled. The web head implements `ISlashActionHost` as `WebSlashActionHost`.
 
 ## Status
 
