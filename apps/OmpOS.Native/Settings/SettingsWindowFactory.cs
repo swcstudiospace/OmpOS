@@ -3,6 +3,7 @@ using OmpOS.Harness.AgentLoop.Hooks;
 using OmpOS.Harness.Mcp.Config;
 using OmpOS.Native.Views.Hooks;
 using OmpOS.Native.Views.Mcp;
+using OmpOS.Presentation.Automations;
 using OmpOS.Presentation.Cloud;
 using OmpOS.Presentation.Commands;
 using OmpOS.Presentation.Hooks;
@@ -23,8 +24,8 @@ internal static class SettingsWindowFactory
 {
     /// <summary>
     /// Creates the pages in navigation order: Runtime, General, Display, Agents, Run mode, Models, Tab, Rules, Skills, Commands, Hooks, MCP,
-    /// Plugins, Workspaces, Worktrees, Ignore, Remote, Cloud, Privacy, Network and Keyboard. A page whose service the options do not supply
-    /// (Display, Run mode, Models, Hooks, MCP, Workspaces, Remote) is left out; the Cloud page is always there and shows its not-configured state
+    /// Plugins, Workspaces, Worktrees, Ignore, Remote, Cloud, Automations, Privacy, Network and Keyboard. A page whose service the options do not supply
+    /// (Display, Run mode, Models, Hooks, MCP, Workspaces, Remote, Automations) is left out; the Cloud page is always there and shows its not-configured state
     /// when the options hold no cloud host.
     /// </summary>
     /// <param name="options">Where the values live.</param>
@@ -74,11 +75,19 @@ internal static class SettingsWindowFactory
         pages.Add(new IgnoreSettingsPage(new IgnoreSettingsSource(options.Store, options.WorkspaceRoot)));
         if (options.RemoteEnvironments is { } remote)
         {
-            pages.Add(new RemoteEnvironmentsSettingsPage(new RemoteEnvironmentsViewModel(remote)));
+            var runtimeModel = options.ContainerEnvironments is { } containers && options.ContainerLister is { } lister
+                ? new RuntimeEnvironmentsViewModel(remote, containers, lister)
+                : null;
+            pages.Add(new RemoteEnvironmentsSettingsPage(new RemoteEnvironmentsViewModel(remote), runtimeModel));
         }
 
         var cloud = options.CloudAgentsModel ??= CreateCloudModel(options);
         pages.Add(new CloudSettingsPage(cloud));
+        if (options.Automations is { } automations)
+        {
+            pages.Add(new AutomationsSettingsPage(new HostedAutomationsViewModel(automations)));
+        }
+
         pages.Add(new PrivacySettingsPage());
         pages.Add(new NetworkSettingsPage(options.NetworkSource ?? new NetworkDiagnosticsSource()));
         pages.Add(new KeyboardSettingsPage(new KeyboardSettingsSource()));

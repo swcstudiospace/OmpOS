@@ -163,7 +163,12 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
 
+      <TextBlock x:Name="ScheduleOnlyText"
+                 Classes="settings-help"
+                 IsVisible="{CompiledBinding ScheduleOnlyNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding ScheduleOnlyNote}" />
       <CheckBox x:Name="WebhookEnabledBox"
+                IsVisible="{CompiledBinding SupportsWebhooks}"
                 IsChecked="{CompiledBinding WebhookEnabled, Mode=TwoWay}"
                 Content="{x:Static auto:AutomationsCopy.WebhookEnabledLabel}"
                 AutomationProperties.Name="{x:Static auto:AutomationsCopy.WebhookEnabledLabel}" />

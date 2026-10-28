@@ -444,6 +444,12 @@
           "OmpOS.Harness.Plugins": "[0.15.0, )"
         }
       },
+      "ompos.harness.automations": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Harness.Plugins": "[0.15.0, )"
+        }
+      },
       "ompos.harness.completion": {
         "type": "Project"
       },
@@ -520,6 +526,7 @@
           "OmpOS.EngineHost": "[0.15.0, )",
           "OmpOS.Harness.Acp": "[0.15.0, )",
           "OmpOS.Harness.AgentLoop": "[0.15.0, )",
+          "OmpOS.Harness.Automations": "[0.15.0, )",
           "OmpOS.Harness.Mcp": "[0.15.0, )",
           "OmpOS.Harness.OmpConfig": "[0.15.0, )",
           "OmpOS.Harness.Plugins": "[0.15.0, )",

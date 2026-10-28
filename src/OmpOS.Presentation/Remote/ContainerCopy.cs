@@ -82,4 +82,49 @@ public static class ContainerCopy
 
     /// <summary>The note on a loopback MCP server that cannot reach a container or distribution.</summary>
     public const string LoopbackNote = "MCP servers on this computer's loopback address are not reachable from inside a container or distribution; start such a server inside it, or use one on a reachable address.";
+
+    /// <summary>The label of the container name field.</summary>
+    public const string ContainerNameLabel = "Container name or id";
+
+    /// <summary>The label of the user field of a container.</summary>
+    public const string ContainerUserLabel = "User inside the container (optional)";
+
+    /// <summary>The label of the folder field of a container.</summary>
+    public const string ContainerFolderLabel = "Folder inside the container";
+
+    /// <summary>The label of the podman path field.</summary>
+    public const string PodmanPathLabel = "podman executable (optional)";
+
+    /// <summary>The help of the podman path field.</summary>
+    public const string PodmanPathHelp = "Leave empty to use podman from PATH.";
+
+    /// <summary>The label of the omp path field of a container or distribution.</summary>
+    public const string OmpPathInsideLabel = "omp inside the environment (optional)";
+
+    /// <summary>The help of the omp path field of a container or distribution.</summary>
+    public const string OmpPathInsideHelp = "Leave empty to find omp on the PATH inside, ~/.bun/bin, ~/.local/bin and /usr/local/bin.";
+
+    /// <summary>The label of the distribution name field.</summary>
+    public const string DistroLabel = "WSL distribution";
+
+    /// <summary>The label of the user field of a distribution.</summary>
+    public const string DistroUserLabel = "User inside the distribution (optional)";
+
+    /// <summary>The label of the folder field of a distribution.</summary>
+    public const string DistroFolderLabel = "Folder inside the distribution";
+
+    /// <summary>The accessible name of the list of the saved container and WSL environments.</summary>
+    public const string EnvironmentsListName = "Container and WSL environments";
+
+    /// <summary>The accessible name of the live region of the section.</summary>
+    public const string AnnouncementName = "Containers and WSL status";
+
+    /// <summary>The label of the button that adds the chosen running container.</summary>
+    public const string AddChosenLabel = "Add the chosen container";
+
+    /// <summary>The label of the button that closes the list of running containers.</summary>
+    public const string ClosePickerLabel = "Close the list";
+
+    /// <summary>The text of the section when no container or WSL environment is saved.</summary>
+    public const string EmptyText = "No container or WSL environment is saved yet. Add a running container, or one by name.";
 }

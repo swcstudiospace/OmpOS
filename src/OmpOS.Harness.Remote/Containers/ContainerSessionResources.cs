@@ -13,7 +13,7 @@ namespace OmpOS.Harness.Remote.Containers;
 /// A container has no ssh connection, so loopback services of this machine are not forwarded: an MCP server on a loopback address stays in the launch, reported as
 /// probably unreachable.
 /// </summary>
-public sealed class ContainerSessionResources : IDisposable
+public sealed class ContainerSessionResources : IEnvironmentSessionResources
 {
     private ContainerSessionResources(
         ContainerProfile profile,

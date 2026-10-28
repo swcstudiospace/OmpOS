@@ -32,7 +32,7 @@ internal sealed record EngineCompositionOptions
     /// Gets the resources of a session on an ssh host, or null for a local session. The engine then connects through the resources' transport factory, resumes the conversation after a lost
     /// connection and is wrapped in a <see cref="OmpOS.EngineHost.ReconnectingEngineHost"/>. The caller owns the resources and disposes them after the engine.
     /// </summary>
-    public RemoteSessionResources? Remote { get; init; }
+    public IEnvironmentSessionResources? Remote { get; init; }
 
     /// <summary>Gets the clock behind the run mode audit and the reconnect delays, or null for the system clock.</summary>
     public TimeProvider? Clock { get; init; }

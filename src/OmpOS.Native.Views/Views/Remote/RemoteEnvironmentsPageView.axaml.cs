@@ -49,6 +49,9 @@ internal partial class RemoteEnvironmentsPageView : UserControl
     /// <summary>Gets the card that holds the add or edit form.</summary>
     internal Border EditorFrame => EditorCard;
 
+    /// <summary>Gets the section of the container and WSL environments, or null when the head has none.</summary>
+    internal RuntimeEnvironmentsView? RuntimeSection => RuntimeHost.Content as RuntimeEnvironmentsView;
+
     /// <inheritdoc />
     protected override void OnDataContextChanged(EventArgs e)
     {
@@ -76,6 +79,10 @@ internal partial class RemoteEnvironmentsPageView : UserControl
         {
             PageScroll.DataContext = _model;
         }
+
+        RuntimeHost.Content = DataContext is OmpOS.Presentation.Settings.RemoteEnvironmentsSettingsPage { Runtime: { } runtime }
+            ? new RuntimeEnvironmentsView { DataContext = runtime }
+            : null;
 
         if (_model is not null)
         {

@@ -92,6 +92,9 @@ public sealed class HostedAutomationsViewModel : ObservableModel
     /// <summary>Gets the polite announcement of the latest finished action, or an empty string.</summary>
     public string Notice => _notice;
 
+    /// <summary>Gets the sentence the page shows under its description (where the automations run and what they need), or an empty string.</summary>
+    public string PageNote => _manager.PageNote;
+
     /// <summary>Gets whether a load or an action is still running.</summary>
     public bool IsBusy => _pending > 0;
 

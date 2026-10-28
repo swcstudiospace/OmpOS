@@ -23,6 +23,7 @@
     <ProjectReference Include="../../src/OmpOS.EngineHost/OmpOS.EngineHost.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.AgentLoop/OmpOS.Harness.AgentLoop.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Automations/OmpOS.Harness.Automations.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.OmpConfig/OmpOS.Harness.OmpConfig.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Providers/OmpOS.Harness.Providers.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Secrets/OmpOS.Harness.Secrets.csproj" />

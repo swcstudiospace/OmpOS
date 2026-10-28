@@ -18,7 +18,7 @@ namespace OmpOS.Native.Engine;
 /// <param name="Resolver">The resolver that holds the requests the host parked and waits on their decisions.</param>
 /// <param name="Reconnecting">The host that keeps a session on an ssh host alive across a lost connection and wraps <paramref name="Host"/>, or null for a local engine. A prompt is sent through it, so a drop is retried and reported.</param>
 /// <param name="Remote">The resources of the ssh host the session runs on (its remote file system and convention discovery), or null for a local engine. The owner disposes them after the host.</param>
-internal sealed record EngineComposition(InProcessEngineHost Host, IToolApprovalBridge ApprovalBridge, PendingPermissionResolver Resolver, ReconnectingEngineHost? Reconnecting = null, RemoteSessionResources? Remote = null)
+internal sealed record EngineComposition(InProcessEngineHost Host, IToolApprovalBridge ApprovalBridge, PendingPermissionResolver Resolver, ReconnectingEngineHost? Reconnecting = null, IEnvironmentSessionResources? Remote = null)
 {
     /// <summary>Composes an engine whose approval policy allows exactly <paramref name="allowedKinds"/>. Empty allows nothing.</summary>
     /// <param name="allowedKinds">The tool kinds the approval policy admits.</param>

@@ -221,6 +221,9 @@ public sealed class SettingsWindowHostTests : IDisposable
             WorkspaceSets = sets,
             RemoteEnvironments = new ScriptedRemoteHost(),
             Cloud = new OmpOS.Presentation.Cloud.FakeCloudAgentsHost(clock),
+            ContainerEnvironments = new ScriptedContainerHost(),
+            ContainerLister = new ScriptedContainerLister(),
+            Automations = new ScriptedAutomationsManager(),
         };
 
         var model = SettingsWindowFactory.CreateModel(options);
@@ -245,10 +248,12 @@ public sealed class SettingsWindowHostTests : IDisposable
             SettingsSection.Ignore,
             SettingsSection.Remote,
             SettingsSection.Cloud,
+            SettingsSection.Automations,
             SettingsSection.Privacy,
             SettingsSection.Network,
             SettingsSection.Keyboard,
         ]);
+        model.Pages.OfType<RemoteEnvironmentsSettingsPage>().Single().Runtime.ShouldNotBeNull("the container and WSL section is there when the head supplies podman support");
         options.CloudAgentsModel.ShouldNotBeNull().Dispose();
     }
 

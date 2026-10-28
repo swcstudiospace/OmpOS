@@ -23,6 +23,10 @@
                  Text="{x:Static auto:AutomationsCopy.Heading}" />
       <TextBlock Classes="settings-description"
                  Text="{x:Static auto:AutomationsCopy.Description}" />
+      <TextBlock x:Name="PageNoteText"
+                 Classes="settings-help"
+                 IsVisible="{CompiledBinding PageNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding PageNote}" />
 
       <StackPanel x:Name="Toolbar"
                   Orientation="Horizontal"
@@ -161,23 +165,27 @@
                        Orientation="Horizontal"
                        AutomationProperties.Name="{x:Static auto:AutomationsCopy.ActionsName}">
               <Button x:Name="RunNowButton"
+                      AutomationProperties.Name="{x:Static auto:AutomationsCopy.RunNowLabel}"
                       Margin="0,0,8,8"
                       Content="{x:Static auto:AutomationsCopy.RunNowLabel}"
                       MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                       MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
                       Click="OnRunNowClick" />
               <Button x:Name="ToggleEnabledButton"
+                      AutomationProperties.Name="{x:Static auto:AutomationsCopy.TurnOffLabel}"
                       Margin="0,0,8,8"
                       MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                       MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
                       Click="OnToggleClick" />
               <Button x:Name="EditButton"
+                      AutomationProperties.Name="{x:Static auto:AutomationsCopy.EditLabel}"
                       Margin="0,0,8,8"
                       Content="{x:Static auto:AutomationsCopy.EditLabel}"
                       MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                       MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
                       Click="OnEditClick" />
               <Button x:Name="DeleteButton"
+                      AutomationProperties.Name="{x:Static auto:AutomationsCopy.DeleteLabel}"
                       Margin="0,0,8,8"
                       Content="{x:Static auto:AutomationsCopy.DeleteLabel}"
                       MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
@@ -202,6 +210,7 @@
                           MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
                           Click="OnCancelDeleteClick" />
                   <Button x:Name="ConfirmDeleteButton"
+                          AutomationProperties.Name="{x:Static auto:AutomationsCopy.ConfirmDeleteLabel}"
                           Content="{x:Static auto:AutomationsCopy.ConfirmDeleteLabel}"
                           MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
                           MinWidth="{DynamicResource OmpOS.Size.TargetMin}"

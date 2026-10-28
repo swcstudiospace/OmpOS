@@ -11,7 +11,7 @@ namespace OmpOS.Harness.Remote;
 /// <c>InProcessEngineHost.ForAcp</c> takes, the <see cref="AcpClientOptions"/> adjusted for a remote omp, the remote file system for the explorer and the
 /// editor, and the convention discovery of the remote workspace. The remote home directory is read from the host once. Disposing it releases the exec layer.
 /// </summary>
-public sealed class RemoteSessionResources : IDisposable
+public sealed class RemoteSessionResources : IEnvironmentSessionResources
 {
     private RemoteSessionResources(
         SshProfile profile,

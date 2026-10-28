@@ -17,6 +17,18 @@
   <ItemGroup>
     <Compile Include="../OmpOS.Presentation.Tests/Hooks/ScriptedHooksPageSource.cs" Link="Hooks/Shared/ScriptedHooksPageSource.cs" />
     <Compile Include="../OmpOS.Presentation.Tests/Hooks/HookItems.cs" Link="Hooks/Shared/HookItems.cs" />
+
+    <!-- The stand-in for podman and its container, shared with the remote tests so the script exists once. -->
+    <Compile Include="../OmpOS.Harness.Remote.Tests/Support/FakeContainerHost.cs" Link="Remote/Shared/FakeContainerHost.cs" />
+    <Compile Include="../OmpOS.Harness.Remote.Tests/Support/FakeContainerHostOptions.cs" Link="Remote/Shared/FakeContainerHostOptions.cs" />
+    <Compile Include="../OmpOS.Harness.Remote.Tests/Support/FakeGuestFiles.cs" Link="Remote/Shared/FakeGuestFiles.cs" />
+
+    <!-- The clock whose timers fire when a test advances it, shared with the automation tests. -->
+    <Compile Include="../OmpOS.Harness.Automations.Tests/FakeTimeProvider.cs" Link="Composition/Automations/Shared/FakeTimeProvider.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../OmpOS.Harness.Remote.Tests/Fixtures/**/*" LinkBase="Fixtures" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

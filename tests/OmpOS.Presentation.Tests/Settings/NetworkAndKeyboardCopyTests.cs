@@ -38,7 +38,8 @@ public sealed class NetworkAndKeyboardCopyTests
         ((int)SettingsSection.Keyboard).ShouldBe(10);
         ((int)SettingsSection.Hooks).ShouldBe(11);
         ((int)SettingsSection.Ignore).ShouldBe(20);
-        Enum.GetValues<SettingsSection>().Distinct().Count().ShouldBe(21);
+        ((int)SettingsSection.Automations).ShouldBe(21);
+        Enum.GetValues<SettingsSection>().Distinct().Count().ShouldBe(22);
     }
 
     /// <summary>The navigation titles of the new pages differ from every other title.</summary>

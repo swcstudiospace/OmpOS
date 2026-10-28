@@ -44,6 +44,7 @@ internal static class SettingsPageViews
             WorktreesSettingsPage => new WorktreesPageView(),
             IgnoreSettingsPage => new IgnorePageView(),
             PrivacySettingsPage => new PrivacyPageView(),
+            AutomationsSettingsPage => new OmpOS.Native.Views.Automations.AutomationsPageView(),
             _ => throw new ArgumentException("No view draws this kind of settings page.", nameof(page)),
         };
         view.DataContext = ContextOf(page);
@@ -55,6 +56,7 @@ internal static class SettingsPageViews
     {
         McpSettingsPage mcp => mcp.Model,
         CloudSettingsPage cloud => cloud.Agents,
+        AutomationsSettingsPage automations => automations.Model,
         _ => page,
     };
 

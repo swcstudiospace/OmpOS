@@ -1,4 +1,5 @@
 using Avalonia.Threading;
+using OmpOS.Native.Composition.Automations;
 using OmpOS.Native.Logging;
 using OmpOS.Native.Settings;
 using OmpOS.Native.Settings.Models;
@@ -240,6 +241,9 @@ internal sealed class AgentHead : IAsyncDisposable
             Board.CompleteLoading();
             StartDetailsRefresh();
             Settings.Start();
+
+            // The head is open: the schedules of the automations start to count.
+            Services?.Automations.Start();
         }
     }
 
@@ -270,6 +274,13 @@ internal sealed class AgentHead : IAsyncDisposable
         await Volatile.Read(ref _refreshTask).ConfigureAwait(true);
 #pragma warning restore VSTHRD003
         await Settings.DisposeAsync().ConfigureAwait(true);
+
+        // A run in flight works in a session of the host, so the automations stop before the engines.
+        if (Services is { } automationServices)
+        {
+            await automationServices.Automations.DisposeAsync().ConfigureAwait(true);
+        }
+
         await Host.DisposeAsync().ConfigureAwait(true);
         if (Services is { } services)
         {
@@ -307,6 +318,9 @@ internal sealed class AgentHead : IAsyncDisposable
                 });
             var settings = HeadSettings.Create(host, store, options.TimeProvider, dispatch, settingsOptions);
             host.CatalogModel = catalog;
+
+            // A local automation starts its run in a session of this head, through the panel's own models.
+            services?.Automations.Attach(new HeadAutomationSessions(host, dispatch));
             var head = new AgentHead(host, catalog, panel, board, panel.BeginInitialising(), selectMostRecent, dispatch, options.TimeProvider, detailsInterval, settings) { Services = services };
 
             // The head owns the models from here on.

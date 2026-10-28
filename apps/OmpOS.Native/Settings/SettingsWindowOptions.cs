@@ -1,5 +1,6 @@
 using OmpOS.Harness.AgentLoop.Hooks;
 using OmpOS.Harness.Mcp.Catalog;
+using OmpOS.Presentation.Automations;
 using OmpOS.Presentation.Cloud;
 using OmpOS.Presentation.Commands;
 using OmpOS.Presentation.Commands.Handlers;
@@ -68,6 +69,15 @@ internal sealed class SettingsWindowOptions
 
     /// <summary>Gets the cloud agents host the Cloud page shows. Null is a head without an API base address: the page then shows its not-configured state and no agent control.</summary>
     public ICloudAgentsHost? Cloud { get; init; }
+
+    /// <summary>Gets the host of the Containers and WSL section of the Remote page, or null for a page of ssh environments only.</summary>
+    public IContainerEnvironmentsHost? ContainerEnvironments { get; init; }
+
+    /// <summary>Gets the lister of the running containers the Containers and WSL section offers to add, or null for none.</summary>
+    public IContainerLister? ContainerLister { get; init; }
+
+    /// <summary>Gets the manager of the Automations page, or null for a window without that page.</summary>
+    public IAutomationsManager? Automations { get; init; }
 
     /// <summary>Gets the store of setup approvals the Worktrees page reads the consent state from, or null to read none (the page then reports the state as not granted).</summary>
     public ISetupConsentStore? WorktreeConsent { get; init; }

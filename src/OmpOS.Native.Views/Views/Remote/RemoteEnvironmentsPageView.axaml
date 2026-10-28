@@ -367,6 +367,11 @@
         </ContentControl>
       </Border>
 
+      <!-- The Containers and WSL section, when the head has podman or WSL support. -->
+      <ContentControl x:Name="RuntimeHost"
+                      Focusable="False"
+                      Margin="0,16,0,0" />
+
     </StackPanel>
   </ScrollViewer>
 

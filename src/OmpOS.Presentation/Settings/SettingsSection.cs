@@ -65,4 +65,7 @@ public enum SettingsSection
 
     /// <summary>The global ignore list and the ignore files found.</summary>
     Ignore = 20,
+
+    /// <summary>The automations: prompts that start an agent on a schedule.</summary>
+    Automations = 21,
 }

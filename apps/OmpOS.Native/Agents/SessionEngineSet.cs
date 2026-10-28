@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.Extensions.Logging;
 using OmpOS.Contracts.Agents;
+using OmpOS.Contracts.Environments;
 using OmpOS.Harness.Acp;
 using OmpOS.Harness.AgentLoop.Connection;
 using OmpOS.Harness.AgentLoop.Gsd;
@@ -14,6 +15,7 @@ using OmpOS.Harness.AgentLoop.Steering;
 using OmpOS.Harness.AgentLoop.Substrate;
 using OmpOS.Harness.OmpLauncher;
 using OmpOS.Harness.Remote;
+using OmpOS.Harness.Remote.Containers;
 using OmpOS.Harness.Terminal;
 using OmpOS.Native.Composition;
 using OmpOS.Native.Composition.Checkpoints;
@@ -187,6 +189,25 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         _ = _services?.NewSessionTarget.Take();
         _ = _services?.NewSessionTarget.TakeRoots();
         return PrepareSession(registry, registry.Create(title, _options.Loop.WorkspaceRoot, SessionKind.Terminal));
+    }
+
+    /// <summary>
+    /// Creates the chat session of one automation run in the registry: titled with the automation's name, local, in <paramref name="workspaceRoot"/>. Unlike <see cref="CreateSessionAsync"/> it leaves the
+    /// environment and roots the user chose in the New session picker alone, because the run is not that session. No omp starts here.
+    /// </summary>
+    /// <param name="title">The title of the session.</param>
+    /// <param name="workspaceRoot">The absolute workspace root the run works in.</param>
+    /// <param name="cancellationToken">Cancels the creation.</param>
+    /// <returns>The identifier of the new session.</returns>
+    /// <exception cref="ArgumentException"><paramref name="title"/> or <paramref name="workspaceRoot"/> is blank.</exception>
+    internal async Task<string> CreateAutomationSessionAsync(string title, string workspaceRoot, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
+        ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRoot);
+        var registry = await EnsureRegistryAsync(cancellationToken).ConfigureAwait(false);
+        var id = PrepareSession(registry, registry.Create(title, workspaceRoot));
+        await RememberExtrasAsync(id, SessionExtras.Local, cancellationToken).ConfigureAwait(false);
+        return id;
     }
 
     private static string PrepareSession(AgentSessionRegistry registry, AgentSessionRecord record)
@@ -563,7 +584,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(plan);
         var launch = plan.Launch;
-        RemoteSessionResources? remote = null;
+        IEnvironmentSessionResources? remote = null;
         IReadOnlyList<AcpMcpServer> extraServers = [];
         if (plan.Extras.IsRemote)
         {
@@ -676,7 +697,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         var roots = pending?.TakeRoots();
         var primary = roots is { Count: > 0 } ? roots[0].Path : null;
         IReadOnlyList<string> additional = roots is { Count: > 1 } ? [.. roots.Skip(1).Select(static root => root.Path)] : [];
-        var environmentId = target is { Kind: SessionTargetKind.Ssh } ? target.ProfileId : null;
+        var environmentId = target is { Kind: SessionTargetKind.Ssh or SessionTargetKind.Container or SessionTargetKind.Wsl } ? target.ProfileId : null;
         var workspaceRoot = environmentId is null
             ? primary ?? _options.Loop.WorkspaceRoot
             : target!.RemoteWorkspaceRoot ?? primary ?? _options.Loop.WorkspaceRoot;
@@ -800,25 +821,34 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         GraphId = scope.GraphId,
     };
 
-    private async Task<RemoteSessionResources> CreateRemoteResourcesAsync(SessionPlan plan, CancellationToken cancellationToken)
+    private async Task<IEnvironmentSessionResources> CreateRemoteResourcesAsync(SessionPlan plan, CancellationToken cancellationToken)
     {
-        var services = _services ?? throw new InvalidOperationException("This head has no saved ssh environments.");
+        var services = _services ?? throw new InvalidOperationException("This head has no saved environments.");
         var listing = await services.RemoteProfiles.ListAsync(cancellationToken).ConfigureAwait(false);
-        var profile = listing.Profiles.FirstOrDefault(stored => string.Equals(stored.Profile.Id, plan.Extras.EnvironmentId, StringComparison.Ordinal))?.Profile.Ssh
-            ?? throw new InvalidOperationException("The ssh environment of this session is not among your saved environments. Add it again on the Remote page.");
+        var profile = listing.Profiles.FirstOrDefault(stored => string.Equals(stored.Profile.Id, plan.Extras.EnvironmentId, StringComparison.Ordinal))?.Profile
+            ?? throw new InvalidOperationException("The environment of this session is not among your saved environments. Add it again on the Remote page.");
         IReadOnlyDictionary<string, string>? secrets = _options.ProviderKeys is { Current.Count: > 0 } keys
             ? new Dictionary<string, string>(keys.Current, StringComparer.Ordinal)
             : null;
+        var launchOptions = new RemoteLaunchOptions { SessionId = plan.SessionId, RemoteHomeDirectory = "/", LocalStateRoot = _options.Loop.StateRoot };
 
-        // The provider keys travel on the ssh stdin and never on a command line; the plan itself holds none.
-        return await RemoteSessionResources.CreateAsync(
-            profile,
-            plan.Launch,
-            new RemoteLaunchOptions { SessionId = plan.SessionId, RemoteHomeDirectory = "/", LocalStateRoot = _options.Loop.StateRoot },
-            secrets,
-            services.SshOptions,
-            _options.LoggerFactory,
-            cancellationToken).ConfigureAwait(false);
+        // The provider keys travel on the ssh, podman or wsl.exe stdin and never on a command line; the plan itself holds none.
+        switch (profile)
+        {
+            case { Kind: EnvironmentKind.Ssh, Ssh: { } ssh }:
+                return await RemoteSessionResources.CreateAsync(ssh, plan.Launch, launchOptions, secrets, services.SshOptions, _options.LoggerFactory, cancellationToken).ConfigureAwait(false);
+            case { Kind: EnvironmentKind.Container, Container: { } container }:
+                return await ContainerSessionResources.CreateAsync(container, plan.Launch, launchOptions, secrets, services.PodmanOptions, _options.LoggerFactory, cancellationToken).ConfigureAwait(false);
+            case { Kind: EnvironmentKind.Wsl, Wsl: { } wsl }:
+                if (!services.ContainerEnvironments.SupportsWsl)
+                {
+                    throw new InvalidOperationException(ContainerCopy.WslWindowsOnly);
+                }
+
+                return await WslSessionResources.CreateAsync(wsl, plan.Launch, launchOptions, secrets, services.WslOptions, _options.LoggerFactory, cancellationToken).ConfigureAwait(false);
+            default:
+                throw new InvalidOperationException("The environment of this session has no details a session can start in. Edit it on the Remote page.");
+        }
     }
 
     private ISlashDiscoverySource SlashDiscoveryFor(AgentRow row, SessionSlot slot) =>

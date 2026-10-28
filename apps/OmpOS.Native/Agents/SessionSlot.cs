@@ -26,6 +26,7 @@ internal sealed class SessionSlot : IAsyncDisposable
     private readonly CancellationTokenSource _lifetime = new();
     private readonly System.Threading.Lock _gate = new();
     private Task<SessionPlan>? _planTask;
+    private readonly Dictionary<string, TaskCompletionSource<bool>> _consents = new(StringComparer.Ordinal);
     private Task<EngineComposition>? _engineTask;
     private EngineComposition? _engine;
     private bool _engineClosed;
@@ -56,6 +57,46 @@ internal sealed class SessionSlot : IAsyncDisposable
 
     /// <summary>Gets the session identifier.</summary>
     public string Id { get; }
+
+    /// <summary>
+    /// Registers a question an automation asks before its first run (not an engine request) and returns the task that completes with the user's answer, true for Allow. The approval card of the session
+    /// decides it through the slot's approval bridge, by the same request identifier the card was raised with.
+    /// </summary>
+    /// <param name="requestId">The identifier of the card. Registering one that is pending throws.</param>
+    /// <returns>The answer.</returns>
+    /// <exception cref="InvalidOperationException">A question with this identifier is pending.</exception>
+    public Task<bool> ExpectConsentAsync(string requestId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(requestId);
+        var answer = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_gate)
+        {
+            if (!_consents.TryAdd(requestId, answer))
+            {
+                throw new InvalidOperationException("A confirmation with this identifier is already waiting.");
+            }
+        }
+
+        return answer.Task;
+    }
+
+    /// <summary>Answers a pending confirmation, whichever way, as when the session is closed without an answer (deny).</summary>
+    /// <param name="requestId">The identifier of the card.</param>
+    /// <param name="allow">The answer.</param>
+    /// <returns>True when a confirmation with this identifier was pending.</returns>
+    public bool TryDecideConsent(string requestId, bool allow)
+    {
+        TaskCompletionSource<bool>? answer;
+        lock (_gate)
+        {
+            if (!_consents.Remove(requestId, out answer))
+            {
+                return false;
+            }
+        }
+
+        return answer.TrySetResult(allow);
+    }
 
     /// <summary>Gets the live scope of the session.</summary>
     public SessionScopeProvider Scope { get; }
@@ -170,6 +211,7 @@ internal sealed class SessionSlot : IAsyncDisposable
             _engineTask = null;
         }
 
+        DenyPendingConsents();
         SetTurnActive(false);
         await DisposeEngineAsync(task).ConfigureAwait(false);
         lock (_gate)
@@ -248,6 +290,22 @@ internal sealed class SessionSlot : IAsyncDisposable
         }
     }
 
+    /// <summary>Answers every pending automation confirmation with deny: the session ended, so nobody can answer them.</summary>
+    private void DenyPendingConsents()
+    {
+        TaskCompletionSource<bool>[] pending;
+        lock (_gate)
+        {
+            pending = [.. _consents.Values];
+            _consents.Clear();
+        }
+
+        foreach (var answer in pending)
+        {
+            _ = answer.TrySetResult(false);
+        }
+    }
+
     /// <summary>Stops the engine and releases the plan. The runtime that shows the slot is disposed by the engine set.</summary>
     /// <returns>A task that completes when everything is released.</returns>
     public async ValueTask DisposeAsync()
@@ -257,6 +315,7 @@ internal sealed class SessionSlot : IAsyncDisposable
             return;
         }
 
+        DenyPendingConsents();
         Task<EngineComposition>? engine;
         Task<SessionPlan>? plan;
         lock (_gate)
@@ -307,7 +366,7 @@ internal sealed class SessionSlot : IAsyncDisposable
     /// <summary>Returns the resources of the session's ssh host (its remote file system and the discovery of its conventions), composing the engine first when needed. Null for a local session.</summary>
     /// <param name="cancellationToken">Stops waiting for the engine.</param>
     /// <returns>The resources, which the slot owns and disposes with the engine.</returns>
-    public async Task<RemoteSessionResources?> RemoteResourcesAsync(CancellationToken cancellationToken) =>
+    public async Task<IEnvironmentSessionResources?> RemoteResourcesAsync(CancellationToken cancellationToken) =>
         (await EngineAsync(cancellationToken).ConfigureAwait(false)).Remote;
 
     /// <summary>Forks the engine session: the engine creates a second session that continues from the same history and answers with its identifier.</summary>
@@ -424,10 +483,18 @@ internal sealed class SessionSlot : IAsyncDisposable
     /// <summary>The approval bridge of the slot: a decision reaches the engine that raised the request.</summary>
     private sealed class SlotApprovalBridge(SessionSlot slot) : IToolApprovalBridge
     {
-        public Task<ToolApprovalOutcome> DecideAsync(string sessionId, string requestId, ToolApprovalDecision decision, CancellationToken cancellationToken) =>
-            slot.TryGetEngine() is { } engine
+        public Task<ToolApprovalOutcome> DecideAsync(string sessionId, string requestId, ToolApprovalDecision decision, CancellationToken cancellationToken)
+        {
+            // A confirmation an automation asked is answered here; it never reaches the engine, which did not raise it.
+            if (slot.TryDecideConsent(requestId, decision == ToolApprovalDecision.Allow))
+            {
+                return Task.FromResult(ToolApprovalOutcome.Accepted);
+            }
+
+            return slot.TryGetEngine() is { } engine
                 ? engine.ApprovalBridge.DecideAsync(sessionId, requestId, decision, cancellationToken)
                 : Task.FromResult(ToolApprovalOutcome.AlreadyDecided);
+        }
     }
 
     /// <summary>The stage source of the slot: it waits for the plan, then observes the plan's merged source.</summary>

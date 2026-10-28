@@ -5,6 +5,7 @@ using OmpOS.Native.Tests.Mcp;
 using OmpOS.Native.Tests.Remote;
 using OmpOS.Native.Tests.Safety;
 using OmpOS.Native.Views.Settings;
+using OmpOS.Presentation.Automations;
 using OmpOS.Presentation.Cloud;
 using OmpOS.Presentation.Commands.Handlers;
 using OmpOS.Presentation.Hooks;
@@ -23,7 +24,7 @@ using OmpOS.Presentation.Tests.Hooks;
 namespace OmpOS.Native.Tests.Settings;
 
 /// <summary>
-/// A real <see cref="SettingsWindow"/> over real page models whose sources are scripted. Only the sources are fake: the twenty-one pages, the
+/// A real <see cref="SettingsWindow"/> over real page models whose sources are scripted. Only the sources are fake: the twenty-two pages, the
 /// window model and the window are the product's. The pages are in the order the head's factory gives them when every service is supplied.
 /// The window is shown, and every page is loaded unless the test asks to keep them loading.
 /// </summary>
@@ -47,17 +48,18 @@ internal sealed class SettingsFixture : IDisposable
         Workspaces = new WorkspacesSettingsPage(WorkspacesSource);
         Worktrees = new WorktreesSettingsPage(WorktreesSource);
         Ignore = new IgnoreSettingsPage(IgnoreSource);
-        Remote = new RemoteEnvironmentsSettingsPage(new RemoteEnvironmentsViewModel(RemoteHost));
+        Remote = new RemoteEnvironmentsSettingsPage(new RemoteEnvironmentsViewModel(RemoteHost), new RuntimeEnvironmentsViewModel(RemoteHost, ContainerHost, ContainerLister));
         CloudHost = new FakeCloudAgentsHost(Clock);
         CloudModel = new CloudAgentsViewModel(CloudHost, Clock);
         Cloud = new CloudSettingsPage(CloudModel);
+        Automations = new AutomationsSettingsPage(new HostedAutomationsViewModel(AutomationsManager));
         Privacy = new PrivacySettingsPage();
         Network = new NetworkSettingsPage(NetworkSource);
         Keyboard = new KeyboardSettingsPage(KeyboardSource);
         Model = new SettingsWindowModel(
         [
             Runtime, General, Display, Agents, RunMode, Models, Tab, Rules, Skills, Commands, Hooks, Mcp, Plugins,
-            Workspaces, Worktrees, Ignore, Remote, Cloud, Privacy, Network, Keyboard,
+            Workspaces, Worktrees, Ignore, Remote, Cloud, Automations, Privacy, Network, Keyboard,
         ]);
         Window = new SettingsWindow(Model);
         Runtime.Saved += (_, args) => RuntimeSaved.Add(args.Values);
@@ -179,6 +181,18 @@ internal sealed class SettingsFixture : IDisposable
 
     /// <summary>Gets the Remote page.</summary>
     internal RemoteEnvironmentsSettingsPage Remote { get; }
+
+    /// <summary>Gets the host of the Containers and WSL section of the Remote page.</summary>
+    internal ScriptedContainerHost ContainerHost { get; } = new();
+
+    /// <summary>Gets the lister of running containers of the Remote page.</summary>
+    internal ScriptedContainerLister ContainerLister { get; } = new();
+
+    /// <summary>Gets the manager of the Automations page.</summary>
+    internal ScriptedAutomationsManager AutomationsManager { get; } = new();
+
+    /// <summary>Gets the Automations page.</summary>
+    internal AutomationsSettingsPage Automations { get; }
 
     /// <summary>Gets the Cloud page.</summary>
     internal CloudSettingsPage Cloud { get; }

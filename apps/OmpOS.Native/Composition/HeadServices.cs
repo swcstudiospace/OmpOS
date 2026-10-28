@@ -4,9 +4,12 @@ using OmpOS.Harness.AgentLoop.Hooks;
 using OmpOS.Harness.AgentLoop.Safety;
 using OmpOS.Harness.Mcp.Catalog;
 using OmpOS.Harness.Mcp.Config;
+using OmpOS.Harness.OmpLauncher;
 using OmpOS.Harness.Remote;
+using OmpOS.Harness.Remote.Containers;
 using OmpOS.Native.Agents;
 using OmpOS.Native.Cloud;
+using OmpOS.Native.Composition.Automations;
 using OmpOS.Native.Composition.Checkpoints;
 using OmpOS.Native.Views;
 using OmpOS.Native.Views.Safety;
@@ -73,9 +76,16 @@ internal sealed class HeadServices : IAsyncDisposable
         WorkspaceSetStore workspaceSets,
         ICloudAgentsHost? cloud,
         HttpClient? apiClient,
-        SshClientOptions sshOptions)
+        SshClientOptions sshOptions,
+        ContainerHosts containers,
+        AutomationsHost automations)
     {
         SshOptions = sshOptions;
+        PodmanOptions = containers.Podman;
+        WslOptions = containers.Wsl;
+        ContainerEnvironments = containers.Environments;
+        ContainerLister = containers.Lister;
+        Automations = automations;
         StateRoot = options.StateRoot;
         PluginsRoot = options.PluginsRoot;
         WorkspaceRoot = options.WorkspaceRoot;
@@ -140,6 +150,21 @@ internal sealed class HeadServices : IAsyncDisposable
 
     /// <summary>Gets how ssh is run for the remote environments: the control socket directory shared by the connection test and the sessions.</summary>
     public SshClientOptions SshOptions { get; }
+
+    /// <summary>Gets how podman is run for the container environments: the executable and the time one command may take. The connection test, the listing of running containers and the sessions share it.</summary>
+    public PodmanClientOptions PodmanOptions { get; }
+
+    /// <summary>Gets how wsl.exe is run for the WSL environments.</summary>
+    public WslClientOptions WslOptions { get; }
+
+    /// <summary>Gets the host of the Containers and WSL section of the Remote page: the connection tests and the start of a stopped container. WSL is supported on Windows only.</summary>
+    public IContainerEnvironmentsHost ContainerEnvironments { get; }
+
+    /// <summary>Gets the lister of the running containers the Remote page offers to add.</summary>
+    public IContainerLister ContainerLister { get; }
+
+    /// <summary>Gets the automations of this computer: their file, their scheduler and the manager of the Automations page. The head starts the scheduler once it is open.</summary>
+    public AutomationsHost Automations { get; }
 
     /// <summary>Gets or sets the function that opens a terminal tab running a command, which the remote host uses to let the user confirm a host key by hand. Null when the head has no terminal: the page then tells the user to run ssh once.</summary>
     public Func<RemoteTerminalCommand, CancellationToken, Task<bool>>? TrustTerminalOpener { get; set; }
@@ -211,6 +236,7 @@ internal sealed class HeadServices : IAsyncDisposable
         // The stores and the API client are owned here until the services take them over; a failure part way disposes the ones that exist.
         Stores? stores = null;
         HttpClient? apiClient = null;
+        AutomationsHost? automations = null;
         var created = false;
         try
         {
@@ -227,16 +253,19 @@ internal sealed class HeadServices : IAsyncDisposable
             var (runModeHub, runModes) = CreateRunModes(options, string.IsNullOrWhiteSpace(home) ? config : home, hooks, clock);
             var (cloud, client) = CreateCloud(options, clock, urlLauncher);
             apiClient = client;
+            var containers = CreateContainerHosts(options, clock);
+            automations = CreateAutomations(options, config, cloud, clock);
 
             var services = new HeadServices(
                 options, runModeHub.HomeDirectory, config, hooks, hookApproval, stores.RemoteProfiles, remoteEnvironments, mcp, stores.Checkpoints, setupConsent, stores.ConsentStore,
-                worktrees, new AboutLauncher(), urlLauncher, display, runModeHub, runModes, stores.WorkspaceSets, cloud, apiClient, sshOptions);
+                worktrees, new AboutLauncher(), urlLauncher, display, runModeHub, runModes, stores.WorkspaceSets, cloud, apiClient, sshOptions, containers, automations);
             holder.Owner = services;
             created = true;
 
-            // The services own the stores and the client from here on.
+            // The services own the stores, the client and the automations from here on.
             stores = null;
             apiClient = null;
+            automations = null;
             return services;
         }
         finally
@@ -245,6 +274,11 @@ internal sealed class HeadServices : IAsyncDisposable
             stores?.Dispose();
             if (!created)
             {
+                if (automations is not null)
+                {
+                    await automations.DisposeAsync().ConfigureAwait(false);
+                }
+
                 await hooks.DisposeAsync().ConfigureAwait(false);
             }
         }
@@ -283,6 +317,26 @@ internal sealed class HeadServices : IAsyncDisposable
             urlLauncher: urlLauncher,
             logger: options.LoggerFactory?.CreateLogger("OmpOS.Native.Cloud"));
         return (host, client);
+    }
+
+    private static ContainerHosts CreateContainerHosts(HeadServicesOptions options, TimeProvider clock)
+    {
+        var podman = options.Podman ?? new PodmanClientOptions();
+        var wsl = options.Wsl ?? new WslClientOptions();
+        return new ContainerHosts(podman, wsl, new ContainerEnvironmentsHost(podman, wsl, clock), new PodmanContainerLister(podman, clock));
+    }
+
+    private static AutomationsHost CreateAutomations(HeadServicesOptions options, string config, ICloudAgentsHost? cloud, TimeProvider clock)
+    {
+        var localAvailable = options.OmpAvailable?.Invoke() ?? OmpLocator.Locate(OmpLocatorOptions.FromEnvironment(options.OmpPath)) is OmpFound;
+        return new AutomationsHost(
+            Path.Combine(config, "automations.json"),
+            Path.Combine(config, "automation-consent.json"),
+            cloud,
+            () => options.WorkspaceRoot,
+            localAvailable,
+            clock,
+            options.LoggerFactory?.CreateLogger("OmpOS.Native.Automations"));
     }
 
     private static Task<HooksService> OpenHooksAsync(HeadServicesOptions options, string home, ForwardingHookApprovalPrompt approval, TimeProvider clock, CancellationToken cancellationToken) =>
@@ -342,6 +396,8 @@ internal sealed class HeadServices : IAsyncDisposable
             return;
         }
 
+        // The automations stop first: a run in flight uses the cloud host and the sessions.
+        await Automations.DisposeAsync().ConfigureAwait(false);
         _cloudDisposable?.Dispose();
         _apiClient?.Dispose();
         Checkpoints.Dispose();
@@ -422,6 +478,9 @@ internal sealed class HeadServices : IAsyncDisposable
             return null;
         }
     }
+
+    /// <summary>How podman and wsl.exe are run, and the hosts built over them.</summary>
+    private sealed record ContainerHosts(PodmanClientOptions Podman, WslClientOptions Wsl, IContainerEnvironmentsHost Environments, IContainerLister Lister);
 
     /// <summary>Forwards the remote host's request to open a terminal to the function the shell connects later.</summary>
     private sealed class TrustTerminalHolder

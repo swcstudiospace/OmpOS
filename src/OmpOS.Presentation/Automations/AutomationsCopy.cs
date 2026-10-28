@@ -307,6 +307,46 @@ public static class AutomationsCopy
     /// <summary>The message of an automation without trigger.</summary>
     public const string TriggersRequired = "Add a schedule or turn on the webhook trigger so the automation can start.";
 
+    /// <summary>The message of an automation without a schedule, on a head that receives no webhooks.</summary>
+    public const string ScheduleRequired = "Add a schedule so the automation can start.";
+
+    /// <summary>The sentence of the editor of a head that receives no webhooks: the schedule is the only trigger.</summary>
+    public const string ScheduleOnlyNote = "Automations of this computer start from their schedule only. A webhook needs the OmpOS service, which has a public address; create that automation there.";
+
+    /// <summary>The sentence of the desktop page: where local automations run, and when.</summary>
+    public const string DesktopNote = "A local automation starts a new agent session in the open workspace at its scheduled time, while OmpOS is open. The first run of each automation asks you to confirm it, and the run mode of the session applies.";
+
+    /// <summary>The sentence of the desktop page when omp is not installed: a local automation cannot run.</summary>
+    public const string NoOmpNote = "omp was not found, so local automations cannot run. Install omp, then restart OmpOS.";
+
+    /// <summary>The message of a webhook trigger saved on a head that receives none.</summary>
+    public const string WebhookNotSupported = "This computer does not receive webhooks. Remove the webhook trigger or create the automation in the OmpOS service.";
+
+    /// <summary>The message of a local automation that was not confirmed.</summary>
+    public const string NotConfirmed = "The first run was not confirmed, so nothing started.";
+
+    /// <summary>The title of the confirmation card that appears in the session of the first run of an automation.</summary>
+    public const string ConsentCardTitle = "Run automation";
+
+    /// <summary>The failure of a run that started before the head had opened its agent sessions.</summary>
+    public const string SessionsNotReady = "OmpOS had not finished opening, so no agent session could be started.";
+
+    /// <summary>The failure of a run whose agent turn ended without a result.</summary>
+    public const string TurnFailed = "The agent's turn ended with an error.";
+
+    /// <summary>The failure of a cloud run on a head without a cloud agents service.</summary>
+    public const string CloudNotConfigured = "Cloud agents are not set up on this computer, so a cloud automation cannot run. Set the OMPOS_API_BASE_URL variable and restart OmpOS.";
+
+    /// <summary>The message of a save for a target the head cannot run.</summary>
+    public const string TargetUnavailable = "This computer cannot run that kind of target.";
+
+    /// <summary>The sentence of the confirmation card of a first run.</summary>
+    /// <param name="name">The name of the automation.</param>
+    /// <param name="workspaceRoot">The workspace the run works in.</param>
+    /// <returns>The sentence.</returns>
+    public static string ConsentSummary(string name, string workspaceRoot) =>
+        "The automation \"" + name + "\" starts an agent session in " + workspaceRoot + " with its saved prompt, now and on its schedule. Allow it to run on its own; the run mode still decides which tools the agent may use.";
+
     /// <summary>The message of a cron expression whose preview reported it never runs.</summary>
     public const string CronNeverRuns = "This schedule never runs.";
 

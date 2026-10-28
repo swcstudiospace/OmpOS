@@ -1,6 +1,6 @@
 # Runbook: containers and WSL as environments
 
-Status: written 2026-10-28 (ADR-0015 addendum). Everything below is built and unit-tested against fake `podman` and `wsl` scripts; a real podman run is the Live test `PodmanLiveTests` (`OMPOS_LIVE_PODMAN=1`), not run yet. The Remote environments page and the New session picker views for these kinds are a later wiring item; the models exist.
+Status: written 2026-10-28 (ADR-0015 addendum). Everything below is built and unit-tested against fake `podman` and `wsl` scripts; a real podman run is the Live test `PodmanLiveTests` (`OMPOS_LIVE_PODMAN=1`), not run yet. The desktop head is wired: the Remote page has a Containers and WSL section (rows with Test, Start container, Edit and Delete; add a running container from podman's list, by name, or a WSL distribution on Windows), the New session picker lists these profiles (WSL only where it is supported, which is Windows), and a session on a container or distribution starts omp through `ContainerSessionResources` or `WslSessionResources` like ssh does through `RemoteSessionResources`. Such sessions get no desktop MCP servers and no local hook files. The terminal pane and the dev container attach button are not wired.
 
 ## What runs where
 

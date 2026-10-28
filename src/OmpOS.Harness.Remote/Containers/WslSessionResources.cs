@@ -13,7 +13,7 @@ namespace OmpOS.Harness.Remote.Containers;
 /// A distribution has no ssh connection, so loopback services of this machine are not forwarded: an MCP server on a loopback address stays in the launch, reported as
 /// probably unreachable.
 /// </summary>
-public sealed class WslSessionResources : IDisposable
+public sealed class WslSessionResources : IEnvironmentSessionResources
 {
     private WslSessionResources(
         WslProfile profile,

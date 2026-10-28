@@ -11,6 +11,15 @@ public interface IAutomationsManager
     /// <summary>Gets the target kinds this head can run: <c>cloud</c> on the web head, <c>local</c> and <c>cloud</c> on the desktop.</summary>
     IReadOnlyList<string> SupportedTargetKinds { get; }
 
+    /// <summary>
+    /// Gets whether this head can receive the webhook of an automation: true when the service that hosts the automations has a public address (the API),
+    /// false on the desktop, where an automation starts from its schedule only. The editor offers the webhook trigger only when this is true.
+    /// </summary>
+    bool SupportsWebhooks { get; }
+
+    /// <summary>Gets a sentence the page shows under its description (where the automations run and what they need), or an empty string.</summary>
+    string PageNote { get; }
+
     /// <summary>Lists every automation.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The automations.</returns>

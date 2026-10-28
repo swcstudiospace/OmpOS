@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:rem="clr-namespace:OmpOS.Presentation.Remote;assembly=OmpOS.Presentation"
+             x:Class="OmpOS.Native.Views.Remote.WslProfileView"
+             x:DataType="rem:WslProfileEditor"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The fields of a WSL environment. The Save and Cancel buttons belong to the section that hosts the form. Keyboard order follows XAML order. -->
+  <StackPanel x:Name="EditorPanel"
+              Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+    <TextBlock x:Name="EditorHeading"
+               Classes="settings-section"
+               Text="{CompiledBinding Heading}" />
+
+    <TextBlock Classes="settings-label"
+               Text="{x:Static rem:RemoteCopy.DisplayNameLabel}" />
+    <TextBox x:Name="DisplayNameBox"
+             Text="{CompiledBinding DisplayName, Mode=TwoWay}"
+             AutomationProperties.Name="{x:Static rem:RemoteCopy.DisplayNameLabel}" />
+
+    <TextBlock Classes="settings-label"
+               Text="{x:Static rem:ContainerCopy.DistroLabel}" />
+    <TextBox x:Name="DistroBox"
+             Classes="settings-mono"
+             Text="{CompiledBinding Distro, Mode=TwoWay}"
+             AutomationProperties.Name="{x:Static rem:ContainerCopy.DistroLabel}" />
+
+    <TextBlock Classes="settings-label"
+               Text="{x:Static rem:ContainerCopy.DistroUserLabel}" />
+    <TextBox x:Name="UserBox"
+             Classes="settings-mono"
+             Text="{CompiledBinding User, Mode=TwoWay}"
+             AutomationProperties.Name="{x:Static rem:ContainerCopy.DistroUserLabel}" />
+
+    <TextBlock Classes="settings-label"
+               Text="{x:Static rem:ContainerCopy.DistroFolderLabel}" />
+    <TextBox x:Name="FolderBox"
+             Classes="settings-mono"
+             Text="{CompiledBinding WorkspacePath, Mode=TwoWay}"
+             AutomationProperties.Name="{x:Static rem:ContainerCopy.DistroFolderLabel}" />
+
+    <TextBlock Classes="settings-label"
+               Text="{x:Static rem:ContainerCopy.OmpPathInsideLabel}" />
+    <TextBox x:Name="OmpPathBox"
+             Classes="settings-mono"
+             Text="{CompiledBinding OmpPath, Mode=TwoWay}"
+             AutomationProperties.Name="{x:Static rem:ContainerCopy.OmpPathInsideLabel}" />
+    <TextBlock Classes="settings-help"
+               Text="{x:Static rem:ContainerCopy.OmpPathInsideHelp}" />
+
+    <TextBlock Classes="settings-help"
+               Text="{x:Static rem:ContainerCopy.LoopbackNote}" />
+
+    <!-- The problems of the current values, one line each. -->
+    <ItemsControl x:Name="IssueRows"
+                  ItemsSource="{CompiledBinding Issues}"
+                  AutomationProperties.Name="{x:Static rem:RemoteCopy.IssuesLabel}"
+                  AutomationProperties.LiveSetting="Polite">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="rem:RemoteFieldIssue">
+          <TextBlock Classes="tone-error settings-help"
+                     Text="{CompiledBinding Message}" />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+  </StackPanel>
+</UserControl>

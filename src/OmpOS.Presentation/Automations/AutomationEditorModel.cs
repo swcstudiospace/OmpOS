@@ -151,6 +151,12 @@ public sealed class AutomationEditorModel : ObservableModel
     /// <summary>Gets the target kinds the application can run, in order of preference.</summary>
     public IReadOnlyList<string> SupportedTargetKinds => _supportedTargetKinds;
 
+    /// <summary>Gets whether this head receives webhooks. When false the form offers the schedule only and says so.</summary>
+    public bool SupportsWebhooks => _manager.SupportsWebhooks;
+
+    /// <summary>Gets the sentence that explains why the form has no webhook trigger, or an empty string when it has one.</summary>
+    public string ScheduleOnlyNote => _manager.SupportsWebhooks ? string.Empty : AutomationsCopy.ScheduleOnlyNote;
+
     /// <summary>Gets or sets the name. Surrounding spaces are not part of it.</summary>
     public string Name
     {
@@ -983,7 +989,7 @@ public sealed class AutomationEditorModel : ObservableModel
         var hasCron = _cronText.Trim().Length > 0;
         if (!hasCron && !_webhookEnabled && _extraTriggers.Count == 0)
         {
-            errors[AutomationsCopy.FieldTriggers] = AutomationsCopy.TriggersRequired;
+            errors[AutomationsCopy.FieldTriggers] = _manager.SupportsWebhooks ? AutomationsCopy.TriggersRequired : AutomationsCopy.ScheduleRequired;
         }
 
         if (hasCron && _previewError.Length > 0 && string.Equals(_previewKey, PreviewKeyOf(_cronText.Trim(), EffectiveTimeZone()), StringComparison.Ordinal))

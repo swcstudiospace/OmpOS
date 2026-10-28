@@ -35,4 +35,16 @@ internal sealed record HeadServicesOptions
 
     /// <summary>Gets the handler behind the API client of the cloud agents, or null for a plain socket handler. Tests pass a scripted one.</summary>
     public HttpMessageHandler? ApiHandler { get; init; }
+
+    /// <summary>Gets how podman is run, or null for <c>podman</c> from <c>PATH</c>. Tests pass a script that stands in for it.</summary>
+    public OmpOS.Harness.Remote.Containers.PodmanClientOptions? Podman { get; init; }
+
+    /// <summary>Gets how wsl.exe is run, or null for <c>wsl.exe</c> from <c>PATH</c>.</summary>
+    public OmpOS.Harness.Remote.Containers.WslClientOptions? Wsl { get; init; }
+
+    /// <summary>Gets the configured path of omp, or null to search the environment, <c>PATH</c> and the known install places. It decides whether local automations can run.</summary>
+    public string? OmpPath { get; init; }
+
+    /// <summary>Gets a function that says whether omp is installed, or null to look for it. Tests replace it.</summary>
+    public Func<bool>? OmpAvailable { get; init; }
 }

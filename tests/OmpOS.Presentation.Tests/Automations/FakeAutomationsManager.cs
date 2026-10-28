@@ -24,6 +24,12 @@ internal sealed class FakeAutomationsManager : IAutomationsManager
     /// <summary>Gets or sets the target kinds the manager reports as supported.</summary>
     public IReadOnlyList<string> SupportedTargetKinds { get; set; } = ["local", "cloud"];
 
+    /// <summary>Gets or sets whether the manager reports that its head receives webhooks.</summary>
+    public bool SupportsWebhooks { get; set; } = true;
+
+    /// <summary>Gets or sets the sentence the manager reports for the page.</summary>
+    public string PageNote { get; set; } = string.Empty;
+
     /// <summary>Gets every call that reached the manager, as <c>Operation</c> or <c>Operation:argument</c>, in order.</summary>
     internal List<string> Calls { get; } = [];
 

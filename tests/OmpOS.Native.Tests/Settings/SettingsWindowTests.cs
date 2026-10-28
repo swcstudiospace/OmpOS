@@ -1,5 +1,6 @@
 using Avalonia.Automation;
 using Avalonia.Controls;
+using OmpOS.Native.Views.Automations;
 using OmpOS.Native.Views.Cloud;
 using OmpOS.Native.Views.Hooks;
 using OmpOS.Native.Views.Mcp;
@@ -7,6 +8,7 @@ using OmpOS.Native.Views.Remote;
 using OmpOS.Native.Views.Safety;
 using OmpOS.Native.Views.Settings;
 using OmpOS.Presentation;
+using OmpOS.Presentation.Automations;
 using OmpOS.Presentation.Cloud;
 using OmpOS.Presentation.Hooks;
 using OmpOS.Presentation.Mcp;
@@ -47,6 +49,7 @@ public sealed class SettingsWindowTests
         (SettingsSection.Ignore, IgnoreCopy.Title, typeof(IgnorePageView)),
         (SettingsSection.Remote, RemoteCopy.Title, typeof(RemoteEnvironmentsPageView)),
         (SettingsSection.Cloud, CloudCopy.Title, typeof(CloudAgentsPageView)),
+        (SettingsSection.Automations, AutomationsCopy.Title, typeof(AutomationsPageView)),
         (SettingsSection.Privacy, PrivacyCopy.Title, typeof(PrivacyPageView)),
         (SettingsSection.Network, NetworkCopy.Title, typeof(NetworkPageView)),
         (SettingsSection.Keyboard, KeyboardCopy.Title, typeof(KeyboardPageView)),
@@ -57,6 +60,7 @@ public sealed class SettingsWindowTests
     {
         McpSettingsPage mcp => mcp.Model,
         CloudSettingsPage cloud => cloud.Agents,
+        AutomationsSettingsPage automations => automations.Model,
         _ => page,
     };
 
