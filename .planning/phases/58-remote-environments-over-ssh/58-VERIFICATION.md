@@ -8,7 +8,7 @@ export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH DOTNET_NOLOGO=1 DOTNET
 
 Results recorded on 2026-10-28 are in `58-SUMMARY.md`. A row marked "no recorded run" has a command but no result. The unit tests are hermetic: a fake `ssh` and a fake `omp` (POSIX `sh` scripts under `tests/OmpOS.Harness.Remote.Tests/Fixtures`), headless Avalonia, no network. The fake scripts need `sh`, `sed`, `stat -c`, `mktemp` and GNU coreutils, so the tests are Linux only in practice. Only the live run used a real `sshd` and the real omp 18.12.6, and it sent no prompt.
 
-Recorded totals (recorded 2026-10-28, orchestrator): Remote 520+ (2 skipped as root), Presentation 2303, Native 2012 (2 skipped), Architecture 46, Contracts 137 passed on the final tree. The full `./bootstrap.sh` gate on the final commit was running; its result is recorded by the orchestrator in `docs/runbooks/evidence/bootstrap-gate-2026-10-28-*.log`. The commands below were not re-run by the author of this record.
+Recorded totals (recorded 2026-10-28, orchestrator): Remote 520+ (2 skipped as root), Presentation 2303, Native 2012 (2 skipped), Architecture 46, Contracts 137 passed on the final tree. The full `./bootstrap.sh` gate on a clean worktree of commit e24e6851 exited 0 (recorded 2026-10-28: 12215 tests, 12213 succeeded, 0 failed, 2 skipped; format clean; repository checks and licence check OK); release head 9d4e0075 is tagged v0.15.0, later commits are documentation only. GitHub `ci` runs 40758215402 (main) and 40758275399 (tag) failed at 'Start test services' (rootless podman cannot create a user namespace in the runner container, OQ-168); the local gate is the gate of record. The commands below were not re-run by the author of this record.
 
 ## Criteria
 

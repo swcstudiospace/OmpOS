@@ -8,13 +8,14 @@ export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH DOTNET_NOLOGO=1 DOTNET
 
 Results recorded on 2026-10-28 are in `60-SUMMARY.md`. A row marked "no recorded run" has a command but no result. The tests are hermetic: a fake omp script, a loopback WebSocket server, an in-process fake worker and fake GitHub, and recorded Railway responses. The AgentWorker and entrypoint tests need a POSIX shell with `head`, `tr`, `sed` and `sleep` and skip elsewhere. The Postgres tests use a throwaway PostgreSQL (podman, or `OMPOS_TEST_POSTGRES_CONNECTION`). No live Railway, GitHub or model call is made.
 
-Recorded totals (recorded 2026-10-28, orchestrator): Api.IntegrationTests 1027/1027, Coordination 32 and Sessions.Postgres 58 passed on the final tree with throwaway podman services; AgentWorker 153, Sandbox 329, Acp 201, Presentation 2303, Native 2012 (2 skipped), Contracts 137, Architecture 46 passed on the final tree before the last wiring. The full `./bootstrap.sh` gate on the final commit was running; its result is recorded by the orchestrator in `docs/runbooks/evidence/bootstrap-gate-2026-10-28-*.log`. The commands below were not re-run by the author of this record.
+Recorded totals (recorded 2026-10-28): the `./bootstrap.sh` gate on commit e24e6851 exited 0 (`docs/runbooks/evidence/bootstrap-gate-2026-10-28-e24e6851.log`): `dotnet test OmpOS.Linux.slnf` 12215 total, 12213 succeeded, 0 failed, 2 skipped; the log lists `OmpOS.AgentWorker.Tests`, `OmpOS.Sandbox.Tests`, `OmpOS.Sessions.Postgres.Tests` and `OmpOS.Api.IntegrationTests` as passed. Separate runs on the final tree with throwaway podman services: Api.IntegrationTests 1027/1027, Coordination 32, Sessions.Postgres 58; earlier per-project runs: AgentWorker 153, Sandbox 329, Acp 201, Presentation 2303, Native 2012 (2 skipped), Contracts 137, Architecture 46. The commands below were not re-run by the author of this record. GitHub `ci` runs 40758215402 (main) and 40758275399 (tag) failed at "Start test services" (OQ-168), so they add no test result.
 
 ## Criteria
 
 | Criterion | Command | What it proves | Recorded result |
 |-----------|---------|----------------|-----------------|
-| 1 (worker) | `dotnet test tests/OmpOS.AgentWorker.Tests -c Release` | The `/acp` bridge pumps frames between a WebSocket and a fake `omp acp`; a missing, expired, wrong-audience, wrong-issuer or unsigned token is refused; a pinned worker serves only its session; a subject mismatch is 403; frames are one JSON object; canary secrets reach no log, no transcript frame and no argument list; the entrypoint script sets volume ownership | Inside the passing AgentWorker run (153) |
+| 1 (worker) | `dotnet test tests/OmpOS.AgentWorker.Tests -c Release` | The `/acp` bridge pumps frames between a WebSocket and a fake `omp acp`; a missing, expired, wrong-audience, wrong-issuer or unsigned token is refused; a pinned worker serves only its session; a subject mismatch is 403; frames are one JSON object; canary secrets reach no log, no transcript frame and no argument list; the entrypoint script sets volume ownership | Inside the passing AgentWorker run (153) and the AgentWorker line of the e24e6851 gate log |
+| 1 (live image) | `podman build -f deploy/worker.Containerfile -t ompos-agent-worker:local .` then `node scripts/cloud/worker-live-check.mjs` | The built worker image refuses five bad-token cases (401 or 403) before any upgrade, answers health and readiness, accepts a valid WebSocket, carries `initialize` and `session/new` to a real `omp` 18.12.5, refuses a second connection for one session (409) and logs no key or token material. Does not prove a prompt turn (OD-07), a Railway deploy, a control plane minting tokens, a worker clone or hooks | 14 of 14 checks passed, recorded 2026-10-28: `docs/runbooks/evidence/cloud-worker-container-2026-10-28/README.md` |
 | 1 (transport) | `dotnet test tests/OmpOS.Harness.Acp.Tests -c Release -- --filter-class "*AcpWebSocketTransportTests*"` | Connect failure, drop, close code, oversized frame and bearer handling of `AcpWebSocketTransport` against a loopback listener | Inside the passing Acp run (201) |
 | 1 (API) | `dotnet test tests/OmpOS.Api.IntegrationTests -c Release -- --filter-namespace "*Cloud*"` | Create with caps and idempotency, ownership, wake, stop, delete, idle sweep (an agent with a run in flight is skipped), orphan handling, secret canaries across responses, events and logs, pull requests through a fake GitHub, token minting and expiry, environment file reading, cloud disabled by default | Inside the passing Api.IntegrationTests run (1027/1027) |
 | 1 (store) | `dotnet test tests/OmpOS.Sessions.Postgres.Tests -c Release -- --filter-class "*PostgresCloudAgentStoreTests*"` | The durable store: atomic caps, unique idempotency key, update and activation against a real PostgreSQL | Inside the passing Sessions.Postgres run (58) |
@@ -29,12 +30,13 @@ Recorded totals (recorded 2026-10-28, orchestrator): Api.IntegrationTests 1027/1
 |------|---------|----------------|-----------------|
 | Hooks in cloud workers | `dotnet test tests/OmpOS.AgentWorker.Tests -c Release -- --filter-class "*CloudHooksWorkerTests*" --filter-class "*CloudHookFilterTests*" --filter-class "*HooksConsentSnapshotReaderTests*"` | The worker runs consented project hooks through the shared bridge, refuses an invalid consent claim as a whole, reports `untrusted` without a claim, and sends `_ompos/hook` frames; the omp extension is never run (the fake omp posts nothing, the tests post to the bridge themselves) | Inside the passing AgentWorker run |
 | Contracts | `dotnet test tests/OmpOS.Contracts.Tests -c Release` | The cloud wire types round trip; contract version 1.5.0 | Inside the passing Contracts run (137) |
-| Worker image | `podman build -f deploy/worker.Containerfile -t ompos-agent-worker:local .` | The image builds with the locked restore | No recorded run |
+| Worker image | `podman build -f deploy/worker.Containerfile -t ompos-agent-worker:local .` | The image builds with the pinned base images, Bun and omp digests | Built and run, recorded 2026-10-28 (see criterion 1, live image); the locked restore half is covered by the gate restore |
 
 ## Evidence files
 
 | File | What it shows |
 |------|---------------|
+| `docs/runbooks/evidence/cloud-worker-container-2026-10-28/README.md` | The live check of the worker image under podman: 14 of 14 checks (method, table, what it proves and does not) |
 | `docs/runbooks/cloud-agents.md` | Operator and user guide; the table "What is verified and what is blocked" |
 | `docs/decisions/ADR-0020-cloud-agents-on-railway.md` | Decisions D1 to D8, including the operation table with VERIFIED and UNVERIFIED rows |
 | `docs/decisions/addendum-ADR-0020-hooks.md` | Hooks in cloud workers |
@@ -43,7 +45,7 @@ Recorded totals (recorded 2026-10-28, orchestrator): Api.IntegrationTests 1027/1
 
 ## Known limits of this verification
 
-- No Railway deployment, no schema introspection, no live provisioning, no live cloud agent, no GitHub call, no model turn (OD-07).
+- No Railway deployment, no schema introspection, no live provisioning, no live cloud agent, no GitHub call, no model turn (OD-07). The worker image ran locally under podman only.
 - The worker has no checkout bootstrap, so no end-to-end run could exist even with a deploy.
 - The Windows, macOS and Android heads were not run.
-- No log of the per-project runs is committed; the `./bootstrap.sh` log is the orchestrator's.
+- The `./bootstrap.sh` log of commit e24e6851 is committed; per-project logs of the earlier runs are not.

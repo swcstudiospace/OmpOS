@@ -8,7 +8,7 @@ export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH DOTNET_NOLOGO=1 DOTNET
 
 Results recorded on 2026-10-28 are in `56-SUMMARY.md`. Tests are hermetic: no omp, no network, no model. The omp command list was read from the installed omp 18.12.6 source and frozen as test data.
 
-Recorded totals (orchestrator facts, recorded 2026-10-28, final tree before the last wiring): Presentation 2303, Native 2012 (2 skipped), Workspace 364, Remote 520 or more (2 skipped as root), Web 262 or more, UI 595, Architecture 46, all passing. The full `./bootstrap.sh` gate on the final commit was running; its result is recorded by the orchestrator in `docs/runbooks/evidence/bootstrap-gate-2026-10-28-*.log`. The commands below were not re-run by the author of this record; "Inside the passing <Project> run" means the project passed as a whole, not that the class was run alone.
+Recorded totals (orchestrator facts, recorded 2026-10-28, final tree before the last wiring): Presentation 2303, Native 2012 (2 skipped), Workspace 364, Remote 520 or more (2 skipped as root), Web 262 or more, UI 595, Architecture 46, all passing. The full `./bootstrap.sh` gate on a clean worktree of commit e24e6851 exited 0 (recorded 2026-10-28: 12215 tests, 12213 succeeded, 0 failed, 2 skipped; format clean; repository checks and licence check OK); release head 9d4e0075 is tagged v0.15.0, later commits are documentation only. GitHub `ci` runs 40758215402 (main) and 40758275399 (tag) failed at 'Start test services' (rootless podman cannot create a user namespace in the runner container, OQ-168); the local gate is the gate of record. The commands below were not re-run by the author of this record; "Inside the passing <Project> run" means the project passed as a whole, not that the class was run alone.
 
 ## Criteria
 
@@ -38,5 +38,5 @@ Recorded totals (orchestrator facts, recorded 2026-10-28, final tree before the 
 
 - No live omp turn (OD-07), no Windows, macOS or Android run.
 - Remote discovery was tested over fake remote file systems and podman exec fixtures, not read from a live host.
-- Cloud discovery and web discovery are not built, so no test exists for them.
+- Cloud discovery is not built and the web palette is still given `SlashDiscovery.Empty` (confirmed by grep 2026-10-28), so no test exists for them.
 - The 5 s refresh throttle uses `TimeProvider` in the tests; no real-time wait was measured.

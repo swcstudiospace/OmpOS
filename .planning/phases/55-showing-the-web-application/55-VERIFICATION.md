@@ -8,7 +8,7 @@ export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH DOTNET_NOLOGO=1 DOTNET
 
 Results recorded on 2026-10-28 are in `55-SUMMARY.md`. The Demo tests are hermetic (a manual clock, no browser, no network). The hosted check and the captures need Chrome and network access to the hosted URL.
 
-Recorded totals (2026-10-28, orchestrator facts): Web 262 or more passed on the final tree before the last wiring (no per-class result is claimed; each row is "inside the passing Web run"). The Demo was deployed at https://ompos-web.vercel.app and captured with headless Chrome from the live URL: no console errors, no failed requests. The full `./bootstrap.sh` gate on the final commit was running; its result is recorded by the orchestrator in `docs/runbooks/evidence/bootstrap-gate-2026-10-28-*.log`.
+Recorded totals (2026-10-28, orchestrator facts): `./bootstrap.sh` on a clean worktree of e24e6851 exited 0 (12215 total, 12213 succeeded, 0 failed, 2 skipped), including the Demo smoke (68 axe runs, 0 violations). The Demo is deployed at https://ompos-web.vercel.app (deployment `ompos-px32dymvw-swcstudiospace.vercel.app`) and captured with headless Chrome from the live URL: no console errors, no failed requests.
 
 ## Criteria
 
@@ -16,8 +16,8 @@ Recorded totals (2026-10-28, orchestrator facts): Web 262 or more passed on the 
 |-----------|---------|----------------|-----------------|
 | 1 | `dotnet build services/OmpOS.Api -c Release` (regenerates `docs/api/openapi.json`), then `dotnet test tests/OmpOS.Web.Tests -c Release -- --filter-class "*DemoApiHandlerTests*" --filter-class "*DemoFixturesContractTests*" --filter-class "*OpenApiCoverageTests*" --filter-class "*DemoExclusionTests*" --filter-class "*RenderCspScriptTests*"` | The handler answers the client's routes; fixture bodies deserialise strictly into the contract types; every operation the client uses is in the OpenAPI document; Demo types exist only in a Demo build; `render-csp.sh` prints the exact `connect-src` line and fails closed | Inside the passing Web run |
 | 1 (production bundle) | `dotnet publish apps/OmpOS.Web -c Release -o /tmp/ompos-prod`, then `grep -c DemoApiHandler /tmp/ompos-prod/wwwroot/_framework/OmpOS.Web*` (every count 0) and `test ! -e /tmp/ompos-prod/wwwroot/appsettings.demo.json` | A normal build holds no Demo code | no recorded run of the commands as written |
-| 2 | `curl -sI https://ompos-web.vercel.app` and `URL=https://ompos-web.vercel.app OUT=/tmp/ompos-hosted node scripts/web-demo/capture.mjs` | The hosted page answers and renders | Headless Chrome capture of the live URL, no console errors, no failed requests (orchestrator, 2026-10-28). No curl output or capture is committed. Commit and build id: UNVERIFIED: `vercel inspect ompos-web.vercel.app` |
-| 3 | `scripts/web-demo/serve-demo.sh` after `scripts/vercel/build-demo.sh`, then `node scripts/web-demo/capture.mjs` with `THEME=light` or `dark` and `W` and `H` set to 1440x900, 1024x768 and 390x844 | The screens of the Demo in both themes at three widths | 16 images committed (see below); the smoke's 68 images were written to `/tmp/shots` and not committed |
+| 2 | `curl -sI https://ompos-web.vercel.app` and `URL=https://ompos-web.vercel.app OUT=/tmp/ompos-hosted node scripts/web-demo/capture.mjs` | The hosted page answers and renders | Committed: `live-vercel-L1440-01-agents.png` and `live-vercel-report.json` (`ready: true`, `errors: []`, `failedRequests: 0`); deployment id in `docs/runbooks/web-demo.md`. No curl output committed. Source commit: UNVERIFIED: `vercel inspect ompos-px32dymvw-swcstudiospace.vercel.app` |
+| 3 | `scripts/web-demo/serve-demo.sh` after `scripts/vercel/build-demo.sh`, then `node scripts/web-demo/capture.mjs` with `THEME=light` or `dark` and `W` and `H` set to 1440x900, 1024x768 and 390x844 | The screens of the Demo in both themes at three widths | 16 images committed plus the live capture (see below); the smoke's 68 images were written to `/tmp/shots` and not committed; Dark 1024 and Dark 390 absent |
 
 ## Evidence files
 
@@ -33,8 +33,8 @@ Recorded totals (2026-10-28, orchestrator facts): Web 262 or more passed on the 
 
 ## Known limits of this verification
 
-- No README exists in the evidence folder; the method is in the header of `capture.mjs` and in the runbook.
-- The folder is dated 2026-10-28; the ROADMAP names `web-app-2026-10-27`.
+- The evidence README exists; it names the method and the simulation.
+- The folder is dated 2026-10-28 (planning text said `web-app-2026-10-27`).
 - Missing from the matrix of every screen in both themes at three widths: Dark at 1024 and 390 entirely; at 1440 Dark lacks approval, failed, terminal, slash palette and Settings; Light at 1024 and 390 lack every screen except agents and the drawer.
-- `docs/runbooks/web-demo.md` says "no public deployment exists" in its status line; the Demo is hosted (orchestrator fact).
-- The hosted bundle's commit and the Vercel build id are not in the tree.
+- `docs/runbooks/web-demo.md` now names the hosted Demo, the project id and the deployment id; it does not name the source commit.
+- The hosted bundle's source commit is not in the tree.
