@@ -13,6 +13,14 @@ function focusableWithin(container) {
   );
 }
 
+// The shell can be disposed while a media change is in flight, and the callback then finds no object to call. That one rejection is dropped; any
+// other failure of the handler still surfaces as an unhandled rejection.
+function ignoreDisposed(error) {
+  if (!String(error && error.message).includes("no tracked object")) {
+    throw error;
+  }
+}
+
 export function trapFocus(container, dotnet) {
   const onKeyDown = (event) => {
     if (event.key !== "Tab") {
@@ -38,7 +46,7 @@ export function trapFocus(container, dotnet) {
   const media = window.matchMedia(DRAWER_QUERY);
   const onMediaChange = (event) => {
     if (!event.matches) {
-      dotnet.invokeMethodAsync("CloseFromViewport");
+      dotnet.invokeMethodAsync("CloseFromViewport").catch(ignoreDisposed);
     }
   };
   document.addEventListener("keydown", onKeyDown, true);

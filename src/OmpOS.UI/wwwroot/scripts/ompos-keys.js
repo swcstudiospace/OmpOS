@@ -81,15 +81,23 @@ export function registerShortcuts(dotnet) {
     }
     if (id !== null) {
       event.preventDefault();
-      dotnet.invokeMethodAsync("OnShortcut", id);
+      dotnet.invokeMethodAsync("OnShortcut", id).catch(ignoreDisposed);
     }
   });
+}
+
+// The component can be disposed while an event is in flight, and the callback then finds no object to call. There is nobody left to tell, so that
+// one rejection is dropped; any other failure of the handler still surfaces as an unhandled rejection.
+function ignoreDisposed(error) {
+  if (!String(error && error.message).includes("no tracked object")) {
+    throw error;
+  }
 }
 
 export function watchOutside(container, dotnet) {
   const leave = (event) => {
     if (!container.contains(event.target)) {
-      dotnet.invokeMethodAsync("OnOutside");
+      dotnet.invokeMethodAsync("OnOutside").catch(ignoreDisposed);
     }
   };
   return trackAll([

@@ -19,6 +19,14 @@ export function scrollToEnd() {
   v.scrollTop = v.scrollHeight;
 }
 
+// The component can be disposed while a scroll event is in flight, and the callback then finds no object to call. That one rejection is dropped;
+// any other failure of the handler still surfaces as an unhandled rejection.
+function ignoreDisposed(error) {
+  if (!String(error && error.message).includes("no tracked object")) {
+    throw error;
+  }
+}
+
 // Reports only transitions across the bottom edge, so ordinary scroll events do not cross the interop boundary.
 export function observe(callback) {
   let scrolledUp = isScrolledUp();
@@ -26,7 +34,7 @@ export function observe(callback) {
     const up = isScrolledUp();
     if (up !== scrolledUp) {
       scrolledUp = up;
-      callback.invokeMethodAsync("ReportScrollPosition", up);
+      callback.invokeMethodAsync("ReportScrollPosition", up).catch(ignoreDisposed);
     }
   };
   const token = nextToken++;
