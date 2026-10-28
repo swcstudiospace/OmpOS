@@ -1,5 +1,6 @@
 using OmpOS.Web.Demo;
 using OmpOS.Web.Services;
+using Xunit;
 
 namespace OmpOS.Web.Tests;
 
@@ -64,6 +65,10 @@ internal sealed class DemoTestHost : IDisposable
             {
                 await Task.Yield();
             }
+
+            // The scripted turn runs on the thread pool through the in-memory HTTP handler: on a loaded host the yields alone
+            // let the virtual clock race ahead of work that has not been scheduled yet, so each step also gives real time.
+            await Task.Delay(1, TestContext.Current.CancellationToken).ConfigureAwait(true);
         }
 
         throw new TimeoutException("The condition did not hold after 6000 clock steps.");

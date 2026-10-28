@@ -358,10 +358,11 @@
         return string.Join(", ", parts);
     }
 
+    // A running agent is confirmed before it closes, selected or not: the selected session may not have seen an event yet
+    // (its lifecycle says Running while its transcript is still empty), and the row group is the lifecycle the user sees.
     private bool NeedsConfirmation(AgentRow row) =>
-        Panel.Selected is { } selected && string.Equals(selected.Id, row.Id, StringComparison.Ordinal)
-            ? selected.RequiresCloseConfirmation
-            : row.Group is AgentRowGroup.NeedsYou or AgentRowGroup.Running;
+        row.Group is AgentRowGroup.NeedsYou or AgentRowGroup.Running
+        || (Panel.Selected is { } selected && string.Equals(selected.Id, row.Id, StringComparison.Ordinal) && selected.RequiresCloseConfirmation);
 
     private async Task RequestCloseAsync(AgentRow row)
     {

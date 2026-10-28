@@ -100,7 +100,7 @@
     private string PaletteId => _id + "-palette";
     private string HintId => _id + "-hint";
 
-    /// <summary>Gets whether the assistant is currently streaming; Escape stops, and the stop control replaces send. It applies to a composer that owns its view model; a composer given a <see cref="Model"/> follows the model.</summary>
+    /// <summary>Gets whether the assistant is currently streaming; Escape stops, and the stop control replaces send. A composer that owns its view model hands the value to it; a composer given a <see cref="Model"/> also shows the stop control while this is true, so a transcript that streams without a send from this composer (a run observed or resumed) can always be stopped.</summary>
     [Parameter]
     public bool IsStreaming { get; set; }
 
@@ -126,7 +126,7 @@
     [Parameter]
     public SteeringInputModel? Steering { get; set; }
 
-    private bool Streaming => _viewModel.IsStreaming;
+    private bool Streaming => _viewModel.IsStreaming || IsStreaming;
 
     private bool SteerMode => Steering is { IsRunActive: true };
 

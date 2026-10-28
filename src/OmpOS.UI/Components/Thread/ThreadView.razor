@@ -54,7 +54,7 @@
     else
     {
         <div class="ompos-composer-dock">
-            <Composer @key="Session.Id" Model="Session.Composer" Steering="Session.Steering" OnStop="RequestStopAsync" />
+            <Composer @key="Session.Id" Model="Session.Composer" Steering="Session.Steering" IsStreaming="Transcript.CanStop" OnStop="RequestStopAsync" />
         </div>
     }
 </div>
