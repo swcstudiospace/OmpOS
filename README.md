@@ -73,7 +73,7 @@ Status words: **Built** = implemented, reachable from a head and covered by test
 | Remote environments over ssh | Partial | A live run through a loopback `sshd` with the real omp passed on Linux; no real network host; remote file explorer and terminal pane not wired |
 | Containers (podman) and WSL | Partial | A live podman test passed on Linux (alpine); WSL never ran |
 | Multi-repo workspaces | Partial | Workspace sets and `--add-dir` wired; no live run |
-| Cloud agents on Railway | Partial | Control plane, worker and desktop client against fakes; no deploy |
+| Cloud agents on Railway | Partial | Control plane and desktop client against fakes; the worker image runs under podman with a real omp ([14 of 14 checks](docs/runbooks/evidence/cloud-worker-container-2026-10-28/README.md)); no Railway deploy, no clone bootstrap |
 | GitBook documentation site | Blocked | Published after the owner connects GitBook |
 | Cursor accounts, teams, billing | Omitted | No accounts by design |
 
