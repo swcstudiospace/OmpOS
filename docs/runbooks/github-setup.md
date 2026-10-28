@@ -4,7 +4,7 @@ description: "How to apply the GitHub presentation, community health and release
 
 # GitHub setup runbook (Phase 52)
 
-Status: Built (files are in the repository); the settings were applied with `scripts/github/apply-repo-settings.sh` on 2026-10-28 (recorded); the social preview upload and the discussion categories still need the owner
+Status: Built and applied: the settings were applied with `scripts/github/apply-repo-settings.sh --apply` and read back after the push on 2026-10-28, and the tag and the GitHub Release v0.15.0 exist (recorded); the social preview upload and the discussion categories still need the owner
 
 Last verified: 2026-10-28
 
@@ -12,7 +12,7 @@ Applies to: v0.15.0
 
 Applies the GitHub presentation, community health and release settings of `swcstudiospace/OmpOS`. The files live in the repository; the settings need the `gh` CLI signed in with admin rights on the repository (`gh auth status`). Facts about the repository state on 2026-10-27 are in `docs/plans/v0.15.0-research/12-github-gitbook-plan.md`.
 
-**Recorded 2026-10-28:** `scripts/github/apply-repo-settings.sh` was applied to `swcstudiospace/OmpOS`: description, homepage (the web Demo, <https://ompos-web.vercel.app>), 15 topics, Discussions on, wiki off, delete-branch-on-merge, private vulnerability reporting, Dependabot security updates, secret scanning with push protection and 22 labels. Not done, because GitHub offers no API: the social preview image upload and the discussion categories (see "Manual steps").
+**Recorded 2026-10-28:** `scripts/github/apply-repo-settings.sh` was applied to `swcstudiospace/OmpOS`: description, homepage (the web Demo, <https://ompos-web.vercel.app>), 15 topics, Discussions on, wiki off, delete-branch-on-merge, private vulnerability reporting, Dependabot security updates, secret scanning with push protection and 22 labels. Read back after the push (recorded 2026-10-28, `docs/runbooks/evidence/github-setup-2026-10-28/read-back.json`): GitHub detects the licence as AGPL-3.0 (key `agpl-3.0`), the community profile health is 100, private vulnerability reporting and automated security fixes are enabled, secret scanning and push protection are enabled, there are no rulesets and no branch protection on `main` (on purpose). `origin/main` was fast-forwarded to `9d4e0075`, the annotated tag `v0.15.0` points at it, and the `release` workflow (run 40758275112, 31 s) published https://github.com/swcstudiospace/OmpOS/releases/tag/v0.15.0. The `ci` workflow failed for both pushes at 'Start test services' because rootless podman cannot create a user namespace in the runner container (OQ-168); the local `./bootstrap.sh` gate of `e24e6851` is the gate of record. Not done, because GitHub offers no API: the social preview image upload (OQ-170) and the discussion categories (OQ-109) (see "Manual steps"). The older milestone tags `v0.9.1` to `v0.14.0` do not exist (OQ-108).
 
 ## What is in the repository
 
@@ -50,7 +50,7 @@ It leaves the merge methods (squash, merge commit, rebase) as they are, and it c
 2. Dry run: `bash scripts/github/apply-repo-settings.sh`. Read the commands.
 3. Apply: `bash scripts/github/apply-repo-settings.sh --apply` (add `--homepage <url>` when the docs site is published).
 4. Do the manual steps below.
-5. Read back: `bash scripts/github/read-back.sh --out docs/runbooks/evidence/github-settings-<date>.json` (the orchestrator owns the evidence folder) and check the result against the list in "Verify".
+5. Read back: `bash scripts/github/read-back.sh --out docs/runbooks/evidence/github-setup-<date>/read-back.json` and check the result against the list in "Verify" (the 2026-10-28 read-back and what it holds: `docs/runbooks/evidence/github-setup-2026-10-28/README.md`).
 6. Release: see "Tag and release v0.15.0".
 
 ## Manual steps (GitHub offers no API)
@@ -89,6 +89,8 @@ Commit the lock-file changes to the Dependabot branch (`git fetch`, `git checkou
 
 ## Tag and release v0.15.0
 
+Done 2026-10-28 (recorded): the steps below ran for v0.15.0 and the Release exists; they stay here as the procedure for the next release.
+
 1. `Directory.Build.props` holds `<VersionPrefix>0.15.0</VersionPrefix>` (the release work of Phase 65 sets it; the tag must equal it, and the release workflow fails otherwise).
 2. In `CHANGELOG.md`, rewrite `[Unreleased]` into `## [0.15.0] - <date>` with the real contents, open a new empty `## [Unreleased]`, and update the bottom references: `[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.15.0...HEAD` and `[0.15.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.14.0...v0.15.0`.
 3. `bash scripts/ci/check-changelog.sh` must pass, then `./bootstrap.sh` must pass on the release commit.
@@ -104,7 +106,7 @@ Commit the lock-file changes to the Dependabot branch (`git fetch`, `git checkou
 
 GitHub's automatic "Source code" archives never contain submodules, and `plugins/agent-swarm` and `plugins/agent-substrate` carry no licence file: do not attach an archive that bundles them to the public release without a licence decision (see OQ-93 and the licensing facts in the research file).
 
-The compare links in `CHANGELOG.md` for the milestones before 0.15.0 point to tags that do not exist yet (the repository has no tags): they work once those tags are created. Tagging historical commits is an owner decision; the only commit the records identify for sure is `cbbe22d`, the merge of PR #1 that shipped v0.9.1.
+The compare links in `CHANGELOG.md` for the milestones before 0.15.0 point to tags that do not exist (the only tag is `v0.15.0`, recorded 2026-10-28; OQ-108): they work once those tags are created. Tagging historical commits is an owner decision; the only commit the records identify for sure is `cbbe22d`, the merge of PR #1 that shipped v0.9.1.
 
 ## Verify with the community profile
 
@@ -112,7 +114,7 @@ The compare links in `CHANGELOG.md` for the milestones before 0.15.0 point to ta
 gh api repos/swcstudiospace/OmpOS/community/profile --jq '{health_percentage, files: (.files | map_values(. != null))}'
 ```
 
-Expected: `health_percentage` 100, and every one of `code_of_conduct`, `contributing`, `issue_template`, `pull_request_template` and `license` true, `readme` true. The `documentation` field is derived by GitHub and may point to a branch that does not exist; it does not count against the score. If `license` is false, check that `LICENSE` is the unmodified AGPL-3.0 text on `main` (GitHub's detector can take a few minutes). Then check:
+Expected: `health_percentage` 100, and every one of `code_of_conduct`, `contributing`, `issue_template`, `pull_request_template` and `license` true, `readme` true. Recorded 2026-10-28: `health_percentage` was 100 while `issue_template` was `null` (the repository has three issue forms under `.github/ISSUE_TEMPLATE/`; UNVERIFIED why GitHub reports no issue template for forms: open `https://github.com/swcstudiospace/OmpOS/issues/new/choose`). The `documentation` field is derived by GitHub and may point to a branch that does not exist; it does not count against the score. If `license` is false, check that `LICENSE` is the unmodified AGPL-3.0 text on `main` (GitHub's detector can take a few minutes). Then check:
 
 | Check | Command | Expect |
 | --- | --- | --- |

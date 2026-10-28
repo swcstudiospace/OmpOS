@@ -17,15 +17,17 @@ The row-by-row truth is the [Cursor parity audit of 2026-10-28](../quality/curso
 | Proof | Result |
 |---|---|
 | Web Demo deployed (Vercel production alias of project `ompos-web`) | <https://ompos-web.vercel.app>: a static bundle, simulated engine, no backend, no secret. Captured with headless Chrome from the live URL: no console error, no failed request ([evidence](../runbooks/evidence/web-app-2026-10-28/README.md)). |
-| Web smoke (`scripts/web-smoke/smoke-demo.mjs`) | 68 axe runs (Light and Dark at 1440, 1024 and 390 px, every screen), 0 violations in the Wave 5 tree. |
+| Web smoke (`scripts/web-smoke/smoke-demo.mjs`, inside the gate) | 68 axe runs (Light and Dark at 1440, 1024 and 390 px, every screen), 0 violations, no console error or failed request, no horizontal scroll; the drawer traps focus and closes on Escape; the theme persists. |
 | Live ssh | A real `omp acp` 18.12.6 through a loopback `sshd` passed ([evidence](../runbooks/evidence/remote-ssh-live-2026-10-28/README.md)). No prompt turn. |
 | Live podman | `OMPOS_LIVE_PODMAN=1` against an alpine image passed in the Wave 4 tree after two defects were fixed. |
 | Services | Api.IntegrationTests 1027/1027, Coordination 32 and Sessions.Postgres 58 passed on the final tree against throwaway podman services. |
-| Per-project tests on the final tree | Presentation 2303, Native 2012 (2 skipped), AgentLoop 1221, Acp 201, Mcp 197, Plugins 429, Remote 520+ (2 skipped as root), Workspace 364, Automations 386, Web 262+, UI 595, Architecture 46, AgentWorker 153, Contracts 137, Sandbox 329. |
+| Release gate: `./bootstrap.sh` on a clean worktree of `e24e6851` | Exit 0: secret scan, plugin node tests (69 and 76), repository checks, licence check, warnings-as-errors build, `dotnet test OmpOS.Linux.slnf` 12215 tests, 0 failed, 2 skipped (two tests that need a non-root user), 25 minutes with throwaway TimescaleDB and Dragonfly under podman, `dotnet format` clean, web smoke ([log](../runbooks/evidence/bootstrap-gate-2026-10-28-e24e6851.log); its header records the two earlier runs of the branch that failed and why). |
+| Push, tag and release | `main` fast-forwarded from `04e80d1` to `9d4e0075`; the annotated tag `v0.15.0` points at it; the `release` workflow (run 40758275112, 31 s) published the [GitHub Release v0.15.0](https://github.com/swcstudiospace/OmpOS/releases/tag/v0.15.0). |
+| Cloud worker image | The worker image under podman, 14 of 14 checks ([evidence](../runbooks/evidence/cloud-worker-container-2026-10-28/README.md)); not on Railway. |
 | Desktop on Linux | Xvfb run of the real app: 21 Settings pages render; two layout defects found and fixed ([evidence](../runbooks/evidence/desktop-app-2026-10-28/README.md)). |
-| GitHub settings | Applied with `scripts/github/apply-repo-settings.sh`: description, homepage (the Demo URL), 15 topics, discussions on, wiki off, delete branch on merge, private vulnerability reporting, Dependabot security updates, secret scanning with push protection, 22 labels. |
+| GitHub settings | Applied with `scripts/github/apply-repo-settings.sh --apply` and read back after the push ([evidence](../runbooks/evidence/github-setup-2026-10-28/README.md)): description, homepage (the Demo URL), 15 topics, discussions on, wiki off, delete branch on merge, private vulnerability reporting, Dependabot security updates, secret scanning with push protection, 22 labels. GitHub detects the licence as AGPL-3.0; the community profile health is 100; no ruleset and no branch protection on `main`, on purpose. |
 
-The full `./bootstrap.sh` gate on the final commit was still running when this page was written; its result is recorded in `docs/runbooks/evidence/` and is not claimed here.
+**CI on GitHub did not pass.** The `ci` workflow ran for the main push (run 40758215402) and the tag push (run 40758275399) and failed both times at 'Start test services': rootless podman cannot create a user namespace inside the self-hosted runner container (`newuidmap: write to uid_map failed` and `cannot clone: Permission denied`, OQ-168). The build steps passed; the tests, format check, smoke and checks were skipped. The local gate above is the gate of record.
 
 ## What works today
 
@@ -64,13 +66,15 @@ No live model turn since the bounded Phase 11 capture (OD-07); nothing on Window
 
 ## The v0.15.0 roadmap
 
-Milestone v0.15.0 ("Cursor completeness, brand and public launch") covers phases 51 to 65: brand and licence (51), repository and community health (52), web head foundation and screens (53 to 55), slash commands and discovery (56), hooks (57), remote environments (58), multi-repo (59), cloud agents (60), settings parity (61), providers (62), feature completion (63), documentation (64) and integration and release (65). The planning records are in `.planning/` in the repository; the changelog is [CHANGELOG.md](https://github.com/swcstudiospace/OmpOS/blob/main/CHANGELOG.md).
+Milestone v0.15.0 ("Cursor completeness, brand and public launch") covers phases 51 to 65: brand and licence (51), repository and community health (52), web head foundation and screens (53 to 55), slash commands and discovery (56), hooks (57), remote environments (58), multi-repo (59), cloud agents (60), settings parity (61), providers (62), feature completion (63), documentation (64) and integration and release (65). The milestone was released on 2026-10-28 as [v0.15.0](https://github.com/swcstudiospace/OmpOS/releases/tag/v0.15.0). Five phases are complete (52, 53, 58, 64 and 65; 52, 58, 64 and 65 with caveats) and ten stay partial (51, 54 to 57 and 59 to 63): built code that no head wires yet, a missing page or test, or a missing record; the audit names each. The planning records are in `.planning/` in the repository; the changelog is [CHANGELOG.md](https://github.com/swcstudiospace/OmpOS/blob/main/CHANGELOG.md).
 
 ## What needs the owner
 
 - **GitBook:** connect the space and publish the site ([steps](../runbooks/gitbook-publish.md), OQ-101).
-- **GitHub:** upload the social preview image (`assets/brand/ompos-social-preview.png`) and create the discussion categories; discussions are switched on, categories need the web UI.
-- **Notion:** authorise the Notion connection used for project tracking.
+- **GitHub:** upload the social preview image (`assets/brand/ompos-social-preview.png`, OQ-170) and create the discussion categories (OQ-109); discussions are switched on, categories need the web UI. The settings are applied and read back ([evidence](../runbooks/evidence/github-setup-2026-10-28/README.md)).
+- **Tags:** the older milestone tags `v0.9.1` to `v0.14.0` do not exist, so the `CHANGELOG.md` compare links of those milestones 404; tag them if wanted (OQ-108).
+- **CI runners:** make rootless podman work inside the `omega-ci` runner container so the `ci` workflow gets past 'Start test services' (OQ-168).
+- **Notion and Linear:** authorise the Notion connection (`ultrathink-mcp auth login notion`); the tracker rows of the Ultrathink graph `ut-mvrb4grd-ff38e1ff` stay incomplete (OQ-169).
 - **Live model turn:** approve one (OD-07); every "no live turn" note on these pages waits on it.
 - **Provider credentials:** supply test credentials so live validation of providers can run (OQ-71).
 - **Windows, macOS and Android runs:** the desktop on Windows and macOS, the Android head on a device or emulator (OQ-74).
