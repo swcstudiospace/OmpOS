@@ -62,6 +62,11 @@
   ],
   "modelsFilterCn": true,
   "modelsFilterEu": true,
-  "errors": [],
-  "failedRequests": 0
+  "errors": [
+    "{\"entry\":{\"source\":\"network\",\"level\":\"error\",\"text\":\"Failed to load resource: net::ERR_NETWORK_CHANGED\",\"timestamp\":1793220761120.779,\"url\":\"https://ompos-web.vercel.app/_content/OmpOS.UI/brand/ompos-",
+    "{\"entry\":{\"source\":\"network\",\"level\":\"error\",\"text\":\"Failed to load resource: net::ERR_NETWORK_CHANGED\",\"timestamp\":1793220761129.844,\"url\":\"https://ompos-web.vercel.app/_content/OmpOS.UI/scripts/ompo",
+    "{\"entry\":{\"source\":\"network\",\"level\":\"error\",\"text\":\"Failed to load resource: net::ERR_NETWORK_CHANGED\",\"timestamp\":1793220761129.915,\"url\":\"https://ompos-web.vercel.app/_content/OmpOS.UI/scripts/ompo",
+    "{\"entry\":{\"source\":\"network\",\"level\":\"error\",\"text\":\"Failed to load resource: net::ERR_NETWORK_CHANGED\",\"timestamp\":1793220761129.946,\"url\":\"https://ompos-web.vercel.app/_content/OmpOS.UI/scripts/ompo"
+  ],
+  "failedRequests": 4
 }
