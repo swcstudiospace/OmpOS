@@ -40,6 +40,32 @@ internal sealed class WorkerOptionsValidator : IValidateOptions<WorkerOptions>
             failures.Add("Worker:Omp:ExtraArguments must not contain blank entries or NUL.");
         }
 
+        ValidateHooks(options.Hooks, failures);
+
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
+    }
+
+    private static void ValidateHooks(WorkerHooksOptions? hooks, List<string> failures)
+    {
+        if (hooks is null)
+        {
+            failures.Add("Worker:Hooks must not be null.");
+            return;
+        }
+
+        if (hooks.MaxSnapshotHashes is < 1 or > 4096)
+        {
+            failures.Add("Worker:Hooks:MaxSnapshotHashes must be between 1 and 4096.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(hooks.StateRoot) && !Path.IsPathFullyQualified(hooks.StateRoot))
+        {
+            failures.Add("Worker:Hooks:StateRoot must be an absolute path.");
+        }
+
+        if (hooks.Enabled && (string.IsNullOrWhiteSpace(hooks.PluginsRoot) || !Path.IsPathFullyQualified(hooks.PluginsRoot)))
+        {
+            failures.Add("Worker:Hooks:PluginsRoot must be an absolute path when Worker:Hooks:Enabled is true.");
+        }
     }
 }

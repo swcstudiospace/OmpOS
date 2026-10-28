@@ -14,6 +14,15 @@ public static class SettingsCopy
     /// <summary>The accessible name of the left navigation list.</summary>
     public const string NavigationName = "Settings sections";
 
+    /// <summary>The heading of the About block of the General page.</summary>
+    public const string AboutHeading = "About";
+
+    /// <summary>The label of the button that opens the About window; it is also the accessible name.</summary>
+    public const string AboutLabel = "About OmpOS";
+
+    /// <summary>The sentence under the About button.</summary>
+    public const string AboutHelp = "Version, revision, licence and where to get the source.";
+
     /// <summary>The navigation label of the Runtime page.</summary>
     public const string RuntimeTitle = "Runtime";
 

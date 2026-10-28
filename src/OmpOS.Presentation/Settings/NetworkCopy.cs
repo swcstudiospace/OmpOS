@@ -22,6 +22,11 @@ public static class NetworkCopy
         "Run diagnostics sends one unauthenticated request to each model provider endpoint OmpOS knows about, and nothing else: no key, no token, no prompt. "
         + "An answer with any HTTP status, even an error, means the endpoint is reachable. Nothing is checked until you press the button.";
 
+    /// <summary>The note about proxies: what the diagnostics use and what this page does not change.</summary>
+    public const string ProxyNote =
+        "A diagnostics run uses the system proxy settings; on Linux and macOS that means the HTTP_PROXY, HTTPS_PROXY, ALL_PROXY and NO_PROXY environment variables of the process OmpOS was started from. "
+        + "The agent engine (omp) makes the model calls itself and keeps its own network configuration; this page does not change it.";
+
     /// <summary>The label of the button that starts a run.</summary>
     public const string RunLabel = "Run diagnostics";
 

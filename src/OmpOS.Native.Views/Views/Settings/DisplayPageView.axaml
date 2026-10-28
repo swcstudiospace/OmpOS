@@ -1,0 +1,54 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:set="clr-namespace:OmpOS.Presentation.Settings;assembly=OmpOS.Presentation"
+                            xmlns:local="clr-namespace:OmpOS.Native.Views.Settings"
+                            x:Class="OmpOS.Native.Views.Settings.DisplayPageView"
+                            x:DataType="set:DisplaySettingsPage"
+                            Focusable="False">
+
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+
+  <!-- The Display page: six switches, each with its sentence. The switches are built from the page's list; a change is a draft until Save. -->
+  <Panel>
+
+    <local:PageStatusView x:Name="StateView" />
+
+    <ScrollViewer x:Name="ReadyPanel"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Classes="settings-column">
+
+        <TextBlock Classes="settings-heading"
+                   Text="{x:Static set:DisplayCopy.Heading}" />
+        <TextBlock Classes="settings-description"
+                   Text="{x:Static set:DisplayCopy.Description}" />
+
+        <StackPanel x:Name="TogglePanel"
+                    Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                    AutomationProperties.Name="{x:Static set:DisplayCopy.GroupName}" />
+
+        <TextBlock x:Name="SaveFailedHeading"
+                   Classes="tone-error settings-body"
+                   IsVisible="{CompiledBinding HasError}"
+                   Text="{x:Static set:SettingsCopy.SaveFailedHeading}"
+                   AutomationProperties.LiveSetting="Assertive"
+                   AutomationProperties.Name="{x:Static set:SettingsCopy.SaveFailedHeading}" />
+        <TextBlock x:Name="SaveFailedBody"
+                   Classes="tone-error settings-body"
+                   IsVisible="{CompiledBinding HasError}"
+                   Text="{CompiledBinding SaveError}" />
+
+        <TextBlock Classes="settings-help"
+                   Margin="0,16,0,0"
+                   Text="{x:Static set:DisplayCopy.NotOfferedNote}" />
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Panel>
+
+</local:SettingsPageViewBase>

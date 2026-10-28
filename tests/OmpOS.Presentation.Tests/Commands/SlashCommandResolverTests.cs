@@ -237,12 +237,12 @@ public sealed class SlashCommandResolverTests
         send.Prompt.ShouldEndWith("Task: check the login flow", Case.Sensitive);
     }
 
-    /// <summary>The cloud prefix refuses with the phase-60 reason today, and runs the hand-off action once a host can run it.</summary>
+    /// <summary>The cloud prefix is refused while no host can run the hand-off, and runs the hand-off action once a host can run it.</summary>
     [Fact]
     public void TheAmpersandPrefixIsTheCloudHandoff()
     {
         Resolver.Resolve("& refactor the auth module", Context())
-            .ShouldBe(new SlashRefused("&", "cloud agents: phase 60"));
+            .ShouldBe(new SlashRefused("&", SlashPaletteCopy.ActionNotInThisWindow));
 
         var registry = new SlashCommandRegistry(
         [

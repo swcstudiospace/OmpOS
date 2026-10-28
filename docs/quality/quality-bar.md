@@ -1,4 +1,14 @@
+---
+description: "Record of the 2026-10-22 quality-bar audit: gate checks and findings at that commit."
+---
+
 # Quality bar (audit 2026-10-22)
+
+Status: Record (historical audit of 2026-10-22; superseded by the parity audit of 2026-10-28)
+
+Last verified: 2026-10-28 (the status only; the body is a dated record and was not re-verified)
+
+Applies to: v0.15.0
 
 Repository HEAD `d965ba6`, working tree as found. Other work was uncommitted in the tree during this audit (`git status` listed tracked edits to `Directory.Packages.props`, `apps/OmpOS.Native/*`, `src/OmpOS.Harness.Terminal/*` and others, plus untracked peer work). This audit changed only: `docs/open-questions.md` (132 rows appended, 0 deleted; `git diff --numstat` gives `132 0`), `docs/quality/`, `scripts/web-smoke/` and `docs/runbooks/evidence/quality-audit-2026-10-22/`.
 

@@ -5,7 +5,9 @@ using Avalonia.VisualTree;
 using OmpOS.Contracts.Agents;
 using OmpOS.Native.Views.AgentPanel;
 using OmpOS.Presentation.AgentPanel;
+using OmpOS.Presentation.Cloud;
 using OmpOS.Presentation.Kanban;
+using OmpOS.Presentation.Remote;
 using Shouldly;
 using Xunit;
 
@@ -384,6 +386,38 @@ public sealed class AgentRailViewTests
             window.Content = null;
             secondFake.Put(PanelFixtures.Summary("later-1", SessionLifecycle.Created, clock.GetUtcNow(), clock.GetUtcNow(), "Later"));
             ReferenceEquals(list.ItemsSource, drawn).ShouldBeTrue("a detached rail does not redraw");
+            window.Close();
+        }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>A remote connection state and a cloud agent redraw their row with the overlaid status words, and the row's accessible name carries them.</summary>
+    [Fact]
+    public async Task OverlaidStatusWordsAndNamesAreDrawn()
+    {
+        await using var session = TestAppBuilder.StartSession();
+        await session.Dispatch(() =>
+        {
+            var (rail, catalog, _, _, window) = Open();
+
+            catalog.SetRemoteStatus("run-1", RemoteEnvironmentStatus.Interrupted);
+            catalog.SetCloudAgents([new CloudAgentRecord { Id = "c-1", Name = "Cloud", Status = CloudAgentStatus.LimitReached, CreatedAt = DateTimeOffset.UnixEpoch, SessionId = "idle-1" }]);
+            ViewHarness.Settle(window);
+
+            var items = Items(rail);
+            var rows = catalog.Rows.ToList();
+            items.Count.ShouldBe(rows.Count);
+            var interrupted = rows.Single(static row => string.Equals(row.Id, "run-1", StringComparison.Ordinal));
+            var limit = rows.Single(static row => string.Equals(row.Id, "idle-1", StringComparison.Ordinal));
+            interrupted.StatusText.ShouldBe(RemoteCopy.InterruptedBadge, Case.Sensitive);
+            limit.StatusText.ShouldBe("Limit reached", Case.Sensitive);
+            for (var index = 0; index < rows.Count; index++)
+            {
+                ViewHarness.VisibleTexts(items[index]).ShouldContain(rows[index].StatusText, StringComparer.Ordinal);
+                AutomationProperties.GetName(items[index]).ShouldBe(rows[index].AccessibleName, Case.Sensitive);
+            }
+
+            AutomationProperties.GetName(items[rows.IndexOf(interrupted)]).ShouldContain("Disconnected, turn interrupted", Case.Sensitive);
+            AutomationProperties.GetName(items[rows.IndexOf(limit)]).ShouldContain("cloud agent", Case.Sensitive);
             window.Close();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }

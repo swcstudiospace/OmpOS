@@ -5,9 +5,10 @@ using OmpOS.Presentation.Observable;
 namespace OmpOS.Presentation.Remote;
 
 /// <summary>
-/// The environment selector of the New session dialog: this computer, every saved ssh environment, and the cloud (listed, not yet available). The
-/// choice is validated before a session starts: an ssh environment whose profile is invalid, or whose last test failed, cannot be chosen to start, and the
-/// message says what to fix. An environment that was never tested can start: starting connects to it.
+/// The environment selector of the New session dialog: this computer, every saved ssh, container and WSL environment, and the cloud (listed, not yet available). The
+/// choice is validated before a session starts: an environment whose profile is invalid, or whose last test failed, cannot be chosen to start, and the
+/// message says what to fix. An environment that was never tested can start: starting connects to it. WSL environments are listed on Windows only
+/// (<see cref="IncludeWsl"/>).
 /// </summary>
 public sealed class NewSessionTargetModel : ObservableModel
 {
@@ -17,12 +18,17 @@ public sealed class NewSessionTargetModel : ObservableModel
     /// <summary>The identifier of the cloud option.</summary>
     public const string CloudId = "cloud";
 
+    private const string ContainerPrefix = "container:";
+    private const string WslPrefix = "wsl:";
+
     private readonly ObservableCollection<NewSessionTargetOption> _options = [];
     private readonly Dictionary<string, RemoteEnvironmentStatus> _statuses = new(StringComparer.Ordinal);
+    private IReadOnlyList<EnvironmentProfile> _profiles = [];
     private NewSessionTargetOption? _selected;
+    private bool _includeWsl = OperatingSystem.IsWindows();
 
     /// <summary>Initializes a new instance of the <see cref="NewSessionTargetModel"/> class with this computer selected.</summary>
-    /// <param name="sshProfiles">The saved ssh environments, in the order the picker lists them.</param>
+    /// <param name="sshProfiles">The saved environments (ssh, container and WSL ones are listed, others are left out), in the order the picker lists them.</param>
     /// <exception cref="ArgumentNullException"><paramref name="sshProfiles"/> is null.</exception>
     public NewSessionTargetModel(IEnumerable<EnvironmentProfile> sshProfiles)
     {
@@ -31,7 +37,21 @@ public sealed class NewSessionTargetModel : ObservableModel
         SetProfiles(sshProfiles);
     }
 
-    /// <summary>Gets the options in display order: this computer, the ssh environments, the cloud.</summary>
+    /// <summary>Gets or sets whether WSL environments are listed. The head sets it on Windows only; on another system a stored WSL environment is kept but not offered.</summary>
+    public bool IncludeWsl
+    {
+        get => _includeWsl;
+        set
+        {
+            if (_includeWsl != value)
+            {
+                _includeWsl = value;
+                SetProfiles(_profiles);
+            }
+        }
+    }
+
+    /// <summary>Gets the options in display order: this computer, the ssh environments, the container environments, the WSL environments, the cloud.</summary>
     public ReadOnlyObservableCollection<NewSessionTargetOption> Options { get; }
 
     /// <summary>Gets the option that is chosen. It is never <see langword="null"/> after construction.</summary>
@@ -54,31 +74,50 @@ public sealed class NewSessionTargetModel : ObservableModel
     /// <summary>Gets whether the choice can start a session, and the sentence that says why not or what to expect.</summary>
     public NewSessionTargetValidation Validation => Validate();
 
-    /// <summary>Replaces the ssh environments. The choice stays when its option still exists, else this computer is chosen.</summary>
-    /// <param name="sshProfiles">The saved ssh environments.</param>
+    /// <summary>Replaces the environments. The choice stays when its option still exists, else this computer is chosen.</summary>
+    /// <param name="sshProfiles">The saved environments (ssh, container and WSL ones are listed, others are left out).</param>
     /// <exception cref="ArgumentNullException"><paramref name="sshProfiles"/> is null.</exception>
     public void SetProfiles(IEnumerable<EnvironmentProfile> sshProfiles)
     {
         ArgumentNullException.ThrowIfNull(sshProfiles);
+        _profiles = [.. sshProfiles];
         var chosen = _selected?.Id;
         _options.Clear();
         _options.Add(new NewSessionTargetOption(LocalId, SessionTargetKind.Local, RemoteCopy.LocalLabel, RemoteCopy.LocalDetail, profile: null, unavailableReason: null));
-        foreach (var profile in sshProfiles.Where(candidate => candidate.Kind == EnvironmentKind.Ssh && candidate.Ssh is not null))
+        foreach (var profile in _profiles.Where(candidate => candidate.Kind == EnvironmentKind.Ssh && candidate.Ssh is not null))
         {
             var ssh = profile.Ssh!;
-            var option = new NewSessionTargetOption(
+            AddOption(
                 "ssh:" + profile.Id,
                 SessionTargetKind.Ssh,
                 RemoteCopy.SshPrefix + profile.DisplayName,
                 (ssh.Hostname ?? ssh.Alias) + " " + RemoteCopy.RemoteFolderPrefix + ssh.RemoteWorkspaceRoot,
-                profile,
-                unavailableReason: null);
-            if (_statuses.TryGetValue(profile.Id, out var status))
-            {
-                option.Status = status;
-            }
+                profile);
+        }
 
-            _options.Add(option);
+        foreach (var profile in _profiles.Where(candidate => candidate.Kind == EnvironmentKind.Container && candidate.Container is not null))
+        {
+            var container = profile.Container!;
+            AddOption(
+                ContainerPrefix + profile.Id,
+                SessionTargetKind.Container,
+                ContainerCopy.PickerPrefix + profile.DisplayName,
+                container.Container + " " + ContainerCopy.FolderInContainerPrefix + container.WorkspaceFolder,
+                profile);
+        }
+
+        if (_includeWsl)
+        {
+            foreach (var profile in _profiles.Where(candidate => candidate.Kind == EnvironmentKind.Wsl && candidate.Wsl is not null))
+            {
+                var wsl = profile.Wsl!;
+                AddOption(
+                    WslPrefix + profile.Id,
+                    SessionTargetKind.Wsl,
+                    ContainerCopy.WslPickerPrefix + profile.DisplayName,
+                    wsl.Distro + " " + ContainerCopy.FolderInDistroPrefix + wsl.WorkspacePath,
+                    profile);
+            }
         }
 
         _options.Add(new NewSessionTargetOption(CloudId, SessionTargetKind.Cloud, RemoteCopy.CloudLabel, RemoteCopy.CloudDetail, profile: null, unavailableReason: RemoteCopy.CloudUnavailable));
@@ -139,7 +178,7 @@ public sealed class NewSessionTargetModel : ObservableModel
             return new NewSessionTargetValidation(false, _selected.UnavailableReason ?? RemoteCopy.TargetNone);
         }
 
-        if (_selected.Kind != SessionTargetKind.Ssh || _selected.Profile is not { } profile)
+        if (_selected.Kind is not (SessionTargetKind.Ssh or SessionTargetKind.Container or SessionTargetKind.Wsl) || _selected.Profile is not { } profile)
         {
             return new NewSessionTargetValidation(true, RemoteCopy.TargetOk);
         }
@@ -151,6 +190,17 @@ public sealed class NewSessionTargetModel : ObservableModel
         }
 
         return ValidateStatus(_selected.Status);
+    }
+
+    private void AddOption(string id, SessionTargetKind kind, string label, string detail, EnvironmentProfile profile)
+    {
+        var option = new NewSessionTargetOption(id, kind, label, detail, profile, unavailableReason: null);
+        if (_statuses.TryGetValue(profile.Id, out var status))
+        {
+            option.Status = status;
+        }
+
+        _options.Add(option);
     }
 
     private static NewSessionTargetValidation ValidateStatus(RemoteEnvironmentStatus? status)

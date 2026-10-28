@@ -25,6 +25,9 @@ internal sealed class SettingsDocument
     /// <summary>Gets or sets the runtime settings.</summary>
     public SettingsRuntimeSection? Runtime { get; set; }
 
+    /// <summary>Gets or sets the ignore settings: the global patterns and the two switches.</summary>
+    public SettingsIgnoreSection? Ignore { get; set; }
+
     /// <summary>Gets or sets the members of a newer schema that this build does not read.</summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? Extra { get; set; }

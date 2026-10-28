@@ -1,6 +1,16 @@
+---
+description: "What the AGPL-3.0-or-later licence of OmpOS means for users, hosts and contributors, the source offer, third-party licences and open licence questions."
+---
+
 # Licensing
 
-Status: 2026-10-27. This page describes what the OmpOS licence means for people who use, host or contribute to OmpOS. It is engineering documentation, not legal advice. The research behind it is `docs/plans/v0.15.0-research/11-agpl-audit.md`; the decision is [ADR-0018](decisions/ADR-0018-licence-agpl-and-source-offer.md).
+Status: Built (the licence is in effect; this page is engineering documentation, not legal advice)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
+
+This page describes what the OmpOS licence means for people who use, host or contribute to OmpOS. It is engineering documentation, not legal advice. The research behind it is `docs/plans/v0.15.0-research/11-agpl-audit.md`; the decision is [ADR-0018](decisions/ADR-0018-licence-agpl-and-source-offer.md).
 
 ## The licence
 
@@ -8,10 +18,10 @@ OmpOS is licensed under the GNU Affero General Public License, version 3 or, at 
 
 | File | What it is |
 |---|---|
-| [LICENSE](../LICENSE) | The full licence text, unmodified. |
-| [NOTICE](../NOTICE) | Copyright, the licence notice, the source URL, the submodule statement and the name notice. |
-| [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md) | Licences and copyright lines of everything third-party that OmpOS uses or conveys. Generated, never edited by hand. |
-| [REUSE.toml](../REUSE.toml) and `LICENSES/` | Machine-readable licence data (REUSE 3.3): one annotation table, no per-file headers, licence texts by SPDX identifier. |
+| [LICENSE](https://github.com/swcstudiospace/OmpOS/blob/main/LICENSE) | The full licence text, unmodified. |
+| [NOTICE](https://github.com/swcstudiospace/OmpOS/blob/main/NOTICE) | Copyright, the licence notice, the source URL, the submodule statement and the name notice. |
+| [THIRD-PARTY-NOTICES.md](https://github.com/swcstudiospace/OmpOS/blob/main/THIRD-PARTY-NOTICES.md) | Licences and copyright lines of everything third-party that OmpOS uses or conveys. Generated, never edited by hand. |
+| [REUSE.toml](https://github.com/swcstudiospace/OmpOS/blob/main/REUSE.toml) and `LICENSES/` | Machine-readable licence data (REUSE 3.3): one annotation table, no per-file headers, licence texts by SPDX identifier. |
 
 What that means in practice:
 
@@ -57,7 +67,7 @@ Building images: `podman build -f deploy/api.Containerfile --build-arg OMPOS_REV
 
 ## Third-party licences
 
-Every package in the dependency graph (about 230 NuGet packages across shipped, build-time, test and spike scope) is permissive (MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, PostgreSQL) and compatible with the AGPL version 3. The list, with scope, licence expression and copyright line per package, and the licence and notice files that ship inside packages (for example the Skia and HarfBuzz notices), is [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md). Two packages declare their licence as a file inside the package; their licences were checked against the vendor repository and are recorded in the generator script (`Avalonia.Angle.Windows.Natives` BSD-3-Clause, `Unicode.net` MIT).
+Every package in the dependency graph (about 230 NuGet packages across shipped, build-time, test and spike scope) is permissive (MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, PostgreSQL) and compatible with the AGPL version 3. The list, with scope, licence expression and copyright line per package, and the licence and notice files that ship inside packages (for example the Skia and HarfBuzz notices), is [THIRD-PARTY-NOTICES.md](https://github.com/swcstudiospace/OmpOS/blob/main/THIRD-PARTY-NOTICES.md). Two packages declare their licence as a file inside the package; their licences were checked against the vendor repository and are recorded in the generator script (`Avalonia.Angle.Windows.Natives` BSD-3-Clause, `Unicode.net` MIT).
 
 Regenerate and check:
 
@@ -96,11 +106,11 @@ Submodules are not included in GitHub source archives of OmpOS, so they are not 
 
 ## Contributing
 
-Contributions are licensed under AGPL-3.0-or-later. Every commit carries a Developer Certificate of Origin sign-off (`git commit -s` adds `Signed-off-by:`); there is no contributor licence agreement. Under AGPL-3.0-or-later plus DCO the maintainers cannot later relicense contributed code as proprietary; a CLA would be needed only for dual licensing, and none is planned. See [CONTRIBUTING.md](../CONTRIBUTING.md).
+Contributions are licensed under AGPL-3.0-or-later. Every commit carries a Developer Certificate of Origin sign-off (`git commit -s` adds `Signed-off-by:`); there is no contributor licence agreement. Under AGPL-3.0-or-later plus DCO the maintainers cannot later relicense contributed code as proprietary; a CLA would be needed only for dual licensing, and none is planned. See [CONTRIBUTING.md](https://github.com/swcstudiospace/OmpOS/blob/main/CONTRIBUTING.md).
 
 ## Name and logo
 
-The licence grants no right to the name "OmpOS" or to its logo, banner or other brand artwork (AGPL section 7(e)); [NOTICE](../NOTICE) says so. Forks should use a different name. No trademark search for "OmpOS" has been made, so the name is not cleared.
+The licence grants no right to the name "OmpOS" or to its logo, banner or other brand artwork (AGPL section 7(e)); [NOTICE](https://github.com/swcstudiospace/OmpOS/blob/main/NOTICE) says so. Forks should use a different name. No trademark search for "OmpOS" has been made, so the name is not cleared.
 
 ## What the owner still has to do
 

@@ -1,0 +1,253 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:wt="clr-namespace:OmpOS.Presentation.Worktrees;assembly=OmpOS.Presentation"
+             x:Class="OmpOS.Native.Views.Worktrees.WorktreeCommandsView"
+             x:DataType="wt:WorktreeCommandsModel"
+             Focusable="False"
+             KeyDown="OnViewKeyDown">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The worktree runs panel: the runs of the repository with Review, Apply, Merge and Delete, the patch of the reviewed run, the result of the last apply,
+       the delete confirmation and the best-of-n candidates. The head shows it while the model is open. Keyboard order follows XAML order; Escape dismisses a delete confirmation. -->
+  <ScrollViewer x:Name="PanelScroll"
+                Focusable="False"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="{DynamicResource OmpOS.Space.Sm}"
+                Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBlock x:Name="HeadingText"
+                   Grid.Column="0"
+                   Classes="settings-section"
+                   VerticalAlignment="Center"
+                   Text="Worktrees" />
+        <Button x:Name="RefreshButton"
+                Grid.Column="1"
+                Margin="0,0,8,0"
+                Content="Refresh"
+                AutomationProperties.Name="Refresh the worktree list"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                Click="OnRefreshClick" />
+        <Button x:Name="CloseButton"
+                Grid.Column="2"
+                Content="Close"
+                AutomationProperties.Name="Close the worktree panel"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                Click="OnCloseClick" />
+      </Grid>
+
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBox x:Name="NewNameBox"
+                 Grid.Column="0"
+                 PlaceholderText="Name (optional)"
+                 AutomationProperties.Name="Name of the new worktree"
+                 MinHeight="{DynamicResource OmpOS.Size.TargetMin}" />
+        <Button x:Name="NewWorktreeButton"
+                Grid.Column="1"
+                Margin="8,0,0,0"
+                Classes="primary"
+                Content="{x:Static wt:WorktreeCommandsCopy.StartLabel}"
+                AutomationProperties.Name="{x:Static wt:WorktreeCommandsCopy.StartLabel}"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                Click="OnNewWorktreeClick" />
+      </Grid>
+
+      <TextBlock x:Name="StatusText"
+                 Classes="settings-body"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="Worktree status" />
+
+      <TextBlock x:Name="EmptyText"
+                 Classes="muted settings-body" />
+
+      <ItemsControl x:Name="RunList"
+                    AutomationProperties.Name="Worktree runs">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="wt:WorktreeRunRow">
+            <Border Classes="settings-card"
+                    Margin="0,0,0,8"
+                    AutomationProperties.Name="{CompiledBinding RowName}">
+              <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+                <TextBlock Classes="settings-body"
+                           Text="{CompiledBinding RowText}" />
+                <WrapPanel Orientation="Horizontal">
+                  <Button Margin="0,0,8,8"
+                          Classes="sm"
+                          Content="{x:Static wt:WorktreeCommandsCopy.PreviewLabel}"
+                          AutomationProperties.Name="{CompiledBinding PreviewName}"
+                          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                          MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                          Click="OnPreviewClick" />
+                  <Button Margin="0,0,8,8"
+                          Classes="sm"
+                          Content="{x:Static wt:WorktreeCommandsCopy.ApplyLabel}"
+                          AutomationProperties.Name="{CompiledBinding ApplyName}"
+                          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                          MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                          Click="OnApplyClick" />
+                  <Button Margin="0,0,8,8"
+                          Classes="sm"
+                          Content="{x:Static wt:WorktreeCommandsCopy.ApplyThreeWayLabel}"
+                          AutomationProperties.Name="{CompiledBinding RunId, StringFormat='Merge the changes of worktree {0} three ways'}"
+                          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                          MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                          Click="OnApplyThreeWayClick" />
+                  <Button Margin="0,0,8,8"
+                          Classes="sm"
+                          Content="{x:Static wt:WorktreeCommandsCopy.DeleteLabel}"
+                          AutomationProperties.Name="{CompiledBinding DeleteName}"
+                          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                          MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                          Click="OnDeleteClick" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- The delete confirmation: what is lost, then Delete or Cancel. Focus lands on Cancel. It also asks before best-of-n discards the other candidates. -->
+      <Border x:Name="DeleteConfirmBar"
+              Classes="banner"
+              AutomationProperties.LiveSetting="Assertive"
+              AutomationProperties.Name="Confirm deletion of worktrees">
+        <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+          <TextBlock x:Name="DeleteWarningText"
+                     Classes="settings-body" />
+          <WrapPanel Orientation="Horizontal">
+            <Button x:Name="CancelDeleteButton"
+                    Margin="0,0,8,0"
+                    Content="{x:Static wt:WorktreeCommandsCopy.CancelLabel}"
+                    AutomationProperties.Name="{x:Static wt:WorktreeCommandsCopy.CancelLabel}"
+                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                    MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                    Click="OnCancelDeleteClick" />
+            <Button x:Name="ConfirmDeleteButton"
+                    Content="{x:Static wt:WorktreeCommandsCopy.ConfirmDeleteLabel}"
+                    AutomationProperties.Name="Delete the worktrees named in the question"
+                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                    MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                    Click="OnConfirmDeleteClick" />
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- The patch of the run last reviewed: nothing is applied by looking at it. -->
+      <Border x:Name="PreviewCard"
+              Classes="settings-card">
+        <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+          <TextBlock x:Name="PreviewSummaryText"
+                     Classes="settings-label" />
+          <ItemsControl x:Name="PreviewFileList"
+                        AutomationProperties.Name="Files changed by the reviewed worktree">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="wt:WorktreePatchFileInfo">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto"
+                      Margin="0,0,0,4">
+                  <TextBlock Grid.Column="0"
+                             Classes="settings-mono"
+                             Text="{CompiledBinding Path}" />
+                  <TextBlock Grid.Column="1"
+                             Classes="settings-help"
+                             Margin="8,0,0,0"
+                             Text="{CompiledBinding Change}" />
+                  <TextBlock Grid.Column="2"
+                             Classes="settings-body tone-success"
+                             Margin="8,0,0,0"
+                             Text="{CompiledBinding Added, StringFormat='+{0}'}" />
+                  <TextBlock Grid.Column="3"
+                             Classes="settings-body tone-error"
+                             Margin="8,0,0,0"
+                             Text="{CompiledBinding Removed, StringFormat='-{0}'}" />
+                  <TextBlock Grid.Column="4"
+                             Classes="settings-help"
+                             Margin="8,0,0,0"
+                             Text="binary"
+                             IsVisible="{CompiledBinding IsBinary}" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <!-- How the last apply ended. The sentence is also the status line, which is the live region; this block keeps it next to the files to resolve. -->
+      <Border x:Name="ApplyOutcomeCard"
+              Classes="settings-card"
+              AutomationProperties.Name="Result of the last apply">
+        <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+          <TextBlock x:Name="ApplyOutcomeText"
+                     Classes="settings-body" />
+          <ItemsControl x:Name="ConflictList"
+                        AutomationProperties.Name="Files that conflict">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <TextBlock Classes="settings-mono tone-error"
+                           Text="{CompiledBinding .}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <!-- Best of n: one task in n worktrees, then keep one candidate and discard the others after a confirmation. -->
+      <Border x:Name="BestOfCard"
+              Classes="settings-card">
+        <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+          <TextBlock Classes="settings-label"
+                     Text="Best of n" />
+          <TextBox x:Name="BestOfPromptBox"
+                   AcceptsReturn="False"
+                   PlaceholderText="Task for every candidate"
+                   AutomationProperties.Name="Task for every candidate"
+                   MinHeight="{DynamicResource OmpOS.Size.TargetMin}" />
+          <WrapPanel Orientation="Horizontal">
+            <ComboBox x:Name="BestOfCountBox"
+                      Margin="0,0,8,0"
+                      AutomationProperties.Name="Number of candidates"
+                      MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                      MinWidth="{DynamicResource OmpOS.Size.TargetMin}" />
+            <Button x:Name="BestOfRunButton"
+                    Content="Run candidates"
+                    AutomationProperties.Name="Run the task in the chosen number of worktrees"
+                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                    MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                    Click="OnBestOfRunClick" />
+          </WrapPanel>
+          <ItemsControl x:Name="CandidateList"
+                        AutomationProperties.Name="Best of n candidates">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="wt:BestOfNCandidate">
+                <Grid ColumnDefinitions="*,Auto"
+                      Margin="0,0,0,8">
+                  <TextBlock Grid.Column="0"
+                             Classes="settings-body"
+                             VerticalAlignment="Center"
+                             Text="{CompiledBinding RowText}" />
+                  <Button Grid.Column="1"
+                          Margin="8,0,0,0"
+                          Classes="sm"
+                          Content="Keep this one"
+                          AutomationProperties.Name="{CompiledBinding Index, StringFormat='Keep candidate {0} and discard the others'}"
+                          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                          MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                          Click="OnKeepClick" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

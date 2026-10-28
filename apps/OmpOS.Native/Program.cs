@@ -33,5 +33,5 @@ internal static class Program
     /// going to <see cref="System.Diagnostics.Trace"/>, so the stderr listener installed at startup receives it (ADR-0011).
     /// </summary>
     /// <returns>The configured application builder.</returns>
-    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure(() => new App(AgentHead.CreateProduction)).UsePlatformDetect();
+    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure(() => new App()).UsePlatformDetect();
 }

@@ -19,7 +19,7 @@ namespace OmpOS.Harness.Acp;
 /// change happens at a known point in that order. A request the policy admits waits for its decision on a task of its own,
 /// so the pump never blocks on it.
 /// </summary>
-public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpModelControl, IOmpSessionOptions, IOmpSessionCommands, IOmpLiveSteering
+public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpModelControl, IOmpSessionOptions, IOmpSessionCommands, IOmpLiveSteering, IOmpSessionFork
 {
     private const string UpdateMethod = "session/update";
     private const string SetConfigOptionMethod = "session/set_config_option";
@@ -289,7 +289,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         var finished = false;
         try
         {
-            await StartPromptAsync(turn, hookedPrompt, cancellationToken).ConfigureAwait(false);
+            await StartPromptAsync(turn, hookedPrompt, options.Resources, cancellationToken).ConfigureAwait(false);
             while (true)
             {
                 var held = new HeldTerminalEvent(_hookGate is not null);
@@ -311,7 +311,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
                     }
 
                     turn = BeginTurn();
-                    await StartPromptAsync(turn, followUp, cancellationToken).ConfigureAwait(false);
+                    await StartPromptAsync(turn, followUp, [], cancellationToken).ConfigureAwait(false);
                     continue;
                 }
 
@@ -553,6 +553,54 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
 
         await CloseRemoteAsync(sessionId, _options.RequestTimeout, cancellationToken).ConfigureAwait(false);
         await NotifySessionClosedAsync("user_close").ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public bool CanFork => AdvertisedCapabilities.TryGetValue("sessionCapabilities.fork", out var advertised) && string.Equals(advertised, "true", StringComparison.Ordinal);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Sends <c>session/fork</c> (the unstable <c>unstable_forkSession</c> request) with this session's identifier, working directory and MCP servers. The agent keeps
+    /// this session and answers with the identifier of the new one; the new session is not bound here.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">The session is not open, or a prompt is in flight.</exception>
+    /// <exception cref="AcpRequestFailedHarnessException">The agent answered <c>session/fork</c> with an error or without a sessionId.</exception>
+    public async Task<string> ForkAsync(CancellationToken cancellationToken)
+    {
+        if (!CanFork)
+        {
+            throw new NotSupportedException("This omp does not advertise forking a session.");
+        }
+
+        string sessionId;
+        lock (_gate)
+        {
+            if (_disposed || _sessionClosed || SessionId is null)
+            {
+                throw new InvalidOperationException("The ACP session is not open, so it cannot be forked.");
+            }
+
+            if (_machine.State is HarnessState.Streaming or HarnessState.Cancelling)
+            {
+                throw new InvalidOperationException("The ACP session cannot be forked while a prompt is in flight.");
+            }
+
+            sessionId = SessionId;
+        }
+
+        var response = await CallAsync(
+            "session/fork",
+            new AcpFrames.ForkSessionParams(sessionId, _options.WorkingDirectory, _mcpServers),
+            AcpJsonContext.Default.RequestForkSessionParams,
+            _options.RequestTimeout,
+            cancellationToken).ConfigureAwait(false);
+        var forked = ReadResult(response, AcpJsonContext.Default.NewSessionResult, "session/fork");
+        if (forked.SessionId.Length == 0)
+        {
+            throw new AcpRequestFailedHarnessException("omp acp forked a session without a sessionId.", "session/fork");
+        }
+
+        return forked.SessionId;
     }
 
     /// <inheritdoc />
@@ -1222,6 +1270,10 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
             {
                 HandleSessionUpdate(inbound);
             }
+            else if (string.Equals(inbound.Method, AcpHookNotificationFrames.Method, StringComparison.Ordinal))
+            {
+                HandleHookNotification(inbound);
+            }
 
             return;
         }
@@ -1827,7 +1879,7 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
         }
     }
 
-    private async Task StartPromptAsync(PromptTurn turn, string prompt, CancellationToken cancellationToken)
+    private async Task StartPromptAsync(PromptTurn turn, string prompt, IReadOnlyList<PromptResource> resources, CancellationToken cancellationToken)
     {
         var sent = false;
         try
@@ -1841,11 +1893,26 @@ public sealed class AcpAgentSession : IOmpSession, IOmpSessionIdentity, IOmpMode
                 _pending[id] = new PendingCall(frame => OnPromptResponse(turn, frame), error => FailTurn(turn, error));
             }
 
-            var parameters = new AcpFrames.PromptParams(turn.SessionId, [new AcpFrames.ContentBlock { Text = prompt }]);
-            await SendFrameAsync(
-                new AcpFrames.Request<AcpFrames.PromptParams>(id, "session/prompt", parameters),
-                AcpJsonContext.Default.RequestPromptParams,
-                cancellationToken).ConfigureAwait(false);
+            if (resources.Count == 0)
+            {
+                var parameters = new AcpFrames.PromptParams(turn.SessionId, [new AcpFrames.ContentBlock { Text = prompt }]);
+                await SendFrameAsync(
+                    new AcpFrames.Request<AcpFrames.PromptParams>(id, "session/prompt", parameters),
+                    AcpJsonContext.Default.RequestPromptParams,
+                    cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                // Mentions travel as embedded resource blocks: omp inlines them, where it reduces a resource link to a title.
+                var content = AcpPromptContent.BuildParams(
+                    turn.SessionId,
+                    prompt,
+                    [.. resources.Select(static resource => new AcpPromptResource(resource.Location.AbsoluteUri, resource.MimeType, resource.Text, resource.DisplayName, resource.OriginalLength, resource.Truncated))]);
+                await SendFrameAsync(
+                    new AcpFrames.Request<AcpPromptContentParams>(id, "session/prompt", content),
+                    AcpPromptContentJsonContext.Default.RequestAcpPromptContentParams,
+                    cancellationToken).ConfigureAwait(false);
+            }
             sent = true;
         }
         finally

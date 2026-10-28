@@ -26,13 +26,14 @@ public sealed class ConfigOverlayWriter : IDisposable
     /// <param name="settings">What the user asked of the agent loop.</param>
     /// <param name="sessionStateDirectory">The directory returned by <see cref="SessionStateLayout.SessionDirectory"/>. It is created when missing.</param>
     /// <param name="additionalDirectories">The other roots of a multi-root workspace (see <see cref="OmpLaunchPlan.AdditionalDirectories"/>), or null.</param>
+    /// <param name="extraYaml">Further top-level YAML blocks to add, for example the <c>bash</c> block of the run mode (see <c>RunModeOverlay.RenderYaml</c>), or null for none. They never repeat a key the writer owns.</param>
     /// <returns>The writer that owns the file, or null when no overlay key is set and nothing was written.</returns>
     /// <exception cref="IOException">The file cannot be written.</exception>
-    public static ConfigOverlayWriter? Write(AgentLoopSettings settings, string sessionStateDirectory, IReadOnlyList<string>? additionalDirectories = null)
+    public static ConfigOverlayWriter? Write(AgentLoopSettings settings, string sessionStateDirectory, IReadOnlyList<string>? additionalDirectories = null, string? extraYaml = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionStateDirectory);
-        var content = Render(settings, additionalDirectories);
+        var content = Render(settings, additionalDirectories, extraYaml);
         if (content is null)
         {
             return null;
@@ -81,22 +82,29 @@ public sealed class ConfigOverlayWriter : IDisposable
     }
 
     /// <summary>
-    /// Renders the overlay as a YAML mapping, or returns null when the settings ask for no overlay key. The additional
+    /// Renders the overlay as a YAML mapping, or returns null when the settings ask for no overlay key and there is no extra block. The additional
     /// directories of a multi-root session are recorded under <c>workspace.additionalDirectories</c> only when an overlay is
     /// written for another reason: the <c>--add-dir</c> arguments of the plan are what carries them, and omp merges both
     /// without duplicates.
     /// </summary>
     /// <param name="settings">What the user asked of the agent loop.</param>
     /// <param name="additionalDirectories">The other roots of a multi-root workspace, or null for none.</param>
-    internal static string? Render(AgentLoopSettings settings, IReadOnlyList<string>? additionalDirectories = null)
+    /// <param name="extraYaml">Further top-level YAML blocks, or null for none.</param>
+    internal static string? Render(AgentLoopSettings settings, IReadOnlyList<string>? additionalDirectories = null, string? extraYaml = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        if (!settings.DisableProjectMcpConfig)
+        var hasExtra = !string.IsNullOrWhiteSpace(extraYaml);
+        if (!settings.DisableProjectMcpConfig && !hasExtra)
         {
             return null;
         }
 
-        var builder = new StringBuilder("mcp:\n  enableProjectConfig: false\n");
+        var builder = new StringBuilder();
+        if (settings.DisableProjectMcpConfig)
+        {
+            builder.Append("mcp:\n  enableProjectConfig: false\n");
+        }
+
         if (additionalDirectories is { Count: > 0 })
         {
             builder.Append("workspace:\n  additionalDirectories:\n");
@@ -104,6 +112,15 @@ public sealed class ConfigOverlayWriter : IDisposable
             {
                 builder.Append("    - ");
                 AppendQuoted(builder, directory);
+                builder.Append('\n');
+            }
+        }
+
+        if (hasExtra)
+        {
+            builder.Append(extraYaml);
+            if (extraYaml![^1] != '\n')
+            {
                 builder.Append('\n');
             }
         }

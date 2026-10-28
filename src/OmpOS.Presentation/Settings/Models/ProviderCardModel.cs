@@ -104,6 +104,15 @@ public sealed class ProviderCardModel : ObservableModel
     /// <summary>Gets a value indicating whether the key entry is open.</summary>
     public bool IsApiKeyEditorOpen => _apiKey is not null;
 
+    /// <summary>Gets the sentence that says why the operator has disabled key entry, or null when keys can be entered.</summary>
+    public string? KeyDisabledReason => _host.KeyWritesDisabledReason;
+
+    /// <summary>Gets a value indicating whether the operator has disabled key entry: the key field is then disabled and saving is refused.</summary>
+    public bool IsKeyDisabled => KeyDisabledReason is not null;
+
+    /// <summary>Gets a value indicating whether the key field accepts input: the operator has not disabled key entry.</summary>
+    public bool IsKeyEnabled => KeyDisabledReason is null;
+
     /// <summary>Gets a value indicating whether the provider can be edited: OmpOS wrote it as a custom provider.</summary>
     public bool CanEdit => _info is { IsOmpOSManaged: true, Group: ProviderGroup.Custom, Definition: not null };
 
@@ -166,6 +175,13 @@ public sealed class ProviderCardModel : ObservableModel
         var draft = _apiKey;
         if (draft is null || _isBusy)
         {
+            return false;
+        }
+
+        if (_host.KeyWritesDisabledReason is { } disabledReason)
+        {
+            draft.Clear();
+            ErrorText = disabledReason;
             return false;
         }
 
@@ -344,6 +360,14 @@ public sealed class ProviderCardModel : ObservableModel
     /// <summary>Describes the card without any entry.</summary>
     /// <returns>The provider id.</returns>
     public override string ToString() => $"ProviderCard({_info.Id})";
+
+    /// <summary>Announces that the operator's key entry switch may have changed.</summary>
+    internal void RefreshKeyDisabled()
+    {
+        NotifyPropertyChanged(nameof(KeyDisabledReason));
+        NotifyPropertyChanged(nameof(IsKeyDisabled));
+        NotifyPropertyChanged(nameof(IsKeyEnabled));
+    }
 
     /// <summary>Replaces the provider and the default after a read, keeping the state of the actions.</summary>
     /// <param name="info">The provider as read.</param>

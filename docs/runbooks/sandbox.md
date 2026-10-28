@@ -1,6 +1,16 @@
+---
+description: "Host prerequisites and local provider notes for the OmpOS sandbox, which runs agent processes under podman."
+---
+
 # Sandbox runbook
 
-Sandbox providers arrive in Phase 3. This runbook records the host prerequisites and the local provider notes so the machine can be prepared ahead of time.
+Status: Partial (the local podman provider is built and tested; other providers are blocked)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
+
+The sandbox abstraction, a fake provider and a local podman-compose provider exist (Phase 3 and later); vendor providers stay blocked on external criteria. This runbook records the host prerequisites and the local provider notes so the machine can be prepared ahead of time. Podman is the only supported container runtime.
 
 ## Host prerequisites (OpenShell podman driver)
 

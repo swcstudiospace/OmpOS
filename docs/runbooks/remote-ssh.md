@@ -1,8 +1,18 @@
+---
+description: "Remote environments over ssh: profiles, preflight, what runs where, reconnect, remote files and terminals, and how to read each diagnosis."
+---
+
 # Remote environments over ssh: user guide and runbook
+
+Status: Partial (core, remote file system, terminals, profile store and the Remote environments page are written with tests; never run against a real host; desktop head wiring is tracked in the parity audit)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 Scope: requirement PX-15 (Phase 58 part 1), decision [ADR-0015](../decisions/ADR-0015-remote-environments.md). A session runs on another machine that you reach with your own `ssh`. This page says what you need, how a profile works, what runs where, what is not there yet, and how to read each diagnosis.
 
-Status as of 2026-10-28: the core (profiles, ssh transport, connection test, launch rewrite, reconnect) and the part-2 pieces (remote file system, remote convention discovery, remote terminals, profile store, the Remote environments page and the New session picker) are written. Their tests were written but not yet run by an automated gate, and the head wiring that shows the page, the picker and the remote explorer in the app is the next wave (see "Part 2 status"). Until the page is wired, a profile is a JSON entry in the user settings (see "A profile as stored").
+Details as of 2026-10-28: the core (profiles, ssh transport, connection test, launch rewrite, reconnect) and the part-2 pieces (remote file system, remote convention discovery, remote terminals, profile store, the Remote environments page and the New session picker) are written. Their tests were written but not yet run by an automated gate, and the head wiring that shows the page, the picker and the remote explorer in the app is the next wave (see "Part 2 status"). Until the page is wired, a profile is a JSON entry in the user settings (see "A profile as stored").
 
 ## What runs where
 

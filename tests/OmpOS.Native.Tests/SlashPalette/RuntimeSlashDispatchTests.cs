@@ -116,7 +116,7 @@ public sealed class RuntimeSlashDispatchTests
             await runtime.Composer.SendAsync().ConfigureAwait(true);
 
             channel.Prompts.ShouldBeEmpty();
-            runtime.StatusText.ShouldBe("cloud agents: phase 60");
+            runtime.StatusText.ShouldBe(SlashPaletteCopy.ActionNotInThisWindow);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

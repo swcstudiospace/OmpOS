@@ -21,6 +21,9 @@ internal static class HeadSettingsCopy
     /// <summary>The sentence shown when the workspace files cannot be read.</summary>
     public const string WorkspaceUnreadable = "The workspace files could not be read.";
 
+    /// <summary>The sentence shown on the MCP page when the system could not open a configuration file.</summary>
+    public const string McpFileNotOpened = "The system could not open this file. Open it in your editor from its path.";
+
     /// <summary>Builds the reason a settings file cannot be read at all.</summary>
     /// <param name="path">The file path.</param>
     /// <returns>The sentence.</returns>

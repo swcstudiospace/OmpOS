@@ -85,6 +85,21 @@ internal static class ShellShortcutEffects
         ShellTree.Named<TextBox>(searchHost, "SearchInput")!.IsFocused.ShouldBeTrue();
     }
 
+    /// <summary>Ctrl+K opens the search over all conversations, and the same gesture closes it again.</summary>
+    internal static void SearchConversations(KeyGesture gesture)
+    {
+        var window = ShellHarness.Show();
+        var search = ShellHarness.MainViewOf(window).ConversationSearch.ShouldNotBeNull();
+        search.IsOpen.ShouldBeFalse();
+        ShellHarness.Prompt(window).Focus();
+
+        ShortcutKeys.Press(window, gesture);
+        search.IsOpen.ShouldBeTrue();
+
+        ShortcutKeys.Press(window, gesture);
+        search.IsOpen.ShouldBeFalse();
+    }
+
     /// <summary>Esc closes the transcript search and returns focus to the transcript.</summary>
     internal static void Dismiss(KeyGesture gesture, KeyGesture openSearch)
     {

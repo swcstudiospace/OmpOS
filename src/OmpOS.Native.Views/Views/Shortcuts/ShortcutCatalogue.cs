@@ -19,6 +19,7 @@ public static class ShortcutCatalogue
         new(ShortcutIds.FocusAgentList, ShortcutCopy.FocusAgentList, new KeyGesture(Key.D1, KeyModifiers.Control), KeyboardCopy.ScopeApplication),
         new(ShortcutIds.FocusPrompt, ShortcutCopy.FocusPrompt, new KeyGesture(Key.D2, KeyModifiers.Control), KeyboardCopy.ScopeApplication),
         new(ShortcutIds.SearchTranscript, ShortcutCopy.SearchTranscript, new KeyGesture(Key.F, KeyModifiers.Control), KeyboardCopy.ScopeApplication),
+        new(ShortcutIds.SearchConversations, ShortcutCopy.SearchConversations, new KeyGesture(Key.K, KeyModifiers.Control), KeyboardCopy.ScopeApplication),
         new(ShortcutIds.Dismiss, ShortcutCopy.Dismiss, new KeyGesture(Key.Escape), KeyboardCopy.ScopeApplication),
         new(ShortcutIds.NewAgent, ShortcutCopy.NewAgent, new KeyGesture(Key.N, KeyModifiers.Control), KeyboardCopy.ScopeAgents),
         new(ShortcutIds.NewTerminal, ShortcutCopy.NewTerminal, new KeyGesture(Key.T, KeyModifiers.Control | KeyModifiers.Shift), KeyboardCopy.ScopeAgents),

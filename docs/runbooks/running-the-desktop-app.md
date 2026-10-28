@@ -1,4 +1,14 @@
+---
+description: "Run the OmpOS desktop head on Linux: environment variables, state directory, where keys live and keyboard shortcuts."
+---
+
 # Running the desktop app
+
+Status: Built on Linux; Windows, macOS and a live model turn are not run
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 How to run the OmpOS desktop head (`apps/OmpOS.Native`) on Linux, where it keeps its state, and what it writes outside its own directories. Status of each feature: [docs/quality/cursor-parity-audit-2026-10-26.md](../quality/cursor-parity-audit-2026-10-26.md). Plugin details: [agent-loop.md](agent-loop.md), [docs/plugins.md](../plugins.md).
 

@@ -1,6 +1,16 @@
+---
+description: "Cloud agents on Railway: what runs where, the control plane API, secrets, limits, pull requests and what is verified versus blocked."
+---
+
 # Cloud agents: user and operator guide
 
-Status: control plane built and tested against fakes (2026-10-27). **No live run has happened**: Railway deploys are paused, the identity provider is not chosen and no model credential is configured (see "What is verified and what is blocked"). Design record: [ADR-0020](../decisions/ADR-0020-cloud-agents-on-railway.md). Research: [09-remote-cloud-plan.md](../plans/v0.15.0-research/09-remote-cloud-plan.md).
+Status: Partial (control plane, worker bridge and Railway client are built and tested against fakes; no Railway deploy and no live run has happened)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
+
+Details: control plane built and tested against fakes (2026-10-27). **No live run has happened**: Railway deploys are paused, the identity provider is not chosen and no model credential is configured (see "What is verified and what is blocked"). Design record: [ADR-0020](../decisions/ADR-0020-cloud-agents-on-railway.md). Research: [09-remote-cloud-plan.md](../plans/v0.15.0-research/09-remote-cloud-plan.md).
 
 ## What runs where
 

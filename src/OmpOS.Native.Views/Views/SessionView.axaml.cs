@@ -6,6 +6,9 @@ using Avalonia.Threading;
 using OmpOS.Contracts.Ui;
 using OmpOS.GenUi;
 using OmpOS.Native.Views.AgentPanel;
+using OmpOS.Native.Views.Blocks;
+using OmpOS.Native.Views.Hooks;
+using OmpOS.Presentation.Hooks;
 using OmpOS.Presentation.State;
 
 namespace OmpOS.Native.Views;
@@ -25,6 +28,7 @@ internal partial class SessionView : UserControl
     private const double LatestTolerance = 1;
 
     private readonly List<UiBlock> _rendered = [];
+    private readonly List<(HookNoticeRow Row, HookNoticeRowView View)> _notices = [];
     private SessionViewModel? _session;
     private bool _shown;
 
@@ -36,6 +40,51 @@ internal partial class SessionView : UserControl
         SessionStopButton.Click += OnStopClick;
         SessionRetryButton.Click += OnRetryClick;
         JumpToLatestButton.Click += OnJumpToLatestClick;
+    }
+
+    /// <summary>Raised on the UI thread when the user asks to review the hooks a notice names.</summary>
+    public event EventHandler? HookReviewRequested;
+
+    /// <summary>
+    /// Shows a hook notice: under the tool-call row whose call id the notice names, or under the conversation when it names none or the call is not in the transcript. A notice stays with its call when the rows are rebuilt.
+    /// </summary>
+    /// <param name="notice">The notice row.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="notice"/> is null.</exception>
+    internal void AddHookNotice(HookNoticeRow notice)
+    {
+        ArgumentNullException.ThrowIfNull(notice);
+
+        var view = new HookNoticeRowView { DataContext = notice };
+        view.ReviewRequested += (_, _) => HookReviewRequested?.Invoke(this, EventArgs.Empty);
+        _notices.Add((notice, view));
+        PlaceNotice(notice, view);
+    }
+
+    /// <summary>Gets the notice views the transcript holds, oldest first.</summary>
+    internal IReadOnlyList<HookNoticeRowView> HookNotices => [.. _notices.Select(static pair => pair.View)];
+
+    private void PlaceNotice(HookNoticeRow notice, HookNoticeRowView view)
+    {
+        var row = notice.ToolCallId is { } callId
+            ? BlockHost.Children.OfType<ToolCallBlockView>().FirstOrDefault(candidate => string.Equals(candidate.CallId, callId, StringComparison.Ordinal))
+            : null;
+        if (row is not null)
+        {
+            row.AttachNotice(view);
+            return;
+        }
+
+        if (view.Parent is Panel parent)
+        {
+            if (ReferenceEquals(parent, HookNoticeHost))
+            {
+                return;
+            }
+
+            parent.Children.Remove(view);
+        }
+
+        HookNoticeHost.Children.Add(view);
     }
 
     /// <summary>Raised on the UI thread when the user activates the stop control while a turn streams.</summary>
@@ -223,6 +272,11 @@ internal partial class SessionView : UserControl
         {
             BlockHost.Children.Add(ViewMapping.CreateBlock(blocks[index]));
             _rendered.Add(blocks[index]);
+        }
+
+        foreach (var (row, view) in _notices)
+        {
+            PlaceNotice(row, view);
         }
     }
 

@@ -38,7 +38,7 @@ The chosen design adds no package. The components that sit on either side of the
 | omp (`@oh-my-pi/pi-coding-agent` 18.12.5, the host of tier 1) | MIT | https://github.com/can1357/oh-my-pi/blob/main/LICENSE | `package.json` `license` field of the installed package, and the LICENSE file read from that URL, 2026-10-26 |
 | Ultrathink plugin | AGPL-3.0-or-later | https://github.com/swcstudiospace/ultrathink | Recorded in `docs/plugins.md`; the repository was not re-read in this session |
 | Swarm and Substrate plugins | NOASSERTION (no LICENSE file upstream) | https://github.com/swcstudiospace/swarm and https://github.com/swcstudiospace/substrate | Recorded in `docs/plugins.md`; not re-read in this session |
-| OmpOS plugin host (`OmpOS.Harness.Plugins`) | NOASSERTION (OmpOS has no LICENSE file) | `docs/plugins.md`, "Licence facts" | Open: [OQ-62](../open-questions.md) |
+| OmpOS plugin host (`OmpOS.Harness.Plugins`) | AGPL-3.0-or-later (decided in [ADR-0018](ADR-0018-licence-agpl-and-source-offer.md); it was NOASSERTION when this record was written) | `LICENSE`, `docs/plugins.md`, "Licence facts" | Resolved for OmpOS; the two submodules stay open: [OQ-102](../open-questions.md) |
 
 The plugins stay separate programs launched by reference, so tier 1 does not link their code into OmpOS. Whether that satisfies the AGPL is a legal question this record does not answer ([OQ-62](../open-questions.md)).
 
@@ -69,7 +69,7 @@ Run by the orchestrator; none of the tests below was run when this record was wr
 4. **Quarantine covers runner and activation faults only.** A hook that exits non-zero every time is not quarantined. A plugin quarantined at load has no registered hooks, so lifting it takes effect only after a later load.
 5. **Not wired into a running head.** The host and runner are built only in tests, so the boundary is enforced by the library, not yet by the applications. Until a head constructs them, no hook runs in the product.
 6. **Tier 1 has no boundary of its own.** An omp plugin has everything the omp child has. It reaches OmpOS only through files and HTTP that it writes, which OmpOS treats as untrusted (ADR-0012 D9). A pin bump trusts the new commit; its review is a human step, and this record found no automated check of it.
-7. **Licences of tier 1 plugins are unresolved** for two of three plugins (no LICENSE file) and unresolved in effect for the AGPL one ([OQ-62](../open-questions.md)).
+7. **Licences of tier 1 plugins**: `claude-ultrathink` is AGPL-3.0-or-later; two of three plugins (`agent-swarm`, `agent-substrate`) still have no LICENSE file ([OQ-102](../open-questions.md)). OmpOS itself became AGPL-3.0-or-later after this record ([ADR-0018](ADR-0018-licence-agpl-and-source-offer.md)).
 8. **A symlink or executable swap between consent and spawn** is not guarded. The same window is recorded for the terminal gate in ADR-0006.
 
 ## Owner decisions needed

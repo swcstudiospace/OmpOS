@@ -1,7 +1,9 @@
 using System.Globalization;
 using OmpOS.Contracts.Agents;
+using OmpOS.Presentation.Cloud;
 using OmpOS.Presentation.Kanban;
 using OmpOS.Presentation.Observable;
+using OmpOS.Presentation.Remote;
 
 namespace OmpOS.Presentation.AgentPanel;
 
@@ -48,6 +50,9 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
     private string? _loadError;
     private ITimer? _timer;
     private bool _disposed;
+    private readonly Dictionary<string, CloudAgentRecord> _cloud = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, RemoteEnvironmentStatus> _remote = new(StringComparer.Ordinal);
+    private HashSet<string> _knownIds = new(StringComparer.Ordinal);
 
     /// <summary>Creates the model, reads the first snapshot and subscribes to the catalog.</summary>
     /// <param name="catalog">The catalog that owns the sessions.</param>
@@ -213,6 +218,53 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
         _catalog.Changed -= OnCatalogChanged;
     }
 
+    /// <summary>
+    /// Shows the cloud agents the host reports on their rows. A row whose session identifier equals the <see cref="CloudAgentRecord.SessionId"/> of
+    /// an agent takes its status words, glyph, status, group and accessible name from <see cref="CloudAgentRailMap"/>; every other row is unchanged.
+    /// The list replaces the previous one as a whole. An agent without a session identifier, and one whose session is not in the catalog, shows nothing.
+    /// </summary>
+    /// <param name="agents">The agents the host reports now. An empty list clears every cloud row look.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="agents"/> is null.</exception>
+    public void SetCloudAgents(IReadOnlyList<CloudAgentRecord> agents)
+    {
+        ArgumentNullException.ThrowIfNull(agents);
+
+        _cloud.Clear();
+        foreach (var agent in agents)
+        {
+            if (!string.IsNullOrEmpty(agent.SessionId))
+            {
+                _cloud[agent.SessionId] = agent;
+            }
+        }
+
+        Rebuild();
+    }
+
+    /// <summary>
+    /// Sets or clears the connection state of a remote (ssh) session. While a state that <see cref="RemoteRailMap"/> maps is set, the row of the
+    /// session shows its label (<see cref="RemoteCopy.InterruptedBadge"/> for an interrupted turn), glyph, status and group, and its accessible
+    /// name carries the full label. A state that says nothing about the connection (for example Connected) leaves the row as it is.
+    /// </summary>
+    /// <param name="sessionId">The session that runs on the remote host.</param>
+    /// <param name="status">The connection state, or null to clear it.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="sessionId"/> is null.</exception>
+    public void SetRemoteStatus(string sessionId, RemoteEnvironmentStatus? status)
+    {
+        ArgumentNullException.ThrowIfNull(sessionId);
+
+        if (status is { } state)
+        {
+            _remote[sessionId] = state;
+        }
+        else
+        {
+            _remote.Remove(sessionId);
+        }
+
+        Rebuild();
+    }
+
     private void OnCatalogChanged(object? sender, EventArgs e)
     {
         if (!_disposed)
@@ -256,6 +308,7 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
         var now = _timeProvider.GetUtcNow();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var rows = new List<AgentRow>(_snapshot.Count);
+        PruneOverlays(_snapshot);
         foreach (var summary in _snapshot)
         {
             if (seen.Add(summary.Id))
@@ -280,6 +333,23 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
         {
             SetSelection(null);
         }
+    }
+
+    // An overlay is dropped when its session was in the previous snapshot and has left the catalog. A session the catalog has not listed yet
+    // keeps its overlay, so the host may report a connection state or a cloud agent a moment before the session is registered.
+    private void PruneOverlays(IReadOnlyList<SessionSummary> snapshot)
+    {
+        var present = new HashSet<string>(snapshot.Select(static summary => summary.Id), StringComparer.Ordinal);
+        foreach (var id in _knownIds)
+        {
+            if (!present.Contains(id))
+            {
+                _cloud.Remove(id);
+                _remote.Remove(id);
+            }
+        }
+
+        _knownIds = present;
     }
 
     private void ApplyFilter()
@@ -331,8 +401,24 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
 
     private AgentRow BuildRow(SessionSummary summary, DateTimeOffset now)
     {
-        var mapping = AgentRowStatusMap.Resolve(summary.Lifecycle, _options.LiveStatus?.Invoke(summary.Id), _options.IsClosed?.Invoke(summary.Id) ?? false);
-        var running = mapping.Status == AgentRowStatus.Running;
+        var live = _options.LiveStatus?.Invoke(summary.Id);
+        var closed = _options.IsClosed?.Invoke(summary.Id) ?? false;
+        var mapping = AgentRowStatusMap.Resolve(summary.Lifecycle, live, closed);
+        var look = (mapping.Status, Runtime: mapping.RuntimeStatus, mapping.Group, Text: AgentRowStatusMap.TextOf(mapping.Status), Icon: AgentRowStatusMap.IconOf(mapping.Status));
+        RemoteEnvironmentStatus? remoteState = null;
+        CloudAgentRecord? cloud = null;
+        if (_remote.TryGetValue(summary.Id, out var connection) && RemoteRailMap.Resolve(connection) is { } remote)
+        {
+            remoteState = connection;
+            look = (remote.Status, remote.RuntimeStatus, remote.Group, remote.StatusText, remote.IconKey);
+        }
+        else if (_cloud.TryGetValue(summary.Id, out cloud))
+        {
+            var cloudLook = CloudAgentRailMap.Resolve(cloud.Status);
+            look = (cloudLook.Status, cloudLook.RuntimeStatus, cloudLook.Group, cloudLook.StatusText, cloudLook.IconKey);
+        }
+
+        var running = look.Status == AgentRowStatus.Running;
         var idle = now - summary.LastActivity;
         var isStale = running && idle > _options.StaleAfter;
         var isLongRunning = running && now - summary.CreatedAt > _options.LongRunningAfter;
@@ -342,40 +428,44 @@ public sealed class SessionCatalogModel : ObservableModel, IDisposable
             title = AgentPanelCopy.UntitledAgent;
         }
 
-        var statusText = AgentRowStatusMap.TextOf(mapping.Status);
         var lastActivity = RelativeTimeText.Format(summary.LastActivity, now);
         var quietMinutes = isStale ? Math.Max(1, (long)idle.TotalMinutes) : (long?)null;
         var quiet = quietMinutes is { } minutes ? string.Create(CultureInfo.InvariantCulture, $"Quiet for {minutes} min") : null;
         var taskId = PanelText.Plain(summary.TaskId, MaxTagChars);
         var graphId = PanelText.Plain(summary.GraphId, MaxTagChars);
         var tag = taskId.Length > 0 ? $"Task {taskId}" : graphId.Length > 0 ? $"Graph {LastChars(graphId, GraphTagChars)}" : null;
+        var baseName = remoteState is { } state
+            ? RemoteRailMap.AccessibleName(title, state, lastActivity)
+            : cloud is not null
+                ? CloudAgentRailMap.AccessibleName(title, cloud.Status, lastActivity)
+                : $"{title}, {look.Text}, {lastActivity}";
         return new AgentRow
         {
             Summary = summary,
             Id = summary.Id,
             Title = title,
-            Status = mapping.Status,
-            Group = mapping.Group,
-            Card = mapping.RuntimeStatus is { } runtime ? new KanbanCardState(runtime, isStale) : null,
-            StatusText = statusText,
-            IconKey = AgentRowStatusMap.IconOf(mapping.Status),
+            Status = look.Status,
+            Group = look.Group,
+            Card = look.Runtime is { } runtime ? new KanbanCardState(runtime, isStale) : null,
+            StatusText = look.Text,
+            IconKey = look.Icon,
             LastActivityText = lastActivity,
             IsLongRunning = isLongRunning,
             IsStale = isStale,
-            IsLost = mapping.Status == AgentRowStatus.Lost,
+            IsLost = look.Status == AgentRowStatus.Lost,
             QuietText = quiet,
             TaskTag = tag,
             TaskId = taskId.Length == 0 ? null : taskId,
             GraphId = graphId.Length == 0 ? null : graphId,
-            AccessibleName = AccessibleNameOf(title, statusText, lastActivity, isLongRunning, quietMinutes, tag, summary.Kind == SessionKind.Terminal),
+            AccessibleName = AccessibleNameOf(baseName, isLongRunning, quietMinutes, tag, summary.Kind == SessionKind.Terminal),
         };
     }
 
     private static string LastChars(string value, int count) => value.Length <= count ? value : value[^count..];
 
-    private static string AccessibleNameOf(string title, string statusText, string lastActivity, bool longRunning, long? quietMinutes, string? tag, bool terminal)
+    private static string AccessibleNameOf(string baseName, bool longRunning, long? quietMinutes, string? tag, bool terminal)
     {
-        var name = $"{title}, {statusText}, {lastActivity}";
+        var name = baseName;
         if (longRunning)
         {
             name += ", long-running";

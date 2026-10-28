@@ -1,4 +1,14 @@
+---
+description: "The four omp plugins OmpOS launches with every session: Ultrathink, Substrate, Swarm and GSD-Core, how they are pinned, health, steering and licence facts."
+---
+
 # Plugins
+
+Status: Built; verified without a model turn (no live turn has been run)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 OmpOS runs four plugins inside the omp engine. Three are sibling projects pinned as git submodules under `plugins/`; one is first-party and tracked in this repository. All four are omp extensions: OmpOS launches omp with them, observes what they write, and shows what they expose in the default Cursor-style Agent Panel (session rail, thread, composer, and the one-line plugin connection row under the thread header). The panel has no stage panels or inspector of its own (DR-1, [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md#update-2026-10-26)); task context and steering history belong on the Kanban tab card (Phase 39). The plugins are connected to every omp process the application starts, engine sessions over ACP and omp terminals, as described in "Plugins in omp terminals" below (verified without a model turn on Linux; that section lists what is not verified). OmpOS never copies, forks or edits their source. Decision record: [ADR-0012](decisions/ADR-0012-agent-loop-plugins.md). Evidence: [docs/plans/agent-loop/](plans/agent-loop/README.md).
 
@@ -23,7 +33,7 @@ prompt -> Ultrathink (plan) -> Swarm (subagents) -> Substrate (session state, st
 | `plugins/claude-ultrathink` | `https://github.com/swcstudiospace/ultrathink.git` | `71101ed069a66b3862fa5da5b01995a60c2160c2` (tracks `main`) | AGPL-3.0-or-later | public |
 | `plugins/agent-swarm` | `https://github.com/swcstudiospace/swarm.git` | `c900a510db3e50de6e9f8b60453bdded6fdf72df` (tracks `main`) | no LICENSE file in the repository | public |
 | `plugins/agent-substrate` | `https://github.com/swcstudiospace/substrate.git` | `754c51a17a9e6ffbc222d04bdaf4e783b4eca720` (tracks `main`) | no LICENSE file in the repository | private |
-| `plugins/gsd-core-omp` | tracked in this repository, not a submodule | n/a | OmpOS-owned; no LICENSE file in OmpOS (see Licence facts) | n/a |
+| `plugins/gsd-core-omp` | tracked in this repository, not a submodule | n/a | OmpOS-owned; `AGPL-3.0-or-later` like OmpOS (see Licence facts) | n/a |
 
 `.gitmodules` is the source of truth for URL and branch; the pin is the commit recorded in the OmpOS tree (`git submodule status`). The three repositories were renamed upstream: `claude-ultrathink` to `ultrathink`, `agent-swarm` to `swarm`, `agent-substrate` to `substrate`. The old URLs redirect. The directory names under `plugins/` keep the old names the team uses, so paths, descriptors and docs say `claude-ultrathink`, `agent-swarm` and `agent-substrate`.
 
@@ -165,10 +175,10 @@ Verified without a model turn: the inbox against the real omp in both modes (hea
 
 ## Licence facts
 
-These are facts, not legal advice. The owner decision is open: [OQ-62](open-questions.md).
+These are facts, not legal advice. OmpOS itself is `AGPL-3.0-or-later` ([ADR-0018](decisions/ADR-0018-licence-agpl-and-source-offer.md), [licensing](licensing.md)). The licence of the two submodules without a licence file is an open owner decision: [OQ-102](open-questions.md).
 
-- OmpOS has no LICENSE file.
-- `claude-ultrathink` is AGPL-3.0-or-later. `agent-swarm` and `agent-substrate` have no LICENSE file.
+- OmpOS and `plugins/gsd-core-omp` are `AGPL-3.0-or-later`.
+- `claude-ultrathink` is AGPL-3.0-or-later. `agent-swarm` and `agent-substrate` have no LICENSE file; `agent-substrate` is private.
 - The plugins are separate programs launched as omp extensions. They are pinned by reference. Their source is not copied or linked into OmpOS binaries, and the container build context excludes `plugins/`.
 
 ## Tests

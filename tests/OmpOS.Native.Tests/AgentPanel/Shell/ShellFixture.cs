@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using OmpOS.Contracts.Agents;
 using OmpOS.Native.Tests.Terminal;
 using OmpOS.Native.Views.Sessions;
+using OmpOS.Native.Views.Shell;
 using OmpOS.Presentation;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Kanban;
@@ -62,6 +63,12 @@ internal sealed class ShellFixture : IAsyncDisposable
 
     /// <summary>Gets the main view of <see cref="ShowWithBoard"/>, or null before it.</summary>
     public MainView? BoardMain { get; private set; }
+
+    /// <summary>Gets the plain window of <see cref="ShowWithServices"/>, or null before it.</summary>
+    public Window? ServicesWindow { get; private set; }
+
+    /// <summary>Gets the main view of <see cref="ShowWithServices"/>, or null before it.</summary>
+    public MainView? ServicesMain { get; private set; }
 
     /// <summary>Creates a fixture with no session.</summary>
     /// <returns>The fixture.</returns>
@@ -192,6 +199,26 @@ internal sealed class ShellFixture : IAsyncDisposable
         return main;
     }
 
+    /// <summary>Shows the main view with the services a head supplies to the shell (hooks, remote environments, checkpoints, cloud and the others), in a plain window.</summary>
+    /// <param name="services">The services.</param>
+    /// <param name="motion">The motion setting of the view.</param>
+    /// <param name="width">The window width.</param>
+    /// <param name="height">The window height.</param>
+    /// <returns>The main view. The fixture owns the window and the view.</returns>
+    public MainView ShowWithServices(ShellServices services, MotionPreference motion = MotionPreference.Full, double width = 1280, double height = 800)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        var main = new MainView(Panel, null, motion, mcpHost: null, board: null, services);
+        var window = new Window { Content = main, Width = width, Height = height };
+        window.Show();
+        ShellHarness.Settle(window);
+        ShellHarness.Settle(window);
+        ServicesWindow = window;
+        ServicesMain = main;
+        return main;
+    }
+
     /// <summary>Resizes the shown window and settles its layout.</summary>
     /// <param name="width">The new width.</param>
     /// <param name="height">The new height.</param>
@@ -216,6 +243,8 @@ internal sealed class ShellFixture : IAsyncDisposable
         _disposed = true;
         Window?.Close();
         BoardMain?.Close();
+        ServicesMain?.Close();
+        ServicesWindow?.Close();
         BoardWindow?.Close();
         Board?.Dispose();
         Panel.Dispose();

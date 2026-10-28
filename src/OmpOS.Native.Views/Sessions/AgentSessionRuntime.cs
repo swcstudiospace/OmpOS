@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using Avalonia.Threading;
 using OmpOS.Contracts.Agents;
+using OmpOS.Contracts.Environments;
 using OmpOS.Contracts.Streaming;
 using OmpOS.Contracts.Ui;
 using OmpOS.Harness.Abstractions;
@@ -16,7 +17,11 @@ using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Approvals;
 using OmpOS.Presentation.Commands;
 using OmpOS.Presentation.Composer;
+using OmpOS.Presentation.Mentions;
+using OmpOS.Presentation.Modes;
+using OmpOS.Presentation.Remote;
 using OmpOS.Presentation.Runs;
+using OmpOS.Presentation.SideChats;
 using OmpOS.Presentation.State;
 using OmpOS.Sessions;
 
@@ -66,6 +71,10 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     private readonly OptionChipBinding? _modeBinding;
     private readonly OptionChipBinding? _thinkingBinding;
     private readonly SlashPaletteBinding? _slashBinding;
+    private readonly MentionComposerModel? _mentions;
+    private IReadOnlyList<PromptResource> _lastResources = [];
+    private string? _lastRequestId;
+    private bool _turnInterrupted;
 
     private ModelPickerBinding? BindModels(AgentSessionRuntimeOptions options)
     {
@@ -113,6 +122,22 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             _ = _slashBinding.RefreshDiscoveryAsync(CancellationToken.None);
         }
 
+        if (options.MentionSources is { } mentionSources && options.TerminalStarter is null)
+        {
+            // A terminal runs its own omp and has no composer prompt: only a chat session offers @ mentions and the context ring.
+            _mentions = new MentionComposerModel(mentionSources(), timeProvider: _timeProvider);
+            Composer.Mentions = _mentions;
+            Composer.ContextRing = new ContextRingModel();
+            Composer.MentionSender = StartTurnWithMentionsAsync;
+        }
+
+        if (options.LiveEvents is { } liveEvents)
+        {
+            liveEvents.HookNoticeRaised += OnHookNoticeRaised;
+            liveEvents.ConnectionChanged += OnConnectionChanged;
+            liveEvents.TurnInterrupted += OnTurnInterrupted;
+        }
+
         ViewModel = new AgentSessionViewModel(new AgentSessionOptions
         {
             Row = options.Row,
@@ -146,6 +171,24 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <summary>Occurs on the UI context when a run started, completed or faulted.</summary>
     public event EventHandler<SessionTurnEventArgs>? TurnChanged;
 
+    /// <summary>Occurs on the UI context when a hook did something the thread must show: a denial, a missing consent, added context or a continuation.</summary>
+    public event EventHandler<HookNoticeRaisedEventArgs>? HookNoticeRaised;
+
+    /// <summary>Occurs on the UI context when the connection of a remote session changed.</summary>
+    public event EventHandler<SessionConnectionChangedEventArgs>? ConnectionChanged;
+
+    /// <summary>Occurs on the UI context when a turn ended because the connection dropped. The conversation is safe on the engine's side and the next prompt resumes it.</summary>
+    public event EventHandler<TurnInterruptedEventArgs>? TurnInterrupted;
+
+    /// <summary>
+    /// Occurs on the UI context when the connection status of the remote environment the session runs on changed: reconnecting, unreachable, or a turn interrupted by the loss of the
+    /// connection. A null status means the connection is healthy and the rail shows the session's own status again. A local session never raises it.
+    /// </summary>
+    public event EventHandler<RemoteEnvironmentStatusChangedEventArgs>? RemoteStatusChanged;
+
+    /// <summary>Occurs on the UI context when the engine reported how much of the context window the conversation uses. The composer's context ring is already updated.</summary>
+    public event EventHandler? ContextUsageChanged;
+
     /// <summary>Occurs when <see cref="StatusText"/> or <see cref="ErrorText"/> changed.</summary>
     internal event EventHandler? FeedbackChanged;
 
@@ -175,6 +218,50 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
 
     /// <summary>Gets the motion setting the head supplied.</summary>
     public MotionPreference Motion => _options.Motion;
+
+    /// <summary>Gets the identifier of the session in the head's registry.</summary>
+    public string SessionId => ViewModel.Id;
+
+    /// <summary>Gets the correlation identifier of the last turn this runtime started, or null before the first one. A copy command offers it as the request identifier.</summary>
+    public string? LastRequestId => _lastRequestId;
+
+    /// <summary>Gets the function that returns the file system of the ssh host the session runs on, or null for a local session.</summary>
+    public Func<CancellationToken, Task<OmpOS.Presentation.Editor.IAsyncWorkspaceFileSystem>>? RemoteFiles => _options.RemoteFiles;
+
+    /// <summary>Returns the conversation as plain text (the user's messages and the assistant's answers), for an @ mention of this chat.</summary>
+    /// <returns>The text, or an empty string before the first message.</returns>
+    internal string TranscriptText()
+    {
+        var builder = new System.Text.StringBuilder();
+        foreach (var block in Session.Tree.Blocks)
+        {
+            switch (block)
+            {
+                case UserMessageBlock user:
+                    builder.Append("User: ").Append(user.Text).Append("\n\n");
+                    break;
+                case MarkdownBlock markdown:
+                    builder.Append("Assistant: ").Append(markdown.Markdown).Append("\n\n");
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>Gets the forker of the session, which creates a new session that continues from the same history, or null when the session cannot be forked (a terminal, or an omp that does not advertise it).</summary>
+    public ISessionForker? Forker => _options.Forker;
+
+    /// <summary>Gets the engine of the session's side chats, or null when the session offers none.</summary>
+    public ISideChatEngine? SideChatEngine => _options.SideChatEngine;
+
+    /// <summary>
+    /// Gets or sets the preamble of the active custom mode. While it is active, each prompt sent to the engine (a typed turn and a message held behind a run) is sent through
+    /// <see cref="IPromptPreamble.Apply"/>; the transcript echoes what the user typed, and text that starts with <c>/</c> is not changed, because omp runs a leading slash command from the start of the prompt.
+    /// </summary>
+    public IPromptPreamble? PromptPreamble { get; set; }
 
     /// <summary>Gets the absolute path of the workspace the session runs in. The Changes bar reads the agent's edits against it.</summary>
     internal string WorkspaceRoot => _options.Scope.WorkspaceRoot;
@@ -230,6 +317,14 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         _modeBinding?.Dispose();
         _thinkingBinding?.Dispose();
         _slashBinding?.Dispose();
+        if (_options.LiveEvents is { } liveEvents)
+        {
+            liveEvents.HookNoticeRaised -= OnHookNoticeRaised;
+            liveEvents.ConnectionChanged -= OnConnectionChanged;
+            liveEvents.TurnInterrupted -= OnTurnInterrupted;
+        }
+
+        _mentions?.Dispose();
         if (Terminal is { } terminal)
         {
             terminal.PropertyChanged -= OnTerminalChanged;
@@ -281,7 +376,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             return;
         }
 
-        _ = StartTurnAsync(prompt);
+        _ = StartTurnCoreAsync(prompt, _lastResources);
     }
 
     /// <summary>
@@ -609,7 +704,44 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// </summary>
     /// <param name="text">The draft text the user sent.</param>
     /// <returns>True when the host accepted the send; false when no engine is composed.</returns>
-    private async Task<bool> StartTurnAsync(string text)
+    private Task<bool> StartTurnAsync(string text) => StartTurnCoreAsync(text, []);
+
+    /// <summary>
+    /// Sends text to the session's engine as the user's turn, exactly as the composer does: a slash command is resolved first, the echo and the stream follow. The shell uses it for a
+    /// message that does not come from the composer (a queued message, a hand-off).
+    /// </summary>
+    /// <param name="text">The text to send.</param>
+    /// <param name="cancellationToken">Cancels the call before anything is sent.</param>
+    /// <returns>True when the host accepted the send; false when no engine is composed or the session cannot take it.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is null.</exception>
+    public Task<bool> StartTurnAsync(string text, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        cancellationToken.ThrowIfCancellationRequested();
+        return StartTurnCoreAsync(text, []);
+    }
+
+    /// <summary>
+    /// Sends the draft with the content of its attached @-mentions: each mention travels as an embedded resource next to the text, in attachment order.
+    /// </summary>
+    /// <param name="text">The draft text the user sent.</param>
+    /// <param name="attachments">The attached mentions and the content read for each.</param>
+    /// <returns>True when the host accepted the send; false when no engine is composed.</returns>
+    private Task<bool> StartTurnWithMentionsAsync(string text, IReadOnlyList<MentionAttachment> attachments)
+    {
+        ArgumentNullException.ThrowIfNull(attachments);
+        return StartTurnCoreAsync(
+            text,
+            [.. attachments.Select(static attachment => new PromptResource(
+                attachment.Mention.Location,
+                attachment.Mention.MimeType,
+                attachment.Content.Text,
+                attachment.Mention.Display,
+                attachment.Content.SizeBytes,
+                attachment.Content.Truncated))]);
+    }
+
+    private async Task<bool> StartTurnCoreAsync(string text, IReadOnlyList<PromptResource> resources)
     {
         if (Terminal is not null && Volatile.Read(ref _disposed) == 0)
         {
@@ -638,6 +770,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
 
         // The last prompt sent is the one a retry sends again. A new send clears the banner of an earlier failure.
         _lastPrompt = text;
+        _lastResources = resources;
         ShowEngineFailure(null);
 
         // The composer does not send while a response streams. The run stays active until its last turn ends, so a message sent
@@ -645,9 +778,10 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         Composer.IsStreaming = true;
         Runs.RunStarted();
         var correlationId = Guid.NewGuid().ToString("N");
+        _lastRequestId = correlationId;
         EchoUserMessage(text, correlationId);
         TurnChanged?.Invoke(this, new SessionTurnEventArgs(SessionTurnKind.Started));
-        var turn = DriveTurnsAsync(text, correlationId);
+        var turn = DriveTurnsAsync(text, resources, correlationId);
 
         // The turn is not awaited. DriveTurnsAsync shows a turn's fault under that turn's own id, so this observes only what escapes it.
         _ = turn.ContinueWith(
@@ -659,15 +793,18 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     }
 
     /// <summary>
-    /// Streams one turn's events into the transcript. A fault that ends the turn is not caught here: <see cref="StartTurnAsync"/>
-    /// observes it and shows it inline.
+    /// Streams one turn's events into the transcript. A fault that ends the turn is not caught here: <see cref="StartTurnCoreAsync"/>
+    /// observes it and shows it inline. The prompt goes through the active custom mode's preamble, when there is one; the transcript keeps what the user typed.
     /// </summary>
     /// <param name="text">The prompt text.</param>
+    /// <param name="resources">The mentions that travel with the prompt.</param>
     /// <param name="correlationId">The correlation identifier of the turn.</param>
     /// <returns>A task that completes when the turn has ended.</returns>
-    private async Task StreamTurnAsync(string text, string correlationId)
+    private async Task StreamTurnAsync(string text, IReadOnlyList<PromptResource> resources, string correlationId)
     {
-        await foreach (var evt in _options.Prompts.SubmitAsync(text, CancellationToken.None).ConfigureAwait(true))
+        var prompt = PromptPreamble is { IsActive: true } preamble && !text.StartsWith('/') ? preamble.Apply(text) : text;
+        var promptOptions = new PromptOptions { Resources = resources };
+        await foreach (var evt in _options.Prompts.SubmitAsync(prompt, promptOptions, CancellationToken.None).ConfigureAwait(true))
         {
             ShowTurnEvent(evt, correlationId);
         }
@@ -679,9 +816,10 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// transcript says how many were not sent.
     /// </summary>
     /// <param name="text">The prompt the run starts with.</param>
+    /// <param name="resources">The mentions that travel with the first prompt.</param>
     /// <param name="correlationId">The correlation identifier of the first turn.</param>
     /// <returns>A task that completes when the run has ended.</returns>
-    private async Task DriveTurnsAsync(string text, string correlationId)
+    private async Task DriveTurnsAsync(string text, IReadOnlyList<PromptResource> resources, string correlationId)
     {
         var turnCorrelationId = correlationId;
         string? faultReason = null;
@@ -691,7 +829,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             {
                 try
                 {
-                    await StreamTurnAsync(text, turnCorrelationId).ConfigureAwait(true);
+                    await StreamTurnAsync(text, resources, turnCorrelationId).ConfigureAwait(true);
                 }
                 catch (Exception fault) when (fault is not OperationCanceledException)
                 {
@@ -718,7 +856,9 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
                 }
 
                 text = next;
+                resources = [];
                 turnCorrelationId = Guid.NewGuid().ToString("N");
+                _lastRequestId = turnCorrelationId;
                 EchoUserMessage(text, turnCorrelationId);
                 if (!Runs.IsRunActive)
                 {
@@ -814,6 +954,14 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// <param name="correlationId">The correlation identifier of the turn.</param>
     private void ShowTurnEvent(HarnessEvent evt, string correlationId)
     {
+        // Usage is session state, not transcript content: it feeds the context ring and shows nothing in the thread.
+        if (evt is ContextUsageEvent usage)
+        {
+            Composer.ContextRing?.ReportUsage(usage.Used, usage.Size > 0 ? usage.Size : null);
+            ContextUsageChanged?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
         // The id the host's resolver holds the request under is the one the bridge decides by.
         if (evt is PermissionRequestEvent request)
         {
@@ -824,6 +972,48 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         {
             Session.ApplyEvent(streamEvent);
             _nextSeq = streamEvent.Seq + 1;
+        }
+    }
+
+    private void OnHookNoticeRaised(object? sender, HookNoticeRaisedEventArgs e) => RaiseOnUi(() => HookNoticeRaised?.Invoke(this, e));
+
+    private void OnConnectionChanged(object? sender, SessionConnectionChangedEventArgs e) =>
+        RaiseOnUi(() =>
+        {
+            ConnectionChanged?.Invoke(this, e);
+            var healthy = e.State == RemoteConnectionState.Connected;
+            if (healthy)
+            {
+                _turnInterrupted = false;
+            }
+
+            RemoteStatusChanged?.Invoke(this, new RemoteEnvironmentStatusChangedEventArgs(healthy ? null : RemoteStatusDescriber.FromConnection(e.State, _turnInterrupted)));
+        });
+
+    private void OnTurnInterrupted(object? sender, TurnInterruptedEventArgs e) =>
+        RaiseOnUi(() =>
+        {
+            _turnInterrupted = true;
+            TurnInterrupted?.Invoke(this, e);
+            RemoteStatusChanged?.Invoke(this, new RemoteEnvironmentStatusChangedEventArgs(RemoteStatusDescriber.FromConnection(RemoteConnectionState.Disconnected, turnInterrupted: true)));
+        });
+
+    /// <summary>Runs a raise on the UI context that owns the presentation models; a signal that arrives after the runtime was disposed is dropped.</summary>
+    /// <param name="raise">The raise.</param>
+    private void RaiseOnUi(Action raise)
+    {
+        if (Volatile.Read(ref _disposed) != 0)
+        {
+            return;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            raise();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(raise);
         }
     }
 

@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using OmpOS.Native.Agents;
 using OmpOS.Native.Settings;
+using OmpOS.Native.Views.Branding;
 
 namespace OmpOS.Native;
 
@@ -19,15 +21,16 @@ internal partial class App : Application
     private const int ShutdownRunning = 1;
     private const int ShutdownDone = 2;
 
-    private readonly Func<AgentHead> _headFactory;
+    private readonly Func<AgentHead>? _headFactory;
+    private readonly Func<Func<TopLevel?>, CancellationToken, Task<AgentHead>>? _headFactoryAsync;
     private AgentHead? _head;
     private Task _initialisation = Task.CompletedTask;
     private int _shutdownState;
 
     /// <summary>Creates the application with the production head, which reads the plugins, the state and the Substrate from the process environment.</summary>
     public App()
-        : this(AgentHead.CreateProduction)
     {
+        _headFactoryAsync = AgentHead.CreateProductionAsync;
     }
 
     /// <summary>Creates the application over a head that is composed when the main window opens.</summary>
@@ -76,17 +79,57 @@ internal partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var head = _headFactory();
-            _head = head;
-            RequestedThemeVariant = HeadSettings.VariantOf(head.Settings.Theme);
-            var window = new MainWindow(head.Panel, head.Settings.Motion, Environment.CurrentDirectory, head.Board);
-            head.Settings.Attach(window);
-            desktop.MainWindow = window;
             desktop.ShutdownRequested += OnShutdownRequested;
-            _initialisation = head.InitializeAsync(CancellationToken.None);
+            if (_headFactory is { } factory)
+            {
+                var head = factory();
+                _head = head;
+                _initialisation = OpenWindow(desktop, head);
+            }
+            else
+            {
+                // The services every window shares are opened asynchronously, so the window opens as soon as they are ready.
+                _initialisation = OpenAsync(desktop);
+            }
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private async Task OpenAsync(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        AgentHead head;
+        try
+        {
+            head = await _headFactoryAsync!(() => desktop.MainWindow, CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            Trace.TraceError($"The agent head could not be composed ({exception.GetType().Name}): {exception.Message}");
+            desktop.Shutdown(1);
+            return;
+        }
+
+        _head = head;
+        var window = CreateWindow(head);
+        desktop.MainWindow = window;
+        window.Show();
+        await head.InitializeAsync(CancellationToken.None).ConfigureAwait(true);
+    }
+
+    private Task OpenWindow(IClassicDesktopStyleApplicationLifetime desktop, AgentHead head)
+    {
+        desktop.MainWindow = CreateWindow(head);
+        return head.InitializeAsync(CancellationToken.None);
+    }
+
+    private MainWindow CreateWindow(AgentHead head)
+    {
+        RequestedThemeVariant = HeadSettings.VariantOf(head.Settings.Theme);
+        var window = new MainWindow(head.Panel, head.Settings.Motion, Environment.CurrentDirectory, head.Board, head.Services);
+        AppIcon.Apply(window);
+        head.Settings.Attach(window);
+        return window;
     }
 
     /// <summary>

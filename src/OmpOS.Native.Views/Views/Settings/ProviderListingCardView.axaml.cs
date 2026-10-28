@@ -42,6 +42,12 @@ internal partial class ProviderListingCardView : UserControl
     /// <summary>Gets the selectable text of the vendor's plan rule.</summary>
     internal SelectableTextBlock PlanRule => PlanRuleLine;
 
+    /// <summary>Gets the tick box that says the vendor's rule text was read. It is shown for a coding plan only.</summary>
+    internal CheckBox PlanRuleTick => PlanRuleBox;
+
+    /// <summary>Gets the line that says key entry is turned off by the operator.</summary>
+    internal TextBlock KeyDisabled => KeyDisabledLine;
+
     private void OnSetupClick(object? sender, RoutedEventArgs e) => Card?.BeginSetup();
 
     private void OnAddClick(object? sender, RoutedEventArgs e)

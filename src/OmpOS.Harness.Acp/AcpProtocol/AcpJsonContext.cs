@@ -11,6 +11,7 @@ namespace OmpOS.Harness.Acp.AcpProtocol;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip)]
 [JsonSerializable(typeof(AcpFrames.Inbound))]
+[JsonSerializable(typeof(AcpFrames.Request<AcpFrames.ForkSessionParams>))]
 [JsonSerializable(typeof(AcpFrames.Request<AcpFrames.InitializeParams>))]
 [JsonSerializable(typeof(AcpFrames.Request<AcpFrames.AuthenticateParams>))]
 [JsonSerializable(typeof(AcpFrames.Request<AcpFrames.NewSessionParams>))]
@@ -38,6 +39,7 @@ namespace OmpOS.Harness.Acp.AcpProtocol;
 [JsonSerializable(typeof(AcpFrames.ChunkUpdate))]
 [JsonSerializable(typeof(AcpFrames.ToolCallPayload))]
 [JsonSerializable(typeof(AcpFrames.PlanUpdate))]
+[JsonSerializable(typeof(AcpFrames.UsageUpdate))]
 [JsonSerializable(typeof(AcpFrames.McpServerFrame))]
 [JsonSerializable(typeof(AcpFrames.NameValueFrame))]
 [JsonSerializable(typeof(AcpFrames.PermissionRequestParams))]

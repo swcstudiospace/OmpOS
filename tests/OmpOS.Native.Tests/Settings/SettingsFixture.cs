@@ -1,15 +1,31 @@
 using Avalonia.Controls;
 using Avalonia.Threading;
+using OmpOS.Native.Tests.AgentPanel.Views;
+using OmpOS.Native.Tests.Mcp;
+using OmpOS.Native.Tests.Remote;
+using OmpOS.Native.Tests.Safety;
 using OmpOS.Native.Views.Settings;
+using OmpOS.Presentation.Cloud;
+using OmpOS.Presentation.Commands.Handlers;
+using OmpOS.Presentation.Hooks;
+using OmpOS.Presentation.Mcp;
+using OmpOS.Presentation.Remote;
+using OmpOS.Presentation.Safety;
 using OmpOS.Presentation.Settings;
 using OmpOS.Presentation.Settings.Customize;
+using OmpOS.Presentation.Settings.Ignore;
 using OmpOS.Presentation.Settings.Models;
+using OmpOS.Presentation.Settings.Privacy;
+using OmpOS.Presentation.Settings.Workspaces;
+using OmpOS.Presentation.Settings.Worktrees;
+using OmpOS.Presentation.Tests.Hooks;
 
 namespace OmpOS.Native.Tests.Settings;
 
 /// <summary>
-/// A real <see cref="SettingsWindow"/> over real page models whose sources are scripted. Only the sources are fake: the nine pages, the window
-/// model and the window are the product's. The window is shown, and every page is loaded unless the test asks to keep them loading.
+/// A real <see cref="SettingsWindow"/> over real page models whose sources are scripted. Only the sources are fake: the twenty-one pages, the
+/// window model and the window are the product's. The pages are in the order the head's factory gives them when every service is supplied.
+/// The window is shown, and every page is loaded unless the test asks to keep them loading.
 /// </summary>
 internal sealed class SettingsFixture : IDisposable
 {
@@ -17,16 +33,31 @@ internal sealed class SettingsFixture : IDisposable
     {
         Runtime = new RuntimePage(new RuntimeSettingsModel());
         Models = new ModelsSettingsPage(ModelsSource);
-        General = new GeneralPage(GeneralSource);
+        General = new GeneralPage(GeneralSource, openAbout: () => AboutOpened++);
+        Display = new DisplaySettingsPage(new DisplaySettings(DisplayStore));
         Agents = new AgentsPage(AgentsSource);
+        RunMode = new RunModeSettingsPage(SettingsSection.RunMode, RunModeSource);
         Tab = new TabPage(TabSource);
         Plugins = new PluginsPage(PluginsSource);
         Rules = new RulesSettingsPage(RulesSource);
         Skills = new SkillsSettingsPage(SkillsSource);
         Commands = new CommandsSettingsPage(CommandsSource);
+        Hooks = new HooksSettingsPage(SettingsSection.Hooks, HooksSource);
+        Mcp = new McpSettingsPage(new McpSettingsViewModel(McpSource));
+        Workspaces = new WorkspacesSettingsPage(WorkspacesSource);
+        Worktrees = new WorktreesSettingsPage(WorktreesSource);
+        Ignore = new IgnoreSettingsPage(IgnoreSource);
+        Remote = new RemoteEnvironmentsSettingsPage(new RemoteEnvironmentsViewModel(RemoteHost));
+        CloudHost = new FakeCloudAgentsHost(Clock);
+        Cloud = new CloudSettingsPage(new CloudAgentsViewModel(CloudHost, Clock));
+        Privacy = new PrivacySettingsPage();
         Network = new NetworkSettingsPage(NetworkSource);
         Keyboard = new KeyboardSettingsPage(KeyboardSource);
-        Model = new SettingsWindowModel([Runtime, Models, General, Agents, Tab, Plugins, Rules, Skills, Commands, Network, Keyboard]);
+        Model = new SettingsWindowModel(
+        [
+            Runtime, General, Display, Agents, RunMode, Models, Tab, Rules, Skills, Commands, Hooks, Mcp, Plugins,
+            Workspaces, Worktrees, Ignore, Remote, Cloud, Privacy, Network, Keyboard,
+        ]);
         Window = new SettingsWindow(Model);
         Runtime.Saved += (_, args) => RuntimeSaved.Add(args.Values);
     }
@@ -61,6 +92,39 @@ internal sealed class SettingsFixture : IDisposable
     /// <summary>Gets the source of the Models page.</summary>
     internal FakeModelsSource ModelsSource { get; } = new();
 
+    /// <summary>Gets the store behind the Display page.</summary>
+    internal MemoryDisplayStore DisplayStore { get; } = new();
+
+    /// <summary>Gets the source of the Run mode page.</summary>
+    internal FakeRunModeSource RunModeSource { get; } = new();
+
+    /// <summary>Gets the source of the Hooks page.</summary>
+    internal ScriptedHooksPageSource HooksSource { get; } = new();
+
+    /// <summary>Gets the source of the MCP page.</summary>
+    internal ScriptedMcpPageSource McpSource { get; } = new();
+
+    /// <summary>Gets the source of the Workspaces page.</summary>
+    internal FakeWorkspacesSource WorkspacesSource { get; } = new();
+
+    /// <summary>Gets the source of the Worktrees page.</summary>
+    internal FakeWorktreesSource WorktreesSource { get; } = new();
+
+    /// <summary>Gets the source of the Ignore page.</summary>
+    internal FakeIgnoreSource IgnoreSource { get; } = new();
+
+    /// <summary>Gets the host of the Remote page.</summary>
+    internal ScriptedRemoteHost RemoteHost { get; } = new();
+
+    /// <summary>Gets the clock of the Cloud page.</summary>
+    internal ManualTimeProvider Clock { get; } = new();
+
+    /// <summary>Gets the host of the Cloud page.</summary>
+    internal FakeCloudAgentsHost CloudHost { get; }
+
+    /// <summary>Gets how many times the About button of the General page was pressed.</summary>
+    internal int AboutOpened { get; private set; }
+
     /// <summary>Gets the values the Runtime page announced as saved, in order.</summary>
     internal List<RuntimeSettingsValues> RuntimeSaved { get; } = [];
 
@@ -73,8 +137,14 @@ internal sealed class SettingsFixture : IDisposable
     /// <summary>Gets the General page.</summary>
     internal GeneralPage General { get; }
 
+    /// <summary>Gets the Display page.</summary>
+    internal DisplaySettingsPage Display { get; }
+
     /// <summary>Gets the Agents page.</summary>
     internal AgentsPage Agents { get; }
+
+    /// <summary>Gets the Run mode page.</summary>
+    internal RunModeSettingsPage RunMode { get; }
 
     /// <summary>Gets the Tab page.</summary>
     internal TabPage Tab { get; }
@@ -90,6 +160,30 @@ internal sealed class SettingsFixture : IDisposable
 
     /// <summary>Gets the Commands page.</summary>
     internal CommandsSettingsPage Commands { get; }
+
+    /// <summary>Gets the Hooks page.</summary>
+    internal HooksSettingsPage Hooks { get; }
+
+    /// <summary>Gets the MCP page.</summary>
+    internal McpSettingsPage Mcp { get; }
+
+    /// <summary>Gets the Workspaces page.</summary>
+    internal WorkspacesSettingsPage Workspaces { get; }
+
+    /// <summary>Gets the Worktrees page.</summary>
+    internal WorktreesSettingsPage Worktrees { get; }
+
+    /// <summary>Gets the Ignore page.</summary>
+    internal IgnoreSettingsPage Ignore { get; }
+
+    /// <summary>Gets the Remote page.</summary>
+    internal RemoteEnvironmentsSettingsPage Remote { get; }
+
+    /// <summary>Gets the Cloud page.</summary>
+    internal CloudSettingsPage Cloud { get; }
+
+    /// <summary>Gets the Privacy page.</summary>
+    internal PrivacySettingsPage Privacy { get; }
 
     /// <summary>Gets the Network page.</summary>
     internal NetworkSettingsPage Network { get; }

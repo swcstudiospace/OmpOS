@@ -1,4 +1,14 @@
+---
+description: "Reference for Cursor-compatible hooks in OmpOS: hooks.json locations, the 21 events, the hook protocol, the omp extension and the Hooks page."
+---
+
 # Hooks
+
+Status: Partial (library, bridge, omp extension, service and page are built and unit tested; not run against a live omp session; head wiring is tracked in the parity audit)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 Hooks let your own scripts watch and steer the agent: block a shell command, rewrite a tool's input, format a file after an edit, add context after a tool ran, or ask the agent to keep going when it stops. OmpOS reads the same `hooks.json` files as Cursor, so a project hook written for Cursor runs unchanged.
 

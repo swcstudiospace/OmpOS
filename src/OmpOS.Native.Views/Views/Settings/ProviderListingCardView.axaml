@@ -210,8 +210,15 @@
                        Text="{CompiledBinding ModelIdsHelp}" />
           </StackPanel>
 
-          <!-- The key: a masked entry that lives only in the draft. It is empty again as soon as a save attempt ends. -->
+          <!-- The key: a masked entry that lives only in the draft. It is empty again as soon as a save attempt ends. The operator can turn key entry off: the field is then disabled and its reason shows. -->
+          <TextBlock x:Name="KeyDisabledLine"
+                     Classes="tone-warning settings-body"
+                     IsVisible="{CompiledBinding IsKeyDisabled}"
+                     Text="{CompiledBinding KeyDisabledReason}"
+                     AutomationProperties.LiveSetting="Polite"
+                     AutomationProperties.Name="{CompiledBinding KeyDisabledReason}" />
           <ContentControl x:Name="KeyHost"
+                          IsEnabled="{CompiledBinding IsKeyEnabled}"
                           Content="{CompiledBinding ApiKey}">
             <ContentControl.ContentTemplate>
               <DataTemplate x:DataType="models:ApiKeyDraft">
@@ -233,6 +240,13 @@
               </DataTemplate>
             </ContentControl.ContentTemplate>
           </ContentControl>
+
+          <!-- A coding plan asks for a tick that the vendor's rule text was read. Adding is refused until it is ticked. -->
+          <CheckBox x:Name="PlanRuleBox"
+                    IsVisible="{CompiledBinding RequiresPlanRule}"
+                    IsChecked="{CompiledBinding PlanRuleAccepted, Mode=TwoWay}"
+                    Content="{CompiledBinding PlanRuleAcceptLabel}"
+                    AutomationProperties.Name="{CompiledBinding PlanRuleAcceptName}" />
 
           <StackPanel Orientation="Horizontal"
                       Spacing="{DynamicResource OmpOS.Gap.Sm}">

@@ -1,4 +1,14 @@
+---
+description: "Reference for MCP servers in OmpOS: where configuration is read from, validation, the catalog, the MCP settings page and how servers reach omp sessions."
+---
+
 # MCP servers
+
+Status: Partial (loader, catalog and page are built and unit tested; not run against a live omp session; head wiring is tracked in the parity audit)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 MCP (Model Context Protocol) servers give the agent extra tools: a documentation search, a database, a browser. OmpOS reads the MCP configuration files you already have for OmpOS, Cursor, Claude Code and VS Code, checks them, and offers the servers to every session it starts. The MCP settings page shows each server with its state and the problems it found.
 

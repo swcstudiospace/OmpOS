@@ -24,7 +24,7 @@ The Settings window is a separate, non-modal window (OQ-89), opened from the rai
 
 Class paths are under `src/OmpOS.Presentation/Settings/` for the models and `apps/OmpOS.Native/Settings/` for the head. The views are in `src/OmpOS.Native.Views/Views/Settings/`.
 
-There is no Hooks, MCP, Search, Subagents, Beta or Accounts page.
+Since v0.15.0 there are ten further pages (Display, Run mode, Hooks, MCP, Workspaces, Worktrees, Ignore, Remote, Cloud, Privacy); see "v0.15.0" below. There is no Search, Subagents, Beta or Accounts page.
 
 ## The 34 rows
 
@@ -84,5 +84,66 @@ The scout plan (2026-10-26, before the build) proposed more pages than were buil
 
 ## Open points
 
-- Remapping of shortcuts and an HTTP compatibility switch are not built; the Keyboard page lists a fixed map and the Network page only diagnoses. The reason is missing backing, not an owner decision.
-- No test enumerates the 34 rows. The page-level tests are listed in `.planning/phases/40-settings-window-and-model-providers/40-VERIFICATION.md`.
+- Remapping of shortcuts is not built; the Keyboard page lists a fixed map. The HTTP compatibility switch (S06) is omitted by decision, see below.
+- The 34 rows above are not machine checked. The 50 rows below are: `SettingsParityTableTests` parses them.
+
+## v0.15.0: the window has 21 pages and the 50 further rows are tracked by id
+
+Since v0.15.0 the Settings window holds these pages in this order when the head supplies every service (`apps/OmpOS.Native/Settings/SettingsWindowFactory.cs`): Runtime, General, Display, Agents, Run mode, Models, Tab, Rules, Skills, Commands, Hooks, MCP, Plugins, Workspaces, Worktrees, Ignore, Remote, Cloud, Privacy, Network, Keyboard. Display, Run mode, Models, Hooks, MCP, Workspaces and Remote are left out of a window whose head does not supply their service. Worktrees, Ignore, Cloud (its not-configured state when no API address is set) and Privacy are always there. The General page links to the About window.
+
+Source of the rows: `docs/plans/v0.15.0-research/03-cursor-settings-slash.md`, Table 1 (S01 to S50). Statuses: **Built** (a page and key exist in OmpOS), **Wired** (the value reaches omp; the key is named), **Partial** (what is missing is stated), **Omitted** (decision and reason). Columns: id, Cursor option, status, page (a `SettingsSection` name, or `-`), key (an OmpOS or omp key, or `-`), note. `SettingsParityTableTests` asserts that every id S01 to S50 is present once with a status, that every Built, Wired and Partial row with a page names a real `SettingsSection`, and that every Built and Wired row names a page and a key.
+
+| ID | Cursor option | Status | Page | Key | Note |
+|----|---------------|--------|------|-----|------|
+| S01 | cli-config.json version | Omitted | - | - | OmpOS does not read or write cli-config.json. Its own file `config/settings.json` carries `schemaVersion`. |
+| S02 | editor.vimMode | Partial | Display | `display.vimMode` | The flag is stored and `/vim` flips it. No prompt box applies vim keys yet. |
+| S03 | permissions.allow / deny tokens | Partial | RunMode | `permissions.json` | The page edits the terminal and MCP allowlists and shows the tokens read from the files. Deny rules are read, not edited. |
+| S04 | approvalMode | Wired | RunMode | omp `--approval-mode` | The page stores the run mode in `~/.ompos/run-mode.json`; the launch mapper turns it into `always-ask`, `always-ask-cached` or `yolo`. The session pipeline applies it. |
+| S05 | sandbox.mode / networkAccess / readBoundary | Partial | RunMode | `sandbox.json readBoundary` | Only the read boundary exists and it binds the tool calls omp asks OmpOS about. There is no OS sandbox and no sandbox network mode. |
+| S06 | network.useHttp1ForAgent | Omitted | - | - | omp makes the model calls; OmpOS has no agent traffic of its own to move to HTTP/1.1. |
+| S07 | attribution commit and PR text | Omitted | - | - | OmpOS creates no commits or pull requests itself, so a toggle would control nothing. |
+| S08 | notifications, hints, suggestNextPrompt, rewind | Partial | Display | `display.rewind` | Rewind is a switch. Notifications, hints and next-prompt suggestions are not built. |
+| S09 | display toggles | Partial | Display | `display.lineNumbers` | Line numbers and status indicators are applied by the views. Thinking blocks and running time are stored flags only. |
+| S10 | model, maxMode, channel, statusLine | Partial | Models | omp `modelRoles.default` | The default model is set through omp. Max Mode, update channel and a status line command are not built. |
+| S11 | model slash commands toggle | Omitted | - | - | There is no /opus or /composer family to switch off. |
+| S12 | proxy environment variables | Built | Network | `HTTP_PROXY` | The page states which proxy settings a diagnostics run uses and that omp keeps its own. |
+| S13 | Auto-review classifier model | Omitted | - | - | The classifier is Cursor's hosted model. OmpOS Auto-review is the allowlist, a known-safe read-only list, then ask. |
+| S14 | permissions.json autoRun instructions | Partial | RunMode | `autoRun.allow_instructions` | The instructions are shown, not passed to the agent. |
+| S15 | sandbox.json readBoundary, additionalReadPaths | Partial | RunMode | `sandbox.json additionalReadPaths` | Edited on the page, with the file that controls the value; enforcement as S05. |
+| S16 | Team read controls | Omitted | - | - | Team admin dashboard; OmpOS has no teams. |
+| S17 | Run Mode names | Built | RunMode | `run-mode.json mode` | Auto-review, Allowlist and Run Everything. |
+| S18 | Remote Control | Omitted | - | - | Needs a Cursor account and relay. The OmpOS equivalents are the Remote (ssh) and Cloud pages. |
+| S19 | Agent Review | Omitted | - | - | No Git and PRs page. Review is the /review command of omp. |
+| S20 | Design Mode | Omitted | - | - | No browser Design Mode; it has no settings. |
+| S21 | Optimize For (Router) | Omitted | - | - | Cursor inference. |
+| S22 | Router admin controls | Omitted | - | - | Team admin. |
+| S23 | Skills as Custom Modes | Partial | Skills | - | The Skills page lists skills. A mode is chosen from the slash palette, not set here. |
+| S24 | SKILL.md frontmatter | Partial | Skills | - | Skills are listed; frontmatter fields are not shown or edited. |
+| S25 | Skill discovery folders | Partial | Skills | - | The slash palette reads the six convention folders; the page lists what discovery finds. |
+| S26 | Rule frontmatter matrix | Partial | Rules | - | Rules are listed read-only; the matrix is not shown. |
+| S27 | Subagent frontmatter | Omitted | - | - | Delegation belongs to omp and the Swarm plugin; there is no Subagents page. |
+| S28 | hooks.json hook fields | Built | Hooks | `hooks.json` | Hooks, their approval, enable switch and run log. The switch lives in OmpOS state, never in a hooks file. |
+| S29 | hooks.json events | Partial | Hooks | - | Event coverage follows the Producer column of `docs/reference/hooks.md`. |
+| S30 | mcp.json | Partial | Mcp | `mcp.json` | Servers, consent and templates. OAuth blocks are not passed and the connection check needs a headers-capable connector. |
+| S31 | Per-scope activation and rule toggle | Partial | Rules | - | Read-only lists; no activation toggle and no team scope. |
+| S32 | Show Count menu bar badge | Omitted | - | - | No menu bar icon. |
+| S33 | workbench.reduceMotion | Built | General | `motion` | Motion: follow system, reduce or full. |
+| S34 | Chat Width | Omitted | - | - | The transcript column width is fixed by layout tokens. |
+| S35 | New-agent default environment | Partial | Remote | - | The environment picker lists saved ssh environments; no default-environment setting. |
+| S36 | Queue versus steer | Partial | - | - | Behaviour is built (Tab queues, Enter steers); there is no setting for the default. |
+| S37 | Conversation search | Partial | - | - | The search model and overlay are built; it is not a setting. |
+| S38 | Context usage tray | Partial | - | - | The context ring model is built; it is not a setting. |
+| S39 | BYOK rules | Wired | Models | omp `auth import` | Write-only key fields, the provider listing, the plan-rule tick box and the operator's key-entry switch. |
+| S40 | Privacy Mode | Built | Privacy | privacy statement | Read-only page: only the selected provider receives code context, no telemetry, no Privacy Mode to switch. |
+| S41 | PR draft policy | Omitted | - | - | The Cloud page opens pull requests as drafts; there is no switch. |
+| S42 | Cloud environments and builds | Omitted | - | - | The API has no environment endpoints; the Cloud page hides the lists. |
+| S43 | Self-hosted workers | Omitted | - | - | Cursor worker settings; OmpOS uses ssh environments and cloud agents. |
+| S44 | Bugbot public repositories | Omitted | - | - | Bugbot is not part of OmpOS. |
+| S45 | Tab | Partial | Tab | - | Read-only status; snooze, disable and remap are not built. |
+| S46 | CURSOR_AGENT and sandbox identity | Omitted | - | - | OmpOS sets no such variable. |
+| S47 | Indexing and Docs | Omitted | - | - | Nothing to build. |
+| S48 | Inline edit shortcut | Built | Keyboard | shortcut catalogue | The Keyboard page lists only shortcuts the shell handles; there is no inline-edit shortcut. |
+| S49 | Grok Bot app settings | Omitted | - | - | A separate Cursor product. |
+| S50 | CLI updates | Omitted | - | - | Not applicable. |
+
+Check it from a shell with `scripts/check-settings-parity.sh`.

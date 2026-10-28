@@ -32,4 +32,7 @@ internal sealed class WorkerOptions
 
     /// <summary>Gets or sets how <c>omp acp</c> is started.</summary>
     public WorkerOmpOptions Omp { get; set; } = new();
+
+    /// <summary>Gets or sets whether and how the worker runs the project hooks of a session's checkout.</summary>
+    public WorkerHooksOptions Hooks { get; set; } = new();
 }

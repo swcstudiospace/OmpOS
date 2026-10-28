@@ -7,6 +7,9 @@ using OmpOS.Presentation;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Approvals;
 using OmpOS.Presentation.Commands;
+using OmpOS.Presentation.Editor;
+using OmpOS.Presentation.Mentions;
+using OmpOS.Presentation.SideChats;
 
 namespace OmpOS.Native.Views.Sessions;
 
@@ -105,4 +108,28 @@ public sealed class AgentSessionRuntimeOptions
     /// makes its command unavailable in the palette.
     /// </summary>
     public DesktopSlashTargets? SlashTargets { get; init; }
+
+    /// <summary>
+    /// Gets the relay that carries the engine-side signals of the session (hook notices, the connection of a remote session, an interrupted turn) to the runtime, or null
+    /// when the session has none. The runtime republishes them as <see cref="AgentSessionRuntime.HookNoticeRaised"/>, <see cref="AgentSessionRuntime.ConnectionChanged"/> and <see cref="AgentSessionRuntime.TurnInterrupted"/>.
+    /// </summary>
+    public SessionLiveEvents? LiveEvents { get; init; }
+
+    /// <summary>
+    /// Gets the factory of the @-mention sources of a chat session, or null when the session offers no mentions. The runtime calls it once, when it is created, and builds the
+    /// composer's mention picker, its chips and its context ring over the sources; a terminal runtime never calls it. The factory does no work of its own: the sources read lazily.
+    /// </summary>
+    public Func<IReadOnlyList<IMentionSource>>? MentionSources { get; init; }
+
+    /// <summary>Gets the forker of the session (a new session that continues from the same history), or null when the session cannot be forked.</summary>
+    public ISessionForker? Forker { get; init; }
+
+    /// <summary>Gets the engine of the session's side chats (a child conversation separate from the session), or null when the session offers none.</summary>
+    public ISideChatEngine? SideChatEngine { get; init; }
+
+    /// <summary>
+    /// Gets the function that returns the file system of the ssh host a remote session runs on (it connects to the host the first time it is called), or null for a local session. The explorer and the editor of a remote
+    /// session read and write through it.
+    /// </summary>
+    public Func<CancellationToken, Task<IAsyncWorkspaceFileSystem>>? RemoteFiles { get; init; }
 }

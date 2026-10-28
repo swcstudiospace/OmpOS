@@ -1,4 +1,8 @@
 using OmpOS.Native.Settings;
+using OmpOS.Native.Tests.AgentPanel.Views;
+using OmpOS.Native.Tests.Mcp;
+using OmpOS.Native.Tests.Remote;
+using OmpOS.Native.Tests.Safety;
 using OmpOS.Presentation;
 using OmpOS.Presentation.Settings;
 using OmpOS.Presentation.Settings.Customize;
@@ -17,7 +21,10 @@ public sealed class SettingsWindowHostTests : IDisposable
     /// <inheritdoc />
     public void Dispose() => _tree.Dispose();
 
-    /// <summary>The pages are in navigation order: Runtime, General, Agents, Models, Tab, Rules, Skills, Commands, Plugins, Network, Keyboard.</summary>
+    /// <summary>
+    /// With no head services the pages are in navigation order: Runtime, General, Agents, Models, Tab, Rules, Skills, Commands, Plugins, Worktrees,
+    /// Ignore, Cloud (not configured), Privacy, Network, Keyboard.
+    /// </summary>
     [Fact]
     public void PagesAreInNavigationOrderWithTheModelsPageFourth()
     {
@@ -34,6 +41,10 @@ public sealed class SettingsWindowHostTests : IDisposable
             SettingsSection.Skills,
             SettingsSection.Commands,
             SettingsSection.Plugins,
+            SettingsSection.Worktrees,
+            SettingsSection.Ignore,
+            SettingsSection.Cloud,
+            SettingsSection.Privacy,
             SettingsSection.Network,
             SettingsSection.Keyboard,
         ]);
@@ -56,6 +67,10 @@ public sealed class SettingsWindowHostTests : IDisposable
             SettingsSection.Skills,
             SettingsSection.Commands,
             SettingsSection.Plugins,
+            SettingsSection.Worktrees,
+            SettingsSection.Ignore,
+            SettingsSection.Cloud,
+            SettingsSection.Privacy,
             SettingsSection.Network,
             SettingsSection.Keyboard,
         ]);
@@ -182,6 +197,77 @@ public sealed class SettingsWindowHostTests : IDisposable
         pages.OfType<PluginsPage>().Single().Rows.Count.ShouldBe(4);
         pages.OfType<TabPage>().Single().IsEnabled.ShouldBeFalse();
         pages.OfType<GeneralPage>().Single().Motion.ShouldBe(MotionPreference.System);
+    }
+
+    /// <summary>With every head service supplied the window has the 21 pages in the Cursor-like order.</summary>
+    [Fact]
+    public void EveryServiceAddsItsPageInNavigationOrder()
+    {
+        var clock = new ManualTimeProvider();
+        using var sets = new OmpOS.Workspace.Sets.WorkspaceSetStore(_tree.PathOf("sets.json"));
+        var files = new MemoryMcpFiles();
+        var options = new SettingsWindowOptions
+        {
+            Store = new FileSettingsStore(_tree.PathOf("state")),
+            WorkspaceRoot = Directory.CreateDirectory(_tree.PathOf("workspace")).FullName,
+            PluginsRoot = _tree.PathOf("plugins"),
+            UserHome = Directory.CreateDirectory(_tree.PathOf("home")).FullName,
+            GetVariable = static _ => null,
+            ModelsPageFactory = () => new StubSettingsPage(SettingsSection.Models),
+            Hooks = new OmpOS.Harness.AgentLoop.Tests.Hooks.FakeHooksService(),
+            Mcp = new OmpOS.Harness.Mcp.Catalog.McpServerCatalog(files, files),
+            RunModes = new FakeRunModeSource(),
+            Display = new OmpOS.Presentation.Commands.Handlers.DisplaySettings(new MemoryDisplayStore()),
+            WorkspaceSets = sets,
+            RemoteEnvironments = new ScriptedRemoteHost(),
+            Cloud = new OmpOS.Presentation.Cloud.FakeCloudAgentsHost(clock),
+        };
+
+        var model = SettingsWindowFactory.CreateModel(options);
+
+        model.Pages.Select(static page => page.Section).ShouldBe(
+        [
+            SettingsSection.Runtime,
+            SettingsSection.General,
+            SettingsSection.Display,
+            SettingsSection.Agents,
+            SettingsSection.RunMode,
+            SettingsSection.Models,
+            SettingsSection.Tab,
+            SettingsSection.Rules,
+            SettingsSection.Skills,
+            SettingsSection.Commands,
+            SettingsSection.Hooks,
+            SettingsSection.Mcp,
+            SettingsSection.Plugins,
+            SettingsSection.Workspaces,
+            SettingsSection.Worktrees,
+            SettingsSection.Ignore,
+            SettingsSection.Remote,
+            SettingsSection.Cloud,
+            SettingsSection.Privacy,
+            SettingsSection.Network,
+            SettingsSection.Keyboard,
+        ]);
+        options.CloudAgentsModel.ShouldNotBeNull().Dispose();
+    }
+
+    /// <summary>Asking for a section selects it in a new window and in the open one; a section the window lacks leaves the choice alone.</summary>
+    [Fact]
+    public async Task AskingForASectionSelectsItInANewAndAnOpenWindow()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var host = NewHost(withModels: false);
+
+        await host.ShowAsync(owner: null, ct, SettingsSection.Privacy).ConfigureAwait(true);
+        var model = _windows.Single().Model;
+        model.SelectedSection.ShouldBe(SettingsSection.Privacy);
+
+        await host.ShowAsync(owner: null, ct, SettingsSection.Ignore).ConfigureAwait(true);
+        model.SelectedSection.ShouldBe(SettingsSection.Ignore);
+
+        await host.ShowAsync(owner: null, ct, SettingsSection.Hooks).ConfigureAwait(true);
+        model.SelectedSection.ShouldBe(SettingsSection.Ignore);
     }
 
     private SettingsWindowHost NewHost(bool withModels)

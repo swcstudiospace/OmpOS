@@ -1,4 +1,14 @@
+---
+description: "Status record of the Android and iOS terminal checks that cannot run on the Linux gate host."
+---
+
 # Android and iOS terminals runbook
+
+Status: Blocked (needs an Android device or emulator, a Mac channel and a Windows runner); status record of 2026-10-26
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 Scope: Phase 43 (VX-08, VX-10), criterion 4, and the mobile part of criterion 1. Status as of 2026-10-26.
 

@@ -1,4 +1,14 @@
+---
+description: "Reference for file checkpoints and restore, git worktrees, the message queue, custom modes, side chats and fork in OmpOS."
+---
+
 # Checkpoints, worktrees, the message queue, custom modes, side chats and fork
+
+Status: Partial (libraries and presentation models are built and unit tested; not run against a live omp session; head wiring is tracked in the parity audit)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 This page describes how OmpOS undoes an agent's file edits, runs work in git worktrees, queues messages while the agent works, pins a skill as a mode, and opens side chats and forks. Every feature is a library plus a presentation model with tests. The views and the wiring into the windows are a later step; the last section lists what each model needs from the head.
 

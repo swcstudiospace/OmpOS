@@ -13,6 +13,7 @@ using OmpOS.Native.Engine;
 using OmpOS.Native.Views;
 using OmpOS.Native.Views.AgentPanel;
 using OmpOS.Native.Views.Changes;
+using OmpOS.Native.Views.Checkpoints;
 using OmpOS.Native.Views.Chats;
 using OmpOS.Native.Views.Diff;
 using OmpOS.Native.Views.Editor;
@@ -21,19 +22,28 @@ using OmpOS.Native.Views.Export;
 using OmpOS.Native.Views.InlineEditing;
 using OmpOS.Native.Views.Kanban;
 using OmpOS.Native.Views.Mcp;
+using OmpOS.Native.Views.Modes;
+using OmpOS.Native.Views.Queue;
 using OmpOS.Native.Views.RunControls;
 using OmpOS.Native.Views.Search;
+using OmpOS.Native.Views.Shell;
+using OmpOS.Native.Views.SideChats;
 using OmpOS.Native.Views.Sessions;
 using OmpOS.Native.Views.Terminal;
 using OmpOS.Native.Views.Workspace;
 using OmpOS.Presentation;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Agents;
+using OmpOS.Contracts.Ui;
 using OmpOS.Presentation.Changes;
+using OmpOS.Presentation.Checkpoints;
 using OmpOS.Presentation.Chats;
 using OmpOS.Presentation.Editor;
 using OmpOS.Presentation.Export;
 using OmpOS.Presentation.Kanban;
+using OmpOS.Presentation.Modes;
+using OmpOS.Presentation.Queue;
+using OmpOS.Presentation.SideChats;
 using OmpOS.Presentation.State;
 using OmpOS.Workspace;
 
@@ -160,11 +170,13 @@ public partial class MainView : UserControl
     /// <param name="motion">The motion setting of the head.</param>
     /// <param name="mcpHost">The MCP host the view lists and disposes, or null to create the production registry when the MCP view opens.</param>
     /// <param name="board">The Kanban board, or null for a view with no Kanban tab.</param>
-    internal MainView(AgentPanelViewModel panel, string? workspaceRoot, MotionPreference motion, IMcpRegistryHost? mcpHost, KanbanBoardModel? board = null)
+    /// <param name="services">The services the head supplies to the shell (hooks, remote environments, checkpoints, cloud, About and the others), or null for a window that has none of those features.</param>
+    internal MainView(AgentPanelViewModel panel, string? workspaceRoot, MotionPreference motion, IMcpRegistryHost? mcpHost, KanbanBoardModel? board = null, ShellServices? services = null)
     {
         ArgumentNullException.ThrowIfNull(panel);
 
         _panel = panel;
+        _services = services ?? new ShellServices();
         _mcpHost = mcpHost;
         _workspace = new WorkspaceRoot(workspaceRoot ?? Environment.CurrentDirectory);
 
@@ -216,6 +228,8 @@ public partial class MainView : UserControl
             KanbanHost.Content = _boardView;
             ShowKanbanTabStrip(board);
         }
+
+        InitializeShell();
 
         _panel.PropertyChanged += OnPanelChanged;
         _panel.Catalog.PropertyChanged += OnCatalogChanged;
@@ -277,8 +291,8 @@ public partial class MainView : UserControl
     /// <summary>Gets whether the Kanban tab is the selected top-level tab. It is false for a view with no board.</summary>
     public bool IsKanbanShown => _kanbanShown;
 
-    /// <summary>Occurs when the user asks for the Settings window, with the rail footer button or Ctrl+,. The host that owns the window handles it; the view has no dependency on it.</summary>
-    public event EventHandler? SettingsRequested;
+    /// <summary>Occurs when the user asks for the Settings window, with the rail footer button or Ctrl+,, a slash command that names a page, or a link inside the shell (hooks review, manage environments). The arguments name the page. The host that owns the window handles it; the view has no dependency on it.</summary>
+    public event EventHandler<SettingsRequestedEventArgs>? SettingsRequested;
 
     /// <summary>
     /// Gets or sets where the Terminal tool reads its settings. It is read each time the tool builds its view, so the stored auto-run choice
@@ -287,7 +301,7 @@ public partial class MainView : UserControl
     public Func<TerminalSettings>? TerminalSettingsProvider { get; set; }
 
     /// <summary>Asks for the Settings window, as the rail button and Ctrl+, do.</summary>
-    public void RequestSettings() => SettingsRequested?.Invoke(this, EventArgs.Empty);
+    public void RequestSettings() => RequestSettings(section: null);
 
     /// <summary>
     /// Applies a motion setting to the shell now: the reduced-motion class of the view and the tab strip transitions. Sessions that are
@@ -407,6 +421,7 @@ public partial class MainView : UserControl
         if (string.Equals(e.PropertyName, nameof(SessionCatalogModel.Sessions), StringComparison.Ordinal))
         {
             PruneStalePanes();
+            _searchModel?.SyncSessions(_panel.Catalog.Sessions);
         }
     }
 
@@ -459,6 +474,10 @@ public partial class MainView : UserControl
         ComposerHost.Content = pane is null ? null : pane.SteerView ?? (Control)pane.Composer;
         SideChatHost.Content = pane?.SideChatView;
         ChangesHost.Content = pane?.ChangesView;
+        CheckpointsHost.Content = pane?.CheckpointsView;
+        CustomModeHost.Content = pane?.CustomModeView;
+        QueueHost.Content = pane?.QueueView;
+        SyncCheckpointsToggle();
         if (pane is not null)
         {
             pane.Composer.SuggestionsShown = SuggestionsToggle.IsChecked == true;
@@ -543,8 +562,10 @@ public partial class MainView : UserControl
         if (pane.Changes is { } changes)
         {
             pane.ChangesView = (ChangesBarView)ViewMapping.Create(changes);
+            pane.ChangesOpener = new ChangesBarOpener(changes, () => ShowChangesBar(pane));
         }
 
+        AttachShellPane(pane, runtime);
         if (runtime is not null)
         {
             AttachRuntime(pane, runtime);
@@ -557,7 +578,11 @@ public partial class MainView : UserControl
         pane.Composer.WorkFaulted += (_, e) => ReportFor(pane, $"{FaultedStatus} {e.Exception.GetBaseException().Message}");
         pane.Composer.StatusMessage += (_, e) => ReportFor(pane, e.Message);
         pane.Composer.StopConfirmationRequested += (_, _) => pane.ConfirmBar.OpenStop();
-        pane.Transcript.StopRequested += (_, _) => pane.Composer.StopResponse();
+        pane.Transcript.StopRequested += (_, _) =>
+        {
+            pane.Queue?.Clear();
+            pane.Composer.StopResponse();
+        };
         pane.Transcript.RetryRequested += (_, _) => runtime?.RetryLastTurn();
         pane.Search.MatchSelected += (_, e) => pane.Transcript.ScrollToBlock(e.Match.BlockIndex);
         pane.Header.CloseClicked += (_, _) => pane.ConfirmBar.OpenClose();
@@ -571,7 +596,12 @@ public partial class MainView : UserControl
             pane.SteerView = new TerminalSteerView { DataContext = viewModel };
             pane.SteerView.StatusMessage += (_, e) => ReportFor(pane, e.Message);
         }
-        pane.ConfirmBar.StopConfirmed += (_, _) => pane.Composer.StopResponse();
+        pane.ConfirmBar.StopConfirmed += (_, _) =>
+        {
+            // Stopping a turn discards the messages queued behind it: they were written for a run that no longer continues.
+            pane.Queue?.Clear();
+            pane.Composer.StopResponse();
+        };
         pane.ConfirmBar.CloseConfirmed += (_, _) =>
         {
             viewModel.CloseCommand.Execute(null);
@@ -641,7 +671,11 @@ public partial class MainView : UserControl
         }
     }
 
-    private void OnNewAgentCompleted(object? sender, EventArgs e) => FocusThread();
+    private void OnNewAgentCompleted(object? sender, EventArgs e)
+    {
+        ApplyPendingTarget();
+        FocusThread();
+    }
 
     private void OnRowActivated(object? sender, EventArgs e) => FocusThread();
 
@@ -727,6 +761,7 @@ public partial class MainView : UserControl
         var control = (e.KeyModifiers & KeyModifiers.Control) != KeyModifiers.None;
         var shift = (e.KeyModifiers & KeyModifiers.Shift) != KeyModifiers.None;
         var alt = (e.KeyModifiers & KeyModifiers.Alt) != KeyModifiers.None;
+        var meta = (e.KeyModifiers & KeyModifiers.Meta) != KeyModifiers.None;
         if (alt)
         {
             return;
@@ -770,9 +805,13 @@ public partial class MainView : UserControl
                 e.Handled = true;
                 CycleRegions(backwards: shift);
                 break;
-            case Key.F when control && !shift:
+            case Key.F when (control || meta) && !shift:
                 e.Handled = true;
                 OpenSearch();
+                break;
+            case Key.K when (control || meta) && !shift:
+                e.Handled = true;
+                ToggleConversationSearch();
                 break;
             case Key.Escape when !control && !shift:
                 e.Handled = DismissWithEscape();
@@ -810,31 +849,44 @@ public partial class MainView : UserControl
     /// <summary>The parts of the shell that native slash commands drive for one session: Settings, a new chat, a new terminal and a side chat.</summary>
     private DesktopSlashTargets CreateSlashTargets(SessionPane pane) => new()
     {
-        OpenSettings = _ =>
+        OpenSettings = argument =>
         {
-            RequestSettings();
-            return true;
-        },
-        NewChat = _ => StartNewAgentAsync(),
-        NewTerminal = _ => StartNewTerminalAsync(),
-        OpenSideChat = (question, _) =>
-        {
-            var chat = pane.SideChats.Open();
-            if (question.Length > 0)
+            if (!TryReadSettingsSection(argument, out var section))
             {
-                chat.Post(SideChatAuthor.User, question);
+                return false;
             }
 
-            SideChatsToggle.IsChecked = true;
-            return Task.CompletedTask;
+            RequestSettings(section);
+            return true;
         },
+        HandOffToCloud = HandOffToCloudAsync,
+        Handlers = CreateHandlers(pane),
+        NewChat = _ => StartNewAgentAsync(),
+        NewTerminal = _ => StartNewTerminalAsync(),
     };
 
     private async Task StartNewAgentAsync()
     {
+        if (NewSessionBlocked(out var reason))
+        {
+            SetStatus(reason);
+            return;
+        }
+
         ShowAgentsTab();
         ShowThread();
-        await _panel.NewSessionCommand.ExecuteAsync(null).ConfigureAwait(true);
+        ApplyPendingTarget();
+        try
+        {
+            await _panel.NewSessionCommand.ExecuteAsync(null).ConfigureAwait(true);
+        }
+        finally
+        {
+            // The engine set took the pending target and folders when it created the session; the picker's choice stays for the next one.
+            _services.NewSessionTarget?.SetRoots(null);
+            ApplyPendingTarget();
+        }
+
         FocusThread();
     }
 
@@ -1155,6 +1207,7 @@ public partial class MainView : UserControl
             new ToolEntry(McpToggle, "MCP tools", CreateMcpTools, keepView: true),
             new ToolEntry(WorkspaceSearchToggle, "Workspace search", CreateWorkspaceSearch, keepView: true),
             new ToolEntry(ExportToggle, "Transcript export", CreateExport, keepView: false),
+            .. CreateShellTools(),
         ];
 
         foreach (var tool in tools)
@@ -1465,6 +1518,7 @@ public partial class MainView : UserControl
         }
 
         _closed = true;
+        CloseShell();
         _panel.PropertyChanged -= OnPanelChanged;
         _panel.Catalog.PropertyChanged -= OnCatalogChanged;
         if (_board is not null)
@@ -1576,6 +1630,45 @@ public partial class MainView : UserControl
         /// <summary>Gets or sets the action that unsubscribes the pane from its runtime.</summary>
         public Action? Detach { get; set; }
 
+        /// <summary>Gets or sets the recorder that cuts the transcript into checkpoint turns, or null when checkpoints are off.</summary>
+        public CheckpointRecorderModel? CheckpointRecorder { get; set; }
+
+        /// <summary>Gets or sets the checkpoints timeline model of the session, or null when checkpoints are off.</summary>
+        public CheckpointsModel? CheckpointsModel { get; set; }
+
+        /// <summary>Gets or sets the checkpoints timeline view, or null when checkpoints are off.</summary>
+        public CheckpointsTimelineView? CheckpointsView { get; set; }
+
+        /// <summary>Gets or sets how many blocks the recorder saw last, so a streaming delta does not record again.</summary>
+        public int RecordedBlockCount { get; set; }
+
+        /// <summary>Gets or sets the last block the recorder saw.</summary>
+        public UiBlock? RecordedLastBlock { get; set; }
+
+        /// <summary>Gets or sets the queue of messages behind the active run, or null for a session with no run input.</summary>
+        public QueuedMessagesModel? Queue { get; set; }
+
+        /// <summary>Gets or sets the adapter that sends the next queued message when the run ends.</summary>
+        public QueuedMessagesSteeringAdapter? QueueAdapter { get; set; }
+
+        /// <summary>Gets or sets the queued messages view.</summary>
+        public QueuedMessagesView? QueueView { get; set; }
+
+        /// <summary>Gets or sets the custom mode of the session, or null when the head offers none.</summary>
+        public CustomModeModel? CustomMode { get; set; }
+
+        /// <summary>Gets or sets the custom mode chip.</summary>
+        public CustomModeChipView? CustomModeView { get; set; }
+
+        /// <summary>Gets or sets the side chats of the session when the engine can answer them, or null.</summary>
+        public SideChatHub? Hub { get; set; }
+
+        /// <summary>Gets or sets the fork model of the session when the engine can fork it, or null.</summary>
+        public ForkModel? Fork { get; set; }
+
+        /// <summary>Gets or sets the opener of the Changes bar for the /changes command.</summary>
+        public ChangesBarOpener? ChangesOpener { get; set; }
+
         /// <summary>Unsubscribes the pane from its runtime and disposes the search.</summary>
         public void Dispose()
         {
@@ -1584,6 +1677,7 @@ public partial class MainView : UserControl
             TerminalView?.Release();
             Search.Dispose();
             Changes?.Dispose();
+            CheckpointRecorder?.Dispose();
         }
     }
 }

@@ -1,4 +1,14 @@
+---
+description: "Multi-repository workspaces: several folders in one session, validation, omp launch, one worktree per git root and .code-workspace import and export."
+---
+
 # Multi-repo workspaces runbook
+
+Status: Partial (core library and tests are built; the head picker is Wave 3 work, see the parity audit; no live run)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 Scope: Phase 59 part 1 (PX-16), the core. One session can cover several folders: validated roots, omp launched with all of them, one git worktree per git root for a run, a multi-root explorer, and `.code-workspace` import and export. Status as of 2026-10-27. Native views for the picker are the next wave.
 

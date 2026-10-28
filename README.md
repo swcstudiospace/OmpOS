@@ -10,20 +10,54 @@
 
 # OmpOS
 
-OmpOS is a Cursor-style agents workspace whose engine is **omp**. The desktop head (`apps/OmpOS.Native`, Avalonia) opens on an Agents window: a session rail, a thread and a composer, plus a Kanban tab with one card per opened session. Every omp process the application starts, a chat session through `omp acp` or an embedded omp terminal, is launched with four plugins: Ultrathink, Substrate, Swarm and GSD-Core. A running session can be steered live from the composer or from its Kanban card. The Settings window (Ctrl+,) configures model providers through omp's own configuration. The application starts in the Dark theme and can follow System or Light.
+OmpOS is a Cursor-class workspace for coding agents on the **omp** engine: a desktop app, a web app, cloud agents and remote environments, under an open licence (AGPL-3.0-or-later). You start several agents, watch them work, steer them while they run and review their file changes. Every omp process OmpOS starts runs with four plugins: Ultrathink, Substrate, Swarm and GSD-Core. OmpOS has no model of its own: you bring a provider and a key, chosen from a catalogue of 103 European, US, Chinese, global and local providers and coding plans.
 
-The same repository holds a Blazor WebAssembly web head, an Android head, an ASP.NET Core API (session runs execute in-process; no worker service) and sandboxed agent execution. The desktop head is the one that is built out; see Status.
+Be clear about maturity: this is pre-1.0 software. The desktop app is built and verified on Linux without a model turn; **no live model turn has been run** since a bounded capture in Phase 11, nothing was run on Windows, macOS or Android, and nothing is deployed to Railway. The tables below say what is Built, Partial or Blocked.
 
-## Prerequisites
+## Screenshots
 
-- `bash`, `curl`, `git`, `python3` on `PATH`.
-- `omp` on `PATH` (the engine). The application starts no omp process until you send a prompt or open an omp terminal.
-- The plugin submodules: `git clone --recurse-submodules`, or `git submodule update --init --recursive` in an existing clone. `plugins/agent-substrate` is private; without access that plugin reports Unavailable and sessions still run.
-- Node 20 or newer for the plugin tests (`scripts/ci/plugin-node-tests.sh`); GSD tools need a newer node, see [docs/runbooks/agent-loop.md](docs/runbooks/agent-loop.md).
-- .NET is not a prerequisite: `./bootstrap.sh` installs the SDK pinned in `global.json` into `~/.dotnet` when it is missing.
-- `podman` plus `podman-compose` are optional (only the local sandbox provider needs them). Podman is the only supported container runtime.
+![The OmpOS web app in the Demo build, Light theme: the agent rail, a streaming thread and the composer.](docs/assets/screens/web-agents-light.png)
 
-## Run the desktop head (Linux)
+*Web app, Demo build: a simulated engine produces the thread; no model is called.*
+
+![The Kanban board in the web Demo build.](docs/assets/screens/web-kanban-light.png)
+
+*Web app, Demo build.*
+
+![The OmpOS desktop app on Linux, Light theme: the Agents window.](docs/assets/screens/desktop-agents-light.png)
+
+*Desktop app on Linux (the real omp engine; no model turn).*
+
+![The desktop Settings window on Linux.](docs/assets/screens/desktop-settings-light.png)
+
+*Desktop Settings window on Linux.*
+
+## What is built
+
+Status words: **Built** = implemented, reachable from a head and covered by tests the gate runs. **Partial** = part is built or wired; the audit names the missing piece. **Blocked** = needs something outside the repository. The row-by-row truth is the [Cursor parity audit of 2026-10-28](docs/quality/cursor-parity-audit-2026-10-28.md).
+
+| Feature | Status | Note |
+|---|---|---|
+| Desktop app: Agents window, thread, composer, Kanban, omp terminals, Changes bar, live steering, Settings | Built | Linux only; no model turn |
+| Four plugins loop on every omp process | Built | Checked against the real omp without a model turn |
+| White-and-Purple brand, Light default | Built | Owner sign-off of the logo is open |
+| AGPL-3.0-or-later licence, notices, `GET /source` offer | Built | Licence of two submodules is open |
+| Web app: shell, rail, thread, composer, Changes, Kanban, Settings, Demo | Partial | Unit-tested components; Demo has a simulated engine; no public deployment |
+| Model provider catalogue (103 rows) and coding plans | Partial | No credential used; 49 rows partly verified |
+| Slash commands (92 Cursor tokens) | Partial | Every token has a handler or a stated reason |
+| Hooks (`hooks.json`, 21 events) | Partial | Not run against a live omp |
+| MCP servers, run modes, checkpoints, worktrees, mentions, ignore files | Partial | Built and unit-tested; head wiring tracked in the audit |
+| Remote environments over ssh | Partial | Never run against a real host |
+| Multi-repo workspaces | Partial | Core built |
+| Cloud agents on Railway | Partial | Control plane and worker against fakes; no deploy |
+| GitBook documentation site | Blocked | Published after the owner connects GitBook |
+| Cursor accounts, teams, billing | Omitted | No accounts by design |
+
+## Quick start
+
+Requirements: `bash`, `curl`, `git` and `python3`; `omp` on `PATH` (the engine); the plugin submodules (`git clone --recurse-submodules`, or `git submodule update --init --recursive`; `plugins/agent-substrate` is private and its plugin reports Unavailable without access); optional `podman` for the local sandbox. .NET is not a prerequisite: `./bootstrap.sh` installs the SDK pinned in `global.json` into `~/.dotnet`.
+
+**Desktop (Linux):**
 
 ```sh
 export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH DOTNET_NOLOGO=1 DOTNET_CLI_TELEMETRY_OPTOUT=1
@@ -31,80 +65,68 @@ git submodule update --init --recursive
 dotnet run --project apps/OmpOS.Native
 ```
 
-The workspace root is the current directory. The head reads these environment variables (`apps/OmpOS.Native/Agents/AgentLoopEnvironment.cs`):
+The workspace root is the current directory. The app starts no omp process until you send a prompt or open an omp terminal. Press Ctrl+, for Settings and add a provider key on the Models page.
+
+**Web Demo (no backend):**
+
+```sh
+scripts/vercel/build-demo.sh
+scripts/web-demo/serve-demo.sh      # http://127.0.0.1:5190/
+```
+
+**Web with a local API:** see [docs/runbooks/web-demo.md](docs/runbooks/web-demo.md). **Everything (build, test, format, web smoke):** `./bootstrap.sh`, see [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md).
+
+The desktop head reads these variables (`apps/OmpOS.Native/Agents/AgentLoopEnvironment.cs`):
 
 | Variable | What it does |
 |---|---|
-| `OMPOS_STATE_DIR` | Root of all application state (session catalog, per-session directories, settings, provider key store). Default: `$XDG_DATA_HOME/OmpOS`, else `~/.local/share/OmpOS`. |
-| `OMPOS_PLUGINS_ROOT` | The plugins directory. Default: `plugins/` next to the repository root (found from the executable or the current directory). |
-| `OMPOS_SUBSTRATE_URL` | Address of the Substrate server (https, or http on a loopback host). Unset means the Substrate is not used. |
+| `OMPOS_STATE_DIR` | Root of all application state (session catalogue, settings, provider key store). Default `$XDG_DATA_HOME/OmpOS`, else `~/.local/share/OmpOS`. |
+| `OMPOS_PLUGINS_ROOT` | The plugins directory. Default `plugins/` next to the repository root. |
+| `OMPOS_SUBSTRATE_URL` | Address of the Substrate server (https, or http on a loopback host). Unset means it is not used. |
 | `OMPOS_SUBSTRATE_TOKEN_ENV` | The NAME of the variable the Substrate token is read from (default `SUBSTRATE_TOKEN_OMP`). The token itself is never logged or stored. |
 
-More detail, including the state directory layout and what the application writes outside its own directories: [docs/runbooks/running-the-desktop-app.md](docs/runbooks/running-the-desktop-app.md).
+## Model providers
 
-## Bootstrap and the gate
+The Settings > Models page lists **103 providers, aggregators, coding plans and local runtimes**: Europe 20 (17 model APIs, 1 aggregator, 2 coding plans), United States and Canada 25, China 41, Global 8 and 9 local runtimes. Each row names the vendor page it was read on, the base URL, how the key is sent and a verification status (50 verified, 49 partial, 4 unverified). Keys are never stored in the catalogue: omp keeps them. See [docs/guides/providers-guide.md](docs/guides/providers-guide.md) and the generated [docs/reference/providers.md](docs/reference/providers.md).
 
-```sh
-./bootstrap.sh
-```
+## Documentation
 
-One command builds and tests everything from a clean clone. It installs the pinned SDK when missing, runs the pinned secret scan (`scripts/ci/secret-scan.sh`, which fails closed), the node tests of `plugins/gsd-core-omp`, a locked restore, a warnings-as-errors Release build, the test suite (`Category=Live` excluded), `dotnet format --verify-no-changes`, and the web smoke with its axe check. Any failing step exits non-zero. See [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md).
+The documentation is in [docs/README.md](docs/README.md): guides for the desktop and web apps, concepts, settings, providers, hooks, remote environments, cloud agents, the HTTP API, decisions and the parity audit. It is laid out for GitBook's GitHub Git Sync and is published after the owner connects GitBook, see [docs/runbooks/gitbook-publish.md](docs/runbooks/gitbook-publish.md); until a live URL is confirmed, read it here. `bash scripts/ci/check-docs.sh` checks its structure.
 
-- Run the tests: `dotnet test OmpOS.Linux.slnf -c Release`.
-- Verify formatting: `dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore`.
-- Live tests against the real omp (no model turn) are opt-in: `OMPOS_LIVE_OMP=1`, trait `Category=Live`.
+## Support, contributing and security
 
-## Status
+- Help and questions: [SUPPORT.md](SUPPORT.md). Best effort; no service-level agreement.
+- Contributing: [CONTRIBUTING.md](CONTRIBUTING.md) (branches, commit subjects, formatting, lock files, DCO sign-off); [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+- Security: report privately as [SECURITY.md](SECURITY.md) describes, never in a public issue.
+- Changes: [CHANGELOG.md](CHANGELOG.md).
 
-The Agent Panel, the Kanban tab, omp terminals with the four plugins, live steering, the Settings window with model providers and the Cursor-style visual parity (Dark and Light) are built and verified on Linux without a model turn. Not built or not wired into a head: the browser pane, hooks, automations, the plugin host, herdr, the MCP gateway, the Pets view, remote and mobile terminals and usage history. No live model turn has been run since the bounded Phase 11 run, and nothing was run on Windows, macOS, Android or a hosted deployment. The row-by-row audit is [docs/quality/cursor-parity-audit-2026-10-26.md](docs/quality/cursor-parity-audit-2026-10-26.md); the planning records are in `.planning/`.
-
-## Repo map
+## Project layout
 
 | Path | Contents |
 | ---- | -------- |
-| `OmpOS.slnx` | Solution (all projects, including the Android head) |
-| `OmpOS.Linux.slnf` | Solution filter for Linux and CI (everything except the Android head) |
-| `Directory.Build.props` | Compiler, analyzer, determinism and lock-file policy for every project |
-| `Directory.Packages.props` | Central package versions |
-| `global.json` | Pinned .NET SDK plus the test runner mode |
-| `.editorconfig` | Single rule source for formatting and code style |
-| `bootstrap.sh` | One-command bootstrap and gate |
-| `.env.example` | Every configuration variable of the API, documented |
-| `src/` | Libraries (`Contracts`, `Parser`, `Harness.*`, `Sandbox`, `Sessions`, `GenUi`, `Presentation`, `Native.Views`, `UI`, ...) |
-| `services/` | Hosts (`Api`) |
-| `apps/` | Heads: `Native` (Avalonia desktop), `Web` (Blazor WebAssembly), `Android` (Avalonia) |
-| `plugins/` | The four omp plugins: submodules `claude-ultrathink`, `agent-swarm`, `agent-substrate`, and the tracked `gsd-core-omp`; see [docs/plugins.md](docs/plugins.md) |
-| `scripts/` | CI scripts (`scripts/ci/`: secret scan, plugin node tests), web smoke, Vercel helpers |
+| `apps/` | Heads: `OmpOS.Native` (Avalonia desktop), `OmpOS.Web` (Blazor WebAssembly), `OmpOS.Android` (Avalonia) |
+| `services/` | `OmpOS.Api` (ASP.NET Core API and cloud control plane), `OmpOS.AgentWorker` (cloud agent worker) |
+| `src/` | Libraries: `Contracts`, `Parser`, `Harness.*` (Acp, AgentLoop, Remote, Mcp, Providers, Workspace, Worktrees, Terminal, ...), `Sandbox`, `Sessions`, `GenUi`, `Presentation`, `Native.Views`, `UI`, ... |
+| `plugins/` | The four omp plugins: submodules `claude-ultrathink`, `agent-swarm`, `agent-substrate` and the tracked `gsd-core-omp`; see [docs/plugins.md](docs/plugins.md) |
 | `tests/` | Per-project suites, contract fixtures and `ArchitectureTests` |
-| `docs/` | Architecture, ADRs, open questions, plans, runbooks |
-| `docs/quality/` | The quality bar and the Cursor parity audit |
-| `docs/runbooks/` | Operator and developer runbooks |
-| `docs/runbooks/evidence/` | Recorded runs and screenshots (for example `ui-parity-2026-10-26/`, `phase-48-omp-plugins-2026-10-26/`) |
+| `docs/` | The documentation (GitBook root), ADRs, runbooks, audits, plans and recorded evidence |
+| `assets/brand/` | Logo set, banner and social preview; see [docs/brand.md](docs/brand.md) |
+| `scripts/` | CI and docs checks (`scripts/ci/`, `scripts/docs/`), web smoke, Vercel and brand helpers |
+| `deploy/` | Containerfiles and `compose.yaml` for podman-compose |
 | `.planning/` | Roadmap, requirements, state and per-phase records |
-| `deploy/` | `compose.yaml` for podman-compose |
-| `.github/workflows/` | `ci.yml` (build, test, format, audit, scan, compose, Android) |
+| `OmpOS.slnx`, `OmpOS.Linux.slnf` | Solution, and the filter for Linux and CI (everything except the Android head) |
+| `Directory.Build.props`, `Directory.Packages.props`, `global.json`, `.editorconfig`, `bootstrap.sh` | Build policy, central package versions, pinned SDK, style rules, the one-command gate |
 
 ## What is verified where
 
 | Surface | Verifier | Scope |
 | ------- | -------- | ----- |
 | Linux (CI pool) | `ci.yml` job `build-test` | Everything in `OmpOS.Linux.slnf`, the plugin node tests, the secret scan and the web smoke |
-| Linux dev box | `./bootstrap.sh` | The same scope; the Android head is outside the Linux filter |
+| Linux dev box | `./bootstrap.sh` | The same scope |
 | Linux (CI pool) | `ci.yml` job `android` | `apps/OmpOS.Android`: restore and `-warnaserror` build; no device or emulator |
-| Windows, macOS, iOS | none | Not built or run; they need a Windows 11 runner and the Mac channel (OQ-69, OQ-74) |
+| Windows, macOS, iOS | none | Not built or run: they need a Windows 11 runner and the Mac channel |
 
-Restoring the full `OmpOS.slnx` needs the .NET Android workload (`dotnet workload install android`); the Linux filter does not.
-
-## Docs
-
-- [docs/runbooks/running-the-desktop-app.md](docs/runbooks/running-the-desktop-app.md): run the desktop head, state layout, shortcuts.
-- [docs/runbooks/agent-loop.md](docs/runbooks/agent-loop.md): the four plugins, health and probes.
-- [docs/quality/cursor-parity-audit-2026-10-26.md](docs/quality/cursor-parity-audit-2026-10-26.md): what is built, wired and not done.
-- [docs/settings-parity.md](docs/settings-parity.md): the 34 Cursor settings rows and the eleven Settings pages.
-- [docs/architecture.md](docs/architecture.md), [docs/decisions/](docs/decisions/): layers and decision records.
-- [docs/open-questions.md](docs/open-questions.md): every unverified external fact, with owner.
-- [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md), [docs/runbooks/sandbox.md](docs/runbooks/sandbox.md): bootstrap, local dependencies, sandbox providers.
-- [CONTRIBUTING.md](CONTRIBUTING.md): branches, commits, formatting, lock files, TODO policy.
+Live tests against the real omp (no model turn) are opt-in: `OMPOS_LIVE_OMP=1`, trait `Category=Live`.
 
 ## License
 

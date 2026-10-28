@@ -1,4 +1,16 @@
+---
+description: "Historical v0.9.1 handoff: how the repository was handed over after the foundation phases."
+---
+
 # OmpOS v0.9.1 handoff — implemented / stubbed / deferred
+
+Status: Superseded (historical v0.9.1 handoff; the current status is guides/status-and-roadmap.md)
+
+Last verified: 2026-10-28 (the status only; the body is a dated record and was not re-verified)
+
+Applies to: v0.15.0
+
+> **Historical document.** This is the v0.9.1 handoff of 2026-10-21. Much of it is superseded: Temporal is gone, the MAUI head was replaced by Avalonia, and the product has grown through v0.10.0 to v0.15.0. For what is built today read [Status and roadmap](guides/status-and-roadmap.md) and the [parity audit of 2026-10-28](quality/cursor-parity-audit-2026-10-28.md); for the current architecture read [Architecture](architecture.md). Facts below are kept as written on that date.
 
 **Milestone:** OmpOS v0.9.1 · **Date:** 2026-10-21 · **Author task:** Phase 5 verify pass
 

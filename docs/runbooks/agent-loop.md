@@ -1,4 +1,14 @@
+---
+description: "How to run the OmpOS desktop head with the Ultrathink, Swarm, Substrate and GSD-Core plugins and check a launch without a model turn."
+---
+
 # Agent loop runbook
+
+Status: Built; verified against the real omp without a model turn
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 How to run the OmpOS native head with the Ultrathink, Swarm, Substrate and GSD-Core plugins, how to check a launch without spending a model turn, and what is known not to work. Plugin facts: [docs/plugins.md](../plugins.md). Decision: [ADR-0012](../decisions/ADR-0012-agent-loop-plugins.md).
 

@@ -75,4 +75,10 @@ internal sealed class SessionEngineSetOptions
     /// it returns never hold a key.
     /// </summary>
     public ProviderKeyEnvironment? ProviderKeys { get; init; }
+
+    /// <summary>
+    /// Gets the head's shared services (hooks, run mode, MCP catalog, remote environments, checkpoints), or null for a head without them. Without it a session is composed exactly as it was before
+    /// these features existed: no hooks, no run mode (omp keeps its own approval default), no MCP servers of the user's files, no ssh sessions.
+    /// </summary>
+    public OmpOS.Native.Composition.HeadServices? Services { get; init; }
 }

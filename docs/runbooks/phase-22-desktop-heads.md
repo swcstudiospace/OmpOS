@@ -1,4 +1,14 @@
+---
+description: "Record of Phase 22: Linux, Windows and macOS desktop head status and what is not run."
+---
+
 # Phase 22 desktop heads: platform runbook
+
+Status: Record (historical, 2026-10-22; Windows and macOS were never run)
+
+Last verified: 2026-10-28 (the status only; the body is a dated record and was not re-verified)
+
+Applies to: v0.15.0
 
 Scope: XP-02 (Linux), XP-03 (Windows), XP-04 (macOS) and XP-11 (Mac-channel items). Status as of 2026-10-22.
 

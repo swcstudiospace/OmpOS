@@ -20,4 +20,7 @@ internal interface IProviderCardHost
     /// <summary>Puts text in the live region.</summary>
     /// <param name="text">The text.</param>
     void Announce(string text);
+
+    /// <summary>Gets the sentence that says why the operator has disabled key entry, or null when keys can be entered.</summary>
+    string? KeyWritesDisabledReason { get; }
 }

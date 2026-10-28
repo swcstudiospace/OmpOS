@@ -1,0 +1,52 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:priv="clr-namespace:OmpOS.Presentation.Settings.Privacy;assembly=OmpOS.Presentation"
+                            xmlns:local="clr-namespace:OmpOS.Native.Views.Settings"
+                            x:Class="OmpOS.Native.Views.Settings.PrivacyPageView"
+                            x:DataType="priv:PrivacySettingsPage"
+                            Focusable="False">
+
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+
+  <!-- The Privacy page: short read-only statements about what OmpOS does with your code and prompts. Nothing here can be changed. -->
+  <Panel>
+
+    <local:PageStatusView x:Name="StateView" />
+
+    <ScrollViewer x:Name="ReadyPanel"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Classes="settings-column">
+
+        <TextBlock Classes="settings-heading"
+                   Text="{x:Static priv:PrivacyCopy.Heading}" />
+        <TextBlock Classes="settings-description"
+                   Text="{x:Static priv:PrivacyCopy.Description}" />
+
+        <ItemsControl x:Name="StatementRows"
+                      ItemsSource="{CompiledBinding Rows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="priv:PrivacyRow">
+              <Border Classes="settings-row"
+                      AutomationProperties.Name="{CompiledBinding Summary}">
+                <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
+                  <TextBlock Classes="settings-label"
+                             Text="{CompiledBinding Heading}" />
+                  <TextBlock Classes="settings-body"
+                             Text="{CompiledBinding Text}" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Panel>
+
+</local:SettingsPageViewBase>

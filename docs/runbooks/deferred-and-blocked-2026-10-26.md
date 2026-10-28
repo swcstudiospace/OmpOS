@@ -1,4 +1,16 @@
+---
+description: "Every deferred or blocked item as of 2026-10-26, with the blocker and the owner action."
+---
+
 # Deferred and blocked items (2026-10-26)
+
+Status: Record (written 2026-10-26; the current status is the parity audit of 2026-10-28)
+
+Last verified: 2026-10-28 (the status only; the body is a dated record and was not re-verified)
+
+Applies to: v0.15.0
+
+> **Superseded as a status source.** This table was compiled on 2026-10-26. Several rows have since moved (the licence is decided; hooks, remote environments, multi-repo and cloud agents were built as Partial in v0.15.0). The current status is in the [parity audit of 2026-10-28](../quality/cursor-parity-audit-2026-10-28.md) and [Status and roadmap](../guides/status-and-roadmap.md). The table below is kept as recorded.
 
 One table of every item that is deferred or blocked by something outside the repository or outside the current work. It was compiled on 2026-10-26 from `.planning/ROADMAP.md`, `.planning/STATE.md`, `docs/open-questions.md` and the phase records they point to. No blocker here is new: each row names where it is recorded. Where a record names no owner action, the cell says so instead of guessing one.
 
@@ -32,7 +44,7 @@ These are not blockers of a phase above, but they stay open and are recorded in 
 
 | Item | What is open | Recorded in |
 |------|--------------|-------------|
-| Licence of OmpOS and the AGPL-3.0-or-later of the `claude-ultrathink` submodule | OmpOS has no LICENSE file; no distribution claim is made. | OQ-62 |
+| Licence of OmpOS and the AGPL-3.0-or-later of the `claude-ultrathink` submodule | Resolved on 2026-10-27: OmpOS is `AGPL-3.0-or-later` (ADR-0018). Still open: the licence of the submodules `agent-swarm` and `agent-substrate`, which have no LICENSE file (`agent-substrate` is private). | OQ-62 (resolved), OQ-102 |
 | `SUBMODULE_TOKEN` repository secret for the private `agent-substrate` submodule | Not set; CI warns and continues without the substrate plugin. | OQ-63 |
 | A live model turn (OD-07) | Approved only for the bounded Phase 11 run; any further live turn needs a new recorded approval. Until then an `injected` steering delivery and the behaviour of the plugins under a model are not verified. | `docs/open-questions.md` (Owner decisions, OD-07); OQ-81 |
 | Windows and macOS local terminals | No backend exists; the entries are NOT RUN. | OQ-69; `docs/runbooks/local-terminal.md` |

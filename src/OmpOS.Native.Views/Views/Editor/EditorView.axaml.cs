@@ -45,6 +45,22 @@ internal partial class EditorView : UserControl
         AddHandler(KeyDownEvent, OnViewKeyDown, RoutingStrategies.Tunnel);
     }
 
+    /// <summary>Moves the caret of the selected file to the start of a line and scrolls it into view. A line past the end goes to the last line; a file that is not loaded yet does nothing.</summary>
+    /// <param name="line">The 1-based line.</param>
+    internal void GoToLine(int line)
+    {
+        var document = CodeEditor.Document;
+        if (document is null || document.LineCount == 0)
+        {
+            return;
+        }
+
+        var clamped = Math.Clamp(line, 1, document.LineCount);
+        CodeEditor.TextArea.Caret.Line = clamped;
+        CodeEditor.TextArea.Caret.Column = 1;
+        CodeEditor.ScrollToLine(clamped);
+    }
+
     /// <summary>Binds the view to the editor state in the data context and draws its current state.</summary>
     protected override void OnDataContextChanged(EventArgs e)
     {

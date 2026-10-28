@@ -34,6 +34,11 @@
                  TextWrapping="Wrap"
                  IsVisible="False" />
 
+      <!-- The hook notices that belong to no tool call of the transcript: they sit under the conversation. -->
+      <StackPanel x:Name="HookNoticeHost"
+                  AutomationProperties.Name="Hook notices"
+                  Spacing="{DynamicResource OmpOS.Gap.Xs}" />
+
       <!-- The lifecycle notice and the affordances follow the transcript. The stop control shows while a turn streams, retry after a
            recoverable failure, and jump to latest while auto-scroll is paused. -->
       <TextBlock x:Name="StateNotice"

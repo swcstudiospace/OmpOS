@@ -94,4 +94,7 @@ internal sealed class AgentHeadOptions
     /// An infinite or non-positive value runs the sweeper without a timer: it applies the settings when they are saved and once at the start.
     /// </summary>
     public TimeSpan? RuntimeSweepInterval { get; init; }
+
+    /// <summary>Gets the head's shared services (hooks, run mode, MCP catalog, remote environments, checkpoints), or null for a head without them, which composes every session as it always did. The head disposes them.</summary>
+    public OmpOS.Native.Composition.HeadServices? Services { get; init; }
 }

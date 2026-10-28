@@ -77,4 +77,4 @@ Shared logic lives in `src/gsd-home.mjs` (plain ESM with JSDoc types) instead of
 
 ## Licence
 
-No `license` field in `package.json`: OmpOS has no licence yet. This is an owner decision; add the field once the repository licence is chosen. GSD-Core itself is MIT and is only referenced, never copied.
+`package.json` declares `AGPL-3.0-or-later`, the licence of OmpOS (see `LICENSE` at the repository root). GSD-Core itself is MIT and is only referenced, never copied.

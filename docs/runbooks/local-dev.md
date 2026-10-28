@@ -1,4 +1,14 @@
+---
+description: "Local development: bootstrap from a clean clone, the gate, tests, formatting, lock files and local dependencies."
+---
+
 # Local development runbook
+
+Status: Built; the gate runs on Linux
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 ## Bootstrap
 

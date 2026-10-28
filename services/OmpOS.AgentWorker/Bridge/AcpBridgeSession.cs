@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Net.WebSockets;
+using System.Threading.Channels;
 using OmpOS.Harness.Abstractions;
 
 namespace OmpOS.AgentWorker.Bridge;
@@ -32,6 +33,7 @@ internal static class AcpBridgeSession
     /// <param name="logger">Receives the end of the session.</param>
     /// <param name="stopping">Signals that the worker is shutting down.</param>
     /// <param name="requestAborted">Signals that the client's connection dropped.</param>
+    /// <param name="hookFrames">The frames the session's hooks produce (<c>_ompos/hook</c> notifications), sent to the client next to the omp frames, or null when the session has no hooks.</param>
     /// <returns>A task that completes when the socket is closed and both pumps have ended.</returns>
     public static async Task RunAsync(
         WebSocket socket,
@@ -40,16 +42,22 @@ internal static class AcpBridgeSession
         TimeSpan closeTimeout,
         ILogger logger,
         CancellationToken stopping,
-        CancellationToken requestAborted)
+        CancellationToken requestAborted,
+        ChannelReader<ReadOnlyMemory<byte>>? hookFrames = null)
     {
         using var pumps = new CancellationTokenSource();
         using var interruption = CancellationTokenSource.CreateLinkedTokenSource(stopping, requestAborted);
+        using var sendGate = new SemaphoreSlim(1, 1);
         var interrupted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var registration = interruption.Token.Register(static state => ((TaskCompletionSource)state!).TrySetResult(), interrupted);
 
+        using var hookPump = HookFramePump.Start(socket, hookFrames, sendGate);
         var client = PumpClientAsync(socket, omp, pumps.Token);
-        var engine = PumpOmpAsync(socket, omp, pumps.Token);
+        var engine = PumpOmpAsync(socket, omp, sendGate, pumps.Token);
         var first = await Task.WhenAny(client, engine, interrupted.Task).ConfigureAwait(false);
+
+        // A close frame is a send too: no hook frame may be in flight when it goes out.
+        await hookPump.StopAsync().ConfigureAwait(false);
 
         Outcome outcome;
         if (first == client)
@@ -139,7 +147,7 @@ internal static class AcpBridgeSession
         }
     }
 
-    private static async Task<Outcome> PumpOmpAsync(WebSocket socket, IAcpTransport omp, CancellationToken cancellationToken)
+    private static async Task<Outcome> PumpOmpAsync(WebSocket socket, IAcpTransport omp, SemaphoreSlim sendGate, CancellationToken cancellationToken)
     {
         try
         {
@@ -150,7 +158,15 @@ internal static class AcpBridgeSession
                     return new Outcome(WebSocketCloseStatus.MessageTooBig, "omp frame exceeds 1 MiB");
                 }
 
-                await socket.SendAsync(frame, WebSocketMessageType.Text, endOfMessage: true, cancellationToken).ConfigureAwait(false);
+                await sendGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await socket.SendAsync(frame, WebSocketMessageType.Text, endOfMessage: true, cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    sendGate.Release();
+                }
             }
 
             return new Outcome(WebSocketCloseStatus.InternalServerError, "omp closed its output");

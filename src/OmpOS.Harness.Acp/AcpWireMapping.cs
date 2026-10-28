@@ -26,6 +26,7 @@ internal static class AcpWireMapping
             "tool_call" => ToolCall(update),
             "tool_call_update" => ToolCallUpdate(update),
             "plan" => Plan(update),
+            "usage_update" => Usage(update),
             _ => null,
         };
     }
@@ -178,6 +179,12 @@ internal static class AcpWireMapping
     {
         var plan = update.Deserialize(AcpJsonContext.Default.PlanUpdate);
         return new PlanEvent(RenderPlan(plan?.Entries ?? []));
+    }
+
+    private static ContextUsageEvent Usage(JsonElement update)
+    {
+        var usage = update.Deserialize(AcpJsonContext.Default.UsageUpdate) ?? throw new JsonException("usage_update carries no usage.");
+        return new ContextUsageEvent(Math.Max(usage.Used, 0), Math.Max(usage.Size, 0));
     }
 
     private static string Box(string status) => status switch

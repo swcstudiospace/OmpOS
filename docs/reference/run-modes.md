@@ -1,4 +1,14 @@
+---
+description: "Reference for run modes (Auto-review, Allowlist, Run Everything), permissions.json and sandbox.json, and how a call is judged."
+---
+
 # Run modes, permissions.json and sandbox.json
+
+Status: Partial (decision engine, file formats, page and launch mapping are built and unit tested; Auto-review's hosted classifier is not available; not run against a live omp session)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 Run modes decide how much an agent may do without asking you. OmpOS uses Cursor's names and Cursor's file formats, so the files you wrote for Cursor keep working, and it says plainly where it does less than Cursor.
 

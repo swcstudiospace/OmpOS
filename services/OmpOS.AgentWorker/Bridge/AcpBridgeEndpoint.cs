@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Options;
 using OmpOS.AgentWorker.Configuration;
+using OmpOS.AgentWorker.Hooks;
 using OmpOS.AgentWorker.Security;
 using OmpOS.Harness.Abstractions;
 
@@ -56,7 +57,9 @@ internal static class AcpBridgeEndpoint
             return;
         }
 
-        var attachment = host.TryAttach(sessionId, BearerToken(context.Request));
+        var hooks = options.Value.Hooks;
+        var consent = hooks.Enabled ? HooksConsentSnapshotReader.Read(context.User, hooks.MaxSnapshotHashes) : HooksConsentRead.Absent;
+        var attachment = host.TryAttach(sessionId, BearerToken(context.Request), consent);
         if (attachment is null)
         {
             Refused(logger, sessionId, null);
@@ -86,7 +89,8 @@ internal static class AcpBridgeEndpoint
                 options.Value.CloseTimeout,
                 logger,
                 lifetime.ApplicationStopping,
-                context.RequestAborted).ConfigureAwait(false);
+                context.RequestAborted,
+                attachment.HookFrames).ConfigureAwait(false);
         }
         finally
         {

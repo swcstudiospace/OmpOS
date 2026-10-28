@@ -1,7 +1,13 @@
 using Avalonia.Controls;
+using OmpOS.Presentation.Hooks;
+using OmpOS.Presentation.Safety;
 using OmpOS.Presentation.Settings;
 using OmpOS.Presentation.Settings.Customize;
+using OmpOS.Presentation.Settings.Ignore;
 using OmpOS.Presentation.Settings.Models;
+using OmpOS.Presentation.Settings.Privacy;
+using OmpOS.Presentation.Settings.Workspaces;
+using OmpOS.Presentation.Settings.Worktrees;
 
 namespace OmpOS.Native.Views.Settings;
 
@@ -21,6 +27,7 @@ internal static class SettingsPageViews
         {
             RuntimePage => new RuntimePageView(),
             GeneralPage => new GeneralPageView(),
+            DisplaySettingsPage => new DisplayPageView(),
             AgentsPage => new AgentsPageView(),
             TabPage => new TabPageView(),
             PluginsPage => new PluginsPageView(),
@@ -28,30 +35,47 @@ internal static class SettingsPageViews
             KeyboardSettingsPage => new KeyboardPageView(),
             ModelsSettingsPage => new ModelsPageView(),
             CustomizeCatalogPage => new CustomizeCatalogView(),
+            HooksSettingsPage => new OmpOS.Native.Views.Hooks.HooksPageView(),
+            RunModeSettingsPage => new OmpOS.Native.Views.Safety.RunModePageView(),
+            McpSettingsPage => new OmpOS.Native.Views.Mcp.McpPageView(),
+            RemoteEnvironmentsSettingsPage => new OmpOS.Native.Views.Remote.RemoteEnvironmentsPageView(),
+            CloudSettingsPage => new OmpOS.Native.Views.Cloud.CloudAgentsPageView(),
+            WorkspacesSettingsPage => new WorkspacesPageView(),
+            WorktreesSettingsPage => new WorktreesPageView(),
+            IgnoreSettingsPage => new IgnorePageView(),
+            PrivacySettingsPage => new PrivacyPageView(),
             _ => throw new ArgumentException("No view draws this kind of settings page.", nameof(page)),
         };
-        view.DataContext = page;
+        view.DataContext = ContextOf(page);
         return view;
     }
 
+    // The MCP and Cloud views draw a model the page holds; every other view draws the page.
+    private static object ContextOf(ISettingsPage page) => page switch
+    {
+        McpSettingsPage mcp => mcp.Model,
+        CloudSettingsPage cloud => cloud.Agents,
+        _ => page,
+    };
+
     /// <summary>Returns whether the page has something to save: its footer then shows Save and Discard. A read-only page shows neither.</summary>
     /// <param name="page">The page.</param>
-    /// <returns>True for the Runtime, General, Agents and Models pages.</returns>
+    /// <returns>True for the Runtime, General, Agents, Models, Display, Run mode, Ignore and Workspaces pages.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="page"/> is null.</exception>
     public static bool IsEditable(ISettingsPage page)
     {
         ArgumentNullException.ThrowIfNull(page);
-        return page is RuntimePage or GeneralPage or AgentsPage or ModelsSettingsPage;
+        return page is RuntimePage or GeneralPage or AgentsPage or ModelsSettingsPage or DisplaySettingsPage or RunModeSettingsPage or IgnoreSettingsPage or WorkspacesSettingsPage;
     }
 
     /// <summary>Returns whether the page has defaults the footer's Reset returns its draft to. The Models page has none: its draft is a form to close.</summary>
     /// <param name="page">The page.</param>
-    /// <returns>True for the Runtime, General and Agents pages.</returns>
+    /// <returns>True for the Runtime, General, Agents, Display, Run mode, Ignore and Workspaces pages.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="page"/> is null.</exception>
     public static bool HasDefaults(ISettingsPage page)
     {
         ArgumentNullException.ThrowIfNull(page);
-        return page is RuntimePage or GeneralPage or AgentsPage;
+        return page is RuntimePage or GeneralPage or AgentsPage or DisplaySettingsPage or RunModeSettingsPage or IgnoreSettingsPage or WorkspacesSettingsPage;
     }
 
     /// <summary>Returns whether the page is still loading its values.</summary>

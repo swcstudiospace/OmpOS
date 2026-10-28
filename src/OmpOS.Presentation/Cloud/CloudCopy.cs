@@ -364,6 +364,27 @@ public static class CloudCopy
     /// <summary>The sentence of a hand-off without a prompt.</summary>
     public const string HandoffNeedsPrompt = "Write the task for the cloud agent first.";
 
+    /// <summary>The title of the hand-off dialog.</summary>
+    public const string HandoffTitle = "Hand off to cloud";
+
+    /// <summary>The sentence under the title of the hand-off dialog.</summary>
+    public const string HandoffDescription = "A new cloud agent will work on this task in the repository you choose. Nothing is sent until you confirm the cost.";
+
+    /// <summary>The label of the task shown in the hand-off dialog.</summary>
+    public const string HandoffTaskLabel = "Task";
+
+    /// <summary>The label of the button that starts the hand-off.</summary>
+    public const string HandoffStartLabel = "Hand off";
+
+    /// <summary>The label of the start button while the hand-off runs.</summary>
+    public const string HandoffStartingLabel = "Handing off";
+
+    /// <summary>The sentence while the hand-off runs.</summary>
+    public const string HandoffInProgress = "Handing the task off to a cloud agent.";
+
+    /// <summary>The accessible name of the status of the hand-off.</summary>
+    public const string HandoffStatusName = "Hand-off status";
+
     // Entry errors.
 
     /// <summary>A name is missing.</summary>

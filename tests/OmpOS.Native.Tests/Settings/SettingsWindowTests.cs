@@ -1,10 +1,24 @@
 using Avalonia.Automation;
 using Avalonia.Controls;
+using OmpOS.Native.Views.Cloud;
+using OmpOS.Native.Views.Hooks;
+using OmpOS.Native.Views.Mcp;
+using OmpOS.Native.Views.Remote;
+using OmpOS.Native.Views.Safety;
 using OmpOS.Native.Views.Settings;
 using OmpOS.Presentation;
+using OmpOS.Presentation.Cloud;
+using OmpOS.Presentation.Hooks;
+using OmpOS.Presentation.Mcp;
+using OmpOS.Presentation.Remote;
+using OmpOS.Presentation.Safety;
 using OmpOS.Presentation.Settings;
 using OmpOS.Presentation.Settings.Customize;
+using OmpOS.Presentation.Settings.Ignore;
 using OmpOS.Presentation.Settings.Models;
+using OmpOS.Presentation.Settings.Privacy;
+using OmpOS.Presentation.Settings.Workspaces;
+using OmpOS.Presentation.Settings.Worktrees;
 using Shouldly;
 using Xunit;
 
@@ -16,17 +30,35 @@ public sealed class SettingsWindowTests
     private static readonly (SettingsSection Section, string Title, Type View)[] Pages =
     [
         (SettingsSection.Runtime, SettingsCopy.RuntimeTitle, typeof(RuntimePageView)),
-        (SettingsSection.Models, ModelsCopy.PageTitle, typeof(ModelsPageView)),
         (SettingsSection.General, SettingsCopy.GeneralTitle, typeof(GeneralPageView)),
+        (SettingsSection.Display, DisplayCopy.Title, typeof(DisplayPageView)),
         (SettingsSection.Agents, SettingsCopy.AgentsTitle, typeof(AgentsPageView)),
+        (SettingsSection.RunMode, SafetyCopy.Title, typeof(RunModePageView)),
+        (SettingsSection.Models, ModelsCopy.PageTitle, typeof(ModelsPageView)),
         (SettingsSection.Tab, SettingsCopy.TabTitle, typeof(TabPageView)),
-        (SettingsSection.Plugins, SettingsCopy.PluginsTitle, typeof(PluginsPageView)),
         (SettingsSection.Rules, CustomizeCopy.RulesTitle, typeof(CustomizeCatalogView)),
         (SettingsSection.Skills, CustomizeCopy.SkillsTitle, typeof(CustomizeCatalogView)),
         (SettingsSection.Commands, CustomizeCopy.CommandsTitle, typeof(CustomizeCatalogView)),
+        (SettingsSection.Hooks, HooksCopy.Title, typeof(HooksPageView)),
+        (SettingsSection.Mcp, McpCopy.Title, typeof(McpPageView)),
+        (SettingsSection.Plugins, SettingsCopy.PluginsTitle, typeof(PluginsPageView)),
+        (SettingsSection.Workspaces, WorkspacesCopy.Title, typeof(WorkspacesPageView)),
+        (SettingsSection.Worktrees, WorktreesCopy.Title, typeof(WorktreesPageView)),
+        (SettingsSection.Ignore, IgnoreCopy.Title, typeof(IgnorePageView)),
+        (SettingsSection.Remote, RemoteCopy.Title, typeof(RemoteEnvironmentsPageView)),
+        (SettingsSection.Cloud, CloudCopy.Title, typeof(CloudAgentsPageView)),
+        (SettingsSection.Privacy, PrivacyCopy.Title, typeof(PrivacyPageView)),
         (SettingsSection.Network, NetworkCopy.Title, typeof(NetworkPageView)),
         (SettingsSection.Keyboard, KeyboardCopy.Title, typeof(KeyboardPageView)),
     ];
+
+    // The MCP and Cloud views draw the model their page holds; every other view draws the page.
+    private static object ContextOf(ISettingsPage page) => page switch
+    {
+        McpSettingsPage mcp => mcp.Model,
+        CloudSettingsPage cloud => cloud.Agents,
+        _ => page,
+    };
 
     /// <summary>The navigation lists the pages in model order under their titles, the first is selected, and choosing an entry shows that page's view.</summary>
     [Fact]
@@ -51,7 +83,7 @@ public sealed class SettingsWindowTests
 
                 fixture.Model.SelectedSection.ShouldBe(section, title);
                 window.CurrentView.ShouldNotBeNull().GetType().ShouldBe(view, title);
-                window.CurrentView.DataContext.ShouldBeSameAs(fixture.Model.SelectedPage);
+                window.CurrentView.DataContext.ShouldBeSameAs(ContextOf(fixture.Model.SelectedPage));
             }
         }, ct).ConfigureAwait(true);
     }

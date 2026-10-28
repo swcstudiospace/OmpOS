@@ -41,6 +41,7 @@ public sealed class ShortcutCatalogueTests
             ShortcutIds.FocusAgentList => RunAsync(() => ShellShortcutEffects.FocusAgentList(gesture)),
             ShortcutIds.FocusPrompt => RunAsync(() => ShellShortcutEffects.FocusPrompt(gesture)),
             ShortcutIds.SearchTranscript => RunAsync(() => ShellShortcutEffects.SearchTranscript(gesture)),
+            ShortcutIds.SearchConversations => RunAsync(() => ShellShortcutEffects.SearchConversations(gesture)),
             ShortcutIds.Dismiss => RunAsync(() => ShellShortcutEffects.Dismiss(gesture, GestureOf(ShortcutIds.SearchTranscript))),
             ShortcutIds.NewAgent => ShellShortcutEffects.NewAgentAsync(gesture, token),
             ShortcutIds.NewTerminal => ShellShortcutEffects.NewTerminalAsync(gesture, token),

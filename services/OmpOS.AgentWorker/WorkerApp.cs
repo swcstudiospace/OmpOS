@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using OmpOS.AgentWorker.Bridge;
 using OmpOS.AgentWorker.Configuration;
 using OmpOS.AgentWorker.Health;
+using OmpOS.AgentWorker.Hooks;
 using OmpOS.AgentWorker.Security;
 
 namespace OmpOS.AgentWorker;
@@ -40,6 +41,7 @@ internal static class WorkerApp
         builder.Services.AddAuthorizationBuilder().SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
         builder.Services.AddSingleton<WorkerSecretRedactor>();
+        builder.Services.AddSingleton<CloudHooksFactory>();
         builder.Services.AddSingleton<OmpProcessHost>();
         builder.Services.AddSingleton<WorkerReadiness>();
         builder.Services.AddOptions<WebSocketOptions>()

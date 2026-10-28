@@ -1,6 +1,43 @@
+---
+description: "How OmpOS is layered: contracts, libraries, services and the desktop, web and Android heads, plus the session run path, the web shell, remote environments, cloud agents and hooks."
+---
+
 # OmpOS architecture
 
+Status: Built (the layers and the session run path); remote, cloud and hooks pieces are Partial, see the parity audit
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
+
 This document records the layering every later phase must respect, and the session run path as decided on 2026-10-21. Temporal is removed; session runs execute in-process in the API. See [Temporal removal and Railway topology (2026-10-21)](handoff.md#temporal-removal-and-railway-topology-2026-10-21).
+
+## Overview
+
+![Architecture overview: three heads on one presentation layer; the desktop head runs the harness libraries that start omp or reach a remote omp over ssh; the web head calls the API, which runs sessions and talks to a cloud agent worker over a WebSocket; Railway is intended and not deployed.](assets/architecture-overview.svg)
+
+*Hand-drawn diagram. The Railway band is the intended topology: nothing is deployed.*
+
+- **Heads** (`apps/`): the Avalonia desktop head, the Blazor WebAssembly web head and the Android head. A head owns windows, process lifetime and platform services, and nothing else.
+- **Presentation layer** (`src/OmpOS.Presentation`, `OmpOS.Native.Views`, `OmpOS.UI`): view models with no UI framework, drawn by Avalonia views on desktop and Android and by Razor components on the web. The web head also has a styled shell (top bar, agent rail, footer, theme switch) on White-and-Purple tokens, and a **Demo** build whose HTTP client is answered inside the browser ([ADR-0017](decisions/ADR-0017-web-head-demo-mode.md)).
+- **API** (`services/OmpOS.Api`): sessions, runs, server-sent events, tool approvals, the change review, steering, providers, workspace settings, the source offer, and the cloud agent control plane.
+- **Harness** (`src/OmpOS.Harness.*`): the libraries that talk to omp (ACP over stdio), plan a launch with the four plugins, run Cursor-compatible hooks through a loopback bridge and an omp extension, enforce run modes, read MCP configuration, keep file checkpoints and worktrees, resolve `@` mentions and ignore files, and reach a remote machine over your own `ssh`.
+- **omp**: the engine. OmpOS starts `omp acp` per chat session and an embedded omp terminal on request, always with Ultrathink, Substrate, Swarm and GSD-Core.
+- **Worker and Railway**: the cloud agent path (API, `OmpOS.AgentWorker`, PostgreSQL). Built and tested against fakes; no Railway deploy has happened.
+
+### What is built where
+
+| Piece | Where | Status |
+|---|---|---|
+| Desktop head: Agents window, Kanban, terminals, Changes bar, steering, Settings | `apps/OmpOS.Native`, `src/OmpOS.Native.Views` | Built, Linux only |
+| Web head: shell, agent rail, thread, composer, Kanban, Settings dialog, terminal view | `apps/OmpOS.Web`, `src/OmpOS.UI` | Built as components; Demo and local API run; see the [Web app guide](guides/web-app-guide.md) |
+| Hooks | `Harness.AgentLoop/Hooks`, `Harness.Acp`, hooks omp extension | Partial: not run against a live omp ([Hooks](reference/hooks.md)) |
+| Remote environments over ssh | `src/OmpOS.Harness.Remote` | Partial: never run against a real host ([Remote](runbooks/remote-ssh.md)) |
+| Multi-repo workspaces | `src/OmpOS.Harness.Workspace` (`WorkspaceSet`), `Harness.Worktrees` | Partial ([Multi-repo](runbooks/multi-repo.md)) |
+| Cloud agents | `services/OmpOS.Api/Cloud`, `services/OmpOS.AgentWorker`, `src/OmpOS.Sandbox` | Partial: fakes only ([Cloud agents](runbooks/cloud-agents.md)) |
+| Provider catalogue | `src/OmpOS.Harness.Providers` | Built as data and UI; no real credential used ([Providers](guides/providers-guide.md)) |
+
+The authoritative status of every Cursor feature is the [parity audit](quality/cursor-parity-audit-2026-10-28.md).
 
 ## Layer diagram
 
@@ -20,7 +57,7 @@ flowchart TB
 
 Dependency direction is apps → services → libraries → contracts, enforced mechanically by `tests/OmpOS.ArchitectureTests` (csproj-graph test plus ArchUnitNET type rules). Nothing references `OmpOS.Api` except tests. `OmpOS.Web` never references the process-spawning harness assemblies (`Harness.Acp`, `Harness.Rpc`).
 
-There is no worker layer. The Temporal worker project was removed on 2026-10-21, and no separate worker process runs.
+There is no Temporal worker: it was removed on 2026-10-21 and session runs execute in the API process. One separate process exists for cloud agents only: `services/OmpOS.AgentWorker` runs inside a cloud agent's environment and bridges the API to an omp process over a WebSocket ([ADR-0020](decisions/ADR-0020-cloud-agents-on-railway.md)).
 
 ## Components
 
@@ -45,7 +82,20 @@ There is no worker layer. The Temporal worker project was removed on 2026-10-21,
 | `OmpOS.App` | L4 | Superseded 2026-10-21 by ADR-0004: the .NET MAUI Blazor Hybrid head sharing `OmpOS.UI` (Phase 4) retires by clean cutover after parity tests (v0.10.0 Phase 25). Its replacement, the Avalonia UI native heads for Windows, macOS, Linux, iOS and Android, has its first project in the repo (`OmpOS.Native`, Phase 20); the other platform heads are not yet in the repo. |
 | `OmpOS.Native` | L4 | Avalonia 12.1.4 desktop shell (Phase 20). Binds the `OmpOS.Presentation` view models through an explicit `ViewMapping` (no `ViewLocator`), with one token dictionary (`Themes/OmpOSTokens.axaml`). Headless tests live in `tests/OmpOS.Native.Tests`. Per-platform runs for Linux, Windows, macOS, iOS and Android are not yet recorded (Phases 22 and 24). |
 
-`OmpOS.Api` is a class-library placeholder in Phase 1 and is converted to the web SDK host in Phase 2.
+`OmpOS.Api` is an ASP.NET Core web host (converted from a Phase 1 placeholder in Phase 2).
+
+### Projects added or extended in v0.15.0
+
+| Project | Responsibility |
+| ------- | -------------- |
+| `OmpOS.Harness.Remote` | Remote environments over your own `ssh`: profiles, `ssh -G` resolution, connection test, launch rewrite, reconnect, remote file system and terminals |
+| `OmpOS.Harness.Mcp` (extended) | Reads MCP configuration files of OmpOS, Cursor, Claude Code and VS Code and builds the server list offered to a session |
+| `OmpOS.Harness.Providers` | The provider catalogue as data (`Data/catalogue-*.json`), the omp configuration writer and the plan rules |
+| `OmpOS.Harness.Worktrees` | Git worktree manager and applier for runs, with setup scripts |
+| `OmpOS.Harness.Workspace` | Workspace snapshot, conventions, Cursor-style ignore files, file checkpoints, and workspace sets (several roots in one session) |
+| `OmpOS.Harness.AgentLoop` (extended) | Hooks service and loopback bridge, run modes and permissions, safety policy |
+| `OmpOS.Sandbox` (extended) | Cloud environment client for Railway, a static pool client, a cloud session host |
+| `OmpOS.AgentWorker` | The cloud agent worker: JWT-authenticated WebSocket bridge to `omp acp` |
 
 ## Data flow
 

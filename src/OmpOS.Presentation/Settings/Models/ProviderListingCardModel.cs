@@ -26,6 +26,7 @@ public sealed class ProviderListingCardModel : ObservableModel
     private ApiKeyDraft? _apiKey;
     private string _modelIdsText = string.Empty;
     private bool _isSetupOpen;
+    private bool _planRuleAccepted;
     private bool _isBusy;
     private string? _errorText;
     private string? _actionText;
@@ -248,6 +249,40 @@ public sealed class ProviderListingCardModel : ObservableModel
     /// <summary>Gets the open key entry, or null while the form is closed or the route takes no key.</summary>
     public ApiKeyDraft? ApiKey => _apiKey;
 
+    /// <summary>Gets the sentence that says why the operator has disabled key entry, or null when keys can be entered.</summary>
+    public string? KeyDisabledReason => TakesKey ? _host.KeyWritesDisabledReason : null;
+
+    /// <summary>Gets a value indicating whether the operator has disabled key entry for this card: the key field is then disabled and adding is refused.</summary>
+    public bool IsKeyDisabled => KeyDisabledReason is not null;
+
+    /// <summary>Gets a value indicating whether the key field accepts input: the operator has not disabled key entry.</summary>
+    public bool IsKeyEnabled => KeyDisabledReason is null;
+
+    /// <summary>Gets a value indicating whether the form asks the user to tick that they read the vendor's rule text: the listing is a coding plan that takes a key.</summary>
+    public bool RequiresPlanRule => HasPlan && TakesKey;
+
+    /// <summary>Gets the label of the plan rule tick box.</summary>
+    public string PlanRuleAcceptLabel => ProviderListingCopy.PlanRuleAcceptLabel;
+
+    /// <summary>Gets the accessible name of the plan rule tick box.</summary>
+    public string PlanRuleAcceptName => ProviderListingCopy.PlanRuleAcceptName(_listing.DisplayName);
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the user ticked that they read the vendor's rule text. Adding a coding plan is refused until it is
+    /// ticked; the tick goes to the source as <see cref="CatalogueProviderRequest.PlanRuleAccepted"/>. It starts unticked every time the form opens.
+    /// </summary>
+    public bool PlanRuleAccepted
+    {
+        get => _planRuleAccepted;
+        set
+        {
+            if (SetProperty(ref _planRuleAccepted, value) && value)
+            {
+                ErrorText = null;
+            }
+        }
+    }
+
     /// <summary>Gets a value indicating whether the setup form is open.</summary>
     public bool IsSetupOpen => _isSetupOpen;
 
@@ -280,6 +315,8 @@ public sealed class ProviderListingCardModel : ObservableModel
         ErrorText = null;
         ActionText = null;
         _isSetupOpen = true;
+        _planRuleAccepted = false;
+        NotifyPropertyChanged(nameof(PlanRuleAccepted));
         NotifyPropertyChanged(nameof(IsSetupOpen));
         NotifyPropertyChanged(nameof(CanBeginSetup));
         ResetKeyDraft();
@@ -295,6 +332,8 @@ public sealed class ProviderListingCardModel : ObservableModel
 
         _apiKey?.Clear();
         _isSetupOpen = false;
+        _planRuleAccepted = false;
+        NotifyPropertyChanged(nameof(PlanRuleAccepted));
         SetApiKey(null);
         ErrorText = null;
         NotifyPropertyChanged(nameof(IsSetupOpen));
@@ -315,6 +354,13 @@ public sealed class ProviderListingCardModel : ObservableModel
             return false;
         }
 
+        if (KeyDisabledReason is { } disabledReason)
+        {
+            _apiKey?.Clear();
+            ErrorText = disabledReason;
+            return false;
+        }
+
         var problem = FormProblem();
         if (problem is not null)
         {
@@ -328,7 +374,8 @@ public sealed class ProviderListingCardModel : ObservableModel
             _listing.Id,
             _selectedRoute.Id,
             TypedValues(),
-            ParseModelIds(_modelIdsText));
+            ParseModelIds(_modelIdsText),
+            _planRuleAccepted);
         var result = await SendAsync(request, key, draft, cancellationToken).ConfigureAwait(true);
         if (!result.Succeeded)
         {
@@ -390,6 +437,14 @@ public sealed class ProviderListingCardModel : ObservableModel
             ?? (listing.Routes.Count > 0 ? listing.Routes[0] : null);
         RebuildInputs();
         NotifyPropertyChanged(string.Empty);
+    }
+
+    /// <summary>Announces that the operator's key entry switch may have changed.</summary>
+    internal void RefreshKeyDisabled()
+    {
+        NotifyPropertyChanged(nameof(KeyDisabledReason));
+        NotifyPropertyChanged(nameof(IsKeyDisabled));
+        NotifyPropertyChanged(nameof(IsKeyEnabled));
     }
 
     /// <summary>Sets the line that says the listing is already set up in omp.</summary>
@@ -461,6 +516,11 @@ public sealed class ProviderListingCardModel : ObservableModel
             {
                 return draft?.Error ?? ModelsCopy.ErrApiKeyRequired;
             }
+        }
+
+        if (RequiresPlanRule && !_planRuleAccepted)
+        {
+            return ProviderListingCopy.PlanRuleRequired;
         }
 
         return null;

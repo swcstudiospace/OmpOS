@@ -36,7 +36,7 @@ public sealed class SlashCommandDispatcherTests
         var result = await Dispatcher.DispatchAsync("/in-cloud fix the bug", SlashResolutionContext.Empty, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         result.Kind.ShouldBe(SlashDispatchKind.Handled);
-        result.Text.ShouldBe("cloud agents: phase 60");
+        result.Text.ShouldBe(SlashPaletteCopy.ActionNotInThisWindow);
     }
 
     /// <summary>A completed native action shows its message and sends nothing; the host sees the action, the catalogue's argument and the typed text.</summary>

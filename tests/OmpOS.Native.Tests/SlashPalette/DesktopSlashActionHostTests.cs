@@ -133,7 +133,7 @@ public sealed class DesktopSlashActionHostTests
         helpFor.ShouldBe("pl");
     }
 
-    /// <summary>The cloud hand-off says cloud agents are phase 60; an action with no target says the window cannot run it.</summary>
+    /// <summary>An action with no target says the window cannot run it, the cloud hand-off included.</summary>
     [Fact]
     public async Task UnavailableActionsSayWhy()
     {
@@ -143,7 +143,7 @@ public sealed class DesktopSlashActionHostTests
         var cloud = await host.RunAsync(Request(SlashActionIds.CloudHandoff, typed: "task"), token).ConfigureAwait(true);
         var chat = await host.RunAsync(Request(SlashActionIds.ChatNew), token).ConfigureAwait(true);
 
-        cloud.ShouldBe(SlashActionResult.NotAvailable("cloud agents: phase 60"));
+        cloud.ShouldBe(SlashActionResult.NotAvailable(SlashPaletteCopy.ActionNotInThisWindow));
         chat.ShouldBe(SlashActionResult.NotAvailable(SlashPaletteCopy.ActionNotInThisWindow));
     }
 

@@ -144,6 +144,10 @@
           <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
             <TextBlock Classes="settings-label"
                        Text="{CompiledBinding FieldLabel}" />
+            <TextBlock x:Name="ApiKeyDisabledLine"
+                       Classes="tone-warning settings-body"
+                       IsVisible="False"
+                       AutomationProperties.LiveSetting="Polite" />
             <TextBox x:Name="ApiKeyBox"
                      Classes="mono"
                      PasswordChar="&#8226;"

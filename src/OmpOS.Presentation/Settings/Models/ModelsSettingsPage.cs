@@ -34,6 +34,7 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
     private ModelsPageState _state = ModelsPageState.Loading;
     private string? _loadFailure;
     private string? _warning;
+    private string? _keyWritesDisabledReason;
     private bool _isComplete = true;
     private string? _defaultModel;
     private string _searchText = string.Empty;
@@ -68,6 +69,9 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
 
     /// <summary>Gets omp's configuration warning (for example its <c>models.yml</c> validation message), or null.</summary>
     public string? Warning => _warning;
+
+    /// <summary>Gets the sentence that says why the operator has disabled key entry, or null when keys can be entered. Every card disables its key field while it is set.</summary>
+    public string? KeyWritesDisabledReason => _keyWritesDisabledReason;
 
     /// <summary>Gets a value indicating whether the list is complete. When false omp lists only providers it holds a credential for.</summary>
     public bool IsComplete => _isComplete;
@@ -303,6 +307,9 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
     /// <inheritdoc/>
     void IProviderCardHost.Announce(string text) => Announce(text);
 
+    /// <inheritdoc/>
+    string? IProviderCardHost.KeyWritesDisabledReason => _keyWritesDisabledReason;
+
     private static bool Matches(ProviderCardModel card, string text) =>
         Contains(card.DisplayName, text)
         || Contains(card.Id, text)
@@ -368,8 +375,29 @@ public sealed class ModelsSettingsPage : ObservableModel, ISettingsPage, IProvid
         NotifyPropertyChanged(nameof(Templates));
         NotifyPropertyChanged(nameof(HasTemplates));
         _directory.Update(snapshot.Listings ?? [], _cards);
+        SetKeyWritesDisabledReason(snapshot.KeyWritesDisabledReason);
         SetState(_cards.Count == 0 && !_directory.HasListings ? ModelsPageState.Empty : ModelsPageState.Ready);
         NotifyPropertyChanged(nameof(HasNoMatches));
+    }
+
+    private void SetKeyWritesDisabledReason(string? reason)
+    {
+        var normalised = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+        if (!string.Equals(_keyWritesDisabledReason, normalised, StringComparison.Ordinal))
+        {
+            _keyWritesDisabledReason = normalised;
+            NotifyPropertyChanged(nameof(KeyWritesDisabledReason));
+        }
+
+        foreach (var card in _cards)
+        {
+            card.RefreshKeyDisabled();
+        }
+
+        foreach (var card in _directory.Cards)
+        {
+            card.RefreshKeyDisabled();
+        }
     }
 
     private void SetDefault(string? selector)

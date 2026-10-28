@@ -1,0 +1,7 @@
+# GitBook Git Sync layout for the OmpOS documentation (see docs/runbooks/gitbook-publish.md).
+# The content root is docs/; GitBook reads docs/README.md as the landing page and docs/SUMMARY.md as the navigation.
+root: ./docs/
+
+structure:
+  readme: README.md
+  summary: SUMMARY.md

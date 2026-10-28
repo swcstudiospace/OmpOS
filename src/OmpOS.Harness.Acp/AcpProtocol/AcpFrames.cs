@@ -425,6 +425,22 @@ public static class AcpFrames
         public string Status { get; init; } = string.Empty;
     }
 
+    /// <summary>A <c>usage_update</c>: how much of the context window the conversation uses.</summary>
+    public sealed class UsageUpdate
+    {
+        /// <summary>Gets the tokens the conversation uses now.</summary>
+        public long Used { get; init; }
+
+        /// <summary>Gets the size of the context window in tokens, or zero when the agent did not send it.</summary>
+        public long Size { get; init; }
+    }
+
+    /// <summary>Parameters of <c>session/fork</c> (the unstable <c>unstable_forkSession</c> request).</summary>
+    /// <param name="SessionId">The session to fork.</param>
+    /// <param name="Cwd">The absolute working directory for the new session.</param>
+    /// <param name="McpServers">MCP servers to attach to the new session. An empty list serialises as <c>[]</c>.</param>
+    public sealed record ForkSessionParams(string SessionId, string Cwd, IReadOnlyList<McpServerFrame> McpServers);
+
     /// <summary>Parameters of an agent-initiated <c>session/request_permission</c> request.</summary>
     public sealed class PermissionRequestParams
     {

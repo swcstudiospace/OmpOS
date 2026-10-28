@@ -11,4 +11,10 @@ public enum SessionTargetKind
 
     /// <summary>On a cloud worker.</summary>
     Cloud,
+
+    /// <summary>Inside a local podman container (a dev container or any running container).</summary>
+    Container,
+
+    /// <summary>Inside a WSL distribution on this Windows computer.</summary>
+    Wsl,
 }

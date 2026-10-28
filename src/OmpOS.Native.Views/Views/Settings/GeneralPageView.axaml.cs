@@ -19,6 +19,7 @@ internal partial class GeneralPageView : SettingsPageViewBase
         InitializeComponent();
         ThemeList.SelectionChanged += OnThemeSelectionChanged;
         MotionList.SelectionChanged += OnMotionSelectionChanged;
+        AboutButton.Click += OnAboutClick;
         Start();
     }
 
@@ -27,6 +28,9 @@ internal partial class GeneralPageView : SettingsPageViewBase
 
     /// <summary>Gets the list of motion choices.</summary>
     internal ListBox Motion => MotionList;
+
+    /// <summary>Gets the button that opens the About window. It is hidden when the head has none.</summary>
+    internal Button About => AboutButton;
 
     /// <inheritdoc />
     internal override PageStatusView Status => StateView;
@@ -114,6 +118,14 @@ internal partial class GeneralPageView : SettingsPageViewBase
         if (MotionList.SelectedItem is ListBoxItem { Tag: MotionOption option })
         {
             page.SetMotion(option.Value);
+        }
+    }
+
+    private void OnAboutClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (Page is GeneralPage page)
+        {
+            page.OpenAbout();
         }
     }
 }

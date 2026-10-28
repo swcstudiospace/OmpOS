@@ -73,9 +73,14 @@ internal sealed class AgentHead : IAsyncDisposable
     /// <summary>Gets the head's side of the Settings window: the settings file, the one Settings window and the sweeper that applies the Runtime settings. The main window is connected to it with <see cref="HeadSettings.Attach"/>.</summary>
     public HeadSettings Settings { get; }
 
+    /// <summary>Gets the shared services (hooks, remote environments, MCP catalog, checkpoints, run mode, cloud) the shell and the Settings window read, or null for a head built without them. The head disposes them.</summary>
+    public OmpOS.Native.Composition.HeadServices? Services { get; private init; }
+
     /// <summary>Builds the head of the running process: the plugins, the state and the Substrate come from the environment, and the registry's changes reach the models on the UI thread.</summary>
     /// <returns>The head. It opens nothing until <see cref="InitializeAsync"/>.</returns>
-    public static AgentHead CreateProduction()
+    public static AgentHead CreateProduction() => CreateProduction(null);
+
+    private static AgentHead CreateProduction(OmpOS.Native.Composition.HeadServices? services)
     {
         var loop = AgentLoopEnvironment.Resolve();
         var store = new FileSettingsStore(loop.StateRoot);
@@ -92,6 +97,7 @@ internal sealed class AgentHead : IAsyncDisposable
                     LoggerFactory = DesktopLogging.Factory,
                     Motion = HeadSettings.ReadOrDefaults(store).Motion,
                     ProviderKeys = models.Keys,
+                    Services = services,
                 },
                 UiDispatch,
                 selectMostRecent: true,
@@ -103,11 +109,45 @@ internal sealed class AgentHead : IAsyncDisposable
                     NetworkSource = NetworkDiagnosticsSource.Over(models.Omp.ModelsFile),
                     Owned = models,
                     SweepInterval = SessionLifecycleSweeper.DefaultInterval,
-                });
+                    Services = services,
+                },
+                services);
         }
         catch
         {
             models.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Builds the head of the running process like <see cref="CreateProduction"/>, and first opens the services every window shares (hooks, remote environments, MCP catalog, checkpoints, run mode,
+    /// cloud agents). The services are opened asynchronously, so the application shows its window once this has completed.
+    /// </summary>
+    /// <param name="topLevel">Returns the window the system browser is asked through, or null.</param>
+    /// <param name="cancellationToken">Cancels the opening of the services.</param>
+    /// <returns>The head. It opens nothing more until <see cref="InitializeAsync"/>.</returns>
+    public static async Task<AgentHead> CreateProductionAsync(Func<Avalonia.Controls.TopLevel?> topLevel, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(topLevel);
+        var loop = AgentLoopEnvironment.Resolve();
+        var services = await OmpOS.Native.Composition.HeadServices.CreateAsync(
+            new OmpOS.Native.Composition.HeadServicesOptions
+            {
+                StateRoot = loop.StateRoot,
+                PluginsRoot = loop.PluginsRoot,
+                WorkspaceRoot = loop.WorkspaceRoot,
+                TopLevel = topLevel,
+                LoggerFactory = DesktopLogging.Factory,
+            },
+            cancellationToken).ConfigureAwait(true);
+        try
+        {
+            return CreateProduction(services);
+        }
+        catch
+        {
+            await services.DisposeAsync().ConfigureAwait(true);
             throw;
         }
     }
@@ -146,6 +186,7 @@ internal sealed class AgentHead : IAsyncDisposable
                 LiveSteering = options.LiveSteering,
                 TerminalLocator = options.TerminalLocator,
                 ProviderKeys = options.ProviderKeys,
+                Services = options.Services,
             },
             options.Dispatch,
             options.SelectMostRecentSession,
@@ -156,7 +197,9 @@ internal sealed class AgentHead : IAsyncDisposable
                 ModelsPageFactory = options.ModelsPageFactory,
                 GetVariable = variables,
                 SweepInterval = options.RuntimeSweepInterval,
-            });
+                Services = options.Services,
+            },
+            options.Services);
     }
 
     /// <summary>
@@ -228,13 +271,19 @@ internal sealed class AgentHead : IAsyncDisposable
 #pragma warning restore VSTHRD003
         await Settings.DisposeAsync().ConfigureAwait(true);
         await Host.DisposeAsync().ConfigureAwait(true);
+        if (Services is { } services)
+        {
+            // The hooks service outlives every session: it is released after the engines stopped.
+            await services.DisposeAsync().ConfigureAwait(true);
+        }
+
         Board.Dispose();
         Panel.Dispose();
         Catalog.Dispose();
         _lifetime.Dispose();
     }
 
-    private static AgentHead Build(SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, FileSettingsStore store, HeadSettingsOptions settingsOptions)
+    private static AgentHead Build(SessionEngineSetOptions options, Action<Action>? dispatch, bool selectMostRecent, TimeSpan detailsInterval, FileSettingsStore store, HeadSettingsOptions settingsOptions, OmpOS.Native.Composition.HeadServices? services)
     {
         var host = new SessionEngineSet(options);
         SessionCatalogModel? catalog = null;
@@ -257,7 +306,8 @@ internal sealed class AgentHead : IAsyncDisposable
                     StartLoading = true,
                 });
             var settings = HeadSettings.Create(host, store, options.TimeProvider, dispatch, settingsOptions);
-            var head = new AgentHead(host, catalog, panel, board, panel.BeginInitialising(), selectMostRecent, dispatch, options.TimeProvider, detailsInterval, settings);
+            host.CatalogModel = catalog;
+            var head = new AgentHead(host, catalog, panel, board, panel.BeginInitialising(), selectMostRecent, dispatch, options.TimeProvider, detailsInterval, settings) { Services = services };
 
             // The head owns the models from here on.
             catalog = null;

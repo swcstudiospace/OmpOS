@@ -3,7 +3,7 @@ namespace OmpOS.Presentation.Commands;
 /// <summary>The identifiers of the actions a head runs for <see cref="SlashHandlerKind.NativeAction"/> commands (and the cloud hand-off). A head implements <see cref="ISlashActionHost"/> for the ones it can run.</summary>
 public static class SlashActionIds
 {
-    /// <summary>Opens Settings. The action argument names a section: <c>models</c>, <c>agents</c>, <c>plugins</c>, <c>rules</c>, <c>skills</c> or <c>commands</c>; empty opens the first page.</summary>
+    /// <summary>Opens Settings. The action argument names a section: <c>models</c>, <c>agents</c>, <c>plugins</c>, <c>rules</c>, <c>skills</c>, <c>commands</c> or <c>run-mode</c>; empty opens the first page.</summary>
     public const string SettingsOpen = "settings.open";
 
     /// <summary>Starts a new chat.</summary>

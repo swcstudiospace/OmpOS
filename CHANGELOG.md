@@ -8,23 +8,48 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
-### Planned
+## [0.15.0] - 2026-10-28
 
-Milestone v0.15.0, "Cursor completeness, brand and public launch" (Phases 51 to 65). Nothing below is released yet.
+Cursor completeness, brand and public launch (Phases 51 to 65). Items marked partial are built and unit-tested but not exercised live: no live model turn, Windows or macOS run, or Railway deploy has happened, and the head wiring of several Wave 2 features is recorded in `docs/quality/cursor-parity-audit-2026-10-28.md`.
 
-- White-and-Purple brand: the Light theme becomes the default in the desktop and web heads, with Dark and System kept; a logo set, banner, social preview and icons under `assets/brand/` (Phase 51).
-- Licence: the repository becomes `AGPL-3.0-or-later`, with `LICENSE`, `NOTICE`, third-party notices, an SPDX expression in package metadata, and a `GET /source` endpoint that offers the running revision's source (Phase 51).
-- GitHub presentation and community health: description, topics, issue forms, pull request template, `CODEOWNERS`, Dependabot, labels, security policy, support and conduct files, secret scanning, release workflow and this changelog (Phase 52).
-- Web head: a styled White-and-Purple shell on the shared presentation layer, API endpoints for the screens, the Agent Panel and the workspace screens, and a Demo build with a simulated engine shown beside a local run (Phases 53 to 55).
-- All 92 Cursor slash tokens, and automatic pickup of commands, skills, rules, subagents and MCP servers in desktop, remote and cloud sessions (Phase 56).
-- Cursor-compatible hooks (`hooks.json`, 21 events) run by OmpOS, with blocking events enforced by an OmpOS-owned omp extension (Phase 57).
-- Remote environments over SSH: profiles, preflight, reconnect, remote files and terminal (Phase 58).
-- Multi-repository workspaces in one session (Phase 59).
-- Cloud agents on Railway: worker bridge, control plane, Railway client, secrets, pull requests and a staged deploy (Phase 60).
-- Cursor-equivalent Settings in both heads, and a provider catalogue covering EU, US and CN providers and coding plans (Phases 61 and 62).
-- The remaining Cursor agent, chat, context and safety features (Phase 63).
-- Up-to-date documentation in GitBook's Git Sync layout, a documentation link gate and a refreshed parity audit (Phase 64).
-- Release v0.15.0: clean-tree gate, fast-forward push, tag, GitHub Release and recorded deploys (Phase 65).
+### Added
+
+- White-and-Purple brand: a logo set, wordmark lockups, banner (1280 by 320), social preview (1280 by 640), favicons, desktop and Android icons under `assets/brand/` with a reproducible build script and a check, in the bundled DM Sans, Anybody and Space Mono faces (Phase 51).
+- `AGPL-3.0-or-later` licence: `LICENSE`, `NOTICE`, generated `THIRD-PARTY-NOTICES.md`, REUSE data, an SPDX expression in package metadata and a licence check script; an anonymous `GET /source` that names the licence, the source URL and the running revision, with a source link in the web footer and the About dialogs (Phase 51).
+- Community health and release files: `SECURITY.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, issue forms, a pull request template, `CODEOWNERS`, Dependabot, labels, release notes categories, a release workflow that reads this changelog, and a changelog check script (Phase 52).
+- Web head foundation: tokens, self-hosted woff2 fonts, theme boot, a responsive shell with top bar, agent rail and footer, no Bootstrap (Phase 53).
+- API surface for the web screens: catalogue, board, user event stream, stages, context, steering, config options, commands, change review, session lifecycle and workspace routes (contract version 1.3.0) (Phase 53).
+- Web screens: agent rail, thread, composer with model, mode and thinking chips and a slash palette, tool approvals, Changes bar and review, Kanban board, Settings dialog and a terminal view; and a Demo build with a simulated engine, labelled on screen, that runs without a backend (Phases 54 and 55; partial: not run in a browser against this tree, no public deployment).
+- All 92 Cursor slash tokens with handler kinds, statuses and reasons, a resolver that merges engine commands, custom command files, skills and subagents, discovery over six directories at two scopes, and a generated `docs/reference/slash-commands.md` (Phase 56).
+- Cursor-compatible hooks: a 21-event catalogue, `hooks.json` loaders, a dispatcher, a shell hook runner, per-version consent, a loopback bridge, an omp extension that enforces blocking events (76 node tests pass), an ACP tap, a hooks service and a Hooks page (Phase 57; partial: not run against a live omp session).
+- Remote environments over `ssh`: profiles, `ssh -G` resolution, preflight diagnosis, launch rewrite, reconnect, remote file system, remote convention discovery, remote terminals, a profile store, a Remote environments page and a New session target picker (Phase 58; partial: never run against a real host).
+- Multi-repository workspaces: validated workspace sets, omp launched with every root, one git worktree per git root, a multi-root explorer and `.code-workspace` import and export (Phase 59; partial).
+- Cloud agents on Railway: an agent worker with a JWT-authenticated WebSocket bridge to `omp acp`, a Railway GraphQL client, a static pool client, the API control plane (create, prompt, stop, wake, delete, secrets, limits, pull requests) with a PostgreSQL store, and a cloud agents list and form in the heads (Phase 60; partial: against fakes, `Cloud:Enabled` is false by default, no deploy).
+- Provider catalogue of 103 EU, US, CN, global and local providers, aggregators, coding plans and local runtimes as JSON data, a writer for every omp API style, region and kind filters, coding-plan rule cards, `GET /providers` and credential routes, and a generated `docs/reference/providers.md` (Phase 62; partial: no row was called with a real credential).
+- Run modes (Auto-review, Allowlist, Run Everything), `permissions.json`, `sandbox.json` readers and writers, a decision engine and a Run mode page (Phase 63; partial; Auto-review's hosted classifier is not available).
+- `@` mentions with a fuzzy picker, Cursor-style ignore files (gitignore syntax) for the agent, Tab and mentions, a conversation search index, a context ring and ACP prompt content blocks (Phase 63; partial).
+- MCP configuration import from OmpOS, Cursor, Claude Code and VS Code files, a server catalog and an MCP settings page (Phase 63; partial).
+- File checkpoints with rewind and restore, a worktree command model, a message queue, custom modes, side chats and fork, as libraries and presentation models (Phase 63; partial).
+- Documentation in GitBook's Git Sync layout: `.gitbook.yaml`, `docs/SUMMARY.md`, guides for getting started, the desktop and web apps, concepts, providers, settings and troubleshooting, an architecture diagram, an HTTP API reference, a publish runbook, a documentation check script (`scripts/ci/check-docs.sh`) and a refreshed Cursor parity audit (`docs/quality/cursor-parity-audit-2026-10-28.md`) (Phase 64).
+
+### Changed
+
+- The Light theme is the default in the desktop and web heads; Dark and System remain choices (Phase 51).
+- The README is rewritten as the GitHub landing with a feature status table and the licence block (Phase 64).
+- `docs/architecture.md` now covers the web shell, remote environments, cloud agents and hooks; `docs/handoff.md` is marked as the historical v0.9.1 handoff (Phase 64).
+- ADR-0013 decision 4 (no shell, closed stdin for plugin hooks) is amended by ADR-0016 so that Cursor hook commands run as written (Phase 57).
+- Licence statements in `docs/plugins.md`, ADR-0013, the GSD-Core plugin README and the deferred-and-blocked record now say OmpOS is `AGPL-3.0-or-later`; the licences of `agent-swarm` and `agent-substrate` stay open (Phase 64).
+
+### Fixed
+
+- A hook run log is created with owner-only permissions because it holds prompts and output excerpts (Phase 57).
+- The web head no longer ships Bootstrap; the unused library and its annotation are removed (Phase 53).
+
+### Security
+
+- AGPL section 13 source offer for network use, anonymous and without sign-in (Phase 51).
+- Cloud agent worker tokens are short-lived and verified by the worker; secrets are write-only through the API (Phase 60).
+- Provider key writes, custom endpoints and live tests are off by default in the API and need explicit operator switches; the live test connects to public addresses only (Phase 62).
 
 ## [0.14.0] - 2026-10-27
 
@@ -216,7 +241,8 @@ Foundation through verified handoff (Phases 1 to 5).
 - A shared Razor class library chat surface with a Generative UI renderer, a Blazor WebAssembly web head and a MAUI Blazor Hybrid head (Phase 4).
 - A clean-clone bootstrap record, the handoff document and the open-questions register (Phase 5).
 
-[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/swcstudiospace/OmpOS/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/swcstudiospace/OmpOS/compare/v0.11.0...v0.12.0

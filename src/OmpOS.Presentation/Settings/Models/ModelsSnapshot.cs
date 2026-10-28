@@ -7,13 +7,15 @@ namespace OmpOS.Presentation.Settings.Models;
 /// <param name="IsComplete">False when omp lists only providers it has a credential for, so the list can be shorter than what omp supports.</param>
 /// <param name="Templates">The templates a custom provider can start from.</param>
 /// <param name="Listings">Every provider, aggregator, coding plan and local runtime the page offers to set up, in the order the source lists them. Null means none.</param>
+/// <param name="KeyWritesDisabledReason">The sentence that says why the operator has disabled key entry, or null when keys can be entered. Cards then show the sentence and disable their key field.</param>
 public sealed record ModelsSnapshot(
     IReadOnlyList<ProviderInfo> Providers,
     string? DefaultModel,
     string? Warning,
     bool IsComplete,
     IReadOnlyList<ProviderTemplate> Templates,
-    IReadOnlyList<ProviderListing>? Listings = null)
+    IReadOnlyList<ProviderListing>? Listings = null,
+    string? KeyWritesDisabledReason = null)
 {
     /// <summary>Initializes a new instance of the <see cref="ModelsSnapshot"/> class with no provider templates.</summary>
     /// <param name="providers">Every provider to show, in the order the source lists them.</param>

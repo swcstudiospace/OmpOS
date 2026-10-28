@@ -1,0 +1,153 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:m="clr-namespace:OmpOS.Presentation.Modes;assembly=OmpOS.Presentation"
+             x:Class="OmpOS.Native.Views.Modes.CustomModeChipView"
+             x:DataType="m:CustomModeModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+
+    <!-- The chip is a ghost: no fill, a hairline, a pill. The dot carries the colour key of the skill through the status tokens; the mode name
+         beside it is always the text, so the colour is never the only signal. -->
+    <Style Selector="Border.mode-chip">
+      <Setter Property="Background" Value="{DynamicResource OmpOS.Brush.Transparent}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.Border}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Border.Hairline}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource OmpOS.Radius.Pill}" />
+      <Setter Property="Padding" Value="8,0,0,0" />
+    </Style>
+    <Style Selector="Ellipse.mode-default">
+      <Setter Property="Fill" Value="{DynamicResource OmpOS.Color.TextSecondary}" />
+    </Style>
+    <Style Selector="Ellipse.mode-success">
+      <Setter Property="Fill" Value="{DynamicResource OmpOS.Color.StatusSuccess}" />
+    </Style>
+    <Style Selector="Ellipse.mode-warning">
+      <Setter Property="Fill" Value="{DynamicResource OmpOS.Color.StatusWarning}" />
+    </Style>
+    <Style Selector="Ellipse.mode-error">
+      <Setter Property="Fill" Value="{DynamicResource OmpOS.Color.StatusError}" />
+    </Style>
+    <Style Selector="Ellipse.mode-accent">
+      <Setter Property="Fill" Value="{DynamicResource OmpOS.Color.AccentPurple}" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- The custom-mode chip of the composer footer (Cursor's Use as Mode). While a skill is pinned the chip shows its name and a clear button that
+       exits the mode; the Use as Mode button is always there and opens the list of skills that can be pinned, which is read again each time
+       it opens. The status line under them is a polite live region: it says that a mode is on, that it is off, or why a skill was not pinned. -->
+  <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xxs}">
+
+    <StackPanel Orientation="Horizontal"
+                Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+      <Border x:Name="ModeChip"
+              Classes="mode-chip"
+              IsVisible="{CompiledBinding IsActive}"
+              VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource OmpOS.Gap.Xs}">
+          <Ellipse x:Name="ModeDot"
+                   Classes="mode-default"
+                   Width="8"
+                   Height="8"
+                   VerticalAlignment="Center"
+                   AutomationProperties.AccessibilityView="Raw" />
+          <TextBlock x:Name="ModeText"
+                     Classes="settings-label"
+                     VerticalAlignment="Center"
+                     MaxWidth="200"
+                     TextWrapping="NoWrap"
+                     TextTrimming="CharacterEllipsis"
+                     MaxLines="1"
+                     Text="{CompiledBinding ChipText}" />
+          <Button x:Name="ClearModeButton"
+                  Classes="icon ghost"
+                  MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                  MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                  ToolTip.Tip="{x:Static m:CustomModeCopy.ExitLabel}"
+                  AutomationProperties.Name="{CompiledBinding ChipName}"
+                  Click="OnClearClick">
+            <Path Data="M4 4l8 8M12 4l-8 8"
+                  Width="{DynamicResource OmpOS.Size.IconSizeSm}"
+                  Height="{DynamicResource OmpOS.Size.IconSizeSm}"
+                  Stretch="Uniform"
+                  StrokeLineCap="Round"
+                  StrokeJoin="Round"
+                  AutomationProperties.AccessibilityView="Raw" />
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <Button x:Name="PickerButton"
+              Classes="ghost sm"
+              HorizontalContentAlignment="Left"
+              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+              MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+              AutomationProperties.Name="{x:Static m:CustomModeCopy.UseAsModeLabel}">
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource OmpOS.Gap.Xs}">
+          <TextBlock Text="{x:Static m:CustomModeCopy.UseAsModeLabel}"
+                     FontSize="{DynamicResource OmpOS.Font.Size.Label}"
+                     VerticalAlignment="Center"
+                     MaxLines="1" />
+          <Path Data="M2 4 6 8 10 4"
+                Stroke="{DynamicResource OmpOS.Color.TextSecondary}"
+                StrokeThickness="1.5"
+                StrokeLineCap="Round"
+                StrokeJoin="Round"
+                Stretch="Uniform"
+                Width="12"
+                Height="12"
+                VerticalAlignment="Center"
+                AutomationProperties.AccessibilityView="Raw" />
+        </StackPanel>
+
+        <Button.Flyout>
+          <Flyout Placement="TopEdgeAlignedLeft">
+            <StackPanel Width="280"
+                        Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+              <ListBox x:Name="SkillList"
+                       MaxHeight="280"
+                       AutomationProperties.Name="{x:Static m:CustomModeCopy.UseAsModeLabel}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="m:ModeSkill">
+                    <StackPanel MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="{CompiledBinding Name}"
+                                AutomationProperties.HelpText="{CompiledBinding Description}">
+                      <TextBlock Text="{CompiledBinding Name}"
+                                 TextTrimming="CharacterEllipsis"
+                                 MaxLines="1" />
+                      <TextBlock Classes="settings-help"
+                                 IsVisible="{CompiledBinding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                 Text="{CompiledBinding Description}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+
+              <TextBlock x:Name="EmptySkillsText"
+                         Classes="settings-help"
+                         IsVisible="False" />
+            </StackPanel>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
+
+    </StackPanel>
+
+    <TextBlock x:Name="StatusLine"
+               Classes="settings-help"
+               Classes.tone-error="{CompiledBinding HasError}"
+               IsVisible="{CompiledBinding StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               Text="{CompiledBinding StatusText}"
+               AutomationProperties.LiveSetting="Polite"
+               AutomationProperties.Name="{x:Static m:CustomModeCopy.UseAsModeLabel}" />
+
+  </StackPanel>
+
+</UserControl>

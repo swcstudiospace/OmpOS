@@ -1,4 +1,14 @@
+---
+description: "Record of Phase 30: VS Code extension compatibility and admin controls, deferred in writing."
+---
+
 # Phase 30 compatibility and admin: status record
+
+Status: Record (deferred; status record re-written 2026-10-26)
+
+Last verified: 2026-10-28 (the status only; the body is a dated record and was not re-verified)
+
+Applies to: v0.15.0
 
 Scope: ADE-21 (VS Code extension compatibility) and ADE-22 (admin, analytics and team controls). Re-recorded on 2026-10-26 at HEAD ccba1c1 (working tree with uncommitted changes from other teams). The first record is dated 2026-10-22 at HEAD 9e5913d; its figures stay below as history and are marked.
 

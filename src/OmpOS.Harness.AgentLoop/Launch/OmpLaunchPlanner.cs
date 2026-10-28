@@ -1,5 +1,6 @@
 using OmpOS.Contracts.Agents;
 using OmpOS.Harness.AgentLoop.Plugins;
+using OmpOS.Harness.AgentLoop.Safety;
 
 namespace OmpOS.Harness.AgentLoop.Launch;
 
@@ -39,6 +40,14 @@ public static class OmpLaunchPlanner
     /// <c>OMPOS_HOOKS_URL</c>, <c>OMPOS_HOOKS_TOKEN</c> and <c>OMPOS_HOOKS_STARTUP_FILE</c>. A plugin that is missing or unhealthy is left out
     /// like any other: the plan then carries a degraded planning event, no hook variable, and <see cref="OmpLaunchPlan.HooksBridgeLoaded"/> is false.
     /// </param>
+    /// <param name="runMode">
+    /// How omp is told to ask for approvals (see <see cref="RunModeLaunchMapper.Map"/>), or null to pass nothing. omp then runs with its own default, which approves every tool call without asking, so a head
+    /// that offers run modes always passes one: <c>--approval-mode &lt;mode&gt;</c> is added after the plugin arguments and before the overlay and the added directories.
+    /// </param>
+    /// <param name="bashOverlayYaml">
+    /// The <c>bash</c> block of the run mode's overlay (see <see cref="RunModeOverlay.RenderYaml"/>), or null for none. omp enforces its deny patterns in every approval mode. A non-null value makes the plan carry
+    /// <see cref="OmpLaunchPlan.ConfigOverlayPath"/>, and the caller writes the file with <see cref="ConfigOverlayWriter.Write"/> before launching.
+    /// </param>
     /// <returns>The plan.</returns>
     /// <exception cref="ArgumentException">
     /// The session identifier is unsafe, the workspace is not an absolute path, the isolated profile has no home directory, or an
@@ -52,7 +61,9 @@ public static class OmpLaunchPlanner
         string? graphId,
         TimeProvider? timeProvider = null,
         IReadOnlyList<string>? additionalDirectories = null,
-        HookBridgeEndpoint? hookBridge = null)
+        HookBridgeEndpoint? hookBridge = null,
+        RunModeLaunch? runMode = null,
+        string? bashOverlayYaml = null)
     {
         ValidateInputs(settings, plugins, sessionId, workspaceRoot);
         var extraDirectories = ValidateAdditionalDirectories(additionalDirectories, workspaceRoot);
@@ -96,7 +107,12 @@ public static class OmpLaunchPlanner
         }
 
         var hooksLoaded = AddHookBridge(hookBridge, sessionId, graphId, now, arguments, events);
-        var overlayPath = AddConfigOverlay(settings, sessionDirectory, arguments);
+        if (runMode is not null)
+        {
+            arguments.AddRange(runMode.Arguments);
+        }
+
+        var overlayPath = AddConfigOverlay(settings, sessionDirectory, bashOverlayYaml, arguments);
         AddDirectories(extraDirectories, arguments);
 
         return new OmpLaunchPlan
@@ -149,9 +165,9 @@ public static class OmpLaunchPlanner
         return true;
     }
 
-    private static string? AddConfigOverlay(AgentLoopSettings settings, string sessionDirectory, List<string> arguments)
+    private static string? AddConfigOverlay(AgentLoopSettings settings, string sessionDirectory, string? bashOverlayYaml, List<string> arguments)
     {
-        if (!settings.DisableProjectMcpConfig)
+        if (!settings.DisableProjectMcpConfig && string.IsNullOrWhiteSpace(bashOverlayYaml))
         {
             return null;
         }

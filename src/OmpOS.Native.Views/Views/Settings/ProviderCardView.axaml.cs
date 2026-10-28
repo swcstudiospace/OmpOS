@@ -132,6 +132,10 @@ internal partial class ProviderCardView : UserControl
         ApiKeyEditor.DataContext = card.ApiKey;
         ApiKeyEditor.IsVisible = card.IsApiKeyEditorOpen;
         ApiKeyButton.IsVisible = card.CanSetApiKey && !card.IsApiKeyEditorOpen;
+        ApiKeyBox.IsEnabled = card.IsKeyEnabled;
+        ApiKeyDisabledLine.IsVisible = card.IsKeyDisabled;
+        ApiKeyDisabledLine.Text = card.KeyDisabledReason ?? string.Empty;
+        AutomationProperties.SetName(ApiKeyDisabledLine, card.KeyDisabledReason ?? string.Empty);
         ApiKeyButton.IsEnabled = !card.IsBusy;
         TestButton.IsEnabled = !card.IsTesting;
         EditButton.IsEnabled = !card.IsBusy;

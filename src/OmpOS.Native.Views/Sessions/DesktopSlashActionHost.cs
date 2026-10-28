@@ -1,108 +1,124 @@
 using OmpOS.Presentation.Commands;
+using OmpOS.Presentation.Commands.Handlers;
 
 namespace OmpOS.Native.Views.Sessions;
 
 /// <summary>
 /// The desktop head's <see cref="ISlashActionHost"/>: it maps each action id of <see cref="SlashActionIds"/> to the matching callback of <see cref="DesktopSlashTargets"/>, reads the action's
-/// argument, and turns the outcome into a sentence for the composer's status line. An action whose callback is null cannot run (<see cref="CanRun"/> is false), and the cloud hand-off cannot run until the cloud phase.
+/// argument, and turns the outcome into a sentence for the composer's status line. An action whose callback is null cannot run (<see cref="CanRun"/> is false). The handlers of
+/// <see cref="DesktopSlashTargets.Handlers"/> (checkpoints, worktrees, copy, about, workspace sets, display switches and the others) run through a <see cref="SlashActionHandlerHost"/> and win over the callbacks of the same action id.
 /// </summary>
 public sealed class DesktopSlashActionHost : ISlashActionHost
 {
-    /// <summary>The sentence shown for the cloud hand-off while cloud agents are not built.</summary>
-    public const string CloudNotBuilt = "cloud agents: phase 60";
-
-    private readonly DesktopSlashTargets _targets;
+    private readonly ISlashActionHost _host;
 
     /// <summary>Initializes a new instance of the <see cref="DesktopSlashActionHost"/> class.</summary>
-    /// <param name="targets">The callbacks the actions drive.</param>
+    /// <param name="targets">The callbacks and handlers the actions drive.</param>
     /// <exception cref="ArgumentNullException"><paramref name="targets"/> is null.</exception>
     public DesktopSlashActionHost(DesktopSlashTargets targets)
     {
         ArgumentNullException.ThrowIfNull(targets);
-        _targets = targets;
+        _host = targets.Handlers is { Count: > 0 } handlers ? new SlashActionHandlerHost(handlers, new TargetHost(targets)) : new TargetHost(targets);
     }
 
     /// <inheritdoc/>
     public bool CanRun(string actionId)
     {
         ArgumentNullException.ThrowIfNull(actionId);
-        return actionId switch
-        {
-            SlashActionIds.SettingsOpen => _targets.OpenSettings is not null,
-            SlashActionIds.ChatNew => _targets.NewChat is not null,
-            SlashActionIds.TerminalNew => _targets.NewTerminal is not null,
-            SlashActionIds.ModeSet => _targets.SetMode is not null,
-            SlashActionIds.ModelPick => _targets.PickModel is not null,
-            SlashActionIds.SideOpen => _targets.OpenSideChat is not null,
-            SlashActionIds.HelpShow => _targets.ShowHelp is not null,
-            _ => false,
-        };
+        return _host.CanRun(actionId);
     }
 
     /// <inheritdoc/>
-    public async Task<SlashActionResult> RunAsync(SlashActionRequest request, CancellationToken cancellationToken)
+    public Task<SlashActionResult> RunAsync(SlashActionRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        return _host.RunAsync(request, cancellationToken);
+    }
 
-        if (!CanRun(request.ActionId))
+    /// <summary>The actions the window runs through plain callbacks.</summary>
+    private sealed class TargetHost(DesktopSlashTargets targets) : ISlashActionHost
+    {
+        public bool CanRun(string actionId)
         {
-            return SlashActionResult.NotAvailable(
-                string.Equals(request.ActionId, SlashActionIds.CloudHandoff, StringComparison.Ordinal) ? CloudNotBuilt : SlashPaletteCopy.ActionNotInThisWindow);
-        }
-
-        try
-        {
-            return request.ActionId switch
+            ArgumentNullException.ThrowIfNull(actionId);
+            return actionId switch
             {
-                SlashActionIds.SettingsOpen => OpenSettings(request),
-                SlashActionIds.ChatNew => await RunTargetAsync(_targets.NewChat!, "Started a new chat.", cancellationToken).ConfigureAwait(true),
-                SlashActionIds.TerminalNew => await RunTargetAsync(_targets.NewTerminal!, "Started a new terminal.", cancellationToken).ConfigureAwait(true),
-                SlashActionIds.ModeSet => await SetModeAsync(request, cancellationToken).ConfigureAwait(true),
-                SlashActionIds.ModelPick => SlashActionResult.Completed(await _targets.PickModel!(ModelFilter(request), cancellationToken).ConfigureAwait(true)),
-                SlashActionIds.SideOpen => await OpenSideAsync(request, cancellationToken).ConfigureAwait(true),
-                _ => ShowHelp(request),
+                SlashActionIds.SettingsOpen => targets.OpenSettings is not null,
+                SlashActionIds.ChatNew => targets.NewChat is not null,
+                SlashActionIds.TerminalNew => targets.NewTerminal is not null,
+                SlashActionIds.ModeSet => targets.SetMode is not null,
+                SlashActionIds.ModelPick => targets.PickModel is not null,
+                SlashActionIds.SideOpen => targets.OpenSideChat is not null,
+                SlashActionIds.HelpShow => targets.ShowHelp is not null,
+                SlashActionIds.CloudHandoff => targets.HandOffToCloud is not null,
+                _ => false,
             };
         }
-        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+
+        public async Task<SlashActionResult> RunAsync(SlashActionRequest request, CancellationToken cancellationToken)
         {
-            return SlashActionResult.Failed("The command failed: " + exception.Message);
+            ArgumentNullException.ThrowIfNull(request);
+
+            if (!CanRun(request.ActionId))
+            {
+                return SlashActionResult.NotAvailable(SlashPaletteCopy.ActionNotInThisWindow);
+            }
+
+            try
+            {
+                return request.ActionId switch
+                {
+                    SlashActionIds.SettingsOpen => OpenSettings(request),
+                    SlashActionIds.ChatNew => await RunTargetAsync(targets.NewChat!, "Started a new chat.", cancellationToken).ConfigureAwait(true),
+                    SlashActionIds.TerminalNew => await RunTargetAsync(targets.NewTerminal!, "Started a new terminal.", cancellationToken).ConfigureAwait(true),
+                    SlashActionIds.ModeSet => await SetModeAsync(request, cancellationToken).ConfigureAwait(true),
+                    SlashActionIds.ModelPick => SlashActionResult.Completed(await targets.PickModel!(ModelFilter(request), cancellationToken).ConfigureAwait(true)),
+                    SlashActionIds.SideOpen => await OpenSideAsync(request, cancellationToken).ConfigureAwait(true),
+                    SlashActionIds.CloudHandoff => await targets.HandOffToCloud!(request.TypedText, cancellationToken).ConfigureAwait(true),
+                    _ => ShowHelp(request),
+                };
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+            {
+                return SlashActionResult.Failed("The command failed: " + exception.Message);
+            }
         }
-    }
 
-    private static string ModelFilter(SlashActionRequest request) =>
-        request.Argument.Length > 0 ? request.Argument : request.TypedText;
+        private static string ModelFilter(SlashActionRequest request) =>
+            request.Argument.Length > 0 ? request.Argument : request.TypedText;
 
-    private static async Task<SlashActionResult> RunTargetAsync(Func<CancellationToken, Task> target, string done, CancellationToken cancellationToken)
-    {
-        await target(cancellationToken).ConfigureAwait(true);
-        return SlashActionResult.Completed(done);
-    }
-
-    private SlashActionResult OpenSettings(SlashActionRequest request) =>
-        _targets.OpenSettings!(request.Argument)
-            ? SlashActionResult.Completed()
-            : SlashActionResult.Failed("Settings has no " + request.Argument + " page.");
-
-    private async Task<SlashActionResult> SetModeAsync(SlashActionRequest request, CancellationToken cancellationToken)
-    {
-        var failure = await _targets.SetMode!(request.Argument, cancellationToken).ConfigureAwait(true);
-        if (failure is not null)
+        private static async Task<SlashActionResult> RunTargetAsync(Func<CancellationToken, Task> target, string done, CancellationToken cancellationToken)
         {
-            return SlashActionResult.Failed(failure);
+            await target(cancellationToken).ConfigureAwait(true);
+            return SlashActionResult.Completed(done);
         }
 
-        return SlashActionResult.Completed("Mode: " + request.Argument + ".", request.TypedText.Length > 0 ? request.TypedText : null);
-    }
+        private SlashActionResult OpenSettings(SlashActionRequest request) =>
+            targets.OpenSettings!(request.Argument)
+                ? SlashActionResult.Completed()
+                : SlashActionResult.Failed("Settings has no " + request.Argument + " page.");
 
-    private async Task<SlashActionResult> OpenSideAsync(SlashActionRequest request, CancellationToken cancellationToken)
-    {
-        await _targets.OpenSideChat!(request.TypedText, cancellationToken).ConfigureAwait(true);
-        return SlashActionResult.Completed();
-    }
+        private async Task<SlashActionResult> SetModeAsync(SlashActionRequest request, CancellationToken cancellationToken)
+        {
+            var failure = await targets.SetMode!(request.Argument, cancellationToken).ConfigureAwait(true);
+            if (failure is not null)
+            {
+                return SlashActionResult.Failed(failure);
+            }
 
-    private SlashActionResult ShowHelp(SlashActionRequest request)
-    {
-        _targets.ShowHelp!(request.TypedText);
-        return SlashActionResult.Completed();
+            return SlashActionResult.Completed("Mode: " + request.Argument + ".", request.TypedText.Length > 0 ? request.TypedText : null);
+        }
+
+        private async Task<SlashActionResult> OpenSideAsync(SlashActionRequest request, CancellationToken cancellationToken)
+        {
+            await targets.OpenSideChat!(request.TypedText, cancellationToken).ConfigureAwait(true);
+            return SlashActionResult.Completed();
+        }
+
+        private SlashActionResult ShowHelp(SlashActionRequest request)
+        {
+            targets.ShowHelp!(request.TypedText);
+            return SlashActionResult.Completed();
+        }
     }
 }

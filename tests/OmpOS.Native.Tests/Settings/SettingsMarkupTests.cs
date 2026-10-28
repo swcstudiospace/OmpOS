@@ -48,6 +48,12 @@ public sealed class SettingsMarkupTests
         "\"settings-help\"",
         "\"settings-dirty-marker\"",
         "\"*,Auto\"",
+        "\"recent-load\"",
+        "\"muted settings-body\"",
+        "\"settings-mono\"",
+        "\"settings-row\"",
+        "\"tone-warning settings-help\"",
+        "\"OmpOS.Size.TargetMin\"",
     };
 
     private static string SettingsPath() => Path.Combine(ShellHarness.RepoRoot(), SettingsDirectory);

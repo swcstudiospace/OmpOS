@@ -121,25 +121,46 @@
                 AutomationProperties.Name="Agents rail">
           <DockPanel>
 
-            <!-- The two views of the rail as one segmented pair: two equal halves in a track. -->
-            <Border DockPanel.Dock="Top"
-                    Classes="segment-track"
-                    Margin="0,0,0,8">
-              <Grid ColumnDefinitions="*,*"
-                    ColumnSpacing="{DynamicResource OmpOS.Gap.Xxs}">
-                <ToggleButton x:Name="SessionsViewToggle"
-                              Grid.Column="0"
-                              Classes="segment"
-                              Content="Sessions"
-                              IsChecked="True"
-                              AutomationProperties.Name="Sessions view" />
-                <ToggleButton x:Name="ToolsViewToggle"
-                              Grid.Column="1"
-                              Classes="segment"
-                              Content="Tools"
-                              AutomationProperties.Name="Tools view" />
-              </Grid>
-            </Border>
+            <!-- The rail header: the two views of the rail as one segmented pair (two equal halves in a track), and the workspace sets button. -->
+            <Grid DockPanel.Dock="Top"
+                  ColumnDefinitions="*,Auto"
+                  ColumnSpacing="{DynamicResource OmpOS.Gap.Xs}"
+                  Margin="0,0,0,8">
+              <Border Grid.Column="0"
+                      Classes="segment-track">
+                <Grid ColumnDefinitions="*,*"
+                      ColumnSpacing="{DynamicResource OmpOS.Gap.Xxs}">
+                  <ToggleButton x:Name="SessionsViewToggle"
+                                Grid.Column="0"
+                                Classes="segment"
+                                Content="Sessions"
+                                IsChecked="True"
+                                AutomationProperties.Name="Sessions view" />
+                  <ToggleButton x:Name="ToolsViewToggle"
+                                Grid.Column="1"
+                                Classes="segment"
+                                Content="Tools"
+                                AutomationProperties.Name="Tools view" />
+                </Grid>
+              </Border>
+              <Button x:Name="WorkspacesButton"
+                      Grid.Column="1"
+                      Classes="ghost"
+                      Content="Folders"
+                      MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                      MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                      ToolTip.Tip="Workspace sets: open several folders in one session"
+                      AutomationProperties.Name="Workspace sets" />
+            </Grid>
+
+            <!-- Where the next new session starts: this computer or a saved ssh environment. It exists only in a window that has a remote environments host. -->
+            <Expander x:Name="EnvironmentExpander"
+                      DockPanel.Dock="Top"
+                      IsVisible="False"
+                      Margin="0,0,0,8"
+                      AutomationProperties.Name="New session environment">
+              <ContentControl x:Name="EnvironmentHost" />
+            </Expander>
 
             <Grid RowDefinitions="*,Auto">
               <ContentControl x:Name="RailHost" />
@@ -207,6 +228,18 @@
                                 Classes="nav"
                                 Content="Export"
                                 AutomationProperties.Name="Transcript export" />
+                  <ToggleButton x:Name="CheckpointsToggle"
+                                Classes="nav"
+                                Content="Checkpoints"
+                                AutomationProperties.Name="Checkpoints" />
+                  <ToggleButton x:Name="WorktreesToggle"
+                                Classes="nav"
+                                Content="Worktrees"
+                                AutomationProperties.Name="Worktrees" />
+                  <ToggleButton x:Name="HookLogToggle"
+                                Classes="nav"
+                                Content="Hook run log"
+                                AutomationProperties.Name="Hook run log" />
                 </StackPanel>
               </ScrollViewer>
 
@@ -219,21 +252,31 @@
                       MinHeight="{DynamicResource OmpOS.Size.TitleBarHeight}"
                       BorderBrush="{DynamicResource OmpOS.Color.Border}"
                       BorderThickness="0,1,0,0">
-                <Button x:Name="SettingsButton"
-                        Classes="icon ghost"
-                        MinWidth="{DynamicResource OmpOS.Size.IconButtonSm}"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Center"
-                        ToolTip.Tip="{x:Static local:MainView.SettingsTooltip}"
-                        AutomationProperties.Name="{x:Static set:SettingsCopy.WindowTitle}">
-                  <Path Data="M8 4.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8ZM8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1"
-                        Width="{DynamicResource OmpOS.Size.IconSize}"
-                        Height="{DynamicResource OmpOS.Size.IconSize}"
-                        Stretch="Uniform"
-                        StrokeLineCap="Round"
-                        StrokeJoin="Round"
-                        AutomationProperties.AccessibilityView="Raw" />
-                </Button>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Spacing="{DynamicResource OmpOS.Gap.Xs}">
+                  <Button x:Name="SettingsButton"
+                          Classes="icon ghost"
+                          MinWidth="{DynamicResource OmpOS.Size.IconButtonSm}"
+                          ToolTip.Tip="{x:Static local:MainView.SettingsTooltip}"
+                          AutomationProperties.Name="{x:Static set:SettingsCopy.WindowTitle}">
+                    <Path Data="M8 4.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8ZM8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1"
+                          Width="{DynamicResource OmpOS.Size.IconSize}"
+                          Height="{DynamicResource OmpOS.Size.IconSize}"
+                          Stretch="Uniform"
+                          StrokeLineCap="Round"
+                          StrokeJoin="Round"
+                          AutomationProperties.AccessibilityView="Raw" />
+                  </Button>
+                  <!-- About OmpOS: version, revision, licence and the source. It comes after Settings in the tab order. -->
+                  <Button x:Name="AboutButton"
+                          Classes="ghost"
+                          Content="About"
+                          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                          MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                          AutomationProperties.Name="About OmpOS" />
+                </StackPanel>
               </Border>
             </Grid>
 
@@ -245,7 +288,7 @@
                 MinWidth="{DynamicResource OmpOS.Size.ThreadMinWidth}"
                 Background="{DynamicResource OmpOS.Color.Surface}"
                 AutomationProperties.Name="Agent thread">
-          <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
+          <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
             <!-- The thread header. Its own close and resume controls come first, then the plugin connection row (the pipeline strip). -->
             <ContentControl x:Name="ThreadHeaderHost"
@@ -257,7 +300,7 @@
             <!-- The panel state: the empty, loading and error blocks of the whole panel. The view hides itself while the panel is ready. -->
             <ContentControl x:Name="PanelStateHost"
                             Grid.Row="2"
-                            Grid.RowSpan="10" />
+                            Grid.RowSpan="13" />
 
             <!-- The closed-agent notice. A lost agent shows its notice in the thread header. -->
             <Border x:Name="ClosedNotice"
@@ -373,10 +416,24 @@
             <ContentControl x:Name="ConfirmBarHost"
                             Grid.Row="9" />
 
-            <ContentControl x:Name="ComposerHost"
-                            Grid.Row="10" />
+            <!-- The Checkpoints timeline of the session: the turns the agent changed files in, with Rewind behind a confirmation. It hides itself until it is opened. -->
+            <ContentControl x:Name="CheckpointsHost"
+                            Grid.Row="10"
+                            HorizontalContentAlignment="Stretch" />
 
-            <ScrollViewer Grid.Row="11"
+            <!-- The custom mode chip sits above the composer; the queued messages hang under it. Both hide themselves while they have nothing to show. -->
+            <ContentControl x:Name="CustomModeHost"
+                            Grid.Row="11"
+                            HorizontalContentAlignment="Stretch" />
+
+            <ContentControl x:Name="ComposerHost"
+                            Grid.Row="12" />
+
+            <ContentControl x:Name="QueueHost"
+                            Grid.Row="13"
+                            HorizontalContentAlignment="Stretch" />
+
+            <ScrollViewer Grid.Row="14"
                           MaxHeight="160"
                           Focusable="False"
                           IsTabStop="False"
@@ -399,6 +456,14 @@
       </Grid>
 
     </DockPanel>
+
+    <!-- The conversation search: a palette over the window, top aligned, 560 px wide. Ctrl or Cmd+K opens it; the view hides itself while its model is closed. -->
+    <ContentControl x:Name="ConversationSearchHost"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Width="560"
+                    Margin="0,48,0,0"
+                    ZIndex="10" />
 
   </Panel>
 

@@ -43,6 +43,12 @@ public static class ProviderListingCopy
     /// <summary>The sentence that says OmpOS sends a plan key only to the plan's own host.</summary>
     public const string PlanHostSentence = "OmpOS sends this key only to the plan's own host.";
 
+    /// <summary>The label of the tick box a coding plan asks for before it is added.</summary>
+    public const string PlanRuleAcceptLabel = "I have read the vendor's rule text";
+
+    /// <summary>The problem shown when a coding plan is added without the tick.</summary>
+    public const string PlanRuleRequired = "Confirm that you have read the vendor's rule text before adding this plan.";
+
     /// <summary>The sentence under the model id field of a route that has no models list OmpOS can read.</summary>
     public const string ModelIdsNeededText = "This provider has no models list OmpOS can read. Enter at least one model id, separated by commas or spaces.";
 
@@ -213,6 +219,11 @@ public static class ProviderListingCopy
     /// <param name="providerName">The provider's display name.</param>
     /// <returns>The name.</returns>
     public static string SetupActionName(string providerName) => $"Set up {providerName}";
+
+    /// <summary>Returns the accessible name of the plan rule tick box.</summary>
+    /// <param name="providerName">The provider's display name.</param>
+    /// <returns>The name.</returns>
+    public static string PlanRuleAcceptName(string providerName) => $"I have read the vendor's rule text for {providerName}";
 
     /// <summary>Returns the accessible name of the add action.</summary>
     /// <param name="providerName">The provider's display name.</param>

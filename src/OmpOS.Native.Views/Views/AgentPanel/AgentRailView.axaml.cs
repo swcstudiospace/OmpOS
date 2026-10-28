@@ -3,7 +3,9 @@ using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
+using OmpOS.Native.Views.Display;
 using OmpOS.Presentation.AgentPanel;
+using OmpOS.Presentation.Commands.Handlers;
 
 namespace OmpOS.Native.Views.AgentPanel;
 
@@ -15,6 +17,7 @@ namespace OmpOS.Native.Views.AgentPanel;
 internal partial class AgentRailView : UserControl
 {
     private readonly ModelWatcher<SessionCatalogModel> _catalogWatch;
+    private readonly DisplayOptionsWatcher _display;
     private readonly ModelWatcher<AgentPanelViewModel> _panelWatch;
     private AgentPanelViewModel? _panel;
     private bool _attached;
@@ -28,6 +31,7 @@ internal partial class AgentRailView : UserControl
         NewTerminalKeys.Text = new KeyGesture(Key.T, KeyModifiers.Control | KeyModifiers.Shift).ToString(null, System.Globalization.CultureInfo.InvariantCulture);
         _catalogWatch = new ModelWatcher<SessionCatalogModel>(Refresh);
         _panelWatch = new ModelWatcher<AgentPanelViewModel>(Refresh);
+        _display = new DisplayOptionsWatcher(this, ApplyDisplay);
 
         AgentRows.SelectionChanged += OnSelectionChanged;
         AgentRows.ContainerPrepared += OnContainerPrepared;
@@ -308,4 +312,7 @@ internal partial class AgentRailView : UserControl
             CloseRequested?.Invoke(this, new AgentRowEventArgs(row.Id));
         }
     }
+
+    private void ApplyDisplay(DisplaySettingsValues values) =>
+        AgentRows.Classes.Set("no-status-indicators", !values.ShowStatusIndicators);
 }

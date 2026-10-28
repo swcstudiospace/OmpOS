@@ -5,7 +5,7 @@ using OmpOS.Presentation.AgentPanel;
 
 namespace OmpOS.Native.Views.Blocks;
 
-/// <summary>A tool-call row: a status glyph, the tool's name and its status in words. The arguments are not drawn.</summary>
+/// <summary>A tool-call row: a status glyph, the tool's name and its status in words. The arguments are not drawn. Hook notices of the call hang under the row.</summary>
 internal partial class ToolCallBlockView : UserControl
 {
     /// <summary>Builds the row for one tool call.</summary>
@@ -16,10 +16,37 @@ internal partial class ToolCallBlockView : UserControl
         ArgumentNullException.ThrowIfNull(block);
 
         InitializeComponent();
+        CallId = block.CallId;
         ToolName.Text = block.ToolName;
         ToolStatus.Text = block.Status;
         StatusGlyph.IconKey = GlyphOf(block.Status);
         AutomationProperties.SetName(this, $"Tool call {block.ToolName}, {block.Status}");
+    }
+
+    /// <summary>Gets the id of the call the row shows.</summary>
+    internal string CallId { get; }
+
+    /// <summary>Gets the panel that holds the hook notices under the row.</summary>
+    internal Panel Notices => NoticeHost;
+
+    /// <summary>Shows a notice under the row. A control that sits under another parent (an older row of the same call) is moved here.</summary>
+    /// <param name="notice">The notice control.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="notice"/> is null.</exception>
+    internal void AttachNotice(Control notice)
+    {
+        ArgumentNullException.ThrowIfNull(notice);
+
+        if (notice.Parent is Panel parent)
+        {
+            if (ReferenceEquals(parent, NoticeHost))
+            {
+                return;
+            }
+
+            parent.Children.Remove(notice);
+        }
+
+        NoticeHost.Children.Add(notice);
     }
 
     /// <summary>Chooses the glyph of the glyph table that matches a reported call status. The words next to it say the same thing.</summary>

@@ -1,6 +1,8 @@
 using OmpOS.Contracts.Agents;
+using OmpOS.Harness.AgentLoop.Hooks;
 using OmpOS.Harness.AgentLoop.Launch;
 using OmpOS.Harness.AgentLoop.Substrate;
+using OmpOS.Native.Composition;
 
 namespace OmpOS.Native.Agents;
 
@@ -9,7 +11,7 @@ namespace OmpOS.Native.Agents;
 /// context source, the steering recorder (only when the Substrate answered its health check), the Substrate gateway used for a
 /// re-check, and the HTTP client behind the gateway. The plan owns that client and disposes it.
 /// </summary>
-internal sealed class SessionPlan : IDisposable
+internal sealed class SessionPlan : IDisposable, IAsyncDisposable
 {
     private readonly HttpClient? _substrateClient;
 
@@ -67,6 +69,37 @@ internal sealed class SessionPlan : IDisposable
     /// <summary>Gets a value indicating whether the Substrate answered its health check and is used by this session.</summary>
     public bool SubstrateActive { get; }
 
-    /// <summary>Disposes the HTTP client of the Substrate gateway.</summary>
-    public void Dispose() => _substrateClient?.Dispose();
+    /// <summary>Gets the hooks of the session, or null when hooks are off for it (no hooks service, the global switch off, or the start failed). The session's engine reports to its gate; it is disposed after the engine.</summary>
+    public IHooksSession? Hooks { get; init; }
+
+    /// <summary>Gets the run mode policy of the session's workspace, or null for a session without run modes.</summary>
+    public RunModePolicyHolder? RunModes { get; init; }
+
+    /// <summary>Gets the writer that owns the settings overlay file omp reads (<c>--config</c>), or null when the plan needs none. Disposing it deletes the file.</summary>
+    public ConfigOverlayWriter? Overlay { get; init; }
+
+    /// <summary>Gets the identifier of the session the plan is for.</summary>
+    public string SessionId { get; init; } = string.Empty;
+
+    /// <summary>Gets what the head remembers about the session: the ssh environment it runs on and the other roots of its workspace.</summary>
+    public SessionExtras Extras { get; init; } = SessionExtras.Local;
+
+    /// <summary>Releases what the plan owns without waiting: the HTTP client of the Substrate gateway, the overlay file and the run mode holder. The hooks of the session are released by <see cref="DisposeAsync"/>.</summary>
+    public void Dispose()
+    {
+        _substrateClient?.Dispose();
+        Overlay?.Dispose();
+        RunModes?.Dispose();
+    }
+
+    /// <summary>Releases everything the plan owns, and ends the hooks of the session (its disposal sends <c>sessionEnd</c>) after the engine that reported to them has stopped.</summary>
+    /// <returns>A task that completes when everything is released.</returns>
+    public async ValueTask DisposeAsync()
+    {
+        Dispose();
+        if (Hooks is { } hooks)
+        {
+            await hooks.DisposeAsync().ConfigureAwait(false);
+        }
+    }
 }

@@ -1,4 +1,14 @@
+---
+description: "Threat model for a provider key typed into the OmpOS web head: kept in page memory only."
+---
+
 # Web provider-key threat model
+
+Status: Built (decision and mechanism recorded); not a security review
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 Phase 43 (VX-10). Scope: a provider key (for example a model API key) that the user types into the WebAssembly head (`apps/OmpOS.Web`, shared UI in `src/OmpOS.UI`) so the browser can call a provider directly.
 

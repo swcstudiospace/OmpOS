@@ -19,5 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.AgentLoop/OmpOS.Harness.AgentLoop.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Plugins/OmpOS.Harness.Plugins.csproj" />
   </ItemGroup>
 </Project>

@@ -28,14 +28,15 @@ public sealed class SettingsKeyboardTests
             fixture.Settle();
 
             SettingsTree.Press(window, Key.Down, PhysicalKey.ArrowDown);
-            fixture.Model.SelectedSection.ShouldBe(SettingsSection.Models);
-            window.CurrentView.ShouldBeOfType<ModelsPageView>();
+            fixture.Model.SelectedSection.ShouldBe(SettingsSection.General);
+            window.CurrentView.ShouldBeOfType<GeneralPageView>();
 
             SettingsTree.Press(window, Key.Down, PhysicalKey.ArrowDown);
-            fixture.Model.SelectedSection.ShouldBe(SettingsSection.General);
+            fixture.Model.SelectedSection.ShouldBe(SettingsSection.Display);
+            window.CurrentView.ShouldBeOfType<DisplayPageView>();
 
             SettingsTree.Press(window, Key.Up, PhysicalKey.ArrowUp);
-            fixture.Model.SelectedSection.ShouldBe(SettingsSection.Models);
+            fixture.Model.SelectedSection.ShouldBe(SettingsSection.General);
 
             SettingsTree.Press(window, Key.End, PhysicalKey.End);
             fixture.Model.SelectedSection.ShouldBe(SettingsSection.Keyboard);

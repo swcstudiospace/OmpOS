@@ -4,7 +4,8 @@ namespace OmpOS.Workspace.Conventions;
 /// Discovers commands, skills, rules, subagents, hooks files and MCP files from every convention directory (<see cref="ConventionDirectories.Names"/>) at each workspace root and at
 /// the user's home. Precedence: a project item beats a user item; within a scope the directories are tried in <see cref="ConventionDirectories.Names"/> order; an earlier
 /// workspace root beats a later one; the first item with a name wins and the others are listed in <see cref="ConventionSet.Diagnostics"/>. A malformed, oversize or unreadable file is a diagnostic and never an
-/// exception. The files are read through <see cref="IConventionFileSource"/>, so the same discovery serves a local disk, an SSH host and a cloud file tree.
+/// exception. The files are read through <see cref="IConventionFileSource"/>, so the same discovery serves a local disk, an SSH host and a cloud file tree. When <see cref="ConventionSources.Builtin"/> is set, the skills that
+/// ship with the application are added last, in the <see cref="ConventionScope.Builtin"/> scope: they never beat a project or user skill of the same name.
 /// </summary>
 public static class ConventionCatalog
 {
@@ -42,6 +43,13 @@ public static class ConventionCatalog
         {
             var context = new ConventionScanContext(sources.User, collector, bounds, ConventionScope.User, userHome, "~/");
             await new ConventionScanner(context).ScanAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        if (sources.Builtin is { } builtin)
+        {
+            // The skills that ship with the application come last, so a project or user skill of the same name wins and the loser is reported as a duplicate.
+            var context = new ConventionScanContext(builtin, collector, bounds, ConventionScope.Builtin, builtin.BasePath, "builtin:");
+            await new ConventionItemScanner(context).ScanSkillsAsync(string.Empty, string.Empty, cancellationToken).ConfigureAwait(false);
         }
 
         return collector.Build();

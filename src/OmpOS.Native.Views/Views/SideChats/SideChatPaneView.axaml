@@ -1,0 +1,156 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sc="clr-namespace:OmpOS.Presentation.SideChats;assembly=OmpOS.Presentation"
+             xmlns:chats="clr-namespace:OmpOS.Presentation.Chats;assembly=OmpOS.Presentation"
+             x:Class="OmpOS.Native.Views.SideChats.SideChatPaneView"
+             x:DataType="sc:SideChatHub"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The side chat pane: the open side chats of a session as cards, each with its messages, an ask box and a Close button, and a New side chat control.
+       The optional Fork button duplicates the session. Keyboard order follows XAML order; Enter sends, Shift+Enter starts a new line. -->
+  <ScrollViewer x:Name="PaneScroll"
+                Focusable="False"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="{DynamicResource OmpOS.Space.Sm}"
+                Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+      <TextBlock x:Name="HeadingText"
+                 Classes="settings-section"
+                 Text="Side chats" />
+
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBox x:Name="NewQuestionBox"
+                 Grid.Column="0"
+                 PlaceholderText="First question (optional)"
+                 AutomationProperties.Name="First question of a new side chat"
+                 MinHeight="{DynamicResource OmpOS.Size.TargetMin}" />
+        <Button x:Name="NewSideChatButton"
+                Grid.Column="1"
+                Margin="8,0,0,0"
+                Classes="primary"
+                Content="New side chat"
+                AutomationProperties.Name="New side chat"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                Click="OnNewSideChatClick" />
+        <Button x:Name="ForkButton"
+                Grid.Column="2"
+                Margin="8,0,0,0"
+                Content="Fork this chat"
+                AutomationProperties.Name="Fork this chat into a new session. The original chat is unchanged."
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                Click="OnForkClick" />
+      </Grid>
+
+      <TextBlock x:Name="HubStatusText"
+                 Classes="settings-body"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="Side chat status" />
+      <TextBlock x:Name="ForkStatusText"
+                 Classes="settings-body"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="Fork status" />
+
+      <TextBlock x:Name="EmptyText"
+                 Classes="muted settings-body"
+                 Text="No side chat is open. A side chat keeps its messages out of the session's transcript." />
+
+      <ItemsControl x:Name="OpenList"
+                    AutomationProperties.Name="Open side chats">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="sc:SideChatModel">
+            <Border x:Name="ChatCard"
+                    Classes="settings-card"
+                    Margin="0,0,0,8"
+                    AutomationProperties.Name="{CompiledBinding Title}">
+              <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0"
+                             Classes="settings-section"
+                             VerticalAlignment="Center"
+                             Text="{CompiledBinding Title}" />
+                  <Button x:Name="CloseChatButton"
+                          Grid.Column="1"
+                          Classes="sm"
+                          Content="{x:Static sc:SideChatCopy.CloseLabel}"
+                          AutomationProperties.Name="{x:Static sc:SideChatCopy.CloseName}"
+                          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                          MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                          Click="OnCloseChatClick" />
+                </Grid>
+
+                <TextBlock Classes="settings-help"
+                           Text="{x:Static sc:SideChatCopy.Notice}" />
+
+                <ScrollViewer MaxHeight="240"
+                              Focusable="True"
+                              IsTabStop="True"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto"
+                              AutomationProperties.Name="{CompiledBinding Title, StringFormat='Messages of {0}'}">
+                  <ItemsControl ItemsSource="{CompiledBinding Chat.Messages}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="chats:SideChatMessage">
+                        <StackPanel Margin="0,0,0,8">
+                          <TextBlock Classes="settings-label"
+                                     Text="{CompiledBinding Author}" />
+                          <TextBlock Classes="settings-body"
+                                     Text="{CompiledBinding Text}" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBox x:Name="AskBox"
+                           Grid.Column="0"
+                           AcceptsReturn="True"
+                           TextWrapping="Wrap"
+                           MaxHeight="120"
+                           MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                           AutomationProperties.Name="{CompiledBinding Title, StringFormat='Ask a question in {0}'}"
+                           AttachedToVisualTree="OnAskBoxAttached" />
+                  <Button x:Name="SendButton"
+                          Grid.Column="1"
+                          Margin="8,0,0,0"
+                          VerticalAlignment="Bottom"
+                          Content="Send"
+                          AutomationProperties.Name="{CompiledBinding Title, StringFormat='Send your question in {0}'}"
+                          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                          MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                          Click="OnSendClick" />
+                </Grid>
+
+                <!-- While the assistant answers the status line says so, politely; a failure is announced at once. -->
+                <TextBlock x:Name="AnsweringText"
+                           Classes="muted settings-body"
+                           Text="{CompiledBinding StatusText}"
+                           IsVisible="{CompiledBinding IsAnswering}"
+                           AutomationProperties.LiveSetting="Polite"
+                           AutomationProperties.Name="Assistant status" />
+                <TextBlock x:Name="ErrorText"
+                           Classes="tone-error settings-body"
+                           Text="{CompiledBinding StatusText}"
+                           IsVisible="{CompiledBinding HasError}"
+                           AutomationProperties.LiveSetting="Assertive"
+                           AutomationProperties.Name="Side chat error" />
+
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

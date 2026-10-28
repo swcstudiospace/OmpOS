@@ -199,6 +199,25 @@ public sealed class InProcessEngineHost : IEngineHost, IAsyncDisposable
         return session?.CancelAsync(cancellationToken) ?? Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Forks the engine session this host is bound to (<see cref="IOmpSessionFork"/>): the engine creates a second session that continues from the same
+    /// history, and this host stays bound to the first. The session is opened first when none is bound.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>The identifier the engine gave the new session.</returns>
+    /// <exception cref="NotSupportedException">The engine does not advertise forking.</exception>
+    /// <exception cref="ObjectDisposedException">The host was disposed.</exception>
+    public async Task<string> ForkAsync(CancellationToken cancellationToken)
+    {
+        var session = await EnsureSessionAsync(cancellationToken).ConfigureAwait(false);
+        if (session is not IOmpSessionFork { CanFork: true } fork)
+        {
+            throw new NotSupportedException("This omp does not advertise forking a session.");
+        }
+
+        return await fork.ForkAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {

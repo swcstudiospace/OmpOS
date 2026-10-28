@@ -1,4 +1,14 @@
+---
+description: "Inventory of the session-chat features the Razor head renders and the Avalonia head must match, with the test that proves each row."
+---
+
 # Session-chat parity inventory (Phase 21)
+
+Status: Record (inventory written for Phase 21; some rows are pending in the native head)
+
+Last verified: 2026-10-28 (the status only; the body is a dated record and was not re-verified)
+
+Applies to: v0.15.0
 
 This inventory lists every session-chat feature that the Razor head (`src/OmpOS.UI`) renders or that the MAUI host
 (`apps/OmpOS.App`) wires, one row per feature. The native Avalonia head must match each row with an Avalonia test.

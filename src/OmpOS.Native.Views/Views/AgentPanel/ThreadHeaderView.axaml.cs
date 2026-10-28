@@ -1,7 +1,9 @@
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using OmpOS.Native.Views.Display;
 using OmpOS.Presentation.AgentPanel;
+using OmpOS.Presentation.Commands.Handlers;
 
 namespace OmpOS.Native.Views.AgentPanel;
 
@@ -13,6 +15,7 @@ namespace OmpOS.Native.Views.AgentPanel;
 internal partial class ThreadHeaderView : UserControl
 {
     private readonly ModelWatcher<AgentSessionViewModel> _watch;
+    private readonly DisplayOptionsWatcher _display;
     private bool _attached;
 
     /// <summary>Creates a header with no model.</summary>
@@ -20,6 +23,7 @@ internal partial class ThreadHeaderView : UserControl
     {
         InitializeComponent();
         _watch = new ModelWatcher<AgentSessionViewModel>(Refresh);
+        _display = new DisplayOptionsWatcher(this, ApplyDisplay);
         CloseButton.Click += OnCloseClick;
         TaskChipButton.Click += OnTaskChipClick;
         PanelNoticeHost.ShowPipelineRequested += OnShowPipelineRequested;
@@ -130,4 +134,7 @@ internal partial class ThreadHeaderView : UserControl
     private void OnTaskChipClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => TaskChipClicked?.Invoke(this, EventArgs.Empty);
 
     private void OnShowPipelineRequested(object? sender, EventArgs e) => ShowPipelineRequested?.Invoke(this, EventArgs.Empty);
+
+    private void ApplyDisplay(DisplaySettingsValues values) =>
+        HeaderFrame.Classes.Set("no-status-indicators", !values.ShowStatusIndicators);
 }

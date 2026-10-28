@@ -1,5 +1,7 @@
+using System.Reflection;
 using System.Text.RegularExpressions;
 using OmpOS.Presentation.Commands;
+using OmpOS.Presentation.Commands.Handlers;
 using Shouldly;
 using Xunit;
 
@@ -58,6 +60,39 @@ public sealed class SlashCommandCatalogueTests
         SlashCommandCatalogue.ResearchRows.Values.Count(row => row[0] == 'D').ShouldBe(6);
     }
 
+    /// <summary>
+    /// The statuses add up to the 92 tokens: a command is Built only when OmpOS runs it as Cursor describes it, and a flip in either direction is a decision that changes this count. A native command is Unavailable
+    /// only for a reason (no log file, no Vim keys, no thinking blocks to hide, Cursor's own backend), so these counts are the honest tally of what the window runs.
+    /// </summary>
+    [Fact]
+    public void TheStatusCountsAreTheDocumentedTally()
+    {
+        var all = SlashCommandCatalogue.Shipped.ListAll();
+
+        all.Count(command => command.Status == SlashCommandStatus.Built).ShouldBe(26);
+        all.Count(command => command.Status == SlashCommandStatus.Partial).ShouldBe(31);
+        all.Count(command => command.Status == SlashCommandStatus.Delegated).ShouldBe(9);
+        all.Count(command => command.Status == SlashCommandStatus.Unavailable).ShouldBe(26);
+    }
+
+    /// <summary>Every native action a catalogue row names is an action some handler or the head runs, and each handler action id is named by at least one row: no handler is registered for a command that does not exist.</summary>
+    [Fact]
+    public void EveryHandlerActionBelongsToACommand()
+    {
+        var named = SlashCommandCatalogue.Shipped.ListAll()
+            .Where(static command => command.Kind == SlashHandlerKind.NativeAction && command.Status != SlashCommandStatus.Unavailable)
+            .Select(static command => command.HandlerId)
+            .ToHashSet(StringComparer.Ordinal);
+        var shownByTheWindow = new[]
+        {
+            HandlerActionIds.ChatRewind, HandlerActionIds.ChatRestore, HandlerActionIds.ChatUndo, HandlerActionIds.ChatFork, HandlerActionIds.WorktreeApply, HandlerActionIds.WorktreeDelete, HandlerActionIds.WorktreeBestOfN,
+            HandlerActionIds.ChatCopy, HandlerActionIds.ChatCopyConversationId, HandlerActionIds.ChatCopyRequestId, HandlerActionIds.AppAbout, HandlerActionIds.AppQuit, HandlerActionIds.AppFeedback, HandlerActionIds.EditorOpen,
+            HandlerActionIds.ChangesOpen, HandlerActionIds.WorkspaceSave, HandlerActionIds.WorkspaceLoad, HandlerActionIds.DisplayLineNumbers, HandlerActionIds.DisplayStatusIndicators,
+        };
+
+        shownByTheWindow.ShouldAllBe(action => named.Contains(action));
+    }
+
     /// <summary>Every token has a handler: a native action, an omp command, a skill, a cloud hand-off or an unavailable marker with its reason. No unavailable row lacks a reason.</summary>
     [Fact]
     public void EveryTokenHasAHandlerAndEveryUnavailableRowHasAReason()
@@ -81,12 +116,15 @@ public sealed class SlashCommandCatalogueTests
         }
     }
 
-    /// <summary>Each kind carries what it needs: a known action id, an omp command that omp 18.12.6 really handles over ACP, a skill name, or the cloud hand-off with the reason that cloud agents are phase 60.</summary>
+    /// <summary>Each kind carries what it needs: a known action id (the head's own or one a slash handler runs), an omp command that omp 18.12.6 really handles over ACP, a skill name, or the cloud hand-off action.</summary>
     [Fact]
     public void EachHandlerKindIsBackedByWhatItNames()
     {
         var actions = new HashSet<string>(
-            [SlashActionIds.SettingsOpen, SlashActionIds.ChatNew, SlashActionIds.TerminalNew, SlashActionIds.ModeSet, SlashActionIds.ModelPick, SlashActionIds.SideOpen, SlashActionIds.HelpShow],
+            [
+                SlashActionIds.SettingsOpen, SlashActionIds.ChatNew, SlashActionIds.TerminalNew, SlashActionIds.ModeSet, SlashActionIds.ModelPick, SlashActionIds.SideOpen, SlashActionIds.HelpShow, SlashActionIds.CloudHandoff,
+                .. typeof(HandlerActionIds).GetFields(BindingFlags.Public | BindingFlags.Static).Where(static field => field.IsLiteral).Select(static field => (string)field.GetRawConstantValue()!),
+            ],
             StringComparer.Ordinal);
         foreach (var command in SlashCommandCatalogue.Shipped.ListAll())
         {
@@ -108,8 +146,8 @@ public sealed class SlashCommandCatalogueTests
                     command.Status.ShouldBe(SlashCommandStatus.Partial);
                     break;
                 case SlashHandlerKind.CloudHandoff:
-                    command.Status.ShouldBe(SlashCommandStatus.Unavailable);
-                    command.DisabledReason.ShouldBe("cloud agents: phase 60");
+                    command.HandlerId.ShouldBe(SlashActionIds.CloudHandoff);
+                    command.Status.ShouldNotBe(SlashCommandStatus.Unavailable);
                     break;
                 default:
                     command.Status.ShouldBe(SlashCommandStatus.Unavailable);

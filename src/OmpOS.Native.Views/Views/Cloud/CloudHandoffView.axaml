@@ -1,0 +1,102 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cloud="clr-namespace:OmpOS.Presentation.Cloud;assembly=OmpOS.Presentation"
+             x:Class="OmpOS.Native.Views.Cloud.CloudHandoffView"
+             x:DataType="cloud:CloudHandoffModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The hand-off dialog. Keyboard order follows XAML order: the task (read-only), the repository, the cost confirmation, Hand off, Cancel.
+       Hand off stays disabled until the repository is valid and the cost is confirmed. There is no field for a secret value anywhere. -->
+  <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+    <TextBlock x:Name="DialogTitle"
+               Classes="settings-section"
+               Text="{x:Static cloud:CloudCopy.HandoffTitle}"
+               AutomationProperties.Name="{x:Static cloud:CloudCopy.HandoffTitle}" />
+    <TextBlock Classes="settings-help"
+               Text="{x:Static cloud:CloudCopy.HandoffDescription}" />
+
+    <TextBlock Classes="settings-label"
+               Text="{x:Static cloud:CloudCopy.HandoffTaskLabel}" />
+    <TextBox x:Name="TaskBox"
+             IsReadOnly="True"
+             AcceptsReturn="True"
+             TextWrapping="Wrap"
+             MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+             MaxHeight="160"
+             Text="{CompiledBinding Task, Mode=OneWay}"
+             AutomationProperties.Name="{x:Static cloud:CloudCopy.HandoffTaskLabel}" />
+
+    <TextBlock Classes="settings-label"
+               Text="{x:Static cloud:CloudCopy.RepositoryEntryLabel}" />
+    <TextBox x:Name="RepositoryBox"
+             Classes="settings-mono"
+             Classes.invalid="{CompiledBinding RepositoryError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+             Text="{CompiledBinding RepositoryText, Mode=TwoWay}"
+             MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+             AutomationProperties.Name="{x:Static cloud:CloudCopy.RepositoryEntryLabel}" />
+    <TextBlock Classes="settings-help"
+               Text="{x:Static cloud:CloudCopy.RepositoryEntryHelp}" />
+    <TextBlock x:Name="RepositoryErrorText"
+               Classes="tone-error small"
+               IsVisible="{CompiledBinding RepositoryError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               Text="{CompiledBinding RepositoryError}"
+               AutomationProperties.LiveSetting="Assertive"
+               AutomationProperties.Name="{x:Static cloud:CloudCopy.RepositoryProblemName}" />
+
+    <!-- The cost confirmation: plain words about what is billed, and an explicit checkbox. Hand off cannot start before it is ticked. -->
+    <Border x:Name="CostBlock"
+            Classes="banner">
+      <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+        <TextBlock Classes="settings-label"
+                   Text="{x:Static cloud:CloudCopy.CostHeading}" />
+        <TextBlock x:Name="CostNoticeText"
+                   Classes="settings-body"
+                   TextWrapping="Wrap"
+                   Text="{CompiledBinding CostNotice}" />
+        <CheckBox x:Name="CostConfirmBox"
+                  IsChecked="{CompiledBinding CostConfirmed, Mode=TwoWay}"
+                  Content="{x:Static cloud:CloudCopy.CostConfirmLabel}"
+                  AutomationProperties.Name="{x:Static cloud:CloudCopy.CostConfirmLabel}" />
+      </StackPanel>
+    </Border>
+
+    <TextBlock x:Name="WhyDisabledText"
+               Classes="settings-help"
+               IsVisible="{CompiledBinding WhyDisabled, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               Text="{CompiledBinding WhyDisabled}"
+               AutomationProperties.Name="{x:Static cloud:CloudCopy.WhyDisabledName}" />
+    <TextBlock x:Name="StatusText"
+               Classes="settings-body"
+               TextWrapping="Wrap"
+               IsVisible="{CompiledBinding Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               Text="{CompiledBinding Status}"
+               AutomationProperties.LiveSetting="Polite"
+               AutomationProperties.Name="{x:Static cloud:CloudCopy.HandoffStatusName}" />
+
+    <StackPanel Orientation="Horizontal"
+                Spacing="{DynamicResource OmpOS.Gap.Sm}">
+      <Button x:Name="StartButton"
+              Classes="primary"
+              Content="{x:Static cloud:CloudCopy.HandoffStartLabel}"
+              IsEnabled="{CompiledBinding CanStart}"
+              AutomationProperties.Name="{x:Static cloud:CloudCopy.HandoffStartLabel}"
+              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+              MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+              Click="OnStartClick" />
+      <Button x:Name="CancelButton"
+              Content="{x:Static cloud:CloudCopy.CancelLabel}"
+              IsEnabled="{CompiledBinding !IsBusy}"
+              AutomationProperties.Name="{x:Static cloud:CloudCopy.CancelLabel}"
+              MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+              MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+              Click="OnCancelClick" />
+    </StackPanel>
+
+  </StackPanel>
+</UserControl>

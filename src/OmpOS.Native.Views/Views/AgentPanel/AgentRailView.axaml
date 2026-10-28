@@ -63,6 +63,10 @@
     <Style Selector="ListBoxItem:selected TextBlock.row-title">
       <Setter Property="FontWeight" Value="{DynamicResource OmpOS.Font.Weight.Semibold}" />
     </Style>
+    <!-- The Status indicators switch off: the glyph of every row hides. The status words and the row's accessible text stay, so assistive technology still gets the status. -->
+    <Style Selector="ListBox.no-status-indicators local|StageIcon">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
     <!-- Keyboard focus: a 2 px AccentPurple ring on the whole row, whose padding gives up 1 px a side as the border grows. -->
     <Style Selector="ListBoxItem:focus-visible Border.row-frame">
       <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.AccentPurple}" />

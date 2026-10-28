@@ -71,6 +71,24 @@
                              Text="{x:Static set:SettingsCopy.PrivacyStatement}"
                              AutomationProperties.Name="{x:Static set:SettingsCopy.PrivacyStatement}" />
 
+        <!-- About: the button opens the About window through the head. It is absent when the head has no About window. -->
+        <TextBlock x:Name="AboutHeading"
+                   Classes="settings-section"
+                   Margin="0,24,0,0"
+                   IsVisible="{CompiledBinding CanOpenAbout}"
+                   Text="{x:Static set:SettingsCopy.AboutHeading}" />
+        <Button x:Name="AboutButton"
+                HorizontalAlignment="Left"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                IsVisible="{CompiledBinding CanOpenAbout}"
+                Content="{x:Static set:SettingsCopy.AboutLabel}"
+                AutomationProperties.Name="{x:Static set:SettingsCopy.AboutLabel}"
+                AutomationProperties.HelpText="{x:Static set:SettingsCopy.AboutHelp}" />
+        <TextBlock Classes="settings-help"
+                   IsVisible="{CompiledBinding CanOpenAbout}"
+                   Text="{x:Static set:SettingsCopy.AboutHelp}" />
+
       </StackPanel>
     </ScrollViewer>
 

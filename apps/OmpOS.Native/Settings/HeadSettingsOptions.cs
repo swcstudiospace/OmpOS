@@ -1,3 +1,4 @@
+using OmpOS.Native.Composition;
 using OmpOS.Presentation.Commands;
 using OmpOS.Presentation.Settings;
 
@@ -26,4 +27,10 @@ internal sealed class HeadSettingsOptions
 
     /// <summary>Gets how a Settings window is built over its model, or null for the real window. A test supplies a fake.</summary>
     public Func<SettingsWindowModel, ISettingsWindowHandle>? WindowFactory { get; init; }
+
+    /// <summary>
+    /// Gets the services the pages of the newer sections read: hooks, MCP, run mode, display, workspace sets, remote environments, the Cloud agents
+    /// host (null when no API base address is set) and the About launcher. Null builds the window without those pages.
+    /// </summary>
+    public HeadServices? Services { get; init; }
 }

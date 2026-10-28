@@ -1,4 +1,14 @@
+---
+description: "Run the OmpOS web head against the real API or as a static Demo with a simulated engine, and how to deploy the Demo."
+---
+
 # Web head runbook: real API, Demo, and static Demo deployment
+
+Status: Built (real API and Demo run locally); no public deployment exists
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 The web head (`apps/OmpOS.Web`, Blazor WebAssembly) can run in three ways. The decision is [ADR-0017](../decisions/ADR-0017-web-head-demo-mode.md). Nothing here deploys anything public: the API must stay private until sign-in (OD-03) exists ([hosting runbook](hosting.md)).
 

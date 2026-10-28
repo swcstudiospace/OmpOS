@@ -7,6 +7,11 @@
 
   <UserControl.Styles>
     <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <!-- The Status indicators switch off: the glyph of the status chip hides. The status words and the chip's accessible name stay, so
+         assistive technology still gets the status. -->
+    <Style Selector="Border.no-status-indicators local|StatusChip local|StageIcon">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
   </UserControl.Styles>
 
   <!-- Keyboard order follows XAML order: Resume or Reopen, the task chip, Close, the trailing slot (left empty by the shell), then the

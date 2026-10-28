@@ -3,10 +3,12 @@ using OmpOS.Contracts.Agents;
 using OmpOS.EngineHost;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.AgentLoop.Steering;
+using OmpOS.Harness.Remote;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Views.Sessions;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Approvals;
+using EngineInterrupted = OmpOS.EngineHost.TurnInterruptedEventArgs;
 
 namespace OmpOS.Native.Agents;
 
@@ -84,6 +86,9 @@ internal sealed class SessionSlot : IAsyncDisposable
 
     /// <summary>Gets the omp live steering of the session: it follows the engine the slot holds now and is unsupported without one or when that omp cannot take a message into a running turn. The composer and the Kanban card of a chat session use it before the steering inbox.</summary>
     public SlotLiveSteering LiveSteering { get; }
+
+    /// <summary>Gets the relay that carries the engine-side signals of the session (hook notices, the connection of a remote session, an interrupted turn) to its runtime. It outlives every engine the slot composes.</summary>
+    public SessionLiveEvents LiveEvents { get; } = new();
 
     /// <summary>Gets or sets the runtime that shows the session. The engine set sets it once, right after it creates the runtime.</summary>
     public AgentSessionRuntime? Runtime { get; set; }
@@ -273,7 +278,7 @@ internal sealed class SessionSlot : IAsyncDisposable
         {
             try
             {
-                (await plan.ConfigureAwait(false)).Dispose();
+                await (await plan.ConfigureAwait(false)).DisposeAsync().ConfigureAwait(false);
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
@@ -296,7 +301,24 @@ internal sealed class SessionSlot : IAsyncDisposable
     private async Task ConnectModelsAsync(CancellationToken cancellationToken)
     {
         var engine = await EngineAsync(cancellationToken).ConfigureAwait(false);
-        await engine.Host.ConnectAsync(cancellationToken).ConfigureAwait(false);
+        await (engine.Reconnecting is { } reconnecting ? reconnecting.ConnectAsync(cancellationToken) : engine.Host.ConnectAsync(cancellationToken)).ConfigureAwait(false);
+    }
+
+    /// <summary>Returns the resources of the session's ssh host (its remote file system and the discovery of its conventions), composing the engine first when needed. Null for a local session.</summary>
+    /// <param name="cancellationToken">Stops waiting for the engine.</param>
+    /// <returns>The resources, which the slot owns and disposes with the engine.</returns>
+    public async Task<RemoteSessionResources?> RemoteResourcesAsync(CancellationToken cancellationToken) =>
+        (await EngineAsync(cancellationToken).ConfigureAwait(false)).Remote;
+
+    /// <summary>Forks the engine session: the engine creates a second session that continues from the same history and answers with its identifier.</summary>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>The identifier the engine gave the new session.</returns>
+    /// <exception cref="NotSupportedException">The engine does not advertise forking.</exception>
+    /// <exception cref="InvalidOperationException">The session is closed.</exception>
+    public async Task<string> ForkAsync(CancellationToken cancellationToken)
+    {
+        var engine = await EngineAsync(cancellationToken).ConfigureAwait(false);
+        return await engine.Host.ForkAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<EngineComposition> ComposeEngineAsync()
@@ -308,8 +330,14 @@ internal sealed class SessionSlot : IAsyncDisposable
             resume = record.ResumeReference;
         }
 
-        var engine = _owner.ComposeEngine(plan.Launch, resume);
+        var engine = await _owner.ComposeEngineAsync(plan, resume, _lifetime.Token).ConfigureAwait(false);
         engine.Host.NativeSessionIdChanged += OnNativeSessionIdChanged;
+        if (engine.Reconnecting is { } reconnecting)
+        {
+            reconnecting.ConnectionStateChanged += OnConnectionStateChanged;
+            reconnecting.TurnInterrupted += OnTurnInterrupted;
+        }
+
         lock (_gate)
         {
             _engine = engine;
@@ -334,13 +362,25 @@ internal sealed class SessionSlot : IAsyncDisposable
         {
             var engine = await task.WaitAsync(CancellationToken.None).ConfigureAwait(false);
             engine.Host.NativeSessionIdChanged -= OnNativeSessionIdChanged;
+            if (engine.Reconnecting is { } reconnecting)
+            {
+                reconnecting.ConnectionStateChanged -= OnConnectionStateChanged;
+                reconnecting.TurnInterrupted -= OnTurnInterrupted;
+                await reconnecting.DisposeAsync().ConfigureAwait(false);
+            }
+
             await engine.Host.DisposeAsync().ConfigureAwait(false);
+            engine.Remote?.Dispose();
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             // The engine never finished composing, or its host was already gone: there is no process to stop.
         }
     }
+
+    private void OnConnectionStateChanged(object? sender, ConnectionStateChangedEventArgs e) => LiveEvents.RaiseConnectionChanged(e.State, e.Attempt, e.LastFailure);
+
+    private void OnTurnInterrupted(object? sender, EngineInterrupted e) => LiveEvents.RaiseTurnInterrupted(e.NativeSessionId);
 
     private void OnNativeSessionIdChanged(object? sender, EventArgs e)
     {
@@ -356,11 +396,18 @@ internal sealed class SessionSlot : IAsyncDisposable
     /// <summary>The send path of the slot: it forwards to whichever engine the slot holds when the prompt is sent.</summary>
     private sealed class SlotPromptChannel(SessionSlot slot) : IPromptChannel
     {
-        public async IAsyncEnumerable<HarnessEvent> SubmitAsync(string prompt, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public IAsyncEnumerable<HarnessEvent> SubmitAsync(string prompt, CancellationToken cancellationToken) =>
+            SubmitAsync(prompt, new PromptOptions(), cancellationToken);
+
+        public async IAsyncEnumerable<HarnessEvent> SubmitAsync(string prompt, PromptOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(prompt);
+            ArgumentNullException.ThrowIfNull(options);
             var engine = await slot.EngineAsync(cancellationToken).ConfigureAwait(false);
-            await foreach (var harnessEvent in engine.Host.SubmitPromptAsync(prompt, new PromptOptions(), cancellationToken).ConfigureAwait(false))
+
+            // A session on an ssh host sends through the reconnecting host, so a dropped connection is retried and reported.
+            IEngineHost host = engine.Reconnecting is { } reconnecting ? reconnecting : engine.Host;
+            await foreach (var harnessEvent in host.SubmitPromptAsync(prompt, options, cancellationToken).ConfigureAwait(false))
             {
                 slot._owner.Registry?.Touch(slot.Id);
                 yield return harnessEvent;
@@ -368,7 +415,7 @@ internal sealed class SessionSlot : IAsyncDisposable
         }
 
         public Task CancelAsync(CancellationToken cancellationToken) =>
-            slot.TryGetEngine() is { } engine ? engine.Host.CancelAsync(cancellationToken) : Task.CompletedTask;
+            slot.TryGetEngine() is { } engine ? (engine.Reconnecting?.CancelAsync(cancellationToken) ?? engine.Host.CancelAsync(cancellationToken)) : Task.CompletedTask;
 
         // The slot owns the engine, so closing the send path of a runtime stops nothing.
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;

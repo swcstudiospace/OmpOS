@@ -21,6 +21,9 @@ public static class ShortcutCopy
     /// <summary>The label of the shortcut that opens the transcript search.</summary>
     public const string SearchTranscript = "Search the transcript";
 
+    /// <summary>The label of the shortcut that opens the search over all conversations.</summary>
+    public const string SearchConversations = "Search all conversations";
+
     /// <summary>The label of the shortcut that dismisses the transcript search or a confirmation.</summary>
     public const string Dismiss = "Close the transcript search or a confirmation";
 

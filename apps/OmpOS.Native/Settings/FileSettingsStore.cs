@@ -1,6 +1,7 @@
 using System.Text.Json;
 using OmpOS.Presentation;
 using OmpOS.Presentation.Settings;
+using OmpOS.Presentation.Settings.Ignore;
 
 namespace OmpOS.Native.Settings;
 
@@ -36,6 +37,7 @@ internal sealed class FileSettingsStore
     private const string ThemeMember = "theme";
     private const string IdleStopMember = "runtime.idleStopHours";
     private const string RetentionMember = "runtime.retentionDays";
+    private const string IgnorePatternsMember = "ignore.globalPatterns";
 
     private readonly System.Threading.Lock _gate = new();
 
@@ -121,6 +123,52 @@ internal sealed class FileSettingsStore
         });
     }
 
+    /// <summary>Reads the global ignore settings. A file that does not exist, or has no <c>ignore</c> object, gives the defaults.</summary>
+    /// <returns>The values.</returns>
+    /// <exception cref="SettingsSourceException">The file is unreadable, not valid, from a newer major schema or holds an unusable value.</exception>
+    public IgnoreSettingsValues ReadIgnore()
+    {
+        lock (_gate)
+        {
+            var document = ReadDocument();
+            _ = ToValues(document);
+            return IgnoreOf(document, FilePath);
+        }
+    }
+
+    /// <summary>Saves the global ignore settings (<c>ignore.globalPatterns</c>, <c>ignore.useDefaultList</c> and <c>ignore.hierarchical</c>) in one write.</summary>
+    /// <param name="values">The values, within <see cref="IgnoreSettingsLimits"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="values"/> is null.</exception>
+    /// <exception cref="SettingsSourceException">The values are outside the limits, or the file cannot be read or written; nothing is changed.</exception>
+    public void SetIgnore(IgnoreSettingsValues values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        if (IgnoreSettingsLimits.ListProblem(values.GlobalPatterns) is { } problem)
+        {
+            throw new SettingsSourceException(problem);
+        }
+
+        Update(document =>
+        {
+            document.Ignore ??= new SettingsIgnoreSection();
+            document.Ignore.GlobalPatterns = [.. values.GlobalPatterns];
+            document.Ignore.UseDefaultList = values.UseDefaultList;
+            document.Ignore.Hierarchical = values.HierarchicalIgnoreFiles;
+        });
+    }
+
+    private static IgnoreSettingsValues IgnoreOf(SettingsDocument document, string path)
+    {
+        var section = document.Ignore;
+        IReadOnlyList<string> patterns = section?.GlobalPatterns is { } stored ? [.. stored] : [];
+        if (IgnoreSettingsLimits.ListProblem(patterns) is not null)
+        {
+            throw new SettingsSourceException(HeadSettingsCopy.SettingsBadMember(path, IgnorePatternsMember));
+        }
+
+        return new IgnoreSettingsValues(patterns, section?.UseDefaultList ?? true, section?.Hierarchical ?? false);
+    }
+
     private static string MotionText(MotionPreference motion) => motion switch
     {
         MotionPreference.Reduced => "reduced",
@@ -166,6 +214,9 @@ internal sealed class FileSettingsStore
         {
             throw new SettingsSourceException(HeadSettingsCopy.SettingsBadMember(path, RetentionMember));
         }
+
+        // The ignore section is validated here too, so a bad value is reported on every read and write and is never overwritten.
+        _ = IgnoreOf(document, path);
 
         return new StoredSettings(motion, theme, document.Terminal?.AutoRun ?? false, new RuntimeSettingsValues(idle, retention));
     }

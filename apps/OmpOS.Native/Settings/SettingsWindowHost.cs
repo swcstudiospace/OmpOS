@@ -13,6 +13,7 @@ internal sealed class SettingsWindowHost
     private readonly Func<SettingsWindowModel> _modelFactory;
     private readonly Func<SettingsWindowModel, ISettingsWindowHandle> _windowFactory;
     private ISettingsWindowHandle? _open;
+    private SettingsWindowModel? _openModel;
 
     /// <summary>Initializes a new instance of the <see cref="SettingsWindowHost"/> class.</summary>
     /// <param name="modelFactory">Builds the model over new pages.</param>
@@ -35,18 +36,22 @@ internal sealed class SettingsWindowHost
     /// <summary>Opens the window over an owner, or brings the open one forward, then loads the pages of a new window.</summary>
     /// <param name="owner">The window it opens over, or null.</param>
     /// <param name="cancellationToken">Cancels the loading of the pages.</param>
+    /// <param name="section">The page to show, or null to keep the window's own choice (the first page of a new window). A section the window has no page for is ignored.</param>
     /// <returns>A task that completes when every page of a new window has loaded or failed to load. It completes at once when the window was already open.</returns>
-    public async Task ShowAsync(Window? owner, CancellationToken cancellationToken)
+    public async Task ShowAsync(Window? owner, CancellationToken cancellationToken, SettingsSection? section = null)
     {
         if (_open is { } existing)
         {
+            Select(_openModel, section);
             existing.Activate();
             return;
         }
 
         var model = _modelFactory();
+        Select(model, section);
         var handle = _windowFactory(model);
         _open = handle;
+        _openModel = model;
         handle.Closed += OnClosed;
         try
         {
@@ -57,6 +62,7 @@ internal sealed class SettingsWindowHost
             // A window that could not be shown is not open: the next request builds a new one.
             handle.Closed -= OnClosed;
             _open = null;
+            _openModel = null;
             throw;
         }
 
@@ -67,6 +73,14 @@ internal sealed class SettingsWindowHost
     /// <summary>Closes the open window, dropping unsaved changes. The application is closing. It does nothing when no window is open.</summary>
     public void CloseForShutdown() => _open?.CloseDiscardingChanges();
 
+    private static void Select(SettingsWindowModel? model, SettingsSection? section)
+    {
+        if (model is not null && section is { } wanted && model.Pages.Any(page => page.Section == wanted))
+        {
+            model.SelectSection(wanted);
+        }
+    }
+
     private void OnClosed(object? sender, EventArgs e)
     {
         if (sender is ISettingsWindowHandle handle)
@@ -75,6 +89,7 @@ internal sealed class SettingsWindowHost
             if (ReferenceEquals(_open, handle))
             {
                 _open = null;
+                _openModel = null;
             }
         }
     }

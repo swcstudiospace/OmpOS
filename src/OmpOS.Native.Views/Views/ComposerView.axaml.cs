@@ -48,6 +48,7 @@ internal partial class ComposerView : UserControl
         SlashPalette.EntryChosen += OnSlashEntryChosen;
         MentionPicker.RowChosen += OnMentionRowChosen;
         MentionChips.AddHandler(Button.ClickEvent, OnChipClick);
+        InitialiseAttachments();
         RefreshRunState();
     }
 
@@ -63,6 +64,12 @@ internal partial class ComposerView : UserControl
         get => Suggestions.Client;
         set => Suggestions.Client = value;
     }
+
+    /// <summary>
+    /// Gets or sets the callback that queues a message behind the active run when Tab is pressed in the prompt. It returns <see langword="true"/> when the message was queued (the draft then clears) and <see langword="false"/> when it was refused
+    /// (the draft stays). Null leaves Tab to move focus.
+    /// </summary>
+    public Func<string, bool>? QueueRequest { get; set; }
 
     /// <summary>
     /// Gets or sets the run input of the active run. Null means no run input is connected: the send control then always sends
@@ -188,6 +195,7 @@ internal partial class ComposerView : UserControl
         ThinkingChipView.DataContext = _composer?.ThinkingChip;
         SlashPalette.DataContext = _composer?.SlashPalette;
         BindMentions();
+        BindAttachments();
     }
 
     private void OnComposerChanged(object? sender, PropertyChangedEventArgs e)
@@ -397,6 +405,18 @@ internal partial class ComposerView : UserControl
 
         if (TryHandleMentionPickerKey(composer, e))
         {
+            return;
+        }
+
+        if (e.Key == Key.Tab && e.KeyModifiers == KeyModifiers.None && QueueRequest is { } queue && _runs is { IsRunActive: true } && !string.IsNullOrWhiteSpace(composer.Draft))
+        {
+            // Tab queues the draft behind the active run (Cursor's rule); Enter keeps steering. A refused message stays in the box.
+            e.Handled = true;
+            if (queue(composer.Draft))
+            {
+                composer.Draft = string.Empty;
+            }
+
             return;
         }
 

@@ -33,14 +33,29 @@
         </Button>
       </Grid>
 
-      <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                    VerticalScrollBarVisibility="Disabled">
-        <TextBlock x:Name="CodeText"
-                   Margin="12,0,12,8"
+      <!-- The line-number gutter sits outside the scroller so the numbers stay put while the code scrolls sideways. It is decoration: no hit
+           area and raw to assistive technology, so a screen reader reads the code and not the numbers. The display switch hides it. -->
+      <Grid ColumnDefinitions="Auto,*">
+        <TextBlock x:Name="LineNumbers"
+                   Grid.Column="0"
+                   Classes="muted"
+                   Margin="12,0,0,8"
+                   TextAlignment="Right"
                    FontSize="{DynamicResource OmpOS.Font.Size.Mono}"
                    LineHeight="{DynamicResource OmpOS.Font.LineHeight.Mono}"
-                   TextWrapping="NoWrap" />
-      </ScrollViewer>
+                   TextWrapping="NoWrap"
+                   IsHitTestVisible="False"
+                   AutomationProperties.AccessibilityView="Raw" />
+        <ScrollViewer Grid.Column="1"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled">
+          <TextBlock x:Name="CodeText"
+                     Margin="12,0,12,8"
+                     FontSize="{DynamicResource OmpOS.Font.Size.Mono}"
+                     LineHeight="{DynamicResource OmpOS.Font.LineHeight.Mono}"
+                     TextWrapping="NoWrap" />
+        </ScrollViewer>
+      </Grid>
 
     </StackPanel>
   </Border>

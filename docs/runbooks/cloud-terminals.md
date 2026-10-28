@@ -1,4 +1,14 @@
+---
+description: "Status record of the Phase 42 prototype: cloud terminals on Railway that sleep when idle and restore on reattach."
+---
+
 # Cloud terminals on Railway runbook
+
+Status: Partial (prototype over a fake Railway client; superseded by the cloud agents guide; no live run)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 Scope: Phase 42 (VX-06, VX-08). Each cloud session runs in a Linux environment that sleeps when idle and restores its transcript on reattach. Status as of 2026-10-26.
 

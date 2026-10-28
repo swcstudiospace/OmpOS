@@ -1,4 +1,14 @@
+---
+description: "How to apply the GitHub presentation, community health and release settings of the OmpOS repository with the gh CLI."
+---
+
 # GitHub setup runbook (Phase 52)
+
+Status: Built (files are in the repository); the settings are applied by the owner and are not applied by this page
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 Applies the GitHub presentation, community health and release settings of `swcstudiospace/OmpOS`. The files live in the repository; the settings need the `gh` CLI signed in with admin rights on the repository (`gh auth status`). Facts about the repository state on 2026-10-27 are in `docs/plans/v0.15.0-research/12-github-gitbook-plan.md`.
 

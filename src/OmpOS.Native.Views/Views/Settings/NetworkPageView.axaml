@@ -29,6 +29,9 @@
         <TextBlock x:Name="ExplanationText"
                    Classes="settings-help"
                    Text="{x:Static set:NetworkCopy.Explanation}" />
+        <TextBlock x:Name="ProxyNoteText"
+                   Classes="settings-help"
+                   Text="{x:Static set:NetworkCopy.ProxyNote}" />
 
         <StackPanel Orientation="Horizontal"
                     Spacing="{DynamicResource OmpOS.Gap.Sm}"

@@ -1,4 +1,14 @@
+---
+description: "Status record of the local terminal: a shell that spawns, echoes typed input and exits with its code on each desktop OS."
+---
+
 # Local terminal runbook
+
+Status: Partial (Linux passes; Windows and macOS were not run); status record of 2026-10-26
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 Scope: Phase 37 criterion 4 (VX-08). A local shell spawns, echoes typed input and exits with its code on each desktop OS. Status as of 2026-10-26.
 

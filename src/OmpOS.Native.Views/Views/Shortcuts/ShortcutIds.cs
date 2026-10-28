@@ -21,6 +21,9 @@ public static class ShortcutIds
     /// <summary>Ctrl+F opens the transcript search.</summary>
     public const string SearchTranscript = "application.search";
 
+    /// <summary>Ctrl or Cmd+K opens the search over all conversations.</summary>
+    public const string SearchConversations = "application.search-conversations";
+
     /// <summary>Esc dismisses the open transcript search or confirmation.</summary>
     public const string Dismiss = "application.dismiss";
 

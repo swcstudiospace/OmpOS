@@ -4,7 +4,9 @@ using Avalonia.Controls;
 using Avalonia.Styling;
 using OmpOS.Native.Agents;
 using OmpOS.Presentation;
+using OmpOS.Presentation.Cloud;
 using OmpOS.Presentation.Settings;
+using OmpOS.Workspace;
 
 namespace OmpOS.Native.Settings;
 
@@ -20,6 +22,9 @@ internal sealed class HeadSettings : IAsyncDisposable
     private readonly SessionLifecycleSweeper? _sweeper;
     private readonly TimeSpan? _sweepInterval;
     private readonly IDisposable? _owned;
+    private readonly SettingsWindowOptions _windowOptions;
+    private readonly HeadSettingsLinks _links;
+    private readonly IDisposable? _consent;
     private readonly CancellationTokenSource _lifetime = new();
     private StoredSettings _applied;
     private MainView? _main;
@@ -32,7 +37,10 @@ internal sealed class HeadSettings : IAsyncDisposable
         SessionLifecycleSweeper? sweeper,
         TimeSpan? sweepInterval,
         IDisposable? owned,
-        StoredSettings applied)
+        StoredSettings applied,
+        SettingsWindowOptions windowOptions,
+        HeadSettingsLinks links,
+        IDisposable? consent)
     {
         Store = store;
         _host = host;
@@ -40,7 +48,14 @@ internal sealed class HeadSettings : IAsyncDisposable
         _sweepInterval = sweepInterval;
         _owned = owned;
         _applied = applied;
+        _windowOptions = windowOptions;
+        _links = links;
+        _consent = consent;
+        _links.CloudAgentOpenRequested += OnCloudAgentOpenRequested;
     }
+
+    /// <summary>Occurs when the Cloud page asks to open the session of a cloud agent. The head that owns the sessions attaches it and selects its row.</summary>
+    public event EventHandler<CloudAgentOpenEventArgs>? CloudAgentOpenRequested;
 
     /// <summary>Gets the settings file.</summary>
     public FileSettingsStore Store { get; }
@@ -54,7 +69,7 @@ internal sealed class HeadSettings : IAsyncDisposable
     /// <summary>Gets the motion setting that was saved when the settings were created. A file that cannot be used gives <see cref="MotionPreference.System"/>.</summary>
     public MotionPreference Motion { get; private init; }
 
-    /// <summary>Gets the theme setting that was saved when the settings were created. A file that cannot be used gives <see cref="ThemePreference.Dark"/>.</summary>
+    /// <summary>Gets the theme setting that was saved when the settings were created. A file that cannot be used gives <see cref="ThemePreference.Light"/>.</summary>
     public ThemePreference Theme { get; private init; }
 
     /// <summary>Maps a theme preference to the Avalonia theme variant the application requests. System is the platform's own variant.</summary>
@@ -101,6 +116,9 @@ internal sealed class HeadSettings : IAsyncDisposable
 
         var stored = ReadOrDefaults(store);
         var sweeper = options.SweepInterval is null ? null : new SessionLifecycleSweeper(engines, stored.Runtime, clock, dispatch);
+        var services = options.Services;
+        var links = new HeadSettingsLinks();
+        var consent = services is null ? null : new FileSetupConsentStore(FileSetupConsentStore.DefaultPath());
         var windowOptions = new SettingsWindowOptions
         {
             Store = store,
@@ -112,11 +130,27 @@ internal sealed class HeadSettings : IAsyncDisposable
             Commands = options.Commands,
             ApplyRuntime = values => sweeper?.Apply(values),
             RuntimeSaveFailed = static (_, failure) => Trace.TraceWarning($"A Runtime setting could not be saved. {failure.Failure.Message}"),
+            Hooks = services?.Hooks,
+            Mcp = services?.Mcp,
+            RunModes = services?.RunModes,
+            Display = services?.Display,
+            WorkspaceSets = services?.WorkspaceSets,
+            RemoteEnvironments = services?.RemoteEnvironments,
+            Cloud = services?.Cloud,
+            WorktreeConsent = consent,
+            OpenAbout = services is null ? null : () => services.About.Show(links.Owner),
+            UrlLauncher = services?.UrlLauncher,
+            Dispatch = dispatch,
+            OpenCloudAgent = links.RaiseCloudAgentOpen,
         };
         var host = new SettingsWindowHost(
             () => SettingsWindowFactory.CreateModel(windowOptions),
             options.WindowFactory ?? (static model => new AvaloniaSettingsWindow(model)));
-        return new HeadSettings(store, host, sweeper, options.SweepInterval, options.Owned, stored) { Motion = stored.Motion, Theme = stored.Theme };
+        return new HeadSettings(store, host, sweeper, options.SweepInterval, options.Owned, stored, windowOptions, links, consent)
+        {
+            Motion = stored.Motion,
+            Theme = stored.Theme,
+        };
     }
 
     /// <summary>Starts the sweeper, which makes a first pass over the sessions the registry holds. Call it after the registry is loaded. It does nothing when the head runs no sweeper.</summary>
@@ -145,6 +179,7 @@ internal sealed class HeadSettings : IAsyncDisposable
 
         _main = main;
         _owner = owner;
+        _links.Owner = owner;
         main.TerminalSettingsProvider = () => AgentsSettingsSource.ToTerminalSettings(Store);
         main.SettingsRequested += OnSettingsRequested;
         Store.Changed += OnStoreChanged;
@@ -153,12 +188,13 @@ internal sealed class HeadSettings : IAsyncDisposable
     }
 
     /// <summary>Opens the Settings window over the main window, or brings the open one forward.</summary>
+    /// <param name="section">The page to show, or null for the window's own choice. A section the window has no page for is ignored.</param>
     /// <returns>A task that completes when the pages of a new window have loaded. It never faults: a failure is traced.</returns>
-    public async Task OpenAsync()
+    public async Task OpenAsync(SettingsSection? section = null)
     {
         try
         {
-            await _host.ShowAsync(_owner, _lifetime.Token).ConfigureAwait(true);
+            await _host.ShowAsync(_owner, _lifetime.Token, section).ConfigureAwait(true);
         }
         catch (OperationCanceledException)
         {
@@ -188,10 +224,15 @@ internal sealed class HeadSettings : IAsyncDisposable
         }
 
         _owned?.Dispose();
+        _windowOptions.CloudAgentsModel?.Dispose();
+        _links.CloudAgentOpenRequested -= OnCloudAgentOpenRequested;
+        _consent?.Dispose();
         _lifetime.Dispose();
     }
 
-    private void OnSettingsRequested(object? sender, EventArgs e) => _ = OpenAsync();
+    private void OnSettingsRequested(object? sender, EventArgs e) => _ = OpenAsync((e as SettingsRequestedEventArgs)?.Section);
+
+    private void OnCloudAgentOpenRequested(object? sender, CloudAgentOpenEventArgs e) => CloudAgentOpenRequested?.Invoke(this, e);
 
     private void OnOwnerClosing(object? sender, WindowClosingEventArgs e)
     {
@@ -218,6 +259,7 @@ internal sealed class HeadSettings : IAsyncDisposable
             owner.Closing -= OnOwnerClosing;
             owner.Closed -= OnOwnerClosed;
             _owner = null;
+            _links.Owner = null;
         }
     }
 

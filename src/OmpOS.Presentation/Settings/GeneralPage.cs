@@ -21,16 +21,25 @@ public sealed class GeneralPage : EditableSettingsPage<GeneralSettingsValues>
     ];
 
     private readonly IGeneralSettingsSource _source;
+    private readonly Action? _openAbout;
 
     /// <summary>Initializes a new instance of the <see cref="GeneralPage"/> class.</summary>
     /// <param name="source">Where the values are read and written.</param>
+    /// <param name="openAbout">What opens the About window, or null when the head has none; the page then offers no About button.</param>
     /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
-    public GeneralPage(IGeneralSettingsSource source)
+    public GeneralPage(IGeneralSettingsSource source, Action? openAbout = null)
         : base(SettingsSection.General, SettingsCopy.GeneralTitle, GeneralSettingsValues.Defaults)
     {
         ArgumentNullException.ThrowIfNull(source);
         _source = source;
+        _openAbout = openAbout;
     }
+
+    /// <summary>Gets a value indicating whether the head can open the About window from this page.</summary>
+    public bool CanOpenAbout => _openAbout is not null;
+
+    /// <summary>Opens the About window. Does nothing when the head has none.</summary>
+    public void OpenAbout() => _openAbout?.Invoke();
 
     /// <summary>Gets the theme choices in display order: System, Light, Dark.</summary>
     public static IReadOnlyList<ThemeOption> ThemeOptions => AllThemeOptions;

@@ -1,4 +1,14 @@
+---
+description: "Hosting runbook for the OmpOS API on Railway: topology, limits and the deploy definition."
+---
+
 # Hosting runbook (HOST-01)
+
+Status: Blocked (nothing is deployed; Railway deploys and the production API origin are owner decisions)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 ## Status
 

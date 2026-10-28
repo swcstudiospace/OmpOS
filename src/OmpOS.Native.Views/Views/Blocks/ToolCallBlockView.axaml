@@ -5,26 +5,30 @@
 
   <!-- A tool call is one quiet 28 px row on the thread surface, not a card (parity spec 4.6): the status glyph (it pulses while the
        call runs, under full motion), the tool phrase in the secondary text role, and the status words at the right. The glyph is
-       decorative; the status is always also written in words. -->
-  <Border MinHeight="28"
-          Padding="4,0"
-          CornerRadius="{DynamicResource OmpOS.Radius.Control}">
-    <Grid ColumnDefinitions="Auto,*,Auto"
-          ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
-      <panel:StageIcon x:Name="StatusGlyph"
-                       Grid.Column="0"
-                       VerticalAlignment="Center" />
-      <TextBlock x:Name="ToolName"
-                 Grid.Column="1"
-                 Classes="muted"
-                 TextTrimming="CharacterEllipsis"
-                 MaxLines="1"
-                 VerticalAlignment="Center" />
-      <TextBlock x:Name="ToolStatus"
-                 Grid.Column="2"
-                 Classes="muted small"
-                 VerticalAlignment="Center" />
-    </Grid>
-  </Border>
+       decorative; the status is always also written in words. The notice host under the row holds the hook notices of this call. -->
+  <StackPanel>
+    <Border MinHeight="28"
+            Padding="4,0"
+            CornerRadius="{DynamicResource OmpOS.Radius.Control}">
+      <Grid ColumnDefinitions="Auto,*,Auto"
+            ColumnSpacing="{DynamicResource OmpOS.Gap.Sm}">
+        <panel:StageIcon x:Name="StatusGlyph"
+                         Grid.Column="0"
+                         VerticalAlignment="Center" />
+        <TextBlock x:Name="ToolName"
+                   Grid.Column="1"
+                   Classes="muted"
+                   TextTrimming="CharacterEllipsis"
+                   MaxLines="1"
+                   VerticalAlignment="Center" />
+        <TextBlock x:Name="ToolStatus"
+                   Grid.Column="2"
+                   Classes="muted small"
+                   VerticalAlignment="Center" />
+      </Grid>
+    </Border>
+    <StackPanel x:Name="NoticeHost"
+                Margin="24,0,0,0" />
+  </StackPanel>
 
 </UserControl>

@@ -1,4 +1,14 @@
+---
+description: "Record of Phase 20: the Avalonia foundation, its success criteria and the AT-SPI2 evidence."
+---
+
 # Phase 20 Avalonia foundation: runbook
+
+Status: Record (historical, 2026-10-22)
+
+Last verified: 2026-10-28 (the status only; the body is a dated record and was not re-verified)
+
+Applies to: v0.15.0
 
 Correction 2026-10-27: `apps/OmpOS.Native/Themes/OmpOSTokens.axaml` is now `src/OmpOS.Native.Views/Themes/OmpOSTokens.axaml`, and the keyboard test `TabMovesFromSessionListThroughTranscriptPromptSendAndStop` is now `TabMovesFromSessionListThroughPipelineStripTranscriptPromptSendAndStop`.
 
