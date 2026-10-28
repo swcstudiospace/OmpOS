@@ -8,7 +8,4 @@ public enum ConventionScope
 
     /// <summary>The user's home directory, shared by every workspace.</summary>
     User = 1,
-
-    /// <summary>The application itself: a skill that ships inside it (<see cref="OmpOS.Workspace.BuiltinSkills.BuiltinSkillSource"/>). It has the lowest precedence: a project or user item of the same name wins.</summary>
-    Builtin = 2,
 }

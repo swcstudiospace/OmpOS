@@ -30,7 +30,21 @@ public static class EnvironmentProfileValidator
             issues.Add(new ProfileIssue(nameof(EnvironmentProfile.Kind), "The environment kind is not known."));
         }
 
-        ValidateDetails(profile, issues);
+        switch (profile.Kind)
+        {
+            case EnvironmentKind.Ssh when profile.Ssh is null:
+                issues.Add(new ProfileIssue(nameof(EnvironmentProfile.Ssh), "An ssh environment needs its ssh details."));
+                break;
+            case EnvironmentKind.Ssh:
+                issues.AddRange(Validate(profile.Ssh!));
+                break;
+            case EnvironmentKind.Local or EnvironmentKind.Cloud when profile.Ssh is not null:
+                issues.Add(new ProfileIssue(nameof(EnvironmentProfile.Ssh), "Only an ssh environment carries ssh details."));
+                break;
+            default:
+                break;
+        }
+
         return issues;
     }
 
@@ -91,71 +105,6 @@ public static class EnvironmentProfileValidator
         return issues;
     }
 
-    /// <summary>Validates a podman container profile. Property names in the issues are prefixed with <c>Container.</c>.</summary>
-    /// <param name="profile">The profile.</param>
-    /// <returns>The issues found, empty when the profile is acceptable.</returns>
-    public static IReadOnlyList<ProfileIssue> Validate(ContainerProfile profile)
-    {
-        ArgumentNullException.ThrowIfNull(profile);
-        var issues = new List<ProfileIssue>();
-        if (!ContainerProfileRules.IsValidContainerReference(profile.Container))
-        {
-            issues.Add(new ProfileIssue("Container." + nameof(ContainerProfile.Container), "The container must be a podman container name or id: 1 to 128 letters, digits, '.', '_' or '-', starting with a letter or digit."));
-        }
-
-        if (profile.RemoteUser is not null && !ContainerProfileRules.IsValidInnerUser(profile.RemoteUser))
-        {
-            issues.Add(new ProfileIssue("Container." + nameof(ContainerProfile.RemoteUser), "The user must be 1 to 64 letters, digits, '.', '_' or '-' and must not start with '-'."));
-        }
-
-        if (!SshProfileRules.IsValidAbsoluteRemotePath(profile.WorkspaceFolder))
-        {
-            issues.Add(new ProfileIssue("Container." + nameof(ContainerProfile.WorkspaceFolder), "The workspace folder must be an absolute POSIX path inside the container, without '..' segments or control characters."));
-        }
-
-        if (profile.PodmanPath is not null && !ContainerProfileRules.IsValidPodmanPath(profile.PodmanPath))
-        {
-            issues.Add(new ProfileIssue("Container." + nameof(ContainerProfile.PodmanPath), "The podman path must be a plain command name or a full path on this machine."));
-        }
-
-        if (profile.OmpPath is not null && !SshProfileRules.IsValidRemoteExecutable(profile.OmpPath))
-        {
-            issues.Add(new ProfileIssue("Container." + nameof(ContainerProfile.OmpPath), "The omp path must be an absolute POSIX path or a plain command name."));
-        }
-
-        return issues;
-    }
-
-    /// <summary>Validates a WSL profile. Property names in the issues are prefixed with <c>Wsl.</c>.</summary>
-    /// <param name="profile">The profile.</param>
-    /// <returns>The issues found, empty when the profile is acceptable.</returns>
-    public static IReadOnlyList<ProfileIssue> Validate(WslProfile profile)
-    {
-        ArgumentNullException.ThrowIfNull(profile);
-        var issues = new List<ProfileIssue>();
-        if (!ContainerProfileRules.IsValidWslDistribution(profile.Distro))
-        {
-            issues.Add(new ProfileIssue("Wsl." + nameof(WslProfile.Distro), "The distribution must be a WSL distribution name: 1 to 64 letters, digits, '.', '_' or '-', starting with a letter or digit."));
-        }
-
-        if (profile.User is not null && !ContainerProfileRules.IsValidInnerUser(profile.User))
-        {
-            issues.Add(new ProfileIssue("Wsl." + nameof(WslProfile.User), "The user must be 1 to 64 letters, digits, '.', '_' or '-' and must not start with '-'."));
-        }
-
-        if (!SshProfileRules.IsValidAbsoluteRemotePath(profile.WorkspacePath))
-        {
-            issues.Add(new ProfileIssue("Wsl." + nameof(WslProfile.WorkspacePath), "The workspace path must be an absolute POSIX path inside the distribution, without '..' segments or control characters."));
-        }
-
-        if (profile.OmpPath is not null && !SshProfileRules.IsValidRemoteExecutable(profile.OmpPath))
-        {
-            issues.Add(new ProfileIssue("Wsl." + nameof(WslProfile.OmpPath), "The omp path must be an absolute POSIX path or a plain command name."));
-        }
-
-        return issues;
-    }
-
     /// <summary>Returns whether a profile has no issue.</summary>
     /// <param name="profile">The profile.</param>
     public static bool IsValid(EnvironmentProfile profile) => Validate(profile).Count == 0;
@@ -163,47 +112,6 @@ public static class EnvironmentProfileValidator
     /// <summary>Returns whether an ssh profile has no issue.</summary>
     /// <param name="profile">The profile.</param>
     public static bool IsValid(SshProfile profile) => Validate(profile).Count == 0;
-
-    /// <summary>Returns whether a container profile has no issue.</summary>
-    /// <param name="profile">The profile.</param>
-    public static bool IsValid(ContainerProfile profile) => Validate(profile).Count == 0;
-
-    /// <summary>Returns whether a WSL profile has no issue.</summary>
-    /// <param name="profile">The profile.</param>
-    public static bool IsValid(WslProfile profile) => Validate(profile).Count == 0;
-
-    // Each kind needs its own details and no other kind's: a profile never carries a second destination that could be picked by mistake.
-    private static void ValidateDetails(EnvironmentProfile profile, List<ProfileIssue> issues)
-    {
-        CheckDetails(profile.Kind == EnvironmentKind.Ssh, profile.Ssh is not null, nameof(EnvironmentProfile.Ssh), "An ssh environment needs its ssh details.", "Only an ssh environment carries ssh details.", issues);
-        CheckDetails(profile.Kind == EnvironmentKind.Container, profile.Container is not null, nameof(EnvironmentProfile.Container), "A container environment needs its container details.", "Only a container environment carries container details.", issues);
-        CheckDetails(profile.Kind == EnvironmentKind.Wsl, profile.Wsl is not null, nameof(EnvironmentProfile.Wsl), "A WSL environment needs its WSL details.", "Only a WSL environment carries WSL details.", issues);
-
-        if (profile.Kind == EnvironmentKind.Ssh && profile.Ssh is not null)
-        {
-            issues.AddRange(Validate(profile.Ssh));
-        }
-        else if (profile.Kind == EnvironmentKind.Container && profile.Container is not null)
-        {
-            issues.AddRange(Validate(profile.Container));
-        }
-        else if (profile.Kind == EnvironmentKind.Wsl && profile.Wsl is not null)
-        {
-            issues.AddRange(Validate(profile.Wsl));
-        }
-    }
-
-    private static void CheckDetails(bool kindMatches, bool present, string property, string missing, string unexpected, List<ProfileIssue> issues)
-    {
-        if (kindMatches && !present)
-        {
-            issues.Add(new ProfileIssue(property, missing));
-        }
-        else if (!kindMatches && present)
-        {
-            issues.Add(new ProfileIssue(property, unexpected));
-        }
-    }
 
     private static void ValidateOptions(SshProfile profile, List<ProfileIssue> issues)
     {

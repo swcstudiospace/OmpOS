@@ -5,7 +5,7 @@ namespace OmpOS.Harness.Remote;
 
 /// <summary>
 /// The workspace files of an ssh host, for the file tree, the editor and the diff review: <see cref="IAsyncWorkspaceFileSystem"/> over short
-/// POSIX scripts run through <see cref="IRemoteExec"/>. Nothing leaves the remote workspace root: the remote machine resolves the real path of
+/// POSIX scripts run through <see cref="RemoteExec"/>. Nothing leaves the remote workspace root: the remote machine resolves the real path of
 /// every path with <c>realpath</c> (or <c>readlink -f</c>, or <c>cd -P</c>) before it touches it, so a symbolic link that leads outside is refused
 /// and not listed. A read returns at most the cap the caller gives (1 MiB by default) and refuses a binary file. A write, create or delete runs
 /// as one remote script that compares the file signature (modification time and size) it read with the one on disk just before it replaces the
@@ -21,17 +21,17 @@ public sealed class RemoteWorkspaceFileSystem : IAsyncWorkspaceFileSystem
 
     private static ReadOnlySpan<byte> Utf8Bom => [0xEF, 0xBB, 0xBF];
 
-    private readonly IRemoteExec _exec;
+    private readonly RemoteExec _exec;
     private readonly string _root;
 
     /// <summary>Initializes a new instance of the <see cref="RemoteWorkspaceFileSystem"/> class over the remote workspace root of the exec's profile.</summary>
     /// <param name="exec">Runs the scripts on the remote machine.</param>
     /// <exception cref="ArgumentNullException"><paramref name="exec"/> is null.</exception>
-    public RemoteWorkspaceFileSystem(IRemoteExec exec)
+    public RemoteWorkspaceFileSystem(RemoteExec exec)
     {
         ArgumentNullException.ThrowIfNull(exec);
         _exec = exec;
-        _root = RemotePaths.TrimTrailingSlash(exec.WorkspaceRoot);
+        _root = RemotePaths.TrimTrailingSlash(exec.Profile.RemoteWorkspaceRoot);
     }
 
     /// <inheritdoc/>

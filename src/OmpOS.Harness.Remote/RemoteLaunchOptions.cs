@@ -23,11 +23,4 @@ public sealed record RemoteLaunchOptions
 
     /// <summary>Gets how many ports from <see cref="ReversePortBase"/> are used. A session's ports are chosen inside this range from its identifier. Defaults to 2000.</summary>
     public int ReversePortSpan { get; init; } = 2000;
-
-    /// <summary>
-    /// Gets whether a loopback address of this machine (a local MCP server) is rewritten to a reverse-forwarded port of the remote machine. Defaults to
-    /// <see langword="true"/>, which is what an ssh host needs. A container or a WSL distribution has no ssh connection to carry a forward, so those environments set
-    /// this to <see langword="false"/>: the loopback address is then kept and reported as probably unreachable, and the launch carries no reverse forward.
-    /// </summary>
-    public bool CarryLoopbackServices { get; init; } = true;
 }

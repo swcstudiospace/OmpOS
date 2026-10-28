@@ -123,48 +123,6 @@ public static class AcpPromptContent
         return new AcpPromptContentParams(sessionId, Build(text, resources, limits));
     }
 
-    /// <summary>Builds the prompt blocks of a message that carries images. The text may be blank when an image is attached; the image blocks follow the text and resource blocks.</summary>
-    /// <param name="text">The user text.</param>
-    /// <param name="resources">The resolved mention resources, in attachment order.</param>
-    /// <param name="images">The images in attachment order.</param>
-    /// <param name="limits">The resource limits, or <see langword="null"/> for the defaults.</param>
-    /// <param name="imageLimits">The image limits, or <see langword="null"/> for the defaults.</param>
-    /// <returns>The ordered content blocks.</returns>
-    /// <exception cref="ArgumentException">A resource URI is blank, or there is no text, no resource and no image.</exception>
-    public static IReadOnlyList<AcpPromptBlock> BuildWithImages(string text, IReadOnlyList<AcpPromptResource> resources, IReadOnlyList<AcpPromptImage> images, AcpPromptLimits? limits = null, AcpImageLimits? imageLimits = null)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-        ArgumentNullException.ThrowIfNull(resources);
-        ArgumentNullException.ThrowIfNull(images);
-
-        var imageBlocks = AcpImageContent.Build(images, imageLimits);
-        if (imageBlocks.Count == 0)
-        {
-            return Build(text, resources, limits);
-        }
-
-        if (string.IsNullOrWhiteSpace(text) && resources.Count == 0)
-        {
-            return imageBlocks;
-        }
-
-        return [.. Build(text, resources, limits), .. imageBlocks];
-    }
-
-    /// <summary>Builds the <c>session/prompt</c> parameters of a message that carries images.</summary>
-    /// <param name="sessionId">The session the prompt belongs to.</param>
-    /// <param name="text">The user text.</param>
-    /// <param name="resources">The resolved mention resources.</param>
-    /// <param name="images">The images in attachment order.</param>
-    /// <param name="limits">The resource limits, or <see langword="null"/> for the defaults.</param>
-    /// <param name="imageLimits">The image limits, or <see langword="null"/> for the defaults.</param>
-    /// <returns>The prompt parameters.</returns>
-    public static AcpPromptContentParams BuildParamsWithImages(string sessionId, string text, IReadOnlyList<AcpPromptResource> resources, IReadOnlyList<AcpPromptImage> images, AcpPromptLimits? limits = null, AcpImageLimits? imageLimits = null)
-    {
-        ArgumentNullException.ThrowIfNull(sessionId);
-        return new AcpPromptContentParams(sessionId, BuildWithImages(text, resources, images, limits, imageLimits));
-    }
-
     /// <summary>Formats the note that lists omitted attachments.</summary>
     /// <param name="names">The omitted names.</param>
     /// <returns>The note text.</returns>

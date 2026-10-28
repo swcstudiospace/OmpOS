@@ -27,9 +27,6 @@ public static class RemoteStatusDescriber
         RemoteEnvironmentStatus.ReadyWithWarnings => "Ready with warnings",
         RemoteEnvironmentStatus.Disconnected => "Disconnected",
         RemoteEnvironmentStatus.Interrupted => "Disconnected, turn interrupted",
-        RemoteEnvironmentStatus.RuntimeUnavailable => "Runtime not available",
-        RemoteEnvironmentStatus.NotRunning => "Container not running",
-        RemoteEnvironmentStatus.NotFound => "Not found",
         _ => "Unknown",
     };
 
@@ -55,9 +52,6 @@ public static class RemoteStatusDescriber
         RemoteEnvironmentStatus.ReadyWithWarnings => "The host works, but a check raised a warning. See the findings.",
         RemoteEnvironmentStatus.Disconnected => "No session is connected to this host.",
         RemoteEnvironmentStatus.Interrupted => "The connection dropped while the agent was working. That turn did not finish: send the prompt again once the host is back.",
-        RemoteEnvironmentStatus.RuntimeUnavailable => "podman (containers) or wsl.exe (WSL) is not installed or does not answer. Install it or start its service, then test again.",
-        RemoteEnvironmentStatus.NotRunning => "The container is stopped. Start it, then test again. OmpOS never starts a container on its own.",
-        RemoteEnvironmentStatus.NotFound => "The container or WSL distribution does not exist. Check its name in the profile.",
         _ => string.Empty,
     };
 
@@ -68,11 +62,9 @@ public static class RemoteStatusDescriber
     {
         RemoteEnvironmentStatus.Testing or RemoteEnvironmentStatus.Authenticating or RemoteEnvironmentStatus.Connecting => RemoteStatusSeverity.Progress,
         RemoteEnvironmentStatus.Connected or RemoteEnvironmentStatus.Ready => RemoteStatusSeverity.Good,
-        RemoteEnvironmentStatus.Reconnecting or RemoteEnvironmentStatus.ReadyWithWarnings or RemoteEnvironmentStatus.HostKeyUnconfirmed or RemoteEnvironmentStatus.Interrupted
-            or RemoteEnvironmentStatus.NotRunning => RemoteStatusSeverity.Warning,
+        RemoteEnvironmentStatus.Reconnecting or RemoteEnvironmentStatus.ReadyWithWarnings or RemoteEnvironmentStatus.HostKeyUnconfirmed or RemoteEnvironmentStatus.Interrupted => RemoteStatusSeverity.Warning,
         RemoteEnvironmentStatus.HostKeyChanged or RemoteEnvironmentStatus.AuthFailed or RemoteEnvironmentStatus.Unreachable
-            or RemoteEnvironmentStatus.VersionMismatch or RemoteEnvironmentStatus.NeedsSetup
-            or RemoteEnvironmentStatus.RuntimeUnavailable or RemoteEnvironmentStatus.NotFound => RemoteStatusSeverity.Error,
+            or RemoteEnvironmentStatus.VersionMismatch or RemoteEnvironmentStatus.NeedsSetup => RemoteStatusSeverity.Error,
         _ => RemoteStatusSeverity.Neutral,
     };
 
@@ -81,8 +73,7 @@ public static class RemoteStatusDescriber
     /// <returns><see langword="true"/> for the failed test outcomes.</returns>
     public static bool BlocksStart(RemoteEnvironmentStatus status) => status is
         RemoteEnvironmentStatus.HostKeyUnconfirmed or RemoteEnvironmentStatus.HostKeyChanged or RemoteEnvironmentStatus.AuthFailed
-        or RemoteEnvironmentStatus.Unreachable or RemoteEnvironmentStatus.VersionMismatch or RemoteEnvironmentStatus.NeedsSetup
-        or RemoteEnvironmentStatus.RuntimeUnavailable or RemoteEnvironmentStatus.NotRunning or RemoteEnvironmentStatus.NotFound;
+        or RemoteEnvironmentStatus.Unreachable or RemoteEnvironmentStatus.VersionMismatch or RemoteEnvironmentStatus.NeedsSetup;
 
     /// <summary>Maps the report of a connection test to a status.</summary>
     /// <param name="report">The report.</param>
@@ -120,9 +111,6 @@ public static class RemoteStatusDescriber
         RemoteDiagnosisKind.AuthFailed => RemoteEnvironmentStatus.AuthFailed,
         RemoteDiagnosisKind.HostUnreachable or RemoteDiagnosisKind.SshMissing => RemoteEnvironmentStatus.Unreachable,
         RemoteDiagnosisKind.OmpMissing or RemoteDiagnosisKind.OmpTooOld or RemoteDiagnosisKind.BunMissing => RemoteEnvironmentStatus.VersionMismatch,
-        RemoteDiagnosisKind.ContainerRuntimeMissing or RemoteDiagnosisKind.ContainerRuntimeUnavailable or RemoteDiagnosisKind.WslMissing => RemoteEnvironmentStatus.RuntimeUnavailable,
-        RemoteDiagnosisKind.ContainerNotRunning => RemoteEnvironmentStatus.NotRunning,
-        RemoteDiagnosisKind.ContainerMissing or RemoteDiagnosisKind.WslDistroMissing => RemoteEnvironmentStatus.NotFound,
         _ => RemoteEnvironmentStatus.NeedsSetup,
     };
 

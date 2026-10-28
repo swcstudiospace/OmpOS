@@ -3,7 +3,7 @@ using OmpOS.Presentation.Observable;
 
 namespace OmpOS.Presentation.Remote;
 
-/// <summary>One row of the New session picker: this computer, an ssh, container or WSL environment, or the cloud.</summary>
+/// <summary>One row of the New session picker: this computer, an ssh environment, or the cloud.</summary>
 public sealed class NewSessionTargetOption : ObservableModel
 {
     private RemoteEnvironmentStatus? _status;
@@ -18,7 +18,7 @@ public sealed class NewSessionTargetOption : ObservableModel
         UnavailableReason = unavailableReason;
     }
 
-    /// <summary>Gets the stable identifier: <c>local</c>, <c>cloud</c>, <c>ssh:&lt;profile id&gt;</c>, <c>container:&lt;profile id&gt;</c> or <c>wsl:&lt;profile id&gt;</c>.</summary>
+    /// <summary>Gets the stable identifier: <c>local</c>, <c>cloud</c> or <c>ssh:&lt;profile id&gt;</c>.</summary>
     public string Id { get; }
 
     /// <summary>Gets where the option runs the agent.</summary>
@@ -30,7 +30,7 @@ public sealed class NewSessionTargetOption : ObservableModel
     /// <summary>Gets the second line: where it points.</summary>
     public string Detail { get; }
 
-    /// <summary>Gets the environment of an ssh, container or WSL option, or <see langword="null"/>.</summary>
+    /// <summary>Gets the environment of an ssh option, or <see langword="null"/>.</summary>
     public EnvironmentProfile? Profile { get; }
 
     /// <summary>Gets why the option cannot be chosen, or <see langword="null"/> when it can.</summary>
@@ -39,7 +39,7 @@ public sealed class NewSessionTargetOption : ObservableModel
     /// <summary>Gets whether the option can be chosen.</summary>
     public bool IsAvailable => UnavailableReason is null;
 
-    /// <summary>Gets the last known status of an ssh, container or WSL environment, or <see langword="null"/> for the other options and when nothing is known.</summary>
+    /// <summary>Gets the last known status of an ssh environment, or <see langword="null"/> for the other options and when nothing is known.</summary>
     public RemoteEnvironmentStatus? Status
     {
         get => _status;

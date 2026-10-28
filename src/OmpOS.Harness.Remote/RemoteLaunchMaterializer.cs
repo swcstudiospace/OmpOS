@@ -68,7 +68,7 @@ public sealed class RemoteLaunchMaterializer
 
         var remoteState = options.RemoteHomeDirectory.TrimEnd('/') + "/.ompos/sessions/" + options.SessionId;
         var localSession = Path.TrimEndingDirectorySeparator(Path.GetFullPath(SessionStateLayout.SessionDirectory(options.LocalStateRoot, options.SessionId)));
-        var forwards = new ReverseForwardAllocator(options.SessionId, options.ReversePortBase, options.ReversePortSpan, options.CarryLoopbackServices);
+        var forwards = new ReverseForwardAllocator(options.SessionId, options.ReversePortBase, options.ReversePortSpan);
         var events = new List<StageEvent>(plan.PlanningEvents);
         var files = new List<RemoteFile>();
 
@@ -205,11 +205,6 @@ public sealed class RemoteLaunchMaterializer
         if (!string.IsNullOrEmpty(uri.UserInfo))
         {
             hasUserInfo = true;
-            return false;
-        }
-
-        if (!forwards.Enabled)
-        {
             return false;
         }
 

@@ -1,8 +1,3 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- The skills that ship with the application (assets/skills/<name>/SKILL.md) are copied to a "skills" folder next to the assembly of every head that references this project. -->
-  <ItemGroup>
-    <Content Include="../../assets/skills/**/*" Link="skills/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
 </Project>

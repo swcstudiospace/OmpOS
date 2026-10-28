@@ -53,18 +53,4 @@
     <Setter Property="Padding" Value="10,0,0,0" />
   </Style>
 
-  <!-- An attached image above the card: a square thumbnail and its remove button. Tokens only. -->
-  <Style Selector="Border.attachment-item">
-    <Setter Property="CornerRadius" Value="{DynamicResource OmpOS.Radius.Md}" />
-    <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceSunken}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.Border}" />
-    <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Border.Hairline}" />
-    <Setter Property="ClipToBounds" Value="True" />
-  </Style>
-  <Style Selector="Button.attachment-thumb">
-    <Setter Property="Width" Value="56" />
-    <Setter Property="Height" Value="56" />
-    <Setter Property="Padding" Value="0" />
-  </Style>
-
 </Styles>

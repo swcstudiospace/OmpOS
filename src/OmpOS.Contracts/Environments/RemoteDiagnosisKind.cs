@@ -44,28 +44,4 @@ public enum RemoteDiagnosisKind
 
     /// <summary>A standard tool OmpOS needs on the remote machine (for example <c>mktemp</c>) is missing.</summary>
     RequiredToolMissing,
-
-    /// <summary>The <c>podman</c> program is not installed or cannot be started on this machine.</summary>
-    ContainerRuntimeMissing,
-
-    /// <summary>podman is installed but its service cannot be reached (for example the podman machine is stopped).</summary>
-    ContainerRuntimeUnavailable,
-
-    /// <summary>No container has the name or id of the profile.</summary>
-    ContainerMissing,
-
-    /// <summary>The container exists but is not running.</summary>
-    ContainerNotRunning,
-
-    /// <summary>The user of the profile does not exist inside the container.</summary>
-    ContainerUserMissing,
-
-    /// <summary>The <c>wsl.exe</c> program is not available: WSL is not installed, or this machine is not Windows.</summary>
-    WslMissing,
-
-    /// <summary>No WSL distribution has the name of the profile.</summary>
-    WslDistroMissing,
-
-    /// <summary>The user of the profile does not exist in the WSL distribution.</summary>
-    WslUserMissing,
 }

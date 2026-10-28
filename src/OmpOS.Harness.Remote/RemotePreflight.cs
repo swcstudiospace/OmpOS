@@ -75,7 +75,7 @@ public sealed partial class RemotePreflight
     private static RemotePreflightReport Failed(RemoteDiagnosis diagnosis) =>
         new() { Succeeded = false, Diagnoses = [diagnosis] };
 
-    internal static string BuildProbeScript(SshProfile profile)
+    private static string BuildProbeScript(SshProfile profile)
     {
         var root = PosixQuoting.Quote(profile.RemoteWorkspaceRoot);
         var omp = PosixQuoting.Quote(profile.RemoteOmpPath ?? "omp");
@@ -91,7 +91,7 @@ public sealed partial class RemotePreflight
             + "; p bun \"$(command -v bun 2>/dev/null)\"";
     }
 
-    internal static Dictionary<string, string> ParseProbe(string output)
+    private static Dictionary<string, string> ParseProbe(string output)
     {
         var values = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var rawLine in output.Split('\n'))

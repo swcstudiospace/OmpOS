@@ -14,7 +14,6 @@ internal sealed class ReverseForwardAllocator
     private readonly string _sessionId;
     private readonly int _basePort;
     private readonly int _span;
-    private readonly bool _enabled;
     private readonly Dictionary<string, ReverseForward> _forwards = new(StringComparer.Ordinal);
     private readonly HashSet<int> _used = [];
 
@@ -22,17 +21,12 @@ internal sealed class ReverseForwardAllocator
     /// <param name="sessionId">The session identifier the ports are derived from.</param>
     /// <param name="basePort">The first port of the range.</param>
     /// <param name="span">The number of ports in the range.</param>
-    /// <param name="enabled">Whether forwards are allocated at all. When <see langword="false"/> the caller keeps loopback addresses as they are.</param>
-    public ReverseForwardAllocator(string sessionId, int basePort, int span, bool enabled = true)
+    public ReverseForwardAllocator(string sessionId, int basePort, int span)
     {
-        _enabled = enabled;
         _sessionId = sessionId;
         _basePort = basePort;
         _span = span;
     }
-
-    /// <summary>Gets a value indicating whether forwards are allocated at all.</summary>
-    public bool Enabled => _enabled;
 
     /// <summary>Gets the forwards allocated so far, in allocation order.</summary>
     public IReadOnlyList<ReverseForward> Forwards => [.. _forwards.Values];

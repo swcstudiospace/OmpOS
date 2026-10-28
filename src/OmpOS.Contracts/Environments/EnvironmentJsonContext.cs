@@ -13,9 +13,6 @@ namespace OmpOS.Contracts.Environments;
 [JsonSerializable(typeof(EnvironmentProfile))]
 [JsonSerializable(typeof(EnvironmentProfile[]))]
 [JsonSerializable(typeof(SshProfile))]
-[JsonSerializable(typeof(ContainerProfile))]
-[JsonSerializable(typeof(WslProfile))]
-[JsonSerializable(typeof(ContainerSummary))]
 [JsonSerializable(typeof(RemotePreflightReport))]
 [JsonSerializable(typeof(RemoteDiagnosis))]
 public sealed partial class EnvironmentJsonContext : JsonSerializerContext

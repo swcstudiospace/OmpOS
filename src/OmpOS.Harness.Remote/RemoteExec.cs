@@ -11,7 +11,7 @@ namespace OmpOS.Harness.Remote;
 /// destination, no secret on a command line). It is the transport of the remote file system and of the remote convention discovery. At most
 /// four ssh processes run at once; the others wait their turn.
 /// </summary>
-public sealed class RemoteExec : IRemoteExec
+public sealed class RemoteExec : IDisposable
 {
     private const int MaxConcurrentCalls = 4;
     private const int ChunkBytes = 16 * 1024;
@@ -50,9 +50,6 @@ public sealed class RemoteExec : IRemoteExec
     /// <summary>Gets the remote machine the scripts run on.</summary>
     public SshProfile Profile => _profile;
 
-    /// <inheritdoc />
-    public string WorkspaceRoot => _profile.RemoteWorkspaceRoot;
-
     /// <summary>Runs one script on the remote machine and waits for it.</summary>
     /// <param name="script">One line of POSIX shell. It is passed to <c>sh -c</c> on the remote machine; every dynamic value in it must be quoted with <see cref="PosixQuoting"/>.</param>
     /// <param name="input">The bytes written to the script's stdin, then stdin is closed. Empty for none.</param>
@@ -69,7 +66,7 @@ public sealed class RemoteExec : IRemoteExec
         await _slots.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            return await RunInvocationAsync(invocation, input, maxOutputBytes, _options.CommandTimeout, _clock, cancellationToken).ConfigureAwait(false);
+            return await RunProcessAsync(invocation, input, maxOutputBytes, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -222,24 +219,7 @@ public sealed class RemoteExec : IRemoteExec
         return startInfo;
     }
 
-    /// <summary>
-    /// Runs one client process (ssh, podman or wsl.exe) with the output cap and the time limit of this layer, and waits for it. The process is started from an
-    /// argument list without a shell; its stdin gets the input and is closed. It is the one process runner of every <see cref="IRemoteExec"/> implementation.
-    /// </summary>
-    /// <param name="invocation">The process to start.</param>
-    /// <param name="input">The bytes written to stdin, then stdin is closed.</param>
-    /// <param name="maxOutputBytes">The most stdout bytes kept.</param>
-    /// <param name="timeout">How long the process may run before it is killed.</param>
-    /// <param name="clock">The clock the limits use.</param>
-    /// <param name="cancellationToken">Cancels the run and kills the process.</param>
-    /// <returns>What the process did.</returns>
-    internal static async Task<RemoteExecResult> RunInvocationAsync(
-        SshInvocation invocation,
-        ReadOnlyMemory<byte> input,
-        int maxOutputBytes,
-        TimeSpan timeout,
-        TimeProvider clock,
-        CancellationToken cancellationToken)
+    private async Task<RemoteExecResult> RunProcessAsync(SshInvocation invocation, ReadOnlyMemory<byte> input, int maxOutputBytes, CancellationToken cancellationToken)
     {
         using var process = TryStart(StartInfoFor(invocation), out var startFailure);
         if (process is null)
@@ -251,10 +231,10 @@ public sealed class RemoteExec : IRemoteExec
         var reading = ReadCappedAsync(process.StandardOutput.BaseStream, maxOutputBytes);
         var errors = ReadErrorAsync(process.StandardError);
 
-        var timedOut = await WaitAsync(process, timeout, clock, cancellationToken).ConfigureAwait(false);
+        var timedOut = await WaitAsync(process, cancellationToken).ConfigureAwait(false);
         try
         {
-            await Task.WhenAll(writing, reading, errors).WaitAsync(DrainGrace, clock, CancellationToken.None).ConfigureAwait(false);
+            await Task.WhenAll(writing, reading, errors).WaitAsync(DrainGrace, _clock, CancellationToken.None).ConfigureAwait(false);
         }
         catch (TimeoutException)
         {
@@ -267,9 +247,9 @@ public sealed class RemoteExec : IRemoteExec
     }
 
     // Waits for the process; returns true when it was killed for exceeding the time limit. A cancelled run kills the process and throws.
-    private static async Task<bool> WaitAsync(Process process, TimeSpan timeout, TimeProvider clock, CancellationToken cancellationToken)
+    private async Task<bool> WaitAsync(Process process, CancellationToken cancellationToken)
     {
-        using var limit = new CancellationTokenSource(timeout, clock);
+        using var limit = new CancellationTokenSource(_options.CommandTimeout, _clock);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, limit.Token);
         try
         {
