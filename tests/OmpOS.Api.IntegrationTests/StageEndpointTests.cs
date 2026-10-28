@@ -32,10 +32,10 @@ public sealed class StageEndpointTests
         document.RootElement.GetProperty("reason").GetString().ShouldNotBeNullOrWhiteSpace();
         var stages = document.RootElement.GetProperty("stages").EnumerateArray().ToArray();
         stages.Select(static stage => stage.GetProperty("source").GetString()).ShouldBe(["Omp", "Ultrathink", "Swarm", "Substrate", "Gsd"]);
-        stages[0].GetProperty("status").GetString().ShouldBe("Pending", Case.Sensitive);
+        stages[0].GetProperty("status").GetString().ShouldBe("Pending");
         foreach (var plugin in stages.Skip(1))
         {
-            plugin.GetProperty("status").GetString().ShouldBe("Unavailable", Case.Sensitive);
+            plugin.GetProperty("status").GetString().ShouldBe("Unavailable");
         }
     }
 
@@ -53,7 +53,7 @@ public sealed class StageEndpointTests
         using var response = await client.GetAsync(new Uri($"/sessions/{id}/stages", UriKind.Relative), ct).ConfigureAwait(true);
 
         using var document = await WebAppTestHost.ReadJsonAsync(response, ct).ConfigureAwait(true);
-        document.RootElement.GetProperty("stages")[0].GetProperty("status").GetString().ShouldBe("Succeeded", Case.Sensitive);
+        document.RootElement.GetProperty("stages")[0].GetProperty("status").GetString().ShouldBe("Succeeded");
     }
 
     /// <summary>A published plugin stage is listed in place of that source's unavailable stage, is appended to the session log as a stage event, and names the Graph in the catalog.</summary>
@@ -71,17 +71,17 @@ public sealed class StageEndpointTests
         using var document = await WebAppTestHost.ReadJsonAsync(stages, ct).ConfigureAwait(true);
         document.RootElement.GetProperty("available").GetBoolean().ShouldBeTrue();
         var planner = document.RootElement.GetProperty("stages").EnumerateArray().Where(static stage => string.Equals(stage.GetProperty("source").GetString(), "Ultrathink", StringComparison.Ordinal)).ShouldHaveSingleItem();
-        planner.GetProperty("stageId").GetString().ShouldBe("plan", Case.Sensitive);
-        planner.GetProperty("status").GetString().ShouldBe("Running", Case.Sensitive);
+        planner.GetProperty("stageId").GetString().ShouldBe("plan");
+        planner.GetProperty("status").GetString().ShouldBe("Running");
 
         var session = await factory.Services.GetRequiredService<ISessionRepository>().GetAsync(id, ct).ConfigureAwait(true);
         var logged = session.ShouldNotBeNull().Events.ShouldHaveSingleItem();
         StreamEventPayloads.TryReadStage(logged.Payload, out var stage).ShouldBeTrue();
-        stage.ShouldNotBeNull().GraphId.ShouldBe("graph-9", Case.Sensitive);
+        stage.ShouldNotBeNull().GraphId.ShouldBe("graph-9");
 
         using var list = await client.GetAsync(new Uri("/sessions", UriKind.Relative), ct).ConfigureAwait(true);
         using var rows = await WebAppTestHost.ReadJsonAsync(list, ct).ConfigureAwait(true);
-        rows.RootElement[0].GetProperty("graphId").GetString().ShouldBe("graph-9", Case.Sensitive);
+        rows.RootElement[0].GetProperty("graphId").GetString().ShouldBe("graph-9");
     }
 
     /// <summary>A stage for a session that does not exist is refused by the hub and appends nothing.</summary>
@@ -144,8 +144,8 @@ public sealed class StageEndpointTests
 
             using var document = await WebAppTestHost.ReadJsonAsync(response, ct).ConfigureAwait(true);
             document.RootElement.GetProperty("available").GetBoolean().ShouldBeTrue();
-            document.RootElement.GetProperty("context").GetProperty("title").GetString().ShouldBe("Ship the web head", Case.Sensitive);
-            source.LastScope.ShouldNotBeNull().GraphId.ShouldBe("graph-3", Case.Sensitive);
+            document.RootElement.GetProperty("context").GetProperty("title").GetString().ShouldBe("Ship the web head");
+            source.LastScope.ShouldNotBeNull().GraphId.ShouldBe("graph-3");
         }
         finally
         {

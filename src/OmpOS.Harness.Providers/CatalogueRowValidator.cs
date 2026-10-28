@@ -131,7 +131,7 @@ public static partial class CatalogueRowValidator
                 bad($"route {route.Id}: the auth header is set exactly for custom header auth");
             }
 
-            foreach (var name in CatalogueUrlTemplate.VariablesIn(route.BaseUrl))
+            foreach (var name in CatalogueUrlTemplate.VariablesIn(route.BaseAddressTemplate))
             {
                 used.Add(name);
             }
@@ -147,7 +147,7 @@ public static partial class CatalogueRowValidator
 
     private static void CheckBaseUrl(CatalogueRow row, CatalogueRoute route, Action<string> bad)
     {
-        var filled = Placeholder().Replace(route.BaseUrl, "x");
+        var filled = Placeholder().Replace(route.BaseAddressTemplate, "x");
         if (filled.Contains('{', StringComparison.Ordinal) || filled.Contains('}', StringComparison.Ordinal))
         {
             bad($"route {route.Id}: the base URL has a malformed placeholder");

@@ -80,7 +80,7 @@ internal sealed class TestWebSocketSession : IDisposable
                 return new Message(WebSocketMessageType.Close, string.Empty, result.CloseStatus, result.CloseStatusDescription);
             }
 
-            collected.Write(buffer, 0, result.Count);
+            await collected.WriteAsync(buffer.AsMemory(0, result.Count), cancellationToken).ConfigureAwait(false);
             if (result.EndOfMessage)
             {
                 var text = result.MessageType == WebSocketMessageType.Text ? Encoding.UTF8.GetString(collected.ToArray()) : string.Empty;

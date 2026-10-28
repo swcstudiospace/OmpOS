@@ -32,18 +32,18 @@ public sealed class HookInputBuilderTests
 
         var input = Build("beforeShellExecution", session, """{ "command": "ls", "cwd": "/work/a", "sandbox": false }""");
 
-        input.GetProperty("conversation_id").GetString().ShouldBe("conv-9", Case.Sensitive);
-        input.GetProperty("generation_id").GetString().ShouldBe(session.GenerationId, Case.Sensitive);
-        input.GetProperty("model").GetString().ShouldBe("claude-x", Case.Sensitive);
-        input.GetProperty("model_id").GetString().ShouldBe("claude-x-id", Case.Sensitive);
-        input.GetProperty("model_params")[0].GetProperty("id").GetString().ShouldBe("effort", Case.Sensitive);
-        input.GetProperty("model_params")[0].GetProperty("value").GetString().ShouldBe("max", Case.Sensitive);
-        input.GetProperty("hook_event_name").GetString().ShouldBe("beforeShellExecution", Case.Sensitive);
-        input.GetProperty("cursor_version").GetString().ShouldBe("ompos-1.2", Case.Sensitive);
+        input.GetProperty("conversation_id").GetString().ShouldBe("conv-9");
+        input.GetProperty("generation_id").GetString().ShouldBe(session.GenerationId);
+        input.GetProperty("model").GetString().ShouldBe("claude-x");
+        input.GetProperty("model_id").GetString().ShouldBe("claude-x-id");
+        input.GetProperty("model_params")[0].GetProperty("id").GetString().ShouldBe("effort");
+        input.GetProperty("model_params")[0].GetProperty("value").GetString().ShouldBe("max");
+        input.GetProperty("hook_event_name").GetString().ShouldBe("beforeShellExecution");
+        input.GetProperty("cursor_version").GetString().ShouldBe("ompos-1.2");
         input.GetProperty("workspace_roots").EnumerateArray().Select(root => root.GetString()).ShouldBe(["/work/a", "/work/b"], ignoreOrder: false);
-        input.GetProperty("user_email").GetString().ShouldBe("ada@example.com", Case.Sensitive);
-        input.GetProperty("transcript_path").GetString().ShouldBe("/t/transcript.jsonl", Case.Sensitive);
-        input.GetProperty("command").GetString().ShouldBe("ls", Case.Sensitive);
+        input.GetProperty("user_email").GetString().ShouldBe("ada@example.com");
+        input.GetProperty("transcript_path").GetString().ShouldBe("/t/transcript.jsonl");
+        input.GetProperty("command").GetString().ShouldBe("ls");
         input.GetProperty("sandbox").GetBoolean().ShouldBeFalse();
     }
 
@@ -70,9 +70,9 @@ public sealed class HookInputBuilderTests
             input.TryGetProperty(absent, out _).ShouldBeFalse(absent);
         }
 
-        input.GetProperty("hook_event_name").GetString().ShouldBe("workspaceOpen", Case.Sensitive);
+        input.GetProperty("hook_event_name").GetString().ShouldBe("workspaceOpen");
         input.GetProperty("workspace_roots").GetArrayLength().ShouldBe(1);
-        input.GetProperty("user_email").GetString().ShouldBe("ada@example.com", Case.Sensitive);
+        input.GetProperty("user_email").GetString().ShouldBe("ada@example.com");
     }
 
     [Fact]
@@ -80,10 +80,10 @@ public sealed class HookInputBuilderTests
     {
         var input = Build("preToolUse", HookFixtures.Session(), """{ "conversation_id": "forged", "hook_event_name": "other", "workspace_roots": [], "tool_name": "Shell" }""");
 
-        input.GetProperty("conversation_id").GetString().ShouldBe("conv-1", Case.Sensitive);
-        input.GetProperty("hook_event_name").GetString().ShouldBe("preToolUse", Case.Sensitive);
+        input.GetProperty("conversation_id").GetString().ShouldBe("conv-1");
+        input.GetProperty("hook_event_name").GetString().ShouldBe("preToolUse");
         input.GetProperty("workspace_roots").GetArrayLength().ShouldBe(1);
-        input.GetProperty("tool_name").GetString().ShouldBe("Shell", Case.Sensitive);
+        input.GetProperty("tool_name").GetString().ShouldBe("Shell");
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public sealed class HookInputBuilderTests
     public void AHugeStringFieldIsCutAtACharacterBoundaryAndFlagged()
     {
         var text = new string('a', HookInputBuilder.MaxStringBytes - 1) + "é" + "tail";
-        var payload = JsonSerializer.Serialize(new Dictionary<string, string> { ["content"] = text }, ObjectContext.Default.DictionaryStringString);
+        var payload = JsonSerializer.Serialize(new Dictionary<string, string>(StringComparer.Ordinal) { ["content"] = text }, ObjectContext.Default.DictionaryStringString);
 
         var input = Build("beforeReadFile", HookFixtures.Session(), payload);
 
@@ -113,7 +113,7 @@ public sealed class HookInputBuilderTests
     {
         var input = Build("afterAgentResponse", HookFixtures.Session(), """{ "text": "hello" }""");
 
-        input.GetProperty("text").GetString().ShouldBe("hello", Case.Sensitive);
+        input.GetProperty("text").GetString().ShouldBe("hello");
         input.TryGetProperty("text_truncated", out _).ShouldBeFalse();
     }
 
@@ -122,7 +122,7 @@ public sealed class HookInputBuilderTests
     {
         var input = Build("sessionEnd", HookFixtures.Session(), "[1,2]");
 
-        input.GetProperty("hook_event_name").GetString().ShouldBe("sessionEnd", Case.Sensitive);
+        input.GetProperty("hook_event_name").GetString().ShouldBe("sessionEnd");
         input.EnumerateObject().Count().ShouldBe(8);
     }
 }

@@ -77,7 +77,7 @@
       "ompos.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "Microsoft.Extensions.Configuration.Abstractions": {

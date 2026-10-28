@@ -107,7 +107,7 @@ public sealed class MultiRootLaunchTests
         caller.Add("/repos/late");
 
         plan.AdditionalDirectories.ShouldBe(["/repos/web"]);
-        plan.ExtraArguments.ShouldNotContain("/repos/late");
+        plan.ExtraArguments.ShouldNotContain("/repos/late", StringComparer.Ordinal);
     }
 
     [Fact]
@@ -130,15 +130,14 @@ public sealed class MultiRootLaunchTests
             + "workspace:\n  additionalDirectories:\n"
             + "    - \"/repos/web\"\n"
             + "    - \"C:\\\\repos\\\\api\"\n"
-            + "    - \"/repos/q\\\"uote\"\n",
-            Case.Sensitive);
+            + "    - \"/repos/q\\\"uote\"\n");
     }
 
     [Fact]
     public void TheOverlayHasNoWorkspaceKeyForASingleRootSession()
     {
-        ConfigOverlayWriter.Render(Settings(disableProjectMcp: true), null).ShouldBe("mcp:\n  enableProjectConfig: false\n", Case.Sensitive);
-        ConfigOverlayWriter.Render(Settings(disableProjectMcp: true), []).ShouldBe("mcp:\n  enableProjectConfig: false\n", Case.Sensitive);
+        ConfigOverlayWriter.Render(Settings(disableProjectMcp: true), null).ShouldBe("mcp:\n  enableProjectConfig: false\n");
+        ConfigOverlayWriter.Render(Settings(disableProjectMcp: true), []).ShouldBe("mcp:\n  enableProjectConfig: false\n");
     }
 
     [Fact]

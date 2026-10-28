@@ -65,7 +65,7 @@ public sealed class ThemeSwitchTests : UiTestContext
         module.SetupVoid("setTheme", expectedKey);
         var cut = Render<ThemeSwitch>();
 
-        cut.FindAll("button").Single(button => button.TextContent == label).Click();
+        cut.FindAll("button").Single(button => string.Equals(button.TextContent, label, StringComparison.Ordinal)).Click();
 
         module.VerifyInvoke("setTheme").Arguments.ShouldBe([expectedKey]);
         AssertPressed(cut, label);

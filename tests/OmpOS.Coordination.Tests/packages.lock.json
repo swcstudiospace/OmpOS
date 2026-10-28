@@ -240,7 +240,7 @@
       "ompos.coordination.dragonfly": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Coordination": "[1.0.0, )",
+          "OmpOS.Coordination": "[0.15.0, )",
           "StackExchange.Redis": "[3.4.5, )"
         }
       },

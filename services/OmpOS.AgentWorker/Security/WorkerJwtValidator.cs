@@ -67,7 +67,8 @@ internal sealed class WorkerJwtValidator : IDisposable
     {
         ArgumentNullException.ThrowIfNull(principal);
         var subject = principal.FindFirst(SubjectClaimType)?.Value;
-        if (!WorkerSessionIds.IsSafe(subject)
+        if (subject is null
+            || !WorkerSessionIds.IsSafe(subject)
             || (_pinnedSessionId is not null && !string.Equals(subject, _pinnedSessionId, StringComparison.Ordinal)))
         {
             sessionId = null;

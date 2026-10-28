@@ -141,9 +141,9 @@ public sealed class OmpManagedBlockWriterApiTests
 
         var lines = OmpManagedBlockWriter.Render(provider, 4, 4);
 
-        lines.ShouldContain("        discovery:");
-        lines.ShouldContain("            type: \"openai-models-list\"");
-        lines.ShouldContain("        models:");
+        lines.ShouldContain("        discovery:", StringComparer.Ordinal);
+        lines.ShouldContain("            type: \"openai-models-list\"", StringComparer.Ordinal);
+        lines.ShouldContain("        models:", StringComparer.Ordinal);
     }
 
     [Theory]

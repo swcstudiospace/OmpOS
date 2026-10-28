@@ -65,11 +65,35 @@ public sealed partial class SessionKeyHolderTests
 
         files.ShouldNotBeEmpty();
         string[] offenders = files
+            .Where(path => !IsDisplayPreferenceScript(path))
             .Where(path => ContainsStorageToken(WithoutComments(path, File.ReadAllText(path))))
             .Select(path => Path.GetRelativePath(root, path))
             .ToArray();
         offenders.ShouldBeEmpty("the web head must not write browser storage; provider keys live only in SessionKeyHolder");
     }
+
+    /// <summary>
+    /// The two scripts that keep the display preferences (theme and motion, never a secret) are the only web head files allowed to name
+    /// a browser storage API. They must not mention a key or a secret.
+    /// </summary>
+    [Fact]
+    public void OnlyTheDisplayPreferenceScriptsTouchBrowserStorageAndHoldNoSecret()
+    {
+        string root = FindRepoRoot();
+        foreach (string name in DisplayPreferenceScripts)
+        {
+            string text = File.ReadAllText(Path.Combine(root, "src", "OmpOS.UI", "wwwroot", "scripts", name));
+            WithoutComments(name, text).ShouldNotContain("apikey", Case.Insensitive);
+            WithoutComments(name, text).ShouldNotContain("secret", Case.Insensitive);
+            WithoutComments(name, text).ShouldNotContain("token", Case.Insensitive);
+        }
+    }
+
+    private static readonly string[] DisplayPreferenceScripts = ["ompos-theme.js", "theme-boot.js"];
+
+    private static bool IsDisplayPreferenceScript(string path) =>
+        string.Equals(Path.GetFileName(Path.GetDirectoryName(path)), "scripts", StringComparison.Ordinal)
+        && DisplayPreferenceScripts.Contains(Path.GetFileName(path), StringComparer.Ordinal);
 
     /// <summary>Dispose overwrites the buffer, forgets the key and refuses further use.</summary>
     [Fact]

@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 using OmpOS.Harness.Plugins.Hooks;
@@ -25,8 +26,8 @@ public sealed class LocalHookFileSourceTests
 
         info.Exists.ShouldBeTrue();
         info.Length.ShouldBe(3);
-        Encoding.UTF8.GetString((await source.ReadAsync(path, 100, Token))!).ShouldBe("abc", Case.Sensitive);
-        (await source.DigestAsync(path, 100, Token)).ShouldBe(Convert.ToHexStringLower(SHA256.HashData("abc"u8)), Case.Sensitive);
+        Encoding.UTF8.GetString((await source.ReadAsync(path, 100, Token))!).ShouldBe("abc");
+        (await source.DigestAsync(path, 100, Token)).ShouldBe(Convert.ToHexStringLower(SHA256.HashData("abc"u8)));
     }
 
     [Fact]
@@ -44,6 +45,7 @@ public sealed class LocalHookFileSourceTests
         (await source.DigestAsync(big, 10, Token)).ShouldBeNull();
     }
 
+    [SupportedOSPlatform("linux")]
     [Fact]
     public async Task AFileIsTamperResistantOnlyWhenNeitherItNorItsDirectoryIsWritableByOthers()
     {

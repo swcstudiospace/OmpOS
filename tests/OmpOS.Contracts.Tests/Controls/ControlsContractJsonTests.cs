@@ -19,7 +19,7 @@ public sealed class ControlsContractJsonTests
     {
         var request = JsonSerializer.Deserialize("""{"text":"left","mode":"send_now"}""", SessionControlsJsonContext.Default.SteerRequest).ShouldNotBeNull();
         request.Mode.ShouldBe(SteerMode.SendNow);
-        request.Text.ShouldBe("left", Case.Sensitive);
+        request.Text.ShouldBe("left");
         JsonSerializer.Deserialize("""{"text":"x","mode":"queue"}""", SessionControlsJsonContext.Default.SteerRequest).ShouldNotBeNull().Mode.ShouldBe(SteerMode.Queue);
         JsonSerializer.Deserialize("""{"text":"x"}""", SessionControlsJsonContext.Default.SteerRequest).ShouldNotBeNull().Mode.ShouldBeNull();
         Should.Throw<JsonException>(() => JsonSerializer.Deserialize("""{"text":"x","mode":"later"}""", SessionControlsJsonContext.Default.SteerRequest));
@@ -35,7 +35,7 @@ public sealed class ControlsContractJsonTests
     {
         var json = JsonSerializer.Serialize(new SteerResponse { Delivery = delivery }, SessionControlsJsonContext.Default.SteerResponse);
 
-        json.ShouldBe($$"""{"delivery":"{{wire}}"}""", Case.Sensitive);
+        json.ShouldBe($$"""{"delivery":"{{wire}}"}""");
     }
 
     /// <summary>The option, command, change and approval answers round trip.</summary>
@@ -64,15 +64,15 @@ public sealed class ControlsContractJsonTests
         };
 
         JsonSerializer.Deserialize(JsonSerializer.Serialize(options, SessionControlsJsonContext.Default.SessionConfigOptionsResponse), SessionControlsJsonContext.Default.SessionConfigOptionsResponse)
-            .ShouldNotBeNull().Options.ShouldHaveSingleItem().Values.ShouldHaveSingleItem().Value.ShouldBe("agent", Case.Sensitive);
+            .ShouldNotBeNull().Options.ShouldHaveSingleItem().Values.ShouldHaveSingleItem().Value.ShouldBe("agent");
         JsonSerializer.Deserialize(JsonSerializer.Serialize(commands, SessionControlsJsonContext.Default.SessionCommandsResponse), SessionControlsJsonContext.Default.SessionCommandsResponse)
-            .ShouldNotBeNull().Commands.ShouldHaveSingleItem().InputHint.ShouldBe("[x]", Case.Sensitive);
+            .ShouldNotBeNull().Commands.ShouldHaveSingleItem().InputHint.ShouldBe("[x]");
         var changesJson = JsonSerializer.Serialize(changes, SessionControlsJsonContext.Default.SessionChangesResponse);
         changesJson.ShouldContain("\"kind\":\"added\"", Case.Sensitive);
         changesJson.ShouldContain("\"status\":\"accepted\"", Case.Sensitive);
         changesJson.ShouldNotContain("oldText", Case.Sensitive);
         JsonSerializer.Deserialize(JsonSerializer.Serialize(approvals, SessionControlsJsonContext.Default.PendingToolApprovalsResponse), SessionControlsJsonContext.Default.PendingToolApprovalsResponse)
-            .ShouldNotBeNull().Approvals.ShouldHaveSingleItem().RequestId.ShouldBe("r:1", Case.Sensitive);
+            .ShouldNotBeNull().Approvals.ShouldHaveSingleItem().RequestId.ShouldBe("r:1");
     }
 
     /// <summary>A stage event travels in a stream event as the stage kind, deserializes as an unknown payload with the kind preserved, and is read back from it.</summary>
@@ -87,8 +87,8 @@ public sealed class ControlsContractJsonTests
 
         json.ShouldContain("\"kind\":\"stage\"", Case.Sensitive);
         var unknown = back.Payload.ShouldBeOfType<UnknownPayload>();
-        unknown.OriginalKind.ShouldBe(StreamEventKinds.Stage, Case.Sensitive);
-        JsonSerializer.Serialize(back, OmpOsJsonContext.Default.StreamEvent).ShouldBe(json, Case.Sensitive);
+        unknown.OriginalKind.ShouldBe(StreamEventKinds.Stage);
+        JsonSerializer.Serialize(back, OmpOsJsonContext.Default.StreamEvent).ShouldBe(json);
         StreamEventPayloads.TryReadStage(back.Payload, out var read).ShouldBeTrue();
         read.ShouldBe(stage);
         StreamEventPayloads.TryReadConfigOptionUpdate(back.Payload, out _).ShouldBeFalse();
@@ -100,12 +100,12 @@ public sealed class ControlsContractJsonTests
     {
         var update = new ConfigOptionUpdateEvent { OptionId = "model", CurrentValue = "provider/model" };
         var payload = StreamEventPayloads.CreateConfigOptionUpdate(update);
-        payload.OriginalKind.ShouldBe(StreamEventKinds.ConfigOptionUpdate, Case.Sensitive);
+        payload.OriginalKind.ShouldBe(StreamEventKinds.ConfigOptionUpdate);
         StreamEventPayloads.TryReadConfigOptionUpdate(payload, out var read).ShouldBeTrue();
         read.ShouldBe(update);
 
         var future = JsonSerializer.Deserialize("""{"kind":"not_a_kind_yet","x":1}""", OmpOsJsonContext.Default.StreamEventPayload).ShouldNotBeNull();
-        future.ShouldBeOfType<UnknownPayload>().OriginalKind.ShouldBe("not_a_kind_yet", Case.Sensitive);
+        future.ShouldBeOfType<UnknownPayload>().OriginalKind.ShouldBe("not_a_kind_yet");
         StreamEventPayloads.TryReadStage(future, out var none).ShouldBeFalse();
         none.ShouldBeNull();
         using var document = JsonDocument.Parse("""{"kind":"stage","sessionId":5}""");

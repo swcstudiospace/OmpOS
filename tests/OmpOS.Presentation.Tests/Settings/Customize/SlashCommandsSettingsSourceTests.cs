@@ -86,13 +86,13 @@ public sealed class SlashCommandsSettingsSourceTests
         page.Entries.Select(entry => entry.Title).ShouldBe(["/fork", "/side <topic> [model]", "/deploy <env>", "/standup", "/verifier <task>"]);
         var deploy = page.Entries.Single(entry => entry.Title.StartsWith("/deploy", StringComparison.Ordinal));
         deploy.Scope.ShouldBe(CustomizeScope.Project);
-        deploy.Origin.ShouldBe(".cursor/commands/deploy.md", Case.Sensitive);
-        deploy.Description.ShouldBe("Deploys the app.", Case.Sensitive);
+        deploy.Origin.ShouldBe(".cursor/commands/deploy.md");
+        deploy.Description.ShouldBe("Deploys the app.");
         var standup = page.Entries.Single(entry => string.Equals(entry.Title, "/standup", StringComparison.Ordinal));
         standup.Scope.ShouldBe(CustomizeScope.User);
-        standup.Origin.ShouldBe("~/.claude/commands/standup.md", Case.Sensitive);
+        standup.Origin.ShouldBe("~/.claude/commands/standup.md");
         var verifier = page.Entries.Single(entry => entry.Title.StartsWith("/verifier", StringComparison.Ordinal));
-        verifier.Description.ShouldBe("Subagent. Verifies work.", Case.Sensitive);
+        verifier.Description.ShouldBe("Subagent. Verifies work.");
         page.Problems.ShouldHaveSingleItem().ShouldStartWith(".cursor/commands/broken.md: ", Case.Sensitive);
     }
 

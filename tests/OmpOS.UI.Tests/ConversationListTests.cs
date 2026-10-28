@@ -22,8 +22,8 @@ public sealed class ConversationListTests : BunitContext
             .Add(p => p.SelectedId, "s-2"));
 
         var items = cut.FindAll(".ompos-conversation-item");
-        items.Select(static item => item.TextContent).ShouldBe(["First", "Second"]);
-        cut.Find("button[aria-current=\"true\"]").TextContent.ShouldBe("Second");
+        items.Select(static item => item.QuerySelector(".ompos-conversation-title")!.TextContent).ShouldBe(["First", "Second"]);
+        cut.Find("button[aria-current=\"true\"]").TextContent.Trim().ShouldBe("Second");
     }
 
     /// <summary>Activating a conversation reports its identifier.</summary>

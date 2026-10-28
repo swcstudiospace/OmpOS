@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace OmpOS.Contracts.Controls;
 
 /// <summary>One value a <see cref="ConfigOption"/> can take.</summary>
@@ -10,5 +12,6 @@ public sealed record ConfigOptionValue
     public required string Name { get; init; }
 
     /// <summary>Gets the description, or null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Description { get; init; }
 }

@@ -14,7 +14,7 @@ public sealed class ConventionFrontmatterParserTests
         var parsed = ConventionFrontmatterParser.Parse("# Title\nBody line.\n");
 
         parsed.Fields.ShouldBeEmpty();
-        parsed.Body.ShouldBe("# Title\nBody line.\n", Case.Sensitive);
+        parsed.Body.ShouldBe("# Title\nBody line.\n");
         parsed.Problem.ShouldBeNull();
     }
 
@@ -25,8 +25,8 @@ public sealed class ConventionFrontmatterParserTests
         var parsed = ConventionFrontmatterParser.Parse("\uFEFF---\ndescription: Hello\n---\nBody\n");
 
         parsed.Problem.ShouldBeNull();
-        parsed.ReadText("description").ShouldBe("Hello", Case.Sensitive);
-        parsed.Body.ShouldBe("Body\n", Case.Sensitive);
+        parsed.ReadText("description").ShouldBe("Hello");
+        parsed.Body.ShouldBe("Body\n");
     }
 
     /// <summary>Plain, double-quoted and single-quoted scalars are read; a trailing comment is dropped from a plain scalar; a colon inside a value is kept; escapes in double quotes are decoded.</summary>
@@ -37,11 +37,11 @@ public sealed class ConventionFrontmatterParserTests
             "---\nplain: Use when: testing  # a comment\ndouble: \"say \\\"hi\\\"\\tnow\"\nsingle: 'it''s fine'\nempty:\nurl: https://example.com/a#b\n---\n");
 
         parsed.Problem.ShouldBeNull();
-        parsed.ReadText("plain").ShouldBe("Use when: testing", Case.Sensitive);
-        parsed.ReadText("double").ShouldBe("say \"hi\"\tnow", Case.Sensitive);
-        parsed.ReadText("single").ShouldBe("it's fine", Case.Sensitive);
+        parsed.ReadText("plain").ShouldBe("Use when: testing");
+        parsed.ReadText("double").ShouldBe("say \"hi\"\tnow");
+        parsed.ReadText("single").ShouldBe("it's fine");
         parsed.ReadText("empty").ShouldBeNull();
-        parsed.ReadText("url").ShouldBe("https://example.com/a#b", Case.Sensitive);
+        parsed.ReadText("url").ShouldBe("https://example.com/a#b");
     }
 
     /// <summary>Folded (&gt;) and literal (|) block scalars join their indented lines with spaces and newlines, and a plain scalar continues on indented lines.</summary>
@@ -52,9 +52,9 @@ public sealed class ConventionFrontmatterParserTests
             "---\nfolded: >\n  first line\n  second line\nliteral: |\n  one\n  two\nwrapped: starts here\n  and goes on\n---\n");
 
         parsed.Problem.ShouldBeNull();
-        parsed.ReadText("folded").ShouldBe("first line second line", Case.Sensitive);
-        parsed.ReadText("literal").ShouldBe("one\ntwo", Case.Sensitive);
-        parsed.ReadText("wrapped").ShouldBe("starts here and goes on", Case.Sensitive);
+        parsed.ReadText("folded").ShouldBe("first line second line");
+        parsed.ReadText("literal").ShouldBe("one\ntwo");
+        parsed.ReadText("wrapped").ShouldBe("starts here and goes on");
     }
 
     /// <summary>Flow lists, block lists and comma-separated scalars all read as lists; a quoted comma stays inside its item.</summary>
@@ -104,8 +104,8 @@ public sealed class ConventionFrontmatterParserTests
         var parsed = ConventionFrontmatterParser.Parse("---\r\nname: x\r\ndescription: d\r\n---\r\nBody\r\n");
 
         parsed.Problem.ShouldBeNull();
-        parsed.ReadText("name").ShouldBe("x", Case.Sensitive);
-        parsed.ReadText("description").ShouldBe("d", Case.Sensitive);
+        parsed.ReadText("name").ShouldBe("x");
+        parsed.ReadText("description").ShouldBe("d");
     }
 
     /// <summary>YAML anchors, aliases, tags and merge keys are never interpreted: their text is kept as written.</summary>
@@ -115,9 +115,9 @@ public sealed class ConventionFrontmatterParserTests
         var parsed = ConventionFrontmatterParser.Parse("---\na: &anchor value\nb: *anchor\nc: !!str 12\n---\n");
 
         parsed.Problem.ShouldBeNull();
-        parsed.ReadText("a").ShouldBe("&anchor value", Case.Sensitive);
-        parsed.ReadText("b").ShouldBe("*anchor", Case.Sensitive);
-        parsed.ReadText("c").ShouldBe("!!str 12", Case.Sensitive);
+        parsed.ReadText("a").ShouldBe("&anchor value");
+        parsed.ReadText("b").ShouldBe("*anchor");
+        parsed.ReadText("c").ShouldBe("!!str 12");
     }
 
     /// <summary>A block that is not closed, a line that is not a key, a repeated key, an unclosed list and an orphan indented line are problems with no fields.</summary>
@@ -134,7 +134,7 @@ public sealed class ConventionFrontmatterParserTests
 
         parsed.Problem.ShouldNotBeNull().ShouldContain(reasonPart, Case.Sensitive);
         parsed.Fields.ShouldBeEmpty();
-        parsed.Body.ShouldBe(text, Case.Sensitive, "a malformed block leaves the whole text as the body");
+        parsed.Body.ShouldBe(text, "a malformed block leaves the whole text as the body");
     }
 
     /// <summary>The block is bounded: more than 200 lines, more than 100 keys and a line over 4096 characters are problems, not hangs.</summary>

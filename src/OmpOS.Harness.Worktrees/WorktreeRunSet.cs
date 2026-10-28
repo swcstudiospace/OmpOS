@@ -77,13 +77,7 @@ public sealed class WorktreeRunSet
                 var folder = folders[index];
                 if (!IsGitRoot(folder.Path))
                 {
-                    outcomes[index] = new WorktreeRootOutcome(
-                        folder.Name,
-                        folder.Path,
-                        WorktreeRootStatus.UsedInPlace,
-                        folder.Path,
-                        null,
-                        $"'{folder.Name}' is not the top of a git repository, so the run uses the folder in place: its changes are not isolated in a worktree.");
+                    outcomes[index] = UsedInPlace(folder);
                     continue;
                 }
 
@@ -111,19 +105,32 @@ public sealed class WorktreeRunSet
         if (failedAt >= 0)
         {
             await RollBackAsync(created, outcomes, folders).ConfigureAwait(false);
-            for (var index = failedAt + 1; index < folders.Count; index++)
-            {
-                outcomes[index] = new WorktreeRootOutcome(
-                    folders[index].Name,
-                    folders[index].Path,
-                    WorktreeRootStatus.NotAttempted,
-                    folders[index].Path,
-                    null,
-                    $"'{folders[index].Name}' was not attempted because '{folders[failedAt].Name}' failed.");
-            }
+            MarkNotAttempted(outcomes, folders, failedAt);
         }
 
         return new WorktreeRunSetResult(runId, outcomes);
+    }
+
+    private static WorktreeRootOutcome UsedInPlace(WorktreeRootSpec folder) => new(
+        folder.Name,
+        folder.Path,
+        WorktreeRootStatus.UsedInPlace,
+        folder.Path,
+        null,
+        $"'{folder.Name}' is not the top of a git repository, so the run uses the folder in place: its changes are not isolated in a worktree.");
+
+    private static void MarkNotAttempted(WorktreeRootOutcome[] outcomes, List<WorktreeRootSpec> folders, int failedAt)
+    {
+        for (var index = failedAt + 1; index < folders.Count; index++)
+        {
+            outcomes[index] = new WorktreeRootOutcome(
+                folders[index].Name,
+                folders[index].Path,
+                WorktreeRootStatus.NotAttempted,
+                folders[index].Path,
+                null,
+                $"'{folders[index].Name}' was not attempted because '{folders[failedAt].Name}' failed.");
+        }
     }
 
     /// <summary>
@@ -229,7 +236,11 @@ public sealed class WorktreeRunSet
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var root in roots)
         {
-            ArgumentNullException.ThrowIfNull(root);
+            if (root is null)
+            {
+                throw new ArgumentException("A root must not be null.", nameof(roots));
+            }
+
             ArgumentException.ThrowIfNullOrWhiteSpace(root.Name, nameof(roots));
             ArgumentException.ThrowIfNullOrWhiteSpace(root.Path, nameof(roots));
             if (!Path.IsPathRooted(root.Path))

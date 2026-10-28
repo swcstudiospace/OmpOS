@@ -89,7 +89,7 @@ public sealed class LocalConventionFileSourceTests : IDisposable
         var source = new LocalConventionFileSource([_workspace.RootPath]);
         var token = TestContext.Current.CancellationToken;
 
-        (await source.ReadTextAsync(Path.Combine(_workspace.RootPath, "bom.txt"), 100, token).ConfigureAwait(true)).Text.ShouldBe("hi", Case.Sensitive);
+        (await source.ReadTextAsync(Path.Combine(_workspace.RootPath, "bom.txt"), 100, token).ConfigureAwait(true)).Text.ShouldBe("hi");
         var missing = await source.ReadTextAsync(Path.Combine(_workspace.RootPath, "none.txt"), 100, token).ConfigureAwait(true);
         var big = await source.ReadTextAsync(Path.Combine(_workspace.RootPath, "big.txt"), 10, token).ConfigureAwait(true);
 

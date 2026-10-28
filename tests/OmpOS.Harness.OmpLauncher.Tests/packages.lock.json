@@ -208,13 +208,13 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.harness.omplauncher": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Terminal": "[1.0.0, )"
+          "OmpOS.Harness.Terminal": "[0.15.0, )"
         }
       },
       "ompos.harness.terminal": {

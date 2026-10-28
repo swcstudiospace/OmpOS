@@ -38,7 +38,7 @@ public sealed class HookEventsTests
     [MemberData(nameof(WireNames))]
     public void EveryEventRoundTripsThroughItsWireName(HookEvent hookEvent, string name)
     {
-        HookEvents.Format(hookEvent).ShouldBe(name, Case.Sensitive);
+        HookEvents.Format(hookEvent).ShouldBe(name);
         HookEvents.TryParse(name, out var parsed).ShouldBeTrue();
         parsed.ShouldBe(hookEvent);
     }
@@ -105,7 +105,7 @@ public sealed class HookEventsTests
     [InlineData(HookEvent.AfterAgentThought, "AgentThought")]
     public void FixedMatcherValuesFollowTheCursorDocs(HookEvent hookEvent, string expected)
     {
-        HookEvents.MatcherValue(hookEvent, HookFixtures.Json("{}")).ShouldBe(expected, Case.Sensitive);
+        HookEvents.MatcherValue(hookEvent, HookFixtures.Json("{}")).ShouldBe(expected);
     }
 
     [Theory]
@@ -119,7 +119,7 @@ public sealed class HookEventsTests
     [InlineData(HookEvent.BeforeMcpExecution, """{"tool_name":"create_issue"}""", "create_issue")]
     public void PayloadMatcherValuesComeFromTheDocumentedField(HookEvent hookEvent, string payload, string expected)
     {
-        HookEvents.MatcherValue(hookEvent, HookFixtures.Json(payload)).ShouldBe(expected, Case.Sensitive);
+        HookEvents.MatcherValue(hookEvent, HookFixtures.Json(payload)).ShouldBe(expected);
     }
 
     [Theory]

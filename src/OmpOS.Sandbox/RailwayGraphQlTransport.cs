@@ -118,13 +118,7 @@ internal sealed class RailwayGraphQlTransport
         return request;
     }
 
-    private TData Interpret<TData>(
-        string operation,
-        int status,
-        string body,
-        TimeSpan? retryAfter,
-        JsonTypeInfo<RailwayGraphQlResponse<TData>> responseInfo)
-        where TData : class
+    private void ThrowForStatus(string operation, int status, TimeSpan? retryAfter, bool isBadRequest)
     {
         if (status == 429)
         {
@@ -141,11 +135,22 @@ internal sealed class RailwayGraphQlTransport
             throw Fail(operation, CloudEnvironmentFailure.Transport, status, "the server answered with an error", null, null, null);
         }
 
-        var isBadRequest = status == 400;
         if (!isBadRequest && status is < 200 or >= 300)
         {
             throw Fail(operation, CloudEnvironmentFailure.Transport, status, "the server answered with an unexpected status", null, null, null);
         }
+    }
+
+    private TData Interpret<TData>(
+        string operation,
+        int status,
+        string body,
+        TimeSpan? retryAfter,
+        JsonTypeInfo<RailwayGraphQlResponse<TData>> responseInfo)
+        where TData : class
+    {
+        var isBadRequest = status == 400;
+        ThrowForStatus(operation, status, retryAfter, isBadRequest);
 
         RailwayGraphQlResponse<TData>? parsed;
         try

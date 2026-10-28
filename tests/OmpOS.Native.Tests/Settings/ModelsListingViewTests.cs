@@ -11,6 +11,8 @@ namespace OmpOS.Native.Tests.Settings;
 /// <summary>The provider listing of the Models page: sections by region and kind, region and kind filters, the verify mark, the plan terms, and the setup form with its masked key.</summary>
 public sealed class ModelsListingViewTests
 {
+    private static readonly string[] ExpectedHeadings = ["Europe: Model APIs", "United States and Canada: Coding plans", "China: Model APIs", "China: Coding plans"];
+
     private static void WithListings(SettingsFixture fixture) =>
         fixture.ModelsSource.Snapshot = ModelsData.Snapshot() with { Listings = ModelsListingData.All() };
 
@@ -52,7 +54,7 @@ public sealed class ModelsListingViewTests
 
             view.ListingCardViews.Select(static card => card.Card!.Id).ShouldBe(["mistral", "infomaniak-ai-tools", "anthropic-subscription", "baichuan", "zai"]);
             var texts = SettingsTree.Texts(view);
-            foreach (var heading in new[] { "Europe: Model APIs", "United States and Canada: Coding plans", "China: Model APIs", "China: Coding plans" })
+            foreach (var heading in ExpectedHeadings)
             {
                 texts.ShouldContain(heading, StringComparer.Ordinal);
             }
@@ -175,7 +177,7 @@ public sealed class ModelsListingViewTests
 
             var inputs = SettingsTree.Visible<TextBox>(card);
             inputs.Count(static box => box.PasswordChar != '\0').ShouldBe(1);
-            var product = inputs.First(static box => box.PasswordChar == '\0' && box.Name != "ModelIdsBox");
+            var product = inputs.First(static box => box.PasswordChar == '\0' && !string.Equals(box.Name, "ModelIdsBox", StringComparison.Ordinal));
             AutomationProperties.GetName(product).ShouldBe(ProviderListingCopy.VariableFieldName("Infomaniak AI Tools", "Product ID"));
             product.Text = "424242";
             inputs.Single(static box => box.PasswordChar != '\0').Text = ModelsData.FakeKey;

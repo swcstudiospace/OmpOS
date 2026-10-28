@@ -30,11 +30,11 @@ public sealed class CatalogEventStreamTests
         items.Select(static item => item.EventType).ShouldBe(["catalog_changed", "session_status", "stage"]);
         items.Select(static item => item.EventId).ShouldBe(["1", "2", "3"]);
         using var changed = JsonDocument.Parse(items[0].Data);
-        changed.RootElement.GetProperty("sessionId").GetString().ShouldBe(id, Case.Sensitive);
-        changed.RootElement.GetProperty("change").GetString().ShouldBe("created", Case.Sensitive);
+        changed.RootElement.GetProperty("sessionId").GetString().ShouldBe(id);
+        changed.RootElement.GetProperty("change").GetString().ShouldBe("created");
         using var stage = JsonDocument.Parse(items[2].Data);
-        stage.RootElement.GetProperty("source").GetString().ShouldBe("Omp", Case.Sensitive);
-        stage.RootElement.GetProperty("status").GetString().ShouldBe("Pending", Case.Sensitive);
+        stage.RootElement.GetProperty("source").GetString().ShouldBe("Omp");
+        stage.RootElement.GetProperty("status").GetString().ShouldBe("Pending");
     }
 
     /// <summary>A client that resumes with the last identifier it saw gets exactly the later events.</summary>
@@ -65,7 +65,7 @@ public sealed class CatalogEventStreamTests
 
         var items = await SessionClient.ReadStreamAsync(client, "/events", 1, ct, lastEventId: "999999").ConfigureAwait(true);
 
-        items.ShouldHaveSingleItem().EventType.ShouldBe("resync", Case.Sensitive);
+        items.ShouldHaveSingleItem().EventType.ShouldBe("resync");
         items[0].EventId.ShouldBeNullOrEmpty();
         using var data = JsonDocument.Parse(items[0].Data);
         data.RootElement.GetProperty("reason").GetString().ShouldNotBeNullOrWhiteSpace();
@@ -108,9 +108,9 @@ public sealed class CatalogEventStreamTests
 
         var kinds = items.Select(static item => item.EventType).ToArray();
         kinds.ShouldBe(["catalog_changed", "session_status", "stage", "catalog_changed", "session_status", "stage", "catalog_changed", "session_status"]);
-        Change(items[3]).ShouldBe("updated", Case.Sensitive);
-        Status(items[4]).ShouldBe("Completed", Case.Sensitive);
-        Change(items[6]).ShouldBe("closed", Case.Sensitive);
+        Change(items[3]).ShouldBe("updated");
+        Status(items[4]).ShouldBe("Completed");
+        Change(items[6]).ShouldBe("closed");
     }
 
     /// <summary>The stream of one owner never carries another owner's session.</summary>
@@ -130,7 +130,7 @@ public sealed class CatalogEventStreamTests
         foreach (var item in items.Where(static item => string.Equals(item.EventType, "catalog_changed", StringComparison.Ordinal) || string.Equals(item.EventType, "session_status", StringComparison.Ordinal)))
         {
             using var data = JsonDocument.Parse(item.Data);
-            data.RootElement.GetProperty("sessionId").GetString().ShouldBe(bobSession, Case.Sensitive);
+            data.RootElement.GetProperty("sessionId").GetString().ShouldBe(bobSession);
         }
     }
 
@@ -147,9 +147,9 @@ public sealed class CatalogEventStreamTests
 
         var items = await SessionClient.ReadStreamAsync(client, "/events", 1, ct, lastEventId: "0").ConfigureAwait(true);
 
-        items.ShouldHaveSingleItem().EventType.ShouldBe("stage", Case.Sensitive);
+        items.ShouldHaveSingleItem().EventType.ShouldBe("stage");
         using var data = JsonDocument.Parse(items[0].Data);
-        data.RootElement.GetProperty("graphId").GetString().ShouldBe("graph-1", Case.Sensitive);
+        data.RootElement.GetProperty("graphId").GetString().ShouldBe("graph-1");
     }
 
     private static string? Change(SseItem<string> item)

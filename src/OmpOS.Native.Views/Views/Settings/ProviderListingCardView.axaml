@@ -87,8 +87,8 @@
                  Text="{CompiledBinding ConfiguredText}" />
       <TextBlock x:Name="BaseUrlLine"
                  Classes="muted settings-mono"
-                 IsVisible="{CompiledBinding BaseUrlText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                 Text="{CompiledBinding BaseUrlText}" />
+                 IsVisible="{CompiledBinding BaseAddressText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding BaseAddressText}" />
       <TextBlock x:Name="ListingSignInLine"
                  Classes="settings-help"
                  IsVisible="{CompiledBinding SignInText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"

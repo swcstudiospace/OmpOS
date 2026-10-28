@@ -45,11 +45,11 @@ public sealed class ChangeReviewEndpointTests : IDisposable
         body.RootElement.GetProperty("workspaceAvailable").GetBoolean().ShouldBeTrue();
         var changes = body.RootElement.GetProperty("changes").EnumerateArray().ToArray();
         changes.Select(static change => change.GetProperty("path").GetString()).ShouldBe(["src/a.txt", "src/new.txt"]);
-        changes[0].GetProperty("kind").GetString().ShouldBe("modified", Case.Sensitive);
-        changes[0].GetProperty("status").GetString().ShouldBe("pending", Case.Sensitive);
-        changes[0].GetProperty("oldText").GetString().ShouldBe("one", Case.Sensitive);
-        changes[0].GetProperty("newText").GetString().ShouldBe("three", Case.Sensitive);
-        changes[1].GetProperty("kind").GetString().ShouldBe("added", Case.Sensitive);
+        changes[0].GetProperty("kind").GetString().ShouldBe("modified");
+        changes[0].GetProperty("status").GetString().ShouldBe("pending");
+        changes[0].GetProperty("oldText").GetString().ShouldBe("one");
+        changes[0].GetProperty("newText").GetString().ShouldBe("three");
+        changes[1].GetProperty("kind").GetString().ShouldBe("added");
         changes[1].TryGetProperty("oldText", out _).ShouldBeFalse();
     }
 
@@ -68,11 +68,11 @@ public sealed class ChangeReviewEndpointTests : IDisposable
         {
             response.StatusCode.ShouldBe(HttpStatusCode.OK);
             using var body = await WebAppTestHost.ReadJsonAsync(response, ct).ConfigureAwait(true);
-            body.RootElement.GetProperty("status").GetString().ShouldBe("accepted", Case.Sensitive);
+            body.RootElement.GetProperty("status").GetString().ShouldBe("accepted");
             body.RootElement.GetProperty("applied").GetBoolean().ShouldBeTrue();
         }
 
-        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("after", Case.Sensitive);
+        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("after");
         (await StatusAsync(client, id, "src/a.txt", ct).ConfigureAwait(true)).ShouldBe("accepted");
 
         await EditAsync(factory, id, "src/a.txt", "after", "again", ct).ConfigureAwait(true);
@@ -102,7 +102,7 @@ public sealed class ChangeReviewEndpointTests : IDisposable
             response.StatusCode.ShouldBe(HttpStatusCode.OK);
         }
 
-        (await File.ReadAllTextAsync(edited, ct).ConfigureAwait(true)).ShouldBe("before", Case.Sensitive);
+        (await File.ReadAllTextAsync(edited, ct).ConfigureAwait(true)).ShouldBe("before");
         File.Exists(created).ShouldBeFalse();
         (await StatusAsync(client, id, "src/a.txt", ct).ConfigureAwait(true)).ShouldBe("rejected");
     }
@@ -123,7 +123,7 @@ public sealed class ChangeReviewEndpointTests : IDisposable
 
         await WebAppTestHost.ShouldBeProblemAsync(accept, HttpStatusCode.Conflict, "workspace_conflict", ct).ConfigureAwait(true);
         await WebAppTestHost.ShouldBeProblemAsync(reject, HttpStatusCode.Conflict, "workspace_conflict", ct).ConfigureAwait(true);
-        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("the user edited this", Case.Sensitive);
+        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("the user edited this");
         (await StatusAsync(client, id, "src/a.txt", ct).ConfigureAwait(true)).ShouldBe("pending");
     }
 
@@ -255,7 +255,7 @@ public sealed class ChangeReviewEndpointTests : IDisposable
         accept.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         reject.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         absent.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("before", Case.Sensitive);
+        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("before");
     }
 
     private OmpApiFactory Factory() =>

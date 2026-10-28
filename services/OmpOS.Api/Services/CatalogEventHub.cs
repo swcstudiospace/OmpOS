@@ -75,30 +75,7 @@ internal sealed class CatalogEventHub
         _ = Interlocked.Increment(ref _subscribers);
         try
         {
-            long cursor;
-            var resync = false;
-            lock (_gate)
-            {
-                if (afterId is not { } requested)
-                {
-                    cursor = _last;
-                }
-                else if (requested > _last)
-                {
-                    cursor = _last;
-                    resync = true;
-                }
-                else
-                {
-                    var oldest = _history.Count > 0 ? _history[0].Id : _last + 1;
-                    cursor = requested;
-                    if (requested + 1 < oldest)
-                    {
-                        cursor = oldest - 1;
-                        resync = true;
-                    }
-                }
-            }
+            var (cursor, resync) = StartPosition(afterId);
 
             if (resync)
             {
@@ -142,6 +119,25 @@ internal sealed class CatalogEventHub
         finally
         {
             _ = Interlocked.Decrement(ref _subscribers);
+        }
+    }
+
+    private (long Cursor, bool Resync) StartPosition(long? afterId)
+    {
+        lock (_gate)
+        {
+            if (afterId is not { } requested)
+            {
+                return (_last, false);
+            }
+
+            if (requested > _last)
+            {
+                return (_last, true);
+            }
+
+            var oldest = _history.Count > 0 ? _history[0].Id : _last + 1;
+            return requested + 1 < oldest ? (oldest - 1, true) : (requested, false);
         }
     }
 

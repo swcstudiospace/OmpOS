@@ -40,7 +40,7 @@ public sealed class HooksConfigLoaderTests
         set.For(HookEvent.BeforeShellExecution).Select(hook => hook.Command).ShouldBe(
             ["managed.sh", "project-a.sh", "project-b.sh", "user.sh"],
             ignoreOrder: false);
-        set.For(HookEvent.PreToolUse).Single().Command.ShouldBe("claude.sh", Case.Sensitive);
+        set.For(HookEvent.PreToolUse).Single().Command.ShouldBe("claude.sh");
         set.Sources.Count.ShouldBe(4);
     }
 
@@ -56,13 +56,13 @@ public sealed class HooksConfigLoaderTests
 
         var set = await LoadAsync(files);
 
-        var cursorStop = set.For(HookEvent.Stop).Single(hook => hook.Command == "./stop.sh");
+        var cursorStop = set.For(HookEvent.Stop).Single(hook => string.Equals(hook.Command, "./stop.sh", StringComparison.Ordinal));
         cursorStop.LoopLimit.ShouldBe(5);
         cursorStop.Timeout.ShouldBe(TimeSpan.FromSeconds(30));
         cursorStop.Shell.ShouldBe(HookShell.PosixSh);
-        cursorStop.WorkingDirectory.ShouldBe(Root, Case.Sensitive);
+        cursorStop.WorkingDirectory.ShouldBe(Root);
         cursorStop.HashVersion.ShouldBe(2);
-        set.For(HookEvent.Stop).Single(hook => hook.Command == "./claude-stop.sh").LoopLimit.ShouldBeNull();
+        set.For(HookEvent.Stop).Single(hook => string.Equals(hook.Command, "./claude-stop.sh", StringComparison.Ordinal)).LoopLimit.ShouldBeNull();
         var args = set.For(HookEvent.AfterFileEdit).Single();
         args.Shell.ShouldBe(HookShell.None);
         args.Args!.ShouldBe(["prettier", "--write"], ignoreOrder: false);
@@ -111,7 +111,7 @@ public sealed class HooksConfigLoaderTests
 
         var set = await LoadAsync(files);
 
-        set.For(HookEvent.Stop).Single().Command.ShouldBe("./ok.sh", Case.Sensitive);
+        set.For(HookEvent.Stop).Single().Command.ShouldBe("./ok.sh");
         set.Diagnostics.ShouldContain(d => d.Severity == HookDiagnosticSeverity.Error && d.File.EndsWith(".ompos/hooks.json", StringComparison.Ordinal));
     }
 
@@ -144,8 +144,8 @@ public sealed class HooksConfigLoaderTests
 
         var ids = set.Hooks.Select(hook => hook.Id).ToList();
         ids.Distinct(StringComparer.Ordinal).Count().ShouldBe(ids.Count);
-        set.Hooks[0].Id.ShouldBe($"ompos-project:{HookSourceLocator.RootHash(Root)}:audit", Case.Sensitive);
-        set.Hooks[2].Id.ShouldBe($"cursor-project:{HookSourceLocator.RootHash(Root)}:stop:1", Case.Sensitive);
+        set.Hooks[0].Id.ShouldBe($"ompos-project:{HookSourceLocator.RootHash(Root)}:audit");
+        set.Hooks[2].Id.ShouldBe($"cursor-project:{HookSourceLocator.RootHash(Root)}:stop:1");
         set.Hooks.Select(hook => hook.PluginId).Distinct(StringComparer.Ordinal).Count().ShouldBe(2);
     }
 
@@ -198,12 +198,12 @@ public sealed class HooksConfigLoaderTests
         hooks.Count.ShouldBe(2);
         var plugin = hooks[1];
         plugin.Scope.ShouldBe(HookScope.Plugin);
-        plugin.CommandHash.ShouldBe(hash, Case.Sensitive);
+        plugin.CommandHash.ShouldBe(hash);
         plugin.HashVersion.ShouldBe(1);
         plugin.Shell.ShouldBe(HookShell.None);
         plugin.Args!.ShouldBe(["/opt/plugin/check", "--strict"], ignoreOrder: false);
         plugin.Blocking.ShouldBeTrue();
-        plugin.Id.ShouldBe("acme#0", Case.Sensitive);
+        plugin.Id.ShouldBe("acme#0");
     }
 
     [Theory]
@@ -218,7 +218,7 @@ public sealed class HooksConfigLoaderTests
 
         var set = await LoadAsync(new MemoryHookFileSource(), [registration]);
 
-        set.For(expected).Single().Id.ShouldBe("p#0", Case.Sensitive);
+        set.For(expected).Single().Id.ShouldBe("p#0");
     }
 
     [Fact]
@@ -231,7 +231,7 @@ public sealed class HooksConfigLoaderTests
         var set = await LoadAsync(files);
 
         set.Hooks.Count.ShouldBe(2);
-        set.ForOmp("tool_call").Single().Command.ShouldBe("./g.sh", Case.Sensitive);
+        set.ForOmp("tool_call").Single().Command.ShouldBe("./g.sh");
         set.ForOmp("tool_call").Single().Blocking.ShouldBeTrue();
         set.ForOmp("input").ShouldBeEmpty();
         set.ActiveOmpEvents().ShouldBe(["tool_call"], ignoreOrder: true);

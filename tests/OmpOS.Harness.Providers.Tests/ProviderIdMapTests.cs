@@ -32,10 +32,10 @@ public sealed class ProviderIdMapTests
             var expected = entry.Transport == ProviderTransport.AnthropicCompatible ? "anthropic-messages" : "openai";
 
             route.Api.ShouldStartWith(expected, Case.Sensitive, mapping.LegacyId);
-            new Uri(route.BaseUrl).Scheme.ShouldBe(endpoint.Scheme, mapping.LegacyId);
+            new Uri(route.BaseAddressTemplate).Scheme.ShouldBe(endpoint.Scheme, mapping.LegacyId);
             if (!string.Equals(mapping.LegacyId, "llama-cpp-local", StringComparison.Ordinal))
             {
-                route.BaseUrl.TrimEnd('/').ShouldBe(endpoint.OriginalString.TrimEnd('/'), mapping.LegacyId);
+                route.BaseAddressTemplate.TrimEnd('/').ShouldBe(endpoint.OriginalString.TrimEnd('/'), mapping.LegacyId);
             }
         }
     }
@@ -46,7 +46,7 @@ public sealed class ProviderIdMapTests
         // The earlier research recorded port 9931, omp's default is 8080; the row says so instead of hiding the conflict.
         ProviderCatalogue.LlamaCppLocalOpenAi.BaseEndpoint!.Port.ShouldBe(9931);
         var row = CatalogueRows.Find("llama-cpp").ShouldNotBeNull();
-        new Uri(row.Routes[0].BaseUrl).Port.ShouldBe(8080);
+        new Uri(row.Routes[0].BaseAddressTemplate).Port.ShouldBe(8080);
         row.Note.ShouldNotBeNull().ShouldContain("9931", Case.Sensitive);
     }
 

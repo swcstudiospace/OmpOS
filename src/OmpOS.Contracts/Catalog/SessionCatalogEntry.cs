@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 using OmpOS.Contracts.Sessions;
 using OmpOS.Contracts.Streaming;
 
@@ -26,6 +28,7 @@ public sealed record SessionCatalogEntry
     public required SessionStatus Status { get; init; }
 
     /// <summary>Gets the sandbox identifier, or null when the session runs without a sandbox.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? SandboxId { get; init; }
 
     /// <summary>Gets the ordered chat messages.</summary>
@@ -47,11 +50,13 @@ public sealed record SessionCatalogEntry
     public required DateTimeOffset LastActivityAt { get; init; }
 
     /// <summary>Gets the Graph identifier of the session's plan, or null when no stage source reported one.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? GraphId { get; init; }
 
     /// <summary>Gets a value indicating whether the operator closed the session.</summary>
     public required bool Closed { get; init; }
 
     /// <summary>Gets the name of the folder the session works in, or null when the API has no workspace. It is never a full path.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? WorkspaceLabel { get; init; }
 }

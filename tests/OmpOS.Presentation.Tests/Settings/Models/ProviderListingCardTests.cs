@@ -152,13 +152,13 @@ public sealed class ProviderListingCardTests
         var (page, source, card) = await OpenAsync("infomaniak-ai-tools").ConfigureAwait(true);
         card.UsesOmpKey.ShouldBeFalse();
         card.KeyStorageNote.ShouldBe(ModelsCopy.OmpOSKeyStorageNote);
-        card.BaseUrlText.ShouldBe("https://api.infomaniak.com/2/ai/{product_id}/openai/v1");
+        card.BaseAddressText.ShouldBe("https://api.infomaniak.com/2/ai/{product_id}/openai/v1");
         card.BeginSetup();
         card.UrlInputs.Select(input => input.Name).ShouldBe(["product_id"]);
         card.UrlInputs[0].Value = " 424242 ";
         card.ModelIdsText = "llama3, mistral3\nllama3";
         card.ApiKey.ShouldNotBeNull().Entry = Key;
-        card.BaseUrlText.ShouldBe("https://api.infomaniak.com/2/ai/424242/openai/v1");
+        card.BaseAddressText.ShouldBe("https://api.infomaniak.com/2/ai/424242/openai/v1");
 
         var saved = await card.SaveAsync(token).ConfigureAwait(true);
 
@@ -167,7 +167,7 @@ public sealed class ProviderListingCardTests
         key.ShouldBe(Key);
         request.ListingId.ShouldBe("infomaniak-ai-tools");
         request.RouteId.ShouldBe("openai");
-        request.UrlValues.ShouldBe(new Dictionary<string, string> { ["product_id"] = "424242" });
+        request.UrlValues.ShouldBe(new Dictionary<string, string>(StringComparer.Ordinal) { ["product_id"] = "424242" });
         request.ModelIds.ShouldBe(["llama3", "mistral3"]);
         request.ToString().ShouldNotContain(Key, Case.Sensitive);
         source.OmpKeys.ShouldBeEmpty();
@@ -242,11 +242,11 @@ public sealed class ProviderListingCardTests
 
         card.SelectedRoute = card.Routes[1];
 
-        card.BaseUrlText.ShouldBe("https://api.deepseek.com/anthropic");
+        card.BaseAddressText.ShouldBe("https://api.deepseek.com/anthropic");
         card.UsesOmpKey.ShouldBeFalse();
         card.NeedsModelIds.ShouldBeTrue();
         card.KeyStorageNote.ShouldBe(ModelsCopy.OmpOSKeyStorageNote);
-        names.ShouldContain(nameof(ProviderListingCardModel.BaseUrlText));
+        names.ShouldContain(nameof(ProviderListingCardModel.BaseAddressText), StringComparer.Ordinal);
         card.ApiKey.ShouldNotBeNull().Entry = Key;
         card.ModelIdsText = "deepseek-chat";
 
@@ -254,7 +254,7 @@ public sealed class ProviderListingCardTests
 
         source.CatalogueAdds.ShouldHaveSingleItem().Request.RouteId.ShouldBe("anthropic");
         source.OmpKeys.ShouldBeEmpty();
-        card.ConfiguredId().ShouldBe("deepseek-anthropic");
+        card.ConfiguredId.ShouldBe("deepseek-anthropic");
     }
 
     [Fact]

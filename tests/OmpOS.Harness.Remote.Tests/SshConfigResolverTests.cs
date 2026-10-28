@@ -114,14 +114,14 @@ public sealed class SshConfigResolverTests
 
         using var directory = TempDirectory.Create();
         var included = directory.Combine("included.conf");
-        File.WriteAllText(included, "Host web\n  Port 2201\n  IdentityFile /keys/web_ed25519\n");
+        await File.WriteAllTextAsync(included, "Host web\n  Port 2201\n  IdentityFile /keys/web_ed25519\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
         var config = directory.Combine("config");
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             config,
             $"Include {included}\n" +
             "Match originalhost web\n  User matched-user\n" +
             "Host web\n  HostName web.example.com\n" +
-            "Host *\n  ProxyJump bastion.example.com\n  User fallback-user\n");
+            "Host *\n  ProxyJump bastion.example.com\n  User fallback-user\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
         var options = new SshClientOptions { ConfigFile = config };
 
         var resolution = await new SshConfigResolver(options).ResolveAsync("web", ct).ConfigureAwait(true);
@@ -132,7 +132,7 @@ public sealed class SshConfigResolverTests
         effective.Port.ShouldBe(2201);
         effective.User.ShouldBe("matched-user");
         effective.ProxyJump.ShouldBe("bastion.example.com");
-        effective.IdentityFiles.ShouldContain("/keys/web_ed25519");
+        effective.IdentityFiles.ShouldContain("/keys/web_ed25519", StringComparer.Ordinal);
     }
 
     private static bool SshIsInstalled()

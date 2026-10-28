@@ -24,6 +24,9 @@ internal sealed class SettingsWindowOptions
     /// <summary>Gets the source of the Network page's diagnostics, or null for one over the provider catalogue alone, with no managed provider. A run happens only when the user asks.</summary>
     public INetworkDiagnosticsSource? NetworkSource { get; init; }
 
+    /// <summary>Gets the user home directory the Rules, Skills and Commands pages read user-scope conventions from, or null for the current user's profile.</summary>
+    public string? UserHome { get; init; }
+
     /// <summary>Gets the lookup of the environment variables the Tab page reads, or null to read the process environment.</summary>
     public Func<string, string?>? GetVariable { get; init; }
 

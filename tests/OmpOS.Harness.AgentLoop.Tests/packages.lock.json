@@ -216,21 +216,21 @@
       "ompos.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.harness.acp": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.harness.agentloop": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

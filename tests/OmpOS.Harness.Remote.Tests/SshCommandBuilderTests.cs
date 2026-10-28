@@ -40,8 +40,8 @@ public sealed class SshCommandBuilderTests
         var invocation = new SshCommandBuilder().BuildAcp(Profile, LaunchFactory.Create("/home/dev/work", "/home/dev/.ompos/sessions/s1"));
 
         invocation.FileName.ShouldBe("ssh");
-        invocation.Arguments.ShouldContain("-T");
-        invocation.Arguments.ShouldNotContain("-tt");
+        invocation.Arguments.ShouldContain("-T", StringComparer.Ordinal);
+        invocation.Arguments.ShouldNotContain("-tt", StringComparer.Ordinal);
         foreach (var option in new[]
         {
             "BatchMode=yes", "ConnectTimeout=15", "ServerAliveInterval=15", "ServerAliveCountMax=3", "LogLevel=ERROR",
@@ -54,7 +54,7 @@ public sealed class SshCommandBuilderTests
         invocation.Arguments.Any(argument => argument.StartsWith("StrictHostKeyChecking", StringComparison.Ordinal)).ShouldBeFalse();
         invocation.Arguments.Any(argument => argument.Contains("=no", StringComparison.Ordinal) && argument.Contains("HostKey", StringComparison.Ordinal)).ShouldBeFalse();
         invocation.Arguments.Any(argument => argument.StartsWith("ExitOnForwardFailure", StringComparison.Ordinal)).ShouldBeFalse();
-        invocation.Arguments.ShouldNotContain("-R");
+        invocation.Arguments.ShouldNotContain("-R", StringComparer.Ordinal);
         invocation.Preamble.ShouldBeNull();
     }
 
@@ -134,7 +134,7 @@ public sealed class SshCommandBuilderTests
         var list = invocation.Arguments.ToList();
         list[list.IndexOf("-R") + 1].ShouldBe("127.0.0.1:41234:127.0.0.1:7410");
         list.Count(argument => string.Equals(argument, "-R", StringComparison.Ordinal)).ShouldBe(2);
-        list.ShouldContain("127.0.0.1:41300:localhost:8080");
+        list.ShouldContain("127.0.0.1:41300:localhost:8080", StringComparer.Ordinal);
         HasOption(invocation.Arguments, "ExitOnForwardFailure=yes").ShouldBeTrue();
     }
 
@@ -214,8 +214,11 @@ public sealed class SshCommandBuilderTests
         _ = Directory.CreateDirectory(workspace);
         _ = Directory.CreateDirectory(bin);
         var omp = Path.Combine(bin, "omp");
-        File.WriteAllText(omp, "#!/bin/sh\nprintf 'CWD=%s\\n' \"$(pwd)\"\nfor a in \"$@\"; do printf 'ARG=%s\\n' \"$a\"; done\n");
-        File.SetUnixFileMode(omp, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        await File.WriteAllTextAsync(omp, "#!/bin/sh\nprintf 'CWD=%s\\n' \"$(pwd)\"\nfor a in \"$@\"; do printf 'ARG=%s\\n' \"$a\"; done\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(omp, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
         var launch = LaunchFactory.Create(workspace, temp.Combine("home", "state"), arguments: ["acp-arg", "with space", "it's", "$(touch pwned)"]);
         var profile = Profile with { RemoteWorkspaceRoot = workspace };
 
@@ -227,7 +230,7 @@ public sealed class SshCommandBuilderTests
             ct).ConfigureAwait(true);
 
         result.StandardError.ShouldBeEmpty();
-        result.StandardOutput.ShouldBe($"CWD={workspace}\nARG=acp\nARG=acp-arg\nARG=with space\nARG=it's\nARG=$(touch pwned)\n", Case.Sensitive);
+        result.StandardOutput.ShouldBe($"CWD={workspace}\nARG=acp\nARG=acp-arg\nARG=with space\nARG=it's\nARG=$(touch pwned)\n");
         File.Exists(Path.Combine(workspace, "pwned")).ShouldBeFalse();
         File.Exists(Path.Combine(temp.Path, "pwned")).ShouldBeFalse();
         Directory.GetFiles(temp.Path, "pwned", SearchOption.AllDirectories).ShouldBeEmpty();
@@ -246,8 +249,11 @@ public sealed class SshCommandBuilderTests
         _ = Directory.CreateDirectory(bin);
         _ = Directory.CreateDirectory(scratch);
         var omp = Path.Combine(bin, "omp");
-        File.WriteAllText(omp, "#!/bin/sh\nprintf 'A=%s\\n' \"$OMPOS_A\"\nprintf 'B=%s\\n' \"$OMPOS_B\"\nprintf 'LEFT=%s\\n' \"$(ls \"$TMPDIR\" | wc -l | tr -d ' ')\"\nIFS= read -r line\nprintf 'FIRSTFRAME=%s\\n' \"$line\"\n");
-        File.SetUnixFileMode(omp, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        await File.WriteAllTextAsync(omp, "#!/bin/sh\nprintf 'A=%s\\n' \"$OMPOS_A\"\nprintf 'B=%s\\n' \"$OMPOS_B\"\nprintf 'LEFT=%s\\n' \"$(ls \"$TMPDIR\" | wc -l | tr -d ' ')\"\nIFS= read -r line\nprintf 'FIRSTFRAME=%s\\n' \"$line\"\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(omp, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
         const string Tricky = "it's a \"tricky\" $(touch pwned) `x` \\ value";
         var environment = new Dictionary<string, string>(StringComparer.Ordinal) { ["OMPOS_A"] = Tricky, ["OMPOS_B"] = "line1\nline2" };
         var launch = LaunchFactory.Create(workspace, temp.Combine("home", "state"), environment: environment, secretNames: new HashSet<string>(StringComparer.Ordinal) { "OMPOS_A" });
@@ -267,7 +273,7 @@ public sealed class SshCommandBuilderTests
             ct).ConfigureAwait(true);
 
         result.StandardError.ShouldBeEmpty();
-        result.StandardOutput.ShouldBe($"A={Tricky}\nB=line1\nline2\nLEFT=0\nFIRSTFRAME={{\"jsonrpc\":\"2.0\"}}\n", Case.Sensitive);
+        result.StandardOutput.ShouldBe($"A={Tricky}\nB=line1\nline2\nLEFT=0\nFIRSTFRAME={{\"jsonrpc\":\"2.0\"}}\n");
         File.Exists(Path.Combine(workspace, "pwned")).ShouldBeFalse();
     }
 
@@ -283,8 +289,11 @@ public sealed class SshCommandBuilderTests
         _ = Directory.CreateDirectory(workspace);
         _ = Directory.CreateDirectory(bin);
         var omp = Path.Combine(bin, "omp");
-        File.WriteAllText(omp, "#!/bin/sh\nprintf 'BODY=%s\\n' \"$(cat \"$2\")\"\nprintf 'FILEMODE=%s\\n' \"$(stat -c %a \"$2\")\"\nprintf 'DIRMODE=%s\\n' \"$(stat -c %a \"$(dirname \"$2\")\")\"\n");
-        File.SetUnixFileMode(omp, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        await File.WriteAllTextAsync(omp, "#!/bin/sh\nprintf 'BODY=%s\\n' \"$(cat \"$2\")\"\nprintf 'FILEMODE=%s\\n' \"$(stat -c %a \"$2\")\"\nprintf 'DIRMODE=%s\\n' \"$(stat -c %a \"$(dirname \"$2\")\")\"\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(omp, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
         var overlay = state + "/omp-overlay.yml";
         var launch = LaunchFactory.Create(workspace, state, arguments: [overlay], files: [new RemoteFile(overlay, "mcp:\n  enableProjectConfig: false\n")]);
 
@@ -296,7 +305,7 @@ public sealed class SshCommandBuilderTests
             ct).ConfigureAwait(true);
 
         result.StandardError.ShouldBeEmpty();
-        result.StandardOutput.ShouldBe("BODY=mcp:\n  enableProjectConfig: false\nFILEMODE=600\nDIRMODE=700\n", Case.Sensitive);
+        result.StandardOutput.ShouldBe("BODY=mcp:\n  enableProjectConfig: false\nFILEMODE=600\nDIRMODE=700\n");
     }
 
     /// <summary>When the end-of-section marker is also a line of the content, another marker is chosen.</summary>
@@ -322,7 +331,7 @@ public sealed class SshCommandBuilderTests
         var invocation = new SshCommandBuilder().BuildProbe(Profile, "echo 'a b'; true");
 
         invocation.Preamble.ShouldBeNull();
-        invocation.Arguments[^1].ShouldBe("exec sh -c 'echo '\\''a b'\\''; true'", Case.Sensitive);
+        invocation.Arguments[^1].ShouldBe("exec sh -c 'echo '\\''a b'\\''; true'");
         HasOption(invocation.Arguments, "BatchMode=yes").ShouldBeTrue();
         Should.Throw<ArgumentException>(() => new SshCommandBuilder().BuildProbe(Profile, "a\nb"));
     }
@@ -333,8 +342,8 @@ public sealed class SshCommandBuilderTests
     {
         var invocation = new SshCommandBuilder().BuildHostTrustTerminal(Profile);
 
-        invocation.Arguments.ShouldContain("-tt");
-        invocation.Arguments.ShouldNotContain("-T");
+        invocation.Arguments.ShouldContain("-tt", StringComparer.Ordinal);
+        invocation.Arguments.ShouldNotContain("-T", StringComparer.Ordinal);
         invocation.Arguments.Any(argument => argument.StartsWith("BatchMode", StringComparison.Ordinal)).ShouldBeFalse();
         invocation.Arguments.Any(argument => argument.StartsWith("StrictHostKeyChecking", StringComparison.Ordinal)).ShouldBeFalse();
         invocation.Arguments[^1].ShouldBe("true");

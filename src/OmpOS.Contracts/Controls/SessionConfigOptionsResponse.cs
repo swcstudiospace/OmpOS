@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace OmpOS.Contracts.Controls;
 
 /// <summary>The answer of <c>GET /sessions/{id}/config-options</c>.</summary>
@@ -13,6 +15,7 @@ public sealed record SessionConfigOptionsResponse
     public required bool Live { get; init; }
 
     /// <summary>Gets a plain sentence that says why the options are unavailable or not live, or null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Reason { get; init; }
 
     /// <summary>Gets the options.</summary>

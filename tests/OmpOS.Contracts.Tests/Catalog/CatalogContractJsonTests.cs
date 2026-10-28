@@ -39,15 +39,15 @@ public sealed class CatalogContractJsonTests
 
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
-        root.GetProperty("status").GetString().ShouldBe("AwaitingToolApproval", Case.Sensitive);
-        root.GetProperty("kind").GetString().ShouldBe("cloud", Case.Sensitive);
-        root.GetProperty("rowStatus").GetString().ShouldBe("needs-approval", Case.Sensitive);
-        root.GetProperty("group").GetString().ShouldBe("needs-you", Case.Sensitive);
-        root.GetProperty("events")[0].GetProperty("payload").GetProperty("kind").GetString().ShouldBe("text_delta", Case.Sensitive);
+        root.GetProperty("status").GetString().ShouldBe("AwaitingToolApproval");
+        root.GetProperty("kind").GetString().ShouldBe("cloud");
+        root.GetProperty("rowStatus").GetString().ShouldBe("needs-approval");
+        root.GetProperty("group").GetString().ShouldBe("needs-you");
+        root.GetProperty("events")[0].GetProperty("payload").GetProperty("kind").GetString().ShouldBe("text_delta");
         var back = JsonSerializer.Deserialize(json, CatalogJsonContext.Default.SessionCatalogEntry).ShouldNotBeNull();
         back.Kind.ShouldBe(CatalogSessionKind.Cloud);
         back.Events.ShouldHaveSingleItem().Payload.ShouldBeOfType<TextDeltaPayload>();
-        JsonSerializer.Serialize(back, CatalogJsonContext.Default.SessionCatalogEntry).ShouldBe(json, Case.Sensitive);
+        JsonSerializer.Serialize(back, CatalogJsonContext.Default.SessionCatalogEntry).ShouldBe(json);
     }
 
     /// <summary>A row reads back as a plain session: a client of the older contract keeps working.</summary>
@@ -73,7 +73,7 @@ public sealed class CatalogContractJsonTests
         var json = JsonSerializer.Serialize(entry, CatalogJsonContext.Default.SessionCatalogEntry);
         var asSession = JsonSerializer.Deserialize(json, OmpOS.Contracts.Serialization.OmpOsJsonContext.Default.Session).ShouldNotBeNull();
 
-        asSession.Id.ShouldBe("s1", Case.Sensitive);
+        asSession.Id.ShouldBe("s1");
         asSession.Status.ShouldBe(SessionStatus.Idle);
         json.ShouldNotContain("graphId", Case.Sensitive);
     }
@@ -89,7 +89,7 @@ public sealed class CatalogContractJsonTests
 
         var json = JsonSerializer.Serialize(confirmation, CatalogJsonContext.Default.CatalogChangedEvent);
 
-        json.ShouldBe($$"""{"sessionId":"s","change":"reopened","rowStatus":"{{wire}}","group":"finished"}""", Case.Sensitive);
+        json.ShouldBe($$"""{"sessionId":"s","change":"reopened","rowStatus":"{{wire}}","group":"finished"}""");
         JsonSerializer.Deserialize(json, CatalogJsonContext.Default.CatalogChangedEvent).ShouldBe(confirmation);
         Should.Throw<JsonException>(() => JsonSerializer.Deserialize("""{"sessionId":"s","change":"vanished","rowStatus":"ready","group":"idle"}""", CatalogJsonContext.Default.CatalogChangedEvent));
     }
@@ -104,7 +104,7 @@ public sealed class CatalogContractJsonTests
             Columns = [new BoardColumn { Key = "backlog", Title = "Backlog", AcceptsDrop = true, Cards = [new BoardCard { Id = "s1", Title = "Agent s1", RowStatus = CatalogRowStatus.Ready, ColumnKey = "backlog", LastActivityAt = Stamp, IsStale = false, Closed = false }] }],
         };
         var workspace = new WorkspaceInfo { Name = "OmpOS", FolderLabel = "OmpOS", PluginCheck = new PluginCheckResult { Status = PluginCheckStatus.Degraded, Summary = "One plugin is missing." } };
-        var source = new SourceInfo { Licence = "AGPL-3.0-or-later", LicenceUrl = "https://www.gnu.org/licenses/agpl-3.0.html", SourceUrl = "https://github.com/swcstudiospace/OmpOS", Revision = "unknown", Version = "0.15.0.0" };
+        var source = new SourceInfo { Licence = "AGPL-3.0-or-later", LicenceUrl = new Uri("https://www.gnu.org/licenses/agpl-3.0.html"), SourceUrl = new Uri("https://github.com/swcstudiospace/OmpOS"), Revision = "unknown", Version = "0.15.0.0" };
         var stages = new SessionStagesResponse
         {
             SessionId = "s1",
@@ -120,11 +120,11 @@ public sealed class CatalogContractJsonTests
         };
 
         JsonSerializer.Serialize(board, CatalogJsonContext.Default.BoardResponse).ShouldContain("\"state\":\"ready\"", Case.Sensitive);
-        JsonSerializer.Deserialize(JsonSerializer.Serialize(board, CatalogJsonContext.Default.BoardResponse), CatalogJsonContext.Default.BoardResponse).ShouldNotBeNull().Columns.ShouldHaveSingleItem().Cards.ShouldHaveSingleItem().Id.ShouldBe("s1", Case.Sensitive);
+        JsonSerializer.Deserialize(JsonSerializer.Serialize(board, CatalogJsonContext.Default.BoardResponse), CatalogJsonContext.Default.BoardResponse).ShouldNotBeNull().Columns.ShouldHaveSingleItem().Cards.ShouldHaveSingleItem().Id.ShouldBe("s1");
         JsonSerializer.Serialize(workspace, CatalogJsonContext.Default.WorkspaceInfo).ShouldContain("\"status\":\"degraded\"", Case.Sensitive);
         JsonSerializer.Serialize(source, CatalogJsonContext.Default.SourceInfo)
-            .ShouldBe("""{"licence":"AGPL-3.0-or-later","licenceUrl":"https://www.gnu.org/licenses/agpl-3.0.html","sourceUrl":"https://github.com/swcstudiospace/OmpOS","revision":"unknown","version":"0.15.0.0"}""", Case.Sensitive);
+            .ShouldBe("""{"licence":"AGPL-3.0-or-later","licenceUrl":"https://www.gnu.org/licenses/agpl-3.0.html","sourceUrl":"https://github.com/swcstudiospace/OmpOS","revision":"unknown","version":"0.15.0.0"}""");
         JsonSerializer.Deserialize(JsonSerializer.Serialize(stages, CatalogJsonContext.Default.SessionStagesResponse), CatalogJsonContext.Default.SessionStagesResponse).ShouldNotBeNull().Stages.ShouldHaveSingleItem().Status.ShouldBe(StageStatus.Running);
-        JsonSerializer.Deserialize(JsonSerializer.Serialize(context, CatalogJsonContext.Default.SessionContextResponse), CatalogJsonContext.Default.SessionContextResponse).ShouldNotBeNull().Context.ShouldNotBeNull().Lessons.ShouldHaveSingleItem().Id.ShouldBe("l", Case.Sensitive);
+        JsonSerializer.Deserialize(JsonSerializer.Serialize(context, CatalogJsonContext.Default.SessionContextResponse), CatalogJsonContext.Default.SessionContextResponse).ShouldNotBeNull().Context.ShouldNotBeNull().Lessons.ShouldHaveSingleItem().Id.ShouldBe("l");
     }
 }

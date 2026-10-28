@@ -65,7 +65,7 @@
     public bool IsDrawerOpen => _drawerOpen;
 
     // Only an open drawer listens for keys: a handler on the root would otherwise re-render the shell on every keystroke.
-    private Func<KeyboardEventArgs, Task>? KeyHandler => _drawerOpen ? OnShellKeyDownAsync : null;
+    private EventCallback<KeyboardEventArgs> KeyHandler => _drawerOpen ? EventCallback.Factory.Create<KeyboardEventArgs>(this, OnShellKeyDownAsync) : default;
 
     /// <summary>Closes the drawer and returns keyboard focus to the button that opened it; nothing happens when it is closed.</summary>
     /// <returns>A task that completes when the drawer is closed.</returns>

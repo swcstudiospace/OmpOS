@@ -32,7 +32,7 @@ public sealed class HookDispatcherFailurePolicyTests
         using var _ = rig;
 
         decision.Verdict.ShouldBe(HookVerdict.Allow);
-        decision.UserMessage.ShouldBe("ok", Case.Sensitive);
+        decision.UserMessage.ShouldBe("ok");
         decision.IsDenied.ShouldBeFalse();
         decision.Records.Single().Status.ShouldBe(HookRunStatus.Succeeded);
         decision.HooksRun.ShouldBe(1);
@@ -46,10 +46,10 @@ public sealed class HookDispatcherFailurePolicyTests
 
         decision.IsDenied.ShouldBeTrue();
         decision.Cause.ShouldBe(HookDecisionCause.HookDenied);
-        decision.AgentMessage.ShouldBe("blocked", Case.Sensitive);
-        decision.UserMessage.ShouldBe("no", Case.Sensitive);
+        decision.AgentMessage.ShouldBe("blocked");
+        decision.UserMessage.ShouldBe("no");
         decision.Records.Single().Status.ShouldBe(HookRunStatus.Denied);
-        decision.Records.Single().Decision.ShouldBe("deny", Case.Sensitive);
+        decision.Records.Single().Decision.ShouldBe("deny");
     }
 
     [Theory]
@@ -103,8 +103,8 @@ public sealed class HookDispatcherFailurePolicyTests
 
         decision.IsDenied.ShouldBeTrue();
         decision.Cause.ShouldBe(HookDecisionCause.ExitCodeTwo);
-        decision.AgentMessage.ShouldBe("from json", Case.Sensitive);
-        decision.UserMessage.ShouldBe("u", Case.Sensitive);
+        decision.AgentMessage.ShouldBe("from json");
+        decision.UserMessage.ShouldBe("u");
         decision.Records.Single().Status.ShouldBe(HookRunStatus.Denied);
         decision.Records.Single().ExitCode.ShouldBe(2);
     }
@@ -117,8 +117,8 @@ public sealed class HookDispatcherFailurePolicyTests
         var (bare, second) = await RunAsync(HookEvent.BeforeShellExecution, ScriptedCommandRunner.Exit(2));
         using var _second = second;
 
-        withStderr.AgentMessage.ShouldBe("git is blocked here", Case.Sensitive);
-        bare.AgentMessage.ShouldContain("exit code 2", Case.Sensitive);
+        withStderr.AgentMessage.ShouldBe("git is blocked here");
+        bare.AgentMessage.ShouldNotBeNull().ShouldContain("exit code 2", Case.Sensitive);
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public sealed class HookDispatcherFailurePolicyTests
         using var _ = rig;
 
         decision.IsDenied.ShouldBeTrue();
-        decision.UserMessage.ShouldBe("secrets in prompt", Case.Sensitive);
+        decision.UserMessage.ShouldBe("secrets in prompt");
     }
 
     [Theory]
@@ -164,7 +164,7 @@ public sealed class HookDispatcherFailurePolicyTests
 
         decision.IsDenied.ShouldBeTrue();
         decision.Cause.ShouldBe(HookDecisionCause.FailClosedFailure);
-        decision.AgentMessage.ShouldContain("failClosed", Case.Sensitive);
+        decision.AgentMessage.ShouldNotBeNull().ShouldContain("failClosed", Case.Sensitive);
     }
 
     [Fact]
@@ -292,9 +292,9 @@ public sealed class HookDispatcherFailurePolicyTests
         using var rig = await DispatcherRig.CreateAsync([hook], Token, runner);
 
         var pending = rig.DispatchAsync(HookEvent.PreToolUse, """{ "tool_name": "Shell" }""", Token);
-        await started.Task;
+        await started.Task.ConfigureAwait(true);
         rig.Clock.Advance(TimeSpan.FromSeconds(11));
-        var decision = await pending;
+        var decision = await pending.ConfigureAwait(true);
 
         decision.IsDenied.ShouldBeFalse();
         decision.Records.Single().Status.ShouldBe(HookRunStatus.TimedOut);
@@ -315,9 +315,9 @@ public sealed class HookDispatcherFailurePolicyTests
         using var rig = await DispatcherRig.CreateAsync([hook], Token, runner);
 
         var pending = rig.DispatchAsync(HookEvent.BeforeMcpExecution, """{ "tool_name": "x" }""", Token);
-        await started.Task;
+        await started.Task.ConfigureAwait(true);
         rig.Clock.Advance(TimeSpan.FromSeconds(6));
-        var decision = await pending;
+        var decision = await pending.ConfigureAwait(true);
 
         decision.IsDenied.ShouldBeTrue();
         decision.Cause.ShouldBe(HookDecisionCause.FailClosedTimeout);
@@ -338,10 +338,10 @@ public sealed class HookDispatcherFailurePolicyTests
         using var rig = await DispatcherRig.CreateAsync([HookFixtures.Hook(HookEvent.PreToolUse)], Token, runner);
 
         var pending = rig.DispatchAsync(HookEvent.PreToolUse, "{}", cancellation.Token);
-        await started.Task;
-        await cancellation.CancelAsync();
+        await started.Task.ConfigureAwait(true);
+        await cancellation.CancelAsync().ConfigureAwait(true);
 
-        await Should.ThrowAsync<OperationCanceledException>(async () => await pending);
+        await Should.ThrowAsync<OperationCanceledException>(async () => await pending.WaitAsync(CancellationToken.None).ConfigureAwait(true)).ConfigureAwait(true);
         rig.State.FindQuarantine("cursor-project:abc").ShouldBeNull();
     }
 

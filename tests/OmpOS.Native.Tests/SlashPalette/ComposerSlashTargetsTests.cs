@@ -40,7 +40,7 @@ public sealed class ComposerSlashTargetsTests
         var failure = await ComposerSlashTargets.SetModeAsync(composer, mode, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         failure.ShouldBeNull();
-        composer.ModeChip.CurrentValue.ShouldBe("plan", Case.Sensitive);
+        composer.ModeChip.CurrentValue.ShouldBe("plan");
     }
 
     /// <summary>A mode the engine does not offer is reported with the modes it does offer; a session with no mode chip says it offers none.</summary>
@@ -50,11 +50,11 @@ public sealed class ComposerSlashTargetsTests
         var composer = Composer();
         var token = TestContext.Current.CancellationToken;
 
-        (await ComposerSlashTargets.SetModeAsync(composer, "plan", token).ConfigureAwait(true)).ShouldBe("This session does not offer modes.", Case.Sensitive);
+        (await ComposerSlashTargets.SetModeAsync(composer, "plan", token).ConfigureAwait(true)).ShouldBe("This session does not offer modes.");
 
         composer.ModeChip = ModeChip();
-        (await ComposerSlashTargets.SetModeAsync(composer, "ask", token).ConfigureAwait(true)).ShouldBe("The engine offers no ask mode. It offers: default, plan.", Case.Sensitive);
-        composer.ModeChip.CurrentValue.ShouldBe("default", Case.Sensitive);
+        (await ComposerSlashTargets.SetModeAsync(composer, "ask", token).ConfigureAwait(true)).ShouldBe("The engine offers no ask mode. It offers: default, plan.");
+        composer.ModeChip.CurrentValue.ShouldBe("default");
     }
 
     /// <summary>A mode change the engine refuses returns the engine's reason.</summary>
@@ -66,8 +66,8 @@ public sealed class ComposerSlashTargetsTests
 
         var failure = await ComposerSlashTargets.SetModeAsync(composer, "plan", TestContext.Current.CancellationToken).ConfigureAwait(true);
 
-        failure.ShouldBe("A turn is running.", Case.Sensitive);
-        composer.ModeChip.CurrentValue.ShouldBe("default", Case.Sensitive);
+        failure.ShouldBe("A turn is running.");
+        composer.ModeChip.CurrentValue.ShouldBe("default");
     }
 
     /// <summary>The picker selects the model when exactly one matches the filter, and says so otherwise.</summary>
@@ -82,10 +82,10 @@ public sealed class ComposerSlashTargetsTests
         var several = await ComposerSlashTargets.PickModelAsync(composer, "claude", token).ConfigureAwait(true);
         var none = await ComposerSlashTargets.PickModelAsync(composer, "llama", token).ConfigureAwait(true);
 
-        one.ShouldBe("Model: anthropic/claude-opus.", Case.Sensitive);
-        composer.ModelPicker.CurrentValue.ShouldBe("anthropic/claude-opus", Case.Sensitive);
-        several.ShouldBe("Several models match 'claude': pick one in the model list.", Case.Sensitive);
-        none.ShouldBe("No model matches 'llama'.", Case.Sensitive);
+        one.ShouldBe("Model: anthropic/claude-opus.");
+        composer.ModelPicker.CurrentValue.ShouldBe("anthropic/claude-opus");
+        several.ShouldBe("Several models match 'claude': pick one in the model list.");
+        none.ShouldBe("No model matches 'llama'.");
     }
 
     /// <summary>A session with no model picker says it offers none.</summary>
@@ -94,7 +94,7 @@ public sealed class ComposerSlashTargetsTests
     {
         var message = await ComposerSlashTargets.PickModelAsync(Composer(), "opus", TestContext.Current.CancellationToken).ConfigureAwait(true);
 
-        message.ShouldBe("This session does not offer a model picker.", Case.Sensitive);
+        message.ShouldBe("This session does not offer a model picker.");
     }
 
     /// <summary>The combined targets keep the head's own, add the composer's, and help puts a slash and the typed text in the draft so the palette opens.</summary>
@@ -111,9 +111,9 @@ public sealed class ComposerSlashTargetsTests
         targets.ShowHelp.ShouldNotBeNull()("pl");
 
         headOpened.ShouldBeTrue();
-        mode.ShouldBe("head wins", Case.Sensitive);
+        mode.ShouldBe("head wins");
         targets.PickModel.ShouldNotBeNull();
-        composer.Draft.ShouldBe("/pl", Case.Sensitive);
+        composer.Draft.ShouldBe("/pl");
         ComposerSlashTargets.Create(composer, null).OpenSettings.ShouldBeNull();
         Should.Throw<ArgumentNullException>(() => ComposerSlashTargets.Create(null!, head));
     }

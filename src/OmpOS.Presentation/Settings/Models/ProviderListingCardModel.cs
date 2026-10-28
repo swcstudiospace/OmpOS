@@ -191,9 +191,9 @@ public sealed class ProviderListingCardModel : ObservableModel
     public string RouteFieldName => ProviderListingCopy.RouteFieldName(_listing.DisplayName);
 
     /// <summary>Gets the base URL of the chosen route, with the typed placeholder values filled in; placeholders still empty stay in braces.</summary>
-    public string BaseUrlText => _selectedRoute is null
+    public string BaseAddressText => _selectedRoute is null
         ? string.Empty
-        : ProviderListingUrl.Fill(_selectedRoute.BaseUrlTemplate, TypedValues());
+        : ProviderListingUrl.Fill(_selectedRoute.BaseAddressTemplate, TypedValues());
 
     /// <summary>Gets the line that says how the chosen route sends the key.</summary>
     public string AuthText => _selectedRoute?.AuthText ?? string.Empty;
@@ -329,37 +329,7 @@ public sealed class ProviderListingCardModel : ObservableModel
             _selectedRoute.Id,
             TypedValues(),
             ParseModelIds(_modelIdsText));
-        ErrorText = null;
-        ActionText = null;
-        IsBusy = true;
-        if (draft is not null)
-        {
-            draft.IsSaving = true;
-        }
-
-        ModelsActionResult result;
-        try
-        {
-            // The continuation must run on the context that owns the model, so the context is captured.
-            result = UsesOmpKey
-                ? await _source.SaveApiKeyAsync(_listing.OmpProviderId!, key, cancellationToken).ConfigureAwait(true)
-                : await _source.AddCatalogueProviderAsync(request, key, cancellationToken).ConfigureAwait(true);
-        }
-        catch (SettingsSourceException exception)
-        {
-            result = ModelsActionResult.Failure(exception.Message);
-        }
-        finally
-        {
-            draft?.Clear();
-            if (draft is not null)
-            {
-                draft.IsSaving = false;
-            }
-
-            IsBusy = false;
-        }
-
+        var result = await SendAsync(request, key, draft, cancellationToken).ConfigureAwait(true);
         if (!result.Succeeded)
         {
             ErrorText = Hide(result.Message, key) ?? ModelsCopy.ActionFailed;
@@ -374,6 +344,39 @@ public sealed class ProviderListingCardModel : ObservableModel
         ActionText = added;
         await _host.ChangedAsync(added, cancellationToken).ConfigureAwait(true);
         return true;
+    }
+
+    private async Task<ModelsActionResult> SendAsync(CatalogueProviderRequest request, string key, ApiKeyDraft? draft, CancellationToken cancellationToken)
+    {
+        ErrorText = null;
+        ActionText = null;
+        IsBusy = true;
+        if (draft is not null)
+        {
+            draft.IsSaving = true;
+        }
+
+        try
+        {
+            // The continuation must run on the context that owns the model, so the context is captured.
+            return UsesOmpKey
+                ? await _source.SaveApiKeyAsync(_listing.OmpProviderId!, key, cancellationToken).ConfigureAwait(true)
+                : await _source.AddCatalogueProviderAsync(request, key, cancellationToken).ConfigureAwait(true);
+        }
+        catch (SettingsSourceException exception)
+        {
+            return ModelsActionResult.Failure(exception.Message);
+        }
+        finally
+        {
+            draft?.Clear();
+            if (draft is not null)
+            {
+                draft.IsSaving = false;
+            }
+
+            IsBusy = false;
+        }
     }
 
     /// <summary>Replaces the listing with a newer read of it, keeping what the user typed and the chosen route where they still apply.</summary>
@@ -401,8 +404,7 @@ public sealed class ProviderListingCardModel : ObservableModel
     }
 
     /// <summary>Gets the id the listing has in omp once set up: the omp provider id, or the id of its <c>models.yml</c> block.</summary>
-    /// <returns>The id.</returns>
-    internal string ConfiguredId() =>
+    public string ConfiguredId =>
         UsesOmpKey
             ? _listing.OmpProviderId!
             : _selectedRoute is null || ReferenceEquals(_selectedRoute, _listing.Routes[0]) ? _listing.Id : $"{_listing.Id}-{_selectedRoute.Id}";
@@ -492,13 +494,13 @@ public sealed class ProviderListingCardModel : ObservableModel
                 {
                     if (string.Equals(args.PropertyName, nameof(ProviderListingUrlInput.Value), StringComparison.Ordinal))
                     {
-                        NotifyPropertyChanged(nameof(BaseUrlText));
+                        NotifyPropertyChanged(nameof(BaseAddressText));
                     }
                 };
             }
         }
 
-        var used = _selectedRoute is null ? [] : ProviderListingUrl.VariablesIn(_selectedRoute.BaseUrlTemplate);
+        var used = _selectedRoute is null ? [] : ProviderListingUrl.VariablesIn(_selectedRoute.BaseAddressTemplate);
         _urlInputs = [.. used.Where(_inputsByName.ContainsKey).Select(name => _inputsByName[name])];
     }
 
@@ -520,7 +522,7 @@ public sealed class ProviderListingCardModel : ObservableModel
     {
         NotifyPropertyChanged(nameof(UrlInputs));
         NotifyPropertyChanged(nameof(HasUrlInputs));
-        NotifyPropertyChanged(nameof(BaseUrlText));
+        NotifyPropertyChanged(nameof(BaseAddressText));
         NotifyPropertyChanged(nameof(AuthText));
         NotifyPropertyChanged(nameof(NeedsModelIds));
         NotifyPropertyChanged(nameof(HasModelIdsField));

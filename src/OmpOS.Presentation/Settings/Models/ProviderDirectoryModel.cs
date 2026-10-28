@@ -25,7 +25,7 @@ public sealed class ProviderDirectoryModel : ObservableModel
     private ProviderListingRegion? _region;
     private ProviderListingKind? _kind;
     private string _searchText = string.Empty;
-    private IReadOnlyList<ProviderListingSection> _sections = [];
+    private List<ProviderListingSection> _sections = [];
     private IReadOnlyList<string> _regionChoices = [ProviderListingCopy.AllChoice];
     private IReadOnlyList<string> _kindChoices = [ProviderListingCopy.AllChoice];
     private string _announcement = string.Empty;
@@ -55,9 +55,6 @@ public sealed class ProviderDirectoryModel : ObservableModel
 
     /// <summary>Gets a value indicating whether there are listings and the filters keep none.</summary>
     public bool HasNoMatches => HasListings && _sections.Count == 0;
-
-    /// <summary>Gets the sentence shown when the filters keep no listing.</summary>
-    public string NoMatchesText => ProviderListingCopy.NoMatchesText;
 
     /// <summary>Gets the choices of the region filter: all, then each region that has a listing, each with its count.</summary>
     public IReadOnlyList<string> RegionChoices => _regionChoices;
@@ -193,7 +190,7 @@ public sealed class ProviderDirectoryModel : ObservableModel
 
         foreach (var card in cards)
         {
-            var configured = providers.FirstOrDefault(provider => string.Equals(provider.Id, card.ConfiguredId(), StringComparison.Ordinal));
+            var configured = providers.FirstOrDefault(provider => string.Equals(provider.Id, card.ConfiguredId, StringComparison.Ordinal));
             card.SetConfigured(configured is null ? null : ProviderListingCopy.ConfiguredText(card.TakesKey, configured.Info.Credential == CredentialState.Present));
         }
 
@@ -219,7 +216,7 @@ public sealed class ProviderDirectoryModel : ObservableModel
         || (card.Note is { } note && Contains(note, text))
         || Contains(card.RegionText, text)
         || Contains(card.KindText, text)
-        || card.Routes.Any(route => Contains(route.BaseUrlTemplate, text) || Contains(route.ApiName, text));
+        || card.Routes.Any(route => Contains(route.BaseAddressTemplate, text) || Contains(route.ApiName, text));
 
     private static bool Contains(string value, string text) => value.Contains(text, StringComparison.OrdinalIgnoreCase);
 

@@ -36,6 +36,7 @@ internal static class LayerMap
         ["OmpOS.Harness.Herdr"] = 2,
         ["OmpOS.Harness.Agent"] = 2,
         ["OmpOS.Harness.AgentLoop"] = 2,
+        ["OmpOS.Harness.Remote"] = 2,
         ["OmpOS.Coordination.Dragonfly"] = 2,
         ["OmpOS.EngineHost"] = 3,
         ["OmpOS.Sessions"] = 2,
@@ -47,6 +48,7 @@ internal static class LayerMap
         ["OmpOS.UI"] = 2,
         ["OmpOS.Presentation"] = 2,
         ["OmpOS.Api"] = 3,
+        ["OmpOS.AgentWorker"] = 3,
         ["OmpOS.Web"] = 4,
         ["OmpOS.Native"] = 4,
         ["OmpOS.Native.Views"] = 3,
@@ -79,5 +81,10 @@ internal static class LayerMap
         // intentional: the omp configuration client finds the omp executable through the launcher's locator and wraps API keys in the secrets library's SecretString
         ("OmpOS.Harness.OmpConfig", "OmpOS.Harness.OmpLauncher"),
         ("OmpOS.Harness.OmpConfig", "OmpOS.Harness.Secrets"),
+        // intentional: the OmpConfig client writes the provider catalogue's rows into omp's models.yml
+        ("OmpOS.Harness.OmpConfig", "OmpOS.Harness.Providers"),
+        // intentional: the remote transport speaks ACP and materialises the AgentLoop launch plan on the remote host
+        ("OmpOS.Harness.Remote", "OmpOS.Harness.Acp"),
+        ("OmpOS.Harness.Remote", "OmpOS.Harness.AgentLoop"),
     };
 }

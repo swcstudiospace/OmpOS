@@ -79,6 +79,6 @@ public sealed class LocalHookFileSource : IHookFileSource
             return false;
         }
 
-        return (file.UnixFileMode & GroupOrOtherWritable) == 0 && (directory.UnixFileMode & GroupOrOtherWritable) == 0;
+        return (file.UnixFileMode & GroupOrOtherWritable) == UnixFileMode.None && (directory.UnixFileMode & GroupOrOtherWritable) == UnixFileMode.None;
     }
 }

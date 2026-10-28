@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace OmpOS.Contracts.Controls;
 
 /// <summary>The answer of <c>GET /sessions/{id}/commands</c>.</summary>
@@ -13,6 +15,7 @@ public sealed record SessionCommandsResponse
     public required bool Live { get; init; }
 
     /// <summary>Gets a plain sentence that says why the commands are unavailable or not live, or null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Reason { get; init; }
 
     /// <summary>Gets the commands, in the engine's order.</summary>

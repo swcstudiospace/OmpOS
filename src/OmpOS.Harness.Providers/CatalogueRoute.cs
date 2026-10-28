@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace OmpOS.Harness.Providers;
 
 /// <summary>
@@ -7,7 +9,7 @@ namespace OmpOS.Harness.Providers;
 /// </summary>
 /// <param name="Id">The route slug, unique inside its row.</param>
 /// <param name="Api">The omp <c>models.yml</c> <c>api</c> value the route speaks, for example <c>openai-completions</c>.</param>
-/// <param name="BaseUrl">The base URL or URL template. It is https, except that a local runtime may use http on a loopback host.</param>
+/// <param name="BaseAddressTemplate">The base URL or URL template. It is https, except that a local runtime may use http on a loopback host.</param>
 /// <param name="Auth">How the key is sent.</param>
 /// <param name="AuthHeader">The header that carries the key when <paramref name="Auth"/> is <see cref="CatalogueAuthStyle.CustomHeader"/>; null otherwise.</param>
 /// <param name="Discovery">True when the vendor documents a models list under the base URL, so omp may discover the models.</param>
@@ -16,7 +18,7 @@ namespace OmpOS.Harness.Providers;
 public sealed record CatalogueRoute(
     string Id,
     string Api,
-    string BaseUrl,
+    [property: JsonPropertyName("baseUrl")] string BaseAddressTemplate,
     CatalogueAuthStyle Auth,
     string? AuthHeader,
     bool Discovery,

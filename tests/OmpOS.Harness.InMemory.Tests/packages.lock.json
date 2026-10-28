@@ -207,22 +207,22 @@
       "ompos.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.harness.acp": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.harness.contracttests": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Testing.Extensions.TrxReport": "[2.5.1, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Harness.Acp": "[1.0.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Harness.Acp": "[0.15.0, )",
           "Shouldly": "[4.3.0, )",
           "coverlet.MTP": "[10.1.0, )",
           "xunit.v3": "[4.0.2, )"
@@ -231,8 +231,8 @@
       "ompos.harness.inmemory": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

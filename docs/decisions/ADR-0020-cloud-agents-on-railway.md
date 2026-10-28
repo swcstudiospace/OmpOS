@@ -110,3 +110,27 @@ The service for a session is named `ompos-agent-<sanitised session id>` (a short
 - `WebSocketOmpTransportStub` and its tests are gone; Q-HARN-WS is answered for the OmpOS-owned bridge (framing, upgrade authentication, close codes); omp itself still has no remote endpoint.
 - The hosting runbook line "worker placement is none" (2026-10-21) is superseded by the owner direction of 2026-10-27 and must be amended by the documentation unit.
 - A new project `services/OmpOS.AgentWorker` and its test project need registration in the solution, the layer map and the architecture gates.
+
+## Candidate chosen
+
+An OmpOS-owned worker service (`services/OmpOS.AgentWorker`) that bridges one WebSocket to one `omp acp` child, reached by `AcpWebSocketTransport` and created through a hand-written Railway GraphQL client (`RailwayCloudEnvironmentClient`) or a static pool (`StaticPoolEnvironmentClient`). Decisions D1 to D8 above give the protocol, authentication, isolation and the verified Railway operations.
+
+## Licence
+
+| Component | SPDX | Source | Verified |
+| --- | --- | --- | --- |
+| `OmpOS.AgentWorker`, `AcpWebSocketTransport`, `OmpOS.Sandbox` v2 | AGPL-3.0-or-later | https://www.gnu.org/licenses/agpl-3.0.html | OmpOS-owned code, the project licence of milestone v0.15.0 (ADR-0018) |
+| `Microsoft.AspNetCore.Authentication.JwtBearer` 10.0.13 (existing central package) | MIT | https://github.com/dotnet/aspnetcore/blob/main/LICENSE.txt | Already in `Directory.Packages.props` |
+| Railway public GraphQL API (a hosted service, no code is taken) | not applicable (terms of service) | https://docs.railway.com/integrations/api | Read by the unit that wrote the client on 2026-10-27 |
+
+## Verification route
+
+`dotnet test --project tests/OmpOS.AgentWorker.Tests -c Release --no-build`, `dotnet test --project tests/OmpOS.Sandbox.Tests -c Release --no-build` and `dotnet test --project tests/OmpOS.Harness.Acp.Tests -c Release --no-build` run the worker, the client with recorded fixtures and the transport against a test WebSocket server. The image is built with `podman build -f deploy/worker.Containerfile -t ompos-agent-worker:local .`. The UNVERIFIED Railway rows need a schema introspection run with an API token (see the blocked list above).
+
+## Open risks
+
+- The UNVERIFIED rows of D8 (return types, `serviceCreate` environment input, deployment statuses, private DNS name) can differ from the live schema.
+- Railway has no file API, so a cloud session's transcript cannot be read from the volume; the control plane must keep it.
+- Whether an idle open WebSocket keeps a Serverless service awake is a question to Railway (K3).
+- The `BootGeneration` counter is lost when the control plane restarts; the resume marker says state is not preserved.
+- The worker image was not built by the implementation unit; `podman build` is the first real check.

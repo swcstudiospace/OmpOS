@@ -18,25 +18,26 @@ public sealed class ReconnectingEngineHostTests
 {
     private static readonly EngineHostDescriptor Descriptor = new() { Kind = EngineHostKind.InProcess, Isolation = Isolation.Process, Attestation = Attestation.None };
 
-    private static Exception Unreachable() => new DisconnectedHarnessException("ssh exited with code 255. The host cannot be reached.");
+    private static DisconnectedHarnessException Unreachable() => new DisconnectedHarnessException("ssh exited with code 255. The host cannot be reached.");
 
     private static (ReconnectingEngineHost Host, List<ScriptedSession> Sessions, ManualTimeProvider Clock) Create(params SessionScript[] scripts)
     {
         var sessions = new List<ScriptedSession>();
         var clock = new ManualTimeProvider();
-        var inner = new InProcessEngineHost(
-            () =>
-            {
-                var script = sessions.Count < scripts.Length ? scripts[sessions.Count] : new SessionScript();
-                var session = new ScriptedSession(script);
-                sessions.Add(session);
-                return session;
-            },
-            Descriptor,
-            resumeSessionId: null,
-            resumeAfterFault: true);
-        return (new ReconnectingEngineHost(inner, clock: clock), sessions, clock);
+        return (new ReconnectingEngineHost(NewInner(sessions, scripts), clock: clock), sessions, clock);
     }
+
+    private static InProcessEngineHost NewInner(List<ScriptedSession> sessions, SessionScript[] scripts) => new(
+        () =>
+        {
+            var script = sessions.Count < scripts.Length ? scripts[sessions.Count] : new SessionScript();
+            var session = new ScriptedSession(script);
+            sessions.Add(session);
+            return session;
+        },
+        Descriptor,
+        resumeSessionId: null,
+        resumeAfterFault: true);
 
     private static async Task<List<HarnessEvent>> PromptAsync(ReconnectingEngineHost host, ManualTimeProvider clock, CancellationToken cancellationToken)
     {
@@ -134,7 +135,7 @@ public sealed class ReconnectingEngineHostTests
 
         var events = await PromptAsync(host, clock, ct).ConfigureAwait(true);
 
-        clock.RequestedDelays.ShouldBe(new[] { 1, 2, 4, 8, 16 }.Select(seconds => TimeSpan.FromSeconds(seconds)).ToArray());
+        clock.RequestedDelays.ShouldBe([TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(8), TimeSpan.FromSeconds(16)]);
         attempts.ToArray().ShouldBe([1, 2, 3, 4, 5]);
         host.State.ShouldBe(RemoteConnectionState.Unreachable);
         var error = events.OfType<ErrorEvent>().Single();
@@ -218,21 +219,22 @@ public sealed class ReconnectingEngineHostTests
 
         await cancel.CancelAsync().ConfigureAwait(true);
 
-        var thrown = await Record.ExceptionAsync(() => pump).ConfigureAwait(true);
+        var thrown = await Record.ExceptionAsync(() => pump.WaitAsync(CancellationToken.None)).ConfigureAwait(true);
         thrown.ShouldBeAssignableTo<OperationCanceledException>();
         clock.RequestedDelays.ShouldBe([TimeSpan.FromSeconds(1)]);
     }
 
     /// <summary>Reconnecting without the resume option would start an empty conversation, so the host refuses such an inner host.</summary>
     [Fact]
-    public void AnInnerHostThatDoesNotResumeIsRefused()
+    public async Task AnInnerHostThatDoesNotResumeIsRefused()
     {
         var inner = new InProcessEngineHost(() => new ScriptedSession(new SessionScript()), Descriptor);
+        await using var innerScope = inner.ConfigureAwait(true);
+        var resuming = NewInner([], []);
+        await using var resumingScope = resuming.ConfigureAwait(true);
 
         Should.Throw<ArgumentException>(() => new ReconnectingEngineHost(inner));
-        Should.Throw<ArgumentException>(() => new ReconnectingEngineHost(
-            new InProcessEngineHost(() => new ScriptedSession(new SessionScript()), Descriptor, resumeSessionId: null, resumeAfterFault: true),
-            new ReconnectPolicy { MaxAttempts = 0 }));
+        Should.Throw<ArgumentException>(() => new ReconnectingEngineHost(resuming, new ReconnectPolicy { MaxAttempts = 0 }));
     }
 
     private sealed record SessionScript

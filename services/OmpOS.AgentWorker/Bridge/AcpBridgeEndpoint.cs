@@ -9,7 +9,7 @@ namespace OmpOS.AgentWorker.Bridge;
 /// <summary>
 /// The <c>GET /acp</c> endpoint: authenticates the upgrade request with the worker bearer token, claims the session named by the token
 /// subject, starts <c>omp acp</c> in the session directory, and bridges its stdio protocol to the WebSocket. Failures before the upgrade
-/// are plain HTTP statuses: 400 not a WebSocket request, 401 missing or invalid token, 403 the subject is not a session this worker serves,
+/// are plain HTTP statuses: 401 missing or invalid token, 403 the subject is not a session this worker serves, 400 not a WebSocket request,
 /// 409 the session already has an attached connection, 503 omp could not be started.
 /// </summary>
 internal static class AcpBridgeEndpoint
@@ -44,15 +44,15 @@ internal static class AcpBridgeEndpoint
         ILoggerFactory loggerFactory)
     {
         var logger = loggerFactory.CreateLogger("OmpOS.AgentWorker.AcpBridge");
-        if (!context.WebSockets.IsWebSocketRequest)
-        {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            return;
-        }
-
         if (!validator.TryGetSessionId(context.User, out var sessionId))
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return;
+        }
+
+        if (!context.WebSockets.IsWebSocketRequest)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
             return;
         }
 

@@ -70,7 +70,7 @@ public sealed class EnvironmentProfileValidatorTests
     public void RemotePathsMustBeAbsoluteAndPlain(string path, bool expected)
     {
         SshProfileRules.IsValidAbsoluteRemotePath(path).ShouldBe(expected);
-        EnvironmentProfileValidator.Validate(Valid() with { RemoteWorkspaceRoot = path }).Any(issue => issue.Property == "Ssh.RemoteWorkspaceRoot").ShouldBe(!expected);
+        EnvironmentProfileValidator.Validate(Valid() with { RemoteWorkspaceRoot = path }).Any(issue => string.Equals(issue.Property, "Ssh.RemoteWorkspaceRoot", StringComparison.Ordinal)).ShouldBe(!expected);
     }
 
     /// <summary>The remote omp is a plain command name or an absolute path, never a flag or a shell fragment.</summary>
@@ -111,7 +111,7 @@ public sealed class EnvironmentProfileValidatorTests
     {
         SshProfileRules.IsAllowedOption(name, value).ShouldBe(expected);
         var issues = EnvironmentProfileValidator.Validate(Valid() with { Options = new Dictionary<string, string>(StringComparer.Ordinal) { [name] = value } });
-        issues.Any(issue => issue.Property == "Ssh.Options").ShouldBe(!expected);
+        issues.Any(issue => string.Equals(issue.Property, "Ssh.Options", StringComparison.Ordinal)).ShouldBe(!expected);
     }
 
     /// <summary>The same option written twice in different cases is refused.</summary>
@@ -147,7 +147,7 @@ public sealed class EnvironmentProfileValidatorTests
     [InlineData(601, false)]
     public void KeepAliveHasBounds(int seconds, bool expected)
     {
-        EnvironmentProfileValidator.Validate(Valid() with { KeepAliveSeconds = seconds }).Any(issue => issue.Property == "Ssh.KeepAliveSeconds").ShouldBe(!expected);
+        EnvironmentProfileValidator.Validate(Valid() with { KeepAliveSeconds = seconds }).Any(issue => string.Equals(issue.Property, "Ssh.KeepAliveSeconds", StringComparison.Ordinal)).ShouldBe(!expected);
     }
 
     /// <summary>An environment profile needs its ssh details exactly when it is an ssh environment.</summary>

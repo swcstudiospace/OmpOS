@@ -29,10 +29,10 @@ public sealed class SlashPaletteDiscoveryTests
 
         var deploy = palette.Entries.Single(entry => string.Equals(entry.Name, "deploy", StringComparison.Ordinal));
         deploy.Source.ShouldBe(SlashPaletteSource.Command);
-        deploy.SourceLabel.ShouldBe("Command", Case.Sensitive);
-        deploy.ScopeLabel.ShouldBe("project", Case.Sensitive);
+        deploy.SourceLabel.ShouldBe("Command");
+        deploy.ScopeLabel.ShouldBe("project");
         deploy.InputHint.ShouldBe("<env>");
-        deploy.AutomationName.ShouldBe("/deploy, <env>, Deploys., Command, project", Case.Sensitive);
+        deploy.AutomationName.ShouldBe("/deploy, <env>, Deploys., Command, project");
         var verifier = palette.Entries.Single(entry => string.Equals(entry.Name, "verifier", StringComparison.Ordinal));
         verifier.Source.ShouldBe(SlashPaletteSource.Subagent);
         verifier.InputHint.ShouldBe(SlashPaletteCopy.SubagentHint);
@@ -54,7 +54,7 @@ public sealed class SlashPaletteDiscoveryTests
         var rule = palette.Entries.Single(entry => string.Equals(entry.Name, "create-rule", StringComparison.Ordinal));
         rule.Source.ShouldBe(SlashPaletteSource.Skill);
         rule.IsEnabled.ShouldBeTrue();
-        rule.ScopeLabel.ShouldBe("user", Case.Sensitive);
+        rule.ScopeLabel.ShouldBe("user");
         palette.Entries.Count.ShouldBe(4, "the built-in row is replaced, not repeated");
     }
 
@@ -94,7 +94,7 @@ public sealed class SlashPaletteDiscoveryTests
         palette.UpdateDraft("/clear");
         var before = palette.Entries.ShouldHaveSingleItem();
         before.IsEnabled.ShouldBeFalse();
-        before.DisabledReason.ShouldBe(SlashPaletteCopy.ActionNotInThisWindow, Case.Sensitive);
+        before.DisabledReason.ShouldBe(SlashPaletteCopy.ActionNotInThisWindow);
         before.Source.ShouldBe(SlashPaletteSource.OmpOs);
 
         palette.SetActionHost(new OnlyHost(SlashActionIds.ChatNew));

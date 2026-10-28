@@ -93,23 +93,23 @@ public sealed class SlashCommandCatalogueTests
             switch (command.Kind)
             {
                 case SlashHandlerKind.NativeAction:
-                    actions.ShouldContain(command.HandlerId, $"/{command.Name} names an action no host implements.");
+                    actions.ShouldContain(command.HandlerId, StringComparer.Ordinal, $"/{command.Name} names an action no host implements.");
                     command.Platforms.ShouldBe(CommandPlatforms.Linux | CommandPlatforms.Windows | CommandPlatforms.MacOS);
                     break;
                 case SlashHandlerKind.OmpDelegated:
                     var omp = command.HandlerId["omp.".Length..];
                     command.HandlerId.ShouldStartWith("omp.", Case.Sensitive);
-                    OmpAcpBuiltinCommands.AllNames.ShouldContain(omp, $"/{command.Name} is delegated to /{omp}, which omp {OmpAcpBuiltinCommands.OmpVersion} does not handle over ACP.");
-                    OmpAcpBuiltinCommands.AllNames.ShouldContain(command.EngineCommand ?? command.Name, $"/{command.Name} is sent as /{command.EngineCommand ?? command.Name}, which omp does not handle over ACP.");
+                    OmpAcpBuiltinCommands.AllNames.ShouldContain(omp, StringComparer.Ordinal, $"/{command.Name} is delegated to /{omp}, which omp {OmpAcpBuiltinCommands.OmpVersion} does not handle over ACP.");
+                    OmpAcpBuiltinCommands.AllNames.ShouldContain(command.EngineCommand ?? command.Name, StringComparer.Ordinal, $"/{command.Name} is sent as /{command.EngineCommand ?? command.Name}, which omp does not handle over ACP.");
                     break;
                 case SlashHandlerKind.Skill:
-                    command.HandlerId.ShouldBe("skill." + command.Name, Case.Sensitive);
+                    command.HandlerId.ShouldBe("skill." + command.Name);
                     command.Group.ShouldBe(SlashCommandGroup.BuiltInSkill);
                     command.Status.ShouldBe(SlashCommandStatus.Partial);
                     break;
                 case SlashHandlerKind.CloudHandoff:
                     command.Status.ShouldBe(SlashCommandStatus.Unavailable);
-                    command.DisabledReason.ShouldBe("cloud agents: phase 60", Case.Sensitive);
+                    command.DisabledReason.ShouldBe("cloud agents: phase 60");
                     break;
                 default:
                     command.Status.ShouldBe(SlashCommandStatus.Unavailable);
@@ -130,7 +130,7 @@ public sealed class SlashCommandCatalogueTests
         var command = SlashCommandCatalogue.Shipped.ListAll().Single(candidate => string.Equals(candidate.Name, name, StringComparison.Ordinal));
 
         command.Kind.ShouldNotBe(SlashHandlerKind.OmpDelegated);
-        OmpAcpBuiltinCommands.AllNames.ShouldNotContain(name);
+        OmpAcpBuiltinCommands.AllNames.ShouldNotContain(name, StringComparer.Ordinal);
     }
 
     /// <summary>The aliases name the token they are aliases of, and that token is itself in the catalogue.</summary>
@@ -155,12 +155,12 @@ public sealed class SlashCommandCatalogueTests
         foreach (var command in catalogue)
         {
             var row = rows.Single(candidate => string.Equals(candidate.Token, command.Name, StringComparison.Ordinal));
-            row.Group.ShouldBe(GroupLabel(command.Group), Case.Sensitive, $"/{command.Name} group");
-            row.Cursor.ShouldBe(command.Description, Case.Sensitive, $"/{command.Name} description");
-            row.Kind.ShouldBe(command.Kind.ToString(), Case.Sensitive, $"/{command.Name} kind");
-            row.Handler.ShouldBe(ExpectedHandler(command), Case.Sensitive, $"/{command.Name} handler");
-            row.Status.ShouldBe(command.Status.ToString(), Case.Sensitive, $"/{command.Name} status");
-            row.Reason.ShouldBe(command.DisabledReason ?? command.Note, Case.Sensitive, $"/{command.Name} reason");
+            row.Group.ShouldBe(GroupLabel(command.Group), $"/{command.Name} group");
+            row.Cursor.ShouldBe(command.Description, $"/{command.Name} description");
+            row.Kind.ShouldBe(command.Kind.ToString(), $"/{command.Name} kind");
+            row.Handler.ShouldBe(ExpectedHandler(command), $"/{command.Name} handler");
+            row.Status.ShouldBe(command.Status.ToString(), $"/{command.Name} status");
+            row.Reason.ShouldBe(command.DisabledReason ?? command.Note, $"/{command.Name} reason");
         }
     }
 
@@ -192,13 +192,13 @@ public sealed class SlashCommandCatalogueTests
             if (command.Status == SlashCommandStatus.Unavailable)
             {
                 entry.IsEnabled.ShouldBeFalse($"/{command.Name}");
-                entry.DisabledReason.ShouldBe(command.DisabledReason, Case.Sensitive);
+                entry.DisabledReason.ShouldBe(command.DisabledReason);
                 entry.Source.ShouldBe(SlashPaletteSource.Cursor);
             }
             else if (command.Kind == SlashHandlerKind.Skill)
             {
                 entry.IsEnabled.ShouldBeFalse("no SKILL.md of that name was found");
-                entry.DisabledReason.ShouldBe(SlashPaletteCopy.NoSkillInstalled(command.Name), Case.Sensitive);
+                entry.DisabledReason.ShouldBe(SlashPaletteCopy.NoSkillInstalled(command.Name));
             }
             else
             {

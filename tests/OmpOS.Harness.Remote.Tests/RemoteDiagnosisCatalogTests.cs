@@ -74,7 +74,7 @@ public sealed class RemoteDiagnosisCatalogTests
     [Fact]
     public void TheExcerptIsBounded()
     {
-        RemoteDiagnosisCatalog.Excerpt("\n  \nfirst\n\nsecond\nthird\nfourth\n").ShouldBe("first\nsecond\nthird", Case.Sensitive);
+        RemoteDiagnosisCatalog.Excerpt("\n  \nfirst\n\nsecond\nthird\nfourth\n").ShouldBe("first\nsecond\nthird");
         RemoteDiagnosisCatalog.Excerpt("   \n\n").ShouldBeNull();
         RemoteDiagnosisCatalog.Excerpt(new string('x', 5000))!.Length.ShouldBe(400);
     }

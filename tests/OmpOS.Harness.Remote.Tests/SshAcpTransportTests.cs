@@ -55,12 +55,12 @@ public sealed class SshAcpTransportTests
         await session.CreateAsync(ct).ConfigureAwait(true);
         var events = await PromptAsync(session, "hello", ct).ConfigureAwait(true);
 
-        events.OfType<TextDeltaEvent>().Single().Text.ShouldBe("echo:hello|secretlen=0", Case.Sensitive);
+        events.OfType<TextDeltaEvent>().Single().Text.ShouldBe("echo:hello|secretlen=0");
         events[^1].ShouldBe(new CompletedEvent("end_turn"));
         var log = host.OmpLog();
-        log.ShouldContain("CWD:" + host.WorkspaceDirectory);
-        log.ShouldContain("ARGV:acp");
-        log.ShouldContain("NEW");
+        log.ShouldContain("CWD:" + host.WorkspaceDirectory, StringComparer.Ordinal);
+        log.ShouldContain("ARGV:acp", StringComparer.Ordinal);
+        log.ShouldContain("NEW", StringComparer.Ordinal);
     }
 
     /// <summary>A login banner printed on stdout before the first frame is kept as noise and does not fault the transport.</summary>

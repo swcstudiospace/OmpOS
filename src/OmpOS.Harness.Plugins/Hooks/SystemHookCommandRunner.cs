@@ -19,8 +19,11 @@ public sealed class SystemHookCommandRunner : IHookCommandRunner
     public async Task<HookCommandOutcome> RunAsync(HookInvocation invocation, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(invocation);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(invocation.MaxStandardOutputBytes);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(invocation.MaxStandardErrorBytes);
+        if (invocation.MaxStandardOutputBytes <= 0 || invocation.MaxStandardErrorBytes <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(invocation), "The output bounds must be positive.");
+        }
+
         if (!Directory.Exists(invocation.WorkingDirectory))
         {
             return Failed(HookSpawnFailure.WorkingDirectoryMissing, $"The working directory '{invocation.WorkingDirectory}' does not exist.");
@@ -33,46 +36,43 @@ public sealed class SystemHookCommandRunner : IHookCommandRunner
         }
 
         using var process = new Process { StartInfo = startInfo };
-        try
+        var startFailure = TryStart(process);
+        if (startFailure is not null)
         {
-            process.Start();
-        }
-        catch (Win32Exception ex)
-        {
-            return Failed(Classify(ex), ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Failed(HookSpawnFailure.Other, ex.Message);
+            return startFailure;
         }
 
-        var standardInput = WriteInputAsync(process, invocation.StandardInput);
+        var standardInput = WriteInputAsync(process.StandardInput.BaseStream, invocation.StandardInput);
         var standardOutput = CaptureAsync(process.StandardOutput.BaseStream, invocation.MaxStandardOutputBytes);
         var standardError = CaptureAsync(process.StandardError.BaseStream, invocation.MaxStandardErrorBytes);
 
+        var completed = false;
         try
         {
             await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            ProcessTree.Kill(process);
-            await TaskFault.AwaitAsync(Task.WhenAll(standardInput, standardOutput, standardError)).ConfigureAwait(false);
-            throw;
-        }
 
-        // The pipes close when every writer exits. A descendant that outlives the hook and keeps a pipe open is bounded by
-        // the caller's cancellation, which is the hook timeout.
-        var (outputBytes, outputTruncated) = await standardOutput.WaitAsync(cancellationToken).ConfigureAwait(false);
-        var (errorBytes, errorTruncated) = await standardError.WaitAsync(cancellationToken).ConfigureAwait(false);
-        var delivered = await standardInput.WaitAsync(cancellationToken).ConfigureAwait(false);
-        return new HookCommandOutcome(
-            process.ExitCode,
-            HookOutput.Decode(outputBytes, outputTruncated),
-            HookOutput.Decode(errorBytes, errorTruncated),
-            outputTruncated,
-            errorTruncated,
-            StandardInputDelivered: delivered);
+            // The pipes close when every writer exits. A descendant that outlives the hook and keeps a pipe open is bounded by
+            // the caller's cancellation, which is the hook timeout.
+            var (outputBytes, outputTruncated) = await standardOutput.WaitAsync(cancellationToken).ConfigureAwait(false);
+            var (errorBytes, errorTruncated) = await standardError.WaitAsync(cancellationToken).ConfigureAwait(false);
+            var delivered = await standardInput.WaitAsync(cancellationToken).ConfigureAwait(false);
+            completed = true;
+            return new HookCommandOutcome(
+                process.ExitCode,
+                HookOutput.Decode(outputBytes, outputTruncated),
+                HookOutput.Decode(errorBytes, errorTruncated),
+                outputTruncated,
+                errorTruncated,
+                StandardInputDelivered: delivered);
+        }
+        finally
+        {
+            if (!completed)
+            {
+                ProcessTree.Kill(process);
+                await TaskFault.AwaitAsync(Task.WhenAll(standardInput, standardOutput, standardError)).ConfigureAwait(false);
+            }
+        }
     }
 
     private static ProcessStartInfo? CreateStartInfo(HookInvocation invocation)
@@ -156,9 +156,25 @@ public sealed class SystemHookCommandRunner : IHookCommandRunner
     private static HookCommandOutcome Failed(HookSpawnFailure failure, string message) =>
         new(-1, string.Empty, string.Empty, false, false, failure, message, false);
 
-    private static async Task<bool> WriteInputAsync(Process process, ReadOnlyMemory<byte> input)
+    private static HookCommandOutcome? TryStart(Process process)
     {
-        var stream = process.StandardInput.BaseStream;
+        try
+        {
+            process.Start();
+            return null;
+        }
+        catch (Win32Exception ex)
+        {
+            return Failed(Classify(ex), ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Failed(HookSpawnFailure.Other, ex.Message);
+        }
+    }
+
+    private static async Task<bool> WriteInputAsync(Stream stream, ReadOnlyMemory<byte> input)
+    {
         try
         {
             await stream.WriteAsync(input).ConfigureAwait(false);

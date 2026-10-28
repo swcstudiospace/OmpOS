@@ -46,8 +46,8 @@ public sealed class HookDispatcherPromptTests
     [Fact]
     public void TheInputIsAppendedWhenThePromptHasNoPlaceholder()
     {
-        HookPromptText.Build("Only allow reads.", "{\"a\":1}").ShouldBe("Only allow reads.\n\n{\"a\":1}", Case.Sensitive);
-        HookPromptText.Build("A $ARGUMENTS B $ARGUMENTS", "X").ShouldBe("A X B X", Case.Sensitive);
+        HookPromptText.Build("Only allow reads.", "{\"a\":1}").ShouldBe("Only allow reads.\n\n{\"a\":1}");
+        HookPromptText.Build("A $ARGUMENTS B $ARGUMENTS", "X").ShouldBe("A X B X");
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public sealed class HookDispatcherPromptTests
 
         decision.IsDenied.ShouldBeTrue();
         decision.Cause.ShouldBe(HookDecisionCause.HookDenied);
-        decision.AgentMessage.ShouldBe("writes outside the repo", Case.Sensitive);
+        decision.AgentMessage.ShouldBe("writes outside the repo");
         decision.Records.Single().Status.ShouldBe(HookRunStatus.Denied);
     }
 
@@ -118,9 +118,9 @@ public sealed class HookDispatcherPromptTests
         using var rig = await DispatcherRig.CreateAsync([PromptHook("p", failClosed: true, timeoutSeconds: 4)], Token, prompts: evaluator);
 
         var pending = rig.DispatchAsync(HookEvent.PreToolUse, "{}", Token);
-        await started.Task;
+        await started.Task.ConfigureAwait(true);
         rig.Clock.Advance(TimeSpan.FromSeconds(5));
-        var decision = await pending;
+        var decision = await pending.ConfigureAwait(true);
 
         decision.Records.Single().Status.ShouldBe(HookRunStatus.TimedOut);
         decision.Cause.ShouldBe(HookDecisionCause.FailClosedTimeout);
@@ -135,7 +135,7 @@ public sealed class HookDispatcherPromptTests
         HookSession? session = null;
         var evaluator = new FakeEvaluator(async (_, _, token) =>
         {
-            nested = await dispatcher!.DispatchAsync(HookEvent.BeforeShellExecution, session!, HookFixtures.Json("""{ "command": "ls" }"""), token);
+            nested = await dispatcher!.DispatchAsync(HookEvent.BeforeShellExecution, session!, HookFixtures.Json("""{ "command": "ls" }"""), token).ConfigureAwait(true);
             return new PromptHookAnswer(true, null);
         });
         var prompt = PromptHook("p");
@@ -161,6 +161,6 @@ public sealed class HookDispatcherPromptTests
 
         await rig.DispatchAsync(HookEvent.PreToolUse, "{}", Token);
 
-        evaluator.Calls.Single().Model.ShouldBe("small-model", Case.Sensitive);
+        evaluator.Calls.Single().Model.ShouldBe("small-model");
     }
 }

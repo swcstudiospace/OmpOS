@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 using OmpOS.Contracts.Agents;
 
 namespace OmpOS.Contracts.Catalog;
@@ -12,6 +14,7 @@ public sealed record SessionStagesResponse
     public required bool Available { get; init; }
 
     /// <summary>Gets a plain sentence that says why plugin stages are unavailable, or null when they are available.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Reason { get; init; }
 
     /// <summary>Gets the stages: the latest event for each source and stage, in pipeline order.</summary>

@@ -26,7 +26,7 @@ public sealed class AgentRailTests : UiTestContext
         cut.Find("h2").TextContent.ShouldBe("Agents");
         var button = cut.Find("button[aria-label='New conversation']");
         button.TextContent.Trim().ShouldBe("New conversation");
-        button.ClassList.ShouldContain("ompos-btn");
+        button.ClassList.ShouldContain("ompos-btn", StringComparer.Ordinal);
         button.QuerySelector("svg")!.GetAttribute("aria-hidden").ShouldBe("true");
     }
 
@@ -40,8 +40,8 @@ public sealed class AgentRailTests : UiTestContext
             .Add(p => p.SelectedId, "s-2")
             .Add(p => p.OnSelected, (string id) => picked = id));
 
-        cut.FindAll(".ompos-conversation-item").Select(static item => item.TextContent).ShouldBe(["First", "Second"]);
-        cut.Find("button[aria-current='true']").TextContent.ShouldBe("Second");
+        cut.FindAll(".ompos-conversation-item").Select(static item => item.QuerySelector(".ompos-conversation-title")!.TextContent).ShouldBe(["First", "Second"]);
+        cut.Find("button[aria-current='true']").TextContent.Trim().ShouldBe("Second");
         cut.Find("button[aria-current='true'] .ompos-status-dot").GetAttribute("data-status").ShouldBe("active");
 
         cut.Find(".ompos-conversation-item").Click();

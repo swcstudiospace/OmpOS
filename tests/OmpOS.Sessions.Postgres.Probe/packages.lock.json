@@ -60,14 +60,14 @@
       "ompos.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.sessions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.sessions.postgres": {
@@ -76,9 +76,9 @@
           "Microsoft.Extensions.Configuration.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
           "Npgsql": "[10.0.3, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Sessions": "[0.15.0, )"
         }
       },
       "Microsoft.Extensions.Configuration.Abstractions": {

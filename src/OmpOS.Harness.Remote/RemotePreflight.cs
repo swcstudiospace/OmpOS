@@ -144,6 +144,27 @@ public sealed partial class RemotePreflight
             diagnoses.Add(RemoteDiagnosisCatalog.Create(RemoteDiagnosisKind.RequiredToolMissing, subject: "mktemp"));
         }
 
+        var ompVersion = DiagnoseOmp(ompPath, versionLine, diagnoses);
+
+        if (!string.IsNullOrEmpty(platform) && !string.Equals(platform, SupportedPlatform, StringComparison.Ordinal))
+        {
+            diagnoses.Add(RemoteDiagnosisCatalog.Create(RemoteDiagnosisKind.UnsupportedPlatform, severity: DiagnosisSeverity.Warning, subject: platform));
+        }
+
+        var ordered = diagnoses.OrderBy(diagnosis => diagnosis.Severity == DiagnosisSeverity.Error ? 0 : 1).ToList();
+        return new RemotePreflightReport
+        {
+            Succeeded = ordered.TrueForAll(diagnosis => diagnosis.Severity != DiagnosisSeverity.Error),
+            Diagnoses = ordered,
+            HomeDirectory = string.IsNullOrEmpty(home) ? null : home,
+            Platform = string.IsNullOrEmpty(platform) ? null : platform,
+            OmpPath = string.IsNullOrEmpty(ompPath) ? null : ompPath,
+            OmpVersion = ompVersion,
+        };
+    }
+
+    private string? DiagnoseOmp(string? ompPath, string? versionLine, List<RemoteDiagnosis> diagnoses)
+    {
         string? ompVersion = null;
         if (string.IsNullOrEmpty(ompPath))
         {
@@ -170,21 +191,7 @@ public sealed partial class RemotePreflight
             diagnoses.Add(RemoteDiagnosisCatalog.Create(RemoteDiagnosisKind.Unknown, "omp --version printed: " + RemoteDiagnosisCatalog.Excerpt(versionLine ?? string.Empty)));
         }
 
-        if (!string.IsNullOrEmpty(platform) && !string.Equals(platform, SupportedPlatform, StringComparison.Ordinal))
-        {
-            diagnoses.Add(RemoteDiagnosisCatalog.Create(RemoteDiagnosisKind.UnsupportedPlatform, severity: DiagnosisSeverity.Warning, subject: platform));
-        }
-
-        var ordered = diagnoses.OrderBy(diagnosis => diagnosis.Severity == DiagnosisSeverity.Error ? 0 : 1).ToList();
-        return new RemotePreflightReport
-        {
-            Succeeded = ordered.TrueForAll(diagnosis => diagnosis.Severity != DiagnosisSeverity.Error),
-            Diagnoses = ordered,
-            HomeDirectory = string.IsNullOrEmpty(home) ? null : home,
-            Platform = string.IsNullOrEmpty(platform) ? null : platform,
-            OmpPath = string.IsNullOrEmpty(ompPath) ? null : ompPath,
-            OmpVersion = ompVersion,
-        };
+        return ompVersion;
     }
 
     [GeneratedRegex("(?<major>\\d{1,6})\\.(?<minor>\\d{1,6})\\.(?<patch>\\d{1,6})", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]

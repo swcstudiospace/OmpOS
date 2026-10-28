@@ -114,7 +114,10 @@ public sealed class RuntimeSlashPaletteTests
             control.Report(FakeSessionCommands.Typical);
             runtime.Composer.Draft = "/";
 
-            palette.Entries.ShouldBeEmpty();
+            // The palette always lists the shipped catalogue; what must stop is the engine's own commands appearing after the dispose.
+            var names = palette.Entries.Select(static entry => entry.Name).ToList();
+            names.ShouldNotContain("security", StringComparer.Ordinal);
+            names.ShouldNotContain("skill:review", StringComparer.Ordinal);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

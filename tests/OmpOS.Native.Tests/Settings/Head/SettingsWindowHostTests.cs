@@ -202,6 +202,7 @@ public sealed class SettingsWindowHostTests : IDisposable
         Store = new FileSettingsStore(_tree.PathOf("state")),
         WorkspaceRoot = Directory.CreateDirectory(_tree.PathOf("workspace")).FullName,
         PluginsRoot = _tree.PathOf("plugins"),
+        UserHome = Directory.CreateDirectory(_tree.PathOf("home")).FullName,
         GetVariable = static _ => null,
         ModelsPageFactory = withModels
             ? () =>

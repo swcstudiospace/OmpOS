@@ -11,7 +11,7 @@ namespace OmpOS.Workspace.Sets;
 /// extension recommendations, launch and task blocks, and any key of a folder other than <c>path</c> and <c>name</c>) is kept
 /// as it was read, so exporting a changed set into the file it came from does not lose it. Comments are tolerated on input and are
 /// not written back, because the JSON document model does not carry them. Folders given as a <c>uri</c> (for example
-/// <c>vscode-remote://</c>) are not roots: import skips them with a warning and export keeps them after the roots.
+/// <c>remote-host://</c>) are not roots: import skips them with a warning and export keeps them after the roots.
 /// </summary>
 public sealed class CodeWorkspaceFile
 {
@@ -188,7 +188,7 @@ public sealed class CodeWorkspaceFile
                 node[NameKey] = JsonValue.Create(root.DisplayName);
             }
 
-            folders.Add(node);
+            folders.Add((JsonNode)node);
         }
 
         foreach (var skipped in FolderObjects().Where(candidate => PathOf(candidate) is null))
@@ -268,7 +268,7 @@ public sealed class CodeWorkspaceFile
             return absolutePath.Replace('\\', '/');
         }
 
-        var climbs = relative.Split('/').Count(segment => segment == "..");
+        var climbs = relative.Split('/').Count(segment => string.Equals(segment, "..", StringComparison.Ordinal));
         return climbs > MaxRelativeClimb ? absolutePath.Replace('\\', '/') : relative;
     }
 

@@ -236,9 +236,9 @@ public sealed class WorkspaceSetPickerTests
         picker.Name = "renamed";
         picker.Name = "   ";
 
-        raised.ShouldContain(nameof(WorkspaceSetPicker.CanStart));
-        raised.ShouldContain(nameof(WorkspaceSetPicker.Issues));
-        raised.ShouldContain(nameof(WorkspaceSetPicker.Name));
+        raised.ShouldContain(nameof(WorkspaceSetPicker.CanStart), StringComparer.Ordinal);
+        raised.ShouldContain(nameof(WorkspaceSetPicker.Issues), StringComparer.Ordinal);
+        raised.ShouldContain(nameof(WorkspaceSetPicker.Name), StringComparer.Ordinal);
         picker.Name.ShouldBe("renamed");
     }
 

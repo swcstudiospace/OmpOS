@@ -35,15 +35,15 @@ public sealed class ConventionMappingTests : IDisposable
         var command = discovery.Commands.ShouldHaveSingleItem();
         command.ShouldBe(new SlashDiscoveredCommand("deploy", "Deploy", "<env>", "Deploy $1\n", SlashScope.Project, ".cursor/commands/deploy.md"));
         var skill = discovery.Skills.ShouldHaveSingleItem();
-        skill.Name.ShouldBe("audit", Case.Sensitive);
+        skill.Name.ShouldBe("audit");
         skill.UserInvocable.ShouldBeFalse();
         skill.Path.ShouldEndWith("SKILL.md", Case.Sensitive);
         skill.Scope.ShouldBe(SlashScope.Project);
         var agent = discovery.Subagents.ShouldHaveSingleItem();
         agent.Scope.ShouldBe(SlashScope.User);
-        agent.Model.ShouldBe("fast", Case.Sensitive);
+        agent.Model.ShouldBe("fast");
         agent.ReadOnly.ShouldBeTrue();
-        agent.Instructions.ShouldBe("Check.\n", Case.Sensitive);
+        agent.Instructions.ShouldBe("Check.\n");
         discovery.Problems.ShouldHaveSingleItem().ShouldStartWith(".cursor/commands/has space.md: ", Case.Sensitive);
     }
 
@@ -57,7 +57,7 @@ public sealed class ConventionMappingTests : IDisposable
         (await source.LoadAsync(token).ConfigureAwait(true)).Commands.ShouldBeEmpty();
         _ = _workspace.Write(".ompos/commands/late.md", "Late.\n");
 
-        (await source.LoadAsync(token).ConfigureAwait(true)).Commands.ShouldHaveSingleItem().Name.ShouldBe("late", Case.Sensitive);
+        (await source.LoadAsync(token).ConfigureAwait(true)).Commands.ShouldHaveSingleItem().Name.ShouldBe("late");
     }
 
     /// <summary>The mapping gives each Settings page only its own problems.</summary>

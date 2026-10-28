@@ -35,7 +35,7 @@ public sealed class SlashPaletteBindingDispatchTests
             var result = await binding.DispatchAsync("/rules", TestContext.Current.CancellationToken).ConfigureAwait(true);
 
             result.Kind.ShouldBe(SlashDispatchKind.Handled);
-            result.Text.ShouldBe("Opened.", Case.Sensitive);
+            result.Text.ShouldBe("Opened.");
             host.Requests.ShouldBe([new SlashActionRequest(SlashActionIds.SettingsOpen, "rules", string.Empty)]);
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
@@ -55,9 +55,9 @@ public sealed class SlashPaletteBindingDispatchTests
             var plain = await binding.DispatchAsync("just a prompt", token).ConfigureAwait(true);
 
             delegated.Kind.ShouldBe(SlashDispatchKind.SendPrompt);
-            delegated.Text.ShouldBe("/rename Plan B", Case.Sensitive);
-            unknown.Text.ShouldBe("/some-plugin-command x", Case.Sensitive);
-            plain.Text.ShouldBe("just a prompt", Case.Sensitive);
+            delegated.Text.ShouldBe("/rename Plan B");
+            unknown.Text.ShouldBe("/some-plugin-command x");
+            plain.Text.ShouldBe("just a prompt");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -77,9 +77,9 @@ public sealed class SlashPaletteBindingDispatchTests
             var fallback = await binding.DispatchAsync("/model opus", token).ConfigureAwait(true);
 
             refused.Kind.ShouldBe(SlashDispatchKind.Handled);
-            refused.Text.ShouldBe(SlashPaletteCopy.ActionNotInThisWindow, Case.Sensitive);
+            refused.Text.ShouldBe(SlashPaletteCopy.ActionNotInThisWindow);
             fallback.Kind.ShouldBe(SlashDispatchKind.SendPrompt);
-            fallback.Text.ShouldBe("/model opus", Case.Sensitive);
+            fallback.Text.ShouldBe("/model opus");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -99,7 +99,7 @@ public sealed class SlashPaletteBindingDispatchTests
 
             binding.Palette.Entries.ShouldHaveSingleItem().Source.ShouldBe(SlashPaletteSource.Command);
             result.Kind.ShouldBe(SlashDispatchKind.SendPrompt);
-            result.Text.ShouldBe("Deploy staging now.", Case.Sensitive);
+            result.Text.ShouldBe("Deploy staging now.");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -119,7 +119,7 @@ public sealed class SlashPaletteBindingDispatchTests
 
             source.Loads.ShouldBe(2);
             binding.Palette.UpdateDraft("/dep");
-            binding.Palette.Entries.ShouldHaveSingleItem().Name.ShouldBe("deploy", Case.Sensitive);
+            binding.Palette.Entries.ShouldHaveSingleItem().Name.ShouldBe("deploy");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 

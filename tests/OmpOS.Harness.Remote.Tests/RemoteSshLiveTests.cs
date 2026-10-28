@@ -1,3 +1,4 @@
+using System.Globalization;
 using OmpOS.Contracts.Environments;
 using OmpOS.Harness.Acp;
 using Shouldly;
@@ -36,7 +37,7 @@ public sealed class RemoteSshLiveTests
     private static SshProfile? LiveProfile(string workspace, string ompWrapper)
     {
         if (!string.Equals(Variable("OMPOS_LIVE_SSH"), "1", StringComparison.Ordinal)
-            || !int.TryParse(Variable("OMPOS_LIVE_SSH_PORT"), out var port)
+            || !int.TryParse(Variable("OMPOS_LIVE_SSH_PORT"), NumberStyles.None, CultureInfo.InvariantCulture, out var port)
             || Variable("OMPOS_LIVE_SSH_KEY") is not { Length: > 0 } key
             || Variable("OMPOS_LIVE_SSH_KNOWN_HOSTS") is not { Length: > 0 } knownHosts)
         {
@@ -69,7 +70,10 @@ public sealed class RemoteSshLiveTests
         var omp = Variable("OMPOS_LIVE_SSH_OMP") ?? FindOnPath("omp") ?? throw new InvalidOperationException("omp is not on PATH and OMPOS_LIVE_SSH_OMP is not set.");
         var wrapper = directory.Combine("omp-live");
         File.WriteAllText(wrapper, "#!/bin/sh\nPATH=" + PosixQuoting.Quote(Variable("PATH") ?? string.Empty) + "\nexport PATH\nexec " + PosixQuoting.Quote(omp) + " \"$@\"\n");
-        File.SetUnixFileMode(wrapper, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(wrapper, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
         return wrapper;
     }
 

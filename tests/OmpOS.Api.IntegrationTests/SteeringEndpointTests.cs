@@ -33,7 +33,7 @@ public sealed class SteeringEndpointTests
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         using var body = await WebAppTestHost.ReadJsonAsync(response, ct).ConfigureAwait(true);
-        body.RootElement.GetProperty("delivery").GetString().ShouldBe("delivered", Case.Sensitive);
+        body.RootElement.GetProperty("delivery").GetString().ShouldBe("delivered");
         body.RootElement.TryGetProperty("reason", out _).ShouldBeFalse();
         var engine = factory.Services.GetRequiredService<LiveSessionTracker>().TryGetLive(id).ShouldBeOfType<InMemoryOmpSession>();
         engine.SteeredMessages.ShouldBe([SteerText]);
@@ -52,7 +52,7 @@ public sealed class SteeringEndpointTests
         using var response = await WebAppTestHost.SendAsync(client, HttpMethod.Post, $"/sessions/{id}/steer", $"{{\"text\":\"{SteerText}\",\"mode\":\"queue\"}}", ct).ConfigureAwait(true);
 
         using var body = await WebAppTestHost.ReadJsonAsync(response, ct).ConfigureAwait(true);
-        body.RootElement.GetProperty("delivery").GetString().ShouldBe("queued", Case.Sensitive);
+        body.RootElement.GetProperty("delivery").GetString().ShouldBe("queued");
         factory.Services.GetRequiredService<LiveSessionTracker>().TryGetLive(id).ShouldBeOfType<InMemoryOmpSession>().SteeredMessages.ShouldBe([SteerText]);
         await WebAppTestHost.ReleaseHeldRunAsync(client, id, ct).ConfigureAwait(true);
     }
@@ -72,7 +72,7 @@ public sealed class SteeringEndpointTests
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var raw = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(true);
         using var body = JsonDocument.Parse(raw);
-        body.RootElement.GetProperty("delivery").GetString().ShouldBe("failed", Case.Sensitive);
+        body.RootElement.GetProperty("delivery").GetString().ShouldBe("failed");
         body.RootElement.GetProperty("reason").GetString().ShouldNotBeNullOrWhiteSpace();
         raw.ShouldNotContain(text, Case.Sensitive);
         await WebAppTestHost.ReleaseHeldRunAsync(client, id, ct).ConfigureAwait(true);
@@ -96,17 +96,17 @@ public sealed class SteeringEndpointTests
         using (var body = await WebAppTestHost.ReadJsonAsync(held, ct).ConfigureAwait(true))
         {
             held.StatusCode.ShouldBe(HttpStatusCode.OK);
-            body.RootElement.GetProperty("delivery").GetString().ShouldBe("held", Case.Sensitive);
+            body.RootElement.GetProperty("delivery").GetString().ShouldBe("held");
             body.RootElement.GetProperty("reason").GetString().ShouldNotBeNullOrWhiteSpace();
         }
 
         using (var body = await WebAppTestHost.ReadJsonAsync(queued, ct).ConfigureAwait(true))
         {
-            body.RootElement.GetProperty("delivery").GetString().ShouldBe("queued", Case.Sensitive);
+            body.RootElement.GetProperty("delivery").GetString().ShouldBe("queued");
         }
 
         var session = await factory.Services.GetRequiredService<ISessionRepository>().GetAsync(id, ct).ConfigureAwait(true);
-        session.ShouldNotBeNull().Messages.Select(static message => message.Content).ShouldContain(SteerText);
+        session.ShouldNotBeNull().Messages.Select(static message => message.Content).ShouldContain(SteerText, StringComparer.Ordinal);
         gated.Release();
         _ = await SessionClient.WaitForStatusAsync(client, id, SessionStatus.Completed, WebAppTestHost.SettleTimeout, ct).ConfigureAwait(true);
     }
@@ -208,10 +208,10 @@ public sealed class SteeringEndpointTests
         {
             response.StatusCode.ShouldBe(HttpStatusCode.OK);
             using var body = await WebAppTestHost.ReadJsonAsync(response, ct).ConfigureAwait(true);
-            body.RootElement.GetProperty("sessionId").GetString().ShouldBe(id, Case.Sensitive);
+            body.RootElement.GetProperty("sessionId").GetString().ShouldBe(id);
             var approval = body.RootElement.GetProperty("approvals").EnumerateArray().ShouldHaveSingleItem();
-            approval.GetProperty("toolName").GetString().ShouldBe(WebAppTestHost.HeldToolName, Case.Sensitive);
-            approval.GetProperty("requestId").GetString().ShouldContain(":", Case.Sensitive);
+            approval.GetProperty("toolName").GetString().ShouldBe(WebAppTestHost.HeldToolName);
+            approval.GetProperty("requestId").GetString().ShouldNotBeNull().ShouldContain(":", Case.Sensitive);
             approval.GetProperty("grantableTools").GetArrayLength().ShouldBe(0);
         }
 

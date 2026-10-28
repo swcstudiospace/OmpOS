@@ -15,7 +15,7 @@ internal sealed class SecretRedactor
     /// <summary>The shortest value that is tracked.</summary>
     internal const int MinimumLength = 4;
 
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
     private readonly List<string> _secrets = [];
 
     /// <summary>

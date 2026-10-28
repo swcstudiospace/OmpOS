@@ -241,14 +241,14 @@
       "ompos.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.harness.mcp": {
         "type": "Project",
         "dependencies": {
           "ModelContextProtocol": "[2.3.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.harness.mcp.fixtures": {
@@ -260,7 +260,7 @@
       "ompos.harness.mcpgateway": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Mcp": "[1.0.0, )"
+          "OmpOS.Harness.Mcp": "[0.15.0, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

@@ -85,7 +85,7 @@ internal static class AcpBridgeSession
         // Closing omp ends its stdout, which releases a pump blocked in a read that a token cannot interrupt; the transport close is idempotent.
         await pumps.CancelAsync().ConfigureAwait(false);
         await omp.CloseAsync(CancellationToken.None).ConfigureAwait(false);
-        await Task.WhenAll(client, engine).ConfigureAwait(false);
+        await Task.WhenAll(client, engine).WaitAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
     private static async Task<Outcome> PumpClientAsync(WebSocket socket, IAcpTransport omp, CancellationToken cancellationToken)

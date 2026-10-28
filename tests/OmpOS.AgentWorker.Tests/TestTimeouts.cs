@@ -1,3 +1,5 @@
+using Xunit;
+
 namespace OmpOS.AgentWorker.Tests;
 
 /// <summary>Bounds every wait of a test, so a worker that stops answering fails the test instead of hanging the run.</summary>

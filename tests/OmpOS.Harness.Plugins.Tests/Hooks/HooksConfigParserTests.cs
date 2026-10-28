@@ -37,9 +37,9 @@ public sealed class HooksConfigParserTests
             ["sessionStart", "preToolUse", "beforeShellExecution", "stop", "beforeTabFileRead", "workspaceOpen"],
             ignoreOrder: false);
         var shell = document.Hooks.Single(hook => hook.Event == HookEvent.BeforeShellExecution);
-        shell.Command.ShouldBe("./scripts/approve-network.sh", Case.Sensitive);
+        shell.Command.ShouldBe("./scripts/approve-network.sh");
         shell.TimeoutSeconds.ShouldBe(30d);
-        shell.Matcher.ShouldBe("curl|wget|nc", Case.Sensitive);
+        shell.Matcher.ShouldBe("curl|wget|nc");
         shell.Type.ShouldBe(HookType.Command);
         shell.FailClosed.ShouldBeFalse();
         shell.Enabled.ShouldBeTrue();
@@ -71,15 +71,15 @@ public sealed class HooksConfigParserTests
         var edit = document.Hooks[0];
         edit.Args!.ShouldBe(["prettier", "--write", "${file_path}"], ignoreOrder: false);
         edit.Command.ShouldBeNull();
-        edit.Id.ShouldBe("fmt", Case.Sensitive);
+        edit.Id.ShouldBe("fmt");
         edit.Enabled.ShouldBeFalse();
         edit.RunsIn.ShouldBe(HookLocations.Local);
-        edit.Env["FOO"].ShouldBe("bar", Case.Sensitive);
+        edit.Env["FOO"].ShouldBe("bar");
         edit.FailClosed.ShouldBeTrue();
         var prompt = document.Hooks[1];
         prompt.Type.ShouldBe(HookType.Prompt);
-        prompt.Prompt.ShouldBe("Only allow read-only operations. $ARGUMENTS", Case.Sensitive);
-        prompt.Model.ShouldBe("small", Case.Sensitive);
+        prompt.Prompt.ShouldBe("Only allow read-only operations. $ARGUMENTS");
+        prompt.Model.ShouldBe("small");
         prompt.TimeoutSeconds.ShouldBe(10d);
     }
 
@@ -102,7 +102,7 @@ public sealed class HooksConfigParserTests
         document.OmpHooks.Select(hook => hook.EventName).ShouldBe(["tool_call", "session_before_compact"], ignoreOrder: false);
         document.OmpHooks.ShouldAllBe(hook => hook.IsOmpEvent && hook.Event == null);
         document.Diagnostics.Single().Severity.ShouldBe(HookDiagnosticSeverity.Warning);
-        document.Diagnostics.Single().Location.ShouldBe("$.omp.made_up_event", Case.Sensitive);
+        document.Diagnostics.Single().Location.ShouldBe("$.omp.made_up_event");
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public sealed class HooksConfigParserTests
 
         document.IsValid.ShouldBeTrue();
         document.Hooks.Count.ShouldBe(2);
-        var unknown = document.Hooks.Single(hook => hook.EventName == "futureEvent");
+        var unknown = document.Hooks.Single(hook => string.Equals(hook.EventName, "futureEvent", StringComparison.Ordinal));
         unknown.Event.ShouldBeNull();
         document.Diagnostics.Single().Severity.ShouldBe(HookDiagnosticSeverity.Warning);
     }
@@ -154,7 +154,7 @@ public sealed class HooksConfigParserTests
         var document = Parse(json);
 
         document.IsValid.ShouldBeFalse();
-        document.Diagnostics.Single().Location.ShouldBe("$", Case.Sensitive);
+        document.Diagnostics.Single().Location.ShouldBe("$");
     }
 
     [Fact]
@@ -281,11 +281,11 @@ public sealed class HooksConfigParserTests
         document.Hooks.Select(h => h.EventName).ShouldBe(
             ["preToolUse", "postToolUse", "beforeSubmitPrompt", "stop", "subagentStop"],
             ignoreOrder: false);
-        document.Hooks[0].Matcher.ShouldBe("Shell|Write", Case.Sensitive);
+        document.Hooks[0].Matcher.ShouldBe("Shell|Write");
         document.Hooks[0].TimeoutSeconds.ShouldBe(5d);
         document.Hooks.ShouldAllBe(h => h.LoopLimitSpecified && h.LoopLimit == null);
         document.Diagnostics.Single().Severity.ShouldBe(HookDiagnosticSeverity.Warning);
-        document.Diagnostics.Single().Location.ShouldBe("$.hooks.Notification", Case.Sensitive);
+        document.Diagnostics.Single().Location.ShouldBe("$.hooks.Notification");
     }
 
     [Fact]

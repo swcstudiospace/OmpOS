@@ -235,14 +235,14 @@
       "ompos.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.sessions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.sessions.postgres": {
@@ -251,9 +251,9 @@
           "Microsoft.Extensions.Configuration.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
           "Npgsql": "[10.0.3, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Sessions": "[0.15.0, )"
         }
       },
       "ompos.sessions.postgres.probe": {
@@ -262,18 +262,18 @@
           "Microsoft.Extensions.Configuration": "[10.0.13, )",
           "Microsoft.Extensions.DependencyInjection": "[10.0.13, )",
           "Npgsql": "[10.0.3, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )",
-          "OmpOS.Sessions.Postgres": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Sessions": "[0.15.0, )",
+          "OmpOS.Sessions.Postgres": "[0.15.0, )"
         }
       },
       "ompos.sessions.tests": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Testing.Extensions.TrxReport": "[2.5.1, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )",
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Sessions": "[0.15.0, )",
           "Shouldly": "[4.3.0, )",
           "coverlet.MTP": "[10.1.0, )",
           "xunit.v3": "[4.0.2, )"

@@ -203,27 +203,27 @@
       "ompos.coordination.dragonfly": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Coordination": "[1.0.0, )",
+          "OmpOS.Coordination": "[0.15.0, )",
           "StackExchange.Redis": "[3.4.5, )"
         }
       },
       "ompos.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.harness.acp": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.harness.inmemory": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.harness.worktrees": {
@@ -232,52 +232,52 @@
       "ompos.parser": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.sandbox": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
+          "OmpOS.Sandbox.Abstractions": "[0.15.0, )",
           "YamlDotNet": "[16.3.0, )"
         }
       },
       "ompos.sandbox.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.sessionruns": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )",
-          "OmpOS.Workflows": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Sandbox.Abstractions": "[0.15.0, )",
+          "OmpOS.Sessions": "[0.15.0, )",
+          "OmpOS.Workflows": "[0.15.0, )"
         }
       },
       "ompos.sessions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.sessions.postgres": {
         "type": "Project",
         "dependencies": {
           "Npgsql": "[10.0.3, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Sessions": "[0.15.0, )"
         }
       },
       "ompos.workflows": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "Npgsql": {

@@ -26,7 +26,7 @@ public sealed class HookDispatcherGatingTests
         runner.SpawnCount.ShouldBe(0);
         decision.IsDenied.ShouldBeTrue();
         decision.Cause.ShouldBe(HookDecisionCause.ConsentMissing);
-        decision.AgentMessage.ShouldContain("no consent", Case.Sensitive);
+        decision.AgentMessage.ShouldNotBeNull().ShouldContain("no consent", Case.Sensitive);
         decision.Records.Single().Status.ShouldBe(HookRunStatus.AwaitingConsent);
         decision.HooksRun.ShouldBe(0);
     }
@@ -77,7 +77,7 @@ public sealed class HookDispatcherGatingTests
 
         runner.SpawnCount.ShouldBe(0);
         denied.Cause.ShouldBe(HookDecisionCause.PluginQuarantined);
-        denied.AgentMessage.ShouldContain("earlier fault", Case.Sensitive);
+        denied.AgentMessage.ShouldNotBeNull().ShouldContain("earlier fault", Case.Sensitive);
         skipped.IsDenied.ShouldBeFalse();
         skipped.Records.Single().Status.ShouldBe(HookRunStatus.Skipped);
     }
@@ -206,7 +206,7 @@ public sealed class HookDispatcherGatingTests
         var second = HookFixtures.Hook(HookEvent.BeforeShellExecution, id: "2", command: "./two.sh");
         var third = HookFixtures.Hook(HookEvent.BeforeShellExecution, id: "3", command: "./three.sh");
         var runner = new ScriptedCommandRunner((invocation, _) => Task.FromResult(
-            invocation.Command == "./one.sh" ? ScriptedCommandRunner.Exit(2, string.Empty, "denied first") : ScriptedCommandRunner.Exit(0, """{ "permission": "allow" }""")));
+            string.Equals(invocation.Command, "./one.sh", StringComparison.Ordinal) ? ScriptedCommandRunner.Exit(2, string.Empty, "denied first") : ScriptedCommandRunner.Exit(0, """{ "permission": "allow" }""")));
         using var rig = await DispatcherRig.CreateAsync([first, second, third], Token, runner);
 
         var decision = await rig.DispatchAsync(HookEvent.BeforeShellExecution, """{ "command": "ls" }""", Token);
@@ -228,11 +228,11 @@ public sealed class HookDispatcherGatingTests
         var invocation = runner.Invocations.Single();
         var sent = invocation.StandardInput.ToArray();
         using var document = JsonDocument.Parse(sent);
-        document.RootElement.GetProperty("hook_event_name").GetString().ShouldBe("beforeShellExecution", Case.Sensitive);
-        document.RootElement.GetProperty("command").GetString().ShouldBe("echo TOP-SECRET-TOKEN-123", Case.Sensitive);
-        document.RootElement.GetProperty("conversation_id").GetString().ShouldBe("conv-1", Case.Sensitive);
+        document.RootElement.GetProperty("hook_event_name").GetString().ShouldBe("beforeShellExecution");
+        document.RootElement.GetProperty("command").GetString().ShouldBe("echo TOP-SECRET-TOKEN-123");
+        document.RootElement.GetProperty("conversation_id").GetString().ShouldBe("conv-1");
         var record = decision.Records.Single();
-        record.PayloadSha256.ShouldBe(Convert.ToHexStringLower(SHA256.HashData(sent)), Case.Sensitive);
+        record.PayloadSha256.ShouldBe(Convert.ToHexStringLower(SHA256.HashData(sent)));
         var logged = string.Join('\n', rig.Log.Recent(10).Select(r => $"{r.HookId}|{r.Note}|{r.StandardOutputExcerpt}|{r.StandardErrorExcerpt}|{r.UserMessage}|{r.PayloadSha256}|{r.MatchedValue}"));
         logged.ShouldNotContain("TOP-SECRET-TOKEN-123", Case.Sensitive);
         Encoding.UTF8.GetString(sent).ShouldContain("TOP-SECRET-TOKEN-123", Case.Sensitive);
@@ -247,8 +247,8 @@ public sealed class HookDispatcherGatingTests
         var decision = await rig.DispatchAsync(HookEvent.PreToolUse, """{ "tool_name": "Shell" }""", Token);
 
         rig.Log.Recent(10).ShouldBe(decision.Records, ignoreOrder: false);
-        decision.Records.Single().SessionId.ShouldBe("conv-1", Case.Sensitive);
-        decision.Records.Single().EventName.ShouldBe("preToolUse", Case.Sensitive);
+        decision.Records.Single().SessionId.ShouldBe("conv-1");
+        decision.Records.Single().EventName.ShouldBe("preToolUse");
         decision.Records.Single().At.ShouldBe(rig.Clock.GetUtcNow());
     }
 
@@ -264,7 +264,7 @@ public sealed class HookDispatcherGatingTests
         rig.Dispatcher.Replace(HookFixtures.Set(replacement));
         var decision = await rig.DispatchAsync(HookEvent.PreToolUse, "{}", Token);
 
-        decision.Records.Single().HookId.ShouldBe("new", Case.Sensitive);
+        decision.Records.Single().HookId.ShouldBe("new");
     }
 
     [Fact]

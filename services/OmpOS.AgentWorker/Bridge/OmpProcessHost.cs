@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
-using OmpOS.Harness.Acp;
 using OmpOS.AgentWorker.Configuration;
 using OmpOS.AgentWorker.Security;
+using OmpOS.Harness.Acp;
 
 namespace OmpOS.AgentWorker.Bridge;
 

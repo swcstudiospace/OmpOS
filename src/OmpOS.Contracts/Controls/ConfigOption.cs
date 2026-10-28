@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace OmpOS.Contracts.Controls;
 
 /// <summary>One select-style option of a session that the engine owns: its model, its mode or its thinking level.</summary>
@@ -7,9 +9,11 @@ public sealed record ConfigOption
     public required string Id { get; init; }
 
     /// <summary>Gets the display name, or null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Name { get; init; }
 
     /// <summary>Gets the category the engine gave the option (<c>model</c>, <c>mode</c> or <c>thought_level</c>), or null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Category { get; init; }
 
     /// <summary>Gets the value the option has now.</summary>

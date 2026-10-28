@@ -50,30 +50,30 @@ public sealed class ConventionCatalogTests : IDisposable
         set.Diagnostics.ShouldBeEmpty();
         var origin = (scope == ConventionScope.User ? "~/" : string.Empty) + directory;
         var command = set.Commands.ShouldHaveSingleItem();
-        command.Name.ShouldBe("hello", Case.Sensitive);
-        command.Description.ShouldBe("Says hello", Case.Sensitive);
-        command.ArgumentHint.ShouldBe("<name>", Case.Sensitive);
-        command.Template.ShouldBe("Hello $1\n", Case.Sensitive);
+        command.Name.ShouldBe("hello");
+        command.Description.ShouldBe("Says hello");
+        command.ArgumentHint.ShouldBe("<name>");
+        command.Template.ShouldBe("Hello $1\n");
         command.Scope.ShouldBe(scope);
-        command.SourceDirectory.ShouldBe(directory, Case.Sensitive);
-        command.Origin.ShouldBe(origin + "/commands/hello.md", Case.Sensitive);
+        command.SourceDirectory.ShouldBe(directory);
+        command.Origin.ShouldBe(origin + "/commands/hello.md");
         var skill = set.Skills.ShouldHaveSingleItem();
-        skill.Name.ShouldBe("alpha", Case.Sensitive);
+        skill.Name.ShouldBe("alpha");
         skill.Scope.ShouldBe(scope);
-        skill.SourceDirectory.ShouldBe(directory, Case.Sensitive);
-        skill.Origin.ShouldBe(origin + "/skills/alpha/SKILL.md", Case.Sensitive);
+        skill.SourceDirectory.ShouldBe(directory);
+        skill.Origin.ShouldBe(origin + "/skills/alpha/SKILL.md");
         var rule = set.Rules.ShouldHaveSingleItem();
-        rule.Name.ShouldBe("style", Case.Sensitive);
+        rule.Name.ShouldBe("style");
         rule.Kind.ShouldBe(ConventionRuleKind.Mdc);
         rule.Globs.ShouldBe(["**/*.cs"]);
         rule.AlwaysApply.ShouldBeFalse();
         rule.Scope.ShouldBe(scope);
         var agent = set.Subagents.ShouldHaveSingleItem();
-        agent.Name.ShouldBe("reviewer", Case.Sensitive);
-        agent.Model.ShouldBe("inherit", Case.Sensitive);
+        agent.Name.ShouldBe("reviewer");
+        agent.Model.ShouldBe("inherit");
         agent.ReadOnly.ShouldBeTrue();
         agent.IsBackground.ShouldBeTrue();
-        agent.Instructions.ShouldBe("Review it.\n", Case.Sensitive);
+        agent.Instructions.ShouldBe("Review it.\n");
         agent.Scope.ShouldBe(scope);
     }
 
@@ -89,8 +89,8 @@ public sealed class ConventionCatalogTests : IDisposable
         var set = await DiscoverAsync().ConfigureAwait(true);
 
         var winner = set.Commands.ShouldHaveSingleItem();
-        winner.SourceDirectory.ShouldBe(".ompos", Case.Sensitive);
-        winner.Template.ShouldBe("Deploy from .ompos\n", Case.Sensitive);
+        winner.SourceDirectory.ShouldBe(".ompos");
+        winner.Template.ShouldBe("Deploy from .ompos\n");
         set.Diagnostics.Count.ShouldBe(5);
         set.Diagnostics.ShouldAllBe(diagnostic => diagnostic.Kind == ConventionDiagnosticKind.Duplicate && diagnostic.Item == ConventionItemKind.Command);
         set.Diagnostics.Select(diagnostic => diagnostic.Origin).ShouldBe([".omp/commands/deploy.md", ".cursor/commands/deploy.md", ".claude/commands/deploy.md", ".codex/commands/deploy.md", ".agents/commands/deploy.md"]);
@@ -150,7 +150,7 @@ public sealed class ConventionCatalogTests : IDisposable
             cancellationToken: TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         set.Commands.Select(command => command.Name).ShouldBe(["only-second", "shared"]);
-        set.Commands.Single(command => string.Equals(command.Name, "shared", StringComparison.Ordinal)).Template.ShouldBe("First root\n", Case.Sensitive);
+        set.Commands.Single(command => string.Equals(command.Name, "shared", StringComparison.Ordinal)).Template.ShouldBe("First root\n");
         set.Diagnostics.ShouldHaveSingleItem().Kind.ShouldBe(ConventionDiagnosticKind.Duplicate);
     }
 
@@ -234,7 +234,7 @@ public sealed class ConventionCatalogTests : IDisposable
 
         var set = await DiscoverAsync().ConfigureAwait(true);
 
-        set.Skills.ShouldHaveSingleItem().Name.ShouldBe("linked", Case.Sensitive);
+        set.Skills.ShouldHaveSingleItem().Name.ShouldBe("linked");
         set.Diagnostics.ShouldBeEmpty();
     }
 
@@ -252,8 +252,8 @@ public sealed class ConventionCatalogTests : IDisposable
         var set = await DiscoverAsync().ConfigureAwait(true);
 
         set.Skills.Select(skill => skill.Name).ShouldBe(["app-skill", "root-skill", "web-skill"]);
-        set.Skills.Single(skill => string.Equals(skill.Name, "app-skill", StringComparison.Ordinal)).ScopeDirectory.ShouldBe("packages/app", Case.Sensitive);
-        set.Skills.Single(skill => string.Equals(skill.Name, "web-skill", StringComparison.Ordinal)).Origin.ShouldBe("packages/app/web/.claude/skills/web-skill/SKILL.md", Case.Sensitive);
+        set.Skills.Single(skill => string.Equals(skill.Name, "app-skill", StringComparison.Ordinal)).ScopeDirectory.ShouldBe("packages/app");
+        set.Skills.Single(skill => string.Equals(skill.Name, "web-skill", StringComparison.Ordinal)).Origin.ShouldBe("packages/app/web/.claude/skills/web-skill/SKILL.md");
         set.Skills.Single(skill => string.Equals(skill.Name, "root-skill", StringComparison.Ordinal)).ScopeDirectory.ShouldBe(string.Empty);
     }
 
@@ -290,10 +290,10 @@ public sealed class ConventionCatalogTests : IDisposable
         var agents = set.Rules.Single(rule => string.Equals(rule.Origin, "AGENTS.md", StringComparison.Ordinal));
         agents.Kind.ShouldBe(ConventionRuleKind.AgentsFile);
         agents.AlwaysApply.ShouldBeTrue();
-        agents.Description.ShouldBe("Use tabs never.", Case.Sensitive);
+        agents.Description.ShouldBe("Use tabs never.");
         agents.ScopeDirectory.ShouldBeEmpty();
         set.Rules.Single(rule => string.Equals(rule.Origin, ".cursorrules", StringComparison.Ordinal)).Kind.ShouldBe(ConventionRuleKind.CursorRules);
-        set.Rules.Single(rule => string.Equals(rule.Origin, "services/api/AGENTS.md", StringComparison.Ordinal)).ScopeDirectory.ShouldBe("services/api", Case.Sensitive);
+        set.Rules.Single(rule => string.Equals(rule.Origin, "services/api/AGENTS.md", StringComparison.Ordinal)).ScopeDirectory.ShouldBe("services/api");
         set.Rules.Single(rule => string.Equals(rule.Origin, "~/.codex/AGENTS.md", StringComparison.Ordinal)).Scope.ShouldBe(ConventionScope.User);
         set.Diagnostics.ShouldBeEmpty();
     }
@@ -310,11 +310,11 @@ public sealed class ConventionCatalogTests : IDisposable
         set.Rules.Select(rule => rule.Name).ShouldBe(["frontend/style", "notes"]);
         var style = set.Rules[0];
         style.Kind.ShouldBe(ConventionRuleKind.Mdc);
-        style.Description.ShouldBe("Frontend style", Case.Sensitive);
+        style.Description.ShouldBe("Frontend style");
         style.Globs.ShouldBe(["web/**/*.ts", "web/**/*.tsx"]);
         style.AlwaysApply.ShouldBeTrue();
         set.Rules[1].Kind.ShouldBe(ConventionRuleKind.Markdown);
-        set.Rules[1].Description.ShouldBe("Plain notes line.", Case.Sensitive);
+        set.Rules[1].Description.ShouldBe("Plain notes line.");
     }
 
     /// <summary>Skill frontmatter: paths, the two invocation switches, icon and colour; a name that differs from the folder is reported and the folder name is used; a folder with no SKILL.md is ignored.</summary>
@@ -329,12 +329,12 @@ public sealed class ConventionCatalogTests : IDisposable
 
         set.Skills.Select(skill => skill.Name).ShouldBe(["renamed", "review"]);
         var review = set.Skills.Single(skill => string.Equals(skill.Name, "review", StringComparison.Ordinal));
-        review.Description.ShouldBe("Reviews code", Case.Sensitive);
+        review.Description.ShouldBe("Reviews code");
         review.Paths.ShouldBe(["src/**", "tests/**"]);
         review.DisableModelInvocation.ShouldBeTrue();
         review.UserInvocable.ShouldBeFalse();
-        review.Icon.ShouldBe("magnifier", Case.Sensitive);
-        review.Color.ShouldBe("purple", Case.Sensitive);
+        review.Icon.ShouldBe("magnifier");
+        review.Color.ShouldBe("purple");
         var renamed = set.Skills.Single(skill => string.Equals(skill.Name, "renamed", StringComparison.Ordinal));
         renamed.UserInvocable.ShouldBeTrue("a skill is user-invocable unless its file says otherwise");
         renamed.DisableModelInvocation.ShouldBeFalse();
@@ -353,9 +353,9 @@ public sealed class ConventionCatalogTests : IDisposable
         var set = await DiscoverAsync().ConfigureAwait(true);
 
         var skill = set.Skills.ShouldHaveSingleItem();
-        skill.Name.ShouldBe("lint", Case.Sensitive);
-        skill.Description.ShouldBe("Run the linter.", Case.Sensitive);
-        skill.Origin.ShouldBe(".ompos/skills/lint.md", Case.Sensitive);
+        skill.Name.ShouldBe("lint");
+        skill.Description.ShouldBe("Run the linter.");
+        skill.Origin.ShouldBe(".ompos/skills/lint.md");
     }
 
     /// <summary>A command without frontmatter takes its description from its first body line, and a name that cannot be typed after a slash is an Invalid diagnostic.</summary>
@@ -369,7 +369,7 @@ public sealed class ConventionCatalogTests : IDisposable
         var set = await DiscoverAsync().ConfigureAwait(true);
 
         var command = set.Commands.ShouldHaveSingleItem();
-        command.Description.ShouldBe("Summarise yesterday.", Case.Sensitive);
+        command.Description.ShouldBe("Summarise yesterday.");
         command.ArgumentHint.ShouldBeNull();
         set.Diagnostics.ShouldHaveSingleItem().Kind.ShouldBe(ConventionDiagnosticKind.Invalid);
     }

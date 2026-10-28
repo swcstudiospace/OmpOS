@@ -52,8 +52,8 @@ public sealed class RemotePreflightTests
         var calls = host.SshCalls();
         calls.Count.ShouldBe(2);
         calls[0].ToArray().ShouldBe(["-V"]);
-        calls[1].ShouldContain("BatchMode=yes");
-        calls[1].ShouldContain("-T");
+        calls[1].ShouldContain("BatchMode=yes", StringComparer.Ordinal);
+        calls[1].ShouldContain("-T", StringComparer.Ordinal);
         calls[1][^1].ShouldStartWith("exec sh -c '", Case.Sensitive);
         calls[1][^2].ShouldBe("fake-host");
         calls[1][^3].ShouldBe("--");
@@ -133,7 +133,10 @@ public sealed class RemotePreflightTests
         }
 
         using var host = FakeRemoteHost.Create();
-        File.SetUnixFileMode(host.WorkspaceDirectory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(host.WorkspaceDirectory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        }
         try
         {
             var report = await RunAsync(host, cancellationToken: ct).ConfigureAwait(true);
@@ -142,7 +145,10 @@ public sealed class RemotePreflightTests
         }
         finally
         {
-            File.SetUnixFileMode(host.WorkspaceDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(host.WorkspaceDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
         }
     }
 

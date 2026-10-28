@@ -137,7 +137,7 @@ public sealed class LocalConventionFileSource : IConventionFileSource
         try
         {
             var entries = new List<ConventionEntry>();
-            var options = new EnumerationOptions { IgnoreInaccessible = true, RecurseSubdirectories = false, ReturnSpecialDirectories = false };
+            var options = new EnumerationOptions { IgnoreInaccessible = true, RecurseSubdirectories = false, ReturnSpecialDirectories = false, AttributesToSkip = FileAttributes.None };
             foreach (var path in Directory.EnumerateFileSystemEntries(real, "*", options))
             {
                 var info = new FileInfo(path);

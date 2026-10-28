@@ -56,8 +56,11 @@ public sealed class AcpWebSocketTransport : IAcpTransport
     public AcpWebSocketTransport(AcpWebSocketTransportOptions options, ILogger<AcpWebSocketTransport>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(options.Endpoint);
-        ArgumentNullException.ThrowIfNull(options.BearerTokenProvider);
+        if (options.Endpoint is null || options.BearerTokenProvider is null)
+        {
+            throw new ArgumentException("The endpoint and the bearer token provider are required.", nameof(options));
+        }
+
         if (!options.Endpoint.IsAbsoluteUri
             || (!string.Equals(options.Endpoint.Scheme, "ws", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(options.Endpoint.Scheme, "wss", StringComparison.OrdinalIgnoreCase)))
@@ -99,8 +102,8 @@ public sealed class AcpWebSocketTransport : IAcpTransport
         }
 
         var token = await ResolveTokenAsync(cancellationToken).ConfigureAwait(false);
-        var socket = new ClientWebSocket();
-        var transferred = false;
+        ClientWebSocket? pending = new ClientWebSocket();
+        var socket = pending;
         try
         {
             socket.Options.KeepAliveInterval = _options.KeepAliveInterval;
@@ -116,10 +119,10 @@ public sealed class AcpWebSocketTransport : IAcpTransport
                 }
 
                 _socket = socket;
-                transferred = true;
+                pending = null;
             }
 
-            _pump = PumpAsync(socket, _pumpCancellation.Token);
+            _pump = PumpAsync(_socket!, _pumpCancellation.Token);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -133,10 +136,7 @@ public sealed class AcpWebSocketTransport : IAcpTransport
         }
         finally
         {
-            if (!transferred)
-            {
-                socket.Dispose();
-            }
+            pending?.Dispose();
         }
     }
 
@@ -424,7 +424,7 @@ public sealed class AcpWebSocketTransport : IAcpTransport
         await _pumpCancellation.CancelAsync().ConfigureAwait(false);
         if (pump is not null)
         {
-            await pump.ConfigureAwait(false);
+            await pump.WaitAsync(CancellationToken.None).ConfigureAwait(false);
         }
     }
 }

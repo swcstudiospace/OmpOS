@@ -1,5 +1,9 @@
 # OmpOS agent worker image (OmpOS.AgentWorker). Build with podman from the repository root:
 #   podman build -f deploy/worker.Containerfile -t ompos-agent-worker:local .
+# Run it locally (loopback only; the public key is the PEM of the control plane's token signing key):
+#   podman run --rm -p 127.0.0.1:8088:8080 -v ompos-worker-data:/data \
+#     -e Worker__Auth__PublicKeysPem__0="$OMPOS_WORKER_JWT_PUBLIC_KEY_PEM" -e Worker__Auth__Issuer=ompos-api \
+#     -e Worker__WorkspaceRoot=/data/work -e PORT=8080 localhost/ompos-agent-worker:local
 #
 # Base image tags (identical to deploy/api.Containerfile):
 #   SDK:     mcr.microsoft.com/dotnet/sdk:10.0.402-noble     (global.json pins SDK 10.0.402 exactly)
@@ -67,7 +71,7 @@ FROM ${RUNTIME_IMAGE} AS final
 WORKDIR /app
 
 # git and openssh-client: the agent clones and pushes repositories. ca-certificates: TLS to model providers and git hosts.
-# curl: the container health check (compose profile `agents`) calls GET /healthz. setpriv (used by the entrypoint)
+# curl: the container health check calls GET /healthz. setpriv (used by the entrypoint)
 # comes from util-linux, which is Essential on Ubuntu noble and therefore already present; it is not installed here.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git openssh-client ca-certificates curl \

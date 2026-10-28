@@ -64,8 +64,8 @@ public sealed class HookSourceLocatorTests
             ],
             ignoreOrder: false);
         sources.Select(source => source.Priority).ShouldBe([0, 1, 2, 3, 4, 5, 6, 7], ignoreOrder: false);
-        sources[1].Path.ShouldBe(Path.Combine(Root, ".ompos", "hooks.json"), Case.Sensitive);
-        sources[2].Path.ShouldBe(Path.Combine(Root, ".cursor", "hooks.json"), Case.Sensitive);
+        sources[1].Path.ShouldBe(Path.Combine(Root, ".ompos", "hooks.json"));
+        sources[2].Path.ShouldBe(Path.Combine(Root, ".cursor", "hooks.json"));
     }
 
     [Fact]
@@ -73,11 +73,11 @@ public sealed class HookSourceLocatorTests
     {
         var sources = HookSourceLocator.Locate(Context(), EveryFile());
 
-        sources.Single(source => source.Path == Path.Combine(Root, ".cursor", "hooks.json")).WorkingDirectory.ShouldBe(Root, Case.Sensitive);
-        sources.Single(source => source.Path == Path.Combine(Home, ".cursor", "hooks.json")).WorkingDirectory.ShouldBe(Path.Combine(Home, ".cursor"), Case.Sensitive);
-        sources.Single(source => source.Scope == HookScope.Managed).WorkingDirectory.ShouldBe(Path.Combine("/etc", "ompos"), Case.Sensitive);
-        sources.Single(source => source.Scope == HookScope.ClaudeUser).WorkingDirectory.ShouldBe(Path.Combine(Home, ".claude"), Case.Sensitive);
-        sources.Single(source => source.Scope == HookScope.ClaudeProject).WorkingDirectory.ShouldBe(Root, Case.Sensitive);
+        sources.Single(source => string.Equals(source.Path, Path.Combine(Root, ".cursor", "hooks.json"), StringComparison.Ordinal)).WorkingDirectory.ShouldBe(Root);
+        sources.Single(source => string.Equals(source.Path, Path.Combine(Home, ".cursor", "hooks.json"), StringComparison.Ordinal)).WorkingDirectory.ShouldBe(Path.Combine(Home, ".cursor"));
+        sources.Single(source => source.Scope == HookScope.Managed).WorkingDirectory.ShouldBe(Path.Combine("/etc", "ompos"));
+        sources.Single(source => source.Scope == HookScope.ClaudeUser).WorkingDirectory.ShouldBe(Path.Combine(Home, ".claude"));
+        sources.Single(source => source.Scope == HookScope.ClaudeProject).WorkingDirectory.ShouldBe(Root);
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public sealed class HookSourceLocatorTests
 
         var sources = HookSourceLocator.Locate(Context(), files);
 
-        sources.Single().Path.ShouldBe(Path.Combine(Root, ".cursor", "hooks.json"), Case.Sensitive);
+        sources.Single().Path.ShouldBe(Path.Combine(Root, ".cursor", "hooks.json"));
     }
 
     [Fact]
@@ -121,11 +121,11 @@ public sealed class HookSourceLocatorTests
         var sources = HookSourceLocator.Locate(Context(roots: [Root, second]), files);
 
         sources.Count.ShouldBe(2);
-        sources[0].WorkingDirectory.ShouldBe(Root, Case.Sensitive);
-        sources[1].WorkingDirectory.ShouldBe(second, Case.Sensitive);
+        sources[0].WorkingDirectory.ShouldBe(Root);
+        sources[1].WorkingDirectory.ShouldBe(second);
         sources[0].PseudoPluginId.ShouldStartWith("cursor-project:", Case.Sensitive);
-        sources[0].PseudoPluginId.ShouldNotBe(sources[1].PseudoPluginId, Case.Sensitive);
-        sources[0].PseudoPluginId.ShouldBe("cursor-project:" + HookSourceLocator.RootHash(Root), Case.Sensitive);
+        sources[0].PseudoPluginId.ShouldNotBe(sources[1].PseudoPluginId, StringComparer.Ordinal);
+        sources[0].PseudoPluginId.ShouldBe("cursor-project:" + HookSourceLocator.RootHash(Root));
     }
 
     [Fact]
@@ -134,17 +134,17 @@ public sealed class HookSourceLocatorTests
         var hash = HookSourceLocator.RootHash(Root);
 
         hash.Length.ShouldBe(12);
-        hash.ShouldBe(HookSourceLocator.RootHash(Root), Case.Sensitive);
+        hash.ShouldBe(HookSourceLocator.RootHash(Root));
         hash.ShouldMatch("^[0-9a-f]{12}$");
-        hash.ShouldNotBe(HookSourceLocator.RootHash(Root + "2"), Case.Sensitive);
+        hash.ShouldNotBe(HookSourceLocator.RootHash(Root + "2"), StringComparer.Ordinal);
     }
 
     [Fact]
     public void ManagedPathsAreOmpOsOwnPerPlatformAndNeverCursorsEnterprisePaths()
     {
-        HookSourceLocator.ManagedPath(HookPlatform.Linux, string.Empty).ShouldBe(Path.Combine("/etc", "ompos", "hooks.json"), Case.Sensitive);
-        HookSourceLocator.ManagedPath(HookPlatform.MacOs, string.Empty).ShouldBe(Path.Combine("/Library", "Application Support", "OmpOS", "hooks.json"), Case.Sensitive);
-        HookSourceLocator.ManagedPath(HookPlatform.Windows, @"D:\Data").ShouldBe(Path.Combine(@"D:\Data", "OmpOS", "hooks.json"), Case.Sensitive);
+        HookSourceLocator.ManagedPath(HookPlatform.Linux, string.Empty).ShouldBe(Path.Combine("/etc", "ompos", "hooks.json"));
+        HookSourceLocator.ManagedPath(HookPlatform.MacOs, string.Empty).ShouldBe(Path.Combine("/Library", "Application Support", "OmpOS", "hooks.json"));
+        HookSourceLocator.ManagedPath(HookPlatform.Windows, @"D:\Data").ShouldBe(Path.Combine(@"D:\Data", "OmpOS", "hooks.json"));
         foreach (var platform in Enum.GetValues<HookPlatform>())
         {
             HookSourceLocator.ManagedPath(platform, @"C:\ProgramData").ShouldNotContain("ursor", Case.Insensitive);

@@ -24,7 +24,7 @@ internal sealed class HookBridgeHttpReader : IDisposable
     private bool _disposed;
 
     /// <summary>Creates a reader.</summary>
-    /// <param name="stream">The connection.</param>
+    /// <param name="stream">The connection. The reader owns it and closes it when disposed.</param>
     /// <param name="maxHeaderBytes">The most bytes the head may have, including its blank line.</param>
     internal HookBridgeHttpReader(Stream stream, int maxHeaderBytes)
     {
@@ -149,7 +149,7 @@ internal sealed class HookBridgeHttpReader : IDisposable
         }
     }
 
-    /// <summary>Returns every buffer to the pool, clearing it first. Calling it again does nothing.</summary>
+    /// <summary>Returns every buffer to the pool, clearing it first, and closes the connection stream. Calling it again does nothing.</summary>
     public void Dispose()
     {
         if (_disposed)
@@ -160,5 +160,6 @@ internal sealed class HookBridgeHttpReader : IDisposable
         _disposed = true;
         ReleaseBody();
         ArrayPool<byte>.Shared.Return(_buffer, clearArray: true);
+        _stream.Dispose();
     }
 }

@@ -45,10 +45,13 @@ public sealed class MultiRootWorkspaceTree : ObservableModel
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var source in sources)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            if (source is null || source.Open is null)
+            {
+                throw new ArgumentException("A root source and its open delegate must not be null.", nameof(sources));
+            }
+
             ArgumentException.ThrowIfNullOrWhiteSpace(source.Id, nameof(sources));
             ArgumentException.ThrowIfNullOrWhiteSpace(source.DisplayName, nameof(sources));
-            ArgumentNullException.ThrowIfNull(source.Open);
             if (!ids.Add(source.Id) || !names.Add(source.DisplayName.Trim()))
             {
                 throw new ArgumentException($"The root '{source.DisplayName}' repeats an identifier or a name.", nameof(sources));

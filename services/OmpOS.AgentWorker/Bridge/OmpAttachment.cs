@@ -1,6 +1,6 @@
+using OmpOS.AgentWorker.Security;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.Acp;
-using OmpOS.AgentWorker.Security;
 
 namespace OmpOS.AgentWorker.Bridge;
 
@@ -90,7 +90,7 @@ internal sealed class OmpAttachment : IAsyncDisposable
         try
         {
             await _transport.DisposeAsync().ConfigureAwait(false);
-            await _stderrDrain.ConfigureAwait(false);
+            await _stderrDrain.WaitAsync(CancellationToken.None).ConfigureAwait(false);
         }
         finally
         {

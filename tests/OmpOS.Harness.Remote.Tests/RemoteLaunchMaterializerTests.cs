@@ -67,7 +67,7 @@ public sealed class RemoteLaunchMaterializerTests
 
         launch.Arguments.ShouldBe(["--no-extensions"]);
         launch.LoadedPluginIds.ShouldBeEmpty();
-        var degraded = launch.PlanningEvents.Single(evt => evt.StageId == "remote-launch:plugins");
+        var degraded = launch.PlanningEvents.Single(evt => string.Equals(evt.StageId, "remote-launch:plugins", StringComparison.Ordinal));
         degraded.Status.ShouldBe(StageStatus.Degraded);
         degraded.SessionId.ShouldBe(SessionId);
         var detail = degraded.Detail.ShouldNotBeNull();
@@ -89,7 +89,7 @@ public sealed class RemoteLaunchMaterializerTests
         var launch = new RemoteLaunchMaterializer().Materialize(plan, Profile, Options(directory.Path, mappings));
 
         launch.Arguments.ShouldBe(["--no-extensions", "-e", "/opt/ompos/plugins/ultrathink/index.js"]);
-        launch.PlanningEvents.Single(evt => evt.StageId == "remote-launch:plugins").Detail.ShouldNotBeNull().ShouldContain("1 plugin entry file(s)", Case.Sensitive);
+        launch.PlanningEvents.Single(evt => string.Equals(evt.StageId, "remote-launch:plugins", StringComparison.Ordinal)).Detail.ShouldNotBeNull().ShouldContain("1 plugin entry file(s)", Case.Sensitive);
         launch.LoadedPluginIds.ShouldBeEmpty();
     }
 
@@ -124,8 +124,8 @@ public sealed class RemoteLaunchMaterializerTests
         launch.Arguments.ShouldBe(["--no-extensions", "--config", RemoteState + "/omp-overlay.yml"]);
         var file = launch.Files.ShouldHaveSingleItem();
         file.Path.ShouldBe(RemoteState + "/omp-overlay.yml");
-        file.Content.ShouldBe("mcp:\n  enableProjectConfig: false\n", Case.Sensitive);
-        launch.Arguments.ShouldNotContain(overlay);
+        file.Content.ShouldBe("mcp:\n  enableProjectConfig: false\n");
+        launch.Arguments.ShouldNotContain(overlay, StringComparer.Ordinal);
     }
 
     /// <summary>A settings file that is not the overlay cannot exist remotely and is left out with a report.</summary>
@@ -160,9 +160,9 @@ public sealed class RemoteLaunchMaterializerTests
 
         var launch = new RemoteLaunchMaterializer().Materialize(plan, Profile, Options(directory.Path));
 
-        launch.Environment.Keys.ShouldNotContain("HOME");
-        launch.Environment.Keys.ShouldNotContain("PI_CODING_AGENT_DIR");
-        launch.Environment.Keys.ShouldNotContain("XDG_CONFIG_HOME");
+        launch.Environment.Keys.ShouldNotContain("HOME", StringComparer.Ordinal);
+        launch.Environment.Keys.ShouldNotContain("PI_CODING_AGENT_DIR", StringComparer.Ordinal);
+        launch.Environment.Keys.ShouldNotContain("XDG_CONFIG_HOME", StringComparer.Ordinal);
         launch.Environment["ULTRATHINK_STATE_DIR"].ShouldBe(RemoteState + "/ultrathink");
         launch.Environment["SUBSTRATE_OMP_PENDING_DIR"].ShouldBe(RemoteState + "/substrate-pending");
         launch.Environment["ULTRATHINK_UPLIFT"].ShouldBe("0");
@@ -173,8 +173,8 @@ public sealed class RemoteLaunchMaterializerTests
         forward.LocalPort.ShouldBe(7410);
         forward.RemotePort.ShouldBeInRange(41000, 42999);
         launch.Environment["SUBSTRATE_URL"].ShouldBe($"http://127.0.0.1:{forward.RemotePort}");
-        launch.PlanningEvents.Single(evt => evt.StageId == "remote-launch:environment").Detail.ShouldNotBeNull()
-            .ShouldBe("These local-only environment variables were not sent to the remote machine: HOME, PI_CODING_AGENT_DIR, XDG_CONFIG_HOME.", Case.Sensitive);
+        launch.PlanningEvents.Single(evt => string.Equals(evt.StageId, "remote-launch:environment", StringComparison.Ordinal)).Detail.ShouldNotBeNull()
+            .ShouldBe("These local-only environment variables were not sent to the remote machine: HOME, PI_CODING_AGENT_DIR, XDG_CONFIG_HOME.");
     }
 
     /// <summary>MCP servers on this machine's loopback are rewritten to the remote loopback port, share a forward with the same local service, keep their path and headers, and other servers are left alone.</summary>
@@ -200,10 +200,10 @@ public sealed class RemoteLaunchMaterializerTests
         launch.Environment["SUBSTRATE_URL"].ShouldBe($"http://127.0.0.1:{substratePort}");
 
         launch.McpServers.Count.ShouldBe(3);
-        launch.McpServers[0].Url.ToString().ShouldBe($"http://127.0.0.1:{substratePort}/mcp?x=1", Case.Sensitive);
-        launch.McpServers[0].Headers["Authorization"].ShouldBe("Bearer header-secret", Case.Sensitive);
-        launch.McpServers[1].Url.ToString().ShouldBe($"http://127.0.0.1:{gatewayPort.RemotePort}/gateway/mcp", Case.Sensitive);
-        launch.McpServers[2].Url.ToString().ShouldBe("https://docs.example.com/mcp", Case.Sensitive);
+        launch.McpServers[0].Url.ToString().ShouldBe($"http://127.0.0.1:{substratePort}/mcp?x=1");
+        launch.McpServers[0].Headers["Authorization"].ShouldBe("Bearer header-secret");
+        launch.McpServers[1].Url.ToString().ShouldBe($"http://127.0.0.1:{gatewayPort.RemotePort}/gateway/mcp");
+        launch.McpServers[2].Url.ToString().ShouldBe("https://docs.example.com/mcp");
         launch.McpServers[0].ToString().ShouldNotContain("header-secret", Case.Sensitive);
     }
 
@@ -234,7 +234,7 @@ public sealed class RemoteLaunchMaterializerTests
 
         var launch = new RemoteLaunchMaterializer().Materialize(plan, Profile, Options(directory.Path), secrets);
 
-        launch.Environment["ANTHROPIC_API_KEY"].ShouldBe("sk-canary-0123456789", Case.Sensitive);
+        launch.Environment["ANTHROPIC_API_KEY"].ShouldBe("sk-canary-0123456789");
         launch.SecretEnvironmentNames.ShouldBe(["ANTHROPIC_API_KEY"]);
         launch.GetRedactionValues().ShouldBe(["sk-canary-0123456789"]);
         launch.Arguments.Any(argument => argument.Contains("sk-canary", StringComparison.Ordinal)).ShouldBeFalse();

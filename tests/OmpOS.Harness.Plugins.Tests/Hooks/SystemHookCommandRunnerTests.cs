@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using System.Text;
 using OmpOS.Harness.Plugins.Hooks;
 using Shouldly;
@@ -39,7 +40,7 @@ public sealed class SystemHookCommandRunnerTests
         var outcome = await new SystemHookCommandRunner().RunAsync(Shell("cat", directory.Path, """{ "hook_event_name": "stop" }"""), Token);
 
         outcome.ExitCode.ShouldBe(0);
-        outcome.StandardOutput.ShouldBe("""{ "hook_event_name": "stop" }""", Case.Sensitive);
+        outcome.StandardOutput.ShouldBe("""{ "hook_event_name": "stop" }""");
         outcome.StandardInputDelivered.ShouldBeTrue();
         outcome.SpawnFailure.ShouldBe(HookSpawnFailure.None);
     }
@@ -52,8 +53,8 @@ public sealed class SystemHookCommandRunnerTests
 
         var outcome = await new SystemHookCommandRunner().RunAsync(Shell("echo hello | tr a-z A-Z; echo oops 1>&2", directory.Path), Token);
 
-        outcome.StandardOutput.ShouldBe("HELLO\n", Case.Sensitive);
-        outcome.StandardError.ShouldBe("oops\n", Case.Sensitive);
+        outcome.StandardOutput.ShouldBe("HELLO\n");
+        outcome.StandardError.ShouldBe("oops\n");
     }
 
     [Fact]
@@ -73,7 +74,7 @@ public sealed class SystemHookCommandRunnerTests
 
         var outcome = await new SystemHookCommandRunner().RunAsync(invocation, Token);
 
-        outcome.StandardOutput.ShouldBe("two words; $(touch pwned) `id`", Case.Sensitive);
+        outcome.StandardOutput.ShouldBe("two words; $(touch pwned) `id`");
         File.Exists(directory.PathOf("pwned")).ShouldBeFalse();
     }
 
@@ -86,8 +87,8 @@ public sealed class SystemHookCommandRunnerTests
         var outcome = await new SystemHookCommandRunner().RunAsync(Shell("echo out; echo err 1>&2; exit 3", directory.Path), Token);
 
         outcome.ExitCode.ShouldBe(3);
-        outcome.StandardOutput.ShouldBe("out\n", Case.Sensitive);
-        outcome.StandardError.ShouldBe("err\n", Case.Sensitive);
+        outcome.StandardOutput.ShouldBe("out\n");
+        outcome.StandardError.ShouldBe("err\n");
         outcome.StandardOutputTruncated.ShouldBeFalse();
         outcome.StandardErrorTruncated.ShouldBeFalse();
     }
@@ -102,7 +103,7 @@ public sealed class SystemHookCommandRunnerTests
 
         var outcome = await new SystemHookCommandRunner().RunAsync(Shell("basename \"$(pwd -P)\"", working), Token);
 
-        outcome.StandardOutput.Trim().ShouldBe("hook-cwd", Case.Sensitive);
+        outcome.StandardOutput.Trim().ShouldBe("hook-cwd");
     }
 
     [Fact]
@@ -122,7 +123,7 @@ public sealed class SystemHookCommandRunnerTests
 
             secret.ExitCode.ShouldBe(1);
             secret.StandardOutput.ShouldBeEmpty();
-            wanted.StandardOutput.ShouldBe("bar\n", Case.Sensitive);
+            wanted.StandardOutput.ShouldBe("bar\n");
             everything.StandardOutput.ShouldNotContain("super-secret-value", Case.Sensitive);
             everything.StandardOutput.ShouldNotContain(canary, Case.Sensitive);
         }
@@ -181,7 +182,7 @@ public sealed class SystemHookCommandRunnerTests
 
         var outcome = await new SystemHookCommandRunner().RunAsync(Shell("wc -c", directory.Path, payload), Token);
 
-        outcome.StandardOutput.Trim().ShouldBe((3 * 1024 * 1024).ToString(System.Globalization.CultureInfo.InvariantCulture), Case.Sensitive);
+        outcome.StandardOutput.Trim().ShouldBe((3 * 1024 * 1024).ToString(System.Globalization.CultureInfo.InvariantCulture));
         outcome.StandardInputDelivered.ShouldBeTrue();
     }
 
@@ -222,7 +223,7 @@ public sealed class SystemHookCommandRunnerTests
         var outcome = await new SystemHookCommandRunner().RunAsync(Shell("printf 'ab\\303\\251cd'", directory.Path, maxOut: 3), Token);
 
         outcome.StandardOutputTruncated.ShouldBeTrue();
-        outcome.StandardOutput.ShouldBe("ab", Case.Sensitive);
+        outcome.StandardOutput.ShouldBe("ab");
     }
 
     [Fact]
@@ -244,7 +245,7 @@ public sealed class SystemHookCommandRunnerTests
 
         File.Exists(ready).ShouldBeTrue();
         await cancellation.CancelAsync();
-        await Should.ThrowAsync<OperationCanceledException>(async () => await running);
+        await Should.ThrowAsync<OperationCanceledException>(async () => await running.WaitAsync(CancellationToken.None).ConfigureAwait(true));
         await Task.Delay(TimeSpan.FromSeconds(4), Token);
         File.Exists(finished).ShouldBeFalse();
     }
@@ -263,6 +264,7 @@ public sealed class SystemHookCommandRunnerTests
         outcome.SpawnMessage.ShouldNotBeNullOrWhiteSpace();
     }
 
+    [SupportedOSPlatform("linux")]
     [Fact]
     public async Task ANonExecutableFileOfTheArgsFormIsClassifiedAsAccessDenied()
     {

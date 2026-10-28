@@ -94,17 +94,17 @@ public sealed class SessionConfigEndpointTests
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         using var body = await WebAppTestHost.ReadJsonAsync(response, ct).ConfigureAwait(true);
         body.RootElement.GetProperty("options").EnumerateArray().Single(static option => string.Equals(option.GetProperty("id").GetString(), "mode", StringComparison.Ordinal))
-            .GetProperty("currentValue").GetString().ShouldBe("plan", Case.Sensitive);
-        engine.Options.Single(static option => string.Equals(option.Id, "mode", StringComparison.Ordinal)).CurrentValue.ShouldBe("plan", Case.Sensitive);
+            .GetProperty("currentValue").GetString().ShouldBe("plan");
+        engine.Options.Single(static option => string.Equals(option.Id, "mode", StringComparison.Ordinal)).CurrentValue.ShouldBe("plan");
 
         var session = await factory.Services.GetRequiredService<ISessionRepository>().GetAsync(id, ct).ConfigureAwait(true);
         var logged = session.ShouldNotBeNull().Events.ShouldHaveSingleItem();
         StreamEventPayloads.TryReadConfigOptionUpdate(logged.Payload, out var update).ShouldBeTrue();
-        update.ShouldNotBeNull().OptionId.ShouldBe("mode", Case.Sensitive);
-        update.CurrentValue.ShouldBe("plan", Case.Sensitive);
+        update.ShouldNotBeNull().OptionId.ShouldBe("mode");
+        update.CurrentValue.ShouldBe("plan");
 
         var items = await SessionClient.ReadStreamAsync(client, $"/sessions/{id}/events", 1, ct, lastEventId: "0").ConfigureAwait(true);
-        items.ShouldHaveSingleItem().EventType.ShouldBe("config_option_update", Case.Sensitive);
+        items.ShouldHaveSingleItem().EventType.ShouldBe("config_option_update");
     }
 
     /// <summary>The model is changed through the option named model.</summary>
@@ -120,7 +120,7 @@ public sealed class SessionConfigEndpointTests
         using var response = await WebAppTestHost.SendAsync(client, HttpMethod.Put, $"/sessions/{id}/config-options/model", "{\"value\":\"inmemory/deep\"}", ct).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        engine.CurrentModelId.ShouldBe("inmemory/deep", Case.Sensitive);
+        engine.CurrentModelId.ShouldBe("inmemory/deep");
     }
 
     /// <summary>An unknown option is 404, an unknown value is 400, and neither changes the engine.</summary>
@@ -148,8 +148,8 @@ public sealed class SessionConfigEndpointTests
             await WebAppTestHost.ShouldBeProblemAsync(model, HttpStatusCode.BadRequest, "invalid_config_value", ct).ConfigureAwait(true);
         }
 
-        engine.Options.Single(static option => string.Equals(option.Id, "mode", StringComparison.Ordinal)).CurrentValue.ShouldBe("agent", Case.Sensitive);
-        engine.CurrentModelId.ShouldBe("inmemory/fast", Case.Sensitive);
+        engine.Options.Single(static option => string.Equals(option.Id, "mode", StringComparison.Ordinal)).CurrentValue.ShouldBe("agent");
+        engine.CurrentModelId.ShouldBe("inmemory/fast");
     }
 
     /// <summary>An engine that is running a turn refuses the change with 409 config_option_busy.</summary>
@@ -219,7 +219,7 @@ public sealed class SessionConfigEndpointTests
         options.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         commands.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         put.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        engine.Options.Single(static option => string.Equals(option.Id, "mode", StringComparison.Ordinal)).CurrentValue.ShouldBe("agent", Case.Sensitive);
+        engine.Options.Single(static option => string.Equals(option.Id, "mode", StringComparison.Ordinal)).CurrentValue.ShouldBe("agent");
     }
 
     /// <summary>Commands are unavailable before a run, live while an engine is open, follow the engine's advertisement, and stay as last known afterwards.</summary>
@@ -244,7 +244,7 @@ public sealed class SessionConfigEndpointTests
             body.RootElement.GetProperty("live").GetBoolean().ShouldBeTrue();
             var names = body.RootElement.GetProperty("commands").EnumerateArray().Select(static command => command.GetProperty("name").GetString()).ToArray();
             names.ShouldBe(["plan", "model", "compact"]);
-            body.RootElement.GetProperty("commands")[1].GetProperty("inputHint").GetString().ShouldBe("[model-id]", Case.Sensitive);
+            body.RootElement.GetProperty("commands")[1].GetProperty("inputHint").GetString().ShouldBe("[model-id]");
         }
 
         engine.AdvertiseCommands([new OmpCommand("review", "Review the change.", null)]);

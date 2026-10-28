@@ -100,7 +100,7 @@ public sealed class HookBridgeDecisionTests
             FollowupMessage = "keep going",
             Continue = false,
             UpdatedMcpToolOutput = Element("{\"content\":[{\"type\":\"text\",\"text\":\"ok\"}]}"),
-            Env = new Dictionary<string, string> { ["KEY"] = "value" },
+            Env = new Dictionary<string, string>(StringComparer.Ordinal) { ["KEY"] = "value" },
             OmpResult = Element("{\"block\":false}"),
             HooksRun = 3,
             FailedOpen = false,

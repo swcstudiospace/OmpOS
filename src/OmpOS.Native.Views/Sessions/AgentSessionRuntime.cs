@@ -67,6 +67,19 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     private readonly OptionChipBinding? _thinkingBinding;
     private readonly SlashPaletteBinding? _slashBinding;
 
+    private ModelPickerBinding? BindModels(AgentSessionRuntimeOptions options)
+    {
+        if (options.Models is not { } models || options.TerminalStarter is not null)
+        {
+            return null;
+        }
+
+        // A terminal runs its own omp, which owns its model: only a chat session offers the model chip.
+        var binding = new ModelPickerBinding(models, options.ConnectModels);
+        Composer.ModelPicker = binding.Picker;
+        return binding;
+    }
+
     /// <summary>Creates the runtime of one session and its view model. It starts no observation: call <see cref="StartObserving"/>.</summary>
     /// <param name="options">What the head supplies.</param>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
@@ -82,12 +95,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         RunControls = new RunControlsViewModel(options.Approvals);
         Runs = new RunInputScheduler(_queued);
         Composer = new ComposerViewModel(StartTurnAsync, StopTurnAsync);
-        if (options.Models is { } models && options.TerminalStarter is null)
-        {
-            // A terminal runs its own omp, which owns its model: only a chat session offers the model chip.
-            _modelBinding = new ModelPickerBinding(models, options.ConnectModels);
-            Composer.ModelPicker = _modelBinding.Picker;
-        }
+        _modelBinding = BindModels(options);
 
         if (options.SessionOptions is { } sessionOptions && options.TerminalStarter is null)
         {

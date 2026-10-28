@@ -10,7 +10,7 @@ public sealed class TurnInterruptedEventArgs : EventArgs
     public TurnInterruptedEventArgs(string? nativeSessionId) => NativeSessionId = nativeSessionId;
 
     /// <summary>Gets the status the interrupted turn takes in a session record: always <see cref="SessionStatus.Interrupted"/>.</summary>
-    public SessionStatus Status => SessionStatus.Interrupted;
+    public SessionStatus Status { get; } = SessionStatus.Interrupted;
 
     /// <summary>Gets the engine session that will be reloaded with <c>session/load</c>, or <see langword="null"/>.</summary>
     public string? NativeSessionId { get; }

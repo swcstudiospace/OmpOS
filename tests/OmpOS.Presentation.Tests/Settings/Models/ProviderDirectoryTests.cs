@@ -82,8 +82,8 @@ public sealed class ProviderDirectoryTests
         directory.SelectedRegion.ShouldBe(ProviderListingRegion.China);
         Ids(directory).ShouldBe(["baichuan", "deepseek", "zai"]);
         directory.Announcement.ShouldBe("3 listings shown.");
-        names.ShouldContain(nameof(ProviderDirectoryModel.Sections));
-        names.ShouldContain(nameof(ProviderDirectoryModel.SelectedRegionIndex));
+        names.ShouldContain(nameof(ProviderDirectoryModel.Sections), StringComparer.Ordinal);
+        names.ShouldContain(nameof(ProviderDirectoryModel.SelectedRegionIndex), StringComparer.Ordinal);
         directory.KindChoices[0].ShouldBe("All (3)");
     }
 
@@ -188,7 +188,7 @@ public sealed class ProviderDirectoryTests
         card.UrlInputs.Single().Value = "424242";
         card.ModelIdsText = "llama3";
 
-        source.Listings[source.Listings.FindIndex(listing => listing.Id == "infomaniak-ai-tools")] = ListingTestData.Infomaniak() with { DisplayName = "Infomaniak AI" };
+        source.Listings[source.Listings.FindIndex(listing => string.Equals(listing.Id, "infomaniak-ai-tools", StringComparison.Ordinal))] = ListingTestData.Infomaniak() with { DisplayName = "Infomaniak AI" };
         await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         directory.Find("infomaniak-ai-tools").ShouldBeSameAs(card);

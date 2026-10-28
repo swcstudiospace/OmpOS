@@ -61,13 +61,13 @@ public sealed class HookRunLogTests
         var lines = await File.ReadAllLinesAsync(path, Token);
         lines.Length.ShouldBe(2);
         using var first = JsonDocument.Parse(lines[0]);
-        first.RootElement.GetProperty("hookId").GetString().ShouldBe("h1", Case.Sensitive);
-        first.RootElement.GetProperty("event").GetString().ShouldBe("preToolUse", Case.Sensitive);
-        first.RootElement.GetProperty("status").GetString().ShouldBe("Succeeded", Case.Sensitive);
-        first.RootElement.GetProperty("scope").GetString().ShouldBe("Project", Case.Sensitive);
+        first.RootElement.GetProperty("hookId").GetString().ShouldBe("h1");
+        first.RootElement.GetProperty("event").GetString().ShouldBe("preToolUse");
+        first.RootElement.GetProperty("status").GetString().ShouldBe("Succeeded");
+        first.RootElement.GetProperty("scope").GetString().ShouldBe("Project");
         first.RootElement.GetProperty("durationMs").GetDouble().ShouldBe(12.5);
-        first.RootElement.GetProperty("payloadSha256").GetString().ShouldBe("abcdef", Case.Sensitive);
-        first.RootElement.GetProperty("standardOutput").GetString().ShouldBe("out", Case.Sensitive);
+        first.RootElement.GetProperty("payloadSha256").GetString().ShouldBe("abcdef");
+        first.RootElement.GetProperty("standardOutput").GetString().ShouldBe("out");
         first.RootElement.TryGetProperty("payload", out _).ShouldBeFalse();
         first.RootElement.TryGetProperty("note", out _).ShouldBeFalse();
     }
@@ -124,7 +124,7 @@ public sealed class HookRunLogTests
         await log.AppendAsync(Record("h"), Token);
 
         log.WriteFailures.ShouldBe(1);
-        log.Recent(1).Single().HookId.ShouldBe("h", Case.Sensitive);
+        log.Recent(1).Single().HookId.ShouldBe("h");
     }
 
     [Fact]
@@ -132,7 +132,7 @@ public sealed class HookRunLogTests
     {
         HookRunLog.Excerpt(null).ShouldBeNull();
         HookRunLog.Excerpt(string.Empty).ShouldBeNull();
-        HookRunLog.Excerpt("short").ShouldBe("short", Case.Sensitive);
+        HookRunLog.Excerpt("short").ShouldBe("short");
         var long2Byte = string.Concat(Enumerable.Repeat("é", HookRunLog.ExcerptBytes));
 
         var cut = HookRunLog.Excerpt(long2Byte)!;

@@ -36,8 +36,8 @@ public sealed class ConventionCatalogSourceTests
             ("nested", ConventionScope.Project, "pkg"),
         ]);
         set.Diagnostics.ShouldHaveSingleItem().Kind.ShouldBe(ConventionDiagnosticKind.Duplicate);
-        set.Rules.ShouldHaveSingleItem().Path.ShouldBe("/srv/ws/AGENTS.md", Case.Sensitive);
-        set.HookFiles.ShouldHaveSingleItem().Path.ShouldBe("/srv/ws/.cursor/hooks.json", Case.Sensitive);
+        set.Rules.ShouldHaveSingleItem().Path.ShouldBe("/srv/ws/AGENTS.md");
+        set.HookFiles.ShouldHaveSingleItem().Path.ShouldBe("/srv/ws/.cursor/hooks.json");
         remote.Read.ShouldAllBe(path => path.StartsWith("/srv/ws/", StringComparison.Ordinal));
         local.Read.ShouldAllBe(path => path.StartsWith("/home/dev/", StringComparison.Ordinal));
     }
@@ -73,8 +73,8 @@ public sealed class ConventionCatalogSourceTests
         var diagnostic = set.Diagnostics.ShouldHaveSingleItem();
         diagnostic.Item.ShouldBe(ConventionItemKind.Command);
         diagnostic.Kind.ShouldBe(ConventionDiagnosticKind.Unreadable);
-        diagnostic.Origin.ShouldBe(".claude/commands", Case.Sensitive);
-        diagnostic.Reason.ShouldBe("connection reset", Case.Sensitive);
+        diagnostic.Origin.ShouldBe(".claude/commands");
+        diagnostic.Reason.ShouldBe("connection reset");
     }
 
     /// <summary>The size cap is passed to the source, and a source's TooLarge answer becomes a diagnostic.</summary>

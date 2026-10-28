@@ -77,7 +77,7 @@ internal sealed partial class RailwayFixtureHandler : HttpMessageHandler
             : await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         var query = JsonNode.Parse(body)?["query"]?.GetValue<string>() ?? string.Empty;
         var match = OperationName().Match(query);
-        var operation = match.Success ? match.Groups[1].Value : "(none)";
+        var operation = match.Success ? match.Groups["name"].Value : "(none)";
         Requests.Add(new RecordedRequest(operation, request.RequestUri, request.Headers.Authorization?.ToString(), body));
         if (!_fixtures.TryGetValue(operation, out var list))
         {
@@ -89,7 +89,7 @@ internal sealed partial class RailwayFixtureHandler : HttpMessageHandler
         return list[Math.Min(index, list.Count - 1)]();
     }
 
-    [GeneratedRegex(@"^\s*(?:query|mutation)\s+(\w+)", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^\s*(?:query|mutation)\s+(?<name>\w+)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]
     private static partial Regex OperationName();
 
     /// <summary>One request the handler received.</summary>

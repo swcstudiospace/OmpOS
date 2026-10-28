@@ -57,7 +57,7 @@ public sealed partial class CatalogueRowsTests
         {
             foreach (var route in row.Routes)
             {
-                var filled = Placeholder().Replace(route.BaseUrl, "value1");
+                var filled = Placeholder().Replace(route.BaseAddressTemplate, "value1");
                 var url = new Uri(filled, UriKind.Absolute);
                 if (row.Region == CatalogueRegion.Local)
                 {
@@ -125,7 +125,7 @@ public sealed partial class CatalogueRowsTests
             CatalogueRows.Find(id).ShouldBeNull(id);
         }
 
-        var hosts = CatalogueRows.All.SelectMany(row => row.Routes).Select(route => route.BaseUrl).ToList();
+        var hosts = CatalogueRows.All.SelectMany(row => row.Routes).Select(route => route.BaseAddressTemplate).ToList();
         hosts.ShouldNotContain(url => url.Contains("api.hyperbolic.xyz", StringComparison.Ordinal));
         hosts.ShouldNotContain(url => url.Contains("api.lambda.ai", StringComparison.Ordinal));
         hosts.ShouldNotContain(url => url.Contains("api.replicate.com", StringComparison.Ordinal));
@@ -136,7 +136,7 @@ public sealed partial class CatalogueRowsTests
     public void HyperbolicUsesTheNewInferenceBase()
     {
         var row = CatalogueRows.Find("hyperbolic").ShouldNotBeNull();
-        row.Routes.Select(route => route.BaseUrl).ShouldBe(["https://api.hyperbolic.ai/inference/v1"]);
+        row.Routes.Select(route => route.BaseAddressTemplate).ShouldBe(["https://api.hyperbolic.ai/inference/v1"]);
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public sealed partial class CatalogueRowsTests
         named.Count.ShouldBeGreaterThan(30);
         foreach (var row in named)
         {
-            known.ShouldContain(row.OmpProviderId!, row.Id);
+            known.ShouldContain(row.OmpProviderId!, StringComparer.Ordinal, row.Id);
             CatalogueRows.FindByOmpProviderId(row.OmpProviderId!).ShouldBeSameAs(row);
         }
 
@@ -166,7 +166,7 @@ public sealed partial class CatalogueRowsTests
         payg.OmpProviderId.ShouldBe("mistral");
         codestral.Kind.ShouldBe(CatalogueKind.Api);
         codestral.OmpProviderId.ShouldBeNull();
-        new Uri(codestral.Routes[0].BaseUrl).Host.ShouldBe("codestral.mistral.ai");
+        new Uri(codestral.Routes[0].BaseAddressTemplate).Host.ShouldBe("codestral.mistral.ai");
         vibe.Kind.ShouldBe(CatalogueKind.CodingPlan);
         vibe.Plan.ShouldNotBeNull().SeparateKey.ShouldBeTrue();
         vibe.OmpProviderId.ShouldBeNull();
@@ -208,10 +208,10 @@ public sealed partial class CatalogueRowsTests
             var plan = CatalogueRows.Find(planId).ShouldNotBeNull(planId);
             var payg = CatalogueRows.Find(paygId).ShouldNotBeNull(paygId);
             plan.Plan.ShouldNotBeNull().SeparateKey.ShouldBe(separateKey, planId);
-            var paygUrls = payg.Routes.Select(route => route.BaseUrl.TrimEnd('/')).ToHashSet(StringComparer.Ordinal);
+            var paygUrls = payg.Routes.Select(route => route.BaseAddressTemplate.TrimEnd('/')).ToHashSet(StringComparer.Ordinal);
             foreach (var route in plan.Routes)
             {
-                paygUrls.ShouldNotContain(route.BaseUrl.TrimEnd('/'), $"{planId}/{route.Id}");
+                paygUrls.ShouldNotContain(route.BaseAddressTemplate.TrimEnd('/'), StringComparer.Ordinal, $"{planId}/{route.Id}");
             }
         }
     }
@@ -220,7 +220,7 @@ public sealed partial class CatalogueRowsTests
     public void AccountSpecificHostsDeclareTheirVariables()
     {
         VariableNames("infomaniak-ai-tools").ShouldBe(["product_id"]);
-        VariableNames("exoscale-concrete-ai").ShouldContain("zone");
+        VariableNames("exoscale-concrete-ai").ShouldContain("zone", StringComparer.Ordinal);
         VariableNames("dashscope-cn").ShouldBe(["workspace_id"]);
         VariableNames("azure").ShouldBe(["resource"]);
         VariableNames("amazon-bedrock").ShouldBe(["region"]);
@@ -267,7 +267,7 @@ public sealed partial class CatalogueRowsTests
                 var blockId = row.BlockProviderId(route);
                 if (known.Contains(blockId) && !string.Equals(row.OmpProviderId, blockId, StringComparison.Ordinal))
                 {
-                    reachedOnPurpose.ShouldContain(blockId, $"{row.Id}/{route.Id} writes a block that overrides the omp provider {blockId}");
+                    reachedOnPurpose.ShouldContain(blockId, StringComparer.Ordinal, $"{row.Id}/{route.Id} writes a block that overrides the omp provider {blockId}");
                 }
             }
         }

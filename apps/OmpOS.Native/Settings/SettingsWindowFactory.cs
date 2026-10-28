@@ -34,7 +34,7 @@ internal static class SettingsWindowFactory
         }
 
         pages.Add(new TabPage(tab));
-        var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var userHome = options.UserHome ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         pages.Add(new RulesSettingsPage(new RulesSettingsSource(options.WorkspaceRoot, userHome)));
         pages.Add(new SkillsSettingsPage(new SkillsSettingsSource(options.WorkspaceRoot, userHome)));
         pages.Add(new CommandsSettingsPage(new SlashCommandsSettingsSource(

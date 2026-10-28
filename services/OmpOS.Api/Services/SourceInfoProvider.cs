@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using OmpOS.Contracts.Catalog;
@@ -34,8 +33,8 @@ internal sealed partial class SourceInfoProvider
         _info = new SourceInfo
         {
             Licence = LicenceId,
-            LicenceUrl = LicenceAddress,
-            SourceUrl = SourceAddress,
+            LicenceUrl = new Uri(LicenceAddress),
+            SourceUrl = new Uri(SourceAddress),
             Revision = RevisionOf(informational, configuration[RevisionKey]),
             Version = assembly.GetName().Version?.ToString() ?? Unknown,
         };
@@ -58,14 +57,23 @@ internal sealed partial class SourceInfoProvider
             var candidate = dot >= 0 ? metadata[..dot] : metadata;
             if (ObjectName().IsMatch(candidate))
             {
-                return candidate.ToLowerInvariant();
+                return LowerHex(candidate);
             }
         }
 
         return environmentValue is not null && ObjectName().IsMatch(environmentValue.Trim())
-            ? environmentValue.Trim().ToLower(CultureInfo.InvariantCulture)
+            ? LowerHex(environmentValue.Trim())
             : Unknown;
     }
+
+    // Only hexadecimal digits reach this point, so setting bit 0x20 turns A-F into a-f and leaves 0-9 and a-f alone.
+    private static string LowerHex(string hex) => string.Create(hex.Length, hex, static (span, source) =>
+    {
+        for (var i = 0; i < source.Length; i++)
+        {
+            span[i] = (char)(source[i] | 0x20);
+        }
+    });
 
     [GeneratedRegex("^[0-9a-fA-F]{7,64}$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ObjectName();

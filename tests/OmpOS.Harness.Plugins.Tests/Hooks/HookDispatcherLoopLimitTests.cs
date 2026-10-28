@@ -35,7 +35,7 @@ public sealed class HookDispatcherLoopLimitTests
 
         decisions.Select(decision => decision.FollowupMessage).ShouldBe(["keep going", "keep going", null, null], ignoreOrder: false);
         runner.Invocations.Select(LoopCountSent).ShouldBe([0, 1, 2, 2], ignoreOrder: false);
-        decisions[2].Records.Single().Note.ShouldContain("loop limit reached", Case.Sensitive);
+        decisions[2].Records.Single().Note.ShouldNotBeNull().ShouldContain("loop limit reached", Case.Sensitive);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public sealed class HookDispatcherLoopLimitTests
         for (var turn = 0; turn < 12; turn++)
         {
             var decision = await rig.DispatchAsync(HookEvent.Stop, """{ "status": "completed" }""", Token);
-            decision.FollowupMessage.ShouldBe("keep going", Case.Sensitive);
+            decision.FollowupMessage.ShouldBe("keep going");
         }
     }
 
@@ -110,7 +110,7 @@ public sealed class HookDispatcherLoopLimitTests
         var notes = rig.Log.Recent(10).Select(record => (record.HookId, record.Note)).ToList();
 
         notes.ShouldContain(("one", "loop limit reached (1 of 1); follow-up dropped"));
-        notes.Count(note => note.HookId == "two" && note.Note is not null).ShouldBe(0);
+        notes.Count(note => string.Equals(note.HookId, "two", StringComparison.Ordinal) && note.Note is not null).ShouldBe(0);
     }
 
     [Theory]

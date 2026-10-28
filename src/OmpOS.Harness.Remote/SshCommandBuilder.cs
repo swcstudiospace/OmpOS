@@ -47,7 +47,7 @@ public sealed partial class SshCommandBuilder
     internal SshCommandBuilder(SshClientOptions? options, Func<string>? markerFactory)
     {
         _options = options ?? new SshClientOptions();
-        ArgumentException.ThrowIfNullOrWhiteSpace(_options.SshPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(_options.SshPath, nameof(options));
         if (_options.ControlPathDirectory is { } directory
             && (!Path.IsPathFullyQualified(directory)
                 || directory.Length > MaxControlPathDirectoryLength

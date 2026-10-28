@@ -16,6 +16,10 @@ internal sealed class ObservableProbe : ObservableComponent
     /// <summary>Gets the number of times the component has rendered.</summary>
     public int RenderCount { get; private set; }
 
+    /// <summary>Creates a probe the way the renderer does, with no parameters set.</summary>
+    /// <returns>The probe.</returns>
+    internal static ObservableProbe Create() => new();
+
     /// <inheritdoc />
     protected override void OnParametersSet()
     {

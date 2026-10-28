@@ -24,7 +24,7 @@ public sealed class WorkerSecretHandlingTests
         using var timeout = TestTimeouts.Create();
         using var tokens = new WorkerTokenFactory();
         var clock = new FixedTimeProvider();
-        var logs = new CapturingLoggerProvider();
+        using var logs = new CapturingLoggerProvider();
         var variable = "OMPOS_TEST_CANARY_TOKEN_" + Guid.NewGuid().ToString("N");
         var canary = "canary-secret-" + Guid.NewGuid().ToString("N");
         var argvFile = Path.Combine(Path.GetTempPath(), "argv-" + Guid.NewGuid().ToString("N"));
@@ -64,7 +64,7 @@ public sealed class WorkerSecretHandlingTests
         using var tokens = new WorkerTokenFactory();
         using var foreign = new WorkerTokenFactory();
         var clock = new FixedTimeProvider();
-        var logs = new CapturingLoggerProvider();
+        using var logs = new CapturingLoggerProvider();
         var host = await WorkerHost.StartAsync(tokens, clock, logs: logs, cancellationToken: timeout.Token).ConfigureAwait(true);
         await using var hostScope = host.ConfigureAwait(true);
         var rejected = new[]

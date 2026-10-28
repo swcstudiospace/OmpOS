@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace OmpOS.Sandbox;
 
@@ -130,5 +131,6 @@ internal sealed class WorkerReadinessProbe
         Fatal,
     }
 
+    [StructLayout(LayoutKind.Auto)]
     private readonly record struct Attempt(AttemptOutcome Outcome, int Status);
 }

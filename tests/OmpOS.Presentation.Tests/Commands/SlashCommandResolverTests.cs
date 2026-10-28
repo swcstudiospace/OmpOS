@@ -46,7 +46,7 @@ public sealed class SlashCommandResolverTests
         var resolution = Resolver.Resolve("/rename My title", Context());
 
         var send = resolution.ShouldBeOfType<SlashSendPrompt>();
-        send.Prompt.ShouldBe("/rename My title", Case.Sensitive);
+        send.Prompt.ShouldBe("/rename My title");
         send.Chosen.Source.ShouldBe(SlashPaletteSource.OmpOs);
         send.Alternatives.ShouldBeEmpty();
     }
@@ -61,7 +61,7 @@ public sealed class SlashCommandResolverTests
     {
         var resolution = Resolver.Resolve(typed, Context());
 
-        resolution.ShouldBeOfType<SlashSendPrompt>().Prompt.ShouldBe(sent, Case.Sensitive);
+        resolution.ShouldBeOfType<SlashSendPrompt>().Prompt.ShouldBe(sent);
     }
 
     /// <summary>When the engine advertises the very command the catalogue delegates, the engine is the one that runs it and the name is not ambiguous.</summary>
@@ -71,7 +71,7 @@ public sealed class SlashCommandResolverTests
         var resolution = Resolver.Resolve("/fast on", Context([new SlashEngineCommand("fast", "Toggle fast mode", "[on|off]")]));
 
         var send = resolution.ShouldBeOfType<SlashSendPrompt>();
-        send.Prompt.ShouldBe("/fast on", Case.Sensitive);
+        send.Prompt.ShouldBe("/fast on");
         send.Chosen.Source.ShouldBe(SlashPaletteSource.Engine);
         send.Alternatives.ShouldBeEmpty();
     }
@@ -117,9 +117,9 @@ public sealed class SlashCommandResolverTests
         var resolution = Resolver.Resolve("/goal make it fast", Context(discovery: discovery));
 
         var send = resolution.ShouldBeOfType<SlashSendPrompt>();
-        send.Prompt.ShouldBe("Work towards: make it fast", Case.Sensitive);
+        send.Prompt.ShouldBe("Work towards: make it fast");
         send.Chosen.Source.ShouldBe(SlashPaletteSource.Command);
-        send.Chosen.Label.ShouldBe("Command, project", Case.Sensitive);
+        send.Chosen.Label.ShouldBe("Command, project");
     }
 
     /// <summary>A custom command with no placeholder gets the typed text after its body, so the arguments are not lost.</summary>
@@ -129,7 +129,7 @@ public sealed class SlashCommandResolverTests
         var discovery = new SlashDiscovery([Command("deploy", "Deploy $1 to $2.")], [], [], []);
 
         Resolver.Resolve("/deploy api staging", Context(discovery: discovery))
-            .ShouldBeOfType<SlashSendPrompt>().Prompt.ShouldBe("Deploy api to staging.", Case.Sensitive);
+            .ShouldBeOfType<SlashSendPrompt>().Prompt.ShouldBe("Deploy api to staging.");
     }
 
     /// <summary>Precedence: catalogue, then engine, then command, then skill, then subagent. The first that can run the name is chosen and the others are alternatives with their labels.</summary>
@@ -147,7 +147,7 @@ public sealed class SlashCommandResolverTests
 
         var send = resolution.ShouldBeOfType<SlashSendPrompt>();
         send.Chosen.Source.ShouldBe(SlashPaletteSource.Engine);
-        send.Prompt.ShouldBe("/ship now", Case.Sensitive);
+        send.Prompt.ShouldBe("/ship now");
         send.Alternatives.Select(candidate => candidate.Label).ShouldBe(["Command, project", "Skill, user", "Subagent, project"]);
     }
 
@@ -175,7 +175,7 @@ public sealed class SlashCommandResolverTests
 
         var run = resolution.ShouldBeOfType<SlashRunAction>();
         run.Request.ActionId.ShouldBe(SlashActionIds.ModelPick);
-        run.Request.TypedText.ShouldBe("opus", Case.Sensitive);
+        run.Request.TypedText.ShouldBe("opus");
         run.Alternatives.ShouldHaveSingleItem().Source.ShouldBe(SlashPaletteSource.Engine);
     }
 
@@ -191,9 +191,8 @@ public sealed class SlashCommandResolverTests
             Context([new SlashEngineCommand("skill:create-rule", "Create rules", "arguments")], discovery));
 
         byFile.ShouldBeOfType<SlashSendPrompt>().Prompt.ShouldBe(
-            "Use the skill \"create-rule\". Read its instructions from /work/.cursor/skills/create-rule/SKILL.md and follow them.\n\nno secrets in logs",
-            Case.Sensitive);
-        byEngine.ShouldBeOfType<SlashSendPrompt>().Prompt.ShouldBe("/skill:create-rule no secrets in logs", Case.Sensitive);
+            "Use the skill \"create-rule\". Read its instructions from /work/.cursor/skills/create-rule/SKILL.md and follow them.\n\nno secrets in logs");
+        byEngine.ShouldBeOfType<SlashSendPrompt>().Prompt.ShouldBe("/skill:create-rule no secrets in logs");
     }
 
     /// <summary>A skill that the engine advertises but discovery did not find (omp loaded it from its own providers) runs through omp's skill command.</summary>
@@ -203,7 +202,7 @@ public sealed class SlashCommandResolverTests
         var resolution = Resolver.Resolve("/review", Context([new SlashEngineCommand("skill:review", "Review", "arguments")]));
 
         var send = resolution.ShouldBeOfType<SlashSendPrompt>();
-        send.Prompt.ShouldBe("/skill:review", Case.Sensitive);
+        send.Prompt.ShouldBe("/skill:review");
         send.Chosen.Source.ShouldBe(SlashPaletteSource.Engine);
     }
 
@@ -270,7 +269,7 @@ public sealed class SlashCommandResolverTests
 
         var send = Resolver.Resolve("/skill:review the diff", Context(engine)).ShouldBeOfType<SlashSendPrompt>();
 
-        send.Prompt.ShouldBe("/skill:review the diff", Case.Sensitive);
+        send.Prompt.ShouldBe("/skill:review the diff");
         send.Chosen.Source.ShouldBe(SlashPaletteSource.Engine);
     }
 

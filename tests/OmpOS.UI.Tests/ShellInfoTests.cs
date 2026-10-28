@@ -20,14 +20,14 @@ public sealed class ShellInfoTests
     [InlineData(null, "dev")]
     public void FormatVersionKeepsTheVersionAndAShortCommit(string? informational, string expected)
     {
-        ShellInfo.FormatVersion(informational).ShouldBe(expected, Case.Sensitive);
+        ShellInfo.FormatVersion(informational).ShouldBe(expected);
     }
 
     /// <summary>The source offer names the repository and the licence the project ships under.</summary>
     [Fact]
     public void SourceOfferNamesTheRepositoryAndTheLicence()
     {
-        ShellInfo.SourceRepositoryUrl.ShouldBe("https://github.com/swcstudiospace/OmpOS", Case.Sensitive);
-        ShellInfo.LicenceId.ShouldBe("AGPL-3.0-or-later", Case.Sensitive);
+        ShellInfo.SourceRepositoryUrl.ShouldBe("https://github.com/swcstudiospace/OmpOS");
+        ShellInfo.LicenceId.ShouldBe("AGPL-3.0-or-later");
     }
 }

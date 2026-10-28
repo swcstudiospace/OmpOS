@@ -22,7 +22,7 @@ public sealed class WorkerHealthTests
         await using var hostScope = host.ConfigureAwait(true);
         using var client = new HttpClient { BaseAddress = host.Address };
 
-        using var response = await client.GetAsync("/healthz", timeout.Token).ConfigureAwait(true);
+        using var response = await client.GetAsync(new Uri("/healthz", UriKind.Relative), timeout.Token).ConfigureAwait(true);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync(timeout.Token).ConfigureAwait(true)).ShouldBe("ok");
@@ -45,8 +45,8 @@ public sealed class WorkerHealthTests
         using var readyClient = new HttpClient { BaseAddress = ready.Address };
         using var missingClient = new HttpClient { BaseAddress = missing.Address };
 
-        using var readyResponse = await readyClient.GetAsync("/readyz", timeout.Token).ConfigureAwait(true);
-        using var missingResponse = await missingClient.GetAsync("/readyz", timeout.Token).ConfigureAwait(true);
+        using var readyResponse = await readyClient.GetAsync(new Uri("/readyz", UriKind.Relative), timeout.Token).ConfigureAwait(true);
+        using var missingResponse = await missingClient.GetAsync(new Uri("/readyz", UriKind.Relative), timeout.Token).ConfigureAwait(true);
 
         readyResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
         missingResponse.StatusCode.ShouldBe(HttpStatusCode.ServiceUnavailable);
@@ -59,7 +59,7 @@ public sealed class WorkerHealthTests
     {
         using var timeout = TestTimeouts.Create();
         using var tokens = new WorkerTokenFactory();
-        var logs = new CapturingLoggerProvider();
+        using var logs = new CapturingLoggerProvider();
         var host = await WorkerHost.StartAsync(tokens, new FixedTimeProvider(), logs: logs, cancellationToken: timeout.Token).ConfigureAwait(true);
         await using var hostScope = host.ConfigureAwait(true);
         var before = logs.Lines.Count;
@@ -67,8 +67,8 @@ public sealed class WorkerHealthTests
 
         for (var probe = 0; probe < 3; probe++)
         {
-            using var health = await client.GetAsync("/healthz", timeout.Token).ConfigureAwait(true);
-            using var ready = await client.GetAsync("/readyz", timeout.Token).ConfigureAwait(true);
+            using var health = await client.GetAsync(new Uri("/healthz", UriKind.Relative), timeout.Token).ConfigureAwait(true);
+            using var ready = await client.GetAsync(new Uri("/readyz", UriKind.Relative), timeout.Token).ConfigureAwait(true);
         }
 
         logs.Lines.Count.ShouldBe(before);

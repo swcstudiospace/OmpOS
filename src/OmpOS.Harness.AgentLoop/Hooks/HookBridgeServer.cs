@@ -164,9 +164,9 @@ public sealed class HookBridgeServer : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(handler);
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentOutOfRangeException.ThrowIfLessThan(options.MaxRequestBytes, 1);
-        ArgumentOutOfRangeException.ThrowIfLessThan(options.MaxHeaderBytes, MinHeaderBytes);
-        ArgumentOutOfRangeException.ThrowIfLessThan(options.MaxConcurrentRequests, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(options.MaxRequestBytes, 1, nameof(options));
+        ArgumentOutOfRangeException.ThrowIfLessThan(options.MaxHeaderBytes, MinHeaderBytes, nameof(options));
+        ArgumentOutOfRangeException.ThrowIfLessThan(options.MaxConcurrentRequests, 1, nameof(options));
         ValidateTimeout(options.HandlerTimeout, nameof(options));
         ValidateTimeout(options.ReadTimeout, nameof(options));
         if (options.StartupFilePath is not null)
@@ -256,10 +256,10 @@ public sealed class HookBridgeServer : IAsyncDisposable
         }
 
         await _stopping.CancelAsync().ConfigureAwait(false);
-        _listener?.Stop();
+        _listener?.Dispose();
         if (_acceptLoop is not null)
         {
-            await Task.WhenAll(_acceptLoop).ConfigureAwait(false);
+            await Task.WhenAll(_acceptLoop).WaitAsync(CancellationToken.None).ConfigureAwait(false);
         }
 
         await Task.WhenAll(_inFlight.Values).ConfigureAwait(false);
@@ -495,7 +495,7 @@ public sealed class HookBridgeServer : IAsyncDisposable
                 }
             }
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             var typeName = exception.GetType().Name;
             AcceptLoopFaulted(_logger, typeName, null);
@@ -574,7 +574,7 @@ public sealed class HookBridgeServer : IAsyncDisposable
             var typeName = exception.GetType().Name;
             ConnectionEnded(_logger, typeName, null);
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             var typeName = exception.GetType().Name;
             ConnectionFaulted(_logger, typeName, null);
@@ -626,7 +626,7 @@ public sealed class HookBridgeServer : IAsyncDisposable
     // code; status NoResponse means the client vanished or was too slow and gets no answer.
     private async Task<(BridgeRequest? Request, int Status, string? Code)> ReceiveAsync(HookBridgeHttpReader reader, CancellationToken stop)
     {
-        using var limit = _clock.CreateCancellationTokenSource(_options.ReadTimeout);
+        using var limit = new CancellationTokenSource(_options.ReadTimeout, _clock);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(stop, limit.Token);
         try
         {
@@ -746,7 +746,7 @@ public sealed class HookBridgeServer : IAsyncDisposable
         Func<CancellationToken, ValueTask<T>> work,
         CancellationToken stop)
     {
-        using var timeout = _clock.CreateCancellationTokenSource(_options.HandlerTimeout);
+        using var timeout = new CancellationTokenSource(_options.HandlerTimeout, _clock);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(stop, timeout.Token);
         var call = RunGuardedAsync(role, request, work, linked.Token);
         try
@@ -782,7 +782,7 @@ public sealed class HookBridgeServer : IAsyncDisposable
         {
             return (false, default);
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             var typeName = exception.GetType().Name;
             GuardFailed(_logger, role, SafeEventName(request.Event), typeName, null);
@@ -814,7 +814,7 @@ public sealed class HookBridgeServer : IAsyncDisposable
     // went away or stalled has no use for the answer, so a failed write is not an error.
     private async Task WriteAsync(Stream stream, int status, ReadOnlyMemory<byte> body)
     {
-        using var limit = _clock.CreateCancellationTokenSource(_options.ReadTimeout);
+        using var limit = new CancellationTokenSource(_options.ReadTimeout, _clock);
         try
         {
             await HookBridgeHttpResponse.WriteAsync(stream, status, body, limit.Token).ConfigureAwait(false);
@@ -829,7 +829,7 @@ public sealed class HookBridgeServer : IAsyncDisposable
     // whose peer is still reading the answer (for example after a 413, when the body was never read).
     private async Task LingerAsync(TcpClient client, HookBridgeHttpReader reader)
     {
-        using var limit = _clock.CreateCancellationTokenSource(_options.ReadTimeout);
+        using var limit = new CancellationTokenSource(_options.ReadTimeout, _clock);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(_stopping.Token, limit.Token);
         try
         {

@@ -62,8 +62,8 @@ public sealed class HookDispatcherMergeTests
             """{ "permission": "allow", "user_message": "u2" }""",
             """{ "agent_message": "a3" }""");
 
-        decision.UserMessage.ShouldBe("u1\nu2", Case.Sensitive);
-        decision.AgentMessage.ShouldBe("a1\na3", Case.Sensitive);
+        decision.UserMessage.ShouldBe("u1\nu2");
+        decision.AgentMessage.ShouldBe("a1\na3");
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public sealed class HookDispatcherMergeTests
             """{ "updated_input": { "command": "second" } }""",
             "{}");
 
-        decision.UpdatedInput!.Value.GetProperty("command").GetString().ShouldBe("second", Case.Sensitive);
+        decision.UpdatedInput!.Value.GetProperty("command").GetString().ShouldBe("second");
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public sealed class HookDispatcherMergeTests
             """{ "followup_message": "run the tests" }""",
             """{ "followup_message": "" }""");
 
-        decision.FollowupMessage.ShouldBe("run the tests", Case.Sensitive);
+        decision.FollowupMessage.ShouldBe("run the tests");
     }
 
     [Fact]
@@ -97,10 +97,10 @@ public sealed class HookDispatcherMergeTests
             """{ "additional_context": "ctx1", "env": { "A": "1", "B": "1" } }""",
             """{ "additional_context": "ctx2", "env": { "B": "2", "C": "3" } }""");
 
-        decision.AdditionalContext.ShouldBe("ctx1\nctx2", Case.Sensitive);
-        decision.Environment["A"].ShouldBe("1", Case.Sensitive);
-        decision.Environment["B"].ShouldBe("2", Case.Sensitive);
-        decision.Environment["C"].ShouldBe("3", Case.Sensitive);
+        decision.AdditionalContext.ShouldBe("ctx1\nctx2");
+        decision.Environment["A"].ShouldBe("1");
+        decision.Environment["B"].ShouldBe("2");
+        decision.Environment["C"].ShouldBe("3");
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public sealed class HookDispatcherMergeTests
             """{ "continue": true }""");
 
         decision.ShouldContinue.ShouldBe(false);
-        decision.UserMessage.ShouldBe("blocked by policy", Case.Sensitive);
+        decision.UserMessage.ShouldBe("blocked by policy");
     }
 
     [Fact]
@@ -151,12 +151,12 @@ public sealed class HookDispatcherMergeTests
 
         using var wire = JsonDocument.Parse(decision.ToWireJson());
         var root = wire.RootElement;
-        root.GetProperty("permission").GetString().ShouldBe("deny", Case.Sensitive);
-        root.GetProperty("user_message").GetString().ShouldBe("no", Case.Sensitive);
-        root.GetProperty("agent_message").GetString().ShouldBe("blocked", Case.Sensitive);
-        root.GetProperty("updated_input").GetProperty("command").GetString().ShouldBe("ls", Case.Sensitive);
+        root.GetProperty("permission").GetString().ShouldBe("deny");
+        root.GetProperty("user_message").GetString().ShouldBe("no");
+        root.GetProperty("agent_message").GetString().ShouldBe("blocked");
+        root.GetProperty("updated_input").GetProperty("command").GetString().ShouldBe("ls");
         root.GetProperty("hooks_run").GetInt32().ShouldBe(1);
-        root.GetProperty("denial_cause").GetString().ShouldBe("HookDenied", Case.Sensitive);
+        root.GetProperty("denial_cause").GetString().ShouldBe("HookDenied");
         root.TryGetProperty("followup_message", out _).ShouldBeFalse();
         root.TryGetProperty("env", out _).ShouldBeFalse();
     }

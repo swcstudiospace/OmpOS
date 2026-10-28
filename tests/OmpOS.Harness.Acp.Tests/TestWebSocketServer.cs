@@ -14,7 +14,7 @@ internal sealed class TestWebSocketServer : IDisposable
     /// <summary>Initializes a new instance of the <see cref="TestWebSocketServer"/> class listening on a free loopback port.</summary>
     public TestWebSocketServer()
     {
-        var probe = new TcpListener(IPAddress.Loopback, 0);
+        using var probe = new TcpListener(IPAddress.Loopback, 0);
         probe.Start();
         var port = ((IPEndPoint)probe.LocalEndpoint).Port;
         probe.Stop();

@@ -125,7 +125,7 @@ One row per SUP id. Full text of each decision is the SUP row in `docs/open-ques
 | SUP-070 | skip | `Assert.Skip` | `tests/OmpOS.Harness.Acp.Tests/AcpStdioTransportTests.cs` | kept | Environment precondition (tool, OS or privilege). |
 | SUP-071 | SuppressMessage | `CA1515` | `tests/OmpOS.Harness.ContractTests/AsyncStreamHelpers.cs` | kept | Public type required by xUnit discovery or fixture generics. |
 | SUP-072 | SuppressMessage | `CA1515` | `tests/OmpOS.Harness.ContractTests/LoopbackAcpTransport.cs` | kept | Public type required by xUnit discovery or fixture generics. |
-| SUP-073 | SuppressMessage | `CA2000` | `tests/OmpOS.Harness.InMemory.Tests/WebSocketOmpTransportStubTests.cs` | kept | Disposal ownership transfers to the object under test. |
+| SUP-073 | SuppressMessage | `CA2000` | `tests/OmpOS.Harness.InMemory.Tests/WebSocketOmpTransportStubTests.cs` | fixed | Removed: the file was deleted with the stub (Phase 60). |
 | SUP-074 | SuppressMessage | `CA2007` | `tests/OmpOS.Harness.InMemory.Tests/WebSocketOmpTransportStubTests.cs` | fixed | Removed: suppression was a no-op in an Exe test project. |
 | SUP-075 | skip | `Assert.Skip` | `tests/OmpOS.Harness.Rpc.Tests/OmpPinMismatchTests.cs` | kept | Environment precondition (tool, OS or privilege). |
 | SUP-076 | skip | `Assert.Skip` | `tests/OmpOS.Harness.Rpc.Tests/OmpPinMismatchTests.cs` | kept | Environment precondition (tool, OS or privilege). |

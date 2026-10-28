@@ -158,6 +158,9 @@ internal sealed class FakeRemoteHost : IDisposable
     private static void WriteExecutable(string path, string content)
     {
         File.WriteAllText(path, content);
-        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
     }
 }

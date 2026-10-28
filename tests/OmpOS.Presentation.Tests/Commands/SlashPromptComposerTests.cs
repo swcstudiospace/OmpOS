@@ -16,7 +16,7 @@ public sealed class SlashPromptComposerTests
     [InlineData(false, "", "Use the skill \"lint\". Read its instructions from /w/.claude/skills/lint/SKILL.md and follow them.")]
     [InlineData(false, "src", "Use the skill \"lint\". Read its instructions from /w/.claude/skills/lint/SKILL.md and follow them.\n\nsrc")]
     public void ASkillIsHandedOverByCommandOrByFile(bool engineRunsSkill, string typed, string expected) =>
-        SlashPromptComposer.ForSkill(Skill, typed, engineRunsSkill).ShouldBe(expected, Case.Sensitive);
+        SlashPromptComposer.ForSkill(Skill, typed, engineRunsSkill).ShouldBe(expected);
 
     /// <summary>A subagent prompt carries what the definition says: description, a model other than inherit, the read-only and background flags, the instructions and the task.</summary>
     [Fact]
@@ -29,8 +29,7 @@ public sealed class SlashPromptComposerTests
         prompt.ShouldBe(
             "Hand the task below to a subagent named \"verifier\" with the task tool. Its definition comes from ~/.cursor/agents/verifier.md:\n"
             + "Description: Verifies work.\nModel: fast-model\nThe subagent must not change files.\nRun the subagent in the background.\n"
-            + "Instructions:\nCheck the claims.\n\nTask: the login",
-            Case.Sensitive);
+            + "Instructions:\nCheck the claims.\n\nTask: the login");
     }
 
     /// <summary>An inherited model, no description and no flags leave those lines out.</summary>
@@ -40,8 +39,7 @@ public sealed class SlashPromptComposerTests
         var agent = new SlashDiscoveredSubagent("plain", string.Empty, "Inherit", ReadOnly: false, IsBackground: false, "Do it.", SlashScope.Project, ".cursor/agents/plain.md");
 
         SlashPromptComposer.ForSubagent(agent, "x").ShouldBe(
-            "Hand the task below to a subagent named \"plain\" with the task tool. Its definition comes from .cursor/agents/plain.md:\nInstructions:\nDo it.\n\nTask: x",
-            Case.Sensitive);
+            "Hand the task below to a subagent named \"plain\" with the task tool. Its definition comes from .cursor/agents/plain.md:\nInstructions:\nDo it.\n\nTask: x");
     }
 
     /// <summary>Null input is refused.</summary>

@@ -46,9 +46,9 @@ public sealed class SshConfigReaderTests
         var listing = new SshConfigReader(home.Path).ListHosts(main);
 
         listing.Hosts.Select(host => host.Alias).ToArray().ShouldBe(["alpha", "beta", "gamma", "zeta", "eta", "theta", "epsilon", "kappa", "lambda"]);
-        listing.Hosts.Single(host => host.Alias == "alpha").Line.ShouldBe(2);
-        listing.Hosts.Single(host => host.Alias == "alpha").SourceFile.ShouldBe(main);
-        listing.Hosts.Single(host => host.Alias == "zeta").SourceFile.ShouldEndWith("10-a.conf", Case.Sensitive);
+        listing.Hosts.Single(host => string.Equals(host.Alias, "alpha", StringComparison.Ordinal)).Line.ShouldBe(2);
+        listing.Hosts.Single(host => string.Equals(host.Alias, "alpha", StringComparison.Ordinal)).SourceFile.ShouldBe(main);
+        listing.Hosts.Single(host => string.Equals(host.Alias, "zeta", StringComparison.Ordinal)).SourceFile.ShouldEndWith("10-a.conf", Case.Sensitive);
         listing.Warnings.Count.ShouldBe(1);
         listing.Warnings[0].ShouldContain("cannot be used as an OmpOS alias", Case.Sensitive);
     }

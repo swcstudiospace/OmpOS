@@ -73,18 +73,18 @@ public sealed class WorkspaceSetValidator
         var segments = new List<string>();
         foreach (var segment in path.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries))
         {
-            if (segment == ".")
+            if (string.Equals(segment, ".", StringComparison.Ordinal))
             {
                 continue;
             }
 
-            if (segment == ".." && segments.Count > 0)
+            if (string.Equals(segment, "..", StringComparison.Ordinal) && segments.Count > 0)
             {
                 segments.RemoveAt(segments.Count - 1);
                 continue;
             }
 
-            if (segment != "..")
+            if (!string.Equals(segment, "..", StringComparison.Ordinal))
             {
                 segments.Add(segment);
             }

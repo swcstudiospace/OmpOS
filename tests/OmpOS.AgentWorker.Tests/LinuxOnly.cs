@@ -1,3 +1,5 @@
+using Xunit;
+
 namespace OmpOS.AgentWorker.Tests;
 
 /// <summary>Skips tests whose fixtures are POSIX shell scripts when the run is not on Linux.</summary>

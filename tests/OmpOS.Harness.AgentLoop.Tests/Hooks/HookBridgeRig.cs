@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
 using OmpOS.Harness.AgentLoop.Hooks;
+using Xunit;
 
 namespace OmpOS.Harness.AgentLoop.Tests.Hooks;
 
@@ -14,9 +15,9 @@ internal sealed class HookBridgeRig : IAsyncDisposable
 {
     private static readonly TimeSpan SafetyLimit = TimeSpan.FromSeconds(30);
 
-    private HookBridgeRig(HookBridgeServer server, FakeBridgeHandler handler)
+    private HookBridgeRig(FakeBridgeHandler handler, HookBridgeOptions options, IHookApprovalPrompt? prompt, TimeProvider? clock, ILogger<HookBridgeServer>? logger)
     {
-        Server = server;
+        Server = new HookBridgeServer(handler, options, prompt, clock, logger);
         Handler = handler;
     }
 
@@ -49,18 +50,18 @@ internal sealed class HookBridgeRig : IAsyncDisposable
         TimeProvider? clock = null,
         ILogger<HookBridgeServer>? logger = null)
     {
-        var server = new HookBridgeServer(handler, options ?? new HookBridgeOptions(), prompt, clock, logger);
+        var rig = new HookBridgeRig(handler, options ?? new HookBridgeOptions(), prompt, clock, logger);
         try
         {
-            await server.StartAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await rig.Server.StartAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
         }
         catch
         {
-            await server.DisposeAsync().ConfigureAwait(true);
+            await rig.DisposeAsync().ConfigureAwait(true);
             throw;
         }
 
-        return new HookBridgeRig(server, handler);
+        return rig;
     }
 
     /// <summary>Opens a connection to the server with a real-time safety limit on the connect.</summary>

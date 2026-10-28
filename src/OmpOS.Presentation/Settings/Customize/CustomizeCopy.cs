@@ -104,7 +104,11 @@ public static class CustomizeCopy
     /// <summary>Returns the description of a discovered subagent: it says what the entry is, then what the subagent is for.</summary>
     /// <param name="description">What the subagent is for; may be empty.</param>
     /// <returns>The text.</returns>
-    public static string SubagentDescription(string description) => description.Length == 0 ? "Subagent." : "Subagent. " + description;
+    public static string SubagentDescription(string description)
+    {
+        ArgumentNullException.ThrowIfNull(description);
+        return description.Length == 0 ? "Subagent." : "Subagent. " + description;
+    }
 
     private static string PlatformName(CommandPlatforms platform) => platform switch
     {

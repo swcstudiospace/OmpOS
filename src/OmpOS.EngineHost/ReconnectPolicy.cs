@@ -40,22 +40,23 @@ public sealed record ReconnectPolicy
     }
 
     /// <summary>Checks the policy.</summary>
+    /// <param name="paramName">The name reported in the exception: the name of the argument that carried this policy.</param>
     /// <exception cref="ArgumentException">A delay is not positive, the maximum delay is below the initial delay, or the attempt count is outside 1 to <see cref="MaxAttemptsLimit"/>.</exception>
-    public void Validate()
+    public void Validate(string paramName = "policy")
     {
         if (InitialDelay <= TimeSpan.Zero)
         {
-            throw new ArgumentException("The initial delay must be positive.", nameof(InitialDelay));
+            throw new ArgumentException("The initial delay must be positive.", paramName);
         }
 
         if (MaxDelay < InitialDelay)
         {
-            throw new ArgumentException("The maximum delay must not be below the initial delay.", nameof(MaxDelay));
+            throw new ArgumentException("The maximum delay must not be below the initial delay.", paramName);
         }
 
         if (MaxAttempts is < 1 or > MaxAttemptsLimit)
         {
-            throw new ArgumentException("The attempt count must be between 1 and 100.", nameof(MaxAttempts));
+            throw new ArgumentException("The attempt count must be between 1 and 100.", paramName);
         }
     }
 }

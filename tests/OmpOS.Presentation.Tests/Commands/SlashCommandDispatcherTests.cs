@@ -16,7 +16,7 @@ public sealed class SlashCommandDispatcherTests
         var result = await Dispatcher.DispatchAsync("hello /plan", SlashResolutionContext.Empty, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         result.Kind.ShouldBe(SlashDispatchKind.SendPrompt);
-        result.Text.ShouldBe("hello /plan", Case.Sensitive);
+        result.Text.ShouldBe("hello /plan");
     }
 
     /// <summary>A delegated command is sent to omp as the prompt.</summary>
@@ -26,7 +26,7 @@ public sealed class SlashCommandDispatcherTests
         var result = await Dispatcher.DispatchAsync("/summarize", SlashResolutionContext.Empty, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         result.Kind.ShouldBe(SlashDispatchKind.SendPrompt);
-        result.Text.ShouldBe("/compact", Case.Sensitive);
+        result.Text.ShouldBe("/compact");
     }
 
     /// <summary>A refused command sends nothing and shows the reason.</summary>
@@ -36,7 +36,7 @@ public sealed class SlashCommandDispatcherTests
         var result = await Dispatcher.DispatchAsync("/in-cloud fix the bug", SlashResolutionContext.Empty, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         result.Kind.ShouldBe(SlashDispatchKind.Handled);
-        result.Text.ShouldBe("cloud agents: phase 60", Case.Sensitive);
+        result.Text.ShouldBe("cloud agents: phase 60");
     }
 
     /// <summary>A completed native action shows its message and sends nothing; the host sees the action, the catalogue's argument and the typed text.</summary>
@@ -48,7 +48,7 @@ public sealed class SlashCommandDispatcherTests
         var result = await Dispatcher.DispatchAsync("/rules", new SlashResolutionContext([], SlashDiscovery.Empty, host), TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         result.Kind.ShouldBe(SlashDispatchKind.Handled);
-        result.Text.ShouldBe("Settings opened.", Case.Sensitive);
+        result.Text.ShouldBe("Settings opened.");
         host.Requests.ShouldBe([new SlashActionRequest(SlashActionIds.SettingsOpen, "rules", string.Empty)]);
     }
 
@@ -61,7 +61,7 @@ public sealed class SlashCommandDispatcherTests
         var result = await Dispatcher.DispatchAsync("/plan add a cache", new SlashResolutionContext([], SlashDiscovery.Empty, host), TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         result.Kind.ShouldBe(SlashDispatchKind.SendPrompt);
-        result.Text.ShouldBe("add a cache", Case.Sensitive);
+        result.Text.ShouldBe("add a cache");
     }
 
     /// <summary>A failed action shows the reason and sends nothing, even when it carried text to send afterwards.</summary>
@@ -73,7 +73,7 @@ public sealed class SlashCommandDispatcherTests
         var result = await Dispatcher.DispatchAsync("/ask why", new SlashResolutionContext([], SlashDiscovery.Empty, host), TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         result.Kind.ShouldBe(SlashDispatchKind.Handled);
-        result.Text.ShouldBe("The engine offers no ask mode.", Case.Sensitive);
+        result.Text.ShouldBe("The engine offers no ask mode.");
     }
 
     /// <summary>Null input is refused.</summary>

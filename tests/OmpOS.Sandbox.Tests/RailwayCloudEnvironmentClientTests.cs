@@ -77,7 +77,7 @@ public sealed class RailwayCloudEnvironmentClientTests
 
         await harness.Client.CreateContainerAsync("s1", ct).ConfigureAwait(true);
 
-        var input = harness.Api.Requests.Single(request => request.Operation == "serviceInstanceUpdate").Variables["input"]!;
+        var input = harness.Api.Requests.Single(request => string.Equals(request.Operation, "serviceInstanceUpdate", StringComparison.Ordinal)).Variables["input"]!;
         input["sleepApplication"]!.GetValue<bool>().ShouldBeFalse();
         input["healthcheckPath"]!.GetValue<string>().ShouldBe("/ready");
     }
@@ -248,7 +248,7 @@ public sealed class RailwayCloudEnvironmentClientTests
         failure.Failure.ShouldBe(expected);
         create.Failure.ShouldBe(expected);
         harness.Api.CountOf("serviceCreate").ShouldBe(0);
-        if (expected == CloudEnvironmentFailure.InvalidResponse && status != "NOT_A_STATUS")
+        if (expected == CloudEnvironmentFailure.InvalidResponse && !string.Equals(status, "NOT_A_STATUS", StringComparison.Ordinal))
         {
             failure.Message.ShouldContain(status, Case.Insensitive);
         }
@@ -355,7 +355,7 @@ public sealed class RailwayCloudEnvironmentClientTests
         await harness.Client.AttachVolumeAsync("svc-1", "vol-1", "/var/omp/session", ct).ConfigureAwait(true);
 
         harness.Api.CountOf("volumeInstanceUpdate").ShouldBe(1);
-        var update = harness.Api.Requests.Single(request => request.Operation == "volumeInstanceUpdate").Variables;
+        var update = harness.Api.Requests.Single(request => string.Equals(request.Operation, "volumeInstanceUpdate", StringComparison.Ordinal)).Variables;
         update["volumeId"]!.GetValue<string>().ShouldBe("vol-1");
         update["input"]!["mountPath"]!.GetValue<string>().ShouldBe("/var/omp/session");
     }
@@ -447,9 +447,9 @@ public sealed class RailwayCloudEnvironmentClientTests
     {
         var statuses = RailwayOperations.Statuses;
 
-        statuses.Single(status => status.Operation == "serviceDelete").Verified.ShouldBeTrue();
-        statuses.Single(status => status.Operation == "volumeDelete").Verified.ShouldBeTrue();
-        statuses.Single(status => status.Operation == "deployments").Source.ShouldContain("UNVERIFIED: introspection needed", Case.Sensitive);
+        statuses.Single(status => string.Equals(status.Operation, "serviceDelete", StringComparison.Ordinal)).Verified.ShouldBeTrue();
+        statuses.Single(status => string.Equals(status.Operation, "volumeDelete", StringComparison.Ordinal)).Verified.ShouldBeTrue();
+        statuses.Single(status => string.Equals(status.Operation, "deployments", StringComparison.Ordinal)).Source.ShouldContain("UNVERIFIED: introspection needed", Case.Sensitive);
         statuses.ShouldAllBe(status => status.Source.Contains("https://docs.railway.com/", StringComparison.Ordinal)
             || status.Source.StartsWith("UNVERIFIED: introspection needed", StringComparison.Ordinal));
         string[] sent =
@@ -459,7 +459,7 @@ public sealed class RailwayCloudEnvironmentClientTests
         ];
         foreach (var operation in sent)
         {
-            statuses.Count(status => status.Operation == operation).ShouldBe(1);
+            statuses.Count(status => string.Equals(status.Operation, operation, StringComparison.Ordinal)).ShouldBe(1);
         }
     }
 

@@ -20,14 +20,14 @@ public sealed class HookEnvironmentTests
     {
         var environment = Build(HookFixtures.Hook(), HookFixtures.Session());
 
-        environment["PATH"].ShouldBe("/usr/bin:/bin", Case.Sensitive);
-        environment["HOME"].ShouldBe("/home/ada", Case.Sensitive);
-        environment["LC_ALL"].ShouldBe("C.UTF-8", Case.Sensitive);
+        environment["PATH"].ShouldBe("/usr/bin:/bin");
+        environment["HOME"].ShouldBe("/home/ada");
+        environment["LC_ALL"].ShouldBe("C.UTF-8");
         environment.ContainsKey("ANTHROPIC_API_KEY").ShouldBeFalse();
         environment.ContainsKey("OMPOS_CANARY_SECRET").ShouldBeFalse();
         environment.ContainsKey("OMPOS_HOOKS_TOKEN").ShouldBeFalse();
-        environment.Values.ShouldNotContain("sk-canary");
-        environment.Values.ShouldNotContain("bridge-token-canary");
+        environment.Values.ShouldNotContain("sk-canary", StringComparer.Ordinal);
+        environment.Values.ShouldNotContain("bridge-token-canary", StringComparer.Ordinal);
     }
 
     [Fact]
@@ -43,15 +43,15 @@ public sealed class HookEnvironmentTests
 
         var environment = Build(HookFixtures.Hook(), session);
 
-        environment["CURSOR_PROJECT_DIR"].ShouldBe("/work/app", Case.Sensitive);
-        environment["CLAUDE_PROJECT_DIR"].ShouldBe("/work/app", Case.Sensitive);
-        environment["OMPOS_PROJECT_DIR"].ShouldBe("/work/app", Case.Sensitive);
-        environment["CURSOR_VERSION"].ShouldBe("ompos-0.15.0", Case.Sensitive);
-        environment["CURSOR_USER_EMAIL"].ShouldBe("ada@example.com", Case.Sensitive);
-        environment["CURSOR_TRANSCRIPT_PATH"].ShouldBe("/t/x.jsonl", Case.Sensitive);
-        environment["CURSOR_CODE_REMOTE"].ShouldBe("true", Case.Sensitive);
-        environment["OMPOS_HOOK_EVENT"].ShouldBe("preToolUse", Case.Sensitive);
-        environment["OMPOS_SESSION_ID"].ShouldBe("conv-7", Case.Sensitive);
+        environment["CURSOR_PROJECT_DIR"].ShouldBe("/work/app");
+        environment["CLAUDE_PROJECT_DIR"].ShouldBe("/work/app");
+        environment["OMPOS_PROJECT_DIR"].ShouldBe("/work/app");
+        environment["CURSOR_VERSION"].ShouldBe("ompos-0.15.0");
+        environment["CURSOR_USER_EMAIL"].ShouldBe("ada@example.com");
+        environment["CURSOR_TRANSCRIPT_PATH"].ShouldBe("/t/x.jsonl");
+        environment["CURSOR_CODE_REMOTE"].ShouldBe("true");
+        environment["OMPOS_HOOK_EVENT"].ShouldBe("preToolUse");
+        environment["OMPOS_SESSION_ID"].ShouldBe("conv-7");
         environment.ContainsKey("CURSOR_PLUGIN_ROOT").ShouldBeFalse();
     }
 
@@ -72,8 +72,8 @@ public sealed class HookEnvironmentTests
 
         var environment = Build(hook, HookFixtures.Session());
 
-        environment["CURSOR_PLUGIN_ROOT"].ShouldBe("/opt/plugin", Case.Sensitive);
-        environment["OMPOS_PLUGIN_ROOT"].ShouldBe("/opt/plugin", Case.Sensitive);
+        environment["CURSOR_PLUGIN_ROOT"].ShouldBe("/opt/plugin");
+        environment["OMPOS_PLUGIN_ROOT"].ShouldBe("/opt/plugin");
     }
 
     [Fact]
@@ -85,9 +85,9 @@ public sealed class HookEnvironmentTests
 
         var environment = Build(hook, session);
 
-        environment["MODE"].ShouldBe("hook", Case.Sensitive);
-        environment["ONLY_SESSION"].ShouldBe("s", Case.Sensitive);
-        environment["PATH"].ShouldBe("/custom", Case.Sensitive);
+        environment["MODE"].ShouldBe("hook");
+        environment["ONLY_SESSION"].ShouldBe("s");
+        environment["PATH"].ShouldBe("/custom");
     }
 
     [Theory]
@@ -104,7 +104,7 @@ public sealed class HookEnvironmentTests
 
         var environment = Build(hook, session);
 
-        environment.Values.ShouldNotContain("forged");
+        environment.Values.ShouldNotContain("forged", StringComparer.Ordinal);
         HookEnvironment.IsReserved(name).ShouldBeTrue();
     }
 
@@ -113,7 +113,7 @@ public sealed class HookEnvironmentTests
     {
         var environment = Build(HookFixtures.Hook(), HookFixtures.Session(), inherit: true);
 
-        environment["ANTHROPIC_API_KEY"].ShouldBe("sk-canary", Case.Sensitive);
+        environment["ANTHROPIC_API_KEY"].ShouldBe("sk-canary");
         environment.ContainsKey("OMPOS_HOOKS_TOKEN").ShouldBeFalse();
         environment.ContainsKey("OMPOS_CANARY_SECRET").ShouldBeFalse();
     }
@@ -130,7 +130,7 @@ public sealed class HookEnvironmentTests
         environment.ContainsKey("ANTHROPIC_API_KEY").ShouldBeFalse();
         environment.ContainsKey("OMPOS_CANARY_SECRET").ShouldBeFalse();
         environment.ContainsKey("OMPOS_HOOKS_TOKEN").ShouldBeFalse();
-        environment["CURSOR_PROJECT_DIR"].ShouldBe("/work/project", Case.Sensitive);
+        environment["CURSOR_PROJECT_DIR"].ShouldBe("/work/project");
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public sealed class HookEnvironmentTests
         var start = HookFixtures.Hook(HookEvent.SessionStart, id: "start", command: "./start.sh");
         var later = HookFixtures.Hook(HookEvent.BeforeShellExecution, id: "later", command: "./later.sh");
         var runner = new ScriptedCommandRunner((invocation, _) => Task.FromResult(
-            invocation.Command == "./start.sh"
+            string.Equals(invocation.Command, "./start.sh", StringComparison.Ordinal)
                 ? ScriptedCommandRunner.Exit(0, """{ "env": { "PROJECT_MODE": "strict", "OMPOS_SESSION_ID": "forged" } }""")
                 : ScriptedCommandRunner.Exit(0, """{ "permission": "allow" }""")));
         using var rig = await DispatcherRig.CreateAsync([start, later], Token, runner);
@@ -148,9 +148,9 @@ public sealed class HookEnvironmentTests
         await rig.DispatchAsync(HookEvent.BeforeShellExecution, """{ "command": "ls" }""", Token);
 
         var environment = runner.Invocations[1].Environment;
-        environment["PROJECT_MODE"].ShouldBe("strict", Case.Sensitive);
-        environment["OMPOS_SESSION_ID"].ShouldBe("conv-1", Case.Sensitive);
-        rig.Session.SessionEnvironment["PROJECT_MODE"].ShouldBe("strict", Case.Sensitive);
+        environment["PROJECT_MODE"].ShouldBe("strict");
+        environment["OMPOS_SESSION_ID"].ShouldBe("conv-1");
+        rig.Session.SessionEnvironment["PROJECT_MODE"].ShouldBe("strict");
     }
 
     [Fact]
@@ -164,9 +164,9 @@ public sealed class HookEnvironmentTests
         await rig.DispatchAsync(HookEvent.PreToolUse, "{}", Token);
         await rig.DispatchAsync(HookEvent.PostToolUse, "{}", Token);
 
-        runner.Invocations[0].Command.ShouldBe("./check.sh --strict", Case.Sensitive);
+        runner.Invocations[0].Command.ShouldBe("./check.sh --strict");
         runner.Invocations[0].Shell.ShouldBe(HookShell.PosixSh);
-        runner.Invocations[0].WorkingDirectory.ShouldBe("/work/project", Case.Sensitive);
+        runner.Invocations[0].WorkingDirectory.ShouldBe("/work/project");
         runner.Invocations[0].MaxStandardOutputBytes.ShouldBe(new HookDispatcherOptions().MaxStandardOutputBytes);
         runner.Invocations[1].Shell.ShouldBe(HookShell.None);
         runner.Invocations[1].Args!.ShouldBe(["fmt", "--write"], ignoreOrder: false);

@@ -130,7 +130,7 @@ internal static class WebAppTestHost
         }
 
         using var document = await ReadJsonAsync(response, ct).ConfigureAwait(false);
-        document.RootElement.GetProperty("type").GetString().ShouldBe($"/problems/{code}", Case.Sensitive);
+        document.RootElement.GetProperty("type").GetString().ShouldBe($"/problems/{code}");
     }
 
     /// <summary>Creates a session, submits a prompt, and waits until the run is held at its tool approval.</summary>

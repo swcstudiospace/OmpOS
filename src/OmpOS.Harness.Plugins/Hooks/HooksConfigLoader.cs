@@ -110,6 +110,10 @@ public sealed class HooksConfigLoader
         return HooksConfigParser.Parse(bytes, source.Format, source.Path);
     }
 
+    private static bool IsBlocking(HookDefinition definition) => definition.IsOmpEvent
+        ? GuardingOmpEvents.Contains(definition.EventName)
+        : definition.Event is { } hookEvent && HookEvents.IsPermission(hookEvent);
+
     private async Task<EffectiveHook> BuildAsync(
         HookDefinition definition,
         HookSource source,
@@ -142,9 +146,7 @@ public sealed class HooksConfigLoader
             loopLimit,
             definition.RunsIn,
             digests);
-        var blocking = definition.IsOmpEvent
-            ? GuardingOmpEvents.Contains(definition.EventName)
-            : definition.Event is { } hookEvent && HookEvents.IsPermission(hookEvent);
+        var blocking = IsBlocking(definition);
         var suffix = definition.Id ?? $"{definition.EventName}:{definition.Index}";
         return new EffectiveHook(
             $"{source.PseudoPluginId}:{suffix}",

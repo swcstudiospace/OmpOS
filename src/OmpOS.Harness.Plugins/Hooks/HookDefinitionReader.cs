@@ -43,18 +43,7 @@ internal static class HookDefinitionReader
             return null;
         }
 
-        foreach (var property in element.EnumerateObject())
-        {
-            if (!KnownFields.Contains(property.Name))
-            {
-                diagnostics.Add(new HookDiagnostic(
-                    HookDiagnosticSeverity.Warning,
-                    file,
-                    $"{path}.{property.Name}",
-                    $"Unknown hook field '{property.Name}' is ignored."));
-            }
-        }
-
+        WarnAboutUnknownFields(element, file, path, diagnostics);
         var errors = diagnostics.Count(d => d.Severity == HookDiagnosticSeverity.Error);
         var reader = new FieldReader(element, file, path, diagnostics);
         var type = ReadType(reader);
@@ -99,6 +88,21 @@ internal static class HookDefinitionReader
             description,
             env,
             runsIn);
+    }
+
+    private static void WarnAboutUnknownFields(JsonElement element, string file, string path, List<HookDiagnostic> diagnostics)
+    {
+        foreach (var property in element.EnumerateObject())
+        {
+            if (!KnownFields.Contains(property.Name))
+            {
+                diagnostics.Add(new HookDiagnostic(
+                    HookDiagnosticSeverity.Warning,
+                    file,
+                    $"{path}.{property.Name}",
+                    $"Unknown hook field '{property.Name}' is ignored."));
+            }
+        }
     }
 
     private static HookType ReadType(FieldReader reader)
@@ -196,7 +200,7 @@ internal static class HookDefinitionReader
         return locations;
     }
 
-    private static void CheckBody(FieldReader reader, HookType type, string? command, IReadOnlyList<string>? args, string? prompt)
+    private static void CheckBody(FieldReader reader, HookType type, string? command, List<string>? args, string? prompt)
     {
         if (type == HookType.Prompt)
         {
@@ -308,7 +312,7 @@ internal static class HookDefinitionReader
             return fallback;
         }
 
-        public IReadOnlyList<string>? StringArray(string name)
+        public List<string>? StringArray(string name)
         {
             if (!element.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
             {
@@ -336,7 +340,7 @@ internal static class HookDefinitionReader
             return items;
         }
 
-        public IReadOnlyDictionary<string, string> StringMap(string name)
+        public Dictionary<string, string> StringMap(string name)
         {
             var map = new Dictionary<string, string>(StringComparer.Ordinal);
             if (!element.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)

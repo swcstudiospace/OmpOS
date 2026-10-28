@@ -18,10 +18,11 @@ public sealed class StaticPoolEnvironmentClient : ICloudEnvironmentClient
     private const string VolumePrefix = "pool-";
     private const string UnsupportedFileMessage = "Volume files are only reachable inside the worker; the static pool has no file endpoint";
 
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
     private readonly List<StaticPoolWorker> _workers;
     private readonly Dictionary<string, StaticPoolWorker> _workersById = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _workerIdBySession = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _sessionsWithVolume = new(StringComparer.Ordinal);
     private readonly HashSet<string> _idleWorkerIds = new(StringComparer.Ordinal);
     private readonly WorkerReadinessProbe _probe;
 
@@ -47,7 +48,7 @@ public sealed class StaticPoolEnvironmentClient : ICloudEnvironmentClient
             ArgumentNullException.ThrowIfNull(worker, nameof(options));
             ArgumentException.ThrowIfNullOrWhiteSpace(worker.WorkerId, nameof(options));
             ArgumentNullException.ThrowIfNull(worker.BaseUri, nameof(options));
-            if (!worker.BaseUri.IsAbsoluteUri || (worker.BaseUri.Scheme != Uri.UriSchemeHttp && worker.BaseUri.Scheme != Uri.UriSchemeHttps))
+            if (!worker.BaseUri.IsAbsoluteUri || (!string.Equals(worker.BaseUri.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal) && !string.Equals(worker.BaseUri.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal)))
             {
                 throw new ArgumentException(
                     string.Create(CultureInfo.InvariantCulture, $"Worker '{worker.WorkerId}' needs an absolute http or https base URI."),
@@ -108,7 +109,7 @@ public sealed class StaticPoolEnvironmentClient : ICloudEnvironmentClient
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
         lock (_gate)
         {
-            return Task.FromResult<CloudVolume?>(_workerIdBySession.TryGetValue(sessionId, out var workerId)
+            return Task.FromResult<CloudVolume?>(_sessionsWithVolume.Contains(sessionId) && _workerIdBySession.TryGetValue(sessionId, out var workerId)
                 ? new CloudVolume(VolumePrefix + workerId, sessionId)
                 : null);
         }
@@ -128,6 +129,7 @@ public sealed class StaticPoolEnvironmentClient : ICloudEnvironmentClient
                     CloudEnvironmentFailure.NotFound);
             }
 
+            _sessionsWithVolume.Add(sessionId);
             return Task.FromResult(new CloudVolume(VolumePrefix + workerId, sessionId));
         }
     }
@@ -215,6 +217,7 @@ public sealed class StaticPoolEnvironmentClient : ICloudEnvironmentClient
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
         lock (_gate)
         {
+            _sessionsWithVolume.Remove(sessionId);
             if (!_workerIdBySession.Remove(sessionId, out var workerId))
             {
                 return Task.FromResult(false);

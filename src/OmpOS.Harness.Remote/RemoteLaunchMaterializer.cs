@@ -275,6 +275,13 @@ public sealed class RemoteLaunchMaterializer
             }
         }
 
+        AddDegradedEvents(options, profile, events, droppedPluginEntries, droppedConfigs);
+
+        return arguments;
+    }
+
+    private void AddDegradedEvents(RemoteLaunchOptions options, SshProfile profile, List<StageEvent> events, int droppedPluginEntries, int droppedConfigs)
+    {
         if (droppedPluginEntries > 0)
         {
             events.Add(Degraded(
@@ -289,8 +296,6 @@ public sealed class RemoteLaunchMaterializer
         {
             events.Add(Degraded(options.SessionId, RemoteStageId + ":config", "A settings file named on the local command line does not exist on the remote machine and was left out."));
         }
-
-        return arguments;
     }
 
     private Dictionary<string, string> RewriteEnvironment(

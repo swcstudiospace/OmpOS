@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 using OmpOS.Contracts.Agents;
 
 namespace OmpOS.Contracts.Catalog;
@@ -12,8 +14,10 @@ public sealed record SessionContextResponse
     public required bool Available { get; init; }
 
     /// <summary>Gets a plain sentence that says why the context is unavailable, or null when it is available.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Reason { get; init; }
 
     /// <summary>Gets the task context, or null when it is unavailable.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public TaskContext? Context { get; init; }
 }

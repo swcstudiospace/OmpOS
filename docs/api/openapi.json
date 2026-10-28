@@ -79,8 +79,9 @@
       },
       "get": {
         "tags": [
-          "SessionEndpoints"
+          "Catalog"
         ],
+        "summary": "Lists the caller's sessions with their catalog fields.",
         "responses": {
           "200": {
             "description": "OK",
@@ -89,7 +90,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Session"
+                    "$ref": "#/components/schemas/SessionCatalogEntry"
                   }
                 }
               }
@@ -628,10 +629,1243 @@
           }
         }
       }
+    },
+    "/board": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Builds the Kanban board from the caller's sessions.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/card-details": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Reads what the substrate knows about the session behind a card.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/close": {
+      "post": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Closes a session: stops its live run and moves it to the archived column.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionLifecycleResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/reopen": {
+      "post": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Reopens a closed session.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionLifecycleResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/resume": {
+      "post": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Settles the orphaned run of a lost session so it accepts a new prompt.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionLifecycleResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspace": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Reads the workspace name, its folder name and the plugin check for the top bar.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Streams catalog, session status and stage events of the caller's sessions. The stream does not end at a terminal session event.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/stages": {
+      "get": {
+        "tags": [
+          "Stages"
+        ],
+        "summary": "Reads the latest event of every stage of the session.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionStagesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/context": {
+      "get": {
+        "tags": [
+          "Stages"
+        ],
+        "summary": "Reads the task context of the session: task, Graph, workflow phase, shared memory and lessons.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionContextResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/steer": {
+      "post": {
+        "tags": [
+          "Steering"
+        ],
+        "summary": "Sends a message to the active turn, now or as a queued follow-up, and reports how it was delivered.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SteerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SteerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/tool-approvals": {
+      "get": {
+        "tags": [
+          "Steering"
+        ],
+        "summary": "Lists the tool approvals that wait for a decision.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingToolApprovalsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/config-options": {
+      "get": {
+        "tags": [
+          "Session configuration"
+        ],
+        "summary": "Reads the model, mode and thinking options the engine reports for the session.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionConfigOptionsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/config-options/{optionId}": {
+      "put": {
+        "tags": [
+          "Session configuration"
+        ],
+        "summary": "Changes one option of a session whose run holds a live engine session.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "optionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetConfigOptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionConfigOptionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/commands": {
+      "get": {
+        "tags": [
+          "Session configuration"
+        ],
+        "summary": "Lists the slash commands the engine advertises for the session.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionCommandsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/changes": {
+      "get": {
+        "tags": [
+          "Changes"
+        ],
+        "summary": "Lists the files the session's runs edited, with their before and after text and review state.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionChangesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/changes/{path}/accept": {
+      "post": {
+        "tags": [
+          "Changes"
+        ],
+        "summary": "Accepts the change of one file. The path is URL-encoded.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeDecisionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/changes/{path}/reject": {
+      "post": {
+        "tags": [
+          "Changes"
+        ],
+        "summary": "Rejects the change of one file and restores its text before the edit. The path is URL-encoded.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeDecisionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/source": {
+      "get": {
+        "tags": [
+          "Source"
+        ],
+        "summary": "Names the licence and the source repository of this running service (AGPL-3.0-or-later section 13).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceInfo"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "BoardCard": {
+        "required": [
+          "id",
+          "title",
+          "rowStatus",
+          "columnKey",
+          "lastActivityAt",
+          "isStale",
+          "closed"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "title": {
+            "type": "string",
+            "description": "Gets the card title. It is derived from the session identifier, never from a prompt."
+          },
+          "rowStatus": {
+            "description": "Gets the status the rail shows for the session.",
+            "$ref": "#/components/schemas/CatalogRowStatus"
+          },
+          "columnKey": {
+            "type": "string",
+            "description": "Gets the key of the column the card sits in."
+          },
+          "lastActivityAt": {
+            "type": "string",
+            "description": "Gets the time of the last activity of the session.",
+            "format": "date-time"
+          },
+          "isStale": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the session shows as running but has had no activity for longer than a run lease lives."
+          },
+          "closed": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the operator closed the session."
+          }
+        },
+        "description": "One task card of the board: one session."
+      },
+      "BoardColumn": {
+        "required": [
+          "key",
+          "title",
+          "acceptsDrop",
+          "cards"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Gets the stable column key: `backlog`, `queued`, `running`, `awaiting-input`, `needs-attention`, `paused`, `completed`, `failed`, `unreachable` or `archived`."
+          },
+          "title": {
+            "type": "string",
+            "description": "Gets the column title."
+          },
+          "acceptsDrop": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether a dragged card may be dropped here: true only for Backlog and Archived."
+          },
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardCard"
+            },
+            "description": "Gets the cards of the column, most recent activity first."
+          }
+        },
+        "description": "One column of the board."
+      },
+      "BoardResponse": {
+        "required": [
+          "state",
+          "columns"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "description": "Gets the board state.",
+            "$ref": "#/components/schemas/BoardStateKind"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardColumn"
+            },
+            "description": "Gets the columns in display order. Every column is present, empty ones with no cards."
+          }
+        },
+        "description": "The answer of `GET /board`: the columns and cards built from the catalog."
+      },
+      "BoardStateKind": {
+        "enum": [
+          "loading",
+          "empty",
+          "error",
+          "ready"
+        ],
+        "description": "The state of the whole board. The server answers BoardStateKind.Empty or BoardStateKind.Ready; BoardStateKind.Loading and BoardStateKind.Error exist so a client models all four states of the desktop board with one type."
+      },
+      "CardDetailsResponse": {
+        "required": [
+          "sessionId",
+          "available"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether a task-context source answered. When false every other field is null and string? CardDetailsResponse.Reason says why."
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a plain sentence that says why the details are unavailable, or null when they are available."
+          },
+          "taskTitle": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the title of the task the session works on, or null when not reported."
+          },
+          "graphId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the Graph identifier of the session's plan, or null when not reported."
+          },
+          "lessonsCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Gets the number of lessons recorded for the task, or null when not reported.",
+            "format": "int32"
+          },
+          "leaseHolder": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the holder of the task lease, or null when the source did not report one."
+          }
+        },
+        "description": "The answer of `GET /sessions/{id}/card-details`: what the substrate knows about the session behind a card."
+      },
+      "CatalogRowGroup": {
+        "enum": [
+          "needs-you",
+          "running",
+          "lost",
+          "idle",
+          "finished"
+        ],
+        "description": "The rail group of a catalog row, in display order. The members and their order mirror the desktop rail groups."
+      },
+      "CatalogRowStatus": {
+        "enum": [
+          "needs-approval",
+          "waiting-for-you",
+          "running",
+          "queued",
+          "lost",
+          "ready",
+          "paused",
+          "closed",
+          "completed",
+          "failed",
+          "unknown"
+        ],
+        "description": "The status a catalog row shows. It combines the stored session status, the closed flag and the staleness of a running session; the members mirror the desktop row statuses."
+      },
+      "CatalogSessionKind": {
+        "enum": [
+          "agent",
+          "terminal",
+          "cloud"
+        ],
+        "description": "What a catalog row is. The wire value is the lower-case member name."
+      },
+      "ChangeDecisionResponse": {
+        "required": [
+          "path",
+          "status",
+          "applied"
+        ],
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Gets the path of the change, as `GET /sessions/{id}/changes` reports it."
+          },
+          "status": {
+            "description": "Gets the review state after the decision.",
+            "$ref": "#/components/schemas/ChangeReviewStatus"
+          },
+          "applied": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the decision wrote the file in the workspace. False when the decision was only recorded."
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a plain sentence that says why nothing was written, or null when the decision was applied."
+          }
+        },
+        "description": "The answer of `POST /sessions/{id}/changes/{path}/accept` and `reject`."
+      },
+      "ChangeKind": {
+        "enum": [
+          "added",
+          "modified"
+        ],
+        "description": "Whether a change created a file or edited one."
+      },
+      "ChangeReviewStatus": {
+        "enum": [
+          "pending",
+          "accepted",
+          "rejected"
+        ],
+        "description": "The review state of a change."
+      },
+      "ConfigOption": {
+        "required": [
+          "id",
+          "currentValue",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the engine's identifier of the option, for example `model`, `mode` or `thinking`. It names the option in `PUT /sessions/{id}/config-options/{optionId}`."
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the display name, or null."
+          },
+          "category": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the category the engine gave the option (`model`, `mode` or `thought_level`), or null."
+          },
+          "currentValue": {
+            "type": "string",
+            "description": "Gets the value the option has now."
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfigOptionValue"
+            },
+            "description": "Gets the values the option can take, in the engine's order."
+          }
+        },
+        "description": "One select-style option of a session that the engine owns: its model, its mode or its thinking level."
+      },
+      "ConfigOptionValue": {
+        "required": [
+          "value",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "Gets the engine's identifier of the value. It is sent back verbatim to select it."
+          },
+          "name": {
+            "type": "string",
+            "description": "Gets the display name."
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the description, or null."
+          }
+        },
+        "description": "One value a ConfigOption can take."
+      },
+      "ContextNote": {
+        "required": [
+          "id",
+          "text",
+          "origin"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the identifier of the note in its origin."
+          },
+          "text": {
+            "type": "string",
+            "description": "Gets the note text. Consumers show it as text and never as markup."
+          },
+          "origin": {
+            "type": "string",
+            "description": "Gets the name of the place the note came from, for example the memory scope."
+          },
+          "recordedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the time the note was recorded, or null when the origin does not say.",
+            "format": "date-time"
+          }
+        },
+        "description": "One piece of shared context, a remembered fact or a lesson from earlier work. The text is untrusted, plain text."
+      },
       "CreateSessionRequest": {
         "type": "object",
         "properties": {
@@ -644,6 +1878,47 @@
           }
         },
         "description": "Request body for `POST /sessions`. The owner is never taken from the body; it is the caller's subject."
+      },
+      "GsdPhaseInfo": {
+        "required": [
+          "number",
+          "name",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "string",
+            "description": "Gets the phase number as written in the roadmap, for example `25.6`."
+          },
+          "name": {
+            "type": "string",
+            "description": "Gets the phase name."
+          },
+          "status": {
+            "type": "string",
+            "description": "Gets the phase status as the planning files record it, for example `complete` or `in progress`."
+          },
+          "plansComplete": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the number of completed plans in the phase.",
+            "format": "int32"
+          },
+          "plansTotal": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets the total number of plans in the phase.",
+            "format": "int32"
+          }
+        },
+        "description": "The workflow phase a session works on, as the workflow engine's planning files record it."
       },
       "Message": {
         "required": [
@@ -668,6 +1943,85 @@
           }
         },
         "description": "A single chat message inside a session."
+      },
+      "PendingToolApproval": {
+        "required": [
+          "requestId",
+          "toolName",
+          "requestedAt",
+          "grantableTools"
+        ],
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "description": "Gets the request identifier a decision is addressed to."
+          },
+          "toolName": {
+            "type": "string",
+            "description": "Gets the tool the request concerns."
+          },
+          "requestedAt": {
+            "type": "string",
+            "description": "Gets when the request was made.",
+            "format": "date-time"
+          },
+          "grantableTools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets the tools a decision may allow. Empty means the policy ceiling permits none, so only a deny can be recorded."
+          }
+        },
+        "description": "One tool approval that waits for a decision."
+      },
+      "PendingToolApprovalsResponse": {
+        "required": [
+          "sessionId",
+          "approvals"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "approvals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingToolApproval"
+            },
+            "description": "Gets the pending requests."
+          }
+        },
+        "description": "The answer of `GET /sessions/{id}/tool-approvals`: the requests that wait for a decision, oldest first."
+      },
+      "PluginCheckResult": {
+        "required": [
+          "status",
+          "summary"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "description": "Gets the check status.",
+            "$ref": "#/components/schemas/PluginCheckStatus"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Gets a plain-text summary of the result. It never contains a path or a credential."
+          }
+        },
+        "description": "The outcome of the workspace plugin check, in plain text."
+      },
+      "PluginCheckStatus": {
+        "enum": [
+          "ok",
+          "degraded",
+          "unavailable"
+        ],
+        "description": "The result of the workspace plugin check."
       },
       "ProblemDetails": {
         "type": "object",
@@ -944,6 +2298,365 @@
         },
         "description": "An agent session: ordered messages plus the append-only stream-event log."
       },
+      "SessionCatalogEntry": {
+        "required": [
+          "id",
+          "ownerId",
+          "createdAt",
+          "updatedAt",
+          "status",
+          "messages",
+          "events",
+          "kind",
+          "rowStatus",
+          "group",
+          "lastActivityAt",
+          "closed"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "ownerId": {
+            "type": "string",
+            "description": "Gets the owner identifier: the subject of the bearer token that created the session."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Gets the creation timestamp.",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "Gets the last-update timestamp of the stored session.",
+            "format": "date-time"
+          },
+          "status": {
+            "description": "Gets the stored session status.",
+            "$ref": "#/components/schemas/SessionStatus"
+          },
+          "sandboxId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the sandbox identifier, or null when the session runs without a sandbox."
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "description": "Gets the ordered chat messages."
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StreamEvent"
+            },
+            "description": "Gets the append-only stream-event log."
+          },
+          "kind": {
+            "description": "Gets what the session is. Sessions started through this API are CatalogSessionKind.Agent.",
+            "$ref": "#/components/schemas/CatalogSessionKind"
+          },
+          "rowStatus": {
+            "description": "Gets the status the rail shows for the session.",
+            "$ref": "#/components/schemas/CatalogRowStatus"
+          },
+          "group": {
+            "description": "Gets the rail group of the session.",
+            "$ref": "#/components/schemas/CatalogRowGroup"
+          },
+          "lastActivityAt": {
+            "type": "string",
+            "description": "Gets the time of the last activity: the later of the session update and its last logged event.",
+            "format": "date-time"
+          },
+          "graphId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the Graph identifier of the session's plan, or null when no stage source reported one."
+          },
+          "closed": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the operator closed the session."
+          },
+          "workspaceLabel": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the name of the folder the session works in, or null when the API has no workspace. It is never a full path."
+          }
+        },
+        "description": "One row of `GET /sessions`: every field of the stored Session under its existing name, plus the catalog fields the web\nrail and board need. The catalog fields are additive, so a client that reads the list as sessions keeps working. SessionStatus SessionCatalogEntry.Status is the\nstored session status; the richer rail status is CatalogRowStatus SessionCatalogEntry.RowStatus."
+      },
+      "SessionChange": {
+        "required": [
+          "path",
+          "kind",
+          "status",
+          "newText"
+        ],
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Gets the path of the edited file, as the harness reported it."
+          },
+          "kind": {
+            "description": "Gets whether the edits created the file or changed it.",
+            "$ref": "#/components/schemas/ChangeKind"
+          },
+          "status": {
+            "description": "Gets the review state of the change as it stands.",
+            "$ref": "#/components/schemas/ChangeReviewStatus"
+          },
+          "oldText": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the file text before the first edit, or null when the edits created the file."
+          },
+          "newText": {
+            "type": "string",
+            "description": "Gets the file text after the latest edit."
+          }
+        },
+        "description": "One file the session's runs edited: the net change from the text before the first edit to the text after the latest one."
+      },
+      "SessionChangesResponse": {
+        "required": [
+          "sessionId",
+          "workspaceAvailable",
+          "changes"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "workspaceAvailable": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the API has a workspace folder to apply a decision in. When false, a decision is recorded only."
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionChange"
+            },
+            "description": "Gets the changes, in the order of their first edit."
+          }
+        },
+        "description": "The answer of `GET /sessions/{id}/changes`."
+      },
+      "SessionCommand": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Gets the command name without the leading slash."
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets what the command does, as the engine words it, or null."
+          },
+          "inputHint": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the hint for the argument text that follows the command, or null when it takes no input."
+          }
+        },
+        "description": "One slash command the engine advertises for a session. The engine runs it when a prompt that starts with its name is sent."
+      },
+      "SessionCommandsResponse": {
+        "required": [
+          "sessionId",
+          "available",
+          "live",
+          "commands"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the engine advertised commands for the session. When false, IReadOnlyList&lt;SessionCommand&gt; SessionCommandsResponse.Commands is empty and string? SessionCommandsResponse.Reason says why."
+          },
+          "live": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the commands come from a live engine session or from the last list an earlier run advertised."
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a plain sentence that says why the commands are unavailable or not live, or null."
+          },
+          "commands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionCommand"
+            },
+            "description": "Gets the commands, in the engine's order."
+          }
+        },
+        "description": "The answer of `GET /sessions/{id}/commands`."
+      },
+      "SessionConfigOptionsResponse": {
+        "required": [
+          "sessionId",
+          "available",
+          "live",
+          "options"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the engine reported options for the session. When false, IReadOnlyList&lt;ConfigOption&gt; SessionConfigOptionsResponse.Options is empty and string? SessionConfigOptionsResponse.Reason says why."
+          },
+          "live": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the options come from a live engine session. False means they are the last options an earlier run reported, and a change is refused until a run is live."
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a plain sentence that says why the options are unavailable or not live, or null."
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfigOption"
+            },
+            "description": "Gets the options."
+          }
+        },
+        "description": "The answer of `GET /sessions/{id}/config-options`."
+      },
+      "SessionContextResponse": {
+        "required": [
+          "sessionId",
+          "available"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether a task-context source answered. When false, TaskContext? SessionContextResponse.Context is null and string? SessionContextResponse.Reason says why."
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a plain sentence that says why the context is unavailable, or null when it is available."
+          },
+          "context": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets the task context, or null when it is unavailable.",
+                "$ref": "#/components/schemas/TaskContext"
+              }
+            ]
+          }
+        },
+        "description": "The answer of `GET /sessions/{id}/context`: the task context of the session."
+      },
+      "SessionLifecycleResponse": {
+        "required": [
+          "id",
+          "closed",
+          "rowStatus",
+          "group"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "closed": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether the session is closed after the operation."
+          },
+          "rowStatus": {
+            "description": "Gets the status the rail shows for the session after the operation.",
+            "$ref": "#/components/schemas/CatalogRowStatus"
+          },
+          "group": {
+            "description": "Gets the rail group of the session after the operation.",
+            "$ref": "#/components/schemas/CatalogRowGroup"
+          }
+        },
+        "description": "The answer of `POST /sessions/{id}/close`, `reopen` and `resume`: the session's row after the operation."
+      },
+      "SessionStagesResponse": {
+        "required": [
+          "sessionId",
+          "available",
+          "stages"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Gets a value indicating whether plugin stages (planner, orchestrator, substrate, workflow engine) can be observed. When false, IReadOnlyList&lt;StageEvent&gt; SessionStagesResponse.Stages holds the engine stage and one StageStatus.Unavailable stage for each plugin source, and string? SessionStagesResponse.Reason says why."
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a plain sentence that says why plugin stages are unavailable, or null when they are available."
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StageEvent"
+            },
+            "description": "Gets the stages: the latest event for each source and stage, in pipeline order."
+          }
+        },
+        "description": "The answer of `GET /sessions/{id}/stages`: the latest event of every stage of the session."
+      },
       "SessionStatus": {
         "enum": [
           "Idle",
@@ -951,9 +2664,200 @@
           "AwaitingToolApproval",
           "Completed",
           "Failed",
-          "Cancelled"
+          "Cancelled",
+          "Interrupted"
         ],
         "description": "Lifecycle states of an agent session."
+      },
+      "SetConfigOptionRequest": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the value to select. Required; one of the option's string ConfigOptionValue.Value entries."
+          }
+        },
+        "description": "The body of `PUT /sessions/{id}/config-options/{optionId}`."
+      },
+      "SourceInfo": {
+        "required": [
+          "licence",
+          "licenceUrl",
+          "sourceUrl",
+          "revision",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "licence": {
+            "type": "string",
+            "description": "Gets the SPDX identifier of the licence."
+          },
+          "licenceUrl": {
+            "type": "string",
+            "description": "Gets the address of the licence text.",
+            "format": "uri"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "description": "Gets the address of the source repository.",
+            "format": "uri"
+          },
+          "revision": {
+            "type": "string",
+            "description": "Gets the source revision this build was made from, or `unknown` when the build did not record one."
+          },
+          "version": {
+            "type": "string",
+            "description": "Gets the assembly version of the service."
+          }
+        },
+        "description": "The answer of the anonymous `GET /source`: where the corresponding source of this running service is, as the AGPL-3.0 section 13\nsource offer requires."
+      },
+      "StageEvent": {
+        "required": [
+          "sessionId",
+          "source",
+          "stageId",
+          "title",
+          "status",
+          "timestamp"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Gets the identifier of the session the stage belongs to."
+          },
+          "source": {
+            "description": "Gets the component that produced the event.",
+            "$ref": "#/components/schemas/StageSource"
+          },
+          "stageId": {
+            "type": "string",
+            "description": "Gets the stage identifier. It is stable within one session and source, so a later event updates the same row."
+          },
+          "title": {
+            "type": "string",
+            "description": "Gets the short title of the stage, for display."
+          },
+          "status": {
+            "description": "Gets the state of the stage.",
+            "$ref": "#/components/schemas/StageStatus"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "Gets the time the observation was made.",
+            "format": "date-time"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a short plain-text explanation, or null when the title says everything. For a degraded or failed stage it names the cause."
+          },
+          "parentStageId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the identifier of the parent stage within the same source, or null for a top-level stage. A subagent is a child of the orchestrator stage."
+          },
+          "graphId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the Graph identifier the planner minted for the prompt, or null when no plan exists."
+          }
+        },
+        "description": "One observation about a stage of the agent loop. Producers emit events as plugins make progress; consumers fold them into a\ntimeline keyed by string StageEvent.SessionId, StageSource StageEvent.Source and string StageEvent.StageId. A later event for the same key\nreplaces the earlier one. The event carries plain text only: consumers never interpret any field as markup."
+      },
+      "StageSource": {
+        "enum": [
+          "Omp",
+          "Ultrathink",
+          "Swarm",
+          "Substrate",
+          "Gsd"
+        ],
+        "description": "The component of the agent loop that produced a StageEvent. The order of the members is the pipeline order:\nthe planner runs first, the orchestrator second, and the substrate and the workflow engine run alongside them."
+      },
+      "StageStatus": {
+        "enum": [
+          "Pending",
+          "Running",
+          "Succeeded",
+          "Degraded",
+          "Failed",
+          "Skipped",
+          "Unavailable"
+        ],
+        "description": "The state of one stage of the agent loop. StageStatus.Degraded and StageStatus.Unavailable exist so that a failing or\nmissing plugin shows as a visible, explained state instead of an exception."
+      },
+      "SteerDelivery": {
+        "enum": [
+          "delivered",
+          "queued",
+          "held",
+          "failed"
+        ],
+        "description": "What the channel did with an accepted steering message. The API never claims more than the engine or the store proved."
+      },
+      "SteerMode": {
+        "enum": [
+          "send_now",
+          "queue",
+          null
+        ]
+      },
+      "SteerRequest": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the steering text. Required, not blank, within the configured prompt length."
+          },
+          "mode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets how the message reaches the run. Required.",
+                "$ref": "#/components/schemas/SteerMode"
+              }
+            ]
+          }
+        },
+        "description": "The body of `POST /sessions/{id}/steer`."
+      },
+      "SteerResponse": {
+        "required": [
+          "delivery"
+        ],
+        "type": "object",
+        "properties": {
+          "delivery": {
+            "description": "Gets what the channel did with the message.",
+            "$ref": "#/components/schemas/SteerDelivery"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets a plain sentence that says why the message failed or was held, or null otherwise. It never repeats the message text."
+          }
+        },
+        "description": "The answer of `POST /sessions/{id}/steer`."
       },
       "StreamEvent": {
         "required": [
@@ -996,12 +2900,109 @@
       },
       "StreamEventPayload": {
         "description": "Base record for every stream-event payload. Deserialization never throws on\nunknown or missing `kind` discriminators: they degrade to\nUnknownPayload with the raw payload preserved."
+      },
+      "TaskContext": {
+        "required": [
+          "title",
+          "sharedMemory",
+          "lessons",
+          "warnings"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Gets the task title."
+          },
+          "taskId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the identifier of the task, or null when the session is not bound to a task."
+          },
+          "kanbanStatus": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the Kanban status of the task as text, or null when unknown."
+          },
+          "graphId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the Graph identifier the task is registered under, or null."
+          },
+          "phase": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets the workflow phase of the task, or null when it could not be read.",
+                "$ref": "#/components/schemas/GsdPhaseInfo"
+              }
+            ]
+          },
+          "sharedMemory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContextNote"
+            },
+            "description": "Gets the shared memory entries that apply to the session."
+          },
+          "lessons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContextNote"
+            },
+            "description": "Gets the lessons from earlier work that apply to the session."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets plain-text warnings, one for each part of the context that could not be read."
+          }
+        },
+        "description": "The context of the task a session works on: its Kanban status, the workflow phase, and what the substrate shares with the\nsession. Every part is optional. A part that cannot be read is absent and the reason is listed in IReadOnlyList&lt;string&gt; TaskContext.Warnings."
+      },
+      "WorkspaceInfo": {
+        "required": [
+          "name",
+          "pluginCheck"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Gets the workspace display name."
+          },
+          "folderLabel": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the name of the workspace folder (the last path segment only), or null when the API has no workspace folder."
+          },
+          "pluginCheck": {
+            "description": "Gets the plugin check result.",
+            "$ref": "#/components/schemas/PluginCheckResult"
+          }
+        },
+        "description": "The answer of `GET /workspace`: what the top bar of the web head shows."
       }
     }
   },
   "tags": [
     {
       "name": "SessionEndpoints"
+    },
+    {
+      "name": "Catalog"
     },
     {
       "name": "ToolApprovalEndpoints"
@@ -1011,6 +3012,21 @@
     },
     {
       "name": "RunEndpoints"
+    },
+    {
+      "name": "Stages"
+    },
+    {
+      "name": "Steering"
+    },
+    {
+      "name": "Session configuration"
+    },
+    {
+      "name": "Changes"
+    },
+    {
+      "name": "Source"
     }
   ]
 }

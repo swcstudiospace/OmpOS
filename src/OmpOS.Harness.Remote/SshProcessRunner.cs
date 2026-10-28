@@ -51,7 +51,7 @@ internal sealed class SshProcessRunner
             return new SshProcessResult(-1, string.Empty, string.Empty, TimedOut: false, startFailure);
         }
 
-        var input = WriteInputAsync(process, invocation.Preamble);
+        var input = WriteInputAsync(process.StandardInput.BaseStream, invocation.Preamble);
         var output = ReadCappedAsync(process.StandardOutput);
         var error = ReadCappedAsync(process.StandardError);
 
@@ -108,11 +108,10 @@ internal sealed class SshProcessRunner
         }
     }
 
-    private static async Task WriteInputAsync(Process process, SshStdinPreamble? preamble)
+    private static async Task WriteInputAsync(Stream stdin, SshStdinPreamble? preamble)
     {
         try
         {
-            var stdin = process.StandardInput.BaseStream;
             if (preamble is not null)
             {
                 await stdin.WriteAsync(preamble.Bytes, CancellationToken.None).ConfigureAwait(false);

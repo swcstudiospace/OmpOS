@@ -276,7 +276,7 @@ public sealed class AcpWebSocketTransportTests
         var pending = cancelled.MoveNextAsync().AsTask();
 
         await receiveScope.CancelAsync().ConfigureAwait(true);
-        var thrown = await Record.ExceptionAsync(() => pending).ConfigureAwait(true);
+        var thrown = await Record.ExceptionAsync(() => pending.WaitAsync(CancellationToken.None)).ConfigureAwait(true);
         await transport.SendAsync(Encoding.UTF8.GetBytes("{\"after\":1}"), ct).ConfigureAwait(true);
         var echoed = await session.ReceiveAsync(ct).ConfigureAwait(true);
         await session.SendTextAsync("{\"reply\":2}", ct).ConfigureAwait(true);
@@ -388,23 +388,23 @@ public sealed class AcpWebSocketTransportTests
     [Fact]
     public void ConstructorRefusesUnsafeOptions()
     {
-        static ValueTask<string> Provider(CancellationToken cancellationToken) => ValueTask.FromResult(Token);
+        static ValueTask<string> ProviderAsync(CancellationToken cancellationToken) => ValueTask.FromResult(Token);
 
         Should.Throw<ArgumentException>(() =>
         {
-            _ = new AcpWebSocketTransport(new AcpWebSocketTransportOptions { Endpoint = new Uri("http://127.0.0.1/acp"), BearerTokenProvider = Provider });
+            _ = new AcpWebSocketTransport(new AcpWebSocketTransportOptions { Endpoint = new Uri("http://127.0.0.1/acp"), BearerTokenProvider = ProviderAsync });
         });
         Should.Throw<ArgumentException>(() =>
         {
-            _ = new AcpWebSocketTransport(new AcpWebSocketTransportOptions { Endpoint = new Uri("ws://user:secret@127.0.0.1/acp"), BearerTokenProvider = Provider });
+            _ = new AcpWebSocketTransport(new AcpWebSocketTransportOptions { Endpoint = new Uri("ws://user:secret@127.0.0.1/acp"), BearerTokenProvider = ProviderAsync });
         });
         Should.Throw<ArgumentOutOfRangeException>(() =>
         {
-            _ = new AcpWebSocketTransport(new AcpWebSocketTransportOptions { Endpoint = new Uri("ws://127.0.0.1/acp"), BearerTokenProvider = Provider, MaxFrameBytes = 0 });
+            _ = new AcpWebSocketTransport(new AcpWebSocketTransportOptions { Endpoint = new Uri("ws://127.0.0.1/acp"), BearerTokenProvider = ProviderAsync, MaxFrameBytes = 0 });
         });
         Should.Throw<ArgumentOutOfRangeException>(() =>
         {
-            _ = new AcpWebSocketTransport(new AcpWebSocketTransportOptions { Endpoint = new Uri("ws://127.0.0.1/acp"), BearerTokenProvider = Provider, ConnectTimeout = TimeSpan.Zero });
+            _ = new AcpWebSocketTransport(new AcpWebSocketTransportOptions { Endpoint = new Uri("ws://127.0.0.1/acp"), BearerTokenProvider = ProviderAsync, ConnectTimeout = TimeSpan.Zero });
         });
     }
 

@@ -260,14 +260,14 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.Options": "[10.0.13, )",
-          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
+          "OmpOS.Sandbox.Abstractions": "[0.15.0, )",
           "YamlDotNet": "[16.3.0, )"
         }
       },
       "ompos.sandbox.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "Microsoft.Extensions.Configuration": {

@@ -33,14 +33,14 @@ public sealed class CatalogEndpointTests
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         using var document = await WebAppTestHost.ReadJsonAsync(response, ct).ConfigureAwait(true);
         var row = document.RootElement.EnumerateArray().ShouldHaveSingleItem();
-        row.GetProperty("id").GetString().ShouldBe(id, Case.Sensitive);
-        row.GetProperty("ownerId").GetString().ShouldBe("local-dev", Case.Sensitive);
-        row.GetProperty("status").GetString().ShouldBe("Idle", Case.Sensitive);
+        row.GetProperty("id").GetString().ShouldBe(id);
+        row.GetProperty("ownerId").GetString().ShouldBe("local-dev");
+        row.GetProperty("status").GetString().ShouldBe("Idle");
         row.GetProperty("messages").GetArrayLength().ShouldBe(0);
         row.GetProperty("events").GetArrayLength().ShouldBe(0);
-        row.GetProperty("kind").GetString().ShouldBe("agent", Case.Sensitive);
-        row.GetProperty("rowStatus").GetString().ShouldBe("ready", Case.Sensitive);
-        row.GetProperty("group").GetString().ShouldBe("idle", Case.Sensitive);
+        row.GetProperty("kind").GetString().ShouldBe("agent");
+        row.GetProperty("rowStatus").GetString().ShouldBe("ready");
+        row.GetProperty("group").GetString().ShouldBe("idle");
         row.GetProperty("closed").GetBoolean().ShouldBeFalse();
         row.TryGetProperty("lastActivityAt", out _).ShouldBeTrue();
         row.TryGetProperty("graphId", out _).ShouldBeFalse("a null Graph identifier is omitted");
@@ -62,8 +62,8 @@ public sealed class CatalogEndpointTests
         using var document = await WebAppTestHost.ReadJsonAsync(response, ct).ConfigureAwait(true);
 
         var row = document.RootElement.EnumerateArray().ShouldHaveSingleItem();
-        row.GetProperty("rowStatus").GetString().ShouldBe("completed", Case.Sensitive);
-        row.GetProperty("group").GetString().ShouldBe("finished", Case.Sensitive);
+        row.GetProperty("rowStatus").GetString().ShouldBe("completed");
+        row.GetProperty("group").GetString().ShouldBe("finished");
     }
 
     /// <summary>One owner's list and board never hold another owner's session.</summary>
@@ -87,11 +87,11 @@ public sealed class CatalogEndpointTests
 
         using (var board = await WebAppTestHost.ReadJsonAsync(bobBoard, ct).ConfigureAwait(true))
         {
-            board.RootElement.GetProperty("state").GetString().ShouldBe("empty", Case.Sensitive);
+            board.RootElement.GetProperty("state").GetString().ShouldBe("empty");
         }
 
         using var own = await WebAppTestHost.ReadJsonAsync(aliceBoard, ct).ConfigureAwait(true);
-        own.RootElement.GetProperty("state").GetString().ShouldBe("ready", Case.Sensitive);
+        own.RootElement.GetProperty("state").GetString().ShouldBe("ready");
         CardIds(own.RootElement).ShouldBe([id]);
     }
 
@@ -146,8 +146,8 @@ public sealed class CatalogEndpointTests
             closed.StatusCode.ShouldBe(HttpStatusCode.OK);
             using var body = await WebAppTestHost.ReadJsonAsync(closed, ct).ConfigureAwait(true);
             body.RootElement.GetProperty("closed").GetBoolean().ShouldBeTrue();
-            body.RootElement.GetProperty("rowStatus").GetString().ShouldBe("closed", Case.Sensitive);
-            body.RootElement.GetProperty("group").GetString().ShouldBe("idle", Case.Sensitive);
+            body.RootElement.GetProperty("rowStatus").GetString().ShouldBe("closed");
+            body.RootElement.GetProperty("group").GetString().ShouldBe("idle");
         }
 
         using (var board = await alice.GetAsync(new Uri("/board", UriKind.Relative), ct).ConfigureAwait(true))
@@ -161,7 +161,7 @@ public sealed class CatalogEndpointTests
             reopened.StatusCode.ShouldBe(HttpStatusCode.OK);
             using var body = await WebAppTestHost.ReadJsonAsync(reopened, ct).ConfigureAwait(true);
             body.RootElement.GetProperty("closed").GetBoolean().ShouldBeFalse();
-            body.RootElement.GetProperty("rowStatus").GetString().ShouldBe("ready", Case.Sensitive);
+            body.RootElement.GetProperty("rowStatus").GetString().ShouldBe("ready");
         }
     }
 
@@ -204,7 +204,7 @@ public sealed class CatalogEndpointTests
 
         resumed.StatusCode.ShouldBe(HttpStatusCode.OK);
         using var body = await WebAppTestHost.ReadJsonAsync(resumed, ct).ConfigureAwait(true);
-        body.RootElement.GetProperty("rowStatus").GetString().ShouldBe("paused", Case.Sensitive);
+        body.RootElement.GetProperty("rowStatus").GetString().ShouldBe("paused");
         (await SessionClient.ReadSessionAsync(client, id, ct).ConfigureAwait(true)).Status.ShouldBe(SessionStatus.Cancelled);
         using var again = await SessionClient.PostPromptAsync(client, id, "{\"prompt\":\"again\"}", ct).ConfigureAwait(true);
         again.StatusCode.ShouldBe(HttpStatusCode.Accepted);
@@ -269,11 +269,11 @@ public sealed class CatalogEndpointTests
 
             using var body = await WebAppTestHost.ReadJsonAsync(response, ct).ConfigureAwait(true);
             body.RootElement.GetProperty("available").GetBoolean().ShouldBeTrue();
-            body.RootElement.GetProperty("taskTitle").GetString().ShouldBe("Ship the web head", Case.Sensitive);
-            body.RootElement.GetProperty("graphId").GetString().ShouldBe("graph-7", Case.Sensitive);
+            body.RootElement.GetProperty("taskTitle").GetString().ShouldBe("Ship the web head");
+            body.RootElement.GetProperty("graphId").GetString().ShouldBe("graph-7");
             body.RootElement.GetProperty("lessonsCount").GetInt32().ShouldBe(2);
-            source.LastScope.ShouldNotBeNull().SessionId.ShouldBe(id, Case.Sensitive);
-            source.LastScope.WorkspaceRoot.ShouldBe(Path.TrimEndingDirectorySeparator(root), Case.Sensitive);
+            source.LastScope.ShouldNotBeNull().SessionId.ShouldBe(id);
+            source.LastScope.WorkspaceRoot.ShouldBe(Path.TrimEndingDirectorySeparator(root));
         }
         finally
         {
@@ -297,9 +297,9 @@ public sealed class CatalogEndpointTests
             var text = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(true);
             using var document = JsonDocument.Parse(text);
             var folder = Path.GetFileName(root);
-            document.RootElement.GetProperty("name").GetString().ShouldBe(folder, Case.Sensitive);
-            document.RootElement.GetProperty("folderLabel").GetString().ShouldBe(folder, Case.Sensitive);
-            document.RootElement.GetProperty("pluginCheck").GetProperty("status").GetString().ShouldBe("unavailable", Case.Sensitive);
+            document.RootElement.GetProperty("name").GetString().ShouldBe(folder);
+            document.RootElement.GetProperty("folderLabel").GetString().ShouldBe(folder);
+            document.RootElement.GetProperty("pluginCheck").GetProperty("status").GetString().ShouldBe("unavailable");
             text.ShouldNotContain(Path.GetDirectoryName(root)!, Case.Sensitive);
         }
         finally

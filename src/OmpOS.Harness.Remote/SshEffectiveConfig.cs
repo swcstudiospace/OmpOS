@@ -53,7 +53,7 @@ public sealed record SshEffectiveConfig
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(alias);
         ArgumentNullException.ThrowIfNull(output);
-        var values = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var values = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         foreach (var rawLine in output.Split('\n'))
         {
             var line = rawLine.Trim();
@@ -63,7 +63,7 @@ public sealed record SshEffectiveConfig
             }
 
             var separator = line.IndexOfAny([' ', '\t']);
-            var key = (separator < 0 ? line : line[..separator]).ToLowerInvariant();
+            var key = (separator < 0 ? line : line[..separator]);
             var value = separator < 0 ? string.Empty : line[(separator + 1)..].Trim();
             if (!values.TryGetValue(key, out var list))
             {
@@ -77,7 +77,7 @@ public sealed record SshEffectiveConfig
         return new SshEffectiveConfig
         {
             Alias = alias,
-            Values = values.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<string>)pair.Value, StringComparer.Ordinal),
+            Values = values.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<string>)pair.Value, StringComparer.OrdinalIgnoreCase),
         };
     }
 

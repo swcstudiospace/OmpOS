@@ -38,7 +38,7 @@ public sealed class HookBridgeLifecycleTests
         first.Port.ShouldBeGreaterThan(0);
         first.Port.ShouldNotBe(second.Port);
         first.Token.Length.ShouldBe(43);
-        first.Token.ShouldNotBe(second.Token);
+        first.Token.ShouldNotBe(second.Token, StringComparer.Ordinal);
     }
 
     [Fact]

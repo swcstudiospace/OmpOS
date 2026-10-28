@@ -32,7 +32,7 @@ public sealed class WorkerEntrypointScriptTests
                 $"-R 10001:10001 {sandbox.Volume}/ompos",
                 $"10001:10001 {sandbox.Home}/.omp",
             });
-        sandbox.SetprivCalls.ShouldBe(new[] { "--reuid=10001 --regid=10001 --clear-groups --no-new-privs -- worker-program --flag value with space" });
+        sandbox.SetprivCalls.ShouldBe(["--reuid=10001 --regid=10001 --clear-groups --no-new-privs -- worker-program --flag value with space"]);
         Directory.Exists(Path.Combine(sandbox.Volume, "work")).ShouldBeTrue();
         Directory.Exists(Path.Combine(sandbox.Volume, "ompos")).ShouldBeTrue();
         Directory.Exists(Path.Combine(sandbox.Home, ".omp")).ShouldBeTrue();
@@ -48,7 +48,7 @@ public sealed class WorkerEntrypointScriptTests
         var result = await sandbox.RunAsync(["worker-program"], timeout.Token).ConfigureAwait(true);
 
         result.ExitCode.ShouldBe(0, result.Stderr);
-        sandbox.ChownCalls.ShouldBe(new[] { $"10001:10001 {sandbox.Volume}" });
+        sandbox.ChownCalls.ShouldBe([$"10001:10001 {sandbox.Volume}"]);
         sandbox.SetprivCalls.Length.ShouldBe(1);
     }
 
@@ -273,8 +273,10 @@ public sealed class WorkerEntrypointScriptTests
             File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
 
+        private static readonly string[] MkdirCandidates = ["/bin/mkdir", "/usr/bin/mkdir"];
+
         private static string ResolveRealMkdir() =>
-            new[] { "/bin/mkdir", "/usr/bin/mkdir" }.First(File.Exists);
+            MkdirCandidates.First(File.Exists);
 
         private static string FindRepositoryRoot()
         {

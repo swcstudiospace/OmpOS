@@ -100,6 +100,8 @@ RUN for d in /usr/share/dotnet /usr/lib/dotnet; do for f in LICENSE.txt ThirdPar
 ARG OMPOS_SOURCE=https://github.com/swcstudiospace/OmpOS
 ARG OMPOS_REVISION=unknown
 ARG OMPOS_VERSION=0.15.0
+# SourceInfoProvider reads GIT_SHA for GET /source (the AGPL-3.0 section 13 source offer).
+ENV GIT_SHA=${OMPOS_REVISION}
 LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later" \
       org.opencontainers.image.source="${OMPOS_SOURCE}" \
       org.opencontainers.image.revision="${OMPOS_REVISION}" \

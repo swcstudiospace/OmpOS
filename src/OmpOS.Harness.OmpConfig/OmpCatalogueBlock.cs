@@ -35,7 +35,7 @@ public static class OmpCatalogueBlock
             return Fail($"omp does not support the protocol '{route.Api}'.");
         }
 
-        var resolution = CatalogueUrlTemplate.Resolve(route.BaseUrl, urlValues, allowLoopbackHttp: row.Region == CatalogueRegion.Local);
+        var resolution = CatalogueUrlTemplate.Resolve(route.BaseAddressTemplate, urlValues, allowLoopbackHttp: row.Region == CatalogueRegion.Local);
         if (resolution.Url is null)
         {
             return Fail(resolution.Problem ?? "The base URL is not valid.");

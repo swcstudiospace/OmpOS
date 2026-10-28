@@ -588,26 +588,34 @@
           "xunit.v3.runner.common": "[4.0.2]"
         }
       },
+      "ompos.agentworker": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Harness.Acp": "[0.15.0, )"
+        }
+      },
       "ompos.api": {
         "type": "Project",
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.13, )",
           "Microsoft.Extensions.ApiDescription.Server": "[10.0.13, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Coordination": "[1.0.0, )",
-          "OmpOS.Coordination.Dragonfly": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Harness.Acp": "[1.0.0, )",
-          "OmpOS.Harness.InMemory": "[1.0.0, )",
-          "OmpOS.Harness.Worktrees": "[1.0.0, )",
-          "OmpOS.Parser": "[1.0.0, )",
-          "OmpOS.Sandbox": "[1.0.0, )",
-          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
-          "OmpOS.SessionRuns": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )",
-          "OmpOS.Sessions.Postgres": "[1.0.0, )",
-          "OmpOS.Workflows": "[1.0.0, )",
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Coordination": "[0.15.0, )",
+          "OmpOS.Coordination.Dragonfly": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Harness.Acp": "[0.15.0, )",
+          "OmpOS.Harness.InMemory": "[0.15.0, )",
+          "OmpOS.Harness.Worktrees": "[0.15.0, )",
+          "OmpOS.Parser": "[0.15.0, )",
+          "OmpOS.Sandbox": "[0.15.0, )",
+          "OmpOS.Sandbox.Abstractions": "[0.15.0, )",
+          "OmpOS.SessionRuns": "[0.15.0, )",
+          "OmpOS.Sessions": "[0.15.0, )",
+          "OmpOS.Sessions.Postgres": "[0.15.0, )",
+          "OmpOS.Workflows": "[0.15.0, )",
           "OpenTelemetry": "[1.20.0, )",
           "OpenTelemetry.Exporter.Console": "[1.20.0, )",
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "[1.20.0, )",
@@ -629,7 +637,7 @@
       "ompos.coordination.dragonfly": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Coordination": "[1.0.0, )",
+          "OmpOS.Coordination": "[0.15.0, )",
           "StackExchange.Redis": "[3.4.5, )"
         }
       },
@@ -637,48 +645,48 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Harness.Acp": "[1.0.0, )",
-          "OmpOS.Harness.InMemory": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Harness.Acp": "[0.15.0, )",
+          "OmpOS.Harness.InMemory": "[0.15.0, )"
         }
       },
       "ompos.genui": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.harness.acp": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.harness.agent": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.harness.agentloop": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.harness.automations": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Plugins": "[1.0.0, )"
+          "OmpOS.Harness.Plugins": "[0.15.0, )"
         }
       },
       "ompos.harness.completion": {
@@ -693,34 +701,35 @@
       "ompos.harness.inmemory": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.harness.mcp": {
         "type": "Project",
         "dependencies": {
           "ModelContextProtocol": "[2.3.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.harness.mcpgateway": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Mcp": "[1.0.0, )"
+          "OmpOS.Harness.Mcp": "[0.15.0, )"
         }
       },
       "ompos.harness.ompconfig": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.OmpLauncher": "[1.0.0, )",
-          "OmpOS.Harness.Secrets": "[1.0.0, )"
+          "OmpOS.Harness.OmpLauncher": "[0.15.0, )",
+          "OmpOS.Harness.Providers": "[0.15.0, )",
+          "OmpOS.Harness.Secrets": "[0.15.0, )"
         }
       },
       "ompos.harness.omplauncher": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Terminal": "[1.0.0, )"
+          "OmpOS.Harness.Terminal": "[0.15.0, )"
         }
       },
       "ompos.harness.plugins": {
@@ -732,10 +741,20 @@
       "ompos.harness.registry": {
         "type": "Project"
       },
+      "ompos.harness.remote": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Harness.Acp": "[0.15.0, )",
+          "OmpOS.Harness.AgentLoop": "[0.15.0, )"
+        }
+      },
       "ompos.harness.rpc": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.harness.secrets": {
@@ -760,14 +779,14 @@
           "Avalonia.Desktop": "[12.1.4, )",
           "Avalonia.Themes.Fluent": "[12.1.4, )",
           "Microsoft.Extensions.Logging": "[10.0.13, )",
-          "OmpOS.EngineHost": "[1.0.0, )",
-          "OmpOS.Harness.Acp": "[1.0.0, )",
-          "OmpOS.Harness.AgentLoop": "[1.0.0, )",
-          "OmpOS.Harness.OmpConfig": "[1.0.0, )",
-          "OmpOS.Harness.Providers": "[1.0.0, )",
-          "OmpOS.Harness.Secrets": "[1.0.0, )",
-          "OmpOS.Native.Views": "[1.0.0, )",
-          "OmpOS.Presentation": "[1.0.0, )"
+          "OmpOS.EngineHost": "[0.15.0, )",
+          "OmpOS.Harness.Acp": "[0.15.0, )",
+          "OmpOS.Harness.AgentLoop": "[0.15.0, )",
+          "OmpOS.Harness.OmpConfig": "[0.15.0, )",
+          "OmpOS.Harness.Providers": "[0.15.0, )",
+          "OmpOS.Harness.Secrets": "[0.15.0, )",
+          "OmpOS.Native.Views": "[0.15.0, )",
+          "OmpOS.Presentation": "[0.15.0, )"
         }
       },
       "ompos.native.views": {
@@ -778,18 +797,18 @@
           "AvaloniaEdit.TextMate": "[12.0.0, )",
           "Iciclecreek.Avalonia.Terminal": "[4.1.0, )",
           "Markdig": "[1.4.2, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.GenUi": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Harness.AgentLoop": "[1.0.0, )",
-          "OmpOS.Harness.Completion": "[1.0.0, )",
-          "OmpOS.Harness.Mcp": "[1.0.0, )",
-          "OmpOS.Harness.OmpLauncher": "[1.0.0, )",
-          "OmpOS.Harness.Plugins": "[1.0.0, )",
-          "OmpOS.Harness.Terminal": "[1.0.0, )",
-          "OmpOS.Harness.Workspace": "[1.0.0, )",
-          "OmpOS.Presentation": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )",
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.GenUi": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Harness.AgentLoop": "[0.15.0, )",
+          "OmpOS.Harness.Completion": "[0.15.0, )",
+          "OmpOS.Harness.Mcp": "[0.15.0, )",
+          "OmpOS.Harness.OmpLauncher": "[0.15.0, )",
+          "OmpOS.Harness.Plugins": "[0.15.0, )",
+          "OmpOS.Harness.Terminal": "[0.15.0, )",
+          "OmpOS.Harness.Workspace": "[0.15.0, )",
+          "OmpOS.Presentation": "[0.15.0, )",
+          "OmpOS.Sessions": "[0.15.0, )",
           "TextMateSharp.Grammars": "[2.0.3, )"
         }
       },
@@ -797,16 +816,16 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.presentation": {
         "type": "Project",
         "dependencies": {
           "Markdig": "[1.4.2, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.GenUi": "[1.0.0, )",
-          "OmpOS.Parser": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.GenUi": "[0.15.0, )",
+          "OmpOS.Parser": "[0.15.0, )"
         }
       },
       "ompos.sandbox": {
@@ -815,32 +834,32 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.Options": "[10.0.13, )",
-          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
+          "OmpOS.Sandbox.Abstractions": "[0.15.0, )",
           "YamlDotNet": "[16.3.0, )"
         }
       },
       "ompos.sandbox.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "ompos.sessionruns": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Sandbox.Abstractions": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )",
-          "OmpOS.Workflows": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Sandbox.Abstractions": "[0.15.0, )",
+          "OmpOS.Sessions": "[0.15.0, )",
+          "OmpOS.Workflows": "[0.15.0, )"
         }
       },
       "ompos.sessions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "ompos.sessions.postgres": {
@@ -849,32 +868,32 @@
           "Microsoft.Extensions.Configuration.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
           "Npgsql": "[10.0.3, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Sessions": "[0.15.0, )"
         }
       },
       "ompos.ui": {
         "type": "Project",
         "dependencies": {
           "Microsoft.AspNetCore.Components.Web": "[10.0.13, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.GenUi": "[1.0.0, )",
-          "OmpOS.Presentation": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.GenUi": "[0.15.0, )",
+          "OmpOS.Presentation": "[0.15.0, )"
         }
       },
       "ompos.web": {
         "type": "Project",
         "dependencies": {
           "Microsoft.AspNetCore.Components.WebAssembly": "[10.0.13, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.UI": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.UI": "[0.15.0, )"
         }
       },
       "ompos.workflows": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "OmpOS.Contracts": "[0.15.0, )"
         }
       },
       "Avalonia": {

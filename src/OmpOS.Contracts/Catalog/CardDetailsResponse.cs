@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace OmpOS.Contracts.Catalog;
 
 /// <summary>The answer of <c>GET /sessions/{id}/card-details</c>: what the substrate knows about the session behind a card.</summary>
@@ -10,17 +12,22 @@ public sealed record CardDetailsResponse
     public required bool Available { get; init; }
 
     /// <summary>Gets a plain sentence that says why the details are unavailable, or null when they are available.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Reason { get; init; }
 
     /// <summary>Gets the title of the task the session works on, or null when not reported.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? TaskTitle { get; init; }
 
     /// <summary>Gets the Graph identifier of the session's plan, or null when not reported.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? GraphId { get; init; }
 
     /// <summary>Gets the number of lessons recorded for the task, or null when not reported.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? LessonsCount { get; init; }
 
     /// <summary>Gets the holder of the task lease, or null when the source did not report one.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? LeaseHolder { get; init; }
 }

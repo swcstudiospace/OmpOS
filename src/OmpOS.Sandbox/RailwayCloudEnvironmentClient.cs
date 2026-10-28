@@ -469,7 +469,7 @@ public sealed class RailwayCloudEnvironmentClient : ICloudEnvironmentClient
         ArgumentException.ThrowIfNullOrWhiteSpace(options.Image, nameof(options));
         ArgumentNullException.ThrowIfNull(options.Endpoint, nameof(options));
         ArgumentNullException.ThrowIfNull(options.Variables, nameof(options));
-        if (!options.Endpoint.IsAbsoluteUri || (options.Endpoint.Scheme != Uri.UriSchemeHttps && options.Endpoint.Scheme != Uri.UriSchemeHttp))
+        if (!options.Endpoint.IsAbsoluteUri || (!string.Equals(options.Endpoint.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal) && !string.Equals(options.Endpoint.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal)))
         {
             throw new ArgumentException("The endpoint must be an absolute http or https URI.", nameof(options));
         }
@@ -642,7 +642,7 @@ public sealed class RailwayCloudEnvironmentClient : ICloudEnvironmentClient
     /// </summary>
     private sealed class ServiceState
     {
-        private readonly object _gate = new();
+        private readonly Lock _gate = new();
         private int _generation = 1;
         private CloudContainerPhase _lastPhase = CloudContainerPhase.Running;
         private string? _mountPath;

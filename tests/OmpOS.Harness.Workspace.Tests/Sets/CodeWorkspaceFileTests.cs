@@ -59,7 +59,7 @@ public sealed class CodeWorkspaceFileTests : IDisposable
     {
         const string text = """
             { "folders": [
-              { "uri": "vscode-remote://ssh-remote+dev/srv/app" },
+              { "uri": "remote-host://ssh-remote+dev/srv/app" },
               { "path": "app" },
               { "name": "nothing" }
             ] }
@@ -101,7 +101,7 @@ public sealed class CodeWorkspaceFileTests : IDisposable
         const string text = """
             {
               // comment is dropped, the data is kept
-              "folders": [ { "path": "../web", "name": "Web", "x-owner": "team-a" }, { "uri": "vscode-remote://h/x" } ],
+              "folders": [ { "path": "../web", "name": "Web", "x-owner": "team-a" }, { "uri": "remote-host://h/x" } ],
               "settings": { "editor.tabSize": 2, "files.exclude": { "**/obj": true } },
               "extensions": { "recommendations": [ "ms-dotnettools.csharp" ] },
               "launch": { "version": "0.2.0" }
@@ -123,7 +123,7 @@ public sealed class CodeWorkspaceFileTests : IDisposable
         folders[0]!["x-owner"]!.GetValue<string>().ShouldBe("team-a");
         folders[1]!["path"]!.GetValue<string>().ShouldBe("../services/billing");
         folders[1]!["name"].ShouldBeNull();
-        folders[2]!["uri"]!.GetValue<string>().ShouldBe("vscode-remote://h/x");
+        folders[2]!["uri"]!.GetValue<string>().ShouldBe("remote-host://h/x");
     }
 
     [Fact]
@@ -185,6 +185,6 @@ public sealed class CodeWorkspaceFileTests : IDisposable
 
         bytes.Take(3).ShouldNotBe([0xEF, 0xBB, 0xBF]);
         var text = File.ReadAllText(FilePath);
-        text.ShouldBe("{\n\t\"folders\": [\n\t\t{\n\t\t\t\"path\": \"app\"\n\t\t}\n\t]\n}\n", Case.Sensitive);
+        text.ShouldBe("{\n\t\"folders\": [\n\t\t{\n\t\t\t\"path\": \"app\"\n\t\t}\n\t]\n}\n");
     }
 }

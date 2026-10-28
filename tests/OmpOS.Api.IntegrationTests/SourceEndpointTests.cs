@@ -29,9 +29,9 @@ public sealed class SourceEndpointTests
         using var body = await WebAppTestHost.ReadJsonAsync(response, ct).ConfigureAwait(true);
         body.RootElement.EnumerateObject().Select(static property => property.Name).Order(StringComparer.Ordinal)
             .ShouldBe(["licence", "licenceUrl", "revision", "sourceUrl", "version"]);
-        body.RootElement.GetProperty("licence").GetString().ShouldBe("AGPL-3.0-or-later", Case.Sensitive);
-        body.RootElement.GetProperty("licenceUrl").GetString().ShouldBe("https://www.gnu.org/licenses/agpl-3.0.html", Case.Sensitive);
-        body.RootElement.GetProperty("sourceUrl").GetString().ShouldBe("https://github.com/swcstudiospace/OmpOS", Case.Sensitive);
+        body.RootElement.GetProperty("licence").GetString().ShouldBe("AGPL-3.0-or-later");
+        body.RootElement.GetProperty("licenceUrl").GetString().ShouldBe("https://www.gnu.org/licenses/agpl-3.0.html");
+        body.RootElement.GetProperty("sourceUrl").GetString().ShouldBe("https://github.com/swcstudiospace/OmpOS");
         var revision = body.RootElement.GetProperty("revision").GetString().ShouldNotBeNull();
         (string.Equals(revision, "unknown", StringComparison.Ordinal) || HexRevision.IsMatch(revision)).ShouldBeTrue($"revision '{revision}' is a git object name or unknown");
         body.RootElement.GetProperty("version").GetString().ShouldNotBeNullOrWhiteSpace();
@@ -49,7 +49,7 @@ public sealed class SourceEndpointTests
     [InlineData(null, null, "unknown")]
     public void RevisionOf_PicksABuildRevisionOrUnknown(string? informational, string? environment, string expected)
     {
-        SourceInfoProvider.RevisionOf(informational, environment).ShouldBe(expected, Case.Sensitive);
+        SourceInfoProvider.RevisionOf(informational, environment).ShouldBe(expected);
     }
 
     /// <summary>The offer is read on every host with the same body, so a second read matches the first.</summary>
@@ -63,7 +63,7 @@ public sealed class SourceEndpointTests
         var first = await client.GetStringAsync(new Uri("/source", UriKind.Relative), ct).ConfigureAwait(true);
         var second = await client.GetStringAsync(new Uri("/source", UriKind.Relative), ct).ConfigureAwait(true);
 
-        second.ShouldBe(first, Case.Sensitive);
+        second.ShouldBe(first);
         using var document = JsonDocument.Parse(first);
         document.RootElement.ValueKind.ShouldBe(JsonValueKind.Object);
     }

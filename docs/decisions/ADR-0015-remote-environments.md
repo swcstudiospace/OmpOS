@@ -106,3 +106,29 @@ SSH environments are desktop-only: the web head cannot spawn ssh (it attaches to
 ## Verification
 
 Written and not run by the unit that wrote it (no builds or tests are run by implementation agents): unit tests with a fake `ssh` (`tests/OmpOS.Harness.Remote.Tests/Fixtures/fake-ssh`) and a fake `omp`; a real `ssh -G` test for `Include`, `Match` and `ProxyJump`; the remote bootstrap script was also exercised by hand under `dash` and `bash` (environment delivery, file mode 0600, removal of the temporary file, exact byte round trip) during design. The live test (`Category=Live`, `OMPOS_LIVE_SSH=1`) against `scripts/remote/loopback-sshd.sh` and a real `omp acp` is for the orchestrator; its result and the stdin-EOF behaviour of omp belong in `docs/runbooks/evidence/`.
+
+## Candidate chosen
+
+The user's own OpenSSH client (`ssh`) run as a child process per session: `ssh -G` evaluates the user's configuration, `ssh -T host omp acp` carries ACP over stdio, and OmpOS adds no SSH library (decisions D1 to D4; alternatives in the rejected section above).
+
+## Licence
+
+OmpOS adds no package for this record. Components it relies on:
+
+| Component | SPDX | Source | Verified |
+| --- | --- | --- | --- |
+| OpenSSH client (the user's installed `ssh`, not bundled, not linked) | BSD-2-Clause and ISC among others; the OpenSSH LICENCE file lists the mix | https://github.com/openssh/openssh-portable/blob/master/LICENCE | UNVERIFIED: the file was not re-read by the fix-up agent |
+| `OmpOS.Harness.Remote` and `OmpOS.Harness.Remote.Tests` | AGPL-3.0-or-later | https://www.gnu.org/licenses/agpl-3.0.html | OmpOS-owned code, the project licence of milestone v0.15.0 (ADR-0018) |
+| `Microsoft.Extensions.Logging.Abstractions` (existing central package) | MIT | https://github.com/dotnet/runtime/blob/main/LICENSE.TXT | Already in `Directory.Packages.props` |
+
+## Verification route
+
+`dotnet test --project tests/OmpOS.Harness.Remote.Tests -c Release --no-build --filter-not-trait "Category=Live"` runs the fake-ssh and fake-omp tests and the real `ssh -G` tests. The live test is `OMPOS_LIVE_SSH=1 dotnet test --project tests/OmpOS.Harness.Remote.Tests -c Release` against `scripts/remote/loopback-sshd.sh`; its result belongs in `docs/runbooks/evidence/`. The layer and reference rules are checked by `tests/OmpOS.ArchitectureTests`.
+
+## Open risks
+
+- ControlMaster/ControlPersist with `-T` was built but not probed against a real server; a persisting master could keep stdout open and stall a read.
+- The stdin-EOF behaviour of a remote `omp acp` is unprobed.
+- `session/load` against a real remote omp after a reconnect is unprobed.
+- The Windows desktop head requires a fully qualified working directory in `AcpAgentSession`, which a remote path such as `/home/dev/work` fails; a Harness.Acp change is needed there.
+- The remote user account is the trust boundary: omp commands run with that user's rights.

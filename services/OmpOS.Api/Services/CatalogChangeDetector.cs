@@ -52,6 +52,13 @@ internal sealed class CatalogChangeDetector : BackgroundService
         _logger = logger;
     }
 
+    /// <inheritdoc />
+    public override void Dispose()
+    {
+        _scanGate.Dispose();
+        base.Dispose();
+    }
+
     /// <summary>Scans the catalog once and publishes every difference from the previous scan.</summary>
     /// <param name="cancellationToken">Cancels the scan.</param>
     /// <returns>A task that completes after the scan.</returns>

@@ -170,7 +170,7 @@ public sealed class OmpCatalogueBlockTests
     public void PlainHttpToARemoteHostIsRefusedButLoopbackIsAcceptedForALocalRuntime()
     {
         var remote = CatalogueRows.Find("scaleway")!;
-        var httpRoute = remote.Routes[0] with { BaseUrl = "http://api.scaleway.ai/v1" };
+        var httpRoute = remote.Routes[0] with { BaseAddressTemplate = "http://api.scaleway.ai/v1" };
 
         OmpCatalogueBlock.Build(remote, httpRoute, NoValues, null, ["glm-5.3"]).Problem.ShouldNotBeNull().ShouldContain("https", Case.Sensitive);
 

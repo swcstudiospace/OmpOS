@@ -62,7 +62,7 @@ public sealed class HookBridgeApprovalTests
         var json = response.Json();
         json.GetProperty("permission").GetString().ShouldBe("deny");
         json.GetProperty("agent_message").GetString().ShouldNotBeNullOrWhiteSpace();
-        json.GetProperty("agent_message").GetString().ShouldNotBe("waiting for the user");
+        json.GetProperty("agent_message").GetString().ShouldNotBe("waiting for the user", StringComparer.Ordinal);
         json.GetProperty("user_message").GetString().ShouldBe("Run rm -rf build?");
         prompt.Calls.ShouldBe(1);
     }

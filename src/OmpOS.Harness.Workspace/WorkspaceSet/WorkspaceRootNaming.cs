@@ -49,12 +49,12 @@ internal static class WorkspaceRootNaming
         return builder.Length == 0 ? FallbackName : builder.ToString();
     }
 
-    /// <summary>Returns the normal form two names are compared in: trimmed and lowercase.</summary>
+    /// <summary>Returns the normal form two names are compared in: trimmed and upper-case.</summary>
     /// <param name="name">The display name.</param>
     internal static string Normalize(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
-        return name.Trim().ToLowerInvariant();
+        return name.Trim().ToUpperInvariant();
     }
 
     /// <summary>Returns <paramref name="candidate"/>, or the candidate with <c>-2</c>, <c>-3</c>, and so on, so that it is not in <paramref name="taken"/>.</summary>

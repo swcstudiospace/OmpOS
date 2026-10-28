@@ -5,6 +5,7 @@
     <Project Path="apps/OmpOS.Native/OmpOS.Native.csproj" />
   </Folder>
   <Folder Name="/services/">
+    <Project Path="services/OmpOS.AgentWorker/OmpOS.AgentWorker.csproj" />
     <Project Path="services/OmpOS.Api/OmpOS.Api.csproj" />
   </Folder>
   <Folder Name="/src/">
@@ -16,6 +17,7 @@
     <Project Path="src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
     <Project Path="src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
     <Project Path="src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj" />
+    <Project Path="src/OmpOS.Harness.Remote/OmpOS.Harness.Remote.csproj" />
     <Project Path="src/OmpOS.Harness.Rpc/OmpOS.Harness.Rpc.csproj" />
     <Project Path="src/OmpOS.Harness.Worktrees/OmpOS.Harness.Worktrees.csproj" />
     <Project Path="src/OmpOS.Harness.Terminal/OmpOS.Harness.Terminal.csproj" />
@@ -55,6 +57,7 @@
     <Project Path="tests/OmpOS.Presentation.Tests/OmpOS.Presentation.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.InMemory.Tests/OmpOS.Harness.InMemory.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Acp.Tests/OmpOS.Harness.Acp.Tests.csproj" />
+    <Project Path="tests/OmpOS.Harness.Remote.Tests/OmpOS.Harness.Remote.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Rpc.Tests/OmpOS.Harness.Rpc.Tests.csproj" />
     <Project Path="tests/OmpOS.Harness.Worktrees.Tests/OmpOS.Harness.Worktrees.Tests.csproj" />
     <Project Path="tests/OmpOS.Parity.Support/OmpOS.Parity.Support.csproj" />
@@ -82,6 +85,7 @@
     <Project Path="tests/OmpOS.UI.Tests/OmpOS.UI.Tests.csproj" />
     <Project Path="tests/OmpOS.Web.Tests/OmpOS.Web.Tests.csproj" />
     <Project Path="tests/OmpOS.EngineHost.Tests/OmpOS.EngineHost.Tests.csproj" />
+    <Project Path="tests/OmpOS.AgentWorker.Tests/OmpOS.AgentWorker.Tests.csproj" />
     <Project Path="tests/OmpOS.Api.IntegrationTests/OmpOS.Api.IntegrationTests.csproj" />
     <Project Path="tests/OmpOS.Workflows.Tests/OmpOS.Workflows.Tests.csproj" />
   </Folder>

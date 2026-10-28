@@ -204,7 +204,7 @@
       "ompos.harness.automations": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Harness.Plugins": "[1.0.0, )"
+          "OmpOS.Harness.Plugins": "[0.15.0, )"
         }
       },
       "ompos.harness.plugins": {

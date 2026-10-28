@@ -1,4 +1,5 @@
 using Bunit;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using OmpOS.UI.Components.Shell;
 using Shouldly;
@@ -25,8 +26,8 @@ public sealed class AppShellTests : UiTestContext
         var landmarks = cut.FindAll("header, nav, main, footer").Select(static element => element.TagName).ToList();
         landmarks.ShouldBe(["HEADER", "NAV", "MAIN", "FOOTER"]);
         var header = cut.Find("header");
-        header.ParentElement!.ClassList.ShouldContain("ompos-shell", "the banner must not sit inside the main landmark");
-        cut.Find("footer").ParentElement!.ClassList.ShouldContain("ompos-shell");
+        header.ParentElement!.ClassList.ShouldContain("ompos-shell", StringComparer.Ordinal, "the banner must not sit inside the main landmark");
+        cut.Find("footer").ParentElement!.ClassList.ShouldContain("ompos-shell", StringComparer.Ordinal);
         var nav = cut.Find("nav");
         nav.GetAttribute("aria-label").ShouldBe("Agents");
         nav.Id.ShouldBe("ompos-rail");
@@ -46,7 +47,7 @@ public sealed class AppShellTests : UiTestContext
 
         var first = cut.FindAll(FocusableSelector)[0];
         first.TagName.ShouldBe("A");
-        first.ClassList.ShouldContain("ompos-skip-link");
+        first.ClassList.ShouldContain("ompos-skip-link", StringComparer.Ordinal);
         first.GetAttribute("href").ShouldBe("#main");
         first.TextContent.ShouldBe("Skip to main content");
         cut.FindAll("a.ompos-skip-link").Count.ShouldBe(1);
@@ -89,26 +90,26 @@ public sealed class AppShellTests : UiTestContext
         cut.Find("main").HasAttribute("inert").ShouldBeTrue("the page behind the drawer must not take focus");
         var trap = module.VerifyInvoke("trapFocus");
         trap.Arguments.Count.ShouldBe(2, "the trap takes the rail element and the callback reference");
-        trap.Arguments[0].ShouldBeElementReferenceTo(cut.Find("nav"));
+        IdOf(trap.Arguments[0]).ShouldNotBeNullOrEmpty("the trap receives a real element reference of the rail");
     }
 
     /// <summary>Escape closes an open drawer, releases the focus trap and returns focus to the button that opened it.</summary>
     [Fact]
-    public void EscapeClosesTheDrawerAndReturnsFocusToTheOpener()
+    public async Task EscapeClosesTheDrawerAndReturnsFocusToTheOpener()
     {
         var module = JSInterop.SetupModule(ShellModule);
         var cut = RenderShell();
-        cut.Find(MenuButton).Click();
+        await cut.Find(MenuButton).ClickAsync().ConfigureAwait(true);
         module.VerifyNotInvoke("releaseFocus");
 
-        cut.Find(".ompos-shell").KeyDown(new KeyboardEventArgs { Key = "Escape" });
+        await cut.Find(".ompos-shell").KeyDownAsync(new KeyboardEventArgs { Key = "Escape" }).ConfigureAwait(true);
 
         cut.Find(MenuButton).GetAttribute("aria-expanded").ShouldBe("false");
         cut.Find(".ompos-shell").GetAttribute("data-drawer").ShouldBe("closed");
         cut.FindAll(".ompos-scrim").Count.ShouldBe(0);
         cut.Find("main").HasAttribute("inert").ShouldBeFalse();
         module.VerifyInvoke("releaseFocus");
-        JSInterop.VerifyFocusAsyncInvoke().Arguments[0].ShouldBeElementReferenceTo(cut.Find(MenuButton));
+        await AssertFocusWentToTheOpenerAsync(cut).ConfigureAwait(true);
     }
 
     /// <summary>Other keys leave the drawer open.</summary>
@@ -130,17 +131,17 @@ public sealed class AppShellTests : UiTestContext
     [InlineData(".ompos-scrim")]
     [InlineData("button[aria-label='Close agents panel']")]
     [InlineData(MenuButton)]
-    public void EveryCloseControlClosesTheDrawerAndReturnsFocus(string closeSelector)
+    public async Task EveryCloseControlClosesTheDrawerAndReturnsFocus(string closeSelector)
     {
         JSInterop.SetupModule(ShellModule);
         var cut = RenderShell();
-        cut.Find(MenuButton).Click();
+        await cut.Find(MenuButton).ClickAsync().ConfigureAwait(true);
 
-        cut.Find(closeSelector).Click();
+        await cut.Find(closeSelector).ClickAsync().ConfigureAwait(true);
 
         cut.Find(".ompos-shell").GetAttribute("data-drawer").ShouldBe("closed");
         cut.Find(MenuButton).GetAttribute("aria-expanded").ShouldBe("false");
-        JSInterop.VerifyFocusAsyncInvoke().Arguments[0].ShouldBeElementReferenceTo(cut.Find(MenuButton));
+        await AssertFocusWentToTheOpenerAsync(cut).ConfigureAwait(true);
     }
 
     /// <summary>Growing the window past the breakpoint closes the drawer without pulling focus away from where the user is.</summary>
@@ -149,7 +150,7 @@ public sealed class AppShellTests : UiTestContext
     {
         var module = JSInterop.SetupModule(ShellModule);
         var cut = RenderShell();
-        cut.Find(MenuButton).Click();
+        await cut.Find(MenuButton).ClickAsync().ConfigureAwait(true);
 
         await cut.InvokeAsync(() => cut.Instance.CloseFromViewportAsync()).ConfigureAwait(true);
 
@@ -186,6 +187,24 @@ public sealed class AppShellTests : UiTestContext
 
         var without = Render<AppShell>();
         without.FindAll(".ompos-workspace-label").Count.ShouldBe(0);
+    }
+
+    private static string IdOf(object? argument) => ((ElementReference)argument!).Id;
+
+    /// <summary>
+    /// bUnit cannot map an element reference to a DOM element (the markup carries no reference ids under .NET 10), so the check is done at the
+    /// component boundary: the one focus request made while closing must name the same reference as <see cref="TopBar.FocusDrawerButtonAsync"/>,
+    /// which is documented to focus the drawer button.
+    /// </summary>
+    private async Task AssertFocusWentToTheOpenerAsync(IRenderedComponent<AppShell> cut)
+    {
+        JSInterop.VerifyFocusAsyncInvoke();
+        await cut.InvokeAsync(() => cut.FindComponent<TopBar>().Instance.FocusDrawerButtonAsync().AsTask()).ConfigureAwait(true);
+
+        var calls = JSInterop.Invocations[FocusInterop];
+        calls.Count.ShouldBe(2);
+        IdOf(calls[0].Arguments[0]).ShouldNotBeNullOrEmpty();
+        IdOf(calls[0].Arguments[0]).ShouldBe(IdOf(calls[1].Arguments[0]));
     }
 
     private IRenderedComponent<AppShell> RenderShell() => Render<AppShell>(parameters => parameters

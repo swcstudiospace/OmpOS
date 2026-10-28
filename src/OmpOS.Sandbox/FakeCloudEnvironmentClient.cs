@@ -8,7 +8,7 @@ namespace OmpOS.Sandbox;
 /// </summary>
 public sealed class FakeCloudEnvironmentClient : ICloudEnvironmentClient
 {
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
     private readonly Dictionary<string, CloudContainer> _containersBySession = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _sessionByContainer = new(StringComparer.Ordinal);
     private readonly Dictionary<string, CloudVolume> _volumesBySession = new(StringComparer.Ordinal);

@@ -53,7 +53,7 @@ public sealed class DesktopSlashActionHostTests
         opened.Outcome.ShouldBe(SlashActionOutcome.Completed);
         first.Outcome.ShouldBe(SlashActionOutcome.Completed);
         missing.Outcome.ShouldBe(SlashActionOutcome.Failed);
-        missing.Message.ShouldBe("Settings has no bedrock page.", Case.Sensitive);
+        missing.Message.ShouldBe("Settings has no bedrock page.");
     }
 
     /// <summary>A new chat and a new terminal run their targets and say so.</summary>
@@ -72,8 +72,8 @@ public sealed class DesktopSlashActionHostTests
         var terminal = await host.RunAsync(Request(SlashActionIds.TerminalNew, typed: "ls"), token).ConfigureAwait(true);
 
         calls.ShouldBe(["chat", "terminal"]);
-        chat.Message.ShouldBe("Started a new chat.", Case.Sensitive);
-        terminal.Message.ShouldBe("Started a new terminal.", Case.Sensitive);
+        chat.Message.ShouldBe("Started a new chat.");
+        terminal.Message.ShouldBe("Started a new terminal.");
     }
 
     /// <summary>A mode switch that succeeds returns the typed text as the prompt to send in that mode; one that is refused fails with the reason and carries no prompt.</summary>
@@ -93,7 +93,7 @@ public sealed class DesktopSlashActionHostTests
         plan.ShouldBe(new SlashActionResult(SlashActionOutcome.Completed, "Mode: plan.", "add a cache"));
         bare.FollowUpPrompt.ShouldBeNull();
         ask.Outcome.ShouldBe(SlashActionOutcome.Failed);
-        ask.Message.ShouldBe("The engine offers no ask mode.", Case.Sensitive);
+        ask.Message.ShouldBe("The engine offers no ask mode.");
         ask.FollowUpPrompt.ShouldBeNull();
     }
 
@@ -109,8 +109,8 @@ public sealed class DesktopSlashActionHostTests
         var typed = await host.RunAsync(Request(SlashActionIds.ModelPick, typed: "sonnet"), token).ConfigureAwait(true);
 
         filters.ShouldBe(["opus", "sonnet"]);
-        opus.Message.ShouldBe("Model: opus.", Case.Sensitive);
-        typed.Message.ShouldBe("Model: sonnet.", Case.Sensitive);
+        opus.Message.ShouldBe("Model: opus.");
+        typed.Message.ShouldBe("Model: sonnet.");
     }
 
     /// <summary>A side chat gets the typed question; help gets the typed text.</summary>
@@ -129,8 +129,8 @@ public sealed class DesktopSlashActionHostTests
         await host.RunAsync(Request(SlashActionIds.SideOpen, typed: "why is the build red?"), token).ConfigureAwait(true);
         await host.RunAsync(Request(SlashActionIds.HelpShow, typed: "pl"), token).ConfigureAwait(true);
 
-        question.ShouldBe("why is the build red?", Case.Sensitive);
-        helpFor.ShouldBe("pl", Case.Sensitive);
+        question.ShouldBe("why is the build red?");
+        helpFor.ShouldBe("pl");
     }
 
     /// <summary>The cloud hand-off says cloud agents are phase 60; an action with no target says the window cannot run it.</summary>
@@ -162,7 +162,7 @@ public sealed class DesktopSlashActionHostTests
         var failed = await host.RunAsync(Request(SlashActionIds.ChatNew), TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         failed.Outcome.ShouldBe(SlashActionOutcome.Failed);
-        failed.Message.ShouldBe("The command failed: no workspace", Case.Sensitive);
+        failed.Message.ShouldBe("The command failed: no workspace");
         await Should.ThrowAsync<TaskCanceledException>(() => host.RunAsync(Request(SlashActionIds.TerminalNew), cancelled.Token)).ConfigureAwait(true);
     }
 

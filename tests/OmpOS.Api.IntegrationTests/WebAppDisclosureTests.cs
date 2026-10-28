@@ -78,6 +78,6 @@ public sealed class WebAppDisclosureTests
         }
 
         using var first = JsonDocument.Parse(bodies[0]);
-        first.RootElement.GetProperty("delivery").GetString().ShouldBe("delivered", Case.Sensitive);
+        first.RootElement.GetProperty("delivery").GetString().ShouldBe("delivered");
     }
 }

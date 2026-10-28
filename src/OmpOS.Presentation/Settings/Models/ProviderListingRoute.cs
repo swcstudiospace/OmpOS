@@ -3,7 +3,7 @@ namespace OmpOS.Presentation.Settings.Models;
 /// <summary>One way to reach a listed provider: a protocol, a base URL (or template) and how the key is sent.</summary>
 /// <param name="Id">The route id, unique inside its listing.</param>
 /// <param name="ApiName">The omp <c>api</c> value of the route, for example <c>openai-completions</c>.</param>
-/// <param name="BaseUrlTemplate">The base URL; it holds <c>{name}</c> placeholders when the listing has URL variables.</param>
+/// <param name="BaseAddressTemplate">The base URL; it holds <c>{name}</c> placeholders when the listing has URL variables.</param>
 /// <param name="AuthText">How the key is sent, as words, for example <c>Bearer</c> or <c>header X-API-Key</c>.</param>
 /// <param name="TakesKey">True when the route needs a key; false for a keyless local runtime.</param>
 /// <param name="DiscoversModels">True when the vendor documents a models list omp can read.</param>
@@ -12,7 +12,7 @@ namespace OmpOS.Presentation.Settings.Models;
 public sealed record ProviderListingRoute(
     string Id,
     string ApiName,
-    string BaseUrlTemplate,
+    string BaseAddressTemplate,
     string AuthText,
     bool TakesKey,
     bool DiscoversModels,
@@ -20,5 +20,5 @@ public sealed record ProviderListingRoute(
     IReadOnlyList<string> DocumentedModels)
 {
     /// <summary>Gets the text of the route in a list: the protocol and the base URL.</summary>
-    public string Label => $"{ApiName}: {BaseUrlTemplate}";
+    public string Label => $"{ApiName}: {BaseAddressTemplate}";
 }

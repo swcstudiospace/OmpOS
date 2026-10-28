@@ -44,12 +44,12 @@ public sealed class HookDispatcherOmpTests
         using var _ = rig;
 
         using var sent = JsonDocument.Parse(runner.Invocations.Single().StandardInput.ToArray());
-        sent.RootElement.GetProperty("hook_event_name").GetString().ShouldBe("tool_call", Case.Sensitive);
-        sent.RootElement.GetProperty("toolName").GetString().ShouldBe("bash", Case.Sensitive);
-        sent.RootElement.GetProperty("conversation_id").GetString().ShouldBe("conv-1", Case.Sensitive);
+        sent.RootElement.GetProperty("hook_event_name").GetString().ShouldBe("tool_call");
+        sent.RootElement.GetProperty("toolName").GetString().ShouldBe("bash");
+        sent.RootElement.GetProperty("conversation_id").GetString().ShouldBe("conv-1");
         decision.OmpResult!.Value.GetProperty("block").GetBoolean().ShouldBeTrue();
-        decision.OmpResult!.Value.GetProperty("reason").GetString().ShouldBe("no bash today", Case.Sensitive);
-        decision.Records.Single().MatchedValue.ShouldBe("bash", Case.Sensitive);
+        decision.OmpResult!.Value.GetProperty("reason").GetString().ShouldBe("no bash today");
+        decision.Records.Single().MatchedValue.ShouldBe("bash");
     }
 
     [Fact]
@@ -79,8 +79,8 @@ public sealed class HookDispatcherOmpTests
 
         var result = decision.OmpResult!.Value;
         result.GetProperty("block").GetBoolean().ShouldBeTrue();
-        result.GetProperty("reason").GetString().ShouldBe("second", Case.Sensitive);
-        result.GetProperty("note").GetString().ShouldBe("n", Case.Sensitive);
+        result.GetProperty("reason").GetString().ShouldBe("second");
+        result.GetProperty("note").GetString().ShouldBe("n");
     }
 
     [Theory]
@@ -104,7 +104,7 @@ public sealed class HookDispatcherOmpTests
         var (decision, rig, _) = await DispatchAsync(OmpHook("tool_call", blocking: true), "tool_call", """{ "toolName": "bash" }""", consent: false);
         using var _ = rig;
 
-        decision.OmpResult!.Value.GetProperty("reason").GetString().ShouldContain("no consent", Case.Sensitive);
+        decision.OmpResult!.Value.GetProperty("reason").GetString().ShouldNotBeNull().ShouldContain("no consent", Case.Sensitive);
     }
 
     [Fact]

@@ -17,7 +17,7 @@ internal sealed class WorkerTokenFactory : IDisposable
     public string PublicKeyPem => _key.ExportSubjectPublicKeyInfoPem();
 
     /// <summary>Gets the private key as PEM. A worker must refuse it.</summary>
-    public string PrivateKeyPem => _key.ExportPkcs8PrivatePem();
+    public string PrivateKeyPem => _key.ExportPkcs8PrivateKeyPem();
 
     /// <summary>Mints a token signed with ES256.</summary>
     /// <param name="subject">The <c>sub</c> claim, the session id.</param>
@@ -91,6 +91,8 @@ internal sealed class WorkerTokenFactory : IDisposable
             claims["iat"] = issuedAt.ToUnixTimeSeconds();
         }
 
+        // The token handler stamps nbf with the real clock when the claim is absent, which would put every token in the future of the injected clock.
+        claims["nbf"] = issuedAt.ToUnixTimeSeconds();
         if (includeExpiry)
         {
             claims["exp"] = (issuedAt + (lifetime ?? TimeSpan.FromMinutes(5))).ToUnixTimeSeconds();

@@ -126,6 +126,26 @@ public sealed class ReconnectingEngineHost : IEngineHost, IAsyncDisposable
         }
     }
 
+    // Opens (or reloads) the session before a turn starts, so a failure here is a connection problem and not an interrupted turn.
+    private async Task<bool> EnsureConnectedAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _inner.ConnectAsync(cancellationToken).ConfigureAwait(false);
+            if (State != RemoteConnectionState.Connected)
+            {
+                SetState(RemoteConnectionState.Connected, 0, null);
+            }
+
+            return true;
+        }
+        catch (Exception ex) when (ex is DisconnectedHarnessException or HandshakeTimeoutHarnessException)
+        {
+            SetState(RemoteConnectionState.Reconnecting, 0, ex.Message);
+            return await ReconnectAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
     /// <inheritdoc />
     public async IAsyncEnumerable<HarnessEvent> SubmitPromptAsync(
         string prompt,
@@ -135,23 +155,7 @@ public sealed class ReconnectingEngineHost : IEngineHost, IAsyncDisposable
         ArgumentNullException.ThrowIfNull(prompt);
         ArgumentNullException.ThrowIfNull(options);
 
-        // Open (or reload) the session before the turn starts, so a failure here is a connection problem and not an interrupted turn.
-        var notConnected = false;
-        try
-        {
-            await _inner.ConnectAsync(cancellationToken).ConfigureAwait(false);
-            if (State != RemoteConnectionState.Connected)
-            {
-                SetState(RemoteConnectionState.Connected, 0, null);
-            }
-        }
-        catch (Exception ex) when (ex is DisconnectedHarnessException or HandshakeTimeoutHarnessException)
-        {
-            notConnected = true;
-            SetState(RemoteConnectionState.Reconnecting, 0, ex.Message);
-        }
-
-        if (notConnected && !await ReconnectAsync(cancellationToken).ConfigureAwait(false))
+        if (!await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false))
         {
             yield return new ErrorEvent(UnreachableMessage(), Retryable: true);
             yield break;

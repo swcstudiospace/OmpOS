@@ -35,7 +35,7 @@ public sealed class RuntimeSlashDispatchTests
             chats.ShouldBe(1);
             channel.Prompts.ShouldBeEmpty();
             runtime.Composer.Draft.ShouldBeEmpty();
-            runtime.StatusText.ShouldBe("Started a new chat.", Case.Sensitive);
+            runtime.StatusText.ShouldBe("Started a new chat.");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -116,7 +116,7 @@ public sealed class RuntimeSlashDispatchTests
             await runtime.Composer.SendAsync().ConfigureAwait(true);
 
             channel.Prompts.ShouldBeEmpty();
-            runtime.StatusText.ShouldBe("cloud agents: phase 60", Case.Sensitive);
+            runtime.StatusText.ShouldBe("cloud agents: phase 60");
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
@@ -138,7 +138,7 @@ public sealed class RuntimeSlashDispatchTests
             runtime.Composer.Draft = "/plan add a cache";
             await runtime.Composer.SendAsync().ConfigureAwait(true);
 
-            runtime.Composer.ModeChip.CurrentValue.ShouldBe("plan", Case.Sensitive);
+            runtime.Composer.ModeChip.CurrentValue.ShouldBe("plan");
             channel.Prompts.ShouldBe(["add a cache"]);
             channel.ReleaseFirstTurn();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);

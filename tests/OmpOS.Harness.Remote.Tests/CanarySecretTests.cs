@@ -33,7 +33,7 @@ public sealed class CanarySecretTests
         await session.CreateAsync(ct).ConfigureAwait(true);
         var events = await SshAcpTransportTests.PromptAsync(session, "hi", ct).ConfigureAwait(true);
 
-        events.OfType<TextDeltaEvent>().Single().Text.ShouldBe($"echo:hi|secretlen={Canary.Length}", Case.Sensitive);
+        events.OfType<TextDeltaEvent>().Single().Text.ShouldBe($"echo:hi|secretlen={Canary.Length}");
         var calls = host.SshCalls();
         calls.ShouldNotBeEmpty();
         foreach (var call in calls)
@@ -42,7 +42,7 @@ public sealed class CanarySecretTests
             call.Any(argument => argument.Contains("OMPOS_TEST_SECRET", StringComparison.Ordinal)).ShouldBeFalse();
         }
 
-        File.ReadAllText(host.SshLogPath).ShouldNotContain(Canary, Case.Sensitive);
+        (await File.ReadAllTextAsync(host.SshLogPath, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotContain(Canary, Case.Sensitive);
     }
 
     /// <summary>Every printed form of the launch, the invocation and the preamble is free of the canary.</summary>

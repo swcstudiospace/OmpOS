@@ -85,19 +85,11 @@ public static class OmpLaunchPlanner
             }
 
             loaded.Add(descriptor.Id);
-            foreach (var entry in plugin.EntryPaths)
-            {
-                arguments.Add("-e");
-                arguments.Add(entry);
-            }
+            AddEntryPaths(plugin, arguments);
         }
 
         var overlayPath = AddConfigOverlay(settings, sessionDirectory, arguments);
-        foreach (var directory in extraDirectories)
-        {
-            arguments.Add("--add-dir");
-            arguments.Add(directory);
-        }
+        AddDirectories(extraDirectories, arguments);
 
         return new OmpLaunchPlan
         {
@@ -110,6 +102,24 @@ public static class OmpLaunchPlanner
             LoadedPluginIds = loaded,
             PlanningEvents = events,
         };
+    }
+
+    private static void AddEntryPaths(ResolvedPlugin plugin, List<string> arguments)
+    {
+        foreach (var entry in plugin.EntryPaths)
+        {
+            arguments.Add("-e");
+            arguments.Add(entry);
+        }
+    }
+
+    private static void AddDirectories(IReadOnlyList<string> directories, List<string> arguments)
+    {
+        foreach (var directory in directories)
+        {
+            arguments.Add("--add-dir");
+            arguments.Add(directory);
+        }
     }
 
     private static string? AddConfigOverlay(AgentLoopSettings settings, string sessionDirectory, List<string> arguments)

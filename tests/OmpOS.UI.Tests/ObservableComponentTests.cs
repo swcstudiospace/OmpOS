@@ -17,7 +17,7 @@ public sealed class ObservableComponentTests : UiTestContext
 
         await cut.InvokeAsync(() => model.Change("changed")).ConfigureAwait(true);
 
-        cut.WaitForAssertion(() => cut.Markup.ShouldContain("changed"));
+        await cut.WaitForAssertionAsync(() => cut.Markup.ShouldContain("changed")).ConfigureAwait(true);
     }
 
     /// <summary>A collection change re-renders the component.</summary>
@@ -30,7 +30,7 @@ public sealed class ObservableComponentTests : UiTestContext
 
         await cut.InvokeAsync(model.ResetCollection).ConfigureAwait(true);
 
-        cut.WaitForAssertion(() => cut.Instance.RenderCount.ShouldBe(before + 1));
+        await cut.WaitForAssertionAsync(() => cut.Instance.RenderCount.ShouldBe(before + 1)).ConfigureAwait(true);
     }
 
     /// <summary>Observing the same model on every parameter update subscribes once: one change renders once.</summary>
@@ -44,7 +44,7 @@ public sealed class ObservableComponentTests : UiTestContext
 
         await cut.InvokeAsync(() => model.Change("once")).ConfigureAwait(true);
 
-        cut.WaitForAssertion(() => cut.Instance.RenderCount.ShouldBe(before + 1));
+        await cut.WaitForAssertionAsync(() => cut.Instance.RenderCount.ShouldBe(before + 1)).ConfigureAwait(true);
     }
 
     /// <summary>Replacing the model releases the old one and follows the new one.</summary>
@@ -64,7 +64,7 @@ public sealed class ObservableComponentTests : UiTestContext
         await cut.InvokeAsync(() => first.Change("stale")).ConfigureAwait(true);
         cut.Instance.RenderCount.ShouldBe(before);
         await cut.InvokeAsync(() => second.Change("fresh")).ConfigureAwait(true);
-        cut.WaitForAssertion(() => cut.Markup.ShouldContain("fresh"));
+        await cut.WaitForAssertionAsync(() => cut.Markup.ShouldContain("fresh")).ConfigureAwait(true);
     }
 
     /// <summary>Disposing the component unsubscribes from both events, so a later change renders nothing.</summary>

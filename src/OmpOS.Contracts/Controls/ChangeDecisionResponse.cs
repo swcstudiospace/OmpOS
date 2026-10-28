@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace OmpOS.Contracts.Controls;
 
 /// <summary>The answer of <c>POST /sessions/{id}/changes/{path}/accept</c> and <c>reject</c>.</summary>
@@ -13,5 +15,6 @@ public sealed record ChangeDecisionResponse
     public required bool Applied { get; init; }
 
     /// <summary>Gets a plain sentence that says why nothing was written, or null when the decision was applied.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Reason { get; init; }
 }

@@ -43,7 +43,7 @@ public sealed class InMemorySessionControlTests
             session.ModelChanged += (_, _) => modelEvents++;
 
             (await session.SetOptionAsync("mode", "plan", ct).ConfigureAwait(true)).IsSet.ShouldBeTrue();
-            (await session.SetOptionAsync("thought_level", "high", ct).ConfigureAwait(true)).CurrentValue.ShouldBe("high", Case.Sensitive);
+            (await session.SetOptionAsync("thought_level", "high", ct).ConfigureAwait(true)).CurrentValue.ShouldBe("high");
             (await session.SetOptionAsync("nope", "x", ct).ConfigureAwait(true)).Outcome.ShouldBe(OmpOptionSetOutcome.UnknownOption);
             (await session.SetOptionAsync("mode", "nope", ct).ConfigureAwait(true)).Outcome.ShouldBe(OmpOptionSetOutcome.UnknownValue);
             (await session.SetModelAsync("inmemory/deep", ct).ConfigureAwait(true)).IsSwitched.ShouldBeTrue();
@@ -51,7 +51,7 @@ public sealed class InMemorySessionControlTests
 
             optionEvents.ShouldBe(2);
             modelEvents.ShouldBe(1);
-            session.CurrentModelId.ShouldBe("inmemory/deep", Case.Sensitive);
+            session.CurrentModelId.ShouldBe("inmemory/deep");
             session.Options.Select(static option => option.CurrentValue).ShouldBe(["plan", "high"]);
         }
     }
@@ -98,7 +98,7 @@ public sealed class InMemorySessionControlTests
             session.AdvertiseCommands([new OmpCommand("review", null, "[path]")]);
 
             raised.ShouldBe(1);
-            session.Commands.ShouldHaveSingleItem().InputHint.ShouldBe("[path]", Case.Sensitive);
+            session.Commands.ShouldHaveSingleItem().InputHint.ShouldBe("[path]");
         }
     }
 }

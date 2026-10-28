@@ -41,7 +41,7 @@ public sealed class PosixQuotingTests
         var result = await ShellRunner.RunShAsync(script, null, null, ct).ConfigureAwait(true);
 
         result.ExitCode.ShouldBe(0);
-        result.StandardOutput.ShouldBe(value, Case.Sensitive);
+        result.StandardOutput.ShouldBe(value);
         File.Exists(directory.Combine("should-not-exist")).ShouldBeFalse();
     }
 
@@ -49,14 +49,14 @@ public sealed class PosixQuotingTests
     [Fact]
     public void TheEmptyStringIsAnEmptyWord()
     {
-        PosixQuoting.Quote(string.Empty).ShouldBe("''", Case.Sensitive);
+        PosixQuoting.Quote(string.Empty).ShouldBe("''");
     }
 
     /// <summary>Every single quote in the value is closed, escaped and reopened.</summary>
     [Fact]
     public void SingleQuotesAreEscaped()
     {
-        PosixQuoting.Quote("a'b").ShouldBe("'a'\\''b'", Case.Sensitive);
+        PosixQuoting.Quote("a'b").ShouldBe("'a'\\''b'");
     }
 
     /// <summary>A command line is one line: a line break or NUL is refused.</summary>
@@ -78,7 +78,7 @@ public sealed class PosixQuotingTests
 
         var result = await ShellRunner.RunShAsync("printf '%s' " + PosixQuoting.QuoteValue(Value), null, null, ct).ConfigureAwait(true);
 
-        result.StandardOutput.ShouldBe(Value, Case.Sensitive);
+        result.StandardOutput.ShouldBe(Value);
         Should.Throw<ArgumentException>(() => PosixQuoting.QuoteValue("a\0b"));
     }
 }

@@ -39,7 +39,7 @@ public sealed partial class CssContractTests
         {
             foreach (Match use in UsePattern().Matches(css))
             {
-                defined.ShouldContain(use.Groups["name"].Value, $"{file} reads {use.Groups["name"].Value}, which no stylesheet defines");
+                defined.ShouldContain(use.Groups["name"].Value, StringComparer.Ordinal, $"{file} reads {use.Groups["name"].Value}, which no stylesheet defines");
             }
         }
     }
@@ -65,7 +65,7 @@ public sealed partial class CssContractTests
         dark.Keys.Order(StringComparer.Ordinal).ShouldBe(system.Keys.Order(StringComparer.Ordinal), "the system-dark block must declare the same tokens as the dark block");
         foreach (var (token, value) in dark)
         {
-            system[token].ShouldBe(value, Case.Sensitive, $"{token} differs between the dark and the system-dark block");
+            system[token].ShouldBe(value, $"{token} differs between the dark and the system-dark block");
         }
     }
 
@@ -91,9 +91,9 @@ public sealed partial class CssContractTests
     [InlineData("--ompos-diff-removed", "#fbe6e6", "#301719")]
     public void ColourRolesMatchTheDesktopTokens(string token, string light, string dark)
     {
-        CssSources.Hex(CssSources.Theme.Light, token).ShouldBe(light, Case.Sensitive);
-        CssSources.Hex(CssSources.Theme.Dark, token).ShouldBe(dark, Case.Sensitive);
-        CssSources.Hex(CssSources.Theme.System, token).ShouldBe(dark, Case.Sensitive);
+        CssSources.Hex(CssSources.Theme.Light, token).ShouldBe(light);
+        CssSources.Hex(CssSources.Theme.Dark, token).ShouldBe(dark);
+        CssSources.Hex(CssSources.Theme.System, token).ShouldBe(dark);
     }
 
     /// <summary>The scale tokens carry the design's font sizes, line heights, gaps, radii and sizes.</summary>
@@ -106,32 +106,32 @@ public sealed partial class CssContractTests
         foreach (var pair in fontSizes)
         {
             var parts = pair.Split(':');
-            tokens["--ompos-font-size-" + parts[0]].ShouldBe(parts[1], Case.Sensitive);
+            tokens["--ompos-font-size-" + parts[0]].ShouldBe(parts[1]);
         }
 
         string[] lineHeights = ["small:16px", "label:18px", "body:21px", "heading:22px", "display-sm:26px", "display:30px"];
         foreach (var pair in lineHeights)
         {
             var parts = pair.Split(':');
-            tokens["--ompos-line-height-" + parts[0]].ShouldBe(parts[1], Case.Sensitive);
+            tokens["--ompos-line-height-" + parts[0]].ShouldBe(parts[1]);
         }
 
         foreach (var gap in new[] { "2", "4", "6", "8", "12" })
         {
-            tokens["--ompos-gap-" + gap].ShouldBe(gap + "px", Case.Sensitive);
+            tokens["--ompos-gap-" + gap].ShouldBe(gap + "px");
         }
 
         foreach (var radius in new[] { "4", "6", "8", "10", "12" })
         {
-            tokens["--ompos-radius-" + radius].ShouldBe(radius + "px", Case.Sensitive);
+            tokens["--ompos-radius-" + radius].ShouldBe(radius + "px");
         }
 
-        tokens["--ompos-radius-pill"].ShouldBe("999px", Case.Sensitive);
-        tokens["--ompos-control-height"].ShouldBe("32px", Case.Sensitive);
-        tokens["--ompos-control-height-small"].ShouldBe("28px", Case.Sensitive);
-        tokens["--ompos-rail-width"].ShouldBe("240px", Case.Sensitive);
-        tokens["--ompos-thread-max"].ShouldBe("760px", Case.Sensitive);
-        tokens["--ompos-titlebar-height"].ShouldBe("40px", Case.Sensitive);
+        tokens["--ompos-radius-pill"].ShouldBe("999px");
+        tokens["--ompos-control-height"].ShouldBe("32px");
+        tokens["--ompos-control-height-small"].ShouldBe("28px");
+        tokens["--ompos-rail-width"].ShouldBe("240px");
+        tokens["--ompos-thread-max"].ShouldBe("760px");
+        tokens["--ompos-titlebar-height"].ShouldBe("40px");
         tokens["--ompos-font-sans"].ShouldContain("'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif", Case.Sensitive);
         tokens["--ompos-font-mono"].ShouldContain("Menlo, Consolas, 'Liberation Mono', monospace", Case.Sensitive);
     }
@@ -208,12 +208,13 @@ public sealed partial class CssContractTests
                 stream.ReadExactly(header);
             }
 
-            System.Text.Encoding.ASCII.GetString(header).ShouldBe("wOF2", Case.Sensitive, $"{url} must be a woff2 file");
+            System.Text.Encoding.ASCII.GetString(header).ShouldBe("wOF2", $"{url} must be a woff2 file");
             File.Exists(Path.Combine(Path.GetDirectoryName(path)!, "OFL.txt")).ShouldBeTrue($"{url} must ship beside its OFL.txt");
         }
 
         declared.Order(StringComparer.Ordinal).ShouldBe(
             ["Anybody 600", "DM Sans 400", "DM Sans 500", "DM Sans 600", "Space Mono 400", "Space Mono 700"],
+            Case.Sensitive,
             "every weight the design uses is declared once");
     }
 
@@ -225,8 +226,8 @@ public sealed partial class CssContractTests
         var imported = ImportPattern().Matches(entry).Select(static match => match.Groups["value"].Value).ToList();
         var shipped = Directory.GetFiles(CssSources.StylesDirectory, "*.css").Select(file => Path.GetFileName(file)).Where(static name => !string.Equals(name, "ompos.css", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToList();
 
-        imported.Order(StringComparer.Ordinal).ShouldBe(shipped, "every stylesheet beside ompos.css must be imported by it");
-        imported[0].ShouldBe("tokens.css", Case.Sensitive, "tokens must load first");
+        imported.Order(StringComparer.Ordinal).ShouldBe(shipped, Case.Sensitive, "every stylesheet beside ompos.css must be imported by it");
+        imported[0].ShouldBe("tokens.css", "tokens must load first");
     }
 
     /// <summary>Only tokens.css holds colour literals: every other rule takes its colour from a token, so a theme switch reaches it.</summary>
@@ -278,7 +279,7 @@ public sealed partial class CssContractTests
     [GeneratedRegex("(?<selector>[^{}]+)\\{(?<body>[^{}]*)\\}", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]
     private static partial Regex RulePattern();
 
-    [GeneratedRegex("font-family:[^;]*(--ompos-font-display|Anybody)", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
+    [GeneratedRegex("font-family:[^;]*(--ompos-font-display|Anybody)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]
     private static partial Regex DisplayFacePattern();
 
     [GeneratedRegex("(?<![-\\w])font-size:\\s*(?<value>[^;]+);", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]
