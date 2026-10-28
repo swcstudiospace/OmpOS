@@ -9,7 +9,6 @@
                 id="@ButtonId"
                 aria-haspopup="listbox"
                 aria-expanded="@(IsOpen ? "true" : "false")"
-                aria-controls="@(IsOpen ? ListId : null)"
                 aria-disabled="@(Model.IsEnabled ? null : "true")"
                 aria-describedby="@ReasonId"
                 aria-label="@(Name + ": " + Model.Label)"
