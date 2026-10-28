@@ -7902,6 +7902,7 @@ Fonts are under the SIL Open Font License 1.1 (text in section 8). Each director
 | `src/OmpOS.Native.Views/Assets/Brand/ompos-mark-256.png` | 19255a62aadb | provenance not recorded |
 | `src/OmpOS.UI/wwwroot/brand/ompos-logo-dark.svg` | 339e7c7856eb | provenance not recorded |
 | `src/OmpOS.UI/wwwroot/brand/ompos-logo.svg` | f3cbb2fc3871 | provenance not recorded |
+| `src/OmpOS.UI/wwwroot/brand/ompos-mark-dark.svg` | 2cda67c16d5c | provenance not recorded |
 | `src/OmpOS.UI/wwwroot/brand/ompos-mark.svg` | a523b5af11f6 | provenance not recorded |
 
 ## 7. Components conveyed outside the NuGet graph
