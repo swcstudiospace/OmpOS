@@ -63,13 +63,8 @@ jobs:
       - run: dotnet restore OmpOS.Linux.slnf --locked-mode
       - run: dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
       # The next steps need no podman: they run before the test services so that CI reports them even when the runner cannot start containers
-      # (OQ-168: rootless podman cannot create a user namespace inside the runner container).
+      # (OQ-168: rootless podman cannot create a user namespace inside the runner container, and the image has no Chrome, so the browser smoke comes last).
       - run: dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
-      - name: Browser smoke with axe-core (needs Node and Chrome on the runner; mirrors the bootstrap step)
-        run: |
-          out_dir="$RUNNER_TEMP/web-smoke"
-          mkdir -p "$out_dir"
-          OUT_DIR="$out_dir" bash scripts/web-smoke/run-smoke.sh
       - name: Vulnerable packages (list exits 0 even on findings, so the parse is the gate)
         run: |
           dotnet list OmpOS.Linux.slnf package --vulnerable --include-transitive --format json > vuln.json
@@ -82,6 +77,11 @@ jobs:
         run: bash scripts/ci/repo-checks.sh
       - name: Licence checks (NOTICE and THIRD-PARTY-NOTICES.md against the restored NuGet cache; the same script bootstrap.sh runs)
         run: bash scripts/ci/check-licences.sh
+      - name: Browser smoke with axe-core (needs Node and Chrome on the runner; mirrors the bootstrap step)
+        run: |
+          out_dir="$RUNNER_TEMP/web-smoke"
+          mkdir -p "$out_dir"
+          OUT_DIR="$out_dir" bash scripts/web-smoke/run-smoke.sh
       - name: Require podman (for the test services and compose validation)
         # The Omega CI runner image ships podman; jobs have no sudo to install it.
         run: |
