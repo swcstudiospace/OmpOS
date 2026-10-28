@@ -66,6 +66,7 @@
 * [Publish the docs with GitBook](runbooks/gitbook-publish.md)
 * [GitHub setup](runbooks/github-setup.md)
 * [Hosting](runbooks/hosting.md)
+* [Rebrand to Autonogrammer](runbooks/rebrand-autonogrammer.md)
 
 ## Decisions and records
 
@@ -92,6 +93,14 @@
   * [ADR-0019 Provider catalogue](decisions/ADR-0019-provider-catalogue.md)
   * [ADR-0020 Cloud agents on Railway](decisions/ADR-0020-cloud-agents-on-railway.md)
   * [Addendum to ADR-0020 Hooks in cloud workers](decisions/addendum-ADR-0020-hooks.md)
+  * [ADR-0030 Accounts: Supabase passwordless sign-in](decisions/ADR-0030-accounts-supabase-passwordless.md)
+  * [ADR-0031 Data plane namespaces and resilience](decisions/ADR-0031-data-plane-namespaces-and-resilience.md)
+  * [ADR-0032 Cowork shell, sessions, chat and tool host](decisions/ADR-0032-cowork-shell-sessions-chat-and-tool-host.md)
+  * [ADR-0033 Cowork Artifacts](decisions/ADR-0033-cowork-artifacts.md)
+  * [ADR-0034 Cowork Browser Use](decisions/ADR-0034-cowork-browser-use.md)
+  * [ADR-0035 Cowork Computer Use](decisions/ADR-0035-cowork-computer-use.md)
+  * [ADR-0036 Dispatch relay](decisions/ADR-0036-dispatch-relay.md)
+  * [ADR-0037 Cowork parity remainder](decisions/ADR-0037-cowork-parity-remainder.md)
 * [Open questions register](open-questions.md)
 * [Deferred and blocked items, 2026-10-26](runbooks/deferred-and-blocked-2026-10-26.md)
 * [Quality bar, 2026-10-22](quality/quality-bar.md)
