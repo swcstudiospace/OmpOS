@@ -2,10 +2,20 @@
 @using OmpOS.Presentation.Approvals
 @inherits ObservableComponent
 <div class="ompos-approval" role="group" aria-label="@("Tool approval: " + Approval.ToolName)" data-status="@Approval.Status.ToString().ToLowerInvariant()">
-    <p class="ompos-approval-tool"><span class="ompos-approval-label">Tool:</span> <code>@Approval.ToolName</code></p>
+    <div class="ompos-approval-head">
+        <svg class="ompos-approval-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 2.5 14 13H2ZM8 6.5v3M8 11.2v.1" /></svg>
+        <p class="ompos-approval-tool"><span class="ompos-approval-label">Allow the agent to run</span> <code>@Approval.ToolName</code><span class="ompos-sr-only">?</span></p>
+    </div>
     @if (Approval.ArgumentsSummary.Length > 0)
     {
-        <p class="ompos-approval-arguments"><span class="ompos-approval-label">Arguments:</span> <code>@Approval.ArgumentsSummary</code></p>
+        @if (IsGrantNote)
+        {
+            <p class="ompos-approval-grant">@Approval.ArgumentsSummary</p>
+        }
+        else
+        {
+            <p class="ompos-approval-arguments"><span class="ompos-sr-only">Arguments: </span><code title="@Approval.ArgumentsSummary">@Approval.ArgumentsSummary</code></p>
+        }
     }
 
     @if (Message.Length > 0)
@@ -18,8 +28,8 @@
         <div class="ompos-approval-actions">
             <button type="button" class="ompos-btn ompos-btn--small ompos-btn--primary" disabled="@_inFlight" aria-label="@("Allow once: " + Approval.ToolName)" @onclick="() => DecideAsync(ToolApprovalDecision.Allow)">Allow once</button>
             <button type="button" class="ompos-btn ompos-btn--small" disabled="@_inFlight" aria-label="@("Deny: " + Approval.ToolName)" @onclick="() => DecideAsync(ToolApprovalDecision.Deny)">Deny</button>
+            <p class="ompos-approval-hint">@PolicyHint</p>
         </div>
-        <p class="ompos-approval-hint">@PolicyHint</p>
     }
 </div>
 
@@ -49,6 +59,9 @@
     /// <summary>Gets the clock the decision timeout runs on.</summary>
     [Parameter]
     public TimeProvider Time { get; set; } = TimeProvider.System;
+
+    // The web runtime puts the tools the server can also grant into the summary; that is a note about the grant, not the call's arguments.
+    private bool IsGrantNote => Approval.ArgumentsSummary.StartsWith("Can also grant:", StringComparison.Ordinal);
 
     private bool IsPendingLike => Approval.Status is ToolApprovalStatus.Pending or ToolApprovalStatus.Refused or ToolApprovalStatus.Failed;
 

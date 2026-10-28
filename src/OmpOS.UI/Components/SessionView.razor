@@ -12,6 +12,7 @@
     }
     else if (ViewState == SessionViewState.Empty)
     {
+        <span class="ompos-state-mark" aria-hidden="true"></span>
         <p class="ompos-empty"><strong class="ompos-empty-heading">@AgentPanelCopy.EmptySessionHeading</strong> <span class="ompos-empty-body">@AgentPanelCopy.EmptySessionBody</span></p>
     }
     else
@@ -40,9 +41,9 @@
         {
             <p class="ompos-transport-notice" role="status">You are offline. Showing the last known output.</p>
         }
-        @if (ViewState == SessionViewState.Streaming)
+        @if (ViewState == SessionViewState.Streaming && ShowStop)
         {
-            <button type="button" class="ompos-btn ompos-icon-btn" aria-label="Stop response" @onclick="() => OnStop.InvokeAsync()">■</button>
+            <button type="button" class="ompos-btn ompos-icon-btn" aria-label="Stop response" @onclick="() => OnStop.InvokeAsync()"><svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true" focusable="false"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5" /></svg></button>
         }
         @if (ViewState == SessionViewState.RecoverableError)
         {
@@ -71,6 +72,10 @@
     /// <summary>Gets the throttled aria-live announcement text.</summary>
     [Parameter]
     public string? Announcement { get; set; }
+
+    /// <summary>Gets whether the transcript draws its own stop control while streaming. A host that has a stop control elsewhere (the composer) turns it off.</summary>
+    [Parameter]
+    public bool ShowStop { get; set; } = true;
 
     /// <summary>Gets the callback invoked when the stop control is activated.</summary>
     [Parameter]

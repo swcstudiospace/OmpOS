@@ -20,6 +20,12 @@
   --ompos-selected: #e4e4e0;
   --ompos-surface-active: #dcdcd7;
 
+  /* Purple tints, the brand's quiet geometry: the selected rail row, the Demo banner, callouts and the empty-state mark. Text holds 4.5:1
+     on tint and tint-strong (AccessibilityTests); tint-border is a decorative edge. */
+  --ompos-tint: #f5f1ff;
+  --ompos-tint-strong: #ebe4ff;
+  --ompos-tint-border: #d6c9fb;
+
   /* Text and accent roles. */
   --ompos-text: #1c1c1a; /* 16.34:1 on --ompos-surface */
   --ompos-text-secondary: #55555a; /* 7.10:1 on --ompos-surface */
@@ -129,6 +135,10 @@
   --ompos-selected: #2d2d2d;
   --ompos-surface-active: #333333;
 
+  --ompos-tint: #232130;
+  --ompos-tint-strong: #2c2842;
+  --ompos-tint-border: #4a3f7a;
+
   --ompos-text: #ececec; /* 15.03:1 on --ompos-surface */
   --ompos-text-secondary: #a3a3a3; /* 7.04:1 on --ompos-surface */
   --ompos-accent: #a78bfa; /* 6.52:1 on --ompos-surface */
@@ -161,6 +171,10 @@
     --ompos-hover: #262626;
     --ompos-selected: #2d2d2d;
     --ompos-surface-active: #333333;
+
+    --ompos-tint: #232130;
+    --ompos-tint-strong: #2c2842;
+    --ompos-tint-border: #4a3f7a;
 
     --ompos-text: #ececec; /* 15.03:1 on --ompos-surface */
     --ompos-text-secondary: #a3a3a3; /* 7.04:1 on --ompos-surface */

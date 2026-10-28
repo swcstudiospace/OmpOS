@@ -8,7 +8,7 @@
     <div class="ompos-slash-palette" data-open="true">
         @if (Model.Entries.Count > 0)
         {
-            <ul class="ompos-slash-list" id="@ListId" role="listbox" aria-label="@SlashPaletteCopy.ListName" aria-describedby="@HelpId">
+            <ul class="ompos-slash-list" id="@ListId" tabindex="0" role="listbox" aria-label="@SlashPaletteCopy.ListName" aria-describedby="@HelpId">
                 @for (var index = 0; index < Model.Entries.Count; index++)
                 {
                     var position = index;
@@ -19,29 +19,31 @@
                         data-source="@entry.Source.ToString().ToLowerInvariant()"
                         aria-selected="@(position == Model.SelectedIndex ? "true" : "false")"
                         aria-disabled="@(entry.IsEnabled ? null : "true")"
-                        aria-label="@entry.AutomationName"
                         @onclick="() => OnPick.InvokeAsync(position)">
-                        <span class="ompos-slash-name">@entry.DisplayName</span>
-                        @if (entry.HasInputHint)
-                        {
-                            <span class="ompos-slash-hint">@entry.InputHint</span>
-                        }
-
+                        <span class="ompos-slash-head">
+                            <span class="ompos-slash-name">@entry.DisplayName</span>
+                            @if (entry.HasInputHint)
+                            {
+                                <span class="ompos-slash-hint">@entry.InputHint</span>
+                            }
+                        </span>
                         @if (entry.HasDescription)
                         {
-                            <span class="ompos-slash-description">@entry.Description</span>
+                            <span class="ompos-slash-description" title="@entry.Description">@entry.Description</span>
                         }
 
                         @if (!entry.IsEnabled)
                         {
-                            <span class="ompos-slash-reason">@entry.DisabledReason</span>
+                            <span class="ompos-slash-reason" title="@entry.DisabledReason">@entry.DisabledReason</span>
                         }
 
-                        <span class="ompos-badge-source">@entry.SourceLabel</span>
-                        @if (entry.HasScope)
-                        {
-                            <span class="ompos-badge-scope">@entry.ScopeLabel</span>
-                        }
+                        <span class="ompos-slash-badges">
+                            <span class="ompos-badge-source">@entry.SourceLabel</span>
+                            @if (entry.HasScope)
+                            {
+                                <span class="ompos-badge-scope">@entry.ScopeLabel</span>
+                            }
+                        </span>
                     </li>
                 }
             </ul>

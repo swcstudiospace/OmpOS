@@ -6,7 +6,8 @@
 //
 // Usage:  node scripts/web-demo/capture.mjs
 // Env:    BUNDLE (default output/demo), OUT (default /tmp/ompos-shots), THEME light|dark (default light), W and H (default 1440x900),
-//         DEMO_PORT (default 5190), CHROME_BIN (default google-chrome), PREFIX (file name prefix, default empty)
+//         DEMO_PORT (default 5190), CHROME_BIN (default google-chrome), PREFIX (file name prefix, default empty),
+//         URL (capture an already hosted deployment instead of serving BUNDLE locally)
 import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -16,6 +17,7 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "../..");
 const PORT = process.env.DEMO_PORT || "5190";
+const REMOTE = process.env.URL || "";
 const BUNDLE = resolve(process.env.BUNDLE || join(root, "output/demo"));
 const OUT = resolve(process.env.OUT || "/tmp/ompos-shots");
 const THEME = process.env.THEME || "light";
@@ -25,18 +27,18 @@ const PREFIX = process.env.PREFIX || "";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 mkdirSync(OUT, { recursive: true });
 
-const server = spawn("bash", [join(root, "scripts/web-demo/serve-demo.sh"), BUNDLE], { env: { ...process.env, DEMO_PORT: PORT }, stdio: "ignore" });
+const server = REMOTE ? null : spawn("bash", [join(root, "scripts/web-demo/serve-demo.sh"), BUNDLE], { env: { ...process.env, DEMO_PORT: PORT }, stdio: "ignore" });
 const profile = mkdtempSync(join(tmpdir(), "ompos-shots-"));
 const chrome = spawn(process.env.CHROME_BIN || "google-chrome", [
   "--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--remote-debugging-port=0", `--user-data-dir=${profile}`,
   `--window-size=${W},${H}`, "--hide-scrollbars", "--force-device-scale-factor=1", "about:blank",
 ], { stdio: "ignore" });
-const cleanup = () => { try { chrome.kill(); } catch { /* already gone */ } try { server.kill(); } catch { /* already gone */ } };
+const cleanup = () => { try { chrome.kill(); } catch { /* already gone */ } try { server?.kill(); } catch { /* already gone */ } };
 process.on("exit", cleanup);
 
 let devtoolsPort;
 for (let i = 0; i < 60 && !devtoolsPort; i++) { try { devtoolsPort = readFileSync(join(profile, "DevToolsActivePort"), "utf8").split("\n")[0]; } catch { await sleep(500); } }
-for (let i = 0; i < 60; i++) { try { if ((await fetch(`http://127.0.0.1:${PORT}/`)).ok) break; } catch { /* not up yet */ } await sleep(500); }
+for (let i = 0; i < 60 && !REMOTE; i++) { try { if ((await fetch(`http://127.0.0.1:${PORT}/`)).ok) break; } catch { /* not up yet */ } await sleep(500); }
 const targets = await (await fetch(`http://127.0.0.1:${devtoolsPort}/json/list`)).json();
 const page = targets.find((t) => t.type === "page");
 const ws = new WebSocket(page.webSocketDebuggerUrl);
@@ -60,7 +62,7 @@ await send("Page.enable"); await send("Runtime.enable"); await send("Log.enable"
 await send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: 1, mobile: W < 700 });
 // The theme choice is read by theme-boot.js before first paint.
 await send("Page.addScriptToEvaluateOnNewDocument", { source: `localStorage.setItem('ompos.theme', ${JSON.stringify(THEME)});` });
-await send("Page.navigate", { url: `http://127.0.0.1:${PORT}/` });
+await send("Page.navigate", { url: REMOTE || `http://127.0.0.1:${PORT}/` });
 const report = { theme: THEME, size: `${W}x${H}`, shots: [] };
 report.ready = await wait("document.querySelectorAll('.ompos-agent-row').length > 0 || document.querySelectorAll('[role=navigation] li').length > 0", 120000);
 await sleep(2500);
@@ -102,6 +104,23 @@ if (await click(".ompos-rail-settings")) {
     await evalJs(`document.querySelectorAll('.ompos-settings-nav-item')[${it.i}].click()`);
     await sleep(700);
     await take(`10-settings-${String(it.i).padStart(2, "0")}-${it.t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`);
+  }
+  // Models page with the region and kind filters narrowed: the provider coverage the owner asked for.
+  const modelsIndex = items.findIndex((x) => /^models/i.test(x.t));
+  if (modelsIndex >= 0) {
+    const pick = (labelText, optionPrefix) => evalJs(`(() => { const sel = [...document.querySelectorAll('select')].find((s) => { const l = s.id && document.querySelector('label[for="' + s.id + '"]'); return (l && l.textContent.includes(${JSON.stringify(labelText)})) || (s.getAttribute('aria-label') || '').includes(${JSON.stringify(labelText)}); }); if (!sel) return false; const o = [...sel.options].find((x) => x.text.startsWith(${JSON.stringify(optionPrefix)})); if (!o) return false; sel.value = o.value; sel.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
+    await evalJs(`document.querySelectorAll('.ompos-settings-nav-item')[${modelsIndex}].click()`);
+    await sleep(900);
+    report.modelsFilterCn = (await pick("region", "China")) && (await pick("kind", "Coding plans"));
+    await sleep(700);
+    await evalJs("[...document.querySelectorAll('h2,h3,h4')].find((h) => h.textContent.includes('Provider directory'))?.scrollIntoView({ block: 'start' })");
+    await sleep(400);
+    await take("11-models-cn-coding-plans");
+    report.modelsFilterEu = (await pick("region", "Europe")) && (await pick("kind", "All"));
+    await sleep(700);
+    await evalJs("[...document.querySelectorAll('h2,h3,h4')].find((h) => h.textContent.includes('Provider directory'))?.scrollIntoView({ block: 'start' })");
+    await sleep(400);
+    await take("12-models-eu");
   }
   await evalJs("document.querySelector('.ompos-settings')?.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}))");
 }

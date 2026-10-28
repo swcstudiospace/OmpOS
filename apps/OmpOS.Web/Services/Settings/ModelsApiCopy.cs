@@ -6,6 +6,9 @@ internal static class ModelsApiCopy
     /// <summary>The operator did not enable key writes. It is also the reason shown beside the disabled key field.</summary>
     public const string CredentialWritesDisabled = "Credential writes are disabled by the operator of this service. Provider keys are set in the service's environment.";
 
+    /// <summary>The sentence the key field shows in the Demo, where no key can be entered because no service holds one.</summary>
+    public const string CredentialWritesDisabledInDemo = "Key entry is disabled by the operator in this Demo. A real service takes provider keys in its own environment, and nothing typed here would be stored.";
+
     /// <summary>The operator did not enable configuration writes.</summary>
     public const string ConfigWritesDisabled = "Changing providers and the default model is disabled by the operator of this service.";
 

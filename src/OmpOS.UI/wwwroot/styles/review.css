@@ -6,7 +6,7 @@
   flex-direction: column;
   gap: var(--ompos-gap-4);
   padding: var(--ompos-gap-8) var(--ompos-gap-12);
-  background: var(--ompos-surface-sunken);
+  background: var(--ompos-surface);
   border: 1px solid var(--ompos-border);
   border-radius: var(--ompos-radius-8);
 }
@@ -42,15 +42,23 @@
   list-style: none;
 }
 
+/* One change per row: the kind glyph, the path (cut with an ellipsis) over its kind and status, the line counts, then Keep, Undo and Review. */
 .ompos-change {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: var(--ompos-gap-4) var(--ompos-gap-8);
+  gap: 0 var(--ompos-gap-8);
+  padding-block: var(--ompos-gap-4);
   font-size: var(--ompos-font-size-label);
 }
 
+.ompos-change + .ompos-change {
+  border-top: 1px solid var(--ompos-border);
+}
+
 .ompos-change-kind {
+  grid-column: 1;
+  grid-row: 1 / span 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -60,10 +68,17 @@
 }
 
 .ompos-change-path {
+  grid-column: 2;
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
   font-family: var(--ompos-font-mono);
   font-size: var(--ompos-font-size-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ompos-change-meta {
+  grid-column: 2;
 }
 
 .ompos-change-meta,
@@ -85,9 +100,31 @@
 }
 
 .ompos-change-counts {
-  margin-right: auto;
+  grid-column: 3;
+  grid-row: 1 / span 2;
   font-family: var(--ompos-font-mono);
   font-size: var(--ompos-font-size-mono);
+  white-space: nowrap;
+}
+
+.ompos-change-actions {
+  grid-column: 4;
+  grid-row: 1 / span 2;
+}
+
+.ompos-change-message {
+  grid-column: 2 / -1;
+}
+
+@media (max-width: 559.98px) {
+  .ompos-change {
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+  }
+
+  .ompos-change-actions {
+    grid-column: 2 / -1;
+    grid-row: 3;
+  }
 }
 
 /* The review panel is a side panel on the right; on a narrow screen it covers the viewport. */

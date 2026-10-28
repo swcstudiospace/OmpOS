@@ -230,7 +230,7 @@ public sealed class ComposerPanelTests : UiTestContext
         textarea.GetAttribute("aria-activedescendant").ShouldBe(options[0].Id);
         for (var index = 0; index < options.Count; index++)
         {
-            options[index].GetAttribute("aria-label").ShouldBe(palette.Entries[index].AutomationName);
+            options[index].TextContent.ShouldContain(palette.Entries[index].DisplayName, Case.Sensitive);
             options[index].QuerySelector(".ompos-badge-source")!.TextContent.ShouldBe(palette.Entries[index].SourceLabel);
         }
 

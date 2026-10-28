@@ -223,6 +223,8 @@ public sealed partial class AccessibilityTests : UiTestContext
         "--ompos-hover",
         "--ompos-selected",
         "--ompos-surface-active",
+        "--ompos-tint",
+        "--ompos-tint-strong",
     ];
 
     [GeneratedRegex("^\\s*(?<token>--ompos-[a-z-]+):\\s*(?<color>#[0-9a-fA-F]{6});", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]

@@ -9,7 +9,7 @@
                 id="@ButtonId"
                 aria-haspopup="listbox"
                 aria-expanded="@(IsOpen ? "true" : "false")"
-                aria-controls="@(IsOpen ? ListId : null)"
+                aria-controls="@(IsOpen ? PickerId : null)"
                 aria-disabled="@(Model.IsEnabled ? null : "true")"
                 aria-describedby="@ReasonId"
                 aria-label="@("Model: " + Model.Label)"
@@ -22,7 +22,7 @@
         <span class="ompos-sr-only" id="@ReasonId">@Model.ToolTipText</span>
         @if (IsOpen)
         {
-            <div class="ompos-model-picker">
+            <div class="ompos-model-picker" id="@PickerId">
                 <input type="text"
                        class="ompos-input ompos-model-search"
                        role="combobox"
@@ -88,6 +88,9 @@
     private bool _focusButton;
     private string ButtonId => _id + "-button";
     private string ListId => _id + "-list";
+
+    private string PickerId => _id + "-picker";
+
     private string ReasonId => _id + "-reason";
 
     /// <summary>Gets the model picker: the models the engine offers, the filter, the highlight and the switch command.</summary>

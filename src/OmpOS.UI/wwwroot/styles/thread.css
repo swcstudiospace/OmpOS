@@ -5,8 +5,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--ompos-gap-4);
-  padding-bottom: var(--ompos-gap-8);
-  border-bottom: 1px solid var(--ompos-border);
 }
 
 .ompos-thread-heading,
@@ -18,19 +16,22 @@
   min-width: 0;
 }
 
+/* The conversation title is the page title: the display face, cut with an ellipsis when it does not fit beside the status and the close control. */
 .ompos-thread-title {
+  flex: 1 1 10rem;
   min-width: 0;
   margin: 0;
   overflow: hidden;
-  font-size: var(--ompos-font-size-heading);
+  font-family: var(--ompos-font-display);
+  font-size: var(--ompos-font-size-display-sm);
   font-weight: var(--ompos-font-weight-semibold);
-  line-height: var(--ompos-line-height-heading);
+  line-height: var(--ompos-line-height-display-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.ompos-thread-heading .ompos-spacer {
-  flex: 1;
+.ompos-thread-context .ompos-steering-badge {
+  margin-left: auto;
 }
 
 .ompos-thread-workspace {
@@ -324,16 +325,19 @@
 
 .ompos-run-summary {
   margin: 0;
-  padding: var(--ompos-gap-8) var(--ompos-gap-12);
-  background: var(--ompos-surface-sunken);
-  border-left: 4px solid var(--ompos-success);
+  padding: var(--ompos-gap-6) var(--ompos-gap-12);
+  background: var(--ompos-surface);
+  border: 1px solid var(--ompos-border);
+  border-left: 3px solid var(--ompos-success);
   border-radius: var(--ompos-radius-6);
   font-size: var(--ompos-font-size-label);
 }
 
 .ompos-closed-note {
+  margin-top: auto;
   padding: var(--ompos-gap-12);
-  background: var(--ompos-surface-sunken);
+  background: var(--ompos-tint);
+  border: 1px solid var(--ompos-tint-border);
   border-radius: var(--ompos-radius-8);
   color: var(--ompos-text);
 }
@@ -353,21 +357,34 @@
 .ompos-approval {
   display: flex;
   flex-direction: column;
-  gap: var(--ompos-gap-4);
-  padding: var(--ompos-gap-8) var(--ompos-gap-12);
-  background: var(--ompos-surface);
-  border: 1px solid var(--ompos-accent);
+  gap: var(--ompos-gap-8);
+  padding: var(--ompos-gap-8) var(--ompos-gap-12) var(--ompos-gap-12);
+  background: var(--ompos-tint);
+  border: 1px solid var(--ompos-tint-border);
+  border-left: 3px solid var(--ompos-accent);
   border-radius: var(--ompos-radius-8);
 }
 
 .ompos-approval[data-status='allowed'],
 .ompos-approval[data-status='denied'] {
+  background: var(--ompos-surface);
   border-color: var(--ompos-border);
 }
 
 .ompos-approval p {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.ompos-approval-head {
+  display: flex;
+  align-items: center;
+  gap: var(--ompos-gap-8);
+}
+
+.ompos-approval-icon {
+  flex: none;
+  color: var(--ompos-warning);
 }
 
 .ompos-approval-tool {
@@ -379,10 +396,24 @@
   font-size: var(--ompos-font-size-mono);
 }
 
+/* The arguments are one truncated line of code; the full text is the tooltip. */
+.ompos-approval-arguments code {
+  display: block;
+  padding: var(--ompos-gap-4) var(--ompos-gap-8);
+  overflow: hidden;
+  background: var(--ompos-surface-raised);
+  border: 1px solid var(--ompos-tint-border);
+  border-radius: var(--ompos-radius-6);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .ompos-approval-label,
-.ompos-approval-hint {
+.ompos-approval-hint,
+.ompos-approval-grant {
   color: var(--ompos-text-secondary);
   font-size: var(--ompos-font-size-small);
+  line-height: var(--ompos-line-height-small);
 }
 
 .ompos-approval-message[data-fault='true'] {
@@ -392,5 +423,11 @@
 .ompos-approval-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--ompos-gap-8);
+}
+
+.ompos-approval-actions .ompos-approval-hint {
+  flex: 1 1 14rem;
+  min-width: 0;
 }

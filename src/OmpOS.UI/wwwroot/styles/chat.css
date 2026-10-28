@@ -31,9 +31,30 @@
   overflow-wrap: anywhere;
 }
 
+/* The reader's own turn is a lavender bubble; the assistant's prose is not boxed: it reads as the page, and only the things the agent did
+   (tools, code, edits, plans) are cards. */
 .ompos-block.ompos-user {
-  background: var(--ompos-selected);
+  background: var(--ompos-tint);
+  border-color: var(--ompos-tint-border);
+}
+
+.ompos-block.ompos-markdown,
+.ompos-block.ompos-streaming {
+  padding-inline: var(--ompos-gap-4);
+  background: transparent;
   border-color: transparent;
+}
+
+.ompos-markdown > :first-child {
+  margin-top: 0;
+}
+
+.ompos-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.ompos-markdown :where(p, ul, ol) {
+  margin-block: var(--ompos-gap-8);
 }
 
 .ompos-block.ompos-streaming,
@@ -63,17 +84,71 @@ p.ompos-error {
 }
 
 .ompos-approval-notice {
-  padding: var(--ompos-gap-8) var(--ompos-gap-12);
-  background: var(--ompos-surface-sunken);
-  border-left: 4px solid var(--ompos-warning);
+  padding: var(--ompos-gap-6) var(--ompos-gap-12);
+  background: var(--ompos-tint);
+  border-left: 3px solid var(--ompos-accent);
   border-radius: var(--ompos-radius-6);
   color: var(--ompos-text);
+  font-size: var(--ompos-font-size-label);
 }
 
+/* The pending approvals below the transcript carry the message themselves; the transcript's own notice would repeat it. */
+.ompos-thread:has(.ompos-approvals) .ompos-approval-notice {
+  display: none;
+}
+
+.ompos-session[data-state='empty'] {
+  align-items: center;
+  padding-block: 6vh var(--ompos-gap-12);
+  text-align: center;
+}
+
+.ompos-empty-heading {
+  display: block;
+  color: var(--ompos-text);
+  font-size: var(--ompos-font-size-heading);
+  font-weight: var(--ompos-font-weight-semibold);
+  line-height: var(--ompos-line-height-heading);
+}
+
+/* A tool call is a one-line card: glyph, name, status. The result card that follows it is fused to it (one card, one tool), and its own
+   heading, which would repeat the name and the status, is hidden. */
 .ompos-tool-call {
   display: flex;
   align-items: center;
   gap: var(--ompos-gap-8);
+  min-height: var(--ompos-control-height);
+  padding-block: var(--ompos-gap-4);
+}
+
+.ompos-tool-call:has(+ .ompos-tool-result) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.ompos-tool-call + .ompos-tool-result {
+  margin-top: calc(-1 * var(--ompos-gap-8) - 1px);
+  padding-top: var(--ompos-gap-4);
+  background: var(--ompos-surface-raised);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.ompos-tool-result-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--ompos-gap-8);
+  margin: 0 0 var(--ompos-gap-4);
+}
+
+.ompos-tool-output {
+  font-family: var(--ompos-font-mono);
+  font-size: var(--ompos-font-size-mono);
+  line-height: var(--ompos-line-height-mono);
+}
+
+.ompos-tool-call + .ompos-tool-result .ompos-tool-result-heading {
+  display: none;
 }
 
 .ompos-tool-name,
@@ -231,8 +306,15 @@ p.ompos-error {
   line-height: var(--ompos-line-height-display-sm);
 }
 
+.ompos-wordmark-os {
+  color: var(--ompos-accent);
+}
+
 .ompos-workspace-label {
+  min-width: 0;
+  padding-left: var(--ompos-gap-12);
   overflow: hidden;
+  border-left: 1px solid var(--ompos-border);
   color: var(--ompos-text-secondary);
   font-size: var(--ompos-font-size-label);
   text-overflow: ellipsis;

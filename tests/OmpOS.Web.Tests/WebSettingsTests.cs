@@ -13,7 +13,7 @@ public sealed class WebSettingsTests : IDisposable
 {
     private readonly DemoTestHost _host = new();
 
-    /// <summary>Only the sections the browser or the API can serve are offered, in section order.</summary>
+    /// <summary>Without extra pages the window holds the pages the browser and the readiness check serve, in the web order.</summary>
     [Fact]
     public void WindowOffersTheSectionsTheWebHeadCanServe()
     {
@@ -29,7 +29,7 @@ public sealed class WebSettingsTests : IDisposable
         });
     }
 
-    /// <summary>A page another service registers for a section replaces the built-in page, and adds sections the web head has no page for.</summary>
+    /// <summary>A page another service registers for a section replaces the built-in page, and adds sections the web head has no built-in page for; the order is the web order, not the order of the enum.</summary>
     [Fact]
     public void ExtraPagesReplaceAndExtendTheWindow()
     {
@@ -40,8 +40,8 @@ public sealed class WebSettingsTests : IDisposable
 
         window.Pages.Select(static page => page.Section).ShouldBe(new[]
         {
-            SettingsSection.Models,
             SettingsSection.General,
+            SettingsSection.Models,
             SettingsSection.Tab,
             SettingsSection.Plugins,
             SettingsSection.Network,

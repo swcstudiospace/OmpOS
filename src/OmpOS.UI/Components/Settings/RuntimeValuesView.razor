@@ -1,0 +1,38 @@
+@namespace OmpOS.UI.Components.Settings
+@inherits SettingsPageView<RuntimeValuesPage>
+@using OmpOS.Presentation.Settings
+<SettingsPageFrame Page="Page" Title="@SettingsCopy.RuntimeHeading" Description="@SettingsWebCopy.RuntimeDescription" Editable="false">
+    @if (Page.State != SettingsPageState.Ready)
+    {
+        <SettingsStateView Loading="@(Page.State == SettingsPageState.Loading)" Error="@(Page.State == SettingsPageState.Error ? Page.LoadError : null)" OnRetry="Retry" />
+    }
+    else
+    {
+        <p class="ompos-settings-banner" data-tone="info">@SettingsWebCopy.RuntimeReadOnly</p>
+        @foreach (var group in Page.Groups)
+        {
+            <div class="ompos-settings-fact" role="group" aria-label="@group.Heading">
+                <h4 class="ompos-settings-section-title">@group.Heading</h4>
+                <ul class="ompos-settings-list">
+                    @foreach (var row in group.Rows)
+                    {
+                        <li class="ompos-settings-list-row" @key="row.Label">
+                            <div class="ompos-settings-list-main">
+                                <span class="ompos-settings-label">@row.Label</span>
+                                @if (!string.IsNullOrEmpty(row.Help))
+                                {
+                                    <span class="ompos-settings-help">@row.Help</span>
+                                }
+                            </div>
+                            <span class="ompos-settings-mono ompos-settings-value">@row.Value</span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    }
+</SettingsPageFrame>
+
+@code {
+    private Task Retry() => Page.LoadAsync(CancellationToken.None);
+}

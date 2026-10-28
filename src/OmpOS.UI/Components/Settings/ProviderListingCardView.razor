@@ -111,10 +111,18 @@
             }
             @if (Model.TakesKey && Model.ApiKey is { } draft)
             {
-                <ApiKeyField Draft="draft" InputId="@KeyId" ShowActions="false" />
+                <ApiKeyField Draft="draft" InputId="@KeyId" ShowActions="false" DisabledReason="@Model.KeyDisabledReason" />
+            }
+            @if (Model.RequiresPlanRule)
+            {
+                <label class="ompos-settings-check" for="@PlanRuleId">
+                    <input id="@PlanRuleId" type="checkbox" checked="@Model.PlanRuleAccepted" aria-label="@Model.PlanRuleAcceptName"
+                           @onchange="e => Model.PlanRuleAccepted = e.Value is true" />
+                    <span>@ProviderListingCopy.PlanRuleAcceptLabel</span>
+                </label>
             }
             <div class="ompos-settings-actions">
-                <button type="button" class="ompos-btn ompos-btn--small ompos-btn--primary" disabled="@Model.IsBusy" aria-label="@Model.AddActionName" @onclick="AddAsync">@ProviderListingCopy.AddActionLabel</button>
+                <button type="button" class="ompos-btn ompos-btn--small ompos-btn--primary" disabled="@(Model.IsBusy || Model.IsKeyDisabled)" aria-label="@Model.AddActionName" @onclick="AddAsync">@ProviderListingCopy.AddActionLabel</button>
                 <button type="button" class="ompos-btn ompos-btn--small ompos-btn--ghost" @onclick="Model.CancelSetup">@ProviderListingCopy.CancelActionLabel</button>
             </div>
         </div>
@@ -140,6 +148,8 @@
     private string ModelIdsId => "ompos-model-ids-" + DomIdOf(Model.Id);
 
     private string KeyId => "ompos-listing-key-" + DomIdOf(Model.Id);
+
+    private string PlanRuleId => "ompos-plan-rule-" + DomIdOf(Model.Id);
 
     /// <inheritdoc />
     protected override void OnParametersSet()

@@ -2,11 +2,15 @@
    The screen's colours are read from tokens.css by scripts/ompos-terminal.js, so a theme switch reaches it. */
 @import url('../lib/xterm/xterm.css');
 
+/* The terminal column is wider than the 760 px reading column (terminal output is wide monospace text) and centred in the panel. */
 .ompos-terminal {
   display: flex;
   flex-direction: column;
   gap: var(--ompos-gap-8);
+  width: 100%;
+  max-width: 1000px;
   min-width: 0;
+  margin-inline: auto;
   padding: 16px;
 }
 

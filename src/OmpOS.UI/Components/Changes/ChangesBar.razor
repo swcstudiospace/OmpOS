@@ -20,7 +20,7 @@
             {
                 <li class="ompos-change" data-status="@entry.Status.ToString().ToLowerInvariant()" data-kind="@entry.Kind.ToString().ToLowerInvariant()">
                     <span class="ompos-change-kind" aria-hidden="true">@KindGlyph(entry.Kind)</span>
-                    <span class="ompos-change-path">@entry.Path</span>
+                    <span class="ompos-change-path" title="@entry.Path">@entry.Path</span>
                     <span class="ompos-change-meta">@entry.KindText, @entry.StatusText</span>
                     <span class="ompos-change-counts"><span class="ompos-change-added">@entry.AddedText</span> <span class="ompos-change-removed">@entry.RemovedText</span></span>
                     @if (entry.IsActionable)

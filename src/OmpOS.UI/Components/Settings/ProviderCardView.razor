@@ -81,7 +81,7 @@
     </div>
     @if (Model.IsApiKeyEditorOpen && Model.ApiKey is { } draft)
     {
-        <ApiKeyField Draft="draft" InputId="@KeyInputId" ShowActions="true" OnSave="SaveKeyAsync" OnCancel="CancelKey" />
+        <ApiKeyField Draft="draft" InputId="@KeyInputId" ShowActions="true" DisabledReason="@Model.KeyDisabledReason" OnSave="SaveKeyAsync" OnCancel="CancelKey" />
     }
     @if (Model.IsConfirmingRemove)
     {

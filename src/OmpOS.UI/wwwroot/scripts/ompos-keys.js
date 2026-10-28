@@ -9,6 +9,7 @@
 //   registerShortcuts(dotnet)      Ctrl or Command with Shift+A, Shift+K and the comma call dotnet.OnShortcut("agents"|"kanban"|"settings").
 //   watchOutside(container, dotnet)  Calls dotnet.OnOutside() when a pointer goes down, or the focus lands, outside the container (popups).
 //   ensureVisible(id)              Scrolls the element with that id into view inside its scroll container, without animation.
+//   resetScroll()                  Scrolls the document to the top (a view switch starts at the top).
 //   focusId(id)                    Moves the focus to the element with that id (the thread after an agent was opened).
 //   focusItem(container, id)       Moves the focus to the element of the container whose data-row-id is id (roving tabindex lists).
 //   release(token)                 Removes the listeners of any registration above.
@@ -102,6 +103,10 @@ export function ensureVisible(id) {
   if (element !== null) {
     element.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
+}
+
+export function resetScroll() {
+  window.scrollTo(0, 0);
 }
 
 export function focusId(id) {

@@ -6,15 +6,16 @@
 <div class="ompos-settings-key">
     <label class="ompos-settings-label" for="@InputId">@Draft.FieldLabel</label>
     <input @key="_epoch" id="@InputId" class="ompos-input ompos-settings-mono" type="password" autocomplete="off" autocapitalize="none" spellcheck="false"
+           disabled="@(DisabledReason is not null)"
            aria-invalid="@(Draft.Error is null ? null : "true")"
            aria-describedby="@(InputId + "-note " + InputId + "-error")"
            @oninput="OnInput" />
-    <p class="ompos-settings-help" id="@(InputId + "-note")">@Draft.KeyStorageNote</p>
+    <p class="ompos-settings-help" id="@(InputId + "-note")">@(DisabledReason ?? Draft.KeyStorageNote)</p>
     <p class="ompos-settings-error" id="@(InputId + "-error")" aria-live="polite">@Draft.Error</p>
     @if (ShowActions)
     {
         <div class="ompos-settings-actions">
-            <button type="button" class="ompos-btn ompos-btn--small ompos-btn--primary" disabled="@(!Draft.IsValid || Draft.IsSaving)" @onclick="SaveAsync">@ModelsCopy.SaveKeyLabel</button>
+            <button type="button" class="ompos-btn ompos-btn--small ompos-btn--primary" disabled="@(DisabledReason is not null || !Draft.IsValid || Draft.IsSaving)" @onclick="SaveAsync">@ModelsCopy.SaveKeyLabel</button>
             <button type="button" class="ompos-btn ompos-btn--small ompos-btn--ghost" @onclick="CancelAsync">@ModelsCopy.CancelLabel</button>
         </div>
     }
@@ -37,6 +38,10 @@
     /// <summary>Gets whether the field shows its own Save key and Cancel buttons (a provider card) or leaves saving to its form (a listing card).</summary>
     [Parameter]
     public bool ShowActions { get; set; }
+
+    /// <summary>Gets the sentence that says the operator disabled key entry, or null when keys can be entered. While it is set the input and the Save key button are disabled and the sentence replaces the storage note.</summary>
+    [Parameter]
+    public string? DisabledReason { get; set; }
 
     /// <summary>Gets the callback invoked when the user presses Save key.</summary>
     [Parameter]

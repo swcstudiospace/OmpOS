@@ -82,9 +82,9 @@ public sealed class ThreadViewTests : UiTestContext
         var (harness, session, cut) = await OpenAsync().ConfigureAwait(true);
         using var owned = harness;
         session.Session.ApplyEvent(PanelEvents.Text(1, "Working"));
-        await cut.WaitForAssertionAsync(() => cut.Find("section > button[aria-label='Stop response']").ShouldNotBeNull()).ConfigureAwait(true);
+        await cut.WaitForAssertionAsync(() => cut.Find(".ompos-composer-dock button[aria-label='Stop response']").ShouldNotBeNull()).ConfigureAwait(true);
 
-        await cut.Find("section > button[aria-label='Stop response']").ClickAsync().ConfigureAwait(true);
+        await cut.Find(".ompos-composer-dock button[aria-label='Stop response']").ClickAsync().ConfigureAwait(true);
 
         var bar = cut.Find(".ompos-confirm-bar[data-kind='stop']");
         bar.GetAttribute("aria-label").ShouldBe("Confirm stop");
@@ -93,7 +93,7 @@ public sealed class ThreadViewTests : UiTestContext
         cut.FindAll(".ompos-confirm-bar").ShouldBeEmpty();
         harness.Host.Stops.ShouldBe(0);
 
-        await cut.Find("section > button[aria-label='Stop response']").ClickAsync().ConfigureAwait(true);
+        await cut.Find(".ompos-composer-dock button[aria-label='Stop response']").ClickAsync().ConfigureAwait(true);
         await cut.Find(".ompos-confirm-bar .ompos-btn--primary").ClickAsync().ConfigureAwait(true);
 
         harness.Host.Stops.ShouldBe(1);

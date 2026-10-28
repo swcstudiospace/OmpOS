@@ -1,0 +1,83 @@
+@namespace OmpOS.UI.Components.Settings
+@inherits SettingsPageView<HooksListPage>
+@using OmpOS.Presentation.Settings
+<SettingsPageFrame Page="Page" Title="@SettingsWebCopy.HooksTitle" Description="@SettingsWebCopy.HooksDescription" Editable="false">
+    @if (Page.State != SettingsPageState.Ready)
+    {
+        <SettingsStateView Loading="@(Page.State == SettingsPageState.Loading)" Error="@(Page.State == SettingsPageState.Error ? Page.LoadError : null)" OnRetry="Retry" />
+    }
+    else
+    {
+        <p class="ompos-settings-banner" data-tone="info">@SettingsWebCopy.HooksReadOnly</p>
+        if (Page.IsEmpty)
+        {
+            <p class="ompos-settings-state">@SettingsWebCopy.HooksEmpty</p>
+        }
+        else
+        {
+            <ul class="ompos-settings-list" aria-label="@SettingsWebCopy.HooksTitle">
+                @foreach (var hook in Page.Hooks)
+                {
+                    <li class="ompos-settings-list-row ompos-hook-row" @key="hook.Id" data-event="@hook.EventName">
+                        <div class="ompos-settings-list-main">
+                            <span class="ompos-settings-label">@hook.EventName</span>
+                            <span class="ompos-settings-mono ompos-hook-command">@HooksListPage.CommandText(hook)</span>
+                            @if (!string.IsNullOrEmpty(hook.Description))
+                            {
+                                <span class="ompos-settings-help">@hook.Description</span>
+                            }
+                            @if (!string.IsNullOrEmpty(hook.Matcher))
+                            {
+                                <span class="ompos-settings-help">@SettingsWebCopy.HookMatcherLabel <span class="ompos-settings-mono">@hook.Matcher</span></span>
+                            }
+                            @if (!string.IsNullOrEmpty(hook.MatcherProblem))
+                            {
+                                <span class="ompos-settings-error-text">@hook.MatcherProblem</span>
+                            }
+                            <span class="ompos-settings-help">@SettingsWebCopy.HookDetail(hook)</span>
+                        </div>
+                        <div class="ompos-hook-chips">
+                            <span class="ompos-chip @(hook.Enabled ? "ompos-chip--success" : "ompos-chip--warning")" data-enabled="@(hook.Enabled ? "true" : "false")">@(hook.Enabled ? SettingsWebCopy.HookEnabled : SettingsWebCopy.HookDisabled)</span>
+                            <span class="ompos-chip">@hook.Scope</span>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+
+        <h4 class="ompos-settings-section-title">@SettingsWebCopy.HookFilesHeading</h4>
+        @if (Page.Sources.Count == 0)
+        {
+            <p class="ompos-settings-help">@SettingsWebCopy.HookFilesEmpty</p>
+        }
+        else
+        {
+            <ul class="ompos-settings-list" aria-label="@SettingsWebCopy.HookFilesHeading">
+                @foreach (var source in Page.Sources)
+                {
+                    <li class="ompos-settings-list-row" @key="source.File">
+                        <div class="ompos-settings-list-main">
+                            <span class="ompos-settings-mono">@source.File</span>
+                            <span class="ompos-settings-help">@SettingsWebCopy.HookSourceLine(source)</span>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+
+        @if (Page.Diagnostics.Count > 0)
+        {
+            <h4 class="ompos-settings-section-title">@SettingsWebCopy.ProblemsHeading</h4>
+            <ul class="ompos-settings-problems">
+                @foreach (var problem in Page.Diagnostics)
+                {
+                    <li class="ompos-settings-mono" data-severity="@problem.Severity">@SettingsWebCopy.HookProblemLine(problem)</li>
+                }
+            </ul>
+        }
+    }
+</SettingsPageFrame>
+
+@code {
+    private Task Retry() => Page.LoadAsync(CancellationToken.None);
+}

@@ -277,6 +277,28 @@ public sealed class AgentRailTests : UiTestContext
         harness.Host.Resumes.ShouldBe(1);
     }
 
+    /// <summary>The selected running agent closes through a named icon button with no visible text; it asks first like the Delete key does.</summary>
+    [Fact]
+    public async Task TheSelectedRowClosesThroughANamedIconButton()
+    {
+        using var harness = ThreeAgents();
+        JSInterop.SetupModule(KeysModule);
+        var cut = RenderRail(harness);
+        cut.FindAll(".ompos-agent-close").ShouldBeEmpty("only the selected row offers actions");
+
+        await cut.FindAll(RowSelector)[0].ClickAsync().ConfigureAwait(true);
+        await cut.WaitForAssertionAsync(() => cut.Find(".ompos-agent-actions--float .ompos-agent-close").ShouldNotBeNull()).ConfigureAwait(true);
+        var close = cut.Find(".ompos-agent-actions--float .ompos-agent-close");
+        close.GetAttribute("aria-label").ShouldBe("Close this agent");
+        close.GetAttribute("title").ShouldBe("Close");
+        close.TextContent.Trim().ShouldBeEmpty("the icon button draws an icon, not a word");
+
+        await close.ClickAsync().ConfigureAwait(true);
+
+        cut.Find(".ompos-confirm-bar[data-kind='close']").ShouldNotBeNull();
+        harness.Host.Closed.ShouldBeEmpty();
+    }
+
     /// <summary>Every control of the rail has an accessible name, and the live region is polite.</summary>
     [Fact]
     public void EveryControlHasAnAccessibleNameAndTheLiveRegionIsPolite()

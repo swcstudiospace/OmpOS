@@ -1,0 +1,47 @@
+@namespace OmpOS.UI.Components.Settings
+@inherits SettingsPageView<McpFilesPage>
+@using OmpOS.Presentation.Settings
+<SettingsPageFrame Page="Page" Title="@SettingsWebCopy.McpTitle" Description="@SettingsWebCopy.McpDescription" Editable="false">
+    @if (Page.State != SettingsPageState.Ready)
+    {
+        <SettingsStateView Loading="@(Page.State == SettingsPageState.Loading)" Error="@(Page.State == SettingsPageState.Error ? Page.LoadError : null)" OnRetry="Retry" />
+    }
+    else
+    {
+        <p class="ompos-settings-banner" data-tone="info">@SettingsWebCopy.McpReadOnly</p>
+        if (Page.IsEmpty)
+        {
+            <p class="ompos-settings-state">@SettingsWebCopy.McpEmpty</p>
+        }
+        else
+        {
+            <ul class="ompos-settings-list" aria-label="@SettingsWebCopy.McpTitle">
+                @foreach (var file in Page.Files)
+                {
+                    <li class="ompos-settings-list-row" @key="file.Origin">
+                        <div class="ompos-settings-list-main">
+                            <span class="ompos-settings-mono">@file.Origin</span>
+                            <span class="ompos-settings-help">@SettingsWebCopy.McpFileLine(file)</span>
+                        </div>
+                        <span class="ompos-chip">@(file.Scope == OmpOS.Contracts.WorkspaceSettings.ConventionScopeKind.Project ? SettingsWebCopy.ScopeProject : SettingsWebCopy.ScopeUser)</span>
+                    </li>
+                }
+            </ul>
+        }
+
+        @if (Page.Problems.Count > 0)
+        {
+            <h4 class="ompos-settings-section-title">@SettingsWebCopy.ProblemsHeading</h4>
+            <ul class="ompos-settings-problems">
+                @foreach (var problem in Page.Problems)
+                {
+                    <li class="ompos-settings-mono">@SettingsWebCopy.McpProblemLine(problem)</li>
+                }
+            </ul>
+        }
+    }
+</SettingsPageFrame>
+
+@code {
+    private Task Retry() => Page.LoadAsync(CancellationToken.None);
+}

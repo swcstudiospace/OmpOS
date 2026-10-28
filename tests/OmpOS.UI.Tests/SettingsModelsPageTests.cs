@@ -221,16 +221,61 @@ public sealed class SettingsModelsPageTests : UiTestContext
         cut.Find("label[for='" + key.Id + "']").TextContent.ShouldBe(ModelsCopy.ApiKeyFieldLabel("Plan US"));
         await key.InputAsync(new ChangeEventArgs { Value = Key }).ConfigureAwait(true);
         cut.Markup.ShouldNotContain(Key, Case.Sensitive);
+        await cut.Find("[data-listing='plan-us'] input[type='checkbox']").ChangeAsync(new ChangeEventArgs { Value = true }).ConfigureAwait(true);
 
         await cut.Find("button[aria-label='" + ProviderListingCopy.AddActionName("Plan US") + "']").ClickAsync().ConfigureAwait(true);
 
         await cut.WaitForAssertionAsync(() => source.Catalogue.Count.ShouldBe(1)).ConfigureAwait(true);
         var (request, sentKey) = source.Catalogue[0];
         sentKey.ShouldBe(Key);
+        request.PlanRuleAccepted.ShouldBeTrue("the tick the user gave goes to the source");
         request.ListingId.ShouldBe("plan-us");
         request.UrlValues.ShouldBe(new Dictionary<string, string>(StringComparer.Ordinal) { ["region"] = "eu" });
         await cut.WaitForAssertionAsync(() => cut.FindAll("[data-listing='plan-us'] input[type='password']").Count.ShouldBe(0)).ConfigureAwait(true);
         cut.Markup.ShouldNotContain(Key, Case.Sensitive);
+        AssertNamedControls(cut);
+    }
+
+    /// <summary>A coding plan form shows the tick box with its accessible name; without the tick the add is refused with the reason, the typed key is not sent, and nothing is added.</summary>
+    [Fact]
+    public async Task PlanSetupAsksForTheRuleTickAndRefusesWithoutIt()
+    {
+        var source = new SettingsFixtures.ModelsSource();
+        source.Listings.Add(SettingsFixtures.PlanListing("plan-us", "Plan US", ProviderListingRegion.UnitedStates));
+        var cut = await RenderPageAsync(source);
+        await cut.Find("[data-listing='plan-us'] input[type='text']").InputAsync(new ChangeEventArgs { Value = "eu" }).ConfigureAwait(true);
+        await cut.Find("button[aria-label='" + ProviderListingCopy.SetupActionName("Plan US") + "']").ClickAsync().ConfigureAwait(true);
+        await cut.Find("[data-listing='plan-us'] input[type='password']").InputAsync(new ChangeEventArgs { Value = Key }).ConfigureAwait(true);
+
+        var tick = cut.Find("[data-listing='plan-us'] input[type='checkbox']");
+        tick.GetAttribute("aria-label").ShouldBe(ProviderListingCopy.PlanRuleAcceptName("Plan US"));
+        tick.HasAttribute("checked").ShouldBeFalse();
+        await cut.Find("button[aria-label='" + ProviderListingCopy.AddActionName("Plan US") + "']").ClickAsync().ConfigureAwait(true);
+
+        await cut.WaitForAssertionAsync(() => cut.Find("[data-listing='plan-us'] [role='alert']").TextContent.ShouldBe(ProviderListingCopy.PlanRuleRequired)).ConfigureAwait(true);
+        source.Catalogue.ShouldBeEmpty();
+        cut.Markup.ShouldNotContain(Key, Case.Sensitive);
+    }
+
+    /// <summary>When the operator disabled key entry the key input and the Add action are disabled, the reason is shown on the page and on the card, and no input is held.</summary>
+    [Fact]
+    public async Task DisabledKeyEntryDisablesTheKeyFieldAndShowsTheReason()
+    {
+        const string Reason = "Key entry is disabled by the operator in this test.";
+        var source = new SettingsFixtures.ModelsSource { KeyWritesDisabledReason = Reason };
+        source.Listings.Add(SettingsFixtures.PlanListing("plan-us", "Plan US", ProviderListingRegion.UnitedStates));
+        var cut = await RenderPageAsync(source);
+        await cut.Find("[data-listing='plan-us'] input[type='text']").InputAsync(new ChangeEventArgs { Value = "eu" }).ConfigureAwait(true);
+
+        await cut.Find("button[aria-label='" + ProviderListingCopy.SetupActionName("Plan US") + "']").ClickAsync().ConfigureAwait(true);
+
+        cut.Find(".ompos-settings-banner[data-key-writes='disabled']").TextContent.ShouldBe(Reason);
+        var key = cut.Find("[data-listing='plan-us'] input[type='password']");
+        key.HasAttribute("disabled").ShouldBeTrue();
+        key.HasAttribute("value").ShouldBeFalse();
+        cut.Find("[data-listing='plan-us'] .ompos-settings-key").TextContent.ShouldContain(Reason, Case.Sensitive);
+        cut.Find("button[aria-label='" + ProviderListingCopy.AddActionName("Plan US") + "']").HasAttribute("disabled").ShouldBeTrue();
+        source.Catalogue.ShouldBeEmpty();
         AssertNamedControls(cut);
     }
 

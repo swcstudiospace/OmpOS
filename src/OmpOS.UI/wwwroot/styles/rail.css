@@ -59,7 +59,7 @@
 
 .ompos-agent-group-header {
   margin: 0;
-  padding: var(--ompos-gap-8) var(--ompos-gap-8) var(--ompos-gap-2);
+  padding: var(--ompos-gap-12) var(--ompos-gap-8) var(--ompos-gap-4);
   color: var(--ompos-text-secondary);
   font-size: var(--ompos-font-size-small);
   font-weight: var(--ompos-font-weight-semibold);
@@ -90,11 +90,15 @@
   background: var(--ompos-surface-active);
 }
 
-.ompos-agent-row.is-selected {
-  padding-left: calc(var(--ompos-gap-8) - 2px);
-  background: var(--ompos-selected);
-  border-left: 2px solid var(--ompos-accent);
+.ompos-agent-row.is-selected,
+.ompos-agent-row.is-selected:hover {
+  background: var(--ompos-tint-strong);
   border-radius: 0 var(--ompos-radius-6) var(--ompos-radius-6) 0;
+  box-shadow: inset 3px 0 0 var(--ompos-accent);
+}
+
+.ompos-agent-item {
+  position: relative;
 }
 
 .ompos-agent-row .ompos-glyph {
@@ -161,6 +165,28 @@
   flex-wrap: wrap;
   gap: var(--ompos-gap-4);
   padding: var(--ompos-gap-4) var(--ompos-gap-8) var(--ompos-gap-4) var(--ompos-gap-8);
+}
+
+/* The close control of the selected row floats at the bottom-right of the row, over the empty end of the status line. */
+.ompos-agent-actions--float {
+  position: absolute;
+  right: var(--ompos-gap-4);
+  bottom: var(--ompos-gap-4);
+  padding: 0;
+}
+
+.ompos-agent-row.is-selected .ompos-agent-meta {
+  padding-right: var(--ompos-icon-button);
+}
+
+.ompos-agent-close {
+  color: var(--ompos-text-secondary);
+}
+
+.ompos-agent-close:hover,
+.ompos-agent-close:focus-visible {
+  background: var(--ompos-surface-raised);
+  color: var(--ompos-text);
 }
 
 .ompos-rail-footer {

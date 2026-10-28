@@ -68,6 +68,18 @@
                         case CustomizeCatalogPage customize:
                             <CustomizeSettingsView @key="customize" Page="customize" />
                             break;
+                        case RuntimeValuesPage runtimeValues:
+                            <RuntimeValuesView @key="runtimeValues" Page="runtimeValues" />
+                            break;
+                        case HooksListPage hooks:
+                            <HooksListView @key="hooks" Page="hooks" />
+                            break;
+                        case McpFilesPage mcp:
+                            <McpFilesView @key="mcp" Page="mcp" />
+                            break;
+                        case InfoSettingsPage info:
+                            <InfoSettingsView @key="info" Page="info" />
+                            break;
                         default:
                             <GenericSettingsView @key="Settings.SelectedPage" Page="Settings.SelectedPage" />
                             break;

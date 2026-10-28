@@ -37,6 +37,7 @@
             else if (Panel.State == PanelState.Loading)
             {
                 <div class="ompos-panel-state" data-state="loading" role="status">
+                    <span class="ompos-state-mark" aria-hidden="true"></span>
                     <h2 class="ompos-panel-state-heading">@AgentPanelCopy.PanelLoadingHeading</h2>
                     <p>@AgentPanelCopy.PanelLoadingBody</p>
                 </div>
@@ -44,6 +45,7 @@
             else if (Panel.State == PanelState.Error)
             {
                 <div class="ompos-panel-state" data-state="error">
+                    <span class="ompos-state-mark" aria-hidden="true"></span>
                     @if (Panel.BannerText is { } banner)
                     {
                         <p class="ompos-error" role="alert">@banner</p>
@@ -55,6 +57,7 @@
             else if (Panel.SessionCount == 0)
             {
                 <div class="ompos-panel-state" data-state="empty">
+                    <span class="ompos-state-mark" aria-hidden="true"></span>
                     <h2 class="ompos-panel-state-heading">@AgentPanelCopy.EmptyThreadHeading</h2>
                     <p>@AgentPanelCopy.EmptyThreadBody</p>
                     <button type="button" class="ompos-btn ompos-btn--primary" @onclick="() => Panel.NewSessionCommand.ExecuteAsync(null)">@AgentPanelCopy.StartFirstAgent</button>
@@ -63,6 +66,7 @@
             else if (Panel.Selected is not { } selected)
             {
                 <div class="ompos-panel-state" data-state="no-selection">
+                    <span class="ompos-state-mark" aria-hidden="true"></span>
                     <h2 class="ompos-panel-state-heading">Select an agent</h2>
                     <p>Pick an agent in the list, or start a new one.</p>
                 </div>
@@ -93,6 +97,7 @@
     private IJSObjectReference? _module;
     private string _view = ViewTabs.AgentsView;
     private bool _settingsOpen;
+    private bool _resetScroll;
 
     /// <summary>Gets the Agent Panel view model: the rail rows, the selected agent and the commands.</summary>
     [Parameter, EditorRequired]
@@ -135,9 +140,12 @@
 
     private string? Version => Source is { Version.Length: > 0 } source ? ShellInfo.FormatVersion(source.Version) : null;
 
+    // The folder label repeats the name when the workspace folder is named like the workspace: the label then shows it once.
     private string? WorkspaceLabel => Workspace is null
         ? null
-        : string.IsNullOrWhiteSpace(Workspace.FolderLabel) ? Workspace.Name : Workspace.Name + " · " + Workspace.FolderLabel;
+        : string.IsNullOrWhiteSpace(Workspace.FolderLabel) || string.Equals(Workspace.FolderLabel, Workspace.Name, StringComparison.OrdinalIgnoreCase)
+            ? Workspace.Name
+            : Workspace.Name + " · " + Workspace.FolderLabel;
 
     /// <inheritdoc />
     protected override void OnParametersSet()
@@ -148,15 +156,19 @@
 
     private string? ThreadWorkspaceLabel(AgentSessionViewModel session)
     {
+        // The top bar already names the workspace; a thread names one only when its own differs (an agent started in another folder).
         var root = session.Row.Summary.WorkspaceRoot;
         if (string.IsNullOrWhiteSpace(root))
         {
-            return WorkspaceLabel;
+            return null;
         }
 
         var trimmed = root.TrimEnd('/', '\\');
         var cut = Math.Max(trimmed.LastIndexOf('/'), trimmed.LastIndexOf('\\'));
-        return cut >= 0 ? trimmed[(cut + 1)..] : trimmed;
+        var folder = cut >= 0 ? trimmed[(cut + 1)..] : trimmed;
+        return Workspace is { } known && (string.Equals(folder, known.Name, StringComparison.OrdinalIgnoreCase) || string.Equals(folder, known.FolderLabel, StringComparison.OrdinalIgnoreCase))
+            ? null
+            : folder;
     }
 
     private EventCallback RetryOf(AgentSessionViewModel session)
@@ -166,12 +178,36 @@
     }
 
     private void SelectView(string view) =>
-        _view = string.Equals(view, ViewTabs.KanbanView, StringComparison.Ordinal) ? ViewTabs.KanbanView : ViewTabs.AgentsView;
+        SetView(string.Equals(view, ViewTabs.KanbanView, StringComparison.Ordinal) ? ViewTabs.KanbanView : ViewTabs.AgentsView);
+
+    // The document is the scroll container, so a view switch starts at the top instead of keeping the other view's scroll offset.
+    private void SetView(string view)
+    {
+        if (!string.Equals(_view, view, StringComparison.Ordinal))
+        {
+            _resetScroll = true;
+        }
+
+        _view = view;
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_resetScroll)
+        {
+            return;
+        }
+
+        _resetScroll = false;
+        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
+        await _module.InvokeVoidAsync("resetScroll").ConfigureAwait(true);
+    }
 
     private Task OpenSessionFromBoardAsync(string sessionId)
     {
         Panel.SelectSession(sessionId);
-        _view = ViewTabs.AgentsView;
+        SetView(ViewTabs.AgentsView);
         return FocusThreadAsync();
     }
 
@@ -193,10 +229,10 @@
         switch (id)
         {
             case ShortcutHost.Agents:
-                _view = ViewTabs.AgentsView;
+                SetView(ViewTabs.AgentsView);
                 break;
             case ShortcutHost.Kanban:
-                _view = ViewTabs.KanbanView;
+                SetView(ViewTabs.KanbanView);
                 break;
             case ShortcutHost.Settings:
                 _settingsOpen = true;

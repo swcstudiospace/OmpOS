@@ -22,6 +22,7 @@ internal sealed class DemoApiHandler : HttpMessageHandler
     private const string LastEventIdHeader = "Last-Event-ID";
 
     private readonly DemoWorld _world;
+    private readonly DemoProviders _providers = new();
 
     /// <summary>Initializes a new instance of the <see cref="DemoApiHandler"/> class.</summary>
     /// <param name="world">The state the routes read and change.</param>
@@ -45,7 +46,7 @@ internal sealed class DemoApiHandler : HttpMessageHandler
         }
     }
 
-    private static bool Match(string[] segments, params string?[] pattern)
+    internal static bool Match(string[] segments, params string?[] pattern)
     {
         if (segments.Length != pattern.Length)
         {
@@ -63,7 +64,7 @@ internal sealed class DemoApiHandler : HttpMessageHandler
         return true;
     }
 
-    private static HttpResponseMessage JsonResponse<T>(HttpRequestMessage request, T value, JsonTypeInfo<T> typeInfo, HttpStatusCode status = HttpStatusCode.OK) =>
+    internal static HttpResponseMessage JsonResponse<T>(HttpRequestMessage request, T value, JsonTypeInfo<T> typeInfo, HttpStatusCode status = HttpStatusCode.OK) =>
         new(status)
         {
             Content = new StringContent(JsonSerializer.Serialize(value, typeInfo), Encoding.UTF8, JsonMedia),
@@ -92,7 +93,7 @@ internal sealed class DemoApiHandler : HttpMessageHandler
     private static string[] Segments(Uri uri) =>
         [.. uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries).Select(static segment => Uri.UnescapeDataString(segment))];
 
-    private static async Task<T> ReadBodyAsync<T>(HttpRequestMessage request, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken)
+    internal static async Task<T> ReadBodyAsync<T>(HttpRequestMessage request, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken)
         where T : class
     {
         var mediaType = request.Content?.Headers.ContentType?.MediaType;
@@ -219,6 +220,12 @@ internal sealed class DemoApiHandler : HttpMessageHandler
         if (Match(path, "health", "live") || Match(path, "health", "ready"))
         {
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Healthy", Encoding.UTF8, "text/plain"), RequestMessage = request };
+        }
+
+        var settings = await DemoSettingsRoutes.TryRouteAsync(request, path, _providers, cancellationToken).ConfigureAwait(false);
+        if (settings is not null)
+        {
+            return settings;
         }
 
         if (method == HttpMethod.Get)

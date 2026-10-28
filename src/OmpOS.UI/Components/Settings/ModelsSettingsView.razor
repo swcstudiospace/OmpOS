@@ -31,6 +31,11 @@
                 <p class="ompos-settings-banner" data-tone="warning">@Page.Notice</p>
             }
 
+            if (!string.IsNullOrEmpty(Page.KeyWritesDisabledReason))
+            {
+                <p class="ompos-settings-banner" data-tone="warning" data-key-writes="disabled">@Page.KeyWritesDisabledReason</p>
+            }
+
             <div class="ompos-settings-toolbar">
                 <div class="ompos-settings-toolbar-search">
                     <label class="ompos-settings-label" for="ompos-models-search">@ModelsCopy.SearchLabel</label>

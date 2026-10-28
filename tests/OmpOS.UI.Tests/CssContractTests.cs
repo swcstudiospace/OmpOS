@@ -56,7 +56,7 @@ public sealed partial class CssContractTests
             .Select(static pair => pair.Key)
             .Order(StringComparer.Ordinal)
             .ToList();
-        themed.Count.ShouldBe(22, "19 colour roles, 2 shadows and the scrim are expected in the Light set");
+        themed.Count.ShouldBe(25, "22 colour roles (19 and the 3 purple tints), 2 shadows and the scrim are expected in the Light set");
         foreach (var token in themed)
         {
             dark.ContainsKey(token).ShouldBeTrue($"{token} has a Light value and needs a Dark value");
@@ -77,6 +77,9 @@ public sealed partial class CssContractTests
     [InlineData("--ompos-hover", "#ebebe8", "#262626")]
     [InlineData("--ompos-selected", "#e4e4e0", "#2d2d2d")]
     [InlineData("--ompos-surface-active", "#dcdcd7", "#333333")]
+    [InlineData("--ompos-tint", "#f5f1ff", "#232130")]
+    [InlineData("--ompos-tint-strong", "#ebe4ff", "#2c2842")]
+    [InlineData("--ompos-tint-border", "#d6c9fb", "#4a3f7a")]
     [InlineData("--ompos-text", "#1c1c1a", "#ececec")]
     [InlineData("--ompos-text-secondary", "#55555a", "#a3a3a3")]
     [InlineData("--ompos-accent", "#6d28d9", "#a78bfa")]

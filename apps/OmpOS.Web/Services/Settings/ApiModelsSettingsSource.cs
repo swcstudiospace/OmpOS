@@ -19,22 +19,26 @@ internal sealed class ApiModelsSettingsSource : IModelsSettingsSource
     private readonly HttpClient _http;
     private Dictionary<string, string> _listingByOmpId = new(StringComparer.Ordinal);
     private HashSet<string> _listingIds = new(StringComparer.Ordinal);
+    private HashSet<string> _planListingIds = new(StringComparer.Ordinal);
+    private readonly bool _isDemo;
     private bool? _credentialWritesEnabled;
     private bool? _configWritesEnabled;
 
     /// <summary>Initializes a new instance of the <see cref="ApiModelsSettingsSource"/> class.</summary>
     /// <param name="http">An HTTP client whose base address is the API origin and that sends the caller's bearer token.</param>
-    internal ApiModelsSettingsSource(HttpClient http)
+    /// <param name="isDemo">True when the API is the in-browser Demo handler: the disabled-key sentence then says so.</param>
+    internal ApiModelsSettingsSource(HttpClient http, bool isDemo = false)
     {
         ArgumentNullException.ThrowIfNull(http);
         _http = http;
+        _isDemo = isDemo;
     }
 
     /// <summary>
     /// Gets the sentence that says the operator disabled key writes, or null when writes are enabled or the service was not asked yet. The
     /// web key field is disabled and shows this sentence while it is not null.
     /// </summary>
-    internal string? CredentialWritesDisabledReason => _credentialWritesEnabled == false ? ModelsApiCopy.CredentialWritesDisabled : null;
+    internal string? CredentialWritesDisabledReason => _credentialWritesEnabled == false ? (_isDemo ? ModelsApiCopy.CredentialWritesDisabledInDemo : ModelsApiCopy.CredentialWritesDisabled) : null;
 
     /// <summary>Gets the sentence that says the operator disabled configuration writes, or null.</summary>
     internal string? ConfigWritesDisabledReason => _configWritesEnabled == false ? ModelsApiCopy.ConfigWritesDisabled : null;
@@ -78,9 +82,20 @@ internal sealed class ApiModelsSettingsSource : IModelsSettingsSource
         }
     }
 
-    /// <inheritdoc />
-    public Task<ModelsActionResult> SaveApiKeyAsync(string providerId, string apiKey, CancellationToken cancellationToken) =>
-        SaveApiKeyAsync(providerId, apiKey, planRuleAccepted: false, cancellationToken);
+    /// <summary>
+    /// Hands a key to the service for a listing that omp knows. The Models page refuses a coding plan until the user ticked that they read the
+    /// vendor's rule text, before it calls this method, so a listing with a plan reaches here with the tick and the request carries it.
+    /// </summary>
+    /// <param name="providerId">The omp provider id of the listing.</param>
+    /// <param name="apiKey">The key.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>The result.</returns>
+    public Task<ModelsActionResult> SaveApiKeyAsync(string providerId, string apiKey, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(providerId);
+        var listingId = ListingIdOf(providerId);
+        return SaveApiKeyAsync(providerId, apiKey, listingId is not null && _planListingIds.Contains(listingId), cancellationToken);
+    }
 
     /// <summary>Hands an API key to the service for a catalogue provider.</summary>
     /// <param name="providerId">The omp provider id of the listing, or its catalogue id.</param>
@@ -257,9 +272,15 @@ internal sealed class ApiModelsSettingsSource : IModelsSettingsSource
         _configWritesEnabled = body.ConfigWritesEnabled;
         var byOmp = new Dictionary<string, string>(StringComparer.Ordinal);
         var ids = new HashSet<string>(StringComparer.Ordinal);
+        var plans = new HashSet<string>(StringComparer.Ordinal);
         foreach (var summary in body.Providers)
         {
             _ = ids.Add(summary.Id);
+            if (summary.Plan is not null)
+            {
+                _ = plans.Add(summary.Id);
+            }
+
             if (summary.OmpProviderId is not null)
             {
                 _ = byOmp.TryAdd(summary.OmpProviderId, summary.Id);
@@ -268,6 +289,7 @@ internal sealed class ApiModelsSettingsSource : IModelsSettingsSource
 
         _listingByOmpId = byOmp;
         _listingIds = ids;
+        _planListingIds = plans;
         var cards = new List<ProviderInfo>();
         foreach (var summary in body.Providers)
         {
@@ -284,7 +306,8 @@ internal sealed class ApiModelsSettingsSource : IModelsSettingsSource
             WarningOf(body),
             body.OmpInstalled,
             [],
-            [.. body.Providers.Select(ProviderSummaryMapper.ToListing)]);
+            [.. body.Providers.Select(ProviderSummaryMapper.ToListing)],
+            CredentialWritesDisabledReason);
     }
 
     private static string? WarningOf(Wire.ProvidersResponse body)
@@ -293,11 +316,6 @@ internal sealed class ApiModelsSettingsSource : IModelsSettingsSource
         if (!body.OmpInstalled)
         {
             sentences.Add(ModelsApiCopy.OmpNotInstalled);
-        }
-
-        if (!body.CredentialWritesEnabled)
-        {
-            sentences.Add(ModelsApiCopy.CredentialWritesDisabled);
         }
 
         return sentences.Count == 0 ? null : string.Join(' ', sentences);

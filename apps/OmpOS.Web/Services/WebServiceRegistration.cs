@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.JSInterop;
 using OmpOS.Presentation.Settings;
 using OmpOS.Presentation.Terminal;
+using OmpOS.Web.Services.Settings;
 
 namespace OmpOS.Web.Services;
 
@@ -39,6 +40,7 @@ internal static class WebServiceRegistration
         services.AddScoped(sp => new ApiSessionClient(sp.GetRequiredService<ApiHttp>().Client));
         services.AddScoped(sp => new SseEventStream(sp.GetRequiredService<ApiHttp>().Client));
         services.AddScoped(options);
+        services.AddWebSettingsPages();
         services.TryAddScoped<IRemoteTerminalTransport, UnavailableTerminalTransport>();
         services.AddScoped(sp => new WebWorkbench(
             sp.GetRequiredService<IOmpApiClient>(),

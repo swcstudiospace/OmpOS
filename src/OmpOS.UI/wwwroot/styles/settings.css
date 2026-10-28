@@ -338,6 +338,37 @@ html[data-dialog-open] body {
   color: var(--ompos-warning);
 }
 
+.ompos-settings-banner[data-tone='info'] {
+  border-left: 3px solid var(--ompos-accent);
+}
+
+.ompos-settings-fact {
+  margin: var(--ompos-gap-4) 0 var(--ompos-gap-12);
+}
+
+.ompos-settings-fact .ompos-settings-help {
+  max-width: 68ch;
+  font-size: var(--ompos-font-size-body);
+  line-height: var(--ompos-line-height-body);
+}
+
+.ompos-settings-value {
+  flex: 0 0 auto;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.ompos-hook-command {
+  overflow-wrap: anywhere;
+}
+
+.ompos-hook-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ompos-gap-4);
+}
+
 .ompos-settings-actions {
   display: flex;
   flex-wrap: wrap;
@@ -424,6 +455,7 @@ html[data-dialog-open] body {
 
 .ompos-settings-table th[scope='row'] {
   font-weight: var(--ompos-font-weight-regular);
+  white-space: nowrap;
 }
 
 /* Toolbar and form controls. */

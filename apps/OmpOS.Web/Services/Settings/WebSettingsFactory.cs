@@ -6,9 +6,9 @@ namespace OmpOS.Web.Services.Settings;
 /// <summary>
 /// Builds the <see cref="SettingsWindowModel"/> of the web head. It supplies the pages whose data the browser or the API can serve: General
 /// (theme and motion in <c>localStorage</c>), Tab (reports it is a desktop feature), Plugins (the workspace plugin check), Network (the API
-/// readiness check) and Keyboard (the fixed web shortcuts). The Runtime and Agents pages configure the desktop host (idle stop, retention, terminal auto
-/// run) and have no web counterpart, so they are not offered. Pages other heads' services supply (Models, Rules, Skills, Commands) are passed in
-/// as <c>extraPages</c>; an extra page replaces the built-in page of its section.
+/// readiness check) and Keyboard (the fixed web shortcuts). Every other page (Runtime, Agents, Run mode, Models, Rules, Skills, Commands, Hooks, MCP,
+/// Workspaces, Remote environments, Cloud agents, Privacy) is registered by <see cref="WebSettingsPages"/> and passed in as <c>extraPages</c>; an
+/// extra page replaces the built-in page of its section. The pages are ordered by <see cref="WebSettingsOrder"/>.
 /// </summary>
 internal static class WebSettingsFactory
 {
@@ -42,6 +42,6 @@ internal static class WebSettingsFactory
             pages[page.Section] = page;
         }
 
-        return new SettingsWindowModel([.. pages.OrderBy(static pair => pair.Key).Select(static pair => pair.Value)]);
+        return new SettingsWindowModel([.. pages.OrderBy(static pair => WebSettingsOrder.KeyOf(pair.Key)).Select(static pair => pair.Value)]);
     }
 }

@@ -118,6 +118,9 @@
           "OmpOS.Contracts": "[0.15.0, )"
         }
       },
+      "ompos.harness.providers": {
+        "type": "Project"
+      },
       "ompos.parser": {
         "type": "Project",
         "dependencies": {

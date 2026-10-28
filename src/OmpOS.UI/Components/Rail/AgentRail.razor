@@ -100,7 +100,7 @@
                                     <StatusGlyph IconKey="@row.IconKey" />
                                     <span class="ompos-agent-main">
                                         <span class="ompos-agent-line">
-                                            <span class="ompos-agent-title">@row.Title</span>
+                                            <span class="ompos-agent-title" title="@row.Title">@row.Title</span>
                                             <span class="ompos-agent-time" data-stale="@(row.IsStale ? "true" : null)">@(row.IsStale && row.QuietText is not null ? row.QuietText : row.LastActivityText)</span>
                                         </span>
                                         <span class="ompos-agent-meta">
@@ -122,7 +122,8 @@
                                 </button>
                                 @if (selected && Panel.Selected is { } session && string.Equals(session.Id, row.Id, StringComparison.Ordinal))
                                 {
-                                    <div class="ompos-agent-actions" role="group" aria-label="@AgentPanelViewText.AgentActionsName">
+                                    var floating = row.Status != AgentRowStatus.Closed && !row.IsLost;
+                                    <div class="ompos-agent-actions@(floating ? " ompos-agent-actions--float" : null)" role="group" aria-label="@AgentPanelViewText.AgentActionsName">
                                         @if (row.Status == AgentRowStatus.Closed)
                                         {
                                             <button type="button" class="ompos-btn ompos-btn--small" @onclick="() => session.ReopenCommand.ExecuteAsync(null)">@AgentPanelCopy.ReopenAgent</button>
@@ -133,7 +134,7 @@
                                             {
                                                 <button type="button" class="ompos-btn ompos-btn--small" @onclick="() => session.ResumeCommand.ExecuteAsync(null)">@AgentPanelCopy.ResumeAgent</button>
                                             }
-                                            <button type="button" class="ompos-btn ompos-btn--small ompos-btn--ghost" aria-label="@AgentPanelViewText.CloseName" @onclick="() => RequestCloseAsync(row)">@AgentPanelViewText.CloseLabel</button>
+                                            <button type="button" class="ompos-icon-btn ompos-icon-btn--small ompos-agent-close" aria-label="@AgentPanelViewText.CloseName" title="@AgentPanelViewText.CloseLabel" @onclick="() => RequestCloseAsync(row)"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 4l8 8M12 4l-8 8" /></svg></button>
                                         }
                                     </div>
                                 }

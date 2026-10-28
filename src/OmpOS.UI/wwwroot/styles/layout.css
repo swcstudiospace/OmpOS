@@ -30,7 +30,7 @@
   gap: var(--ompos-gap-8);
   height: var(--ompos-topbar-block);
   padding: env(safe-area-inset-top, 0px) max(var(--ompos-gap-12), env(safe-area-inset-right, 0px)) 0 max(var(--ompos-gap-12), env(safe-area-inset-left, 0px));
-  background: var(--ompos-surface-sunken);
+  background: var(--ompos-surface-raised);
   border-bottom: 1px solid var(--ompos-border);
 }
 
@@ -67,6 +67,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  gap: var(--ompos-gap-8);
   width: 100%;
   max-width: var(--ompos-thread-max);
   min-width: 0;
@@ -75,13 +76,16 @@
 }
 
 .ompos-thread > .ompos-session {
-  flex: 1;
+  flex: 0 0 auto;
 }
 
+/* The transcript, the run summary, the approvals and the changes stack at the top; the composer dock takes the free space above itself, so the
+   cards stay under the last block however short the conversation is. */
 .ompos-composer-dock {
   position: sticky;
   bottom: var(--ompos-footer-block);
   z-index: var(--ompos-z-sticky);
+  margin-top: auto;
   padding-block: var(--ompos-gap-8) var(--ompos-gap-12);
   background: var(--ompos-surface-raised);
 }
@@ -96,7 +100,7 @@
   gap: var(--ompos-gap-4) var(--ompos-gap-12);
   min-height: var(--ompos-footer-block);
   padding: 0 max(var(--ompos-gap-12), env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(var(--ompos-gap-12), env(safe-area-inset-left, 0px));
-  background: var(--ompos-surface-sunken);
+  background: var(--ompos-surface);
   border-top: 1px solid var(--ompos-border);
   color: var(--ompos-text-secondary);
   font-size: var(--ompos-font-size-small);
@@ -163,6 +167,29 @@
   .ompos-topbar .ompos-workspace-label,
   .ompos-topbar .ompos-topbar-link {
     display: none;
+  }
+
+  /* The mark stays; the wordmark becomes the page heading for assistive technology only, so the tabs and the theme switch fit in 360 px. */
+  .ompos-topbar .ompos-wordmark {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .ompos-topbar {
+    gap: var(--ompos-gap-4);
+  }
+
+  /* The footer wraps to two lines here; the token keeps the sticky composer dock and the drawer clear of it. */
+  .ompos-shell {
+    --ompos-footer-height: 52px;
+  }
+
+  .ompos-footer {
+    align-content: center;
   }
 
   .ompos-thread {

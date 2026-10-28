@@ -49,12 +49,12 @@
                 @if (SteerMode)
                 {
                     <button type="button" class="ompos-btn ompos-btn--small" aria-label="@QueueName" @onclick="() => SteerAsync(SteeringMode.FollowUp)">@AgentPanelCopy.QueueFollowUpLabel</button>
-                    <button type="button" class="ompos-icon-btn ompos-stop-btn" aria-label="Stop response" @onclick="() => OnStop.InvokeAsync()">■</button>
+                    <button type="button" class="ompos-icon-btn ompos-stop-btn" aria-label="Stop response" @onclick="() => OnStop.InvokeAsync()"><svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true" focusable="false"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5" /></svg></button>
                     <button type="button" class="ompos-btn ompos-btn--small ompos-btn--primary ompos-send-now" aria-label="@SendNowName" @onclick="() => SteerAsync(SteeringMode.Steer)">@AgentPanelCopy.SendNow</button>
                 }
                 else if (Streaming)
                 {
-                    <button type="button" class="ompos-icon-btn" aria-label="Stop response" @onclick="() => OnStop.InvokeAsync()">■</button>
+                    <button type="button" class="ompos-icon-btn" aria-label="Stop response" @onclick="() => OnStop.InvokeAsync()"><svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true" focusable="false"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5" /></svg></button>
                 }
                 else
                 {

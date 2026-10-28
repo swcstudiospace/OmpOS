@@ -312,7 +312,7 @@
 }
 
 .ompos-tab:hover {
-  background: var(--ompos-hover);
+  background: var(--ompos-tint);
   color: var(--ompos-text);
 }
 
@@ -365,7 +365,7 @@
   display: inline-flex;
   gap: var(--ompos-gap-2);
   padding: var(--ompos-gap-2);
-  background: var(--ompos-surface-active);
+  background: var(--ompos-tint-strong);
   border-radius: var(--ompos-radius-8);
 }
 
@@ -390,5 +390,6 @@
 .ompos-segment[aria-pressed='true'],
 .ompos-segment[aria-checked='true'] {
   background: var(--ompos-surface-raised);
-  box-shadow: var(--ompos-shadow-card);
+  box-shadow: var(--ompos-shadow-card), 0 0 0 1px var(--ompos-tint-border);
+  color: var(--ompos-accent);
 }

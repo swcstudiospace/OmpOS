@@ -62,11 +62,77 @@ public sealed class ApiModelsSettingsSourceTests
 
         var result = await source.SaveApiKeyAsync("kimi-code", Canary, Token).ConfigureAwait(true);
 
-        source.CredentialWritesDisabledReason.ShouldBe(snapshot.Warning);
-        source.CredentialWritesDisabledReason.ShouldNotBeNullOrWhiteSpace();
+        source.CredentialWritesDisabledReason.ShouldBe(snapshot.KeyWritesDisabledReason);
+        source.CredentialWritesDisabledReason.ShouldBe(ModelsApiCopy.CredentialWritesDisabled);
+        snapshot.Warning.ShouldBeNull("the disabled key is the page's key field state, not a configuration warning");
         result.Succeeded.ShouldBeFalse();
         result.Message.ShouldBe(source.CredentialWritesDisabledReason);
         handler.Requests.Count.ShouldBe(1, "only the list was requested; the key never left the page");
+    }
+
+    [Fact]
+    public async Task InTheDemoTheDisabledKeySentenceNamesTheDemo()
+    {
+        using var handler = new ScriptedHandler();
+        using var http = ClientHttp(handler);
+        var source = new ApiModelsSettingsSource(http, isDemo: true);
+        using var queued = Json(HttpStatusCode.OK, Listing(credentialWrites: false));
+        handler.Enqueue(queued);
+
+        var snapshot = await source.LoadAsync(Token).ConfigureAwait(true);
+
+        snapshot.KeyWritesDisabledReason.ShouldBe(ModelsApiCopy.CredentialWritesDisabledInDemo);
+        snapshot.KeyWritesDisabledReason.ShouldNotBeNull().ShouldContain("disabled by the operator in this Demo", Case.Sensitive);
+    }
+
+    [Fact]
+    public async Task WhenKeyWritesAreEnabledThereIsNoDisabledReason()
+    {
+        using var handler = new ScriptedHandler();
+        using var http = ClientHttp(handler);
+        var source = new ApiModelsSettingsSource(http);
+        using var queued = Json(HttpStatusCode.OK, Listing(credentialWrites: true));
+        handler.Enqueue(queued);
+
+        var snapshot = await source.LoadAsync(Token).ConfigureAwait(true);
+
+        snapshot.KeyWritesDisabledReason.ShouldBeNull();
+        source.CredentialWritesDisabledReason.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task AKeyForACodingPlanCarriesThePlanRuleTickTheCardAlreadyDemanded()
+    {
+        using var handler = new ScriptedHandler();
+        using var http = ClientHttp(handler);
+        var source = new ApiModelsSettingsSource(http);
+        var plan = new Wire.ProviderPlanInfo { RuleText = "Interactive only.", InteractiveOnly = true, SeparateKey = true, PlanUrl = new Uri("https://example.com/plan", UriKind.Absolute), Tiers = [], ListedTools = [] };
+        var response = new Wire.ProvidersResponse
+        {
+            Providers = [Summary("zai-plan", "zai-code", Wire.ProviderKind.CodingPlan, plan, Wire.ProviderConfiguredState.NotConfigured), Summary("plain", "plain-api", Wire.ProviderKind.Api, plan: null, Wire.ProviderConfiguredState.NotConfigured)],
+            Total = 2,
+            Custom = [],
+            OmpInstalled = true,
+            CredentialWritesEnabled = true,
+            ConfigWritesEnabled = true,
+            LiveTestsEnabled = false,
+        };
+        using var list = Json(HttpStatusCode.OK, response);
+        using var okPlan = new HttpResponseMessage(HttpStatusCode.OK);
+        using var okPlain = new HttpResponseMessage(HttpStatusCode.OK);
+        handler.Enqueue(list);
+        handler.Enqueue(okPlan);
+        handler.Enqueue(okPlain);
+        _ = await source.LoadAsync(Token).ConfigureAwait(true);
+
+        _ = await source.SaveApiKeyAsync("zai-code", Canary, Token).ConfigureAwait(true);
+        _ = await source.SaveApiKeyAsync("plain-api", Canary, Token).ConfigureAwait(true);
+
+        using var planBody = JsonDocument.Parse(await handler.Requests[1].Content!.ReadAsStringAsync(Token).ConfigureAwait(true));
+        using var plainBody = JsonDocument.Parse(await handler.Requests[2].Content!.ReadAsStringAsync(Token).ConfigureAwait(true));
+        handler.Requests[1].RequestUri!.AbsolutePath.ShouldBe("/providers/zai-plan/credential");
+        planBody.RootElement.GetProperty("planRuleAccepted").GetBoolean().ShouldBeTrue();
+        plainBody.RootElement.GetProperty("planRuleAccepted").GetBoolean().ShouldBeFalse();
     }
 
     [Fact]

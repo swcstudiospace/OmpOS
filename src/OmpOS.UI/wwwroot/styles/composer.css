@@ -20,6 +20,7 @@
 
 .ompos-composer-card:focus-within {
   border-color: var(--ompos-focus);
+  box-shadow: 0 0 0 3px var(--ompos-tint-strong);
 }
 
 .ompos-composer-input {
@@ -132,7 +133,7 @@
   min-height: var(--ompos-control-height-small);
   min-width: var(--ompos-target-min);
   padding: 0 var(--ompos-gap-8);
-  background: var(--ompos-surface-sunken);
+  background: var(--ompos-surface-raised);
   border: 1px solid var(--ompos-border);
   border-radius: var(--ompos-radius-pill);
   color: var(--ompos-text);
@@ -142,11 +143,13 @@
 }
 
 .ompos-chip-btn:hover {
-  background: var(--ompos-hover);
+  background: var(--ompos-tint);
+  border-color: var(--ompos-tint-border);
 }
 
 .ompos-chip-btn[aria-expanded='true'] {
-  background: var(--ompos-selected);
+  background: var(--ompos-tint-strong);
+  border-color: var(--ompos-tint-border);
 }
 
 .ompos-chip-btn[aria-disabled='true'] {
@@ -276,11 +279,13 @@
   list-style: none;
 }
 
+/* One command per row: the name (and its argument hint) on the left, the description with the disabled reason under it in the middle, the
+   source and scope pills on the right. Long text is cut with an ellipsis and carries a title with the full text. */
 .ompos-slash-option {
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(8rem, 13rem) minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--ompos-gap-8);
+  column-gap: var(--ompos-gap-12);
   min-height: var(--ompos-control-height);
   padding: var(--ompos-gap-4) var(--ompos-gap-8);
   border-radius: var(--ompos-radius-6);
@@ -290,18 +295,31 @@
 
 .ompos-slash-option.is-active,
 .ompos-slash-option:hover {
-  background: var(--ompos-hover);
+  background: var(--ompos-tint);
 }
 
 .ompos-slash-option[aria-selected='true'] {
-  background: var(--ompos-selected);
+  background: var(--ompos-tint-strong);
+  box-shadow: inset 3px 0 0 var(--ompos-accent);
 }
 
 .ompos-slash-option.is-disabled {
   cursor: default;
 }
 
+.ompos-slash-head {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: flex;
+  align-items: baseline;
+  gap: var(--ompos-gap-6);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 .ompos-slash-name {
+  flex: none;
   font-family: var(--ompos-font-mono);
   font-size: var(--ompos-font-size-mono);
   font-weight: var(--ompos-font-weight-semibold);
@@ -316,8 +334,16 @@
   line-height: var(--ompos-line-height-small);
 }
 
+.ompos-slash-hint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .ompos-slash-description,
 .ompos-slash-reason {
+  grid-column: 2;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -327,15 +353,23 @@
   color: var(--ompos-warning);
 }
 
+.ompos-slash-badges {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  display: flex;
+  gap: var(--ompos-gap-4);
+}
+
 .ompos-badge-source,
 .ompos-badge-scope {
   padding: 0 var(--ompos-gap-6);
   background: var(--ompos-surface-sunken);
   border: 1px solid var(--ompos-border);
   border-radius: var(--ompos-radius-pill);
-  color: var(--ompos-text);
+  color: var(--ompos-text-secondary);
   font-size: var(--ompos-font-size-small);
   line-height: var(--ompos-line-height-small);
+  white-space: nowrap;
 }
 
 .ompos-slash-message {

@@ -152,6 +152,9 @@ internal static class SettingsFixtures
         /// <summary>Gets or sets a reason that makes the next load fail, or null.</summary>
         internal string? FailWith { get; set; }
 
+        /// <summary>Gets or sets the sentence that says the operator disabled key entry, or null.</summary>
+        internal string? KeyWritesDisabledReason { get; set; }
+
         /// <inheritdoc />
         public Task<ModelsSnapshot> LoadAsync(CancellationToken cancellationToken)
         {
@@ -161,7 +164,7 @@ internal static class SettingsFixtures
                 throw new SettingsSourceException(reason);
             }
 
-            return Task.FromResult(new ModelsSnapshot([.. Providers], null, null, true, [], [.. Listings]));
+            return Task.FromResult(new ModelsSnapshot([.. Providers], null, null, true, [], [.. Listings], KeyWritesDisabledReason));
         }
 
         /// <inheritdoc />

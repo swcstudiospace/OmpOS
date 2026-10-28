@@ -10,9 +10,11 @@
 }
 
 .ompos-kanban-title {
-  font-size: var(--ompos-font-size-heading);
+  margin: 0;
+  font-family: var(--ompos-font-display);
+  font-size: var(--ompos-font-size-display-sm);
   font-weight: var(--ompos-font-weight-semibold);
-  line-height: var(--ompos-line-height-heading);
+  line-height: var(--ompos-line-height-display-sm);
 }
 
 .ompos-kanban-hint {
@@ -88,8 +90,8 @@
   flex: 0 0 var(--ompos-kanban-column);
   min-width: 240px;
   padding: var(--ompos-gap-8);
-  background: var(--ompos-surface-sunken);
-  border: 2px solid transparent;
+  background: var(--ompos-surface);
+  border: 1px solid var(--ompos-border);
   border-radius: var(--ompos-radius-10);
 }
 
@@ -116,9 +118,9 @@
   min-width: 20px;
   height: 18px;
   padding: 0 var(--ompos-gap-6);
-  background: var(--ompos-selected);
+  background: var(--ompos-tint-strong);
   border-radius: var(--ompos-radius-pill);
-  color: var(--ompos-text-secondary);
+  color: var(--ompos-text);
   font-size: var(--ompos-font-size-small);
   line-height: var(--ompos-line-height-small);
 }
@@ -131,12 +133,15 @@
   text-align: center;
 }
 
+/* A lane scrolls inside itself, so the board is never taller than the window and its sideways scrollbar stays in view. */
 .ompos-kanban-cards {
   display: flex;
   flex-direction: column;
   gap: var(--ompos-gap-8);
-  margin: 0;
-  padding: 0;
+  max-height: max(16rem, calc(100dvh - 18rem));
+  margin: calc(-1 * var(--ompos-gap-4));
+  padding: var(--ompos-gap-4);
+  overflow-y: auto;
   list-style: none;
 }
 
@@ -270,6 +275,20 @@
   margin-top: var(--ompos-gap-2);
 }
 
+.ompos-kanban-actions .ompos-btn--ghost {
+  padding-inline: var(--ompos-gap-6);
+  color: var(--ompos-text-secondary);
+}
+
+.ompos-kanban-actions .ompos-btn--ghost:hover {
+  color: var(--ompos-text);
+}
+
+/* When the whole board says the substrate is unavailable, each card need not repeat it four times. */
+.ompos-kanban:has(.ompos-kanban-hint[data-substrate='unavailable']) .ompos-kanban-substrate {
+  display: none;
+}
+
 .ompos-kanban-steer {
   display: flex;
   flex-direction: column;
@@ -289,16 +308,35 @@
   color: var(--ompos-error);
 }
 
+/* The board announces moves and steers through this region; it is for assistive technology and takes no room on screen. */
 .ompos-kanban-live {
-  min-height: var(--ompos-line-height-small);
+  position: absolute;
+  width: 1px;
+  height: 1px;
   margin: 0;
-  color: var(--ompos-text-secondary);
-  font-size: var(--ompos-font-size-small);
-  line-height: var(--ompos-line-height-small);
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 @media (max-width: 559.98px) {
   .ompos-kanban {
     padding: var(--ompos-gap-8);
+  }
+
+  /* One column: the board stacks its lanes instead of scrolling sideways. */
+  .ompos-kanban-columns {
+    flex-direction: column;
+    align-items: stretch;
+    overflow-x: visible;
+  }
+
+  .ompos-kanban-column {
+    flex: none;
+    min-width: 0;
+  }
+
+  .ompos-kanban-cards {
+    max-height: none;
   }
 }

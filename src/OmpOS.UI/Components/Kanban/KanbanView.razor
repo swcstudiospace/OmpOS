@@ -10,6 +10,7 @@
     {
         case BoardState.Loading:
             <div class="ompos-kanban-state" aria-busy="true">
+                <span class="ompos-state-mark" aria-hidden="true"></span>
                 <h3 class="ompos-kanban-state-heading">@KanbanCopy.LoadingHeading</h3>
                 <p class="ompos-kanban-state-body">@KanbanCopy.LoadingBody</p>
                 <div class="ompos-kanban-skeleton" aria-hidden="true">
@@ -21,6 +22,7 @@
             break;
         case BoardState.Empty:
             <div class="ompos-kanban-state">
+                <span class="ompos-state-mark" aria-hidden="true"></span>
                 <h3 class="ompos-kanban-state-heading">@KanbanCopy.EmptyHeading</h3>
                 <p class="ompos-kanban-state-body">@KanbanCopy.EmptyBody</p>
                 <button type="button" class="ompos-btn ompos-btn--primary" aria-label="@KanbanCopy.NewAgentName" @onclick="StartAsync">@KanbanCopy.NewAgent</button>
@@ -28,6 +30,7 @@
             break;
         case BoardState.Error:
             <div class="ompos-kanban-state">
+                <span class="ompos-state-mark" aria-hidden="true"></span>
                 <h3 class="ompos-kanban-state-heading">@KanbanCopy.ErrorHeading</h3>
                 <p class="ompos-kanban-state-body" role="alert">@Board.ErrorText</p>
                 <button type="button" class="ompos-btn" aria-label="@KanbanCopy.RetryName" @onclick="RetryAsync">@KanbanCopy.Retry</button>
@@ -62,7 +65,7 @@
                         }
                         else
                         {
-                            <ul class="ompos-kanban-cards">
+                            <ul class="ompos-kanban-cards" tabindex="0" aria-label="@column.AccessibleName">
                                 @foreach (var card in column.Cards)
                                 {
                                     var model = Board.CardModelOf(card.Id);

@@ -347,6 +347,9 @@
           "OmpOS.Contracts": "[0.15.0, )"
         }
       },
+      "ompos.harness.providers": {
+        "type": "Project"
+      },
       "ompos.parser": {
         "type": "Project",
         "dependencies": {
@@ -377,6 +380,7 @@
         "dependencies": {
           "Microsoft.AspNetCore.Components.WebAssembly": "[10.0.13, )",
           "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Providers": "[0.15.0, )",
           "OmpOS.UI": "[0.15.0, )"
         }
       },

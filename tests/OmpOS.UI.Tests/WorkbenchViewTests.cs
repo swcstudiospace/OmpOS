@@ -69,6 +69,33 @@ public sealed class WorkbenchViewTests : UiTestContext
         cut.Find(".ompos-footer-licence a").TextContent.ShouldBe("AGPL-3.0-or-later");
     }
 
+    /// <summary>A workspace folder named like the workspace is shown once, not as "name · name" (any letter case).</summary>
+    [Theory]
+    [InlineData("acme-shop", "acme-shop")]
+    [InlineData("acme-shop", "ACME-Shop")]
+    public void AFolderNamedLikeTheWorkspaceShowsTheNameOnce(string name, string folder)
+    {
+        using var harness = TwoAgents();
+
+        var cut = RenderWorkbench(harness, parameters => parameters
+            .Add(p => p.Workspace, new WorkspaceInfo { Name = name, FolderLabel = folder, PluginCheck = null! }));
+
+        cut.Find(".ompos-workspace-label").TextContent.ShouldBe(name);
+    }
+
+    /// <summary>Switching the view starts the new view at the top of the document: the page is the scroll container, so it would keep the other view's offset.</summary>
+    [Fact]
+    public async Task SwitchingTheViewScrollsTheDocumentToTheTop()
+    {
+        using var harness = TwoAgents();
+        var keys = JSInterop.SetupModule(KeysModule);
+        var cut = RenderWorkbench(harness);
+
+        await cut.Find($"#{ViewTabs.KanbanTabId}").ClickAsync().ConfigureAwait(true);
+
+        await cut.WaitForAssertionAsync(() => keys.VerifyInvoke("resetScroll")).ConfigureAwait(true);
+    }
+
     /// <summary>The demo banner shows only for a demo, inside main and ahead of the view panel.</summary>
     [Fact]
     public void TheDemoBannerShowsOnlyInADemo()
