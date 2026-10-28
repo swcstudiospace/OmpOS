@@ -110,12 +110,21 @@ async function pressKey(key, modifiers = 0) {
   await cdp("Input.dispatchKeyEvent", { type: "keyUp", ...base });
 }
 
+// Chrome aborts in-flight requests with net::ERR_NETWORK_CHANGED when the host's network interfaces change (on a shared host another
+// process can bring one up or down). That says nothing about the page, so it is counted in the report and not treated as a problem;
+// every other failed request, status of 400 or more, exception and console error still fails the run.
+const hostNetworkChanges = [];
+
 /** Drains the console, exception and network events seen since the last call into problem lists. */
 function drainProblems() {
   const problems = [];
   for (const msg of events.splice(0)) {
     if (msg.sessionId !== sessionId) continue;
     const p = msg.params ?? {};
+    if (/net::ERR_NETWORK_CHANGED/.test(`${p.errorText ?? ""} ${p.entry?.text ?? ""} ${(p.args ?? []).map((a) => a.value ?? a.description ?? "").join(" ")}`)) {
+      hostNetworkChanges.push(msg.method);
+      continue;
+    }
     if (msg.method === "Runtime.exceptionThrown") {
       problems.push(`exception: ${p.exceptionDetails?.exception?.description ?? p.exceptionDetails?.text ?? "?"}`.slice(0, 240));
     } else if (msg.method === "Runtime.consoleAPICalled" && p.type === "error") {
@@ -407,6 +416,7 @@ try {
   note(`demo smoke failed: ${result.error}`);
 } finally {
   result.finishedAt = new Date().toISOString();
+  result.ignoredHostNetworkChanges = hostNetworkChanges.length;
   result.assertions = assertions;
   result.failures = failures;
   result.passed = Object.keys(assertions).length > 0 && Object.values(assertions).every((v) => v === true) && !result.error;
