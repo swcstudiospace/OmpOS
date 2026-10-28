@@ -102,6 +102,10 @@ jobs:
         run: bash scripts/ci/secret-scan.sh
       - name: Plugin tests (node:test suite of plugins/gsd-core-omp; the same script bootstrap.sh runs)
         run: bash scripts/ci/plugin-node-tests.sh
+      - name: Repository checks (brand set, changelog, documentation structure, provider reference, settings parity; the same script bootstrap.sh runs)
+        run: bash scripts/ci/repo-checks.sh
+      - name: Licence checks (NOTICE and THIRD-PARTY-NOTICES.md against the restored NuGet cache; the same script bootstrap.sh runs)
+        run: bash scripts/ci/check-licences.sh
       - name: Validate compose (podman-compose needs the podman binary and the backend profile)
         run: |
           pipx install podman-compose==1.6.0

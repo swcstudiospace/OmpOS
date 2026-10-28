@@ -52,8 +52,13 @@ bash scripts/ci/secret-scan.sh
 # is gated here and in CI by one shared script.
 bash scripts/ci/plugin-node-tests.sh
 
+# Repository checks (v0.15.0): brand set, changelog against the version, documentation structure, provider reference and settings
+# parity, by one script CI also runs; the licence check follows the restore because it reads the NuGet cache.
+bash scripts/ci/repo-checks.sh
+
 dotnet --version
 dotnet restore OmpOS.Linux.slnf --locked-mode
+bash scripts/ci/check-licences.sh
 dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
 
 # Cleanup runs on every exit path. `down` is idempotent; the export file holds test passwords and is removed.

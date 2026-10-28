@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
 # Verify the OmpOS brand asset set: every file exists, PNG dimensions are exact,
 # the social preview is under 1 MB, published SVGs are outlined (no <text>) and
-# favicon.ico holds 16, 32 and 48 pixel images. Needs only python3 and identify.
+# favicon.ico holds 16, 32 and 48 pixel images. Needs only python3 (PNG sizes are read from the file header).
 # Usage: scripts/ci/check-brand.sh   (run from anywhere; exits non-zero on any failure)
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$root"
 
-for tool in python3 identify; do
-  command -v "$tool" >/dev/null 2>&1 || { echo "check-brand: missing tool: $tool" >&2; exit 2; }
-done
+command -v python3 >/dev/null 2>&1 || { echo "check-brand: missing tool: python3" >&2; exit 2; }
 
 exec python3 - <<'PY'
 import re
-import subprocess
+import struct
 import sys
 from pathlib import Path
 
@@ -26,9 +24,11 @@ def fail(message: str) -> None:
 
 
 def png_size(path: Path) -> tuple[int, int]:
-    out = subprocess.run(["identify", "-format", "%w %h", f"{path}[0]"],
-                         check=True, capture_output=True, text=True).stdout.split()
-    return int(out[0]), int(out[1])
+    header = path.read_bytes()[:24]
+    if len(header) < 24 or header[:8] != b"\x89PNG\r\n\x1a\n" or header[12:16] != b"IHDR":
+        raise ValueError(f"{path} is not a PNG file")
+    width, height = struct.unpack(">II", header[16:24])
+    return width, height
 
 
 # (path, exact size) for every PNG in the brand set.

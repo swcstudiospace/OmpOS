@@ -12,6 +12,17 @@ public sealed partial class GateParityTests
 {
     private const string ScanScript = "scripts/ci/secret-scan.sh";
     private const string PinFile = "scripts/ci/gitleaks.env";
+    private const string RepoChecksScript = "scripts/ci/repo-checks.sh";
+    private const string LicenceScript = "scripts/ci/check-licences.sh";
+
+    private static readonly string[] RepositoryChecks =
+    [
+        "scripts/ci/check-brand.sh",
+        "scripts/ci/check-changelog.sh",
+        "scripts/ci/check-docs.sh",
+        "scripts/ci/check-providers-doc.sh",
+        "scripts/check-settings-parity.sh",
+    ];
 
     [Fact]
     public void BootstrapAndCiRunTheSameSecretScanAndVersionPin()
@@ -43,6 +54,35 @@ public sealed partial class GateParityTests
         script.ShouldContain(
             line => line.Contains("gitleaks\" git --redact --exit-code 1 --log-level warn --log-opts=\"--full-history HEAD\" .", StringComparison.Ordinal),
             ScanScript + " must run `gitleaks git --redact --exit-code 1 --log-level warn --log-opts=\"--full-history HEAD\" .`, the flags CI has always used");
+    }
+
+    [Fact]
+    public void BootstrapAndCiRunTheSameRepositoryChecks()
+    {
+        var bootstrap = CodeLines("bootstrap.sh");
+        var workflow = CodeLines(".github/workflows/ci.yml");
+
+        foreach (var script in new[] { RepoChecksScript, LicenceScript })
+        {
+            bootstrap.Count(line => RunsScript(line, script)).ShouldBe(1, "bootstrap.sh must run " + script + " exactly once");
+            workflow.Count(line => RunsScript(line, script)).ShouldBe(1, "ci.yml must run " + script + " exactly once");
+        }
+
+        // The licence check reads the NuGet cache, so both callers run it after a restore.
+        foreach (var (name, lines) in new[] { ("bootstrap.sh", bootstrap), (".github/workflows/ci.yml", workflow) })
+        {
+            var restore = lines.FindIndex(static line => line.Contains("dotnet restore", StringComparison.Ordinal));
+            var licences = lines.FindIndex(line => RunsScript(line, LicenceScript));
+            restore.ShouldBeGreaterThanOrEqualTo(0, name + " must restore");
+            licences.ShouldBeGreaterThan(restore, name + " must run " + LicenceScript + " after the restore");
+        }
+
+        // The shared script runs every static check, so neither caller can run a subset.
+        var checks = CodeLines(RepoChecksScript);
+        foreach (var check in RepositoryChecks)
+        {
+            checks.ShouldContain(line => RunsScript(line, check), RepoChecksScript + " must run " + check);
+        }
     }
 
     [Fact]
@@ -81,6 +121,9 @@ public sealed partial class GateParityTests
 
     /// <summary>True when a code line runs the shared secret-scan script (not merely mentions it in a comment).</summary>
     private static bool RunsScanScript(string line) => line.Contains("bash " + ScanScript, StringComparison.Ordinal);
+
+    /// <summary>True when a code line runs the given repository script through bash (not merely mentions it in a comment).</summary>
+    private static bool RunsScript(string line, string script) => line.Contains("bash " + script, StringComparison.Ordinal);
 
     /// <summary>True when a code line sources the shared pin file.</summary>
     private static bool SourcesPinFile(string line) => line.StartsWith("source " + PinFile, StringComparison.Ordinal);
