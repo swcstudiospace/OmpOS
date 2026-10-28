@@ -4,13 +4,15 @@ description: "How to apply the GitHub presentation, community health and release
 
 # GitHub setup runbook (Phase 52)
 
-Status: Built (files are in the repository); the settings are applied by the owner and are not applied by this page
+Status: Built (files are in the repository); the settings were applied with `scripts/github/apply-repo-settings.sh` on 2026-10-28 (recorded); the social preview upload and the discussion categories still need the owner
 
 Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
 Applies the GitHub presentation, community health and release settings of `swcstudiospace/OmpOS`. The files live in the repository; the settings need the `gh` CLI signed in with admin rights on the repository (`gh auth status`). Facts about the repository state on 2026-10-27 are in `docs/plans/v0.15.0-research/12-github-gitbook-plan.md`.
+
+**Recorded 2026-10-28:** `scripts/github/apply-repo-settings.sh` was applied to `swcstudiospace/OmpOS`: description, homepage (the web Demo, <https://ompos-web.vercel.app>), 15 topics, Discussions on, wiki off, delete-branch-on-merge, private vulnerability reporting, Dependabot security updates, secret scanning with push protection and 22 labels. Not done, because GitHub offers no API: the social preview image upload and the discussion categories (see "Manual steps").
 
 ## What is in the repository
 
@@ -56,7 +58,7 @@ It leaves the merge methods (squash, merge commit, rebase) as they are, and it c
 - **Social preview.** Repository **Settings**, section **Social preview**, **Edit**, **Upload an image**, choose `assets/brand/ompos-social-preview.png` (made by the brand work in Phase 51; use the file's actual name if it differs). PNG, under 1 MB, 1280 by 640 pixels is best, an opaque background is recommended. Confirm with `gh api graphql -f query='{repository(owner:"swcstudiospace",name:"OmpOS"){usesCustomOpenGraphImage}}'`, which must return `true`.
 - **Discussion categories.** The script turns Discussions on; GitHub seeds default categories, and categories can only be created in the UI: **Discussions**, pencil beside **Categories**, **New category** (an emoji, a title, a description and a format: open-ended, Q&A or announcement). Proposal: Announcements (announcement), Q&A (Q&A, the target of the "Questions and ideas" link), Ideas, Show and tell, Providers and plans, Cloud agents and remote environments.
 - **About "Include in the home page".** Gear beside **About**: Releases on once the first release exists; Packages and Deployments off. These toggles have no API.
-- **Homepage.** Once the GitBook site or a custom domain exists, run the script again with `--homepage <url>`, or edit the field in the About gear.
+- **Homepage.** It is the web Demo URL since 2026-10-28. Once the GitBook site or a custom domain exists, run the script again with `--homepage <url>`, or edit the field in the About gear; keep the Demo link in the README.
 - **Optional: CodeQL default setup.** Not configured by the script. `gh api repos/swcstudiospace/OmpOS/code-scanning/default-setup` shows `runner_type: "standard"`, a GitHub-hosted runner, which conflicts with the repository policy that every job runs on the labelled self-hosted pool (`[self-hosted, linux, x64, omega-ci]`, see `ci.yml`). Enable code scanning only if the default setup can be given that runner label, or write an advanced `codeql.yml` that uses exactly those labels. UNVERIFIED: whether the pool can run the CodeQL bundle (`gh api -X PATCH repos/swcstudiospace/OmpOS/code-scanning/default-setup -f state=configured ...` with a runner label is the command that would resolve it).
 - **Optional: a minimal ruleset.** Only if the owner wants a floor. This ruleset blocks branch deletion and force pushes on `main` and still allows fast-forward pushes. It is not in the script on purpose:
 

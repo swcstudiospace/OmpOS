@@ -35,10 +35,13 @@
 * [Hooks](reference/hooks.md)
 * [Slash commands](reference/slash-commands.md)
 * [Remote environments over SSH](runbooks/remote-ssh.md)
+* [Containers and WSL environments](runbooks/remote-containers.md)
 * [Multi-repository workspaces](runbooks/multi-repo.md)
 * [Cloud agents on Railway](runbooks/cloud-agents.md)
 * [Run modes, permissions.json and sandbox.json](reference/run-modes.md)
 * [MCP servers](reference/mcp.md)
+* [Built-in skills](reference/builtin-skills.md)
+* [Automations](reference/automations.md)
 * [Checkpoints, worktrees, queue, modes, side chats and fork](reference/checkpoints-and-worktrees.md)
 
 ## Reference
@@ -82,6 +85,7 @@
   * [ADR-0013 Plugin isolation](decisions/ADR-0013-plugin-isolation.md)
   * [ADR-0014 MCP client](decisions/ADR-0014-mcp-client.md)
   * [ADR-0015 Remote environments](decisions/ADR-0015-remote-environments.md)
+  * [Addendum to ADR-0015 Containers and WSL](decisions/addendum-ADR-0015-containers.md)
   * [ADR-0016 Hooks execution model](decisions/ADR-0016-hooks-execution-model.md)
   * [ADR-0017 Web head Demo mode](decisions/ADR-0017-web-head-demo-mode.md)
   * [ADR-0018 AGPL licence and source offer](decisions/ADR-0018-licence-agpl-and-source-offer.md)

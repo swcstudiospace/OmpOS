@@ -4,13 +4,19 @@ description: "Reference for file checkpoints and restore, git worktrees, the mes
 
 # Checkpoints, worktrees, the message queue, custom modes, side chats and fork
 
-Status: Partial (libraries and presentation models are built and unit tested; not run against a live omp session; head wiring is tracked in the parity audit)
+Status: Partial (libraries, models, views and head adapters are built, wired into the desktop head for local sessions and unit tested; no live omp session or model turn ran; Alt+Enter in the slash palette, best of n without Run Everything, `/vim` and `/show-thinking` are not built)
 
 Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-This page describes how OmpOS undoes an agent's file edits, runs work in git worktrees, queues messages while the agent works, pins a skill as a mode, and opens side chats and forks. Every feature is a library plus a presentation model with tests. The views and the wiring into the windows are a later step; the last section lists what each model needs from the head.
+This page describes how OmpOS undoes an agent's file edits, runs work in git worktrees, queues messages while the agent works, pins a skill as a mode, and opens side chats and forks. Each feature is a library, a presentation model, a view and a head adapter; the last section lists which adapter feeds which model.
+
+> **Status of this release** (recorded 2026-10-28, tree 7535859).
+>
+> - **Built, wired into the desktop head, proven by tests.** `MainView` hosts the Checkpoints timeline, the Worktrees panel, the queued messages under the composer, the custom-mode chip, the side chat pane and fork for each session; `AgentSessionRuntime` takes the forker, the side-chat engine and the prompt preamble. The head adapters are `CheckpointBackend`, `WorktreeBackend`, `WorktreeSetupConsentAdapter`, `BestOfNHost` and `ConventionModeSkillSource` (`apps/OmpOS.Native/Composition/Checkpoints/`), `SessionForker` and `OmpSideChatEngine` (`apps/OmpOS.Native/Agents/`). Tests: `CheckpointBackendTests`, `WorktreeBackendTests`, `WorktreeSetupConsentAdapterTests`, `BestOfNHostTests`, `ConventionModeSkillSourceTests`, `CheckpointsTimelineViewTests`, `WorktreeCommandsViewTests`, `QueuedMessagesViewTests`, `CustomModeChipViewTests`, `SideChatPaneViewTests`, `AcpForkTests` (wire method `session/fork`), `AgentSessionRuntimeWiringTests` (`/duplicate` forks), and the library tests in `OmpOS.Harness.Worktrees.Tests`.
+> - **Built, not wired.** `/fork <n>` from an earlier message is refused: the forker copies the whole conversation (`CanForkFromMessage` is `false`). Alt+Enter on a skill in the slash palette is not built (the mode is chosen from the mode chip). Best of n creates its candidates only in Run Everything. `/vim` and `/show-thinking` are Unavailable in the slash catalogue (no Vim key bindings; the transcript does not draw thinking). No test drives checkpoints, worktrees, side chats or fork in an ssh, container or WSL session: UNVERIFIED there. The web head has none of these features.
+> - **Not live-verified.** No live omp session ran a fork, a side chat or a checkpoint turn, and no model turn ran (open question OD-07). Whether omp accepts `--approval-mode always-ask` for the side chat's second omp is **UNVERIFIED**. Nothing ran on Windows, macOS or Android.
 
 Cursor 3.27 documents the same features (checkpoints and restore, worktrees, queued messages, Custom Modes, side chats, `/fork`). omp has no file checkpoints: its `checkpoint` and `rewind` tools only prune the conversation context, and `/branch`, `/fork` and `/tree` run in its terminal UI only. OmpOS therefore keeps its own file checkpoints and restores files only; it never changes the conversation.
 
@@ -90,7 +96,7 @@ The setting `rewind` (Cursor's `rewind` key) switches the three commands off.
 …the user's prompt…
 ```
 
-until the user exits the mode. The mode chip shows `Mode: <name>` with the skill's `icon` and `color` (`default`, `green`, `cyan`, `blue`, `purple`, `magenta`, `orange`, `yellow`, `red`, `brand`; anything else is `default`). **Alt+Enter** (Option+Enter on macOS) on a skill highlighted in the slash palette means Use as Mode; a plain accept inserts the skill's `/name` as before. A body longer than 20,000 characters, an empty body and an unreadable skill are refused with a sentence and keep the mode that was pinned.
+until the user exits the mode. The mode chip shows `Mode: <name>` with the skill's `icon` and `color` (`default`, `green`, `cyan`, `blue`, `purple`, `magenta`, `orange`, `yellow`, `red`, `brand`; anything else is `default`). **Alt+Enter** (Option+Enter on macOS) on a skill highlighted in the slash palette is not built; choose the skill in the chip. A body longer than 20,000 characters, an empty body and an unreadable skill are refused with a sentence and keep the mode that was pinned.
 
 ## Side chats and fork
 
@@ -100,18 +106,18 @@ A **side chat** (`/side`, `/btw`) is a child conversation. `SideChatHub.OpenAsyn
 
 ## Display switches
 
-`/vim`, `/line-numbers`, `/show-thinking` and `/status-indicators` flip switches of `DisplaySettings` (with `on`, `off`, `toggle` or `status`). They are saved in `display.json`, a small versioned JSON file OmpOS owns, next to the other OmpOS settings; a missing or damaged file reads as the defaults. The Vim switch is a flag the composer reads; the model does not interpret keys. Defaults: Vim off, everything else on.
+`/line-numbers` and `/status-indicators` flip switches of `DisplaySettings` (with `on`, `off`, `toggle` or `status`). `/vim` and `/show-thinking` are Unavailable (see [Slash commands](slash-commands.md)): `DisplaySettings` holds a Vim flag, but no composer reads it. The switches are saved in `display.json`, a small versioned JSON file OmpOS owns, next to the other OmpOS settings; a missing or damaged file reads as the defaults. Defaults: Vim off, everything else on.
 
 ## What the head provides
 
-| Model | Needs |
-|---|---|
-| `CheckpointRecorderModel`, `CheckpointsModel` | `ICheckpointBackend` over `CheckpointStore` |
-| `WorktreeCommandsModel` | `IWorktreeBackend` over `WorktreeManager`, `WorktreeApplier`, `IWorktreeSetupRunner`; `IBestOfNHost` |
-| `QueuedMessagesModel` | `SteeringInputModel` and a way to start a turn (`QueuedMessagesSteeringAdapter`) |
-| `CustomModeModel` | `IModeSkillSource` over `ConventionCatalog`; every prompt sent through `IPromptPreamble.Apply` |
-| `SideChatHub` | `ISideChatEngine` (a second omp session or `unstable_forkSession`) |
-| `ForkModel` | `ISessionForker` over `unstable_forkSession` |
-| Slash handlers | `ISlashSessionContext`, `IClipboardWriter`, `IAboutLauncher`, `IFolderOpener`, `IApplicationLifetime`, `IUrlLauncher`, `IEditorOpener`, `IChangesBarOpener`, `IWorkspaceSetsBackend`, `IDisplaySettingsStore` |
+| Model | Needs | Provided by |
+|---|---|---|
+| `CheckpointRecorderModel`, `CheckpointsModel` | `ICheckpointBackend` over `CheckpointStore` | `CheckpointBackend` |
+| `WorktreeCommandsModel` | `IWorktreeBackend` over `WorktreeManager`, `WorktreeApplier`, `IWorktreeSetupRunner`; `IBestOfNHost` | `WorktreeBackend`, `WorktreeSetupConsentAdapter`, `BestOfNHost` (over `BestOfNCandidateRunner`) |
+| `QueuedMessagesModel` | `SteeringInputModel` and a way to start a turn (`QueuedMessagesSteeringAdapter`) | `MainView`: Tab queues while a run is active, the next message is sent when the run ends, Stop clears the queue |
+| `CustomModeModel` | `IModeSkillSource` over `ConventionCatalog`; every prompt sent through `IPromptPreamble.Apply` | `ConventionModeSkillSource`; `AgentSessionRuntime.PromptPreamble` |
+| `SideChatHub` | `ISideChatEngine` (a second omp session) | `OmpSideChatEngine` (a second omp with `--approval-mode always-ask` that admits no tool kind) |
+| `ForkModel` | `ISessionForker` over `session/fork` | `SessionForker` over the engine's `session/fork` (`IOmpSessionFork`) |
+| Slash handlers | `ISlashSessionContext`, `IClipboardWriter`, `IAboutLauncher`, `IFolderOpener`, `IApplicationLifetime`, `IUrlLauncher`, `IEditorOpener`, `IChangesBarOpener`, `IWorkspaceSetsBackend`, `IDisplaySettingsStore` | the adapters of `src/OmpOS.Native.Views/Shell/`; `IFolderOpener` is not provided (there is no log folder to open) |
 
 `SlashActionHandlerHost` routes the actions of these handlers and passes every other action to the head's own `ISlashActionHost`.

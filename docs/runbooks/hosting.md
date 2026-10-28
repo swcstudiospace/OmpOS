@@ -38,7 +38,7 @@ Railway project `Ultrathink`, environment `production`. All service-to-service t
 Not services:
 
 - **Worker.** None. The Temporal worker project was removed on 2026-10-21, and `deploy/` no longer contains a worker image.
-- **Web.** Vercel hosts the Blazor WebAssembly web head outside Railway. Its configuration is `vercel.ts`; the CSP `connect-src` is generated at build time from `OMPOS_API_ORIGIN` by `scripts/vercel/render-csp.sh`. The Vercel origin and the production API origin are open items (Q-VERCEL-CSP).
+- **Web.** Vercel hosts the Blazor WebAssembly web head outside Railway. Its configuration is `vercel.ts`; the CSP `connect-src` is generated at build time from `OMPOS_API_ORIGIN` by `scripts/vercel/render-csp.sh`. The **Demo** build is deployed (recorded 2026-10-28) at <https://ompos-web.vercel.app>, the production alias of project `ompos-web` in team `swcstudiospace`: static, simulated engine, no backend and no secret, so it needs no API origin (see [Web head runbook](web-demo.md)). The Vercel origin for a real web head and the production API origin are still open items (Q-VERCEL-CSP). Nothing of OmpOS is deployed to Railway: its project "Ultrathink" holds TimescaleDB, Dragonfly, GreptimeDB and two tailscale services only.
 
 ## Network and ports
 

@@ -19,7 +19,7 @@ OmpOS is a workspace for coding agents whose engine is [omp](https://github.com/
 | Run the web app against a local API | [Web with a local API](#web-app-with-a-local-api) |
 | Build and test the whole repository | [Local development](../runbooks/local-dev.md) |
 
-> **Be aware.** No live model turn has been run since a bounded capture in Phase 11. Everything below starts, renders and exchanges messages with the real omp, but "an agent finished a real coding task with a model" is not something the project has demonstrated. The web Demo uses a simulated engine and says so on screen.
+> **Be aware.** No live model turn has been run since a bounded capture in Phase 11. Everything below starts, renders and exchanges messages with the real omp, but "an agent finished a real coding task with a model" is not something the project has demonstrated. The web Demo uses a simulated engine and says so on screen. Nothing was run on Windows, macOS or Android, and nothing of OmpOS is deployed to Railway.
 
 ## Requirements
 
@@ -55,14 +55,16 @@ The main environment variables:
 
 ## The Demo (no backend)
 
-The Demo is the web head with its HTTP client answered inside the browser by a scripted engine. It needs no API, no omp and no model.
+The quickest look: open <https://ompos-web.vercel.app>. It is the web head with its HTTP client answered inside the browser by a scripted engine (a static Vercel deployment, recorded 2026-10-28). It needs no API, no omp and no model, and nothing you type leaves the page.
+
+To build and serve the same bundle yourself:
 
 ```sh
 scripts/vercel/build-demo.sh        # publishes with -p:OmpOSDemo=true into output/demo
 scripts/web-demo/serve-demo.sh      # http://127.0.0.1:5190/ (loopback only)
 ```
 
-It shows a workspace named `acme-shop` and six scripted agents in different states. Sending a prompt gets a reply labelled "Demo". Nothing leaves the page. Details and limits: [Web head runbook](../runbooks/web-demo.md) and [Web app guide](web-app-guide.md).
+It shows a workspace named `acme-shop` and six scripted agents in different states. Sending a prompt gets a reply labelled "Demo". Details and limits: [Web head runbook](../runbooks/web-demo.md) and [Web app guide](web-app-guide.md).
 
 ![The OmpOS web app in the Demo build: the agent rail, a streaming thread and the composer, in the Light theme.](../assets/screens/web-agents-light.png)
 

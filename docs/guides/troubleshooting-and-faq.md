@@ -20,9 +20,9 @@ Applies to: v0.15.0
 
 **Has it run a real model task?** No live model turn has been run since the bounded Phase 11 capture. The desktop app, the plugins and the omp connection were checked against the real omp without a model turn. Treat everything else as built and tested, not field-proven.
 
-**Which platforms work?** The desktop app on Linux. Windows, macOS, Android and iOS were not run. The web head runs in a browser; its Demo needs nothing else.
+**Which platforms work?** The desktop app on Linux. Windows, macOS, Android and iOS were not run. The web head runs in a browser; its Demo needs nothing else and is live at <https://ompos-web.vercel.app>.
 
-**What is the Demo?** The web app answered by a scripted engine inside the browser. It is labelled "Demo", calls no model and keeps nothing. See [Web app guide](web-app-guide.md).
+**What is the Demo?** The web app answered by a scripted engine inside the browser. It is labelled "Demo", calls no model and keeps nothing. It is deployed at <https://ompos-web.vercel.app> (recorded 2026-10-28). See [Web app guide](web-app-guide.md).
 
 **What licence is it?** AGPL-3.0-or-later. If you run a modified OmpOS as a service, you must offer your users the source: [Licensing](../licensing.md).
 
@@ -54,7 +54,7 @@ More in the [Agent loop runbook](../runbooks/agent-loop.md).
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Models page shows a provider but the agent cannot answer | No key, or the wrong host (plan host versus pay-as-you-go host) | Check the row's endpoint and key variable name on the page; read the vendor's current page. |
-| A key typed in the web app is gone after reload | By design: kept in page memory only | Enter it again; see the [threat model](../runbooks/web-key-threat-model.md). |
+| A key typed in the web Models page is not kept | By design: the field is write-only and the page keeps no copy; in the Demo key entry is disabled | Against a real API the operator must allow key writes (`Providers:AllowCredentialWrite`); see the [threat model](../runbooks/web-key-threat-model.md). |
 | API answers 403 `credential_writes_disabled` | Writes are off by default | The operator sets `Providers:AllowCredentialWrite`. |
 | A Partial or Unverified catalogue row fails | Some fact in the row was inferred | Verify on the vendor's page; the row links it. |
 
@@ -72,14 +72,16 @@ More in the [Agent loop runbook](../runbooks/agent-loop.md).
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | A remote profile fails preflight | `ssh` cannot reach the host, host key not trusted, or no omp there | Each diagnosis is explained in [Remote environments](../runbooks/remote-ssh.md). |
-| Cloud agents do nothing | `Cloud:Enabled` is false by default and no worker exists | See [Cloud agents](../runbooks/cloud-agents.md): nothing is deployed on Railway. |
+| A container session cannot create files | An old build of the remote scripts on a BusyBox image (alpine) | Fixed in this release (`RemoteScriptsBusyBoxTests`); see [Containers and WSL](../runbooks/remote-containers.md). WSL profiles need Windows. |
+| Cloud agents do nothing | `Cloud:Enabled` is false by default and no worker exists | See [Cloud agents](../runbooks/cloud-agents.md): nothing is deployed on Railway. The desktop shows "not set up" without `OMPOS_API_BASE_URL`. |
+| Automations return 404 `automations_disabled` | `Automations:Enabled` is false by default in the API | The desktop scheduler needs no API: see [Automations](../reference/automations.md). |
 
 ## Docs checks
 
 | Symptom | Fix |
 |---|---|
 | `scripts/ci/check-docs.sh` reports an orphan page | Add the page to `docs/SUMMARY.md` (or put it under an ignored tree such as `docs/plans/`). |
-| A pinned screenshot is missing | Warning only; `OMPOS_RELEASE=1` makes it an error. The release step adds the images. |
+| A pinned screenshot is missing | Warning only; `OMPOS_RELEASE=1` makes it an error. The eight pinned images exist in `docs/assets/screens/` since 2026-10-28. |
 | GitBook shows a page with raw front matter | An unquoted `description:` containing `:` or `#` fails silently in Git Sync: quote it. |
 
 If none of this helps, see [Contributing, security and support](community.md).

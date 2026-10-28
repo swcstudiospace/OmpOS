@@ -4,13 +4,13 @@ description: "Run the OmpOS web head against the real API or as a static Demo wi
 
 # Web head runbook: real API, Demo, and static Demo deployment
 
-Status: Built (real API and Demo run locally); no public deployment exists
+Status: Built (real API and Demo run locally; the Demo is deployed at https://ompos-web.vercel.app, recorded 2026-10-28); the real API is not deployed anywhere
 
 Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-The web head (`apps/OmpOS.Web`, Blazor WebAssembly) can run in three ways. The decision is [ADR-0017](../decisions/ADR-0017-web-head-demo-mode.md). Nothing here deploys anything public: the API must stay private until sign-in (OD-03) exists ([hosting runbook](hosting.md)).
+The web head (`apps/OmpOS.Web`, Blazor WebAssembly) can run in three ways. The decision is [ADR-0017](../decisions/ADR-0017-web-head-demo-mode.md). The only public deployment is the static Demo (simulated engine, no backend, no secret): <https://ompos-web.vercel.app>. The API must stay private until sign-in (OD-03) exists ([hosting runbook](hosting.md)); nothing of OmpOS is deployed to Railway.
 
 ## 1. The real API and the web head, both on this machine
 
@@ -37,7 +37,7 @@ scripts/vercel/build-demo.sh            # publishes with -p:OmpOSDemo=true into 
 scripts/web-demo/serve-demo.sh          # http://127.0.0.1:5190/ (DEMO_PORT to change), loopback only
 ```
 
-What it shows: the workspace `acme-shop` and six agents: one running (its scripted answer streams markdown, code, a tool call and a diff as soon as the page opens), one waiting for a tool approval, one completed with three changed files, one failed with a retryable error, one closed, and one omp terminal (scripted output). The rail, the Kanban board (ten columns), the Settings dialog, steering, the model and mode chips, the slash palette (20 engine commands), the Changes bar and the stage timeline all work. Sending a prompt gets a scripted reply labelled "Demo". Accepting or rejecting a change, approving a tool, closing and reopening an agent change the in-memory state and nothing else; reloading the page starts over.
+What it shows: the workspace `acme-shop` and six agents: one running (its scripted answer streams markdown, code, a tool call and a diff as soon as the page opens), one waiting for a tool approval, one completed with three changed files, one failed with a retryable error, one closed, and one omp terminal (scripted output). The rail, the Kanban board (ten columns), steering, the model and mode chips, a scripted slash palette, the Changes bar and the stage timeline all work. The Settings dialog has 18 pages: the Models page answers from the real catalogue of 103 provider rows (region, kind and search filters, plan cards, the custom endpoint rules; key entry is disabled and every credential write answers 403 `credential_writes_disabled`), and Rules, Skills, Commands, Hooks, MCP, Runtime and Plugins show the `acme-shop` fixtures (`Demo/DemoWorkspaceSettings`). Sending a prompt gets a scripted reply labelled "Demo". Accepting or rejecting a change, approving a tool, closing and reopening an agent change the in-memory state and nothing else; reloading the page starts over.
 
 Honest limits: no model is called, no file exists, nothing leaves the page, the Content-Security-Policy allows only the page's own origin (`connect-src 'self'`). Changing the model during a running turn is refused with the same 409 the API gives; between turns the Demo allows it.
 
@@ -61,6 +61,19 @@ cd output/demo && vercel deploy        # a preview: Deployment Protection stays 
 Alternatively set `OMPOS_DEMO=1` in a Vercel project that builds from the repository: `vercel.ts` then runs `dotnet publish ... -p:OmpOSDemo=true` and needs no `OMPOS_API_ORIGIN`. Without `OMPOS_DEMO=1` the build still fails closed unless `OMPOS_API_ORIGIN` is a valid `https://host[:port]`.
 
 Never point a hosted page at the development API through a tunnel: that would publish the development principal (ADR-0017).
+
+**Recorded deployment (2026-10-28).** The Demo is live at <https://ompos-web.vercel.app>: the Vercel production alias of project `ompos-web` in team `swcstudiospace`. It is the static Demo bundle (simulated engine, no backend, no secret). The repository homepage points to it. Headless Chrome captured it from the live URL with `URL=https://ompos-web.vercel.app node scripts/web-demo/capture.mjs`: no console error and no failed request ([evidence](evidence/web-app-2026-10-28/README.md)). This follows the default recorded in OQ-99.
+
+## 3a. Capture and smoke
+
+```bash
+node scripts/web-demo/capture.mjs                       # serves output/demo, one PNG per screen into /tmp/ompos-shots
+THEME=dark W=1440 H=900 PREFIX=D1440- node scripts/web-demo/capture.mjs
+URL=https://ompos-web.vercel.app node scripts/web-demo/capture.mjs     # the deployed Demo
+scripts/web-smoke/run-smoke.sh                          # SMOKE_TARGETS="api demo": axe on the Demo (68 runs) and the API half
+```
+
+Needs a headless Chrome (`CHROME_BIN`, default `google-chrome`). The smoke of the Demo recorded 0 axe violations in 68 runs (Wave 5 tree, 2026-10-28); the API half was not re-run for it.
 
 ## 4. Tests
 

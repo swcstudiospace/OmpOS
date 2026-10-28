@@ -17,12 +17,15 @@ Applies to: v0.15.0
 | Agents window | The default desktop surface: session rail, thread, composer and the Kanban tab. |
 | Approval (tool approval) | A request from omp to run a command, edit a file or call a tool, which you allow or deny unless the run mode auto-approves it. |
 | Auto-review | The default run mode: allow rules and a short list of known-safe read-only commands run; everything else asks. Cursor's hosted classifier step is not available. |
+| Automation | A saved prompt with a schedule that starts a session locally or a cloud agent. Cron only on the desktop. |
 | AGPL-3.0-or-later | The licence of OmpOS. Network use is distribution: see [Licensing](../licensing.md). |
 | BYOK | Bring your own key: you supply the provider key. |
+| Built-in skill | One of ten skills OmpOS ships (`review`, `create-hook` and others), found with scope Built-in; a project skill of the same name takes over. |
 | Changes bar | The Keep, Undo and Review controls over the files an agent edited. |
 | Checkpoint | A saved state of the files before an agent turn, used to rewind. |
 | Cloud agent | An agent that runs in a cloud environment (a worker on Railway) instead of on your machine. |
 | Coding plan | A subscription from a model vendor that is bring-your-own-key for coding tools, with its own host and usage rules. |
+| Container environment | A running podman container that omp runs in through `podman exec`; WSL distributions are the Windows equivalent. |
 | Control plane | The part of the API that owns cloud agent records, secrets and limits. |
 | Demo | The web head with a simulated engine answered inside the browser; labelled "Demo" on screen. |
 | Engine | omp. |

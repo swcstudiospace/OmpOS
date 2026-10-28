@@ -1,8 +1,22 @@
+---
+description: "Reference for the 10 skills OmpOS ships (create-hook, review, agent-review and more), how built-in skills are discovered, and the 13 MCP presets."
+---
+
 # Built-in skills and MCP presets
 
-OmpOS ships a small set of skills inside the application. They are plain `SKILL.md` files with OmpOS's own wording, found automatically, and run like any skill you add yourself: type the name after a slash. This page lists what ships, what does not and why, how they are discovered, and the MCP presets that come with the MCP page.
+Status: Partial (10 skills discovered by the desktop slash palette and Skills page; 13 MCP presets on the desktop MCP page; ssh, container, WSL, API-hosted and web sessions carry no built-in skills; no live omp session or model turn ran)
 
-> **Status of this release.** The skills, the discovery scope and the presets are built and unit tested. The desktop, web and API heads do not yet turn the built-in source on, so until that wiring lands (see "Switching it on") the skills are found only by code that asks for them. Nothing here was run against a live omp session.
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
+
+OmpOS ships a small set of skills inside the application. They are plain `SKILL.md` files with OmpOS's own wording, found automatically, and run like any skill you add yourself: type the name after a slash. This page lists what ships, what does not and why, how they are discovered, and the MCP presets that come with the MCP page (the same presets are listed in [MCP servers](mcp.md#presets)).
+
+> **Status of this release** (recorded 2026-10-28, tree 7535859).
+>
+> - **Built, wired into the desktop head, proven by tests.** `ConventionSlashDiscoverySource` and `ConventionSettingsLoader` build their sources with `ConventionSources.Local(...).WithBuiltin()`, so the desktop slash palette and Settings > Skills list the 10 skills with the scope `builtin`; the `skills` folder is copied next to the application by `OmpOS.Harness.Workspace.csproj`. Tests: `BuiltinSkillsDesktopTests` (the real `skills` folder: the 10 tokens resolve to built-in skills, `/review` resolves to the Skill badge with the scope `BuiltIn`, a project skill takes over, palette rows, the Skills page) and `BuiltinSkillSourceTests`, `BuiltinSkillDiscoveryTests`, `BuiltinSkillManifestTests` in `OmpOS.Harness.Workspace.Tests`. In the slash catalogue the 10 tokens are Built with the Skill handler.
+> - **Built, not wired.** API-hosted sessions carry no built-in skills (`ConventionsReader` does not add the source, and `ConventionsMapper` skips built-in entries), so the web head shows none. Sessions in a remote environment (ssh, container, WSL) use `RemoteConventionSources`, which has no built-in source, and the remote slash discovery lists what the remote workspace has. The custom-mode picker (`ConventionModeSkillSource`) and the @ mention provider (`ConventionMentionProvider`) do not include built-in skills.
+> - **Not live-verified.** No live omp session ran one of the skills and no model turn ran (open question OD-07); the published layout of the `skills` folder was not verified by `dotnet publish` (the `bin` layout was). Nothing ran on Windows, macOS or Android.
 
 ## What ships
 
@@ -50,7 +64,7 @@ The machine-readable lists are `BuiltinSkillManifest.Shipped` and `BuiltinSkillM
 - The source reads only inside the `skills` folder.
 - A custom command with the same name as a skill still runs first (commands rank before skills in the palette).
 
-### Switching it on
+### Where it is switched on
 
 Discovery adds the built-in skills when the sources carry a `BuiltinSkillSource`:
 
@@ -58,11 +72,11 @@ Discovery adds the built-in skills when the sources carry a `BuiltinSkillSource`
 var sources = ConventionSources.Local(roots, userHome).WithBuiltin();
 ```
 
-`WithBuiltin()` uses the `skills` folder in `AppContext.BaseDirectory`; pass a `BuiltinSkillSource` to use another folder (tests do). The call goes wherever the app builds its `ConventionSources`: the slash discovery source, the settings loader, the API's conventions reader, and the remote setup (the skills are local files, so a remote workspace uses the same source).
+`WithBuiltin()` uses the `skills` folder in `AppContext.BaseDirectory`; pass a `BuiltinSkillSource` to use another folder (tests do). Two call sites make the call: `ConventionSlashDiscoverySource` (the desktop slash palette) and `ConventionSettingsLoader` (the desktop Skills page). The API's conventions reader, the remote setup, the custom-mode source and the mention provider build `ConventionSources.Local(...)` without it.
 
 ## MCP presets
 
-The MCP page's "Add from template" offers two blank skeletons and the presets below. A preset is written to the OmpOS-owned `.ompos/mcp.json` and stays **switched off** until you enable it. No preset holds a credential: a remote server signs in through OAuth in a browser, or reads its token from an environment variable named in the entry.
+Settings > MCP servers > Add from preset offers the presets below (the same list as in [MCP servers](mcp.md#presets); *Add from template* on the same page adds two blank skeletons). A preset is written to the OmpOS-owned `.ompos/mcp.json` and stays **switched off** until you enable it. No preset holds a credential: a remote server signs in through OAuth in a browser, or reads its token from an environment variable named in the entry. The presets are tested by `McpTemplateCatalogTests`, `McpPresetInstallerTests`, `McpPresetSourceTests` and `McpPresetPageViewTests`; none was contacted live.
 
 Every address below was read from the vendor's own documentation on 2026-10-28. An address that cannot be confirmed is marked `Unverified` in `McpTemplateCatalog.All` and is left out of the default list; none is unverified today.
 

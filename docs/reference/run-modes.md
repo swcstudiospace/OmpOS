@@ -4,7 +4,7 @@ description: "Reference for run modes (Auto-review, Allowlist, Run Everything), 
 
 # Run modes, permissions.json and sandbox.json
 
-Status: Partial (decision engine, file formats, page and launch mapping are built and unit tested; Auto-review's hosted classifier is not available; not run against a live omp session)
+Status: Partial (decision engine, file formats, page and launch mapping are built, wired into the desktop head for local sessions and unit tested; Auto-review's hosted classifier is not available; no live omp session or model turn ran)
 
 Last verified: 2026-10-28
 
@@ -12,7 +12,13 @@ Applies to: v0.15.0
 
 Run modes decide how much an agent may do without asking you. OmpOS uses Cursor's names and Cursor's file formats, so the files you wrote for Cursor keep working, and it says plainly where it does less than Cursor.
 
-> **Status of this release.** The decision engine, the file readers and writers, the Run mode page and the launch mapping are built and unit tested. They have not been run against a live omp session, and the application heads do not yet register the page, build the resolver or pass `--approval-mode` when they start omp. Until that wiring lands, omp runs with its own default (`yolo`: nothing asks). The "Where it is enforced" table says what each part does once it is wired.
+> **Status of this release** (recorded 2026-10-28, tree 7535859).
+>
+> - **Built, wired into the desktop head, proven by tests.** `HeadServices` builds a `RunModeHub` (`apps/OmpOS.Native/Composition/`); for each local session `SessionEngineSet` opens a `RunModePolicyHolder` (the `permissions.json`, `sandbox.json` and `run-mode.json` files are read again when their write time changes; an invalid file gives the defaults and a notice), gives the launch planner `--approval-mode` and a `bash:` overlay (`ConfigOverlayWriter`), and wraps the permission resolver in `RunModePermissionResolver` (`EngineComposition`). Saving on the Run mode page refreshes the policy of every open session. Tests: `RunModeLaunchTests`, `RunModePermissionResolverTests`, `RunModePolicyHolderTests`, `RunModePageViewTests`, and `EnginePermissionOrderTests` (the order is hook deny, approval policy, run mode, then you; Run Everything admits all 10 ACP tool kinds; a deny rule still stops a command in Run Everything). Settings > Run mode rendered in the Xvfb desktop smoke (`docs/runbooks/evidence/desktop-app-2026-10-28/settings-04-runmode.png`; the page opened scrolled down and was fixed).
+> - **Built, not wired.** A changed mode reaches omp's `--approval-mode` only when the engine of a session is composed again: a running omp keeps the policy it started with. For ssh, container and WSL sessions the head wraps the resolver but whether the remote omp is started with `--approval-mode` is **UNVERIFIED**: `src/OmpOS.Harness.Remote` builds `omp acp` with no approval argument of its own, so the remote omp may run with its own default (`yolo`). The web Run mode page is an information page with a desktop notice. The Agents page terminal auto-run switch is separate (see the last section).
+> - **Not live-verified.** No live omp session and no model turn ran (open question OD-07): the request field names omp sends are read from its source, not from a run. Nothing ran on Windows, macOS or Android. Auto-review has no classifier by design.
+>
+> The "Where it is enforced" table says what each part does.
 
 ## The three modes
 

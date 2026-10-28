@@ -4,13 +4,19 @@ description: "Cloud agents on Railway: what runs where, the control plane API, s
 
 # Cloud agents: user and operator guide
 
-Status: Partial (control plane, worker bridge and Railway client are built and tested against fakes; no Railway deploy and no live run has happened)
+Status: Partial (control plane, worker bridge, Railway client, desktop Cloud host and page, and worker hooks are built, wired and tested against fakes on Linux; the worker has no clone bootstrap; the control plane does not mint the hooks consent claim; nothing of OmpOS is deployed on Railway and no live run has happened)
 
 Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-Details: control plane built and tested against fakes (2026-10-27). **No live run has happened**: Railway deploys are paused, the identity provider is not chosen and no model credential is configured (see "What is verified and what is blocked"). Design record: [ADR-0020](../decisions/ADR-0020-cloud-agents-on-railway.md). Research: [09-remote-cloud-plan.md](../plans/v0.15.0-research/09-remote-cloud-plan.md).
+Details (recorded 2026-10-28, tree 7535859). **No live run has happened**: nothing of OmpOS is deployed on Railway, the identity provider is not chosen and no model credential is configured (see "What is verified and what is blocked"). Design record: [ADR-0020](../decisions/ADR-0020-cloud-agents-on-railway.md). Research: [09-remote-cloud-plan.md](../plans/v0.15.0-research/09-remote-cloud-plan.md).
+
+**Status of this release.**
+
+- **Built, wired, proven against fakes.** *API:* `AddCloudAgentServices` and `MapCloudAgentEndpoints` are called in `services/OmpOS.Api/Program.cs`, the routes are in `docs/api/openapi.json` (11 `/cloud` paths), and `OmpOS.Api.IntegrationTests` (`Cloud/`: `CloudAgentLifecycleTests`, `CloudAgentAccessTests`, `CloudSecretTests`, `CloudPullRequestTests`, `CloudOrphanTests`, `CloudDisabledTests` and more, over `FakeCloudWorker` and `FakeGitHubHandler`) passed 1027 of 1027 on the final tree. *Worker:* `services/OmpOS.AgentWorker` bridges `omp acp` to a WebSocket (`OmpOS.AgentWorker.Tests`: `AcpBridgeProtocolTests`, `WorkerAuthenticationTests`, `OmpProcessLifecycleTests`, `WorkerEntrypointScriptTests`, `WorkerSecretHandlingTests`, with a fake omp). *Desktop:* `HeadServices` creates `ApiCloudAgentsHost` only when `OMPOS_API_BASE_URL` is a valid http or https address (the token comes only from `OMPOS_API_TOKEN`); Settings > Cloud, the rail rows and the `/in-cloud` hand-off use it; tests: `ApiCloudAgentsHostTests` (a scripted HTTP handler, no real API), `CloudAgentsPageViewTests`, `NewCloudAgentViewTests`, `CloudHandoffViewTests`, `HeadServicesWiringTests` (the host is null without the address).
+- **Built, not wired.** The worker has no clone bootstrap: it does not check out the repositories, run `OMPOS_ENVIRONMENT` or enforce `OMPOS_PROTECTED_BRANCHES`, so a live agent has no repository on disk. Hooks in the worker (`Worker:Hooks`, see [Hooks](../reference/hooks.md#hooks-in-cloud-workers)) read their consent from the `ompos_hooks_consent` claim of the worker token, and the control plane does not mint that claim: a cloud session reports `untrusted` and runs no project hook (`CloudHooksWorkerTests` prove the worker side with a test-minted token). Cloud automations start these agents only when `Automations:Enabled` and `Cloud:Enabled` are both on (see [Automations](../reference/automations.md)).
+- **Not live-verified.** No Railway deploy, create, sleep, wake or delete; no live worker image build or run is recorded (`deploy/worker.Containerfile` and `deploy/worker-entrypoint.sh` exist: the entrypoint is tested by `WorkerEntrypointScriptTests`, the image build is UNVERIFIED); no live GitHub; no model turn (open question OD-07). Nothing ran on Windows, macOS or Android.
 
 ## What runs where
 
@@ -76,10 +82,10 @@ Status values: `provisioning`, `starting`, `running`, `idle`, `stopping`, `stopp
 
 | Item | State |
 | --- | --- |
-| Lifecycle, caps, idempotency, ownership, idle sweep, orphan handling, secret canaries, pull requests, token minting and expiry, environment file | Written and tested against `FakeCloudEnvironmentClient`, an in-process fake worker and a fake GitHub. Not run by the author; the fix-up build runs them. |
-| Postgres store | Written with tests against a real PostgreSQL (podman or `OMPOS_TEST_POSTGRES_CONNECTION`). Not run by the author. |
+| Lifecycle, caps, idempotency, ownership, idle sweep, orphan handling, secret canaries, pull requests, token minting and expiry, environment file | Written and tested against `FakeCloudEnvironmentClient`, an in-process fake worker and a fake GitHub. Ran on the final tree: `OmpOS.Api.IntegrationTests` 1027 of 1027, recorded 2026-10-28. |
+| Postgres store | `OmpOS.Sessions.Postgres.Tests` 58 passed against a throwaway podman PostgreSQL on the final tree, recorded 2026-10-28. |
 | Worker-side checkout, install, start, git credential helper and push guard | **Not built.** The worker bridge only runs `omp acp`; it does not clone, run `OMPOS_ENVIRONMENT`, or enforce `OMPOS_PROTECTED_BRANCHES`. Until it does, a live agent has no repository on disk. |
-| Live Railway (create, sleep, wake, delete) | Blocked: deploys paused, GraphQL operations unverified (ADR-0020 D8), a Railway API token is needed. |
+| Live Railway (create, sleep, wake, delete) | Blocked: nothing of OmpOS is deployed on Railway, GraphQL operations unverified (ADR-0020 D8), a Railway API token is needed. |
 | Listing Railway workers (orphan workers without a record) | Not possible: the client has no list operation. |
 | Public exposure | Blocked by OD-03 (identity provider). |
 | Model credential in workers | Blocked by HOST-04 and OQ-71. |

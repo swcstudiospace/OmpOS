@@ -1,6 +1,23 @@
+---
+description: "Containers (podman) and WSL distributions as environments: profiles, preflight, dev containers, what runs where, secrets, diagnoses and the live podman test."
+---
+
 # Runbook: containers and WSL as environments
 
-Status: written 2026-10-28 (ADR-0015 addendum). Everything below is built and unit-tested against fake `podman` and `wsl` scripts; a real podman run is the Live test `PodmanLiveTests` (`OMPOS_LIVE_PODMAN=1`), not run yet. The desktop head is wired: the Remote page has a Containers and WSL section (rows with Test, Start container, Edit and Delete; add a running container from podman's list, by name, or a WSL distribution on Windows), the New session picker lists these profiles (WSL only where it is supported, which is Windows), and a session on a container or distribution starts omp through `ContainerSessionResources` or `WslSessionResources` like ssh does through `RemoteSessionResources`. Such sessions get no desktop MCP servers and no local hook files. The terminal pane and the dev container attach button are not wired.
+Status: Partial (podman container environments are wired into the desktop head and a live podman test passed on Linux with an alpine image, recorded 2026-10-28; WSL is built and wired but never run on Windows; the terminal pane for container and WSL sessions and the dev-container attach button are built but not wired; no real omp ran in a container, no model turn)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
+
+Scope: ADR-0015 and its addendum ([addendum-ADR-0015-containers](../decisions/addendum-ADR-0015-containers.md)). A session runs in a podman container or a WSL distribution that you reach with your own `podman` or `wsl.exe`.
+
+**Status of this release** (recorded 2026-10-28, tree 7535859).
+
+- **Built, wired into the desktop head, proven by tests.** Settings > Remote environments has a Containers and WSL section (rows with Test, Start container, Edit and Delete; add a running container from podman's list, by name, or a WSL distribution on Windows); the environment picker in the rail lists these profiles (WSL only where it is supported, which is Windows); a session on a container or distribution starts omp through `ContainerSessionResources` or `WslSessionResources` as ssh does through `RemoteSessionResources`. Tests: `ContainerSessionSelectionTests` (a container profile starts `podman exec` through a fake podman; unsupported WSL is refused), `RuntimeEnvironmentsViewTests`, `HeadServicesWiringTests`, and in `OmpOS.Harness.Remote.Tests` `ContainerSessionResourcesTests`, `PodmanRemoteExecTests`, `PodmanContainerListerTests`, `DevContainerResolverTests`, `ContainerProfileValidatorTests`, `ContainerDiagnosisCatalogTests`, `WslCommandBuilderTests`, `WslPreflightTests`, `WslAcpTransportTests`. Such sessions get no desktop MCP servers and no local hook files (the shared `IsRemote` branch of `SessionEngineSet`; no test of its own for container sessions).
+- **Live proof (Linux, podman only).** The live test `PodmanLiveTests` (`OMPOS_LIVE_PODMAN=1`) ran against a real podman with an alpine image and passed in the Wave 4 tree, recorded 2026-10-28. It found and fixed two defects: the `label=` filter of `PodmanExecCommandBuilder` and the `rp` function of `RemoteScripts` under BusyBox `realpath` (regression test `RemoteScriptsBusyBoxTests`). The test installs the fixture fake omp in the container, so it proves the podman argument shapes, the file system and the stopped-container path, not a real omp. No evidence folder was written for this run.
+- **Built, not wired.** The terminal pane for container and WSL sessions (`PodmanExecCommandBuilder.BuildTerminal` and `WslCommandBuilder.BuildTerminal` are built; no head calls them) and the dev-container attach button (`DevContainerResolver` is built and tested; nothing in the desktop head or the page calls it).
+- **Not live-verified.** WSL never ran: nothing ran on Windows (the `wsl.exe` wording rules are UNVERIFIED, see below). No real omp ran inside a container, no model turn (open question OD-07), no macOS, no Windows head.
 
 ## What runs where
 
@@ -57,7 +74,7 @@ A profile holds references only: there is no field for a password, a token, an e
 
 ## Dev containers
 
-OmpOS reads `.devcontainer/devcontainer.json` (or `.devcontainer.json`; comments and trailing commas are allowed) and finds the container the devcontainer CLI created for the project folder through its `devcontainer.local_folder` label (`podman ps -a --filter label=devcontainer.local_folder=<folder>`).
+OmpOS reads `.devcontainer/devcontainer.json` (or `.devcontainer.json`; comments and trailing commas are allowed) and finds the container the devcontainer CLI created for the project folder through its `devcontainer.local_folder` label (`podman ps -a --filter label=devcontainer.local_folder=<folder>`). The resolver is built and tested (`DevContainerResolverTests`); no desktop control calls it yet, so today you add the container by name or from podman's running list, and the running list marks a container made by the devcontainer CLI as a dev container.
 
 | Outcome | What OmpOS says |
 | --- | --- |
@@ -114,8 +131,11 @@ export OMPOS_LIVE_PODMAN_IMAGE=<a fully qualified base image with sh, sed, cat, 
 dotnet test tests/OmpOS.Harness.Remote.Tests --filter "Category=Live&FullyQualifiedName~PodmanLiveTests"
 ```
 
-The test starts one container with a unique name, installs the fixture fake omp in it (no real omp, no model), runs the connection test, an ACP session, the file system, the stopped-container path, and removes the container.
+The test starts one container with a unique name, installs the fixture fake omp in it (no real omp, no model), runs the connection test, an ACP session, the file system, the stopped-container path, and removes the container. It passed on 2026-10-28 with an alpine image on Linux (see the status above).
 
 ## Evidence
 
-Not yet recorded: no test of this work was run when it was written (the fix-up pass compiles and runs them), and the live test needs your image. Real podman 4.9.3 was asked by hand for `podman exec -i -- <container> sh -c ...` (works, stdin reaches the script), `-u <missing user>` (exit 255, "unable to find user ... no matching entries in passwd file"), exec into a stopped container (exit 255, "can only create exec sessions on running containers"), `container inspect --format '{{.State.Status}}' -- <name>`, `start -- <missing>` (exit 125) and `ps --filter label=...`; the fake podman reproduces those words.
+- **Live podman test:** passed on Linux with an alpine image in the Wave 4 tree, recorded 2026-10-28 (the orchestrator's record; there is no evidence folder for it). It found and fixed two defects: the `label=` filter of `PodmanExecCommandBuilder`, and `RemoteScripts.rp` under BusyBox `realpath` (regression test `RemoteScriptsBusyBoxTests`).
+- **Wiring tests on the final tree:** `ContainerSessionSelectionTests` and `RuntimeEnvironmentsViewTests` in `OmpOS.Native.Tests`, and `OmpOS.Harness.Remote.Tests` (520 or more tests, 2 skipped as root).
+- **Not run:** WSL on Windows; a real omp in a container; a model turn; a macOS or Windows head.
+- **By hand with real podman 4.9.3** (before the live test): `podman exec -i -- <container> sh -c ...` (works, stdin reaches the script), `-u <missing user>` (exit 255, "unable to find user ... no matching entries in passwd file"), exec into a stopped container (exit 255, "can only create exec sessions on running containers"), `container inspect --format '{{.State.Status}}' -- <name>`, `start -- <missing>` (exit 125) and `ps --filter label=...`; the fake podman reproduces those words.

@@ -10,7 +10,7 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-**The site is NOT published until a live URL is confirmed.** Until then the Markdown in `docs/` is the documentation, readable on GitHub. Do not link a GitBook URL anywhere (README, repository About box, `SUPPORT.md`) before step 11 below.
+**The site is NOT published until a live URL is confirmed.** Until then the Markdown in `docs/` is the documentation, readable on GitHub. The repository homepage (the GitHub About box) is the web Demo, <https://ompos-web.vercel.app>, set with `scripts/github/apply-repo-settings.sh` on 2026-10-28; it stays the Demo until the documentation site exists. Do not link a GitBook URL anywhere (README, About box, `SUPPORT.md`) before step 11 below.
 
 The repository already carries everything GitBook reads: `.gitbook.yaml` at the repository root (`root: ./docs/`, landing `README.md`, navigation `SUMMARY.md`), `docs/README.md`, `docs/SUMMARY.md` and the pages. GitHub is the source of truth: edit in the repository, never merge change requests in GitBook (GitBook commits would race your pushes). The design behind this page is `docs/plans/v0.15.0-research/12-github-gitbook-plan.md`.
 
@@ -47,11 +47,11 @@ It exits non-zero on a missing SUMMARY entry, an orphan page, a broken link or a
 8. **OpenAPI.** In the site, open OpenAPI, Add specification, name it `ompos-api`, choose URL and enter the raw GitHub URL of the document: `https://raw.githubusercontent.com/swcstudiospace/OmpOS/main/docs/api/openapi.json`. GitBook refreshes a URL source about every six hours (or press Check for updates). Then add an OpenAPI Reference page to the "HTTP API" area and commit the pages GitBook generates. The document has no `servers` entry beyond `/` and no security scheme, so "Test it" cannot work until a hosted API URL exists. This is the page: [HTTP API](../reference/api.md).
 9. **Edit on GitHub**: turn the toggle on in the site settings; preview; then press **Publish**. Sites are public by default; Settings, Audience changes it.
 10. **Custom domain** (paid plan only): Settings, Domain and URL; add the CNAME GitBook shows at your DNS provider (not an A record; no Cloudflare proxy); SSL is automatic.
-11. **Record the live URL.** Only after you opened it and it matches the checklist below: `gh repo edit swcstudiospace/OmpOS -h <url>`, then put the URL in the README, `SUPPORT.md` and the issue form contact links, and replace the placeholder sentence in `README.md` and `docs/README.md`.
+11. **Record the live URL.** Only after you opened it and it matches the checklist below: `gh repo edit swcstudiospace/OmpOS -h <url>` (this replaces the Demo URL as the homepage; keep the Demo link in the README), then put the URL in the README, `SUPPORT.md` and the issue form contact links, and replace the placeholder sentence in `README.md` and `docs/README.md`.
 
 ## Verification checklist
 
-- [ ] `bash scripts/ci/check-docs.sh` passes (and `OMPOS_RELEASE=1 bash scripts/ci/check-docs.sh` once the screenshots are in `docs/assets/screens/`).
+- [ ] `bash scripts/ci/check-docs.sh` and `OMPOS_RELEASE=1 bash scripts/ci/check-docs.sh` both pass (the eight pinned screenshots exist in `docs/assets/screens/` since 2026-10-28).
 - [ ] The site's first page is the landing page and its navigation matches `docs/SUMMARY.md` (sections, order and nesting).
 - [ ] Open five pages with front matter: no raw `---` block shows (a silent Git Sync failure means an unquoted `description`).
 - [ ] The architecture diagram and every screenshot load, and each has alt text.

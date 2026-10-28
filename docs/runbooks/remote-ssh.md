@@ -4,7 +4,7 @@ description: "Remote environments over ssh: profiles, preflight, what runs where
 
 # Remote environments over ssh: user guide and runbook
 
-Status: Partial (core, remote file system, terminals, profile store and the Remote environments page are written with tests; never run against a real host; desktop head wiring is tracked in the parity audit)
+Status: Partial (ssh sessions are wired into the desktop head and a live run against a loopback sshd with the real omp 18.12.6 passed on Linux, recorded 2026-10-28; the remote file explorer and editor, the remote terminal pane, the host trust terminal button, remote hook files and remote mention files are built but not wired; no model turn, no real network host, no Windows or macOS)
 
 Last verified: 2026-10-28
 
@@ -12,7 +12,12 @@ Applies to: v0.15.0
 
 Scope: requirement PX-15 (Phase 58 part 1), decision [ADR-0015](../decisions/ADR-0015-remote-environments.md). A session runs on another machine that you reach with your own `ssh`. This page says what you need, how a profile works, what runs where, what is not there yet, and how to read each diagnosis.
 
-Details as of 2026-10-28: the core (profiles, ssh transport, connection test, launch rewrite, reconnect) and the part-2 pieces (remote file system, remote convention discovery, remote terminals, profile store, the Remote environments page and the New session picker) are written. Their tests were written but not yet run by an automated gate, and the head wiring that shows the page, the picker and the remote explorer in the app is the next wave (see "Part 2 status"). Until the page is wired, a profile is a JSON entry in the user settings (see "A profile as stored").
+**Status of this release** (recorded 2026-10-28, tree 7535859).
+
+- **Built, wired into the desktop head, proven.** `HeadServices` builds the `EnvironmentProfileStore` and `RemoteEnvironmentsHost`; Settings > Remote environments is the `RemoteEnvironmentsPageView` (rendered in the Xvfb smoke, `docs/runbooks/evidence/desktop-app-2026-10-28/settings-16-remote.png`); the environment picker in the rail sets the target of the next New agent; a session on an ssh profile starts through `RemoteSessionResources` and `ReconnectingEngineHost`, with the connection state on the rail row and an interrupted-turn notice, and remote slash discovery (`RemoteSlashDiscoverySource`). Tests: `RemoteTransportSelectionTests`, `HeadServicesWiringTests`, `RemoteViewTests`, `RuntimeEnvironmentsViewTests`, `AgentSessionRuntimeWiringTests` in `OmpOS.Native.Tests`; `SshCommandBuilderTests`, `SshAcpTransportTests`, `SshConfigResolverTests`, `RemoteWorkspaceFileSystemTests`, `RemoteConventionFileSourceTests`, `RemoteSessionResourcesTests`, `RemoteEnvironmentsHostTests`, `EnvironmentProfileStoreTests`, `ReconnectingEngineHostTests`, `RemoteTerminalLauncherTests` in `OmpOS.Harness.Remote.Tests` (520 or more tests on the final tree, 2 skipped because the run was root).
+- **Live proof.** A real `omp acp` 18.12.6 was started through a real `sshd` on `127.0.0.1`, passed preflight and opened a session (`RemoteSshLiveTests.ARealOmpOpensASessionThroughARealSshd`, `docs/runbooks/evidence/remote-ssh-live-2026-10-28/README.md`). It sent no prompt.
+- **Built, not wired.** The remote file explorer and editor (`RemoteWorkspaceFileSystem` is built and tested; `AgentSessionRuntime.RemoteFiles` is exposed and no explorer reads it); the remote terminal pane (the `RemoteTerminalLauncher` commands are built; no head opens one for an ssh session); the host trust terminal button (`HeadServices.TrustTerminalOpener` is never set, so the page answers that no terminal is available and you run `ssh` once in your own terminal); remote hook files (`NoHookFiles`: a remote session runs without OmpOS hooks) and remote mention files (`RemoteMentionFiles`). The user MCP servers and hook files of this machine are skipped for a remote session.
+- **Not live-verified.** No model turn over ssh (open question OD-07), no prompt, no reconnect against a real host (fake-ssh tests only), no host over a real network, no ssh agent forwarding, no macOS or Windows desktop head, no Windows or macOS remote.
 
 ## What runs where
 
@@ -75,12 +80,12 @@ A profile holds references only: there is no field for a password, a passphrase,
 
 | Piece | State | Where |
 | --- | --- | --- |
-| Remote file system (list, read with a 1 MiB cap, stat, write with a stale-content guard, create, delete) | written; tests not run | `RemoteWorkspaceFileSystem` over `RemoteExec`; the explorer models take it through `IAsyncWorkspaceFileSystem` |
-| Discovery of slash commands, skills, rules and subagents on the remote workspace | written; tests not run | `RemoteConventionFileSource`, `RemoteConventionSources.CreateAsync` |
-| Remote terminals (login shell, omp CLI, host trust) | written; tests not run; a real PTY is not tested | `RemoteTerminalLauncher` |
-| Profile store (`environments.json`, atomic, owner-only) | written; tests not run | `EnvironmentProfileStore` |
-| Remote environments page and New session picker | models and desktop views written; not yet registered in the Settings window or the New session dialog | `OmpOS.Presentation.Remote`, `OmpOS.Native.Views.Remote` |
-| Real ssh, real omp, real PTY | NOT RUN | needs a host and an owner decision |
+| Remote file system (list, read with a 1 MiB cap, stat, write with a stale-content guard, create, delete) | built, tested (`RemoteWorkspaceFileSystemTests`), scripts also run by hand; **not wired**: no explorer or editor of a session uses it | `RemoteWorkspaceFileSystem` over `RemoteExec`; the explorer models take it through `IAsyncWorkspaceFileSystem` |
+| Discovery of slash commands, skills, rules and subagents on the remote workspace | built, tested (`RemoteConventionFileSourceTests`), wired: the remote slash palette uses it | `RemoteConventionFileSource`, `RemoteConventionSources.CreateAsync`, `RemoteSlashDiscoverySource` |
+| Remote terminals (login shell, omp CLI, host trust) | built, tested (`RemoteTerminalLauncherTests`, fake ssh, no real PTY); **not wired** to a terminal pane or to the Trust host button | `RemoteTerminalLauncher` |
+| Profile store (`environments.json`, atomic, owner-only) | built, tested, wired | `EnvironmentProfileStore` |
+| Remote environments page and New session picker | wired: the page is in the Settings window, the picker in the rail | `OmpOS.Presentation.Remote`, `OmpOS.Native.Views.Remote`, `SettingsWindowFactory` |
+| Real ssh and real omp | run once on Linux over a loopback sshd (see Status above); no real PTY, no real network host | `RemoteSshLiveTests` |
 
 ### Remote files
 
@@ -92,15 +97,15 @@ Commands, skills, rules and subagents (the six directories `.ompos`, `.omp`, `.c
 
 ### Remote terminal
 
-Three commands are built for the terminal pane (a local pseudo-terminal running `ssh -tt`; Linux only until OQ-69): a login shell in the workspace (`exec "${SHELL:-/bin/sh}" -l`), the omp command line (`exec omp ...` with the plugin arguments and `--resume <id>` of the same launch an ACP session uses) and the host trust terminal. The terminal is interactive, so ssh may prompt in it. A terminal has no private channel: provider tokens and the settings overlay file of the launch are left out (the page lists them), so the remote omp must be logged in on its own (`omp login` there).
+Three commands are built for the terminal pane (a local pseudo-terminal running `ssh -tt`; Linux only until OQ-69): a login shell in the workspace (`exec "${SHELL:-/bin/sh}" -l`), the omp command line (`exec omp ...` with the plugin arguments and `--resume <id>` of the same launch an ACP session uses) and the host trust terminal. No head opens them yet: an ssh session has no terminal pane on the desktop. The terminal is interactive, so ssh may prompt in it. A terminal has no private channel: provider tokens and the settings overlay file of the launch are left out (the page lists them), so the remote omp must be logged in on its own (`omp login` there).
 
 ### Host key first trust
 
-The first connection to a host happens in the interactive terminal on purpose: the fingerprint is shown by ssh itself and you decide. The Remote environments page offers it ("Trust host in a terminal") exactly when the connection test reports an unknown host key; a changed host key offers nothing but the explanation. The page says this in its own text.
+The first connection to a host is meant to happen in an interactive terminal on purpose: the fingerprint is shown by ssh itself and you decide. The Remote environments page offers "Trust host in a terminal" exactly when the connection test reports an unknown host key; a changed host key offers nothing but the explanation. In this release the button cannot open that terminal (`HeadServices.TrustTerminalOpener` is not set by the shell), so the page tells you that no terminal is available: run `ssh <host>` once in your own terminal and answer the question there.
 
 ## First connection and host key trust
 
-A new host fails the connection test with "The host key of this machine is not trusted yet". OmpOS does not trust it for you. Open the host trust terminal (Remote environments, Trust host): it runs an interactive `ssh -tt` to the host in a terminal tab, shows ssh's own fingerprint prompt, and you compare the fingerprint with the one your administrator published before you type `yes`. After that, connections run non-interactively with ssh's normal host key checking. If the key later changes, the test reports "The host key differs from the one stored in known_hosts"; do not connect until you know why (`ssh-keygen -R <host>` removes the old entry once you are sure).
+A new host fails the connection test with "The host key of this machine is not trusted yet". OmpOS does not trust it for you. Connect once with your own `ssh` in a terminal (the page's Trust host button is meant to open an interactive `ssh -tt` for this, but it is not wired in this release), compare ssh's own fingerprint with the one your administrator published and only then type `yes`. After that, connections run non-interactively with ssh's normal host key checking. If the key later changes, the test reports "The host key differs from the one stored in known_hosts"; do not connect until you know why (`ssh-keygen -R <host>` removes the old entry once you are sure).
 
 ## Secrets
 
@@ -116,7 +121,7 @@ If the connection drops while a turn runs, the turn is shown as interrupted (not
 
 - No Windows remote machine (a POSIX shell is required). A Windows desktop head cannot start a remote session yet: `AcpAgentSession` rejects a working directory that is not fully qualified for the local OS, and `/home/dev/work` is not on Windows.
 - The remote file view reads files up to 1 MiB, refuses binary files, and needs `realpath` or `readlink -f` (or a plain `cd -P`) on the remote machine to prove a path stays inside the workspace; without any of them every path through a symbolic link is refused. It has no file watcher: refresh the folder to see remote changes.
-- The remote terminal is a local terminal running `ssh -tt`; it needs the Linux PTY backend (OQ-69), so Windows and macOS heads cannot open it yet. Provider tokens are not sent to it (see "Remote terminal").
+- The remote terminal is a local terminal running `ssh -tt`; it needs the Linux PTY backend (OQ-69), so Windows and macOS heads cannot open it, and no head opens it for an ssh session yet. Provider tokens are not sent to it (see "Remote terminal").
 - No detach: closing the laptop ends the connection; the turn is interrupted.
 - Plugins are not synchronised; MCP servers on a non-loopback address must be reachable from the remote machine themselves.
 - Devcontainers and Railway sandboxes as hosts are not designed here. Cloud workers are described in ADR-0020.
@@ -145,7 +150,7 @@ A banner printed by `~/.bashrc` on every non-interactive login is tolerated unti
 
 ## Try it without a second machine
 
-`scripts/remote/loopback-sshd.sh` starts a throwaway sshd on 127.0.0.1 (random high port, temporary host key, one temporary client key, `StrictModes no`, `PasswordAuthentication no`, `UsePAM no`) and prints the `ssh -p <port> -i <key> ...` command that logs in plus an `OMPOS_LIVE_ENV` line. It runs until you stop it and removes everything it created. Export the variables of that line and run the live test, which opens a real `omp acp` through the real ssh with an isolated home and sends no prompt (no model is contacted):
+`scripts/remote/loopback-sshd.sh` starts a throwaway sshd on 127.0.0.1 (random high port, temporary host key, one temporary client key, `StrictModes no`, `PasswordAuthentication no`, `UsePAM no`) and prints the `ssh -p <port> -i <key> ...` command that logs in plus an `OMPOS_LIVE_ENV` line. It runs until you stop it and removes everything it created. Export the variables of that line and run the live test, which opens a real `omp acp` through the real ssh with an isolated home and sends no prompt (no model is contacted). It was run on 2026-10-28 and passed ([evidence](evidence/remote-ssh-live-2026-10-28/README.md)):
 
 ```sh
 scripts/remote/loopback-sshd.sh &                      # note the printed OMPOS_LIVE_ENV line
@@ -153,16 +158,17 @@ export OMPOS_LIVE_SSH=1 OMPOS_LIVE_SSH_PORT=... OMPOS_LIVE_SSH_KEY=... OMPOS_LIV
 dotnet test tests/OmpOS.Harness.Remote.Tests --filter-trait "Category=Live"
 ```
 
-Record the run in `docs/runbooks/evidence/`. It is also the place to find out whether the remote omp exits when the ssh connection closes.
+The run of 2026-10-28 is recorded in `docs/runbooks/evidence/remote-ssh-live-2026-10-28/`. Whether the remote omp exits when the ssh connection closes was not measured by it.
 
 ## Evidence
 
 | Check | Status |
 | --- | --- |
-| Unit tests with a fake ssh and a fake omp (quoting, argument list, banner, drop, diagnoses, canary secrets, reconnect schedule) | written, not run |
-| `ssh -G` against the real client for `Include`, `Match`, `ProxyJump` | written, not run |
+| Unit tests with a fake ssh and a fake omp (quoting, argument list, banner, drop, diagnoses, canary secrets, reconnect schedule) | ran on the final tree with the rest of `OmpOS.Harness.Remote.Tests` (520 or more tests, 2 skipped as root), recorded 2026-10-28 |
+| `ssh -G` resolution (`SshConfigResolverTests`) for `Include`, `Match`, `ProxyJump` | part of the same run |
 | Remote bootstrap script under `dash` and `bash` by hand | run once during design: environment and file delivery and cleanup worked |
-| Remote file and convention scripts by hand on the design host (GNU coreutils): listing under `dash`, `bash` and `sh`; signed read, signature-checked replace and no-clobber create under `dash`, with symlink escape, dangling link, FIFO and hostile names | run once: behaved as designed. macOS, busybox and zsh not run |
-| Remote file system, convention discovery (differential against the local source), terminal argv, profile store, models and views tests | written, not run |
-| Live test against a loopback sshd and a real omp | NOT RUN; needs the orchestrator |
-| Real remote host, macOS remote, Windows desktop head | NOT RUN |
+| Remote file and convention scripts by hand on the design host (GNU coreutils): listing under `dash`, `bash` and `sh`; signed read, signature-checked replace and no-clobber create under `dash`, with symlink escape, dangling link, FIFO and hostile names | run once: behaved as designed. macOS and zsh not run; BusyBox is covered by `RemoteScriptsBusyBoxTests` (written after the live podman run found a BusyBox `realpath` defect) |
+| Remote file system, convention discovery (differential against the local source), terminal argv, profile store, models and views tests | ran on the final tree |
+| Desktop wiring of ssh sessions (transport selection, rail status, interrupted notice) | `RemoteTransportSelectionTests` (4), `HeadServicesWiringTests`, `AgentSessionRuntimeWiringTests`; not exercised against a real omp through the desktop head |
+| Live test against a loopback sshd and a real omp | PASSED 2026-10-28 (`docs/runbooks/evidence/remote-ssh-live-2026-10-28/README.md`): OpenSSH 9.6, omp 18.12.6, `loadSession` advertised |
+| Prompt turn over ssh, real network host, macOS remote, Windows desktop head | NOT RUN (a model turn needs a credential, OD-07) |

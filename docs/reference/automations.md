@@ -1,8 +1,22 @@
+---
+description: "Reference for OmpOS automations: cron and signed webhook triggers, cloud and desktop targets, limits, the API routes and the Automations settings page."
+---
+
 # Automations
+
+Status: Partial (library, API routes, receiver, scheduler and desktop Settings page are built, wired and tested; the API is off by default; cron only on the desktop; no web page; no live cloud worker, GitHub repository or model turn)
+
+Last verified: 2026-10-28
+
+Applies to: v0.15.0
 
 An automation is a prompt that OmpOS runs for you when something happens: a cron schedule comes due, or a signed webhook arrives (a generic one, or one from GitHub). Each run starts a cloud agent in your repositories with your prompt and a short description of what triggered it. This is the OmpOS counterpart of Cursor's Automations, limited to the triggers that need no third-party hosting.
 
-> **Status of this release.** The library, the API routes, the webhook receiver, the scheduler, the presentation model and the desktop page are written and unit tested. They have not been run against a live cloud worker or a live GitHub repository. The desktop page is registered: Settings has an Automations section (see [Local](#targets)); the web page is not yet registered in the web head. Automations are off until `Automations:Enabled` is true.
+> **Status of this release** (recorded 2026-10-28, tree 7535859).
+>
+> - **Built, wired, proven by tests.** *API:* `AddAutomationServices` and `MapAutomationEndpoints` are called in `services/OmpOS.Api/Program.cs`; `Automations:Enabled` is false by default and every automation route then answers 404 `automations_disabled`; the routes are in `docs/api/openapi.json` (contract version 1.5.0); proof: `tests/OmpOS.Api.IntegrationTests/Automations` (`AutomationManagementTests`, `AutomationRunEndpointTests`, `AutomationWebhookEndpointTests`, `AutomationCloudTargetTests`, `AutomationOptionsValidatorTests`, `HostedAutomationsSettingsProviderTests`; 73 tests, 1027 of 1027 in the whole project on the final tree). *Desktop:* Settings > Automations is the 22nd page of the Settings window; the head runs the scheduler once it is open; proof: `AutomationsHostTests`, `LocalSessionAutomationTargetTests`, `LocalAutomationsManagerTests`, `AutomationsPageViewTests`, `HeadServicesWiringTests` (the scheduler starts at head open).
+> - **Built, not wired or limited.** The desktop runs cron only: it refuses webhook triggers and secret rotation (the editor says so). There is no web page: the web head has no automations screen, only the API routes. The real UI path of a local run (`HeadAutomationSession(s)`: the approval card in a live session, the first turn, stopping on timeout) has no test, only the scripted seam is tested. A cloud target started from the desktop applies the first repository's branch and base branch to every repository.
+> - **Not live-verified.** No automation ran against a live cloud worker, a live GitHub repository or a live omp session, and no model turn ran (open question OD-07). Nothing of OmpOS is deployed on Railway. Nothing ran on Windows, macOS or Android.
 
 ## Turn it on
 
@@ -139,7 +153,7 @@ All routes need a login except the receiver. A route answers 404 for an automati
 
 | Route | Does |
 | --- | --- |
-| `POST /automations` | Create (201). Body: [`SaveAutomationRequest`](../../src/OmpOS.Contracts/Automations/SaveAutomationRequest.cs). Answer carries `webhookSecret` once. |
+| `POST /automations` | Create (201). Body: [`SaveAutomationRequest`](https://github.com/swcstudiospace/OmpOS/blob/main/src/OmpOS.Contracts/Automations/SaveAutomationRequest.cs). Answer carries `webhookSecret` once. |
 | `GET /automations/definitions` | The caller's automations with next run and last run. (`GET /automations` is the older settings summary and now lists the same automations in its own shape.) |
 | `GET /automations/{id}` | One automation. Never the secret; `hasWebhookSecret` says whether one is stored. |
 | `PUT /automations/{id}` | Replace the definition. The secret is kept; one is generated when the first webhook trigger is added and deleted when the last is removed. |

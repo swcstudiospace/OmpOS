@@ -4,7 +4,7 @@ description: "How OmpOS is layered: contracts, libraries, services and the deskt
 
 # OmpOS architecture
 
-Status: Built (the layers and the session run path); remote, cloud and hooks pieces are Partial, see the parity audit
+Status: Built (the layers and the session run path); hooks, remote, containers, cloud and automations are Partial: wired into the heads and tested with fakes, not run with a model turn, see the parity audit
 
 Last verified: 2026-10-28
 
@@ -29,13 +29,16 @@ This document records the layering every later phase must respect, and the sessi
 
 | Piece | Where | Status |
 |---|---|---|
-| Desktop head: Agents window, Kanban, terminals, Changes bar, steering, Settings | `apps/OmpOS.Native`, `src/OmpOS.Native.Views` | Built, Linux only |
-| Web head: shell, agent rail, thread, composer, Kanban, Settings dialog, terminal view | `apps/OmpOS.Web`, `src/OmpOS.UI` | Built as components; Demo and local API run; see the [Web app guide](guides/web-app-guide.md) |
-| Hooks | `Harness.AgentLoop/Hooks`, `Harness.Acp`, hooks omp extension | Partial: not run against a live omp ([Hooks](reference/hooks.md)) |
-| Remote environments over ssh | `src/OmpOS.Harness.Remote` | Partial: never run against a real host ([Remote](runbooks/remote-ssh.md)) |
+| Desktop head: Agents window, Kanban, terminals, Changes bar, steering, Settings (21 pages and Automations) | `apps/OmpOS.Native`, `src/OmpOS.Native.Views` | Built, Linux only; composition root `Composition/HeadServices` builds the hooks, MCP, run mode, checkpoint, remote, cloud and automation services once per head |
+| Web head: shell, agent rail, thread, composer, Kanban, Settings dialog (18 pages), terminal view | `apps/OmpOS.Web`, `src/OmpOS.UI` | Built; the Demo is deployed at https://ompos-web.vercel.app; see the [Web app guide](guides/web-app-guide.md) |
+| Hooks | `Harness.Plugins/Hooks`, `Harness.Acp`, hooks omp extension, `Native/Composition`, `AgentWorker/Hooks` | Partial: wired into desktop sessions and cloud workers, proven with fakes; not run against a live omp ([Hooks](reference/hooks.md)) |
+| Run modes, mentions, MCP import and presets, checkpoints, fork, side chats | `Harness.AgentLoop/Safety`, `Harness.Workspace`, `Harness.Mcp`, `Native/Composition` | Partial: wired into the desktop head, wiring tests with fake engines |
+| Remote environments over ssh | `src/OmpOS.Harness.Remote` | Partial: a live run through a loopback `sshd` with the real omp passed; no real network host ([Remote](runbooks/remote-ssh.md)) |
+| Containers (podman) and WSL | `src/OmpOS.Harness.Remote` | Partial: a live podman test passed on Linux; WSL never ran ([Containers](runbooks/remote-containers.md)) |
 | Multi-repo workspaces | `src/OmpOS.Harness.Workspace` (`WorkspaceSet`), `Harness.Worktrees` | Partial ([Multi-repo](runbooks/multi-repo.md)) |
-| Cloud agents | `services/OmpOS.Api/Cloud`, `services/OmpOS.AgentWorker`, `src/OmpOS.Sandbox` | Partial: fakes only ([Cloud agents](runbooks/cloud-agents.md)) |
-| Provider catalogue | `src/OmpOS.Harness.Providers` | Built as data and UI; no real credential used ([Providers](guides/providers-guide.md)) |
+| Automations | `src/OmpOS.Harness.Automations`, `Native/Composition/Automations`, `services/OmpOS.Api/Automations` | Partial: desktop scheduler and API routes (off by default) ([Automations](reference/automations.md)) |
+| Cloud agents | `services/OmpOS.Api/Cloud`, `services/OmpOS.AgentWorker`, `src/OmpOS.Sandbox`, `Native/Cloud` | Partial: fakes only ([Cloud agents](runbooks/cloud-agents.md)) |
+| Provider catalogue | `src/OmpOS.Harness.Providers` | Built as data and UI in both heads; no real credential used ([Providers](guides/providers-guide.md)) |
 
 The authoritative status of every Cursor feature is the [parity audit](quality/cursor-parity-audit-2026-10-28.md).
 

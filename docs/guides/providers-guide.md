@@ -4,7 +4,7 @@ description: "How to choose and configure a model provider in OmpOS: region and 
 
 # Choose a model provider
 
-Status: Partial (the catalogue, the writer, the desktop Models page and the API routes are built and unit tested; no provider was called with a real key and no live model turn has run)
+Status: Partial (the catalogue, the writer, the desktop Models page, the web Models page and the API routes are built and unit tested; omp accepts a `models.yml` with every catalogue route in a read-only experiment; no provider was called with a real key and no live model turn has run)
 
 Last verified: 2026-10-28
 
@@ -55,8 +55,14 @@ OmpOS never logs a key, never puts one on a command line and never sends one any
 | Head | Where the key goes |
 |---|---|
 | Desktop | omp's `agent.db`, or `secrets/secrets.json` under `OMPOS_STATE_DIR` (owner-only). See [Run the desktop app](../runbooks/running-the-desktop-app.md). |
-| Web | In page memory for one page session and nowhere else. Closing or reloading loses it. See the [Web key threat model](../runbooks/web-key-threat-model.md). |
+| Web | A write-only field on the Models page. In the Demo it is disabled and nothing is stored or sent. Against a real API the key is sent to the API only when the operator enabled `Providers:AllowCredentialWrite`, and only for providers omp supports natively; the page keeps no copy. See the [Web key threat model](../runbooks/web-key-threat-model.md). |
 | API (operator) | Writes are off by default. `Providers:AllowCredentialWrite`, `Providers:AllowConfigWrite` and `Providers:AllowLiveTest` each switch one capability on for a single-owner host. A provider that omp does not manage natively takes its key from the environment variable `OMPOS_PROVIDER_<ID>_KEY` that the operator sets. |
+
+## What is verified and what is not
+
+- **Verified (recorded 2026-10-27, omp 18.12.6, read-only):** omp accepted a `models.yml` with one block per route of all 103 rows (151 blocks) and listed every route's provider id (`omp models --json` exit 0, no validation warning), so the writer's output is valid for omp. No model was called.
+- **Verified in tests:** the catalogue loader and validator (`CatalogueRowsTests`, `CatalogueRowValidatorTests`), the desktop Models source and the API routes, the web Models page and the Demo's provider routes (`DemoProvidersRouteTests`: Europe, US and China coverage, filters, custom endpoint rules, key never echoed).
+- **Not verified:** that a provider answers. No catalogue row was called with a real credential (open question OQ-71); 49 rows are only Partial-verified and 4 Unverified. The live connection test is off by default in the API (`Providers:AllowLiveTest`).
 
 ## Limits
 

@@ -12,44 +12,68 @@
 
 OmpOS is a Cursor-class workspace for coding agents on the **omp** engine: a desktop app, a web app, cloud agents and remote environments, under an open licence (AGPL-3.0-or-later). You start several agents, watch them work, steer them while they run and review their file changes. Every omp process OmpOS starts runs with four plugins: Ultrathink, Substrate, Swarm and GSD-Core. OmpOS has no model of its own: you bring a provider and a key, chosen from a catalogue of 103 European, US, Chinese, global and local providers and coding plans.
 
-Be clear about maturity: this is pre-1.0 software. The desktop app is built and verified on Linux without a model turn; **no live model turn has been run** since a bounded capture in Phase 11, nothing was run on Windows, macOS or Android, and nothing is deployed to Railway. The tables below say what is Built, Partial or Blocked.
+Be clear about maturity: this is pre-1.0 software. The desktop app is built and verified on Linux without a model turn; **no live model turn has been run** since a bounded capture in Phase 11, nothing was run on Windows, macOS or Android, and nothing of OmpOS is deployed to Railway. The one public deployment is the web **Demo**, <https://ompos-web.vercel.app>: a static build whose engine is simulated in the browser (no backend, no model, no secret). The tables below say what is Built, Partial or Blocked.
 
 ## Screenshots
 
-![The OmpOS web app in the Demo build, Light theme: the agent rail, a streaming thread and the composer.](docs/assets/screens/web-agents-light.png)
+The six web screenshots are the **Demo build**: a simulated engine produces every thread, approval and diff; no model is called and no file exists. The two desktop screenshots are the **real app** on Linux under Xvfb with a sandbox profile, Light theme, no model turn. Method and the other captures: [web evidence](docs/runbooks/evidence/web-app-2026-10-28/README.md), [desktop evidence](docs/runbooks/evidence/desktop-app-2026-10-28/README.md).
 
-*Web app, Demo build: a simulated engine produces the thread; no model is called.*
+![The OmpOS web app, Demo build, Light theme, 1440 by 900: the agent rail with six scripted agents, a running thread with a failing test run and a code block, and the composer.](docs/assets/screens/web-agents-light.png)
 
-![The Kanban board in the web Demo build.](docs/assets/screens/web-kanban-light.png)
+*Web Demo, Light: the agent rail and a running thread. Scripted; the banner under the top bar says so.*
 
-*Web app, Demo build.*
+![The same web Demo screen in the Dark theme.](docs/assets/screens/web-agents-dark.png)
 
-![The OmpOS desktop app on Linux, Light theme: the Agents window.](docs/assets/screens/desktop-agents-light.png)
+*Web Demo, Dark.*
 
-*Desktop app on Linux (the real omp engine; no model turn).*
+![A finished agent in the web Demo: three changed files with Keep, Undo and Review buttons, Keep all and Undo all, and the diffs above them.](docs/assets/screens/web-changes-review-light.png)
 
-![The desktop Settings window on Linux.](docs/assets/screens/desktop-settings-light.png)
+*Web Demo, Changes bar of a completed agent. Keep and Undo change the in-memory state only; no file exists.*
 
-*Desktop Settings window on Linux.*
+![The Kanban board in the web Demo: the Backlog, Queued, Running and Awaiting input columns, with the omp terminal as the one card in Running.](docs/assets/screens/web-kanban-light.png)
+
+*Web Demo, Kanban board; it scrolls sideways, so the later columns are off screen. The note says Substrate is unavailable in the Demo.*
+
+![The Settings window of the web Demo on the Models page: the provider directory filtered to Chinese coding plans.](docs/assets/screens/web-settings-models-light.png)
+
+*Web Demo, Settings > Models: the real catalogue of 103 provider rows (here China, coding plans); key entry is disabled in the Demo.*
+
+![The web Demo on a phone-width screen, 390 pixels.](docs/assets/screens/web-mobile-light.png)
+
+*Web Demo at 390 px.*
+
+![The OmpOS desktop app on Linux, Light theme: the Agents window with a new empty session and the slash palette listing 134 commands.](docs/assets/screens/desktop-agents-light.png)
+
+*Desktop app on Linux (real omp installed, no model turn): a new session with the slash palette open. The banner says six pipeline stages are degraded because the plugin submodules were not checked out in the sandbox that was photographed.*
+
+![The desktop Settings window on the Models page, with the 21 pages in the left list.](docs/assets/screens/desktop-settings-light.png)
+
+*Desktop Settings > Models on Linux: the 24 providers built into omp. It overlaps the main window because the capture ran without a window manager.*
 
 ## What is built
 
-Status words: **Built** = implemented, reachable from a head and covered by tests the gate runs. **Partial** = part is built or wired; the audit names the missing piece. **Blocked** = needs something outside the repository. The row-by-row truth is the [Cursor parity audit of 2026-10-28](docs/quality/cursor-parity-audit-2026-10-28.md).
+Status words: **Built** = implemented, reachable from a head and covered by tests the gate runs. **Partial** = part is built or wired; the audit names the missing piece. **Blocked** = needs something outside the repository. The row-by-row truth is the [Cursor parity audit of 2026-10-28](docs/quality/cursor-parity-audit-2026-10-28.md), re-graded against the final tree. Test counts on the final tree were recorded per project on 2026-10-28 (for example Presentation 2303, Native 2012 with 2 skipped, AgentLoop 1221, Api.IntegrationTests 1027); the full `./bootstrap.sh` gate result on the final commit is recorded separately in [docs/runbooks/evidence](docs/runbooks/evidence/).
 
 | Feature | Status | Note |
 |---|---|---|
-| Desktop app: Agents window, thread, composer, Kanban, omp terminals, Changes bar, live steering, Settings | Built | Linux only; no model turn |
+| Desktop app: Agents window, thread, composer, Kanban, omp terminals, Changes bar, live steering, Settings (21 pages) | Built | Linux only; no model turn; [screenshots and defects found](docs/runbooks/evidence/desktop-app-2026-10-28/README.md) |
 | Four plugins loop on every omp process | Built | Checked against the real omp without a model turn |
 | White-and-Purple brand, Light default | Built | Owner sign-off of the logo is open |
 | AGPL-3.0-or-later licence, notices, `GET /source` offer | Built | Licence of two submodules is open |
-| Web app: shell, rail, thread, composer, Changes, Kanban, Settings, Demo | Partial | Unit-tested components; Demo has a simulated engine; no public deployment |
-| Model provider catalogue (103 rows) and coding plans | Partial | No credential used; 49 rows partly verified |
-| Slash commands (92 Cursor tokens) | Partial | Every token has a handler or a stated reason |
-| Hooks (`hooks.json`, 21 events) | Partial | Not run against a live omp |
-| MCP servers, run modes, checkpoints, worktrees, mentions, ignore files | Partial | Built and unit-tested; head wiring tracked in the audit |
-| Remote environments over ssh | Partial | Never run against a real host |
-| Multi-repo workspaces | Partial | Core built |
-| Cloud agents on Railway | Partial | Control plane and worker against fakes; no deploy |
+| Web Demo, deployed | Built | <https://ompos-web.vercel.app>; simulated engine; headless Chrome capture without console error or failed request; 68 axe runs, 0 violations |
+| Web app: shell, rail, thread, composer, Changes, Kanban, Settings (18 pages) | Partial | Unit-tested; real Models page over `GET /providers`; Hooks and MCP pages read-only; no hosted API behind it; no image attach |
+| Model provider catalogue (103 rows) and coding plans | Partial | omp accepts a `models.yml` with every route; no live credential used; 49 rows partly verified |
+| Slash commands (92 Cursor tokens, 93 rows) | Partial | Built 36, Partial 24, Delegated 9, Unavailable 24; each has a handler or a stated reason |
+| Built-in skills (10) | Partial | In the desktop palette and Skills page; ssh, container, API-hosted and web sessions carry none; no live turn |
+| Hooks (`hooks.json`, 21 events) | Partial | Wired into desktop sessions and proven with fakes; no live omp ran a hook; cloud consent claim not yet minted |
+| MCP servers (import, 13 presets), run modes, mentions, ignore files | Partial | Wired into the desktop head; unit and wiring tests; no live turn |
+| Checkpoints and rewind, worktree commands, queue, custom modes, side chats, fork | Partial | Mounted in the desktop window; rewind restores files only; no live turn |
+| Image attachments | Partial | Desktop composer to ACP image blocks; no live turn; model vision unknown; no web or Android attach |
+| Automations | Partial | Desktop cron scheduler and page; API routes off by default; webhooks refused on the desktop |
+| Remote environments over ssh | Partial | A live run through a loopback `sshd` with the real omp passed on Linux; no real network host; remote file explorer and terminal pane not wired |
+| Containers (podman) and WSL | Partial | A live podman test passed on Linux (alpine); WSL never ran |
+| Multi-repo workspaces | Partial | Workspace sets and `--add-dir` wired; no live run |
+| Cloud agents on Railway | Partial | Control plane, worker and desktop client against fakes; no deploy |
 | GitBook documentation site | Blocked | Published after the owner connects GitBook |
 | Cursor accounts, teams, billing | Omitted | No accounts by design |
 
@@ -67,7 +91,7 @@ dotnet run --project apps/OmpOS.Native
 
 The workspace root is the current directory. The app starts no omp process until you send a prompt or open an omp terminal. Press Ctrl+, for Settings and add a provider key on the Models page.
 
-**Web Demo (no backend):**
+**Web Demo (no backend).** Open <https://ompos-web.vercel.app> (a simulated engine, no model), or build it yourself:
 
 ```sh
 scripts/vercel/build-demo.sh
@@ -125,8 +149,11 @@ The documentation is in [docs/README.md](docs/README.md): guides for the desktop
 | Linux dev box | `./bootstrap.sh` | The same scope |
 | Linux (CI pool) | `ci.yml` job `android` | `apps/OmpOS.Android`: restore and `-warnaserror` build; no device or emulator |
 | Windows, macOS, iOS | none | Not built or run: they need a Windows 11 runner and the Mac channel |
+| Linux (loopback, recorded 2026-10-28) | Opt-in live tests | A real `omp acp` through a real `sshd` ([evidence](docs/runbooks/evidence/remote-ssh-live-2026-10-28/README.md)); `podman exec` into an alpine container (`OMPOS_LIVE_PODMAN=1`); no model turn |
+| Linux, headless Chrome (recorded 2026-10-28) | `scripts/web-demo/capture.mjs`, `scripts/web-smoke/smoke-demo.mjs` | The capture of the locally built Demo and of the live Demo URL: no console error, no failed request; the smoke: 68 axe runs, 0 violations (Wave 5 tree) |
+| Linux, throwaway podman services (recorded 2026-10-28) | `scripts/test-services.sh` | Api.IntegrationTests 1027, Coordination 32 and Sessions.Postgres 58 passed on the final tree |
 
-Live tests against the real omp (no model turn) are opt-in: `OMPOS_LIVE_OMP=1`, trait `Category=Live`.
+Live tests against the real omp (no model turn) are opt-in: `OMPOS_LIVE_OMP=1`, trait `Category=Live`. Nothing in this repository has been verified with a model turn, on Windows, macOS or Android, or on Railway.
 
 ## License
 

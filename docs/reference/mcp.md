@@ -4,7 +4,7 @@ description: "Reference for MCP servers in OmpOS: where configuration is read fr
 
 # MCP servers
 
-Status: Partial (loader, catalog and page are built and unit tested; not run against a live omp session; head wiring is tracked in the parity audit)
+Status: Partial (loader, catalog, page, 13 presets and the session wiring are built, wired into the desktop head and unit tested; no live omp session or model turn ran; no connection checker; no MCP servers for ssh, container or WSL sessions)
 
 Last verified: 2026-10-28
 
@@ -12,7 +12,11 @@ Applies to: v0.15.0
 
 MCP (Model Context Protocol) servers give the agent extra tools: a documentation search, a database, a browser. OmpOS reads the MCP configuration files you already have for OmpOS, Cursor, Claude Code and VS Code, checks them, and offers the servers to every session it starts. The MCP settings page shows each server with its state and the problems it found.
 
-> **Status of this release.** The loader, the catalog, the settings page and its tests are built. The application heads do not yet pass the offered servers to `session/new` and the page is not yet in the settings navigation: both are wired in a later change (see [What is not wired yet](#what-is-not-wired-yet)). Nothing here has run against a live omp session, so "omp connects to the server" is **UNVERIFIED**: `omp acp` accepts the `mcpServers` array by its source (see [ADR-0010](../decisions/ADR-0010-omp-mcp-gateway-feasibility.md)), and a live turn needs the owner's approval to confirm it. Sign-in (OAuth) is modelled as a state only.
+> **Status of this release** (recorded 2026-10-28, tree 7535859).
+>
+> - **Built, wired into the desktop head, proven by tests.** `HeadServices` builds one `McpServerCatalog` per head (`mcp-state.json` in the configuration folder); `SessionEngineSet` refreshes it for each local session and passes `OfferedServers()` to `EngineComposition` as `ExtraMcpServers`, after the plan's own servers (the plan wins a name clash). Settings > MCP servers is the `McpPageView` over `McpCatalogSettingsSource`, added by `SettingsWindowFactory`. Tests: `McpServerCatalogTests`, `McpTemplateCatalogTests`, `McpPresetInstallerTests`, `McpPresetSourceTests`, `McpPresetPageViewTests`, `EngineCompositionOptionsTests`, `HeadServicesWiringTests`. The MCP page rendered in the Xvfb desktop smoke (`docs/runbooks/evidence/desktop-app-2026-10-28/settings-11-mcp.png`).
+> - **Built, not wired.** No connection checker is registered (`McpServerCatalog` is built without an `IMcpConnectionChecker`), so *Check connection* is hidden and *Connected*, *Failed* after a check and *Sign-in needed* never appear. Sessions in a remote environment (ssh, container, WSL) get no MCP servers from the local files (`plan.Extras.IsRemote` skips `OfferedServers()`). The web Settings > MCP page only lists the configuration files, read-only (`McpFilesPage`, `WebSettingsPagesTests`); presets, consent and switches exist on the desktop only. Sign-in (OAuth) is modelled as a state only.
+> - **Not live-verified.** No live omp session and no model turn ran (open question OD-07), so "omp connects to the server" is **UNVERIFIED**: `omp acp` accepts the `mcpServers` array by its source (see [ADR-0010](../decisions/ADR-0010-omp-mcp-gateway-feasibility.md)). No preset address was contacted; the 13 presets were read from the vendors' documentation on 2026-10-28. Nothing ran on Windows, macOS or Android.
 
 ## Why OmpOS reads the files itself
 
@@ -36,7 +40,7 @@ Every file that exists is read. A server with a name that an earlier file alread
 - `.vscode/mcp.json` may hold comments and trailing commas. `inputs` and `${input:...}` are not supported (see below).
 - `~/.claude.json` is a large file that holds more than servers. Only its top-level `mcpServers` is read; the per-project `projects.<path>.mcpServers` entries are **not** read.
 - Files OmpOS does not read, although omp reads them in a terminal: `~/.omp/agent/mcp.json`, `.omp/mcp.json`, `.claude/mcp.json`, Codex, Gemini, OpenCode and Windsurf files. Say so in an issue if you need one.
-- OmpOS writes one file only: `.ompos/mcp.json` of the first workspace root, when you use *Add from template*. Cursor, Claude and VS Code files are never changed.
+- OmpOS writes one file only: `.ompos/mcp.json` of the first workspace root, when you use *Add from template* or *Add from preset*. Cursor, Claude and VS Code files are never changed.
 - A file over 2 MiB, a file that is not valid JSON and a file you cannot read each become one problem on the page. The other files are still read.
 
 ## The entry
@@ -136,7 +140,7 @@ OmpOS does **not** implement MCP OAuth. What exists is the state and the instruc
 
 - A remote server that answers a check with an authentication challenge shows *Sign-in needed* and the sentence "Run `/mcp reauth NAME` in the session". omp's `/mcp` command (`add`, `list`, `remove`, `test`, `reauth`, `unauth`, `enable`, `disable`, `reconnect`) runs the sign-in and **opens the browser on the machine omp runs on**. For a remote or cloud session that is not your screen.
 - Cursor signs in with authorization code and PKCE, a static client (`auth: {CLIENT_ID, CLIENT_SECRET, scopes}`) and the fixed redirect `http://localhost:8787/callback`. omp has its own `oauth` block (`clientId`, `clientSecret`, `scope`, `redirectUri`, `callbackPort`, `callbackPath`). OmpOS passes neither block to omp: an ACP `mcpServers` entry has no OAuth field. A server that needs a token you already have can take it as a header: `"Authorization": "Bearer ${env:NAME}"`.
-- The built-in check of this release does not exist yet (see below), so *Sign-in needed* appears only once a head provides a connection checker.
+- There is no built-in check yet (see [Status by head](#status-by-head)), so *Sign-in needed* appears only once a head provides a connection checker.
 
 ## Not supported, and why
 
@@ -150,13 +154,37 @@ OmpOS does **not** implement MCP OAuth. What exists is the state and the instruc
 | MCP resources, roots and the Apps extension in the chat | They live inside omp's MCP client. OmpOS neither blocks nor renders them: UNVERIFIED what omp does with them in an ACP session. MCP prompts reach you as custom slash commands, which omp provides. |
 | Hot reload of a running session | The array is fixed when the session is created. |
 
-## What is not wired yet
+## Presets
 
-The code is complete and tested on its own, and these three connections are the next change. They are listed so nothing looks finished that is not.
+Settings > MCP servers > Add from preset lists 13 ready-made entries (`McpTemplateCatalog.Default`, `src/OmpOS.Harness.Mcp/Templates/`). *Add* (`McpServerCatalog.AddPresetAsync`) writes the entry to `.ompos/mcp.json` of the first workspace root and switches it off. A preset holds no credential: read its note, sign in or export the named variable, then switch it on; the [approval rules](#approval) apply as for any project server. A preset that is already configured shows *Added*. The *Add from template* section of the same page adds a blank stdio or HTTP skeleton.
 
-1. `session/new`, `load`, `resume` and `fork` are not yet given `McpServerCatalog.OfferedServers()`. Until they are, no configured server reaches a model turn.
-2. The settings window has no *MCP servers* entry yet; the page exists as `McpPageView` over `McpSettingsViewModel`.
-3. No connection checker is registered: *Check connection* is hidden and *Connected*, *Failed* and *Sign-in needed* cannot appear from a check. The checker needs a Streamable HTTP transport that carries headers; the current `McpClientConnector.ConnectHttpAsync` takes only a URL.
+| Preset | Kind | Sign-in |
+| --- | --- | --- |
+| Linear (`https://mcp.linear.app/mcp`) | remote | OAuth |
+| Notion (`https://mcp.notion.com/mcp`) | remote | OAuth |
+| Sentry (`https://mcp.sentry.dev/mcp`) | remote | OAuth |
+| GitHub (`https://api.githubcopilot.com/mcp/`) | remote | token in `GITHUB_PERSONAL_ACCESS_TOKEN` |
+| Railway (`https://mcp.railway.com`) | remote | OAuth |
+| Atlassian (`https://mcp.atlassian.com/v2/mcp`) | remote | OAuth |
+| Stripe (`https://mcp.stripe.com`) | remote | OAuth |
+| Supabase (`https://mcp.supabase.com/mcp`) | remote | OAuth |
+| Vercel (`https://mcp.vercel.com`) | remote | OAuth |
+| Context7 (`https://mcp.context7.com/mcp`) | remote | token in `CONTEXT7_API_KEY` |
+| Filesystem (`npx -y @modelcontextprotocol/server-filesystem ${workspaceFolder}`) | stdio | none; needs Node.js 24 or later |
+| Fetch (`uvx mcp-server-fetch`) | stdio | none; needs uv |
+| Git (`uvx mcp-server-git --repository ${workspaceFolder}`) | stdio | none; needs uv; the server can change the repository |
+
+Each preset cites the vendor page it was read from. A preset that cannot be confirmed is marked `Unverified` and left out of the list (`McpPresetStatus`); none is unverified in this release.
+
+## Status by head
+
+| Head | State |
+| --- | --- |
+| Desktop, local session | Wired: files read, servers offered to `session/new` (and `load`, `resume`, `fork` through the same array), page, presets. |
+| Desktop, ssh, container or WSL session | Not wired: the local files are skipped; nothing is offered. |
+| Web | Read-only list of the MCP files and their problems. |
+| API-hosted and cloud sessions | Not wired: the API only lists the MCP files for the web page (`WorkspaceSettingsEndpoints`); the cloud worker sends no servers. |
+| Connection checker | Not built: it needs a Streamable HTTP transport that carries headers; `McpClientConnector.ConnectHttpAsync` takes only a URL. |
 
 ## For developers
 

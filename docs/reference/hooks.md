@@ -4,7 +4,7 @@ description: "Reference for Cursor-compatible hooks in OmpOS: hooks.json locatio
 
 # Hooks
 
-Status: Partial (library, bridge, omp extension, service and page are built and unit tested; not run against a live omp session; head wiring is tracked in the parity audit)
+Status: Partial (built, wired into the desktop head and unit tested; no live omp session and no model turn ran with a hook; cloud worker hooks are built but the control plane does not mint the consent claim yet; hooks do not run for ssh, container or WSL sessions)
 
 Last verified: 2026-10-28
 
@@ -14,7 +14,13 @@ Hooks let your own scripts watch and steer the agent: block a shell command, rew
 
 The design decisions are in [ADR-0016](../decisions/ADR-0016-hooks-execution-model.md). This page is the reference.
 
-> **Status of this release.** The hook library, the loopback bridge, the omp extension, the ACP tap, the hooks service and the Hooks page are built and unit tested. They have not been run against a live omp session, and the application heads do not yet construct the hooks service, so no hook fires in the product until that wiring lands (open question OQ-84). The "Status" column of the event table says what each event can do once it is wired and which part produces it: the omp extension ("extension") or the ACP tap in the host ("ACP"). [Who fires what](#who-fires-what) explains how the two share the work.
+> **Status of this release** (recorded 2026-10-28, tree 7535859).
+>
+> - **Built, wired into the desktop head, proven by tests.** `HeadServices` (`apps/OmpOS.Native/Composition/HeadServices.cs`) opens one `HooksService` per head; `SessionEngineSet` starts a hooks session per local session, hands the loopback bridge to the omp launch plan and the ACP tap to the engine as `AcpClientOptions.HookGate`; Settings > Hooks is the `HooksPageView` over `HooksServiceSource`. Tests: `HeadServicesWiringTests`, `EnginePermissionOrderTests` (a hook deny comes before the approval policy, the run mode and the user), `AgentSessionRuntimeWiringTests` (a hook notice reaches the session), `HooksPageViewTests`, `HooksServiceTests`, `AcpHookGateTests`, `HookBridgeIntegrationTests`, and `HookExtensionEndToEndTests` (skips without node). The Hooks page rendered in the Xvfb desktop smoke (`docs/runbooks/evidence/desktop-app-2026-10-28/settings-10-hooks.png`).
+> - **Built, not wired.** For a session in a remote environment (ssh, container or WSL) the head passes no hook bridge and reads no hook files (`NoHookFiles`; the session shows a stage notice and runs without hooks): hook files over the ssh file system are not read. No head dispatches `workspaceOpen`. Hooks of the cloud worker are described in [Hooks in cloud workers](#hooks-in-cloud-workers).
+> - **Not live-verified.** No hook ran against a live omp session and no model turn ran (open question OD-07): every proof above is a unit, integration or fake-omp test. Nothing ran on Windows, macOS or Android.
+>
+> The "Status" column of the event table says what each event can do and which part produces it: the omp extension ("extension") or the ACP tap in the host ("ACP"). [Who fires what](#who-fires-what) explains how the two share the work.
 
 ## Where hooks are read from
 
@@ -202,7 +208,7 @@ On Windows a `command` runs through `powershell.exe -NoLogo -NoProfile -NonInter
 
 ## Events
 
-Facts are from https://cursor.com/docs/hooks (read 2026-10-27). "Blocks" means a hook can stop or change the action. The **Status** column is what OmpOS can do once the wiring lands:
+Facts are from https://cursor.com/docs/hooks (read 2026-10-27). "Blocks" means a hook can stop or change the action. The **Status** column is what OmpOS can do for the event and which part produces it (the desktop head wires both parts; no live omp session has run them):
 
 - **Built**: the dispatcher and the omp extension implement it as Cursor describes it.
 - **Partial**: it works with the limit named in the cell.
@@ -230,9 +236,20 @@ Facts are from https://cursor.com/docs/hooks (read 2026-10-27). "Blocks" means a
 | `afterAgentThought` | After a thinking block | `text`, `duration_ms` | none | no | Partial: from omp `message_end` thinking blocks; `duration_ms` is not available **Producer:** the extension. ACP fallback: the thinking chunks, aggregated, with the time from the first to the last chunk as `duration_ms`. |
 | `beforeTabFileRead` | Before Tab reads a file | `file_path`, `content` | `permission` (allow/deny) | yes | **Not available**: OmpOS has no Tab inline-completion engine |
 | `afterTabFileEdit` | After Tab edited a file | `file_path`, `edits` with ranges | none | no | **Not available**: same reason |
-| `workspaceOpen` | A workspace opened or its folders changed | none (no conversation fields) | `pluginPaths` | no | Not wired yet: the dispatcher supports it; no head fires it and nothing loads the returned plugin directories The hooks service runs it for a head that asks (`IHooksSession.DispatchAsync`); no head does yet. |
+| `workspaceOpen` | A workspace opened or its folders changed | none (no conversation fields) | `pluginPaths` | no | Not wired: the dispatcher supports it and the hooks service runs it for a head that asks (`IHooksSession.DispatchAsync`); no head asks, and nothing loads the returned plugin directories. |
 
-Cursor's cloud agents run 14 of the 21 events. OmpOS runs hooks in hosted runs from the checkout and the managed file only, never user hooks; which events a hosted run produces is decided with that wiring.
+### Hooks in cloud workers
+
+Cursor's cloud agents run 14 of the 21 events. The OmpOS cloud worker (`services/OmpOS.AgentWorker/Hooks`) runs the same 14 (`CloudHookEvents`; not `sessionStart`, `sessionEnd`, `workspaceOpen`, the two MCP events and the two Tab events) for project hooks only: the project, Claude project and Claude local files of the checkout. Managed and user files are never read there, and a hook whose `runsIn` excludes `remote` is dropped.
+
+- **Off by default.** `Worker:Hooks:Enabled` is `false`; `PluginsRoot` (the omp extension) is required when it is on.
+- **Consent travels in the token.** The worker reads the consent snapshot (the SHA-256 of each approved hook) from the `ompos_hooks_consent` claim of its signed bearer token (`HooksConsentSnapshotReader`). A hook the snapshot does not cover denies without running.
+- **The claim is not minted yet.** `services/OmpOS.Api` does not mint `ompos_hooks_consent` (the only minter is the test helper `HooksTokenMinter`), so a real cloud session has no snapshot: no project hook runs and the session reports `untrusted`.
+- **The worker has no clone bootstrap yet,** so without a checkout the state is `none`.
+- **Failure policy.** If the extension is missing and a hook is `failClosed`, the connection is refused (503); otherwise the session runs without hooks and reports `unavailable`. Every run reaches the client as an `_ompos/hook` notification.
+- **Proof.** `CloudHooksWorkerTests` (9 loopback tests with a fake omp: a denying project hook stops a tool call; no snapshot means `untrusted`; an invalid snapshot runs nothing; a hook the snapshot does not cover denies; off by default; a fail-closed hook without the extension refuses the connection), `CloudHookFilterTests` and `HooksConsentSnapshotReaderTests`. No real omp and no deployed worker ran them; nothing of OmpOS is deployed on Railway.
+
+The design is in the [ADR-0020 addendum](../decisions/addendum-ADR-0020-hooks.md).
 
 ## Who fires what
 

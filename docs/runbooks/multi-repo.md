@@ -4,13 +4,19 @@ description: "Multi-repository workspaces: several folders in one session, valid
 
 # Multi-repo workspaces runbook
 
-Status: Partial (core library and tests are built; the head picker is Wave 3 work, see the parity audit; no live run)
+Status: Partial (several folders per session are wired into the desktop head: folder-set dialog, saved sets, `--add-dir` launch and persisted extra folders, proven by tests; the multi-root explorer, per-git-root run worktrees and per-root convention merge are built or planned but not wired; no model turn with several folders)
 
 Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-Scope: Phase 59 part 1 (PX-16), the core. One session can cover several folders: validated roots, omp launched with all of them, one git worktree per git root for a run, a multi-root explorer, and `.code-workspace` import and export. Status as of 2026-10-27. Native views for the picker are the next wave.
+Scope: Phase 59 (PX-16). One session can cover several folders: validated roots, omp launched with all of them, one git worktree per git root for a run, a multi-root explorer, and `.code-workspace` import and export.
+
+**Status of this release** (recorded 2026-10-28, tree 7535859).
+
+- **Built, wired into the desktop head, proven by tests.** The rail has a Folders button that opens the workspace-set dialog (`WorkspaceSetPickerView`, add, remove, primary, import and export of `.code-workspace`); Start records the set in `WorkspaceSetStore` (`HeadServices.WorkspaceSets`), hands the roots to `PendingSessionTarget.SetRoots` and starts an agent; `SessionEngineSet` takes the roots once per new session (the first is the working directory, the others become `--add-dir` through `OmpLaunchPlanner`) and keeps them in `<state>/session-extras.json`; `/save-workspace` and `/load-workspace` use the same store (`WorkspaceSetsBackend`); Settings > Workspaces lists the saved sets. Tests: `WorkspaceSetValidatorTests`, `WorkspaceSetTests`, `WorkspaceSetStoreTests`, `WorkspaceSetPickerTests`, `WorkspaceSetPickerViewTests`, `PendingSessionTargetTests`, `SessionExtrasStoreTests`, `ShellAdaptersTests`, `HeadServicesWiringTests`, and the launch tests of `OmpOS.Harness.AgentLoop.Tests`.
+- **Built, not wired.** `MultiRootWorkspaceTree` (the multi-root explorer model) is used by no head view. `WorktreeRunSet` (one worktree per git root for a run) is used by the head only for the cap shown on the Worktrees settings page (`WorktreesSettingsSource`); the Worktrees panel starts one worktree for the primary root (`WorktreeBackend`). The workspace catalog, rules and skills still read the first root only. `SessionSummary` and `StageObservationScope` still carry one `WorkspaceRoot`: the extra folders live in `session-extras.json`, not in the session record.
+- **Not live-verified.** `omp acp --add-dir` was probed with slash-command prompts only ([evidence](evidence/multi-repo-omp-probe-2026-10-27/README.md)); no model turn saw several folders (open question OD-07). Nothing ran on Windows, macOS or Android.
 
 ## How it fits together
 
@@ -63,7 +69,7 @@ The planner rejects a blank, relative or NUL-containing directory, a repeat, and
 - `CloseAsync(result)` removes every worktree and branch the set created, tries every root even if one fails, and can be repeated.
 - The run starts omp in `PrimaryWorkingPath` and passes `AdditionalWorkingPaths` as the additional directories.
 
-`.cursor/worktrees.json` is read by `CursorWorktreesConfig.Find(worktreePath, projectRoot)` (the worktree first, then the project root, as Cursor does) into the three keys `setup-worktree`, `setup-worktree-unix` and `setup-worktree-windows`, each a command list or a script path inside `.cursor/`. `SetupFor(windows)` applies Cursor's precedence. Running the commands is not wired: the existing `SetupRunner` and `SetupRunGate` run only the OmpOS setup file of one `WorkspaceRoot` and have no entry that takes arbitrary commands, so the commands need their own consent key (repository plus the hash of `worktrees.json`) before anything can run them. `ROOT_WORKTREE_PATH` must then be set to the main checkout.
+`.cursor/worktrees.json` is read by `CursorWorktreesConfig.Find(worktreePath, projectRoot)` (the worktree first, then the project root, as Cursor does) into the three keys `setup-worktree`, `setup-worktree-unix` and `setup-worktree-windows`, each a command list or a script path inside `.cursor/`. `SetupFor(windows)` applies Cursor's precedence. The commands run behind consent when a worktree is started from the Worktrees panel (`ConsentedWorktreeSetupRunner`, `WorktreeSetupConsentAdapter`, `WorktreeSetupRunnerTests`, `WorktreeSetupConsentAdapterTests`), with `ROOT_WORKTREE_PATH` set to the main checkout; a repository's setup runs for the primary root only, because the head does not call `WorktreeRunSet`.
 
 ## `.code-workspace` files
 
@@ -81,8 +87,8 @@ The planner rejects a blank, relative or NUL-containing directory, a repeat, and
 
 - No cross-environment sets: all roots of a session live in one environment (omp runs in one place). The validator rejects a mix. Remote roots are validated lexically only and cannot be probed.
 - No per-root convention merge: the workspace catalog and the rules and skills sources still read one root. The merge waits for the convention catalog of the slash-command work.
-- The set is not yet on the session record: `SessionSummary` and `StageObservationScope` still carry one `WorkspaceRoot`, so `SessionEngineSet` keeps the additional directories per slot in memory only and they are not restored after a restart. The contract change belongs to the integration wave.
-- The set picker and explorer have no native view yet.
-- The setup commands of `.cursor/worktrees.json` are read, not run.
+- The set is not on the session record: `SessionSummary` and `StageObservationScope` still carry one `WorkspaceRoot`, so the additional directories are kept per session in `session-extras.json` (`SessionExtrasStore`, `SessionExtrasStoreTests`) and read back after a restart.
+- The set picker has a native view (`WorkspaceSetPickerView`); the multi-root explorer has none.
+- The setup commands of `.cursor/worktrees.json` run for one root (see above), not for each root of a set.
 - A root is judged to be a git root by a `.git` entry at its top; a symlinked repository root is resolved before the validator compares roots, but `WorktreeRunSet` compares full paths only.
 - The `--add-dir` behaviour during a real model turn was not probed (needs a model key and owner approval).

@@ -1,6 +1,6 @@
 # ADR-0017: Web head Demo mode: an in-browser API handler, no tunnel to the dev API
 
-- Status: Proposed 2026-10-27. Default for the "visible web application" goal of milestone v0.15.0; the owner can still choose the hosted API path (see Open risks).
+- Status: Accepted 2026-10-28. Default for the "visible web application" goal of milestone v0.15.0; the Demo build is deployed at https://ompos-web.vercel.app (Vercel production alias of the `ompos-web` project) and was checked with headless Chrome from the live URL; the owner can still choose the hosted API path (see Open risks).
 - Date: 2026-10-27
 - Owner: ompos-maintainers
 - Deciders: ompos-maintainers

@@ -4,7 +4,7 @@ description: "How to run the OmpOS desktop head with the Ultrathink, Swarm, Subs
 
 # Agent loop runbook
 
-Status: Built; verified against the real omp without a model turn
+Status: Built (the four plugins load once in the omp the desktop head starts and connected in separate live engine-session and terminal runs on 2026-10-26; no model turn; no recorded application run that shows all four connected; nothing on Windows, macOS or Android)
 
 Last verified: 2026-10-28
 
@@ -101,7 +101,7 @@ In the test suite the same check is the exact-argument and environment assertion
 
 ## Evidence to record
 
-Status as of 2026-10-26. A row is ticked only where a run is recorded under `docs/runbooks/evidence/` or named as a passing test. None of these runs needed a model turn. The live tests carry the trait `Category=Live`, skip unless `OMPOS_LIVE_OMP=1`, and are excluded from the gate. Target behaviour: [plugins.md, Plugins in omp terminals](../plugins.md#plugins-in-omp-terminals). Criteria and results: `.planning/phases/48-omp-terminals-with-the-four-plugins/48-SUMMARY.md`.
+Status as of 2026-10-28 (the plugin rows below were recorded on 2026-10-26 and are not re-run; tree 7535859). A row is ticked only where a run is recorded under `docs/runbooks/evidence/` or named as a passing test. None of these runs needed a model turn. The live tests carry the trait `Category=Live`, skip unless `OMPOS_LIVE_OMP=1`, and are excluded from the gate. The desktop head also passes `-e plugins/ompos-hooks-omp` and a loopback hook bridge to a local session when the hooks service is on (`OmpLaunchPlanner`, `HooksBridgeLoaded`); that extension is not one of the four plugins and no live omp session has run it: see [Hooks](../reference/hooks.md). Target behaviour: [plugins.md, Plugins in omp terminals](../plugins.md#plugins-in-omp-terminals). Criteria and results: `.planning/phases/48-omp-terminals-with-the-four-plugins/48-SUMMARY.md`.
 
 Per plugin (Ultrathink, Substrate, Swarm, GSD-Core), five items each:
 
@@ -129,7 +129,7 @@ Exactly once:
 End to end:
 
 - [x] The engine session and the omp terminal each showed all four plugins connected, in separate live runs on 2026-10-26 (real omp 18.12.6, Linux). The live part is tagged Live.
-- [ ] Not recorded: one application run, starting a session in the application and opening an omp terminal for it, that shows all four plugins connected in the connection row. The Xvfb screenshots in `docs/runbooks/evidence/ui-parity-2026-10-26/before/` show the row waiting or off in that run.
+- [ ] Not recorded: one application run, starting a session in the application and opening an omp terminal for it, that shows all four plugins connected in the connection row. The Xvfb screenshots in `docs/runbooks/evidence/ui-parity-2026-10-26/before/` show the row waiting or off in that run; the desktop smoke of 2026-10-28 (`docs/runbooks/evidence/desktop-app-2026-10-28/07-omp-terminal.png`, sandbox home, Linux) opened an omp terminal from the application and its row read "Ultrathink unavailable, Swarm unavailable, Substrate off, GSD unavailable", so it does not close this item.
 - [ ] Not run: a live model turn (OD-07), an `injected` steering delivery, Windows, macOS, Android, the hosted deployments.
 
 ## Known limits
