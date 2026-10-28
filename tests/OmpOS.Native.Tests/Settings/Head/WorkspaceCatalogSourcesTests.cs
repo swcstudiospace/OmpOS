@@ -77,8 +77,9 @@ public sealed class WorkspaceCatalogSourcesTests : IDisposable
         var problem = rules.Problems.ShouldHaveSingleItem();
         problem.ShouldStartWith(".ompos/rules/broken.mdc: ", Case.Sensitive);
         problem.ShouldContain("malformed frontmatter", Case.Sensitive);
-        skills.Entries.Select(static entry => entry.Title).ShouldBe(["lint"]);
-        skills.Entries[0].Origin.ShouldBe(".ompos/skills/lint.md");
+        var workspaceSkills = skills.Entries.Where(static entry => entry.Scope != CustomizeScope.BuiltIn).ToArray();
+        workspaceSkills.Select(static entry => entry.Title).ShouldBe(["lint"]);
+        workspaceSkills[0].Origin.ShouldBe(".ompos/skills/lint.md");
         skills.Problems.ShouldBeEmpty();
     }
 
@@ -93,10 +94,11 @@ public sealed class WorkspaceCatalogSourcesTests : IDisposable
 
         await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
-        page.Entries.Select(static entry => entry.Title).ShouldBe(["audit", "quiet", "daily"]);
-        page.Entries.Select(static entry => entry.Origin).ShouldBe([".agents/skills/audit/SKILL.md", ".claude/skills/quiet/SKILL.md", "~/.cursor/skills/daily/SKILL.md"]);
-        page.Entries[1].Description.ShouldBe("Background only Not offered after a slash.");
-        page.Entries[2].Scope.ShouldBe(CustomizeScope.User);
+        var found = page.Entries.Where(static entry => entry.Scope != CustomizeScope.BuiltIn).ToArray();
+        found.Select(static entry => entry.Title).ShouldBe(["audit", "quiet", "daily"]);
+        found.Select(static entry => entry.Origin).ShouldBe([".agents/skills/audit/SKILL.md", ".claude/skills/quiet/SKILL.md", "~/.cursor/skills/daily/SKILL.md"]);
+        found[1].Description.ShouldBe("Background only Not offered after a slash.");
+        found[2].Scope.ShouldBe(CustomizeScope.User);
         page.Problems.ShouldBeEmpty();
     }
 
@@ -109,7 +111,7 @@ public sealed class WorkspaceCatalogSourcesTests : IDisposable
 
         await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
-        page.Entries.ShouldBeEmpty();
+        page.Entries.ShouldAllBe(static entry => entry.Scope == CustomizeScope.BuiltIn, "only the skills that ship with the app list; the oversize file is no skill");
         page.Problems.ShouldHaveSingleItem().ShouldStartWith(".ompos/skills/huge.md: ", Case.Sensitive);
     }
 

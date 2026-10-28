@@ -7,10 +7,13 @@ using Xunit;
 
 namespace OmpOS.Presentation.Tests.Commands;
 
-/// <summary>The shipped catalogue holds every one of the 92 Cursor tokens, each with a handler and an honest status, and each cites the Cursor research row it was verified against (VX-02, PX-12).</summary>
+/// <summary>The shipped catalogue holds every one of the 92 Cursor tokens and the OmpOS addition /update-settings, each with a handler and an honest status, and each cites the research row it was verified against (VX-02, PX-12).</summary>
 public sealed class SlashCommandCatalogueTests
 {
     private const int DocumentedTokens = 92;
+
+    /// <summary>The commands that only OmpOS has (rows E): the built-in skill that explains OmpOS settings.</summary>
+    private const int OmpOSAdditions = 1;
 
     /// <summary>
     /// Each shipped command names a research row, and that row exists in the research record that holds it, is a row of the command tables, and
@@ -29,8 +32,15 @@ public sealed class SlashCommandCatalogueTests
         foreach (var name in shippedNames)
         {
             var row = SlashCommandCatalogue.ResearchRows[name];
-            Regex.IsMatch(row, "^[ABCD][0-9]{2}$", RegexOptions.None, TimeSpan.FromSeconds(1))
+            Regex.IsMatch(row, "^[ABCDE][0-9]{2}$", RegexOptions.None, TimeSpan.FromSeconds(1))
                 .ShouldBeTrue($"Row '{row}' cited by /{name} is not a command row identifier.");
+
+            if (row[0] == 'E')
+            {
+                var builtins = File.ReadAllLines(Path.Combine(root, "docs", "reference", "builtin-skills.md"));
+                builtins.Any(line => line.StartsWith($"| `/{name}` |", StringComparison.Ordinal)).ShouldBeTrue($"Row {row} cited by /{name} is not in docs/reference/builtin-skills.md.");
+                continue;
+            }
 
             if (row[0] == 'D')
             {
@@ -52,12 +62,13 @@ public sealed class SlashCommandCatalogueTests
     {
         var all = SlashCommandCatalogue.Shipped.ListAll();
 
-        all.Count.ShouldBe(DocumentedTokens);
-        all.Select(command => command.Name).Distinct(StringComparer.Ordinal).Count().ShouldBe(DocumentedTokens);
+        all.Count.ShouldBe(DocumentedTokens + OmpOSAdditions);
+        all.Select(command => command.Name).Distinct(StringComparer.Ordinal).Count().ShouldBe(DocumentedTokens + OmpOSAdditions);
         all.Count(command => command.Group == SlashCommandGroup.Cli).ShouldBe(65, "44 CLI table rows and 21 changelog rows");
-        all.Count(command => command.Group == SlashCommandGroup.BuiltInSkill).ShouldBe(18);
+        all.Count(command => command.Group == SlashCommandGroup.BuiltInSkill).ShouldBe(19, "the 18 Cursor built-in skills and /update-settings");
         all.Count(command => command.Group == SlashCommandGroup.Chat).ShouldBe(9, "side, btw, in-cloud and the six tokens added since the first record");
         SlashCommandCatalogue.ResearchRows.Values.Count(row => row[0] == 'D').ShouldBe(6);
+        SlashCommandCatalogue.ResearchRows.Values.Count(row => row[0] == 'E').ShouldBe(OmpOSAdditions);
     }
 
     /// <summary>
@@ -69,10 +80,10 @@ public sealed class SlashCommandCatalogueTests
     {
         var all = SlashCommandCatalogue.Shipped.ListAll();
 
-        all.Count(command => command.Status == SlashCommandStatus.Built).ShouldBe(26);
-        all.Count(command => command.Status == SlashCommandStatus.Partial).ShouldBe(31);
+        all.Count(command => command.Status == SlashCommandStatus.Built).ShouldBe(36, "26 before the built-in skills shipped: 7 Partial skill rows, review-security and agent-review (Unavailable) and the new /update-settings are Built now");
+        all.Count(command => command.Status == SlashCommandStatus.Partial).ShouldBe(24);
         all.Count(command => command.Status == SlashCommandStatus.Delegated).ShouldBe(9);
-        all.Count(command => command.Status == SlashCommandStatus.Unavailable).ShouldBe(26);
+        all.Count(command => command.Status == SlashCommandStatus.Unavailable).ShouldBe(24);
     }
 
     /// <summary>Every native action a catalogue row names is an action some handler or the head runs, and each handler action id is named by at least one row: no handler is registered for a command that does not exist.</summary>
@@ -142,8 +153,8 @@ public sealed class SlashCommandCatalogueTests
                     break;
                 case SlashHandlerKind.Skill:
                     command.HandlerId.ShouldBe("skill." + command.Name);
-                    command.Group.ShouldBe(SlashCommandGroup.BuiltInSkill);
-                    command.Status.ShouldBe(SlashCommandStatus.Partial);
+                    command.Group.ShouldBeOneOf(SlashCommandGroup.BuiltInSkill, SlashCommandGroup.Chat);
+                    command.Status.ShouldBe(SlashCommandStatus.Built, $"/{command.Name} is a skill that ships with OmpOS (assets/skills), so it runs as described");
                     break;
                 case SlashHandlerKind.CloudHandoff:
                     command.HandlerId.ShouldBe(SlashActionIds.CloudHandoff);

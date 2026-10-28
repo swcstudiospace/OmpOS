@@ -19,12 +19,12 @@ internal static class ConventionsMapper
             Available = true,
             IncludesUserScope = home is not null,
             Commands = [.. set.Commands.Select(ToCommand)],
-            Skills = [.. set.Skills.Select(ToSkill)],
+            Skills = [.. set.Skills.Where(static skill => skill.Scope != ConventionScope.Builtin).Select(ToSkill)],
             Rules = [.. set.Rules.Select(ToRule)],
             Subagents = [.. set.Subagents.Select(ToSubagent)],
             HookFiles = [.. set.HookFiles.Select(ToFile)],
             McpFiles = [.. set.McpFiles.Select(ToFile)],
-            Diagnostics = [.. set.Diagnostics.Select(diagnostic => ToDiagnostic(diagnostic, root, home))],
+            Diagnostics = [.. set.Diagnostics.Where(static diagnostic => !diagnostic.Origin.StartsWith("builtin:", StringComparison.Ordinal)).Select(diagnostic => ToDiagnostic(diagnostic, root, home))],
         };
     }
 

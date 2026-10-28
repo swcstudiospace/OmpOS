@@ -305,6 +305,60 @@ public sealed class McpServerCatalogTests
     }
 
     [Fact]
+    public async Task APresetIsWrittenToTheFirstRootsOwnedFileSwitchedOffAndNeverOffered()
+    {
+        var files = new MemoryMcpFileStore();
+        var state = new InMemoryMcpStateStore();
+        var catalog = await LoadedAsync(files, state).ConfigureAwait(true);
+
+        var origin = await catalog.AddPresetAsync("linear", null, Token).ConfigureAwait(true);
+
+        origin.ShouldBe(".ompos/mcp.json");
+        files.Writes.ShouldBe([McpLocations.OwnedProjectFile(McpTestContext.Root)]);
+        Entry(catalog, "linear").Status.State.ShouldBe(McpServerState.Disabled);
+        Entry(catalog, "linear").IsEnabled.ShouldBeFalse();
+        catalog.OfferedServers().ShouldBeEmpty("a preset is not offered to a session until the user switches it on");
+        state.State.EnabledOverride("linear").ShouldBe(false);
+    }
+
+    [Fact]
+    public async Task APresetCanBeAddedUnderAnotherNameAndIsThenFoundUnderThatName()
+    {
+        var catalog = await LoadedAsync(new MemoryMcpFileStore()).ConfigureAwait(true);
+
+        _ = await catalog.AddPresetAsync("fetch", "web-fetch", Token).ConfigureAwait(true);
+
+        Entry(catalog, "web-fetch").Server.CommandPreview.ShouldContain("mcp-server-fetch", Case.Sensitive);
+        catalog.Current.Entries.Select(entry => entry.Server.Name).ShouldBe(["web-fetch"]);
+    }
+
+    [Fact]
+    public async Task APresetNameThatAnotherFileUsesIsRefusedBeforeAnythingIsWritten()
+    {
+        var files = new MemoryMcpFileStore().With(McpTestContext.User(".claude.json"), "{ \"mcpServers\": { \"linear\": { \"command\": \"my-linear\" } } }");
+        var catalog = await LoadedAsync(files).ConfigureAwait(true);
+
+        var failure = await Should.ThrowAsync<McpCatalogException>(() => catalog.AddPresetAsync("linear", null, Token)).ConfigureAwait(true);
+
+        failure.Message.ShouldBe("A server named 'linear' is already configured in ~/.claude.json.");
+        files.Writes.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task AnUnknownPresetAndAMissingWorkspaceAreRefused()
+    {
+        var catalog = await LoadedAsync(new MemoryMcpFileStore()).ConfigureAwait(true);
+        var unknown = await Should.ThrowAsync<McpCatalogException>(() => catalog.AddPresetAsync("nope", null, Token)).ConfigureAwait(true);
+        var closed = Create(new MemoryMcpFileStore());
+        _ = await closed.RefreshAsync(new McpLocatorContext([], McpTestContext.Home, new Dictionary<string, string?>(StringComparer.Ordinal)), Token).ConfigureAwait(true);
+
+        var noWorkspace = await Should.ThrowAsync<McpCatalogException>(() => closed.AddPresetAsync("linear", null, Token)).ConfigureAwait(true);
+
+        unknown.Message.ShouldBe("There is no MCP preset named 'nope'.");
+        noWorkspace.Message.ShouldContain("Open a workspace folder", Case.Sensitive);
+    }
+
+    [Fact]
     public async Task OfferedServersKeepPrecedenceOrderAndMapEveryTransport()
     {
         var files = new MemoryMcpFileStore()

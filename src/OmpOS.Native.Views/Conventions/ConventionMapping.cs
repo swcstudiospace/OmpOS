@@ -48,12 +48,26 @@ public static class ConventionMapping
             Problems(set, ConventionItemKind.Skill));
     }
 
+    /// <summary>Lists the problems of the given kinds. A built-in skill that a project or user skill of the same name replaced is not a problem: replacing it is what the built-in scope is for.</summary>
     private static string[] Problems(ConventionSet set, params ConventionItemKind[] kinds) =>
-        [.. set.Diagnostics.Where(diagnostic => kinds.Contains(diagnostic.Item)).Select(static diagnostic => diagnostic.Origin + ": " + diagnostic.Reason)];
+        [.. set.Diagnostics.Where(diagnostic => kinds.Contains(diagnostic.Item) && !IsShadowedBuiltin(diagnostic)).Select(static diagnostic => diagnostic.Origin + ": " + diagnostic.Reason)];
 
-    private static SlashScope ToSlashScope(ConventionScope scope) => scope == ConventionScope.User ? SlashScope.User : SlashScope.Project;
+    private static bool IsShadowedBuiltin(ConventionDiagnostic diagnostic) =>
+        diagnostic.Kind == ConventionDiagnosticKind.Duplicate && diagnostic.Origin.StartsWith("builtin:", StringComparison.Ordinal);
 
-    private static CustomizeScope ToCustomizeScope(ConventionScope scope) => scope == ConventionScope.User ? CustomizeScope.User : CustomizeScope.Project;
+    private static SlashScope ToSlashScope(ConventionScope scope) => scope switch
+    {
+        ConventionScope.User => SlashScope.User,
+        ConventionScope.Builtin => SlashScope.BuiltIn,
+        _ => SlashScope.Project,
+    };
+
+    private static CustomizeScope ToCustomizeScope(ConventionScope scope) => scope switch
+    {
+        ConventionScope.User => CustomizeScope.User,
+        ConventionScope.Builtin => CustomizeScope.BuiltIn,
+        _ => CustomizeScope.Project,
+    };
 
     private static string DescribeRule(ConventionRule rule)
     {

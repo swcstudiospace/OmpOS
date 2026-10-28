@@ -88,6 +88,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
     private string? _currentModelId;
     private bool _optionChanging;
     private bool _steeringSupported;
+    private bool? _supportsImages;
     private bool _openFailed;
     private OmpSessionOption[] _sessionOptions = [];
     private IReadOnlyList<AcpAvailableCommand> _availableCommands = [];
@@ -245,6 +246,18 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
     /// <inheritdoc />
     public IReadOnlyDictionary<string, string> AdvertisedCapabilities { get; private set; } = FrozenDictionary<string, string>.Empty;
 
+    /// <summary>Gets whether omp advertised <c>agentCapabilities.promptCapabilities.image</c> in its <c>initialize</c> result: true or false once the handshake ran (an <c>initialize</c> without the group means no images), <see langword="null"/> before it.</summary>
+    public bool? SupportsImages
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _supportsImages;
+            }
+        }
+    }
+
     /// <inheritdoc />
     public HarnessState State
     {
@@ -274,6 +287,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         ValidateSubmit(prompt, options);
+
         var (hookedPrompt, refusal) = await ApplyBeforePromptGateAsync(prompt, cancellationToken).ConfigureAwait(false);
         if (refusal is not null)
         {
@@ -289,7 +303,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         var finished = false;
         try
         {
-            await StartPromptAsync(turn, hookedPrompt, options.Resources, cancellationToken).ConfigureAwait(false);
+            await StartPromptAsync(turn, hookedPrompt, options.Resources, options.Images, cancellationToken).ConfigureAwait(false);
             while (true)
             {
                 var held = new HeldTerminalEvent(_hookGate is not null);
@@ -311,7 +325,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
                     }
 
                     turn = BeginTurn();
-                    await StartPromptAsync(turn, followUp, [], cancellationToken).ConfigureAwait(false);
+                    await StartPromptAsync(turn, followUp, [], [], cancellationToken).ConfigureAwait(false);
                     continue;
                 }
 
@@ -1048,6 +1062,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
             AgentInfo = result.AgentInfo;
             AdvertisedCapabilities = AcpWireMapping.Flatten(result.AgentCapabilities);
             _steeringSupported = ReadSteeringSupported(result.Meta);
+            _supportsImages = result.AgentCapabilities.PromptCapabilities?.Image ?? false;
         }
 
         if (result.AuthMethods is { Count: > 0 } authMethods)
@@ -1879,7 +1894,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         }
     }
 
-    private async Task StartPromptAsync(PromptTurn turn, string prompt, IReadOnlyList<PromptResource> resources, CancellationToken cancellationToken)
+    private async Task StartPromptAsync(PromptTurn turn, string prompt, IReadOnlyList<PromptResource> resources, IReadOnlyList<PromptImage> images, CancellationToken cancellationToken)
     {
         var sent = false;
         try
@@ -1893,7 +1908,7 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
                 _pending[id] = new PendingCall(frame => OnPromptResponse(turn, frame), error => FailTurn(turn, error));
             }
 
-            if (resources.Count == 0)
+            if (resources.Count == 0 && images.Count == 0)
             {
                 var parameters = new AcpFrames.PromptParams(turn.SessionId, [new AcpFrames.ContentBlock { Text = prompt }]);
                 await SendFrameAsync(
@@ -1903,11 +1918,15 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
             }
             else
             {
-                // Mentions travel as embedded resource blocks: omp inlines them, where it reduces a resource link to a title.
-                var content = AcpPromptContent.BuildParams(
-                    turn.SessionId,
-                    prompt,
-                    [.. resources.Select(static resource => new AcpPromptResource(resource.Location.AbsoluteUri, resource.MimeType, resource.Text, resource.DisplayName, resource.OriginalLength, resource.Truncated))]);
+                // Mentions travel as embedded resource blocks: omp inlines them, where it reduces a resource link to a title. Images follow them as image blocks.
+                AcpPromptResource[] mentioned = [.. resources.Select(static resource => new AcpPromptResource(resource.Location.AbsoluteUri, resource.MimeType, resource.Text, resource.DisplayName, resource.OriginalLength, resource.Truncated))];
+                var content = images.Count == 0
+                    ? AcpPromptContent.BuildParams(turn.SessionId, prompt, mentioned)
+                    : AcpPromptContent.BuildParamsWithImages(
+                        turn.SessionId,
+                        prompt,
+                        mentioned,
+                        [.. images.Select(static image => new AcpPromptImage(image.Name, image.MimeType, image.Data))]);
                 await SendFrameAsync(
                     new AcpFrames.Request<AcpPromptContentParams>(id, "session/prompt", content),
                     AcpPromptContentJsonContext.Default.RequestAcpPromptContentParams,
@@ -2242,13 +2261,19 @@ public sealed partial class AcpAgentSession : IOmpSession, IOmpSessionIdentity, 
         }
     }
 
-    private static void ValidateSubmit(string prompt, PromptOptions options)
+    private void ValidateSubmit(string prompt, PromptOptions options)
     {
         ArgumentNullException.ThrowIfNull(prompt);
         ArgumentNullException.ThrowIfNull(options);
         if (options.Steer)
         {
             throw new NotSupportedException("ACP v1 has no steer operation. Cancel the in-flight prompt, then submit.");
+        }
+
+        // An image is never dropped silently: an engine that said image false refuses the prompt before anything is sent.
+        if (options.Images.Count > 0 && SupportsImages == false)
+        {
+            throw new NotSupportedException("omp does not accept images in a prompt: its initialize result says promptCapabilities.image is false.");
         }
     }
 

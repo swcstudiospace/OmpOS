@@ -244,6 +244,54 @@
         </StackPanel>
       </StackPanel>
 
+      <StackPanel x:Name="PresetSection"
+                  IsVisible="{CompiledBinding ShowPresets}"
+                  Spacing="{DynamicResource OmpOS.Gap.Xs}">
+        <TextBlock Classes="settings-section"
+                   Text="{x:Static pm:McpCopy.PresetHeading}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static pm:McpCopy.PresetExplanation}" />
+        <ItemsControl x:Name="PresetList"
+                      ItemsSource="{CompiledBinding Presets}"
+                      AutomationProperties.Name="{x:Static pm:McpCopy.PresetListName}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="pm:McpPresetRowModel">
+              <Border Classes="settings-row"
+                      Margin="0,0,0,4">
+                <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
+                  <StackPanel Orientation="Horizontal"
+                              Spacing="{DynamicResource OmpOS.Gap.Sm}">
+                    <TextBlock Classes="settings-label"
+                               VerticalAlignment="Center"
+                               Text="{CompiledBinding DisplayName}" />
+                    <TextBlock Classes="settings-help"
+                               VerticalAlignment="Center"
+                               Text="{CompiledBinding TransportLabel}" />
+                  </StackPanel>
+                  <TextBlock Classes="settings-body"
+                             Text="{CompiledBinding Description}" />
+                  <TextBlock Classes="settings-help"
+                             Text="{CompiledBinding AuthNote}" />
+                  <TextBlock Classes="settings-help"
+                             IsVisible="{CompiledBinding HasNote}"
+                             Text="{CompiledBinding NoteText}" />
+                  <SelectableTextBlock Classes="settings-selectable"
+                                       Text="{CompiledBinding DocumentationText}"
+                                       AutomationProperties.Name="{CompiledBinding DocumentationText}" />
+                  <Button Content="{CompiledBinding AddLabel}"
+                          Command="{CompiledBinding AddCommand}"
+                          IsEnabled="{CompiledBinding CanAdd}"
+                          HorizontalAlignment="Left"
+                          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                          MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                          AutomationProperties.Name="{CompiledBinding AddName}" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
       <TextBlock x:Name="ActionResultText"
                  Classes="settings-body"
                  IsVisible="{CompiledBinding HasActionResult}"

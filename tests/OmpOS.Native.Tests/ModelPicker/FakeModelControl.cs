@@ -11,6 +11,9 @@ internal sealed class FakeModelControl : IOmpModelControl
     /// <summary>Gets the model the control reports as current.</summary>
     public string? CurrentModelId { get; private set; }
 
+    /// <summary>Gets or sets whether the control reports that the engine takes images; null reports nothing, as an engine that has not answered <c>initialize</c> does.</summary>
+    public bool? SupportsImages { get; set; }
+
     /// <inheritdoc />
     public event EventHandler? ModelChanged;
 

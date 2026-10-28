@@ -10,6 +10,7 @@ using OmpOS.Contracts.Ui;
 using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.AgentLoop.Steering;
 using OmpOS.Native.Engine;
+using OmpOS.Native.Views.Attachments;
 using OmpOS.Native.Views.RunControls;
 using OmpOS.Native.Views.Terminal;
 using OmpOS.Presentation;
@@ -17,6 +18,7 @@ using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Approvals;
 using OmpOS.Presentation.Commands;
 using OmpOS.Presentation.Composer;
+using OmpOS.Presentation.Composer.Attachments;
 using OmpOS.Presentation.Mentions;
 using OmpOS.Presentation.Modes;
 using OmpOS.Presentation.Remote;
@@ -72,7 +74,9 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     private readonly OptionChipBinding? _thinkingBinding;
     private readonly SlashPaletteBinding? _slashBinding;
     private readonly MentionComposerModel? _mentions;
+    private readonly ImageInputBinding? _imageBinding;
     private IReadOnlyList<PromptResource> _lastResources = [];
+    private IReadOnlyList<PromptImage> _lastImages = [];
     private string? _lastRequestId;
     private bool _turnInterrupted;
 
@@ -87,6 +91,30 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         var binding = new ModelPickerBinding(models, options.ConnectModels);
         Composer.ModelPicker = binding.Picker;
         return binding;
+    }
+
+    private ImageInputBinding? BindImages(AgentSessionRuntimeOptions options)
+    {
+        // A terminal runs its own omp, and a session with no engine has nothing to send an image to: only a connected chat session offers image attachments. The model of the
+        // attachments follows what the engine said in initialize and, when a lookup knows it, whether the selected model reads images.
+        if (options.TerminalStarter is not null || options.Prompts is UnconnectedPromptChannel)
+        {
+            return null;
+        }
+
+        var images = new ComposerAttachmentsModel(new AvaloniaImageThumbnailer());
+        Composer.Images = images;
+        Composer.ImageSender = StartTurnWithImagesAsync;
+        return new ImageInputBinding(images, options.Models, options.ModelVision);
+    }
+
+    private void DisposeBindings()
+    {
+        _modelBinding?.Dispose();
+        _imageBinding?.Dispose();
+        _modeBinding?.Dispose();
+        _thinkingBinding?.Dispose();
+        _slashBinding?.Dispose();
     }
 
     /// <summary>Creates the runtime of one session and its view model. It starts no observation: call <see cref="StartObserving"/>.</summary>
@@ -130,6 +158,8 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             Composer.ContextRing = new ContextRingModel();
             Composer.MentionSender = StartTurnWithMentionsAsync;
         }
+
+        _imageBinding = BindImages(options);
 
         if (options.LiveEvents is { } liveEvents)
         {
@@ -318,10 +348,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         }
 
         RunControls.Approvals.CollectionChanged -= OnApprovalsChanged;
-        _modelBinding?.Dispose();
-        _modeBinding?.Dispose();
-        _thinkingBinding?.Dispose();
-        _slashBinding?.Dispose();
+        DisposeBindings();
         if (_options.LiveEvents is { } liveEvents)
         {
             liveEvents.HookNoticeRaised -= OnHookNoticeRaised;
@@ -381,7 +408,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             return;
         }
 
-        _ = StartTurnCoreAsync(prompt, _lastResources);
+        _ = StartTurnCoreAsync(prompt, _lastResources, _lastImages);
     }
 
     /// <summary>
@@ -746,7 +773,38 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
                 attachment.Content.Truncated))]);
     }
 
-    private async Task<bool> StartTurnCoreAsync(string text, IReadOnlyList<PromptResource> resources)
+    /// <summary>
+    /// Sends the draft with its attached images, and with the content of its attached @-mentions when it has any: the mentions travel as embedded resources and the images as image blocks, in attachment order.
+    /// The text may be blank when an image is attached.
+    /// </summary>
+    /// <param name="text">The draft text the user sent.</param>
+    /// <param name="attachments">The attached mentions and the content read for each; possibly none.</param>
+    /// <param name="images">The attached images.</param>
+    /// <returns>True when the host accepted the send; false when no engine is composed.</returns>
+    private Task<bool> StartTurnWithImagesAsync(string text, IReadOnlyList<MentionAttachment> attachments, IReadOnlyList<ComposerAttachment> images)
+    {
+        ArgumentNullException.ThrowIfNull(attachments);
+        ArgumentNullException.ThrowIfNull(images);
+        return StartTurnCoreAsync(
+            text,
+            [.. attachments.Select(static attachment => new PromptResource(
+                attachment.Mention.Location,
+                attachment.Mention.MimeType,
+                attachment.Content.Text,
+                attachment.Mention.Display,
+                attachment.Content.SizeBytes,
+                attachment.Content.Truncated))],
+            [.. images.Select(static image => new PromptImage(image.Name, image.MimeType, image.Data))]);
+    }
+
+    /// <summary>Returns what the transcript shows for a message that carries images: the words (possibly none) and the names of the images, because the transcript shows text only.</summary>
+    private static string DescribeImageTurn(string text, IReadOnlyList<PromptImage> images)
+    {
+        var attached = (images.Count == 1 ? "Attached image: " : "Attached images: ") + string.Join(", ", images.Select(static image => image.Name));
+        return string.IsNullOrWhiteSpace(text) ? attached : text + "\n\n" + attached;
+    }
+
+    private async Task<bool> StartTurnCoreAsync(string text, IReadOnlyList<PromptResource> resources, IReadOnlyList<PromptImage>? images = null)
     {
         if (Terminal is not null && Volatile.Read(ref _disposed) == 0)
         {
@@ -774,8 +832,10 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         }
 
         // The last prompt sent is the one a retry sends again. A new send clears the banner of an earlier failure.
+        images ??= [];
         _lastPrompt = text;
         _lastResources = resources;
+        _lastImages = images;
         ShowEngineFailure(null);
 
         // The composer does not send while a response streams. The run stays active until its last turn ends, so a message sent
@@ -784,9 +844,9 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
         Runs.RunStarted();
         var correlationId = Guid.NewGuid().ToString("N");
         _lastRequestId = correlationId;
-        EchoUserMessage(text, correlationId);
+        EchoUserMessage(images.Count == 0 ? text : DescribeImageTurn(text, images), correlationId);
         TurnChanged?.Invoke(this, new SessionTurnEventArgs(SessionTurnKind.Started));
-        var turn = DriveTurnsAsync(text, resources, correlationId);
+        var turn = DriveTurnsAsync(text, resources, images, correlationId);
 
         // The turn is not awaited. DriveTurnsAsync shows a turn's fault under that turn's own id, so this observes only what escapes it.
         _ = turn.ContinueWith(
@@ -803,12 +863,13 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// </summary>
     /// <param name="text">The prompt text.</param>
     /// <param name="resources">The mentions that travel with the prompt.</param>
+    /// <param name="images">The images that travel with the prompt.</param>
     /// <param name="correlationId">The correlation identifier of the turn.</param>
     /// <returns>A task that completes when the turn has ended.</returns>
-    private async Task StreamTurnAsync(string text, IReadOnlyList<PromptResource> resources, string correlationId)
+    private async Task StreamTurnAsync(string text, IReadOnlyList<PromptResource> resources, IReadOnlyList<PromptImage> images, string correlationId)
     {
         var prompt = PromptPreamble is { IsActive: true } preamble && !text.StartsWith('/') ? preamble.Apply(text) : text;
-        var promptOptions = new PromptOptions { Resources = resources };
+        var promptOptions = new PromptOptions { Resources = resources, Images = images };
         await foreach (var evt in _options.Prompts.SubmitAsync(prompt, promptOptions, CancellationToken.None).ConfigureAwait(true))
         {
             ShowTurnEvent(evt, correlationId);
@@ -822,9 +883,10 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
     /// </summary>
     /// <param name="text">The prompt the run starts with.</param>
     /// <param name="resources">The mentions that travel with the first prompt.</param>
+    /// <param name="images">The images that travel with the first prompt.</param>
     /// <param name="correlationId">The correlation identifier of the first turn.</param>
     /// <returns>A task that completes when the run has ended.</returns>
-    private async Task DriveTurnsAsync(string text, IReadOnlyList<PromptResource> resources, string correlationId)
+    private async Task DriveTurnsAsync(string text, IReadOnlyList<PromptResource> resources, IReadOnlyList<PromptImage> images, string correlationId)
     {
         var turnCorrelationId = correlationId;
         string? faultReason = null;
@@ -834,7 +896,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             {
                 try
                 {
-                    await StreamTurnAsync(text, resources, turnCorrelationId).ConfigureAwait(true);
+                    await StreamTurnAsync(text, resources, images, turnCorrelationId).ConfigureAwait(true);
                 }
                 catch (Exception fault) when (fault is not OperationCanceledException)
                 {
@@ -862,6 +924,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
 
                 text = next;
                 resources = [];
+                images = [];
                 turnCorrelationId = Guid.NewGuid().ToString("N");
                 _lastRequestId = turnCorrelationId;
                 EchoUserMessage(text, turnCorrelationId);

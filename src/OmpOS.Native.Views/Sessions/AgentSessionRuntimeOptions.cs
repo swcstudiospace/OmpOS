@@ -7,6 +7,7 @@ using OmpOS.Presentation;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Approvals;
 using OmpOS.Presentation.Commands;
+using OmpOS.Presentation.Composer.Attachments;
 using OmpOS.Presentation.Editor;
 using OmpOS.Presentation.Mentions;
 using OmpOS.Presentation.SideChats;
@@ -69,6 +70,12 @@ public sealed class AgentSessionRuntimeOptions
     /// A chat runtime then shows a model chip in its composer; a terminal runtime never does, because its omp owns its model.
     /// </summary>
     public IOmpModelControl? Models { get; init; }
+
+    /// <summary>
+    /// Gets the lookup that tells whether a model reads images (the model's input kinds, from the model catalogue), given the id <see cref="Models"/> reports as current, or null when no model information is available.
+    /// The composer's image attachments combine it with what the engine said in <c>initialize</c>: a model that lists text input only refuses images, a model the lookup does not know (<see cref="VisionSupport.Unknown"/>) accepts them with a caution.
+    /// </summary>
+    public Func<string, VisionSupport>? ModelVision { get; init; }
 
     /// <summary>
     /// Gets the callback that starts the engine session so that <see cref="Models"/> reports its models, or null when the models are known

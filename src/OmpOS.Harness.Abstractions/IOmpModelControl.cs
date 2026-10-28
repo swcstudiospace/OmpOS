@@ -13,6 +13,12 @@ public interface IOmpModelControl
     string? CurrentModelId { get; }
 
     /// <summary>
+    /// Gets whether the engine accepts image blocks in a prompt, as its <c>initialize</c> result says (<c>promptCapabilities.image</c>): <see langword="true"/> or <see langword="false"/> once the engine answered,
+    /// <see langword="null"/> while it is not known (the session has not started) or when the control belongs to an engine that does not report it. Read it again after <see cref="ModelChanged"/>.
+    /// </summary>
+    bool? SupportsImages => null;
+
+    /// <summary>
     /// Occurs when the current model or the list of models changed, whether this client switched the model or the engine reported
     /// the change itself. It can be raised on any thread; read <see cref="CurrentModelId"/> and <see cref="ModelChoices"/> for the values.
     /// </summary>

@@ -132,6 +132,54 @@ public static class McpCopy
     /// <summary>The sentence shown when no workspace is open and a template cannot be written.</summary>
     public const string TemplateNeedsWorkspace = "Open a workspace folder to add a server to its .ompos/mcp.json.";
 
+    /// <summary>The heading of the add-from-preset section.</summary>
+    public const string PresetHeading = "Add from preset";
+
+    /// <summary>The explanation of the add-from-preset section.</summary>
+    public const string PresetExplanation =
+        "Ready-made entries for well-known services, written to .ompos/mcp.json. A preset is added switched off and holds no credential: read its note, sign in or export the named variable, then switch it on.";
+
+    /// <summary>The accessible name of the preset list.</summary>
+    public const string PresetListName = "MCP presets";
+
+    /// <summary>The label of the Add preset button.</summary>
+    public const string PresetAddLabel = "Add";
+
+    /// <summary>The label of the button of a preset that is already configured.</summary>
+    public const string PresetAddedLabel = "Added";
+
+    /// <summary>The transport label of a remote preset.</summary>
+    public const string PresetRemote = "Remote (HTTP)";
+
+    /// <summary>The transport label of a preset that starts a process.</summary>
+    public const string PresetLocal = "Local (stdio)";
+
+    /// <summary>The sentence that says a preset's server signs in through OAuth.</summary>
+    public const string AuthOAuth = "Signs in through the vendor's OAuth flow in a browser (/mcp reauth); the file holds no credential.";
+
+    /// <summary>The sentence that says a preset's server needs no credential.</summary>
+    public const string AuthNone = "Needs no credential.";
+
+    /// <summary>Returns the sentence that says a preset's server reads its token from an environment variable.</summary>
+    /// <param name="variable">The name of the variable.</param>
+    /// <returns>The sentence; the file holds the variable's name, never its value.</returns>
+    public static string AuthBearerToken(string variable) =>
+        string.Create(CultureInfo.InvariantCulture, $"Reads its token from the environment variable {variable}; the file holds the name, never the token.");
+
+    /// <summary>Returns the sentence that names the vendor page of a preset.</summary>
+    /// <param name="address">The vendor page.</param>
+    /// <returns>For example <c>Vendor docs: https://linear.app/docs/mcp</c>.</returns>
+    public static string PresetDocumentation(string address) =>
+        string.Create(CultureInfo.InvariantCulture, $"Vendor docs: {address}");
+
+    /// <summary>Returns the sentence shown after a preset was added.</summary>
+    /// <param name="name">The server name.</param>
+    /// <param name="origin">The file that was written.</param>
+    /// <param name="authNote">How the server signs in.</param>
+    /// <returns>The sentence.</returns>
+    public static string PresetAdded(string name, string origin, string authNote) =>
+        string.Create(CultureInfo.InvariantCulture, $"Added {name} to {origin}. It is switched off until you switch it on. {authNote}");
+
     /// <summary>The accessible name of the action failure message.</summary>
     public const string ActionFailureName = "MCP action error";
 

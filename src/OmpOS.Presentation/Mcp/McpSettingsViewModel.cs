@@ -26,6 +26,7 @@ public sealed class McpSettingsViewModel : ObservableModel
     private McpFileGroupModel[] _groups = [];
     private McpServerRowModel[] _rows = [];
     private McpNoticeRow[] _notices = [];
+    private McpPresetRowModel[] _presetRows = [];
     private McpSettingsSnapshot _snapshot = McpSettingsSnapshot.Empty;
     private McpViewState _state = McpViewState.Loading;
     private McpConsentPrompt? _pendingConsent;
@@ -104,6 +105,12 @@ public sealed class McpSettingsViewModel : ObservableModel
 
     /// <summary>Gets whether the add-from-template section shows: the page loaded.</summary>
     public bool ShowTemplates => _loaded;
+
+    /// <summary>Gets the presets the page offers to add, each with its note and its button. Empty until the page has loaded.</summary>
+    public IReadOnlyList<McpPresetRowModel> Presets => _presetRows;
+
+    /// <summary>Gets whether the add-from-preset section is shown: the page has loaded and the source offers presets.</summary>
+    public bool ShowPresets => _loaded && _presetRows.Length > 0;
 
     /// <summary>Gets whether the consent prompt shows.</summary>
     public bool HasPendingConsent => _pendingConsent is not null;
@@ -296,6 +303,24 @@ public sealed class McpSettingsViewModel : ObservableModel
         }
     }
 
+    /// <summary>Adds a preset to the OmpOS-owned file under its own name. It stays switched off until the user switches it on, and nothing is started or signed in.</summary>
+    /// <param name="presetId">The id of the preset, as one of <see cref="Presets"/> lists it.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>A task that completes when the page shows the new server or the failure.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="presetId"/> is null.</exception>
+    public async Task AddPresetAsync(string presetId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(presetId);
+        string? written = null;
+        var failed = await RunAsync(async () => written = await _source.AddPresetAsync(presetId, cancellationToken).ConfigureAwait(true)).ConfigureAwait(true);
+        if (!failed && written is not null)
+        {
+            var choice = _source.Presets.FirstOrDefault(candidate => string.Equals(candidate.Id, presetId, StringComparison.Ordinal));
+            _actionResult = McpCopy.PresetAdded(presetId, written, choice?.AuthNote ?? string.Empty);
+            Refresh();
+        }
+    }
+
     /// <summary>Asks the host to open a configuration file.</summary>
     /// <param name="origin">The origin of the file, as the page shows it.</param>
     /// <param name="cancellationToken">Cancels the request.</param>
@@ -347,6 +372,7 @@ public sealed class McpSettingsViewModel : ObservableModel
             [.. rows.Where(row => string.Equals(row.Entry.Origin, file.Origin, StringComparison.Ordinal))],
             new McpActionCommand(() => OpenConfigFileAsync(file.Origin, CancellationToken.None))))];
         _notices = [.. snapshot.Notices.OrderByDescending(notice => notice.Severity).Select(notice => new McpNoticeRow(notice))];
+        _presetRows = [.. _source.Presets.Select(choice => BuildPresetRow(choice, entries))];
         if (_pendingConsent is { } prompt && !entries.Exists(entry => string.Equals(entry.Name, prompt.Name, StringComparison.Ordinal) && entry.Status == McpServerStatusKind.NeedsConsent))
         {
             _pendingConsent = null;
@@ -376,6 +402,16 @@ public sealed class McpSettingsViewModel : ObservableModel
             new McpActionCommand(() => OpenConfigFileAsync(entry.Origin, CancellationToken.None)));
     }
 
+    private McpPresetRowModel BuildPresetRow(McpPresetChoice choice, List<McpServerEntry> entries)
+    {
+        var id = choice.Id;
+        return new McpPresetRowModel(
+            choice,
+            entries.Exists(entry => string.Equals(entry.Name, id, StringComparison.Ordinal)),
+            CanAddTemplate,
+            new McpActionCommand(() => AddPresetAsync(id, CancellationToken.None)));
+    }
+
     private McpViewState ComputeState(McpSettingsSnapshot snapshot)
     {
         var hasError = snapshot.Notices.Any(notice => notice.Severity == McpNoticeSeverity.Error);
@@ -397,6 +433,7 @@ public sealed class McpSettingsViewModel : ObservableModel
         NotifyPropertyChanged(nameof(ActionResult));
         NotifyPropertyChanged(nameof(Groups));
         NotifyPropertyChanged(nameof(Rows));
+        NotifyPropertyChanged(nameof(Presets));
         NotifyPropertyChanged(nameof(Notices));
         NotifyPropertyChanged(nameof(PendingConsent));
         NotifyPropertyChanged(nameof(AttentionCount));
@@ -409,6 +446,7 @@ public sealed class McpSettingsViewModel : ObservableModel
         NotifyPropertyChanged(nameof(ShowList));
         NotifyPropertyChanged(nameof(ShowNotices));
         NotifyPropertyChanged(nameof(ShowTemplates));
+        NotifyPropertyChanged(nameof(ShowPresets));
         NotifyPropertyChanged(nameof(HasPendingConsent));
         NotifyPropertyChanged(nameof(HasActionFailure));
         NotifyPropertyChanged(nameof(HasActionResult));

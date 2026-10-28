@@ -1,6 +1,7 @@
 using System.Text;
 using OmpOS.Harness.Acp;
 using OmpOS.Harness.Mcp.Config;
+using OmpOS.Harness.Mcp.Templates;
 
 namespace OmpOS.Harness.Mcp.Catalog;
 
@@ -22,6 +23,7 @@ public sealed class McpServerCatalog
     private readonly McpConfigLoader _loader;
     private readonly IMcpStateStore _stateStore;
     private readonly McpOwnedConfigWriter _writer;
+    private readonly McpPresetInstaller _presets;
     private readonly IMcpConnectionChecker? _checker;
     private readonly McpToolRegistry? _registry;
     private readonly Dictionary<string, CheckRecord> _checks = new(StringComparer.Ordinal);
@@ -40,6 +42,7 @@ public sealed class McpServerCatalog
         ArgumentNullException.ThrowIfNull(stateStore);
         _loader = new McpConfigLoader(files);
         _writer = new McpOwnedConfigWriter(files);
+        _presets = new McpPresetInstaller(files);
         _stateStore = stateStore;
         _checker = checker;
         _registry = registry;
@@ -184,6 +187,40 @@ public sealed class McpServerCatalog
         var path = McpLocations.OwnedProjectFile(context.WorkspaceRoots[0]);
         await _writer.AddTemplateAsync(path, kind, name, cancellationToken).ConfigureAwait(false);
         await SaveAsync(_state.WithEnabled(name, false), cancellationToken).ConfigureAwait(false);
+        _ = await RefreshAsync(context, cancellationToken).ConfigureAwait(false);
+        return OwnedOrigin(context) ?? ".ompos/mcp.json";
+    }
+
+    /// <summary>
+    /// Adds a ready-made server from <see cref="McpTemplateCatalog.Default"/> to the OmpOS-owned <c>.ompos/mcp.json</c> of the first workspace root and switches it off until the user has enabled it. Nothing is started and
+    /// no credential is written: a token preset names an environment variable, an OAuth preset holds nothing.
+    /// </summary>
+    /// <param name="presetId">The id of the preset, for example <c>linear</c>.</param>
+    /// <param name="name">The server name to write, or <see langword="null"/> for the preset's own id.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>The origin of the file that was written, to show.</returns>
+    /// <exception cref="McpCatalogException">No workspace is open, the preset is unknown, the name is invalid or already configured anywhere, or a file cannot be changed.</exception>
+    public async Task<string> AddPresetAsync(string presetId, string? name, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(presetId);
+        var context = _context;
+        if (context is null || context.WorkspaceRoots.Count == 0 || string.IsNullOrWhiteSpace(context.WorkspaceRoots[0]))
+        {
+            throw new McpCatalogException("Open a workspace folder first: the new server is written to its .ompos/mcp.json.");
+        }
+
+        var preset = McpTemplateCatalog.Find(presetId)
+            ?? throw new McpCatalogException("There is no MCP preset named '" + presetId + "'.");
+        var serverName = string.IsNullOrWhiteSpace(name) ? preset.Id : name;
+        var taken = _config.Servers.FirstOrDefault(server => string.Equals(server.Name, serverName, StringComparison.Ordinal));
+        if (taken is not null)
+        {
+            throw new McpCatalogException("A server named '" + serverName + "' is already configured in " + taken.Origin + ".");
+        }
+
+        var path = McpLocations.OwnedProjectFile(context.WorkspaceRoots[0]);
+        await _presets.AddPresetAsync(path, preset, serverName, cancellationToken).ConfigureAwait(false);
+        await SaveAsync(_state.WithEnabled(serverName, false), cancellationToken).ConfigureAwait(false);
         _ = await RefreshAsync(context, cancellationToken).ConfigureAwait(false);
         return OwnedOrigin(context) ?? ".ompos/mcp.json";
     }

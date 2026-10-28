@@ -1,6 +1,6 @@
 # Slash commands
 
-OmpOS lists every slash command and alias that Cursor 3.27 documents (92 tokens), plus the open-ended forms Cursor allows: a skill name, a custom command file and a subagent name. Each token has a handler kind and an honest status; a token OmpOS cannot run is still listed, disabled, with the reason, so typing it never silently does nothing.
+OmpOS lists every slash command and alias that Cursor 3.27 documents (92 tokens) and one OmpOS addition, `/update-settings` (93 rows), plus the open-ended forms Cursor allows: a skill name, a custom command file and a subagent name. Each token has a handler kind and an honest status; a token OmpOS cannot run is still listed, disabled, with the reason, so typing it never silently does nothing.
 
 The table below is the same data as the shipped catalogue (`SlashCommandCatalogue.Shipped` in `OmpOS.Presentation`). A test parses this file and fails when the two disagree.
 
@@ -16,7 +16,7 @@ When you send text that starts with `/`, OmpOS looks at the name (the text up to
 4. A skill found by discovery (`skills/<name>/SKILL.md`).
 5. A subagent found by discovery (`agents/*.md`).
 
-A catalogue token that OmpOS cannot run does not hide a lower source that can. When two sources can run the same name, the palette lists both rows, each with a source badge (`Engine`, `OmpOS`, `Cursor`, `Command`, `Skill`, `Subagent`) and, for a file, its scope (`project` or `user`); the first source in the order above is the one that runs. A name that no source knows is sent to omp exactly as typed.
+A catalogue token that OmpOS cannot run does not hide a lower source that can. When two sources can run the same name, the palette lists both rows, each with a source badge (`Engine`, `OmpOS`, `Cursor`, `Command`, `Skill`, `Subagent`) and, for a file, its scope (`project`, `user` or `built-in`); the first source in the order above is the one that runs. A name that no source knows is sent to omp exactly as typed.
 
 A text that starts with `&` and a space hands the rest to a cloud agent (the CLI form), as `/in-cloud` does: the window asks for the repository, shows what the cloud worker costs and starts the agent only after you confirm. Without the OmpOS API address and a sign-in it says what is missing and sends nothing.
 
@@ -26,7 +26,7 @@ A text that starts with `&` and a space hands the rest to a cloud agent (the CLI
 |---|---|
 | NativeAction | The window runs a named action through `ISlashActionHost`: open Settings, start a new chat or terminal, switch mode, filter the model picker, open a side chat, open the palette. The desktop head implements the host (`DesktopSlashActionHost`); the web head implements it in a later wave. An action the window cannot run is listed disabled. |
 | OmpDelegated | The text goes to omp as the prompt, and omp runs the command. Only commands that omp 18.12.6 handles over ACP are delegated: `rename`, `compact`, `mcp`, `plugins` (alias `plugin`), `wt` (alias `worktree`), `add-dir`, `context`, `usage`, `fast`. A Cursor alias that omp names differently is rewritten (`/summarize` is sent as `/compact`). |
-| Skill | A skill file named like the token is run: omp is told to read the `SKILL.md` and follow it (or gets `/skill:<name>` when it advertises the skill). Cursor ships its built-in skills inside its app, so OmpOS has no text for them; a `SKILL.md` of the same name makes the token work. |
+| Skill | A skill file named like the token is run: omp is told to read the `SKILL.md` and follow it (or gets `/skill:<name>` when it advertises the skill). OmpOS ships its own wording for the built-in skills (`assets/skills/<name>/SKILL.md`, listed in `docs/reference/builtin-skills.md`) in the `skills` folder next to the desktop application; a project or user `SKILL.md` of the same name takes over. The remote and API-hosted sessions cannot read that folder, so there a `SKILL.md` of the same name must be installed. |
 | CloudHandoff | The task is handed to a cloud agent through the `cloud.handoff` action, after the repository and the cost are confirmed in a dialog. Partial: it needs the OmpOS API address and a sign-in. |
 | Unavailable | OmpOS cannot run the command; the reason is in the table. |
 
@@ -111,21 +111,22 @@ A native command whose action the window cannot run is listed disabled. The web 
 | `/automate` | Built-in skill | Built-in skill: creates Cursor Automations from schedules, Slack, GitHub and other sources. | Unavailable | - | Unavailable | Creates Cursor Automations, a Cursor cloud service. |
 | `/autopilot` | Built-in skill | Built-in skill: monitors a PR and addresses feedback, conflicts and failing checks. | Unavailable | - | Unavailable | Cursor's autopilot skill watches a pull request from Cursor's cloud backend; OmpOS hands a one-off task to a cloud agent with /in-cloud and has no pull request watcher. |
 | `/canvas` | Built-in skill | Built-in skill: creates interactive React artifacts beside the conversation. | Unavailable | - | Unavailable | Cursor renders canvas artifacts in its own pane. |
-| `/create-hook` | Built-in skill | Built-in skill: creates hooks and updates hooks.json. | Skill | `SKILL.md named create-hook` | Partial | Cursor ships this skill inside its app. OmpOS runs a SKILL.md named create-hook when one is installed. |
-| `/create-rule` | Built-in skill | Built-in skill: creates rules with scope and instructions. | Skill | `SKILL.md named create-rule` | Partial | Cursor ships this skill inside its app. OmpOS runs a SKILL.md named create-rule when one is installed. |
-| `/create-skill` | Built-in skill | Built-in skill: creates Agent Skills and SKILL.md. | Skill | `SKILL.md named create-skill` | Partial | Cursor ships this skill inside its app. OmpOS runs a SKILL.md named create-skill when one is installed. |
-| `/create-subagent` | Built-in skill | Built-in skill: creates custom subagents. | Skill | `SKILL.md named create-subagent` | Partial | Cursor ships this skill inside its app. OmpOS runs a SKILL.md named create-subagent when one is installed. |
+| `/create-hook` | Built-in skill | Built-in skill: creates hooks and updates hooks.json. | Skill | `SKILL.md named create-hook` | Built | Ships with OmpOS as a built-in skill; a project or user skill of the same name takes over. |
+| `/create-rule` | Built-in skill | Built-in skill: creates rules with scope and instructions. | Skill | `SKILL.md named create-rule` | Built | Ships with OmpOS as a built-in skill; a project or user skill of the same name takes over. |
+| `/create-skill` | Built-in skill | Built-in skill: creates Agent Skills and SKILL.md. | Skill | `SKILL.md named create-skill` | Built | Ships with OmpOS as a built-in skill; a project or user skill of the same name takes over. |
+| `/create-subagent` | Built-in skill | Built-in skill: creates custom subagents. | Skill | `SKILL.md named create-subagent` | Built | Ships with OmpOS as a built-in skill; a project or user skill of the same name takes over. |
 | `/cursor-blame` | Built-in skill | Built-in skill: investigates AI-authored changes and their prompts. | Unavailable | - | Unavailable | Needs Cursor's record of AI-authored changes and their prompts. |
 | `/loop` | Built-in skill | Built-in skill: runs a prompt or skill repeatedly at an interval. | Unavailable | - | Unavailable | omp runs /loop in its terminal UI only, and OmpOS has no scheduler for repeating prompts. |
-| `/migrate-to-skills` | Built-in skill | Built-in skill: converts dynamic rules and slash commands into skills. | Skill | `SKILL.md named migrate-to-skills` | Partial | Cursor ships this skill inside its app. OmpOS runs a SKILL.md named migrate-to-skills when one is installed. |
-| `/review` | Built-in skill | Built-in skill: selects and runs the code-review agent. | Skill | `SKILL.md named review` | Partial | Cursor ships this skill inside its app. OmpOS runs a SKILL.md named review when one is installed. |
+| `/migrate-to-skills` | Built-in skill | Built-in skill: converts dynamic rules and slash commands into skills. | Skill | `SKILL.md named migrate-to-skills` | Built | Ships with OmpOS as a built-in skill; a project or user skill of the same name takes over. |
+| `/review` | Built-in skill | Built-in skill: selects and runs the code-review agent. | Skill | `SKILL.md named review` | Built | Ships with OmpOS as a built-in skill; a project or user skill of the same name takes over. |
 | `/review-bugbot` | Built-in skill | Built-in skill: reviews for bugs and regressions with Bugbot. | Unavailable | - | Unavailable | Bugbot is a Cursor-hosted reviewer. |
-| `/review-security` | Built-in skill | Built-in skill: reviews for security vulnerabilities with Security Review. | Unavailable | - | Unavailable | Security Review is a Cursor-hosted reviewer; omp offers its own /security scans. |
+| `/review-security` | Built-in skill | Built-in skill: reviews for security vulnerabilities with Security Review. | Skill | `SKILL.md named review-security` | Built | Ships with OmpOS as a built-in skill; a project or user skill of the same name takes over. |
 | `/sdk` | Built-in skill | Built-in skill: helps build applications with the Cursor SDK. | Unavailable | - | Unavailable | Helps build with the Cursor SDK. |
-| `/split-to-prs` | Built-in skill | Built-in skill: splits large changes into smaller PRs. | Skill | `SKILL.md named split-to-prs` | Partial | Cursor ships this skill inside its app. OmpOS runs a SKILL.md named split-to-prs when one is installed. |
+| `/split-to-prs` | Built-in skill | Built-in skill: splits large changes into smaller PRs. | Skill | `SKILL.md named split-to-prs` | Built | Ships with OmpOS as a built-in skill; a project or user skill of the same name takes over. |
 | `/statusline` | Built-in skill | Built-in skill: configures the CLI status line. | Unavailable | - | Unavailable | Configures the Cursor CLI status line. |
-| `/update-cli-config` | Built-in skill | Built-in skill: updates ~/.cursor/cli-config.json. | Unavailable | - | Unavailable | Edits the Cursor CLI's own configuration file. |
-| `/update-cursor-settings` | Built-in skill | Built-in skill: finds and updates a Cursor or VS Code setting. | Unavailable | - | Unavailable | Edits Cursor and VS Code settings; use /config for OmpOS Settings. |
+| `/update-cli-config` | Built-in skill | Built-in skill: updates ~/.cursor/cli-config.json. | Unavailable | - | Unavailable | Edits the Cursor CLI's own configuration file; use /update-settings for OmpOS settings. |
+| `/update-cursor-settings` | Built-in skill | Built-in skill: finds and updates a Cursor or VS Code setting. | Unavailable | - | Unavailable | Edits Cursor and VS Code settings; use /update-settings for OmpOS settings. |
+| `/update-settings` | Built-in skill | Built-in skill: explains and changes OmpOS settings safely. | Skill | `SKILL.md named update-settings` | Built | Ships with OmpOS as a built-in skill; a project or user skill of the same name takes over. |
 | `/add-dir` | CLI | Adds a directory mid-session; refreshes skills and custom commands. | OmpDelegated | `/add-dir` | Delegated | Sent to omp as typed; omp adds the directory to the session. OmpOS re-reads conventions when you refresh. |
 | `/auto-review` | CLI | Named in the Auto-review run-mode entry; Cursor does not state its behaviour. | Unavailable | - | Unavailable | Cursor documents the name only, not what it does. |
 | `/changes` | CLI | Unified review UI with a Session tab showing this session's edits. | NativeAction | `changes.open` | Partial | Shows the Changes bar with this session's edited files; there is no unified review window with a Session tab. |
@@ -147,7 +148,7 @@ A native command whose action the window cannot run is listed disabled. The web 
 | `/restore` | CLI | Alias of /rewind. | NativeAction | `chat.restore` | Partial | Alias of /rewind: opens the Checkpoints timeline, or previews and confirms restoring the files of turn n. Files only, not the conversation text. |
 | `/undo` | CLI | Alias of /rewind. | NativeAction | `chat.undo` | Partial | Previews the files of the latest recorded turn and asks before it puts them back. Files only, not the conversation text. |
 | `/compact` | CLI | Alias of /summarize. | OmpDelegated | `/compact` | Delegated | Sent to omp as typed; omp compacts the conversation. |
-| `/agent-review` | Chat | On-demand local review, Quick or Deep. | Unavailable | - | Unavailable | Cursor's Agent Review service is not reproduced; review diffs in the Changes panel. |
+| `/agent-review` | Chat | On-demand local review, Quick or Deep. | Skill | `SKILL.md named agent-review` | Built | Ships with OmpOS as a built-in skill: a Quick or Deep local review that edits nothing unless asked; a project or user skill of the same name takes over. |
 | `/worktree` | Chat | Runs the rest of the chat in a separate checkout. | OmpDelegated | `/worktree (omp /wt)` | Delegated | Sent to omp as typed; omp's /worktree (alias of /wt) moves the session into a new worktree with its changes and takes an optional branch. |
 | `/apply-worktree` | Chat | Brings worktree changes into the main checkout. | NativeAction | `worktree.apply` | Built | Applies the changes of a worktree run to the main checkout as a patch against their merge base; 'merge' uses a three-way merge and lists conflicts. Opens the Worktrees panel with the outcome. |
 | `/delete-worktree` | Chat | Deletes the isolated checkout. | NativeAction | `worktree.delete` | Built | Asks to delete a worktree run and its checkout; nothing is deleted until you confirm in the Worktrees panel. |

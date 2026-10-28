@@ -76,6 +76,16 @@ internal sealed class ScriptedMcpPageSource : IMcpSettingsSource
     }
 
     /// <inheritdoc />
+    public IReadOnlyList<McpPresetChoice> Presets { get; } = [];
+
+    /// <inheritdoc />
+    public Task<string> AddPresetAsync(string presetId, CancellationToken cancellationToken)
+    {
+        Calls.Add("preset " + presetId);
+        return Task.FromException<string>(new McpSourceException("This scripted page has no presets."));
+    }
+
+    /// <inheritdoc />
     public Task OpenConfigFileAsync(string origin, CancellationToken cancellationToken)
     {
         Calls.Add("open " + origin);

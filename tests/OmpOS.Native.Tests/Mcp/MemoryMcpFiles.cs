@@ -20,6 +20,11 @@ internal sealed class MemoryMcpFiles : IMcpFileStore, IMcpStateStore
         return this;
     }
 
+    /// <summary>Returns the text of a file, as the adapter wrote it.</summary>
+    /// <param name="path">The absolute path.</param>
+    /// <returns>The content, or <see langword="null"/> when the file does not exist.</returns>
+    public string? Text(string path) => _files.TryGetValue(path, out var bytes) ? Encoding.UTF8.GetString(bytes) : null;
+
     /// <inheritdoc />
     public ValueTask<McpFileRead> ReadAsync(string path, int maxBytes, CancellationToken cancellationToken) =>
         ValueTask.FromResult(_files.TryGetValue(path, out var bytes) ? McpFileRead.Read(bytes) : McpFileRead.Missing);

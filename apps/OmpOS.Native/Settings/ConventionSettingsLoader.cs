@@ -3,7 +3,7 @@ using OmpOS.Workspace.Conventions;
 
 namespace OmpOS.Native.Settings;
 
-/// <summary>Discovers the conventions of a workspace for the Rules, Skills and Commands pages. A workspace that does not exist is the page's error state.</summary>
+/// <summary>Discovers the conventions of a workspace for the Rules, Skills and Commands pages, with the skills that ship with the application. A workspace that does not exist is the page's error state.</summary>
 internal static class ConventionSettingsLoader
 {
     /// <summary>Discovers the conventions of the workspace root and the user's home.</summary>
@@ -21,6 +21,6 @@ internal static class ConventionSettingsLoader
         }
 
         var roots = new[] { Path.GetFullPath(workspaceRoot) };
-        return await ConventionCatalog.DiscoverAsync(roots, userHome, ConventionSources.Local(roots, userHome), cancellationToken: cancellationToken).ConfigureAwait(false);
+        return await ConventionCatalog.DiscoverAsync(roots, userHome, ConventionSources.Local(roots, userHome).WithBuiltin(), cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }

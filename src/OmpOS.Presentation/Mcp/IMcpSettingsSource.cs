@@ -47,6 +47,15 @@ public interface IMcpSettingsSource
     /// <returns>The origin of the file that was written, to show.</returns>
     Task<string> AddTemplateAsync(McpTemplateChoice choice, string name, CancellationToken cancellationToken);
 
+    /// <summary>Gets the ready-made servers the page offers to add. The list does not change while the source lives; a source with none returns an empty list.</summary>
+    IReadOnlyList<McpPresetChoice> Presets { get; }
+
+    /// <summary>Adds a preset to the OmpOS-owned file under its own name; it stays switched off until the user switches it on. The entry holds no credential and nothing is started.</summary>
+    /// <param name="presetId">The <see cref="McpPresetChoice.Id"/> of a preset in <see cref="Presets"/>.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>The origin of the file that was written, to show. Faults with <see cref="McpSourceException"/> when no workspace is open, the preset is unknown or its name is already configured.</returns>
+    Task<string> AddPresetAsync(string presetId, CancellationToken cancellationToken);
+
     /// <summary>Asks the host to open a configuration file in the user's editor. The page never reads or edits the file.</summary>
     /// <param name="origin">The origin of the file, as the snapshot shows it.</param>
     /// <param name="cancellationToken">Cancels the request.</param>

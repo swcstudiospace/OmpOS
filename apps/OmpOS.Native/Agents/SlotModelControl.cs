@@ -32,6 +32,9 @@ internal sealed class SlotModelControl : IOmpModelControl
     /// <inheritdoc />
     public string? CurrentModelId => Bound()?.CurrentModelId;
 
+    /// <inheritdoc />
+    public bool? SupportsImages => Bound()?.SupportsImages;
+
     /// <summary>Follows the model control of the engine the slot holds now, or none, and raises <see cref="ModelChanged"/> because the model list is now the engine's.</summary>
     /// <param name="control">The control of the slot's engine host, or null when the slot has no engine.</param>
     public void Bind(IOmpModelControl? control)

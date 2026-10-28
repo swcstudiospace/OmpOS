@@ -21,6 +21,9 @@ internal sealed class HostModelControl : IOmpModelControl
     /// <inheritdoc />
     public string? CurrentModelId => Bound()?.CurrentModelId;
 
+    /// <inheritdoc />
+    public bool? SupportsImages => Bound()?.SupportsImages;
+
     /// <summary>Follows the model control of <paramref name="session"/>, if it has one, and raises <see cref="ModelChanged"/> because the model list is now the session's. A session already followed changes nothing.</summary>
     /// <param name="session">The session the host bound.</param>
     public void Bind(IOmpSession session)

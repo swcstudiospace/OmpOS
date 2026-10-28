@@ -1,5 +1,6 @@
 using OmpOS.Harness.Mcp.Catalog;
 using OmpOS.Harness.Mcp.Config;
+using OmpOS.Harness.Mcp.Templates;
 using OmpOS.Presentation.Mcp;
 
 namespace OmpOS.Native.Views.Mcp;
@@ -75,6 +76,23 @@ internal sealed class McpCatalogSettingsSource : IMcpSettingsSource
     }
 
     /// <inheritdoc />
+    public IReadOnlyList<McpPresetChoice> Presets { get; } = [.. McpTemplateCatalog.Default.Select(MapPreset)];
+
+    /// <inheritdoc />
+    public async Task<string> AddPresetAsync(string presetId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(presetId);
+        try
+        {
+            return await _catalog.AddPresetAsync(presetId, null, cancellationToken).ConfigureAwait(true);
+        }
+        catch (McpCatalogException exception)
+        {
+            throw new McpSourceException(exception.Message, exception);
+        }
+    }
+
+    /// <inheritdoc />
     public Task OpenConfigFileAsync(string origin, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(origin);
@@ -101,6 +119,20 @@ internal sealed class McpCatalogSettingsSource : IMcpSettingsSource
             throw new McpSourceException(exception.Message, exception);
         }
     }
+
+    private static McpPresetChoice MapPreset(McpPreset preset) => new(
+        preset.Id,
+        preset.DisplayName,
+        preset.Description,
+        preset.Kind == McpTemplateKind.Http ? McpTemplateChoice.Http : McpTemplateChoice.Stdio,
+        preset.DocumentationAddress,
+        preset.Auth switch
+        {
+            McpPresetAuth.OAuth => McpCopy.AuthOAuth,
+            McpPresetAuth.BearerToken => McpCopy.AuthBearerToken(preset.TokenVariable ?? string.Empty),
+            _ => McpCopy.AuthNone,
+        },
+        preset.Note);
 
     private static McpServerEntry MapEntry(McpCatalogEntry entry)
     {

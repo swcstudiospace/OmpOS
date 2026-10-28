@@ -122,6 +122,38 @@ internal sealed class ScriptedMcpSource : IMcpSettingsSource
         return Task.FromResult(".ompos/mcp.json");
     }
 
+    /// <summary>Gets the presets the source offers; add to it to script the add-from-preset list.</summary>
+    internal List<McpPresetChoice> PresetList { get; } = [];
+
+    /// <inheritdoc />
+    public IReadOnlyList<McpPresetChoice> Presets => PresetList;
+
+    /// <inheritdoc />
+    public Task<string> AddPresetAsync(string presetId, CancellationToken cancellationToken)
+    {
+        Calls.Add("preset " + presetId);
+        if (WriteFailure is not null)
+        {
+            return Task.FromException<string>(new McpSourceException(WriteFailure));
+        }
+
+        if (!PresetList.Exists(preset => string.Equals(preset.Id, presetId, StringComparison.Ordinal)))
+        {
+            return Task.FromException<string>(new McpSourceException("There is no MCP preset named '" + presetId + "'."));
+        }
+
+        var taken = _servers.Find(server => string.Equals(server.Name, presetId, StringComparison.Ordinal));
+        if (taken is not null)
+        {
+            return Task.FromException<string>(new McpSourceException("A server named '" + presetId + "' is already configured in " + taken.Origin + "."));
+        }
+
+        _servers.Add(new McpServerEntry(
+            presetId, "http", McpEntryScope.Project, ".ompos/mcp.json",
+            McpServerStatusKind.Disabled, "Switched off in OmpOS.", null, "https://preset.example.com", [], [], false, false, true, false, false));
+        return Task.FromResult(".ompos/mcp.json");
+    }
+
     /// <inheritdoc />
     public Task OpenConfigFileAsync(string origin, CancellationToken cancellationToken)
     {

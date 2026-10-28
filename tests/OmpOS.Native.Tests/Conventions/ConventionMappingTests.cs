@@ -28,7 +28,7 @@ public sealed class ConventionMappingTests : IDisposable
         _ = _workspace.Write(".agents/skills/audit/SKILL.md", "---\ndescription: Audit\nuser-invocable: false\n---\n");
         _ = _home.Write(".claude/agents/verifier.md", "---\nname: verifier\ndescription: Verifies\nmodel: fast\nreadonly: true\n---\nCheck.\n");
         _ = _workspace.Write(".cursor/commands/has space.md", "x\n");
-        var source = new ConventionSlashDiscoverySource([_workspace.Root], _home.Root);
+        var source = new ConventionSlashDiscoverySource([_workspace.Root], _home.Root, ConventionSources.Local([_workspace.Root], _home.Root));
 
         var discovery = await source.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
@@ -51,7 +51,7 @@ public sealed class ConventionMappingTests : IDisposable
     [Fact]
     public async Task EachLoadReadsAgain()
     {
-        var source = new ConventionSlashDiscoverySource([_workspace.Root], null);
+        var source = new ConventionSlashDiscoverySource([_workspace.Root], null, ConventionSources.Local([_workspace.Root], null));
         var token = TestContext.Current.CancellationToken;
 
         (await source.LoadAsync(token).ConfigureAwait(true)).Commands.ShouldBeEmpty();

@@ -3,6 +3,7 @@ using OmpOS.Contracts.Ui;
 using OmpOS.Native.Views;
 using OmpOS.Native.Views.AgentPanel;
 using OmpOS.Native.Views.Agents;
+using OmpOS.Native.Views.Attachments;
 using OmpOS.Native.Views.Blocks;
 using OmpOS.Native.Views.Changes;
 using OmpOS.Native.Views.Chats;
@@ -42,7 +43,7 @@ internal static class ViewMapping
         return viewModel switch
         {
             SessionViewModel session => new SessionView { DataContext = session },
-            ComposerViewModel composer => new ComposerView { DataContext = composer },
+            ComposerViewModel composer => CreateComposer(composer),
             AgentsViewModel agents => new AgentsView { DataContext = agents },
             SideChatPanel sideChats => new SideChatListView { DataContext = sideChats },
             TranscriptSearchModel search => new TranscriptSearchView { DataContext = search },
@@ -63,6 +64,18 @@ internal static class ViewMapping
                 viewModel.GetType(),
                 "No native view is mapped for this view model type."),
         };
+    }
+
+    /// <summary>
+    /// Creates the composer view with the Attach button's file picker and the clipboard reader of Ctrl+V, both over the window the view is shown in. The button appears only when the session also wired
+    /// image input into the composer model (<see cref="ComposerViewModel.Images"/>), so a session without it shows neither.
+    /// </summary>
+    private static ComposerView CreateComposer(ComposerViewModel composer)
+    {
+        var view = new ComposerView { DataContext = composer };
+        view.FilePicker = new StorageProviderFilePicker(() => TopLevel.GetTopLevel(view));
+        view.ClipboardImages = new AvaloniaClipboardImageSource(() => TopLevel.GetTopLevel(view));
+        return view;
     }
 
     /// <summary>Creates the view for one transcript block.</summary>
