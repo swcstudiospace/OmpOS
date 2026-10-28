@@ -1,5 +1,5 @@
 ---
-description: "Reference for OmpOS automations: cron and signed webhook triggers, cloud and desktop targets, limits, the API routes and the Automations settings page."
+description: "Reference for Autonogrammer automations: cron and signed webhook triggers, cloud and desktop targets, limits, the API routes and the Automations settings page."
 ---
 
 # Automations
@@ -10,17 +10,17 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-An automation is a prompt that OmpOS runs for you when something happens: a cron schedule comes due, or a signed webhook arrives (a generic one, or one from GitHub). Each run starts a cloud agent in your repositories with your prompt and a short description of what triggered it. This is the OmpOS counterpart of Cursor's Automations, limited to the triggers that need no third-party hosting.
+An automation is a prompt that Autonogrammer runs for you when something happens: a cron schedule comes due, or a signed webhook arrives (a generic one, or one from GitHub). Each run starts a cloud agent in your repositories with your prompt and a short description of what triggered it. This is the Autonogrammer counterpart of Cursor's Automations, limited to the triggers that need no third-party hosting.
 
 > **Status of this release** (recorded 2026-10-28, tree 7535859).
 >
-> - **Built, wired, proven by tests.** *API:* `AddAutomationServices` and `MapAutomationEndpoints` are called in `services/OmpOS.Api/Program.cs`; `Automations:Enabled` is false by default and every automation route then answers 404 `automations_disabled`; the routes are in `docs/api/openapi.json` (contract version 1.5.0); proof: `tests/OmpOS.Api.IntegrationTests/Automations` (`AutomationManagementTests`, `AutomationRunEndpointTests`, `AutomationWebhookEndpointTests`, `AutomationCloudTargetTests`, `AutomationOptionsValidatorTests`, `HostedAutomationsSettingsProviderTests`; 73 tests, 1027 of 1027 in the whole project on the final tree). *Desktop:* Settings > Automations is the 22nd page of the Settings window; the head runs the scheduler once it is open; proof: `AutomationsHostTests`, `LocalSessionAutomationTargetTests`, `LocalAutomationsManagerTests`, `AutomationsPageViewTests`, `HeadServicesWiringTests` (the scheduler starts at head open).
+> - **Built, wired, proven by tests.** *API:* `AddAutomationServices` and `MapAutomationEndpoints` are called in `services/Autonogrammer.Api/Program.cs`; `Automations:Enabled` is false by default and every automation route then answers 404 `automations_disabled`; the routes are in `docs/api/openapi.json` (contract version 1.5.0); proof: `tests/Autonogrammer.Api.IntegrationTests/Automations` (`AutomationManagementTests`, `AutomationRunEndpointTests`, `AutomationWebhookEndpointTests`, `AutomationCloudTargetTests`, `AutomationOptionsValidatorTests`, `HostedAutomationsSettingsProviderTests`; 73 tests, 1027 of 1027 in the whole project on the final tree). *Desktop:* Settings > Automations is the 22nd page of the Settings window; the head runs the scheduler once it is open; proof: `AutomationsHostTests`, `LocalSessionAutomationTargetTests`, `LocalAutomationsManagerTests`, `AutomationsPageViewTests`, `HeadServicesWiringTests` (the scheduler starts at head open).
 > - **Built, not wired or limited.** The desktop runs cron only: it refuses webhook triggers and secret rotation (the editor says so). There is no web page: the web head has no automations screen, only the API routes. The real UI path of a local run (`HeadAutomationSession(s)`: the approval card in a live session, the first turn, stopping on timeout) has no test, only the scripted seam is tested. A cloud target started from the desktop applies the first repository's branch and base branch to every repository.
 > - **Not live-verified.** No automation ran against a live cloud worker, a live GitHub repository or a live omp session, and no model turn ran (open question OD-07). The API is not deployed on Railway (only a staged private worker ran there on 2026-10-28, without a model turn). Nothing ran on Windows, macOS or Android.
 
 ## Turn it on
 
-Automations live in the OmpOS API. They are off by default: with `Automations:Enabled` false every automation route answers 404 `automations_disabled` (including the webhook receiver), nothing is scheduled, and the settings summary `GET /automations` keeps saying that no engine is configured.
+Automations live in the Autonogrammer API. They are off by default: with `Automations:Enabled` false every automation route answers 404 `automations_disabled` (including the webhook receiver), nothing is scheduled, and the settings summary `GET /automations` keeps saying that no engine is configured.
 
 | Key | Default | Meaning |
 | --- | --- | --- |
@@ -89,16 +89,16 @@ Signatures are `sha256=` followed by 64 lower-case hex digits, compared in const
 
 | Header | Value |
 | --- | --- |
-| `X-OmpOS-Timestamp` | Whole Unix seconds. Must be within the replay window (default ±5 minutes) of the server clock. |
-| `X-OmpOS-Signature` | `sha256=` + HMAC-SHA256 of `<timestamp>.<raw body>` with the secret. |
-| `X-OmpOS-Delivery` | Optional identifier, shown in the run summary. |
+| `X-Autonogrammer-Timestamp` | Whole Unix seconds. Must be within the replay window (default ±5 minutes) of the server clock. |
+| `X-Autonogrammer-Signature` | `sha256=` + HMAC-SHA256 of `<timestamp>.<raw body>` with the secret. |
+| `X-Autonogrammer-Delivery` | Optional identifier, shown in the run summary. |
 
 ```sh
 body='{"deploy":"v1.2"}'
 ts=$(date +%s)
-sig=$(printf '%s.%s' "$ts" "$body" | openssl dgst -sha256 -hmac "$OMPOS_WEBHOOK_SECRET" -hex | sed 's/^.* //')
-curl -X POST "$OMPOS_API/hooks/automations/$ID" \
-  -H "X-OmpOS-Timestamp: $ts" -H "X-OmpOS-Signature: sha256=$sig" \
+sig=$(printf '%s.%s' "$ts" "$body" | openssl dgst -sha256 -hmac "$AUTONOGRAMMER_WEBHOOK_SECRET" -hex | sed 's/^.* //')
+curl -X POST "$AUTONOGRAMMER_API/hooks/automations/$ID" \
+  -H "X-Autonogrammer-Timestamp: $ts" -H "X-Autonogrammer-Signature: sha256=$sig" \
   -H 'Content-Type: application/json' --data "$body"
 ```
 
@@ -106,7 +106,7 @@ The first 4000 characters of the body go to the run as trigger data, fenced as u
 
 ### GitHub flavour
 
-In the repository (or organisation) settings add a webhook: payload URL `{API origin}/hooks/automations/{id}`, content type `application/json`, the secret from OmpOS, and the events **Pushes** and **Pull requests**. GitHub sends `X-Hub-Signature-256` (HMAC-SHA256 of the raw body), `X-GitHub-Event` and `X-GitHub-Delivery`.
+In the repository (or organisation) settings add a webhook: payload URL `{API origin}/hooks/automations/{id}`, content type `application/json`, the secret from Autonogrammer, and the events **Pushes** and **Pull requests**. GitHub sends `X-Hub-Signature-256` (HMAC-SHA256 of the raw body), `X-GitHub-Event` and `X-GitHub-Delivery`.
 
 | Filter | Meaning |
 | --- | --- |
@@ -134,7 +134,7 @@ Pushes to tags and branch deletions are ignored. A pull request from a fork is i
 
 **Cloud** (the API's target). The run creates a cloud agent for the automation's owner through the same service the `/cloud/agents` routes use, so owner caps, secret resolution and repository checks apply, waits until its worker is ready, sends the prompt, and ends as `launched` with the agent's identifier. It does not wait for the agent to finish: follow it at `GET /cloud/agents/{id}`. The run's identifier is the idempotency key, so a retry never creates a second agent. Each run creates an agent, which counts against `Cloud:Limits:MaxAgentsPerOwner` and `MaxConcurrentRunningPerOwner`: when a limit is reached the run fails with the cloud code (for example `agent_limit_reached`). Delete old agents from the Cloud agents page.
 
-**Local.** The API has no local target and refuses `local` targets at save time. The desktop registers one: the Automations section of Settings keeps the automations in `automations.json` in the per-user OmpOS folder, and the head runs the scheduler while the app is open (it starts once the head is open and stops when the app closes). A run starts a new agent session in the open workspace, listed in the rail but not selected; the run mode of the session applies. The first run of each automation (and the first run after its prompt changes) asks you to confirm through an approval card in that session; the answer is kept in `automation-consent.json`. One run per automation at a time and the hourly cap come from the runner; the run ends when the first turn ends and the history records the session identifier. Without omp installed local automations are disabled and the page says so. On the desktop the only trigger is the cron schedule: a webhook needs the API, which has a public address, so the desktop editor shows no webhook trigger and refuses one. A desktop automation with a `cloud` target launches the agent through the cloud agents service when `OMPOS_API_BASE_URL` is set (the branches of the first repository apply to every repository).
+**Local.** The API has no local target and refuses `local` targets at save time. The desktop registers one: the Automations section of Settings keeps the automations in `automations.json` in the per-user Autonogrammer folder, and the head runs the scheduler while the app is open (it starts once the head is open and stops when the app closes). A run starts a new agent session in the open workspace, listed in the rail but not selected; the run mode of the session applies. The first run of each automation (and the first run after its prompt changes) asks you to confirm through an approval card in that session; the answer is kept in `automation-consent.json`. One run per automation at a time and the hourly cap come from the runner; the run ends when the first turn ends and the history records the session identifier. Without omp installed local automations are disabled and the page says so. On the desktop the only trigger is the cron schedule: a webhook needs the API, which has a public address, so the desktop editor shows no webhook trigger and refuses one. A desktop automation with a `cloud` target launches the agent through the cloud agents service when `AUTONOGRAMMER_API_BASE_URL` is set (the branches of the first repository apply to every repository).
 
 ## Tools
 
@@ -153,7 +153,7 @@ All routes need a login except the receiver. A route answers 404 for an automati
 
 | Route | Does |
 | --- | --- |
-| `POST /automations` | Create (201). Body: [`SaveAutomationRequest`](https://github.com/swcstudiospace/OmpOS/blob/main/src/OmpOS.Contracts/Automations/SaveAutomationRequest.cs). Answer carries `webhookSecret` once. |
+| `POST /automations` | Create (201). Body: [`SaveAutomationRequest`](https://github.com/swcstudiospace/OmpOS/blob/main/src/Autonogrammer.Contracts/Automations/SaveAutomationRequest.cs). Answer carries `webhookSecret` once. |
 | `GET /automations/definitions` | The caller's automations with next run and last run. (`GET /automations` is the older settings summary and now lists the same automations in its own shape.) |
 | `GET /automations/{id}` | One automation. Never the secret; `hasWebhookSecret` says whether one is stored. |
 | `PUT /automations/{id}` | Replace the definition. The secret is kept; one is generated when the first webhook trigger is added and deleted when the last is removed. |
@@ -175,7 +175,7 @@ Validation failures are 400 `invalid_automation`; `detail` has one `field: messa
 
 ## Cursor parity
 
-| Cursor row | OmpOS |
+| Cursor row | Autonogrammer |
 | --- | --- |
 | AU-01 Automations (prompt, tools, repository scope) | **Built** for cloud targets: prompt, triggers, allowed tools, 1 to 16 repositories. No "no repository" mode yet; a template gallery and the `/automate` skill are not built. |
 | AU-02 Scheduled trigger | **Built.** Cron expression, time zone, never early. Presets are the `@` names; the editor has no preset picker yet. |

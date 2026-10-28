@@ -1,6 +1,6 @@
 # Brief 72: Cowork Browser Use
 
-Names are post-rename (Autonogrammer.*); the repository on disk still uses OmpOS.*; paths are written in the post-rename spelling at the same relative path (line numbers cite the pre-rename files). Decision record: [ADR-0034](../../../decisions/ADR-0034-cowork-browser-use.md). Research: reports 06 (C14 to C17), 07 (sections 2, 4, 5), 02 (sections 8 to 10), 09 (sections 2 and 7). Built on ADR-0032 (briefs 69 and 70) as written; design only, nothing was built or run.
+Names are post-rename (Autonogrammer.*); the repository on disk still uses Autonogrammer.*; paths are written in the post-rename spelling at the same relative path (line numbers cite the pre-rename files). Decision record: [ADR-0034](../../../decisions/ADR-0034-cowork-browser-use.md). Research: reports 06 (C14 to C17), 07 (sections 2, 4, 5), 02 (sections 8 to 10), 09 (sections 2 and 7). Built on ADR-0032 (briefs 69 and 70) as written; design only, nothing was built or run.
 
 ## Goal
 

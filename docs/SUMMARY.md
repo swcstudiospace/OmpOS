@@ -8,7 +8,7 @@
 * [Web head: real API, Demo and static deployment](runbooks/web-demo.md)
 * [Android and iOS terminals](runbooks/android-ios-terminals.md)
 
-## Use OmpOS
+## Use Autonogrammer
 
 * [Desktop app guide](guides/desktop-app-guide.md)
 * [Web app guide](guides/web-app-guide.md)

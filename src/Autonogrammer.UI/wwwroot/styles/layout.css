@@ -1,0 +1,199 @@
+/* App shell grid: a 40 px top bar, then the agent rail beside the thread, then the footer strip. The document scrolls (autonogrammer-scroll.js
+   follows the document viewport), so the top bar and the rail are sticky and the composer dock sticks above the footer.
+
+   Breakpoints (literal px because custom properties cannot appear in a media query):
+     1200 px and up   rail 280 px
+     840 to 1199 px   rail 240 px
+     below 840 px     the rail is an off-canvas drawer opened from the top bar
+     below 560 px     single column: the top bar drops the workspace label and the source link (the footer keeps the source link)
+   Insets keep the shell clear of notches and rounded corners (viewport-fit=cover in index.html). */
+
+.autonogrammer-shell {
+  --autonogrammer-topbar-block: calc(var(--autonogrammer-titlebar-height) + env(safe-area-inset-top, 0px));
+  --autonogrammer-footer-block: calc(var(--autonogrammer-footer-height) + env(safe-area-inset-bottom, 0px));
+
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--autonogrammer-surface-raised);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--autonogrammer-z-topbar);
+  display: flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+  height: var(--autonogrammer-topbar-block);
+  padding: env(safe-area-inset-top, 0px) max(var(--autonogrammer-gap-12), env(safe-area-inset-right, 0px)) 0 max(var(--autonogrammer-gap-12), env(safe-area-inset-left, 0px));
+  background: var(--autonogrammer-surface-raised);
+  border-bottom: 1px solid var(--autonogrammer-border);
+}
+
+.autonogrammer-topbar-spacer {
+  flex: 1;
+}
+
+.autonogrammer-shell-body {
+  display: grid;
+  grid-template-columns: var(--autonogrammer-rail-width) minmax(0, 1fr);
+  min-height: 0;
+}
+
+.autonogrammer-rail {
+  position: sticky;
+  top: var(--autonogrammer-topbar-block);
+  align-self: start;
+  height: calc(100vh - var(--autonogrammer-topbar-block) - var(--autonogrammer-footer-block));
+  height: calc(100dvh - var(--autonogrammer-topbar-block) - var(--autonogrammer-footer-block));
+  overflow-y: auto;
+  padding-left: env(safe-area-inset-left, 0px);
+  background: var(--autonogrammer-surface);
+  border-right: 1px solid var(--autonogrammer-border);
+}
+
+.autonogrammer-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The thread column: transcript, notices and the composer dock, centred at the 760 px reading width. */
+.autonogrammer-thread {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+  width: 100%;
+  max-width: var(--autonogrammer-thread-max);
+  min-width: 0;
+  margin-inline: auto;
+  padding: var(--autonogrammer-gap-12) max(var(--autonogrammer-gap-12), env(safe-area-inset-right, 0px)) 0 var(--autonogrammer-gap-12);
+}
+
+.autonogrammer-thread > .autonogrammer-session {
+  flex: 0 0 auto;
+}
+
+/* The transcript, the run summary, the approvals and the changes stack at the top; the composer dock takes the free space above itself, so the
+   cards stay under the last block however short the conversation is. */
+.autonogrammer-composer-dock {
+  position: sticky;
+  bottom: var(--autonogrammer-footer-block);
+  z-index: var(--autonogrammer-z-sticky);
+  margin-top: auto;
+  padding-block: var(--autonogrammer-gap-8) var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface-raised);
+}
+
+.autonogrammer-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--autonogrammer-z-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--autonogrammer-gap-4) var(--autonogrammer-gap-12);
+  min-height: var(--autonogrammer-footer-block);
+  padding: 0 max(var(--autonogrammer-gap-12), env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(var(--autonogrammer-gap-12), env(safe-area-inset-left, 0px));
+  background: var(--autonogrammer-surface);
+  border-top: 1px solid var(--autonogrammer-border);
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+/* Drawer controls exist only below 840 px. The compound selectors outrank the component rules loaded after this file. */
+.autonogrammer-topbar .autonogrammer-topbar-menu,
+.autonogrammer-rail .autonogrammer-rail-bar,
+.autonogrammer-shell .autonogrammer-scrim {
+  display: none;
+}
+
+@media (min-width: 1200px) {
+  .autonogrammer-shell {
+    --autonogrammer-rail-width: 280px;
+  }
+}
+
+@media (max-width: 839.98px) {
+  .autonogrammer-shell-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .autonogrammer-topbar .autonogrammer-topbar-menu {
+    display: inline-flex;
+  }
+
+  .autonogrammer-rail {
+    position: fixed;
+    top: var(--autonogrammer-topbar-block);
+    bottom: var(--autonogrammer-footer-block);
+    left: 0;
+    z-index: var(--autonogrammer-z-drawer);
+    width: min(var(--autonogrammer-rail-width), 86vw);
+    height: auto;
+    border-right: 1px solid var(--autonogrammer-border);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform var(--autonogrammer-duration) var(--autonogrammer-ease), visibility 0s linear var(--autonogrammer-duration);
+  }
+
+  .autonogrammer-shell[data-drawer='open'] .autonogrammer-rail {
+    transform: none;
+    visibility: visible;
+    box-shadow: var(--autonogrammer-shadow-popup);
+    transition: transform var(--autonogrammer-duration) var(--autonogrammer-ease), visibility 0s linear 0s;
+  }
+
+  .autonogrammer-rail .autonogrammer-rail-bar {
+    display: flex;
+  }
+
+  .autonogrammer-shell[data-drawer='open'] .autonogrammer-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--autonogrammer-z-drawer) - 1);
+    background: var(--autonogrammer-scrim);
+  }
+}
+
+@media (max-width: 559.98px) {
+  .autonogrammer-topbar .autonogrammer-workspace-label,
+  .autonogrammer-topbar .autonogrammer-topbar-link {
+    display: none;
+  }
+
+  /* The mark stays; the wordmark becomes the page heading for assistive technology only, so the tabs and the theme switch fit in 360 px. */
+  .autonogrammer-topbar .autonogrammer-wordmark {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .autonogrammer-topbar {
+    gap: var(--autonogrammer-gap-4);
+  }
+
+  /* The footer wraps to two lines here; the token keeps the sticky composer dock and the drawer clear of it. */
+  .autonogrammer-shell {
+    --autonogrammer-footer-height: 52px;
+  }
+
+  .autonogrammer-footer {
+    align-content: center;
+  }
+
+  .autonogrammer-thread {
+    padding-left: max(var(--autonogrammer-gap-8), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--autonogrammer-gap-8), env(safe-area-inset-right, 0px));
+  }
+}

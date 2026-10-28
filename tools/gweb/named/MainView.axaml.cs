@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace OmpOS.Gweb.Named;
+namespace Autonogrammer.Gweb.Named;
 
 internal sealed partial class MainView : UserControl
 {

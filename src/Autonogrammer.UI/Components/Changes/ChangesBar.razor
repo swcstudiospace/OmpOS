@@ -1,0 +1,169 @@
+@namespace Autonogrammer.UI.Components.Changes
+@using Microsoft.JSInterop
+@using Autonogrammer.Presentation.Changes
+@using Autonogrammer.Presentation.Editor
+@inherits ObservableComponent
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@if (Model.HasChanges)
+{
+    <section class="autonogrammer-changes" aria-label="@ChangeCopy.BarName">
+        <div class="autonogrammer-changes-head">
+            <span class="autonogrammer-changes-summary">@Model.Summary</span>
+            <div class="autonogrammer-changes-actions">
+                <button type="button" class="autonogrammer-btn autonogrammer-btn--small" aria-label="@ChangeCopy.KeepAllName" aria-disabled="@(Model.ActionableCount == 0 ? "true" : null)" @onclick="KeepAll">@ChangeCopy.KeepAll</button>
+                <button type="button" class="autonogrammer-btn autonogrammer-btn--small" aria-label="@ChangeCopy.UndoAllName" aria-disabled="@(Model.ActionableCount == 0 ? "true" : null)" @onclick="UndoAll">@ChangeCopy.UndoAll</button>
+            </div>
+        </div>
+        <ul class="autonogrammer-changes-list" aria-label="@ChangeCopy.ListName" @ref="_list">
+            @foreach (var entry in Model.Entries)
+            {
+                <li class="autonogrammer-change" data-status="@entry.Status.ToString().ToLowerInvariant()" data-kind="@entry.Kind.ToString().ToLowerInvariant()">
+                    <span class="autonogrammer-change-kind" aria-hidden="true">@KindGlyph(entry.Kind)</span>
+                    <span class="autonogrammer-change-path" title="@entry.Path">@entry.Path</span>
+                    <span class="autonogrammer-change-meta">@entry.KindText, @entry.StatusText</span>
+                    <span class="autonogrammer-change-counts"><span class="autonogrammer-change-added">@entry.AddedText</span> <span class="autonogrammer-change-removed">@entry.RemovedText</span></span>
+                    @if (entry.IsActionable)
+                    {
+                        <span class="autonogrammer-change-actions">
+                            <button type="button" class="autonogrammer-btn autonogrammer-btn--small" aria-label="@entry.KeepName" @onclick="() => entry.KeepCommand.Execute(entry.Path)">@ChangeCopy.Keep</button>
+                            <button type="button" class="autonogrammer-btn autonogrammer-btn--small" aria-label="@entry.UndoName" @onclick="() => entry.UndoCommand.Execute(entry.Path)">@ChangeCopy.Undo</button>
+                            <button type="button" class="autonogrammer-btn autonogrammer-btn--small" aria-label="@entry.ReviewName" data-row-id="@entry.Path" @onclick="() => entry.ReviewCommand.Execute(entry.Path)">@ChangeCopy.Review</button>
+                        </span>
+                    }
+
+                    @if (entry.Message.Length > 0)
+                    {
+                        <span class="autonogrammer-change-message" data-status="@entry.Status.ToString().ToLowerInvariant()">@entry.Message</span>
+                    }
+                </li>
+            }
+        </ul>
+        <p class="autonogrammer-sr-only" role="status" aria-live="polite" aria-atomic="true" aria-label="@ChangeCopy.ResultName">@Model.Announcement</p>
+    </section>
+}
+
+@if (_review is { } review)
+{
+    <ChangeReviewPanel Path="@review.Path" Review="review.Review" Model="Model" OnClose="CloseReviewAsync" />
+}
+
+@code {
+    private const string ModulePath = "./_content/Autonogrammer.UI/scripts/autonogrammer-keys.js";
+
+    private ElementReference _list;
+    private IJSObjectReference? _module;
+    private ChangeSetModel? _subscribed;
+    private ChangeReviewRequestedEventArgs? _review;
+    private string? _returnFocusTo;
+    private bool _restoreFocus;
+    private bool _disposed;
+
+    /// <summary>Gets the change set of the session: the files the agent changed, and the commands that keep, undo and review them.</summary>
+    [Parameter, EditorRequired]
+    public ChangeSetModel Model { get; set; } = null!;
+
+    private static string KindGlyph(ChangeKind kind) => kind switch
+    {
+        ChangeKind.Created => "+",
+        ChangeKind.Emptied => "-",
+        _ => "~",
+    };
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_subscribed, Model))
+        {
+            if (_subscribed is not null)
+            {
+                _subscribed.ReviewRequested -= OnReviewRequested;
+                StopObserving(_subscribed);
+                StopObserving(_subscribed.Entries);
+            }
+
+            _subscribed = Model;
+            Model.ReviewRequested += OnReviewRequested;
+        }
+
+        Observe(Model);
+        Observe(Model.Entries);
+        foreach (var entry in Model.Entries)
+        {
+            Observe(entry);
+        }
+    }
+
+    /// <inheritdoc />
+    protected override bool ShouldRender()
+    {
+        // An entry's status changes after a keep or an undo, so each entry is watched as soon as it is listed.
+        foreach (var entry in Model.Entries)
+        {
+            Observe(entry);
+        }
+
+        return true;
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_restoreFocus && _returnFocusTo is { } path && !_disposed)
+        {
+            _restoreFocus = false;
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
+            await _module.InvokeVoidAsync("focusItem", _list, path).ConfigureAwait(true);
+        }
+    }
+
+    private void OnReviewRequested(object? sender, ChangeReviewRequestedEventArgs args)
+    {
+        _review = args;
+        _returnFocusTo = args.Path;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private Task CloseReviewAsync()
+    {
+        _review = null;
+        _restoreFocus = true;
+        return Task.CompletedTask;
+    }
+
+    private void KeepAll() => Model.KeepAllCommand.Execute(null);
+
+    private void UndoAll() => Model.UndoAllCommand.Execute(null);
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        _disposed = true;
+        if (_subscribed is not null)
+        {
+            _subscribed.ReviewRequested -= OnReviewRequested;
+            _subscribed = null;
+        }
+
+        base.Dispose(disposing);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        Dispose();
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _module.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the listeners went with it.
+        }
+    }
+}

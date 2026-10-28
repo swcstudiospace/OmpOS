@@ -2,7 +2,7 @@
 
 - Status: Accepted 2026-10-28 (an addendum to [ADR-0015](ADR-0015-remote-environments.md); ADR-0015 itself is unchanged)
 - Date: 2026-10-28
-- Owner: ompos-maintainers
+- Owner: autonogrammer-maintainers
 - Scope: how a session runs inside a local podman container (a dev container or any running container) or inside a WSL distribution, with the same ACP transport, files, conventions and terminal as an ssh host. Research: [09-remote-cloud-plan.md](../plans/v0.15.0-research/09-remote-cloud-plan.md) section E, [02-cursor-cloud-remote.md](../plans/v0.15.0-research/02-cursor-cloud-remote.md) section F (rows RD-04 and RD-05). Cloud workers stay in ADR-0020.
 
 ## Decision
@@ -39,18 +39,18 @@ An ssh session carries local loopback MCP servers to the remote machine with `ss
 
 ### A6. Dev containers
 
-`DevContainerResolver` reads `.devcontainer/devcontainer.json` (or `.devcontainer.json`; JSON with comments and trailing commas) for the name, `workspaceFolder` (with `${localWorkspaceFolderBasename}` and `${localWorkspaceFolder}` filled in; default `/workspaces/<folder name>`), `remoteUser` (then `containerUser`) and how the container is made, then asks `podman ps -a --filter label=devcontainer.local_folder=<folder> --format json` for the containers the devcontainer CLI labelled with that folder. Outcomes: found (one running container gives the profile), not created, not running, ambiguous, runtime problem, invalid or missing definition. **Starting a dev container from its definition (`devcontainer up`) is out of scope**: OmpOS never builds, creates or starts a dev container on its own; the answer says "start it with the devcontainer CLI or podman, then attach".
+`DevContainerResolver` reads `.devcontainer/devcontainer.json` (or `.devcontainer.json`; JSON with comments and trailing commas) for the name, `workspaceFolder` (with `${localWorkspaceFolderBasename}` and `${localWorkspaceFolder}` filled in; default `/workspaces/<folder name>`), `remoteUser` (then `containerUser`) and how the container is made, then asks `podman ps -a --filter label=devcontainer.local_folder=<folder> --format json` for the containers the devcontainer CLI labelled with that folder. Outcomes: found (one running container gives the profile), not created, not running, ambiguous, runtime problem, invalid or missing definition. **Starting a dev container from its definition (`devcontainer up`) is out of scope**: Autonogrammer never builds, creates or starts a dev container on its own; the answer says "start it with the devcontainer CLI or podman, then attach".
 
 ### A7. Presentation
 
-Framework-neutral models in `OmpOS.Presentation.Remote`: `RuntimeEnvironmentsViewModel` (rows, forms, test, start), `RuntimeEnvironmentRow`, `ContainerProfileEditor`, `WslProfileEditor`, `RunningContainerPicker` over the `IContainerLister` seam (`podman ps --format json`, only identities kept, never the environment), `IContainerEnvironmentsHost`, three new statuses (`RuntimeUnavailable`, `NotRunning`, `NotFound`), and container and WSL options in `NewSessionTargetModel` (WSL only where the head says it exists). Views for these models are a later wiring item.
+Framework-neutral models in `Autonogrammer.Presentation.Remote`: `RuntimeEnvironmentsViewModel` (rows, forms, test, start), `RuntimeEnvironmentRow`, `ContainerProfileEditor`, `WslProfileEditor`, `RunningContainerPicker` over the `IContainerLister` seam (`podman ps --format json`, only identities kept, never the environment), `IContainerEnvironmentsHost`, three new statuses (`RuntimeUnavailable`, `NotRunning`, `NotFound`), and container and WSL options in `NewSessionTargetModel` (WSL only where the head says it exists). Views for these models are a later wiring item.
 
 ## What remains
 
 - A Windows head cannot start a WSL session until the ACP working-directory check accepts a POSIX path (the open question of ADR-0015); the WSL argument shapes are covered by tests that run on any system, the real wsl.exe is UNVERIFIED (`wsl.exe -d <distro> --exec sh -c 'printf "%s\n" "$1"' x 'a b'` must print `a b`).
 - Views, registration and the New session wiring (see the wiring spec in the report of this work).
 - Attaching to a container through a remote podman socket, and containers on an ssh host (podman over ssh), are not built.
-- Live podman test: written (`OMPOS_LIVE_PODMAN=1`), not run.
+- Live podman test: written (`AUTONOGRAMMER_LIVE_PODMAN=1`), not run.
 
 ## Consequences
 
@@ -62,5 +62,5 @@ Framework-neutral models in `OmpOS.Presentation.Remote`: `RuntimeEnvironmentsVie
 
 - A second transport class per client: duplicates 500 lines of framing and redaction.
 - Running omp on this machine with its file view redirected into the container: the tools (bash, edit) would act on the wrong machine, as ADR-0015 rejected for ssh.
-- Starting or building dev containers from OmpOS: needs the devcontainer CLI, builds images and runs arbitrary lifecycle scripts; the user keeps that step.
+- Starting or building dev containers from Autonogrammer: needs the devcontainer CLI, builds images and runs arbitrary lifecycle scripts; the user keeps that step.
 - A runtime option: the project uses podman only.

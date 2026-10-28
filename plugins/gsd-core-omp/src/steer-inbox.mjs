@@ -1,12 +1,12 @@
 /**
- * OmpOS steering inbox: delivers directives that OmpOS drops into a directory into the RUNNING omp session.
+ * Autonogrammer steering inbox: delivers directives that Autonogrammer drops into a directory into the RUNNING omp session.
  *
  * omp's ACP agent cancels a running turn when a new `session/prompt` arrives, so live steering cannot travel as a
  * prompt. An extension can instead call `pi.sendUserMessage(text, { deliverAs })`, which queues the text into the
  * running session (omp 18.12: `deliverAs` is "steer" | "followUp" | "aside"; idle sessions start a turn).
  *
- * Layout under `OMPOS_STEER_DIR` (absolute path; unset or relative = inactive, no fs call at all):
- *   inbox/<id>.json   written by OmpOS (tmp + rename); only `*.json` regular files are read
+ * Layout under `AUTONOGRAMMER_STEER_DIR` (absolute path; unset or relative = inactive, no fs call at all):
+ *   inbox/<id>.json   written by Autonogrammer (tmp + rename); only `*.json` regular files are read
  *   acks/<id>.json    written here, atomically (mode 0600)
  *   done/<id>.json    a handled directive is moved here BEFORE delivery, so a crash can lose but never repeat it
  *   alive.json        heartbeat, rewritten every 5 s
@@ -126,7 +126,7 @@ function validate(parsed, id) {
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return fail("invalid-schema");
   const mode = typeof parsed.mode === "string" && MODES.has(parsed.mode) ? parsed.mode : null;
   if (typeof parsed.id !== "string" || !ID_PATTERN.test(parsed.id) || parsed.id !== id) return fail("bad-id", mode);
-  if (parsed.v !== 1 || mode === null || parsed.source !== "ompos") return fail("invalid-schema", mode);
+  if (parsed.v !== 1 || mode === null || parsed.source !== "autonogrammer") return fail("invalid-schema", mode);
   if (typeof parsed.createdAt !== "string" || !ISO_PATTERN.test(parsed.createdAt) || Number.isNaN(Date.parse(parsed.createdAt))) {
     return fail("invalid-schema", mode);
   }
@@ -145,7 +145,7 @@ function validate(parsed, id) {
  * @param {Clock} options.clock
  * @param {(text: string, mode: "steer" | "followUp" | "aside") => ({ idle?: boolean | null } | void)} options.deliver
  *   hands the text to omp; may report whether the session was idle
- * @param {string | undefined} options.dir `OMPOS_STEER_DIR`; inactive unless absolute
+ * @param {string | undefined} options.dir `AUTONOGRAMMER_STEER_DIR`; inactive unless absolute
  * @param {() => string | null} [options.getMode] omp run mode for the heartbeat
  * @returns {{ active: boolean, start: () => boolean, stop: () => void, poll: () => void }}
  */

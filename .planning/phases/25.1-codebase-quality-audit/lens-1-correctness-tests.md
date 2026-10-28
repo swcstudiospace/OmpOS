@@ -1,8 +1,8 @@
 # Lens 1: Correctness and error handling, plus test quality
 
-Phase 25.1, read-only. Repository `/root/src/repos/ompos`, commit 59e9dd1, branch `feat/v0.9.2-hardening`.
+Phase 25.1, read-only. Repository `/root/src/repos/autonogrammer`, commit 59e9dd1, branch `feat/v0.9.2-hardening`.
 QUALITY_BAR items in scope: **Correctness**, **Unbounded work**. Test quality is folded into Correctness (25.1-CONTEXT.md).
-Scope: tracked files from `git ls-files` (searched with `git grep`) under `src/`, `apps/`, `tests/`. Excludes `bin/`, `obj/`, and `apps/OmpOS.Web/wwwroot/lib/`.
+Scope: tracked files from `git ls-files` (searched with `git grep`) under `src/`, `apps/`, `tests/`. Excludes `bin/`, `obj/`, and `apps/Autonogrammer.Web/wwwroot/lib/`.
 No build, test, formatter, or package-manager run.
 
 ## 1. Findings
@@ -11,40 +11,40 @@ Total found: **34** (High 2, Medium 12, Low 20). None omitted. Ordered by severi
 
 | file:line | QUALITY_BAR item | severity | disposition | evidence (120 characters or fewer) |
 |---|---|---|---|---|
-| src/OmpOS.Harness.Acp/AcpStdioTransport.cs:247 | Unbounded work | High | fix | ACP stdout read by ReadLineAsync with no line cap; RPC caps 1 MiB at OmpRpcProcess.cs:114; no ACP cap test |
-| apps/OmpOS.Web/Services/SseEventStream.cs:81 | Correctness | High | fix | Reconnect count never resets on progress (ConnectionOutcome tracks Terminal only); 10 drops throw on a live stream |
-| src/OmpOS.EngineHost/RemoteEngineHost.cs:343 | Unbounded work | Medium | fix | Frame line read uncapped (ReadLineAsync); data StringBuilder (:337) has no frame cap; no shipped caller yet |
-| src/OmpOS.EngineHost/RemoteEngineHost.cs:347 | Correctness | Medium | fix | Transport drop breaks silently; SubmitPromptAsync ends with no terminal event or error; no in-tree caller checks |
-| src/OmpOS.Harness.Herdr/HerdrSessionService.cs:244 | Correctness | Medium | fix | Failed compensating TerminateAsync swallowed with no log or flag; the unrecorded remote session may keep running |
-| src/OmpOS.Native.Views/Views/RunControls/ToolApprovalRowView.axaml.cs:94 | Correctness | Medium | fix | Decision fault dropped when the row is detached: PostWhileAttached (:125) returns without action or log |
-| src/OmpOS.Harness.Rpc/OmpVersionProbe.cs:31 | Unbounded work | Medium | fix | omp --version output read to end, no cap; the launcher probe caps at 4096 chars (OmpLauncher/OmpVersionProbe.cs:15) |
-| src/OmpOS.Sandbox/AgentOsProvider.cs:400 | Unbounded work | Medium | fix | Vendor response body read with ReadAsStringAsync and no size cap |
-| src/OmpOS.Sandbox/RailwaySwarmProvider.cs:141 | Unbounded work | Medium | fix | Vendor response body read with ReadAsStringAsync and no size cap |
-| tests/OmpOS.Sandbox.Tests/SandboxProviderContractTests.cs:134 | Correctness | Medium | fix | Timeout_IsHonoured asserts nothing; catches at :147 and :151 accept any outcome, so it cannot fail on timeout |
-| tests/OmpOS.Sandbox.Tests/SandboxProviderContractTests.cs:114 | Correctness | Medium | fix | StatusTransitions_CoverEnum asserts no status and no enum value; its name claims coverage it does not give |
-| tests/OmpOS.Native.Tests/RunControls/DetachedSettlementTests.cs:37 | Correctness | Medium | fix | Fixed 200 ms sleep, then a negative StatusText check; a fault posted after 200 ms passes unseen |
-| tests/OmpOS.Web.Tests/SseEventStreamTests.cs:118 | Correctness | Medium | fix | Bound test uses five zero-progress failures, so it cannot tell a cumulative reconnect budget from a consecutive one |
-| src/OmpOS.UI/Components/Blocks/CodeBlockView.razor:29 | Correctness | Medium | fix | Clipboard failure swallowed (:29-31); OnCopy still fires at :33, so the caller is told the copy succeeded |
-| src/OmpOS.Coordination.Dragonfly/DragonflySessionSignals.cs:94 | Correctness | Low | accept | Per-subscriber delivery failure dropped; waiters poll at SessionService.cs:491, so a missed wake is late, not lost |
-| tests/OmpOS.Coordination.Tests/InMemorySessionSignalsTests.cs:71 | Correctness | Low | accept | PublishWithoutSubscribersSucceeds has no assertion; it passes only if nothing throws |
-| tests/OmpOS.Sandbox.Tests/RailwaySwarmProviderTests.cs:204 | Correctness | Low | fix | Name says it completes without network, but nothing checks that no request was sent; no assertion |
-| tests/OmpOS.Sandbox.Tests/SandboxLifecycleTests.cs:184 | Correctness | Low | accept | Teardown_Idempotent_NotFoundIsSuccess has no assertion; it passes only if nothing throws |
-| tests/OmpOS.Harness.ContractTests/AcpTransportContractTests.cs:46 | Correctness | Low | accept | CloseIsIdempotent has no assertion; it passes only if the second close does not throw |
-| tests/OmpOS.EngineHost.Tests/EngineHostTests.cs:324 | Correctness | Low | accept | CancelWithoutPromptCompletes has no assertion; it passes only if neither cancel throws |
-| tests/OmpOS.Api.IntegrationTests/SseWatcherWakeTests.cs:44 | Correctness | Low | fix | Fixed 250 ms sleep before the append; replay of a late subscriber can pass without the wake path running |
-| tests/OmpOS.Harness.Plugins.Tests/SystemHookProcessRunnerTests.cs:94 | Correctness | Low | accept | Negative File.Exists check after a fixed 4 s sleep; a pass shows only that no marker appeared in that window |
-| src/OmpOS.Harness.Workspace/SetupProcess.cs:130 | Correctness | Low | fix | Win32Exception on kill copies the "exited between check and kill" comment; a kill that could not signal is misdescribed |
-| src/OmpOS.Sandbox/SandboxLifecycle.cs:85 | Correctness | Low | accept | Non-cancellation provider failures become ProvisionTimeoutException; documented at :69; no caller branches on the type |
-| src/OmpOS.Harness.Plugins/ProcessTree.cs:179 | Correctness | Low | accept | Win32Exception on signal is swallowed; a descendant may survive. Documented as not owned or already gone |
-| src/OmpOS.Harness.Herdr/HerdrSessionStore.cs:287 | Correctness | Low | accept | Temp-file delete failure swallowed by design (comment :279-280); the store never reads the leftover path |
-| src/OmpOS.Harness.Acp/AcpAgentSession.cs:237 | Correctness | Low | accept | Disposal catch-all with a comment; the pump records the loss (comment :239). Documented |
-| src/OmpOS.Sandbox/ProcessRunner.cs:531 | Unbounded work | Low | accept | Freeze loop bounded by KillWaitBudget for unfrozen members; Thread.Sleep(1) at :541 blocks the kill path |
-| tests/OmpOS.Native.Tests/Editor/HighlightingTests.cs:96 | Correctness | Low | accept | Thread.Sleep on the UI test thread inside a TokenWaitLimit-bounded poll; bounded, but blocks the dispatcher |
-| tests/OmpOS.Sandbox.Tests/ProcessRunnerCancelDuringSpawnRegressionTests.cs:54 | Correctness | Low | accept | Fixed 9 s wait, then empty-directory check, after 800 forked subshells; slow, and a pass shows only no marker |
-| tests/OmpOS.Harness.Rpc.Tests/RpcLiveSmokeTests.cs:29 | Correctness | Low | accept | Live omp test is skip-gated on omp being on PATH; a host without omp reports skipped, not run |
-| src/OmpOS.Harness.Worktrees/GitProcess.cs:76 | Unbounded work | Low | defer | git stdout and stderr read to end with no cap; output size scales with repo state. Local tool output |
-| apps/OmpOS.Web/Services/ApiSessionClient.cs:108 | Unbounded work | Low | accept | Error-body read has no cap; the Justification at :95 records it as best-effort on the error path only |
-| src/OmpOS.Native.Views/Engine/EngineRunInput.cs:16 | Unbounded work | Low | accept | _held has no cap of its own; admission is bounded by RunInputScheduler.MaxQueuedMessages (RunInputScheduler.cs:187) |
+| src/Autonogrammer.Harness.Acp/AcpStdioTransport.cs:247 | Unbounded work | High | fix | ACP stdout read by ReadLineAsync with no line cap; RPC caps 1 MiB at OmpRpcProcess.cs:114; no ACP cap test |
+| apps/Autonogrammer.Web/Services/SseEventStream.cs:81 | Correctness | High | fix | Reconnect count never resets on progress (ConnectionOutcome tracks Terminal only); 10 drops throw on a live stream |
+| src/Autonogrammer.EngineHost/RemoteEngineHost.cs:343 | Unbounded work | Medium | fix | Frame line read uncapped (ReadLineAsync); data StringBuilder (:337) has no frame cap; no shipped caller yet |
+| src/Autonogrammer.EngineHost/RemoteEngineHost.cs:347 | Correctness | Medium | fix | Transport drop breaks silently; SubmitPromptAsync ends with no terminal event or error; no in-tree caller checks |
+| src/Autonogrammer.Harness.Herdr/HerdrSessionService.cs:244 | Correctness | Medium | fix | Failed compensating TerminateAsync swallowed with no log or flag; the unrecorded remote session may keep running |
+| src/Autonogrammer.Native.Views/Views/RunControls/ToolApprovalRowView.axaml.cs:94 | Correctness | Medium | fix | Decision fault dropped when the row is detached: PostWhileAttached (:125) returns without action or log |
+| src/Autonogrammer.Harness.Rpc/OmpVersionProbe.cs:31 | Unbounded work | Medium | fix | omp --version output read to end, no cap; the launcher probe caps at 4096 chars (OmpLauncher/OmpVersionProbe.cs:15) |
+| src/Autonogrammer.Sandbox/AgentOsProvider.cs:400 | Unbounded work | Medium | fix | Vendor response body read with ReadAsStringAsync and no size cap |
+| src/Autonogrammer.Sandbox/RailwaySwarmProvider.cs:141 | Unbounded work | Medium | fix | Vendor response body read with ReadAsStringAsync and no size cap |
+| tests/Autonogrammer.Sandbox.Tests/SandboxProviderContractTests.cs:134 | Correctness | Medium | fix | Timeout_IsHonoured asserts nothing; catches at :147 and :151 accept any outcome, so it cannot fail on timeout |
+| tests/Autonogrammer.Sandbox.Tests/SandboxProviderContractTests.cs:114 | Correctness | Medium | fix | StatusTransitions_CoverEnum asserts no status and no enum value; its name claims coverage it does not give |
+| tests/Autonogrammer.Native.Tests/RunControls/DetachedSettlementTests.cs:37 | Correctness | Medium | fix | Fixed 200 ms sleep, then a negative StatusText check; a fault posted after 200 ms passes unseen |
+| tests/Autonogrammer.Web.Tests/SseEventStreamTests.cs:118 | Correctness | Medium | fix | Bound test uses five zero-progress failures, so it cannot tell a cumulative reconnect budget from a consecutive one |
+| src/Autonogrammer.UI/Components/Blocks/CodeBlockView.razor:29 | Correctness | Medium | fix | Clipboard failure swallowed (:29-31); OnCopy still fires at :33, so the caller is told the copy succeeded |
+| src/Autonogrammer.Coordination.Dragonfly/DragonflySessionSignals.cs:94 | Correctness | Low | accept | Per-subscriber delivery failure dropped; waiters poll at SessionService.cs:491, so a missed wake is late, not lost |
+| tests/Autonogrammer.Coordination.Tests/InMemorySessionSignalsTests.cs:71 | Correctness | Low | accept | PublishWithoutSubscribersSucceeds has no assertion; it passes only if nothing throws |
+| tests/Autonogrammer.Sandbox.Tests/RailwaySwarmProviderTests.cs:204 | Correctness | Low | fix | Name says it completes without network, but nothing checks that no request was sent; no assertion |
+| tests/Autonogrammer.Sandbox.Tests/SandboxLifecycleTests.cs:184 | Correctness | Low | accept | Teardown_Idempotent_NotFoundIsSuccess has no assertion; it passes only if nothing throws |
+| tests/Autonogrammer.Harness.ContractTests/AcpTransportContractTests.cs:46 | Correctness | Low | accept | CloseIsIdempotent has no assertion; it passes only if the second close does not throw |
+| tests/Autonogrammer.EngineHost.Tests/EngineHostTests.cs:324 | Correctness | Low | accept | CancelWithoutPromptCompletes has no assertion; it passes only if neither cancel throws |
+| tests/Autonogrammer.Api.IntegrationTests/SseWatcherWakeTests.cs:44 | Correctness | Low | fix | Fixed 250 ms sleep before the append; replay of a late subscriber can pass without the wake path running |
+| tests/Autonogrammer.Harness.Plugins.Tests/SystemHookProcessRunnerTests.cs:94 | Correctness | Low | accept | Negative File.Exists check after a fixed 4 s sleep; a pass shows only that no marker appeared in that window |
+| src/Autonogrammer.Harness.Workspace/SetupProcess.cs:130 | Correctness | Low | fix | Win32Exception on kill copies the "exited between check and kill" comment; a kill that could not signal is misdescribed |
+| src/Autonogrammer.Sandbox/SandboxLifecycle.cs:85 | Correctness | Low | accept | Non-cancellation provider failures become ProvisionTimeoutException; documented at :69; no caller branches on the type |
+| src/Autonogrammer.Harness.Plugins/ProcessTree.cs:179 | Correctness | Low | accept | Win32Exception on signal is swallowed; a descendant may survive. Documented as not owned or already gone |
+| src/Autonogrammer.Harness.Herdr/HerdrSessionStore.cs:287 | Correctness | Low | accept | Temp-file delete failure swallowed by design (comment :279-280); the store never reads the leftover path |
+| src/Autonogrammer.Harness.Acp/AcpAgentSession.cs:237 | Correctness | Low | accept | Disposal catch-all with a comment; the pump records the loss (comment :239). Documented |
+| src/Autonogrammer.Sandbox/ProcessRunner.cs:531 | Unbounded work | Low | accept | Freeze loop bounded by KillWaitBudget for unfrozen members; Thread.Sleep(1) at :541 blocks the kill path |
+| tests/Autonogrammer.Native.Tests/Editor/HighlightingTests.cs:96 | Correctness | Low | accept | Thread.Sleep on the UI test thread inside a TokenWaitLimit-bounded poll; bounded, but blocks the dispatcher |
+| tests/Autonogrammer.Sandbox.Tests/ProcessRunnerCancelDuringSpawnRegressionTests.cs:54 | Correctness | Low | accept | Fixed 9 s wait, then empty-directory check, after 800 forked subshells; slow, and a pass shows only no marker |
+| tests/Autonogrammer.Harness.Rpc.Tests/RpcLiveSmokeTests.cs:29 | Correctness | Low | accept | Live omp test is skip-gated on omp being on PATH; a host without omp reports skipped, not run |
+| src/Autonogrammer.Harness.Worktrees/GitProcess.cs:76 | Unbounded work | Low | defer | git stdout and stderr read to end with no cap; output size scales with repo state. Local tool output |
+| apps/Autonogrammer.Web/Services/ApiSessionClient.cs:108 | Unbounded work | Low | accept | Error-body read has no cap; the Justification at :95 records it as best-effort on the error path only |
+| src/Autonogrammer.Native.Views/Engine/EngineRunInput.cs:16 | Unbounded work | Low | accept | _held has no cap of its own; admission is bounded by RunInputScheduler.MaxQueuedMessages (RunInputScheduler.cs:187) |
 
 ## 2. Scans
 
@@ -113,26 +113,26 @@ Each continuation observes the fault, either by reading `.Exception` or through 
 ### 2.6 Skip markers (32 hits)
 
 26 platform or tool gates: POSIX shell or Linux checks, `sh`, `head`, `tr`, `printf`, `/bin/printf`, and podman. docs/quality/quality-bar.md notes that CI has `sh`, `head`, and `tr`, so these run in CI and skip only on hosts without the tools. Accepted.
-5 live-omp or environment gates: AcpLiveSmokeTests.cs:25; RpcLiveSmokeTests.cs:29 and :56 (row 31); RpcLiveCaptureTests.cs:46 (env `OMPOS_RPC_LIVE_CAPTURE`); PostgresTwoProcessAppendTests.cs:43 (env connection string). Accepted; these are opt-in.
+5 live-omp or environment gates: AcpLiveSmokeTests.cs:25; RpcLiveSmokeTests.cs:29 and :56 (row 31); RpcLiveCaptureTests.cs:46 (env `AUTONOGRAMMER_RPC_LIVE_CAPTURE`); PostgresTwoProcessAppendTests.cs:43 (env connection string). Accepted; these are opt-in.
 1 not categorised by the heuristic. Not reviewed further.
 
 ### 2.7 Unbounded loops, src/ and apps/ (13 hits)
 
 | file:line | Exit condition | Verdict |
 |---|---|---|
-| apps/OmpOS.Web/Services/SseEventStream.cs:67 | Terminal event, or reconnects reach MaxReconnects (default 10); a null option means unbounded | Bounded by default. Counter is cumulative (row 2) |
-| src/OmpOS.EngineHost/RemoteEngineHost.cs:207 | Lease free, or cancellation through the waiter's token | Bounded by caller token |
-| src/OmpOS.EngineHost/RemoteEngineHost.cs:338 | Null line, or transport exception breaks | Bounded per connection; frame size uncapped (row 3) |
-| src/OmpOS.Harness.Acp/AcpStdioTransport.cs:106 | EOF (null line); exit raised | Bounded; line size uncapped (row 1) |
-| src/OmpOS.Harness.Agent/OmpEventLog.cs:126 | Log completed and drained, or cancellation | Bounded; waits are cancellable |
-| src/OmpOS.Harness.InMemory/InMemoryOmpSession.cs:72 | Cancelled, errored, or no pause segment | Bounded by Produce (test double in src) |
-| src/OmpOS.Harness.Rpc/OmpRpcProcess.cs:85 | Stream completed; a partial frame over 1 MiB throws (:114-116) | Bounded |
-| src/OmpOS.Harness.Terminal/PtyCore.cs:139 | Read returns 0, IOException, or ObjectDisposedException | Bounded |
-| src/OmpOS.Native.Views/MainView.axaml.cs:306 | No held message, stop, or fault. Admission capped at 16 (RunInputScheduler.cs:23, 187) | Bounded. Follow-ups dispatch one per turn end (RunInputScheduler.cs:140-157), taken by TakeNext before the next admission |
-| src/OmpOS.Sandbox/ProcessRunner.cs:99 | EOF, spec.Timeout, or cancellation | Bounded |
-| src/OmpOS.Sandbox/ProcessRunner.cs:165 | EOF, or a line completes | Bounded by EOF and cancellation. Per-line truncation flag exists; reader not read end to end (section 3) |
-| src/OmpOS.Sandbox/ProcessRunner.cs:531 | Each unfrozen member bounded by KillWaitBudget; once all are stopped, no new forks | Bounded (row 28) |
-| src/OmpOS.Sessions/SessionService.cs:475 | Decision recorded, record missing (throws), or lapse token (:446-452) | Bounded by the lapse timer |
+| apps/Autonogrammer.Web/Services/SseEventStream.cs:67 | Terminal event, or reconnects reach MaxReconnects (default 10); a null option means unbounded | Bounded by default. Counter is cumulative (row 2) |
+| src/Autonogrammer.EngineHost/RemoteEngineHost.cs:207 | Lease free, or cancellation through the waiter's token | Bounded by caller token |
+| src/Autonogrammer.EngineHost/RemoteEngineHost.cs:338 | Null line, or transport exception breaks | Bounded per connection; frame size uncapped (row 3) |
+| src/Autonogrammer.Harness.Acp/AcpStdioTransport.cs:106 | EOF (null line); exit raised | Bounded; line size uncapped (row 1) |
+| src/Autonogrammer.Harness.Agent/OmpEventLog.cs:126 | Log completed and drained, or cancellation | Bounded; waits are cancellable |
+| src/Autonogrammer.Harness.InMemory/InMemoryOmpSession.cs:72 | Cancelled, errored, or no pause segment | Bounded by Produce (test double in src) |
+| src/Autonogrammer.Harness.Rpc/OmpRpcProcess.cs:85 | Stream completed; a partial frame over 1 MiB throws (:114-116) | Bounded |
+| src/Autonogrammer.Harness.Terminal/PtyCore.cs:139 | Read returns 0, IOException, or ObjectDisposedException | Bounded |
+| src/Autonogrammer.Native.Views/MainView.axaml.cs:306 | No held message, stop, or fault. Admission capped at 16 (RunInputScheduler.cs:23, 187) | Bounded. Follow-ups dispatch one per turn end (RunInputScheduler.cs:140-157), taken by TakeNext before the next admission |
+| src/Autonogrammer.Sandbox/ProcessRunner.cs:99 | EOF, spec.Timeout, or cancellation | Bounded |
+| src/Autonogrammer.Sandbox/ProcessRunner.cs:165 | EOF, or a line completes | Bounded by EOF and cancellation. Per-line truncation flag exists; reader not read end to end (section 3) |
+| src/Autonogrammer.Sandbox/ProcessRunner.cs:531 | Each unfrozen member bounded by KillWaitBudget; once all are stopped, no new forks | Bounded (row 28) |
+| src/Autonogrammer.Sessions/SessionService.cs:475 | Decision recorded, record missing (throws), or lapse token (:446-452) | Bounded by the lapse timer |
 
 Phase 25 claim checked: the 16-message cap at RunInputScheduler.cs:23 and :187 is in place. `EngineRunInput._held` (row 34) is not capped by itself, but admission is capped in front of it.
 
@@ -142,21 +142,21 @@ Scanned: 307 test files with `[Fact]`, `[Theory]`, `[Test]`, or `[TestMethod]` a
 
 Methods with no assertion call found: 15 flagged, reviewed:
 
-- **9 real, no direct assertion**: rows 10, 11, 16, 17, 18, 19, 20, plus two with no row: `tests/OmpOS.Harness.InMemory.Tests/WebSocketOmpTransportStubTests.cs:34` (CloseOnUnconnectedStubSucceeds, passes only by not throwing; documented) and `tests/OmpOS.Sandbox.Tests/SandboxProviderContractTests.cs:95` (Teardown_IsIdempotent, passes only by not throwing; accepted).
-- **3 not a finding**: `tests/OmpOS.Harness.Automations.Tests/AutomationGuardTests.cs:78, 84, 90` call `RefusesWhenStoreFaultsAsync`, which asserts `Outcome`, `Guard`, and `tally.Count` (AutomationGuardTests.cs:128-134).
-- **2 not a finding**: `tests/OmpOS.UI.Tests/SessionScrollTests.cs:18, 33` assert through bUnit `module.VerifyInvoke`.
-- **1 false positive**: `tests/OmpOS.Native.Tests/Editor/HighlightingTests.cs:19`, a `Main` string inside an `[InlineData]`.
+- **9 real, no direct assertion**: rows 10, 11, 16, 17, 18, 19, 20, plus two with no row: `tests/Autonogrammer.Harness.InMemory.Tests/WebSocketOmpTransportStubTests.cs:34` (CloseOnUnconnectedStubSucceeds, passes only by not throwing; documented) and `tests/Autonogrammer.Sandbox.Tests/SandboxProviderContractTests.cs:95` (Teardown_IsIdempotent, passes only by not throwing; accepted).
+- **3 not a finding**: `tests/Autonogrammer.Harness.Automations.Tests/AutomationGuardTests.cs:78, 84, 90` call `RefusesWhenStoreFaultsAsync`, which asserts `Outcome`, `Guard`, and `tally.Count` (AutomationGuardTests.cs:128-134).
+- **2 not a finding**: `tests/Autonogrammer.UI.Tests/SessionScrollTests.cs:18, 33` assert through bUnit `module.VerifyInvoke`.
+- **1 false positive**: `tests/Autonogrammer.Native.Tests/Editor/HighlightingTests.cs:19`, a `Main` string inside an `[InlineData]`.
 
-Sampled test files (at least 25). Method bodies read: tests/OmpOS.Sandbox.Tests/SandboxProviderContractTests.cs; SandboxLifecycleTests.cs; RailwaySwarmProviderTests.cs; ProcessRunnerCancelDuringSpawnRegressionTests.cs; ProcessRunnerCancellationRegressionTests.cs; tests/OmpOS.Coordination.Tests/InMemorySessionSignalsTests.cs; tests/OmpOS.EngineHost.Tests/EngineHostTests.cs; tests/OmpOS.Harness.Automations.Tests/AutomationGuardTests.cs; tests/OmpOS.Harness.ContractTests/AcpTransportContractTests.cs; OmpLiveVariantContractTests.cs; tests/OmpOS.Harness.InMemory.Tests/WebSocketOmpTransportStubTests.cs; tests/OmpOS.Native.Tests/Editor/HighlightingTests.cs; tests/OmpOS.Native.Tests/RunControls/DetachedSettlementTests.cs; tests/OmpOS.UI.Tests/SessionScrollTests.cs; tests/OmpOS.Web.Tests/SseEventStreamTests.cs; tests/OmpOS.Harness.Plugins.Tests/SystemHookProcessRunnerTests.cs; tests/OmpOS.Sessions.Tests/SessionRepositoryContractTests.cs (lock tests).
+Sampled test files (at least 25). Method bodies read: tests/Autonogrammer.Sandbox.Tests/SandboxProviderContractTests.cs; SandboxLifecycleTests.cs; RailwaySwarmProviderTests.cs; ProcessRunnerCancelDuringSpawnRegressionTests.cs; ProcessRunnerCancellationRegressionTests.cs; tests/Autonogrammer.Coordination.Tests/InMemorySessionSignalsTests.cs; tests/Autonogrammer.EngineHost.Tests/EngineHostTests.cs; tests/Autonogrammer.Harness.Automations.Tests/AutomationGuardTests.cs; tests/Autonogrammer.Harness.ContractTests/AcpTransportContractTests.cs; OmpLiveVariantContractTests.cs; tests/Autonogrammer.Harness.InMemory.Tests/WebSocketOmpTransportStubTests.cs; tests/Autonogrammer.Native.Tests/Editor/HighlightingTests.cs; tests/Autonogrammer.Native.Tests/RunControls/DetachedSettlementTests.cs; tests/Autonogrammer.UI.Tests/SessionScrollTests.cs; tests/Autonogrammer.Web.Tests/SseEventStreamTests.cs; tests/Autonogrammer.Harness.Plugins.Tests/SystemHookProcessRunnerTests.cs; tests/Autonogrammer.Sessions.Tests/SessionRepositoryContractTests.cs (lock tests).
 
-Flagged or sampled lines read: tests/OmpOS.Api.IntegrationTests/SseWatcherWakeTests.cs; SseResumeTests.cs; DirectRunPermissionRoundTripTests.cs; SessionRunWorkflowTests.cs; SessionOwnerScopeTests.cs; GuardTests.cs; OtlpExporterSelectionTests.cs; RunWorktreeIsolationTests.cs; ToolApprovalEndpointTests.cs; tests/OmpOS.Sessions.Tests/ToolApprovalTests.cs; tests/OmpOS.Harness.Agent.Tests/FakeOmpAgentAdapter.cs; RecordedRpcCapture.cs; tests/OmpOS.Harness.Acp.Tests/AcpAgentSessionTests.cs; tests/OmpOS.Harness.Terminal.Tests/LinuxLocalPtyBackendTests.cs; tests/OmpOS.Harness.Rpc.Tests/RpcPromptCompletionTests.cs; tests/OmpOS.Native.Tests/Diff/DiffReviewViewTests.cs.
+Flagged or sampled lines read: tests/Autonogrammer.Api.IntegrationTests/SseWatcherWakeTests.cs; SseResumeTests.cs; DirectRunPermissionRoundTripTests.cs; SessionRunWorkflowTests.cs; SessionOwnerScopeTests.cs; GuardTests.cs; OtlpExporterSelectionTests.cs; RunWorktreeIsolationTests.cs; ToolApprovalEndpointTests.cs; tests/Autonogrammer.Sessions.Tests/ToolApprovalTests.cs; tests/Autonogrammer.Harness.Agent.Tests/FakeOmpAgentAdapter.cs; RecordedRpcCapture.cs; tests/Autonogrammer.Harness.Acp.Tests/AcpAgentSessionTests.cs; tests/Autonogrammer.Harness.Terminal.Tests/LinuxLocalPtyBackendTests.cs; tests/Autonogrammer.Harness.Rpc.Tests/RpcPromptCompletionTests.cs; tests/Autonogrammer.Native.Tests/Diff/DiffReviewViewTests.cs.
 
 ## 3. Gaps
 
 - **No runtime evidence.** No build, test, or analyzer ran. Claims about flakiness, vacuous passes, and timing windows come from source and are not reproduced. A test that passes today can still fail under load.
 - **Test scan is structural.** The method scan uses attributes and brace matching. A body with no assertion token is flagged. A test whose assertions sit in a helper I did not read to its end could be misclassified. The three AutomationGuard cases are the only helper-based ones verified to the end. The bUnit `VerifyInvoke` cases were not read to the end.
 - **Catch split is heuristic.** The filtered/surfaced split (88/121) is a body heuristic. Only the groups and rows named above are reviewed individually.
-- **SSE frame parser not read.** `apps/OmpOS.Web/Services/SseEventStream.cs` after :150 (frame and line reading) was not read, so any frame-size cap there is unverified. Row 2 concerns only the reconnect counter.
+- **SSE frame parser not read.** `apps/Autonogrammer.Web/Services/SseEventStream.cs` after :150 (frame and line reading) was not read, so any frame-size cap there is unverified. Row 2 concerns only the reconnect counter.
 - **ProcessRunner line reader not read end to end.** The per-line cap at ProcessRunner.cs:165 was checked through its truncation flag and `FinishLine`, not through the whole `BoundedLineReader`.
 - **Consumers not traced.** Whether the `OnCopy` consumer shows success text (row 14) and whether a detached-row fault is logged elsewhere (row 6) were checked only at the call sites in this lens.
 - **Dead code** is not in this lens (25-CONTEXT.md; Phase 25 maintainability gap).

@@ -22,7 +22,7 @@ Source: `pi-utils/src/dirs.ts`, `config/settings.ts`, `discovery/*`; confirmed b
 - `--plugin-dir <dir>`: Claude-plugin-layout root only (`injectPluginDirRoots`, `discovery/helpers.ts` 1508): provides skills, commands (namespaced `<plugin>:<cmd>`), agents. It does NOT run `omp.extensions` factories (no `/swarm`, no `swarm_*` tools, no `/ultrathink-swarm|ui`). It is a distinct mechanism from `-e`.
 - `--trusted-extension <FILE>`: exact module FILES only (dirs rejected), disables discovery, no sibling skills/commands/agents; any load error is fatal. Useful for the two substrate projector files only if skill/agent wiring is not wanted.
 - `--no-extensions`: see above. `--no-skills`: kills all skill discovery. `--config`: extra settings overlay.
-- Nonexistent paths: `-e /nope` and `--plugin-dir /nope` are SILENTLY IGNORED: initialize and session/new succeed, no stderr, no notification (runs j1/j2/j3). `--trusted-extension /nope` throws at startup (source). OmpOS must pre-validate every path itself.
+- Nonexistent paths: `-e /nope` and `--plugin-dir /nope` are SILENTLY IGNORED: initialize and session/new succeed, no stderr, no notification (runs j1/j2/j3). `--trusted-extension /nope` throws at startup (source). Autonogrammer must pre-validate every path itself.
 - Path of a missing extension FILE passed to `-e` was not separately tested (only a missing dir/path) - covered by j2 (same silent behavior).
 
 ## 3. Results matrix (cwd `/tmp/omp-probe/work`, fresh sandbox; commands = names from `available_commands_update`; base = 51 commands)
@@ -53,7 +53,7 @@ Startup: `initialize` ~1-2 s, `session/new` returns after ~7-12 s total per run 
 
 Source: `modes/acp/acp-agent.ts` 2584-2664 passes `"rpc"` to `extensionRunner.initialize(..., uiContext, "rpc")` and the real `createAcpExtensionUiContext` (not `noOpUIContext`), so `hasUI()` (= `uiContext !== noOpUIContext`) is true. Experiment (ctxprobe, session_start): `{mode:"rpc", hasUI:true, ui.supportsEditor:false}`, `ctx.ui` has every method.
 - `ui.setWidget/setStatus/setFooter/setHeader/setTitle/setWorkingMessage/custom/setEditorText` are NO-OPS; `ui.notify` only does `logger.debug` (NEVER reaches the ACP client); `select/confirm/input/askDialog` work only if the client advertises `elicitation.form`, else return undefined/false.
-- Consequences: swarm bar mode (`swarm_bar.ts` 2575) = `hasUI===true && mode==="tui"` -> "ui"; `hasUI===false && mode in {print,json}` -> "headless"; ACP is neither -> "off" (bar never mounts). Ultrathink TUI insight/bar require `ctx.mode==="tui"` (omp.ts 1546, 1681) -> never mount. Ultrathink's subagent heuristic (omp.ts 842) `hasUI !== false -> not a subagent`. Swarm `notify` guarded by `ctx.hasUI` is a silent no-op, and `holdTimeoutMs` takes the UI branch. => OmpOS cannot rely on widgets or `notify` for stage visibility under ACP; project stages from tool calls/`session/update` and from files/events the plugins write (swarm `.swarm/events.jsonl`, ultrathink state dir) or pi.events bus channels (`substrate:status`, `token-opt:savings`).
+- Consequences: swarm bar mode (`swarm_bar.ts` 2575) = `hasUI===true && mode==="tui"` -> "ui"; `hasUI===false && mode in {print,json}` -> "headless"; ACP is neither -> "off" (bar never mounts). Ultrathink TUI insight/bar require `ctx.mode==="tui"` (omp.ts 1546, 1681) -> never mount. Ultrathink's subagent heuristic (omp.ts 842) `hasUI !== false -> not a subagent`. Swarm `notify` guarded by `ctx.hasUI` is a silent no-op, and `holdTimeoutMs` takes the UI branch. => Autonogrammer cannot rely on widgets or `notify` for stage visibility under ACP; project stages from tool calls/`session/update` and from files/events the plugins write (swarm `.swarm/events.jsonl`, ultrathink state dir) or pi.events bus channels (`substrate:status`, `token-opt:savings`).
 - Session lifecycle: `session_start` fires in `session/new` after extension binding; `session_shutdown` fires when the process gets SIGTERM (observed in ctx.log).
 
 ## 5. RECOMMENDED argv + env
@@ -67,20 +67,20 @@ omp acp --no-extensions \
   -e ~/src/repos/agent-substrate/packages/projector/omp/substrate-status.ts \
   -e ~/src/repos/agent-substrate/packages/projector/omp/substrate-skills.ts
 ```
-(in OmpOS the three repo roots come from the pinned submodule paths.) Do NOT add `--plugin-dir` for these three (adds nothing with `-e`, and double-registers ultrathink commands). `--no-extensions` is recommended only if the workspace cwd may contain project extensions or sits in claude-ultrathink; it costs `/annotate /green /review`. Without it everything else is identical (i1 vs i2). Do not pass `--no-skills`.
+(in Autonogrammer the three repo roots come from the pinned submodule paths.) Do NOT add `--plugin-dir` for these three (adds nothing with `-e`, and double-registers ultrathink commands). `--no-extensions` is recommended only if the workspace cwd may contain project extensions or sits in claude-ultrathink; it costs `/annotate /green /review`. Without it everything else is identical (i1 vs i2). Do not pass `--no-skills`.
 
-env (names; * = per-session/per-workspace value, rest per-OmpOS-installation):
+env (names; * = per-session/per-workspace value, rest per-Autonogrammer-installation):
 - `HOME=<omp-managed>/home` (REQUIRED, isolation)
 - `PI_CODING_AGENT_DIR=<omp-managed>/agent` (REQUIRED, isolation; holds agent.db credentials, sessions)
-- `ULTRATHINK_UPLIFT=0` (disable prompt rewrite; or `1` when OmpOS wants the uplift stage on) - per session*
+- `ULTRATHINK_UPLIFT=0` (disable prompt rewrite; or `1` when Autonogrammer wants the uplift stage on) - per session*
 - `ULTRATHINK_STATE_DIR=<omp-managed>/ultrathink` (otherwise derived from agent dir/HOME; override ignored if it is a `.planning` path)
 - `SWARM_DIR=<workspace-or-managed>/swarm`* (event log/`results`; default is `<git toplevel>/.swarm`, so a real workspace gets `.swarm/` created)
 - `SWARM_ROOT` (optional, workspace root for swarm python bridge)*
 - `SWARM_GSD_STATE_FILE=` (empty), `SWARM_CLAUDE_STATE_DIR=<managed>/claude-state`
 - `SUBSTRATE_OMP_PENDING_DIR=<managed>/substrate-pending` (REQUIRED: substrate-skills default is hardcoded `~/.omp/agent/substrate-pending`, a real-home write path)
 - `SUBSTRATE_TOKENS_DIR=<managed>/substrate-tokens` (default `/etc/substrate/tokens` is read by both substrate extensions even when URL is unset)
-- `SUBSTRATE_URL`: if UNSET, substrate-status still polls the default `http://127.0.0.1:7410` (observed `connect`); it fails soft ("unreachable"). Set it to the OmpOS-managed substrate URL when one exists.
-- `SUBSTRATE_TOKEN` / `SUBSTRATE_TOKEN_FILE` only when OmpOS runs a substrate server.
+- `SUBSTRATE_URL`: if UNSET, substrate-status still polls the default `http://127.0.0.1:7410` (observed `connect`); it fails soft ("unreachable"). Set it to the Autonogrammer-managed substrate URL when one exists.
+- `SUBSTRATE_TOKEN` / `SUBSTRATE_TOKEN_FILE` only when Autonogrammer runs a substrate server.
 - Provider credentials (e.g. `ANTHROPIC_API_KEY`) via env or `omp login` against the managed agent dir: NOT tested (see UNKNOWNs).
 - Optional: `XDG_CONFIG_HOME|XDG_DATA_HOME|XDG_CACHE_HOME|XDG_STATE_HOME` under the managed home (I set them; omp derived paths from HOME anyway, not shown to be needed).
 - Leave unset: Linear/Notion/Greptile/Hindsight/RAGFlow tokens, `OLLAMA_HOST`/`OLLAMA_BASE_URL`.

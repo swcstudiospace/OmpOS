@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Applies the GitHub presentation and security settings of OmpOS with the gh CLI (Phase 52).
+# Applies the GitHub presentation and security settings of Autonogrammer with the gh CLI (Phase 52).
 #
 #   bash scripts/github/apply-repo-settings.sh [--dry-run]            print every command, change nothing (default)
 #   bash scripts/github/apply-repo-settings.sh --apply                run the commands
 #   Options: --repo OWNER/NAME  --homepage URL  --description TEXT
 #
-# Environment: OMPOS_REPO (default swcstudiospace/OmpOS), OMPOS_HOMEPAGE (default the repository URL until the
+# Environment: AUTONOGRAMMER_REPO (default swcstudiospace/OmpOS), AUTONOGRAMMER_HOMEPAGE (default the repository URL until the
 # docs site exists). Authentication is gh's own (GH_TOKEN or `gh auth login`); this script never prints a token.
 #
 # Every command is idempotent: running --apply twice changes nothing the second time.
@@ -16,13 +16,13 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-repo="${OMPOS_REPO:-swcstudiospace/OmpOS}"
-homepage="${OMPOS_HOMEPAGE:-}"
+repo="${AUTONOGRAMMER_REPO:-swcstudiospace/OmpOS}"
+homepage="${AUTONOGRAMMER_HOMEPAGE:-}"
 description="Web, Desktop & Android agent workspace on the Omp Engine using GSD-Core's USSR Stack. An ADE harness, Cursor-like. AGPL-3.0-or-later."
 mode="dry-run"
 
 # The 15 repository topics (lowercase letters, digits and hyphens; at most 20 are allowed by GitHub).
-topics=(ompos omp ai-agents coding-agent agent-workspace cursor-alternative ai-ide dotnet csharp avalonia blazor-webassembly aspnet-core mcp kanban agpl-3)
+topics=(autonogrammer omp ai-agents coding-agent agent-workspace cursor-alternative ai-ide dotnet csharp avalonia blazor-webassembly aspnet-core mcp kanban agpl-3)
 
 usage() {
   sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'

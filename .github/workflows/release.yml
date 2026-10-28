@@ -1,4 +1,4 @@
-# OmpOS release (Phase 52). A pushed tag v* creates the GitHub Release.
+# Autonogrammer release (Phase 52). A pushed tag v* creates the GitHub Release.
 # Runs on the Omega CI runner pool ([self-hosted, linux, x64, omega-ci]) like ci.yml, never on GitHub-hosted runners.
 # The only credential is the job's GITHUB_TOKEN; `contents: write` is granted to the release job alone.
 # The notes are the matching CHANGELOG.md section. Plugin submodules are not checked out and not attached.
@@ -80,7 +80,7 @@ jobs:
           pre=()
           case "$TAG" in *-*) pre=(--prerelease) ;; esac
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "OmpOS $TAG" --notes-file "$RUNNER_TEMP/notes.md" "${pre[@]}"
+            gh release edit "$TAG" --title "Autonogrammer $TAG" --notes-file "$RUNNER_TEMP/notes.md" "${pre[@]}"
           else
-            gh release create "$TAG" --verify-tag --title "OmpOS $TAG" --notes-file "$RUNNER_TEMP/notes.md" "${pre[@]}"
+            gh release create "$TAG" --verify-tag --title "Autonogrammer $TAG" --notes-file "$RUNNER_TEMP/notes.md" "${pre[@]}"
           fi

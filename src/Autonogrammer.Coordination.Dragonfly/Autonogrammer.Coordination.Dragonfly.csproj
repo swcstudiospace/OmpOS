@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../Autonogrammer.Coordination/Autonogrammer.Coordination.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- IHealthCheck ships in the ASP.NET Core shared framework; no separate package is pinned for it. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="StackExchange.Redis" />
+  </ItemGroup>
+
+</Project>

@@ -173,7 +173,7 @@ async function pressKey(key) {
 // ---- in-page probes (serialised by evalFn) ----------------------------------------------------
 
 function pageFirstRender() {
-  const shell = document.querySelector(".ompos-shell");
+  const shell = document.querySelector(".autonogrammer-shell");
   const bar = document.querySelector("#blazor-error-ui");
   return {
     rendered: !!shell,
@@ -183,7 +183,7 @@ function pageFirstRender() {
 }
 
 function pageSkipLink() {
-  const link = document.querySelector(".ompos-skip-link");
+  const link = document.querySelector(".autonogrammer-skip-link");
   if (!link) return { present: false };
   const rect = link.getBoundingClientRect();
   const style = getComputedStyle(link);
@@ -207,7 +207,7 @@ function pageMarkup() {
   const app = document.querySelector("#app");
   if (!app) return { appPresent: false };
   const text = app.textContent || "";
-  const announcement = document.querySelector(".ompos-announcement");
+  const announcement = document.querySelector(".autonogrammer-announcement");
   return {
     appPresent: true,
     strong: app.querySelectorAll("strong").length,
@@ -217,12 +217,12 @@ function pageMarkup() {
     userTurnEscaped: text.includes("<script>alert(1)</script>"),
     links: Array.from(app.querySelectorAll("a")).map((a) => ({ href: a.getAttribute("href"), text: a.textContent })),
     announcement: announcement ? announcement.textContent : "",
-    errorMessages: Array.from(app.querySelectorAll(".ompos-error-message")).map((e) => e.textContent),
+    errorMessages: Array.from(app.querySelectorAll(".autonogrammer-error-message")).map((e) => e.textContent),
   };
 }
 
 function pageContrast() {
-  const button = document.querySelector("button.ompos-icon-btn");
+  const button = document.querySelector("button.autonogrammer-icon-btn");
   if (!button) return null;
   const parse = (value) => {
     const match = value.match(/rgba?\(([^)]+)\)/);
@@ -278,7 +278,7 @@ function clickSelector(selector) {
 }
 
 function clickConversation(index) {
-  const items = document.querySelectorAll(".ompos-agent-row");
+  const items = document.querySelectorAll(".autonogrammer-agent-row");
   if (!items[index]) return false;
   items[index].click();
   return true;
@@ -350,7 +350,7 @@ try {
   // Step 1: first render (runbook "Browser smoke", step 1).
   note("step 1: load app");
   await openPage(APP_URL);
-  const shellReady = await waitFor(`!!document.querySelector(".ompos-shell")`, 60000);
+  const shellReady = await waitFor(`!!document.querySelector(".autonogrammer-shell")`, 60000);
   await sleep(1000);
   const firstRender = await evalFn(pageFirstRender);
   const reflectionHits = (list) => list.filter((s) => s.includes("JsonSerializerIsReflectionDisabled")).length;
@@ -385,7 +385,7 @@ try {
   const typed = await waitFor(promptVisible(PROBE), 10000);
   const clickedSend = await evalFn(clickSelector, 'button[aria-label="Send message"]');
   const completed = await waitFor(
-    `(document.querySelector(".ompos-announcement")?.textContent ?? "").includes("Response complete.")`,
+    `(document.querySelector(".autonogrammer-announcement")?.textContent ?? "").includes("Response complete.")`,
     120000,
   );
   await sleep(500);
@@ -409,10 +409,10 @@ try {
   // Step 4: reload and open the stored conversation.
   note("step 5: reload and reopen conversation");
   await openPage(APP_URL);
-  await waitFor(`!!document.querySelector(".ompos-shell")`, 60000);
+  await waitFor(`!!document.querySelector(".autonogrammer-shell")`, 60000);
   const errorsBeforeReload = consoleErrors.length;
-  await waitFor(`!!document.querySelector(".ompos-agent-row")`, 30000);
-  const conversationItems = await evalValue(`document.querySelectorAll(".ompos-agent-row").length`);
+  await waitFor(`!!document.querySelector(".autonogrammer-agent-row")`, 30000);
+  const conversationItems = await evalValue(`document.querySelectorAll(".autonogrammer-agent-row").length`);
   // Index.razor selects the first listed conversation on load, which can be an empty session created on
   // first load. Open each listed conversation until one renders its stored history.
   let openedIndex = -1;
@@ -434,7 +434,7 @@ try {
   // Skip link: on a fresh load, one Tab from the body focuses the skip link (runbook "Skip link").
   note("step 6: skip link on fresh load");
   await openPage(APP_URL);
-  await waitFor(`!!document.querySelector(".ompos-skip-link")`, 60000);
+  await waitFor(`!!document.querySelector(".autonogrammer-skip-link")`, 60000);
   await evalFn(blurActive);
   await pressTab();
   await sleep(300);

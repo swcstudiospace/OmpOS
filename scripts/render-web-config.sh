@@ -1,7 +1,7 @@
 #!/bin/sh
-# Rewrites Api:BaseUrl in a published web appsettings.json to the origin in OMPOS_API_ORIGIN.
+# Rewrites Api:BaseUrl in a published web appsettings.json to the origin in AUTONOGRAMMER_API_ORIGIN.
 #
-# Usage: OMPOS_API_ORIGIN=https://api.example.com sh scripts/render-web-config.sh <appsettings.json>
+# Usage: AUTONOGRAMMER_API_ORIGIN=https://api.example.com sh scripts/render-web-config.sh <appsettings.json>
 #
 # Accepted origins (scheme, host, optional port; no path, query, fragment or userinfo):
 #   https://<host>[:port]
@@ -16,13 +16,13 @@ fail() {
 }
 
 if [ "$#" -ne 1 ]; then
-    printf 'usage: OMPOS_API_ORIGIN=<origin> sh scripts/render-web-config.sh <appsettings.json>\n' >&2
+    printf 'usage: AUTONOGRAMMER_API_ORIGIN=<origin> sh scripts/render-web-config.sh <appsettings.json>\n' >&2
     exit 2
 fi
 settings=$1
 
-origin=${OMPOS_API_ORIGIN:-}
-[ -n "$origin" ] || fail "OMPOS_API_ORIGIN is not set"
+origin=${AUTONOGRAMMER_API_ORIGIN:-}
+[ -n "$origin" ] || fail "AUTONOGRAMMER_API_ORIGIN is not set"
 
 case $origin in
     https://*)

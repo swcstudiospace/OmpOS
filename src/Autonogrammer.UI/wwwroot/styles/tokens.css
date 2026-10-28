@@ -1,0 +1,200 @@
+/* Autonogrammer web design tokens: White and Purple. They mirror src/Autonogrammer.Native.Views/Themes/AutonogrammerTokens.axaml, so the web head and the
+   desktop Agent Panel draw the same colours.
+
+   Themes: Light is the default on :root. Dark is selected by <html data-theme="dark">. System follows the operating system through
+   prefers-color-scheme when <html data-theme="system">. theme-boot.js sets data-theme from localStorage before the first paint.
+   The Dark values appear twice (explicit and system) because CSS cannot share one declaration list between a selector and a media
+   query: CssContractTests fails when the two lists differ.
+
+   WCAG contrast: every text role holds 4.5:1 on every surface role, the focus ring and border-strong hold 3:1 (non-text, 1.4.11).
+   The ratios in the comments are computed, and CssContractTests fails when one of them drifts from the colours it describes. */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces, darkest to brightest in Light. */
+  --autonogrammer-surface-sunken: #f0f0ee;
+  --autonogrammer-surface: #fafaf9;
+  --autonogrammer-surface-raised: #ffffff;
+  --autonogrammer-hover: #ebebe8;
+  --autonogrammer-selected: #e4e4e0;
+  --autonogrammer-surface-active: #dcdcd7;
+
+  /* Purple tints, the brand's quiet geometry: the selected rail row, the Demo banner, callouts and the empty-state mark. Text holds 4.5:1
+     on tint and tint-strong (AccessibilityTests); tint-border is a decorative edge. */
+  --autonogrammer-tint: #f5f1ff;
+  --autonogrammer-tint-strong: #ebe4ff;
+  --autonogrammer-tint-border: #d6c9fb;
+
+  /* Text and accent roles. */
+  --autonogrammer-text: #1c1c1a; /* 16.34:1 on --autonogrammer-surface */
+  --autonogrammer-text-secondary: #55555a; /* 7.10:1 on --autonogrammer-surface */
+  --autonogrammer-accent: #6d28d9; /* 6.80:1 on --autonogrammer-surface */
+  --autonogrammer-accent-on: #ffffff; /* 7.10:1 on --autonogrammer-accent */
+  --autonogrammer-accent-hover: #5b21b6; /* 8.98:1 on --autonogrammer-accent-on */
+  --autonogrammer-focus: #5b21b6; /* 8.60:1 on --autonogrammer-surface */
+
+  /* Status roles (text and glyph colours; a status is never colour alone: it also carries a word or an icon). */
+  --autonogrammer-success: #166534; /* 6.83:1 on --autonogrammer-surface */
+  --autonogrammer-warning: #92400e; /* 6.79:1 on --autonogrammer-surface */
+  --autonogrammer-error: #b3261e; /* 6.26:1 on --autonogrammer-surface */
+
+  /* Lines. border is a decorative hairline; border-strong outlines an input, a switch or a checkbox. */
+  --autonogrammer-border: #e0e0dc;
+  --autonogrammer-border-strong: #6f6f6b; /* 4.83:1 on --autonogrammer-surface */
+
+  /* Diff backgrounds (text on them is --autonogrammer-text). */
+  --autonogrammer-diff-added: #e2f4e7;
+  --autonogrammer-diff-removed: #fbe6e6;
+
+  /* Elevation and scrim: two shadows and one overlay, none of them a colour role. */
+  --autonogrammer-shadow-popup: 0 8px 24px 0 rgb(0 0 0 / 16%);
+  --autonogrammer-shadow-card: 0 1px 2px 0 rgb(0 0 0 / 8%);
+  --autonogrammer-scrim: rgb(0 0 0 / 40%);
+
+  /* Typography. DM Sans is the body face, Anybody the display face (SemiBold, 20 px and above only), Space Mono the code face. */
+  --autonogrammer-font-sans: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --autonogrammer-font-display: 'Anybody', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --autonogrammer-font-mono: 'Space Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --autonogrammer-font-size-small: 12px;
+  --autonogrammer-font-size-label: 13px;
+  --autonogrammer-font-size-body: 14px;
+  --autonogrammer-font-size-heading: 16px;
+  --autonogrammer-font-size-display-sm: 20px;
+  --autonogrammer-font-size-display: 24px;
+  --autonogrammer-font-size-mono: 12px;
+  --autonogrammer-font-size-terminal: 13px;
+  --autonogrammer-line-height-small: 16px;
+  --autonogrammer-line-height-label: 18px;
+  --autonogrammer-line-height-body: 21px;
+  --autonogrammer-line-height-heading: 22px;
+  --autonogrammer-line-height-display-sm: 26px;
+  --autonogrammer-line-height-display: 30px;
+  --autonogrammer-line-height-mono: 18px;
+  --autonogrammer-font-weight-regular: 400;
+  --autonogrammer-font-weight-medium: 500;
+  --autonogrammer-font-weight-semibold: 600;
+
+  /* Spacing and shape. */
+  --autonogrammer-gap-2: 2px;
+  --autonogrammer-gap-4: 4px;
+  --autonogrammer-gap-6: 6px;
+  --autonogrammer-gap-8: 8px;
+  --autonogrammer-gap-12: 12px;
+  --autonogrammer-radius-4: 4px;
+  --autonogrammer-radius-6: 6px;
+  --autonogrammer-radius-8: 8px;
+  --autonogrammer-radius-10: 10px;
+  --autonogrammer-radius-12: 12px;
+  --autonogrammer-radius-pill: 999px;
+
+  /* Sizes. Targets are 32 px (28 px small) and never below the 24 px WCAG 2.2 minimum. */
+  --autonogrammer-control-height: 32px;
+  --autonogrammer-control-height-small: 28px;
+  --autonogrammer-target-min: 24px;
+  --autonogrammer-icon-button: 28px;
+  --autonogrammer-icon-button-small: 24px;
+  --autonogrammer-chip-height: 20px;
+  --autonogrammer-titlebar-height: 40px;
+  --autonogrammer-footer-height: 28px;
+  --autonogrammer-pipeline-height: 28px;
+  --autonogrammer-rail-width: 240px;
+  --autonogrammer-thread-max: 760px;
+  --autonogrammer-thread-min: 400px;
+  --autonogrammer-composer-min: 72px;
+  --autonogrammer-composer-max: 220px;
+  --autonogrammer-settings-nav: 220px;
+  --autonogrammer-content-max: 720px;
+  --autonogrammer-kanban-column: 280px;
+
+  /* Focus ring. */
+  --autonogrammer-focus-width: 2px;
+  --autonogrammer-focus-offset: 2px;
+
+  /* Motion. data-motion="reduce" and the reduced-motion media query set the durations to zero (see base.css). */
+  --autonogrammer-duration-fast: 120ms;
+  --autonogrammer-duration: 200ms;
+  --autonogrammer-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Stacking. */
+  --autonogrammer-z-sticky: 20;
+  --autonogrammer-z-topbar: 30;
+  --autonogrammer-z-drawer: 40;
+  --autonogrammer-z-popup: 50;
+  --autonogrammer-z-dialog: 60;
+  --autonogrammer-z-skip: 100;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --autonogrammer-surface-sunken: #141414;
+  --autonogrammer-surface: #181818;
+  --autonogrammer-surface-raised: #1f1f1f;
+  --autonogrammer-hover: #262626;
+  --autonogrammer-selected: #2d2d2d;
+  --autonogrammer-surface-active: #333333;
+
+  --autonogrammer-tint: #232130;
+  --autonogrammer-tint-strong: #2c2842;
+  --autonogrammer-tint-border: #4a3f7a;
+
+  --autonogrammer-text: #ececec; /* 15.03:1 on --autonogrammer-surface */
+  --autonogrammer-text-secondary: #a3a3a3; /* 7.04:1 on --autonogrammer-surface */
+  --autonogrammer-accent: #a78bfa; /* 6.52:1 on --autonogrammer-surface */
+  --autonogrammer-accent-on: #141414; /* 6.77:1 on --autonogrammer-accent */
+  --autonogrammer-accent-hover: #c4b5fd; /* 9.98:1 on --autonogrammer-accent-on */
+  --autonogrammer-focus: #c4b5fd; /* 9.62:1 on --autonogrammer-surface */
+
+  --autonogrammer-success: #4ade80; /* 10.19:1 on --autonogrammer-surface */
+  --autonogrammer-warning: #fbbf24; /* 10.64:1 on --autonogrammer-surface */
+  --autonogrammer-error: #ff9a9a; /* 8.74:1 on --autonogrammer-surface */
+
+  --autonogrammer-border: #2c2c2c;
+  --autonogrammer-border-strong: #808080; /* 4.50:1 on --autonogrammer-surface */
+
+  --autonogrammer-diff-added: #132a1c;
+  --autonogrammer-diff-removed: #301719;
+
+  --autonogrammer-shadow-popup: 0 8px 24px 0 rgb(0 0 0 / 60%);
+  --autonogrammer-shadow-card: 0 0 0 0 rgb(0 0 0 / 0%);
+  --autonogrammer-scrim: rgb(0 0 0 / 60%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='system'] {
+    color-scheme: dark;
+
+    --autonogrammer-surface-sunken: #141414;
+    --autonogrammer-surface: #181818;
+    --autonogrammer-surface-raised: #1f1f1f;
+    --autonogrammer-hover: #262626;
+    --autonogrammer-selected: #2d2d2d;
+    --autonogrammer-surface-active: #333333;
+
+    --autonogrammer-tint: #232130;
+    --autonogrammer-tint-strong: #2c2842;
+    --autonogrammer-tint-border: #4a3f7a;
+
+    --autonogrammer-text: #ececec; /* 15.03:1 on --autonogrammer-surface */
+    --autonogrammer-text-secondary: #a3a3a3; /* 7.04:1 on --autonogrammer-surface */
+    --autonogrammer-accent: #a78bfa; /* 6.52:1 on --autonogrammer-surface */
+    --autonogrammer-accent-on: #141414; /* 6.77:1 on --autonogrammer-accent */
+    --autonogrammer-accent-hover: #c4b5fd; /* 9.98:1 on --autonogrammer-accent-on */
+    --autonogrammer-focus: #c4b5fd; /* 9.62:1 on --autonogrammer-surface */
+
+    --autonogrammer-success: #4ade80; /* 10.19:1 on --autonogrammer-surface */
+    --autonogrammer-warning: #fbbf24; /* 10.64:1 on --autonogrammer-surface */
+    --autonogrammer-error: #ff9a9a; /* 8.74:1 on --autonogrammer-surface */
+
+    --autonogrammer-border: #2c2c2c;
+    --autonogrammer-border-strong: #808080; /* 4.50:1 on --autonogrammer-surface */
+
+    --autonogrammer-diff-added: #132a1c;
+    --autonogrammer-diff-removed: #301719;
+
+    --autonogrammer-shadow-popup: 0 8px 24px 0 rgb(0 0 0 / 60%);
+    --autonogrammer-shadow-card: 0 0 0 0 rgb(0 0 0 / 0%);
+    --autonogrammer-scrim: rgb(0 0 0 / 60%);
+  }
+}

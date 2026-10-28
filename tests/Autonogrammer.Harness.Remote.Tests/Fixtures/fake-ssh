@@ -1,0 +1,77 @@
+#!/bin/sh
+# A stand-in for ssh, used only by Autonogrammer.Harness.Remote.Tests.
+#
+# It logs its argument list, understands `-G <alias>` (prints a canned `ssh -G` answer), `-V`, and otherwise behaves like the remote
+# login shell of a real ssh server: it joins the words after the destination with spaces and runs them with `sh -c`, with stdin, stdout
+# and stderr passed through. Environment variables (set by the per-test wrapper script) steer it:
+#   FAKE_SSH_LOG     file that receives one `CALL` line and one `ARG:<value>` line per argument
+#   FAKE_SSH_G_DIR   directory with `<alias>.txt` files that hold the canned `ssh -G` output
+#   FAKE_SSH_MODE    refused | resolve | hostkey | hostkeychanged | authfail | nonposix | hang (anything else: normal)
+#   FAKE_SSH_BANNER  when non-empty, a login banner is printed on stdout before the command runs
+#   FAKE_SSH_HOME    the HOME of the "remote" user
+#   FAKE_SSH_PATH    the PATH of the "remote" non-interactive shell
+log() {
+  if [ -n "$FAKE_SSH_LOG" ]; then
+    printf '%s\n' "$1" >> "$FAKE_SSH_LOG"
+  fi
+}
+
+log "CALL"
+for arg in "$@"; do
+  log "ARG:$arg"
+done
+
+generate=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -G) generate=1; shift ;;
+    -V) printf 'OpenSSH_9.9p1 (fake-ssh)\n' >&2; exit 0 ;;
+    -o|-p|-i|-l|-J|-F|-R|-L|-S|-D|-W|-b|-c|-E|-e|-I|-m|-O|-Q|-B|-w) shift 2 ;;
+    --) shift; break ;;
+    -*) shift ;;
+    *) break ;;
+  esac
+done
+
+host="$1"
+if [ $# -gt 0 ]; then
+  shift
+fi
+
+if [ "$generate" = 1 ]; then
+  if [ -n "$FAKE_SSH_G_DIR" ] && [ -f "$FAKE_SSH_G_DIR/$host.txt" ]; then
+    cat "$FAKE_SSH_G_DIR/$host.txt"
+    exit 0
+  fi
+  printf 'host %s\nhostname %s\nport 22\nuser fakeuser\n' "$host" "$host"
+  exit 0
+fi
+
+case "$FAKE_SSH_MODE" in
+  refused) printf 'ssh: connect to host %s port 22: Connection refused\n' "$host" >&2; exit 255 ;;
+  resolve) printf 'ssh: Could not resolve hostname %s: Name or service not known\n' "$host" >&2; exit 255 ;;
+  hostkey) printf 'No ED25519 host key is known for %s and you have requested strict checking.\nHost key verification failed.\n' "$host" >&2; exit 255 ;;
+  hostkeychanged) printf '@@@ WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED! @@@\nOffending ECDSA key in /home/u/.ssh/known_hosts:3\nHost key verification failed.\n' >&2; exit 255 ;;
+  authfail) printf 'fake@%s: Permission denied (publickey).\n' "$host" >&2; exit 255 ;;
+  nonposix) printf "fish: Unsupported use of '='. In fish, please use 'set \$((1+1))'.\n" >&2; exit 127 ;;
+  hang) sleep 60; exit 0 ;;
+esac
+
+if [ -n "$FAKE_SSH_BANNER" ]; then
+  printf 'Welcome to the fake host\n'
+  printf 'Last login: Mon Oct 26 10:00:00 2026 from 192.0.2.1\n'
+fi
+
+if [ -n "$FAKE_SSH_HOME" ]; then
+  HOME="$FAKE_SSH_HOME"
+  export HOME
+fi
+if [ -n "$FAKE_SSH_PATH" ]; then
+  PATH="$FAKE_SSH_PATH"
+  export PATH
+fi
+
+# The "remote machine" has no /usr/local/bin: the developer machine that runs the tests may have a real omp there, which the
+# PATH line of the command appends and which must never be found instead of the fixture (or instead of "no omp installed").
+command_text=$(printf '%s' "$*" | sed 's#/usr/local/bin#/nonexistent-autonogrammer-bin#g')
+exec sh -c "$command_text"

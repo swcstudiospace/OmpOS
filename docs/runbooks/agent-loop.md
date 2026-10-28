@@ -1,5 +1,5 @@
 ---
-description: "How to run the OmpOS desktop head with the Ultrathink, Swarm, Substrate and GSD-Core plugins and check a launch without a model turn."
+description: "How to run the Autonogrammer desktop head with the Ultrathink, Swarm, Substrate and GSD-Core plugins and check a launch without a model turn."
 ---
 
 # Agent loop runbook
@@ -10,22 +10,22 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-How to run the OmpOS native head with the Ultrathink, Swarm, Substrate and GSD-Core plugins, how to check a launch without spending a model turn, and what is known not to work. Plugin facts: [docs/plugins.md](../plugins.md). Decision: [ADR-0012](../decisions/ADR-0012-agent-loop-plugins.md).
+How to run the Autonogrammer native head with the Ultrathink, Swarm, Substrate and GSD-Core plugins, how to check a launch without spending a model turn, and what is known not to work. Plugin facts: [docs/plugins.md](../plugins.md). Decision: [ADR-0012](../decisions/ADR-0012-agent-loop-plugins.md).
 
 ## Run the app with the plugins
 
 ```sh
 export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH DOTNET_NOLOGO=1 DOTNET_CLI_TELEMETRY_OPTOUT=1
 git submodule update --init --recursive
-dotnet run --project apps/OmpOS.Native
+dotnet run --project apps/Autonogrammer.Native
 ```
 
 Prerequisites: `omp` on `PATH`, the pinned SDK (`./bootstrap.sh` installs it into `~/.dotnet`), `python3` >= 3.12 for Swarm, `node` >= 24 for GSD tools. Host requirements per plugin are in [plugins.md](../plugins.md#host-requirements).
 
-`OMPOS_PLUGINS_ROOT` points OmpOS at a plugins directory. When it is unset, OmpOS looks for `plugins/` next to the repository root, discovered from the executable or the current directory:
+`AUTONOGRAMMER_PLUGINS_ROOT` points Autonogrammer at a plugins directory. When it is unset, Autonogrammer looks for `plugins/` next to the repository root, discovered from the executable or the current directory:
 
 ```sh
-OMPOS_PLUGINS_ROOT=$PWD/plugins dotnet run --project apps/OmpOS.Native
+AUTONOGRAMMER_PLUGINS_ROOT=$PWD/plugins dotnet run --project apps/Autonogrammer.Native
 ```
 
 If a plugin is not initialised the panel still opens. Its stage shows Unavailable with the fix text, and sessions run as plain omp.
@@ -52,21 +52,21 @@ The probe is offline. The only process it starts is `node <gsdHome>/bin/gsd-tool
 
 ## Plugin health
 
-OmpOS resolves each plugin without executing it (it reads `package.json` `omp.extensions`) and reports one of four states.
+Autonogrammer resolves each plugin without executing it (it reads `package.json` `omp.extensions`) and reports one of four states.
 
 | Health | Cause | Fix |
 | ------ | ----- | --- |
 | Ready | Directory present, manifest valid, entry files exist | none |
 | SubmoduleNotInitialized | The `plugins/<name>` directory is empty or absent | `git submodule update --init --recursive plugins/<name>` |
 | EntryMissing | An extension entry named by the manifest does not exist (wrong pin, partial checkout) | `git submodule status plugins/<name>`; re-run `git submodule update --init --recursive plugins/<name>`; check the pin with `git ls-remote <url> <sha>` |
-| ManifestInvalid | `package.json` is unreadable or has no `omp.extensions` | Check the pin; do not edit the sibling inside OmpOS |
+| ManifestInvalid | `package.json` is unreadable or has no `omp.extensions` | Check the pin; do not edit the sibling inside Autonogrammer |
 
 Stage symptoms:
 
 | Symptom in the panel | Likely cause | Fix |
 | -------------------- | ------------ | --- |
 | Substrate Unavailable, private repository | No read access to `swcstudiospace/substrate` | Authenticate to GitHub with access to it, then initialise the submodule |
-| Substrate Degraded, server unhealthy | `GET /healthz` failed or the token env var is unset | Start the substrate server; set `SUBSTRATE_TOKEN_OMP` or `SUBSTRATE_TOKEN_FILE` by name; OmpOS omits an unhealthy server so `session/new` still succeeds |
+| Substrate Degraded, server unhealthy | `GET /healthz` failed or the token env var is unset | Start the substrate server; set `SUBSTRATE_TOKEN_OMP` or `SUBSTRATE_TOKEN_FILE` by name; Autonogrammer omits an unhealthy server so `session/new` still succeeds |
 | Swarm Unavailable | `plugins/agent-swarm` missing | Initialise the submodule; check `python3 --version` |
 | Ultrathink never leaves Running | Planning is still in progress, or no session file was written | Wait for the file under `<session>/ultrathink/sessions/`; there is no progress signal before it exists |
 | GSD phase unknown | `node` older than 24 or GSD-Core not installed | `node --version`; `node plugins/gsd-core-omp/bin/gsd-omp-probe.mjs` and read `problems` |
@@ -101,7 +101,7 @@ In the test suite the same check is the exact-argument and environment assertion
 
 ## Evidence to record
 
-Status as of 2026-10-28 (the plugin rows below were recorded on 2026-10-26 and are not re-run; tree 7535859). A row is ticked only where a run is recorded under `docs/runbooks/evidence/` or named as a passing test. None of these runs needed a model turn. The live tests carry the trait `Category=Live`, skip unless `OMPOS_LIVE_OMP=1`, and are excluded from the gate. The desktop head also passes `-e plugins/ompos-hooks-omp` and a loopback hook bridge to a local session when the hooks service is on (`OmpLaunchPlanner`, `HooksBridgeLoaded`); that extension is not one of the four plugins and no live omp session has run it: see [Hooks](../reference/hooks.md). Target behaviour: [plugins.md, Plugins in omp terminals](../plugins.md#plugins-in-omp-terminals). Criteria and results: `.planning/phases/48-omp-terminals-with-the-four-plugins/48-SUMMARY.md`.
+Status as of 2026-10-28 (the plugin rows below were recorded on 2026-10-26 and are not re-run; tree 7535859). A row is ticked only where a run is recorded under `docs/runbooks/evidence/` or named as a passing test. None of these runs needed a model turn. The live tests carry the trait `Category=Live`, skip unless `AUTONOGRAMMER_LIVE_OMP=1`, and are excluded from the gate. The desktop head also passes `-e plugins/autonogrammer-hooks-omp` and a loopback hook bridge to a local session when the hooks service is on (`OmpLaunchPlanner`, `HooksBridgeLoaded`); that extension is not one of the four plugins and no live omp session has run it: see [Hooks](../reference/hooks.md). Target behaviour: [plugins.md, Plugins in omp terminals](../plugins.md#plugins-in-omp-terminals). Criteria and results: `.planning/phases/48-omp-terminals-with-the-four-plugins/48-SUMMARY.md`.
 
 Per plugin (Ultrathink, Substrate, Swarm, GSD-Core), five items each:
 
@@ -113,11 +113,11 @@ Per plugin (Ultrathink, Substrate, Swarm, GSD-Core), five items each:
 | Observable in the session UI as far as the plugin exposes it | connection row, planner stage, TUI status line | connection row, TUI status line | connection row, run stages, TUI widget | connection row, workflow phase stage |
 | Load failure shows its fix text (degraded-path test) | yes | yes | yes | yes |
 
-Sources: the registered names are in `docs/runbooks/evidence/phase-48-omp-plugins-2026-10-26/plugin-connection-report.md` (section C); the TUI observations are in `omp-terminal-tui.md`; the degraded-path tests are `PluginConnectionStageSourceTests` and `OmpLaunchPlannerTests` in `tests/OmpOS.Harness.AgentLoop.Tests`. Run the live tests with:
+Sources: the registered names are in `docs/runbooks/evidence/phase-48-omp-plugins-2026-10-26/plugin-connection-report.md` (section C); the TUI observations are in `omp-terminal-tui.md`; the degraded-path tests are `PluginConnectionStageSourceTests` and `OmpLaunchPlannerTests` in `tests/Autonogrammer.Harness.AgentLoop.Tests`. Run the live tests with:
 
 ```sh
-OMPOS_LIVE_OMP=1 dotnet test tests/OmpOS.Harness.AgentLoop.Tests -c Release --no-build -- --filter-trait "Category=Live"
-OMPOS_LIVE_OMP=1 dotnet test tests/OmpOS.Harness.OmpLauncher.Tests -c Release --no-build -- --filter-trait "Category=Live"
+AUTONOGRAMMER_LIVE_OMP=1 dotnet test tests/Autonogrammer.Harness.AgentLoop.Tests -c Release --no-build -- --filter-trait "Category=Live"
+AUTONOGRAMMER_LIVE_OMP=1 dotnet test tests/Autonogrammer.Harness.OmpLauncher.Tests -c Release --no-build -- --filter-trait "Category=Live"
 ```
 
 Exactly once:
@@ -137,9 +137,9 @@ End to end:
 - No live Ultrathink progress. Its session file is written once planning finishes ([OQ-67](../open-questions.md)).
 - ACP shows no widgets. Under `omp acp` extensions see `ctx.mode` `rpc` with a no-op UI context; `ui.notify` only reaches omp's debug log. Stage visibility comes from files and HTTP, so the Swarm status bar and Ultrathink insight bar never mount.
 - Loopback model discovery. Every `omp acp` start probes `127.0.0.1:11434`, `:8080` and `:1234` (ollama, llama.cpp, lm-studio) and logs `model discovery failed`. Whether this can be disabled is UNKNOWN: read `src/config/model-discovery.ts` in the installed `@oh-my-pi/pi-coding-agent` package, then try a `--config` overlay.
-- Substrate status extension polling. With `SUBSTRATE_URL` unset it polls `127.0.0.1:7410`. OmpOS omits both substrate extensions when Substrate is disabled or unhealthy.
+- Substrate status extension polling. With `SUBSTRATE_URL` unset it polls `127.0.0.1:7410`. Autonogrammer omits both substrate extensions when Substrate is disabled or unhealthy.
 - An intermittent outbound HTTPS connection (TCP/443 to Cloudflare addresses) was seen in 2 of about 45 probe runs and not reproduced in 13 reruns. Its purpose is UNKNOWN ([OQ-65](../open-questions.md)).
-- Steering. Chat sessions steer through omp's native `_session/steering` when omp advertises it; omp terminals and an omp without the capability use the inbox in `plugins/gsd-core-omp` (`OMPOS_STEER_DIR`); queue after the turn is the last fallback. Substrate records the steering note and never delivers it ([OQ-66](../open-questions.md)). An `injected` delivery into a running turn is not verified; it needs a model turn ([OQ-81](../open-questions.md)).
+- Steering. Chat sessions steer through omp's native `_session/steering` when omp advertises it; omp terminals and an omp without the capability use the inbox in `plugins/gsd-core-omp` (`AUTONOGRAMMER_STEER_DIR`); queue after the turn is the last fallback. Substrate records the steering note and never delivers it ([OQ-66](../open-questions.md)). An `injected` delivery into a running turn is not verified; it needs a model turn ([OQ-81](../open-questions.md)).
 - Whether omp follows symlinked `agents/*.md` for `gsd-core-omp` is unconfirmed ([OQ-64](../open-questions.md)).
 - Behaviour of `/ultrathink-status`, `/swarm` and `/substrate` when executed was not verified; only their registration was.
 - Whether several concurrent `omp acp` processes share one `agent.db` safely was not stress-tested.

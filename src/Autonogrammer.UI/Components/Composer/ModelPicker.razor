@@ -1,0 +1,208 @@
+@namespace Autonogrammer.UI.Components.Composing
+@using Autonogrammer.Presentation.Composer
+@inherits PopupComponent
+@if (Model.IsVisible)
+{
+    <div class="autonogrammer-chip-menu" data-kind="model" @ref="Root">
+        <button type="button"
+                class="autonogrammer-chip-btn"
+                id="@ButtonId"
+                aria-haspopup="listbox"
+                aria-expanded="@(IsOpen ? "true" : "false")"
+                aria-disabled="@(Model.IsEnabled ? null : "true")"
+                aria-describedby="@ReasonId"
+                aria-label="@("Model: " + Model.Label)"
+                title="@Model.ToolTipText"
+                @ref="_button"
+                @onclick="ToggleAsync">
+            <span class="autonogrammer-chip-value">@Model.Label</span>
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6l4 4 4-4" /></svg>
+        </button>
+        <span class="autonogrammer-sr-only" id="@ReasonId">@Model.ToolTipText</span>
+        @if (IsOpen)
+        {
+            <div class="autonogrammer-model-picker" id="@PickerId">
+                <input type="text"
+                       class="autonogrammer-input autonogrammer-model-search"
+                       role="combobox"
+                       aria-label="Search models"
+                       aria-expanded="true"
+                       aria-controls="@ListId"
+                       aria-autocomplete="list"
+                       aria-activedescendant="@ActiveId"
+                       autocomplete="off"
+                       placeholder="Search models"
+                       value="@Model.FilterText"
+                       @ref="_search"
+                       @oninput="OnInput"
+                       @onkeydown="OnKeyDownAsync" />
+                @if (Model.IsLoading)
+                {
+                    <p class="autonogrammer-model-state" role="status">Loading models…</p>
+                }
+
+                <ul class="autonogrammer-chip-list autonogrammer-model-list" id="@ListId" role="listbox" aria-label="Models" @ref="ListElement">
+                    @for (var index = 0; index < Model.Rows.Count; index++)
+                    {
+                        var row = Model.Rows[index];
+                        var position = index;
+                        @if (row.IsHeading)
+                        {
+                            <li role="presentation" class="autonogrammer-chip-heading">@row.Text</li>
+                        }
+                        else
+                        {
+                            <li role="option"
+                                id="@RowId(position)"
+                                class="autonogrammer-chip-option@(row.IsHighlighted ? " is-active" : null)"
+                                aria-selected="@(row.IsCurrent ? "true" : "false")"
+                                aria-label="@row.AutomationName"
+                                @onclick="() => ChooseAsync(row)">
+                                <span class="autonogrammer-chip-option-name">@row.Text</span>
+                            </li>
+                        }
+                    }
+                </ul>
+                @if (Model.HasNoMatches)
+                {
+                    <p class="autonogrammer-model-state" role="status">No model matches "@Model.FilterText".</p>
+                }
+            </div>
+        }
+
+        @if (Model.Notice is { } notice)
+        {
+            <p class="autonogrammer-chip-notice" role="status">@notice</p>
+        }
+    </div>
+}
+
+@code {
+    private static int s_nextId;
+
+    private readonly string _id = "autonogrammer-model-picker-" + System.Threading.Interlocked.Increment(ref s_nextId).ToString(System.Globalization.CultureInfo.InvariantCulture);
+    private ElementReference _button;
+    private ElementReference _search;
+    private bool _focusSearch;
+    private bool _focusButton;
+    private string ButtonId => _id + "-button";
+    private string ListId => _id + "-list";
+
+    private string PickerId => _id + "-picker";
+
+    private string ReasonId => _id + "-reason";
+
+    /// <summary>Gets the model picker: the models the engine offers, the filter, the highlight and the switch command.</summary>
+    [Parameter, EditorRequired]
+    public ModelPickerModel Model { get; set; } = null!;
+
+    /// <summary>Gets the callback invoked after a model was chosen or the popup was dismissed by the keyboard, so the composer can take the focus back.</summary>
+    [Parameter]
+    public EventCallback OnFocusReturn { get; set; }
+
+    private string? ActiveId
+    {
+        get
+        {
+            for (var index = 0; index < Model.Rows.Count; index++)
+            {
+                if (Model.Rows[index].IsHighlighted && !Model.Rows[index].IsHeading)
+                {
+                    return RowId(index);
+                }
+            }
+
+            return null;
+        }
+    }
+
+    private string RowId(int index) => _id + "-row-" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <inheritdoc />
+    protected override void OnParametersSet() => Observe(Model);
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender).ConfigureAwait(true);
+        if (_focusSearch && IsOpen)
+        {
+            _focusSearch = false;
+            await _search.FocusAsync().ConfigureAwait(true);
+        }
+
+        if (_focusButton)
+        {
+            _focusButton = false;
+            await _button.FocusAsync().ConfigureAwait(true);
+        }
+
+        if (IsOpen && ActiveId is { } active && Module is { } module)
+        {
+            await module.InvokeVoidAsync("ensureVisible", active).ConfigureAwait(true);
+        }
+    }
+
+    private async Task ToggleAsync()
+    {
+        if (!Model.IsEnabled)
+        {
+            return;
+        }
+
+        if (IsOpen)
+        {
+            ClosePopup();
+            return;
+        }
+
+        Model.FilterText = string.Empty;
+        OpenPopup();
+        _focusSearch = true;
+        await Model.EnsureLoadedAsync(CancellationToken.None).ConfigureAwait(true);
+    }
+
+    private void OnInput(ChangeEventArgs args) => Model.FilterText = args.Value?.ToString() ?? string.Empty;
+
+    private async Task ChooseAsync(ModelPickerRow row)
+    {
+        if (row.Choice is null)
+        {
+            return;
+        }
+
+        ClosePopup();
+        _focusButton = true;
+        Model.Highlight(row);
+        await Model.ConfirmHighlightedAsync().ConfigureAwait(true);
+        await OnFocusReturn.InvokeAsync().ConfigureAwait(true);
+    }
+
+    private async Task OnKeyDownAsync(KeyboardEventArgs args)
+    {
+        switch (args.Key)
+        {
+            case "ArrowDown":
+                Model.MoveHighlight(1);
+                break;
+            case "ArrowUp":
+                Model.MoveHighlight(-1);
+                break;
+            case "Enter" when Model.HighlightedRow is not null:
+                ClosePopup();
+                _focusButton = true;
+                await Model.ConfirmHighlightedAsync().ConfigureAwait(true);
+                await OnFocusReturn.InvokeAsync().ConfigureAwait(true);
+                break;
+            case "Escape":
+                ClosePopup();
+                _focusButton = true;
+                break;
+            case "Tab":
+                ClosePopup();
+                break;
+            default:
+                break;
+        }
+    }
+}

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- The worker host binds configuration reflectively and ships as a non-trimmed deployment artifact
+       (the cloud agent image). Libraries keep IsTrimmable=true. -->
+  <PropertyGroup>
+    <IsTrimmable>false</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Autonogrammer.AgentWorker.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Acp/Autonogrammer.Harness.Acp.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.AgentLoop/Autonogrammer.Harness.AgentLoop.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Plugins/Autonogrammer.Harness.Plugins.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,306 @@
+/* Changes bar, review side panel and the diff view. Added and removed lines carry a sign and a hidden word as well as a background, so a
+   change is never colour alone. */
+
+.autonogrammer-changes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  padding: var(--autonogrammer-gap-8) var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+}
+
+.autonogrammer-changes-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-changes-summary {
+  font-size: var(--autonogrammer-font-size-label);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+}
+
+.autonogrammer-changes-actions,
+.autonogrammer-change-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--autonogrammer-gap-4);
+}
+
+.autonogrammer-changes-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  max-height: 14rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+/* One change per row: the kind glyph, the path (cut with an ellipsis) over its kind and status, the line counts, then Keep, Undo and Review. */
+.autonogrammer-change {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0 var(--autonogrammer-gap-8);
+  padding-block: var(--autonogrammer-gap-4);
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+.autonogrammer-change + .autonogrammer-change {
+  border-top: 1px solid var(--autonogrammer-border);
+}
+
+.autonogrammer-change-kind {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  font-family: var(--autonogrammer-font-mono);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+}
+
+.autonogrammer-change-path {
+  grid-column: 2;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.autonogrammer-change-meta {
+  grid-column: 2;
+}
+
+.autonogrammer-change-meta,
+.autonogrammer-change-message {
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+}
+
+.autonogrammer-change[data-status='stale'] .autonogrammer-change-message {
+  color: var(--autonogrammer-warning);
+}
+
+.autonogrammer-change-added {
+  color: var(--autonogrammer-success);
+}
+
+.autonogrammer-change-removed {
+  color: var(--autonogrammer-error);
+}
+
+.autonogrammer-change-counts {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+  white-space: nowrap;
+}
+
+.autonogrammer-change-actions {
+  grid-column: 4;
+  grid-row: 1 / span 2;
+}
+
+.autonogrammer-change-message {
+  grid-column: 2 / -1;
+}
+
+@media (max-width: 559.98px) {
+  .autonogrammer-change {
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+  }
+
+  .autonogrammer-change-actions {
+    grid-column: 2 / -1;
+    grid-row: 3;
+  }
+}
+
+/* The review panel is a side panel on the right; on a narrow screen it covers the viewport. */
+.autonogrammer-review-panel {
+  position: fixed;
+  top: var(--autonogrammer-topbar-block);
+  right: 0;
+  bottom: var(--autonogrammer-footer-block);
+  z-index: var(--autonogrammer-z-drawer);
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+  width: min(36rem, 100vw);
+  padding: var(--autonogrammer-gap-12);
+  overflow-y: auto;
+  background: var(--autonogrammer-surface-raised);
+  border-left: 1px solid var(--autonogrammer-border);
+  box-shadow: var(--autonogrammer-shadow-popup);
+}
+
+.autonogrammer-review-head,
+.autonogrammer-review-hunk-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-review-title {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+}
+
+.autonogrammer-review-hunk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  padding-bottom: var(--autonogrammer-gap-8);
+  border-bottom: 1px solid var(--autonogrammer-border);
+}
+
+.autonogrammer-review-hunk-title {
+  font-weight: var(--autonogrammer-font-weight-semibold);
+}
+
+.autonogrammer-review-hunk-decision,
+.autonogrammer-review-pending,
+.autonogrammer-review-empty {
+  margin: 0;
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+}
+
+.autonogrammer-review-hunk-decision {
+  margin-right: auto;
+}
+
+.autonogrammer-review-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.autonogrammer-review-result {
+  margin: 0;
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+.autonogrammer-review-result[data-outcome='stale'],
+.autonogrammer-review-result[data-outcome='failed'],
+.autonogrammer-review-result[data-outcome='refused'] {
+  color: var(--autonogrammer-error);
+}
+
+/* Diff view ------------------------------------------------------------------------------------------------------------------ */
+
+.autonogrammer-diff-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  min-width: 0;
+}
+
+.autonogrammer-diff-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-diff-summary {
+  color: var(--autonogrammer-text-secondary);
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+}
+
+.autonogrammer-diff-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+  max-height: 28rem;
+  overflow: auto;
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-6);
+}
+
+.autonogrammer-diff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+  line-height: var(--autonogrammer-line-height-mono);
+}
+
+.autonogrammer-diff-hunk-header {
+  padding: var(--autonogrammer-gap-2) var(--autonogrammer-gap-8);
+  background: var(--autonogrammer-surface-sunken);
+  color: var(--autonogrammer-text-secondary);
+  text-align: left;
+}
+
+.autonogrammer-diff-num {
+  min-width: 3ch;
+  padding: 0 var(--autonogrammer-gap-6);
+  color: var(--autonogrammer-text-secondary);
+  text-align: right;
+  user-select: none;
+}
+
+.autonogrammer-diff-sign {
+  width: 2ch;
+  text-align: center;
+  user-select: none;
+}
+
+.autonogrammer-diff-text {
+  width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-diff-table[data-mode='sidebyside'] .autonogrammer-diff-text {
+  width: 50%;
+}
+
+.autonogrammer-diff-line[data-kind='added'],
+.autonogrammer-diff-text[data-kind='added'] {
+  background: var(--autonogrammer-diff-added);
+}
+
+.autonogrammer-diff-line[data-kind='removed'],
+.autonogrammer-diff-text[data-kind='removed'] {
+  background: var(--autonogrammer-diff-removed);
+}
+
+.autonogrammer-diff-text[data-kind='empty'] {
+  background: var(--autonogrammer-surface-sunken);
+}
+
+.autonogrammer-diff-empty,
+.autonogrammer-diff-truncated {
+  margin: 0;
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+}
+
+.autonogrammer-file-edit-diff-toggle {
+  align-self: flex-start;
+  margin-top: var(--autonogrammer-gap-4);
+}
+
+.autonogrammer-code {
+  position: relative;
+}

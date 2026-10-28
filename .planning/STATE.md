@@ -66,25 +66,25 @@ Built (each with its test classes and evidence in the phase record):
 - Brand and licence (51): the Light default theme in the desktop, Android and web heads with Dark and System persisted; the brand set under `assets/brand/` built by `scripts/brand/build-brand.sh`; `LICENSE` (AGPL-3.0-or-later), `NOTICE`, `THIRD-PARTY-NOTICES.md`, `REUSE.toml`; `GET /source` and the desktop About.
 - Repository (52): community files, issue forms, `dependabot.yml`, `release.yml`, `CHANGELOG.md` (0.15.0 to 0.9.1, one version in `Directory.Build.props`); the GitHub settings applied 2026-10-28 with `scripts/github/apply-repo-settings.sh`.
 - Web head (53 to 55): the White and Purple shell with self-hosted fonts, the API surface the screens need (in `docs/api/openapi.json`), the thread, composer, approvals, Changes bar, Kanban, terminal view and an 18-page Settings dialog, and the labelled Demo build with a simulated engine, hosted at https://ompos-web.vercel.app.
-- Slash commands and conventions (56): 92 Cursor tokens plus `/update-settings` with handler kinds, `/skill-name`, custom commands, `/subagent-name` and `&`; discovery over `.ompos`, `.omp`, `.cursor`, `.claude`, `.codex` and `.agents` in desktop and (wired, untested at the seam) remote sessions; built-in skills.
-- Hooks (57): the 21-event catalogue, loaders, dispatcher, consent v2, the omp extension `plugins/ompos-hooks-omp`, the ACP tap, `HooksService`, the Hooks page and the run log in the desktop head.
+- Slash commands and conventions (56): 92 Cursor tokens plus `/update-settings` with handler kinds, `/skill-name`, custom commands, `/subagent-name` and `&`; discovery over `.autonogrammer`, `.omp`, `.cursor`, `.claude`, `.codex` and `.agents` in desktop and (wired, untested at the seam) remote sessions; built-in skills.
+- Hooks (57): the 21-event catalogue, loaders, dispatcher, consent v2, the omp extension `plugins/autonogrammer-hooks-omp`, the ACP tap, `HooksService`, the Hooks page and the run log in the desktop head.
 - Remote (58): ssh stdio sessions, preflight, reconnect with `session/load`, remote files, conventions and terminal, the environment picker; podman containers and WSL as an addendum.
 - Multi-repo (59): workspace sets, validator, store, `.code-workspace` round trip, `--add-dir` launch (probed), `WorktreeRunSet`, the desktop picker.
-- Cloud (60): the worker bridge (`OmpOS.AgentWorker`, `AcpWebSocketTransport`), the control plane with caps, idle sweeper, redaction and a Postgres store, the Railway client over recorded fixtures, the desktop Cloud agents page.
+- Cloud (60): the worker bridge (`Autonogrammer.AgentWorker`, `AcpWebSocketTransport`), the control plane with caps, idle sweeper, redaction and a Postgres store, the Railway client over recorded fixtures, the desktop Cloud agents page.
 - Settings and providers (61, 62): `docs/settings-parity.md` (50 rows: 6 Built, 2 Wired, 20 Partial, 22 Omitted), the new Settings pages, the provider catalogue of 103 rows (EU, US, CN, global, local; 23 coding plans) with the `models.yml` writer and the Models page.
 - Feature completion (63): `@` mentions, run modes with `permissions.json` and `sandbox.json`, `.cursorignore`, `.cursor/mcp.json` import, `.cursor/worktrees.json`, checkpoints with rewind, queue versus send now, conversation search, automations, image attach.
 - Documentation (64): `.gitbook.yaml`, `docs/SUMMARY.md`, the guides, the runbook `docs/runbooks/gitbook-publish.md`, the refreshed audit.
 
 Verified (recorded 2026-10-28):
-- The release gate: `./bootstrap.sh` (`OMPOS_TEST_PARALLEL_MODULES=3 OMPOS_SMOKE_PUBLISH_TIMEOUT=2400 OMPOS_SMOKE_DEMO_TIMEOUT=3600`) exited 0 on a clean git worktree of `e24e6851554ae6ea710a9841920030269f96d2be`: pinned gitleaks scan, plugin node tests (69 and 76), `scripts/ci/repo-checks.sh`, locked restore, `scripts/ci/check-licences.sh`, warnings-as-errors Release build, `dotnet test OmpOS.Linux.slnf` 12215 total, 12213 succeeded, 0 failed, 2 skipped (two tests that need a non-root user) in 25 minutes with throwaway TimescaleDB and Dragonfly under podman, `dotnet format --verify-no-changes` clean, web smoke API half and Demo half with axe-core 4.14.0 (6 configurations, 68 axe runs, 0 violations). Log: `docs/runbooks/evidence/bootstrap-gate-2026-10-28-e24e6851.log` (its header records two earlier failed runs, `083ac50` with 8 failed tests and `75bc55b` with a cascade under load average 96, both fixed).
+- The release gate: `./bootstrap.sh` (`AUTONOGRAMMER_TEST_PARALLEL_MODULES=3 AUTONOGRAMMER_SMOKE_PUBLISH_TIMEOUT=2400 AUTONOGRAMMER_SMOKE_DEMO_TIMEOUT=3600`) exited 0 on a clean git worktree of `e24e6851554ae6ea710a9841920030269f96d2be`: pinned gitleaks scan, plugin node tests (69 and 76), `scripts/ci/repo-checks.sh`, locked restore, `scripts/ci/check-licences.sh`, warnings-as-errors Release build, `dotnet test Autonogrammer.Linux.slnf` 12215 total, 12213 succeeded, 0 failed, 2 skipped (two tests that need a non-root user) in 25 minutes with throwaway TimescaleDB and Dragonfly under podman, `dotnet format --verify-no-changes` clean, web smoke API half and Demo half with axe-core 4.14.0 (6 configurations, 68 axe runs, 0 violations). Log: `docs/runbooks/evidence/bootstrap-gate-2026-10-28-e24e6851.log` (its header records two earlier failed runs, `083ac50` with 8 failed tests and `75bc55b` with a cascade under load average 96, both fixed).
 - The release: `origin/main` went from `04e80d1` to `9d4e0075` as a plain fast-forward; the annotated tag `v0.15.0` (pushed 19:53 UTC) points at it; the `release` workflow run 40758275112 succeeded in 31 s and published https://github.com/swcstudiospace/OmpOS/releases/tag/v0.15.0 with the CHANGELOG `[0.15.0]` notes.
 - The GitHub settings were applied (`scripts/github/apply-repo-settings.sh --apply`) and read back after the push (`docs/runbooks/evidence/github-setup-2026-10-28/`): licence detected as AGPL-3.0, community profile health 100, 26 labels, private vulnerability reporting, automated security fixes, secret scanning and push protection enabled, no rulesets and no branch protection on `main` (on purpose).
 - The web Demo is deployed at https://ompos-web.vercel.app (Vercel production alias of project ompos-web in team swcstudiospace; static bundle, simulated engine, no backend, no secret; deployment record in `docs/runbooks/web-demo.md`) and was captured with headless Chrome from the live URL: no console errors, no failed requests.
 - A live run against a loopback `sshd` with the real omp 18.12.6 opened a session (`docs/runbooks/evidence/remote-ssh-live-2026-10-28/README.md`); a live podman test passed in the Wave 4 tree (alpine image); the worker image ran under podman, 14 of 14 checks (`docs/runbooks/evidence/cloud-worker-container-2026-10-28/README.md`).
-- Api.IntegrationTests 1027/1027, Coordination 32 and Sessions.Postgres 58 passed on the final tree with throwaway podman services and again inside the gate. The node tests of `plugins/ompos-hooks-omp` ran 76 of 76 in the gate.
+- Api.IntegrationTests 1027/1027, Coordination 32 and Sessions.Postgres 58 passed on the final tree with throwaway podman services and again inside the gate. The node tests of `plugins/autonogrammer-hooks-omp` ran 76 of 76 in the gate.
 - The omp `--add-dir` probe: `docs/runbooks/evidence/multi-repo-omp-probe-2026-10-27/`.
-- Railway read-back (made before the staged worker below; it still describes the project): nothing of OmpOS was deployed then; the project 'Ultrathink' holds TimescaleDB, Dragonfly, GreptimeDB and two tailscale services only.
-- Staged worker on Railway (recorded 2026-10-28 about 21:30 UTC, after the release; `docs/runbooks/evidence/railway-ompos-worker-2026-10-28.md`): project `ompos-staging`, environment `staging`, service `ompos-worker`, volume `ompos-worker-data`, private (no domain, no TCP proxy), deployment `b6e5ac9d-831c-49ea-b51c-78e59271de05` SUCCESS, built by Railway from the released tree with `deploy/worker.Containerfile`; Railway's `/healthz` check passed; inside the container `/healthz` 200, `/readyz` 200, `/acp` without a token 401, omp 18.12.5, and a JWT-gated WebSocket bridge let a real `omp acp` answer `initialize` and `session/new`. The refusal of 2026-10-21 (`Deploys have been paused temporarily`) did not recur that day. Not proven: the API or the control plane on Railway (OD-03), a model turn (OD-07), a clone, branch or pull request from the worker, sleep and wake, hooks in the worker, remote desktop (OQ-73). The service stays up and bills usage (OQ-171).
+- Railway read-back (made before the staged worker below; it still describes the project): nothing of Autonogrammer was deployed then; the project 'Ultrathink' holds TimescaleDB, Dragonfly, GreptimeDB and two tailscale services only.
+- Staged worker on Railway (recorded 2026-10-28 about 21:30 UTC, after the release; `docs/runbooks/evidence/railway-autonogrammer-worker-2026-10-28.md`): project `ompos-staging`, environment `staging`, service `ompos-worker`, volume `ompos-worker-data`, private (no domain, no TCP proxy), deployment `b6e5ac9d-831c-49ea-b51c-78e59271de05` SUCCESS, built by Railway from the released tree with `deploy/worker.Containerfile`; Railway's `/healthz` check passed; inside the container `/healthz` 200, `/readyz` 200, `/acp` without a token 401, omp 18.12.5, and a JWT-gated WebSocket bridge let a real `omp acp` answer `initialize` and `session/new`. The refusal of 2026-10-21 (`Deploys have been paused temporarily`) did not recur that day. Not proven: the API or the control plane on Railway (OD-03), a model turn (OD-07), a clone, branch or pull request from the worker, sleep and wake, hooks in the worker, remote desktop (OQ-73). The service stays up and bills usage (OQ-171).
 
 Not verified (stated, not claimed):
 - A GitHub-side run of the test suite: the `ci` workflow ran for the main push (run 40758215402) and the tag push (run 40758275399) on the self-hosted `omega-ci` runners and failed both times at 'Start test services' (`newuidmap: write to uid_map failed: Operation not permitted`; `cannot clone: Permission denied`): rootless podman cannot create a user namespace inside the runner container (OQ-168). Restore and the warnings-as-errors build passed; the later steps were skipped. The local gate is the gate of record.
@@ -101,13 +101,13 @@ Known gaps:
 - Repository and docs: the `ci` workflow fails at 'Start test services' (OQ-168); no test in the suite parses the `.github` YAML; the community profile JSON reports `issue_template` null for the three issue forms (UNVERIFIED why); the tags of v0.9.1 to v0.14.0 do not exist (OQ-108); the audit rows of about nine product files changed after `7535859` were not re-graded.
 
 Next steps for the owner (all recorded in `docs/open-questions.md` unless noted):
-- GitHub by hand (no API): upload `assets/brand/ompos-social-preview.png` as the social preview (OQ-170), create the discussion categories (OQ-109), optionally tag the older milestones v0.9.1 to v0.14.0 so the changelog compare links resolve (OQ-108).
+- GitHub by hand (no API): upload `assets/brand/autonogrammer-social-preview.png` as the social preview (OQ-170), create the discussion categories (OQ-109), optionally tag the older milestones v0.9.1 to v0.14.0 so the changelog compare links resolve (OQ-108).
 - GitBook: create and connect the space from `docs/runbooks/gitbook-publish.md` (OQ-101; OQ-167 on files outside `SUMMARY.md`).
 - CI: make rootless podman work inside the `omega-ci` runner container so the `ci` workflow gets past 'Start test services' (OQ-168).
 - Trackers: `ultrathink-mcp auth login notion`, then complete the Notion and Linear rows of the Ultrathink graph `ut-mvrb4grd-ff38e1ff` (OQ-169).
 - Licence and name: `AGPL-3.0-or-later` versus `-only` (OQ-93); the licences of `agent-swarm` and `agent-substrate` (OQ-102); the trademark and the code ownership (OQ-105, OQ-106).
 - Look: sign-off of the White and Purple look (OQ-94, OQ-87 to OQ-91).
-- Credentials and approvals: one live model turn (OD-07) and provider credentials (OQ-71, OQ-98); the sign-in authority for a public API (OD-03); what else may be deployed to Railway beyond the staged worker (OQ-100), whether to keep the billed `ompos-staging` project (OQ-171; teardown steps in `docs/runbooks/evidence/railway-ompos-worker-2026-10-28.md`) and Railway's acceptable-use text (OQ-73).
+- Credentials and approvals: one live model turn (OD-07) and provider credentials (OQ-71, OQ-98); the sign-in authority for a public API (OD-03); what else may be deployed to Railway beyond the staged worker (OQ-100), whether to keep the billed `ompos-staging` project (OQ-171; teardown steps in `docs/runbooks/evidence/railway-autonogrammer-worker-2026-10-28.md`) and Railway's acceptable-use text (OQ-73).
 - Machines: Windows, macOS and Android runs (OQ-69, OQ-74).
 - ADR-0013 isolation sign-off (OQ-84): hooks are wired, `PluginHost` is not.
 - Rows OQ-105 to OQ-171: web, hosted-API, hooks, remote, cloud, settings, providers, safety, automation and release defaults, each with its default in force.
@@ -135,7 +135,7 @@ Not verified (stated, not claimed):
 Not built or not wired into a head: the browser pane (Phase 29), hooks, automations, the plugin host, herdr and the `Harness.Agent` adapter, the MCP registry and gateway, the Pets view (Phase 41), remote and mobile terminals, usage history, the setup runner, the inline completion and inline edit clients, the lease holder on Kanban cards. See the audit, section 4.
 
 Open owner items (all recorded in `docs/open-questions.md` unless noted):
-- OQ-62: the licence of OmpOS and the AGPL-3.0-or-later of the `claude-ultrathink` submodule.
+- OQ-62: the licence of Autonogrammer and the AGPL-3.0-or-later of the `claude-ultrathink` submodule.
 - OQ-63: the `SUBMODULE_TOKEN` repository secret for the private `agent-substrate` submodule.
 - OQ-64: whether omp's agent loader follows symlinked `agents/*.md` files, which `gsd-core-omp` relies on.
 - OQ-66: adopting `agent-substrate` Phase 53 live steering delivery once it merges.
@@ -158,7 +158,7 @@ Open owner items (all recorded in `docs/open-questions.md` unless noted):
 
 ## Direction Update 2026-10-26 (ultrathink graph ut-mvp88pnw-6e8c4d24)
 
-The owner restated the product (chat message of 2026-10-26): OmpOS is Cursor desktop cloned in full (UI, capabilities, settings) with the Greptile font, running our own agent on the Omp Engine with four plugins (Ultrathink, Substrate, Swarm, GSD-Core). The Agent Panel is the default Cursor-style panel and no additional panel is wanted. The only additions are expanded provider settings and the Kanban tab, one task card per opened session, where Substrate shows its power; every session can be live-steered. The four plugins must be connected to every omp process the app starts, including the omp terminals.
+The owner restated the product (chat message of 2026-10-26): Autonogrammer is Cursor desktop cloned in full (UI, capabilities, settings) with the Greptile font, running our own agent on the Omp Engine with four plugins (Ultrathink, Substrate, Swarm, GSD-Core). The Agent Panel is the default Cursor-style panel and no additional panel is wanted. The only additions are expanded provider settings and the Kanban tab, one task card per opened session, where Substrate shows its power; every session can be live-steered. The four plugins must be connected to every omp process the app starts, including the omp terminals.
 
 Recorded as DR-1 to DR-6 in ROADMAP.md (v0.14.0, revised 2026-10-26) and in requirements AL-07, AL-09, AL-11 to AL-20; new Phases 48 (omp terminals with the four plugins) and 49 (live steering); Phases 33, 39, 40 extended; ADR-0012 carries an update section; open questions OQ-78 to OQ-82 hold the defaults in force (columns mirror the lifecycle status, a closed session moves its card to its terminal column, the plugins are always on, live delivery by an omp extension inbox, per-process plugin flags). The inspector of the Phase 46 design is superseded; its context and steering content moves to the Kanban card.
 
@@ -168,8 +168,8 @@ Progress and verification, recorded 2026-10-26 after wave 3 (runs of that day; r
 
 - Phase 44 partial: criteria 1, 4, 5 met by gate tests, 6 met by a live test with no model turn, 7 met as a gate-equivalent run; criteria 2 (fresh-clone run) and 3 (node tests, probe exit codes) have no recorded run. The `SUBMODULE_TOKEN` owner action is open (OQ-63). `SWARM_GSD_STATE_FILE` is an explicit per-session path now, not empty (Phase 48, because the PTY backend removes an empty variable).
 - Phase 45 complete (criteria 1 to 6; the steering note is recorded in the Substrate ledger by fake-gateway tests, delivery is Phase 49). Phase 46 partial: criteria 1 to 5, 7, 8 met by headless tests, criterion 6 (eight screenshots) not met; the panel has no inspector (DR-1). Phase 47 deferred in writing (hosted API runs the InMemory harness, Railway deploys paused). Phase 48 partial: terminal launch through the planner, terminal sessions in the application, the steering inbox and the PTY environment scrub are built; criteria 3 to 7 are met without a model turn; criterion 8 (one application run showing all four plugins connected in the row) is not verified.
-- Verified: the Release gate-equivalent run after the integration commits passed 4237 tests with 0 failed; after wave 3 every test project of `OmpOS.Linux.slnf` passed (for example Harness.OmpConfig 314, Native 1087, Presentation 975, Harness.AgentLoop 596, Api.IntegrationTests 208, ArchitectureTests 46). The live tests (`Category=Live`, no model turn) passed against the real omp 18.12.6: the engine session handshake (all four plugins connected through the connection report, heartbeat fresh, mode rpc), the interactive omp in the PTY (all four connected, heartbeat mode tui, closes on two Ctrl+C once the TUI is quiet) and the four OmpConfig live tests. Probes recorded exactly-once loading, and the connection report and heartbeat in both modes (`docs/runbooks/evidence/phase-48-omp-plugins-2026-10-26/`). The real application ran under Xvfb with a chat session, an omp terminal session and the Kanban tab with two cards (`docs/runbooks/evidence/ui-parity-2026-10-26/`).
-- Steering mechanism, as built: chat sessions use omp's native ACP `_session/steering`; omp terminals use the OmpOS inbox in `plugins/gsd-core-omp`, which is also the fallback; Substrate only records the note (OQ-81, ADR-0012 update).
+- Verified: the Release gate-equivalent run after the integration commits passed 4237 tests with 0 failed; after wave 3 every test project of `Autonogrammer.Linux.slnf` passed (for example Harness.OmpConfig 314, Native 1087, Presentation 975, Harness.AgentLoop 596, Api.IntegrationTests 208, ArchitectureTests 46). The live tests (`Category=Live`, no model turn) passed against the real omp 18.12.6: the engine session handshake (all four plugins connected through the connection report, heartbeat fresh, mode rpc), the interactive omp in the PTY (all four connected, heartbeat mode tui, closes on two Ctrl+C once the TUI is quiet) and the four OmpConfig live tests. Probes recorded exactly-once loading, and the connection report and heartbeat in both modes (`docs/runbooks/evidence/phase-48-omp-plugins-2026-10-26/`). The real application ran under Xvfb with a chat session, an omp terminal session and the Kanban tab with two cards (`docs/runbooks/evidence/ui-parity-2026-10-26/`).
+- Steering mechanism, as built: chat sessions use omp's native ACP `_session/steering`; omp terminals use the Autonogrammer inbox in `plugins/gsd-core-omp`, which is also the fallback; Substrate only records the note (OQ-81, ADR-0012 update).
 - Not verified: a live model turn (OD-07), an `injected` steering outcome into a running turn, Windows and macOS, Android, and the hosted deployments. Every deferred or externally blocked item is in one table: `docs/runbooks/deferred-and-blocked-2026-10-26.md`.
 
 ## Autonomous Run 2026-10-24 (ultrathink graph ut-mvlj2cdc-609d7b5b)
@@ -178,9 +178,9 @@ Scope: the active milestone is v0.10.0. The STATE frontmatter and ROADMAP agreed
 
 Reconciliation. Before this run, STATE named v0.9.2 as current focus, said Phase 20 was complete, and ROADMAP showed Phase 20 in progress. Resolved from the artifacts: v0.10.0 is active, and Phase 20 is complete (20-04-SUMMARY and 20-VERIFICATION). ROADMAP is updated to match.
 
-Baseline gate: red. Two defects in the uncommitted Terminal PTY tests (tests/OmpOS.Harness.Terminal.Tests/LinuxLocalPtyBackendTests.cs) caused it. `DisposeEndsARunningProcessAndReturns` quoted its shell `PID<$$>` wrongly, so `/bin/sh` failed and the PID wait polled forever (a 59-minute hang). `RefusesANullArgument` asserted a property name as the ParamName. Both are test defects; production code is unchanged. Fixed in the test file.
+Baseline gate: red. Two defects in the uncommitted Terminal PTY tests (tests/Autonogrammer.Harness.Terminal.Tests/LinuxLocalPtyBackendTests.cs) caused it. `DisposeEndsARunningProcessAndReturns` quoted its shell `PID<$$>` wrongly, so `/bin/sh` failed and the PID wait polled forever (a 59-minute hang). `RefusesANullArgument` asserted a property name as the ParamName. Both are test defects; production code is unchanged. Fixed in the test file.
 
-Lock files: the `OmpOS.Sessions` project reference in apps/OmpOS.Native/OmpOS.Native.csproj made the locked restore fail (NU1004). Regenerated with `dotnet restore OmpOS.Linux.slnf --force-evaluate`. `dotnet restore OmpOS.Linux.slnf --locked-mode` passes.
+Lock files: the `Autonogrammer.Sessions` project reference in apps/Autonogrammer.Native/Autonogrammer.Native.csproj made the locked restore fail (NU1004). Regenerated with `dotnet restore Autonogrammer.Linux.slnf --force-evaluate`. `dotnet restore Autonogrammer.Linux.slnf --locked-mode` passes.
 
 Phase 20: complete. gsd-verifier verdict passed, 7 of 7 (20-VERIFICATION.md). OQ-39 stays open. It is not a criterion failure.
 
@@ -190,7 +190,7 @@ Phase 21: complete. Verified twice, passed 5 of 5 (21-VERIFICATION.md). Implemen
 - Steering: steer and follow-up messages are held in send order and sent as their own turns after the active turn ends. Stop cancels the turn and sends nothing further.
 - An independent review (a09-reviewer) returned CHANGES_REQUESTED. All findings were fixed, each with a named test. The fixes include the replay fold throwing on the new kinds, the SSE name for diagnostics, the composer copy, the fault-path test, the fault ordering, the window-close disposal, and the held-steer count.
 
-Phase 22 (partial, blocked): the owner approved a headless Wayland session. weston 13.0.0 (headless backend with Xwayland 23.2.6) was installed. The probe in docs/runbooks/evidence/phase-22-wayland-2026-10-24/ started the head with default platform detection. The head stayed alive for 30 seconds. Its mapped backend libraries were Avalonia.X11.dll and libX11, with no libwayland-client, and an `OmpOS` window (960x640) existed on the Xwayland display. Criterion 1 is met on the XWayland path. The native Wayland backend (Avalonia.Wayland with UseWayland()) is not added: it needs a package addition, and native Wayland has no AT-SPI support, so that is a separate accessibility decision. Criteria 3 (Windows runner) and 4 and 5 (Mac channel) remain blocked.
+Phase 22 (partial, blocked): the owner approved a headless Wayland session. weston 13.0.0 (headless backend with Xwayland 23.2.6) was installed. The probe in docs/runbooks/evidence/phase-22-wayland-2026-10-24/ started the head with default platform detection. The head stayed alive for 30 seconds. Its mapped backend libraries were Avalonia.X11.dll and libX11, with no libwayland-client, and an `Autonogrammer` window (960x640) existed on the Xwayland display. Criterion 1 is met on the XWayland path. The native Wayland backend (Avalonia.Wayland with UseWayland()) is not added: it needs a package addition, and native Wayland has no AT-SPI support, so that is a separate accessibility decision. Criteria 3 (Windows runner) and 4 and 5 (Mac channel) remain blocked.
 
 Quality: the CA1031 suppression added by an earlier Phase 21 unit is removed. No new suppressions remain in the touched code.
 
@@ -204,10 +204,10 @@ Tracking (ultrathink): the Notion Task row is set to Implementing. The planner c
 
 Uncommitted changes from this run (review before any commit):
 - Phase records: .planning/phases/20-avalonia-foundation/20-VERIFICATION.md (new); .planning/phases/21-parity-surface/21-CONTEXT.md, 21-01-PLAN.md, 21-VERIFICATION.md (new) and 21-SUMMARY.md (rewritten); .planning/phases/22-desktop-heads/22-SUMMARY.md (rewritten); .planning/ROADMAP.md; .planning/STATE.md.
-- Phase 21 code: apps/OmpOS.Native (Program.cs, App.axaml.cs, MainWindow.axaml.cs, Engine/ including new EnginePromptChannel.cs and EngineRunInput.cs, Views/ComposerView.axaml.cs, OmpOS.Native.csproj); shared contracts and presentation (src/OmpOS.Contracts, src/OmpOS.Presentation/Runs, src/OmpOS.Sessions/HarnessEventProjection.cs, src/OmpOS.GenUi/UiFolder.cs, src/OmpOS.EngineHost/RemoteEngineHost.cs); services/OmpOS.Api/Sse/StreamEventKind.cs; docs/parity/session-chat-parity.md; tests under tests/OmpOS.Native.Tests/Send/, tests/OmpOS.Native.Tests/RunControls/, tests/OmpOS.Presentation.Tests/, tests/OmpOS.Contracts.Tests/, tests/OmpOS.Sessions.Tests/, tests/OmpOS.UI.Tests/.
+- Phase 21 code: apps/Autonogrammer.Native (Program.cs, App.axaml.cs, MainWindow.axaml.cs, Engine/ including new EnginePromptChannel.cs and EngineRunInput.cs, Views/ComposerView.axaml.cs, Autonogrammer.Native.csproj); shared contracts and presentation (src/Autonogrammer.Contracts, src/Autonogrammer.Presentation/Runs, src/Autonogrammer.Sessions/HarnessEventProjection.cs, src/Autonogrammer.GenUi/UiFolder.cs, src/Autonogrammer.EngineHost/RemoteEngineHost.cs); services/Autonogrammer.Api/Sse/StreamEventKind.cs; docs/parity/session-chat-parity.md; tests under tests/Autonogrammer.Native.Tests/Send/, tests/Autonogrammer.Native.Tests/RunControls/, tests/Autonogrammer.Presentation.Tests/, tests/Autonogrammer.Contracts.Tests/, tests/Autonogrammer.Sessions.Tests/, tests/Autonogrammer.UI.Tests/.
 - Phase 22 evidence: docs/runbooks/phase-22-desktop-heads.md (rows XP-02 Wayland updated); docs/runbooks/evidence/phase-22-wayland-2026-10-24/ (probe.sh, probe-output.txt).
 - Lock files: about ten packages.lock.json files regenerated.
-- Terminal fix: tests/OmpOS.Harness.Terminal.Tests/LinuxLocalPtyBackendTests.cs.
+- Terminal fix: tests/Autonogrammer.Harness.Terminal.Tests/LinuxLocalPtyBackendTests.cs.
 
 ## Owner Decisions
 
@@ -234,7 +234,7 @@ Later owner decisions, not blocking now:
 | Milestone | Phase | Depends on | Status and blocker or decision |
 |-----------|-------|------------|--------------------------------|
 | v0.10.0 | 22 Desktop heads | 20, 21 | Partial. Criteria 1 (XWayland path) and 2 (X11) met. Criteria 3 (Windows 11 24H2 runner) and 4 and 5 (Mac channel) blocked. Owner decision: skip or stop |
-| v0.10.0 | 23 Web head | 20, 21 | Partial. Criterion 1 met. Criteria 2 and 3 blocked (OMPOS_API_ORIGIN unset; Railway deploys paused). Criterion 4 needs a repository command that reproduces G-WEB (the spike project is not in the repo). Does not depend on 22 |
+| v0.10.0 | 23 Web head | 20, 21 | Partial. Criterion 1 met. Criteria 2 and 3 blocked (AUTONOGRAMMER_API_ORIGIN unset; Railway deploys paused). Criterion 4 needs a repository command that reproduces G-WEB (the spike project is not in the repo). Does not depend on 22 |
 | v0.10.0 | 24 iOS and Android heads | 20, 21 | Blocked. iOS needs the Mac channel. Android needs SDK API 36 (ANDROID_HOME unset). Does not depend on 22 |
 | v0.10.0 | 25 Cutover | 21, 22, 23, 24 | Blocked on 22 and 24 |
 | v0.11.0 | 26 Agents, worktrees, cloud, remote | 21, 22 | Partial (audited 2026-10-27). Side chats and transcript search met; the Agents window has no feeder; worktrees only in the hosted API; run contract implemented, no live cloud run (OD-03, OQ-70); remote control not started |
@@ -334,11 +334,11 @@ Recent decisions affecting current work:
 - [Phase 1]: Blazor package versions in CPM; Web entry uses ConfigureAwait(false) under latest-all — Template-inline versions conflict with CPM; template await trips CA2007/MA0004
 - [Phase 1]: bootstrap.sh keeps dotnet test step as-is despite exit 1 on empty test set — Plan-directed: no masking flags; plan 01-02 test projects resolve it
 - [Phase 1]: 01-02: A2uiSurfaceBlock kind is a2ui-surface; bare a2ui stays unknown
-- [Phase 1]: 01-02: OmpOSError is a sealed record; contract collections are read-only interfaces; semver asserted via Version.TryParse
+- [Phase 1]: 01-02: AutonogrammerError is a sealed record; contract collections are read-only interfaces; semver asserted via Version.TryParse
 - [Phase 1]: ArchUnitNET rules take Assembly objects: the string overload of ResideInAssembly compares full assembly names, so short names match nothing — Probed short and full names (both fail to match); object overloads evaluate over real object sets for both positive and negative rules
 - [Phase 1]: open-questions.md seeded with 26 owned rows (14 research gaps, 4 research extras, 8 ultrathink ambiguities transcribed from dispatch context) — Q1-Q8 text is not locatable in the repo; dispatch context provided the eight items with resolved defaults
 - [2026-10-22, q1]: MCP access goes through a host-owned gateway (user answer 2026-10-22). Phase 33 implements it.
-- [2026-10-22, q2]: Cloud means the OmpOS hosted API (OIDC bearer per OD-03). No third-party cloud provider is chosen.
+- [2026-10-22, q2]: Cloud means the Autonogrammer hosted API (OIDC bearer per OD-03). No third-party cloud provider is chosen.
 - [2026-10-22, q3]: Remote development is deferred (OD-06).
 - [2026-10-22, q4]: omp is an external install located by configuration or PATH (Harness:Acp:OmpPath), consistent with the API image shipping a pinned omp.
 - [2026-10-24, F1]: Production approvals are deny-by-default except for the owner-confirmed kinds edit, delete, move, execute, read and search (ACP tool kinds). fetch, think, switch_mode and other stay denied automatically.
@@ -363,7 +363,7 @@ Recent decisions affecting current work:
 - [External, Mac channel]: macOS 26 build, accessibility dump, signing and notarization (Phase 22); iOS build, accessibility dump and signing (Phase 24). Phase 25 cutover waits on both.
 - [External, host]: no Windows 11 24H2 runner (Phase 22 criterion 3); no Android SDK API 36, ANDROID_HOME unset (Phase 24).
 - [Accessibility gap]: native Wayland (Avalonia.Wayland) has no AT-SPI support, so a native-Wayland head would have no screen-reader path; the XWayland path keeps AT-SPI through X11.
-- [External, deploy]: Railway deploys paused (2026-10-21; the refusal did not recur on 2026-10-28, see "Final position 2026-10-28") blocked the Phase 26 cloud live run, the Phase 23 Vercel smoke (OMPOS_API_ORIGIN unset) and ADE-22.
+- [External, deploy]: Railway deploys paused (2026-10-21; the refusal did not recur on 2026-10-28, see "Final position 2026-10-28") blocked the Phase 26 cloud live run, the Phase 23 Vercel smoke (AUTONOGRAMMER_API_ORIGIN unset) and ADE-22.
 - [External, tracking]: Linear workspace free issue limit reached; the ultrathink Linear rows were not created.
 - [Known limit, Phase 21]: no live omp turn was exercised; OnClosed still has an unobserved MCP disposal (pre-existing).
 
@@ -392,7 +392,7 @@ Ship: ultrathink-ship is enabled with autoMerge on. It has NOT run for this work
 
 - Superseded 2026-10-27: the Phase 22 decision was taken (the phase is deferred by the owner) and the working tree was committed. The open owner items are in the section "Final position 2026-10-27".
 - Linear: upgrade the workspace or accept Notion-only tracking, then re-run `ultrathink-mcp track complete` and the substrate `graph_register` call.
-- Host items (owner): the Mac channel for Phase 22 macOS and Phase 24 iOS; a Windows 11 24H2 runner; Android SDK API 36; `OMPOS_API_ORIGIN` and Railway deploys before the Phase 23 smoke.
+- Host items (owner): the Mac channel for Phase 22 macOS and Phase 24 iOS; a Windows 11 24H2 runner; Android SDK API 36; `AUTONOGRAMMER_API_ORIGIN` and Railway deploys before the Phase 23 smoke.
 - Run `./bootstrap.sh` once at the final tree: no run is recorded for `d75fd88`.
 - Approve a bounded live model turn (OD-07) to close the steering, streaming and Changes bar rows that need one.
 
@@ -417,12 +417,12 @@ Discrepancy list (on-disk evidence wins):
 6. v0.11.0 and v0.12.0 phase statuses do not match commits 90d1296, 377d96f, 68f78c7 and 8a89149, which implement parts of Phases 31 to 33 and 26. Not reconciled in this pass. Recorded for MILESTONE_AUDIT.
 
 QUALITY_BASELINE (BASE 8e0c5e2, 2026-10-24):
-- Stack: .NET SDK 10.0.402 (global.json). C# throughout: an Avalonia 12.1.4 native head and a Blazor WebAssembly web head. Manifests: OmpOS.Linux.slnf (54 projects, each with packages.lock.json) and Directory.Packages.props (central package versions).
+- Stack: .NET SDK 10.0.402 (global.json). C# throughout: an Avalonia 12.1.4 native head and a Blazor WebAssembly web head. Manifests: Autonogrammer.Linux.slnf (54 projects, each with packages.lock.json) and Directory.Packages.props (central package versions).
 - Gate commands, verbatim from bootstrap.sh:
-  - restore: dotnet restore OmpOS.Linux.slnf --locked-mode
-  - build: dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
-  - test: dotnet test OmpOS.Linux.slnf -c Release --no-build -- --filter-not-trait "Category=Live"
-  - format: dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
+  - restore: dotnet restore Autonogrammer.Linux.slnf --locked-mode
+  - build: dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror
+  - test: dotnet test Autonogrammer.Linux.slnf -c Release --no-build -- --filter-not-trait "Category=Live"
+  - format: dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore
   - full gate: ./bootstrap.sh exits 0 and prints "bootstrap: OK". Result: total 2245, failed 0, skipped 0, test duration 48.9 s, wall time 265.8 s.
 - Outside the gate, CI only: gitleaks secret scan (ci.yml, pinned 8.30.1), the vulnerable-package list, and compose validation.
 - Pre-existing gate failures: none.
@@ -432,14 +432,14 @@ Entry state (n1 step 8):
 - v0.10.0 is RUNNING.
 - Phases 20 and 21: COMPLETE (verified).
 - Phase 22: BLOCKED. Criteria 3 to 5 need external hosts. Criterion 1 is partial. Owner decision: skip and continue.
-- Phase 23: REMAINING, partial. Criteria 2 and 3 need OMPOS_API_ORIGIN and the Vercel and Railway deploys. Criteria 1, 4 and 5 are to be verified this run.
+- Phase 23: REMAINING, partial. Criteria 2 and 3 need AUTONOGRAMMER_API_ORIGIN and the Vercel and Railway deploys. Criteria 1, 4 and 5 are to be verified this run.
 - Phase 24: BLOCKED. iOS needs the Mac channel. Criterion 5 needs a device or emulator, and /dev/kvm is absent. Criterion 4 needs the Android SDK (authorized for this run) and a CI run.
 - Phase 25: BLOCKED on Phases 22 and 24.
 
 Remaining phases in ROADMAP order, v0.10.0: 22 (BLOCKED), 23 (REMAINING), 24 (BLOCKED), 25 (BLOCKED).
 Milestone closeout cannot run until v0.10.0 is complete or the owner decides otherwise. Later milestones follow only after that.
 
-Pauses raised: none for grey areas. BLOCKERs for Phase 22 criteria 3 to 5 (Windows runner, Mac channel), Phase 23 criteria 2 and 3 (OMPOS_API_ORIGIN, Vercel, Railway deploys paused), and Phase 24 criteria 1 to 3 and 5 (Mac channel, no device or emulator).
+Pauses raised: none for grey areas. BLOCKERs for Phase 22 criteria 3 to 5 (Windows runner, Mac channel), Phase 23 criteria 2 and 3 (AUTONOGRAMMER_API_ORIGIN, Vercel, Railway deploys paused), and Phase 24 criteria 1 to 3 and 5 (Mac channel, no device or emulator).
 
 
 
@@ -473,7 +473,7 @@ Corrections recorded in this run: 22-SUMMARY (criterion 1 is partial), 23-SUMMAR
 Pauses and payloads (the run stops at these):
 - GREY_AREA, Phase 22 criterion 1: add Avalonia.Wayland and call UseWayland() for a native Wayland opt-in run? Default: no. Cost: a package addition, and native Wayland has no AT-SPI support, so the accessibility gap needs its own decision.
 - BLOCKER, Phase 22 criteria 3 to 5: a Windows 11 24H2 runner and the Mac channel. Minimal action: provide a runner and a Mac host, or record these criteria as owner-blocked.
-- BLOCKER, Phase 23 criteria 2 and 3: OMPOS_API_ORIGIN, the Vercel deploy, and Railway deploys that are paused. Minimal action: provide the production API origin and resume deploys, or confirm the deploy is out of scope.
+- BLOCKER, Phase 23 criteria 2 and 3: AUTONOGRAMMER_API_ORIGIN, the Vercel deploy, and Railway deploys that are paused. Minimal action: provide the production API origin and resume deploys, or confirm the deploy is out of scope.
 - VALIDATION, Phase 24 criterion 4: a CI run needs a push of this branch. GIT_SAFETY allows a push only when a phase requires one, and this phase does. Decision needed: authorize the push, or leave criterion 4 open.
 - BLOCKER, Phase 24 criteria 1 to 3: iOS needs a Mac with Xcode. BLOCKER, Phase 24 criterion 5: an Android 16 device or emulator. /dev/kvm is absent on this host, so no emulator runs here.
 
@@ -486,19 +486,19 @@ Discuss records written, one CONTEXT.md per remaining v0.10.0 phase: 22-CONTEXT.
 
 Naming convention (n1.4): phase directories are NN-slug/, and artifacts are NN-CONTEXT.md, NN-01-PLAN.md, NN-SUMMARY.md and NN-VERIFICATION.md. Examples: .planning/phases/21-parity-surface/21-CONTEXT.md and .planning/phases/21-parity-surface/21-01-PLAN.md.
 
-Audit (n2.4, n2.6): dotnet list OmpOS.Linux.slnf package --vulnerable --include-transitive exited 0 and reported no vulnerable packages. Build output is ignored by .gitignore lines 30 and 31 (bin/ and obj/).
+Audit (n2.4, n2.6): dotnet list Autonogrammer.Linux.slnf package --vulnerable --include-transitive exited 0 and reported no vulnerable packages. Build output is ignored by .gitignore lines 30 and 31 (bin/ and obj/).
 
 Grey areas awaiting one batched answer (GREY_AREA class):
 - G22-1: add Avalonia.Wayland and call UseWayland() for a native Wayland run? Default: no.
 - G22-2: accept that native Wayland has no AT-SPI support, so the criterion 2 Wayland variant stays unmet? Default: record the gap.
 - G23-1: run the axe check as a gate step, which adds Node 22 or later and Chrome to the gate? Default: no. scripts/web-smoke stays the axe evidence.
-- G24-1: Android head structure. (a) A new head project over a shared Avalonia library, with a behavior-neutral move of views out of apps/OmpOS.Native. (b) A repeated shell. Default: (a).
+- G24-1: Android head structure. (a) A new head project over a shared Avalonia library, with a behavior-neutral move of views out of apps/Autonogrammer.Native. (b) A repeated shell. Default: (a).
 - G24-2: write the Android CI job now, and authorize a push for a CI run? Default: write the job, and do not push.
-- G25-1: remove apps/OmpOS.App only after Phases 22 and 24 close and the parity inventory is green. Default: yes, and no deletion in this run.
+- G25-1: remove apps/Autonogrammer.App only after Phases 22 and 24 close and the parity inventory is green. Default: yes, and no deletion in this run.
 - G-M1 (milestone order): continue to v0.11.0 while v0.10.0 items stay blocked? Default: no. Close each milestone before the next.
 - G-S1 (process): Skill() is not a tool in this environment. Default: run each phase command by loading its skill document as the one active command, recorded as a deviation. Under the spec, this is a BLOCKER if it is not accepted.
 
-BLOCKERs, external, and no decision clears them: Phase 22 criteria 3 to 5 (Windows 11 24H2 runner, Mac channel). Phase 23 criteria 2 and 3 (OMPOS_API_ORIGIN, Railway deploys). Phase 24 criteria 1 to 3 (Mac with Xcode and an iOS device) and criterion 5 (Android 16 device or KVM host). Phase 25 is blocked on Phases 22 and 24.
+BLOCKERs, external, and no decision clears them: Phase 22 criteria 3 to 5 (Windows 11 24H2 runner, Mac channel). Phase 23 criteria 2 and 3 (AUTONOGRAMMER_API_ORIGIN, Railway deploys). Phase 24 criteria 1 to 3 (Mac with Xcode and an iOS device) and criterion 5 (Android 16 device or KVM host). Phase 25 is blocked on Phases 22 and 24.
 
 Plan (n8, rewritten from the wave 1 to 3 evidence; the waves run in sequence because the answers change the file set):
 - Pause 1, now: the batched GREY_AREA answers above. Each answer becomes an accepted decision in its CONTEXT.md.
@@ -550,14 +550,14 @@ Gate after the split: `./bootstrap.sh` exit 0, total 2245, failed 0, skipped 0, 
 - v0.10.0 closeout: partial audit written (.planning/v0.10.0-MILESTONE-AUDIT.md). Milestone complete: not run (open phases). Cleanup: no run-created scratch remains (the checkpoint patches were not needed; commits are the checkpoints).
 - Phase states: 20 complete; 21 complete; 22 skipped by owner decision; 23 blocked (criterion 2 deploy part and criterion 3); 24 blocked (CI push not authorized; criteria 1 to 3 Mac; criterion 5 device); 25 awaiting owner decision (criterion 1).
 - Commits: cfa385d (Phase 23 checkpoint), fe2d398 (Phase 24 checkpoint), and the Phase 25 checkpoint with this run summary.
-- Open pauses: Phase 25 GREY_AREA (questions 1 and 2 in 25-CONTEXT.md, run record 2026-10-25). Resume at Phase 25 Wave 8 after the answers. External blockers: Phase 22 (Windows and Mac runners), Phase 23 (OMPOS_API_ORIGIN, deploys), Phase 24 (push authorization for the CI run; Mac; Android 16 device).
+- Open pauses: Phase 25 GREY_AREA (questions 1 and 2 in 25-CONTEXT.md, run record 2026-10-25). Resume at Phase 25 Wave 8 after the answers. External blockers: Phase 22 (Windows and Mac runners), Phase 23 (AUTONOGRAMMER_API_ORIGIN, deploys), Phase 24 (push authorization for the CI run; Mac; Android 16 device).
 - Ship: held by the owner's answer; ultrathink-ship not invoked; no PR, push or merge.
 - v0.11.0 and later: not started (G-M1 answered No).
 - Unmapped follow-ups: the flaky terminal test helper; a repository-wide TODO and FIXME check (touched paths were clean).
 
 ## Phase 25 decision 2026-10-25
 
-Owner answers: implement the 13 Class C features with native tests; accept row 11 as by design. Phase 25 proceeds: criterion 1 first, then the removal of apps/OmpOS.App and its references (criterion 2), then the search evidence.
+Owner answers: implement the 13 Class C features with native tests; accept row 11 as by design. Phase 25 proceeds: criterion 1 first, then the removal of apps/Autonogrammer.App and its references (criterion 2), then the search evidence.
 
 ## Phase 25 complete 2026-10-25
 
@@ -590,7 +590,7 @@ Verification:
 - Full gate on the final tree: ./bootstrap.sh exit 0, "bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format, web smoke with axe)", total 2270, failed 0, skipped 0, web smoke exit 0, wall 222 s.
 - Pre-fix checks: the lifecycle test fails on the pre-fix view. The fixed view was restored byte-for-byte afterwards.
 
-Working tree (uncommitted, for review): .github/workflows/ci.yml, bootstrap.sh, src/OmpOS.Native.Views/MainView.axaml.cs, src/OmpOS.Native.Views/Views/SessionView.axaml.cs, tests/OmpOS.Harness.Terminal.Tests/LinuxLocalPtyBackendTests.cs, tests/OmpOS.Native.Tests/Parity/ParitySessionGapTests.cs, and the new .planning/phases/25-cutover/25-01-PLAN.md. Records: STATE.md, .planning/v0.10.0-MILESTONE-AUDIT.md, .planning/phases/25-cutover/25-SUMMARY.md.
+Working tree (uncommitted, for review): .github/workflows/ci.yml, bootstrap.sh, src/Autonogrammer.Native.Views/MainView.axaml.cs, src/Autonogrammer.Native.Views/Views/SessionView.axaml.cs, tests/Autonogrammer.Harness.Terminal.Tests/LinuxLocalPtyBackendTests.cs, tests/Autonogrammer.Native.Tests/Parity/ParitySessionGapTests.cs, and the new .planning/phases/25-cutover/25-01-PLAN.md. Records: STATE.md, .planning/v0.10.0-MILESTONE-AUDIT.md, .planning/phases/25-cutover/25-SUMMARY.md.
 
 Blocked, unchanged: Phase 22 criteria 1 and 3 to 5; Phase 23 criterion 2 (deploy part) and criterion 3; Phase 24 criterion 4 (the CI run needs a push) and criteria 1 to 3 and 5 (Mac channel, device). v0.10.0 cannot close without the owner's decision on its open criteria. v0.9.2 stays open for the owner.
 
@@ -613,24 +613,24 @@ Discovery (read-only, then the first write):
 - Skill: /root/.agents/skills/gsd-autonomous/SKILL.md is a wrapper that points to /root/.agents/gsd-core/workflows/autonomous.md. The autonomous step files cover converge only. The skill defines no commit policy for code. Cleanup goes through gsd-cleanup, which asks for approval itself.
 - Config: commit_docs is true (planning docs are committed by the GSD tooling). create_tag is true, so the complete step creates a tag; a closeout tag needs your acceptance.
 - Git: branch feat/v0.9.2-hardening. At the first write, 10 uncommitted paths predated this run. You chose one local baseline commit with no push: 0bea2bf (its file set equals the 10 paths; the tree was clean afterwards). Starting revision: 0bea2bf.
-- TODO markers: 0 in product code. The 12 matching lines (in 4 files) are scanner strings and test fixtures: tests/OmpOS.ArchitectureTests/TodoMarkerScanner.cs, RepoHygieneTests.cs, and tests/OmpOS.Harness.Rpc.Tests/TestData/frames/*.ndjson. There is nothing to map.
+- TODO markers: 0 in product code. The 12 matching lines (in 4 files) are scanner strings and test fixtures: tests/Autonogrammer.ArchitectureTests/TodoMarkerScanner.cs, RepoHygieneTests.cs, and tests/Autonogrammer.Harness.Rpc.Tests/TestData/frames/*.ndjson. There is nothing to map.
 
 BASELINE (captured on 0bea2bf, before any run write; logs in .git/gsd-baseline/, untracked):
 - ./bootstrap.sh: exit 0; total 2270, failed 0, skipped 0; web smoke exit 0.
-- dotnet list OmpOS.Linux.slnf package --vulnerable --include-transitive: exit 0; 71 projects checked, 0 with vulnerable packages.
+- dotnet list Autonogrammer.Linux.slnf package --vulnerable --include-transitive: exit 0; 71 projects checked, 0 with vulnerable packages.
 - Not run here (CI-only): gitleaks (not installed; install not authorized), compose validation (podman-compose), and the android job (needs a push).
 
 Phase queue (v0.10.0 is the active milestone):
 - 20 complete (20-VERIFICATION.md). 21 complete (21-VERIFICATION.md).
 - 22 deferred by owner decision (2026-10-24). Met: criterion 2 on X11 (2026-10-22) and criterion 1 on the XWayland path (2026-10-24). Deferred, not removed: the native Wayland opt-in start, and criteria 3 to 5. No PLAN exists, which is expected for a deferred phase.
-- 23 blocked: criterion 2's deploy part and criterion 3 need OMPOS_API_ORIGIN, a resumed Railway deploy, and a Vercel deploy. Artifacts 23-CONTEXT.md, 23-01-PLAN.md and 23-SUMMARY.md exist. Discuss and plan were not re-run, because regenerating CONTEXT and PLAN would overwrite recorded decisions; the existing artifacts are reused and verified. Resume point: execute criterion 2's deploy part and criterion 3.
+- 23 blocked: criterion 2's deploy part and criterion 3 need AUTONOGRAMMER_API_ORIGIN, a resumed Railway deploy, and a Vercel deploy. Artifacts 23-CONTEXT.md, 23-01-PLAN.md and 23-SUMMARY.md exist. Discuss and plan were not re-run, because regenerating CONTEXT and PLAN would overwrite recorded decisions; the existing artifacts are reused and verified. Resume point: execute criterion 2's deploy part and criterion 3.
 - 24 blocked: criterion 4 needs a push (not authorized, G24-2). Criteria 1 to 3 and 5 need a Mac with Xcode, an iOS 26 device, and an Android 16 device or a KVM host. Artifacts 24-CONTEXT.md, 24-01-PLAN.md and 24-SUMMARY.md exist. Resume point: execute criterion 4 after push authorization.
 - 25 complete (criteria 1 to 3). 25-01-PLAN.md is a retrospective record, labeled as written after execution.
 
 Pause (BLOCKER_PAUSE): the run stops at the execute step of Phases 23 and 24. Closeout does not start, because every phase must be complete or deferred by a recorded user decision. The open decision is, for each open criterion: defer (keeps v0.10.0 open; the default) or accept.
 
 Open items for the audit:
-- Phase 24 (its entry names apps/OmpOS.Android): Android teardown does not call MainView.Close. CI's vulnerability step audits OmpOS.Linux.slnf, which excludes the Android project; the local audit of that project is clean. The new CI steps (the android job and the browser smoke in build-test) have never run on GitHub. A first push runs gitleaks over the full history, which cannot be run here; the last failing run on the branch (a33c2f7, 2026-10-21) failed that step.
+- Phase 24 (its entry names apps/Autonogrammer.Android): Android teardown does not call MainView.Close. CI's vulnerability step audits Autonogrammer.Linux.slnf, which excludes the Android project; the local audit of that project is clean. The new CI steps (the android job and the browser smoke in build-test) have never run on GitHub. A first push runs gitleaks over the full history, which cannot be run here; the last failing run on the branch (a33c2f7, 2026-10-21) failed that step.
 - Phase 23: the web smoke failed once in a gate run (exit 1) after the tests passed. An isolated rerun passed. The cause is unknown. Its evidence is now kept on failure.
 - Unmapped (tooling): .planning/state.json still names v0.9.2 (2026-10-21).
 
@@ -654,23 +654,23 @@ Answers and effect:
 - Defects (a2): fix (a) and (b), defer (c). (a) was re-asked and deferred (below). (b) is in the Phase 24 commit that follows this record commit. (c) is an audit follow-up.
 - Commits (a3): commit now; one commit per phase after this. This record commit is the first. It stages explicit paths only and pushes nothing.
 
-Re-asked decision (a4, 2026-10-25): fold-in (a) is deferred to the audit. Basis: the view is built once, in OnFrameworkInitializationCompleted (apps/OmpOS.Android/OmpOSAndroidApp.axaml.cs:28). Closing it on finish would leave a same-process relaunch with a disposed view, and no device here can test the relaunch. The current code keeps the view valid for relaunch. The cost is in-process subscriptions until the process ends. Android has no engine (prompts null), so no native resource is held. The owner's earlier approval was given on a description without this risk; the answer is recorded here and in the spec.
+Re-asked decision (a4, 2026-10-25): fold-in (a) is deferred to the audit. Basis: the view is built once, in OnFrameworkInitializationCompleted (apps/Autonogrammer.Android/AutonogrammerAndroidApp.axaml.cs:28). Closing it on finish would leave a same-process relaunch with a disposed view, and no device here can test the relaunch. The current code keeps the view valid for relaunch. The cost is in-process subscriptions until the process ends. Android has no engine (prompts null), so no native resource is held. The owner's earlier approval was given on a description without this risk; the answer is recorded here and in the spec.
 
 Corrections (new lines; earlier entries are not edited):
 - Phase 22 criterion 1: the run-start entry above, and the first ROADMAP status line, said criterion 1 was met on the XWayland path. 22-SUMMARY.md (criterion 1 row, correction 2026-10-24) says it is partial: the X11 and XWayland starts are recorded, and the native Wayland opt-in run is not done. The ROADMAP Phase 22 status line now matches the summary.
 - Complete step: ~/.agents/gsd-core/workflows/complete-milestone.md line 745 creates the tag v[X.Y] when git.create_tag is enabled (config.json: true). Lines 446 and 24 remove REQUIREMENTS.md after archiving it, and line 538 commits the archive. The tag and the archive commit are closeout actions the spec requires the user to accept; the REQUIREMENTS.md removal is declined above.
 
 TODO inventory (2026-10-25):
-- First-party code markers (apps, src, services, tests, tools, scripts, .github, bootstrap.sh): 12 lines in 4 files, all scanner strings or fixtures (tests/OmpOS.ArchitectureTests/TodoMarkerScanner.cs, RepoHygieneTests.cs, tests/OmpOS.Harness.Rpc.Tests/TestData/frames/*.ndjson). The repository's own VERIFY-02 gate passes at 0bea2bf, so there are zero untracked markers. Bucket NOISE; not mapped.
-- Vendored framework comments under apps/OmpOS.Web/wwwroot/lib: bucket FRAMEWORK; excluded by the repository's scanner; not mapped.
+- First-party code markers (apps, src, services, tests, tools, scripts, .github, bootstrap.sh): 12 lines in 4 files, all scanner strings or fixtures (tests/Autonogrammer.ArchitectureTests/TodoMarkerScanner.cs, RepoHygieneTests.cs, tests/Autonogrammer.Harness.Rpc.Tests/TestData/frames/*.ndjson). The repository's own VERIFY-02 gate passes at 0bea2bf, so there are zero untracked markers. Bucket NOISE; not mapped.
+- Vendored framework comments under apps/Autonogrammer.Web/wwwroot/lib: bucket FRAMEWORK; excluded by the repository's scanner; not mapped.
 - Tracker of record: docs/open-questions.md (CONTRIBUTING.md TODO policy: a code TODO cites an OQ ID). 93 ID rows: 64 open, 3 partial, 1 deferred, 1 known limit; the rest are decided, resolved, superseded or closed.
 - Tracker rows that name v0.10.0 phases: OQ-29 (Phase 20), OQ-34 (Phase 20 criterion 5), OQ-44 (native views and view-model refresh; Phases 20 and 21). Rule 6 (complete phase): UNMAPPED-OPEN, listed as unmet in the audit; phases are not reopened. OQ-44's premise may be stale: SessionViewModel raises PropertyChanged and SessionView subscribes to it (commit 0bea2bf). Re-check at the audit.
 - The other open tracker rows name no v0.10.0 phase: OUT-OF-MILESTONE or external. Not mapped here.
-- Phase SUMMARY open items for the active milestone: Phase 22 (3: Windows runner; macOS evidence and signing; native Wayland backend). Phase 23 (3: production origin and Railway deploys; G-WEB repeats, no open item; Avalonia.Browser decision, owner). Phase 24 (3: Android CI run needs a push; iOS Mac evidence; iOS and Android projects, partly stale because the Android project exists). Phase 25 (3: Mac evidence; the apps/OmpOS.App removal is done in 9171508, so stale; src/OmpOS.UI removal is an owner decision, and criterion 3 keeps it while it is referenced).
+- Phase SUMMARY open items for the active milestone: Phase 22 (3: Windows runner; macOS evidence and signing; native Wayland backend). Phase 23 (3: production origin and Railway deploys; G-WEB repeats, no open item; Avalonia.Browser decision, owner). Phase 24 (3: Android CI run needs a push; iOS Mac evidence; iOS and Android projects, partly stale because the Android project exists). Phase 25 (3: Mac evidence; the apps/Autonogrammer.App removal is done in 9171508, so stale; src/Autonogrammer.UI removal is an owner decision, and criterion 3 keeps it while it is referenced).
 - Fold-in candidates: (a) deferred (above); (b) done in the Phase 24 commit; (c) deferred to the audit.
 - Other follow-ups found this run: the bootstrap cleanup runs test-services down before removing temporary files under set -e (latent; down exits 0 today); the Phase 23 smoke failed once with its evidence lost (cause unknown); .planning/state.json still names v0.9.2 (tooling; not edited).
 
-Status: paused at a blocker. Resume points: Phase 23 criterion 2 (deploy part) and criterion 3, blocked on OMPOS_API_ORIGIN (unset here) and on the Vercel and Railway deploys (Railway is paused on the account). Phase 24 criterion 4 (CI run; push not authorized, G24-2) and criteria 1 to 3 and 5 (Mac and Android 16 hardware). Phase 22 is deferred by owner decision. Milestone v0.10.0 stays open: closeout is held while criteria remain open, and cleanup keeps phase artifacts.
+Status: paused at a blocker. Resume points: Phase 23 criterion 2 (deploy part) and criterion 3, blocked on AUTONOGRAMMER_API_ORIGIN (unset here) and on the Vercel and Railway deploys (Railway is paused on the account). Phase 24 criterion 4 (CI run; push not authorized, G24-2) and criteria 1 to 3 and 5 (Mac and Android 16 hardware). Phase 22 is deferred by owner decision. Milestone v0.10.0 stays open: closeout is held while criteria remain open, and cleanup keeps phase artifacts.
 
 Fold-in committed: f8b5faf (Phase 24, the vulnerability gate for the Android head). Its gate on the same content: `./bootstrap.sh` exit 0, 2270 total, 0 failed, 0 skipped, web smoke exit 0. The Phase 24 summary's fold-in section records it. These records are pause-time writes; they ride with the next commit, per the commit answer.
 
@@ -759,7 +759,7 @@ Pending pause (GREY, this packet): (1) uplift scope: audit first, fix phases now
 
 - Fixes committed as 0be414e, with 7 files staged by explicit path: queue cap (16), engine-host dispose trace test, ToggleButton focus-visible style. The .planning records are not in the commit.
 - Gate: ./bootstrap.sh exit 0, "bootstrap: OK", 2275 passed, 0 failed, 0 skipped, web smoke exit 0 (202 s wall time).
-- QUALITY_BAR after the fixes: visible focus and unbounded work now pass. Correctness keeps one residual: the MCP registry close trace, because McpToolRegistry is sealed with no injection point (src/OmpOS.Harness.Mcp/McpToolRegistry.cs). Maintainability keeps the dead-code gap, which the owner accepted.
+- QUALITY_BAR after the fixes: visible focus and unbounded work now pass. Correctness keeps one residual: the MCP registry close trace, because McpToolRegistry is sealed with no injection point (src/Autonogrammer.Harness.Mcp/McpToolRegistry.cs). Maintainability keeps the dead-code gap, which the owner accepted.
 - Phase 25 VERIFY_GATE: open on the MCP residual only. The ROADMAP status line and top-level checkbox stay open.
 - Phase 25.1 (codebase quality audit, decimal, under v0.10.0) is inserted in ROADMAP.md (checklist line 392; section after Phase 25) and not started. The order rule starts it after Phase 25 passes, unless the owner says otherwise.
 - Counters: Phase 25 gate attempts 2 of 3, both passed; QUALITY_BAR runs 2.
@@ -777,9 +777,9 @@ Pending pause (GREY, this packet): (1) uplift scope: audit first, fix phases now
 
 - Phase 25.1 ran discuss, plan, and execute: six read-only lens scans in parallel, no product change. Register: `.planning/phases/25.1-codebase-quality-audit/25.1-FINDINGS.md`. Consolidated 130 rows: 4 High, 35 Medium, 91 Low.
 - Verified High findings: H-1 `?apiBaseUrl=` accepts any https origin (ApiBaseUrlResolver.cs:47-62); H-2 ACP stdout read without a line cap (AcpStdioTransport.cs:247); H-3 SSE reconnect budget never resets on progress (SseEventStream.cs:65,81,87; default 10 from SseStreamOptions.cs:19, so the 11th disconnect throws); H-4 Vercel installer runs unverified on every build (vercel.ts:28).
-- Corrections recorded: lens 6 re-graded from its CI-execution rule (10 High to 1 High, 8 Medium, 1 Low); ompos.css focus ring re-graded to Low (computed ratios pass 3:1); 2026-10-22 owner row 6 (apps/OmpOS.App lock file) resolved at HEAD by the Phase 25 cutover; suppression counts from the 2026-10-22 audit still unreconciled (proposed F-H).
+- Corrections recorded: lens 6 re-graded from its CI-execution rule (10 High to 1 High, 8 Medium, 1 Low); autonogrammer.css focus ring re-graded to Low (computed ratios pass 3:1); 2026-10-22 owner row 6 (apps/Autonogrammer.App lock file) resolved at HEAD by the Phase 25 cutover; suppression counts from the 2026-10-22 audit still unreconciled (proposed F-H).
 - Phase 25.1 status: complete (ROADMAP checkbox and status line). Fix phases F-A to F-H are proposed; none accepted yet.
-- Pending pause (GREY, packet with two items): (1) which fix phases to accept, F-A to F-H; (2) consent behaviour for repo setup steps (M-16: `.ompos/setup.json` runs without consent). Persisted here before asking. Packet status: awaiting answers.
+- Pending pause (GREY, packet with two items): (1) which fix phases to accept, F-A to F-H; (2) consent behaviour for repo setup steps (M-16: `.autonogrammer/setup.json` runs without consent). Persisted here before asking. Packet status: awaiting answers.
 - Ship: still held by the owner. Milestone v0.10.0 closeout: still held (Phases 22, 23, 24 open).
 
 ## Phase 25.1 pause resolved and fix phases accepted, 2026-10-26 (graph ut-mvo0031x-d8bbe878)
@@ -800,7 +800,7 @@ Pending pause (GREY, this packet): (1) uplift scope: audit first, fix phases now
 ## Phase 25.3 closed, 2026-10-26 (graph ut-mvo0031x-d8bbe878)
 
 - F-B (phase 25.3) closed: commit 501c8db (one commit). Gate: 2302 passed, 0 failed, 0 skipped; web smoke exit 0.
-- Caps: ACP and remote lines 1 MiB characters (MalformedFrameHarnessException); remote frame data 1 MiB; version probe 4096 characters with kill; vendor bodies 4 MiB (BoundedContent in OmpOS.Sandbox.Abstractions).
+- Caps: ACP and remote lines 1 MiB characters (MalformedFrameHarnessException); remote frame data 1 MiB; version probe 4096 characters with kill; vendor bodies 4 MiB (BoundedContent in Autonogrammer.Sandbox.Abstractions).
 - Behaviour change recorded: lone CR no longer ends a line in the shared reader; only LF ends it.
 - Gaps recorded in 25.3-01-SUMMARY.md: duplicated bounded-content helper (web and sandbox); POSIX-only sleep in the probe test.
 - Next: Phase 25.4 (F-C): build, deploy, and image integrity. Network-dependent pins (SHAs, digests) to be checked first.

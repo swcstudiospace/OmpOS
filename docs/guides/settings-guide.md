@@ -1,5 +1,5 @@
 ---
-description: "Every page of the OmpOS Settings window with what it does and its status, in the desktop and web heads."
+description: "Every page of the Autonogrammer Settings window with what it does and its status, in the desktop and web heads."
 ---
 
 # Settings guide
@@ -35,15 +35,15 @@ Order in the window (`SettingsWindowFactory`): Runtime, General, Display, Agents
 | Tab | Read-only status of inline completion: on or off, the provider's host and port. | Built (read-only) |
 | Rules, Skills, Commands | The rule files, skill files (including the ten built-in skills with scope Built-in) and slash commands of the workspace, read-only. | Built (read-only) |
 | Hooks | The effective hooks and where they came from, approve or revoke a hook version, the run log ([Hooks](../reference/hooks.md)). | Partial (wired; no live omp) |
-| MCP servers | Servers read from OmpOS, Cursor, Claude Code and VS Code files, their state and problems, and **Add from preset** (13 presets, added disabled) ([MCP servers](../reference/mcp.md)). | Partial |
+| MCP servers | Servers read from Autonogrammer, Cursor, Claude Code and VS Code files, their state and problems, and **Add from preset** (13 presets, added disabled) ([MCP servers](../reference/mcp.md)). | Partial |
 | Plugins | The four plugins connected to every omp process, read-only. There is deliberately no switch. | Built (read-only) |
 | Workspaces | Saved sets of several folders and starting a session in one ([Multi-repo](../runbooks/multi-repo.md)). | Partial |
 | Worktrees | The worktree setup file and its consent state, read-only ([Checkpoints and worktrees](../reference/checkpoints-and-worktrees.md)). | Partial |
 | Ignore | Cursor-style ignore files (gitignore syntax) that hide paths from the agent, Tab and `@` mentions. | Partial |
 | Remote environments | Profiles for machines reached with your own `ssh`, containers (podman) and WSL distributions, preflight and diagnosis ([ssh](../runbooks/remote-ssh.md), [containers](../runbooks/remote-containers.md)). | Partial |
-| Cloud agents | The cloud agent list and new-agent form; shows "not set up" without `OMPOS_API_BASE_URL` ([Cloud agents](../runbooks/cloud-agents.md)). | Partial (fakes only) |
+| Cloud agents | The cloud agent list and new-agent form; shows "not set up" without `AUTONOGRAMMER_API_BASE_URL` ([Cloud agents](../runbooks/cloud-agents.md)). | Partial (fakes only) |
 | Automations | Scheduled prompts that start a session locally or a cloud agent; cron only on the desktop ([Automations](../reference/automations.md)). | Partial |
-| Privacy | A statement of what OmpOS does and does not send. | Built |
+| Privacy | A statement of what Autonogrammer does and does not send. | Built |
 | Network | A **Run diagnostics** button: one unauthenticated GET per known provider endpoint, only when pressed. | Built |
 | Keyboard | The shortcuts the shell handles, grouped by scope. Remapping is not built. | Built (read-only) |
 
@@ -63,16 +63,16 @@ Order (`WebSettingsOrder`): General, Runtime, Agents, Run mode, Models, Tab, Rul
 
 Display, Worktrees, Ignore and Automations have no web page. Test coverage: `WebSettingsPagesTests`, `SettingsRouteSurfaceTests`, `DemoProvidersRouteTests`, `DemoWorkspaceSettingsRouteTests`. Two sentences (the General page's "sends nothing anywhere itself" and the Network intro) are worded for the desktop and are not yet re-worded for the web.
 
-## Settings Cursor has and OmpOS leaves out
+## Settings Cursor has and Autonogrammer leaves out
 
-OmpOS has no accounts, teams, billing, usage dashboard or hosted Cursor services, so those pages do not exist. Each omission has a reason recorded in [Settings parity](../settings-parity.md) (rows marked Omitted) and counted in the parity audit under OMITTED-BY-DECISION.
+Autonogrammer has no accounts, teams, billing, usage dashboard or hosted Cursor services, so those pages do not exist. Each omission has a reason recorded in [Settings parity](../settings-parity.md) (rows marked Omitted) and counted in the parity audit under OMITTED-BY-DECISION.
 
 ## Where settings are stored
 
 | Setting | Stored in |
 |---|---|
-| Runtime, General, Agents, Display | A settings file under the state directory (`OMPOS_STATE_DIR`) |
-| Run mode | `~/.ompos/run-mode.json` |
+| Runtime, General, Agents, Display | A settings file under the state directory (`AUTONOGRAMMER_STATE_DIR`) |
+| Run mode | `~/.autonogrammer/run-mode.json` |
 | Provider keys, custom providers | omp's credential database or `secrets/secrets.json`, and a marked block in omp's `models.yml` ([Choose a model provider](providers-guide.md)) |
 | Web head settings | The browser's local storage for theme and motion; nothing for keys |
 | Automations | `automations.json` and `automation-consent.json` in the desktop configuration directory |

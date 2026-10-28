@@ -1,7 +1,7 @@
 <Project>
   <!-- Product and licence metadata. VersionPrefix is the single version source: the release workflow and CHANGELOG.md read it. -->
   <PropertyGroup>
-    <Product>OmpOS</Product>
+    <Product>Autonogrammer</Product>
     <Authors>SWC Studio</Authors>
     <Company>SWC Studio</Company>
     <Copyright>Copyright (C) 2026 SWC Studio</Copyright>
@@ -49,6 +49,6 @@
 
   <ItemGroup>
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" Link="BannedSymbols.txt" />
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.NoProcess.txt" Link="BannedSymbols.NoProcess.txt" Condition="!$(MSBuildProjectName.StartsWith('OmpOS.Harness.')) And '$(MSBuildProjectName)' != 'OmpOS.Sandbox' And !$(MSBuildProjectName.EndsWith('Tests'))" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.NoProcess.txt" Link="BannedSymbols.NoProcess.txt" Condition="!$(MSBuildProjectName.StartsWith('Autonogrammer.Harness.')) And '$(MSBuildProjectName)' != 'Autonogrammer.Sandbox' And !$(MSBuildProjectName.EndsWith('Tests'))" />
   </ItemGroup>
 </Project>

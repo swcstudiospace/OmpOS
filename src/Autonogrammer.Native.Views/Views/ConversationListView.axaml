@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:components="clr-namespace:Autonogrammer.Presentation.Components;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.ConversationListView">
+
+  <DockPanel>
+    <StackPanel x:Name="StatePanel"
+                DockPanel.Dock="Top"
+                Margin="{DynamicResource Autonogrammer.Space.Sm}"
+                Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+      <TextBlock x:Name="StateHeading"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                 FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+                 TextWrapping="Wrap" />
+      <TextBlock x:Name="StateBody"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+
+    <ListBox x:Name="ConversationRows"
+             AutomationProperties.Name="Conversations"
+             Focusable="True">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="components:ConversationSummary">
+          <TextBlock Text="{CompiledBinding Title}"
+                     TextTrimming="CharacterEllipsis"
+                     MaxLines="1"
+                     VerticalAlignment="Center" />
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+  </DockPanel>
+
+</UserControl>

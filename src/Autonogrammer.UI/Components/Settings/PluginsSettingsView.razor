@@ -1,0 +1,52 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits SettingsPageView<PluginsPage>
+@using Autonogrammer.Presentation.Settings
+<SettingsPageFrame Page="Page" Title="@SettingsCopy.PluginsHeading" Description="@SettingsCopy.PluginsDescription" Editable="false">
+    @if (Page.State != SettingsPageState.Ready)
+    {
+        <SettingsStateView Loading="@(Page.State == SettingsPageState.Loading)" Error="@(Page.State == SettingsPageState.Error ? Page.LoadError : null)" OnRetry="Retry" />
+    }
+    else
+    {
+        <p class="autonogrammer-settings-help">@SettingsCopy.PluginsAlwaysOnNote</p>
+        if (Page.IsEmpty)
+        {
+            <p class="autonogrammer-settings-state">@SettingsCopy.PluginsEmpty</p>
+        }
+        else
+        {
+            <ul class="autonogrammer-settings-list" aria-label="@SettingsCopy.PluginsHeading">
+                @foreach (var row in Page.Rows)
+                {
+                    <li class="autonogrammer-settings-list-row" @key="row.Id" aria-label="@SettingsCopy.PluginSummary(row)">
+                        <div class="autonogrammer-settings-list-main">
+                            <span class="autonogrammer-settings-label">@row.DisplayName</span>
+                            <span class="autonogrammer-settings-help">@row.Role</span>
+                            @if (!string.IsNullOrWhiteSpace(row.Detail))
+                            {
+                                <span class="autonogrammer-settings-help">@row.Detail</span>
+                            }
+                        </div>
+                        <span class="autonogrammer-chip @(row.IsFound ? "autonogrammer-chip--success" : "autonogrammer-chip--warning")" data-availability="@(row.IsFound ? "found" : "missing")">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                @if (row.IsFound)
+                                {
+                                    <path d="m5 12 5 5 9-10" />
+                                }
+                                else
+                                {
+                                    <path d="M6 6l12 12M18 6 6 18" />
+                                }
+                            </svg>@(row.IsFound ? SettingsCopy.PluginFoundLabel : SettingsCopy.PluginMissingLabel)
+                        </span>
+                        <span class="autonogrammer-settings-mono">@(string.IsNullOrWhiteSpace(row.Version) ? SettingsCopy.PluginVersionUnknown : row.Version.Trim())</span>
+                    </li>
+                }
+            </ul>
+        }
+    }
+</SettingsPageFrame>
+
+@code {
+    private Task Retry() => Page.LoadAsync(CancellationToken.None);
+}

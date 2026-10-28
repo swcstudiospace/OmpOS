@@ -4,7 +4,7 @@ description: "Phase 76 brief (v0.16.0): Cowork parity part B, plugin bundles, sk
 
 # Phase 76: Cowork parity B (plugins, skills, connectors, permissions, isolation, sub-agents, notifications)
 
-Status: design brief, nothing built. Written 2026-10-28 for ADR-0037 ([decision record](../../../decisions/ADR-0037-cowork-parity-remainder.md)). Names are post-rename (OmpOS becomes Autonogrammer); paths use that spelling although the repo on disk still uses the old one. Facts cite the research reports of this folder, the repo and the sibling records.
+Status: design brief, nothing built. Written 2026-10-28 for ADR-0037 ([decision record](../../../decisions/ADR-0037-cowork-parity-remainder.md)). Names are post-rename (Autonogrammer becomes Autonogrammer); paths use that spelling although the repo on disk still uses the old one. Facts cite the research reports of this folder, the repo and the sibling records.
 
 ## Goal
 

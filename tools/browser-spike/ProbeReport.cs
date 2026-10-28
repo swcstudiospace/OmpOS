@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace OmpOS.BrowserSpike;
+namespace Autonogrammer.BrowserSpike;
 
 /// <summary>The fields the probe script returns for the fixture's button.</summary>
 internal sealed record ProbeReport(bool Found, string? Selector, bool Resolves, double X, double Y, double Width, double Height)

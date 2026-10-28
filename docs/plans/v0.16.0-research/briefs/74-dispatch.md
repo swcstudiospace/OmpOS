@@ -1,6 +1,6 @@
 # Brief 74: Dispatch relay (ADR-0036)
 
-Names are post-rename (OmpOS becomes Autonogrammer); the repo on disk still uses OmpOS, so `Autonogrammer.Api` is `OmpOS.Api` there. Decisions D1 to D16 are in [ADR-0036](../../../decisions/ADR-0036-dispatch-relay.md); this brief only splits the work. Research: reports 08, 03, 04, 05, 06 (row C18), 09. Reconciled with ADR-0030 (brief 67), ADR-0031 (brief 68), ADR-0032 (briefs 69, 70), ADR-0035 (brief 73).
+Names are post-rename (Autonogrammer becomes Autonogrammer); the repo on disk still uses Autonogrammer, so `Autonogrammer.Api` is `Autonogrammer.Api` there. Decisions D1 to D16 are in [ADR-0036](../../../decisions/ADR-0036-dispatch-relay.md); this brief only splits the work. Research: reports 08, 03, 04, 05, 06 (row C18), 09. Reconciled with ADR-0030 (brief 67), ADR-0031 (brief 68), ADR-0032 (briefs 69, 70), ADR-0035 (brief 73).
 
 ## Goal
 

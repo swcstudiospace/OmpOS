@@ -1,6 +1,6 @@
 # R7: Browser Use and Computer Use feasibility (Autonogrammer Cowork)
 
-Research date: 2026-10-28. Worktree: `/root/src/repos/ompos-autonogrammer` (branch `feat/autonogrammer`). Nothing was built, run, started or committed. All "verified" claims are file reads, NuGet/GitHub/vendor-page reads, or `strings`/`grep` on installed binaries. `[INFERENCE]` marks anything not read.
+Research date: 2026-10-28. Worktree: `/root/src/repos/autonogrammer-autonogrammer` (branch `feat/autonogrammer`). Nothing was built, run, started or committed. All "verified" claims are file reads, NuGet/GitHub/vendor-page reads, or `strings`/`grep` on installed binaries. `[INFERENCE]` marks anything not read.
 
 ## 0. Verdict
 
@@ -21,14 +21,14 @@ Research date: 2026-10-28. Worktree: `/root/src/repos/ompos-autonogrammer` (bran
 | Avalonia version | Avalonia, Desktop, Android, Themes.Fluent, Browser, Headless 12.1.4; Skia 12.1.4 | `Directory.Packages.props:20-26`, `:80` |
 | WebView pin | `Avalonia.Controls.WebView` 12.1.1, group "Embedded browser pane spike (ADE-15, OQ-51, ADR-0009)" | `Directory.Packages.props:93-95` |
 | MCP SDK pin | `ModelContextProtocol` 2.3.0 | `Directory.Packages.props:73-75` |
-| Spike | Not in `OmpOS.slnx`, not a gate; uses `NativeWebView`, `AdapterPreference`, `InvokeScript` probe; passes on WebKitGTK 2.52.6 under `xvfb-run`, fails to start with no `DISPLAY` | `tools/browser-spike/OmpOS.BrowserSpike.csproj:3`, `SpikeWindow.cs:11-30,38-47`; `docs/decisions/ADR-0009-browser-pane.md:92-129` |
+| Spike | Not in `Autonogrammer.slnx`, not a gate; uses `NativeWebView`, `AdapterPreference`, `InvokeScript` probe; passes on WebKitGTK 2.52.6 under `xvfb-run`, fails to start with no `DISPLAY` | `tools/browser-spike/Autonogrammer.BrowserSpike.csproj:3`, `SpikeWindow.cs:11-30,38-47`; `docs/decisions/ADR-0009-browser-pane.md:92-129` |
 | ADR-0009 status | "Accepted for Linux only, on the WebKitGTK adapter. Windows: not measured. macOS: not measured." WPE adapter reports `IsSupported = False` here | `ADR-0009-browser-pane.md:3,18-20,102-108` |
 | Not measured | Windows, macOS, Wayland, clicks, keyboard focus, text input, a11y tree, cookies, real sites, GPU | `ADR-0009-browser-pane.md:141-147` |
 | Required OS lib | `libwebkit2gtk-4.1` on Linux | `ADR-0009-browser-pane.md:158` |
 | OQ-51 | Open: "No verified embedded web view covers all six heads, and the Blazor web head cannot host a second browser in the page" | `docs/open-questions.md:88`; `docs/plans/ade-harness-plan.md:105` (R-3) |
 | Phase 29 | Browser pane NOT STARTED; verification route planned: Linux gate "headless Chromium and fixture pages"; no Mac channel | `.planning/phases/29-browser-completion-export/29-SUMMARY.md:5-9`; `docs/quality/cursor-parity-audit-2026-10-28.md:110,141` (no WebView/browser code in `src/`, `apps/`, `services/`) |
 | Heads | Avalonia native heads: Windows, macOS, Linux, iOS, Android. Web head stays Blazor WASM (Avalonia.Browser failed G-WEB) | `docs/decisions/ADR-0004-cross-platform-ui.md:34-35` |
-| Native-control hosting | No `NativeControlHost`/`NativeWebView` use in `src/` or `apps/` (grep). The native head is `OmpOS.Native.Views.MainView` (`MainView.Panes.cs`), panes are Avalonia views | grep over `src`, `apps`; `src/OmpOS.Native.Views/MainView.Panes.cs:19-31` |
+| Native-control hosting | No `NativeControlHost`/`NativeWebView` use in `src/` or `apps/` (grep). The native head is `Autonogrammer.Native.Views.MainView` (`MainView.Panes.cs`), panes are Avalonia views | grep over `src`, `apps`; `src/Autonogrammer.Native.Views/MainView.Panes.cs:19-31` |
 | Linux display | Wayland: XP-02 "BLOCKED (NOT RUN)"; only X11/Xvfb verified | `docs/runbooks/phase-20-avalonia-foundation.md:45` |
 | Cloud desktop research | Railway docs describe no desktop/VNC/browser-streaming; Sandbox-per-session is the best primitive; Trust and Safety "remote desktop" wording is a conditional blocker (S1); sandbox egress has no documented allow-list (S6) | `docs/plans/vision-research/railway-cloud-desktop.md:5-8,72-92` |
 | Licence policy | Repo is AGPL-3.0-or-later; every shipped dependency licence is MIT, BSD, Apache-2.0, PostgreSQL, OFL (all GPLv3-compatible) | `docs/decisions/ADR-0018-licence-agpl-and-source-offer.md:15`; `docs/plans/v0.15.0-research/11-agpl-audit.md:15` |
@@ -166,17 +166,17 @@ Recommended host pipeline [INFERENCE from the above]: capture native pixels, kee
 
 ### 4.2 How ACP carries images in this repo
 
-- Prompt to omp: `AcpImageContent.Build` makes `{"type":"image","data":<base64>,"mimeType":...}` blocks, allowed types png/jpeg/gif/webp, defaults 8 images, 10 MB each, 25 MB total (`src/OmpOS.Harness.Acp/AcpImageLimits.cs:7`, `AcpImageContent.cs:11-50`). `AcpAgentSession.SupportsImages` reads `promptCapabilities.image` from `initialize`; an image prompt is refused when it is false (`AcpAgentSession.cs:249-256,1065,2273-2277`). omp advertises `image: true` and `mcpCapabilities: {http, sse}` (omp `acp-agent.ts:836-846`).
+- Prompt to omp: `AcpImageContent.Build` makes `{"type":"image","data":<base64>,"mimeType":...}` blocks, allowed types png/jpeg/gif/webp, defaults 8 images, 10 MB each, 25 MB total (`src/Autonogrammer.Harness.Acp/AcpImageLimits.cs:7`, `AcpImageContent.cs:11-50`). `AcpAgentSession.SupportsImages` reads `promptCapabilities.image` from `initialize`; an image prompt is refused when it is false (`AcpAgentSession.cs:249-256,1065,2273-2277`). omp advertises `image: true` and `mcpCapabilities: {http, sse}` (omp `acp-agent.ts:836-846`).
 - Tool results from MCP: omp's MCP bridge keeps image blocks: `formatMCPContent` pushes `case "image"` items through as image content (omp `src/mcp/tool-bridge.ts:222-224`), and the ACP layer resolves image data for session updates (`acp-agent.ts:1804-1825`).
 
 ### 4.3 Gaps in the app (repo facts)
 
-- `ToolUpdateContent` documents "the output text and the file edits" and ignores everything else; `AcpHookSignals.OutputText` also reads only text (`src/OmpOS.Contracts/Ui/ToolUpdateContent.cs:5-24`, `src/OmpOS.Harness.Acp/AcpHookSignals.cs:122-140`). A screenshot returned by a tool never reaches the transcript model. Adding an image field to the tool-update contract and the transcript view, plus export (`OmpOS.Presentation/Export`), is required before Cowork can show what the agent saw.
+- `ToolUpdateContent` documents "the output text and the file edits" and ignores everything else; `AcpHookSignals.OutputText` also reads only text (`src/Autonogrammer.Contracts/Ui/ToolUpdateContent.cs:5-24`, `src/Autonogrammer.Harness.Acp/AcpHookSignals.cs:122-140`). A screenshot returned by a tool never reaches the transcript model. Adding an image field to the tool-update contract and the transcript view, plus export (`Autonogrammer.Presentation/Export`), is required before Cowork can show what the agent saw.
 - The gateway is not wired into any head: `McpGateway` appears only in its own project, tests, and the architecture test (`grep src apps services tests`). Apps use `AcpMcpServerMapper` only if wired; `AcpAgentSession` passes `mcpServers` in `session/new`, `load`, and `fork` (`AcpAgentSession.cs:127,607,1125,1142`).
 
 ### 4.4 The route to expose `computer` and `browser` to omp
 
-1. Host implements two MCP servers in-process (ModelContextProtocol 2.3.0 ships `StreamServerTransport`, `StreamClientTransport`, `ImageContentBlock`, `McpServerTool`; string search of `ModelContextProtocol.Core.dll` in the NuGet cache) and connects an `McpClient` to them over a stream pair. `McpClientConnector` today opens stdio and Streamable HTTP only (`src/OmpOS.Harness.Mcp/McpClientConnector.cs:5-60`), so an in-proc connector method is a small addition [INFERENCE].
+1. Host implements two MCP servers in-process (ModelContextProtocol 2.3.0 ships `StreamServerTransport`, `StreamClientTransport`, `ImageContentBlock`, `McpServerTool`; string search of `ModelContextProtocol.Core.dll` in the NuGet cache) and connects an `McpClient` to them over a stream pair. `McpClientConnector` today opens stdio and Streamable HTTP only (`src/Autonogrammer.Harness.Mcp/McpClientConnector.cs:5-60`), so an in-proc connector method is a small addition [INFERENCE].
 2. `McpToolRegistry.RegisterServerAsync(serverName, client, ct)` registers their tools (`McpToolRegistry.cs:47`). `Enable(sessionId, tool)` grants per session (`:93`).
 3. `McpGatewayServer.Start(registry, invoker)` listens on `127.0.0.1` ephemeral port with a per-start bearer token; hand `LocalEndPoint` + `BearerToken` to omp as an `AcpHttpMcpServer` entry in `session/new.mcpServers` (`McpGatewayServer.cs:34,61,67,74`; entry types in `AcpHttpMcpServer.cs`). Tool names reach omp as `<server>__<tool>` (`McpGatewayToolNames.cs`).
 4. `tools/call` goes through `McpToolInvoker.InvokeAsync`, which first checks the tool is offered to that session, then calls the host `McpToolApproval` delegate (boolean), then the upstream client (`McpToolInvoker.cs:33-50`). The returned `CallToolResult` is serialised whole, so image blocks pass unchanged (`McpGatewayDispatcher.cs:101-106,292`).

@@ -19,10 +19,10 @@ OUT="${1:-$ROOT/output/demo}"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-CONNECT_SRC="$(OMPOS_DEMO=1 bash "$ROOT/scripts/vercel/render-csp.sh")"
+CONNECT_SRC="$(AUTONOGRAMMER_DEMO=1 bash "$ROOT/scripts/vercel/render-csp.sh")"
 CSP="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; ${CONNECT_SRC}; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
 
-dotnet publish apps/OmpOS.Web -c Release -p:OmpOSDemo=true -o "$WORK/publish"
+dotnet publish apps/Autonogrammer.Web -c Release -p:AutonogrammerDemo=true -o "$WORK/publish"
 
 rm -rf "$OUT"
 mkdir -p "$OUT"

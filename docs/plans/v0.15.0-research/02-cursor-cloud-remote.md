@@ -2,7 +2,7 @@
 Researched 2026-10-27 from cursor.com docs (markdown .md variants of doc pages; sitemap https://cursor.com/llms.txt). [INFERENCE] = mine. [SECONDARY] = from a web-search summary or forum, not a Cursor docs page I opened. Fit codes: needs-railway / needs-ssh / needs-ui / omit-no-accounts / library-exists. Cursor docs now sell under 'The X Subscription' (Grok + Cursor + X), see section J.
 
 ## A. Cloud Agents (formerly Background Agents)
-| ID | Feature | What it does | Configured via | Surface | URL | OmpOS fit |
+| ID | Feature | What it does | Configured via | Surface | URL | Autonogrammer fit |
 |---|---|---|---|---|---|---|
 | CA-01 | Cloud agent core | Agent runs in an isolated VM with cloned repo, deps, secrets, network; works on its own branch, pushes, opens PR; many in parallel; laptop need not be online | Admin connects source control; env from dashboard | desktop (Cloud dropdown), web, iOS, Slack, GitHub/Bitbucket @cursor, Linear, API | https://cursor.com/docs/cloud-agent.md | needs-railway |
 | CA-02 | Naming | Cloud Agents were formerly called Background Agents | - | - | https://cursor.com/docs/cloud-agent.md | - |
@@ -10,7 +10,7 @@ Researched 2026-10-27 from cursor.com docs (markdown .md variants of doc pages; 
 | CA-04 | Repo provider clone | Clones from GitHub (Cloud+Enterprise Server), GitLab (Cloud+Self-Hosted), Azure DevOps Services, Bitbucket Cloud; needs read-write on repo and submodules | Dashboard > Integrations | cloud | https://cursor.com/docs/cloud-agent.md | needs-railway |
 | CA-05 | Start from scratch | Agent without repo; Cursor creates a draft Origin repo; Create repo publishes it (Private or Internal) | repo picker | web, Agents Window | https://cursor.com/docs/cloud-agent/setup.md | omit-no-accounts (Origin is Cursor-hosted) |
 | CA-06 | Port forwarding / preview | Ports listened on in the agent env show as Detected; Auto-Forward Ports; Open in internal browser; Design Mode on the page | Agents Window > Forwarded Ports | Agents Window | https://cursor.com/docs/cloud-agent/setup.md | needs-railway (public domain / TCP proxy) + needs-ui |
-| CA-07 | Publish to live URL | Agent links repo to a Vercel project, deploys default branch, replies with URL | Publish button + Vercel plugin | Agents Window | https://cursor.com/docs/cloud-agent/setup.md | omit-no-accounts [INFERENCE: OmpOS could offer Railway deploy instead] |
+| CA-07 | Publish to live URL | Agent links repo to a Vercel project, deploys default branch, replies with URL | Publish button + Vercel plugin | Agents Window | https://cursor.com/docs/cloud-agent/setup.md | omit-no-accounts [INFERENCE: Autonogrammer could offer Railway deploy instead] |
 | CA-08 | Computer use | Agent drives desktop + browser (mouse/keyboard) to run and click through the app | built in; Dockerfile envs need Debian/Ubuntu base | cloud, self-hosted (--computer-use) | https://cursor.com/docs/cloud-agent/capabilities.md | needs-railway (Xvfb/VNC image) |
 | CA-09 | Artifacts / demos | Screenshots, videos, log refs attached to PR; optional embed in GitHub PR description via public unguessable URLs (Allow posting artifacts to GitHub) | Dashboard > Cloud Agents > My Pull Requests | PR, dashboard | https://cursor.com/docs/cloud-agent/capabilities.md | needs-railway |
 | CA-10 | Remote desktop control | User takes over the agent desktop to test without checking out the branch; hands back | UI | web/desktop | https://cursor.com/docs/cloud-agent/capabilities.md | needs-ui + needs-railway (VNC/noVNC) |
@@ -34,15 +34,15 @@ Researched 2026-10-27 from cursor.com docs (markdown .md variants of doc pages; 
 | CA-28 | Settings: security | Display agent summary; summary in external channels; Team follow-ups; auto-allow Projects to place work on self-hosted | admin | admin | https://cursor.com/docs/cloud-agent/settings.md | needs-ui |
 | CA-29 | Privacy Mode requirement | Cloud agents need Privacy Mode (not Legacy) because code is stored while running | Dashboard > Cloud Agents | - | https://cursor.com/docs/cloud-agent/security-network.md | omit-no-accounts |
 | CA-30 | Data lifecycle | Archive agent; Delete Agent API removes transcript+artifacts; snapshots deleted after 30 days idle; VM hibernated then deleted by timers; Enterprise retention policy | dashboard / API | - | https://cursor.com/docs/cloud-agent/security.md | needs-railway |
-| CA-31 | Signed commits | Every cloud-agent commit signed with HSM-backed Ed25519 key (GitHub Verified); GitLab: commits as per-project bot token user, fallback Cursor Agent <cursoragent@cursor.com> | automatic | Git | https://cursor.com/docs/cloud-agent/security-network.md ; https://cursor.com/docs/integrations/gitlab.md | needs-railway [INFERENCE: sign with OmpOS key] |
-| CA-32 | Self-hosted: My Machines | agent worker start on laptop/devbox; outbound HTTPS only; agent loop in Cursor cloud, tools run on your machine; --name, --worker-dir (repeatable); agent worker debug; no inbound ports | CLI | cloud+local | https://cursor.com/docs/cloud-agent/self-hosted/my-machines.md | needs-ssh (closest analogue to OmpOS remote env) |
+| CA-31 | Signed commits | Every cloud-agent commit signed with HSM-backed Ed25519 key (GitHub Verified); GitLab: commits as per-project bot token user, fallback Cursor Agent <cursoragent@cursor.com> | automatic | Git | https://cursor.com/docs/cloud-agent/security-network.md ; https://cursor.com/docs/integrations/gitlab.md | needs-railway [INFERENCE: sign with Autonogrammer key] |
+| CA-32 | Self-hosted: My Machines | agent worker start on laptop/devbox; outbound HTTPS only; agent loop in Cursor cloud, tools run on your machine; --name, --worker-dir (repeatable); agent worker debug; no inbound ports | CLI | cloud+local | https://cursor.com/docs/cloud-agent/self-hosted/my-machines.md | needs-ssh (closest analogue to Autonogrammer remote env) |
 | CA-33 | Self-hosted: Team Pools | Enterprise worker fleets: pool register, labels, pending-request queue (list / SSE watch / claim / release / fail), session tokens, controller autoscaling, up to 200 workers/user and 1000/team; Require Self-Hosted Machines | Dashboard > Cloud Agents > Self-Hosted; service-account key | enterprise | https://cursor.com/docs/cloud-agent/self-hosted/pool.md | needs-railway |
 | CA-34 | Partner hosts for workers | AWS Lambda, Cloudflare, Namespace, Modal, Daytona, E2B, Vercel, Tensorlake, Coder, Superserve; templates for Lambda MicroVMs, Cloudflare Containers, Kubernetes (github.com/anysphere/k8s-workers) | docs | - | https://cursor.com/docs/cloud-agent/self-hosted/integrations.md ; https://cursor.com/docs/cloud-agent/self-hosted.md | needs-railway |
 | CA-35 | Worker flags | --computer-use, --display, --share-desktop view or view_and_control, --clone-git-repos, --identity-socket, --debug, --verbose | agent worker | CLI | https://cursor.com/docs/cli/reference/parameters.md ; pool.md | needs-ssh |
 | CA-36 | Pricing | Uses plan usage at selected model rate; spend limit prompt on first use; needs Premium+ / Teams / Enterprise / legacy paid (not Free or Plus) | - | - | https://cursor.com/docs/cloud-agent.md | omit-no-accounts |
 
 ## B. Environments, builds, secrets, network
-| ID | Feature | What it does | Configured via | Surface | URL | OmpOS fit |
+| ID | Feature | What it does | Configured via | Surface | URL | Autonogrammer fit |
 |---|---|---|---|---|---|---|
 | EN-01 | Ubuntu VMs | Cloud agents run on isolated Ubuntu machines; Cursor-hosted VMs are x86_64 (arm64 only via self-hosted); default VM profile has limited CPU/memory, Enterprise can request more; self-serve resources 'coming soon' | - | - | https://cursor.com/docs/cloud-agent/setup.md ; https://cursor.com/docs/cloud-agent/self-hosted/choose-runtime.md | needs-railway |
 | EN-02 | Agent-driven setup | Agent installs deps, verifies, creates first Build in under 10 min; user supplies secrets; watch in shared terminal | Dashboard > Cloud Agents > Environments, or Agents Window | web | https://cursor.com/docs/cloud-agent/setup.md | needs-railway + needs-ui |
@@ -65,9 +65,9 @@ Researched 2026-10-27 from cursor.com docs (markdown .md variants of doc pages; 
 | EN-19 | Environment versioning | Version history, Restore, Update with Agent, New Setup Run, pin active Build, start agent from a specific/failed Build | Dashboard | web | https://cursor.com/docs/cloud-agent/settings.md ; builds.md | needs-ui |
 
 ## C. Cloud Agents API / SDK / webhooks
-| ID | Feature | What it does | Configured via | Surface | URL | OmpOS fit |
+| ID | Feature | What it does | Configured via | Surface | URL | Autonogrammer fit |
 |---|---|---|---|---|---|---|
-| API-01 | Cloud Agents API v1 (public beta) | Base https://api.cursor.com ; Basic or Bearer auth with user API key (Dashboard > API Keys) or service-account key; durable agent + per-prompt runs; OpenAPI at /docs-static/cloud-agents-openapi.yaml | - | HTTP | https://cursor.com/docs/cloud-agent/api/endpoints.md | library-exists (services/OmpOS.Api) |
+| API-01 | Cloud Agents API v1 (public beta) | Base https://api.cursor.com ; Basic or Bearer auth with user API key (Dashboard > API Keys) or service-account key; durable agent + per-prompt runs; OpenAPI at /docs-static/cloud-agents-openapi.yaml | - | HTTP | https://cursor.com/docs/cloud-agent/api/endpoints.md | library-exists (services/Autonogrammer.Api) |
 | API-02 | Agents endpoints | POST /v1/agents (prompt{text,images<=5x15MB}, model{id,params}, name<=100, env{type cloud|pool|machine,name}, repos[]{url,startingRef,prUrl}, autoCreatePR, workOnCurrentBranch); GET /v1/agents; GET and DELETE /v1/agents/{id}; POST /archive, /unarchive; GET /usage | - | HTTP | endpoints.md | needs-railway |
 | API-03 | Runs | POST /v1/agents/{id}/runs (follow-up/steer, delivery option); GET runs; GET run; GET /runs/{runId}/stream (SSE); POST /runs/{runId}/cancel (terminal) | - | HTTP | endpoints.md | needs-railway |
 | API-04 | Artifacts | GET /v1/agents/{id}/artifacts; GET /artifacts/download returns 15-min presigned S3 URL | - | HTTP | endpoints.md | needs-railway |
@@ -81,7 +81,7 @@ Researched 2026-10-27 from cursor.com docs (markdown .md variants of doc pages; 
 | API-12 | Terraform provider | cursor/cursor provider manages automations as cursor_platform_workflow; auth via service-account key / CURSOR_TOKEN | Terraform | IaC | https://cursor.com/docs/cloud-agent/automations.md | omit-no-accounts |
 
 ## D. Automations, Bugbot and Cursor-managed agents
-| ID | Feature | What it does | Configured via | Surface | URL | OmpOS fit |
+| ID | Feature | What it does | Configured via | Surface | URL | Autonogrammer fit |
 |---|---|---|---|---|---|---|
 | AU-01 | Automations | Cloud agents on schedule or events; created in Agents Window, cursor.com/automations, /automate skill, or Marketplace template; prompt + tools + repo scope (none / single / multi-repo env); max context window | cursor.com/automations | web | https://cursor.com/docs/cloud-agent/automations.md | needs-railway + needs-ui |
 | AU-02 | Scheduled trigger | Presets or cron expression; may run late, never early | automation | - | automations.md | needs-railway (cron) |
@@ -104,7 +104,7 @@ Researched 2026-10-27 from cursor.com docs (markdown .md variants of doc pages; 
 | AU-19 | Rollouts | Rollout plan at PR open; checks deploys against logs/metrics/traces at deploy, +20 min, +1 h, +1 d, +3 d; opens regression issues with Fix issue cloud agent; Teams/Enterprise | automations/rollouts | PR | https://cursor.com/docs/rollouts.md | needs-railway [INFERENCE: read Railway logs/metrics] |
 
 ## E. Integrations
-| ID | Feature | What it does | Configured via | Surface | URL | OmpOS fit |
+| ID | Feature | What it does | Configured via | Surface | URL | Autonogrammer fit |
 |---|---|---|---|---|---|---|
 | IN-01 | GitHub app | Repo access, PRs, issues, checks, Actions (re-run CI), Administration (branch protection read), custom roles, org custom properties; all or selected repos; each installation belongs to one Cursor account/team; github.com/apps/cursor | Dashboard > Integrations | GitHub | https://cursor.com/docs/integrations/github.md | needs-railway (own GitHub App) |
 | IN-02 | GitHub Enterprise Server | v3.8+ recommended; register Cursor Enterprise App by base URL + org; IP allow list; proxy must pass authenticated REST+GraphQL; PrivateLink / Cloudflare Tunnel | Dashboard > Manage apps | GHES | github.md | omit-no-accounts |
@@ -126,7 +126,7 @@ Researched 2026-10-27 from cursor.com docs (markdown .md variants of doc pages; 
 
 ## F. Remote development (editor) - NO dedicated Cursor docs page found
 The official sitemap (https://cursor.com/llms.txt) has no Remote SSH / Dev Containers / WSL page. Official statements exist only on the network help page and Agents Window page. The rest is [SECONDARY] (web-search summary of forum posts; threads not opened).
-| ID | Feature | What it does | Configured via | Surface | URL | OmpOS fit |
+| ID | Feature | What it does | Configured via | Surface | URL | Autonogrammer fit |
 |---|---|---|---|---|---|---|
 | RD-01 | Remote SSH, AI runs locally | AI features run on your local machine and talk to the remote server for file access; AI requests go local to Cursor servers, not from remote host | Anysphere Remote SSH extension | IDE | https://cursor.com/help/troubleshooting/network.md | needs-ssh |
 | RD-02 | SSH keep-alive | Recommends ServerAliveInterval 60 and ServerAliveCountMax 3 in ssh config; restart Cursor after reconnect (stale processes) | ~/.ssh/config | - | network.md | needs-ssh |
@@ -139,7 +139,7 @@ The official sitemap (https://cursor.com/llms.txt) has no Remote SSH / Dev Conta
 | RD-09 | Extension control | extensions.allowed allowlist (publisher or id, version/channel pin, '*': true wildcard); admin portal (client 2.1+) or MDM AllowedExtensions | dashboard/MDM | admin | https://cursor.com/docs/enterprise/identity-and-access-management.md | omit-no-accounts |
 
 ## G. Workspaces, multi-repo, worktrees, parallel agents
-| ID | Feature | What it does | Configured via | Surface | URL | OmpOS fit |
+| ID | Feature | What it does | Configured via | Surface | URL | Autonogrammer fit |
 |---|---|---|---|---|---|---|
 | WS-01 | Multi-root workspace (editor) | VS Code .code-workspace with folders[] (name + path); Add Folder to Workspace, Save Workspace As; arrived Cursor 0.50 (May 2025) [SECONDARY] | .code-workspace | IDE | search summary of Cursor changelog (https://cursor.com/changelog not opened; /changelog/3-2 returned 404) | library-exists |
 | WS-02 | Multi-root in Agents Window | Cursor 3.2 (Apr 2026): one agent session targets a reusable workspace of several folders; worktrees and Cloud Agents disabled in multi-root [SECONDARY] | Agents Window | desktop | https://forum.cursor.com/t/multi-root-support-in-agents-window/158957 (search result; not opened) | needs-ui |
@@ -157,7 +157,7 @@ The official sitemap (https://cursor.com/llms.txt) has no Remote SSH / Dev Conta
 
 ## H. Cursor CLI (binary is now agent; formerly cursor-agent)
 Install: curl https://cursor.com/install -fsS | bash (macOS/Linux/WSL); irm 'https://cursor.com/install?win32=true' | iex (Windows).
-| ID | Feature | What it does | Configured via | Surface | URL | OmpOS fit |
+| ID | Feature | What it does | Configured via | Surface | URL | Autonogrammer fit |
 |---|---|---|---|---|---|---|
 | CL-01 | Modes | Agent (default), Plan (--plan, --mode=plan, /plan, Shift+Tab), Ask (--mode=ask, /ask), Debug (/debug) | flags/slash | CLI | https://cursor.com/docs/cli/overview.md ; slash-commands.md | library-exists |
 | CL-02 | Print / headless | -p/--print with all tools; --output-format text/json/stream-json; --stream-partial-output; without --force edits are only proposed | flags | CI | https://cursor.com/docs/cli/headless.md ; parameters.md | library-exists (omp print mode) |
@@ -182,7 +182,7 @@ Install: curl https://cursor.com/install -fsS | bash (macOS/Linux/WSL); irm 'htt
 | CL-21 | Plugins | --plugin-dir, /plugin manage plugins and marketplaces | - | CLI | slash-commands.md | library-exists |
 
 ## I. Team and enterprise administration (Bugbot code review is in section D)
-| ID | Feature | What it does | Configured via | Surface | URL | OmpOS fit |
+| ID | Feature | What it does | Configured via | Surface | URL | Autonogrammer fit |
 |---|---|---|---|---|---|---|
 | AD-01 | Roles and seats | Member, Admin, Unpaid Admin (no paid seat, admin powers); seat tiers Premium $30 / Super $100 (3.75x Premium) / Ultra $200 (12.5x) / Free $0; legacy Standard $40 / Premium $120 | dashboard | admin | https://cursor.com/docs/account/teams/members.md | needs-ui (roles only; omit billing) |
 | AD-02 | SSO (SAML 2.0) | Okta, Azure AD, Google Workspace, OneLogin; domain verification required; enforce SSO and block password auth; org-level SSO across linked teams | Dashboard SSO | admin | https://cursor.com/docs/enterprise/identity-and-access-management.md ; https://cursor.com/docs/account/teams/sso.md | needs-ui |
@@ -197,21 +197,21 @@ Install: curl https://cursor.com/install -fsS | bash (macOS/Linux/WSL); irm 'htt
 | AD-11 | Spend limits | X Subscription: monthly additional-usage limit (team fixed or per seat); legacy: on-demand spend limit; Enterprise member and group overrides (highest applicable limit wins), dynamic limits scale with seats; Only Admins Can Edit Usage Settings; Admin API set-user-spend-limit | Dashboard Spending/Billing | admin | https://cursor.com/help/account-and-billing/spend-limits.md | omit-no-accounts [INFERENCE: concept reusable as budget caps on BYOK keys] |
 | AD-12 | Team rules / marketplaces | Team rules (required or optional; feed Bugbot); import private marketplaces from GitHub or Default marketplace for shared team MCP servers and member-published skills; opt-in sync of ~/.cursor/skills/ to Cloud Agents | Dashboard > Team Marketplaces / Team content | admin | https://cursor.com/docs/account/teams/dashboard.md ; https://cursor.com/docs/plugins.md | needs-ui + library-exists |
 | AD-13 | Model access control | Enterprise: allow/block models in Team Settings > Models; Org Groups widen per cohort; union (most-permissive) between team and group; new models not auto-enabled for Enterprise; Bugbot stops (neutral check) if all its models blocked | Dashboard | admin | https://cursor.com/docs/enterprise/model-and-integration-management.md | needs-ui (provider/model allowlist) |
-| AD-14 | BYOK restriction | Enterprise can block personal API keys for OpenAI, Anthropic, Azure, AWS Bedrock; all usage via Cursor pool | Dashboard | admin | model-and-integration-management.md | omit-no-accounts (OmpOS is BYOK-first) |
+| AD-14 | BYOK restriction | Enterprise can block personal API keys for OpenAI, Anthropic, Azure, AWS Bedrock; all usage via Cursor pool | Dashboard | admin | model-and-integration-management.md | omit-no-accounts (Autonogrammer is BYOK-first) |
 | AD-15 | MCP allowlist / per-server controls | Enterprise MCP Configuration: approved servers, per-server Tools allowlist, per-server network policy | Dashboard | admin | model-and-integration-management.md | library-exists + needs-ui |
 | AD-16 | Git repo blocklist | Block Cursor from specific repositories; Admin API upsert/delete | Dashboard/API | admin | model-and-integration-management.md ; admin-api.md | needs-ui |
 | AD-17 | Protected Git Scopes | Lock GitHub org / GitLab group to your Cursor org for Cloud Agents, automations, Bugbot | Dashboard | admin | model-and-integration-management.md ; github.md | omit-no-accounts |
 | AD-18 | Privacy Mode + enforcement | Team-level enable and enforce; ZDR with providers; default on for Enterprise; models needing provider retention (Claude Fable 5 / 5.1) need admin approval; MDM Allowed Team IDs backs it | Dashboard Settings | admin | https://cursor.com/docs/enterprise/privacy-and-data-governance.md | needs-ui (no-train / telemetry toggles) |
 | AD-19 | Data residency | US-only per team (inference, processing, storage incl. Cloud Agents; eligible models only); EU/EEA and APAC in active development | account manager | Enterprise | privacy-and-data-governance.md | omit-no-accounts |
 | AD-20 | Network & proxy | HTTP/2 bidirectional streaming with automatic HTTP/1.1 SSE fallback; Settings > Network > HTTP Compatibility Mode and Run Diagnostics; disable SSL inspection for Cursor domains; CLI proxy env | settings | IDE/CLI | https://cursor.com/docs/enterprise/network-configuration.md ; https://cursor.com/help/troubleshooting/network.md | needs-ui |
-| AD-21 | Service accounts | Enterprise non-human accounts; no seat; keys for API, CLI, cloud agents, automations, pool workers; usage from team pool | Dashboard > Settings > API Keys > Service Accounts | admin | https://cursor.com/docs/account/enterprise/service-accounts.md | library-exists (API keys in OmpOS.Api) |
+| AD-21 | Service accounts | Enterprise non-human accounts; no seat; keys for API, CLI, cloud agents, automations, pool workers; usage from team pool | Dashboard > Settings > API Keys > Service Accounts | admin | https://cursor.com/docs/account/enterprise/service-accounts.md | library-exists (API keys in Autonogrammer.Api) |
 | AD-22 | Pooled usage / billing groups | Enterprise pooled usage; billing groups via Admin API | - | Enterprise | https://cursor.com/docs/enterprise/pooled-usage.md ; billing-groups.md | omit-no-accounts |
 | AD-23 | Auto Run / Run Modes | Admin controls which commands may auto-run; Auto-review classifier needs a Haiku-class model allowed | Dashboard | admin | dashboard.md ; https://cursor.com/docs/agent/security/run-modes.md | library-exists (omp permission modes) |
 | AD-24 | Other admin settings | Cursor Router (Auto routing), Bedrock IAM Role, Admin API keys, Active Sessions, Invite codes, restrict invites to verified domains, Active Directory management, CMEK | Dashboard | admin | dashboard.md ; members.md | needs-ui |
 | AD-25 | Security posture | SOC 2 Type 2; at-least-annual third-party pen tests; Trust Center https://trust.cursor.com/ ; sub-processor list; HIPAA BAA doc; hardening + endpoint-security guides | - | - | https://cursor.com/docs/cloud-agent/security.md ; https://cursor.com/docs/enterprise/baa.md | omit-no-accounts |
 
 ## J. Accounts, plans, billing
-| ID | Feature | What it does | Configured via | Surface | URL | OmpOS fit |
+| ID | Feature | What it does | Configured via | Surface | URL | Autonogrammer fit |
 |---|---|---|---|---|---|---|
 | AC-01 | Individual plans | Free $0; Plus $8; Premium $30; Super $100; Ultra $200; annual $80 / $300 / $1,000 / $2,000. Plus has no Auto, Cloud Agents, Automations, Bugbot, Origin, third-party models or BYOK; Premium+ adds Cloud Agents, Automations, Origin, Bugbot, third-party models at API list price from prepaid credit | cursor.com | - | https://cursor.com/docs/models-and-pricing.md | omit-no-accounts |
 | AC-02 | Teams / Enterprise | Teams per-seat $30/$100/$200; third-party models API price + Cursor Token Rate; Enterprise custom, pooled | - | - | https://cursor.com/docs/account/teams/pricing.md | omit-no-accounts |
@@ -220,7 +220,7 @@ Install: curl https://cursor.com/install -fsS | bash (macOS/Linux/WSL); irm 'htt
 | AC-05 | Usage-based add-ons | Prepaid credit, Auto Top-up, monthly additional-usage limit; Cloud Agents and Bugbot Autofix billed at plan rates | billing dashboard | - | spend-limits.md | omit-no-accounts |
 | AC-06 | Billing mechanics | Monthly/yearly (yearly -20%, no mid-term revert), pro-rata seat changes, mobile-store subscriptions, invoices | dashboard | - | members.md ; https://cursor.com/help/account-and-billing/billing.md | omit-no-accounts |
 | AC-07 | API keys | Dashboard > API Keys: user keys (CLI, SDK, Cloud Agents API), Admin API keys, service-account keys | dashboard | - | https://cursor.com/docs/api.md | library-exists |
-| AC-08 | Accounts needed | Cloud features need a Cursor account, paid plan and Privacy Mode; OmpOS has no account or billing system | - | - | cloud-agent.md | omit-no-accounts |
+| AC-08 | Accounts needed | Cloud features need a Cursor account, paid plan and Privacy Mode; Autonogrammer has no account or billing system | - | - | cloud-agent.md | omit-no-accounts |
 
 ## K. What Cursor's cloud agent actually runs (architecture facts)
 - **Compute**: one dedicated VM per agent. 'Runtime workspaces run on Firecracker-based microVM infrastructure'; VMs live in a separate AWS account from Cursor production; agents cannot see each other's code/env/state (https://cursor.com/docs/cloud-agent/security.md). Ubuntu machines (setup.md), x86_64 only (https://cursor.com/docs/cloud-agent/self-hosted/choose-runtime.md). Docker runs 'inside another container layer' with edge cases, hence fuse-overlayfs + iptables-legacy (setup.md).
@@ -234,6 +234,6 @@ Install: curl https://cursor.com/install -fsS | bash (macOS/Linux/WSL); irm 'htt
 - **Follow-up loop**: agent subscribes to CI/review/Slack events and is re-awakened as follow-ups in the same conversation; CI auto-fix capped at 10 follow-ups per PR (capabilities.md).
 - **Tooling inside the VM**: shell + files, git and gh, browser + desktop, MCP, oathtool, optional Docker, tmux terminals, local Unix socket /run/cursor/api.sock for OIDC tokens and agent metadata, hooks from .cursor/hooks.json, AGENTS.md rules (setup.md, identity.md, hooks.md).
 - **Inference**: agent loop and inference run in Cursor's cloud for cloud and self-hosted alike; self-hosted workers only execute tool calls (file edits, terminal, browser, local MCP) over an outbound HTTPS connection, no inbound ports (self-hosted.md, my-machines.md, pool.md). SDK 'local' = local loop, still hosted inference (typescript.md).
-- **Worker protocol facts (useful for an OmpOS remote worker)**: long-lived outbound HTTPS from worker to control plane; control plane sends tool calls down it; pools queue requests until a worker claims them (list / SSE watch / claim / release / fail endpoints); per-claim session tokens; routing by git-remote labels (--worker-dir registers roots with their git remote); 200 workers/user, 1000/team (pool.md, my-machines.md, endpoints.md).
+- **Worker protocol facts (useful for an Autonogrammer remote worker)**: long-lived outbound HTTPS from worker to control plane; control plane sends tool calls down it; pools queue requests until a worker claims them (list / SSE watch / claim / release / fail endpoints); per-claim session tokens; routing by git-remote labels (--worker-dir registers roots with their git remote); 200 workers/user, 1000/team (pool.md, my-machines.md, endpoints.md).
 - **Not public**: VM CPU/memory sizes, hibernation timers, microVM image contents, orchestration internals. Do not assume them.
-- [INFERENCE for OmpOS on Railway]: Railway has no per-task microVM; closest mapping is one Railway service/deployment per agent with a volume for the workspace, Railway variables for secrets, a public or TCP domain for preview ports, and an image-build step to emulate Builds/snapshots. Worker-over-outbound-HTTPS (as in Cursor My Machines) is the pattern that gives needs-ssh-free remote environments.
+- [INFERENCE for Autonogrammer on Railway]: Railway has no per-task microVM; closest mapping is one Railway service/deployment per agent with a volume for the workspace, Railway variables for secrets, a public or TCP domain for preview ports, and an image-build step to emulate Builds/snapshots. Worker-over-outbound-HTTPS (as in Cursor My Machines) is the pattern that gives needs-ssh-free remote environments.

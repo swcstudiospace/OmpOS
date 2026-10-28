@@ -1,4 +1,4 @@
-# OmpOS CI (Phase 1, decision D-05).
+# Autonogrammer CI (Phase 1, decision D-05).
 # Mirrors bootstrap.sh, then adds the audit, scan, and compose gates.
 # Podman is the only container runtime referenced here; Docker is not used.
 # Every job runs on the Omega CI runner pool ([self-hosted, linux, x64, omega-ci],
@@ -29,8 +29,8 @@ env:
   DOTNET_PROCESSOR_COUNT: 2
   MSBUILDDISABLENODEREUSE: 1
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
-  OMPOS_POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
-  OMPOS_DRAGONFLY_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+  AUTONOGRAMMER_POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+  AUTONOGRAMMER_DRAGONFLY_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
   build-test:
@@ -60,14 +60,14 @@ jobs:
           global-json-file: global.json
           cache: true
           cache-dependency-path: '**/packages.lock.json'
-      - run: dotnet restore OmpOS.Linux.slnf --locked-mode
-      - run: dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
+      - run: dotnet restore Autonogrammer.Linux.slnf --locked-mode
+      - run: dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror
       # The next steps need no podman: they run before the test services so that CI reports them even when the runner cannot start containers
       # (OQ-168: rootless podman cannot create a user namespace inside the runner container, and the image has no Chrome, so the browser smoke comes last).
-      - run: dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
+      - run: dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore
       - name: Vulnerable packages (list exits 0 even on findings, so the parse is the gate)
         run: |
-          dotnet list OmpOS.Linux.slnf package --vulnerable --include-transitive --format json > vuln.json
+          dotnet list Autonogrammer.Linux.slnf package --vulnerable --include-transitive --format json > vuln.json
           python3 scripts/ci/check-vulnerable-packages.py vuln.json
       - name: Secret scan (gitleaks CLI, pinned in scripts/ci/gitleaks.env; the same script bootstrap.sh runs)
         run: bash scripts/ci/secret-scan.sh
@@ -97,7 +97,7 @@ jobs:
       - name: Test (throwaway TimescaleDB and Dragonfly for the API, session-store and coordination tests)
         run: |
           source "$TEST_SERVICES_ENV"
-          dotnet test OmpOS.Linux.slnf -c Release --no-build --max-parallel-test-modules 2 --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
+          dotnet test Autonogrammer.Linux.slnf -c Release --no-build --max-parallel-test-modules 2 --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
       - name: Stop test services
         if: always()
         run: |
@@ -140,21 +140,21 @@ jobs:
           }
           dragonfly_ping() {
             { exec 3<>/dev/tcp/127.0.0.1/6379; } 2>/dev/null || return 1
-            printf 'AUTH %s\r\nPING\r\n' "$OMPOS_DRAGONFLY_PASSWORD" >&3
+            printf 'AUTH %s\r\nPING\r\n' "$AUTONOGRAMMER_DRAGONFLY_PASSWORD" >&3
             local auth="" pong=""
             IFS= read -r -t 5 auth <&3 || true
             IFS= read -r -t 5 pong <&3 || true
             exec 3>&-
             [ "$auth" = $'+OK\r' ] && [ "$pong" = $'+PONG\r' ]
           }
-          wait_ready "ompos-postgres" podman exec ompos-postgres pg_isready -h 127.0.0.1 -p 5432
-          wait_ready "ompos-dragonfly" dragonfly_ping
-          wait_ready "ompos-greptimedb" curl -fsS http://127.0.0.1:4000/health
+          wait_ready "autonogrammer-postgres" podman exec autonogrammer-postgres pg_isready -h 127.0.0.1 -p 5432
+          wait_ready "autonogrammer-dragonfly" dragonfly_ping
+          wait_ready "autonogrammer-greptimedb" curl -fsS http://127.0.0.1:4000/health
       - name: Tear down backend profile
         if: always()
         run: podman-compose --profile backend -f deploy/compose.yaml down -v
 
-  # Builds the Android head (apps/OmpOS.Android) on the Omega CI pool (Phase 24 criterion 4). No device or emulator is needed.
+  # Builds the Android head (apps/Autonogrammer.Android) on the Omega CI pool (Phase 24 criterion 4). No device or emulator is needed.
   # The workflow runs on push and pull_request, so the first green run of this job needs the branch pushed.
   android:
     # The runner image pre-installs the Android workloads, JDK 17 and Android SDK 36; its SDK directory is read-only.
@@ -172,10 +172,10 @@ jobs:
         run: |
           dotnet workload list
           dotnet workload list | grep -qi android || dotnet workload install android
-      - run: dotnet restore apps/OmpOS.Android/OmpOS.Android.csproj --locked-mode
+      - run: dotnet restore apps/Autonogrammer.Android/Autonogrammer.Android.csproj --locked-mode
       - name: Vulnerable packages of the Android head (same gate as build-test)
         run: |
-          dotnet list apps/OmpOS.Android/OmpOS.Android.csproj package --vulnerable --include-transitive --format json > vuln-android.json
+          dotnet list apps/Autonogrammer.Android/Autonogrammer.Android.csproj package --vulnerable --include-transitive --format json > vuln-android.json
           python3 scripts/ci/check-vulnerable-packages.py vuln-android.json
       - name: Android platform 36 and build-tools 36.0.0 (installed only when the runner lacks them)
         run: |
@@ -192,4 +192,4 @@ jobs:
           yes | "$sdkmanager" --licenses >/dev/null
           set -o pipefail
           "$sdkmanager" --install "platforms;android-36" "build-tools;36.0.0"
-      - run: dotnet build apps/OmpOS.Android/OmpOS.Android.csproj -c Release --no-restore -warnaserror
+      - run: dotnet build apps/Autonogrammer.Android/Autonogrammer.Android.csproj -c Release --no-restore -warnaserror

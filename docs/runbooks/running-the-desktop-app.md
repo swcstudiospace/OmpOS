@@ -1,5 +1,5 @@
 ---
-description: "Run the OmpOS desktop head on Linux: environment variables, state directory, where keys live and keyboard shortcuts."
+description: "Run the Autonogrammer desktop head on Linux: environment variables, state directory, where keys live and keyboard shortcuts."
 ---
 
 # Running the desktop app
@@ -10,7 +10,7 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-How to run the OmpOS desktop head (`apps/OmpOS.Native`) on Linux, where it keeps its state, and what it writes outside its own directories. Status of each feature: [docs/quality/cursor-parity-audit-2026-10-26.md](../quality/cursor-parity-audit-2026-10-26.md). Plugin details: [agent-loop.md](agent-loop.md), [docs/plugins.md](../plugins.md).
+How to run the Autonogrammer desktop head (`apps/Autonogrammer.Native`) on Linux, where it keeps its state, and what it writes outside its own directories. Status of each feature: [docs/quality/cursor-parity-audit-2026-10-26.md](../quality/cursor-parity-audit-2026-10-26.md). Plugin details: [agent-loop.md](agent-loop.md), [docs/plugins.md](../plugins.md).
 
 ## Prerequisites
 
@@ -24,23 +24,23 @@ How to run the OmpOS desktop head (`apps/OmpOS.Native`) on Linux, where it keeps
 
 ```sh
 export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH DOTNET_NOLOGO=1 DOTNET_CLI_TELEMETRY_OPTOUT=1
-dotnet run --project apps/OmpOS.Native
+dotnet run --project apps/Autonogrammer.Native
 ```
 
 The workspace root is the current directory; there is no open-folder action. The window opens at once in a Loading state and the plugins and saved sessions load behind it.
 
 ## Environment variables
 
-Read once at startup by `AgentLoopEnvironment` (`apps/OmpOS.Native/Agents/AgentLoopEnvironment.cs`). Paths may be relative to the current directory.
+Read once at startup by `AgentLoopEnvironment` (`apps/Autonogrammer.Native/Agents/AgentLoopEnvironment.cs`). Paths may be relative to the current directory.
 
 | Variable | Effect |
 |---|---|
-| `OMPOS_STATE_DIR` | Root of all application state. Default `$XDG_DATA_HOME/OmpOS` when `XDG_DATA_HOME` is set and absolute, else `~/.local/share/OmpOS`. |
-| `OMPOS_PLUGINS_ROOT` | The plugins directory. Default: `plugins/` beside the nearest directory containing `.gitmodules`, searched from the executable and then from the current directory. |
-| `OMPOS_SUBSTRATE_URL` | Substrate server address. Must be https, or http on a loopback host, with no user information, query or fragment; otherwise it is not used and the reason is shown. Unset: the Substrate is not used. |
-| `OMPOS_SUBSTRATE_TOKEN_ENV` | Names the variable the Substrate token is read from. Default `SUBSTRATE_TOKEN_OMP`. Only the name is kept; the value is read on demand and never printed. |
+| `AUTONOGRAMMER_STATE_DIR` | Root of all application state. Default `$XDG_DATA_HOME/Autonogrammer` when `XDG_DATA_HOME` is set and absolute, else `~/.local/share/Autonogrammer`. |
+| `AUTONOGRAMMER_PLUGINS_ROOT` | The plugins directory. Default: `plugins/` beside the nearest directory containing `.gitmodules`, searched from the executable and then from the current directory. |
+| `AUTONOGRAMMER_SUBSTRATE_URL` | Substrate server address. Must be https, or http on a loopback host, with no user information, query or fragment; otherwise it is not used and the reason is shown. Unset: the Substrate is not used. |
+| `AUTONOGRAMMER_SUBSTRATE_TOKEN_ENV` | Names the variable the Substrate token is read from. Default `SUBSTRATE_TOKEN_OMP`. Only the name is kept; the value is read on demand and never printed. |
 
-Also read for the token: `SUBSTRATE_TOKEN_FILE` (first non-empty line of that file) and `SUBSTRATE_TOKENS_DIR`. Live tests use `OMPOS_LIVE_OMP=1`.
+Also read for the token: `SUBSTRATE_TOKEN_FILE` (first non-empty line of that file) and `SUBSTRATE_TOKENS_DIR`. Live tests use `AUTONOGRAMMER_LIVE_OMP=1`.
 
 ## State directory layout
 
@@ -51,11 +51,11 @@ Under the state root:
 | `sessions.json` | The session catalog (`AgentSessionRegistry`). A corrupt file is quarantined and the catalog starts empty. |
 | `sessions/<session id>/` | Private state of one session (`SessionStateLayout`): `ultrathink/`, `swarm/` (with `.swarm/live.json`, `events.jsonl`, `gsd-state.md`), `claude-state/`, `substrate-pending/`, `steer/` (steering inbox), `connection/report.json`, `omp-overlay.yml`. |
 | `config/settings.json` | The head's preferences (`FileSettingsStore`): theme, motion, terminal auto-run, idle stop and retention. Written atomically with mode 0600 in a 0700 folder. Never holds a key. |
-| `secrets/secrets.json` | The OmpOS provider key store (`OwnerOnlyFileSecretStore`): a plain-text, owner-only file that holds the key of a custom provider under its variable name. |
+| `secrets/secrets.json` | The Autonogrammer provider key store (`OwnerOnlyFileSecretStore`): a plain-text, owner-only file that holds the key of a custom provider under its variable name. |
 
 ## Where provider keys live (OQ-92)
 
-omp is the engine, so providers and credentials are omp's. The Models page edits only OmpOS-owned blocks of omp's `models.yml` and keeps a custom provider's key in `secrets/secrets.json`, passed to omp as an environment variable. A built-in provider's key is imported with `omp auth import -` over standard input and stored by omp in its `agent.db` (unencrypted, owner-only). OmpOS keeps no copy of that key. The platform secure store is not used.
+omp is the engine, so providers and credentials are omp's. The Models page edits only Autonogrammer-owned blocks of omp's `models.yml` and keeps a custom provider's key in `secrets/secrets.json`, passed to omp as an environment variable. A built-in provider's key is imported with `omp auth import -` over standard input and stored by omp in its `agent.db` (unencrypted, owner-only). Autonogrammer keeps no copy of that key. The platform secure store is not used.
 
 ## What the app writes outside its own directories
 

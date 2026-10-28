@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Autonogrammer.Harness.Plugins/Autonogrammer.Harness.Plugins.csproj" />
+  </ItemGroup>
+</Project>

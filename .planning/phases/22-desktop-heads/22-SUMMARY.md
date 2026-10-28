@@ -10,11 +10,11 @@ Mac channel: Yes. The macOS 26 build, the NSAccessibility inspection, signing an
 
 | # | Criterion | Status | Evidence |
 |---|-----------|--------|----------|
-| 1 | Linux head starts on X11 and on Wayland with the native backend opt-in, backend named | Partial. X11 and XWayland starts recorded; native Wayland opt-in run not done | X11: docs/runbooks/phase-22-desktop-heads.md (2026-10-22, Xvfb). XWayland: docs/runbooks/evidence/phase-22-wayland-2026-10-24/probe-output.txt (headless weston with Xwayland; `Avalonia.X11.dll` and `libX11` mapped; no `libwayland-client`; window `OmpOS` 960x640). Correction 2026-10-24: the earlier "met on the XWayland path" overstated criterion 1, whose text requires the opt-in. See STATE Run Discovery, item 1 |
+| 1 | Linux head starts on X11 and on Wayland with the native backend opt-in, backend named | Partial. X11 and XWayland starts recorded; native Wayland opt-in run not done | X11: docs/runbooks/phase-22-desktop-heads.md (2026-10-22, Xvfb). XWayland: docs/runbooks/evidence/phase-22-wayland-2026-10-24/probe-output.txt (headless weston with Xwayland; `Avalonia.X11.dll` and `libX11` mapped; no `libwayland-client`; window `Autonogrammer` 960x640). Correction 2026-10-24: the earlier "met on the XWayland path" overstated criterion 1, whose text requires the opt-in. See STATE Run Discovery, item 1 |
 | 2 | Linux AT-SPI2 exposes prompt, send and transcript | Met (X11) | docs/runbooks/evidence/phase-20-avalonia-foundation-2026-10-21/atspi-query.txt |
 | 3 | Windows 11 24H2 builds net10.0-windows; UI Automation names and roles | Blocked | No Windows 11 24H2 runner available |
 | 4 | macOS 26 build; NSAccessibility names and roles | Blocked | Mac channel (owner) |
-| 5 | macOS unsigned CI build; signing and notarization under XP-11 | Blocked | Signing and notarization on the Mac channel. No CI step builds OmpOS.Native on macOS |
+| 5 | macOS unsigned CI build; signing and notarization under XP-11 | Blocked | Signing and notarization on the Mac channel. No CI step builds Autonogrammer.Native on macOS |
 
 ## Open items
 

@@ -1,0 +1,35 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits SettingsPageView<RuntimePage>
+@using Autonogrammer.Presentation.Settings
+<SettingsPageFrame Page="Page" Title="@SettingsCopy.RuntimeHeading" Description="@SettingsCopy.RuntimeDescription">
+    <SettingsField For="@IdleId" Label="@SettingsCopy.IdleStopLabel" Help="@SettingsCopy.IdleStopHelp" Error="@Page.Model.IdleStopError">
+        <input id="@IdleId" class="autonogrammer-input autonogrammer-settings-number" type="text" inputmode="numeric" autocomplete="off" spellcheck="false"
+               value="@Page.Model.IdleStopText"
+               aria-invalid="@(Page.Model.IdleStopError is null ? null : "true")"
+               aria-describedby="@SettingsField.DescribedBy(IdleId, true)"
+               @oninput="OnIdleInput" />
+    </SettingsField>
+    <SettingsField For="@RetentionId" Label="@SettingsCopy.RetentionLabel" Help="@SettingsCopy.RetentionHelp" Error="@Page.Model.RetentionError">
+        <input id="@RetentionId" class="autonogrammer-input autonogrammer-settings-number" type="text" inputmode="numeric" autocomplete="off" spellcheck="false"
+               value="@Page.Model.RetentionText"
+               aria-invalid="@(Page.Model.RetentionError is null ? null : "true")"
+               aria-describedby="@SettingsField.DescribedBy(RetentionId, true)"
+               @oninput="OnRetentionInput" />
+    </SettingsField>
+</SettingsPageFrame>
+
+@code {
+    private const string IdleId = "autonogrammer-setting-idle-stop";
+    private const string RetentionId = "autonogrammer-setting-retention";
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        Observe(Page.Model);
+    }
+
+    private void OnIdleInput(ChangeEventArgs args) => Page.Model.SetIdleStop(args.Value?.ToString());
+
+    private void OnRetentionInput(ChangeEventArgs args) => Page.Model.SetRetention(args.Value?.ToString());
+}

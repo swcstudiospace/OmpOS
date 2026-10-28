@@ -31,7 +31,7 @@ This record states status only. Nothing in it is built, run or deployed by this 
 
 | # | Criterion (ROADMAP, summarised) | Status | Evidence or blocker |
 | --- | --- | --- | --- |
-| 1 | One persistent container per session with idle sleep, one container plus volume for the transcript, reattach restores the transcript, integration test against a fake Railway client, live run recorded blocked | PARTIAL (library over a fake, wired nowhere); live run BLOCKED | `CloudSessionHost`, `ICloudEnvironmentClient` and `FakeCloudEnvironmentClient` exist in `src/OmpOS.Sandbox`, tested by `CloudSessionHostTests`; no head or API uses them (corrected 2026-10-27; this row said none existed). `src/OmpOS.Sandbox/RailwaySwarmProvider.cs` exists and fails closed for provision, exec, logs and attach; only service deletion is callable (Q-SB-RAILWAY). |
+| 1 | One persistent container per session with idle sleep, one container plus volume for the transcript, reattach restores the transcript, integration test against a fake Railway client, live run recorded blocked | PARTIAL (library over a fake, wired nowhere); live run BLOCKED | `CloudSessionHost`, `ICloudEnvironmentClient` and `FakeCloudEnvironmentClient` exist in `src/Autonogrammer.Sandbox`, tested by `CloudSessionHostTests`; no head or API uses them (corrected 2026-10-27; this row said none existed). `src/Autonogrammer.Sandbox/RailwaySwarmProvider.cs` exists and fails closed for provision, exec, logs and attach; only service deletion is callable (Q-SB-RAILWAY). |
 | 2 | Remote desktop and browser streaming is not built until Railway confirms in writing; the confirmation is recorded under `docs/runbooks/` | PAUSED: BLOCKED on Railway | No confirmation exists. The pause is recorded below. |
 | 3 | No claim that process state survives sleep; a restored session resumes from the stored native omp session reference; a test shows the stored transcript and a resume marker | PARTIAL (library, fake only) | The reference type `Harness.Herdr/NativeSessionReference.cs` and `HerdrSessionService.ResumeFromNativeReferenceAsync` exist (tested by `ALostSessionIsNotRunningUntilItResumesFromItsNativeReference`). No transcript volume and no resume marker exist. |
 
@@ -47,7 +47,7 @@ The research found no primary statement that settles the question. Whether Railw
 
 The live cloud-terminal run is not performed. Prerequisites that are not met:
 
-1. Railway deploys are paused. `docs/runbooks/hosting.md` (Known blocker 5) states that nothing has been deployed to Railway and that no Railway service or deploy exists while deploys are paused. Update 2026-10-28: the pause did not recur that day and a staged private worker was deployed to Railway ([evidence](evidence/railway-ompos-worker-2026-10-28.md)); that worker has no remote desktop and no streaming, and the API is still not deployed (OD-03).
+1. Railway deploys are paused. `docs/runbooks/hosting.md` (Known blocker 5) states that nothing has been deployed to Railway and that no Railway service or deploy exists while deploys are paused. Update 2026-10-28: the pause did not recur that day and a staged private worker was deployed to Railway ([evidence](evidence/railway-autonogrammer-worker-2026-10-28.md)); that worker has no remote desktop and no streaming, and the API is still not deployed (OD-03).
 2. The sign-in authority is not configured (`docs/runbooks/hosting.md`, Known blocker 1; the OD-03 decision).
 3. The cloud runtime needs v0.9.2 Phase 13, which is blocked on the same external prerequisites (ROADMAP).
 

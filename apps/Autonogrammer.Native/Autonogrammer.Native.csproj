@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <ApplicationIcon>Assets/Brand/autonogrammer.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/Brand/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Autonogrammer.Native.Views/Autonogrammer.Native.Views.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Presentation/Autonogrammer.Presentation.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.EngineHost/Autonogrammer.EngineHost.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Acp/Autonogrammer.Harness.Acp.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.AgentLoop/Autonogrammer.Harness.AgentLoop.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Automations/Autonogrammer.Harness.Automations.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.OmpConfig/Autonogrammer.Harness.OmpConfig.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Providers/Autonogrammer.Harness.Providers.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Secrets/Autonogrammer.Harness.Secrets.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Mcp/Autonogrammer.Harness.Mcp.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Plugins/Autonogrammer.Harness.Plugins.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Remote/Autonogrammer.Harness.Remote.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Terminal/Autonogrammer.Harness.Terminal.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Workspace/Autonogrammer.Harness.Workspace.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Worktrees/Autonogrammer.Harness.Worktrees.csproj" />
+  </ItemGroup>
+
+</Project>

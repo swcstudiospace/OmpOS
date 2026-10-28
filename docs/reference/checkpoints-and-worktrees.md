@@ -1,5 +1,5 @@
 ---
-description: "Reference for file checkpoints and restore, git worktrees, the message queue, custom modes, side chats and fork in OmpOS."
+description: "Reference for file checkpoints and restore, git worktrees, the message queue, custom modes, side chats and fork in Autonogrammer."
 ---
 
 # Checkpoints, worktrees, the message queue, custom modes, side chats and fork
@@ -10,15 +10,15 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-This page describes how OmpOS undoes an agent's file edits, runs work in git worktrees, queues messages while the agent works, pins a skill as a mode, and opens side chats and forks. Each feature is a library, a presentation model, a view and a head adapter; the last section lists which adapter feeds which model.
+This page describes how Autonogrammer undoes an agent's file edits, runs work in git worktrees, queues messages while the agent works, pins a skill as a mode, and opens side chats and forks. Each feature is a library, a presentation model, a view and a head adapter; the last section lists which adapter feeds which model.
 
 > **Status of this release** (recorded 2026-10-28, tree 7535859).
 >
-> - **Built, wired into the desktop head, proven by tests.** `MainView` hosts the Checkpoints timeline, the Worktrees panel, the queued messages under the composer, the custom-mode chip, the side chat pane and fork for each session; `AgentSessionRuntime` takes the forker, the side-chat engine and the prompt preamble. The head adapters are `CheckpointBackend`, `WorktreeBackend`, `WorktreeSetupConsentAdapter`, `BestOfNHost` and `ConventionModeSkillSource` (`apps/OmpOS.Native/Composition/Checkpoints/`), `SessionForker` and `OmpSideChatEngine` (`apps/OmpOS.Native/Agents/`). Tests: `CheckpointBackendTests`, `WorktreeBackendTests`, `WorktreeSetupConsentAdapterTests`, `BestOfNHostTests`, `ConventionModeSkillSourceTests`, `CheckpointsTimelineViewTests`, `WorktreeCommandsViewTests`, `QueuedMessagesViewTests`, `CustomModeChipViewTests`, `SideChatPaneViewTests`, `AcpForkTests` (wire method `session/fork`), `AgentSessionRuntimeWiringTests` (`/duplicate` forks), and the library tests in `OmpOS.Harness.Worktrees.Tests`.
+> - **Built, wired into the desktop head, proven by tests.** `MainView` hosts the Checkpoints timeline, the Worktrees panel, the queued messages under the composer, the custom-mode chip, the side chat pane and fork for each session; `AgentSessionRuntime` takes the forker, the side-chat engine and the prompt preamble. The head adapters are `CheckpointBackend`, `WorktreeBackend`, `WorktreeSetupConsentAdapter`, `BestOfNHost` and `ConventionModeSkillSource` (`apps/Autonogrammer.Native/Composition/Checkpoints/`), `SessionForker` and `OmpSideChatEngine` (`apps/Autonogrammer.Native/Agents/`). Tests: `CheckpointBackendTests`, `WorktreeBackendTests`, `WorktreeSetupConsentAdapterTests`, `BestOfNHostTests`, `ConventionModeSkillSourceTests`, `CheckpointsTimelineViewTests`, `WorktreeCommandsViewTests`, `QueuedMessagesViewTests`, `CustomModeChipViewTests`, `SideChatPaneViewTests`, `AcpForkTests` (wire method `session/fork`), `AgentSessionRuntimeWiringTests` (`/duplicate` forks), and the library tests in `Autonogrammer.Harness.Worktrees.Tests`.
 > - **Built, not wired.** `/fork <n>` from an earlier message is refused: the forker copies the whole conversation (`CanForkFromMessage` is `false`). Alt+Enter on a skill in the slash palette is not built (the mode is chosen from the mode chip). Best of n creates its candidates only in Run Everything. `/vim` and `/show-thinking` are Unavailable in the slash catalogue (no Vim key bindings; the transcript does not draw thinking). No test drives checkpoints, worktrees, side chats or fork in an ssh, container or WSL session: UNVERIFIED there. The web head has none of these features.
 > - **Not live-verified.** No live omp session ran a fork, a side chat or a checkpoint turn, and no model turn ran (open question OD-07). Whether omp accepts `--approval-mode always-ask` for the side chat's second omp is **UNVERIFIED**. Nothing ran on Windows, macOS or Android.
 
-Cursor 3.27 documents the same features (checkpoints and restore, worktrees, queued messages, Custom Modes, side chats, `/fork`). omp has no file checkpoints: its `checkpoint` and `rewind` tools only prune the conversation context, and `/branch`, `/fork` and `/tree` run in its terminal UI only. OmpOS therefore keeps its own file checkpoints and restores files only; it never changes the conversation.
+Cursor 3.27 documents the same features (checkpoints and restore, worktrees, queued messages, Custom Modes, side chats, `/fork`). omp has no file checkpoints: its `checkpoint` and `rewind` tools only prune the conversation context, and `/branch`, `/fork` and `/tree` run in its terminal UI only. Autonogrammer therefore keeps its own file checkpoints and restores files only; it never changes the conversation.
 
 ## File checkpoints
 
@@ -66,7 +66,7 @@ The setting `rewind` (Cursor's `rewind` key) switches the three commands off.
 
 ## Worktree commands
 
-`WorktreeCommandsModel` works over `WorktreeManager`, `WorktreeApplier` and the setup runner of `OmpOS.Harness.Worktrees`. A run's worktree is `<operator root>/<run id>` on branch `ompos/run/<run id>`; the cap is Cursor's `cursor.worktreeMaxCount` (25).
+`WorktreeCommandsModel` works over `WorktreeManager`, `WorktreeApplier` and the setup runner of `Autonogrammer.Harness.Worktrees`. A run's worktree is `<operator root>/<run id>` on branch `autonogrammer/run/<run id>`; the cap is Cursor's `cursor.worktreeMaxCount` (25).
 
 - **Start** (`/worktree`, the *New worktree* control) creates a worktree and runs its `.cursor/worktrees.json` setup behind consent. A name is turned into a valid run id; a blank name gives `wt-<UTC date>-<time>`. omp's own `/worktree` moves the live session into a worktree and stays a delegated command; the native start is for the Worktrees panel and for best-of-n.
 - **Review** shows the run's changes as a patch: committed and uncommitted changes and new files, against the commit the run started from (the common ancestor with the checkout). Ignored files are left out.
@@ -74,11 +74,11 @@ The setting `rewind` (Cursor's `rewind` key) switches the three commands off.
   - *Clean* (default): the patch is applied only if it fits. If not, nothing is written and the files that do not fit are listed (a conflict result).
   - *Merge three ways* (the word `merge`): git merges the patch into the files that changed since. A clean merge is staged; files that conflict hold conflict markers and are listed.
 - **Delete** (`/delete-worktree [run]`) shows what would be lost (changed files that were not applied) and deletes only after confirmation.
-- **Best of n** (`/best-of-n <n> <task>`) creates n worktrees (1 to 8), calls `IBestOfNHost.RunAsync` for each with the same prompt, and lists the results (finished or failed, files changed, what the agent said). The user reviews each, applies the best and discards the rest after confirmation. The agent runs need live sessions, so the head implements `IBestOfNHost`; Cursor runs one candidate per model, and OmpOS passes the candidate number so the host may choose a model per candidate.
+- **Best of n** (`/best-of-n <n> <task>`) creates n worktrees (1 to 8), calls `IBestOfNHost.RunAsync` for each with the same prompt, and lists the results (finished or failed, files changed, what the agent said). The user reviews each, applies the best and discards the rest after confirmation. The agent runs need live sessions, so the head implements `IBestOfNHost`; Cursor runs one candidate per model, and Autonogrammer passes the candidate number so the host may choose a model per candidate.
 
 ### Setup commands and consent
 
-`.cursor/worktrees.json` is looked for in the worktree, then in the project root (as Cursor does). The setup for the operating system is `setup-worktree-unix` or `setup-worktree-windows`, else `setup-worktree`; it is a list of shell commands or a script path inside `.cursor/`. `ConsentedWorktreeSetupRunner` runs nothing until `IWorktreeSetupConsent` answers yes for this exact setup: the identity is the repository plus the SHA-256 of the file and, for a script entry, of the script. Changing either asks again. The host keeps the answer in the setup consent store it already has, keyed by the path `<repository>/.cursor/worktrees.json`, so it never replaces the approval of `.ompos/setup.json`. `ShellWorktreeSetupExecutor` runs each command through `/bin/sh -c` (PowerShell on Windows, not verified) with `ROOT_WORKTREE_PATH` set to the main checkout, stopping at the first failure.
+`.cursor/worktrees.json` is looked for in the worktree, then in the project root (as Cursor does). The setup for the operating system is `setup-worktree-unix` or `setup-worktree-windows`, else `setup-worktree`; it is a list of shell commands or a script path inside `.cursor/`. `ConsentedWorktreeSetupRunner` runs nothing until `IWorktreeSetupConsent` answers yes for this exact setup: the identity is the repository plus the SHA-256 of the file and, for a script entry, of the script. Changing either asks again. The host keeps the answer in the setup consent store it already has, keyed by the path `<repository>/.cursor/worktrees.json`, so it never replaces the approval of `.autonogrammer/setup.json`. `ShellWorktreeSetupExecutor` runs each command through `/bin/sh -c` (PowerShell on Windows, not verified) with `ROOT_WORKTREE_PATH` set to the main checkout, stopping at the first failure.
 
 ## Message queue
 
@@ -106,7 +106,7 @@ A **side chat** (`/side`, `/btw`) is a child conversation. `SideChatHub.OpenAsyn
 
 ## Display switches
 
-`/line-numbers` and `/status-indicators` flip switches of `DisplaySettings` (with `on`, `off`, `toggle` or `status`). `/vim` and `/show-thinking` are Unavailable (see [Slash commands](slash-commands.md)): `DisplaySettings` holds a Vim flag, but no composer reads it. The switches are saved in `display.json`, a small versioned JSON file OmpOS owns, next to the other OmpOS settings; a missing or damaged file reads as the defaults. Defaults: Vim off, everything else on.
+`/line-numbers` and `/status-indicators` flip switches of `DisplaySettings` (with `on`, `off`, `toggle` or `status`). `/vim` and `/show-thinking` are Unavailable (see [Slash commands](slash-commands.md)): `DisplaySettings` holds a Vim flag, but no composer reads it. The switches are saved in `display.json`, a small versioned JSON file Autonogrammer owns, next to the other Autonogrammer settings; a missing or damaged file reads as the defaults. Defaults: Vim off, everything else on.
 
 ## What the head provides
 
@@ -118,6 +118,6 @@ A **side chat** (`/side`, `/btw`) is a child conversation. `SideChatHub.OpenAsyn
 | `CustomModeModel` | `IModeSkillSource` over `ConventionCatalog`; every prompt sent through `IPromptPreamble.Apply` | `ConventionModeSkillSource`; `AgentSessionRuntime.PromptPreamble` |
 | `SideChatHub` | `ISideChatEngine` (a second omp session) | `OmpSideChatEngine` (a second omp with `--approval-mode always-ask` that admits no tool kind) |
 | `ForkModel` | `ISessionForker` over `session/fork` | `SessionForker` over the engine's `session/fork` (`IOmpSessionFork`) |
-| Slash handlers | `ISlashSessionContext`, `IClipboardWriter`, `IAboutLauncher`, `IFolderOpener`, `IApplicationLifetime`, `IUrlLauncher`, `IEditorOpener`, `IChangesBarOpener`, `IWorkspaceSetsBackend`, `IDisplaySettingsStore` | the adapters of `src/OmpOS.Native.Views/Shell/`; `IFolderOpener` is not provided (there is no log folder to open) |
+| Slash handlers | `ISlashSessionContext`, `IClipboardWriter`, `IAboutLauncher`, `IFolderOpener`, `IApplicationLifetime`, `IUrlLauncher`, `IEditorOpener`, `IChangesBarOpener`, `IWorkspaceSetsBackend`, `IDisplaySettingsStore` | the adapters of `src/Autonogrammer.Native.Views/Shell/`; `IFolderOpener` is not provided (there is no log folder to open) |
 
 `SlashActionHandlerHost` routes the actions of these handlers and passes every other action to the head's own `ISlashActionHost`.

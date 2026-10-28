@@ -19,7 +19,7 @@ body:
     id: proposal
     attributes:
       label: Proposed behaviour
-      description: What should OmpOS do? Sketches and examples are welcome.
+      description: What should Autonogrammer do? Sketches and examples are welcome.
     validations:
       required: true
   - type: textarea

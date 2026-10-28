@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Blocks.PlanBlockView"
+             AutomationProperties.Name="Plan">
+
+  <!-- A plan is a card holding its numbered steps in prose size (parity spec 4.6). -->
+  <Border Classes="card"
+          Padding="12,10">
+    <StackPanel x:Name="Steps"
+                Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+  </Border>
+
+</UserControl>

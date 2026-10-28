@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# OmpOS one-command bootstrap (Phase 1, decision D-05).
+# Autonogrammer one-command bootstrap (Phase 1, decision D-05).
 # Installs the SDK pinned in global.json when missing, then runs a locked
 # restore, a warnings-as-errors Release build, the test suite, and a format
 # verification, then the web browser smoke with its axe-core check. Exits non-zero on any failing step. Never installs containers;
 # Before the build it runs the pinned gitleaks secret scan (scripts/ci/secret-scan.sh, shared with CI), which fails closed when
-# the binary cannot be fetched or verified: set OMPOS_SKIP_SECRET_SCAN=1 to skip it explicitly, for example offline.
+# the binary cannot be fetched or verified: set AUTONOGRAMMER_SKIP_SECRET_SCAN=1 to skip it explicitly, for example offline.
 # The test step starts throwaway test services and stops them on exit.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -45,10 +45,10 @@ if [ -f .gitmodules ] && git rev-parse --git-dir >/dev/null 2>&1; then
 fi
 
 # Secret scan (35-A): the same pinned, digest-checked gitleaks CI runs (version and SHA-256 in scripts/ci/gitleaks.env,
-# flags in scripts/ci/secret-scan.sh). It fails closed, offline included, unless OMPOS_SKIP_SECRET_SCAN=1 is set.
+# flags in scripts/ci/secret-scan.sh). It fails closed, offline included, unless AUTONOGRAMMER_SKIP_SECRET_SCAN=1 is set.
 bash scripts/ci/secret-scan.sh
 
-# Plugin tests: the GSD-Core omp plugin (plugins/gsd-core-omp) is OmpOS-owned JavaScript with no .NET project; its node:test suite
+# Plugin tests: the GSD-Core omp plugin (plugins/gsd-core-omp) is Autonogrammer-owned JavaScript with no .NET project; its node:test suite
 # is gated here and in CI by one shared script.
 bash scripts/ci/plugin-node-tests.sh
 
@@ -57,9 +57,9 @@ bash scripts/ci/plugin-node-tests.sh
 bash scripts/ci/repo-checks.sh
 
 dotnet --version
-dotnet restore OmpOS.Linux.slnf --locked-mode
+dotnet restore Autonogrammer.Linux.slnf --locked-mode
 bash scripts/ci/check-licences.sh
-dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
+dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror
 
 # Cleanup runs on every exit path. `down` is idempotent; the export file holds test passwords and is removed.
 TEST_SERVICES_ENV=""
@@ -76,12 +76,12 @@ cleanup() {
 trap cleanup EXIT
 TEST_SERVICES_ENV="$(bash scripts/test-services.sh up)"
 source "$TEST_SERVICES_ENV"
-# OMPOS_TEST_PARALLEL_MODULES caps how many test modules run at once (CI uses 2); unset leaves the runner's default. A shared or loaded host
+# AUTONOGRAMMER_TEST_PARALLEL_MODULES caps how many test modules run at once (CI uses 2); unset leaves the runner's default. A shared or loaded host
 # sets it so the assemblies that drive a UI thread are not starved by the other modules.
 test_modules=()
-if [ -n "${OMPOS_TEST_PARALLEL_MODULES:-}" ]; then test_modules=(--max-parallel-test-modules "$OMPOS_TEST_PARALLEL_MODULES"); fi
-dotnet test OmpOS.Linux.slnf -c Release --no-build "${test_modules[@]+"${test_modules[@]}"}" -- --filter-not-trait "Category=Live"
-dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
+if [ -n "${AUTONOGRAMMER_TEST_PARALLEL_MODULES:-}" ]; then test_modules=(--max-parallel-test-modules "$AUTONOGRAMMER_TEST_PARALLEL_MODULES"); fi
+dotnet test Autonogrammer.Linux.slnf -c Release --no-build "${test_modules[@]+"${test_modules[@]}"}" -- --filter-not-trait "Category=Live"
+dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore
 
 # Browser smoke with the axe-core gate (Phase 23 criterion 2). scripts/web-smoke/run-smoke.sh publishes the web head and the API,
 # drives the owned headless Chrome, and exits non-zero on any failed assertion, including an axe violation or incomplete item.

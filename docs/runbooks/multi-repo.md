@@ -14,7 +14,7 @@ Scope: Phase 59 (PX-16). One session can cover several folders: validated roots,
 
 **Status of this release** (recorded 2026-10-28, tree 7535859).
 
-- **Built, wired into the desktop head, proven by tests.** The rail has a Folders button that opens the workspace-set dialog (`WorkspaceSetPickerView`, add, remove, primary, import and export of `.code-workspace`); Start records the set in `WorkspaceSetStore` (`HeadServices.WorkspaceSets`), hands the roots to `PendingSessionTarget.SetRoots` and starts an agent; `SessionEngineSet` takes the roots once per new session (the first is the working directory, the others become `--add-dir` through `OmpLaunchPlanner`) and keeps them in `<state>/session-extras.json`; `/save-workspace` and `/load-workspace` use the same store (`WorkspaceSetsBackend`); Settings > Workspaces lists the saved sets. Tests: `WorkspaceSetValidatorTests`, `WorkspaceSetTests`, `WorkspaceSetStoreTests`, `WorkspaceSetPickerTests`, `WorkspaceSetPickerViewTests`, `PendingSessionTargetTests`, `SessionExtrasStoreTests`, `ShellAdaptersTests`, `HeadServicesWiringTests`, and the launch tests of `OmpOS.Harness.AgentLoop.Tests`.
+- **Built, wired into the desktop head, proven by tests.** The rail has a Folders button that opens the workspace-set dialog (`WorkspaceSetPickerView`, add, remove, primary, import and export of `.code-workspace`); Start records the set in `WorkspaceSetStore` (`HeadServices.WorkspaceSets`), hands the roots to `PendingSessionTarget.SetRoots` and starts an agent; `SessionEngineSet` takes the roots once per new session (the first is the working directory, the others become `--add-dir` through `OmpLaunchPlanner`) and keeps them in `<state>/session-extras.json`; `/save-workspace` and `/load-workspace` use the same store (`WorkspaceSetsBackend`); Settings > Workspaces lists the saved sets. Tests: `WorkspaceSetValidatorTests`, `WorkspaceSetTests`, `WorkspaceSetStoreTests`, `WorkspaceSetPickerTests`, `WorkspaceSetPickerViewTests`, `PendingSessionTargetTests`, `SessionExtrasStoreTests`, `ShellAdaptersTests`, `HeadServicesWiringTests`, and the launch tests of `Autonogrammer.Harness.AgentLoop.Tests`.
 - **Built, not wired.** `MultiRootWorkspaceTree` (the multi-root explorer model) is used by no head view. `WorktreeRunSet` (one worktree per git root for a run) is used by the head only for the cap shown on the Worktrees settings page (`WorktreesSettingsSource`); the Worktrees panel starts one worktree for the primary root (`WorktreeBackend`). The workspace catalog, rules and skills still read the first root only. `SessionSummary` and `StageObservationScope` still carry one `WorkspaceRoot`: the extra folders live in `session-extras.json`, not in the session record.
 - **Not live-verified.** `omp acp --add-dir` was probed with slash-command prompts only ([evidence](evidence/multi-repo-omp-probe-2026-10-27/README.md)); no model turn saw several folders (open question OD-07). Nothing ran on Windows, macOS or Android.
 
@@ -22,19 +22,19 @@ Scope: Phase 59 (PX-16). One session can cover several folders: validated roots,
 
 | Piece | Where | What it does |
 | --- | --- | --- |
-| `WorkspaceSet`, `WorkspaceSetRoot` | `src/OmpOS.Harness.Workspace/WorkspaceSet/` (namespace `OmpOS.Workspace.Sets`) | The ordered folders of a session. The first root is the primary: omp's working directory. Every other root is an additional directory. A set is immutable (`AddFolder`, `Remove`, `WithPrimary`, `Rename` return new sets). |
+| `WorkspaceSet`, `WorkspaceSetRoot` | `src/Autonogrammer.Harness.Workspace/WorkspaceSet/` (namespace `Autonogrammer.Workspace.Sets`) | The ordered folders of a session. The first root is the primary: omp's working directory. Every other root is an additional directory. A set is immutable (`AddFolder`, `Remove`, `WithPrimary`, `Rename` return new sets). |
 | `WorkspaceSetValidator` | same | Errors: more than 16 roots, relative or NUL path, missing local folder, duplicate or nested roots (compared by real path, so two links to one folder are one root), roots in different environments, blank or repeated names, repeated ids. Warning: a local root that is not the top of a git working tree. |
 | `CodeWorkspaceFile` | same | Reads and writes VS Code and Cursor `.code-workspace` files. |
-| `WorkspaceSetStore` | same | The 20 most recent sets in `OmpOS/workspace-sets.json` under the per-user config directory (a versioned JSON file; a damaged file reads as empty and is moved aside). |
-| `OmpLaunchPlanner.Plan(..., additionalDirectories)` | `src/OmpOS.Harness.AgentLoop/Launch/` | Emits one `--add-dir <absolute path>` pair per additional root, after every other argument. `OmpLaunchPlan.AdditionalDirectories` records them. |
-| `SessionEngineSet.CreateSlot(..., additionalDirectories)` | `apps/OmpOS.Native/Agents/` | Keeps the list for the slot and passes it to the planner. |
-| `WorktreeRunSet` | `src/OmpOS.Harness.Worktrees/` | One worktree per git root for a run, created and closed as a unit. |
+| `WorkspaceSetStore` | same | The 20 most recent sets in `Autonogrammer/workspace-sets.json` under the per-user config directory (a versioned JSON file; a damaged file reads as empty and is moved aside). |
+| `OmpLaunchPlanner.Plan(..., additionalDirectories)` | `src/Autonogrammer.Harness.AgentLoop/Launch/` | Emits one `--add-dir <absolute path>` pair per additional root, after every other argument. `OmpLaunchPlan.AdditionalDirectories` records them. |
+| `SessionEngineSet.CreateSlot(..., additionalDirectories)` | `apps/Autonogrammer.Native/Agents/` | Keeps the list for the slot and passes it to the planner. |
+| `WorktreeRunSet` | `src/Autonogrammer.Harness.Worktrees/` | One worktree per git root for a run, created and closed as a unit. |
 | `CursorWorktreesConfig` | same | Reads `.cursor/worktrees.json`. |
-| `MultiRootWorkspaceTree`, `WorkspaceSetPicker` | `src/OmpOS.Presentation/Editor/` | The explorer model and the picker model. |
+| `MultiRootWorkspaceTree`, `WorkspaceSetPicker` | `src/Autonogrammer.Presentation/Editor/` | The explorer model and the picker model. |
 
-The planner takes plain paths (`WorkspaceSet.AdditionalDirectoryPaths`), not the set type, so `OmpOS.Harness.AgentLoop` and `OmpOS.Presentation` do not reference `OmpOS.Harness.Workspace`. The host maps between them: `WorkspaceSet` to `WorktreeRootSpec` (`Id` or `DisplayName` and `Path`), and a `WorkspaceSetPicker` backend that wraps the validator and `CodeWorkspaceFile`.
+The planner takes plain paths (`WorkspaceSet.AdditionalDirectoryPaths`), not the set type, so `Autonogrammer.Harness.AgentLoop` and `Autonogrammer.Presentation` do not reference `Autonogrammer.Harness.Workspace`. The host maps between them: `WorkspaceSet` to `WorktreeRootSpec` (`Id` or `DisplayName` and `Path`), and a `WorkspaceSetPicker` backend that wraps the validator and `CodeWorkspaceFile`.
 
-The new root type is named `WorkspaceSetRoot` because `OmpOS.Workspace.WorkspaceRoot` already exists (the symlink-safe handle for one local directory) and the two are different things.
+The new root type is named `WorkspaceSetRoot` because `Autonogrammer.Workspace.WorkspaceRoot` already exists (the symlink-safe handle for one local directory) and the two are different things.
 
 ## The omp probe (omp 18.12.6)
 
@@ -43,7 +43,7 @@ Evidence: [evidence/multi-repo-omp-probe-2026-10-27/README.md](evidence/multi-re
 - `omp acp --add-dir <path>` works, repeatable. `/dirs` lists the working directory and each added directory; the session file header records `additionalDirectories`.
 - `/add-dir`, `/remove-dir` and `/dirs` sent as an ACP `session/prompt` run without a model call. The answer is one `agent_message_chunk` and `stopReason: end_turn`. The three commands are advertised in `available_commands_update`.
 - `workspace.additionalDirectories` in a `--config` overlay gives the same result as the flag.
-- omp does not validate flag directories (a missing one is listed silently), de-duplicates identical absolute paths, resolves relative paths against the process working directory, and allows nesting. OmpOS therefore validates everything itself.
+- omp does not validate flag directories (a missing one is listed silently), de-duplicates identical absolute paths, resolves relative paths against the process working directory, and allows nesting. Autonogrammer therefore validates everything itself.
 
 Decision: the launch mechanism is `--add-dir` arguments (no session-start command list is needed). The overlay also records the directories under `workspace.additionalDirectories`, but only when an overlay is written for another reason (`DisableProjectMcpConfig`); the overlay alone is never what carries them.
 
@@ -61,7 +61,7 @@ The planner rejects a blank, relative or NUL-containing directory, a repeat, and
 
 `WorktreeRunSet.CreateAsync(roots, runId)` takes the roots primary first and returns one outcome per root.
 
-- A git root (it directly contains `.git`) gets a worktree through `WorktreeManager`: `<Worktrees:Root>/<runId>-<root name>` on branch `ompos/run/<runId>-<root name>`. The root name is reduced to ASCII letters, digits and hyphens, made unique and cut so the id has at most 64 characters. The run id must leave room for a name.
+- A git root (it directly contains `.git`) gets a worktree through `WorktreeManager`: `<Worktrees:Root>/<runId>-<root name>` on branch `autonogrammer/run/<runId>-<root name>`. The root name is reduced to ASCII letters, digits and hyphens, made unique and cut so the id has at most 64 characters. The run id must leave room for a name.
 - A root that is not the top of a git repository (including a subfolder of one) is used in place and reported as a warning (`Warnings`, status `UsedInPlace`).
 - Nested or identical roots throw `NestedWorktreeRootException` before anything is created.
 - The cap is 25 run worktrees under the manager's root (`WorktreeRunSet.DefaultMaxWorktrees`, the default of Cursor's `cursor.worktreeMaxCount`); a set that would exceed it throws `WorktreeCapExceededException` and creates nothing. `WorktreeManager` itself has no cap: this class adds it.

@@ -1,0 +1,378 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:rem="clr-namespace:Autonogrammer.Presentation.Remote;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Remote.RemoteEnvironmentsPageView"
+             x:DataType="rem:RemoteEnvironmentsViewModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The Remote environments page: the saved ssh environments with their status in words and their findings with the fix, the hosts of the ssh
+       config that can be added, and the add or edit form. Nothing connects until Test connection is pressed. Tokens only; every control has a name. -->
+  <ScrollViewer x:Name="PageScroll"
+                Focusable="False"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Classes="settings-column">
+
+      <TextBlock Classes="settings-heading"
+                 Text="{x:Static rem:RemoteCopy.Heading}" />
+      <TextBlock Classes="settings-description"
+                 Text="{x:Static rem:RemoteCopy.Description}" />
+      <TextBlock x:Name="ExplanationText"
+                 Classes="settings-help"
+                 Text="{x:Static rem:RemoteCopy.Explanation}" />
+
+      <!-- The polite live region: the result of the last command. -->
+      <TextBlock x:Name="AnnouncementText"
+                 Classes="settings-body"
+                 IsVisible="{CompiledBinding Announcement, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding Announcement}"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="{x:Static rem:RemoteCopy.AnnouncementName}" />
+
+      <TextBlock x:Name="LoadingText"
+                 Classes="muted settings-body"
+                 IsVisible="{CompiledBinding IsLoading}"
+                 Text="{x:Static rem:RemoteCopy.Loading}" />
+
+      <StackPanel x:Name="ErrorPanel"
+                  IsVisible="{CompiledBinding IsError}"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <TextBlock x:Name="ErrorText"
+                   Classes="tone-error settings-body"
+                   Text="{CompiledBinding LoadError}"
+                   AutomationProperties.LiveSetting="Assertive" />
+        <Button x:Name="RetryButton"
+                HorizontalAlignment="Left"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                Content="{x:Static rem:RemoteCopy.RetryLabel}"
+                AutomationProperties.Name="{x:Static rem:RemoteCopy.RetryLabel}"
+                Click="OnRetryClick" />
+      </StackPanel>
+
+      <TextBlock x:Name="WarningText"
+                 Classes="tone-warning settings-body"
+                 IsVisible="{CompiledBinding Warning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding Warning}" />
+
+      <StackPanel x:Name="EmptyPanel"
+                  IsVisible="{CompiledBinding IsEmpty}"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <TextBlock Classes="settings-section"
+                   Text="{x:Static rem:RemoteCopy.EmptyHeading}" />
+        <TextBlock x:Name="EmptyText"
+                   Classes="settings-body"
+                   Text="{x:Static rem:RemoteCopy.EmptyText}" />
+      </StackPanel>
+
+      <ItemsControl x:Name="EnvironmentRows"
+                    ItemsSource="{CompiledBinding Rows}"
+                    AutomationProperties.Name="{x:Static rem:RemoteCopy.Title}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="rem:RemoteProfileRow">
+            <Border Classes="settings-card"
+                    Margin="0,0,0,8"
+                    AutomationProperties.Name="{CompiledBinding AccessibleName}">
+              <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+                <Grid ColumnDefinitions="*,Auto"
+                      ColumnSpacing="8">
+                  <TextBlock Grid.Column="0"
+                             Classes="settings-section"
+                             Text="{CompiledBinding DisplayName}" />
+                  <Border Grid.Column="1"
+                          Classes="chip">
+                    <TextBlock Classes="settings-chip-text"
+                               Classes.tone-success="{CompiledBinding IsGood}"
+                               Classes.tone-warning="{CompiledBinding IsWarning}"
+                               Classes.tone-error="{CompiledBinding IsError}"
+                               Text="{CompiledBinding StatusLabel}"
+                               AutomationProperties.LiveSetting="Polite" />
+                  </Border>
+                </Grid>
+
+                <TextBlock Classes="settings-mono"
+                           Text="{CompiledBinding DestinationText}" />
+                <TextBlock Classes="settings-help"
+                           Text="{CompiledBinding RootText}" />
+                <TextBlock Classes="settings-help"
+                           Text="{CompiledBinding LastUsedText}" />
+                <TextBlock Classes="settings-help"
+                           IsVisible="{CompiledBinding EnvironmentText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           Text="{CompiledBinding EnvironmentText}" />
+                <TextBlock Classes="settings-body"
+                           Text="{CompiledBinding StatusDetail}" />
+
+                <!-- The findings of the last test: severity in words, the problem, and how to fix it. -->
+                <ItemsControl ItemsSource="{CompiledBinding Diagnoses}"
+                              IsVisible="{CompiledBinding HasDiagnoses}"
+                              AutomationProperties.Name="{x:Static rem:RemoteCopy.DiagnosesLabel}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="rem:RemoteDiagnosisRow">
+                      <StackPanel Spacing="2"
+                                  Margin="0,4,0,0"
+                                  AutomationProperties.Name="{CompiledBinding AccessibleText}">
+                        <TextBlock Classes="settings-label"
+                                   Classes.tone-error="{CompiledBinding IsError}"
+                                   Classes.tone-warning="{CompiledBinding !IsError}"
+                                   Text="{CompiledBinding SeverityLabel}" />
+                        <TextBlock Classes="settings-body"
+                                   Text="{CompiledBinding Summary}" />
+                        <TextBlock Classes="settings-help"
+                                   Text="{CompiledBinding FixText}" />
+                        <TextBlock Classes="settings-mono"
+                                   IsVisible="{CompiledBinding HasDetail}"
+                                   Text="{CompiledBinding Detail}" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Classes="settings-help"
+                           IsVisible="{CompiledBinding CanTrustHost}"
+                           Text="{x:Static rem:RemoteCopy.TrustHostHelp}" />
+
+                <StackPanel Orientation="Horizontal"
+                            Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                            Margin="0,4,0,0">
+                  <Button Classes="primary"
+                          MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          Content="{x:Static rem:RemoteCopy.TestLabel}"
+                          IsEnabled="{CompiledBinding CanTest}"
+                          AutomationProperties.Name="{x:Static rem:RemoteCopy.TestLabel}"
+                          Click="OnTestClick" />
+                  <Button MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          Content="{x:Static rem:RemoteCopy.CancelTestLabel}"
+                          IsVisible="{CompiledBinding IsTesting}"
+                          AutomationProperties.Name="{x:Static rem:RemoteCopy.CancelTestLabel}"
+                          Click="OnCancelTestClick" />
+                  <Button MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          Content="{x:Static rem:RemoteCopy.TrustHostLabel}"
+                          IsVisible="{CompiledBinding CanTrustHost}"
+                          AutomationProperties.Name="{x:Static rem:RemoteCopy.TrustHostLabel}"
+                          Click="OnTrustHostClick" />
+                  <Button MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          Content="{x:Static rem:RemoteCopy.EditLabel}"
+                          AutomationProperties.Name="{x:Static rem:RemoteCopy.EditLabel}"
+                          Click="OnEditClick" />
+                  <Button MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          Content="{x:Static rem:RemoteCopy.DeleteLabel}"
+                          AutomationProperties.Name="{x:Static rem:RemoteCopy.DeleteLabel}"
+                          Click="OnDeleteClick" />
+                </StackPanel>
+
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- The hosts of the ssh config that are not saved yet. -->
+      <TextBlock Classes="settings-section"
+                 IsVisible="{CompiledBinding !IsLoading}"
+                 Text="{x:Static rem:RemoteCopy.CandidatesHeading}" />
+      <TextBlock x:Name="NoCandidatesText"
+                 Classes="muted settings-help"
+                 IsVisible="{CompiledBinding HasNoCandidates}"
+                 Text="{x:Static rem:RemoteCopy.NoCandidates}" />
+      <ItemsControl x:Name="CandidateRows"
+                    ItemsSource="{CompiledBinding Candidates}"
+                    AutomationProperties.Name="{x:Static rem:RemoteCopy.CandidatesHeading}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String">
+            <Grid ColumnDefinitions="*,Auto"
+                  ColumnSpacing="8"
+                  Margin="0,0,0,4">
+              <TextBlock Grid.Column="0"
+                         Classes="settings-mono"
+                         VerticalAlignment="Center"
+                         Text="{CompiledBinding .}" />
+              <Button Grid.Column="1"
+                      MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      Content="{x:Static rem:RemoteCopy.AddFromConfigLabel}"
+                      AutomationProperties.Name="{x:Static rem:RemoteCopy.AddFromConfigLabel}"
+                      Click="OnAddCandidateClick" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <ItemsControl x:Name="CandidateWarningRows"
+                    ItemsSource="{CompiledBinding CandidateWarnings}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String">
+            <TextBlock Classes="tone-warning settings-help"
+                       Text="{CompiledBinding .}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Button x:Name="AddManualButton"
+              HorizontalAlignment="Left"
+              Margin="0,4"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              Content="{x:Static rem:RemoteCopy.AddManualLabel}"
+              IsEnabled="{CompiledBinding !IsEditing}"
+              AutomationProperties.Name="{x:Static rem:RemoteCopy.AddManualLabel}"
+              Click="OnAddManualClick" />
+
+      <!-- The add or edit form. Keyboard order follows XAML order. -->
+      <Border x:Name="EditorCard"
+              Classes="settings-card"
+              IsVisible="{CompiledBinding IsEditing}">
+        <ContentControl x:Name="EditorHost"
+                        Content="{CompiledBinding Editor}">
+         <ContentControl.ContentTemplate>
+          <DataTemplate x:DataType="rem:RemoteProfileEditor">
+        <StackPanel x:Name="EditorPanel"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+          <TextBlock x:Name="EditorHeading"
+                     Classes="settings-section"
+                     Text="{CompiledBinding Heading}" />
+
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static rem:RemoteCopy.DisplayNameLabel}" />
+          <TextBox x:Name="DisplayNameBox"
+                   Text="{CompiledBinding DisplayName, Mode=TwoWay}"
+                   AutomationProperties.Name="{x:Static rem:RemoteCopy.DisplayNameLabel}" />
+
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static rem:RemoteCopy.AliasLabel}" />
+          <TextBox x:Name="AliasBox"
+                   Classes="settings-mono"
+                   Text="{CompiledBinding Alias, Mode=TwoWay}"
+                   IsReadOnly="{CompiledBinding AliasIsFixed}"
+                   AutomationProperties.Name="{x:Static rem:RemoteCopy.AliasLabel}" />
+          <TextBlock Classes="settings-help"
+                     Text="{x:Static rem:RemoteCopy.AliasHelp}" />
+
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static rem:RemoteCopy.HostnameLabel}" />
+          <TextBox x:Name="HostnameBox"
+                   Classes="settings-mono"
+                   Text="{CompiledBinding Hostname, Mode=TwoWay}"
+                   AutomationProperties.Name="{x:Static rem:RemoteCopy.HostnameLabel}" />
+
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static rem:RemoteCopy.PortLabel}" />
+          <TextBox x:Name="PortBox"
+                   Classes="settings-mono"
+                   Text="{CompiledBinding PortText, Mode=TwoWay}"
+                   AutomationProperties.Name="{x:Static rem:RemoteCopy.PortLabel}" />
+
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static rem:RemoteCopy.UserLabel}" />
+          <TextBox x:Name="UserBox"
+                   Classes="settings-mono"
+                   Text="{CompiledBinding User, Mode=TwoWay}"
+                   AutomationProperties.Name="{x:Static rem:RemoteCopy.UserLabel}" />
+
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static rem:RemoteCopy.IdentityFileLabel}" />
+          <TextBox x:Name="IdentityFileBox"
+                   Classes="settings-mono"
+                   Text="{CompiledBinding IdentityFile, Mode=TwoWay}"
+                   AutomationProperties.Name="{x:Static rem:RemoteCopy.IdentityFileLabel}" />
+          <TextBlock Classes="settings-help"
+                     Text="{x:Static rem:RemoteCopy.IdentityFileHelp}" />
+
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static rem:RemoteCopy.ProxyJumpLabel}" />
+          <TextBox x:Name="ProxyJumpBox"
+                   Classes="settings-mono"
+                   Text="{CompiledBinding ProxyJump, Mode=TwoWay}"
+                   AutomationProperties.Name="{x:Static rem:RemoteCopy.ProxyJumpLabel}" />
+
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static rem:RemoteCopy.RootLabel}" />
+          <TextBox x:Name="RootBox"
+                   Classes="settings-mono"
+                   Text="{CompiledBinding RemoteWorkspaceRoot, Mode=TwoWay}"
+                   AutomationProperties.Name="{x:Static rem:RemoteCopy.RootLabel}" />
+          <TextBlock Classes="settings-help"
+                     Text="{x:Static rem:RemoteCopy.RootHelp}" />
+
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static rem:RemoteCopy.OmpPathLabel}" />
+          <TextBox x:Name="OmpPathBox"
+                   Classes="settings-mono"
+                   Text="{CompiledBinding RemoteOmpPath, Mode=TwoWay}"
+                   AutomationProperties.Name="{x:Static rem:RemoteCopy.OmpPathLabel}" />
+          <TextBlock Classes="settings-help"
+                     Text="{x:Static rem:RemoteCopy.OmpPathHelp}" />
+
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static rem:RemoteCopy.KeepAliveLabel}" />
+          <TextBox x:Name="KeepAliveBox"
+                   Classes="settings-mono"
+                   Text="{CompiledBinding KeepAliveText, Mode=TwoWay}"
+                   AutomationProperties.Name="{x:Static rem:RemoteCopy.KeepAliveLabel}" />
+
+          <CheckBox x:Name="ForwardAgentBox"
+                    Content="{x:Static rem:RemoteCopy.ForwardAgentLabel}"
+                    IsChecked="{CompiledBinding ForwardAgent, Mode=TwoWay}"
+                    AutomationProperties.Name="{x:Static rem:RemoteCopy.ForwardAgentLabel}" />
+          <TextBlock x:Name="ForwardAgentWarningText"
+                     Classes="tone-warning settings-help"
+                     IsVisible="{CompiledBinding ShowForwardAgentWarning}"
+                     Text="{x:Static rem:RemoteCopy.ForwardAgentWarning}" />
+
+          <!-- The problems of the current values, one line each. -->
+          <ItemsControl x:Name="IssueRows"
+                        ItemsSource="{CompiledBinding Issues}"
+                        AutomationProperties.Name="{x:Static rem:RemoteCopy.IssuesLabel}"
+                        AutomationProperties.LiveSetting="Polite">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="rem:RemoteFieldIssue">
+                <TextBlock Classes="tone-error settings-help"
+                           Text="{CompiledBinding Message}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <StackPanel Orientation="Horizontal"
+                      Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                      Margin="0,4,0,0">
+            <Button x:Name="SaveButton"
+                    Classes="primary"
+                    MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                    MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                    Content="{x:Static rem:RemoteCopy.SaveLabel}"
+                    IsEnabled="{CompiledBinding IsValid}"
+                    AutomationProperties.Name="{x:Static rem:RemoteCopy.SaveLabel}"
+                    Click="OnSaveClick" />
+            <Button x:Name="CancelEditButton"
+                    MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                    MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                    Content="{x:Static rem:RemoteCopy.CancelLabel}"
+                    AutomationProperties.Name="{x:Static rem:RemoteCopy.CancelLabel}"
+                    Click="OnCancelEditClick" />
+          </StackPanel>
+
+        </StackPanel>
+          </DataTemplate>
+         </ContentControl.ContentTemplate>
+        </ContentControl>
+      </Border>
+
+      <!-- The Containers and WSL section, when the head has podman or WSL support. -->
+      <ContentControl x:Name="RuntimeHost"
+                      Focusable="False"
+                      Margin="0,16,0,0" />
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

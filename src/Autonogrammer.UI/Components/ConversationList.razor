@@ -1,0 +1,38 @@
+@namespace Autonogrammer.UI.Components
+<div class="autonogrammer-conversation-list">
+    @if (Conversations.Count == 0)
+    {
+        <p class="autonogrammer-empty">No conversations yet.</p>
+    }
+    else
+    {
+        <ul aria-label="Conversations">
+            @foreach (var conversation in Conversations)
+            {
+                <li>
+                    <button type="button"
+                            class="autonogrammer-btn autonogrammer-conversation-item@(conversation.Id == SelectedId ? " is-selected" : null)"
+                            aria-current="@(conversation.Id == SelectedId ? "true" : null)"
+                            @onclick="() => OnSelected.InvokeAsync(conversation.Id)">
+                        <span class="autonogrammer-status-dot" data-status="@(conversation.Id == SelectedId ? "active" : "idle")" aria-hidden="true"></span>
+                        <span class="autonogrammer-conversation-title">@conversation.Title</span>
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    /// <summary>Gets the conversations to list, in display order.</summary>
+    [Parameter]
+    public IReadOnlyList<ConversationSummary> Conversations { get; set; } = [];
+
+    /// <summary>Gets the selected conversation identifier, if any.</summary>
+    [Parameter]
+    public string? SelectedId { get; set; }
+
+    /// <summary>Gets the callback invoked with the selected conversation identifier.</summary>
+    [Parameter]
+    public EventCallback<string> OnSelected { get; set; }
+}

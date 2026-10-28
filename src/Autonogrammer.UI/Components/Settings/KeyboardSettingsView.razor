@@ -1,0 +1,35 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits SettingsPageView<KeyboardSettingsPage>
+@using Autonogrammer.Presentation.Settings
+<SettingsPageFrame Page="Page" Title="@KeyboardCopy.Heading" Description="@KeyboardCopy.Description" Editable="false">
+    @if (Page.State != SettingsPageState.Ready)
+    {
+        <SettingsStateView Loading="@(Page.State == SettingsPageState.Loading)" Error="@(Page.State == SettingsPageState.Error ? Page.LoadError : null)" OnRetry="Retry" />
+    }
+    else if (Page.IsEmpty)
+    {
+        <p class="autonogrammer-settings-state">@KeyboardCopy.Empty</p>
+    }
+    else
+    {
+        foreach (var group in Page.Groups)
+        {
+            <div class="autonogrammer-settings-shortcut-group" role="group" aria-label="@group.Scope" @key="group.Scope">
+                <h4 class="autonogrammer-settings-section-title">@group.Scope</h4>
+                <ul class="autonogrammer-settings-list">
+                    @foreach (var row in group.Rows)
+                    {
+                        <li class="autonogrammer-settings-list-row" @key="row.Action" aria-label="@row.Summary">
+                            <span class="autonogrammer-settings-label">@row.Action</span>
+                            <kbd class="autonogrammer-settings-kbd">@row.Gesture</kbd>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    }
+</SettingsPageFrame>
+
+@code {
+    private Task Retry() => Page.LoadAsync(CancellationToken.None);
+}

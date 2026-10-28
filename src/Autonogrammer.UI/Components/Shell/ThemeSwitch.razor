@@ -1,0 +1,91 @@
+@namespace Autonogrammer.UI.Components.Shell
+@using Microsoft.JSInterop
+@using Autonogrammer.Presentation
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<div class="autonogrammer-segmented autonogrammer-theme-switch" role="group" aria-label="Theme">
+    @foreach (var option in Options)
+    {
+        <button type="button"
+                class="autonogrammer-segment"
+                aria-pressed="@(_loaded && _current == option.Value ? "true" : "false")"
+                @onclick="() => SelectAsync(option.Value)">@option.Label</button>
+    }
+</div>
+
+@code {
+    private const string ModulePath = "./_content/Autonogrammer.UI/scripts/autonogrammer-theme.js";
+
+    private static readonly (ThemePreference Value, string Label)[] Options =
+    [
+        (ThemePreference.System, "System"),
+        (ThemePreference.Light, "Light"),
+        (ThemePreference.Dark, "Dark"),
+    ];
+
+    private IJSObjectReference? _module;
+    private ThemePreference _current = ThemePreference.Light;
+    private bool _loaded;
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var module = await EnsureModuleAsync().ConfigureAwait(true);
+        var saved = await module.InvokeAsync<string?>("getTheme").ConfigureAwait(true);
+        _current = FromKey(saved);
+        _loaded = true;
+        StateHasChanged();
+    }
+
+    private async Task SelectAsync(ThemePreference choice)
+    {
+        _current = choice;
+        _loaded = true;
+        var module = await EnsureModuleAsync().ConfigureAwait(true);
+        await module.InvokeVoidAsync("setTheme", ToKey(choice)).ConfigureAwait(true);
+    }
+
+    private async Task<IJSObjectReference> EnsureModuleAsync()
+    {
+        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
+        return _module;
+    }
+
+    private static string ToKey(ThemePreference choice) => choice switch
+    {
+        ThemePreference.System => "system",
+        ThemePreference.Light => "light",
+        ThemePreference.Dark => "dark",
+        _ => throw new ArgumentOutOfRangeException(nameof(choice), choice, "Unknown theme preference."),
+    };
+
+    private static ThemePreference FromKey(string? key) => key switch
+    {
+        "system" => ThemePreference.System,
+        "dark" => ThemePreference.Dark,
+        _ => ThemePreference.Light,
+    };
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _module.DisposeAsync().ConfigureAwait(true);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the module went with it.
+        }
+    }
+}

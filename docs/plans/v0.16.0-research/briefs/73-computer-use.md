@@ -1,6 +1,6 @@
 # Brief 73: Computer Use (Cowork)
 
-Names are post-rename (`OmpOS` is `Autonogrammer`); the repo on disk still uses the old names until the rename tool is applied, and the line references below were read under the old names. Decision record: [ADR-0035](../../../decisions/ADR-0035-cowork-computer-use.md). Research: reports 07, 06, 08, 02, 09.
+Names are post-rename (`Autonogrammer` is `Autonogrammer`); the repo on disk still uses the old names until the rename tool is applied, and the line references below were read under the old names. Decision record: [ADR-0035](../../../decisions/ADR-0035-cowork-computer-use.md). Research: reports 07, 06, 08, 02, 09.
 
 ## Goal
 Cowork can look at and operate the user's own desktop (X11 verified here; Windows and macOS compile-checked) through 15 `computer.*` tools behind one policy gate, with per-application grants, local approval, a kill switch, an always-visible indicator and a local audit log. Off by default, never in Code mode, never in the cloud, never remotely approvable.

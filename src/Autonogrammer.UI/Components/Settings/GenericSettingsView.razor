@@ -1,0 +1,16 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits SettingsPageView<ISettingsPage>
+@using Autonogrammer.Presentation.Settings
+<SettingsPageFrame Page="Page" Title="@Page.Title" Description="@SettingsWebCopy.GenericUnavailable" Editable="false">
+    <p class="autonogrammer-settings-state" role="status" data-state="@StateText"><span class="autonogrammer-settings-label">@SettingsWebCopy.GenericState</span> @StateText</p>
+</SettingsPageFrame>
+
+@code {
+    private string StateText => Page switch
+    {
+        SettingsPageBase { State: SettingsPageState.Loading } => "Loading",
+        SettingsPageBase { State: SettingsPageState.Error } failed => "Error: " + failed.LoadError,
+        SettingsPageBase => "Ready",
+        _ => Page.IsDirty ? "Unsaved changes" : "Ready",
+    };
+}

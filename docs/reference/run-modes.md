@@ -10,59 +10,59 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-Run modes decide how much an agent may do without asking you. OmpOS uses Cursor's names and Cursor's file formats, so the files you wrote for Cursor keep working, and it says plainly where it does less than Cursor.
+Run modes decide how much an agent may do without asking you. Autonogrammer uses Cursor's names and Cursor's file formats, so the files you wrote for Cursor keep working, and it says plainly where it does less than Cursor.
 
 > **Status of this release** (recorded 2026-10-28, tree 7535859).
 >
-> - **Built, wired into the desktop head, proven by tests.** `HeadServices` builds a `RunModeHub` (`apps/OmpOS.Native/Composition/`); for each local session `SessionEngineSet` opens a `RunModePolicyHolder` (the `permissions.json`, `sandbox.json` and `run-mode.json` files are read again when their write time changes; an invalid file gives the defaults and a notice), gives the launch planner `--approval-mode` and a `bash:` overlay (`ConfigOverlayWriter`), and wraps the permission resolver in `RunModePermissionResolver` (`EngineComposition`). Saving on the Run mode page refreshes the policy of every open session. Tests: `RunModeLaunchTests`, `RunModePermissionResolverTests`, `RunModePolicyHolderTests`, `RunModePageViewTests`, and `EnginePermissionOrderTests` (the order is hook deny, approval policy, run mode, then you; Run Everything admits all 10 ACP tool kinds; a deny rule still stops a command in Run Everything). Settings > Run mode rendered in the Xvfb desktop smoke (`docs/runbooks/evidence/desktop-app-2026-10-28/settings-04-runmode.png`; the page opened scrolled down and was fixed).
-> - **Built, not wired.** A changed mode reaches omp's `--approval-mode` only when the engine of a session is composed again: a running omp keeps the policy it started with. For ssh, container and WSL sessions the head wraps the resolver but whether the remote omp is started with `--approval-mode` is **UNVERIFIED**: `src/OmpOS.Harness.Remote` builds `omp acp` with no approval argument of its own, so the remote omp may run with its own default (`yolo`). The web Run mode page is an information page with a desktop notice. The Agents page terminal auto-run switch is separate (see the last section).
+> - **Built, wired into the desktop head, proven by tests.** `HeadServices` builds a `RunModeHub` (`apps/Autonogrammer.Native/Composition/`); for each local session `SessionEngineSet` opens a `RunModePolicyHolder` (the `permissions.json`, `sandbox.json` and `run-mode.json` files are read again when their write time changes; an invalid file gives the defaults and a notice), gives the launch planner `--approval-mode` and a `bash:` overlay (`ConfigOverlayWriter`), and wraps the permission resolver in `RunModePermissionResolver` (`EngineComposition`). Saving on the Run mode page refreshes the policy of every open session. Tests: `RunModeLaunchTests`, `RunModePermissionResolverTests`, `RunModePolicyHolderTests`, `RunModePageViewTests`, and `EnginePermissionOrderTests` (the order is hook deny, approval policy, run mode, then you; Run Everything admits all 10 ACP tool kinds; a deny rule still stops a command in Run Everything). Settings > Run mode rendered in the Xvfb desktop smoke (`docs/runbooks/evidence/desktop-app-2026-10-28/settings-04-runmode.png`; the page opened scrolled down and was fixed).
+> - **Built, not wired.** A changed mode reaches omp's `--approval-mode` only when the engine of a session is composed again: a running omp keeps the policy it started with. For ssh, container and WSL sessions the head wraps the resolver but whether the remote omp is started with `--approval-mode` is **UNVERIFIED**: `src/Autonogrammer.Harness.Remote` builds `omp acp` with no approval argument of its own, so the remote omp may run with its own default (`yolo`). The web Run mode page is an information page with a desktop notice. The Agents page terminal auto-run switch is separate (see the last section).
 > - **Not live-verified.** No live omp session and no model turn ran (open question OD-07): the request field names omp sends are read from its source, not from a run. Nothing ran on Windows, macOS or Android. Auto-review has no classifier by design.
 >
 > The "Where it is enforced" table says what each part does.
 
 ## The three modes
 
-| Mode | What it does in OmpOS |
+| Mode | What it does in Autonogrammer |
 | --- | --- |
 | **Auto-review** (default) | A call that matches an allow rule runs. A read-only command from a short built-in list (below) runs when every file it names is inside the read boundary. A call that matches a deny rule is refused. Every other call asks you. |
 | **Allowlist** | A call that matches an allow rule runs. A call that matches a deny rule is refused. Every other call asks you. |
-| **Run Everything** | Every call runs. omp asks OmpOS nothing in this mode. |
+| **Run Everything** | Every call runs. omp asks Autonogrammer nothing in this mode. |
 
-**Auto-review's classifier is not available in OmpOS.** In Cursor, Auto-review sends each call it cannot settle to a small hosted model on Cursor's servers. OmpOS has no hosted model and sends nothing anywhere itself, so a call the classifier would have reviewed asks you. This was decided, not left out by accident: adding a classifier would mean OmpOS choosing a model provider and sending your commands to it. The `autoRun.allow_instructions` and `autoRun.block_instructions` sentences are read, kept and shown on the Run mode page. They are not enforced, because only a model can act on a sentence.
+**Auto-review's classifier is not available in Autonogrammer.** In Cursor, Auto-review sends each call it cannot settle to a small hosted model on Cursor's servers. Autonogrammer has no hosted model and sends nothing anywhere itself, so a call the classifier would have reviewed asks you. This was decided, not left out by accident: adding a classifier would mean Autonogrammer choosing a model provider and sending your commands to it. The `autoRun.allow_instructions` and `autoRun.block_instructions` sentences are read, kept and shown on the Run mode page. They are not enforced, because only a model can act on a sentence.
 
 The known-safe list (Auto-review only): `pwd`, `ls`, `cat`, `head`, `tail`, `wc`, `echo`, `which`, `uname`, `whoami`, `grep`, and `git status`, `git diff`, `git log`, `git show`, `git rev-parse`, `git ls-files`, `git blame`. A command line with a redirect, a substitution, a subshell, a background job, a `git` option that writes or runs a program (`--output`, `--ext-diff`, `--textconv`, `-c`) or an argument outside the read boundary is not on the list and asks.
 
-The mode you choose is kept in `~/.ompos/run-mode.json` as `{ "mode": "auto-review" }` (`allowlist`, `unrestricted`). A new mode applies to agents you start afterwards: omp's approval policy belongs to the process.
+The mode you choose is kept in `~/.autonogrammer/run-mode.json` as `{ "mode": "auto-review" }` (`allowlist`, `unrestricted`). A new mode applies to agents you start afterwards: omp's approval policy belongs to the process.
 
 ## What a call is judged on
 
 | Call | Runs without asking when | Asks when |
 | --- | --- | --- |
-| Shell command (ACP kind `execute`) | every simple command in it matches a `Shell` allow rule or terminal allowlist entry; in Auto-review also when it is known-safe | any other case, including a line OmpOS cannot read with confidence |
+| Shell command (ACP kind `execute`) | every simple command in it matches a `Shell` allow rule or terminal allowlist entry; in Auto-review also when it is known-safe | any other case, including a line Autonogrammer cannot read with confidence |
 | MCP tool | it matches an `Mcp` allow rule or an `mcpAllowlist` entry | otherwise |
 | Web fetch (kind `fetch`) | its host matches a `WebFetch` allow rule | otherwise |
 | Read or search of files (kinds `read`, `search`) | every file is inside the read boundary, or matches a `Read` allow rule | a file is outside the boundary |
 | Edit, delete or move (kinds `edit`, `delete`, `move`) | every file is inside the workspace and none is protected, or the file matches a `Write` allow rule | a file is outside the workspace or protected |
 | Anything else | Run Everything only | always |
 
-A call whose command, files or address OmpOS could not read from omp's request asks. A call that matches a deny rule is refused in Auto-review and Allowlist, before any allow rule is looked at.
+A call whose command, files or address Autonogrammer could not read from omp's request asks. A call that matches a deny rule is refused in Auto-review and Allowlist, before any allow rule is looked at.
 
-Protected paths always ask, whatever the allow rules say: `.ompos/*.json` and `.ompos/**/*.json`, `.cursor/**/*.json`, `.claude/**/*.json`, `.vscode/**`, `*.code-workspace`, `.git/hooks/**`, `.git/config`, `.git/info/attributes`, `.cursorignore`, and `~/.ompos/**/*.json` and `~/.cursor/**/*.json`. An agent therefore cannot widen its own permissions without you.
+Protected paths always ask, whatever the allow rules say: `.autonogrammer/*.json` and `.autonogrammer/**/*.json`, `.cursor/**/*.json`, `.claude/**/*.json`, `.vscode/**`, `*.code-workspace`, `.git/hooks/**`, `.git/config`, `.git/info/attributes`, `.cursorignore`, and `~/.autonogrammer/**/*.json` and `~/.cursor/**/*.json`. An agent therefore cannot widen its own permissions without you.
 
 The order of everything that can say no: a hook (see [Hooks](hooks.md)) may refuse a call first; then the approval policy of the session (which tool kinds may reach a decision at all); then the deny rules; then the mode and the allow rules; then you.
 
 ## The files
 
-OmpOS reads up to eight files. Lowest precedence first:
+Autonogrammer reads up to eight files. Lowest precedence first:
 
 | Order | Scope | `permissions.json` | `sandbox.json` |
 | --- | --- | --- | --- |
 | 1 | User, Cursor | `~/.cursor/permissions.json` | `~/.cursor/sandbox.json` |
-| 2 | User, OmpOS | `~/.ompos/permissions.json` | `~/.ompos/sandbox.json` |
+| 2 | User, Autonogrammer | `~/.autonogrammer/permissions.json` | `~/.autonogrammer/sandbox.json` |
 | 3 | Project, Cursor | `<workspace>/.cursor/permissions.json` | `<workspace>/.cursor/sandbox.json` |
-| 4 | Project, OmpOS | `<workspace>/.ompos/permissions.json` | `<workspace>/.ompos/sandbox.json` |
+| 4 | Project, Autonogrammer | `<workspace>/.autonogrammer/permissions.json` | `<workspace>/.autonogrammer/sandbox.json` |
 
-Both formats allow comments and trailing commas. Unknown keys are ignored. A file that cannot be used (invalid JSON, not an object, larger than 256 KiB, a folder) is ignored as a whole and reported on the Run mode page as a problem; reading never fails and never stops the other files. OmpOS writes only the OmpOS files (`.ompos`), only when you change a value on the Run mode page, and refuses a file that holds comments (it would lose them): edit that one by hand. A Cursor file is never written.
+Both formats allow comments and trailing commas. Unknown keys are ignored. A file that cannot be used (invalid JSON, not an object, larger than 256 KiB, a folder) is ignored as a whole and reported on the Run mode page as a problem; reading never fails and never stops the other files. Autonogrammer writes only the Autonogrammer files (`.autonogrammer`), only when you change a value on the Run mode page, and refuses a file that holds comments (it would lose them): edit that one by hand. A Cursor file is never written.
 
 ### permissions.json
 
@@ -71,7 +71,7 @@ Both formats allow comments and trailing commas. Unknown keys are ignored. A fil
 | `terminalAllowlist` | Commands that run without asking. `git` matches any `git` command (not `gitk`); `git status` matches commands that start with those two words; `npm:install*` matches `npm` with arguments that match `install*`. Case-sensitive. |
 | `mcpAllowlist` | MCP tools that run without asking, written `server:tool`. `*` matches any run of characters in either part; both parts ignore case. An entry without `:` is ignored. |
 | `autoRun.allow_instructions`, `autoRun.block_instructions` | Sentences for Auto-review's classifier. Kept and shown; not enforced (see above). |
-| `permissions.allow`, `permissions.deny` | **OmpOS addition.** Permission tokens, the shape Cursor's CLI uses in its own configuration. Cursor's `permissions.json` has no deny list. |
+| `permissions.allow`, `permissions.deny` | **Autonogrammer addition.** Permission tokens, the shape Cursor's CLI uses in its own configuration. Cursor's `permissions.json` has no deny list. |
 
 Lists from every file are joined, as in Cursor. Duplicates are shown once.
 
@@ -83,7 +83,7 @@ Lists from every file are joined, as in Cursor. Duplicates are shown once.
 
 | Token | Matches |
 | --- | --- |
-| `Shell(git)` | the command's first word; same forms as `terminalAllowlist` (`git status`, `curl:*`). For deny rules OmpOS also sees through `sudo`, `env`, `nohup`, `time`, `xargs` and similar wrappers, `sh -c '...'` text, substitutions and subshells, and matches `/bin/rm` as `rm`. An allow rule needs every simple command of a line (`a && b`, `a | b`) to match, and never matches a line with a redirect, substitution, subshell, background job or leading `NAME=value`. |
+| `Shell(git)` | the command's first word; same forms as `terminalAllowlist` (`git status`, `curl:*`). For deny rules Autonogrammer also sees through `sudo`, `env`, `nohup`, `time`, `xargs` and similar wrappers, `sh -c '...'` text, substitutions and subshells, and matches `/bin/rm` as `rm`. An allow rule needs every simple command of a line (`a && b`, `a | b`) to match, and never matches a line with a redirect, substitution, subshell, background job or leading `NAME=value`. |
 | `Read(src/**)`, `Write(docs/**)` | a file. `*` matches inside one folder level, `**` any number of levels (also none), `?` one character. A relative pattern is anchored at the workspace root: `.env*` is the workspace's `.env` files, `**/.env*` those at any depth. A pattern with no wildcard also covers everything below it. `~` is your home. |
 | `WebFetch(docs.example.com)` | the host of the address. `*` any host; `*.example.com` any subdomain (not `example.com` itself). Paths and ports are ignored. |
 | `Mcp(github:*)` | `server:tool` as in `mcpAllowlist`. |
@@ -97,9 +97,9 @@ An invalid token is ignored with a problem; the rest of the file applies. Tokens
 | Key | Meaning |
 | --- | --- |
 | `readBoundary` | `system` (default): the agent may read anywhere without asking. `workspace`: it reads freely inside the workspace and the read allowlist; anything else asks. |
-| `additionalReadPaths` | The read allowlist: folders (everything below), globs such as `~/notes/*.md`, and `~` paths. Applies only with `readBoundary: workspace`. Under `workspace` the folders `skills`, `rules` and `plugins` of `~/.ompos` and `~/.cursor` are always readable. |
+| `additionalReadPaths` | The read allowlist: folders (everything below), globs such as `~/notes/*.md`, and `~` paths. Applies only with `readBoundary: workspace`. Under `workspace` the folders `skills`, `rules` and `plugins` of `~/.autonogrammer` and `~/.cursor` are always readable. |
 
-A value in a file replaces the one from Settings. The workspace file wins over the user file, and an OmpOS file wins over a Cursor file in the same place. `additionalReadPaths` is replaced as a whole, not joined. An untrusted workspace can only make the boundary stricter: its `workspace` boundary applies; its `system` boundary and its read paths are ignored. Cursor's other `sandbox.json` keys (network policy, writable paths) describe an operating-system sandbox and are ignored.
+A value in a file replaces the one from Settings. The workspace file wins over the user file, and an Autonogrammer file wins over a Cursor file in the same place. `additionalReadPaths` is replaced as a whole, not joined. An untrusted workspace can only make the boundary stricter: its `workspace` boundary applies; its `system` boundary and its read paths are ignored. Cursor's other `sandbox.json` keys (network policy, writable paths) describe an operating-system sandbox and are ignored.
 
 The read boundary does not apply in Run Everything.
 
@@ -107,17 +107,17 @@ The read boundary does not apply in Run Everything.
 
 omp has no operating-system sandbox: no Landlock, no Seatbelt, no seccomp. Its approval policy belongs to the omp process (`omp acp --approval-mode`; ACP has no per-session field), and its `bash.patterns` setting is "an approval policy, not containment".
 
-| Mode | `--approval-mode` OmpOS passes to omp | What omp then asks OmpOS |
+| Mode | `--approval-mode` Autonogrammer passes to omp | What omp then asks Autonogrammer |
 | --- | --- | --- |
-| Auto-review, Allowlist | `always-ask-cached` when the read boundary is `workspace` or a `Read` deny rule exists; otherwise `always-ask` | every file read (cached form only), every write, every shell command, MCP tool and fetch; OmpOS settles each from the files, or asks you |
+| Auto-review, Allowlist | `always-ask-cached` when the read boundary is `workspace` or a `Read` deny rule exists; otherwise `always-ask` | every file read (cached form only), every write, every shell command, MCP tool and fetch; Autonogrammer settles each from the files, or asks you |
 | Run Everything | `yolo` | nothing |
 
-`always-ask` lets omp approve file reads itself, so OmpOS cannot see them; that is why a `workspace` boundary or a `Read` deny rule needs the cached form. omp's default is `yolo`: a launch that passes no flag asks nothing.
+`always-ask` lets omp approve file reads itself, so Autonogrammer cannot see them; that is why a `workspace` boundary or a `Read` deny rule needs the cached form. omp's default is `yolo`: a launch that passes no flag asks nothing.
 
 | Rule | Auto-review and Allowlist | Run Everything |
 | --- | --- | --- |
-| `Shell` deny | enforced by OmpOS on every call omp asks about, and by omp's own `bash.patterns` (`deny` is absolute) | enforced by omp's `bash.patterns` only; they match a command line that starts with the denied command, not one buried in a pipeline |
-| `Read`, `Write`, `WebFetch`, `Mcp` deny | enforced by OmpOS on every call omp asks about | **not enforced**: omp does not ask |
+| `Shell` deny | enforced by Autonogrammer on every call omp asks about, and by omp's own `bash.patterns` (`deny` is absolute) | enforced by omp's `bash.patterns` only; they match a command line that starts with the denied command, not one buried in a pipeline |
+| `Read`, `Write`, `WebFetch`, `Mcp` deny | enforced by Autonogrammer on every call omp asks about | **not enforced**: omp does not ask |
 | Allow rules, allowlists | skip the question | not needed |
 | Read boundary | enforced for the agent's file tools | not applied |
 
@@ -131,4 +131,4 @@ What this does not do:
 
 ## The terminal auto-run switch
 
-The Agents page switch "Run terminal commands without asking" governs the commands OmpOS itself proposes in its terminal, not the tool calls the agent makes through omp. On the Run mode page's terms it is Run Everything for that one path, and off is Allowlist: every proposed command waits for you. A later change can let the same allowlist and deny rules decide those proposals, using the same engine with a shell request.
+The Agents page switch "Run terminal commands without asking" governs the commands Autonogrammer itself proposes in its terminal, not the tool calls the agent makes through omp. On the Run mode page's terms it is Run Everything for that one path, and off is Allowlist: every proposed command waits for you. A later change can let the same allowlist and deny rules decide those proposals, using the same engine with a shell request.

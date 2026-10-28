@@ -1,0 +1,19 @@
+@namespace Autonogrammer.UI.Components.Blocks
+@using Autonogrammer.Contracts.Ui
+<div class="autonogrammer-block autonogrammer-error" role="alert">
+    <span class="autonogrammer-error-message">@Block.Message</span>
+    @if (Block.Retryable)
+    {
+        <button type="button" class="autonogrammer-btn" aria-label="Retry failed operation" @onclick="() => OnRetry.InvokeAsync()">Retry</button>
+    }
+</div>
+
+@code {
+    /// <summary>Gets the error block to render.</summary>
+    [Parameter, EditorRequired]
+    public ErrorBlock Block { get; set; } = null!;
+
+    /// <summary>Gets the callback invoked when the retry affordance is activated.</summary>
+    [Parameter]
+    public EventCallback OnRetry { get; set; }
+}

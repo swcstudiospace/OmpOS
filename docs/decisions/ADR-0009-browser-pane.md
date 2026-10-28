@@ -2,8 +2,8 @@
 
 - Status: Accepted for Linux only, on the WebKitGTK adapter. Windows: not measured. macOS: not measured.
 - Date: 2026-10-22
-- Deciders: ompos-maintainers
-- Scope: the embedded browser pane for ADE-15 (`docs/plans/ade-harness-plan.md`, risk R-3). Covers the control choice, the Linux engine, and the spike that measured it in `tools/browser-spike`. The spike is not part of `OmpOS.slnx`, `OmpOS.Linux.slnf` or any gate, and it adds no product code. Does not cover navigation policy, cookies, the pane's place in the shell, or the Windows and macOS heads.
+- Deciders: autonogrammer-maintainers
+- Scope: the embedded browser pane for ADE-15 (`docs/plans/ade-harness-plan.md`, risk R-3). Covers the control choice, the Linux engine, and the spike that measured it in `tools/browser-spike`. The spike is not part of `Autonogrammer.slnx`, `Autonogrammer.Linux.slnf` or any gate, and it adds no product code. Does not cover navigation policy, cookies, the pane's place in the shell, or the Windows and macOS heads.
 
 ## Context
 
@@ -56,11 +56,11 @@ $ export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH DOTNET_NOLOGO=1 DOTN
 $ cd tools/browser-spike
 $ dotnet --version
 10.0.402
-$ dotnet restore OmpOS.BrowserSpike.csproj --force-evaluate
+$ dotnet restore Autonogrammer.BrowserSpike.csproj --force-evaluate
   Determining projects to restore...
-  Restored /root/src/repos/ompos/tools/browser-spike/OmpOS.BrowserSpike.csproj (in 34.79 sec).
+  Restored /root/src/repos/autonogrammer/tools/browser-spike/Autonogrammer.BrowserSpike.csproj (in 34.79 sec).
 exit=0
-$ dotnet build OmpOS.BrowserSpike.csproj -c Release --no-restore -warnaserror
+$ dotnet build Autonogrammer.BrowserSpike.csproj -c Release --no-restore -warnaserror
 Build succeeded.
     0 Warning(s)
     0 Error(s)
@@ -76,7 +76,7 @@ Earlier build attempts failed on analyzer findings (MA0048, MA0006, IDE0005, VST
 Adapter list:
 
 ```
-$ dotnet bin/Release/net10.0/OmpOS.BrowserSpike.dll --list-adapters
+$ dotnet bin/Release/net10.0/Autonogrammer.BrowserSpike.dll --list-adapters
 Unknown
 WebView2
 WebView1
@@ -92,7 +92,7 @@ exit=0
 Run A, default adapter selection:
 
 ```
-$ timeout 120 xvfb-run -a dotnet bin/Release/net10.0/OmpOS.BrowserSpike.dll
+$ timeout 120 xvfb-run -a dotnet bin/Release/net10.0/Autonogrammer.BrowserSpike.dll
 libEGL warning: DRI3 error: Could not get DRI3 device
 libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
 SPIKE PASS load+selector+box: adapter=DetailedWebViewAdapterInfo { Type = WebKitGtk, Engine = WebKit, Version = 2.52.6, IsSupported = True, IsInstalled = True, UnavailableReason = , SupportedScenarios = NativeDialog } selector=#go resolves=True box=(40,60,120,32)
@@ -102,7 +102,7 @@ exit=0
 Run B, forced WPE adapter:
 
 ```
-$ OMPOS_SPIKE_ADAPTER=WpeWebKit timeout 120 xvfb-run -a dotnet bin/Release/net10.0/OmpOS.BrowserSpike.dll
+$ AUTONOGRAMMER_SPIKE_ADAPTER=WpeWebKit timeout 120 xvfb-run -a dotnet bin/Release/net10.0/Autonogrammer.BrowserSpike.dll
 SPIKE FAIL deadline: no result within 60 s; adapter=DetailedWebViewAdapterInfo { Type = Unknown, Engine = Unknown, Version = , IsSupported = False, IsInstalled = False, UnavailableReason = The adapter is not supported on the current platform., SupportedScenarios = None }
 exit=1
 ```
@@ -110,7 +110,7 @@ exit=1
 Run C, forced WebKitGTK adapter:
 
 ```
-$ OMPOS_SPIKE_ADAPTER=WebKitGtk timeout 120 xvfb-run -a dotnet bin/Release/net10.0/OmpOS.BrowserSpike.dll
+$ AUTONOGRAMMER_SPIKE_ADAPTER=WebKitGtk timeout 120 xvfb-run -a dotnet bin/Release/net10.0/Autonogrammer.BrowserSpike.dll
 libEGL warning: DRI3 error: Could not get DRI3 device
 libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
 SPIKE PASS load+selector+box: adapter=DetailedWebViewAdapterInfo { Type = WebKitGtk, Engine = WebKit, Version = 2.52.6, IsSupported = True, IsInstalled = True, UnavailableReason = , SupportedScenarios = NativeDialog } selector=#go resolves=True box=(40,60,120,32)
@@ -120,7 +120,7 @@ exit=0
 No display, no `xvfb-run`:
 
 ```
-$ env -u DISPLAY -u WAYLAND_DISPLAY dotnet bin/Release/net10.0/OmpOS.BrowserSpike.dll
+$ env -u DISPLAY -u WAYLAND_DISPLAY dotnet bin/Release/net10.0/Autonogrammer.BrowserSpike.dll
 Unhandled exception. System.Exception: XOpenDisplay failed
    at Avalonia.X11.AvaloniaX11Platform.Initialize(X11PlatformOptions options)
    at Avalonia.AvaloniaX11PlatformExtensions.<>c.<UseX11>b__0_0()

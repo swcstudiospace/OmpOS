@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Rebuild every OmpOS brand asset from assets/brand/src.
+# Rebuild every Autonogrammer brand asset from assets/brand/src.
 #
 # Prerequisites on PATH: google-chrome (headless), pdftocairo (poppler-utils),
 # optipng, convert (ImageMagick 6, used only for PNG -> ICO), python3 with the
 # modules cairosvg and Pillow. No font tooling is needed: Chrome shapes the TTFs in
-# src/OmpOS.Native.Views/Assets/Fonts and pdftocairo outlines the glyphs.
-# If python3 lacks the modules, point OMPOS_BRAND_PYTHON at a venv interpreter:
-#   python3 -m venv /tmp/ompos-brand-venv && /tmp/ompos-brand-venv/bin/pip install cairosvg pillow
-#   OMPOS_BRAND_PYTHON=/tmp/ompos-brand-venv/bin/python scripts/brand/build-brand.sh
+# src/Autonogrammer.Native.Views/Assets/Fonts and pdftocairo outlines the glyphs.
+# If python3 lacks the modules, point AUTONOGRAMMER_BRAND_PYTHON at a venv interpreter:
+#   python3 -m venv /tmp/autonogrammer-brand-venv && /tmp/autonogrammer-brand-venv/bin/pip install cairosvg pillow
+#   AUTONOGRAMMER_BRAND_PYTHON=/tmp/autonogrammer-brand-venv/bin/python scripts/brand/build-brand.sh
 # The build is idempotent: unchanged files are not rewritten.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-python="${OMPOS_BRAND_PYTHON:-python3}"
+python="${AUTONOGRAMMER_BRAND_PYTHON:-python3}"
 
 missing=0
 for tool in google-chrome pdftocairo optipng convert "$python"; do

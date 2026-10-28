@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Blocks.ToolResultBlockView">
+
+  <!-- A tool result is a sunken card indented under its call row (parity spec 4.6): a small header with the tool and the status words,
+       then the output in the mono face, at most 240 px high and scrolling past that. -->
+  <Border Classes="card-sunken"
+          Margin="22,0,0,0"
+          Padding="{DynamicResource Autonogrammer.Space.Sm}">
+    <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+      <Grid ColumnDefinitions="*,Auto"
+            ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+        <TextBlock x:Name="ResultTitle"
+                   Grid.Column="0"
+                   Classes="muted small strong"
+                   TextTrimming="CharacterEllipsis"
+                   MaxLines="1" />
+        <TextBlock x:Name="ResultStatus"
+                   Grid.Column="1"
+                   Classes="muted small"
+                   VerticalAlignment="Center" />
+      </Grid>
+
+      <ScrollViewer MaxHeight="240"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+        <TextBlock x:Name="OutputText"
+                   FontFamily="{DynamicResource Autonogrammer.Font.Mono}"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Mono}"
+                   LineHeight="{DynamicResource Autonogrammer.Font.LineHeight.Mono}"
+                   TextWrapping="Wrap" />
+      </ScrollViewer>
+
+    </StackPanel>
+  </Border>
+
+</UserControl>

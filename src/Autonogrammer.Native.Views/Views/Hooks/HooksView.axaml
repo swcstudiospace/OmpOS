@@ -1,0 +1,152 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:hooks="clr-namespace:Autonogrammer.Native.Views.Hooks"
+             x:Class="Autonogrammer.Native.Views.Hooks.HooksView">
+
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="{DynamicResource Autonogrammer.Space.Sm}"
+                Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+      <TextBlock x:Name="StateHeading"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                 FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+                 AutomationProperties.Name="Hooks state"
+                 AutomationProperties.LiveSetting="Polite" />
+
+      <TextBlock x:Name="LoadingText"
+                 Classes="muted"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 Text="Loading hooks from the loaded plugins." />
+
+      <TextBlock x:Name="EmptyText"
+                 Classes="muted"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 Text="No loaded plugin declares a hook." />
+
+      <TextBlock x:Name="ErrorText"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Hooks load error"
+                 AutomationProperties.LiveSetting="Assertive" />
+
+      <StackPanel x:Name="ListPanel"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+        <TextBlock x:Name="SummaryText"
+                   Classes="muted"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   TextWrapping="Wrap"
+                   AutomationProperties.Name="Hooks summary" />
+
+        <ItemsControl x:Name="HookRows"
+                      AutomationProperties.Name="Hooks in run order">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="hooks:HookRow">
+              <Border Classes="card"
+                      Margin="0,0,0,8"
+                      Padding="{DynamicResource Autonogrammer.Space.Sm}">
+                <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+                  <TextBlock Text="{CompiledBinding Id}"
+                             FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+                  <TextBlock Text="{CompiledBinding TriggerText}"
+                             FontSize="{DynamicResource Autonogrammer.Font.Size.Label}" />
+                  <TextBlock Text="{CompiledBinding CommandText}"
+                             FontFamily="{DynamicResource Autonogrammer.Font.Mono}"
+                             FontSize="{DynamicResource Autonogrammer.Font.Size.Mono}"
+                             TextWrapping="Wrap" />
+                  <TextBlock Text="{CompiledBinding WorkingDirectoryText}"
+                             FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                             TextWrapping="Wrap" />
+                  <TextBlock Text="{CompiledBinding EnabledText}"
+                             FontSize="{DynamicResource Autonogrammer.Font.Size.Label}" />
+                  <TextBlock Text="{CompiledBinding ConsentText}"
+                             FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                             TextWrapping="Wrap" />
+
+                  <StackPanel IsVisible="{CompiledBinding IsDegraded}"
+                              Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+                    <TextBlock Text="Degraded"
+                               FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+                               FontSize="{DynamicResource Autonogrammer.Font.Size.Label}" />
+                    <TextBlock Text="{CompiledBinding DegradedText}"
+                               FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                               TextWrapping="Wrap" />
+                  </StackPanel>
+
+                  <WrapPanel>
+                    <Button Classes="sm" Content="Enable"
+                            Margin="0,0,4,4"
+                            AutomationProperties.Name="{CompiledBinding EnableName}"
+                            Command="{CompiledBinding EnableCommand}" />
+                    <Button Classes="sm" Content="Disable"
+                            Margin="0,0,4,4"
+                            AutomationProperties.Name="{CompiledBinding DisableName}"
+                            Command="{CompiledBinding DisableCommand}" />
+                    <Button Classes="sm" Content="Move up"
+                            Margin="0,0,4,4"
+                            AutomationProperties.Name="{CompiledBinding MoveUpName}"
+                            Command="{CompiledBinding MoveUpCommand}" />
+                    <Button Classes="sm" Content="Move down"
+                            Margin="0,0,4,4"
+                            AutomationProperties.Name="{CompiledBinding MoveDownName}"
+                            Command="{CompiledBinding MoveDownCommand}" />
+                    <Button Classes="sm" Content="{CompiledBinding ReviewText}"
+                            Margin="0,0,4,4"
+                            AutomationProperties.Name="{CompiledBinding ReviewName}"
+                            Command="{CompiledBinding ReviewCommand}" />
+                  </WrapPanel>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+
+      <StackPanel x:Name="ConsentPanel"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <TextBlock Text="Consent"
+                   FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}" />
+        <TextBlock x:Name="ConsentPrompt"
+                   Classes="muted"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   TextWrapping="Wrap" />
+
+        <StackPanel x:Name="ConsentDetails"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+          <TextBlock x:Name="ConsentTrigger"
+                     FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                     TextWrapping="Wrap" />
+          <TextBlock x:Name="ConsentDirectory"
+                     FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                     TextWrapping="Wrap"
+                     AutomationProperties.Name="Consent working directory" />
+          <TextBlock Text="Arguments, executable first"
+                     FontSize="{DynamicResource Autonogrammer.Font.Size.Label}" />
+          <TextBlock x:Name="ConsentArguments"
+                     FontFamily="{DynamicResource Autonogrammer.Font.Mono}"
+                     FontSize="{DynamicResource Autonogrammer.Font.Size.Mono}"
+                     TextWrapping="Wrap"
+                     AutomationProperties.Name="Consent argument list" />
+        </StackPanel>
+
+        <Button x:Name="ApproveButton"
+                Classes="primary sm"
+                Content="Approve consent"
+                HorizontalAlignment="Left" />
+      </StackPanel>
+
+      <TextBlock x:Name="ActionErrorText"
+                 IsVisible="False"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Hooks action error"
+                 AutomationProperties.LiveSetting="Assertive" />
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

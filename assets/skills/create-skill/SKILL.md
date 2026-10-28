@@ -14,10 +14,10 @@ A skill is a folder whose `SKILL.md` teaches the agent a repeatable task. The ag
 Ask in one message only for what you cannot infer:
 
 - The task the skill performs and when it should be used.
-- Whether it is for this project (`.ompos/skills/<name>/`) or for the user in every project (`~/.ompos/skills/<name>/`). Default to the project.
+- Whether it is for this project (`.autonogrammer/skills/<name>/`) or for the user in every project (`~/.autonogrammer/skills/<name>/`). Default to the project.
 - Whether the model may choose it on its own (default) or only when the user types it (set `disable-model-invocation: true`). Anything that changes files outside the workspace, deploys, deletes, or sends messages should be manual only.
 
-OmpOS also reads skills from `.omp`, `.cursor`, `.claude`, `.codex` and `.agents` folders. If the repository already keeps its skills in one of them, use that folder so the team has one place.
+Autonogrammer also reads skills from `.omp`, `.cursor`, `.claude`, `.codex` and `.agents` folders. If the repository already keeps its skills in one of them, use that folder so the team has one place.
 
 ## 2. Name it
 

@@ -6,12 +6,12 @@
 # the repository.
 set -euo pipefail
 
-POSTGRES_NAME=ompos-test-postgres
-DRAGONFLY_NAME=ompos-test-dragonfly
+POSTGRES_NAME=autonogrammer-test-postgres
+DRAGONFLY_NAME=autonogrammer-test-dragonfly
 POSTGRES_IMAGE=docker.io/timescale/timescaledb:2.13.1-pg16@sha256:1b2b5508848bbbbd671e02aeafd75fefb57771168f0782b6842bfb2f66af444b
 DRAGONFLY_IMAGE=docker.io/dragonflydb/dragonfly:v1.27.1@sha256:385cb73078f4dabe43d536766842eab444f3d791b0fcf86951decdcbcda37917
-DB=ompos_test
-DB_USER=ompos
+DB=autonogrammer_test
+DB_USER=autonogrammer
 READY_BUDGET_SECONDS=90
 
 # Prints the host port that Podman published for container port $2 of container $1.
@@ -81,11 +81,11 @@ up() {
     exit 1
   fi
 
-  env_file="$(mktemp "${TMPDIR:-/tmp}/ompos-test-services.XXXXXX")"
+  env_file="$(mktemp "${TMPDIR:-/tmp}/autonogrammer-test-services.XXXXXX")"
   chmod 600 "$env_file"
-  printf "export OMPOS_TEST_POSTGRES_CONNECTION='Host=127.0.0.1;Port=%s;Database=%s;Username=%s;Password=%s'\n" \
+  printf "export AUTONOGRAMMER_TEST_POSTGRES_CONNECTION='Host=127.0.0.1;Port=%s;Database=%s;Username=%s;Password=%s'\n" \
     "$postgres_port" "$DB" "$DB_USER" "$postgres_password" >>"$env_file"
-  printf "export OMPOS_TEST_DRAGONFLY_CONNECTION='127.0.0.1:%s,password=%s,abortConnect=false'\n" \
+  printf "export AUTONOGRAMMER_TEST_DRAGONFLY_CONNECTION='127.0.0.1:%s,password=%s,abortConnect=false'\n" \
     "$dragonfly_port" "$dragonfly_password" >>"$env_file"
   echo "$env_file"
 }

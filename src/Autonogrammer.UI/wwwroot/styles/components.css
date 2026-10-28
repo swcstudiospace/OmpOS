@@ -1,0 +1,395 @@
+/* Shared controls: buttons, icon buttons, chips, inputs, list rows, badges, tooltip, dialog, tabs, toggle and segmented control.
+   Everything comes from tokens.css. Targets are 32 px (28 px small, 24 px minimum). Hover, selected and active states use the
+   surface roles, so each stays inside the contrast pairs CssContractTests checks. */
+
+/* Buttons ------------------------------------------------------------------------------------------------------------------- */
+
+.autonogrammer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--autonogrammer-gap-6);
+  min-height: var(--autonogrammer-control-height);
+  min-width: var(--autonogrammer-control-height);
+  padding: 0 var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-6);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-label);
+  font-weight: var(--autonogrammer-font-weight-medium);
+  line-height: var(--autonogrammer-line-height-label);
+  text-align: center;
+  transition: background-color var(--autonogrammer-duration-fast) var(--autonogrammer-ease), border-color var(--autonogrammer-duration-fast) var(--autonogrammer-ease);
+}
+
+.autonogrammer-btn:hover {
+  background: var(--autonogrammer-hover);
+}
+
+.autonogrammer-btn:active {
+  background: var(--autonogrammer-surface-active);
+}
+
+.autonogrammer-btn:disabled,
+.autonogrammer-btn[aria-disabled='true'] {
+  opacity: 0.5;
+}
+
+.autonogrammer-btn--primary {
+  background: var(--autonogrammer-accent);
+  border-color: var(--autonogrammer-accent);
+  color: var(--autonogrammer-accent-on);
+}
+
+.autonogrammer-btn--primary:hover,
+.autonogrammer-btn--primary:active {
+  background: var(--autonogrammer-accent-hover);
+  border-color: var(--autonogrammer-accent-hover);
+}
+
+.autonogrammer-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.autonogrammer-btn--small {
+  min-height: var(--autonogrammer-control-height-small);
+  padding: 0 var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--autonogrammer-control-height);
+  height: var(--autonogrammer-control-height);
+  min-width: var(--autonogrammer-control-height);
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--autonogrammer-radius-6);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-heading);
+  line-height: 1;
+}
+
+.autonogrammer-icon-btn:hover {
+  background: var(--autonogrammer-hover);
+}
+
+.autonogrammer-icon-btn:active {
+  background: var(--autonogrammer-surface-active);
+}
+
+.autonogrammer-icon-btn--small {
+  width: var(--autonogrammer-icon-button);
+  height: var(--autonogrammer-icon-button);
+  min-width: var(--autonogrammer-icon-button);
+}
+
+/* Chips and badges ---------------------------------------------------------------------------------------------------------- */
+
+.autonogrammer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-4);
+  height: var(--autonogrammer-chip-height);
+  padding: 0 var(--autonogrammer-gap-8);
+  background: var(--autonogrammer-surface-sunken);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-pill);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-small);
+  font-weight: var(--autonogrammer-font-weight-medium);
+  line-height: var(--autonogrammer-line-height-small);
+  white-space: nowrap;
+}
+
+.autonogrammer-chip--accent {
+  color: var(--autonogrammer-accent);
+}
+
+.autonogrammer-chip--success {
+  color: var(--autonogrammer-success);
+}
+
+.autonogrammer-chip--warning {
+  color: var(--autonogrammer-warning);
+}
+
+.autonogrammer-chip--error {
+  color: var(--autonogrammer-error);
+}
+
+.autonogrammer-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--autonogrammer-chip-height);
+  height: var(--autonogrammer-chip-height);
+  padding: 0 var(--autonogrammer-gap-6);
+  background: var(--autonogrammer-accent);
+  border-radius: var(--autonogrammer-radius-pill);
+  color: var(--autonogrammer-accent-on);
+  font-size: var(--autonogrammer-font-size-small);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+/* Status dot: decorative (aria-hidden); the row or chip beside it names the status in words. */
+.autonogrammer-status-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--autonogrammer-radius-pill);
+  background: var(--autonogrammer-border-strong);
+}
+
+.autonogrammer-status-dot[data-status='active'] {
+  background: var(--autonogrammer-accent);
+}
+
+.autonogrammer-status-dot[data-status='success'] {
+  background: var(--autonogrammer-success);
+}
+
+.autonogrammer-status-dot[data-status='warning'] {
+  background: var(--autonogrammer-warning);
+}
+
+.autonogrammer-status-dot[data-status='error'] {
+  background: var(--autonogrammer-error);
+}
+
+/* Inputs -------------------------------------------------------------------------------------------------------------------- */
+
+.autonogrammer-input,
+.autonogrammer-textarea,
+.autonogrammer-select {
+  display: block;
+  width: 100%;
+  min-height: var(--autonogrammer-control-height);
+  padding: var(--autonogrammer-gap-6) var(--autonogrammer-gap-8);
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border-strong);
+  border-radius: var(--autonogrammer-radius-6);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-body);
+  line-height: var(--autonogrammer-line-height-body);
+}
+
+.autonogrammer-input::placeholder,
+.autonogrammer-textarea::placeholder {
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-input:disabled,
+.autonogrammer-textarea:disabled,
+.autonogrammer-select:disabled {
+  opacity: 0.5;
+}
+
+/* List rows ----------------------------------------------------------------------------------------------------------------- */
+
+.autonogrammer-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.autonogrammer-list-row {
+  display: flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+  width: 100%;
+  min-height: var(--autonogrammer-control-height);
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+  background: transparent;
+  border: 0;
+  border-radius: var(--autonogrammer-radius-6);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-body);
+  line-height: var(--autonogrammer-line-height-body);
+  text-align: left;
+  transition: background-color var(--autonogrammer-duration-fast) var(--autonogrammer-ease);
+}
+
+.autonogrammer-list-row:hover {
+  background: var(--autonogrammer-hover);
+}
+
+.autonogrammer-list-row[aria-current='true'],
+.autonogrammer-list-row.is-selected {
+  background: var(--autonogrammer-selected);
+  font-weight: var(--autonogrammer-font-weight-medium);
+}
+
+.autonogrammer-list-row-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tooltip: the bubble a host positions next to its trigger and wires with aria-describedby. */
+.autonogrammer-tooltip {
+  position: absolute;
+  z-index: var(--autonogrammer-z-popup);
+  max-width: 240px;
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-6);
+  box-shadow: var(--autonogrammer-shadow-popup);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+/* Dialog: a native <dialog> opened with showModal() (focus trap, Escape and inert background come from the platform). */
+.autonogrammer-dialog {
+  max-width: min(var(--autonogrammer-content-max), calc(100vw - 2 * var(--autonogrammer-gap-12)));
+  max-height: calc(100dvh - 2 * var(--autonogrammer-gap-12));
+  padding: 0;
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-12);
+  box-shadow: var(--autonogrammer-shadow-popup);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-dialog::backdrop {
+  background: var(--autonogrammer-scrim);
+}
+
+.autonogrammer-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+  padding: var(--autonogrammer-gap-12);
+  border-bottom: 1px solid var(--autonogrammer-border);
+  font-size: var(--autonogrammer-font-size-heading);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-heading);
+}
+
+.autonogrammer-dialog-body {
+  padding: var(--autonogrammer-gap-12);
+  overflow-y: auto;
+}
+
+.autonogrammer-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--autonogrammer-gap-8);
+  padding: var(--autonogrammer-gap-12);
+  border-top: 1px solid var(--autonogrammer-border);
+}
+
+/* Tabs ---------------------------------------------------------------------------------------------------------------------- */
+
+.autonogrammer-tabs {
+  display: flex;
+  gap: var(--autonogrammer-gap-4);
+  border-bottom: 1px solid var(--autonogrammer-border);
+}
+
+.autonogrammer-tab {
+  min-height: var(--autonogrammer-control-height);
+  padding: 0 var(--autonogrammer-gap-12);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-label);
+  font-weight: var(--autonogrammer-font-weight-medium);
+}
+
+.autonogrammer-tab:hover {
+  background: var(--autonogrammer-tint);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-tab[aria-selected='true'] {
+  border-bottom-color: var(--autonogrammer-accent);
+  color: var(--autonogrammer-text);
+}
+
+/* Toggle: <button role="switch" aria-checked>. The track is outlined with border-strong (3:1), the thumb is the accent. */
+.autonogrammer-toggle {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: var(--autonogrammer-target-min);
+  padding: 0;
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border-strong);
+  border-radius: var(--autonogrammer-radius-pill);
+  transition: background-color var(--autonogrammer-duration-fast) var(--autonogrammer-ease);
+}
+
+.autonogrammer-toggle::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  background: var(--autonogrammer-border-strong);
+  border-radius: var(--autonogrammer-radius-pill);
+  transition: transform var(--autonogrammer-duration-fast) var(--autonogrammer-ease), background-color var(--autonogrammer-duration-fast) var(--autonogrammer-ease);
+}
+
+.autonogrammer-toggle[aria-checked='true'] {
+  background: var(--autonogrammer-accent);
+  border-color: var(--autonogrammer-accent);
+}
+
+.autonogrammer-toggle[aria-checked='true']::before {
+  background: var(--autonogrammer-accent-on);
+  transform: translateX(12px);
+}
+
+.autonogrammer-toggle:disabled {
+  opacity: 0.5;
+}
+
+/* Segmented control: a group of toggle buttons (aria-pressed) or radios (aria-checked) with exactly one choice on. */
+.autonogrammer-segmented {
+  display: inline-flex;
+  gap: var(--autonogrammer-gap-2);
+  padding: var(--autonogrammer-gap-2);
+  background: var(--autonogrammer-tint-strong);
+  border-radius: var(--autonogrammer-radius-8);
+}
+
+.autonogrammer-segment {
+  min-height: var(--autonogrammer-control-height-small);
+  min-width: var(--autonogrammer-target-min);
+  padding: 0 var(--autonogrammer-gap-8);
+  background: transparent;
+  border: 0;
+  border-radius: var(--autonogrammer-radius-6);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-label);
+  font-weight: var(--autonogrammer-font-weight-medium);
+  line-height: var(--autonogrammer-line-height-label);
+  transition: background-color var(--autonogrammer-duration-fast) var(--autonogrammer-ease);
+}
+
+.autonogrammer-segment:hover {
+  background: var(--autonogrammer-hover);
+}
+
+.autonogrammer-segment[aria-pressed='true'],
+.autonogrammer-segment[aria-checked='true'] {
+  background: var(--autonogrammer-surface-raised);
+  box-shadow: var(--autonogrammer-shadow-card), 0 0 0 1px var(--autonogrammer-tint-border);
+  color: var(--autonogrammer-accent);
+}

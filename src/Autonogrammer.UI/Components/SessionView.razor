@@ -1,0 +1,164 @@
+@namespace Autonogrammer.UI.Components
+@using Autonogrammer.GenUi
+@using Autonogrammer.Presentation.AgentPanel
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<section class="autonogrammer-session" id="autonogrammer-conversation" aria-label="Session" tabindex="-1" data-state="@ViewState.ToString().ToLowerInvariant()">
+    <div class="autonogrammer-announcement" aria-live="polite">@Announcement</div>
+    @if (ViewState == SessionViewState.LoadingHistory)
+    {
+        <p class="autonogrammer-loading">Loading conversation history…</p>
+    }
+    else if (ViewState == SessionViewState.Empty)
+    {
+        <span class="autonogrammer-state-mark" aria-hidden="true"></span>
+        <p class="autonogrammer-empty"><strong class="autonogrammer-empty-heading">@AgentPanelCopy.EmptySessionHeading</strong> <span class="autonogrammer-empty-body">@AgentPanelCopy.EmptySessionBody</span></p>
+    }
+    else
+    {
+        <div class="autonogrammer-blocks">
+            @foreach (var block in Tree.Blocks)
+            {
+                <Autonogrammer.UI.Components.Blocks.UiBlockRenderer Block="block" OnRetry="OnRetry" />
+            }
+            @if (Tree.StreamingText.Length > 0)
+            {
+                <div class="autonogrammer-block autonogrammer-streaming">@Tree.StreamingText</div>
+            }
+        </div>
+        @if (ViewState == SessionViewState.AwaitingApproval)
+        {
+            // Read-only notice: the server session status is the only authority for this state. The decision itself
+            // is made in the pending approvals under the transcript (ToolApprovalList), never in this view.
+            <p class="autonogrammer-approval-notice" role="status">Approval needed to continue. The decision is made by policy.</p>
+        }
+        else if (ViewState == SessionViewState.Reconnecting)
+        {
+            <p class="autonogrammer-transport-notice" role="status">Reconnecting…</p>
+        }
+        else if (ViewState == SessionViewState.Offline)
+        {
+            <p class="autonogrammer-transport-notice" role="status">You are offline. Showing the last known output.</p>
+        }
+        @if (ViewState == SessionViewState.Streaming && ShowStop)
+        {
+            <button type="button" class="autonogrammer-btn autonogrammer-icon-btn" aria-label="Stop response" @onclick="() => OnStop.InvokeAsync()"><svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true" focusable="false"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5" /></svg></button>
+        }
+        @if (ViewState == SessionViewState.RecoverableError)
+        {
+            <button type="button" class="autonogrammer-btn" aria-label="Retry failed operation" @onclick="() => OnRetry.InvokeAsync()">Retry</button>
+        }
+        @if (ShowJumpToLatest)
+        {
+            <button type="button" class="autonogrammer-btn autonogrammer-icon-btn" aria-label="Jump to latest" @onclick="JumpToLatestAsync"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M6 13l6 6 6-6" /></svg></button>
+        }
+    }
+</section>
+
+@code {
+    /// <summary>Gets the folded UI tree to render.</summary>
+    [Parameter, EditorRequired]
+    public UiTree Tree { get; set; } = null!;
+
+    /// <summary>Gets the lifecycle state driving announcements and affordances.</summary>
+    [Parameter, EditorRequired]
+    public SessionViewState ViewState { get; set; }
+
+    /// <summary>Gets whether auto-scroll is paused because the user scrolled up.</summary>
+    [Parameter]
+    public bool AutoScrollPaused { get; set; }
+
+    /// <summary>Gets the throttled aria-live announcement text.</summary>
+    [Parameter]
+    public string? Announcement { get; set; }
+
+    /// <summary>Gets whether the transcript draws its own stop control while streaming. A host that has a stop control elsewhere (the composer) turns it off.</summary>
+    [Parameter]
+    public bool ShowStop { get; set; } = true;
+
+    /// <summary>Gets the callback invoked when the stop control is activated.</summary>
+    [Parameter]
+    public EventCallback OnStop { get; set; }
+
+    /// <summary>Gets the callback invoked when the retry affordance is activated.</summary>
+    [Parameter]
+    public EventCallback OnRetry { get; set; }
+
+    /// <summary>Gets the callback invoked when the jump-to-latest control is activated.</summary>
+    [Parameter]
+    public EventCallback OnJumpToLatest { get; set; }
+
+    /// <summary>Gets the callback invoked when the viewport crosses the bottom edge: true when the user scrolled up, false when they returned to the latest output.</summary>
+    [Parameter]
+    public EventCallback<bool> AutoScrollPausedChanged { get; set; }
+
+    private const string ScrollModulePath = "./_content/Autonogrammer.UI/scripts/autonogrammer-scroll.js";
+
+    private IJSObjectReference? _scrollModule;
+    private DotNetObjectReference<SessionView>? _self;
+    private int _observerToken;
+    private bool _scrolledUp;
+
+    private bool ShowJumpToLatest => AutoScrollPaused || _scrolledUp;
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _scrollModule = await JS.InvokeAsync<IJSObjectReference>("import", ScrollModulePath);
+            _self = DotNetObjectReference.Create(this);
+            _observerToken = await _scrollModule.InvokeAsync<int>("observe", _self);
+        }
+
+        if (_scrollModule is not null && !ShowJumpToLatest)
+        {
+            await _scrollModule.InvokeVoidAsync("scrollToEnd");
+        }
+    }
+
+    /// <summary>Called by autonogrammer-scroll.js when the viewport crosses the bottom edge.</summary>
+    /// <param name="scrolledUp">True when the user scrolled away from the latest output.</param>
+    [JSInvokable("ReportScrollPosition")]
+    public async Task ReportScrollPositionAsync(bool scrolledUp)
+    {
+        if (_scrolledUp == scrolledUp)
+        {
+            return;
+        }
+
+        _scrolledUp = scrolledUp;
+        await InvokeAsync(StateHasChanged);
+        await AutoScrollPausedChanged.InvokeAsync(scrolledUp);
+    }
+
+    private async Task JumpToLatestAsync()
+    {
+        _scrolledUp = false;
+        await OnJumpToLatest.InvokeAsync();
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        if (_scrollModule is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _scrollModule.InvokeVoidAsync("unobserve", _observerToken);
+            await _scrollModule.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the scroll listener went with it.
+        }
+        finally
+        {
+            _self?.Dispose();
+        }
+    }
+}

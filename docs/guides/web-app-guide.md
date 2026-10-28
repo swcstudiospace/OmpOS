@@ -1,5 +1,5 @@
 ---
-description: "A tour of the OmpOS web app: the agent rail, thread, composer, Changes review, Kanban board and Settings, the Demo build with a simulated engine versus a real API, and what the web head cannot do."
+description: "A tour of the Autonogrammer web app: the agent rail, thread, composer, Changes review, Kanban board and Settings, the Demo build with a simulated engine versus a real API, and what the web head cannot do."
 ---
 
 # Web app guide
@@ -10,12 +10,12 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-The web head (`apps/OmpOS.Web`, Blazor WebAssembly) shows the same agent workspace as the desktop app in a browser, on the shared presentation layer and the White-and-Purple theme. It runs in one of two ways, and the page always tells you which.
+The web head (`apps/Autonogrammer.Web`, Blazor WebAssembly) shows the same agent workspace as the desktop app in a browser, on the shared presentation layer and the White-and-Purple theme. It runs in one of two ways, and the page always tells you which.
 
 | Way | What answers | Use it to |
 |---|---|---|
-| **Demo** | A scripted engine inside the browser (`-p:OmpOSDemo=true`). A banner says "Demo: simulated engine, no real agent, no network". | See the screens with no backend, model or key. Deployed at <https://ompos-web.vercel.app> (recorded 2026-10-28). |
-| **Real API** | `services/OmpOS.Api`, over HTTPS and server-sent events. | Use a local API. With the in-memory harness it echoes; with a real harness it runs omp on the API host. No hosted API exists: it needs a sign-in authority first (OD-03). |
+| **Demo** | A scripted engine inside the browser (`-p:AutonogrammerDemo=true`). A banner says "Demo: simulated engine, no real agent, no network". | See the screens with no backend, model or key. Deployed at <https://ompos-web.vercel.app> (recorded 2026-10-28). |
+| **Real API** | `services/Autonogrammer.Api`, over HTTPS and server-sent events. | Use a local API. With the in-memory harness it echoes; with a real harness it runs omp on the API host. No hosted API exists: it needs a sign-in authority first (OD-03). |
 
 How to start each: [Getting started](getting-started.md) and the [Web head runbook](../runbooks/web-demo.md). The screenshots below were captured from the Demo by `scripts/web-demo/capture.mjs` with headless Chrome; method, all captures and the known visual debt: [web evidence](../runbooks/evidence/web-app-2026-10-28/README.md).
 
@@ -65,7 +65,7 @@ A normal build contains no Demo code; the runbook shows the check.
 
 ## Keys on the web
 
-The Models page key field is write-only: it is a password input that never holds or renders a value after saving, and Add stays disabled while key entry is disabled. In the Demo key entry is disabled and the Demo answers every credential write with 403 `credential_writes_disabled`, so nothing typed there is stored or sent. Against a real API the key goes to the API only when the operator switched `Providers:AllowCredentialWrite` on; only providers omp supports natively take a key that way, others read `OMPOS_PROVIDER_<ID>_KEY` from the API host's environment. See the [Web key threat model](../runbooks/web-key-threat-model.md) and [Choose a model provider](providers-guide.md).
+The Models page key field is write-only: it is a password input that never holds or renders a value after saving, and Add stays disabled while key entry is disabled. In the Demo key entry is disabled and the Demo answers every credential write with 403 `credential_writes_disabled`, so nothing typed there is stored or sent. Against a real API the key goes to the API only when the operator switched `Providers:AllowCredentialWrite` on; only providers omp supports natively take a key that way, others read `AUTONOGRAMMER_PROVIDER_<ID>_KEY` from the API host's environment. See the [Web key threat model](../runbooks/web-key-threat-model.md) and [Choose a model provider](providers-guide.md).
 
 ## What the web head cannot do
 

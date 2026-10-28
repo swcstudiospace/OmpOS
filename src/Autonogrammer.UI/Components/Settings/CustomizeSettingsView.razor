@@ -1,0 +1,62 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits SettingsPageView<CustomizeCatalogPage>
+@using Autonogrammer.Presentation.Settings
+@using Autonogrammer.Presentation.Settings.Customize
+<SettingsPageFrame Page="Page" Title="@Page.Title" Description="@Page.IntroText" Editable="false">
+    @switch (Page.State)
+    {
+        case CustomizePageState.Loading:
+            <p class="autonogrammer-settings-state" role="status" aria-busy="true">@CustomizeCopy.LoadingText</p>
+            break;
+        case CustomizePageState.Error:
+            <div class="autonogrammer-settings-state autonogrammer-settings-state--error">
+                <h4 class="autonogrammer-settings-section-title">@CustomizeCopy.ErrorTitle</h4>
+                <p role="alert">@(Page.LoadFailure ?? CustomizeCopy.LoadFailed)</p>
+                <button type="button" class="autonogrammer-btn" @onclick="Retry">@SettingsCopy.RetryLabel</button>
+            </div>
+            break;
+        case CustomizePageState.Empty:
+            <p class="autonogrammer-settings-state">@Page.EmptyText</p>
+            break;
+        default:
+            <p class="autonogrammer-settings-help">@CustomizeCopy.ReadOnlyNotice @Page.CountText</p>
+            <div class="autonogrammer-settings-table-wrap" role="region" tabindex="0" aria-label="@Page.Title">
+                <table class="autonogrammer-settings-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">@CustomizeCopy.ColumnTitle</th>
+                            <th scope="col">@CustomizeCopy.ColumnScope</th>
+                            <th scope="col">@CustomizeCopy.ColumnOrigin</th>
+                            <th scope="col">@CustomizeCopy.ColumnDescription</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in Page.Entries)
+                        {
+                            <tr>
+                                <th scope="row" class="autonogrammer-settings-mono">@entry.Title</th>
+                                <td><span class="autonogrammer-chip">@entry.ScopeLabel</span></td>
+                                <td class="autonogrammer-settings-mono">@entry.Origin</td>
+                                <td>@entry.Description</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            break;
+    }
+    @if (Page.Problems.Count > 0)
+    {
+        <h4 class="autonogrammer-settings-section-title">@CustomizeCopy.ProblemsHeading</h4>
+        <ul class="autonogrammer-settings-problems">
+            @foreach (var problem in Page.Problems)
+            {
+                <li class="autonogrammer-settings-mono">@problem</li>
+            }
+        </ul>
+    }
+</SettingsPageFrame>
+
+@code {
+    private Task Retry() => Page.LoadAsync(CancellationToken.None);
+}

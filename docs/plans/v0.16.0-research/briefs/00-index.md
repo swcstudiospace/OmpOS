@@ -1,6 +1,6 @@
 # Briefs index and reconciliation: milestone v0.16.0 (Autonogrammer)
 
-Written by the design integrator on 2026-10-28 over ADR-0030 to ADR-0037 and briefs 67 to 76. Names are POST-RENAME (`Autonogrammer.*`); the tree on disk still says `OmpOS.*`. Nothing here was built or run. The scaffold step that creates every new project is in [00-scaffold-manifest.md](00-scaffold-manifest.md).
+Written by the design integrator on 2026-10-28 over ADR-0030 to ADR-0037 and briefs 67 to 76. Names are POST-RENAME (`Autonogrammer.*`); the tree on disk still says `Autonogrammer.*`. Nothing here was built or run. The scaffold step that creates every new project is in [00-scaffold-manifest.md](00-scaffold-manifest.md).
 
 ## 1. Phase table
 
@@ -8,7 +8,7 @@ Requirement ids are `AG-<phase>-<n>`. Work units are the units of the brief. "Ca
 
 | Phase | Name | Brief | ADR | Depends on | Requirement ids | Units | Cannot be verified on this host |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 66 | Rebrand (OmpOS to Autonogrammer) | [66-rebrand.md](66-rebrand.md); research report [01](../01-rename-inventory.md); tool `scripts/rebrand/rebrand.py`, runbook `docs/runbooks/rebrand-autonogrammer.md` | none (physical names: ADR-0031 D1) | none; applied after the units of 67 to 76 (they write post-rename names and must not run it) | AG-66-* | see the brief | not stated by any brief; the renamed tree has to be built and gated once, which this design pass did not do |
+| 66 | Rebrand (Autonogrammer to Autonogrammer) | [66-rebrand.md](66-rebrand.md); research report [01](../01-rename-inventory.md); tool `scripts/rebrand/rebrand.py`, runbook `docs/runbooks/rebrand-autonogrammer.md` | none (physical names: ADR-0031 D1) | none; applied after the units of 67 to 76 (they write post-rename names and must not run it) | AG-66-* | see the brief | not stated by any brief; the renamed tree has to be built and gated once, which this design pass did not do |
 | 67 | Accounts: Supabase passwordless sign-in, GoTrue client, account surface | [67-accounts.md](67-accounts.md) | ADR-0030 | 68 (units 4 and 5 need U3: surface column, repository methods); 69 and 70 (SurfaceHost chrome slot for the account menu) | AG-67-1 to AG-67-24 | 6 | any live Supabase call (publishable key and owner actions O1, O3, O4); Windows DPAPI and macOS Keychain (compile only); web two-tab hand-off and CSP in a real browser; a real deploy; the Linux keyring live test is possible but was not run |
 | 68 | Data plane: names, schema, migrations, telemetry sink, resilience, ledger sink | [68-data-plane.md](68-data-plane.md) | ADR-0031 | rename tool applied after its units; consumed by 67 (M0003), 74 (M0005, M0008), 75 (M0009) | AG-68-1 to AG-68-14 | 6 (U1 to U6) | Railway private network, Timescale edition and `add_retention_policy`, Substrate prefix and index location, Greptime per-database authorisation, any hosted deploy (OQ-73), rootless podman in CI (OQ-168), head banners on Windows, macOS, Android |
 | 69 | Surface switch (Code or Cowork), Cowork layout, Cowork session model | [69-mode-shell-and-cowork-sessions.md](69-mode-shell-and-cowork-sessions.md) | ADR-0032 | 67 (account state), 68 (`ListByOwnerAsync`, `surface` column) | AG-69-1 to AG-69-12 | 6 | Windows and macOS rendering and Meta shortcuts; Wayland focus; screen readers; whether a browser reserves Ctrl+Shift+1 or 2; live Supabase and Railway routes |
@@ -76,7 +76,7 @@ All 104 rows were appended to `docs/open-questions.md` after OQ-168 (6 columns, 
 - ADR-0030 D7: the freshness rule is the newest non-refresh `amr` entry (ADR-0036 D2), not `iat` and `session_id` (R18).
 - Brief 68: only `Coordination.Dragonfly` (L2) references `Resilience`; `Coordination` (L1) must not (a same-layer edge needs a tuple that ADR-0031 does not grant).
 - Brief 75: `CoworkSessionProfile` lives at `Cowork/Chat/` (brief 70), not `Cowork/Sessions/`.
-- ADR-0034 and brief 72 cited on-disk spellings of paths (`src/OmpOS...`); they now use the post-rename spelling like the other documents. Brief 76 and ADR-0031 had one stray "OmpOS" each.
+- ADR-0034 and brief 72 cited on-disk spellings of paths (`src/Autonogrammer...`); they now use the post-rename spelling like the other documents. Brief 76 and ADR-0031 had one stray "Autonogrammer" each.
 - `docs/decisions/README.md` rows for ADR-0030 to ADR-0037 (ADR-0035 row says `computer_*`; the ADR-0036 row no longer asserts the M0009 number, R2) and `docs/SUMMARY.md` entries (the docs gate rejects an ADR page that is not in SUMMARY.md).
 - OQ-427 instead of OQ-749 in brief 72 (see the cross-citation table).
 

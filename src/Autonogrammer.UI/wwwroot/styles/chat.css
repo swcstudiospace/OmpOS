@@ -1,0 +1,337 @@
+/* The chat surface: session transcript blocks, notices, the conversation list rows and the shell chrome. Block views are restyled here;
+   the composer, the agent rail, the thread chrome, the review panel and the workbench regions have their own files (composer.css,
+   rail.css, thread.css, review.css, workbench.css), imported from autonogrammer.css. */
+
+.autonogrammer-session {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+  min-width: 0;
+  background: var(--autonogrammer-surface-raised);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-session:focus {
+  outline: none;
+}
+
+.autonogrammer-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-block {
+  min-width: 0;
+  padding: var(--autonogrammer-gap-8) var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+  color: var(--autonogrammer-text);
+  overflow-wrap: anywhere;
+}
+
+/* The reader's own turn is a lavender bubble; the assistant's prose is not boxed: it reads as the page, and only the things the agent did
+   (tools, code, edits, plans) are cards. */
+.autonogrammer-block.autonogrammer-user {
+  background: var(--autonogrammer-tint);
+  border-color: var(--autonogrammer-tint-border);
+}
+
+.autonogrammer-block.autonogrammer-markdown,
+.autonogrammer-block.autonogrammer-streaming {
+  padding-inline: var(--autonogrammer-gap-4);
+  background: transparent;
+  border-color: transparent;
+}
+
+.autonogrammer-markdown > :first-child {
+  margin-top: 0;
+}
+
+.autonogrammer-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.autonogrammer-markdown :where(p, ul, ol) {
+  margin-block: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-block.autonogrammer-streaming,
+.autonogrammer-user-text {
+  white-space: pre-wrap;
+}
+
+.autonogrammer-error {
+  border-left: 4px solid var(--autonogrammer-error);
+}
+
+p.autonogrammer-error {
+  padding: var(--autonogrammer-gap-8) var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface-sunken);
+  border-radius: var(--autonogrammer-radius-6);
+}
+
+.autonogrammer-error-message {
+  color: var(--autonogrammer-error);
+}
+
+.autonogrammer-empty,
+.autonogrammer-loading,
+.autonogrammer-transport-notice,
+.autonogrammer-approval-notice {
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-approval-notice {
+  padding: var(--autonogrammer-gap-6) var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-tint);
+  border-left: 3px solid var(--autonogrammer-accent);
+  border-radius: var(--autonogrammer-radius-6);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+/* The pending approvals below the transcript carry the message themselves; the transcript's own notice would repeat it. */
+.autonogrammer-thread:has(.autonogrammer-approvals) .autonogrammer-approval-notice {
+  display: none;
+}
+
+.autonogrammer-session[data-state='empty'] {
+  align-items: center;
+  padding-block: 6vh var(--autonogrammer-gap-12);
+  text-align: center;
+}
+
+.autonogrammer-empty-heading {
+  display: block;
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-heading);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-heading);
+}
+
+/* A tool call is a one-line card: glyph, name, status. The result card that follows it is fused to it (one card, one tool), and its own
+   heading, which would repeat the name and the status, is hidden. */
+.autonogrammer-tool-call {
+  display: flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+  min-height: var(--autonogrammer-control-height);
+  padding-block: var(--autonogrammer-gap-4);
+}
+
+.autonogrammer-tool-call:has(+ .autonogrammer-tool-result) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.autonogrammer-tool-call + .autonogrammer-tool-result {
+  margin-top: calc(-1 * var(--autonogrammer-gap-8) - 1px);
+  padding-top: var(--autonogrammer-gap-4);
+  background: var(--autonogrammer-surface-raised);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.autonogrammer-tool-result-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+  margin: 0 0 var(--autonogrammer-gap-4);
+}
+
+.autonogrammer-tool-output {
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+  line-height: var(--autonogrammer-line-height-mono);
+}
+
+.autonogrammer-tool-call + .autonogrammer-tool-result .autonogrammer-tool-result-heading {
+  display: none;
+}
+
+.autonogrammer-tool-name,
+.autonogrammer-file-edit-path,
+.autonogrammer-diff-path {
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+}
+
+.autonogrammer-tool-status,
+.autonogrammer-file-edit-change,
+.autonogrammer-code-language,
+.autonogrammer-file-edit-label,
+.autonogrammer-permission-note {
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-code-header,
+.autonogrammer-file-edit-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-code pre,
+.autonogrammer-markdown pre {
+  margin-top: var(--autonogrammer-gap-4);
+  overflow: auto;
+}
+
+/* Tool output and file text keep their line breaks and scroll inside the block, so a long result never widens the transcript. */
+.autonogrammer-tool-output,
+.autonogrammer-file-edit-text {
+  margin: 0;
+  max-height: 24rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-file-edit-before .autonogrammer-file-edit-text {
+  background: var(--autonogrammer-diff-removed);
+}
+
+.autonogrammer-file-edit-after .autonogrammer-file-edit-text {
+  background: var(--autonogrammer-diff-added);
+}
+
+.autonogrammer-unknown > summary {
+  cursor: pointer;
+}
+
+.autonogrammer-a2ui-image {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Agent rail and conversation list ------------------------------------------------------------------------------------------ */
+
+.autonogrammer-agent-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+  padding: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-rail-bar {
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-4) 0 var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-rail-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-rail-title {
+  padding: 0 var(--autonogrammer-gap-8);
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-small);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.autonogrammer-new-agent {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.autonogrammer-conversation-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-2);
+}
+
+.autonogrammer-conversation-list .autonogrammer-empty {
+  padding: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-btn.autonogrammer-conversation-item {
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--autonogrammer-gap-8);
+  width: 100%;
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+  background: transparent;
+  border-color: transparent;
+  font-size: var(--autonogrammer-font-size-body);
+  font-weight: var(--autonogrammer-font-weight-regular);
+  line-height: var(--autonogrammer-line-height-body);
+  text-align: left;
+}
+
+.autonogrammer-btn.autonogrammer-conversation-item:hover {
+  background: var(--autonogrammer-hover);
+}
+
+.autonogrammer-btn.autonogrammer-conversation-item.is-selected {
+  background: var(--autonogrammer-selected);
+  font-weight: var(--autonogrammer-font-weight-medium);
+}
+
+.autonogrammer-conversation-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Shell chrome: top bar and footer content -------------------------------------------------------------------------------- */
+
+.autonogrammer-logo {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  background: url('../brand/autonogrammer-mark.svg') center / contain no-repeat;
+}
+
+.autonogrammer-wordmark {
+  margin: 0;
+  font-family: var(--autonogrammer-font-display);
+  font-size: var(--autonogrammer-font-size-display-sm);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-display-sm);
+}
+
+.autonogrammer-wordmark-os {
+  color: var(--autonogrammer-accent);
+}
+
+.autonogrammer-workspace-label {
+  min-width: 0;
+  padding-left: var(--autonogrammer-gap-12);
+  overflow: hidden;
+  border-left: 1px solid var(--autonogrammer-border);
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.autonogrammer-topbar-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--autonogrammer-control-height-small);
+  padding: 0 var(--autonogrammer-gap-4);
+  font-size: var(--autonogrammer-font-size-label);
+  font-weight: var(--autonogrammer-font-weight-medium);
+}
+
+.autonogrammer-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--autonogrammer-target-min);
+}

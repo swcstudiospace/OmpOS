@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.ContextRingView"
+             IsVisible="False">
+
+  <UserControl.Styles>
+    <Style Selector="Arc.ring-warning">
+      <Setter Property="Stroke" Value="{DynamicResource Autonogrammer.Color.StatusWarning}" />
+    </Style>
+    <Style Selector="Arc.ring-critical">
+      <Setter Property="Stroke" Value="{DynamicResource Autonogrammer.Color.StatusError}" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- The context ring: a small arc that fills as the context window fills, the percentage beside it, and the state in words once the window is getting full, so colour is
+       never the only carrier (the arc turns amber at 70 percent and red at 90). The ring is not a control: it takes no focus and its tooltip and automation name carry the
+       full text. It draws no animation. -->
+  <StackPanel x:Name="RingHost"
+              Orientation="Horizontal"
+              Spacing="{DynamicResource Autonogrammer.Gap.Xs}"
+              VerticalAlignment="Center">
+    <Panel Width="20"
+           Height="20"
+           VerticalAlignment="Center"
+           AutomationProperties.AccessibilityView="Raw">
+      <Ellipse Stroke="{DynamicResource Autonogrammer.Color.Border}"
+               StrokeThickness="2" />
+      <Arc x:Name="Progress"
+           Stroke="{DynamicResource Autonogrammer.Color.AccentPurple}"
+           StrokeThickness="2"
+           StrokeLineCap="Round"
+           StartAngle="-90"
+           SweepAngle="0" />
+    </Panel>
+    <TextBlock x:Name="PercentText"
+               Classes="muted small"
+               VerticalAlignment="Center" />
+    <TextBlock x:Name="StateText"
+               Classes="muted small"
+               IsVisible="False"
+               VerticalAlignment="Center" />
+  </StackPanel>
+
+</UserControl>

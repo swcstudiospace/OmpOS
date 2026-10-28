@@ -1,0 +1,125 @@
+@namespace Autonogrammer.UI.Components.Thread
+@using Autonogrammer.Presentation.AgentPanel
+@using Autonogrammer.UI.Components.Rail
+@inherits ObservableComponent
+<header class="autonogrammer-thread-header" aria-label="@AgentPanelViewText.HeaderName">
+    <div class="autonogrammer-thread-heading">
+        <h2 class="autonogrammer-thread-title" id="autonogrammer-thread-title" title="@Session.Title">@Session.Title</h2>
+        <span class="autonogrammer-chip autonogrammer-status-chip" data-tone="@StatusGlyphs.ToneOf(Session.Row.Status)" data-status="@Session.Row.Status.ToString().ToLowerInvariant()"><StatusGlyph IconKey="@Session.Row.IconKey" /><span class="autonogrammer-sr-only">Status: </span>@Session.Row.StatusText</span>
+        @if (Session.Row.IsTerminal)
+        {
+            <span class="autonogrammer-chip">@AgentPanelCopy.TerminalTag</span>
+        }
+
+        <button type="button" class="autonogrammer-icon-btn autonogrammer-thread-close" aria-label="@AgentPanelViewText.CloseName" title="@AgentPanelViewText.CloseLabel" @onclick="RequestCloseAsync"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 4l8 8M12 4l-8 8" /></svg></button>
+    </div>
+    <div class="autonogrammer-thread-context">
+        @if (!string.IsNullOrWhiteSpace(WorkspaceLabel))
+        {
+            <span class="autonogrammer-thread-workspace"><span class="autonogrammer-sr-only">Workspace: </span>@WorkspaceLabel</span>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Branch))
+        {
+            <span class="autonogrammer-chip autonogrammer-branch-chip"><span class="autonogrammer-sr-only">Branch: </span>@Branch</span>
+        }
+
+        @if (Session.TaskTitle is { } taskTitle)
+        {
+            <span class="autonogrammer-chip autonogrammer-task-chip">@AgentPanelViewText.TaskChipText(taskTitle)</span>
+        }
+
+        @if (Session.GraphId is { Length: > 0 } graphId)
+        {
+            <span class="autonogrammer-chip autonogrammer-graph-chip">@AgentPanelViewText.GraphChip(graphId)</span>
+        }
+
+        @if (Session.IsLost)
+        {
+            <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--primary" @onclick="() => Session.ResumeCommand.ExecuteAsync(null)">@AgentPanelCopy.ResumeAgent</button>
+        }
+
+        @if (Session.IsClosed)
+        {
+            <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--primary" @onclick="() => Session.ReopenCommand.ExecuteAsync(null)">@AgentPanelCopy.ReopenAgent</button>
+        }
+
+        <span class="autonogrammer-chip autonogrammer-steering-badge" title="@Session.SteeringBadgeName"><StatusGlyph IconKey="@StatusIcon.Info" />@Session.SteeringBadgeText</span>
+    </div>
+
+    @if (_confirmClose)
+    {
+        <ConfirmBar Kind="close"
+                    AccessibleName="@AgentPanelViewText.ConfirmCloseName"
+                    Message="@Session.CloseConfirmationText"
+                    ConfirmLabel="@AgentPanelCopy.CloseAgent"
+                    CancelLabel="@AgentPanelCopy.KeepAgentOpen"
+                    OnConfirm="ConfirmCloseAsync"
+                    OnCancel="CancelClose" />
+    }
+
+    @if (Session.ActionError is { } actionError)
+    {
+        <p class="autonogrammer-panel-notice" data-kind="error" role="alert">@actionError</p>
+    }
+
+    @if (Session.HasNotice)
+    {
+        <div class="autonogrammer-panel-notice" data-kind="@Session.NoticeKind.ToString().ToLowerInvariant()" role="status" aria-label="@AgentPanelViewText.PanelNoticeName">
+            <p class="autonogrammer-panel-notice-text">@Session.NoticeText</p>
+            @if (Session.NoticeKind is PanelNoticeKind.Degraded or PanelNoticeKind.NoPlugins or PanelNoticeKind.Resumed)
+            {
+                <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--ghost" @onclick="() => Session.DismissNoticeCommand.ExecuteAsync(null)">@AgentPanelViewText.DismissNotice</button>
+            }
+        </div>
+    }
+</header>
+
+@code {
+    private bool _confirmClose;
+
+    /// <summary>Gets the agent session whose header is shown.</summary>
+    [Parameter, EditorRequired]
+    public AgentSessionViewModel Session { get; set; } = null!;
+
+    /// <summary>Gets the workspace label (the folder the agent works in), or null when none is known.</summary>
+    [Parameter]
+    public string? WorkspaceLabel { get; set; }
+
+    /// <summary>Gets the branch the agent works on, or null when it is not known. The web head has no branch source yet, so a host passes one only when it has it.</summary>
+    [Parameter]
+    public string? Branch { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        Observe(Session);
+        Observe(Session.Timeline);
+        Observe(Session.Steering);
+        Observe(Session.Context);
+    }
+
+    private Task RequestCloseAsync()
+    {
+        if (Session.IsClosed)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (Session.RequiresCloseConfirmation)
+        {
+            _confirmClose = true;
+            return Task.CompletedTask;
+        }
+
+        return Session.CloseCommand.ExecuteAsync(null);
+    }
+
+    private void CancelClose() => _confirmClose = false;
+
+    private async Task ConfirmCloseAsync()
+    {
+        _confirmClose = false;
+        await Session.CloseCommand.ExecuteAsync(null).ConfigureAwait(true);
+    }
+}

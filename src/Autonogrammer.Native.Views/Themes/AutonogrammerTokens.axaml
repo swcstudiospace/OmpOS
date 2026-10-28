@@ -1,0 +1,924 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Colour roles (20-UI-SPEC.md, Color; docs/plans/ui-parity/cursor-agents-window-parity.md, 2.1). Each role has a Light and a
+       Dark value; Avalonia selects the set for the active theme variant. ThemeContrastTests classifies each role by its use and
+       checks every text and non-text pair the classification produces, in both variants.
+       Surface order, Dark: SurfaceSunken < Surface < SurfaceRaised < Hover < Selected < SurfaceActive. Light mirrors it with
+       SurfaceRaised as the brightest. Border is a decorative hairline (no contrast requirement beyond staying visible);
+       BorderStrong draws the outline that identifies an input, a switch or a checkbox (3:1).
+       FocusRing is reserved for focus indicators to bind in a later phase. No style consumes it yet: the focus
+       indicators in App.axaml draw AccentPurple. -->
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="Autonogrammer.Color.SurfaceSunken">#f0f0ee</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.Surface">#fafaf9</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.SurfaceRaised">#ffffff</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.Hover">#ebebe8</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.Selected">#e4e4e0</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.SurfaceActive">#dcdcd7</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.DiffAdded">#e2f4e7</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.DiffRemoved">#fbe6e6</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.TextPrimary">#1c1c1a</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.TextSecondary">#55555a</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.AccentPurple">#6d28d9</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.AccentPurpleOn">#ffffff</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.FocusRing">#5b21b6</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.StatusSuccess">#166534</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.StatusWarning">#92400e</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.StatusError">#b3261e</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.Border">#e0e0dc</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.BorderStrong">#6f6f6b</SolidColorBrush>
+
+      <!-- Elevation (2.5): surfaces are separated by tone and hairlines; two shadows are not colour roles, so the colour tests do not scan them. -->
+      <BoxShadows x:Key="Autonogrammer.Shadow.Popup">0 8 24 0 #29000000</BoxShadows>
+      <BoxShadows x:Key="Autonogrammer.Shadow.Card">0 1 2 0 #14000000</BoxShadows>
+
+      <!-- Fluent resource aliases (spec 3.2). Avalonia's Fluent templates read these keys; pointing them at the Autonogrammer roles restyles
+           every stock control through its own template states instead of fighting the template with presenter selectors.
+           StaticResource aliases are not Autonogrammer.Color.* keys, so the contrast tests do not scan them. -->
+      <!-- Button -->
+      <StaticResource x:Key="ButtonBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ButtonBorderBrush" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ButtonForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <!-- AccentButton (a stray Classes="accent" stays on palette) -->
+      <StaticResource x:Key="AccentButtonBackground" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBackgroundDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBackgroundPointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBackgroundPressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBorderBrush" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonBorderBrushDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonBorderBrushPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonBorderBrushPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonForeground" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="AccentButtonForegroundDisabled" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="AccentButtonForegroundPointerOver" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="AccentButtonForegroundPressed" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <!-- ToggleButton -->
+      <StaticResource x:Key="ToggleButtonBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedDisabled" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ToggleButtonBackgroundDisabled" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminate" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminateDisabled" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminatePressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ToggleButtonBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="ToggleButtonBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ToggleButtonBorderBrush" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushChecked" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushCheckedDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushCheckedPointerOver" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushCheckedPressed" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminate" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminateDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminatePressed" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushPointerOver" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushPressed" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminate" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminateDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminatePressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <!-- TextBox (TextControl*) -->
+      <StaticResource x:Key="TextControlBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="TextControlBackgroundDisabled" ResourceKey="Autonogrammer.Color.Surface" />
+      <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="TextControlBorderBrush" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="TextControlBorderBrushDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlButtonBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="TextControlButtonBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="TextControlButtonBorderBrush" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonBorderBrushPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonBorderBrushPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlButtonForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlButtonForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <!-- ComboBox -->
+      <StaticResource x:Key="ComboBoxBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxBackgroundBorderBrushFocused" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ComboBoxBackgroundBorderBrushUnfocused" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ComboBoxBackgroundDisabled" ResourceKey="Autonogrammer.Color.Surface" />
+      <StaticResource x:Key="ComboBoxBackgroundPointerOver" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ComboBoxBackgroundUnfocused" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxBorderBrush" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ComboBoxBorderBrushPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxBorderBrushPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxDropDownBorderBrush" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForegroundFocused" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForegroundFocusedPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxForegroundFocused" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxForegroundFocusedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxPlaceHolderForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxPlaceHolderForegroundFocusedPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <!-- ComboBoxItem -->
+      <StaticResource x:Key="ComboBoxItemBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBackgroundDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="ComboBoxItemBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelected" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelectedDisabled" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelectedPointerOver" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelectedPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelected" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelectedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelectedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelectedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxItemForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelected" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelectedDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelectedPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelectedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <!-- TabStripItem and TabItem -->
+      <StaticResource x:Key="TabItemHeaderBackgroundDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundSelected" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundSelectedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundSelectedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundUnselected" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundUnselectedPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="TabItemHeaderBackgroundUnselectedPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="TabItemHeaderForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TabItemHeaderForegroundSelected" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundSelectedPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundSelectedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundUnselected" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TabItemHeaderForegroundUnselectedPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundUnselectedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderSelectedPipeFill" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <!-- ScrollBar -->
+      <StaticResource x:Key="ScrollBarBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="ScrollBarBorderBrush" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonArrowForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarButtonArrowForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarButtonArrowForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ScrollBarButtonArrowForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ScrollBarButtonBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="ScrollBarButtonBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrush" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrushDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrushPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrushPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarPanningThumbBackground" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ScrollBarThumbBackgroundColor" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ScrollBarThumbFillDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarThumbFillPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarThumbFillPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ScrollBarTrackFill" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarTrackFillPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="ScrollBarTrackStroke" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarTrackStrokePointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <!-- ToolTip -->
+      <StaticResource x:Key="ToolTipBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ToolTipBorderBrush" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ToolTipForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <!-- Flyout -->
+      <StaticResource x:Key="FlyoutBorderThemeBrush" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="FlyoutPresenterBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <!-- Menu and context-menu items -->
+      <StaticResource x:Key="MenuFlyoutItemBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="MenuFlyoutItemBackgroundDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="MenuFlyoutItemBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="MenuFlyoutItemBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="MenuFlyoutItemForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="MenuFlyoutItemForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="MenuFlyoutItemForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutPresenterBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="MenuFlyoutPresenterBorderBrush" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevron" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronSubMenuOpened" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <!-- ToggleSwitch -->
+      <StaticResource x:Key="ToggleSwitchContainerBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchContainerBackgroundPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchContainerBackgroundPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchContentForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleSwitchFillOff" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchFillOffPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchFillOffPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchFillOn" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchFillOnDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchFillOnPointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchFillOnPressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchHeaderForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOff" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOffDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOffPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOffPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOn" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOnDisabled" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOnPointerOver" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOnPressed" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchStrokeOff" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleSwitchStrokeOffDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ToggleSwitchStrokeOffPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchStrokeOffPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchStrokeOn" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchStrokeOnDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchStrokeOnPointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchStrokeOnPressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <!-- CheckBox -->
+      <StaticResource x:Key="CheckBoxBackgroundChecked" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundCheckedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundCheckedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundCheckedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminate" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminateDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminatePointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminatePressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUnchecked" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUncheckedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUncheckedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUncheckedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushChecked" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushCheckedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushCheckedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushCheckedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminate" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminateDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminatePointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminatePressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUnchecked" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUncheckedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUncheckedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUncheckedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillChecked" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminate" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUnchecked" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminate" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminateDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUnchecked" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundChecked" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminate" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminateDisabled" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUnchecked" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUncheckedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUncheckedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUncheckedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxForegroundChecked" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundCheckedDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxForegroundCheckedPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundCheckedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminate" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminateDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminatePressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundUnchecked" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundUncheckedDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxForegroundUncheckedPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundUncheckedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <!-- RadioButton -->
+      <StaticResource x:Key="RadioButtonBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBackgroundDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBackgroundPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBackgroundPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrush" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrushDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrushPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrushPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFill" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFillDisabled" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFillPointerOver" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFillPressed" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStroke" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStrokeDisabled" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStrokePointerOver" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStrokePressed" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="RadioButtonForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="RadioButtonForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="RadioButtonForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFill" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillPressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStroke" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokePressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFill" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFillDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFillPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFillPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStroke" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStrokeDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStrokePointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStrokePressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <!-- List rows and shared system brushes that the Fluent templates read (defined in Fluent's base resources) -->
+      <StaticResource x:Key="SystemControlHighlightListLowBrush" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="SystemControlHighlightListMediumBrush" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="SystemControlHighlightListLowRevealBackgroundBrush" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="SystemControlHighlightListMediumRevealBackgroundBrush" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="SystemControlHighlightListAccentLowBrush" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="SystemControlHighlightListAccentMediumBrush" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="SystemControlHighlightListAccentHighBrush" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="SystemControlHighlightAltBaseHighBrush" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="SystemControlDisabledBaseMediumLowBrush" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="SystemControlErrorTextForegroundBrush" ResourceKey="Autonogrammer.Color.StatusError" />
+      <!-- Metrics -->
+      <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
+      <CornerRadius x:Key="OverlayCornerRadius">10</CornerRadius>
+      <Thickness x:Key="ButtonPadding">11,0</Thickness>
+      <x:Double x:Key="ControlContentThemeFontSize">13</x:Double>
+      <x:Double x:Key="TextControlThemeMinHeight">32</x:Double>
+      <Thickness x:Key="TextControlThemePadding">9,0</Thickness>
+      <Thickness x:Key="TextControlBorderThemeThickness">1</Thickness>
+      <Thickness x:Key="TextControlBorderThemeThicknessFocused">2</Thickness>
+      <x:Double x:Key="ComboBoxMinHeight">32</x:Double>
+      <Thickness x:Key="ComboBoxPadding">9,0,0,0</Thickness>
+      <Thickness x:Key="ComboBoxItemThemePadding">8,0</Thickness>
+      <x:Double x:Key="TabItemHeaderFontSize">13</x:Double>
+      <FontWeight x:Key="TabItemHeaderThemeFontWeight">Medium</FontWeight>
+      <Thickness x:Key="TabItemHeaderMargin">12,0</Thickness>
+      <x:Double x:Key="TabStripItemMinHeight">28</x:Double>
+      <x:Double x:Key="TabStripItemPipeThickness">2</x:Double>
+      <x:Double x:Key="ScrollBarSize">10</x:Double>
+      <x:Double x:Key="ToolTipContentThemeFontSize">12</x:Double>
+      <x:Double x:Key="ToolTipContentMaxWidth">360</x:Double>
+      <Thickness x:Key="ToolTipBorderThemePadding">8,4</Thickness>
+      <Thickness x:Key="FlyoutBorderThemePadding">12</Thickness>
+      <Thickness x:Key="FlyoutContentThemePadding">0</Thickness>
+      <Thickness x:Key="MenuFlyoutItemThemePaddingNarrow">8,4</Thickness>
+      <Thickness x:Key="ListBoxItemPadding">8,4</Thickness>
+      <x:Double x:Key="CheckBoxMinHeight">32</x:Double>
+      <x:Double x:Key="RadioButtonMinHeight">24</x:Double>
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="Autonogrammer.Color.SurfaceSunken">#141414</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.Surface">#181818</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.SurfaceRaised">#1f1f1f</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.Hover">#262626</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.Selected">#2d2d2d</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.SurfaceActive">#333333</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.DiffAdded">#132a1c</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.DiffRemoved">#301719</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.TextPrimary">#ececec</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.TextSecondary">#a3a3a3</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.AccentPurple">#a78bfa</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.AccentPurpleOn">#141414</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.FocusRing">#c4b5fd</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.StatusSuccess">#4ade80</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.StatusWarning">#fbbf24</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.StatusError">#ff9a9a</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.Border">#2c2c2c</SolidColorBrush>
+      <SolidColorBrush x:Key="Autonogrammer.Color.BorderStrong">#808080</SolidColorBrush>
+
+      <BoxShadows x:Key="Autonogrammer.Shadow.Popup">0 8 24 0 #99000000</BoxShadows>
+      <BoxShadows x:Key="Autonogrammer.Shadow.Card">0 0 0 0 #00000000</BoxShadows>
+
+      <!-- Fluent resource aliases (spec 3.2). Avalonia's Fluent templates read these keys; pointing them at the Autonogrammer roles restyles
+           every stock control through its own template states instead of fighting the template with presenter selectors.
+           StaticResource aliases are not Autonogrammer.Color.* keys, so the contrast tests do not scan them. -->
+      <!-- Button -->
+      <StaticResource x:Key="ButtonBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ButtonBorderBrush" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ButtonForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <!-- AccentButton (a stray Classes="accent" stays on palette) -->
+      <StaticResource x:Key="AccentButtonBackground" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBackgroundDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBackgroundPointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBackgroundPressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="AccentButtonBorderBrush" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonBorderBrushDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonBorderBrushPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonBorderBrushPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="AccentButtonForeground" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="AccentButtonForegroundDisabled" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="AccentButtonForegroundPointerOver" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="AccentButtonForegroundPressed" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <!-- ToggleButton -->
+      <StaticResource x:Key="ToggleButtonBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedDisabled" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ToggleButtonBackgroundDisabled" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminate" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminateDisabled" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ToggleButtonBackgroundIndeterminatePressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ToggleButtonBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="ToggleButtonBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ToggleButtonBorderBrush" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushChecked" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushCheckedDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushCheckedPointerOver" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushCheckedPressed" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminate" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminateDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushIndeterminatePressed" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushPointerOver" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonBorderBrushPressed" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleButtonForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundCheckedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminate" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminateDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundIndeterminatePressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleButtonForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <!-- TextBox (TextControl*) -->
+      <StaticResource x:Key="TextControlBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="TextControlBackgroundDisabled" ResourceKey="Autonogrammer.Color.Surface" />
+      <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="TextControlBorderBrush" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="TextControlBorderBrushDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlButtonBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="TextControlButtonBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="TextControlButtonBorderBrush" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonBorderBrushPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonBorderBrushPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TextControlButtonForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlButtonForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlButtonForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <!-- ComboBox -->
+      <StaticResource x:Key="ComboBoxBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxBackgroundBorderBrushFocused" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ComboBoxBackgroundBorderBrushUnfocused" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ComboBoxBackgroundDisabled" ResourceKey="Autonogrammer.Color.Surface" />
+      <StaticResource x:Key="ComboBoxBackgroundPointerOver" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ComboBoxBackgroundUnfocused" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxBorderBrush" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ComboBoxBorderBrushPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxBorderBrushPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ComboBoxDropDownBorderBrush" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForegroundFocused" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxDropDownGlyphForegroundFocusedPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxForegroundFocused" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxForegroundFocusedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxPlaceHolderForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxPlaceHolderForegroundFocusedPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <!-- ComboBoxItem -->
+      <StaticResource x:Key="ComboBoxItemBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBackgroundDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="ComboBoxItemBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelected" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelectedDisabled" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelectedPointerOver" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="ComboBoxItemBackgroundSelectedPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelected" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelectedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelectedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemBorderBrushSelectedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ComboBoxItemForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxItemForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelected" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelectedDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelectedPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ComboBoxItemForegroundSelectedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <!-- TabStripItem and TabItem -->
+      <StaticResource x:Key="TabItemHeaderBackgroundDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundSelected" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundSelectedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundSelectedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundUnselected" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="TabItemHeaderBackgroundUnselectedPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="TabItemHeaderBackgroundUnselectedPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="TabItemHeaderForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TabItemHeaderForegroundSelected" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundSelectedPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundSelectedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundUnselected" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="TabItemHeaderForegroundUnselectedPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderForegroundUnselectedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="TabItemHeaderSelectedPipeFill" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <!-- ScrollBar -->
+      <StaticResource x:Key="ScrollBarBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="ScrollBarBorderBrush" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonArrowForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarButtonArrowForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarButtonArrowForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ScrollBarButtonArrowForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ScrollBarButtonBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="ScrollBarButtonBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrush" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrushDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrushPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarButtonBorderBrushPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarPanningThumbBackground" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ScrollBarThumbBackgroundColor" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ScrollBarThumbFillDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarThumbFillPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ScrollBarThumbFillPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ScrollBarTrackFill" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarTrackFillPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="ScrollBarTrackStroke" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ScrollBarTrackStrokePointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <!-- ToolTip -->
+      <StaticResource x:Key="ToolTipBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="ToolTipBorderBrush" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ToolTipForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <!-- Flyout -->
+      <StaticResource x:Key="FlyoutBorderThemeBrush" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="FlyoutPresenterBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <!-- Menu and context-menu items -->
+      <StaticResource x:Key="MenuFlyoutItemBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="MenuFlyoutItemBackgroundDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="MenuFlyoutItemBackgroundPointerOver" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="MenuFlyoutItemBackgroundPressed" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="MenuFlyoutItemForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="MenuFlyoutItemForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="MenuFlyoutItemForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForeground" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutPresenterBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />
+      <StaticResource x:Key="MenuFlyoutPresenterBorderBrush" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevron" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="MenuFlyoutSubItemChevronSubMenuOpened" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <!-- ToggleSwitch -->
+      <StaticResource x:Key="ToggleSwitchContainerBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchContainerBackgroundPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchContainerBackgroundPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchContentForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="ToggleSwitchFillOff" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchFillOffPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchFillOffPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="ToggleSwitchFillOn" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchFillOnDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchFillOnPointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchFillOnPressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchHeaderForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOff" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOffDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOffPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOffPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOn" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOnDisabled" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOnPointerOver" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchKnobFillOnPressed" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="ToggleSwitchStrokeOff" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="ToggleSwitchStrokeOffDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="ToggleSwitchStrokeOffPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchStrokeOffPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="ToggleSwitchStrokeOn" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchStrokeOnDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchStrokeOnPointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="ToggleSwitchStrokeOnPressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <!-- CheckBox -->
+      <StaticResource x:Key="CheckBoxBackgroundChecked" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundCheckedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundCheckedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundCheckedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminate" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminateDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminatePointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundIndeterminatePressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUnchecked" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUncheckedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUncheckedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBackgroundUncheckedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushChecked" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushCheckedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushCheckedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushCheckedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminate" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminateDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminatePointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushIndeterminatePressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUnchecked" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUncheckedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUncheckedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxBorderBrushUncheckedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillChecked" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminate" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUnchecked" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminate" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminateDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUnchecked" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundChecked" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminate" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminateDisabled" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUnchecked" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUncheckedDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUncheckedPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundUncheckedPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="CheckBoxForegroundChecked" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundCheckedDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxForegroundCheckedPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundCheckedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminate" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminateDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminatePointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundIndeterminatePressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundUnchecked" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundUncheckedDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="CheckBoxForegroundUncheckedPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="CheckBoxForegroundUncheckedPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <!-- RadioButton -->
+      <StaticResource x:Key="RadioButtonBackground" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBackgroundDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBackgroundPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBackgroundPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrush" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrushDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrushPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonBorderBrushPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFill" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFillDisabled" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFillPointerOver" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphFillPressed" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStroke" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStrokeDisabled" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStrokePointerOver" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonCheckGlyphStrokePressed" ResourceKey="Autonogrammer.Color.AccentPurpleOn" />
+      <StaticResource x:Key="RadioButtonForeground" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="RadioButtonForegroundDisabled" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="RadioButtonForegroundPointerOver" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="RadioButtonForegroundPressed" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFill" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillPressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStroke" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokePressed" ResourceKey="Autonogrammer.Color.AccentPurple" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFill" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFillDisabled" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFillPointerOver" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseFillPressed" ResourceKey="Autonogrammer.Brush.Transparent" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStroke" ResourceKey="Autonogrammer.Color.BorderStrong" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStrokeDisabled" ResourceKey="Autonogrammer.Color.Border" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStrokePointerOver" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="RadioButtonOuterEllipseStrokePressed" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <!-- List rows and shared system brushes that the Fluent templates read (defined in Fluent's base resources) -->
+      <StaticResource x:Key="SystemControlHighlightListLowBrush" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="SystemControlHighlightListMediumBrush" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="SystemControlHighlightListLowRevealBackgroundBrush" ResourceKey="Autonogrammer.Color.Hover" />
+      <StaticResource x:Key="SystemControlHighlightListMediumRevealBackgroundBrush" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="SystemControlHighlightListAccentLowBrush" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="SystemControlHighlightListAccentMediumBrush" ResourceKey="Autonogrammer.Color.Selected" />
+      <StaticResource x:Key="SystemControlHighlightListAccentHighBrush" ResourceKey="Autonogrammer.Color.SurfaceActive" />
+      <StaticResource x:Key="SystemControlHighlightAltBaseHighBrush" ResourceKey="Autonogrammer.Color.TextPrimary" />
+      <StaticResource x:Key="SystemControlDisabledBaseMediumLowBrush" ResourceKey="Autonogrammer.Color.TextSecondary" />
+      <StaticResource x:Key="SystemControlErrorTextForegroundBrush" ResourceKey="Autonogrammer.Color.StatusError" />
+      <!-- Metrics -->
+      <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
+      <CornerRadius x:Key="OverlayCornerRadius">10</CornerRadius>
+      <Thickness x:Key="ButtonPadding">11,0</Thickness>
+      <x:Double x:Key="ControlContentThemeFontSize">13</x:Double>
+      <x:Double x:Key="TextControlThemeMinHeight">32</x:Double>
+      <Thickness x:Key="TextControlThemePadding">9,0</Thickness>
+      <Thickness x:Key="TextControlBorderThemeThickness">1</Thickness>
+      <Thickness x:Key="TextControlBorderThemeThicknessFocused">2</Thickness>
+      <x:Double x:Key="ComboBoxMinHeight">32</x:Double>
+      <Thickness x:Key="ComboBoxPadding">9,0,0,0</Thickness>
+      <Thickness x:Key="ComboBoxItemThemePadding">8,0</Thickness>
+      <x:Double x:Key="TabItemHeaderFontSize">13</x:Double>
+      <FontWeight x:Key="TabItemHeaderThemeFontWeight">Medium</FontWeight>
+      <Thickness x:Key="TabItemHeaderMargin">12,0</Thickness>
+      <x:Double x:Key="TabStripItemMinHeight">28</x:Double>
+      <x:Double x:Key="TabStripItemPipeThickness">2</x:Double>
+      <x:Double x:Key="ScrollBarSize">10</x:Double>
+      <x:Double x:Key="ToolTipContentThemeFontSize">12</x:Double>
+      <x:Double x:Key="ToolTipContentMaxWidth">360</x:Double>
+      <Thickness x:Key="ToolTipBorderThemePadding">8,4</Thickness>
+      <Thickness x:Key="FlyoutBorderThemePadding">12</Thickness>
+      <Thickness x:Key="FlyoutContentThemePadding">0</Thickness>
+      <Thickness x:Key="MenuFlyoutItemThemePaddingNarrow">8,4</Thickness>
+      <Thickness x:Key="ListBoxItemPadding">8,4</Thickness>
+      <x:Double x:Key="CheckBoxMinHeight">32</x:Double>
+      <x:Double x:Key="RadioButtonMinHeight">24</x:Double>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <!-- Type tokens (20-UI-SPEC.md, Typography; spec 2.4). The bundled faces are static instances named by their avares folder URI,
+       so Avalonia loads every weight of the family; the fallbacks follow the family name after the fragment.
+       Anybody (Display) is used only at 20 px and above, weight SemiBold. -->
+  <FontFamily x:Key="Autonogrammer.Font.Family">avares://Autonogrammer.Native.Views/Assets/Fonts/DMSans#DM Sans, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
+  <FontFamily x:Key="Autonogrammer.Font.Display">avares://Autonogrammer.Native.Views/Assets/Fonts/Anybody#Anybody, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
+  <FontFamily x:Key="Autonogrammer.Font.Mono">avares://Autonogrammer.Native.Views/Assets/Fonts/SpaceMono#Space Mono, Menlo, Consolas, Liberation Mono, monospace</FontFamily>
+  <x:Double x:Key="Autonogrammer.Font.Size.Small">12</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.Size.Label">13</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.Size.Body">14</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.Size.Heading">16</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.Size.DisplaySm">20</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.Size.Display">24</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.Size.Mono">12</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.Size.MonoTerminal">13</x:Double>
+  <FontWeight x:Key="Autonogrammer.Font.Weight.Regular">Normal</FontWeight>
+  <FontWeight x:Key="Autonogrammer.Font.Weight.Medium">Medium</FontWeight>
+  <FontWeight x:Key="Autonogrammer.Font.Weight.Semibold">SemiBold</FontWeight>
+  <x:Double x:Key="Autonogrammer.Font.LineHeight.Small">16</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.LineHeight.Label">18</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.LineHeight.Body">21</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.LineHeight.Heading">22</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.LineHeight.DisplaySm">26</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.LineHeight.Display">30</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.LineHeight.Mono">18</x:Double>
+  <x:Double x:Key="Autonogrammer.Font.LineHeight.MonoTerminal">17</x:Double>
+
+  <!-- Spacing tokens. Uniform Thickness values: they are applied to Padding, Margin and BorderThickness, which take Thickness. -->
+  <Thickness x:Key="Autonogrammer.Space.Xxs">2</Thickness>
+  <Thickness x:Key="Autonogrammer.Space.Xs">4</Thickness>
+  <Thickness x:Key="Autonogrammer.Space.Compact">6</Thickness>
+  <Thickness x:Key="Autonogrammer.Space.Sm">8</Thickness>
+  <Thickness x:Key="Autonogrammer.Space.Cozy">12</Thickness>
+  <Thickness x:Key="Autonogrammer.Space.Md">16</Thickness>
+  <Thickness x:Key="Autonogrammer.Space.Lg">24</Thickness>
+  <Thickness x:Key="Autonogrammer.Space.Xl">32</Thickness>
+  <Thickness x:Key="Autonogrammer.Space.Xxl">48</Thickness>
+  <Thickness x:Key="Autonogrammer.Space.Xxxl">64</Thickness>
+
+  <!-- Corner radius scale (2.5): Sm chips and skeletons, Control buttons and inputs, Md cards, Column Kanban columns, Lg composer and popups, Pill chips and round buttons. -->
+  <CornerRadius x:Key="Autonogrammer.Radius.Sm">4</CornerRadius>
+  <CornerRadius x:Key="Autonogrammer.Radius.Control">6</CornerRadius>
+  <CornerRadius x:Key="Autonogrammer.Radius.Md">8</CornerRadius>
+  <CornerRadius x:Key="Autonogrammer.Radius.Column">10</CornerRadius>
+  <CornerRadius x:Key="Autonogrammer.Radius.Lg">12</CornerRadius>
+  <CornerRadius x:Key="Autonogrammer.Radius.Pill">999</CornerRadius>
+
+  <!-- A transparent fill for the Fluent aliases of the variants: Transparent cannot be an Autonogrammer.Color.* role (every such element is a hex role). -->
+  <SolidColorBrush x:Key="Autonogrammer.Brush.Transparent">Transparent</SolidColorBrush>
+
+  <!-- Hairline: the width of every divider and card outline. -->
+  <Thickness x:Key="Autonogrammer.Border.Hairline">1</Thickness>
+
+  <!-- Scalar gaps for StackPanel.Spacing and Grid.ColumnSpacing, which take double. Same values as the spacing tokens. -->
+  <x:Double x:Key="Autonogrammer.Gap.Xxs">2</x:Double>
+  <x:Double x:Key="Autonogrammer.Gap.Xs">4</x:Double>
+  <x:Double x:Key="Autonogrammer.Gap.Compact">6</x:Double>
+  <x:Double x:Key="Autonogrammer.Gap.Sm">8</x:Double>
+  <x:Double x:Key="Autonogrammer.Gap.Cozy">12</x:Double>
+
+  <!-- Fixed sizes (the 2 px focus stroke is a border width). TargetMin is the one place that sets the control height of every view that writes
+       MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}": 32 on the desktop (OQ-87; WCAG 2.2 AA asks 24). The Android head overrides it with 44 in
+       its application resources, where a finger is the pointer. Control heights: ControlHeight buttons and inputs, ControlHeightSm toolbar buttons,
+       tabs and chips that are buttons; IconButton and IconButtonSm square icon buttons (24 is the WCAG 2.2 AA minimum target, SC 2.5.8). -->
+  <x:Double x:Key="Autonogrammer.Size.SessionListWidth">240</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.TargetMin">32</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.ControlHeight">32</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.ControlHeightSm">28</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.IconButton">28</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.IconButtonSm">24</x:Double>
+  <Thickness x:Key="Autonogrammer.Size.FocusBorder">2</Thickness>
+
+  <!-- Agent Panel sizes (46-UI-SPEC, Spacing Scale). Fixed sizes, not spacing and not colours, so they sit outside the theme variants. -->
+  <x:Double x:Key="Autonogrammer.Size.AgentRailWidth">280</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.StageFlyoutWidth">360</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.StageFlyoutMaxHeight">360</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.ThreadMinWidth">400</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.ThreadContentMaxWidth">760</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.SessionRowMinHeight">48</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.StageRowMinHeight">28</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.ChipHeight">20</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.IconSize">16</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.IconSizeSm">14</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.TitleBarHeight">40</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.PipelineStripHeight">28</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.ComposerMinHeight">72</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.ComposerMaxHeight">220</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.ScrollBarThumb">6</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.SettingsNavWidth">220</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.SettingsContentMaxWidth">720</x:Double>
+  <x:Double x:Key="Autonogrammer.Size.KanbanColumnWidth">280</x:Double>
+
+</ResourceDictionary>

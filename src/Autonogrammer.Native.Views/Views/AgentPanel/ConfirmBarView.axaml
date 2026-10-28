@@ -1,0 +1,83 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:copy="clr-namespace:Autonogrammer.Presentation.AgentPanel;assembly=Autonogrammer.Presentation"
+             xmlns:local="clr-namespace:Autonogrammer.Native.Views.AgentPanel"
+             x:Class="Autonogrammer.Native.Views.AgentPanel.ConfirmBarView"
+             x:DataType="copy:AgentSessionViewModel">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- Two inline confirmation bars, never a dialog. Both are hidden until opened, so neither is a tab stop before that. The safe choice
+       takes focus when a bar opens: Stop agent for the stop bar (Esc keeps running), Keep agent open for the close bar. -->
+  <StackPanel>
+
+    <Border x:Name="StopConfirmBar"
+            Background="{DynamicResource Autonogrammer.Color.SurfaceRaised}"
+            Padding="{DynamicResource Autonogrammer.Space.Sm}"
+            IsVisible="False"
+            AutomationProperties.Name="{x:Static local:AgentPanelViewText.ConfirmStopName}"
+            AutomationProperties.LiveSetting="Polite">
+      <DockPanel LastChildFill="True">
+        <WrapPanel DockPanel.Dock="Right"
+                   Orientation="Horizontal"
+                   VerticalAlignment="Center"
+                   ItemSpacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                   LineSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+          <Button x:Name="StopAgentButton"
+                  Content="{x:Static copy:AgentPanelCopy.StopAgent}"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Padding="{DynamicResource Autonogrammer.Space.Md}"
+                  AutomationProperties.Name="{x:Static copy:AgentPanelCopy.StopAgent}" />
+          <Button x:Name="KeepRunningButton"
+                  Content="{x:Static copy:AgentPanelCopy.KeepRunning}"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Padding="{DynamicResource Autonogrammer.Space.Md}"
+                  AutomationProperties.Name="{x:Static copy:AgentPanelCopy.KeepRunning}" />
+        </WrapPanel>
+        <TextBlock x:Name="StopConfirmText"
+                   Text="{x:Static copy:AgentPanelCopy.StopConfirmation}"
+                   VerticalAlignment="Center"
+                   Margin="0,0,8,0"
+                   TextWrapping="Wrap"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}" />
+      </DockPanel>
+    </Border>
+
+    <Border x:Name="CloseConfirmBar"
+            Background="{DynamicResource Autonogrammer.Color.SurfaceRaised}"
+            Padding="{DynamicResource Autonogrammer.Space.Sm}"
+            IsVisible="False"
+            AutomationProperties.Name="{x:Static local:AgentPanelViewText.ConfirmCloseName}"
+            AutomationProperties.LiveSetting="Polite">
+      <DockPanel LastChildFill="True">
+        <WrapPanel DockPanel.Dock="Right"
+                   Orientation="Horizontal"
+                   VerticalAlignment="Center"
+                   ItemSpacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                   LineSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+          <Button x:Name="CloseAgentButton"
+                  Classes="destructive"
+                  Content="{x:Static copy:AgentPanelCopy.CloseAgent}"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Padding="{DynamicResource Autonogrammer.Space.Md}"
+                  AutomationProperties.Name="{x:Static copy:AgentPanelCopy.CloseAgent}" />
+          <Button x:Name="KeepAgentOpenButton"
+                  Content="{x:Static copy:AgentPanelCopy.KeepAgentOpen}"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Padding="{DynamicResource Autonogrammer.Space.Md}"
+                  AutomationProperties.Name="{x:Static copy:AgentPanelCopy.KeepAgentOpen}" />
+        </WrapPanel>
+        <TextBlock x:Name="CloseConfirmText"
+                   Text="{CompiledBinding CloseConfirmationText}"
+                   VerticalAlignment="Center"
+                   Margin="0,0,8,0"
+                   TextWrapping="Wrap"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}" />
+      </DockPanel>
+    </Border>
+
+  </StackPanel>
+
+</UserControl>

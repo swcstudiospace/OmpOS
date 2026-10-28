@@ -1,5 +1,5 @@
 ---
-description: "Troubleshooting and frequently asked questions for OmpOS: starting the app, plugins, providers and keys, the web Demo, remote and cloud agents, and what is not verified."
+description: "Troubleshooting and frequently asked questions for Autonogrammer: starting the app, plugins, providers and keys, the web Demo, remote and cloud agents, and what is not verified."
 ---
 
 # Troubleshooting and FAQ
@@ -12,9 +12,9 @@ Applies to: v0.15.0
 
 ## Frequently asked questions
 
-**What is OmpOS?** A workspace for coding agents on the omp engine, with a desktop app, a web app, cloud agents and remote environments. See [Getting started](getting-started.md) and [Concepts](concepts.md).
+**What is Autonogrammer?** A workspace for coding agents on the omp engine, with a desktop app, a web app, cloud agents and remote environments. See [Getting started](getting-started.md) and [Concepts](concepts.md).
 
-**Does OmpOS include a model?** No. omp talks to the provider you configure: [Choose a model provider](providers-guide.md). OmpOS does not sell, proxy or resell inference.
+**Does Autonogrammer include a model?** No. omp talks to the provider you configure: [Choose a model provider](providers-guide.md). Autonogrammer does not sell, proxy or resell inference.
 
 **Is it a Cursor replacement?** It targets the Cursor 3.27 feature set under an open licence, and the [parity audit](../quality/cursor-parity-audit-2026-10-28.md) lists, row by row, what is built, partial or left out. Cursor's accounts, teams and billing are left out on purpose.
 
@@ -24,7 +24,7 @@ Applies to: v0.15.0
 
 **What is the Demo?** The web app answered by a scripted engine inside the browser. It is labelled "Demo", calls no model and keeps nothing. It is deployed at <https://ompos-web.vercel.app> (recorded 2026-10-28). See [Web app guide](web-app-guide.md).
 
-**What licence is it?** AGPL-3.0-or-later. If you run a modified OmpOS as a service, you must offer your users the source: [Licensing](../licensing.md).
+**What licence is it?** AGPL-3.0-or-later. If you run a modified Autonogrammer as a service, you must offer your users the source: [Licensing](../licensing.md).
 
 **Is the documentation site published?** Not until the owner connects GitBook and a live URL is confirmed: [Publish the docs with GitBook](../runbooks/gitbook-publish.md). The Markdown in `docs/` is readable on GitHub now.
 
@@ -34,7 +34,7 @@ Applies to: v0.15.0
 |---|---|---|
 | `dotnet` not found | The SDK is not installed or not on `PATH` | Run `./bootstrap.sh` (installs the SDK pinned in `global.json` into `~/.dotnet`), then `export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH`. |
 | `omp` not found when you send a prompt | The engine is not installed or not on `PATH` | Install omp and check `omp --version`. The app starts no omp process until you send a prompt or open an omp terminal. |
-| The app starts but there is no state where you expect it | `OMPOS_STATE_DIR` is set or XDG paths differ | State is under `$OMPOS_STATE_DIR`, else `$XDG_DATA_HOME/OmpOS`, else `~/.local/share/OmpOS`. |
+| The app starts but there is no state where you expect it | `AUTONOGRAMMER_STATE_DIR` is set or XDG paths differ | State is under `$AUTONOGRAMMER_STATE_DIR`, else `$XDG_DATA_HOME/Autonogrammer`, else `~/.local/share/Autonogrammer`. |
 | Restore or build fails after changing a package | Lock files out of date | `dotnet restore --force-evaluate` and commit the lock files. See [Local development](../runbooks/local-dev.md). |
 
 ## Plugins
@@ -43,7 +43,7 @@ Applies to: v0.15.0
 |---|---|---|
 | A plugin shows Unavailable | The submodule is not initialised | `git submodule update --init --recursive plugins/<name>`. |
 | Substrate Unavailable, private repository | No read access to `swcstudiospace/substrate` | Authenticate to GitHub with an account that can read it, then initialise the submodule. Sessions still run without it. |
-| Substrate Degraded | Its server is unhealthy, or the token variable is unset | Start the server and set the variable named by `OMPOS_SUBSTRATE_TOKEN_ENV` (default `SUBSTRATE_TOKEN_OMP`). |
+| Substrate Degraded | Its server is unhealthy, or the token variable is unset | Start the server and set the variable named by `AUTONOGRAMMER_SUBSTRATE_TOKEN_ENV` (default `SUBSTRATE_TOKEN_OMP`). |
 | GSD phase unknown | `node` older than 24 or GSD-Core missing | `node --version`; `node plugins/gsd-core-omp/bin/gsd-omp-probe.mjs`. |
 | Ultrathink never leaves Running | Planning is in progress | Wait: there is no progress signal before its session file is written. |
 
@@ -73,7 +73,7 @@ More in the [Agent loop runbook](../runbooks/agent-loop.md).
 |---|---|---|
 | A remote profile fails preflight | `ssh` cannot reach the host, host key not trusted, or no omp there | Each diagnosis is explained in [Remote environments](../runbooks/remote-ssh.md). |
 | A container session cannot create files | An old build of the remote scripts on a BusyBox image (alpine) | Fixed in this release (`RemoteScriptsBusyBoxTests`); see [Containers and WSL](../runbooks/remote-containers.md). WSL profiles need Windows. |
-| Cloud agents do nothing | `Cloud:Enabled` is false by default and no control plane is deployed | See [Cloud agents](../runbooks/cloud-agents.md): the API is not deployed on Railway (only a staged private worker is). The desktop shows "not set up" without `OMPOS_API_BASE_URL`. |
+| Cloud agents do nothing | `Cloud:Enabled` is false by default and no control plane is deployed | See [Cloud agents](../runbooks/cloud-agents.md): the API is not deployed on Railway (only a staged private worker is). The desktop shows "not set up" without `AUTONOGRAMMER_API_BASE_URL`. |
 | Automations return 404 `automations_disabled` | `Automations:Enabled` is false by default in the API | The desktop scheduler needs no API: see [Automations](../reference/automations.md). |
 
 ## Docs checks
@@ -81,7 +81,7 @@ More in the [Agent loop runbook](../runbooks/agent-loop.md).
 | Symptom | Fix |
 |---|---|
 | `scripts/ci/check-docs.sh` reports an orphan page | Add the page to `docs/SUMMARY.md` (or put it under an ignored tree such as `docs/plans/`). |
-| A pinned screenshot is missing | Warning only; `OMPOS_RELEASE=1` makes it an error. The eight pinned images exist in `docs/assets/screens/` since 2026-10-28. |
+| A pinned screenshot is missing | Warning only; `AUTONOGRAMMER_RELEASE=1` makes it an error. The eight pinned images exist in `docs/assets/screens/` since 2026-10-28. |
 | GitBook shows a page with raw front matter | An unquoted `description:` containing `:` or `#` fails silently in Git Sync: quote it. |
 
 If none of this helps, see [Contributing, security and support](community.md).

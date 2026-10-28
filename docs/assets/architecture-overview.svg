@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" width="960" height="560" role="img" aria-labelledby="t d" font-family="'DM Sans', 'Segoe UI', Arial, sans-serif" font-size="14">
-  <title id="t">OmpOS architecture overview</title>
+  <title id="t">Autonogrammer architecture overview</title>
   <desc id="d">Three heads (desktop, web, Android) sit on one presentation layer. The desktop head runs the harness libraries in its own process, which start omp and its four plugins, or reach omp on a remote machine over ssh. The web head talks to the ASP.NET Core API over HTTPS and server-sent events. The API runs sessions through the same harness libraries and, for cloud agents, reaches an agent worker over a WebSocket; the API, the worker and the PostgreSQL session log are intended to run on Railway, where only a staged private worker is deployed so far.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
@@ -20,18 +20,18 @@
   </g>
   <g fill="#1c1c1a" text-anchor="middle">
     <text x="175" y="52" font-weight="600">Desktop head</text>
-    <text x="175" y="74" font-size="12">Avalonia, apps/OmpOS.Native</text>
+    <text x="175" y="74" font-size="12">Avalonia, apps/Autonogrammer.Native</text>
     <text x="480" y="52" font-weight="600">Web head</text>
-    <text x="480" y="74" font-size="12">Blazor WebAssembly, apps/OmpOS.Web</text>
+    <text x="480" y="74" font-size="12">Blazor WebAssembly, apps/Autonogrammer.Web</text>
     <text x="785" y="52" font-weight="600">Android head</text>
-    <text x="785" y="74" font-size="12">Avalonia, apps/OmpOS.Android (not run)</text>
+    <text x="785" y="74" font-size="12">Avalonia, apps/Autonogrammer.Android (not run)</text>
   </g>
 
   <!-- Presentation layer -->
   <rect x="40" y="132" width="880" height="62" rx="10" fill="#6d28d9"/>
   <g fill="#ffffff" text-anchor="middle">
-    <text x="480" y="158" font-weight="600">Presentation layer: OmpOS.Presentation (view models, no UI framework)</text>
-    <text x="480" y="180" font-size="12">OmpOS.Native.Views (Avalonia views) and OmpOS.UI (Razor components) draw the same models</text>
+    <text x="480" y="158" font-weight="600">Presentation layer: Autonogrammer.Presentation (view models, no UI framework)</text>
+    <text x="480" y="180" font-size="12">Autonogrammer.Native.Views (Avalonia views) and Autonogrammer.UI (Razor components) draw the same models</text>
   </g>
   <g stroke="#5b21b6" stroke-width="2" fill="none" marker-end="url(#arrow)">
     <path d="M175,96 L175,130"/>
@@ -53,7 +53,7 @@
   <!-- API -->
   <rect x="520" y="262" width="400" height="82" rx="10" fill="#ffffff" stroke="#6d28d9" stroke-width="1.5"/>
   <g fill="#1c1c1a">
-    <text x="536" y="286" font-weight="600">OmpOS.Api (ASP.NET Core)</text>
+    <text x="536" y="286" font-weight="600">Autonogrammer.Api (ASP.NET Core)</text>
     <text x="536" y="306" font-size="12">sessions, runs, SSE events, changes, providers, workspace</text>
     <text x="536" y="324" font-size="12">settings, cloud control plane; runs sessions in process</text>
   </g>

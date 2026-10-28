@@ -15,10 +15,10 @@ If the request leaves any of these open, ask once, in a single message, and then
 
 - **What should happen**, in one sentence (for example "block `rm -rf` outside the workspace" or "run prettier after every edit").
 - **Which event.** Choose from the list below. When two events fit, prefer the one that can block if the hook must stop something, and the one that only observes if it just reacts.
-- **Where it lives.** Default: the project file `.ompos/hooks.json` in the workspace root. A personal hook goes to `~/.ompos/hooks.json`. Do not write a Cursor or Claude file unless the user asks for it.
+- **Where it lives.** Default: the project file `.autonogrammer/hooks.json` in the workspace root. A personal hook goes to `~/.autonogrammer/hooks.json`. Do not write a Cursor or Claude file unless the user asks for it.
 - **Fail-open or fail-closed.** Default is fail-open (an error lets the action through). Set `"failClosed": true` only when the user wants a broken hook to block the action, and only on an event that can block.
 
-Events: `sessionStart`, `sessionEnd`, `preToolUse`, `postToolUse`, `postToolUseFailure`, `subagentStart`, `subagentStop`, `beforeShellExecution`, `afterShellExecution`, `beforeMCPExecution`, `afterMCPExecution`, `beforeReadFile`, `afterFileEdit`, `beforeSubmitPrompt`, `preCompact`, `stop`, `afterAgentResponse`, `afterAgentThought`, `workspaceOpen`. The events that guard an action are `preToolUse`, `subagentStart`, `beforeShellExecution`, `beforeMCPExecution` and `beforeReadFile`. Read `docs/reference/hooks.md` in the OmpOS repository, or the project's copy, when you need the fields an event sends or answers with. Do not use the Tab events: OmpOS accepts them and never fires them.
+Events: `sessionStart`, `sessionEnd`, `preToolUse`, `postToolUse`, `postToolUseFailure`, `subagentStart`, `subagentStop`, `beforeShellExecution`, `afterShellExecution`, `beforeMCPExecution`, `afterMCPExecution`, `beforeReadFile`, `afterFileEdit`, `beforeSubmitPrompt`, `preCompact`, `stop`, `afterAgentResponse`, `afterAgentThought`, `workspaceOpen`. The events that guard an action are `preToolUse`, `subagentStart`, `beforeShellExecution`, `beforeMCPExecution` and `beforeReadFile`. Read `docs/reference/hooks.md` in the Autonogrammer repository, or the project's copy, when you need the fields an event sends or answers with. Do not use the Tab events: Autonogrammer accepts them and never fires them.
 
 ## 2. Read before you write
 
@@ -28,7 +28,7 @@ Events: `sessionStart`, `sessionEnd`, `preToolUse`, `postToolUse`, `postToolUseF
 
 ## 3. Write the script
 
-Put the script next to the file it belongs to: `.ompos/hooks/<name>.sh` for a project hook, `~/.ompos/hooks/<name>.sh` for a user hook. Use a language the machine already has; a POSIX shell script with `jq` is fine when `jq` is installed, otherwise use `python3` or `node`. Rules for every script:
+Put the script next to the file it belongs to: `.autonogrammer/hooks/<name>.sh` for a project hook, `~/.autonogrammer/hooks/<name>.sh` for a user hook. Use a language the machine already has; a POSIX shell script with `jq` is fine when `jq` is installed, otherwise use `python3` or `node`. Rules for every script:
 
 - It reads **one JSON object from standard input** and may write **one JSON object to standard output**. Read stdin completely before it decides.
 - It exits `0` on success. Exit `2` blocks the action (the same as `"permission": "deny"`); anything else is a failure.

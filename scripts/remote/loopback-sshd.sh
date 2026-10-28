@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
-# A throwaway sshd on 127.0.0.1 for the live remote-environment tests (OMPOS_LIVE_SSH=1) and for trying a remote profile by hand.
+# A throwaway sshd on 127.0.0.1 for the live remote-environment tests (AUTONOGRAMMER_LIVE_SSH=1) and for trying a remote profile by hand.
 #
 # It starts /usr/sbin/sshd in the foreground on a random high port with a temporary host key, a temporary client key as the only
 # authorized key, StrictModes no, PasswordAuthentication no and UsePAM no, waits until the port accepts connections, and prints
 #   1. the ready line: the ssh command that logs in (starts with `ssh -p <port> -i <key>`),
-#   2. one `OMPOS_LIVE_ENV` line with the variables tests/OmpOS.Harness.Remote.Tests/RemoteSshLiveTests.cs reads.
+#   2. one `AUTONOGRAMMER_LIVE_ENV` line with the variables tests/Autonogrammer.Harness.Remote.Tests/RemoteSshLiveTests.cs reads.
 # It runs until it is killed (Ctrl-C or SIGTERM); the temporary directory, the keys and the server go away with it.
 #
 # Nothing here touches ~/.ssh, ~/.omp or any system configuration. The server accepts only the current user, only the generated
 # key, and only from this machine. Do not point it at anything other than a test.
 #
 # Usage:  scripts/remote/loopback-sshd.sh
-#   OMPOS_SSHD=/path/to/sshd         override the sshd binary (default /usr/sbin/sshd)
-#   OMPOS_SSH_KEYGEN=/path/ssh-keygen override ssh-keygen (default: from PATH)
+#   AUTONOGRAMMER_SSHD=/path/to/sshd         override the sshd binary (default /usr/sbin/sshd)
+#   AUTONOGRAMMER_SSH_KEYGEN=/path/ssh-keygen override ssh-keygen (default: from PATH)
 set -euo pipefail
 
-SSHD="${OMPOS_SSHD:-/usr/sbin/sshd}"
-KEYGEN="${OMPOS_SSH_KEYGEN:-ssh-keygen}"
+SSHD="${AUTONOGRAMMER_SSHD:-/usr/sbin/sshd}"
+KEYGEN="${AUTONOGRAMMER_SSH_KEYGEN:-ssh-keygen}"
 
 ATTEMPTS=10
 READY_BUDGET_SECONDS=20
@@ -29,7 +29,7 @@ for tool in "$SSHD" "$KEYGEN"; do
 done
 
 user="$(id -un)"
-dir="${TMPDIR:-/tmp}/ompos-loopback-sshd.$$.$RANDOM$RANDOM"
+dir="${TMPDIR:-/tmp}/autonogrammer-loopback-sshd.$$.$RANDOM$RANDOM"
 mkdir -m 700 "$dir"
 pid=""
 
@@ -48,8 +48,8 @@ if [ "$(id -u)" = "0" ]; then
   mkdir -p /run/sshd
 fi
 
-"$KEYGEN" -q -t ed25519 -N '' -C ompos-loopback-host -f "$dir/host_key"
-"$KEYGEN" -q -t ed25519 -N '' -C ompos-loopback-client -f "$dir/client_key"
+"$KEYGEN" -q -t ed25519 -N '' -C autonogrammer-loopback-host -f "$dir/host_key"
+"$KEYGEN" -q -t ed25519 -N '' -C autonogrammer-loopback-client -f "$dir/client_key"
 cp "$dir/client_key.pub" "$dir/authorized_keys"
 chmod 600 "$dir/authorized_keys"
 
@@ -112,6 +112,6 @@ printf '[127.0.0.1]:%s %s\n' "$port" "$(cut -d' ' -f1,2 "$dir/host_key.pub")" > 
 
 
 echo "ssh -p $port -i $dir/client_key -o UserKnownHostsFile=$dir/known_hosts -o StrictHostKeyChecking=yes -o BatchMode=yes $user@127.0.0.1"
-echo "OMPOS_LIVE_ENV OMPOS_LIVE_SSH=1 OMPOS_LIVE_SSH_PORT=$port OMPOS_LIVE_SSH_KEY=$dir/client_key OMPOS_LIVE_SSH_KNOWN_HOSTS=$dir/known_hosts OMPOS_LIVE_SSH_USER=$user"
+echo "AUTONOGRAMMER_LIVE_ENV AUTONOGRAMMER_LIVE_SSH=1 AUTONOGRAMMER_LIVE_SSH_PORT=$port AUTONOGRAMMER_LIVE_SSH_KEY=$dir/client_key AUTONOGRAMMER_LIVE_SSH_KNOWN_HOSTS=$dir/known_hosts AUTONOGRAMMER_LIVE_SSH_USER=$user"
 
 wait "$pid" || true

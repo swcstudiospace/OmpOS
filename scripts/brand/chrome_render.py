@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Headless Chrome helpers for the OmpOS brand build.
+"""Headless Chrome helpers for the Autonogrammer brand build.
 
 Chrome is the only renderer on the build host that shapes and kerns the bundled
 TTFs correctly, so it rasterises banners (screenshot) and produces the PDF that
@@ -13,7 +13,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-FONTS = REPO / "src" / "OmpOS.Native.Views" / "Assets" / "Fonts"
+FONTS = REPO / "src" / "Autonogrammer.Native.Views" / "Assets" / "Fonts"
 
 CHROME_FLAGS = [
     "--headless=new",
@@ -63,7 +63,7 @@ def screenshot(svg_path: Path, out_png: Path) -> None:
     """Rasterise an SVG source at its natural pixel size with Chrome."""
     svg = svg_path.read_text(encoding="utf-8")
     width, height = _viewbox(svg)
-    with tempfile.TemporaryDirectory(prefix="ompos-brand-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="autonogrammer-brand-") as tmp:
         page = Path(tmp) / "page.html"
         page.write_text(_page(svg, width, height), encoding="utf-8")
         subprocess.run(
@@ -78,7 +78,7 @@ def print_pdf(svg_path: Path, out_pdf: Path) -> None:
     """Print an SVG source to a one-page PDF whose page equals the viewBox."""
     svg = svg_path.read_text(encoding="utf-8")
     width, height = _viewbox(svg)
-    with tempfile.TemporaryDirectory(prefix="ompos-brand-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="autonogrammer-brand-") as tmp:
         page = Path(tmp) / "page.html"
         page.write_text(_page(svg, width, height), encoding="utf-8")
         subprocess.run(

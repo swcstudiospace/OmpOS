@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Blocks.A2uiSurfaceView"
+             AutomationProperties.Name="Interface surface">
+
+  <!-- An A2UI surface is a card; its controls come from the shared library. -->
+  <Border Classes="card"
+          Padding="12,10">
+    <StackPanel x:Name="Components"
+                Spacing="{DynamicResource Autonogrammer.Gap.Sm}" />
+  </Border>
+
+</UserControl>

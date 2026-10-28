@@ -1,5 +1,5 @@
 ---
-description: "Run the OmpOS web head against the real API or as a static Demo with a simulated engine, and how to deploy the Demo."
+description: "Run the Autonogrammer web head against the real API or as a static Demo with a simulated engine, and how to deploy the Demo."
 ---
 
 # Web head runbook: real API, Demo, and static Demo deployment
@@ -10,7 +10,7 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-The web head (`apps/OmpOS.Web`, Blazor WebAssembly) can run in three ways. The decision is [ADR-0017](../decisions/ADR-0017-web-head-demo-mode.md). The only public deployment is the static Demo (simulated engine, no backend, no secret): <https://ompos-web.vercel.app>. The API must stay private until sign-in (OD-03) exists ([hosting runbook](hosting.md)); the API is not deployed to Railway (a staged private worker is, see the [cloud agents runbook](cloud-agents.md)).
+The web head (`apps/Autonogrammer.Web`, Blazor WebAssembly) can run in three ways. The decision is [ADR-0017](../decisions/ADR-0017-web-head-demo-mode.md). The only public deployment is the static Demo (simulated engine, no backend, no secret): <https://ompos-web.vercel.app>. The API must stay private until sign-in (OD-03) exists ([hosting runbook](hosting.md)); the API is not deployed to Railway (a staged private worker is, see the [cloud agents runbook](cloud-agents.md)).
 
 ## 1. The real API and the web head, both on this machine
 
@@ -19,9 +19,9 @@ The API refuses the development principal and the in-memory harness outside Deve
 ```bash
 ASPNETCORE_ENVIRONMENT=Development Harness__Adapter=InMemory Sessions__Store=InMemory Coordination__Store=InMemory \
   Api__Auth__AllowDevelopmentPrincipal=true Api__Cors__Origins__0=http://127.0.0.1:5180 \
-  dotnet run --project services/OmpOS.Api --urls http://127.0.0.1:5187
-dotnet publish apps/OmpOS.Web -c Release -o /tmp/ompos-web
-python3 -m http.server 5180 --bind 127.0.0.1 --directory /tmp/ompos-web/wwwroot
+  dotnet run --project services/Autonogrammer.Api --urls http://127.0.0.1:5187
+dotnet publish apps/Autonogrammer.Web -c Release -o /tmp/autonogrammer-web
+python3 -m http.server 5180 --bind 127.0.0.1 --directory /tmp/autonogrammer-web/wwwroot
 ```
 
 Open `http://127.0.0.1:5180/`. The page reads its API origin from `wwwroot/appsettings.json` (`Api:BaseUrl`, default `http://127.0.0.1:5187`); a loopback page may override it with `?apiBaseUrl=http://127.0.0.1:<port>`. The in-memory harness answers with an echo, not a model. `scripts/web-smoke/run-smoke.sh` does the same with a headless browser and axe.
@@ -33,7 +33,7 @@ Optional configuration of the API for the web head: `Api:Workspace:Root` (an abs
 The Demo is a build of the same head whose HTTP client is answered inside the browser.
 
 ```bash
-scripts/vercel/build-demo.sh            # publishes with -p:OmpOSDemo=true into output/demo
+scripts/vercel/build-demo.sh            # publishes with -p:AutonogrammerDemo=true into output/demo
 scripts/web-demo/serve-demo.sh          # http://127.0.0.1:5190/ (DEMO_PORT to change), loopback only
 ```
 
@@ -44,9 +44,9 @@ Honest limits: no model is called, no file exists, nothing leaves the page, the 
 A normal (non-Demo) build must contain no Demo code. Check it:
 
 ```bash
-dotnet publish apps/OmpOS.Web -c Release -o /tmp/ompos-prod
-grep -c DemoApiHandler /tmp/ompos-prod/wwwroot/_framework/OmpOS.Web*   # every count must be 0
-test ! -e /tmp/ompos-prod/wwwroot/appsettings.demo.json
+dotnet publish apps/Autonogrammer.Web -c Release -o /tmp/autonogrammer-prod
+grep -c DemoApiHandler /tmp/autonogrammer-prod/wwwroot/_framework/Autonogrammer.Web*   # every count must be 0
+test ! -e /tmp/autonogrammer-prod/wwwroot/appsettings.demo.json
 ```
 
 ## 3. Deploying the static Demo
@@ -58,7 +58,7 @@ scripts/vercel/build-demo.sh
 cd output/demo && vercel deploy        # a preview: Deployment Protection stays on; use a Shareable Link to show it
 ```
 
-Alternatively set `OMPOS_DEMO=1` in a Vercel project that builds from the repository: `vercel.ts` then runs `dotnet publish ... -p:OmpOSDemo=true` and needs no `OMPOS_API_ORIGIN`. Without `OMPOS_DEMO=1` the build still fails closed unless `OMPOS_API_ORIGIN` is a valid `https://host[:port]`.
+Alternatively set `AUTONOGRAMMER_DEMO=1` in a Vercel project that builds from the repository: `vercel.ts` then runs `dotnet publish ... -p:AutonogrammerDemo=true` and needs no `AUTONOGRAMMER_API_ORIGIN`. Without `AUTONOGRAMMER_DEMO=1` the build still fails closed unless `AUTONOGRAMMER_API_ORIGIN` is a valid `https://host[:port]`.
 
 Never point a hosted page at the development API through a tunnel: that would publish the development principal (ADR-0017).
 
@@ -69,7 +69,7 @@ Deployment record: project id `prj_5clbARYWIOrfgkMSK2Fvw2p0iXAc`. The first depl
 ## 3a. Capture and smoke
 
 ```bash
-node scripts/web-demo/capture.mjs                       # serves output/demo, one PNG per screen into /tmp/ompos-shots
+node scripts/web-demo/capture.mjs                       # serves output/demo, one PNG per screen into /tmp/autonogrammer-shots
 THEME=dark W=1440 H=900 PREFIX=D1440- node scripts/web-demo/capture.mjs
 URL=https://ompos-web.vercel.app node scripts/web-demo/capture.mjs     # the deployed Demo
 scripts/web-smoke/run-smoke.sh                          # SMOKE_TARGETS="api demo": axe on the Demo (68 runs) and the API half
@@ -80,7 +80,7 @@ Needs a headless Chrome (`CHROME_BIN`, default `google-chrome`). The smoke of th
 ## 4. Tests
 
 ```bash
-dotnet test tests/OmpOS.Web.Tests
+dotnet test tests/Autonogrammer.Web.Tests
 ```
 
 The Demo sources are compiled into the test project, so the Demo handler is tested on a manual clock (`ManualTimeProvider`) without a browser or a network. `OpenApiCoverageTests` reads `docs/api/openapi.json`, which the API build regenerates: build the API first.

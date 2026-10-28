@@ -1,5 +1,5 @@
 ---
-description: "A tour of the OmpOS desktop app: the Agents window, the thread and composer, the Kanban tab, omp terminals, steering, the Changes bar, slash commands, Settings and keyboard shortcuts."
+description: "A tour of the Autonogrammer desktop app: the Agents window, the thread and composer, the Kanban tab, omp terminals, steering, the Changes bar, slash commands, Settings and keyboard shortcuts."
 ---
 
 # Desktop app guide
@@ -10,7 +10,7 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-The desktop head (`apps/OmpOS.Native`) is the most complete part of OmpOS. It starts `omp acp` for each chat session and, on request, an embedded omp terminal. Every omp process it starts is launched with the same four plugins: Ultrathink, Substrate, Swarm and GSD-Core. To run it, see [Getting started](getting-started.md).
+The desktop head (`apps/Autonogrammer.Native`) is the most complete part of Autonogrammer. It starts `omp acp` for each chat session and, on request, an embedded omp terminal. Every omp process it starts is launched with the same four plugins: Ultrathink, Substrate, Swarm and GSD-Core. To run it, see [Getting started](getting-started.md).
 
 ![The desktop Agents window on Linux: the session rail on the left, an empty new session and the slash palette listing 134 commands above the composer.](../assets/screens/desktop-agents-light.png)
 
@@ -30,11 +30,11 @@ The app opens on the Agents window. The default theme is Light (White and Purple
 
 ## Steering
 
-A running session takes a steering message from the composer (Ctrl+Enter, "steer now") or from its Kanban card. Chat sessions use omp's native `_session/steering`; omp terminals use the OmpOS inbox in the GSD-Core plugin. The UI reports honestly whether the message was delivered, held for the next turn or failed. An injected delivery into a running real turn needs a model turn and has not been exercised: see [Plugins](../plugins.md).
+A running session takes a steering message from the composer (Ctrl+Enter, "steer now") or from its Kanban card. Chat sessions use omp's native `_session/steering`; omp terminals use the Autonogrammer inbox in the GSD-Core plugin. The UI reports honestly whether the message was delivered, held for the next turn or failed. An injected delivery into a running real turn needs a model turn and has not been exercised: see [Plugins](../plugins.md).
 
 ## Slash commands
 
-Typing `/` in the composer opens the slash palette. It lists the commands omp advertises, the OmpOS catalogue of Cursor's tokens (93 rows: Built 36, Partial 24, Delegated 9, Unavailable 24, each with a status and, when OmpOS cannot run it, the reason), the ten [built-in skills](../reference/builtin-skills.md) and the commands, skills and subagents found in your workspace files. Arrow keys move, Enter or Tab completes, Esc closes. The full list and each token's status: [Slash commands](../reference/slash-commands.md).
+Typing `/` in the composer opens the slash palette. It lists the commands omp advertises, the Autonogrammer catalogue of Cursor's tokens (93 rows: Built 36, Partial 24, Delegated 9, Unavailable 24, each with a status and, when Autonogrammer cannot run it, the reason), the ten [built-in skills](../reference/builtin-skills.md) and the commands, skills and subagents found in your workspace files. Arrow keys move, Enter or Tab completes, Esc closes. The full list and each token's status: [Slash commands](../reference/slash-commands.md).
 
 ## Settings
 
@@ -70,7 +70,7 @@ These are wired into the desktop head and covered by unit and wiring tests with 
 | Remote environments over ssh | Wired; a live loopback run passed; no remote file explorer, terminal pane, hook files or mentions | [Remote environments](../runbooks/remote-ssh.md) |
 | Containers (podman) and WSL | Wired; a live podman test passed on Linux; WSL never ran | [Containers and WSL](../runbooks/remote-containers.md) |
 | Several folders in one session | Workspace sets dialog and `--add-dir` | [Multi-repo](../runbooks/multi-repo.md) |
-| Cloud agents on Railway | Wired when `OMPOS_API_BASE_URL` is set; fakes only; no deployed control plane | [Cloud agents](../runbooks/cloud-agents.md) |
+| Cloud agents on Railway | Wired when `AUTONOGRAMMER_API_BASE_URL` is set; fakes only; no deployed control plane | [Cloud agents](../runbooks/cloud-agents.md) |
 | Automations | Settings page and cron scheduler; consent on the first run | [Automations](../reference/automations.md) |
 | Local and cloud terminals | Built (Linux) | [Local terminal](../runbooks/local-terminal.md), [Cloud terminals](../runbooks/cloud-terminals.md) |
 
@@ -80,7 +80,7 @@ The About dialog shows the licence (AGPL-3.0-or-later), the version, the source 
 
 ## State and privacy
 
-All state is under `OMPOS_STATE_DIR` (default `~/.local/share/OmpOS`): the session catalogue, per-session directories, settings and the provider key store (owner-only). The app writes outside its own directories only in two cases: omp's `models.yml` and credential database when you save a provider on the Models page, and workspace files when you press Keep, Undo or Apply review. App-started omp processes run without your global omp extensions. Details: [Run the desktop app](../runbooks/running-the-desktop-app.md).
+All state is under `AUTONOGRAMMER_STATE_DIR` (default `~/.local/share/Autonogrammer`): the session catalogue, per-session directories, settings and the provider key store (owner-only). The app writes outside its own directories only in two cases: omp's `models.yml` and credential database when you save a provider on the Models page, and workspace files when you press Keep, Undo or Apply review. App-started omp processes run without your global omp extensions. Details: [Run the desktop app](../runbooks/running-the-desktop-app.md).
 
 ## Limits
 

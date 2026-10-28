@@ -1,0 +1,85 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Autonogrammer.Native.Views"
+             x:Class="Autonogrammer.Native.Views.OptionChipView"
+             IsVisible="False">
+
+  <!-- A chip of the composer footer for one option the engine owns, such as the mode or the thinking level (parity spec 4.7): a ghost
+       chip button with the value in the label size and a chevron. It opens a short list of the engine's values with a check on the one
+       in use. The popup has no animation, so reduced motion needs no class here. -->
+  <Button x:Name="ChipButton"
+          Classes="ghost sm"
+          HorizontalContentAlignment="Left"
+          MinHeight="{DynamicResource Autonogrammer.Size.ControlHeightSm}"
+          MinWidth="{DynamicResource Autonogrammer.Size.IconButtonSm}"
+          ToolTip.ShowOnDisabled="True">
+    <StackPanel Orientation="Horizontal"
+                Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+      <TextBlock x:Name="LabelText"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                 Foreground="{DynamicResource Autonogrammer.Color.TextPrimary}"
+                 MaxWidth="160"
+                 TextTrimming="CharacterEllipsis"
+                 MaxLines="1"
+                 VerticalAlignment="Center" />
+      <Path Data="M2 4 6 8 10 4"
+            Stroke="{DynamicResource Autonogrammer.Color.TextSecondary}"
+            StrokeThickness="1.5"
+            StrokeLineCap="Round"
+            StrokeJoin="Round"
+            Stretch="Uniform"
+            Width="12"
+            Height="12"
+            VerticalAlignment="Center"
+            AutomationProperties.AccessibilityView="Raw" />
+    </StackPanel>
+
+    <Button.Flyout>
+      <Flyout Placement="TopEdgeAlignedLeft">
+        <StackPanel Width="240"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+          <ListBox x:Name="ChoiceList">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="local:OptionChoiceRow">
+                <Grid ColumnDefinitions="*,Auto"
+                      ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                      AutomationProperties.Name="{CompiledBinding AutomationName}">
+                  <StackPanel Grid.Column="0"
+                              VerticalAlignment="Center">
+                    <TextBlock Text="{CompiledBinding Name}"
+                               TextTrimming="CharacterEllipsis"
+                               MaxLines="1" />
+                    <TextBlock Text="{CompiledBinding Description}"
+                               Classes="muted small"
+                               IsVisible="{CompiledBinding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               TextWrapping="Wrap" />
+                  </StackPanel>
+                  <Path Grid.Column="1"
+                        IsVisible="{CompiledBinding IsCurrent}"
+                        Data="M2 8 6 12 14 4"
+                        Stroke="{DynamicResource Autonogrammer.Color.AccentPurple}"
+                        StrokeThickness="2"
+                        StrokeLineCap="Round"
+                        StrokeJoin="Round"
+                        Stretch="Uniform"
+                        Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                        Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                        VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <!-- A refused or failed change: the engine's reason, in a polite live region. -->
+          <TextBlock x:Name="NoticeText"
+                     Classes="error small"
+                     IsVisible="False"
+                     TextWrapping="Wrap"
+                     AutomationProperties.LiveSetting="Polite" />
+        </StackPanel>
+      </Flyout>
+    </Button.Flyout>
+  </Button>
+
+</UserControl>

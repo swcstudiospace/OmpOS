@@ -1,4 +1,4 @@
-# R-GITHUB: presenting OmpOS on GitHub and publishing a GitBook site
+# R-GITHUB: presenting Autonogrammer on GitHub and publishing a GitBook site
 
 Research date 2026-10-27. Repo `swcstudiospace/OmpOS` (public, org-owned, org plan `team`, default branch `main`, HEAD `04e80d1d` on the remote when probed). Tags used: **[P]** = probed on this host (read-only `gh api` GET, `gh --help`, local files); **[D]** = vendor documentation opened (URL given); **[I]** = inferred / from memory, not opened; **[U]** = unverified, owner or main agent must check.
 No GitBook credential exists on this host: `env` names containing GITBOOK = none **[P]**. Nothing was written to the repository or to GitHub; the only scratch was `/tmp/research/_svgtest/` (removed at the end).
@@ -23,10 +23,10 @@ No GitBook credential exists on this host: `env` names containing GITBOOK = none
 | Actions | enabled, `allowed_actions:all`, `sha_pinning_required:false`; one workflow `ci` (`.github/workflows/ci.yml`) runs only on `[self-hosted, linux, x64, omega-ci]` (comment: "never GitHub-hosted"; fork PRs skipped); org has 2 self-hosted runners registered |
 | Languages (bytes) | C# 9,850,602; JavaScript 99,327; HTML 35,241; Shell 26,391; TypeScript 8,204; CSS 7,894; Dockerfile 5,127; Python 1,186 |
 | `.gitattributes` | one line: `* text=auto eol=lf` |
-| Package manifests tracked in OmpOS | NuGet: central (`Directory.Packages.props`, `ManagePackageVersionsCentrally`, `RestorePackagesWithLockFile`, committed `packages.lock.json` per project, CI `--locked-mode`). npm: only `plugins/gsd-core-omp/package.json` (no lock file found); the other `package.json` files are inside submodules |
-| Plugins licensing (from `docs/plans/agent-loop/dossier-git-ci.md`, 2026-10-26) | `claude-ultrathink` AGPL-3.0-or-later; `agent-swarm` and `agent-substrate` (PRIVATE) have no licence file; OmpOS has none |
-| Versions in repo | Android `ApplicationDisplayVersion` 0.10.0 (`apps/OmpOS.Android/OmpOS.Android.csproj`); no `<Version>` in `Directory.Build.props`; docs mention v0.9.1 (handoff) and milestone v0.14.0: there is no single version source yet, which a release workflow needs |
-| Existing brand tokens | `src/OmpOS.Native.Views/Themes/OmpOSTokens.axaml`: Light `AccentPurple #6d28d9`, `FocusRing #5b21b6`, Surface `#fafaf9`, text `#1c1c1a`; Dark `AccentPurple #a78bfa`, `FocusRing #c4b5fd`, Surface `#181818`, text `#ececec` |
+| Package manifests tracked in Autonogrammer | NuGet: central (`Directory.Packages.props`, `ManagePackageVersionsCentrally`, `RestorePackagesWithLockFile`, committed `packages.lock.json` per project, CI `--locked-mode`). npm: only `plugins/gsd-core-omp/package.json` (no lock file found); the other `package.json` files are inside submodules |
+| Plugins licensing (from `docs/plans/agent-loop/dossier-git-ci.md`, 2026-10-26) | `claude-ultrathink` AGPL-3.0-or-later; `agent-swarm` and `agent-substrate` (PRIVATE) have no licence file; Autonogrammer has none |
+| Versions in repo | Android `ApplicationDisplayVersion` 0.10.0 (`apps/Autonogrammer.Android/Autonogrammer.Android.csproj`); no `<Version>` in `Directory.Build.props`; docs mention v0.9.1 (handoff) and milestone v0.14.0: there is no single version source yet, which a release workflow needs |
+| Existing brand tokens | `src/Autonogrammer.Native.Views/Themes/AutonogrammerTokens.axaml`: Light `AccentPurple #6d28d9`, `FocusRing #5b21b6`, Surface `#fafaf9`, text `#1c1c1a`; Dark `AccentPurple #a78bfa`, `FocusRing #c4b5fd`, Surface `#181818`, text `#ececec` |
 
 ## 1. GitHub presentation and community-health items
 
@@ -36,11 +36,11 @@ Columns: item | current state | exact way to set it | source | notes.
 |---|---|---|---|---|---|
 | 1 | Description | set (see §0), long and jargon-heavy | `gh repo edit swcstudiospace/OmpOS -d "<text>"` = `PATCH /repos/swcstudiospace/OmpOS {"description":...}` | gh `--help` [P] | Proposal: "Open-source agent workspace on the omp engine: Cursor-style agents, Kanban, hooks, cloud agents on Railway, desktop, web and Android. AGPL-3.0." Keep under the ~350-character UI limit [I]. |
 | 2 | Homepage (About "Website") | empty | `gh repo edit -h <url>` = `PATCH ... {"homepage":...}` | gh `--help` [P] | Set to the published GitBook URL (or the custom domain) once it exists; until then the web-head URL if one is deployed. |
-| 3 | Topics | none | `gh repo edit --add-topic t1 --add-topic t2 ...` or `gh api -X PUT repos/swcstudiospace/OmpOS/topics -f 'names[]=ompos' ...` (REST `PUT /repos/{o}/{r}/topics`, body `{"names":[...]}`) | rules: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/classifying-your-repository-with-topics [D]; endpoint [I] | Rules [D]: lowercase letters, digits, hyphens; at most 50 characters each; at most 20 topics. **Proposed 15:** `ompos`, `omp`, `ai-agents`, `coding-agent`, `agent-workspace`, `cursor-alternative`, `ai-ide`, `dotnet`, `csharp`, `avalonia`, `blazor-webassembly`, `aspnet-core`, `mcp`, `kanban`, `agpl-3` |
+| 3 | Topics | none | `gh repo edit --add-topic t1 --add-topic t2 ...` or `gh api -X PUT repos/swcstudiospace/OmpOS/topics -f 'names[]=autonogrammer' ...` (REST `PUT /repos/{o}/{r}/topics`, body `{"names":[...]}`) | rules: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/classifying-your-repository-with-topics [D]; endpoint [I] | Rules [D]: lowercase letters, digits, hyphens; at most 50 characters each; at most 20 topics. **Proposed 15:** `autonogrammer`, `omp`, `ai-agents`, `coding-agent`, `agent-workspace`, `cursor-alternative`, `ai-ide`, `dotnet`, `csharp`, `avalonia`, `blazor-webassembly`, `aspnet-core`, `mcp`, `kanban`, `agpl-3` |
 | 4 | Social preview image | none custom | **No REST or GraphQL setter exists** (REST update-repository has no field; GraphQL exposes only read fields `openGraphImageUrl`/`usesCustomOpenGraphImage`) **[D+P]**. Manual: repo main page → Settings → "Social preview" → Edit → "Upload an image..." | https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/customizing-your-repositorys-social-media-preview [D] | PNG, JPG or GIF, under 1 MB; at least 640x320, 1280x640 for best display; PNG transparency supported but GitHub recommends a solid background. Only a public repo's image is shared. Commit the source PNG in the repo (e.g. `assets/brand/social-preview-1280x640.png`) so the owner has the file to upload. |
-| 5 | README banner and logo, light and dark | README starts with `# OmpOS` text only | `<picture>` with `<source media="(prefers-color-scheme: dark)" srcset=...>` and `<source media="(prefers-color-scheme: light)" ...>` plus an `<img>` fallback (block below) | https://github.blog/changelog/2022-05-19-specify-theme-context-for-images-in-markdown-beta/ [D via search]; "The `<picture>` HTML element is supported": https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax [D] | A 2022 community report said repo-relative `srcset` paths in `<picture>` were not branch-rewritten; verify render after push, fallback to absolute `https://raw.githubusercontent.com/swcstudiospace/OmpOS/main/<path>` **[U]**. The older `#gh-dark-mode-only` suffix works but needs no reload; `<picture>` needs a reload on theme switch [D via search]. |
+| 5 | README banner and logo, light and dark | README starts with `# Autonogrammer` text only | `<picture>` with `<source media="(prefers-color-scheme: dark)" srcset=...>` and `<source media="(prefers-color-scheme: light)" ...>` plus an `<img>` fallback (block below) | https://github.blog/changelog/2022-05-19-specify-theme-context-for-images-in-markdown-beta/ [D via search]; "The `<picture>` HTML element is supported": https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax [D] | A 2022 community report said repo-relative `srcset` paths in `<picture>` were not branch-rewritten; verify render after push, fallback to absolute `https://raw.githubusercontent.com/swcstudiospace/OmpOS/main/<path>` **[U]**. The older `#gh-dark-mode-only` suffix works but needs no reload; `<picture>` needs a reload on theme switch [D via search]. |
 | 6 | Badges | none | Markdown in README under the banner | - | Native, no third party: CI `https://github.com/swcstudiospace/OmpOS/actions/workflows/ci.yml/badge.svg` (workflow name `ci`); release `https://img.shields.io/github/v/release/swcstudiospace/OmpOS` and license `https://img.shields.io/github/license/swcstudiospace/OmpOS` (shields.io is third-party [I]); static badges for ".NET 10", "AGPL-3.0", "Docs: GitBook". The CI runner pool was offline on 2026-10-26 (dossier), so a CI badge may read "failing/queued": check before adding. |
-| 7 | Issue forms | none | `.github/ISSUE_TEMPLATE/1-bug.yml`, `2-feature.yml`, `3-docs.yml`, `config.yml`; schema keys `name`, `description`, `title`, `labels`, `assignees`, `body[]` with `type: markdown|input|textarea|dropdown|checkboxes`, each with `id`, `attributes`, `validations.required` | https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository [D] | Files sort alphanumerically, YAML before Markdown; number-prefix to order. **Security is not an issue form** (public issues leak vulnerabilities): put it in `config.yml` `contact_links` pointing at `https://github.com/swcstudiospace/OmpOS/security/advisories/new` (requires PVR, row 10). `config.yml`: `blank_issues_enabled: false` (maintainers still see "Maintainers only" blank issue [D]), `contact_links` for Security, Discussions Q&A and the GitBook site. Bug form fields worth having: head (desktop/web/android/api), OS, OmpOS version/commit, omp version (`omp --version`), plugin availability (Ultrathink/Swarm/Substrate/GSD-Core), provider used, repro steps, logs (render: shell). Labels in forms must already exist (row 15). |
+| 7 | Issue forms | none | `.github/ISSUE_TEMPLATE/1-bug.yml`, `2-feature.yml`, `3-docs.yml`, `config.yml`; schema keys `name`, `description`, `title`, `labels`, `assignees`, `body[]` with `type: markdown|input|textarea|dropdown|checkboxes`, each with `id`, `attributes`, `validations.required` | https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository [D] | Files sort alphanumerically, YAML before Markdown; number-prefix to order. **Security is not an issue form** (public issues leak vulnerabilities): put it in `config.yml` `contact_links` pointing at `https://github.com/swcstudiospace/OmpOS/security/advisories/new` (requires PVR, row 10). `config.yml`: `blank_issues_enabled: false` (maintainers still see "Maintainers only" blank issue [D]), `contact_links` for Security, Discussions Q&A and the GitBook site. Bug form fields worth having: head (desktop/web/android/api), OS, Autonogrammer version/commit, omp version (`omp --version`), plugin availability (Ultrathink/Swarm/Substrate/GSD-Core), provider used, repro steps, logs (render: shell). Labels in forms must already exist (row 15). |
 | 8 | PR template | none | `.github/pull_request_template.md` (also allowed: root, `docs/`, or several under `.github/PULL_REQUEST_TEMPLATE/` selected with `?template=`) | https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository [D] | Checklist from CONTRIBUTING.md: `dotnet format` clean, lock files relocked (`dotnet restore --force-evaluate`), tests, CHANGELOG entry, docs updated, TODO policy, parity-audit row, no secrets. The CONTRIBUTING rule "Refs SPE-xxxxx Linear trailer" is internal: mark it "maintainers only" in the template. |
 | 9 | CODEOWNERS | none | `.github/CODEOWNERS` (also root or `docs/`): last matching pattern wins; guard the file itself with `/.github/ @owner` | https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners [D] | Owners must be real users/teams with write access: the owner supplies handles (I did not list org teams). Suggested paths: `*`, `/.github/`, `/plugins/`, `/docs/api/openapi.json`, `/gitbook/`. It only blocks merges when a ruleset/branch protection requires code-owner review (row 23: not recommended), otherwise it just auto-requests reviewers. |
 | 10 | SECURITY.md + private vulnerability reporting | no file; PVR disabled | File in root, `docs/` or `.github/`; enable PVR: `gh api -X PUT repos/swcstudiospace/OmpOS/private-vulnerability-reporting` (`GET` returns `{"enabled":bool}`; `DELETE` disables) | file locations: https://docs.github.com/en/code-security/getting-started/adding-a-security-policy-to-your-repository [D via search]; endpoints: https://docs.github.com/en/rest/repos/repos [D] | Content: supported versions (latest tag + `main`), report via the advisory form, what is in scope (provider-key store and web key handling, sandbox escape, session/run API auth and tool approvals, plugin isolation, hooks/remote-env execution), out of scope, coordinated disclosure window (owner decides; do not invent numbers). Link it from README and CONTRIBUTING. |
@@ -49,7 +49,7 @@ Columns: item | current state | exact way to set it | source | notes.
 | 13 | FUNDING.yml | none | omitted (not asked) | - | - |
 | 14 | CONTRIBUTING | exists, 52 lines (`CONTRIBUTING.md`) | edit in place | [P] | Covers branches, commit subject `{type}({phase}-{plan}): ...` + Linear trailer, `dotnet format`, lock files, adding a project, plugin submodules, TODO policy. **Gaps for external contributors:** no "getting started / prerequisites" pointer (README has it), no licence statement (inbound = AGPL-3.0, add DCO or an explicit "by contributing you license under AGPL-3.0"), no issue-vs-discussion guidance, no PR process, no CoC/SECURITY link, the GSD/Linear workflow is internal and should be flagged as maintainers-only, no description of the private `agent-substrate` submodule limitation for outside contributors (CI warns when `SUBMODULE_TOKEN` is absent). |
 | 15 | Labels | 9 defaults | `gh label create <name> -c <hex> -d <text> [--force]` (loop below) | gh `--help` [P] | Proposed set below; also what `.github/release.yml` and dependabot reference. |
-| 16 | Discussions | disabled | `gh repo edit --enable-discussions` (REST `has_discussions` on `PATCH /repos/{o}/{r}`, default false) | gh `--help` [P]; REST field: https://docs.github.com/en/rest/repos/repos [D] | **Categories cannot be created by API** (GraphQL `DiscussionCategory` is read-only; no REST discussions endpoints) [D via search: https://docs.github.com/en/discussions/managing-discussions-for-your-community/managing-categories-for-discussions]. Manual: Discussions tab → pencil beside "Categories" → New category (emoji + title + description + format open-ended / Q&A / announcement); max 25. GitHub seeds default categories on enabling [I]. Proposal: Announcements (announcement), Q&A (Q&A), Ideas, Show and tell, "Providers and plans", "Cloud agents and remote environments", General. After creation, ids are readable: `gh api graphql -f query='{repository(owner:"swcstudiospace",name:"OmpOS"){discussionCategories(first:25){nodes{id name slug}}}}'`. |
+| 16 | Discussions | disabled | `gh repo edit --enable-discussions` (REST `has_discussions` on `PATCH /repos/{o}/{r}`, default false) | gh `--help` [P]; REST field: https://docs.github.com/en/rest/repos/repos [D] | **Categories cannot be created by API** (GraphQL `DiscussionCategory` is read-only; no REST discussions endpoints) [D via search: https://docs.github.com/en/discussions/managing-discussions-for-your-community/managing-categories-for-discussions]. Manual: Discussions tab → pencil beside "Categories" → New category (emoji + title + description + format open-ended / Q&A / announcement); max 25. GitHub seeds default categories on enabling [I]. Proposal: Announcements (announcement), Q&A (Q&A), Ideas, Show and tell, "Providers and plans", "Cloud agents and remote environments", General. After creation, ids are readable: `gh api graphql -f query='{repository(owner:"swcstudiospace",name:"Autonogrammer"){discussionCategories(first:25){nodes{id name slug}}}}'`. |
 | 17 | dependabot.yml | none | `.github/dependabot.yml`, `version: 2`, `updates[]` per ecosystem (block below) | https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories [D via search: values `nuget`, `npm`, `github-actions`] | **Risk [D via search + P]:** CI restores with `--locked-mode` and every project commits `packages.lock.json`; Dependabot's NuGet updater edits `Directory.Packages.props` and community reports are mixed on whether it regenerates lock files (some say it runs `dotnet restore --force-evaluate`, one repo saw NU1004). Test with the first Dependabot PR before relying on it. Submodule contents are not scanned: only `plugins/gsd-core-omp` is a tracked npm project. Fork/Dependabot PRs: `ci.yml` skips fork PRs, Dependabot PRs come from the same repo and will run on the self-hosted pool. |
 | 18 | `.github/release.yml` | none | file `.github/release.yml` with `changelog.exclude.{labels,authors}` and `changelog.categories[{title,labels[]}]`; `labels: ['*']` is the catch-all | https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes [D] | Block below. Used only when releases are created with `--generate-notes` / "Generate release notes". |
 | 19 | Release workflow (tag → GitHub Release) | none; 0 tags | `.github/workflows/release.yml`, trigger `push: tags: ['v*.*.*']`, `permissions: contents: write`, `gh release create "$GITHUB_REF_NAME" --verify-tag --title ... --notes-file <CHANGELOG section>` or `--generate-notes` | `gh release create --help` [P] | Block below. **Constraints:** (a) runs on `[self-hosted, linux, x64, omega-ci]` like ci.yml (policy comment), (b) GitHub's auto "Source code" zip/tar.gz never include submodules (verified by multiple reports [D via search: https://github.com/orgs/community/discussions/6003]), and `agent-substrate` is private and unlicensed, so a "full source" asset including it must NOT be attached to a public AGPL release without the owner's licence decision, (c) there is no single version source; decide one (e.g. `<Version>` in `Directory.Build.props`) and have the workflow fail when tag != version, (d) signing/notarisation/Android keystore are not on this host **[U]**, so binaries (Linux `dotnet publish`, web `wwwroot`, unsigned APK) are optional assets, (e) after the first tag, GitHub immutable-release settings are an owner choice **[U]**. |
@@ -58,8 +58,8 @@ Columns: item | current state | exact way to set it | source | notes.
 | 22 | Dependabot alerts and security updates | alerts on, security updates off | `gh api -X PUT repos/swcstudiospace/OmpOS/automated-security-fixes` (`DELETE` disables); alerts: `PUT .../vulnerability-alerts` | https://docs.github.com/en/rest/repos/repos [D] | Security-update PRs hit the same lock-file risk as row 17. |
 | 23 | Branch protection / rulesets | none (404), `rulesets: []`, org rulesets `[]` (dossier) | **Recommendation: enable nothing that blocks the owner's pushes.** Every default branch protection option (required PR, required status checks, linear history, restrict pushes) would reject the owner's direct fast-forward pushes or the GitBook app's commits; the CI runner pool was offline on 2026-10-26 so required checks would deadlock merges. If the owner later wants a floor, the only low-risk ruleset is `deletion` + `non_fast_forward` on `refs/heads/main` (blocks branch deletion and force pushes, still allows fast-forward pushes) via `POST /repos/{o}/{r}/rulesets` with `enforcement:"active"`; add the GitBook app and the owner as bypass actors. | rulesets: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets [D via CODEOWNERS page link]; GitBook push requirement: gitbook troubleshooting (below) [D] | GitBook Git Sync pushes straight to the synced branch and "requires the GitBook app to push changes without restrictions, including during setup"; with protection the bot must bypass (`gitbook-com`). |
 | 24 | About sidebar | description/website/topics as above | Set via REST/gh (rows 1-3). **"Include in the home page" toggles (Releases, Packages, Deployments) are UI-only**: no REST or GraphQL field; tracked in cli/cli#8755 (blocked) [D via search]. Manual: gear beside "About". Feature flags with API: `has_issues`, `has_wiki`, `has_projects`, `has_discussions`. | https://github.com/cli/cli/issues/8755 [D via search] | Recommended state: Releases ON (after first release), Packages OFF, Deployments OFF; wiki OFF once GitBook is live (`gh repo edit --enable-wiki=false`) to avoid a second doc surface; Discussions ON; Projects keep (owner uses it). Optional: `--delete-branch-on-merge`. |
-| 25 | LICENSE (AGPL-3.0) | none (`/license` 404) | root `LICENSE` with the unmodified GNU AGPL-3.0 text from https://www.gnu.org/licenses/agpl-3.0.txt [I, not opened] so GitHub's detector reports `AGPL-3.0`; add SPDX `AGPL-3.0-only` or `-or-later` consistently (the sibling `claude-ultrathink` uses `AGPL-3.0-or-later`, copyright "SWC Studio" [P via dossier]); add `<PackageLicenseExpression>` in `Directory.Build.props`; per-file headers optional | dossier §5 [P] | **Open licensing facts for the owner:** `agent-swarm` and private `agent-substrate` have no licence; OmpOS links them only as submodule gitlinks, but any archive that bundles them redistributes unlicensed code. AGPL-3.0 §13 (network use) applies to the hosted `services/OmpOS.Api` and the web head. Fonts: OFL texts already ship in `src/OmpOS.Native.Views/Assets/Fonts/*/OFL.txt`; keep them (OFL needs the notice with redistribution). |
-| 26 | Language bar accuracy | JS 99 KB etc. | `.gitattributes` lines (below) | https://github.com/github-linguist/linguist/blob/main/docs/overrides.md [D] | Bootstrap under `apps/OmpOS.Web/wwwroot/lib/` is vendored JS; mark `linguist-vendored`; mark evidence and plans `linguist-documentation`. Keep the existing `* text=auto eol=lf`. |
+| 25 | LICENSE (AGPL-3.0) | none (`/license` 404) | root `LICENSE` with the unmodified GNU AGPL-3.0 text from https://www.gnu.org/licenses/agpl-3.0.txt [I, not opened] so GitHub's detector reports `AGPL-3.0`; add SPDX `AGPL-3.0-only` or `-or-later` consistently (the sibling `claude-ultrathink` uses `AGPL-3.0-or-later`, copyright "SWC Studio" [P via dossier]); add `<PackageLicenseExpression>` in `Directory.Build.props`; per-file headers optional | dossier §5 [P] | **Open licensing facts for the owner:** `agent-swarm` and private `agent-substrate` have no licence; Autonogrammer links them only as submodule gitlinks, but any archive that bundles them redistributes unlicensed code. AGPL-3.0 §13 (network use) applies to the hosted `services/Autonogrammer.Api` and the web head. Fonts: OFL texts already ship in `src/Autonogrammer.Native.Views/Assets/Fonts/*/OFL.txt`; keep them (OFL needs the notice with redistribution). |
+| 26 | Language bar accuracy | JS 99 KB etc. | `.gitattributes` lines (below) | https://github.com/github-linguist/linguist/blob/main/docs/overrides.md [D] | Bootstrap under `apps/Autonogrammer.Web/wwwroot/lib/` is vendored JS; mark `linguist-vendored`; mark evidence and plans `linguist-documentation`. Keep the existing `* text=auto eol=lf`. |
 | 27 | Repository merge settings | all three merge methods on | `gh repo edit --enable-squash-merge ... --delete-branch-on-merge` | gh `--help` [P] | Optional; no impact on fast-forward pushes. |
 
 ### 1.1 Proposed file bodies (for the main agent to create; nothing created by this scout)
@@ -70,7 +70,7 @@ README header (put at the very top of `README.md`; paths assume `assets/brand/`)
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/brand/banner-dark-1280x320.png">
     <source media="(prefers-color-scheme: light)" srcset="assets/brand/banner-light-1280x320.png">
-    <img alt="OmpOS: the agent workspace on the omp engine" src="assets/brand/banner-light-1280x320.png" width="100%">
+    <img alt="Autonogrammer: the agent workspace on the omp engine" src="assets/brand/banner-light-1280x320.png" width="100%">
   </picture>
 </p>
 ```
@@ -149,7 +149,7 @@ jobs:
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
           pre=""; case "$GITHUB_REF_NAME" in *-*) pre="--prerelease";; esac
-          gh release create "$GITHUB_REF_NAME" --verify-tag --title "OmpOS $GITHUB_REF_NAME" --notes-file notes.md $pre
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "Autonogrammer $GITHUB_REF_NAME" --notes-file notes.md $pre
           # optional assets: gh release upload "$GITHUB_REF_NAME" <file> --clobber
 ```
 
@@ -177,7 +177,7 @@ priority/p3|d4d4d4|Someday
 area/desktop|c4b5fd|Avalonia desktop head
 area/web|c4b5fd|Blazor WebAssembly head
 area/android|c4b5fd|Android head
-area/api|c4b5fd|services/OmpOS.Api
+area/api|c4b5fd|services/Autonogrammer.Api
 area/engine-omp|c4b5fd|omp engine integration, ACP, steering
 area/plugins|c4b5fd|Ultrathink, Swarm, Substrate, GSD-Core
 area/settings|c4b5fd|Settings window and parity rows
@@ -195,7 +195,7 @@ E
 
 `.gitattributes` additions:
 ```gitattributes
-apps/OmpOS.Web/wwwroot/lib/** linguist-vendored
+apps/Autonogrammer.Web/wwwroot/lib/** linguist-vendored
 docs/runbooks/evidence/** linguist-documentation
 gitbook/** linguist-documentation
 ```
@@ -203,7 +203,7 @@ gitbook/** linguist-documentation
 One-shot repo settings (idempotent; the owner may run after review):
 ```sh
 gh repo edit swcstudiospace/OmpOS --enable-discussions --enable-wiki=false --delete-branch-on-merge \
-  --add-topic ompos --add-topic omp --add-topic ai-agents --add-topic coding-agent --add-topic agent-workspace \
+  --add-topic autonogrammer --add-topic omp --add-topic ai-agents --add-topic coding-agent --add-topic agent-workspace \
   --add-topic cursor-alternative --add-topic ai-ide --add-topic dotnet --add-topic csharp --add-topic avalonia \
   --add-topic blazor-webassembly --add-topic aspnet-core --add-topic mcp --add-topic kanban --add-topic agpl-3
 gh api -X PUT repos/swcstudiospace/OmpOS/private-vulnerability-reporting
@@ -228,12 +228,12 @@ Manual-only afterwards: social preview upload (row 4), discussion categories (ro
 | Python `fontTools` | **NOT installed** in `/usr/bin/python3`, nor in the `.venv`s of `ai-agency`, `grok-*`, `hermes-engineering-board` or `docs-scraper` (the brief assumed it was present). `pip3 list` shows brotli but no fonttools. Installing is outside this scout's read-only rules. If the owner wants direct TTF→SVG-path conversion or WOFF2 files for GitBook, create a venv and `pip install fonttools brotli` (main agent decision). |
 | `node` v24.18.0, `bun` 1.4.0, `python3` 3.12.3 | present. Global npm modules: no `opentype.js`, `svgo`, `sharp`, `resvg` (global list checked). `typescript`, `pnpm`, `vercel`, `pyright` exist. |
 | Not found by `which` | `rsvg-convert`, `inkscape`, `magick`, `potrace`, `svgo`, `icotool`, `pdf2svg`, `mutool`, `fontforge`, `woff2_compress`, `hb-view`, `resvg`. No `.icns` writer (`png2icns`, `iconutil`) was tested: macOS `.icns` needs macOS or `libicns` **[U]**. |
-| Bundled fonts (`src/OmpOS.Native.Views/Assets/Fonts`) | Static TTFs, TrueType outlines (`glyf`, no `fvar`, `GSUB` present): DMSans-Regular / Medium / SemiBold (about 78 KB each), Anybody-SemiBold (65 KB), SpaceMono-Regular / Bold (about 99 KB). One `OFL.txt` per family. Note: no DM Sans Bold, no Anybody weights other than SemiBold. |
+| Bundled fonts (`src/Autonogrammer.Native.Views/Assets/Fonts`) | Static TTFs, TrueType outlines (`glyf`, no `fvar`, `GSUB` present): DMSans-Regular / Medium / SemiBold (about 78 KB each), Anybody-SemiBold (65 KB), SpaceMono-Regular / Bold (about 99 KB). One `OFL.txt` per family. Note: no DM Sans Bold, no Anybody weights other than SemiBold. |
 
 ### 2.2 Method (vector first, text as outlines)
 
 1. Author the **mark** directly as SVG geometry (no text): square `viewBox="0 0 512 512"`, flat shapes, purple `#6d28d9` on white (light) and `#a78bfa` on `#181818` (dark), taken from the existing Avalonia tokens so desktop, web and docs match. It must stay legible at 16 px (one or two shapes, no hairlines).
-2. Author each **text-bearing asset** (wordmark lockup, banner, social card) as an HTML page using `@font-face` pointing at the bundled TTFs (`OmpOS` in Anybody SemiBold, tagline in DM Sans Medium, version/licence chips in Space Mono Bold), with an explicit background `div` and the mark inlined.
+2. Author each **text-bearing asset** (wordmark lockup, banner, social card) as an HTML page using `@font-face` pointing at the bundled TTFs (`Autonogrammer` in Anybody SemiBold, tagline in DM Sans Medium, version/licence chips in Space Mono Bold), with an explicit background `div` and the mark inlined.
 3. Chrome `--print-to-pdf` (set `@page { size: <w>px <h>px; margin: 0 }`) → `pdftocairo -svg` → **outlined SVG** (verified above). Post-check: `grep -c "<text"` must be 0 and `fonts` must not be referenced.
 4. Rasterise **from the outlined SVG** with `cairosvg -s <scale>` (or from the HTML with Chrome `--screenshot --force-device-scale-factor`), then `optipng -o7`. Compose `.ico` with IM from the PNG set.
 5. Commit sources under `assets/brand/` (SVG masters + generated PNGs) and a small script `scripts/brand/build.sh` documenting the exact commands, so the files are reproducible. Recommended single source of truth for colours: the tokens file above.
@@ -245,7 +245,7 @@ Manual-only afterwards: social preview upload (row 4), discussion categories (ro
 |---|---|---|---|
 | `logo-mark.svg`, `logo-mark-dark.svg` | 512x512 viewBox, SVG | everywhere (master) | geometry only |
 | `logo-mark-512.png` | 512x512 PNG, transparent | GitBook, Play listing, docs | from SVG via cairosvg |
-| `logo-lockup-light.svg`, `logo-lockup-dark.svg` | about 4:1, e.g. viewBox 960x240, outlined text | README/GitBook | wordmark "OmpOS" Anybody SemiBold |
+| `logo-lockup-light.svg`, `logo-lockup-dark.svg` | about 4:1, e.g. viewBox 960x240, outlined text | README/GitBook | wordmark "Autonogrammer" Anybody SemiBold |
 | `logo-lockup-light-1200x300.png`, `-dark-` | 1200x300 PNG | GitBook site logo (light and dark uploads) | GitBook: upload one per mode, "at least 600 px wide" recommended [D: https://gitbook.com/docs/manage-your-site/customization/icons-colors-and-themes, offline skill ref 093] |
 | GitBook site icon | 132x132 PNG | GitBook favicon/title icon | [D, same page] |
 | `banner-light-1280x320.png`, `banner-dark-1280x320.png` (+ SVG masters) | 1280x320 | README `<picture>` | light = white background, purple type; dark = `#181818`, `#a78bfa` |
@@ -253,11 +253,11 @@ Manual-only afterwards: social preview upload (row 4), discussion categories (ro
 | `favicon.svg` | SVG | modern browsers (`<link rel="icon" type="image/svg+xml">`) | |
 | `favicon-16.png`, `favicon-32.png`, `favicon.ico` (16, 32, 48 in one file) | PNG / ICO | web head, GitBook fallback | IM: `convert f16.png f32.png f48.png favicon.ico` [I: multi-image form not run, single-image ICO was] |
 | `apple-touch-icon.png` | 180x180, opaque | iOS home screen | |
-| `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` | 192, 512, 512 (maskable keeps the mark inside the central 80% [I]) | web manifest (`manifest.webmanifest`), PWA | replaces the Blazor-template `favicon.png`/`icon-192.png` in `apps/OmpOS.Web/wwwroot/`; `index.html` currently has only `<link rel="icon" type="image/png" href="favicon.png" />` and `<title>OmpOS.Web</title>` [P] |
-| Android launcher (legacy) | mipmap mdpi 48, hdpi 72, xhdpi 96, xxhdpi 144, xxxhdpi 192 px [I] | `apps/OmpOS.Android/Resources/mipmap-*` | currently only `Resources/values/styles.xml` exists; `[Activity]` has no `Icon`, csproj has no icon [P] |
+| `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` | 192, 512, 512 (maskable keeps the mark inside the central 80% [I]) | web manifest (`manifest.webmanifest`), PWA | replaces the Blazor-template `favicon.png`/`icon-192.png` in `apps/Autonogrammer.Web/wwwroot/`; `index.html` currently has only `<link rel="icon" type="image/png" href="favicon.png" />` and `<title>Autonogrammer.Web</title>` [P] |
+| Android launcher (legacy) | mipmap mdpi 48, hdpi 72, xhdpi 96, xxhdpi 144, xxxhdpi 192 px [I] | `apps/Autonogrammer.Android/Resources/mipmap-*` | currently only `Resources/values/styles.xml` exists; `[Activity]` has no `Icon`, csproj has no icon [P] |
 | Android adaptive | foreground, background (flat purple) and monochrome layers, all 108x108 dp (px at 1x,1.5x,2x,3x,4x = 108, 162, 216, 324, 432); keep the logo between 48 and 66 dp, the inner 66 dp is the never-clipped safe zone; `res/mipmap-anydpi-v26/ic_launcher.xml` with `<foreground>`, `<background>`, `<monochrome>` | Android head | [D: https://developer.android.com/develop/ui/views/launch/icon_design_adaptive] ; wire with `Icon = "@mipmap/ic_launcher"` on the activity/application [I] |
 | Play/store icon | 512x512 PNG [I] | listing | not needed for a sideloaded APK |
-| Avalonia window icon | 256 PNG (and 32, 48) or `.ico`, embedded as an `AvaloniaResource` and set via `Window.Icon`/`WindowIcon` [I] | `apps/OmpOS.Native` | currently no icon in `MainWindow.axaml` or the csproj [P] |
+| Avalonia window icon | 256 PNG (and 32, 48) or `.ico`, embedded as an `AvaloniaResource` and set via `Window.Icon`/`WindowIcon` [I] | `apps/Autonogrammer.Native` | currently no icon in `MainWindow.axaml` or the csproj [P] |
 | Windows exe icon | `.ico` with 16, 24, 32, 48, 64, 128, 256 via `<ApplicationIcon>` [I] | Native head publish | |
 | Linux desktop entry | 256 and 512 PNG + `.desktop` `Icon=` [I] | packaging | |
 | macOS | `.icns` 16 to 1024 | Native head publish | tool not on host **[U]** |
@@ -299,7 +299,7 @@ gitbook/
   .gitbook/vars.yaml         # product_name, current_version, repo_url ...
   README.md                  # landing
   SUMMARY.md
-  getting-started/  using-ompos/  concepts/  settings-and-providers/  slash-commands/
+  getting-started/  using-autonogrammer/  concepts/  settings-and-providers/  slash-commands/
   hooks/  cloud-agents/  remote-environments/  multi-repo/  architecture/
   api-reference/  runbooks/  contributing/  changelog.md  licensing.md
   docs.yaml                  # written by GitBook at first sync (commit it)
@@ -325,14 +325,14 @@ gitbook/
 
 ### 3.3 OpenAPI reference for `docs/api/openapi.json`
 
-Facts [P]: OpenAPI **3.1.1**, title `OmpOS.Api | v1`, version `1.0.0`, 9 paths / 10 operations (`GET /sessions`, `POST /sessions`, `GET /sessions/{id}`, `GET .../events`, `POST .../prompts`, `POST .../runs`, `GET .../runs/{runId}`, `GET .../output`, `POST .../cancel`, `POST .../tool-approvals/{requestId}`), tags `SessionEndpoints`, `RunEndpoints`, `EventStreamEndpoints`, `ToolApprovalEndpoints`, `servers: [{"url":"/"}]`, **no `securitySchemes`**, only `components.schemas`. A "Test it" runner needs a real server URL and auth scheme; neither is in the spec and no public API hostname appears in `docs/runbooks/hosting.md` **[P]**; add `servers` and security when the hosted API URL exists.
+Facts [P]: OpenAPI **3.1.1**, title `Autonogrammer.Api | v1`, version `1.0.0`, 9 paths / 10 operations (`GET /sessions`, `POST /sessions`, `GET /sessions/{id}`, `GET .../events`, `POST .../prompts`, `POST .../runs`, `GET .../runs/{runId}`, `GET .../output`, `POST .../cancel`, `POST .../tool-approvals/{requestId}`), tags `SessionEndpoints`, `RunEndpoints`, `EventStreamEndpoints`, `ToolApprovalEndpoints`, `servers: [{"url":"/"}]`, **no `securitySchemes`**, only `components.schemas`. A "Test it" runner needs a real server URL and auth scheme; neither is in the spec and no public API hostname appears in `docs/runbooks/hosting.md` **[P]**; add `servers` and security when the hosted API URL exists.
 
 | Route | Exact steps | Needs token? | Source |
 |---|---|---|---|
-| A. URL source (no token) | GitBook UI → sidebar **OpenAPI** → **Add specification** → name `ompos-api` → "URL" = `https://raw.githubusercontent.com/swcstudiospace/OmpOS/main/docs/api/openapi.json`. Probed: HTTP 200, `Access-Control-Allow-Origin: *`, `Cache-Control: max-age=300` [P]. URL sources refresh automatically every 6 hours, or **Check for updates**. | no | ref 167 (UI path, 6 h refresh, CORS note) |
-| B. File source via CLI (CI) | `npm install @gitbook/cli -g` (Node 18+), `export GITBOOK_TOKEN=<personal API token from https://app.gitbook.com/account/developer>`, `gitbook openapi publish --spec ompos-api --organization <orgId> docs/api/openapi.json`. Same command updates; against a URL it forces a refresh. GitHub Actions example uses `npx -y @gitbook/cli@latest openapi publish --spec "$GITBOOK_SPEC_NAME" --organization "$GITBOOK_ORGANIZATION_ID" <path>` with `GITBOOK_TOKEN` as a secret. | yes | refs 065, 167 |
-| C. File source via REST | `curl -X POST -H "Authorization: Bearer $GITBOOK_TOKEN" -F slug=ompos-api -F file=@docs/api/openapi.json https://api.gitbook.com/v1/orgs/$ORG_ID/openapi`; update with `PATCH /v1/orgs/{orgId}/openapi/{specId}` | yes | ref 167 |
-| Insert into docs | In the space table of contents: **Add new... → OpenAPI Reference** → pick the spec: one page per tag plus an optional models page, kept updated when the spec changes; or press `/` → OpenAPI to embed one operation/schema. Resulting pages are Markdown with `{% openapi ... %}` / `{% openapi-schemas spec="ompos-api" ... %}` blocks and should be committed from the Git Sync export **[I: generated pages sync back to the repo; exact `src` attribute for a stored spec is produced by the UI, do not hand-write it]**. | no | ref 167 |
+| A. URL source (no token) | GitBook UI → sidebar **OpenAPI** → **Add specification** → name `autonogrammer-api` → "URL" = `https://raw.githubusercontent.com/swcstudiospace/OmpOS/main/docs/api/openapi.json`. Probed: HTTP 200, `Access-Control-Allow-Origin: *`, `Cache-Control: max-age=300` [P]. URL sources refresh automatically every 6 hours, or **Check for updates**. | no | ref 167 (UI path, 6 h refresh, CORS note) |
+| B. File source via CLI (CI) | `npm install @gitbook/cli -g` (Node 18+), `export GITBOOK_TOKEN=<personal API token from https://app.gitbook.com/account/developer>`, `gitbook openapi publish --spec autonogrammer-api --organization <orgId> docs/api/openapi.json`. Same command updates; against a URL it forces a refresh. GitHub Actions example uses `npx -y @gitbook/cli@latest openapi publish --spec "$GITBOOK_SPEC_NAME" --organization "$GITBOOK_ORGANIZATION_ID" <path>` with `GITBOOK_TOKEN` as a secret. | yes | refs 065, 167 |
+| C. File source via REST | `curl -X POST -H "Authorization: Bearer $GITBOOK_TOKEN" -F slug=autonogrammer-api -F file=@docs/api/openapi.json https://api.gitbook.com/v1/orgs/$ORG_ID/openapi`; update with `PATCH /v1/orgs/{orgId}/openapi/{specId}` | yes | ref 167 |
+| Insert into docs | In the space table of contents: **Add new... → OpenAPI Reference** → pick the spec: one page per tag plus an optional models page, kept updated when the spec changes; or press `/` → OpenAPI to embed one operation/schema. Resulting pages are Markdown with `{% openapi ... %}` / `{% openapi-schemas spec="autonogrammer-api" ... %}` blocks and should be committed from the Git Sync export **[I: generated pages sync back to the repo; exact `src` attribute for a stored spec is produced by the UI, do not hand-write it]**. | no | ref 167 |
 | Supported versions | Swagger 2.0, OpenAPI 3.0, 3.1 (webhooks need 3.1) | | refs 009, 167 |
 
 Recommendation: route A first (no secret, spec stays single-sourced in the repo); move to B only if the spec must be versioned per release.
@@ -472,8 +472,8 @@ Custom domain: "not included in the Free plan; included in the Essential, Ultima
 ### 3.7 Owner checklist: what only a human with the GitBook account can do (no token on this host)
 
 1. Sign up / sign in at https://app.gitbook.com with GitHub. If "Potential duplicated accounts" appears, unlink the GitHub identity from the other GitBook account first (ref 070).
-2. Create an organisation and a **site** "OmpOS" (Home → create a docs site, ref 034). Pick the plan (§3.6).
-3. Install the **GitBook GitHub app** (https://github.com/apps/gitbook-com) on the `swcstudiospace` organisation (requires an organisation owner; the `gh` identity has `admin:org`, ownership not probed), grant access to repository `OmpOS` only.
+2. Create an organisation and a **site** "Autonogrammer" (Home → create a docs site, ref 034). Pick the plan (§3.6).
+3. Install the **GitBook GitHub app** (https://github.com/apps/gitbook-com) on the `swcstudiospace` organisation (requires an organisation owner; the `gh` identity has `admin:org`, ownership not probed), grant access to repository `Autonogrammer` only.
 4. Land the `gitbook/` content on `main` first (so the first import has something real). In the site: **Git Sync → GitHub**, repository `swcstudiospace/OmpOS`, branch `main`, **initial direction GitHub → GitBook** (use "Swap direction" if GitBook shows the other way; a non-empty GitBook space is replaced), **Project directory `gitbook`**, content mapping: the space → `./`, **Sync**. Only administrators and creators can configure Git Sync (ref 064).
 5. Commit the `docs.yaml` GitBook writes into `gitbook/`.
 6. Customize: theme and primary colour `#6d28d9` (tint chosen from the suggestions or the neutral `#fafaf9`/`#181818`), logo light/dark (`logo-lockup-*-1200x300.png`), icon 132x132, fonts (DM Sans standard, Space Mono monospace as `.woff2` regular + bold), site title, social/OG image, SEO.
@@ -496,7 +496,7 @@ Repository root: `README.md` (97 lines; run/bootstrap/repo map/status/docs list)
 | `docs/plugins.md` | 176 | the four plugins, submodules, private-repo access | yes (trim CI secret details) |
 | `docs/settings-parity.md` | 88 | the 34 Cursor settings rows and the eleven Settings pages, with "Omitted" rows (MCP, Hooks, Indexing, @Docs) | yes, basis of Settings pages; status columns change fast |
 | `docs/decisions/ADR-0001..0014` + `README.md` | 29-279 each | decision records | yes, as "Architecture decision records" (copy; keep numbering) |
-| `docs/api/openapi.json` | 1015 | OpenAPI 3.1.1 of `OmpOS.Api` | register as spec (§3.3), do not copy as a page |
+| `docs/api/openapi.json` | 1015 | OpenAPI 3.1.1 of `Autonogrammer.Api` | register as spec (§3.3), do not copy as a page |
 | `docs/api/ADE-07-run-contract-change-request.md` | 148 | internal change request | no (internal) |
 | `docs/runbooks/running-the-desktop-app.md` | 74 | run, state dir, shortcuts | yes |
 | `docs/runbooks/local-dev.md` | 152 | bootstrap, local dependencies | yes (Contributing / Getting started) |
@@ -509,7 +509,7 @@ Repository root: `README.md` (97 lines; run/bootstrap/repo map/status/docs list)
 | `docs/runbooks/evidence/**` | 240 files | recorded runs, screenshots (`ui-parity-2026-10-26/after-light|after-dark`, settings-1..11, slash palette, kanban) | no as a tree; copy a few optimised screenshots into `gitbook/.gitbook/assets/` |
 | `docs/quality/cursor-parity-audit-2026-10-26.md` | 546 | row-by-row audit | publish a summarised "Parity status" page; keep the audit internal |
 | `docs/quality/quality-bar.md` | 276 | audit of 2026-10-22 | no |
-| `docs/plans/vision-research/cursor-slash-commands.md` | 206 | Cursor slash commands and OmpOS mapping (research, 2026-10-22) | rewrite as user doc; source of truth should be generated from `src/OmpOS.Presentation/Commands/SlashCommandRegistry.cs` |
+| `docs/plans/vision-research/cursor-slash-commands.md` | 206 | Cursor slash commands and Autonogrammer mapping (research, 2026-10-22) | rewrite as user doc; source of truth should be generated from `src/Autonogrammer.Presentation/Commands/SlashCommandRegistry.cs` |
 | `docs/plans/vision-research/cursor-settings-window.md` | 142 | Cursor settings sections | rewrite with `settings-parity.md` |
 | `docs/plans/vision-research/providers-eu-cn.md`, `providers-local-us.md` | 134, 152 | provider and plan research | rewrite as Providers pages |
 | `docs/plans/vision-research/railway-cloud-desktop.md` | 153 | Railway cloud desktop research | rewrite as Cloud agents pages |
@@ -532,13 +532,13 @@ Existing files are curated copies; internal phase/OQ/Linear jargon must be strip
 | (landing) | `README.md` | root `README.md` intro, banner, status table | rewrite; banner via `.gitbook/assets` |
 | Getting started | `getting-started/install.md` | README Prerequisites; `docs/runbooks/local-dev.md` | curate |
 | | `getting-started/run-the-desktop-app.md` | `docs/runbooks/running-the-desktop-app.md` | copy and curate |
-| | `getting-started/run-the-web-app.md` | README; `docs/runbooks/hosting.md`; `apps/OmpOS.Web` | new (web head is a bare chat page today per the brief) |
+| | `getting-started/run-the-web-app.md` | README; `docs/runbooks/hosting.md`; `apps/Autonogrammer.Web` | new (web head is a bare chat page today per the brief) |
 | | `getting-started/android.md` | `docs/runbooks/android-ios-terminals.md`, `phase-22-desktop-heads.md` | curate |
 | | `getting-started/first-session.md` | `docs/runbooks/agent-loop.md` (probe without a model turn) | curate |
-| Using OmpOS | `using-ompos/desktop.md` | running-the-desktop-app, `ui-parity-2026-10-26` screenshots | new text + screenshots |
-| | `using-ompos/web.md` | - | new |
-| | `using-ompos/terminals.md` | `docs/runbooks/local-terminal.md`, `cloud-terminals.md` | curate |
-| | `using-ompos/keyboard-shortcuts.md` | running-the-desktop-app (shortcuts), Settings > Keyboard | curate |
+| Using Autonogrammer | `using-autonogrammer/desktop.md` | running-the-desktop-app, `ui-parity-2026-10-26` screenshots | new text + screenshots |
+| | `using-autonogrammer/web.md` | - | new |
+| | `using-autonogrammer/terminals.md` | `docs/runbooks/local-terminal.md`, `cloud-terminals.md` | curate |
+| | `using-autonogrammer/keyboard-shortcuts.md` | running-the-desktop-app (shortcuts), Settings > Keyboard | curate |
 | Concepts | `concepts/agent-loop.md` | `docs/plans/agent-loop/agent-loop-design.md`, `runbooks/agent-loop.md` | condense |
 | | `concepts/plugins.md` | `docs/plugins.md`, ADR-0012, ADR-0013 | curate |
 | | `concepts/steering.md` | README ("steered live from the composer or its Kanban card"); `.planning/phases/49-live-steering/49-SUMMARY.md` (internal) | new, written from the code and summary |
@@ -559,14 +559,14 @@ Existing files are curated copies; internal phase/OQ/Linear jargon must be strip
 | Runbooks | `runbooks/local-dev.md`, `agent-loop.md`, `hosting.md`, `sandbox.md` | `docs/runbooks/*` | curate (avoid duplicates of Getting started: one canonical page each) |
 | Contributing | `contributing/index.md`, `contributing/plugin-submodules.md`, `contributing/docs.md` | `CONTRIBUTING.md`, `docs/plugins.md` | copy; add docs-contribution rules and the checker |
 | Changelog | `changelog.md` (use `{% updates %}`) | new root `CHANGELOG.md` | single source: either root `CHANGELOG.md` with the GitBook page generated by script, or the other way; the release workflow reads root `CHANGELOG.md` so keep that canonical |
-| Licensing | `licensing.md` | new `LICENSE` (AGPL-3.0), `src/OmpOS.Native.Views/Assets/Fonts/*/OFL.txt`, plugin licence facts | new; must state each plugin's own terms and the font OFL notices |
+| Licensing | `licensing.md` | new `LICENSE` (AGPL-3.0), `src/Autonogrammer.Native.Views/Assets/Fonts/*/OFL.txt`, plugin licence facts | new; must state each plugin's own terms and the font OFL notices |
 | Project | `status.md` ("What works today") | `docs/quality/cursor-parity-audit-2026-10-26.md` summary, README Status | summarise |
 
 Suggested `SUMMARY.md` skeleton (page groups via `##`, nesting by two spaces):
 ```
 # Summary
 
-* [OmpOS](README.md)
+* [Autonogrammer](README.md)
 
 ## Get started
 
@@ -576,12 +576,12 @@ Suggested `SUMMARY.md` skeleton (page groups via `##`, nesting by two spaces):
 * [Android](getting-started/android.md)
 * [First session](getting-started/first-session.md)
 
-## Use OmpOS
+## Use Autonogrammer
 
-* [Desktop](using-ompos/desktop.md)
-* [Web](using-ompos/web.md)
-* [Terminals](using-ompos/terminals.md)
-* [Keyboard shortcuts](using-ompos/keyboard-shortcuts.md)
+* [Desktop](using-autonogrammer/desktop.md)
+* [Web](using-autonogrammer/web.md)
+* [Terminals](using-autonogrammer/terminals.md)
+* [Keyboard shortcuts](using-autonogrammer/keyboard-shortcuts.md)
 
 ## Concepts
 
@@ -623,7 +623,7 @@ Suggested `SUMMARY.md` skeleton (page groups via `##`, nesting by two spaces):
 ### 4.3 Cross-cutting findings for planning
 
 1. The repo has **no LICENSE and no tag**, but the README, GitBook and release workflow all assume AGPL-3.0 and versions: LICENSE + a single version source + `CHANGELOG.md` must land before the first release workflow run.
-2. `agent-swarm` and the private `agent-substrate` submodule are unlicensed; AGPL-3.0 on OmpOS does not license them, and GitHub's release archives omit submodules anyway: publish no bundle containing them without the owner's decision.
+2. `agent-swarm` and the private `agent-substrate` submodule are unlicensed; AGPL-3.0 on Autonogrammer does not license them, and GitHub's release archives omit submodules anyway: publish no bundle containing them without the owner's decision.
 3. Fonts: `Assets/Fonts` is guarded by `FontResourceTests` ("folder holds only manifest fonts", manifest hash) per the parity audit AL-23; WOFF2 conversions for GitBook or the web head must live outside that folder (for example `assets/brand/fonts/`). The same rows say Anybody appears only at 20 px and above, SemiBold or heavier: apply that rule to the banner and logo too.
 4. The `[self-hosted, omega-ci]`-only CI policy collides with CodeQL default setup (GitHub-hosted `standard` runners) and any new release/docs workflow; each needs the same runner labels, and the pool was reported offline on 2026-10-26 (2 org runners registered now, status not probed).
 5. Dependabot NuGet + committed `packages.lock.json` + `--locked-mode` is a known failure mode: test with the first PR.

@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:panel="clr-namespace:Autonogrammer.Native.Views.AgentPanel"
+             xmlns:copy="clr-namespace:Autonogrammer.Presentation.AgentPanel;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Blocks.ErrorBlockView"
+             AutomationProperties.Name="Error">
+
+  <!-- An error is a banner: the error-tint fill, a 3 px error bar at the left, the Cross glyph and the message in the primary text
+       role (it reads 4.5:1 or more over the tint). The glyph and the words carry the meaning; colour is never the only signal. -->
+  <Border Classes="banner"
+          Background="{DynamicResource Autonogrammer.Color.DiffRemoved}"
+          ClipToBounds="True"
+          Padding="0">
+    <Grid ColumnDefinitions="3,*">
+      <Border Grid.Column="0"
+              Background="{DynamicResource Autonogrammer.Color.StatusError}" />
+      <Grid Grid.Column="1"
+            ColumnDefinitions="Auto,*"
+            ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}"
+            Margin="10,8">
+        <panel:StageIcon x:Name="ErrorGlyph"
+                         Grid.Column="0"
+                         IconKey="{x:Static copy:StatusIcon.Cross}"
+                         VerticalAlignment="Top" />
+        <TextBlock x:Name="Message"
+                   Grid.Column="1"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Body}"
+                   LineHeight="{DynamicResource Autonogrammer.Font.LineHeight.Body}"
+                   TextWrapping="Wrap" />
+      </Grid>
+    </Grid>
+  </Border>
+
+</UserControl>

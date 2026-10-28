@@ -1,17 +1,17 @@
 #!/bin/sh
-# OmpOS agent worker entrypoint (image: deploy/worker.Containerfile).
+# Autonogrammer agent worker entrypoint (image: deploy/worker.Containerfile).
 #
 # Railway mounts volumes root-owned (https://docs.railway.com/volumes.md), so the image starts as root, repairs
-# ownership of the mount, then drops to OMPOS_RUN_UID:OMPOS_RUN_GID with setpriv and execs the program. Started
+# ownership of the mount, then drops to AUTONOGRAMMER_RUN_UID:AUTONOGRAMMER_RUN_GID with setpriv and execs the program. Started
 # as a non-root user (for example RAILWAY_RUN_UID=10001 or a local podman --user), it skips the ownership repair.
 #
 # Environment:
-#   OMPOS_VOLUME_PATH  volume mount point (default /data)
-#   OMPOS_RUN_UID      uid the program runs as (default 10001)
-#   OMPOS_RUN_GID      gid the program runs as (default 10001)
+#   AUTONOGRAMMER_VOLUME_PATH  volume mount point (default /data)
+#   AUTONOGRAMMER_RUN_UID      uid the program runs as (default 10001)
+#   AUTONOGRAMMER_RUN_GID      gid the program runs as (default 10001)
 #   PORT               listen port (default 8080)
 #   HOME               home directory of the program, on the volume (default /data/home)
-# Arguments: the program to exec; with none, `dotnet /app/OmpOS.AgentWorker.dll`.
+# Arguments: the program to exec; with none, `dotnet /app/Autonogrammer.AgentWorker.dll`.
 # Exit codes: 64 invalid uid/gid, 66 volume path missing, 69 setpriv missing, 73 volume path not writable.
 # Nothing in this script prints environment variables or secret values.
 set -eu
@@ -40,9 +40,9 @@ repair_owner() {
   fi
 }
 
-volume_path="${OMPOS_VOLUME_PATH:-/data}"
-run_uid="${OMPOS_RUN_UID:-10001}"
-run_gid="${OMPOS_RUN_GID:-10001}"
+volume_path="${AUTONOGRAMMER_VOLUME_PATH:-/data}"
+run_uid="${AUTONOGRAMMER_RUN_UID:-10001}"
+run_gid="${AUTONOGRAMMER_RUN_GID:-10001}"
 HOME="${HOME:-/data/home}"
 export HOME
 
@@ -53,21 +53,21 @@ ASPNETCORE_URLS="http://[::]:${PORT:-8080}"
 export ASPNETCORE_URLS
 
 if ! is_positive_int "$run_uid"; then
-  log "OMPOS_RUN_UID must be a positive integer"
+  log "AUTONOGRAMMER_RUN_UID must be a positive integer"
   exit 64
 fi
 if ! is_positive_int "$run_gid"; then
-  log "OMPOS_RUN_GID must be a positive integer"
+  log "AUTONOGRAMMER_RUN_GID must be a positive integer"
   exit 64
 fi
 
 if [ "$#" -eq 0 ]; then
-  set -- dotnet /app/OmpOS.AgentWorker.dll
+  set -- dotnet /app/Autonogrammer.AgentWorker.dll
 fi
 
 if [ "$(id -u)" = "0" ]; then
   if [ ! -d "$volume_path" ]; then
-    log "volume path $volume_path is not an existing directory; mount a volume there or set OMPOS_VOLUME_PATH"
+    log "volume path $volume_path is not an existing directory; mount a volume there or set AUTONOGRAMMER_VOLUME_PATH"
     exit 66
   fi
   if ! command -v setpriv >/dev/null 2>&1; then
@@ -79,7 +79,7 @@ if [ "$(id -u)" = "0" ]; then
   if [ ! -d "$HOME/.omp" ]; then
     omp_dir_existed=0
   fi
-  mkdir -p "$HOME" "$HOME/.omp" "$volume_path/work" "$volume_path/ompos"
+  mkdir -p "$HOME" "$HOME/.omp" "$volume_path/work" "$volume_path/autonogrammer"
 
   # The mount point itself is repaired without walking the volume.
   chown "$run_uid:$run_gid" "$volume_path"
@@ -87,7 +87,7 @@ if [ "$(id -u)" = "0" ]; then
   # volume does not traverse it on every start.
   repair_owner "$HOME" recursive
   repair_owner "$volume_path/work" recursive
-  repair_owner "$volume_path/ompos" recursive
+  repair_owner "$volume_path/autonogrammer" recursive
   if [ "$omp_dir_existed" = 0 ]; then
     repair_owner "$HOME/.omp" flat
   fi

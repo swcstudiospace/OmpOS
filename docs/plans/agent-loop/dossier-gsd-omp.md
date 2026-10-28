@@ -53,7 +53,7 @@ Sources read: `omp --help`, `omp plugin --help`, `omp://plugin-manager-installer
 
 ## 3. Recommended packaging
 
-### 3.1 Submodule or thin plugin? -> (b) OmpOS-owned thin plugin
+### 3.1 Submodule or thin plugin? -> (b) Autonogrammer-owned thin plugin
 (a) is technically possible (GSD-Core has its own remote `github.com/open-gsd/gsd-core`, pin tag v1.18.0 `35f5a45…`), but NOT recommended and should not be a 4th submodule:
 1. Upstream has no omp manifest; its `package.json` only has `pi.extensions: ["./pi/gsd.cjs"]` (pi.dev API, subprocess-reuse of `gsd-tools.cjs`, installs to `~/.pi/agent/extensions/gsd.js`); hosting an omp manifest would need an upstream PR (not ours; MIT, third party).
 2. Linking the upstream checkout would expose root `skills/` (Claude/pi-flavoured, 72 names identical to the installed Kimi ones but with different bodies -> every skill gets a `<namespace>/<name>` alias + collision warnings) and root `agents/` incl. 29 `.compact.md` files with duplicate `name:` values (silent first-wins ambiguity). Net negative.
@@ -61,7 +61,7 @@ Sources read: `omp --help`, `omp plugin --help`, `omp://plugin-manager-installer
 4. Brief rule "never copy sibling source" is satisfied by (b) (reference only).
 (The upstream remote is still useful as the *install source*: `npx @opengsd/gsd-core@1.18.0 --kimi --global`.)
 
-### 3.2 Layout: `plugins/gsd-core-omp/` in the OmpOS repo (does not exist yet; ompos has no `plugins/` dir and no `.gitmodules`)
+### 3.2 Layout: `plugins/gsd-core-omp/` in the Autonogrammer repo (does not exist yet; autonogrammer has no `plugins/` dir and no `.gitmodules`)
 ```
 plugins/gsd-core-omp/
   package.json
@@ -90,7 +90,7 @@ No skills/ dir (provided natively by `~/.agents/skills`), no commands/ dir (GSD 
   "scripts": { "probe": "node bin/gsd-omp-probe.mjs --json", "link-agents": "node bin/gsd-omp-link.mjs" }
 }
 ```
-(License choice = OmpOS repo's own; `UNKNOWN: cat ~/src/repos/ompos/LICENSE` — none at repo root listing above; align with whatever OmpOS decides.)
+(License choice = Autonogrammer repo's own; `UNKNOWN: cat ~/src/repos/autonogrammer/LICENSE` — none at repo root listing above; align with whatever Autonogrammer decides.)
 
 `src/index.ts` sketch (convention of agent-swarm/omp: factory registers only; fs only inside handlers):
 ```ts
@@ -114,7 +114,7 @@ Rationale for symlinks in the plugin's own gitignored `agents/`: `resources_disc
 
 ### 3.3 Paths the plugin must resolve
 Resolution order for the GSD install root (`gsdHome`, dir containing `bin/gsd-tools.cjs`, `agents/`, `VERSION`):
-1. env `GSD_CORE_HOME` (OmpOS-defined override; GSD itself defines none — `GSD_HOME` means something else, do not reuse),
+1. env `GSD_CORE_HOME` (Autonogrammer-defined override; GSD itself defines none — `GSD_HOME` means something else, do not reuse),
 2. `$KIMI_CONFIG_DIR/gsd-core` (the Kimi installer's own override env),
 3. `~/.config/agents/gsd-core`, then 4. `~/.agents/gsd-core` (the installer's probe order; present here).
 Derived: `skillsDir = dirname(gsdHome)/skills` (only for the report), `toolsCli = gsdHome/bin/gsd-tools.cjs`, `agentsAuthoritative = gsdHome/agents/*.md` minus `*.compact.md`, `ompAgentsUser = ~/.omp/agent/agents` (honour `PI_CODING_AGENT_DIR`/`--profile`: `UNKNOWN: omp config path for agent dir under --profile`).
@@ -133,9 +133,9 @@ Building blocks that already exist and can be used verbatim (verified):
 - `node ~/.agents/gsd-core/bin/gsd-tools.cjs runtime-identity --raw` -> `{"packageName":"@opengsd/gsd-core","version":"1.18.0"}` (pure local read, ~0.3 s).
 - `omp plugin list --json` -> filter `.npm[]|select(.name=="gsd-core-omp")` (`enabled:true`, `manifest.extensions`).
 - `omp plugin doctor` -> line `✔ plugin:gsd-core-omp: v0.1.0 - …`.
-- ompos-side install: `omp plugin link /abs/path/plugins/gsd-core-omp` (persistent) or per-launch `omp acp --plugin-dir /abs/path/plugins/gsd-core-omp` (no `~/.omp` mutation; `--plugin-dir` roots rank first for agents/skills and are exempt from the claude-plugins opt-in). For OmpOS's ACP launch prefer `--plugin-dir` so the plugin is pinned to the repo path.
+- autonogrammer-side install: `omp plugin link /abs/path/plugins/gsd-core-omp` (persistent) or per-launch `omp acp --plugin-dir /abs/path/plugins/gsd-core-omp` (no `~/.omp` mutation; `--plugin-dir` roots rank first for agents/skills and are exempt from the claude-plugins opt-in). For Autonogrammer's ACP launch prefer `--plugin-dir` so the plugin is pinned to the repo path.
 
-## 4. Reading GSD state from C# (Kanban task context) — all run in ~/src/repos/ompos
+## 4. Reading GSD state from C# (Kanban task context) — all run in ~/src/repos/autonogrammer
 Invocation: `node ~/.agents/gsd-core/bin/gsd-tools.cjs query <name> [args] [--raw] [--pick <field>] [--project-dir <root>] [--json-errors]`. Each call ≈ 0.35–0.40 s wall (node cold start; no daemon), JSON on **stdout**, warnings on **stderr** (harmless, exit 0): `gsd-tools: warning: unknown config key(s) in .planning/config.json: quick_branch_template …` and `…~/.gsd/defaults.json sets model_profile, commit_docs, … (#3532)`. Errors: exit 1 + `{"ok":false,"reason":"sdk_unknown_command","message":"Unknown command: …"}` (with `--json-errors`, on stderr). Verified read-only: STATE.md/ROADMAP.md mtimes unchanged after running the queries below (`state.json` query synthesises `last_updated` = now; do not diff on it).
 
 ### 4.1 Direct file reads (cheapest, stable)
@@ -167,7 +167,7 @@ progress: {total_phases: 6, completed_phases: 3, total_plans: 8, completed_plans
 10. `query phase-plan-index 21` -> `{phase, plans:[{id:"21-01",wave,depends_on[],autonomous,gap_closure,objective,files_modified[],files_deleted[],agent_hint,task_count,has_summary,halted,blocked_by[],ready}], waves:{"1":["21-01"]}, incomplete[], runnable[], ready_plans[], has_checkpoints}` — per-plan Kanban cards.
 11. `query init.phase-op 21` -> paths bundle `{phase_found,phase_dir,phase_number,phase_name,phase_slug,padded_phase,has_research,has_context,context_scope,has_plans,has_verification,has_reviews,plan_count,state_path,roadmap_path,requirements_path,context_path,verification_path,project_root,agents_installed,missing_agents,agents_dir,agent_runtime,project_title,commit_docs,…search flags}`.
 - Other families advertised by `gsd-tools` usage: `milestone, phase, phases, progress, roadmap, state, requirements, list-todos, list-seeds, learnings, intel, graphify, history-digest, audit-open, audit-uat, loop, worktree, workstream, verify, validate`. `UNKNOWN: node ~/.agents/gsd-core/bin/gsd-tools.cjs query learnings.list` (not run) for the "lessons/shared memory" surface; `.planning/intel/` and `.planning/research/` exist as directories.
-- Project flags: `--ws <name>`/`GSD_WORKSTREAM` workstreams; `--project-dir /abs/root` skips ancestor walk-up (REQUIRED for C# since `--cwd` must contain `.planning/` and OmpOS may run from elsewhere).
+- Project flags: `--ws <name>`/`GSD_WORKSTREAM` workstreams; `--project-dir /abs/root` skips ancestor walk-up (REQUIRED for C# since `--cwd` must contain `.planning/` and Autonogrammer may run from elsewhere).
 - Stability ranking for C#: (1) STATE.md frontmatter + ROADMAP checklist regex = zero-process, stable keys but may disagree with computed values; (2) `query roadmap.analyze` / `progress` / `phase-plan-index` = stable, small, cheap; (3) `init.manager` = richest, versioned by gsd-core (shape may change across releases: bind with unknown-tolerant source-generated JSON, `[JsonExtensionData]`, and guard on `runtime-identity` version `1.18.x`); (4) `state.json`/`state-snapshot` text-derived fields are heuristic. Always set 5–10 s timeout, read stdout only, treat non-zero exit as "GSD unavailable", cache per `.planning` mtime to avoid 0.4 s spawns.
 
 ## 5. Licence
@@ -177,13 +177,13 @@ MIT License
 
 Copyright (c) 2026 Open GSD
 ```
-`npm view @opengsd/gsd-core license` = `MIT`; GitHub SPDX `MIT`. The installed `~/.agents/gsd-core` tree ships no LICENSE file. MIT is compatible with OmpOS referencing it (no source copied; plugin only symlinks/reads).
+`npm view @opengsd/gsd-core license` = `MIT`; GitHub SPDX `MIT`. The installed `~/.agents/gsd-core` tree ships no LICENSE file. MIT is compatible with Autonogrammer referencing it (no source copied; plugin only symlinks/reads).
 
-## 6. Risks / UNKNOWNs for the C# OmpOS host
+## 6. Risks / UNKNOWNs for the C# Autonogrammer host
 - UNKNOWN: omp agent loader follows symlinked `agents/*.md` (test command §2); fallback is an orchestrator decision (copy forbidden by brief).
 - GSD workflows are written for `Agent()`; under omp that is the `task` tool — the 14 missing agents break map-codebase/docs-update/debug/intel/user-profile flows until linked.
-- OmpOS launching omp with an isolated `--profile`/custom agent dir may hide `~/.omp/agent/agents` (21 copies) and possibly alter `~/.agents` skill visibility: `UNKNOWN: omp --profile ompos -p "list skills" --no-session`.
+- Autonogrammer launching omp with an isolated `--profile`/custom agent dir may hide `~/.omp/agent/agents` (21 copies) and possibly alter `~/.agents` skill visibility: `UNKNOWN: omp --profile autonogrammer -p "list skills" --no-session`.
 - GSD agents installed with the Kimi layout ⇒ any GSD reinstall (`npx @opengsd/gsd-core --kimi`) rewrites `~/.agents/gsd-core`; plugin symlinks stay valid (same path), versions via `runtime-identity`.
 - Query numbers disagree (frontmatter 50%/6 phases vs query 69%/15 phases; roadmap.analyze `current_phase` 23 vs STATE current 21); show both with provenance or pick `roadmap.analyze` consistently.
-- Node >=24 required by gsd-tools (host has 24.18.0); OmpOS must locate `node` explicitly (no podman/docker involvement).
-- `.planning/` in ompos currently has uncommitted modifications (STATE.md, ROADMAP.md, phase summaries) — read-only queries do not change them.
+- Node >=24 required by gsd-tools (host has 24.18.0); Autonogrammer must locate `node` explicitly (no podman/docker involvement).
+- `.planning/` in autonogrammer currently has uncommitted modifications (STATE.md, ROADMAP.md, phase summaries) — read-only queries do not change them.

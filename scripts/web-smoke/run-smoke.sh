@@ -10,8 +10,8 @@
 #         first in the tab order, the drawer's focus trap and the persistent theme switch (scripts/web-smoke/smoke-demo.mjs).
 #
 # Deliberate differences from the runbook text:
-#   - The API and the web head are published with --no-restore, under a timeout each (OMPOS_SMOKE_PUBLISH_TIMEOUT, default 300 s;
-#     the Demo build has OMPOS_SMOKE_DEMO_TIMEOUT, default 1200 s; raise both on a loaded host), and
+#   - The API and the web head are published with --no-restore, under a timeout each (AUTONOGRAMMER_SMOKE_PUBLISH_TIMEOUT, default 300 s;
+#     the Demo build has AUTONOGRAMMER_SMOKE_DEMO_TIMEOUT, default 1200 s; raise both on a loaded host), and
 #     run from their output directories. The API is not started with `dotnet run`, so every child
 #     process can be stopped cleanly.
 #   - The API runs with ASPNETCORE_ENVIRONMENT=Development, Sessions:Store=InMemory, Coordination:Store=InMemory and
@@ -111,20 +111,20 @@ wait_http() {
 
 CHROME="$(find_chrome)"
 echo "commit=$COMMIT date=$RUN_DATE chrome=$CHROME targets=$SMOKE_TARGETS"
-# Build budgets in seconds: the defaults fit an idle host; a shared or loaded host sets these (OMPOS_SMOKE_PUBLISH_TIMEOUT, OMPOS_SMOKE_DEMO_TIMEOUT).
-PUBLISH_TIMEOUT="${OMPOS_SMOKE_PUBLISH_TIMEOUT:-300}"
-DEMO_TIMEOUT="${OMPOS_SMOKE_DEMO_TIMEOUT:-1200}"
+# Build budgets in seconds: the defaults fit an idle host; a shared or loaded host sets these (AUTONOGRAMMER_SMOKE_PUBLISH_TIMEOUT, AUTONOGRAMMER_SMOKE_DEMO_TIMEOUT).
+PUBLISH_TIMEOUT="${AUTONOGRAMMER_SMOKE_PUBLISH_TIMEOUT:-300}"
+DEMO_TIMEOUT="${AUTONOGRAMMER_SMOKE_DEMO_TIMEOUT:-1200}"
 
 if wants api; then
   # Serve the published web head (runbook: "Serve the published web head").
-  timeout "$PUBLISH_TIMEOUT" dotnet publish apps/OmpOS.Web/OmpOS.Web.csproj -c Release --no-restore -nodeReuse:false -o "$WORK/web" \
+  timeout "$PUBLISH_TIMEOUT" dotnet publish apps/Autonogrammer.Web/Autonogrammer.Web.csproj -c Release --no-restore -nodeReuse:false -o "$WORK/web" \
     >"$OUT_DIR/web-publish-$STAMP.log" 2>&1
 
   # Serve the API with the in-memory adapter (runbook: "Serve the API (in-memory adapter)").
-  timeout "$PUBLISH_TIMEOUT" dotnet publish services/OmpOS.Api/OmpOS.Api.csproj -c Release --no-restore -nodeReuse:false -o "$WORK/api" \
+  timeout "$PUBLISH_TIMEOUT" dotnet publish services/Autonogrammer.Api/Autonogrammer.Api.csproj -c Release --no-restore -nodeReuse:false -o "$WORK/api" \
     >"$OUT_DIR/api-publish-$STAMP.log" 2>&1
   env ASPNETCORE_ENVIRONMENT=Development Harness__Adapter=InMemory Sessions__Store=InMemory Coordination__Store=InMemory Api__Auth__AllowDevelopmentPrincipal=true "Api__Cors__Origins__0=http://127.0.0.1:$WEB_PORT" \
-    dotnet "$WORK/api/OmpOS.Api.dll" --urls "http://127.0.0.1:$API_PORT" \
+    dotnet "$WORK/api/Autonogrammer.Api.dll" --urls "http://127.0.0.1:$API_PORT" \
     >"$OUT_DIR/api-$STAMP.log" 2>&1 &
   PIDS+=($!)
 

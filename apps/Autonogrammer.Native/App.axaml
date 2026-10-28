@@ -1,0 +1,42 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.App"
+             RequestedThemeVariant="Light">
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Autonogrammer.Native.Views/Themes/AutonogrammerTokens.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme DensityStyle="Compact" />
+
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Surface}" />
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+      <Setter Property="FontFamily" Value="{DynamicResource Autonogrammer.Font.Family}" />
+    </Style>
+
+    <!-- No Foreground here: a text block takes its colour from its parent (the window's TextPrimary, or the button's own state colour for
+         the text a button presents), instead of a style that would win over the button's colour. -->
+    <Style Selector=":is(TextBlock)">
+      <Setter Property="FontFamily" Value="{DynamicResource Autonogrammer.Font.Family}" />
+      <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Label}" />
+    </Style>
+
+    <Style Selector=":is(TextBlock).muted">
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+    </Style>
+
+    <Style Selector=":is(TextBlock).error">
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.StatusError}" />
+    </Style>
+
+    <!-- The shared control library: buttons, inputs, tabs, rows, menus, chips and the focus rule, in the Autonogrammer roles. -->
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Themes/AutonogrammerControls.axaml" />
+  </Application.Styles>
+
+</Application>

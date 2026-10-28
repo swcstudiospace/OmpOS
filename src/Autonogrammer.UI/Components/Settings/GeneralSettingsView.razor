@@ -1,0 +1,123 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits SettingsPageView<GeneralPage>
+@implements IAsyncDisposable
+@using Microsoft.JSInterop
+@using Autonogrammer.Presentation
+@using Autonogrammer.Presentation.Settings
+@inject IJSRuntime JS
+<SettingsPageFrame Page="Page" Title="@SettingsCopy.GeneralHeading" Description="@SettingsCopy.GeneralDescription" Editable="@(Page.State == SettingsPageState.Ready)">
+    @if (Page.State == SettingsPageState.Ready)
+    {
+        <SettingsField For="@ThemeId" Label="@SettingsCopy.ThemeLabel" Help="@SettingsWebCopy.ThemeHelp" IsGroup="true">
+            <div id="@ThemeId" class="autonogrammer-segmented" role="group" aria-labelledby="@SettingsField.LabelIdOf(ThemeId)" aria-describedby="@SettingsField.DescribedBy(ThemeId, true)">
+                @foreach (var option in GeneralPage.ThemeOptions)
+                {
+                    var theme = option.Value;
+                    <button type="button" class="autonogrammer-segment" aria-pressed="@(Page.Theme == theme ? "true" : "false")" @onclick="() => Page.SetTheme(theme)">@option.Label</button>
+                }
+            </div>
+            <p class="autonogrammer-settings-help">@Page.SelectedThemeOption.Description</p>
+        </SettingsField>
+        <SettingsField For="@MotionId" Label="@SettingsCopy.MotionLabel" Help="@SettingsWebCopy.MotionHelp" IsGroup="true">
+            <div id="@MotionId" class="autonogrammer-segmented" role="group" aria-labelledby="@SettingsField.LabelIdOf(MotionId)" aria-describedby="@SettingsField.DescribedBy(MotionId, true)">
+                @foreach (var option in GeneralPage.MotionOptions)
+                {
+                    var motion = option.Value;
+                    <button type="button" class="autonogrammer-segment" aria-pressed="@(Page.Motion == motion ? "true" : "false")" @onclick="() => Page.SetMotion(motion)">@option.Label</button>
+                }
+            </div>
+            <p class="autonogrammer-settings-help">@Page.SelectedMotionOption.Description</p>
+        </SettingsField>
+        <h4 class="autonogrammer-settings-section-title">@SettingsCopy.PrivacyHeading</h4>
+        <p class="autonogrammer-settings-privacy">@SettingsCopy.PrivacyStatement</p>
+    }
+    else
+    {
+        <SettingsStateView Loading="@(Page.State == SettingsPageState.Loading)" Error="@(Page.State == SettingsPageState.Error ? Page.LoadError : null)" OnRetry="Retry" />
+    }
+</SettingsPageFrame>
+
+@code {
+    private const string ModulePath = "./_content/Autonogrammer.UI/scripts/autonogrammer-theme.js";
+    private const string ThemeId = "autonogrammer-setting-theme";
+    private const string MotionId = "autonogrammer-setting-motion";
+
+    private IJSObjectReference? _module;
+    private ThemePreference? _appliedTheme;
+    private MotionPreference? _appliedMotion;
+    private bool _baselineTaken;
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Page.State != SettingsPageState.Ready)
+        {
+            return;
+        }
+
+        // The first Ready render only records what the page loaded: the stored choice is already applied by theme-boot.js, so
+        // writing the page's value back would overwrite it. Every later difference is a user edit, a reset or a discard.
+        if (!_baselineTaken)
+        {
+            _baselineTaken = true;
+            _appliedTheme = Page.Theme;
+            _appliedMotion = Page.Motion;
+            return;
+        }
+
+        if (_appliedTheme == Page.Theme && _appliedMotion == Page.Motion)
+        {
+            return;
+        }
+
+        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
+        if (_appliedTheme != Page.Theme)
+        {
+            _appliedTheme = Page.Theme;
+            await _module.InvokeVoidAsync("setTheme", ThemeKey(Page.Theme)).ConfigureAwait(true);
+        }
+
+        if (_appliedMotion != Page.Motion)
+        {
+            _appliedMotion = Page.Motion;
+            await _module.InvokeVoidAsync("setMotion", MotionKey(Page.Motion)).ConfigureAwait(true);
+        }
+    }
+
+    private static string ThemeKey(ThemePreference theme) => theme switch
+    {
+        ThemePreference.System => "system",
+        ThemePreference.Light => "light",
+        ThemePreference.Dark => "dark",
+        _ => throw new ArgumentOutOfRangeException(nameof(theme), theme, "Unknown theme preference."),
+    };
+
+    private static string MotionKey(MotionPreference motion) => motion switch
+    {
+        MotionPreference.System => "system",
+        MotionPreference.Reduced => "reduce",
+        MotionPreference.Full => "full",
+        _ => throw new ArgumentOutOfRangeException(nameof(motion), motion, "Unknown motion preference."),
+    };
+
+    private Task Retry() => Page.LoadAsync(CancellationToken.None);
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        Dispose();
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _module.DisposeAsync().ConfigureAwait(true);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The page is gone, and the module went with it.
+        }
+    }
+}

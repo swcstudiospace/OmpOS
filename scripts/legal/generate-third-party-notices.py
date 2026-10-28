@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 SWC Studio
-"""Generate THIRD-PARTY-NOTICES.md for OmpOS (stdlib only, offline, deterministic).
+"""Generate THIRD-PARTY-NOTICES.md for Autonogrammer (stdlib only, offline, deterministic).
 
 Inputs (all read from this checkout and the local NuGet cache; nothing is fetched):
   * every packages.lock.json in the repository (resolved versions),
@@ -69,7 +69,7 @@ BUILD_TIME_IDS = {
 
 SKIP_DIRS = {".git", "bin", "obj", "node_modules", ".planning", ".swarm", ".dotnet", ".nuget"}
 SUBMODULE_LICENCES = {
-    "plugins/claude-ultrathink": "AGPL-3.0-or-later (its LICENSE; same family as OmpOS)",
+    "plugins/claude-ultrathink": "AGPL-3.0-or-later (its LICENSE; same family as Autonogrammer)",
     "plugins/agent-swarm": "none published (no LICENSE file; OQ-102)",
     "plugins/agent-substrate": "none published (no LICENSE file, private repository; OQ-102)",
 }
@@ -297,9 +297,9 @@ def image_rows():
         if path.suffix.lower() not in IMAGE_EXT or rel.startswith(("docs/", "tests/", "tools/")):
             continue
         if rel.startswith("assets/"):
-            origin = "OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE)"
+            origin = "Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE)"
         elif rel.endswith(("wwwroot/favicon.png", "wwwroot/icon-192.png")):
-            origin = "provenance not recorded; the file names match the stock Blazor WebAssembly template [INFERENCE]; replace with OmpOS-authored artwork"
+            origin = "provenance not recorded; the file names match the stock Blazor WebAssembly template [INFERENCE]; replace with Autonogrammer-authored artwork"
         else:
             origin = "provenance not recorded"
         rows.append((rel, hashlib.sha256(path.read_bytes()).hexdigest()[:12], origin))
@@ -377,7 +377,7 @@ def render(cache: Path) -> str:
     w = out.append
     w("# Third-party notices")
     w("")
-    w("OmpOS is licensed under AGPL-3.0-or-later (see [LICENSE](LICENSE) and [NOTICE](NOTICE)). It uses and conveys the third-party components below, each under its own licence. This file is generated; do not edit it by hand.")
+    w("Autonogrammer is licensed under AGPL-3.0-or-later (see [LICENSE](LICENSE) and [NOTICE](NOTICE)). It uses and conveys the third-party components below, each under its own licence. This file is generated; do not edit it by hand.")
     w("")
     w("Regenerate: `python3 scripts/legal/generate-third-party-notices.py` (check without writing: `--check`). Input: every `packages.lock.json` in the repository, the NuGet cache, the font and image directories, and `deploy/*.Containerfile`.")
     w("")
@@ -457,7 +457,7 @@ def render(cache: Path) -> str:
     w("| Item | Version | Licence | Notes |")
     w("|---|---|---|---|")
     if npm is not None:
-        w(f"| plugins/gsd-core-omp | {cell(str(npm.get('version', '')))} | {cell(str(npm.get('license', 'not declared')))} | first-party OmpOS code; declares no npm dependencies |")
+        w(f"| plugins/gsd-core-omp | {cell(str(npm.get('version', '')))} | {cell(str(npm.get('license', 'not declared')))} | first-party Autonogrammer code; declares no npm dependencies |")
     for b in bootstrap:
         w(f"| Bootstrap (`{b['dir']}`) | {b['version']} | MIT | {cell(b['copyright'])}; read from the banner of bootstrap.css; MIT text in section 8 |")
     for v in vendored:
@@ -497,13 +497,13 @@ def render(cache: Path) -> str:
         bun = values.get("BUN_VERSION")
         omp = values.get("OMP_VERSION")
         if bun:
-            w(f"| Bun {bun} | `{file}` final image (`/usr/local/bin/bun`) | MIT, plus statically linked components (JavaScriptCore under LGPL-2, tinycc under LGPL-2.1, zlib-ng, ICU, SQLite and others) | https://bun.sh/docs/project/licensing; the image carries `/licenses/bun-NOTICE.txt`. Bun's source is available at https://github.com/oven-sh/bun/tree/bun-v{bun}. Bun is a separate program that OmpOS does not link. |")
+            w(f"| Bun {bun} | `{file}` final image (`/usr/local/bin/bun`) | MIT, plus statically linked components (JavaScriptCore under LGPL-2, tinycc under LGPL-2.1, zlib-ng, ICU, SQLite and others) | https://bun.sh/docs/project/licensing; the image carries `/licenses/bun-NOTICE.txt`. Bun's source is available at https://github.com/oven-sh/bun/tree/bun-v{bun}. Bun is a separate program that Autonogrammer does not link. |")
         if omp:
             w(f"| omp (`@oh-my-pi/pi-coding-agent`) {omp} | `{file}` final image (`/opt/omp`) | MIT, Copyright (c) 2025 Mario Zechner, 2025-2026 Can Bölük | the tarball's LICENSE is copied to `/licenses/omp-LICENSE`. omp's own npm dependency tree is resolved at image build time and is not audited here. |")
         w(f"| .NET runtime and ASP.NET Core shared framework | `{file}` base images; desktop and web payloads | MIT, with third-party notices (ICU and others) | the runtime's `LICENSE.txt` and `ThirdPartyNotices.txt` are copied to `/licenses` when the base image provides them (https://github.com/dotnet/runtime/blob/main/THIRD-PARTY-NOTICES.TXT) |")
         w(f"| Ubuntu 24.04 base image packages | `{file}` | per package, see `/usr/share/doc/*/copyright` inside the image | standard image distribution duties |")
     w("")
-    w("Submodules under `plugins/` are separate programs pinned by reference; their files are not part of OmpOS source archives.")
+    w("Submodules under `plugins/` are separate programs pinned by reference; their files are not part of Autonogrammer source archives.")
     w("")
     w("| Submodule | Repository | Licence |")
     w("|---|---|---|")

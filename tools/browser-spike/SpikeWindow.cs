@@ -3,7 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform;
 using Avalonia.Threading;
 
-namespace OmpOS.BrowserSpike;
+namespace Autonogrammer.BrowserSpike;
 
 /// <summary>Hosts the native web view, loads the local fixture and reads the button's selector and box back.</summary>
 internal sealed class SpikeWindow : Window
@@ -32,7 +32,7 @@ internal sealed class SpikeWindow : Window
     public SpikeWindow(IClassicDesktopStyleApplicationLifetime desktop)
     {
         _desktop = desktop;
-        Title = "OmpOS browser spike (ADR-0009)";
+        Title = "Autonogrammer browser spike (ADR-0009)";
         Width = 800;
         Height = 600;
 

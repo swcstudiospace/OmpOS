@@ -2,7 +2,7 @@
 
 - Status: Accepted 2026-10-21, amended (web stays Blazor WebAssembly)
 - Date: 2026-10-21
-- Deciders: ompos-maintainers
+- Deciders: autonogrammer-maintainers
 - Scope: UI stack for Windows, macOS, Linux, iOS, Android and the web head. Supersedes the UI stack decisions in ADR-0002.
 
 ## Context
@@ -34,7 +34,7 @@ Throwaway projects were generated from Avalonia.Templates 12.1.4 (`avalonia.xpla
 1. Avalonia UI 12.1.4 (MIT) is the UI framework for the five native heads: Windows, macOS, Linux, iOS and Android.
 2. The web head stays Blazor WebAssembly. Avalonia.Browser is adopted only when gate G-WEB passes: the browser build must expose role and accessible name for the prompt input, the send control and the transcript to the Chromium accessibility tree. G-WEB failed on Avalonia 12.1.4. It is re-measured on each Avalonia release with the procedure in the evidence README.
 3. A framework-neutral presentation layer is extracted from the Razor components: view models and state with no UI-framework types. The Avalonia heads and the Blazor web head bind the same presentation state, and parity tests run against that layer. This bounds drift between the two view layers.
-4. The .NET MAUI head (`apps/OmpOS.App`) retires by a clean cutover after parity tests exist (XP-10). The Razor component library (`src/OmpOS.UI`) stays as the web head's UI until the web head moves. No new MAUI-only or Razor-only feature code is written.
+4. The .NET MAUI head (`apps/Autonogrammer.App`) retires by a clean cutover after parity tests exist (XP-10). The Razor component library (`src/Autonogrammer.UI`) stays as the web head's UI until the web head moves. No new MAUI-only or Razor-only feature code is written.
 5. ADE capabilities are delivered through a plugin harness: UI-framework-neutral contracts in the contracts layer, in-process plugins first, MCP for out-of-process tools later.
 6. iOS and macOS signing, notarization and device runs stay on the Mac channel and remain human-gated.
 

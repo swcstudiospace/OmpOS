@@ -1,0 +1,241 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:safety="clr-namespace:Autonogrammer.Presentation.Safety;assembly=Autonogrammer.Presentation"
+                            xmlns:local="clr-namespace:Autonogrammer.Native.Views.Settings"
+                            x:Class="Autonogrammer.Native.Views.Safety.RunModePageView"
+                            x:DataType="safety:RunModeSettingsPage"
+                            Focusable="False">
+
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+
+  <!-- The Run mode page: the mode list, the classifier note, the allowlists and the read boundary you can edit, then what is in force (rules, files, problems).
+       The lists of rows are drawn from the page in the code-behind. Everything is a draft until the footer's Save writes it. -->
+  <Panel>
+
+    <local:PageStatusView x:Name="StateView" />
+
+    <ScrollViewer x:Name="ReadyPanel"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Classes="settings-column">
+
+        <TextBlock Classes="settings-heading"
+                   Text="{x:Static safety:SafetyCopy.Heading}" />
+        <TextBlock Classes="settings-description"
+                   Text="{x:Static safety:SafetyCopy.Description}" />
+
+        <TextBlock Classes="settings-section"
+                   Margin="0,8,0,0"
+                   Text="{x:Static safety:SafetyCopy.ModeLabel}" />
+        <Border Classes="card"
+                Padding="{DynamicResource Autonogrammer.Space.Xs}">
+          <ListBox x:Name="ModeList"
+                   SelectionMode="Single"
+                   AutoScrollToSelectedItem="False"
+                   AutomationProperties.Name="{x:Static safety:SafetyCopy.ModeLabel}" />
+        </Border>
+        <TextBlock x:Name="EffectiveModeText"
+                   Classes="settings-help"
+                   Text="{CompiledBinding EffectiveModeText}"
+                   AutomationProperties.LiveSetting="Polite"
+                   AutomationProperties.Name="{x:Static safety:SafetyCopy.ModeLabel}" />
+        <TextBlock x:Name="RunEverythingWarning"
+                   Classes="tone-warning settings-body"
+                   IsVisible="{CompiledBinding IsRunEverythingWarningVisible}"
+                   Text="{x:Static safety:SafetyCopy.RunEverythingWarning}"
+                   AutomationProperties.LiveSetting="Polite"
+                   AutomationProperties.Name="{x:Static safety:SafetyCopy.RunEverythingWarning}" />
+
+        <Border x:Name="ClassifierBox"
+                Classes="settings-banner"
+                IsVisible="{CompiledBinding IsClassifierNoteVisible}">
+          <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+            <TextBlock Classes="settings-label"
+                       Text="{x:Static safety:SafetyCopy.ClassifierHeading}" />
+            <TextBlock Classes="settings-help"
+                       Text="{x:Static safety:SafetyCopy.ClassifierNote}" />
+          </StackPanel>
+        </Border>
+        <TextBlock x:Name="NoSandboxText"
+                   Classes="settings-help"
+                   Text="{x:Static safety:SafetyCopy.NoSandboxNote}" />
+
+        <TextBlock Classes="settings-section"
+                   Margin="0,16,0,0"
+                   Text="{x:Static safety:SafetyCopy.TerminalHeading}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static safety:SafetyCopy.TerminalHelp}" />
+        <TextBlock x:Name="PermissionsTargetText"
+                   Classes="settings-help"
+                   Text="{CompiledBinding PermissionsTargetText}" />
+        <StackPanel x:Name="TerminalList"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+        <Grid ColumnDefinitions="*,Auto"
+              ColumnSpacing="8">
+          <TextBox x:Name="TerminalBox"
+                   Grid.Column="0"
+                   Classes="settings-mono"
+                   PlaceholderText="{x:Static safety:SafetyCopy.TerminalPlaceholder}"
+                   IsEnabled="{CompiledBinding CanEditEntries}"
+                   AutomationProperties.Name="{x:Static safety:SafetyCopy.TerminalAddLabel}" />
+          <Button x:Name="TerminalAdd"
+                  Grid.Column="1"
+                  Content="{x:Static safety:SafetyCopy.TerminalAddButton}"
+                  IsEnabled="{CompiledBinding CanEditEntries}"
+                  AutomationProperties.Name="{x:Static safety:SafetyCopy.TerminalAddButton}" />
+        </Grid>
+
+        <TextBlock Classes="settings-section"
+                   Margin="0,16,0,0"
+                   Text="{x:Static safety:SafetyCopy.McpHeading}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static safety:SafetyCopy.McpHelp}" />
+        <StackPanel x:Name="McpList"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+        <Grid ColumnDefinitions="*,Auto"
+              ColumnSpacing="8">
+          <TextBox x:Name="McpBox"
+                   Grid.Column="0"
+                   Classes="settings-mono"
+                   PlaceholderText="{x:Static safety:SafetyCopy.McpPlaceholder}"
+                   IsEnabled="{CompiledBinding CanEditEntries}"
+                   AutomationProperties.Name="{x:Static safety:SafetyCopy.McpAddLabel}" />
+          <Button x:Name="McpAdd"
+                  Grid.Column="1"
+                  Content="{x:Static safety:SafetyCopy.McpAddButton}"
+                  IsEnabled="{CompiledBinding CanEditEntries}"
+                  AutomationProperties.Name="{x:Static safety:SafetyCopy.McpAddButton}" />
+        </Grid>
+
+        <TextBlock x:Name="EntryErrorText"
+                   Classes="tone-error settings-body"
+                   IsVisible="{CompiledBinding HasEntryError}"
+                   Text="{CompiledBinding EntryError}"
+                   AutomationProperties.LiveSetting="Assertive"
+                   AutomationProperties.Name="{x:Static safety:SafetyCopy.EntryErrorName}" />
+
+        <TextBlock Classes="settings-section"
+                   Margin="0,16,0,0"
+                   Text="{x:Static safety:SafetyCopy.ReadHeading}" />
+        <TextBlock x:Name="ReadHiddenText"
+                   Classes="muted settings-body"
+                   IsVisible="{CompiledBinding !IsReadAccessVisible}"
+                   Text="{x:Static safety:SafetyCopy.ReadHiddenNote}" />
+        <StackPanel x:Name="ReadPanel"
+                    IsVisible="{CompiledBinding IsReadAccessVisible}"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+          <TextBlock Classes="settings-help"
+                     Text="{x:Static safety:SafetyCopy.ReadHelp}" />
+          <Border Classes="card"
+                  Padding="{DynamicResource Autonogrammer.Space.Xs}">
+            <ListBox x:Name="BoundaryList"
+                     SelectionMode="Single"
+                     AutoScrollToSelectedItem="False"
+                     AutomationProperties.Name="{x:Static safety:SafetyCopy.ReadHeading}" />
+          </Border>
+          <TextBlock x:Name="BoundarySourceText"
+                     Classes="settings-help"
+                     Text="{CompiledBinding BoundarySourceText}" />
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static safety:SafetyCopy.ReadPathsHeading}" />
+          <TextBlock Classes="settings-help"
+                     Text="{x:Static safety:SafetyCopy.ReadPathsHelp}" />
+          <TextBlock x:Name="ReadPathsSourceText"
+                     Classes="settings-help"
+                     Text="{CompiledBinding ReadPathsSourceText}" />
+          <TextBlock x:Name="SandboxTargetText"
+                     Classes="settings-help"
+                     Text="{CompiledBinding SandboxTargetText}" />
+          <StackPanel x:Name="ReadPathList"
+                      Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+          <Grid ColumnDefinitions="*,Auto"
+                ColumnSpacing="8">
+            <TextBox x:Name="ReadPathBox"
+                     Grid.Column="0"
+                     Classes="settings-mono"
+                     PlaceholderText="{x:Static safety:SafetyCopy.ReadPathPlaceholder}"
+                     IsEnabled="{CompiledBinding CanEditSandbox}"
+                     AutomationProperties.Name="{x:Static safety:SafetyCopy.ReadPathAddLabel}" />
+            <Button x:Name="ReadPathAdd"
+                    Grid.Column="1"
+                    Content="{x:Static safety:SafetyCopy.ReadPathAddButton}"
+                    IsEnabled="{CompiledBinding CanEditSandbox}"
+                    AutomationProperties.Name="{x:Static safety:SafetyCopy.ReadPathAddButton}" />
+          </Grid>
+        </StackPanel>
+
+        <TextBlock Classes="settings-section"
+                   Margin="0,16,0,0"
+                   Text="{x:Static safety:SafetyCopy.RulesHeading}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static safety:SafetyCopy.RulesHelp}" />
+        <TextBlock Classes="settings-label"
+                   Text="{x:Static safety:SafetyCopy.AllowRulesLabel}" />
+        <StackPanel x:Name="AllowRuleList"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+        <TextBlock Classes="settings-label"
+                   Text="{x:Static safety:SafetyCopy.DenyRulesLabel}" />
+        <StackPanel x:Name="DenyRuleList"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+
+        <StackPanel x:Name="InstructionsPanel"
+                    IsVisible="{CompiledBinding HasInstructions}"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+          <TextBlock Classes="settings-section"
+                     Margin="0,16,0,0"
+                     Text="{x:Static safety:SafetyCopy.InstructionsHeading}" />
+          <TextBlock Classes="settings-help"
+                     Text="{x:Static safety:SafetyCopy.InstructionsNote}" />
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static safety:SafetyCopy.AllowInstructionsLabel}" />
+          <StackPanel x:Name="AllowInstructionList"
+                      Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static safety:SafetyCopy.BlockInstructionsLabel}" />
+          <StackPanel x:Name="BlockInstructionList"
+                      Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+        </StackPanel>
+
+        <TextBlock Classes="settings-section"
+                   Margin="0,16,0,0"
+                   Text="{x:Static safety:SafetyCopy.FilesHeading}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static safety:SafetyCopy.FilesHelp}" />
+        <TextBlock x:Name="UntrustedText"
+                   Classes="tone-warning settings-body"
+                   IsVisible="{CompiledBinding IsProjectUntrusted}"
+                   Text="{x:Static safety:SafetyCopy.UntrustedProject}" />
+        <StackPanel x:Name="FileList"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+
+        <TextBlock Classes="settings-section"
+                   Margin="0,16,0,0"
+                   Text="{x:Static safety:SafetyCopy.DiagnosticsHeading}" />
+        <TextBlock x:Name="NoProblemsText"
+                   Classes="muted settings-body"
+                   IsVisible="{CompiledBinding !HasDiagnostics}"
+                   Text="{x:Static safety:SafetyCopy.NoProblems}" />
+        <StackPanel x:Name="ProblemList"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+
+        <TextBlock x:Name="SaveFailedHeading"
+                   Classes="tone-error settings-label"
+                   IsVisible="{CompiledBinding HasError}"
+                   Text="{x:Static safety:SafetyCopy.SaveFailedHeading}"
+                   AutomationProperties.LiveSetting="Assertive"
+                   AutomationProperties.Name="{x:Static safety:SafetyCopy.SaveFailedHeading}" />
+        <TextBlock x:Name="SaveFailedBody"
+                   Classes="tone-error settings-body"
+                   IsVisible="{CompiledBinding HasError}"
+                   Text="{CompiledBinding SaveError}" />
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Panel>
+
+</local:SettingsPageViewBase>

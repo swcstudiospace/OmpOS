@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs the node:test suite of the GSD-Core omp plugin (plugins/gsd-core-omp). The plugin is OmpOS-owned JavaScript with no
+# Runs the node:test suite of the GSD-Core omp plugin (plugins/gsd-core-omp). The plugin is Autonogrammer-owned JavaScript with no
 # .NET project, so this script is its gate: bootstrap.sh and the CI workflow both run it. Node 20 or newer is required.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
@@ -10,4 +10,4 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 node --test plugins/gsd-core-omp/test/*.test.mjs
-node --test plugins/ompos-hooks-omp/test/*.test.mjs
+node --test plugins/autonogrammer-hooks-omp/test/*.test.mjs

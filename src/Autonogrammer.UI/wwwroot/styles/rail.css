@@ -1,0 +1,255 @@
+/* The agent rail: new agent and terminal buttons, the filter, the grouped rows, and the settings button. A status is a glyph and words,
+   never colour alone. Rows are buttons in a roving tabindex list: one tab stop, Up and Down move between rows. */
+
+.autonogrammer-agent-rail {
+  min-height: 100%;
+}
+
+.autonogrammer-new-terminal {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.autonogrammer-agent-filter {
+  width: 100%;
+}
+
+.autonogrammer-rail-alert {
+  margin: 0;
+  padding: var(--autonogrammer-gap-8);
+  background: var(--autonogrammer-surface-sunken);
+  border-left: 4px solid var(--autonogrammer-error);
+  border-radius: var(--autonogrammer-radius-6);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+.autonogrammer-rail-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--autonogrammer-gap-4);
+  padding: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-rail-state-heading {
+  margin: 0;
+  font-weight: var(--autonogrammer-font-weight-semibold);
+}
+
+.autonogrammer-rail-state-body {
+  margin: 0;
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+.autonogrammer-agent-groups,
+.autonogrammer-agent-items {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.autonogrammer-agent-groups {
+  flex: 1;
+  gap: var(--autonogrammer-gap-4);
+}
+
+.autonogrammer-agent-group-header {
+  margin: 0;
+  padding: var(--autonogrammer-gap-12) var(--autonogrammer-gap-8) var(--autonogrammer-gap-4);
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-agent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--autonogrammer-gap-8);
+  width: 100%;
+  min-height: var(--autonogrammer-control-height);
+  padding: var(--autonogrammer-gap-6) var(--autonogrammer-gap-8);
+  background: transparent;
+  border: 0;
+  border-radius: var(--autonogrammer-radius-6);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-label);
+  line-height: var(--autonogrammer-line-height-label);
+  text-align: left;
+}
+
+.autonogrammer-agent-row:hover {
+  background: var(--autonogrammer-hover);
+}
+
+.autonogrammer-agent-row:active {
+  background: var(--autonogrammer-surface-active);
+}
+
+.autonogrammer-agent-row.is-selected,
+.autonogrammer-agent-row.is-selected:hover {
+  background: var(--autonogrammer-tint-strong);
+  border-radius: 0 var(--autonogrammer-radius-6) var(--autonogrammer-radius-6) 0;
+  box-shadow: inset 3px 0 0 var(--autonogrammer-accent);
+}
+
+.autonogrammer-agent-item {
+  position: relative;
+}
+
+.autonogrammer-agent-row .autonogrammer-glyph {
+  flex: none;
+  margin-top: 1px;
+}
+
+.autonogrammer-agent-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.autonogrammer-agent-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-agent-title {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: var(--autonogrammer-font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.autonogrammer-agent-row.is-selected .autonogrammer-agent-title {
+  font-weight: var(--autonogrammer-font-weight-semibold);
+}
+
+.autonogrammer-agent-time {
+  flex: none;
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+}
+
+.autonogrammer-agent-time[data-stale='true'] {
+  color: var(--autonogrammer-warning);
+}
+
+.autonogrammer-agent-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--autonogrammer-gap-8);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-agent-flag,
+.autonogrammer-agent-tag {
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-agent-tag {
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+}
+
+.autonogrammer-agent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--autonogrammer-gap-4);
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8) var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+}
+
+/* The close control of the selected row floats at the bottom-right of the row, over the empty end of the status line. */
+.autonogrammer-agent-actions--float {
+  position: absolute;
+  right: var(--autonogrammer-gap-4);
+  bottom: var(--autonogrammer-gap-4);
+  padding: 0;
+}
+
+.autonogrammer-agent-row.is-selected .autonogrammer-agent-meta {
+  padding-right: var(--autonogrammer-icon-button);
+}
+
+.autonogrammer-agent-close {
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-agent-close:hover,
+.autonogrammer-agent-close:focus-visible {
+  background: var(--autonogrammer-surface-raised);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-rail-footer {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: var(--autonogrammer-gap-8) 0 0;
+  background: var(--autonogrammer-surface);
+  border-top: 1px solid var(--autonogrammer-border);
+}
+
+.autonogrammer-rail-settings {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+/* Status glyphs and words. The colour role says the same thing as the words beside it; it never stands alone. */
+.autonogrammer-glyph {
+  flex: none;
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-glyph[data-tone='primary'] {
+  color: var(--autonogrammer-accent);
+}
+
+.autonogrammer-glyph[data-tone='success'] {
+  color: var(--autonogrammer-success);
+}
+
+.autonogrammer-glyph[data-tone='warning'] {
+  color: var(--autonogrammer-warning);
+}
+
+.autonogrammer-glyph[data-tone='error'] {
+  color: var(--autonogrammer-error);
+}
+
+.autonogrammer-agent-status[data-tone='primary'],
+.autonogrammer-stage-status[data-tone='primary'],
+.autonogrammer-chip[data-tone='primary'] {
+  color: var(--autonogrammer-accent);
+}
+
+.autonogrammer-agent-status[data-tone='success'],
+.autonogrammer-stage-status[data-tone='success'],
+.autonogrammer-chip[data-tone='success'] {
+  color: var(--autonogrammer-success);
+}
+
+.autonogrammer-agent-status[data-tone='warning'],
+.autonogrammer-stage-status[data-tone='warning'],
+.autonogrammer-chip[data-tone='warning'] {
+  color: var(--autonogrammer-warning);
+}
+
+.autonogrammer-agent-status[data-tone='error'],
+.autonogrammer-stage-status[data-tone='error'],
+.autonogrammer-chip[data-tone='error'] {
+  color: var(--autonogrammer-error);
+}
+
+.autonogrammer-agent-status[data-tone='secondary'],
+.autonogrammer-stage-status[data-tone='secondary'] {
+  color: var(--autonogrammer-text-secondary);
+}

@@ -1,0 +1,432 @@
+/* The composer: one rounded card in the thread column. The prompt is the card; the footer holds the model, mode and thinking chips on the
+   left and the send controls on the right. The slash palette, the chip lists and the model picker open above and below the card. Colours,
+   sizes and fonts come from tokens.css only. */
+
+.autonogrammer-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+}
+
+.autonogrammer-composer-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border-strong);
+  border-radius: var(--autonogrammer-radius-12);
+  box-shadow: var(--autonogrammer-shadow-card);
+}
+
+.autonogrammer-composer-card:focus-within {
+  border-color: var(--autonogrammer-focus);
+  box-shadow: 0 0 0 3px var(--autonogrammer-tint-strong);
+}
+
+.autonogrammer-composer-input {
+  width: 100%;
+  min-height: var(--autonogrammer-composer-min);
+  max-height: var(--autonogrammer-composer-max);
+  padding: var(--autonogrammer-gap-12) var(--autonogrammer-gap-12) var(--autonogrammer-gap-4);
+  background: transparent;
+  border: 0;
+  border-radius: var(--autonogrammer-radius-12) var(--autonogrammer-radius-12) 0 0;
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-body);
+  line-height: var(--autonogrammer-line-height-body);
+  field-sizing: content;
+  resize: none;
+}
+
+.autonogrammer-composer-input:focus-visible {
+  outline: none;
+}
+
+.autonogrammer-composer-input::placeholder {
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-composer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8) var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-composer-chips,
+.autonogrammer-composer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--autonogrammer-gap-4);
+  min-width: 0;
+}
+
+.autonogrammer-composer-actions {
+  justify-content: flex-end;
+}
+
+.autonogrammer-composer .autonogrammer-icon-btn {
+  background: var(--autonogrammer-accent);
+  border-color: var(--autonogrammer-accent);
+  border-radius: var(--autonogrammer-radius-pill);
+  color: var(--autonogrammer-accent-on);
+}
+
+.autonogrammer-composer .autonogrammer-icon-btn:hover,
+.autonogrammer-composer .autonogrammer-icon-btn:active {
+  background: var(--autonogrammer-accent-hover);
+  border-color: var(--autonogrammer-accent-hover);
+}
+
+.autonogrammer-composer .autonogrammer-icon-btn.autonogrammer-stop-btn {
+  background: var(--autonogrammer-surface-raised);
+  border-color: var(--autonogrammer-border-strong);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-composer .autonogrammer-icon-btn.autonogrammer-stop-btn:hover {
+  background: var(--autonogrammer-hover);
+}
+
+/* Text under the card: what is pending, why a send was refused, the character count and the keyboard hint. The hint is for the keyboard:
+   it shows while the focus is inside the composer and stays available to assistive technology otherwise. */
+.autonogrammer-composer-pending,
+.autonogrammer-composer-status,
+.autonogrammer-composer-count,
+.autonogrammer-composer-hint {
+  margin: 0;
+  padding: 0 var(--autonogrammer-gap-4);
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-composer-pending:empty {
+  display: none;
+}
+
+.autonogrammer-composer-status {
+  color: var(--autonogrammer-error);
+}
+
+.autonogrammer-composer:not(:focus-within) .autonogrammer-composer-hint {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Chips ---------------------------------------------------------------------------------------------------------------------- */
+
+.autonogrammer-chip-menu {
+  position: relative;
+}
+
+.autonogrammer-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-4);
+  min-height: var(--autonogrammer-control-height-small);
+  min-width: var(--autonogrammer-target-min);
+  padding: 0 var(--autonogrammer-gap-8);
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-pill);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-small);
+  font-weight: var(--autonogrammer-font-weight-medium);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-chip-btn:hover {
+  background: var(--autonogrammer-tint);
+  border-color: var(--autonogrammer-tint-border);
+}
+
+.autonogrammer-chip-btn[aria-expanded='true'] {
+  background: var(--autonogrammer-tint-strong);
+  border-color: var(--autonogrammer-tint-border);
+}
+
+.autonogrammer-chip-btn[aria-disabled='true'] {
+  opacity: 0.6;
+}
+
+.autonogrammer-chip-value {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.autonogrammer-chip-list {
+  position: absolute;
+  bottom: calc(100% + var(--autonogrammer-gap-4));
+  left: 0;
+  z-index: var(--autonogrammer-z-popup);
+  min-width: 12rem;
+  max-width: min(22rem, 90vw);
+  max-height: 16rem;
+  margin: 0;
+  padding: var(--autonogrammer-gap-4);
+  overflow-y: auto;
+  list-style: none;
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+  box-shadow: var(--autonogrammer-shadow-popup);
+}
+
+.autonogrammer-chip-option {
+  display: flex;
+  flex-direction: column;
+  min-height: var(--autonogrammer-control-height);
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+  border-radius: var(--autonogrammer-radius-6);
+  cursor: pointer;
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+.autonogrammer-chip-option.is-active,
+.autonogrammer-chip-option:hover {
+  background: var(--autonogrammer-hover);
+}
+
+.autonogrammer-chip-option[aria-selected='true'] {
+  background: var(--autonogrammer-selected);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+}
+
+.autonogrammer-chip-option-description,
+.autonogrammer-chip-notice,
+.autonogrammer-model-state {
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-chip-notice {
+  position: absolute;
+  bottom: calc(100% + var(--autonogrammer-gap-4));
+  left: 0;
+  z-index: var(--autonogrammer-z-popup);
+  width: max-content;
+  max-width: 20rem;
+  margin: 0;
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-6);
+}
+
+.autonogrammer-chip-heading {
+  padding: var(--autonogrammer-gap-6) var(--autonogrammer-gap-8) var(--autonogrammer-gap-2);
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.autonogrammer-model-picker {
+  position: absolute;
+  bottom: calc(100% + var(--autonogrammer-gap-4));
+  left: 0;
+  z-index: var(--autonogrammer-z-popup);
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  width: min(24rem, 90vw);
+  padding: var(--autonogrammer-gap-8);
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+  box-shadow: var(--autonogrammer-shadow-popup);
+}
+
+.autonogrammer-model-picker .autonogrammer-chip-list {
+  position: static;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+/* Slash palette ------------------------------------------------------------------------------------------------------------------ */
+
+.autonogrammer-slash-palette {
+  position: absolute;
+  bottom: calc(100% + var(--autonogrammer-gap-4));
+  left: 0;
+  right: 0;
+  z-index: var(--autonogrammer-z-popup);
+  padding: var(--autonogrammer-gap-4);
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+  box-shadow: var(--autonogrammer-shadow-popup);
+}
+
+.autonogrammer-slash-list {
+  max-height: 16rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+/* One command per row: the name (and its argument hint) on the left, the description with the disabled reason under it in the middle, the
+   source and scope pills on the right. Long text is cut with an ellipsis and carries a title with the full text. */
+.autonogrammer-slash-option {
+  display: grid;
+  grid-template-columns: minmax(8rem, 13rem) minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--autonogrammer-gap-12);
+  min-height: var(--autonogrammer-control-height);
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+  border-radius: var(--autonogrammer-radius-6);
+  cursor: pointer;
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+.autonogrammer-slash-option.is-active,
+.autonogrammer-slash-option:hover {
+  background: var(--autonogrammer-tint);
+}
+
+.autonogrammer-slash-option[aria-selected='true'] {
+  background: var(--autonogrammer-tint-strong);
+  box-shadow: inset 3px 0 0 var(--autonogrammer-accent);
+}
+
+.autonogrammer-slash-option.is-disabled {
+  cursor: default;
+}
+
+.autonogrammer-slash-head {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: flex;
+  align-items: baseline;
+  gap: var(--autonogrammer-gap-6);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.autonogrammer-slash-name {
+  flex: none;
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+}
+
+.autonogrammer-slash-hint,
+.autonogrammer-slash-description,
+.autonogrammer-slash-reason,
+.autonogrammer-slash-message {
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-slash-hint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.autonogrammer-slash-description,
+.autonogrammer-slash-reason {
+  grid-column: 2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.autonogrammer-slash-reason {
+  color: var(--autonogrammer-warning);
+}
+
+.autonogrammer-slash-badges {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  display: flex;
+  gap: var(--autonogrammer-gap-4);
+}
+
+.autonogrammer-badge-source,
+.autonogrammer-badge-scope {
+  padding: 0 var(--autonogrammer-gap-6);
+  background: var(--autonogrammer-surface-sunken);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-pill);
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+  white-space: nowrap;
+}
+
+.autonogrammer-slash-message {
+  margin: 0;
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+}
+
+/* Steering history -------------------------------------------------------------------------------------------------------------- */
+
+.autonogrammer-steering-details {
+  padding: 0 var(--autonogrammer-gap-4);
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+}
+
+.autonogrammer-steering-details > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--autonogrammer-target-min);
+  cursor: pointer;
+}
+
+.autonogrammer-steering-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.autonogrammer-steering-entry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+  background: var(--autonogrammer-surface-sunken);
+  border-radius: var(--autonogrammer-radius-6);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-steering-header {
+  color: var(--autonogrammer-text-secondary);
+  font-weight: var(--autonogrammer-font-weight-medium);
+}
+
+.autonogrammer-steering-text {
+  flex-basis: 100%;
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-steering-status[data-failed='true'],
+.autonogrammer-steering-reason {
+  color: var(--autonogrammer-error);
+}
+
+.autonogrammer-steering-held {
+  margin: 0;
+  color: var(--autonogrammer-warning);
+}

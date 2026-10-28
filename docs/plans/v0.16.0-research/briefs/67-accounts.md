@@ -1,6 +1,6 @@
 # Brief 67: Accounts (Supabase passwordless, GoTrue client, account surface)
 
-Names are POST-RENAME (OmpOS becomes Autonogrammer); the repo on disk still uses OmpOS paths, cited at the same relative path. Decision record: `docs/decisions/ADR-0030-accounts-supabase-passwordless.md` (read it first; this brief does not repeat its tables).
+Names are POST-RENAME (Autonogrammer becomes Autonogrammer); the repo on disk still uses Autonogrammer paths, cited at the same relative path. Decision record: `docs/decisions/ADR-0030-accounts-supabase-passwordless.md` (read it first; this brief does not repeat its tables).
 
 ## Goal
 A person can sign in on the desktop and web heads with an email code or a magic link against the shared Supabase project, stay signed in across restarts on desktop with the token in the operating system store, and read their own account and sessions through the owner-scoped API. Code mode keeps working signed out; Cowork, Dispatch and the account surface need an account.

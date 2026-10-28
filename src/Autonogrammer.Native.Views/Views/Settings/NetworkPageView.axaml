@@ -1,0 +1,102 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:set="clr-namespace:Autonogrammer.Presentation.Settings;assembly=Autonogrammer.Presentation"
+                            xmlns:local="clr-namespace:Autonogrammer.Native.Views.Settings"
+                            x:Class="Autonogrammer.Native.Views.Settings.NetworkPageView"
+                            x:DataType="set:NetworkSettingsPage"
+                            Focusable="False">
+
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+
+  <!-- The Network page: one button runs the diagnostics, the result is a list and a polite live region. Nothing runs until the button is pressed. -->
+  <Panel>
+
+    <local:PageStatusView x:Name="StateView" />
+
+    <ScrollViewer x:Name="ReadyPanel"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Classes="settings-column">
+
+        <TextBlock Classes="settings-heading"
+                   Text="{x:Static set:NetworkCopy.Heading}" />
+        <TextBlock Classes="settings-description"
+                   Text="{x:Static set:NetworkCopy.Description}" />
+        <TextBlock x:Name="ExplanationText"
+                   Classes="settings-help"
+                   Text="{x:Static set:NetworkCopy.Explanation}" />
+        <TextBlock x:Name="ProxyNoteText"
+                   Classes="settings-help"
+                   Text="{x:Static set:NetworkCopy.ProxyNote}" />
+
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                    Margin="0,8">
+          <Button x:Name="RunButton"
+                  Classes="primary"
+                  Content="{x:Static set:NetworkCopy.RunLabel}"
+                  IsEnabled="{CompiledBinding CanRun}"
+                  AutomationProperties.Name="{x:Static set:NetworkCopy.RunLabel}"
+                  Click="OnRunClick" />
+          <Button x:Name="CancelButton"
+                  Content="{x:Static set:NetworkCopy.CancelLabel}"
+                  IsVisible="{CompiledBinding IsRunning}"
+                  AutomationProperties.Name="{x:Static set:NetworkCopy.CancelLabel}"
+                  Click="OnCancelClick" />
+        </StackPanel>
+
+        <!-- The polite live region: that a run is in progress, how it ended, or that it was cancelled. -->
+        <TextBlock x:Name="AnnouncementText"
+                   Classes="settings-body"
+                   IsVisible="{CompiledBinding Announcement, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Text="{CompiledBinding Announcement}"
+                   AutomationProperties.LiveSetting="Polite"
+                   AutomationProperties.Name="{x:Static set:NetworkCopy.AnnouncementName}" />
+
+        <TextBlock x:Name="NotRunText"
+                   Classes="muted settings-body"
+                   IsVisible="{CompiledBinding IsNotRun}"
+                   Text="{x:Static set:NetworkCopy.NotRun}" />
+        <TextBlock x:Name="CheckedAtLine"
+                   Classes="settings-help"
+                   IsVisible="{CompiledBinding HasReport}"
+                   Text="{CompiledBinding CheckedAtText}" />
+
+        <ItemsControl x:Name="CheckRows"
+                      ItemsSource="{CompiledBinding Rows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="set:NetworkCheckRow">
+              <Border Classes="settings-row"
+                      AutomationProperties.Name="{CompiledBinding Summary}">
+                <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+                  <Grid ColumnDefinitions="*,Auto"
+                        ColumnSpacing="8">
+                    <TextBlock Grid.Column="0"
+                               Classes="settings-label"
+                               Text="{CompiledBinding Name}" />
+                    <Border Grid.Column="1"
+                            Classes="chip">
+                      <TextBlock Classes="settings-chip-text"
+                                 Text="{CompiledBinding StatusLabel}" />
+                    </Border>
+                  </Grid>
+                  <TextBlock Classes="settings-mono"
+                             Text="{CompiledBinding Host}" />
+                  <TextBlock Classes="settings-help"
+                             Text="{CompiledBinding Detail}" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Panel>
+
+</local:SettingsPageViewBase>

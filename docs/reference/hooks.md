@@ -1,5 +1,5 @@
 ---
-description: "Reference for Cursor-compatible hooks in OmpOS: hooks.json locations, the 21 events, the hook protocol, the omp extension and the Hooks page."
+description: "Reference for Cursor-compatible hooks in Autonogrammer: hooks.json locations, the 21 events, the hook protocol, the omp extension and the Hooks page."
 ---
 
 # Hooks
@@ -10,13 +10,13 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-Hooks let your own scripts watch and steer the agent: block a shell command, rewrite a tool's input, format a file after an edit, add context after a tool ran, or ask the agent to keep going when it stops. OmpOS reads the same `hooks.json` files as Cursor, so a project hook written for Cursor runs unchanged.
+Hooks let your own scripts watch and steer the agent: block a shell command, rewrite a tool's input, format a file after an edit, add context after a tool ran, or ask the agent to keep going when it stops. Autonogrammer reads the same `hooks.json` files as Cursor, so a project hook written for Cursor runs unchanged.
 
 The design decisions are in [ADR-0016](../decisions/ADR-0016-hooks-execution-model.md). This page is the reference.
 
 > **Status of this release** (recorded 2026-10-28, tree 7535859).
 >
-> - **Built, wired into the desktop head, proven by tests.** `HeadServices` (`apps/OmpOS.Native/Composition/HeadServices.cs`) opens one `HooksService` per head; `SessionEngineSet` starts a hooks session per local session, hands the loopback bridge to the omp launch plan and the ACP tap to the engine as `AcpClientOptions.HookGate`; Settings > Hooks is the `HooksPageView` over `HooksServiceSource`. Tests: `HeadServicesWiringTests`, `EnginePermissionOrderTests` (a hook deny comes before the approval policy, the run mode and the user), `AgentSessionRuntimeWiringTests` (a hook notice reaches the session), `HooksPageViewTests`, `HooksServiceTests`, `AcpHookGateTests`, `HookBridgeIntegrationTests`, and `HookExtensionEndToEndTests` (skips without node). The Hooks page rendered in the Xvfb desktop smoke (`docs/runbooks/evidence/desktop-app-2026-10-28/settings-10-hooks.png`).
+> - **Built, wired into the desktop head, proven by tests.** `HeadServices` (`apps/Autonogrammer.Native/Composition/HeadServices.cs`) opens one `HooksService` per head; `SessionEngineSet` starts a hooks session per local session, hands the loopback bridge to the omp launch plan and the ACP tap to the engine as `AcpClientOptions.HookGate`; Settings > Hooks is the `HooksPageView` over `HooksServiceSource`. Tests: `HeadServicesWiringTests`, `EnginePermissionOrderTests` (a hook deny comes before the approval policy, the run mode and the user), `AgentSessionRuntimeWiringTests` (a hook notice reaches the session), `HooksPageViewTests`, `HooksServiceTests`, `AcpHookGateTests`, `HookBridgeIntegrationTests`, and `HookExtensionEndToEndTests` (skips without node). The Hooks page rendered in the Xvfb desktop smoke (`docs/runbooks/evidence/desktop-app-2026-10-28/settings-10-hooks.png`).
 > - **Built, not wired.** For a session in a remote environment (ssh, container or WSL) the head passes no hook bridge and reads no hook files (`NoHookFiles`; the session shows a stage notice and runs without hooks): hook files over the ssh file system are not read. No head dispatches `workspaceOpen`. Hooks of the cloud worker are described in [Hooks in cloud workers](#hooks-in-cloud-workers).
 > - **Not live-verified.** No hook ran against a live omp session and no model turn ran (open question OD-07): every proof above is a unit, integration or fake-omp test. Nothing ran on Windows, macOS or Android.
 >
@@ -28,20 +28,20 @@ Every file that exists is loaded. All hooks of all files run, in the order below
 
 | Order | Scope | File | Hooks run in |
 | --- | --- | --- | --- |
-| 1 | Managed | Linux `/etc/ompos/hooks.json`; macOS `/Library/Application Support/OmpOS/hooks.json`; Windows `%ProgramData%\OmpOS\hooks.json` | the directory of the file |
-| 2 | Project | `<root>/.ompos/hooks.json`, then `<root>/.cursor/hooks.json` | the workspace root that holds the file |
-| 3 | User | `~/.ompos/hooks.json`, then `~/.cursor/hooks.json` | the directory of the file |
+| 1 | Managed | Linux `/etc/autonogrammer/hooks.json`; macOS `/Library/Application Support/Autonogrammer/hooks.json`; Windows `%ProgramData%\Autonogrammer\hooks.json` | the directory of the file |
+| 2 | Project | `<root>/.autonogrammer/hooks.json`, then `<root>/.cursor/hooks.json` | the workspace root that holds the file |
+| 3 | User | `~/.autonogrammer/hooks.json`, then `~/.cursor/hooks.json` | the directory of the file |
 | 4 | Claude local | `<root>/.claude/settings.local.json` | the workspace root |
 | 5 | Claude project | `<root>/.claude/settings.json` | the workspace root |
 | 6 | Claude user | `~/.claude/settings.json` | `~/.claude` |
 | 7 | Plugins | hooks declared in a harness plugin manifest | the plugin directory |
 
 - A multi-root workspace reads the project files of every root.
-- The same hook (event, command, matcher, working directory) in `.ompos` and `.cursor` runs once.
+- The same hook (event, command, matcher, working directory) in `.autonogrammer` and `.cursor` runs once.
 - User scopes (3 and 6) are not read in remote and hosted sessions.
 - Claude files are read for their `hooks` key only, and only when third-party discovery is on (the default). Discovery is not trust: consent still applies.
-- There is no team scope. OmpOS never reads Cursor's enterprise paths.
-- A managed hook is pre-consented only when its file and the directory that holds it are not writable by group or others. On Windows OmpOS does not read access control lists, so managed hooks there need consent like any other.
+- There is no team scope. Autonogrammer never reads Cursor's enterprise paths.
+- A managed hook is pre-consented only when its file and the directory that holds it are not writable by group or others. On Windows Autonogrammer does not read access control lists, so managed hooks there need consent like any other.
 - Files are read when a session starts and when the loader is asked to reload. Invalid files become diagnostics on the Hooks page; they never stop the other files.
 
 ## The file
@@ -67,14 +67,14 @@ Every file that exists is loaded. All hooks of all files run, in the order below
 }
 ```
 
-The file must be UTF-8 JSON of at most 64 KiB and 16 levels deep, without comments or trailing commas, and without a repeated key. `version` is required and must be `1`. Unknown top-level keys and unknown hook keys are kept out of the way with a warning. An event name OmpOS does not know is kept and listed as an unknown event; it never runs and it does not fail the file. At most 256 hooks per file.
+The file must be UTF-8 JSON of at most 64 KiB and 16 levels deep, without comments or trailing commas, and without a repeated key. `version` is required and must be `1`. Unknown top-level keys and unknown hook keys are kept out of the way with a warning. An event name Autonogrammer does not know is kept and listed as an unknown event; it never runs and it does not fail the file. At most 256 hooks per file.
 
 ### Keys of a hook
 
 | Key | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `command` | string | required unless `args` or `type: "prompt"` | A shell string, a script path or a path relative to the hook's working directory. |
-| `args` | string[] | none | OmpOS addition. An argument vector started directly, without a shell. Use it when you do not want the shell to interpret anything. `command` and `args` are mutually exclusive. |
+| `args` | string[] | none | Autonogrammer addition. An argument vector started directly, without a shell. Use it when you do not want the shell to interpret anything. `command` and `args` are mutually exclusive. |
 | `type` | `"command"` or `"prompt"` | `"command"` | A prompt hook asks a model instead of running a process. |
 | `prompt` | string | none | The prompt of a prompt hook. `$ARGUMENTS` is replaced by the input JSON; the input is appended when the placeholder is absent. |
 | `model` | string | provider default | Model override of a prompt hook. |
@@ -85,7 +85,7 @@ The file must be UTF-8 JSON of at most 64 KiB and 16 levels deep, without commen
 | `id` | string | `<source>:<event>:<index>` | A stable name for the Hooks page and the enabled state. Unique within a file. |
 | `enabled` | boolean | `true` | `false` lists the hook and never runs it. |
 | `description` | string | none | Free text. |
-| `env` | object of strings | none | Extra environment variables for this hook only. Names starting with `OMPOS_` or `CURSOR_` and `CLAUDE_PROJECT_DIR` are ignored. |
+| `env` | object of strings | none | Extra environment variables for this hook only. Names starting with `AUTONOGRAMMER_` or `CURSOR_` and `CLAUDE_PROJECT_DIR` are ignored. |
 | `runsIn` | `["local"]`, `["remote"]` or both | both | Where the hook may run. |
 
 A `blocking` key is accepted and ignored: whether a hook guards an action follows from its event.
@@ -94,7 +94,7 @@ A `blocking` key is accepted and ignored: whether a hook guards an action follow
 
 The host starts the hook, writes **one JSON object** on its standard input and closes the pipe. The hook may write **one JSON object** on standard output.
 
-- Standard input holds the common fields `conversation_id`, `generation_id`, `model` (and `model_id`, `model_params` when known), `hook_event_name`, `cursor_version` (for example `ompos-0.15.0`), `workspace_roots`, `user_email` (or `null`) and `transcript_path` (or `null`), then the event's own fields. `workspaceOpen` runs outside a conversation and omits the conversation fields. A string field longer than 1 MiB is cut and followed by `<name>_truncated: true`. An input over 8 MiB is not delivered and the hook counts as failed.
+- Standard input holds the common fields `conversation_id`, `generation_id`, `model` (and `model_id`, `model_params` when known), `hook_event_name`, `cursor_version` (for example `autonogrammer-0.15.0`), `workspace_roots`, `user_email` (or `null`) and `transcript_path` (or `null`), then the event's own fields. `workspaceOpen` runs outside a conversation and omits the conversation fields. A string field longer than 1 MiB is cut and followed by `<name>_truncated: true`. An input over 8 MiB is not delivered and the hook counts as failed.
 - Standard output is read up to 1 MiB. Longer output is drained and flagged as cut. A cut answer that still parses is used; a cut answer that no longer parses is a failure of the hook, not an invalid response.
 - Standard error is kept up to 64 KiB for the log. On exit code 2 it becomes the message when standard output has none.
 - A hook that does not read its input is fine: a broken pipe is the hook's own choice.
@@ -142,7 +142,7 @@ The six permission events are `preToolUse`, `subagentStart`, `beforeShellExecuti
 | No consent for the hook | blocks, nothing is started | skipped |
 | The hook's source is quarantined | blocks, nothing is started | skipped |
 
-`ask` is honoured by `beforeShellExecution` and `beforeMCPExecution`: OmpOS asks you before the action runs. On `preToolUse` it counts as allow (Cursor does not enforce it either), on `subagentStart` as deny, and on `beforeReadFile` it is an invalid answer. An allow from a hook never bypasses omp's own approval or the ACP permission request: hooks can only tighten.
+`ask` is honoured by `beforeShellExecution` and `beforeMCPExecution`: Autonogrammer asks you before the action runs. On `preToolUse` it counts as allow (Cursor does not enforce it either), on `subagentStart` as deny, and on `beforeReadFile` it is an invalid answer. An allow from a hook never bypasses omp's own approval or the ACP permission request: hooks can only tighten.
 
 ## Consent and quarantine
 
@@ -150,7 +150,7 @@ A repository can carry hook files, so **nothing runs until you consent to that e
 
 A hook that guards an action (a permission event) and has no consent, or whose source is quarantined, **blocks the action** instead of being skipped. Other hooks are skipped. The reason is shown with the denial.
 
-If OmpOS itself fails to start a hook (the shell is missing, the runner throws), the source of the hook is quarantined and stays so across restarts until you lift it with a reason. A hook that merely exits non-zero does not quarantine anything.
+If Autonogrammer itself fails to start a hook (the shell is missing, the runner throws), the source of the hook is quarantined and stays so across restarts until you lift it with a reason. A hook that merely exits non-zero does not quarantine anything.
 
 ## The Hooks page
 
@@ -159,7 +159,7 @@ Settings has a Hooks page. It lists the effective hooks by scope in priority ord
 - **Run hooks** switches every hook off at once. With it off the page lists nothing and no session starts a bridge or a gate.
 - **Review** opens the consent card: the exact command (or the numbered arguments, or the prompt text), whether it runs through a shell, the matcher, the timeout, the names of the environment variables it adds, what happens if it fails, and what changed since the version you approved. **Approve this hook** records consent for exactly that; **Trust all hooks in this folder** does the same for every hook that needs it and later edits ask again.
 - A folder you have not trusted is not read: its hook files are only named, with **Trust this folder**. Trusting the folder approves no hook.
-- **Enabled** switches one hook on or off in OmpOS's own state. A Cursor or Claude file is never written.
+- **Enabled** switches one hook on or off in Autonogrammer's own state. A Cursor or Claude file is never written.
 - A quarantined source is listed with its reason; lifting it needs a reason of your own, which is recorded.
 - Problems found in a hook file are listed with the file, the place in it and the reason.
 - The run log under the list shows the newest runs first, filterable by outcome, with credentials removed from the output, and copies as JSON.
@@ -175,7 +175,7 @@ The matcher is tested against one value per call:
 | `preToolUse`, `postToolUse`, `postToolUseFailure` | the tool type: `Shell`, `Read`, `Write`, `Grep`, `Delete`, `Task`, `WebSearch`, `MCP:<tool_name>` |
 | `subagentStart`, `subagentStop` | the subagent type, such as `generalPurpose`, `explore`, `shell` |
 | `beforeShellExecution`, `afterShellExecution` | the full command string |
-| `beforeMCPExecution`, `afterMCPExecution` | `tool_name` (an OmpOS choice; Cursor documents no value) |
+| `beforeMCPExecution`, `afterMCPExecution` | `tool_name` (an Autonogrammer choice; Cursor documents no value) |
 | `beforeReadFile` | `Read` **Producer:** the extension. ACP fallback: `fs/read_text_file`, with the whole file as `content`; a deny answers the agent with an error and sends no content. |
 | `afterFileEdit` | `Write` **Producer:** the extension. ACP fallback: `fs/write_text_file`; `edits` holds the part of the text that changed (common head and tail removed), and the write has already happened. |
 | `beforeTabFileRead` / `afterTabFileEdit` | `TabRead` / `TabWrite` |
@@ -192,15 +192,15 @@ A hook does not inherit your environment. It receives `PATH`, `HOME`, `USER`, `L
 
 | Variable | Value |
 | --- | --- |
-| `CURSOR_PROJECT_DIR`, `CLAUDE_PROJECT_DIR`, `OMPOS_PROJECT_DIR` | the primary workspace root |
-| `CURSOR_VERSION`, `OMPOS_VERSION` | the compatibility version string, for example `ompos-0.15.0` |
+| `CURSOR_PROJECT_DIR`, `CLAUDE_PROJECT_DIR`, `AUTONOGRAMMER_PROJECT_DIR` | the primary workspace root |
+| `CURSOR_VERSION`, `AUTONOGRAMMER_VERSION` | the compatibility version string, for example `autonogrammer-0.15.0` |
 | `CURSOR_USER_EMAIL` | when signed in |
 | `CURSOR_TRANSCRIPT_PATH` | when the host knows the transcript file |
 | `CURSOR_CODE_REMOTE` | `true` in remote and hosted sessions |
-| `CURSOR_PLUGIN_ROOT`, `OMPOS_PLUGIN_ROOT` | the plugin directory, for plugin hooks |
-| `OMPOS_HOOK_EVENT`, `OMPOS_SESSION_ID` | the event name and the conversation id |
+| `CURSOR_PLUGIN_ROOT`, `AUTONOGRAMMER_PLUGIN_ROOT` | the plugin directory, for plugin hooks |
+| `AUTONOGRAMMER_HOOK_EVENT`, `AUTONOGRAMMER_SESSION_ID` | the event name and the conversation id |
 
-The environment a `sessionStart` hook returns in `env` is added to every later hook of the session. The `hooks.inheritEnvironment` setting (`InheritEnvironment` in `HookDispatcherOptions`) hands hooks the rest of the parent environment too, except `OMPOS_*` variables.
+The environment a `sessionStart` hook returns in `env` is added to every later hook of the session. The `hooks.inheritEnvironment` setting (`InheritEnvironment` in `HookDispatcherOptions`) hands hooks the rest of the parent environment too, except `AUTONOGRAMMER_*` variables.
 
 ## Windows
 
@@ -208,11 +208,11 @@ On Windows a `command` runs through `powershell.exe -NoLogo -NoProfile -NonInter
 
 ## Events
 
-Facts are from https://cursor.com/docs/hooks (read 2026-10-27). "Blocks" means a hook can stop or change the action. The **Status** column is what OmpOS can do for the event and which part produces it (the desktop head wires both parts; no live omp session has run them):
+Facts are from https://cursor.com/docs/hooks (read 2026-10-27). "Blocks" means a hook can stop or change the action. The **Status** column is what Autonogrammer can do for the event and which part produces it (the desktop head wires both parts; no live omp session has run them):
 
 - **Built**: the dispatcher and the omp extension implement it as Cursor describes it.
 - **Partial**: it works with the limit named in the cell.
-- **Not available**: OmpOS cannot produce the event; the reason is given. Hooks for it are accepted in `hooks.json` and never run.
+- **Not available**: Autonogrammer cannot produce the event; the reason is given. Hooks for it are accepted in `hooks.json` and never run.
 
 | Event | Fires | Fields in the input (after the common ones) | Honoured output | Blocks | Status |
 | --- | --- | --- | --- | --- | --- |
@@ -234,28 +234,28 @@ Facts are from https://cursor.com/docs/hooks (read 2026-10-27). "Blocks" means a
 | `stop` | The agent loop ends | `status`, `loop_count` | `followup_message` (bounded by `loop_limit`) | follow-up only | Partial: from omp `session_stop`, which continues the same turn with the follow-up as context; `status` is always `completed` from the extension. The host can also run it when an ACP turn ends (a later unit) |
 | `afterAgentResponse` | After an assistant message | `text` | none | no | Built: omp `message_end` **Producer:** the extension. ACP fallback: the message chunks of a turn, aggregated until the message ends. |
 | `afterAgentThought` | After a thinking block | `text`, `duration_ms` | none | no | Partial: from omp `message_end` thinking blocks; `duration_ms` is not available **Producer:** the extension. ACP fallback: the thinking chunks, aggregated, with the time from the first to the last chunk as `duration_ms`. |
-| `beforeTabFileRead` | Before Tab reads a file | `file_path`, `content` | `permission` (allow/deny) | yes | **Not available**: OmpOS has no Tab inline-completion engine |
+| `beforeTabFileRead` | Before Tab reads a file | `file_path`, `content` | `permission` (allow/deny) | yes | **Not available**: Autonogrammer has no Tab inline-completion engine |
 | `afterTabFileEdit` | After Tab edited a file | `file_path`, `edits` with ranges | none | no | **Not available**: same reason |
 | `workspaceOpen` | A workspace opened or its folders changed | none (no conversation fields) | `pluginPaths` | no | Not wired: the dispatcher supports it and the hooks service runs it for a head that asks (`IHooksSession.DispatchAsync`); no head asks, and nothing loads the returned plugin directories. |
 
 ### Hooks in cloud workers
 
-Cursor's cloud agents run 14 of the 21 events. The OmpOS cloud worker (`services/OmpOS.AgentWorker/Hooks`) runs the same 14 (`CloudHookEvents`; not `sessionStart`, `sessionEnd`, `workspaceOpen`, the two MCP events and the two Tab events) for project hooks only: the project, Claude project and Claude local files of the checkout. Managed and user files are never read there, and a hook whose `runsIn` excludes `remote` is dropped.
+Cursor's cloud agents run 14 of the 21 events. The Autonogrammer cloud worker (`services/Autonogrammer.AgentWorker/Hooks`) runs the same 14 (`CloudHookEvents`; not `sessionStart`, `sessionEnd`, `workspaceOpen`, the two MCP events and the two Tab events) for project hooks only: the project, Claude project and Claude local files of the checkout. Managed and user files are never read there, and a hook whose `runsIn` excludes `remote` is dropped.
 
 - **Off by default.** `Worker:Hooks:Enabled` is `false`; `PluginsRoot` (the omp extension) is required when it is on.
-- **Consent travels in the token.** The worker reads the consent snapshot (the SHA-256 of each approved hook) from the `ompos_hooks_consent` claim of its signed bearer token (`HooksConsentSnapshotReader`). A hook the snapshot does not cover denies without running.
-- **The claim is not minted yet.** `services/OmpOS.Api` does not mint `ompos_hooks_consent` (the only minter is the test helper `HooksTokenMinter`), so a real cloud session has no snapshot: no project hook runs and the session reports `untrusted`.
+- **Consent travels in the token.** The worker reads the consent snapshot (the SHA-256 of each approved hook) from the `autonogrammer_hooks_consent` claim of its signed bearer token (`HooksConsentSnapshotReader`). A hook the snapshot does not cover denies without running.
+- **The claim is not minted yet.** `services/Autonogrammer.Api` does not mint `autonogrammer_hooks_consent` (the only minter is the test helper `HooksTokenMinter`), so a real cloud session has no snapshot: no project hook runs and the session reports `untrusted`.
 - **The worker has no clone bootstrap yet,** so without a checkout the state is `none`.
-- **Failure policy.** If the extension is missing and a hook is `failClosed`, the connection is refused (503); otherwise the session runs without hooks and reports `unavailable`. Every run reaches the client as an `_ompos/hook` notification.
+- **Failure policy.** If the extension is missing and a hook is `failClosed`, the connection is refused (503); otherwise the session runs without hooks and reports `unavailable`. Every run reaches the client as an `_autonogrammer/hook` notification.
 - **Proof.** `CloudHooksWorkerTests` (9 loopback tests with a fake omp: a denying project hook stops a tool call; no snapshot means `untrusted`; an invalid snapshot runs nothing; a hook the snapshot does not cover denies; off by default; a fail-closed hook without the extension refuses the connection), `CloudHookFilterTests` and `HooksConsentSnapshotReaderTests`. No real omp and no deployed worker ran them; the staged private worker on Railway (2026-10-28) ran no hook.
 
 The design is in the [ADR-0020 addendum](../decisions/addendum-ADR-0020-hooks.md).
 
 ## Who fires what
 
-Two parts of OmpOS produce hook events, and they never both produce the same event for a session:
+Two parts of Autonogrammer produce hook events, and they never both produce the same event for a session:
 
-- The **omp extension** (`plugins/ompos-hooks-omp`) runs inside omp. It sees every tool call before omp's own approval gate, so it is the only part that can block a call omp would run without asking. The host connects it by starting a loopback bridge per session, with a random token, and passing `-e plugins/ompos-hooks-omp` and three `OMPOS_HOOKS_*` variables to omp.
+- The **omp extension** (`plugins/autonogrammer-hooks-omp`) runs inside omp. It sees every tool call before omp's own approval gate, so it is the only part that can block a call omp would run without asking. The host connects it by starting a loopback bridge per session, with a random token, and passing `-e plugins/autonogrammer-hooks-omp` and three `AUTONOGRAMMER_HOOKS_*` variables to omp.
 - The **ACP tap** runs in the host and sees the Agent Client Protocol traffic of the session: the prompt, permission requests, `fs/*` calls, `session/update` and the end of each turn.
 
 When the extension is connected, the tap fires only what the extension cannot see: `beforeSubmitPrompt`, and the context that a `sessionStart` hook added. When it is not connected (the plugin folder is missing, or the bridge could not start) the tap is the fallback for every event it can produce, and the Hooks page and the plan's planning event say so. The tap cannot block what ACP never asks about, so the fallback is weaker, not equivalent.
@@ -272,19 +272,19 @@ A prompt hook sends its text to a model and expects `{ "ok": true }` or `{ "ok":
 
 ## The `omp` section
 
-`omp` maps omp extension event names to hooks. The hook receives the omp event object plus the common fields and answers with the omp result object, which OmpOS merges key by key (`block`, `cancel`, `handled` and `continue` stay true once any hook sets them) and hands back to omp. Accepted events: `tool_call`, `tool_result`, `input`, `session_stop`, `before_subagent_spawn`, `session_before_compact`, `auto_compaction_start`, `session_start`, `session_shutdown`, `agent_end`, `turn_end`, `message_end`, `tool_approval_requested`, `tool_approval_resolved`. Hooks on `tool_call`, `before_subagent_spawn` and `input` guard an action, so without consent they block it.
+`omp` maps omp extension event names to hooks. The hook receives the omp event object plus the common fields and answers with the omp result object, which Autonogrammer merges key by key (`block`, `cancel`, `handled` and `continue` stay true once any hook sets them) and hands back to omp. Accepted events: `tool_call`, `tool_result`, `input`, `session_stop`, `before_subagent_spawn`, `session_before_compact`, `auto_compaction_start`, `session_start`, `session_shutdown`, `agent_end`, `turn_end`, `message_end`, `tool_approval_requested`, `tool_approval_resolved`. Hooks on `tool_call`, `before_subagent_spawn` and `input` guard an action, so without consent they block it.
 
 ## Claude Code settings
 
-From a Claude `settings.json` OmpOS imports `PreToolUse`, `PostToolUse`, `UserPromptSubmit` (as `beforeSubmitPrompt`), `Stop` and `SubagentStop`, command hooks only. Tool names in matchers are translated: `Bash` becomes `Shell` and `Edit` becomes `Write`. `loop_limit` is `null` for these hooks. Other Claude events (for example `Notification`) are reported as not imported.
+From a Claude `settings.json` Autonogrammer imports `PreToolUse`, `PostToolUse`, `UserPromptSubmit` (as `beforeSubmitPrompt`), `Stop` and `SubagentStop`, command hooks only. Tool names in matchers are translated: `Bash` becomes `Shell` and `Edit` becomes `Write`. `loop_limit` is `null` for these hooks. Other Claude events (for example `Notification`) are reported as not imported.
 
 ## The run log
 
 Every hook that is considered leaves a record in `hooks/runs.jsonl` of the session state directory: time, conversation, generation, event, hook id, source, status (`Succeeded`, `Denied`, `Failed`, `TimedOut`, `Skipped`, `Faulted`, `AwaitingConsent`, `PluginQuarantined`, `InvalidResponse`), decision, exit code, duration, your `user_message`, at most 4 KiB of standard output and standard error, and the SHA-256 of the input. The input itself is never stored, and the shell events do not record their matcher value because it is the whole command. The log is two files of at most 5 MiB together; the older one is replaced when the newer fills.
 
-## Where OmpOS differs from Cursor
+## Where Autonogrammer differs from Cursor
 
-| Topic | Cursor | OmpOS |
+| Topic | Cursor | Autonogrammer |
 | --- | --- | --- |
 | Trust | Project hooks run in a trusted workspace | Nothing runs without consent for the exact hook; a guarding hook without consent blocks; script content is part of the consent |
 | Environment | not stated | allow-list, not the parent environment |
@@ -294,9 +294,9 @@ Every hook that is considered leaves a record in `hooks/runs.jsonl` of the sessi
 | No output with exit 0 | listed as a failure for `failClosed` | a hook that said nothing: proceeds, `failClosed` blocks |
 | Matcher | a regular expression | a .NET regular expression, unanchored, case sensitive, 100 ms limit |
 | Merge | "last wins" on the hooks page, "higher priority wins" on the third-party page | last wins, as the hooks page says |
-| Team and enterprise | Cursor dashboard and MDM paths | OmpOS managed file only; no team scope |
-| Blocking | by the Cursor agent | by an OmpOS omp extension; a hook can only tighten omp's own approval policy |
-| `args` form, `id`, `enabled`, `env`, `runsIn`, `omp` section | none | OmpOS additions |
+| Team and enterprise | Cursor dashboard and MDM paths | Autonogrammer managed file only; no team scope |
+| Blocking | by the Cursor agent | by an Autonogrammer omp extension; a hook can only tighten omp's own approval policy |
+| `args` form, `id`, `enabled`, `env`, `runsIn`, `omp` section | none | Autonogrammer additions |
 | Tab events | Cursor Tab | accepted, never fire |
 
 ## Troubleshooting

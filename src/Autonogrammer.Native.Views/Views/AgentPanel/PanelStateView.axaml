@@ -1,0 +1,104 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:copy="clr-namespace:Autonogrammer.Presentation.AgentPanel;assembly=Autonogrammer.Presentation"
+             xmlns:local="clr-namespace:Autonogrammer.Native.Views.AgentPanel"
+             x:Class="Autonogrammer.Native.Views.AgentPanel.PanelStateView"
+             x:DataType="copy:AgentPanelViewModel">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The thread block of the panel states Empty, Loading and Error (46-UI-SPEC, States; spec 4.8). Ready draws nothing. Each state is one
+       centred column of at most 420 px with 12 px gaps. -->
+  <StackPanel Margin="16"
+              MaxWidth="420"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              Spacing="{DynamicResource Autonogrammer.Gap.Cozy}">
+
+    <!-- Panel error: a failed catalog load. Assertive, because the user has to act. -->
+    <Border x:Name="PanelError"
+            Classes="banner"
+            Padding="0"
+            ClipToBounds="True"
+            Background="{DynamicResource Autonogrammer.Color.DiffRemoved}"
+            IsVisible="False"
+            AutomationProperties.Name="{x:Static local:AgentPanelViewText.PanelErrorName}"
+            AutomationProperties.LiveSetting="Assertive">
+      <Grid ColumnDefinitions="Auto,*">
+        <Border Classes="banner-bar bar-error" />
+        <StackPanel Grid.Column="1"
+                    Margin="10,8"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+            <local:StageIcon IconKey="{x:Static copy:StatusIcon.Cross}"
+                             Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                             Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                             VerticalAlignment="Top"
+                             Margin="0,3,0,0" />
+            <TextBlock x:Name="PanelErrorText"
+                       Text="{CompiledBinding BannerText}"
+                       FontSize="{DynamicResource Autonogrammer.Font.Size.Body}"
+                       TextWrapping="Wrap"
+                       MaxWidth="360" />
+          </StackPanel>
+          <Button x:Name="RetryLoadingButton"
+                  Classes="sm"
+                  Content="{x:Static copy:AgentPanelCopy.RetryLoading}"
+                  Command="{CompiledBinding RetryLoadingCommand}"
+                  HorizontalAlignment="Left"
+                  AutomationProperties.Name="{x:Static copy:AgentPanelCopy.RetryLoadingName}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Loading: static text, never a spinner. -->
+    <Border x:Name="LoadingBlock"
+            IsVisible="False"
+            HorizontalAlignment="Center">
+      <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+        <TextBlock x:Name="LoadingHeading"
+                   Classes="heading"
+                   Text="{x:Static copy:AgentPanelCopy.PanelLoadingHeading}"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="LoadingBody"
+                   Classes="muted"
+                   Text="{x:Static copy:AgentPanelCopy.PanelLoadingBody}"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
+    <!-- Empty: no sessions. The heading is the one display line of the screen; the primary button is the only accent fill. -->
+    <Border x:Name="EmptyBlock"
+            IsVisible="False"
+            HorizontalAlignment="Center">
+      <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Cozy}">
+        <TextBlock x:Name="EmptyHeading"
+                   Classes="display"
+                   Text="{x:Static copy:AgentPanelCopy.EmptyThreadHeading}"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="EmptyBody"
+                   Classes="muted"
+                   Text="{x:Static copy:AgentPanelCopy.EmptyThreadBody}"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Body}"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   MaxWidth="380" />
+        <Button x:Name="StartFirstAgentButton"
+                Classes="primary"
+                Content="{x:Static copy:AgentPanelCopy.NewAgent}"
+                HorizontalAlignment="Center"
+                Margin="0,4,0,0"
+                MinHeight="{DynamicResource Autonogrammer.Size.ControlHeight}"
+                AutomationProperties.Name="{x:Static copy:AgentPanelCopy.StartFirstAgent}" />
+      </StackPanel>
+    </Border>
+
+  </StackPanel>
+
+</UserControl>

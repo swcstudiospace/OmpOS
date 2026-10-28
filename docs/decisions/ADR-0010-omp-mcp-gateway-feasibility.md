@@ -2,13 +2,13 @@
 
 - Status: Proposed
 - Date: 2026-10-22
-- Owner: ompos-maintainers
-- Deciders: ompos-maintainers
-- Scope: whether OmpOS can make a host-owned MCP gateway the only MCP source of an omp run, and which omp mechanisms would carry it. Measured against omp 18.12.5 as installed on this workstation. Does not cover any live model turn, the gateway implementation, or auth for the gateway. Live-turn governance is OD-07 in `docs/open-questions.md`.
+- Owner: autonogrammer-maintainers
+- Deciders: autonogrammer-maintainers
+- Scope: whether Autonogrammer can make a host-owned MCP gateway the only MCP source of an omp run, and which omp mechanisms would carry it. Measured against omp 18.12.5 as installed on this workstation. Does not cover any live model turn, the gateway implementation, or auth for the gateway. Live-turn governance is OD-07 in `docs/open-questions.md`.
 
 ## Context
 
-OmpOS wants an omp run whose MCP tools come only from a gateway the host owns, with no MCP server that omp discovers from disk. Three questions were asked:
+Autonogrammer wants an omp run whose MCP tools come only from a gateway the host owns, with no MCP server that omp discovers from disk. Three questions were asked:
 
 1. Does omp accept an extra config overlay (`--config`) that can declare MCP servers, and can that overlay point omp's MCP client at an HTTP endpoint instead of a local command?
 2. Does omp have a setting that disables or routes its own direct MCP connections?
@@ -272,7 +272,7 @@ The Status line above is unchanged. This note ties the record to the later ones 
 
 ## Update 2026-10-26: host gateway implementation
 
-The Status line above is unchanged. A loopback gateway now exists in `src/OmpOS.Harness.McpGateway` (`McpGatewayServer`), covered by `tests/OmpOS.Harness.McpGateway.Tests`.
+The Status line above is unchanged. A loopback gateway now exists in `src/Autonogrammer.Harness.McpGateway` (`McpGatewayServer`), covered by `tests/Autonogrammer.Harness.McpGateway.Tests`.
 
 - Verified by tests: `tools/list` offers only the tools granted to the session; an ungranted `tools/call` is refused at the gateway before the invoker, the approval gate or any server is contacted; every request needs a bearer token compared in constant time; the listener binds 127.0.0.1 only; sessions cannot use each other's grants; and the real `ModelContextProtocol` Streamable HTTP client works against it.
 - Limit found while testing: on Linux the managed `HttpListener` answers a request with an unmatched `Host` header with 404 before the gateway's own Host check can run, so that check is defence in depth and not the first line.

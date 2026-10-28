@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 
-namespace OmpOS.BrowserSpike;
+namespace Autonogrammer.BrowserSpike;
 
 /// <summary>Application that opens the spike window on the classic desktop lifetime.</summary>
 internal sealed class SpikeApplication : Application

@@ -1,5 +1,5 @@
 ---
-description: "Host prerequisites and local provider notes for the OmpOS sandbox, which runs agent processes under podman."
+description: "Host prerequisites and local provider notes for the Autonogrammer sandbox, which runs agent processes under podman."
 ---
 
 # Sandbox runbook
@@ -12,7 +12,7 @@ Applies to: v0.15.0
 
 The sandbox abstraction, a fake provider and a local podman-compose provider exist (Phase 3 and later); vendor providers stay blocked on external criteria. This runbook records the host prerequisites and the local provider notes so the machine can be prepared ahead of time. Podman is the only supported container runtime.
 
-**Status of this release** (recorded 2026-10-28, tree 7535859). `OmpOS.Sandbox.Tests` passed 329 tests on the final tree. The cloud control plane (`services/OmpOS.Api`) uses `ICloudEnvironmentClient`; `RailwayCloudEnvironmentClient` is built for Railway's GraphQL API and was never run against Railway (the API is not deployed there; the staged worker of 2026-10-28 was created through Railway's MCP, not through this client; the operations are unverified, ADR-0020 D8). Which tests drive a real podman (`LocalPodmanComposeProviderContractTests` uses `CommandProbe`) was not re-checked for this page: UNVERIFIED. No model turn, nothing on Windows, macOS or Android.
+**Status of this release** (recorded 2026-10-28, tree 7535859). `Autonogrammer.Sandbox.Tests` passed 329 tests on the final tree. The cloud control plane (`services/Autonogrammer.Api`) uses `ICloudEnvironmentClient`; `RailwayCloudEnvironmentClient` is built for Railway's GraphQL API and was never run against Railway (the API is not deployed there; the staged worker of 2026-10-28 was created through Railway's MCP, not through this client; the operations are unverified, ADR-0020 D8). Which tests drive a real podman (`LocalPodmanComposeProviderContractTests` uses `CommandProbe`) was not re-checked for this page: UNVERIFIED. No model turn, nothing on Windows, macOS or Android.
 
 ## Host prerequisites (OpenShell podman driver)
 

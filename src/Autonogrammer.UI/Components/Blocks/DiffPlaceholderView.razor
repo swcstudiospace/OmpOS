@@ -1,0 +1,12 @@
+@namespace Autonogrammer.UI.Components.Blocks
+@using Autonogrammer.Contracts.Ui
+<div class="autonogrammer-block autonogrammer-diff">
+    <span class="autonogrammer-diff-path">@Block.Path</span>
+    <span class="autonogrammer-diff-reason">@Block.Reason</span>
+</div>
+
+@code {
+    /// <summary>Gets the diff placeholder block to render.</summary>
+    [Parameter, EditorRequired]
+    public DiffPlaceholderBlock Block { get; set; } = null!;
+}

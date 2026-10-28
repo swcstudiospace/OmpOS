@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             xmlns:editor="clr-namespace:Autonogrammer.Native.Views.Editor"
+             x:Class="Autonogrammer.Native.Views.Editor.EditorView">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*">
+
+    <ScrollViewer Grid.Row="0"
+                  x:Name="TabScroll"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Disabled">
+      <ItemsControl x:Name="TabStrip"
+                    AutomationProperties.Name="Open files">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="editor:EditorTabItem">
+            <StackPanel Orientation="Horizontal">
+              <ToggleButton Content="{CompiledBinding Name}"
+                            IsChecked="{CompiledBinding IsSelected, Mode=OneWay}"
+                            Command="{CompiledBinding SelectCommand}"
+                            AutomationProperties.Name="{CompiledBinding Name}" />
+              <Button Classes="ghost sm"
+                      Content="×"
+                      Command="{CompiledBinding CloseCommand}"
+                      AutomationProperties.Name="{CompiledBinding Name, StringFormat='Close {0}'}" />
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+      <TextBox x:Name="FindInput"
+               Grid.Column="0"
+               Classes="sm"
+               PlaceholderText="Find in file"
+               AutomationProperties.Name="Find in file" />
+      <Button x:Name="PreviousMatchButton"
+              Grid.Column="1"
+              Classes="sm"
+              Content="Previous"
+              IsEnabled="False"
+              AutomationProperties.Name="Previous match" />
+      <Button x:Name="NextMatchButton"
+              Grid.Column="2"
+              Classes="sm"
+              Content="Next"
+              IsEnabled="False"
+              AutomationProperties.Name="Next match" />
+      <CheckBox x:Name="MatchCaseCheck"
+                Grid.Column="3"
+                Content="Match case"
+                AutomationProperties.Name="Match case" />
+      <TextBlock x:Name="MatchStatusText"
+                 Grid.Column="4"
+                 AutomationProperties.Name="Find result"
+                 AutomationProperties.LiveSetting="Polite" />
+    </Grid>
+
+    <ae:TextEditor x:Name="CodeEditor"
+                   Grid.Row="2"
+                   ShowLineNumbers="True"
+                   Background="{DynamicResource Autonogrammer.Color.SurfaceSunken}"
+                   Foreground="{DynamicResource Autonogrammer.Color.TextPrimary}"
+                   FontFamily="{DynamicResource Autonogrammer.Font.Mono}"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Mono}"
+                   AutomationProperties.Name="Code editor" />
+
+  </Grid>
+
+</UserControl>

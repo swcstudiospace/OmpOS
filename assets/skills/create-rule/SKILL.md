@@ -20,9 +20,9 @@ If the request is vague, ask one short question; otherwise decide and say what y
 | Applies only to some files (by glob) | A `.mdc` rule with `globs` |
 | Applies always, but is long or structured | A `.mdc` rule with `alwaysApply: true` |
 | Should be attached only when the agent decides it is relevant | A `.mdc` rule with a clear `description` and no globs |
-| Personal and the same in every project | A user rule: `~/.ompos/rules/<name>.mdc` |
+| Personal and the same in every project | A user rule: `~/.autonogrammer/rules/<name>.mdc` |
 
-Default location for a project rule is `.ompos/rules/<name>.mdc` in the workspace root. OmpOS also reads `.cursor/rules`, `.omp/rules`, `.claude/rules`, `.codex/rules` and `.agents/rules`: if the repository already keeps its rules in one of those folders, put the new rule there instead so the team has one place to look. Rule files may sit in sub-folders up to three levels deep.
+Default location for a project rule is `.autonogrammer/rules/<name>.mdc` in the workspace root. Autonogrammer also reads `.cursor/rules`, `.omp/rules`, `.claude/rules`, `.codex/rules` and `.agents/rules`: if the repository already keeps its rules in one of those folders, put the new rule there instead so the team has one place to look. Rule files may sit in sub-folders up to three levels deep.
 
 ## 2. Check what exists
 
@@ -66,4 +66,4 @@ Show the user the file path, the scope you chose (always, intelligent, file scop
 ## Never
 
 - Never overwrite an existing rule file without showing the difference and getting a yes.
-- Never edit a rule file outside the workspace or the user's `~/.ompos/rules` folder.
+- Never edit a rule file outside the workspace or the user's `~/.autonogrammer/rules` folder.

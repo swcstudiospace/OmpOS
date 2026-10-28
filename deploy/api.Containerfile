@@ -1,5 +1,5 @@
-# OmpOS API image (OmpOS.Api). Build with podman from the repository root:
-#   podman build -f deploy/api.Containerfile -t ompos-api:local .
+# Autonogrammer API image (Autonogrammer.Api). Build with podman from the repository root:
+#   podman build -f deploy/api.Containerfile -t autonogrammer-api:local .
 #
 # Base image tags:
 #   SDK:     mcr.microsoft.com/dotnet/sdk:10.0.402-noble     (global.json pins SDK 10.0.402 exactly)
@@ -18,14 +18,14 @@ ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
 # Repository-wide build inputs: SDK pin, central package versions, analyzer and style inputs
 # (.editorconfig and the banned-symbol AdditionalFiles are read by the warnings-as-errors build).
 COPY global.json Directory.Build.props Directory.Packages.props .editorconfig BannedSymbols.txt BannedSymbols.NoProcess.txt ./
-# Project graph of OmpOS.Api, plus docs/api, which the build-time OpenAPI generator writes into.
+# Project graph of Autonogrammer.Api, plus docs/api, which the build-time OpenAPI generator writes into.
 COPY src/ src/
-COPY services/OmpOS.Api/ services/OmpOS.Api/
+COPY services/Autonogrammer.Api/ services/Autonogrammer.Api/
 COPY docs/api/ docs/api/
 
 # Locked restore: every project in the graph has a committed packages.lock.json.
-RUN dotnet restore services/OmpOS.Api/OmpOS.Api.csproj --locked-mode
-RUN dotnet publish services/OmpOS.Api/OmpOS.Api.csproj -c Release -o /app --no-restore
+RUN dotnet restore services/Autonogrammer.Api/Autonogrammer.Api.csproj --locked-mode
+RUN dotnet publish services/Autonogrammer.Api/Autonogrammer.Api.csproj -c Release -o /app --no-restore
 
 # omp runtime for Harness__Adapter=Acp: the ACP adapter launches the `omp` CLI, which this stage supplies.
 #
@@ -80,8 +80,8 @@ FROM ${RUNTIME_IMAGE} AS final
 WORKDIR /app
 
 # Non-root service account with fixed numeric IDs, so the platform can enforce the user without name lookup.
-RUN groupadd --system --gid 10001 ompos \
- && useradd --system --uid 10001 --gid ompos --no-create-home --shell /usr/sbin/nologin ompos
+RUN groupadd --system --gid 10001 autonogrammer \
+ && useradd --system --uid 10001 --gid autonogrammer --no-create-home --shell /usr/sbin/nologin autonogrammer
 COPY --from=build --chown=10001:10001 /app ./
 # omp for Harness__Adapter=Acp. Bun is the runtime omp needs; the omp package is root-owned and read-only to uid 10001.
 COPY --from=omp-runtime /usr/local/bin/bun /usr/local/bin/bun
@@ -96,16 +96,16 @@ RUN for d in /usr/share/dotnet /usr/lib/dotnet; do for f in LICENSE.txt ThirdPar
  chmod -R a=rX /licenses
 
 # OCI image labels. Pass the real values at build time, for example:
-#   podman build -f deploy/api.Containerfile --build-arg OMPOS_REVISION="$(git rev-parse HEAD)" -t ompos-api:local .
-ARG OMPOS_SOURCE=https://github.com/swcstudiospace/OmpOS
-ARG OMPOS_REVISION=unknown
-ARG OMPOS_VERSION=0.15.0
+#   podman build -f deploy/api.Containerfile --build-arg AUTONOGRAMMER_REVISION="$(git rev-parse HEAD)" -t autonogrammer-api:local .
+ARG AUTONOGRAMMER_SOURCE=https://github.com/swcstudiospace/OmpOS
+ARG AUTONOGRAMMER_REVISION=unknown
+ARG AUTONOGRAMMER_VERSION=0.15.0
 # SourceInfoProvider reads GIT_SHA for GET /source (the AGPL-3.0 section 13 source offer).
-ENV GIT_SHA=${OMPOS_REVISION}
+ENV GIT_SHA=${AUTONOGRAMMER_REVISION}
 LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later" \
-      org.opencontainers.image.source="${OMPOS_SOURCE}" \
-      org.opencontainers.image.revision="${OMPOS_REVISION}" \
-      org.opencontainers.image.version="${OMPOS_VERSION}"
+      org.opencontainers.image.source="${AUTONOGRAMMER_SOURCE}" \
+      org.opencontainers.image.revision="${AUTONOGRAMMER_REVISION}" \
+      org.opencontainers.image.version="${AUTONOGRAMMER_VERSION}"
 
 ENV ASPNETCORE_ENVIRONMENT=Production \
     ASPNETCORE_URLS=http://[::]:8080 \
@@ -117,4 +117,4 @@ EXPOSE 8080
 
 # Runs under /bin/sh -c so ${PORT} expands at start and binds dual-stack ([::] accepts IPv4 and IPv6; Railway private networking needs IPv6). ASPNETCORE_HTTP_PORTS is unset so it cannot override ASPNETCORE_URLS.
 # exec replaces the shell, so the .NET process is PID 1 and receives termination signals.
-ENTRYPOINT ["/bin/sh", "-c", "unset ASPNETCORE_HTTP_PORTS; export ASPNETCORE_URLS=\"http://[::]:${PORT:-8080}\"; exec dotnet /app/OmpOS.Api.dll"]
+ENTRYPOINT ["/bin/sh", "-c", "unset ASPNETCORE_HTTP_PORTS; export ASPNETCORE_URLS=\"http://[::]:${PORT:-8080}\"; exec dotnet /app/Autonogrammer.Api.dll"]

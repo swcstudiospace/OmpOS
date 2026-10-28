@@ -1,0 +1,284 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:att="clr-namespace:Autonogrammer.Native.Views.Attachments"
+             xmlns:atc="clr-namespace:Autonogrammer.Presentation.Composer.Attachments;assembly=Autonogrammer.Presentation"
+             xmlns:completion="clr-namespace:Autonogrammer.Native.Views.Completion"
+             xmlns:copy="clr-namespace:Autonogrammer.Presentation.AgentPanel;assembly=Autonogrammer.Presentation"
+             xmlns:local="clr-namespace:Autonogrammer.Native.Views"
+             xmlns:mentions="clr-namespace:Autonogrammer.Presentation.Mentions;assembly=Autonogrammer.Presentation"
+             xmlns:panel="clr-namespace:Autonogrammer.Native.Views.AgentPanel"
+             x:Class="Autonogrammer.Native.Views.ComposerView"
+             Background="{DynamicResource Autonogrammer.Color.Surface}">
+
+  <UserControl.Resources>
+    <att:ThumbnailConverter x:Key="ThumbnailConverter" />
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/ComposerStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The composer is one rounded card in the thread's content column (parity spec 4.7). The prompt text box is the card; the footer is
+       drawn over its bottom padding: the model, mode and thinking chips at the left, then follow-up, stop and the round send at the right.
+       Keyboard order follows XAML order, which keeps the order the keyboard tests rely on: prompt, send (steer while a run is active),
+       follow-up (only while a run is active), stop, then the chips (model, mode, thinking), then the suggestions box while it is shown.
+       Grid.Column only places the controls. The keyboard hint is the prompt's tooltip; the hint line is kept for assistive technology and
+       the shell, and is hidden unless the shell asks for it. -->
+  <Grid x:Name="ComposerColumn"
+        RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+        MaxWidth="{DynamicResource Autonogrammer.Size.ThreadContentMaxWidth}"
+        Margin="16,8,16,16">
+
+    <TextBlock x:Name="PendingLabel"
+               Grid.Row="1"
+               Classes="muted small"
+               Margin="4,0,4,6"
+               TextWrapping="Wrap"
+               IsVisible="False"
+               AutomationProperties.Name="Pending input"
+               AutomationProperties.LiveSetting="Polite" />
+
+    <Border x:Name="ComposerFrame"
+            Grid.Row="4"
+            CornerRadius="{DynamicResource Autonogrammer.Radius.Lg}"
+            BoxShadow="{DynamicResource Autonogrammer.Shadow.Card}">
+      <Panel>
+
+        <TextBox x:Name="PromptInput"
+                 Classes="composer"
+                 AutomationProperties.Name="Message"
+                 AutomationProperties.HelpText="{x:Static panel:AgentPanelViewText.ComposerHint}"
+                 ToolTip.Tip="{x:Static panel:AgentPanelViewText.ComposerHint}"
+                 PlaceholderText="{x:Static copy:AgentPanelCopy.ComposerPlaceholderIdle}"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap" />
+
+        <Grid x:Name="ComposerFooter"
+              VerticalAlignment="Bottom"
+              Margin="8,0,8,8"
+              ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto"
+              ColumnSpacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+          <Button x:Name="SendButton"
+                  Grid.Column="6"
+                  Classes="round primary"
+                  AutomationProperties.Name="Send message"
+                  ToolTip.Tip="Send message"
+                  VerticalAlignment="Bottom">
+            <Path Data="M3 3.5 21 12 3 20.5 7 12Z"
+                  Stretch="Uniform"
+                  Width="14"
+                  Height="14" />
+          </Button>
+
+          <Button x:Name="FollowUpButton"
+                  Grid.Column="4"
+                  Classes="sm"
+                  Content="{x:Static panel:AgentPanelViewText.QueueFollowUp}"
+                  VerticalAlignment="Bottom"
+                  IsVisible="False"
+                  AutomationProperties.Name="{x:Static panel:AgentPanelViewText.QueueFollowUpName}" />
+
+          <Button x:Name="StopButton"
+                  Grid.Column="5"
+                  Classes="round"
+                  AutomationProperties.Name="Stop response"
+                  ToolTip.Tip="Stop response"
+                  VerticalAlignment="Bottom">
+            <Rectangle Width="12"
+                       Height="12"
+                       RadiusX="2"
+                       RadiusY="2"
+                       Fill="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+          </Button>
+
+          <!-- The chips hide until the session reports a model, a mode or a thinking level, and stay hidden in an omp terminal. -->
+          <local:ModelPickerView x:Name="ModelPicker"
+                                 Grid.Column="0"
+                                 VerticalAlignment="Center" />
+
+          <local:OptionChipView x:Name="ModeChipView"
+                                Grid.Column="1"
+                                VerticalAlignment="Center" />
+
+          <local:OptionChipView x:Name="ThinkingChipView"
+                                Grid.Column="2"
+                                VerticalAlignment="Center" />
+
+          <!-- Image input: hidden until the composer carries an attachments model. It is declared after the chips so it follows them in the keyboard order. -->
+          <Button x:Name="AttachButton"
+                  Grid.Column="3"
+                  Classes="ghost sm"
+                  HorizontalAlignment="Left"
+                  VerticalAlignment="Bottom"
+                  IsVisible="False"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  AutomationProperties.Name="{x:Static atc:AttachmentCopy.AttachName}"
+                  ToolTip.Tip="{x:Static atc:AttachmentCopy.AttachName}">
+            <Path Data="M2 3H14V13H2ZM2 11 6 7 9 10 11 8 14 11"
+                  Stroke="{DynamicResource Autonogrammer.Color.TextSecondary}"
+                  StrokeThickness="1.5"
+                  StrokeLineCap="Round"
+                  StrokeJoin="Round"
+                  Stretch="Uniform"
+                  Width="16"
+                  Height="16"
+                  AutomationProperties.AccessibilityView="Raw" />
+          </Button>
+
+        </Grid>
+
+      </Panel>
+    </Border>
+
+    <TextBlock x:Name="HintLine"
+               Grid.Row="5"
+               Classes="muted small"
+               Margin="4,6,4,0"
+               TextWrapping="Wrap"
+               IsVisible="False"
+               Text="{x:Static panel:AgentPanelViewText.ComposerHint}"
+               AutomationProperties.Name="{x:Static panel:AgentPanelViewText.ComposerHintName}" />
+
+    <!-- Above the card: the mention picker, shown while the caret is in an @ or # token (it never takes focus, so it is no tab stop), the slash palette, shown while the draft
+         starts with a slash and a command name is being typed (it never takes focus either), and the suggestions box, shown by the shell's Inline suggestions toggle. The box
+         is hidden until then, so it is no tab stop before that either. -->
+    <StackPanel Grid.Row="0">
+      <local:MentionPickerView x:Name="MentionPicker"
+                               Margin="0,0,0,8" />
+      <local:SlashPaletteView x:Name="SlashPalette"
+                              Margin="0,0,0,8" />
+      <completion:InlineCompletionBox x:Name="Suggestions"
+                                      Margin="0,0,0,8"
+                                      IsVisible="False" />
+    </StackPanel>
+
+    <!-- The attached items and the context ring, above the card. It is declared last, so its remove buttons come after the footer chips in the keyboard order the tests rely on,
+         and it is placed in the row above the card. A chip is the name in the mono face, its size and a remove button; the ring shows the window usage and the estimate of the
+         attached items. The row is hidden while there is neither a chip nor a ring to show. -->
+    <Grid x:Name="ContextRow"
+          Grid.Row="2"
+          ColumnDefinitions="*,Auto"
+          ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}"
+          Margin="4,0,4,6"
+          IsVisible="False">
+      <ItemsControl x:Name="MentionChips"
+                    Grid.Column="0"
+                    AutomationProperties.Name="{x:Static mentions:MentionCopy.ChipsName}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="mentions:MentionChip">
+            <Border Classes="mention-chip"
+                    Margin="0,0,4,4"
+                    AutomationProperties.Name="{CompiledBinding AccessibleName}">
+              <StackPanel Orientation="Horizontal"
+                          Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+                <TextBlock Classes="mono small"
+                           Text="{CompiledBinding Label}"
+                           MaxWidth="260"
+                           MaxLines="1"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
+                <TextBlock Classes="muted small"
+                           Text="{CompiledBinding SizeText}"
+                           IsVisible="{CompiledBinding HasSize}"
+                           VerticalAlignment="Center" />
+                <Button Classes="ghost chip-remove"
+                        MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        AutomationProperties.Name="{CompiledBinding RemoveName}"
+                        ToolTip.Tip="{CompiledBinding RemoveName}">
+                  <Path Data="M2 2 10 10M10 2 2 10"
+                        Stroke="{DynamicResource Autonogrammer.Color.TextSecondary}"
+                        StrokeThickness="1.5"
+                        StrokeLineCap="Round"
+                        Stretch="Uniform"
+                        Width="10"
+                        Height="10"
+                        AutomationProperties.AccessibilityView="Raw" />
+                </Button>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <local:ContextRingView x:Name="ContextRing"
+                             Grid.Column="1"
+                             VerticalAlignment="Top" />
+    </Grid>
+
+    <!-- The attached images above the card: a thumbnail that takes focus (Delete removes it) and a remove button each, then the notice (why attaching is off, a refused image, or the caution that the
+         model may ignore images). Declared last so its stops come after the chips. Hidden while there is nothing to show. -->
+    <StackPanel x:Name="ImageStripPanel"
+                Grid.Row="3"
+                Margin="4,0,4,6"
+                Spacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                IsVisible="False">
+      <ItemsControl x:Name="ImageStrip"
+                    AutomationProperties.Name="{x:Static atc:AttachmentCopy.StripName}"
+                    AutomationProperties.HelpText="{x:Static atc:AttachmentCopy.StripHelp}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="atc:ComposerAttachment">
+            <Border Classes="attachment-item"
+                    Margin="0,0,6,6">
+              <StackPanel Orientation="Horizontal">
+                <Button Classes="ghost attachment-thumb"
+                        MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        AutomationProperties.Name="{CompiledBinding AccessibleName}"
+                        AutomationProperties.HelpText="{x:Static atc:AttachmentCopy.StripHelp}"
+                        ToolTip.Tip="{CompiledBinding AltText}">
+                  <Panel>
+                    <Path Data="M2 3H14V13H2ZM2 11 6 7 9 10 11 8 14 11"
+                          Stroke="{DynamicResource Autonogrammer.Color.TextSecondary}"
+                          StrokeThickness="1.5"
+                          Stretch="Uniform"
+                          Width="20"
+                          Height="20"
+                          AutomationProperties.AccessibilityView="Raw" />
+                    <Image Source="{CompiledBinding Thumbnail, Converter={StaticResource ThumbnailConverter}}"
+                           Stretch="UniformToFill"
+                           IsVisible="{CompiledBinding HasThumbnail}"
+                           AutomationProperties.AccessibilityView="Raw" />
+                  </Panel>
+                </Button>
+                <Button Classes="ghost attachment-remove"
+                        MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        AutomationProperties.Name="{CompiledBinding RemoveName}"
+                        ToolTip.Tip="{CompiledBinding RemoveName}">
+                  <Path Data="M2 2 10 10M10 2 2 10"
+                        Stroke="{DynamicResource Autonogrammer.Color.TextSecondary}"
+                        StrokeThickness="1.5"
+                        StrokeLineCap="Round"
+                        Stretch="Uniform"
+                        Width="10"
+                        Height="10"
+                        AutomationProperties.AccessibilityView="Raw" />
+                </Button>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBlock x:Name="ImageNotice"
+                 Classes="muted small"
+                 TextWrapping="Wrap"
+                 IsVisible="False"
+                 AutomationProperties.Name="{x:Static atc:AttachmentCopy.NoticeName}"
+                 AutomationProperties.LiveSetting="Polite" />
+    </StackPanel>
+
+  </Grid>
+
+</UserControl>

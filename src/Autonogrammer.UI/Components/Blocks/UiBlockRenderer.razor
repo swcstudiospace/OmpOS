@@ -1,0 +1,55 @@
+@namespace Autonogrammer.UI.Components.Blocks
+@using Autonogrammer.Contracts.Ui
+@switch (Block)
+{
+    case UserMessageBlock user:
+        <UserMessageView Block="user" />
+        break;
+    case MarkdownBlock markdown:
+        <MarkdownBlockView Block="markdown" />
+        break;
+    case CodeBlock code:
+        <CodeBlockView Block="code" OnCopy="OnCopy" />
+        break;
+    case ToolCallBlock toolCall:
+        <ToolCallBlockView Block="toolCall" />
+        break;
+    case ToolResultBlock toolResult:
+        <ToolResultBlockView Block="toolResult" />
+        break;
+    case FileEditBlock fileEdit:
+        <FileEditBlockView Block="fileEdit" />
+        break;
+    case PermissionBlock permission:
+        <PermissionBlockView Block="permission" />
+        break;
+    case PlanBlock plan:
+        <PlanBlockView Block="plan" />
+        break;
+    case DiffPlaceholderBlock diff:
+        <DiffPlaceholderView Block="diff" />
+        break;
+    case ErrorBlock error:
+        <ErrorBlockView Block="error" OnRetry="OnRetry" />
+        break;
+    case A2uiSurfaceBlock surface:
+        <A2uiSurfaceView Block="surface" />
+        break;
+    case UnknownBlock unknown:
+        <UnknownBlockView Block="unknown" />
+        break;
+}
+
+@code {
+    /// <summary>Gets the block to render; dispatch is on the concrete block type.</summary>
+    [Parameter, EditorRequired]
+    public UiBlock Block { get; set; } = null!;
+
+    /// <summary>Gets the callback invoked with code text when a copy control is activated.</summary>
+    [Parameter]
+    public EventCallback<string> OnCopy { get; set; }
+
+    /// <summary>Gets the callback invoked when a retry affordance is activated.</summary>
+    [Parameter]
+    public EventCallback OnRetry { get; set; }
+}

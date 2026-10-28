@@ -60,7 +60,7 @@ function fakePi({ tools = ["read", "bash"], commands = ["help"], withCommands = 
 }
 
 function setup(options = {}) {
-  const root = mkdtempSync(join(tmpdir(), "ompos-conn-"));
+  const root = mkdtempSync(join(tmpdir(), "autonogrammer-conn-"));
   temps.push(root);
   const file = join(root, "connection.json");
   const clock = fakeClock();

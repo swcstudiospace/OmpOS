@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:export="clr-namespace:Autonogrammer.Presentation.Export;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Export.TranscriptExportView"
+             Padding="{DynamicResource Autonogrammer.Space.Sm}">
+
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+    <TextBlock Text="Export transcript"
+               FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+               FontSize="{DynamicResource Autonogrammer.Font.Size.Body}" />
+
+    <Grid ColumnDefinitions="*,Auto"
+          ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+      <TextBox x:Name="PathInput"
+               Grid.Column="0"
+               Classes="mono"
+               PlaceholderText="File path, for example notes/transcript.md"
+               AutomationProperties.Name="Export file path" />
+
+      <Button x:Name="ExportButton"
+              Grid.Column="1"
+              Classes="primary"
+              Content="Export"
+              AutomationProperties.Name="Export transcript" />
+
+    </Grid>
+
+    <TextBlock x:Name="StatusText"
+               Classes="muted"
+               FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Export status"
+               AutomationProperties.LiveSetting="Polite" />
+
+    <TextBlock Text="Usage"
+               FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+               FontSize="{DynamicResource Autonogrammer.Font.Size.Body}" />
+
+    <ComboBox x:Name="PeriodSelector"
+              AutomationProperties.Name="Usage period" />
+
+    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto"
+          ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+      <TextBlock Grid.Column="0" Classes="muted" Text="Period" FontSize="{DynamicResource Autonogrammer.Font.Size.Label}" />
+      <TextBlock Grid.Column="1" Classes="muted" Text="Runs" FontSize="{DynamicResource Autonogrammer.Font.Size.Label}" />
+      <TextBlock Grid.Column="2" Classes="muted" Text="Input" FontSize="{DynamicResource Autonogrammer.Font.Size.Label}" />
+      <TextBlock Grid.Column="3" Classes="muted" Text="Output" FontSize="{DynamicResource Autonogrammer.Font.Size.Label}" />
+      <TextBlock Grid.Column="4" Classes="muted" Text="Total" FontSize="{DynamicResource Autonogrammer.Font.Size.Label}" />
+    </Grid>
+
+    <ListBox x:Name="UsageList"
+             MaxHeight="240"
+             AutomationProperties.Name="Usage totals per period">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="export:UsageTotal">
+          <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto"
+                ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+            <TextBlock Grid.Column="0" Text="{CompiledBinding Period}" />
+            <TextBlock Grid.Column="1" Text="{CompiledBinding RunCount}" />
+            <TextBlock Grid.Column="2" Text="{CompiledBinding InputTokens}" />
+            <TextBlock Grid.Column="3" Text="{CompiledBinding OutputTokens}" />
+            <TextBlock Grid.Column="4" Text="{CompiledBinding TotalTokens}" />
+          </Grid>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <TextBlock x:Name="UsageEmptyText"
+               Classes="muted"
+               Text="No usage recorded."
+               IsVisible="False"
+               FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+               AutomationProperties.Name="Usage status" />
+
+  </StackPanel>
+
+</UserControl>

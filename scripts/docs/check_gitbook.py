@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline structure check of the OmpOS documentation for GitBook Git Sync (standard library only).
+"""Offline structure check of the Autonogrammer documentation for GitBook Git Sync (standard library only).
 
 Usage: check_gitbook.py [repository-root] [--require-screenshots] [--list-outside-root]
 

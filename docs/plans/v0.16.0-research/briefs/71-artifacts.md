@@ -1,6 +1,6 @@
 # Brief 71: Cowork Artifacts
 
-Status: design brief, milestone v0.16.0. Record: [ADR-0033](../../../decisions/ADR-0033-cowork-artifacts.md). Every name is post-rename (Autonogrammer.*, `services/Autonogrammer.Api`) although the tree on disk still says OmpOS; the external omp names are unchanged.
+Status: design brief, milestone v0.16.0. Record: [ADR-0033](../../../decisions/ADR-0033-cowork-artifacts.md). Every name is post-rename (Autonogrammer.*, `services/Autonogrammer.Api`) although the tree on disk still says Autonogrammer; the external omp names are unchanged.
 
 ## Goal
 

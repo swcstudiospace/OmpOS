@@ -14,17 +14,17 @@ Scope: requirement PX-15 (Phase 58 part 1), decision [ADR-0015](../decisions/ADR
 
 **Status of this release** (recorded 2026-10-28, tree 7535859).
 
-- **Built, wired into the desktop head, proven.** `HeadServices` builds the `EnvironmentProfileStore` and `RemoteEnvironmentsHost`; Settings > Remote environments is the `RemoteEnvironmentsPageView` (rendered in the Xvfb smoke, `docs/runbooks/evidence/desktop-app-2026-10-28/settings-16-remote.png`); the environment picker in the rail sets the target of the next New agent; a session on an ssh profile starts through `RemoteSessionResources` and `ReconnectingEngineHost`, with the connection state on the rail row and an interrupted-turn notice, and remote slash discovery (`RemoteSlashDiscoverySource`). Tests: `RemoteTransportSelectionTests`, `HeadServicesWiringTests`, `RemoteViewTests`, `RuntimeEnvironmentsViewTests`, `AgentSessionRuntimeWiringTests` in `OmpOS.Native.Tests`; `SshCommandBuilderTests`, `SshAcpTransportTests`, `SshConfigResolverTests`, `RemoteWorkspaceFileSystemTests`, `RemoteConventionFileSourceTests`, `RemoteSessionResourcesTests`, `RemoteEnvironmentsHostTests`, `EnvironmentProfileStoreTests`, `ReconnectingEngineHostTests`, `RemoteTerminalLauncherTests` in `OmpOS.Harness.Remote.Tests` (520 or more tests on the final tree, 2 skipped because the run was root).
+- **Built, wired into the desktop head, proven.** `HeadServices` builds the `EnvironmentProfileStore` and `RemoteEnvironmentsHost`; Settings > Remote environments is the `RemoteEnvironmentsPageView` (rendered in the Xvfb smoke, `docs/runbooks/evidence/desktop-app-2026-10-28/settings-16-remote.png`); the environment picker in the rail sets the target of the next New agent; a session on an ssh profile starts through `RemoteSessionResources` and `ReconnectingEngineHost`, with the connection state on the rail row and an interrupted-turn notice, and remote slash discovery (`RemoteSlashDiscoverySource`). Tests: `RemoteTransportSelectionTests`, `HeadServicesWiringTests`, `RemoteViewTests`, `RuntimeEnvironmentsViewTests`, `AgentSessionRuntimeWiringTests` in `Autonogrammer.Native.Tests`; `SshCommandBuilderTests`, `SshAcpTransportTests`, `SshConfigResolverTests`, `RemoteWorkspaceFileSystemTests`, `RemoteConventionFileSourceTests`, `RemoteSessionResourcesTests`, `RemoteEnvironmentsHostTests`, `EnvironmentProfileStoreTests`, `ReconnectingEngineHostTests`, `RemoteTerminalLauncherTests` in `Autonogrammer.Harness.Remote.Tests` (520 or more tests on the final tree, 2 skipped because the run was root).
 - **Live proof.** A real `omp acp` 18.12.6 was started through a real `sshd` on `127.0.0.1`, passed preflight and opened a session (`RemoteSshLiveTests.ARealOmpOpensASessionThroughARealSshd`, `docs/runbooks/evidence/remote-ssh-live-2026-10-28/README.md`). It sent no prompt.
-- **Built, not wired.** The remote file explorer and editor (`RemoteWorkspaceFileSystem` is built and tested; `AgentSessionRuntime.RemoteFiles` is exposed and no explorer reads it); the remote terminal pane (the `RemoteTerminalLauncher` commands are built; no head opens one for an ssh session); the host trust terminal button (`HeadServices.TrustTerminalOpener` is never set, so the page answers that no terminal is available and you run `ssh` once in your own terminal); remote hook files (`NoHookFiles`: a remote session runs without OmpOS hooks) and remote mention files (`RemoteMentionFiles`). The user MCP servers and hook files of this machine are skipped for a remote session.
+- **Built, not wired.** The remote file explorer and editor (`RemoteWorkspaceFileSystem` is built and tested; `AgentSessionRuntime.RemoteFiles` is exposed and no explorer reads it); the remote terminal pane (the `RemoteTerminalLauncher` commands are built; no head opens one for an ssh session); the host trust terminal button (`HeadServices.TrustTerminalOpener` is never set, so the page answers that no terminal is available and you run `ssh` once in your own terminal); remote hook files (`NoHookFiles`: a remote session runs without Autonogrammer hooks) and remote mention files (`RemoteMentionFiles`). The user MCP servers and hook files of this machine are skipped for a remote session.
 - **Not live-verified.** No model turn over ssh (open question OD-07), no prompt, no reconnect against a real host (fake-ssh tests only), no host over a real network, no ssh agent forwarding, no macOS or Windows desktop head, no Windows or macOS remote.
 
 ## What runs where
 
 | Piece | Runs on | Notes |
 | --- | --- | --- |
-| OmpOS window, Agent Panel, approvals | this machine | The head spawns `ssh`; the web head cannot, so ssh environments are desktop only. |
-| `ssh` client | this machine | Your own OpenSSH. OmpOS never implements SSH, never prompts for a password and never edits `known_hosts`. |
+| Autonogrammer window, Agent Panel, approvals | this machine | The head spawns `ssh`; the web head cannot, so ssh environments are desktop only. |
+| `ssh` client | this machine | Your own OpenSSH. Autonogrammer never implements SSH, never prompts for a password and never edits `known_hosts`. |
 | `omp acp`, its tools (bash, edit, read, search) and its session files | the remote machine | Commands run with the remote user's rights. Nothing from this machine's disk is served to it. |
 | MCP servers that listen on this machine's loopback (the MCP gateway, the substrate) | this machine | Reached from the remote omp through a reverse port forward (`ssh -R`, remote loopback only). |
 | Plugins (`-e` entries) | not copied | Used only where you have installed them on the remote machine and mapped the directory; otherwise the session runs without them and the Agent Panel says so. |
@@ -35,7 +35,7 @@ This differs from Cursor's Remote SSH, where the agent loop stays on your machin
 
 This machine: OpenSSH client (`ssh` on PATH), Linux or macOS desktop (a Windows desktop cannot start a remote session yet, see Limits).
 
-The remote machine: Linux x86_64 (other platforms give a warning; only Linux x86_64 is verified), a POSIX `sh` and a login shell that can run `sh -c` (bash, zsh or sh; fish or csh as login shell is diagnosed and should be changed for non-interactive use), `mktemp`, omp 18.12.0 or newer with Bun (omp starts through `#!/usr/bin/env bun`), and a directory the user can write to. Install omp and Bun yourself; OmpOS never installs anything.
+The remote machine: Linux x86_64 (other platforms give a warning; only Linux x86_64 is verified), a POSIX `sh` and a login shell that can run `sh -c` (bash, zsh or sh; fish or csh as login shell is diagnosed and should be changed for non-interactive use), `mktemp`, omp 18.12.0 or newer with Bun (omp starts through `#!/usr/bin/env bun`), and a directory the user can write to. Install omp and Bun yourself; Autonogrammer never installs anything.
 
 Authentication: keys in ssh-agent or an `IdentityFile` (certificates and `ProxyJump` work as in your ssh configuration). Passwords and passphrase prompts are not supported because every connection runs with `BatchMode=yes`.
 
@@ -51,7 +51,7 @@ Authentication: keys in ssh-agent or an `IdentityFile` (certificates and `ProxyJ
      ProxyJump bastion.example.com
    ```
 
-2. In Remote environments choose the alias from the list. The list shows concrete `Host` names of `~/.ssh/config` and the files it includes (patterns such as `*.internal` and `Match` blocks are not aliases). OmpOS resolves what ssh would really use with `ssh -G -- build-box`, so `Include`, `Host`, `Match` and `ProxyJump` behave exactly as in a terminal. `Match exec` lines in your configuration run their commands during that lookup.
+2. In Remote environments choose the alias from the list. The list shows concrete `Host` names of `~/.ssh/config` and the files it includes (patterns such as `*.internal` and `Match` blocks are not aliases). Autonogrammer resolves what ssh would really use with `ssh -G -- build-box`, so `Include`, `Host`, `Match` and `ProxyJump` behave exactly as in a terminal. `Match exec` lines in your configuration run their commands during that lookup.
 3. Set the remote workspace root (an absolute path such as `/home/dev/work`), and optionally the remote omp path (an absolute path or a plain command name; the default is `omp`, searched on the remote PATH extended by `~/.bun/bin`, `~/.local/bin` and `/usr/local/bin`).
 4. Press Test connection. Fix every error it lists (see Troubleshooting) until it passes.
 
@@ -84,7 +84,7 @@ A profile holds references only: there is no field for a password, a passphrase,
 | Discovery of slash commands, skills, rules and subagents on the remote workspace | built, tested (`RemoteConventionFileSourceTests`), wired: the remote slash palette uses it | `RemoteConventionFileSource`, `RemoteConventionSources.CreateAsync`, `RemoteSlashDiscoverySource` |
 | Remote terminals (login shell, omp CLI, host trust) | built, tested (`RemoteTerminalLauncherTests`, fake ssh, no real PTY); **not wired** to a terminal pane or to the Trust host button | `RemoteTerminalLauncher` |
 | Profile store (`environments.json`, atomic, owner-only) | built, tested, wired | `EnvironmentProfileStore` |
-| Remote environments page and New session picker | wired: the page is in the Settings window, the picker in the rail | `OmpOS.Presentation.Remote`, `OmpOS.Native.Views.Remote`, `SettingsWindowFactory` |
+| Remote environments page and New session picker | wired: the page is in the Settings window, the picker in the rail | `Autonogrammer.Presentation.Remote`, `Autonogrammer.Native.Views.Remote`, `SettingsWindowFactory` |
 | Real ssh and real omp | run once on Linux over a loopback sshd (see Status above); no real PTY, no real network host | `RemoteSshLiveTests` |
 
 ### Remote files
@@ -93,7 +93,7 @@ Every operation is one short POSIX script run through your own `ssh` (`ssh -T`, 
 
 ### Convention discovery on the remote workspace
 
-Commands, skills, rules and subagents (the six directories `.ompos`, `.omp`, `.cursor`, `.claude`, `.codex`, `.agents`, at the remote workspace and in the remote home, which is `printf %s "$HOME"` there) are found through the same ssh exec layer as the local ones, with the same precedence and diagnostics. Each folder listing is one ssh call, so discovery bounds itself to depth 3, 300 folders and 1000 entries per folder (`RemoteConventionSources.DiscoveryOptions`). Set `SshClientOptions.ControlPathDirectory` to share one connection and make it much faster. A symbolic link that leaves the root becomes an `EscapesRoot` diagnostic; a file the remote user cannot read an `Unreadable` one; a host that does not answer is a problem in the result, never an exception.
+Commands, skills, rules and subagents (the six directories `.autonogrammer`, `.omp`, `.cursor`, `.claude`, `.codex`, `.agents`, at the remote workspace and in the remote home, which is `printf %s "$HOME"` there) are found through the same ssh exec layer as the local ones, with the same precedence and diagnostics. Each folder listing is one ssh call, so discovery bounds itself to depth 3, 300 folders and 1000 entries per folder (`RemoteConventionSources.DiscoveryOptions`). Set `SshClientOptions.ControlPathDirectory` to share one connection and make it much faster. A symbolic link that leaves the root becomes an `EscapesRoot` diagnostic; a file the remote user cannot read an `Unreadable` one; a host that does not answer is a problem in the result, never an exception.
 
 ### Remote terminal
 
@@ -105,17 +105,17 @@ The first connection to a host is meant to happen in an interactive terminal on 
 
 ## First connection and host key trust
 
-A new host fails the connection test with "The host key of this machine is not trusted yet". OmpOS does not trust it for you. Connect once with your own `ssh` in a terminal (the page's Trust host button is meant to open an interactive `ssh -tt` for this, but it is not wired in this release), compare ssh's own fingerprint with the one your administrator published and only then type `yes`. After that, connections run non-interactively with ssh's normal host key checking. If the key later changes, the test reports "The host key differs from the one stored in known_hosts"; do not connect until you know why (`ssh-keygen -R <host>` removes the old entry once you are sure).
+A new host fails the connection test with "The host key of this machine is not trusted yet". Autonogrammer does not trust it for you. Connect once with your own `ssh` in a terminal (the page's Trust host button is meant to open an interactive `ssh -tt` for this, but it is not wired in this release), compare ssh's own fingerprint with the one your administrator published and only then type `yes`. After that, connections run non-interactively with ssh's normal host key checking. If the key later changes, the test reports "The host key differs from the one stored in known_hosts"; do not connect until you know why (`ssh-keygen -R <host>` removes the old entry once you are sure).
 
 ## Secrets
 
 - Provider tokens for the remote omp are delivered through ssh's standard input, written by the remote shell to a mode 0600 temporary file, sourced and deleted before omp starts. They are never in a command line on either machine. Alternatively, log in on the remote machine once (`omp login` there) and send nothing.
 - Agent forwarding is off. If you turn it on for a host, anyone with root on that host can use your ssh agent as you while the connection is up. Prefer a deploy key or a short-lived token for unattended git on the remote machine.
-- The stderr buffer, the failure messages and the diagnoses are scrubbed of the secret values OmpOS delivered.
+- The stderr buffer, the failure messages and the diagnoses are scrubbed of the secret values Autonogrammer delivered.
 
 ## Reconnect
 
-If the connection drops while a turn runs, the turn is shown as interrupted (not finished, not failed by the model). OmpOS waits 1, 2, 4, 8 and 16 seconds between five attempts, opens a new ssh connection and loads the stored omp session again. Then send the prompt again: a turn that was running is not resumed. After five failed attempts the host is shown as unreachable; the next prompt tries again. A connection that dropped while you were idle is repaired by your next prompt. omp's own state stays on the remote machine, so the same host must be used. Keep ssh alive with `ServerAliveInterval` (OmpOS sets 15 seconds, three misses). Whether the remote omp exits when ssh dies is not verified; a stale remote process is possible after a long outage.
+If the connection drops while a turn runs, the turn is shown as interrupted (not finished, not failed by the model). Autonogrammer waits 1, 2, 4, 8 and 16 seconds between five attempts, opens a new ssh connection and loads the stored omp session again. Then send the prompt again: a turn that was running is not resumed. After five failed attempts the host is shown as unreachable; the next prompt tries again. A connection that dropped while you were idle is repaired by your next prompt. omp's own state stays on the remote machine, so the same host must be used. Keep ssh alive with `ServerAliveInterval` (Autonogrammer sets 15 seconds, three misses). Whether the remote omp exits when ssh dies is not verified; a stale remote process is possible after a long outage.
 
 ## Limits
 
@@ -150,12 +150,12 @@ A banner printed by `~/.bashrc` on every non-interactive login is tolerated unti
 
 ## Try it without a second machine
 
-`scripts/remote/loopback-sshd.sh` starts a throwaway sshd on 127.0.0.1 (random high port, temporary host key, one temporary client key, `StrictModes no`, `PasswordAuthentication no`, `UsePAM no`) and prints the `ssh -p <port> -i <key> ...` command that logs in plus an `OMPOS_LIVE_ENV` line. It runs until you stop it and removes everything it created. Export the variables of that line and run the live test, which opens a real `omp acp` through the real ssh with an isolated home and sends no prompt (no model is contacted). It was run on 2026-10-28 and passed ([evidence](evidence/remote-ssh-live-2026-10-28/README.md)):
+`scripts/remote/loopback-sshd.sh` starts a throwaway sshd on 127.0.0.1 (random high port, temporary host key, one temporary client key, `StrictModes no`, `PasswordAuthentication no`, `UsePAM no`) and prints the `ssh -p <port> -i <key> ...` command that logs in plus an `AUTONOGRAMMER_LIVE_ENV` line. It runs until you stop it and removes everything it created. Export the variables of that line and run the live test, which opens a real `omp acp` through the real ssh with an isolated home and sends no prompt (no model is contacted). It was run on 2026-10-28 and passed ([evidence](evidence/remote-ssh-live-2026-10-28/README.md)):
 
 ```sh
-scripts/remote/loopback-sshd.sh &                      # note the printed OMPOS_LIVE_ENV line
-export OMPOS_LIVE_SSH=1 OMPOS_LIVE_SSH_PORT=... OMPOS_LIVE_SSH_KEY=... OMPOS_LIVE_SSH_KNOWN_HOSTS=... OMPOS_LIVE_SSH_USER=...
-dotnet test tests/OmpOS.Harness.Remote.Tests --filter-trait "Category=Live"
+scripts/remote/loopback-sshd.sh &                      # note the printed AUTONOGRAMMER_LIVE_ENV line
+export AUTONOGRAMMER_LIVE_SSH=1 AUTONOGRAMMER_LIVE_SSH_PORT=... AUTONOGRAMMER_LIVE_SSH_KEY=... AUTONOGRAMMER_LIVE_SSH_KNOWN_HOSTS=... AUTONOGRAMMER_LIVE_SSH_USER=...
+dotnet test tests/Autonogrammer.Harness.Remote.Tests --filter-trait "Category=Live"
 ```
 
 The run of 2026-10-28 is recorded in `docs/runbooks/evidence/remote-ssh-live-2026-10-28/`. Whether the remote omp exits when the ssh connection closes was not measured by it.
@@ -164,7 +164,7 @@ The run of 2026-10-28 is recorded in `docs/runbooks/evidence/remote-ssh-live-202
 
 | Check | Status |
 | --- | --- |
-| Unit tests with a fake ssh and a fake omp (quoting, argument list, banner, drop, diagnoses, canary secrets, reconnect schedule) | ran on the final tree with the rest of `OmpOS.Harness.Remote.Tests` (520 or more tests, 2 skipped as root), recorded 2026-10-28 |
+| Unit tests with a fake ssh and a fake omp (quoting, argument list, banner, drop, diagnoses, canary secrets, reconnect schedule) | ran on the final tree with the rest of `Autonogrammer.Harness.Remote.Tests` (520 or more tests, 2 skipped as root), recorded 2026-10-28 |
 | `ssh -G` resolution (`SshConfigResolverTests`) for `Include`, `Match`, `ProxyJump` | part of the same run |
 | Remote bootstrap script under `dash` and `bash` by hand | run once during design: environment and file delivery and cleanup worked |
 | Remote file and convention scripts by hand on the design host (GNU coreutils): listing under `dash`, `bash` and `sh`; signed read, signature-checked replace and no-clobber create under `dash`, with symlink escape, dangling link, FIFO and hostile names | run once: behaved as designed. macOS and zsh not run; BusyBox is covered by `RemoteScriptsBusyBoxTests` (written after the live podman run found a BusyBox `realpath` defect) |

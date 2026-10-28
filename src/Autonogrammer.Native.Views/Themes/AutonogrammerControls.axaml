@@ -1,0 +1,666 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- The Autonogrammer control library (docs/plans/ui-parity/cursor-agents-window-parity.md, section 3). Tokens only: no colour literal.
+       Stock colours come from the Fluent resource aliases in AutonogrammerTokens.axaml, so the Fluent templates draw rest, hover, pressed,
+       checked and disabled in the Autonogrammer roles. This file adds the geometry, the variants (classes) and the shared focus rule.
+       Focus (3.13): a 2 px AccentPurple border on the control itself, no adorner, no size change (padding gives up 1 px a side
+       as the border grows from 1 to 2). Disabled controls are drawn at half opacity. -->
+
+  <!-- ===== Button (3.3) ===== -->
+  <Style Selector="Button">
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.TargetMin}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Control}" />
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Label}" />
+    <Setter Property="FontWeight" Value="{DynamicResource Autonogrammer.Font.Weight.Regular}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.100" />
+      </Transitions>
+    </Setter>
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <Style Selector="^.sm">
+      <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.ControlHeightSm}" />
+    </Style>
+  </Style>
+
+  <!-- Primary: the only accent fill. Its fill never changes; hover and press dim the whole button (the label dims with the fill). -->
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.AccentPurpleOn}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    <Setter Property="FontWeight" Value="{DynamicResource Autonogrammer.Font.Weight.Medium}" />
+    <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.AccentPurpleOn}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    </Style>
+    <Style Selector="^:pointerover">
+      <Setter Property="Opacity" Value="0.92" />
+    </Style>
+    <Style Selector="^:pressed">
+      <Setter Property="Opacity" Value="0.80" />
+    </Style>
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.AccentPurpleOn}" />
+    </Style>
+    <Style Selector="^:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.AccentPurpleOn}" />
+    </Style>
+  </Style>
+
+  <!-- Ghost: no fill or outline until hovered. -->
+  <Style Selector="Button.ghost">
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+    <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+    </Style>
+    <Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Hover}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+    </Style>
+    <Style Selector="^:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceActive}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+    </Style>
+  </Style>
+
+  <!-- Icon: a square button holding a Path glyph. Its size is fixed, so the focus border never moves it. -->
+  <Style Selector="Button.icon">
+    <Setter Property="Width" Value="{DynamicResource Autonogrammer.Size.IconButton}" />
+    <Setter Property="Height" Value="{DynamicResource Autonogrammer.Size.IconButton}" />
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.IconButtonSm}" />
+    <Setter Property="Padding" Value="0" />
+    <Style Selector="^.sm">
+      <Setter Property="Width" Value="{DynamicResource Autonogrammer.Size.IconButtonSm}" />
+      <Setter Property="Height" Value="{DynamicResource Autonogrammer.Size.IconButtonSm}" />
+    </Style>
+    <Style Selector="^ Path">
+      <Setter Property="Stroke" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+      <Setter Property="StrokeThickness" Value="1.5" />
+    </Style>
+    <Style Selector="^:pointerover Path">
+      <Setter Property="Stroke" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+    </Style>
+  </Style>
+
+  <!-- Danger: the label is StatusError; hover tints the fill. -->
+  <Style Selector="Button.destructive">
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.StatusError}" />
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.StatusError}" />
+    </Style>
+    <Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.DiffRemoved}" />
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.StatusError}" />
+    </Style>
+    <Style Selector="^:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.DiffRemoved}" />
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.StatusError}" />
+    </Style>
+  </Style>
+
+  <!-- Round action (send, stop): 28 px circle. Combine with primary for send; stop keeps the secondary fill. -->
+  <Style Selector="Button.round">
+    <Setter Property="Width" Value="{DynamicResource Autonogrammer.Size.IconButton}" />
+    <Setter Property="Height" Value="{DynamicResource Autonogrammer.Size.IconButton}" />
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.IconButtonSm}" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Pill}" />
+    <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Pill}" />
+    </Style>
+    <Style Selector="^ Path">
+      <Setter Property="Fill" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+    </Style>
+    <Style Selector="^.primary Path">
+      <Setter Property="Fill" Value="{DynamicResource Autonogrammer.Color.AccentPurpleOn}" />
+    </Style>
+    <Style Selector="^:not(.primary) /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.BorderStrong}" />
+    </Style>
+  </Style>
+
+  <!-- A button whose face is a chip or a strip of pills: a transparent 2 px border so the focus ring appears without moving anything. -->
+  <Style Selector="Button.chip-button">
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.TargetMin}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Padding" Value="0" />
+    <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    </Style>
+    <Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Hover}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    </Style>
+  </Style>
+  <Style Selector="Button.strip">
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.TargetMin}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Padding" Value="{DynamicResource Autonogrammer.Space.Sm}" />
+    <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceRaised}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    </Style>
+    <Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Hover}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    </Style>
+  </Style>
+
+  <!-- Skip link: leaves the layout flow and is invisible until focused, so assistive technology still lists it (4.2). -->
+  <Style Selector="Button.skip-link">
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Margin" Value="8" />
+    <Setter Property="ZIndex" Value="100" />
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.BorderStrong}" />
+  </Style>
+  <Style Selector="Button.skip-link:focus">
+    <Setter Property="Opacity" Value="1" />
+    <Setter Property="IsHitTestVisible" Value="True" />
+  </Style>
+
+  <!-- Button focus (3.13). Declared after every variant so it wins over their presenter rules: the ring shows at rest, on hover and
+       pressed. Primary draws it in TextPrimary (a purple ring on a purple fill is invisible). The border grows from 1 to 2 px, so the
+       padding gives up 1 px a side; fixed-size and 2 px-border variants keep their own padding. -->
+  <Style Selector="Button:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+  </Style>
+  <Style Selector="Button:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+  </Style>
+  <Style Selector="Button.primary:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+  </Style>
+  <Style Selector="Button.primary:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+  </Style>
+  <Style Selector="Button.icon:focus-visible, Button.round:focus-visible, Button.chip-button:focus-visible">
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="Button.strip:focus-visible">
+    <Setter Property="Padding" Value="{DynamicResource Autonogrammer.Space.Sm}" />
+  </Style>
+
+  <!-- ===== ToggleButton (3.6) ===== -->
+  <Style Selector="ToggleButton">
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.TargetMin}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Control}" />
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Label}" />
+    <Setter Property="Padding" Value="{DynamicResource ButtonPadding}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.100" />
+      </Transitions>
+    </Setter>
+    <Style Selector="^:checked">
+      <Setter Property="FontWeight" Value="{DynamicResource Autonogrammer.Font.Weight.Medium}" />
+    </Style>
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+  </Style>
+
+  <!-- Segment: one half of a pair inside Border.segment-track. Checked is shown by fill, weight and the toggle state. -->
+  <Style Selector="Border.segment-track">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Hover}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Md}" />
+    <Setter Property="Padding" Value="{DynamicResource Autonogrammer.Space.Xxs}" />
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.ControlHeightSm}" />
+  </Style>
+  <Style Selector="ToggleButton.segment">
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+    <Setter Property="FontWeight" Value="{DynamicResource Autonogrammer.Font.Weight.Regular}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Border.Hairline}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Control}" />
+  </Style>
+  <Style Selector="ToggleButton.segment /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+  </Style>
+  <Style Selector="ToggleButton.segment:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+  </Style>
+  <Style Selector="ToggleButton.segment:checked /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.Border}" />
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+  </Style>
+  <Style Selector="ToggleButton.segment:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceActive}" />
+  </Style>
+
+  <!-- Nav: a left-aligned row; checked shows the fill, a 2 px AccentPurple bar and a heavier weight. -->
+  <Style Selector="ToggleButton.nav">
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.ControlHeightSm}" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="CornerRadius" Value="0,6,6,0" />
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+    <Setter Property="BorderThickness" Value="2,0,0,0" />
+  </Style>
+  <Style Selector="ToggleButton.nav /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+  </Style>
+  <Style Selector="ToggleButton.nav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Hover}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+  </Style>
+  <Style Selector="ToggleButton.nav:checked /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Selected}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+  </Style>
+  <Style Selector="ToggleButton.nav:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceActive}" />
+  </Style>
+
+  <!-- ToggleButton focus: the same ring as Button, declared after the variants. -->
+  <Style Selector="ToggleButton:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+  </Style>
+  <Style Selector="ToggleButton:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+  </Style>
+  <Style Selector="ToggleButton.segment:focus-visible">
+    <Setter Property="Padding" Value="9,0" />
+  </Style>
+  <Style Selector="ToggleButton.nav:focus-visible">
+    <Setter Property="Padding" Value="9,0" />
+  </Style>
+
+  <!-- ===== TextBox (3.4) ===== -->
+  <Style Selector="TextBox">
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.TargetMin}" />
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Label}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurpleOn}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <Style Selector="^[AcceptsReturn=True]">
+      <Setter Property="Padding" Value="9,6" />
+      <Setter Property="VerticalContentAlignment" Value="Top" />
+    </Style>
+    <Style Selector="^.sm">
+      <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.ControlHeightSm}" />
+    </Style>
+    <Style Selector="^.mono">
+      <Setter Property="FontFamily" Value="{DynamicResource Autonogrammer.Font.Mono}" />
+      <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Mono}" />
+    </Style>
+    <Style Selector="^.invalid /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.StatusError}" />
+    </Style>
+    <Style Selector="^:readonly /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Surface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.Border}" />
+    </Style>
+    <!-- Keyboard focus: the control and its drawn border both carry the 2 px accent ring. -->
+    <Style Selector="^:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="^[AcceptsReturn=True]:focus-visible">
+      <Setter Property="Padding" Value="8,5" />
+    </Style>
+    <Style Selector="^:focus-visible /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+    </Style>
+  </Style>
+  <Style Selector="TextBox /template/ TextBlock#PART_Watermark">
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+  </Style>
+
+  <!-- ===== ComboBox (3.5) ===== -->
+  <Style Selector="ComboBox">
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.TargetMin}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Control}" />
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Label}" />
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <Style Selector="^:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="^ /template/ Border#PopupBorder">
+      <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Column}" />
+      <Setter Property="Padding" Value="{DynamicResource Autonogrammer.Space.Xs}" />
+      <Setter Property="BoxShadow" Value="{DynamicResource Autonogrammer.Shadow.Popup}" />
+    </Style>
+  </Style>
+  <Style Selector="ComboBoxItem">
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.ControlHeightSm}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Control}" />
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Label}" />
+    <Style Selector="^:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+  </Style>
+
+  <!-- ===== TabStrip and TabStripItem (3.7) ===== -->
+  <Style Selector="TabStripItem">
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.ControlHeightSm}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Control}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.100" />
+      </Transitions>
+    </Setter>
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <Style Selector="^:focus-visible /template/ Border#PART_LayoutRoot">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+    </Style>
+    <Style Selector="^:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+  </Style>
+  <Style Selector="TabStrip.top-tabs /template/ ItemsPresenter StackPanel">
+    <Setter Property="Spacing" Value="{DynamicResource Autonogrammer.Gap.Xs}" />
+  </Style>
+
+  <!-- ===== ListBox and ListBoxItem rows (3.8) ===== -->
+  <Style Selector="ListBox">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Style Selector="^:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+  </Style>
+  <Style Selector="ListBoxItem">
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.ControlHeightSm}" />
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Control}" />
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.100" />
+      </Transitions>
+    </Setter>
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <Style Selector="^:selected">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="2,0,0,0" />
+      <Setter Property="CornerRadius" Value="0,6,6,0" />
+    </Style>
+    <Style Selector="^:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Control}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+  </Style>
+
+  <!-- ===== Scroll viewer: the transcript scroller is a tab stop and shows the same focus ring ===== -->
+  <Style Selector="ScrollViewer:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+  </Style>
+
+  <!-- ===== CheckBox, RadioButton, ToggleSwitch (3.12) ===== -->
+  <Style Selector="CheckBox">
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Label}" />
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <Style Selector="^:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+  </Style>
+  <Style Selector="RadioButton">
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Label}" />
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <Style Selector="^:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+  </Style>
+  <Style Selector="ToggleSwitch">
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Label}" />
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <Style Selector="^:focus-visible">
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="^:focus-visible /template/ Border#OuterBorder">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+    </Style>
+  </Style>
+
+  <!-- ===== Tooltips, flyouts, menus, popups (3.11) ===== -->
+  <Style Selector="ToolTip">
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Small}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Control}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Border.Hairline}" />
+    <Style Selector="^ /template/ Border#PART_LayoutRoot">
+      <Setter Property="BoxShadow" Value="{DynamicResource Autonogrammer.Shadow.Popup}" />
+    </Style>
+  </Style>
+  <Style Selector="FlyoutPresenter">
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Lg}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Border.Hairline}" />
+    <Style Selector="^ /template/ Border#LayoutRoot">
+      <Setter Property="BoxShadow" Value="{DynamicResource Autonogrammer.Shadow.Popup}" />
+    </Style>
+  </Style>
+  <Style Selector="MenuFlyoutPresenter, ContextMenu">
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Column}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Border.Hairline}" />
+  </Style>
+  <Style Selector="MenuFlyoutPresenter /template/ Border#LayoutRoot">
+    <Setter Property="BoxShadow" Value="{DynamicResource Autonogrammer.Shadow.Popup}" />
+  </Style>
+  <Style Selector="MenuItem">
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.ControlHeightSm}" />
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Label}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Control}" />
+    <Style Selector="^:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+  </Style>
+
+  <!-- ===== Text roles (3.14). Size, weight and family come from the type tokens. ===== -->
+  <Style Selector=":is(TextBlock).small">
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Small}" />
+  </Style>
+  <Style Selector=":is(TextBlock).strong">
+    <Setter Property="FontWeight" Value="{DynamicResource Autonogrammer.Font.Weight.Medium}" />
+  </Style>
+  <Style Selector=":is(TextBlock).heading">
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Heading}" />
+    <Setter Property="FontWeight" Value="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+  </Style>
+  <Style Selector=":is(TextBlock).display">
+    <Setter Property="FontFamily" Value="{DynamicResource Autonogrammer.Font.Display}" />
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Display}" />
+    <Setter Property="FontWeight" Value="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+  </Style>
+  <Style Selector=":is(TextBlock).display-sm">
+    <Setter Property="FontFamily" Value="{DynamicResource Autonogrammer.Font.Display}" />
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.DisplaySm}" />
+    <Setter Property="FontWeight" Value="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+  </Style>
+  <Style Selector=":is(TextBlock).mono">
+    <Setter Property="FontFamily" Value="{DynamicResource Autonogrammer.Font.Mono}" />
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Mono}" />
+  </Style>
+
+  <!-- ===== Chips, pills, badges, cards (3.9) ===== -->
+  <!-- The chip shape of the status, graph and steering chips. -->
+  <Style Selector="Border.chip">
+    <Setter Property="Height" Value="{DynamicResource Autonogrammer.Size.ChipHeight}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Pill}" />
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.Border}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Border.Hairline}" />
+    <Setter Property="Padding" Value="8,0" />
+  </Style>
+  <!-- A chip without its outline, for rows and cards where a repeated outline would be noise. -->
+  <Style Selector="Border.chip-flat">
+    <Setter Property="Height" Value="{DynamicResource Autonogrammer.Size.ChipHeight}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Pill}" />
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="8,0" />
+  </Style>
+  <Style Selector="Border.chip-count">
+    <Setter Property="MinWidth" Value="20" />
+    <Setter Property="Height" Value="18" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Pill}" />
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Selected}" />
+    <Setter Property="Padding" Value="6,0" />
+  </Style>
+  <Style Selector="Border.kbd">
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Sm}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.Border}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Border.Hairline}" />
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Hover}" />
+    <Setter Property="Padding" Value="4,1" />
+  </Style>
+  <Style Selector="Border.kbd TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource Autonogrammer.Font.Mono}" />
+    <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Small}" />
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+  </Style>
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.Border}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Border.Hairline}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Md}" />
+    <Setter Property="BoxShadow" Value="{DynamicResource Autonogrammer.Shadow.Card}" />
+  </Style>
+  <Style Selector="Border.card-sunken">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.Border}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Border.Hairline}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Md}" />
+  </Style>
+  <Style Selector="Border.banner">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.Border}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Border.Hairline}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Md}" />
+    <Setter Property="Padding" Value="{DynamicResource Autonogrammer.Space.Sm}" />
+  </Style>
+  <Style Selector="Border.popup">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.Border}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Border.Hairline}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Lg}" />
+    <Setter Property="BoxShadow" Value="{DynamicResource Autonogrammer.Shadow.Popup}" />
+  </Style>
+
+  <!-- ===== Reduced motion: the window or main view carries the class and every shared control loses its transition. ===== -->
+  <Style Selector=".reduced-motion Button">
+    <Setter Property="Transitions">
+      <Transitions />
+    </Setter>
+  </Style>
+  <Style Selector=".reduced-motion ToggleButton">
+    <Setter Property="Transitions">
+      <Transitions />
+    </Setter>
+  </Style>
+  <Style Selector=".reduced-motion ListBox">
+    <Setter Property="Transitions">
+      <Transitions />
+    </Setter>
+  </Style>
+  <Style Selector=".reduced-motion ListBoxItem">
+    <Setter Property="Transitions">
+      <Transitions />
+    </Setter>
+  </Style>
+  <Style Selector=".reduced-motion TabStripItem">
+    <Setter Property="Transitions">
+      <Transitions />
+    </Setter>
+  </Style>
+  <Style Selector=".reduced-motion TextBox">
+    <Setter Property="Transitions">
+      <Transitions />
+    </Setter>
+  </Style>
+  <Style Selector=".reduced-motion ComboBox">
+    <Setter Property="Transitions">
+      <Transitions />
+    </Setter>
+  </Style>
+  <Style Selector=".reduced-motion ScrollViewer">
+    <Setter Property="Transitions">
+      <Transitions />
+    </Setter>
+  </Style>
+
+</Styles>

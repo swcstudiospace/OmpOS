@@ -1,0 +1,71 @@
+@namespace Autonogrammer.UI.Components.Shell
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@code {
+    private const string ModulePath = "./_content/Autonogrammer.UI/scripts/autonogrammer-keys.js";
+
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<ShortcutHost>? _self;
+    private int _token;
+    private bool _registered;
+
+    /// <summary>The shortcut identifier of Ctrl+Shift+A: show the Agents view.</summary>
+    public const string Agents = "agents";
+
+    /// <summary>The shortcut identifier of Ctrl+Shift+K: show the Kanban view.</summary>
+    public const string Kanban = "kanban";
+
+    /// <summary>The shortcut identifier of Ctrl+Comma: open Settings.</summary>
+    public const string Settings = "settings";
+
+    /// <summary>Gets the callback invoked with the identifier of the shortcut the user pressed. The same keys work with Command on a Mac.</summary>
+    [Parameter]
+    public EventCallback<string> OnShortcut { get; set; }
+
+    /// <summary>Called by autonogrammer-keys.js when a registered shortcut is pressed.</summary>
+    /// <param name="id">The shortcut identifier: <see cref="Agents"/>, <see cref="Kanban"/> or <see cref="Settings"/>.</param>
+    /// <returns>A task that completes when the callback has run.</returns>
+    [JSInvokable("OnShortcut")]
+    public Task HandleShortcutAsync(string id) => OnShortcut.InvokeAsync(id);
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _module = await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
+        _self = DotNetObjectReference.Create(this);
+        _token = await _module.InvokeAsync<int>("registerShortcuts", _self).ConfigureAwait(true);
+        _registered = true;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_module is not null)
+            {
+                if (_registered)
+                {
+                    await _module.InvokeVoidAsync("release", _token).ConfigureAwait(false);
+                }
+
+                await _module.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the listener went with it.
+        }
+        finally
+        {
+            _self?.Dispose();
+        }
+    }
+}

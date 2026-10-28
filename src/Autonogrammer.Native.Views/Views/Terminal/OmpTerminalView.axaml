@@ -1,0 +1,107 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:term="clr-namespace:Iciclecreek.Terminal;assembly=Iciclecreek.Avalonia.Terminal"
+             xmlns:panel="clr-namespace:Autonogrammer.Native.Views.AgentPanel"
+             x:Class="Autonogrammer.Native.Views.Terminal.OmpTerminalView">
+  <!-- The output control's default theme is scoped to this view, so its template does not depend on the application's style list.
+       The view model owns the omp session. The control only draws its output and turns keys into input for it. -->
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Iciclecreek.Avalonia.Terminal/Themes/Generic.axaml" />
+  </UserControl.Styles>
+
+  <!-- The terminal sits in a rounded frame with a hairline (parity spec 4.9): a 28 px status bar on the raised surface, then the sunken
+       terminal body. -->
+  <Border CornerRadius="{DynamicResource Autonogrammer.Radius.Md}"
+          BorderBrush="{DynamicResource Autonogrammer.Color.Border}"
+          BorderThickness="{DynamicResource Autonogrammer.Border.Hairline}"
+          Background="{DynamicResource Autonogrammer.Color.SurfaceSunken}"
+          Margin="0,0,0,8"
+          ClipToBounds="True">
+
+    <DockPanel>
+
+      <Border DockPanel.Dock="Top"
+              MinHeight="28"
+              Padding="10,0"
+              Background="{DynamicResource Autonogrammer.Color.SurfaceRaised}"
+              BorderBrush="{DynamicResource Autonogrammer.Color.Border}"
+              BorderThickness="0,0,0,1">
+
+        <DockPanel>
+
+          <StackPanel DockPanel.Dock="Right"
+                      Orientation="Horizontal"
+                      VerticalAlignment="Center"
+                      Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+            <Button x:Name="RestartButton"
+                    Classes="ghost sm"
+                    Content="Restart omp"
+                    IsVisible="False"
+                    AutomationProperties.Name="Restart omp" />
+
+            <Button x:Name="CloseButton"
+                    Classes="ghost icon sm"
+                    ToolTip.Tip="Close"
+                    AutomationProperties.Name="Close omp terminal">
+              <Path Data="M4 4l8 8M12 4l-8 8"
+                    Stretch="Uniform"
+                    Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                    Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                    StrokeLineCap="Round"
+                    AutomationProperties.AccessibilityView="Raw" />
+            </Button>
+
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal"
+                      VerticalAlignment="Center"
+                      Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+            <panel:StageIcon x:Name="StateIcon"
+                             VerticalAlignment="Center" />
+
+            <TextBlock x:Name="StatusText"
+                       Classes="small"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       AutomationProperties.Name="omp status"
+                       AutomationProperties.LiveSetting="Polite" />
+
+          </StackPanel>
+
+        </DockPanel>
+
+      </Border>
+
+      <Grid>
+
+        <term:TerminalControl x:Name="Output"
+                              FontFamily="{DynamicResource Autonogrammer.Font.Mono}"
+                              FontSize="{DynamicResource Autonogrammer.Font.Size.MonoTerminal}"
+                              Background="{DynamicResource Autonogrammer.Color.SurfaceSunken}"
+                              Foreground="{DynamicResource Autonogrammer.Color.TextPrimary}"
+                              SelectionBrush="{DynamicResource Autonogrammer.Color.Selected}"
+                              Margin="{DynamicResource Autonogrammer.Space.Sm}"
+                              AutomationProperties.Name="omp terminal" />
+
+        <ScrollViewer x:Name="UnavailablePanel"
+                      IsVisible="False"
+                      Padding="{DynamicResource Autonogrammer.Space.Md}">
+
+          <SelectableTextBlock x:Name="FixText"
+                               FontFamily="{DynamicResource Autonogrammer.Font.Mono}"
+                               FontSize="{DynamicResource Autonogrammer.Font.Size.Mono}"
+                               TextWrapping="Wrap"
+                               Focusable="True"
+                               AutomationProperties.Name="Why omp is unavailable" />
+
+        </ScrollViewer>
+
+      </Grid>
+
+    </DockPanel>
+
+  </Border>
+
+</UserControl>

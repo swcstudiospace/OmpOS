@@ -1,0 +1,12 @@
+@namespace Autonogrammer.UI.Components.Blocks
+@using Autonogrammer.Contracts.Ui
+<details class="autonogrammer-block autonogrammer-unknown">
+    <summary>Unsupported content@(Block.OriginalKind is null ? null : $" ({Block.OriginalKind})")</summary>
+    <pre>@Block.Raw.GetRawText()</pre>
+</details>
+
+@code {
+    /// <summary>Gets the unknown block to render as a collapsed disclosure with its raw JSON.</summary>
+    [Parameter, EditorRequired]
+    public UnknownBlock Block { get; set; } = null!;
+}

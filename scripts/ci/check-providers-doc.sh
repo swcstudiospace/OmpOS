@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fails when docs/reference/providers.md is stale or the provider catalogue data is invalid. The page is generated from
-# src/OmpOS.Harness.Providers/Data/catalogue-*.json by scripts/docs/generate-providers-md.py; this wrapper runs its --check mode.
+# src/Autonogrammer.Harness.Providers/Data/catalogue-*.json by scripts/docs/generate-providers-md.py; this wrapper runs its --check mode.
 # Python 3 (standard library only) is required. No network access.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."

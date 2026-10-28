@@ -1,0 +1,118 @@
+/* Workbench regions: the view tabs in the top bar, the view panel, the panel states and the permanent demo banner. */
+
+.autonogrammer-topbar-tabs {
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+  margin-left: var(--autonogrammer-gap-12);
+}
+
+.autonogrammer-viewtabs {
+  border-bottom: 0;
+}
+
+.autonogrammer-viewtabs .autonogrammer-tab {
+  min-width: var(--autonogrammer-target-min);
+}
+
+.autonogrammer-view-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.autonogrammer-view-panel:focus {
+  outline: none;
+}
+
+/* Panel states (loading, error, empty, nothing selected): centred, headed by the brand mark on a quiet lavender disc, the mood of the
+   brand banner. The heading is a page title, so it takes the display face. */
+.autonogrammer-panel-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+  width: 100%;
+  max-width: 440px;
+  margin: 12vh auto var(--autonogrammer-gap-12);
+  padding: var(--autonogrammer-gap-12);
+  text-align: center;
+}
+
+.autonogrammer-state-mark {
+  display: block;
+  flex: none;
+  width: 96px;
+  height: 96px;
+  margin-bottom: var(--autonogrammer-gap-4);
+  background: var(--autonogrammer-tint-strong) url('../brand/autonogrammer-mark.svg') center / 44px 44px no-repeat;
+  border-radius: var(--autonogrammer-radius-pill);
+  box-shadow: 0 0 0 10px var(--autonogrammer-tint);
+}
+
+/* Dark surfaces take the lavender tile of the brand (docs/brand.md). The system theme repeats the rule under the media query. */
+:root[data-theme='dark'] .autonogrammer-state-mark,
+:root[data-theme='dark'] .autonogrammer-logo {
+  background-image: url('../brand/autonogrammer-mark-dark.svg');
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='system'] .autonogrammer-state-mark,
+  :root[data-theme='system'] .autonogrammer-logo {
+    background-image: url('../brand/autonogrammer-mark-dark.svg');
+  }
+}
+
+.autonogrammer-panel-state-heading {
+  margin: 0;
+  font-family: var(--autonogrammer-font-display);
+  font-size: var(--autonogrammer-font-size-display);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-display);
+}
+
+.autonogrammer-panel-state p {
+  margin: 0;
+  color: var(--autonogrammer-text-secondary);
+}
+
+/* The demo banner is permanent: no close control, and it sticks under the top bar so the page scrolling to follow a streaming reply never moves it out of sight.
+   It is a slim lavender bar with an info icon; its text holds 4.5:1 on the tint. */
+.autonogrammer-demo-banner {
+  position: sticky;
+  top: var(--autonogrammer-topbar-block);
+  z-index: var(--autonogrammer-z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--autonogrammer-gap-8);
+  min-height: var(--autonogrammer-control-height-small);
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-tint-strong);
+  border-bottom: 1px solid var(--autonogrammer-tint-border);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-small);
+  font-weight: var(--autonogrammer-font-weight-medium);
+  line-height: var(--autonogrammer-line-height-small);
+  text-align: center;
+}
+
+.autonogrammer-demo-banner-icon {
+  flex: none;
+  color: var(--autonogrammer-accent);
+}
+
+@media (max-width: 559.98px) {
+  .autonogrammer-topbar-tabs {
+    margin-left: 0;
+  }
+
+  .autonogrammer-viewtabs .autonogrammer-tab {
+    padding: 0 var(--autonogrammer-gap-8);
+  }
+
+  .autonogrammer-review-panel {
+    width: 100vw;
+  }
+}

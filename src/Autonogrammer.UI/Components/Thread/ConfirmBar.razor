@@ -1,0 +1,52 @@
+@namespace Autonogrammer.UI.Components.Thread
+<div class="autonogrammer-confirm-bar" role="group" aria-label="@AccessibleName" data-kind="@Kind">
+    <p class="autonogrammer-confirm-text" id="@_textId">@Message</p>
+    <div class="autonogrammer-confirm-actions">
+        <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--primary" aria-describedby="@_textId" @onclick="() => OnConfirm.InvokeAsync()">@ConfirmLabel</button>
+        <button type="button" class="autonogrammer-btn autonogrammer-btn--small" aria-describedby="@_textId" @ref="_cancelButton" @onclick="() => OnCancel.InvokeAsync()">@CancelLabel</button>
+    </div>
+</div>
+
+@code {
+    private static int s_nextId;
+
+    private readonly string _textId = "autonogrammer-confirm-" + System.Threading.Interlocked.Increment(ref s_nextId).ToString(System.Globalization.CultureInfo.InvariantCulture);
+    private ElementReference _cancelButton;
+
+    /// <summary>Gets the sentence that asks the question.</summary>
+    [Parameter, EditorRequired]
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>Gets the accessible name of the bar, for example <c>Confirm stop</c>.</summary>
+    [Parameter, EditorRequired]
+    public string AccessibleName { get; set; } = string.Empty;
+
+    /// <summary>Gets the kind of the bar (<c>stop</c> or <c>close</c>), exposed as a data attribute for styling and tests.</summary>
+    [Parameter]
+    public string Kind { get; set; } = "confirm";
+
+    /// <summary>Gets the label of the button that goes ahead.</summary>
+    [Parameter, EditorRequired]
+    public string ConfirmLabel { get; set; } = string.Empty;
+
+    /// <summary>Gets the label of the button that keeps things as they are. It takes the focus when the bar appears, so the safe choice is the default.</summary>
+    [Parameter, EditorRequired]
+    public string CancelLabel { get; set; } = string.Empty;
+
+    /// <summary>Gets the callback invoked when the user goes ahead.</summary>
+    [Parameter]
+    public EventCallback OnConfirm { get; set; }
+
+    /// <summary>Gets the callback invoked when the user keeps things as they are.</summary>
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _cancelButton.FocusAsync().ConfigureAwait(true);
+        }
+    }
+}

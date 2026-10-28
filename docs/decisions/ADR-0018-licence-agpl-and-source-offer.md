@@ -2,13 +2,13 @@
 
 - Status: Accepted 2026-10-27 with the default taken for OQ-93 (the owner may still change the identifier; see Open risks). Closes OQ-62.
 - Date: 2026-10-27
-- Owner: ompos-maintainers
-- Deciders: ompos-maintainers
-- Scope: which licence OmpOS carries, how the copyright and third-party notices are kept, how contributions are licensed, and how a running OmpOS makes the Corresponding Source available to its network users (milestone v0.15.0, phase 51, requirements PX-03 and PX-04). Does not cover the licences of the submodules `agent-swarm` and `agent-substrate` (OQ-102) or the clearance of the name "OmpOS".
+- Owner: autonogrammer-maintainers
+- Deciders: autonogrammer-maintainers
+- Scope: which licence Autonogrammer carries, how the copyright and third-party notices are kept, how contributions are licensed, and how a running Autonogrammer makes the Corresponding Source available to its network users (milestone v0.15.0, phase 51, requirements PX-03 and PX-04). Does not cover the licences of the submodules `agent-swarm` and `agent-substrate` (OQ-102) or the clearance of the name "Autonogrammer".
 
 ## Context
 
-OmpOS had no LICENSE file (OQ-62). The owner direction of 2026-10-27 asks for an "AGL 3.0" licence; no licence has that name, so it is read as the GNU Affero General Public License version 3 (OQ-93). The closest plugin, `claude-ultrathink`, is already `AGPL-3.0-or-later` (its LICENSE, `package.json` and README grant "either version 3 of the License, or (at your option) any later version"). OmpOS is also run as a hosted service (the ASP.NET Core API on Railway, the Blazor WebAssembly head in browsers), which is the case the AGPL's section 13 targets.
+Autonogrammer had no LICENSE file (OQ-62). The owner direction of 2026-10-27 asks for an "AGL 3.0" licence; no licence has that name, so it is read as the GNU Affero General Public License version 3 (OQ-93). The closest plugin, `claude-ultrathink`, is already `AGPL-3.0-or-later` (its LICENSE, `package.json` and README grant "either version 3 of the License, or (at your option) any later version"). Autonogrammer is also run as a hosted service (the ASP.NET Core API on Railway, the Blazor WebAssembly head in browsers), which is the case the AGPL's section 13 targets.
 
 Facts read for this record (research `docs/plans/v0.15.0-research/11-agpl-audit.md`, 2026-10-27):
 
@@ -50,7 +50,7 @@ The licence chosen is `AGPL-3.0-or-later`; text and wording: https://www.gnu.org
 
 ## Decision
 
-1. OmpOS is licensed under `AGPL-3.0-or-later`; `LICENSE` holds the canonical text and the SPDX expression is set once in `Directory.Build.props`. No project overrides it (`scripts/ci/check-licences.sh` fails when one does).
+1. Autonogrammer is licensed under `AGPL-3.0-or-later`; `LICENSE` holds the canonical text and the SPDX expression is set once in `Directory.Build.props`. No project overrides it (`scripts/ci/check-licences.sh` fails when one does).
 2. `THIRD-PARTY-NOTICES.md` is generated and checked for staleness in the gate; a package whose licence cannot be determined fails the generator.
 3. Fonts keep their `OFL.txt` next to the font files; a directory with font files and no `OFL.txt` fails the gate.
 4. Contributions are accepted under `AGPL-3.0-or-later` with a DCO sign-off and no CLA. A CLA is needed only for dual licensing, and none is planned.
@@ -64,7 +64,7 @@ Run by the orchestrator; nothing below was run when this record was written exce
 
 - `bash scripts/ci/check-licences.sh`: LICENSE length and SHA-256, notices freshness (`python3 scripts/legal/generate-third-party-notices.py --check`), font `OFL.txt` presence, plugin `package.json` licence, README, package metadata.
 - The source-offer endpoint and pages are verified by the tests of the agents that implement them (the API test of `GET /source` without credentials; the web and desktop About pages): see `docs/licensing.md` for the contract they must match.
-- `podman build -f deploy/api.Containerfile --build-arg OMPOS_REVISION="$(git rev-parse HEAD)" -t ompos-api:local .` then `podman inspect ompos-api:local` shows the four OCI labels and `/licenses` holds LICENSE, NOTICE, THIRD-PARTY-NOTICES.md, the omp LICENSE and the Bun notice.
+- `podman build -f deploy/api.Containerfile --build-arg AUTONOGRAMMER_REVISION="$(git rev-parse HEAD)" -t autonogrammer-api:local .` then `podman inspect autonogrammer-api:local` shows the four OCI labels and `/licenses` holds LICENSE, NOTICE, THIRD-PARTY-NOTICES.md, the omp LICENSE and the Bun notice.
 - Optional: `reuse lint` once the REUSE tool is installed (not available on the research host).
 
 ## Open risks
@@ -73,7 +73,7 @@ Run by the orchestrator; nothing below was run when this record was written exce
 - Ownership of all existing code by SWC Studio and the absence of third-party snippets in the git history are unverified; review before the first AGPL tag.
 - `agent-swarm` and `agent-substrate` have no licence (OQ-102); until that changes they are outside the source offer, and the private `agent-substrate` cannot be obtained by users of a public build.
 - `TextMateSharp.Grammars` embeds third-party grammars whose licences the package does not state; the packages' native-code notices are reproduced from the packages but not otherwise audited.
-- Two web icons (`favicon.png`, `icon-192.png`) have unknown provenance and the name "OmpOS" is not cleared as a trademark.
+- Two web icons (`favicon.png`, `icon-192.png`) have unknown provenance and the name "Autonogrammer" is not cleared as a trademark.
 - App-store terms (Google Play) may conflict with AGPL section 10; the Android build ships through GitHub Releases or F-Droid until that is read.
 - This record is engineering analysis, not legal advice; whether process boundaries (omp over ACP) count as aggregation is a legal judgement it does not make.
 
@@ -86,5 +86,5 @@ Run by the orchestrator; nothing below was run when this record was written exce
 
 ## Related
 
-- [ADR-0013](ADR-0013-plugin-isolation.md): plugin boundary; the licence table there names OmpOS as NOASSERTION and is superseded by this record.
+- [ADR-0013](ADR-0013-plugin-isolation.md): plugin boundary; the licence table there names Autonogrammer as NOASSERTION and is superseded by this record.
 - `docs/licensing.md`: the user and operator guide; `docs/plans/v0.15.0-research/11-agpl-audit.md`: the audit.

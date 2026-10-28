@@ -1,13 +1,13 @@
 using Avalonia;
 using Avalonia.Platform;
 
-namespace OmpOS.BrowserSpike;
+namespace Autonogrammer.BrowserSpike;
 
 /// <summary>Composition root of the ADR-0009 browser spike.</summary>
 internal static class Program
 {
     /// <summary>Environment variable that forces one <see cref="WebViewAdapterType"/> by name, for measuring a single engine.</summary>
-    internal const string AdapterOverrideVariable = "OMPOS_SPIKE_ADAPTER";
+    internal const string AdapterOverrideVariable = "AUTONOGRAMMER_SPIKE_ADAPTER";
 
     [STAThread]
     public static int Main(string[] args)

@@ -1,7 +1,7 @@
 # Lens 2: Boundaries and Security
 
-Repository: `/root/src/repos/ompos` at commit 59e9dd1 (branch feat/v0.9.2-hardening).
-Scope: tracked files under `src/`, `apps/`, `tests/`, `scripts/`, `.github/`, `bootstrap.sh`. `apps/OmpOS.Web/wwwroot/lib` and `bin/`/`obj/` excluded. Read-only audit; no builds, tests, or package commands were run.
+Repository: `/root/src/repos/autonogrammer` at commit 59e9dd1 (branch feat/v0.9.2-hardening).
+Scope: tracked files under `src/`, `apps/`, `tests/`, `scripts/`, `.github/`, `bootstrap.sh`. `apps/Autonogrammer.Web/wwwroot/lib` and `bin/`/`obj/` excluded. Read-only audit; no builds, tests, or package commands were run.
 
 Totals: 31 rows (High 1, Medium 6, Low 24). Row cap of 40 not reached.
 
@@ -9,35 +9,35 @@ Totals: 31 rows (High 1, Medium 6, Low 24). Row cap of 40 not reached.
 
 | file:line | QUALITY_BAR item | severity | disposition | evidence |
 |---|---|---|---|---|
-| apps/OmpOS.Web/Services/ApiBaseUrlResolver.cs:50-52 | Security | High | fix | `?apiBaseUrl=` accepts any https origin; Program.cs:17,24 send prompts and SSE there. Doc at :38-41 says otherwise. |
-| src/OmpOS.Sandbox/AgentOsProvider.cs:65,256 | Security | Medium | fix | Bearer token sent to any absolute URI; ctor (:59-62) checks only IsAbsoluteUri, so cleartext http:// is allowed. |
-| src/OmpOS.Harness.Acp/AcpStdioTransport.cs:247 | Boundaries | Medium | fix | Child stdout read by ReadLineAsync with no line cap (called at :108); ValidateJsonObject (:120) runs after buffering. |
-| src/OmpOS.EngineHost/RemoteEngineHost.cs:343 | Boundaries | Medium | fix | Remote SSE ReadLineAsync has no line cap; frame data grows in a StringBuilder; JSON parse at :417 has no size check. |
-| apps/OmpOS.Web/Services/SseParser.cs:43 | Boundaries | Medium | fix | `_lineBuffer` appends each chunk until a newline arrives; the parser has no max line or frame size. |
-| src/OmpOS.Sandbox/LocalPodmanComposeProvider.cs:139,503 | Security | Medium | fix | Compose file (incl. Spec.Environment, :733) in shared temp dir, default mode; siblings use owner-only. |
-| src/OmpOS.Harness.Workspace/SetupRunner.cs:36-51 | Security | Medium | fix | Repo .ompos/setup.json steps run with no consent; env names only syntax-checked (SetupFileReader.cs:92). |
-| src/OmpOS.Harness.Acp/AcpStdioTransport.cs:201 | Boundaries | Low | defer | Child stderr read by ReadLineAsync with no line cap; stderr is diagnostics only. |
-| src/OmpOS.Harness.Rpc/OmpRpcProcess.cs:237 | Boundaries | Low | defer | stderr ReadLineAsync has no line cap; only the tail count is bounded (:240). |
-| apps/OmpOS.Web/Services/ApiSessionClient.cs:37 | Boundaries | Low | defer | ReadFromJsonAsync on API bodies (also :50, :72; SseEventStream.cs:327) has no response size cap. |
-| src/OmpOS.Harness.Registry/RegistryReader.cs:28 | Boundaries | Low | defer | Whole local file read before TryParse, no size cap (RegistryWriter.cs:57 is the same). |
-| src/OmpOS.Harness.Herdr/HerdrSessionStore.cs:41 | Boundaries | Low | defer | Local store read with no size cap before deserialize (:54). |
-| src/OmpOS.Harness.Plugins/PluginStateStore.cs:42 | Boundaries | Low | defer | Local state read with no size cap before deserialize (:43). |
-| src/OmpOS.Native.Views/MainView.axaml.cs:633 | Boundaries | Low | defer | Path is contained by WorkspaceRoot.Resolve, but File.ReadAllText loads the whole file with no size cap. |
-| src/OmpOS.Native.Views/Views/Export/TranscriptExportView.axaml.cs:66 | Security | Low | accept | Writes to a user-typed path and overwrites silently; user-initiated desktop action. |
-| src/OmpOS.Harness.Acp/AcpStdioTransport.cs:189 | Security | Low | accept | Process.Start with ArgumentList, no shell, executable from config. Same at OmpRpcProcess.cs:67, OmpVersionProbe.cs:57. |
-| src/OmpOS.Harness.Terminal/TerminalGate.cs:106 | Security | Low | accept | Agent proposals wait for approval unless AutoRunEnabled, which defaults to false (TerminalSettings.cs:11). |
-| src/OmpOS.Harness.Terminal/TerminalGate.cs:256 | Security | Low | accept | Working directory resolved through WorkspacePath (symlink-aware); must be an existing directory inside the root. |
-| src/OmpOS.Harness.Acp/AcpAgentSession.cs:951 | Security | Low | accept | Agent fs/read and fs/write disabled unless FsRoot is set; containment check is separator-aware (:1014-1025). |
-| src/OmpOS.Harness.Worktrees/WorktreeManager.cs:274 | Security | Low | accept | Recursive delete of Path.Combine(_root, runId), reached only after WorktreeRunId.Validate (:121). |
-| src/OmpOS.Sessions.Postgres/PostgresSessionRepository.cs:45 | Security | Low | accept | 8 SQL literals joined with +; all constant text with @parameters. No interpolated SQL in src/. |
-| src/OmpOS.Sandbox/LocalPodmanComposeProvider.cs:133 | Security | Low | accept | Generated sandbox id checked by IsSafeId before it reaches a file path or argv. |
-| src/OmpOS.Sandbox/RailwaySwarmProvider.cs:38 | Security | Low | accept | Hard-coded https://backboard.railway.com endpoint; the only non-XAML URL literal in src/ .cs files. |
-| src/OmpOS.Harness.Plugins/PluginManifestSource.cs:22 | Boundaries | Low | accept | Manifest size checked (64 KiB) before ReadAllBytes; parser re-checks at PluginManifestParser.cs:40. |
-| src/OmpOS.Harness.Plugins/HookRunner.cs:94 | Security | Low | accept | Hook runs only when its command hash has recorded consent; otherwise reports AwaitingConsent. |
-| src/OmpOS.Harness.Workspace/WorkspaceFiles.cs:38 | Boundaries | Low | accept | Convention files (setup, modes) capped at 256 KiB before read; both loaders use this reader. |
-| src/OmpOS.Harness.Rpc/OmpRpcProcess.cs:114 | Boundaries | Low | accept | RPC stdout capped at 1 MiB per line; rpc_chunk reassembly capped at 64 MiB (RpcChunkAssembler.cs:112). |
-| src/OmpOS.Sandbox/PodmanSandboxCredential.cs:63 | Security | Low | accept | Credential staging file uses CreateNew with user-only mode (:70); Herdr store likewise (HerdrSessionStore.cs:254). |
-| tests/OmpOS.Sandbox.Tests/NonPodmanCredentialFailClosedTests.cs:20 | Security | Low | accept | Fixture secrets (sk_test_secret, railway-test-token). All 8 test secret-like hits are fixtures or assertions. |
+| apps/Autonogrammer.Web/Services/ApiBaseUrlResolver.cs:50-52 | Security | High | fix | `?apiBaseUrl=` accepts any https origin; Program.cs:17,24 send prompts and SSE there. Doc at :38-41 says otherwise. |
+| src/Autonogrammer.Sandbox/AgentOsProvider.cs:65,256 | Security | Medium | fix | Bearer token sent to any absolute URI; ctor (:59-62) checks only IsAbsoluteUri, so cleartext http:// is allowed. |
+| src/Autonogrammer.Harness.Acp/AcpStdioTransport.cs:247 | Boundaries | Medium | fix | Child stdout read by ReadLineAsync with no line cap (called at :108); ValidateJsonObject (:120) runs after buffering. |
+| src/Autonogrammer.EngineHost/RemoteEngineHost.cs:343 | Boundaries | Medium | fix | Remote SSE ReadLineAsync has no line cap; frame data grows in a StringBuilder; JSON parse at :417 has no size check. |
+| apps/Autonogrammer.Web/Services/SseParser.cs:43 | Boundaries | Medium | fix | `_lineBuffer` appends each chunk until a newline arrives; the parser has no max line or frame size. |
+| src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:139,503 | Security | Medium | fix | Compose file (incl. Spec.Environment, :733) in shared temp dir, default mode; siblings use owner-only. |
+| src/Autonogrammer.Harness.Workspace/SetupRunner.cs:36-51 | Security | Medium | fix | Repo .autonogrammer/setup.json steps run with no consent; env names only syntax-checked (SetupFileReader.cs:92). |
+| src/Autonogrammer.Harness.Acp/AcpStdioTransport.cs:201 | Boundaries | Low | defer | Child stderr read by ReadLineAsync with no line cap; stderr is diagnostics only. |
+| src/Autonogrammer.Harness.Rpc/OmpRpcProcess.cs:237 | Boundaries | Low | defer | stderr ReadLineAsync has no line cap; only the tail count is bounded (:240). |
+| apps/Autonogrammer.Web/Services/ApiSessionClient.cs:37 | Boundaries | Low | defer | ReadFromJsonAsync on API bodies (also :50, :72; SseEventStream.cs:327) has no response size cap. |
+| src/Autonogrammer.Harness.Registry/RegistryReader.cs:28 | Boundaries | Low | defer | Whole local file read before TryParse, no size cap (RegistryWriter.cs:57 is the same). |
+| src/Autonogrammer.Harness.Herdr/HerdrSessionStore.cs:41 | Boundaries | Low | defer | Local store read with no size cap before deserialize (:54). |
+| src/Autonogrammer.Harness.Plugins/PluginStateStore.cs:42 | Boundaries | Low | defer | Local state read with no size cap before deserialize (:43). |
+| src/Autonogrammer.Native.Views/MainView.axaml.cs:633 | Boundaries | Low | defer | Path is contained by WorkspaceRoot.Resolve, but File.ReadAllText loads the whole file with no size cap. |
+| src/Autonogrammer.Native.Views/Views/Export/TranscriptExportView.axaml.cs:66 | Security | Low | accept | Writes to a user-typed path and overwrites silently; user-initiated desktop action. |
+| src/Autonogrammer.Harness.Acp/AcpStdioTransport.cs:189 | Security | Low | accept | Process.Start with ArgumentList, no shell, executable from config. Same at OmpRpcProcess.cs:67, OmpVersionProbe.cs:57. |
+| src/Autonogrammer.Harness.Terminal/TerminalGate.cs:106 | Security | Low | accept | Agent proposals wait for approval unless AutoRunEnabled, which defaults to false (TerminalSettings.cs:11). |
+| src/Autonogrammer.Harness.Terminal/TerminalGate.cs:256 | Security | Low | accept | Working directory resolved through WorkspacePath (symlink-aware); must be an existing directory inside the root. |
+| src/Autonogrammer.Harness.Acp/AcpAgentSession.cs:951 | Security | Low | accept | Agent fs/read and fs/write disabled unless FsRoot is set; containment check is separator-aware (:1014-1025). |
+| src/Autonogrammer.Harness.Worktrees/WorktreeManager.cs:274 | Security | Low | accept | Recursive delete of Path.Combine(_root, runId), reached only after WorktreeRunId.Validate (:121). |
+| src/Autonogrammer.Sessions.Postgres/PostgresSessionRepository.cs:45 | Security | Low | accept | 8 SQL literals joined with +; all constant text with @parameters. No interpolated SQL in src/. |
+| src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:133 | Security | Low | accept | Generated sandbox id checked by IsSafeId before it reaches a file path or argv. |
+| src/Autonogrammer.Sandbox/RailwaySwarmProvider.cs:38 | Security | Low | accept | Hard-coded https://backboard.railway.com endpoint; the only non-XAML URL literal in src/ .cs files. |
+| src/Autonogrammer.Harness.Plugins/PluginManifestSource.cs:22 | Boundaries | Low | accept | Manifest size checked (64 KiB) before ReadAllBytes; parser re-checks at PluginManifestParser.cs:40. |
+| src/Autonogrammer.Harness.Plugins/HookRunner.cs:94 | Security | Low | accept | Hook runs only when its command hash has recorded consent; otherwise reports AwaitingConsent. |
+| src/Autonogrammer.Harness.Workspace/WorkspaceFiles.cs:38 | Boundaries | Low | accept | Convention files (setup, modes) capped at 256 KiB before read; both loaders use this reader. |
+| src/Autonogrammer.Harness.Rpc/OmpRpcProcess.cs:114 | Boundaries | Low | accept | RPC stdout capped at 1 MiB per line; rpc_chunk reassembly capped at 64 MiB (RpcChunkAssembler.cs:112). |
+| src/Autonogrammer.Sandbox/PodmanSandboxCredential.cs:63 | Security | Low | accept | Credential staging file uses CreateNew with user-only mode (:70); Herdr store likewise (HerdrSessionStore.cs:254). |
+| tests/Autonogrammer.Sandbox.Tests/NonPodmanCredentialFailClosedTests.cs:20 | Security | Low | accept | Fixture secrets (sk_test_secret, railway-test-token). All 8 test secret-like hits are fixtures or assertions. |
 | .github/workflows/ci.yml:10 | Security | Low | accept | Workflow token scoped with `permissions: contents: read`; no pull_request_target or secrets. usage found. |
 | scripts/test-services.sh:58 | Security | Low | accept | Passwords from openssl rand; env file chmod 600 (:84-85); passed to podman via env, not argv (:61). |
 
@@ -70,7 +70,7 @@ Every pattern below was run with the grep tool over the stated paths. Counts are
      - State or config files, no root: HerdrSessionStore.cs:41,226,267,285; PluginStateStore.cs:42,206,213,214,220; PluginManifestSource.cs:30 (size-checked); RegistryReader.cs:28; RegistryWriter.cs:57,183; SystemRegistryFileSystem.cs:30,33; ProcessTree.cs:93,140 and ProcessRunner.cs:665,756 (read /proc only).
      - User-typed path: TranscriptExportView.axaml.cs:66 (Low finding, accepted).
      - Other: OpenShellProvider.cs:208 reads /proc/self/cgroup. Fine.
-   - apps/OmpOS.Web/Services/, apps/OmpOS.Native/, scripts/: 0 hits.
+   - apps/Autonogrammer.Web/Services/, apps/Autonogrammer.Native/, scripts/: 0 hits.
    - tests/: not enumerated. Observed hits are fixture writes or deletes under temp or test repo dirs (RunWorktreeIsolationTests.cs:35,107,219; HarnessBarePathReadinessCheckTests.cs:22,25,35).
 6. `(?i)(password|secret|api[_-]?key|token|bearer)\s*[:=]\s*"`, over src/, apps/, tests/, scripts/, .github/, bootstrap.sh: **13 hits** (src 1, tests 8, scripts 4, .github 0).
    - src (1): RailwaySwarmProvider.cs:36 `RedactedToken = "[REDACTED]"`, a sentinel, not a secret.
@@ -84,8 +84,8 @@ Every pattern below was run with the grep tool over the stated paths. Counts are
 9. `AllowInsecure|Insecure|verify\s*=\s*false`, over src/, apps/, tests/, scripts/, bootstrap.sh, .github/: **0 hits**.
 
 Added scans (boundary and entry-point checks):
-- HTTP routes (`\.Map(Get|Post|...)|MapHub|MapControllers|MapGroup|app\.Use`) over src/ and apps/OmpOS.Web/: **0 server routes**. The only hits are A2UI mapping helpers (`A2uiBlockMapping.Map`) and a test-only MCP fixture server. No Kestrel host exists under src/ or apps/.
-- Auth, CORS, body-size, and rate-limit names over src/ and apps/OmpOS.Web/: **0 hits**.
+- HTTP routes (`\.Map(Get|Post|...)|MapHub|MapControllers|MapGroup|app\.Use`) over src/ and apps/Autonogrammer.Web/: **0 server routes**. The only hits are A2UI mapping helpers (`A2uiBlockMapping.Map`) and a test-only MCP fixture server. No Kestrel host exists under src/ or apps/.
+- Auth, CORS, body-size, and rate-limit names over src/ and apps/Autonogrammer.Web/: **0 hits**.
 - Stdin or console readers (`OpenStandardInput|Console\.In|Console\.ReadLine`): **0 hits**. Line readers exist for ACP, RPC, SSE, and remote engine output only.
 - Shell or argv risk (`UseShellExecute = true`, `/bin/sh`, `bash -c`, `cmd`): **0 hits** in src/ and apps/. Every process start found builds argv with ArgumentList.
 - Scheme checks: CompletionSettings.cs:38-40 (http/https only); McpClientConnector.cs:58 (http/https only); ApiBaseUrlResolver.cs:50-62 (http only for loopback, any https); AgentOsProvider.cs:59 (IsAbsoluteUri only, so cleartext http is allowed).
@@ -115,14 +115,14 @@ Not confirmed (no cap or validation found in code I read):
 - Editor file open (MainView.axaml.cs:633): path contained, size uncapped. Low finding.
 - Repo setup file execution (SetupRunner.cs:36-51): Medium finding. Unwired today: only tests call it.
 - Stdin: no reader exists under src/ or apps/.
-- services/OmpOS.Api (the HTTP API that the web client calls): outside the stated audit scope. Its routes, auth, and body limits were not audited.
+- services/Autonogrammer.Api (the HTTP API that the web client calls): outside the stated audit scope. Its routes, auth, and body limits were not audited.
 
 ## 3. Gaps
 
-- Boundaries: the HTTP API host is outside this lens's scope. `services/OmpOS.Api` is excluded by the stated scope (only src/, apps/, tests/, scripts/, .github/, bootstrap.sh). Its endpoints, authentication, and request limits are unverified here. Recommend a lens covering services/.
-- Boundaries: MCP client configuration sourcing (src/OmpOS.Harness.Mcp), automation definitions (src/OmpOS.Harness.Automations), and Dragonfly coordination inputs (src/OmpOS.Coordination.Dragonfly) were not traced to their external sources. Only their scheme and size checks were grepped.
-- Security: CompletionClient request and response handling (src/OmpOS.Harness.Completion) was checked only for scheme enforcement, not for response bounds or credential handling.
-- Security: the approval policy in the native composition root (apps/OmpOS.Native/Program.cs, ComposeProductionEngine) and the hook consent UI were not traced end to end.
+- Boundaries: the HTTP API host is outside this lens's scope. `services/Autonogrammer.Api` is excluded by the stated scope (only src/, apps/, tests/, scripts/, .github/, bootstrap.sh). Its endpoints, authentication, and request limits are unverified here. Recommend a lens covering services/.
+- Boundaries: MCP client configuration sourcing (src/Autonogrammer.Harness.Mcp), automation definitions (src/Autonogrammer.Harness.Automations), and Dragonfly coordination inputs (src/Autonogrammer.Coordination.Dragonfly) were not traced to their external sources. Only their scheme and size checks were grepped.
+- Security: CompletionClient request and response handling (src/Autonogrammer.Harness.Completion) was checked only for scheme enforcement, not for response bounds or credential handling.
+- Security: the approval policy in the native composition root (apps/Autonogrammer.Native/Program.cs, ComposeProductionEngine) and the hook consent UI were not traced end to end.
 - Security: dependency vulnerabilities and secret storage at rest (keychain, user config) are outside what greps can check. The dotnet analyzers cannot run under this lens's rules.
 - Tests: `JsonSerializer.Deserialize` and file-operation hits under tests/ were not enumerated one by one. Observed hits were fixtures.
 - Scans: the grep tool truncated some result pages. Missing hits were recovered with narrower path reruns; any remaining gap would be in tests/ only.

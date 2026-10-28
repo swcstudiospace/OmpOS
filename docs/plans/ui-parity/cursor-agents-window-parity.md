@@ -1,8 +1,8 @@
-# OmpOS visual parity with the Cursor Agents window, set in the Greptile faces
+# Autonogrammer visual parity with the Cursor Agents window, set in the Greptile faces
 
 Status: design specification, DESIGN-1. Written 2026-10-26. No source, test or csproj file was changed to produce it.
 Audience: engineers implementing the look. Behaviour is built; this document specifies only appearance, density, tokens, control styles, layout and the order to land them.
-Direction (user, 2026-10-26): OmpOS is a Cursor desktop clone on the omp engine, set in DM Sans, Anybody and Space Mono. The default Cursor-style Agents window is the whole product. Beyond Cursor parity there are two additions: expanded model-provider settings and a Kanban tab. There is no other panel.
+Direction (user, 2026-10-26): Autonogrammer is a Cursor desktop clone on the omp engine, set in DM Sans, Anybody and Space Mono. The default Cursor-style Agents window is the whole product. Beyond Cursor parity there are two additions: expanded model-provider settings and a Kanban tab. There is no other panel.
 
 Marking. Every fact about Cursor or Avalonia carries a source row in Appendix A (read 2026-10-26 unless a different date is shown). Anything not backed by an opened source is marked **[INFERENCE]**. Numbers in the contrast tables were computed on 2026-10-26 with the WCAG 2.x relative-luminance formula, the same formula `ThemeContrastTests` uses.
 
@@ -16,12 +16,12 @@ The five "before" screenshots are in `docs/runbooks/evidence/ui-parity-2026-10-2
 |---|---|---|---|
 | R1 | Buttons are white boxes with black outlines; hover is invisible; "Tools" toggle is a grey block (01, 02) | Fluent's `Button` and `ToggleButton` control themes set Background, BorderBrush and Foreground on `ContentPresenter#PART_ContentPresenter` per state from resource keys (`ButtonBackground`, `ButtonBackgroundPointerOver`, ...). `App.axaml` sets `Background` on the `Button` itself, which the presenter overrides on `:pointerover`, and it never overrides the keys. | Override the Fluent keys per theme variant (section 3.2). Do not fight the template with presenter selectors. |
 | R2 | "Skip to conversation" box is always visible in the top left (all five) | `SkipLink` is a normal docked `Button` in `MainView.axaml` row 0. | Make it an overlay that is transparent until focused (section 4.2). |
-| R3 | Kanban column headers and the Kanban empty heading are thin, small, low contrast (04, 05) | `OmpOS.Font.Display` points at `Anybody.ttf`. That file is a variable font whose `fvar` default instance is `wght=100` (Thin) and `wdth=100`. Avalonia cannot change variable axes (Appendix A, rows A14 to A16), so `FontWeight=SemiBold` is ignored and the face is drawn Thin. The headers are also 13 px. I confirmed the axes with fontTools on the shipped file: `wght` min 100, **default 100**, max 900; `OS/2.usWeightClass` 100. | Ship static instances (section 2.4). Anybody only at 20 px and above. |
-| R4 | Light theme only, no dark theme at runtime | `App.axaml` has `RequestedThemeVariant="Light"`; no setting changes it. Dark values already exist in `OmpOSTokens.axaml`. | Dark default, System/Light/Dark setting (section 2.6). |
-| R5 | Controls are 44 px high, the rail row is 64 px, text is 15 px; the screen looks like a form, not a tool | `OmpOS.Size.TargetMin` is 44 and is set as a local `MinHeight` on almost every control; `Font.Size.Body` is 15. Local values beat any style, so density cannot be reached by styles alone. | Density contract change (section 2.5, open question O1). |
+| R3 | Kanban column headers and the Kanban empty heading are thin, small, low contrast (04, 05) | `Autonogrammer.Font.Display` points at `Anybody.ttf`. That file is a variable font whose `fvar` default instance is `wght=100` (Thin) and `wdth=100`. Avalonia cannot change variable axes (Appendix A, rows A14 to A16), so `FontWeight=SemiBold` is ignored and the face is drawn Thin. The headers are also 13 px. I confirmed the axes with fontTools on the shipped file: `wght` min 100, **default 100**, max 900; `OS/2.usWeightClass` 100. | Ship static instances (section 2.4). Anybody only at 20 px and above. |
+| R4 | Light theme only, no dark theme at runtime | `App.axaml` has `RequestedThemeVariant="Light"`; no setting changes it. Dark values already exist in `AutonogrammerTokens.axaml`. | Dark default, System/Light/Dark setting (section 2.6). |
+| R5 | Controls are 44 px high, the rail row is 64 px, text is 15 px; the screen looks like a form, not a tool | `Autonogrammer.Size.TargetMin` is 44 and is set as a local `MinHeight` on almost every control; `Font.Size.Body` is 15. Local values beat any style, so density cannot be reached by styles alone. | Density contract change (section 2.5, open question O1). |
 | R6 | The composer is a plain text box with two square buttons and a permanent grey hint sentence (02) | `ComposerView.axaml`: `TextBox`, 44 px `Button`s, `HintLine` always visible above 720 px window height. | Rounded composer card; hint becomes a tooltip (section 4.6). |
 | R7 | The pipeline strip, header chips, notice and "Latest:" line stack into four bands before any message (02) | Each of `ThreadHeaderView`, `PanelNoticeView`, `PipelineStripView` is its own 44 px-minimum band. | One 40 px header, one 28 px strip line (section 4.5). |
-| R8 | Diff lines would draw in a literal font stack `Cascadia Code,Consolas,Menlo,monospace` | `DiffReviewView.axaml` does not use `OmpOS.Font.Mono`. | Use the token (section 5, change 14). |
+| R8 | Diff lines would draw in a literal font stack `Cascadia Code,Consolas,Menlo,monospace` | `DiffReviewView.axaml` does not use `Autonogrammer.Font.Mono`. | Use the token (section 5, change 14). |
 | R9 | Blocks built in code (markdown, A2UI, inline completion) and the terminal cursor read colour once at construction | `BlockTokens.Get` and `OmpTerminalView.ApplyCursorColour` read the resource for `ActualThemeVariant` when built. A runtime theme switch leaves them stale. | Rebuild or re-read on `ActualThemeVariantChanged` (section 2.6). |
 
 ---
@@ -43,9 +43,9 @@ Cursor's marketing and docs captures are Light. The **default dark theme languag
 
 What the language comes down to: dark neutral surfaces separated by hairlines, not by shadows; compact 12 to 13 px UI text; 6 to 8 px control radii; 12 px composer radius; muted secondary rows; one accent; small status glyphs instead of badges; keyboard hints in a quiet mono face.
 
-### 1.2 What "Cursor-like" means for OmpOS
+### 1.2 What "Cursor-like" means for Autonogrammer
 
-| Keep from Cursor | Meaning for OmpOS |
+| Keep from Cursor | Meaning for Autonogrammer |
 |---|---|
 | Hierarchy | Selected rail row, thread header, transcript, composer; everything else is quiet. Same as `46-UI-SPEC.md`, "Hierarchy". |
 | Density | Controls 28 or 32 px, UI text 13 px, small text 12 px, rail rows 48 px (two lines). |
@@ -54,7 +54,7 @@ What the language comes down to: dark neutral surfaces separated by hairlines, n
 | Message shape | User prompt as a card; agent output as prose; tool calls as one-line muted rows; edits as compact diff cards. |
 | Composer | Rounded card, model chip, round send and stop, hint as a tooltip. |
 
-| Deliberately kept from OmpOS | Why |
+| Deliberately kept from Autonogrammer | Why |
 |---|---|
 | WCAG 2.2 AA contrast, enumerated by `ThemeContrastTests` | Every new colour role is checked in section 2.2 and the test classification is extended in section 2.3. |
 | Focus indicator: 2 px `AccentPurple` border, `FocusAdorner` null, in both themes | `KeyboardFocusTests`, `FocusVisibleToggleTests`, `KanbanBoardKeyboardTests` assert it. |
@@ -64,19 +64,19 @@ What the language comes down to: dark neutral surfaces separated by hairlines, n
 | Greptile faces | DM Sans for UI and prose, Anybody only for large display headings (>= 20 px, SemiBold or heavier), Space Mono for code, terminal chrome, ids and keyboard hints. |
 | Phase 46 and 39 contracts | Status vocabulary, accessible names, Kanban column set, group order in the rail. Only dimensions and colours change. |
 
-What we do not copy: Cursor's logo, wording of marketing copy, its blue accent, the Marketplace row, cloud icons, or anything in the sidebar that has no OmpOS behaviour (no "Marketplace", no cloud-run marker).
+What we do not copy: Cursor's logo, wording of marketing copy, its blue accent, the Marketplace row, cloud icons, or anything in the sidebar that has no Autonogrammer behaviour (no "Marketplace", no cloud-run marker).
 
 ---
 
 ## 2. Token set
 
-All tokens live in `src/OmpOS.Native.Views/Themes/OmpOSTokens.axaml`. Colour roles stay inside the `Light` and `Dark` theme dictionaries; sizes, fonts and spacing stay outside them (as `PanelMarkupTests` requires of sizes).
+All tokens live in `src/Autonogrammer.Native.Views/Themes/AutonogrammerTokens.axaml`. Colour roles stay inside the `Light` and `Dark` theme dictionaries; sizes, fonts and spacing stay outside them (as `PanelMarkupTests` requires of sizes).
 
 ### 2.1 Colour roles (hex values)
 
 Existing roles keep their names. New roles are marked NEW. "Role use" is the classification `ThemeContrastTests` needs (section 2.3).
 
-| Role (`OmpOS.Color.*`) | Light | Dark | Role use | Where it is drawn |
+| Role (`Autonogrammer.Color.*`) | Light | Dark | Role use | Where it is drawn |
 |---|---|---|---|---|
 | `SurfaceSunken` NEW | `#f0f0ee` | `#141414` | Background | Window top bar, rail, code blocks, Kanban columns, terminal body, settings navigation |
 | `Surface` | `#fafaf9` (was `#ffffff`) | `#181818` (was `#18181b`) | Background | Thread, settings content, window |
@@ -178,7 +178,7 @@ All three states keep the label at 4.5:1 or more.
 
 ### 2.4 Typography, in the Greptile faces
 
-Tokens: `OmpOS.Font.Family` (DM Sans), `OmpOS.Font.Display` (Anybody), `OmpOS.Font.Mono` (Space Mono). Fallbacks stay as they are.
+Tokens: `Autonogrammer.Font.Family` (DM Sans), `Autonogrammer.Font.Display` (Anybody), `Autonogrammer.Font.Mono` (Space Mono). Fallbacks stay as they are.
 
 **Faces and weights actually used**
 
@@ -188,7 +188,7 @@ Tokens: `OmpOS.Font.Family` (DM Sans), `OmpOS.Font.Display` (Anybody), `OmpOS.Fo
 | Anybody | 600 only | Display headings of 20 px and above: empty-state hero (24), settings page title (20). Never below 20 px. Never Thin or Light. |
 | Space Mono | 400, 700 | Code, diff, terminal, model and provider identifiers, task and graph ids, endpoint text, keyboard hints (`Ctrl+N`) |
 
-**Size scale (token names are `OmpOS.Font.Size.*` and `OmpOS.Font.LineHeight.*`)**
+**Size scale (token names are `Autonogrammer.Font.Size.*` and `Autonogrammer.Font.LineHeight.*`)**
 
 | Token | Size / line height | Weight | Role |
 |---|---|---|---|
@@ -203,7 +203,7 @@ Tokens: `OmpOS.Font.Family` (DM Sans), `OmpOS.Font.Display` (Anybody), `OmpOS.Fo
 
 Markdown headings inside prose: H1 18/24 600, H2 16/22 600, H3 14/21 600, all DM Sans. Inline code: Space Mono 12 on `Selected`, radius 4, padding 4,1.
 
-Weight tokens: `OmpOS.Font.Weight.Regular` (Normal), `Semibold` (SemiBold) stay; add `OmpOS.Font.Weight.Medium` (Medium = 500).
+Weight tokens: `Autonogrammer.Font.Weight.Regular` (Normal), `Semibold` (SemiBold) stay; add `Autonogrammer.Font.Weight.Medium` (Medium = 500).
 
 Letter spacing: none anywhere (0). Cursor-like compactness comes from size, not tracking. No uppercase group labels: sentence case 12 px 500 `TextSecondary`.
 
@@ -218,20 +218,20 @@ Letter spacing: none anywhere (0). Cursor-like compactness comes from size, not 
 Token values change from a file URI to a folder URI so Avalonia loads every weight of the family:
 
 ```xml
-<FontFamily x:Key="OmpOS.Font.Family">avares://OmpOS.Native.Views/Assets/Fonts/DMSans#DM Sans, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
-<FontFamily x:Key="OmpOS.Font.Display">avares://OmpOS.Native.Views/Assets/Fonts/Anybody#Anybody, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
-<FontFamily x:Key="OmpOS.Font.Mono">avares://OmpOS.Native.Views/Assets/Fonts/SpaceMono#Space Mono, Menlo, Consolas, Liberation Mono, monospace</FontFamily>
+<FontFamily x:Key="Autonogrammer.Font.Family">avares://Autonogrammer.Native.Views/Assets/Fonts/DMSans#DM Sans, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
+<FontFamily x:Key="Autonogrammer.Font.Display">avares://Autonogrammer.Native.Views/Assets/Fonts/Anybody#Anybody, Helvetica Neue, Helvetica, Arial, sans-serif</FontFamily>
+<FontFamily x:Key="Autonogrammer.Font.Mono">avares://Autonogrammer.Native.Views/Assets/Fonts/SpaceMono#Space Mono, Menlo, Consolas, Liberation Mono, monospace</FontFamily>
 ```
 
-`Assets/Fonts/*` must be an `AvaloniaResource` glob (check `OmpOS.Native.Views.csproj`; it already includes the three files). Same commit updates `tests/OmpOS.Native.Tests/Theme/FontManifest.txt` (one row per shipped TTF, with the derivation noted for Anybody), `FontResourceTests` (`FontFiles`, `Families`, `FamilyNotices`: one row per shipped file; the "bytes are the upstream bytes" summary now reads "or the recorded derivation"), and `ThemeContrastTests.TheFontTokensNameTheBundledFaces` (`ShouldStartWith` the folder URIs above). Add the new OFL files exactly as the current ones are shipped.
+`Assets/Fonts/*` must be an `AvaloniaResource` glob (check `Autonogrammer.Native.Views.csproj`; it already includes the three files). Same commit updates `tests/Autonogrammer.Native.Tests/Theme/FontManifest.txt` (one row per shipped TTF, with the derivation noted for Anybody), `FontResourceTests` (`FontFiles`, `Families`, `FamilyNotices`: one row per shipped file; the "bytes are the upstream bytes" summary now reads "or the recorded derivation"), and `ThemeContrastTests.TheFontTokensNameTheBundledFaces` (`ShouldStartWith` the folder URIs above). Add the new OFL files exactly as the current ones are shipped.
 
 Risk **[INFERENCE]**: whether Avalonia's embedded collection groups `DM Sans Medium` (nameID 1) under the family `DM Sans` depends on the platform font stack reading nameID 16. Acceptance check below proves it on the headless platform and by screenshot on Windows or macOS. Fallback if a platform fails: rename nameID 1 to `DM Sans` and nameID 2 to the style with fontTools (I tested this recipe on a derived SemiBold: nameID 1 `DM Sans`, nameID 2 `SemiBold`, `usWeightClass` 600, no `fvar`).
 
-Acceptance (change 1): a headless test measures the same string in DM Sans at weights 400 and 600 and asserts the advance widths differ and that `FontManager` resolves `OmpOS.Font.Display` at SemiBold to a face whose weight is 600; after it, screenshot 05 shows "No sessions yet" at 24 px, solid, not Thin.
+Acceptance (change 1): a headless test measures the same string in DM Sans at weights 400 and 600 and asserts the advance widths differ and that `FontManager` resolves `Autonogrammer.Font.Display` at SemiBold to a face whose weight is 600; after it, screenshot 05 shows "No sessions yet" at 24 px, solid, not Thin.
 
 ### 2.5 Radii, borders, spacing, sizes, elevation, motion
 
-**Radius** (`OmpOS.Radius.*`, `CornerRadius`)
+**Radius** (`Autonogrammer.Radius.*`, `CornerRadius`)
 
 | Token | Value | Use |
 |---|---|---|
@@ -244,7 +244,7 @@ Acceptance (change 1): a headless test measures the same string in DM Sans at we
 
 Also set Fluent resources `ControlCornerRadius` = 6 and `OverlayCornerRadius` = 10 (section 3.2).
 
-**Borders.** `OmpOS.Border.Hairline` NEW = `Thickness` 1 (all hairlines and card outlines). `OmpOS.Size.FocusBorder` stays 2.
+**Borders.** `Autonogrammer.Border.Hairline` NEW = `Thickness` 1 (all hairlines and card outlines). `Autonogrammer.Size.FocusBorder` stays 2.
 
 **Spacing** (`Thickness`, with matching `x:Double` gaps; existing names unchanged)
 
@@ -263,7 +263,7 @@ Also set Fluent resources `ControlCornerRadius` = 6 and `OverlayCornerRadius` = 
 
 | Token | Value | Replaces or adds | Test impact |
 |---|---|---|---|
-| `Size.TargetMin` | **32** (was 44) | Single place that sets the control height of every view that writes `MinHeight={DynamicResource OmpOS.Size.TargetMin}` | See O1: 26 assertions `ShouldBeGreaterThanOrEqualTo(44)` in 13 test files |
+| `Size.TargetMin` | **32** (was 44) | Single place that sets the control height of every view that writes `MinHeight={DynamicResource Autonogrammer.Size.TargetMin}` | See O1: 26 assertions `ShouldBeGreaterThanOrEqualTo(44)` in 13 test files |
 | `Size.ControlHeight` NEW | 32 | Buttons, inputs, composer buttons, settings controls | none |
 | `Size.ControlHeightSm` NEW | 28 | Toolbar buttons, tabs, segmented, rail nav rows, chips that are buttons | none |
 | `Size.IconButton` NEW | 28 | Square icon buttons (close, settings gear, copy) | none |
@@ -287,8 +287,8 @@ Also set Fluent resources `ControlCornerRadius` = 6 and `OverlayCornerRadius` = 
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `OmpOS.Shadow.Popup` | `0 8 24 0 #29000000` | `0 8 24 0 #99000000` | Flyouts, menus, combo drop-down, tooltips, dragged Kanban card |
-| `OmpOS.Shadow.Card` | `0 1 2 0 #14000000` | `0 0 0 0 #00000000` | Composer card and message cards (Light only) |
+| `Autonogrammer.Shadow.Popup` | `0 8 24 0 #29000000` | `0 8 24 0 #99000000` | Flyouts, menus, combo drop-down, tooltips, dragged Kanban card |
+| `Autonogrammer.Shadow.Card` | `0 1 2 0 #14000000` | `0 0 0 0 #00000000` | Composer card and message cards (Light only) |
 
 **[INFERENCE]** `<BoxShadows x:Key="...">` as a theme-dictionary resource compiles in Avalonia 12.1.4; if it does not, declare the two shadows as `x:String` and convert with `BoxShadows.Parse` in `BlockTokens`.
 
@@ -296,7 +296,7 @@ Also set Fluent resources `ControlCornerRadius` = 6 and `OverlayCornerRadius` = 
 
 ### 2.6 Dark by default, and the theme choice
 
-1. `apps/OmpOS.Native/App.axaml`: `RequestedThemeVariant="Dark"` (was `Light`). This is the value before settings load, so the first frame is dark.
+1. `apps/Autonogrammer.Native/App.axaml`: `RequestedThemeVariant="Dark"` (was `Light`). This is the value before settings load, so the first frame is dark.
 2. Settings > General gets a **Theme** row with three choices, in this order: `System`, `Light`, `Dark`. Default `Dark`. It follows the existing Motion row pattern: a `ThemePreference` enum next to `MotionPreference`, a `Theme` value in `GeneralSettingsValues`, `GeneralPage.SetTheme` and `GeneralPage.SelectedThemeOption`, draft until `SaveAsync` (the page already supports draft and save). Row labels, descriptions and the three option names are new constants in `SettingsCopy` (the views hold no literal copy).
 3. Applying it: on save and at start-up after the value is read, `Application.Current.RequestedThemeVariant = preference switch { System => ThemeVariant.Default, Light => ThemeVariant.Light, Dark => ThemeVariant.Dark }`. `ThemeVariant.Default` follows the operating system. Persist in the same store as the motion setting (the `IGeneralSettingsSource` already persists `GeneralSettingsValues`).
 4. Live switching. Controls bound with `DynamicResource` follow the variant automatically. Three places do not and must re-read on `ActualThemeVariantChanged` (R9): `Blocks/BlockTokens.Get` call sites that build controls in code (`MarkdownAstBuilder`, `A2uiSurfaceView`, `FileEditBlockView`, `BlockControls`, `InlineCompletionBox`) rebuild their content or bind with `DynamicResource` through `Control.Bind(property, resourceKey)` instead of one-time `Get`; `OmpTerminalView.ApplyCursorColour` and the terminal palette (section 2.7) re-apply.
@@ -333,14 +333,14 @@ These hexes are terminal data, not UI colour roles. They live in code next to `O
 
 ### 3.1 Where it lives and how it composes
 
-* New file `src/OmpOS.Native.Views/Themes/OmpOSControls.axaml` (`<Styles>` root). It holds every selector in this section. `App.axaml` includes it after `<FluentTheme DensityStyle="Compact" />` through `<StyleInclude Source="avares://OmpOS.Native.Views/Themes/OmpOSControls.axaml" />`. `DensityStyle="Compact"` is a real `FluentTheme` property (A15); its `Compact.xaml` sets `ComboBoxMinHeight` 24, `ButtonPadding` 6,4, `TabItemMinHeight` 28, `ListBoxItemPadding` 4,2 and similar. Our tokens then override the values we care about.
-* The Fluent key aliases of section 3.2 are `StaticResource` entries inside the `Light` and `Dark` theme dictionaries of `OmpOSTokens.axaml`, the same idiom Fluent uses in its own `FluentControlResources.xaml` (A15). They are not `OmpOS.Color.*` keys and not `SolidColorBrush` elements, so `ThemeContrastTests.ReadVariant` ignores them.
-* `PanelStyles.axaml` and `KanbanStyles.axaml` stay, but their copies of button, chip and focus chrome are deleted once `OmpOSControls.axaml` supplies them (clean cutover: `Button.primary` and its presenter duplicates, `Button.destructive`, `Button.chip-button`, `Button.strip`, `Border.chip`, the `Window.reduced-motion` blocks in `App.axaml`). Class names stay: **no existing `Classes=` value or `x:Name` is renamed**.
-* The shared focus style in `App.axaml` (the `*:focus-visible` blocks) moves into `OmpOSControls.axaml` unchanged in effect: `BorderBrush = AccentPurple`, `BorderThickness = FocusBorder` (2), `FocusAdorner = null`, on `Button`, `ToggleButton`, `TextBox`, `ListBox`, `ListBoxItem`, `ScrollViewer`, plus the new `TabStripItem`, `ComboBox`, `CheckBox`, `RadioButton`, `ToggleSwitch`, `MenuItem`.
+* New file `src/Autonogrammer.Native.Views/Themes/AutonogrammerControls.axaml` (`<Styles>` root). It holds every selector in this section. `App.axaml` includes it after `<FluentTheme DensityStyle="Compact" />` through `<StyleInclude Source="avares://Autonogrammer.Native.Views/Themes/AutonogrammerControls.axaml" />`. `DensityStyle="Compact"` is a real `FluentTheme` property (A15); its `Compact.xaml` sets `ComboBoxMinHeight` 24, `ButtonPadding` 6,4, `TabItemMinHeight` 28, `ListBoxItemPadding` 4,2 and similar. Our tokens then override the values we care about.
+* The Fluent key aliases of section 3.2 are `StaticResource` entries inside the `Light` and `Dark` theme dictionaries of `AutonogrammerTokens.axaml`, the same idiom Fluent uses in its own `FluentControlResources.xaml` (A15). They are not `Autonogrammer.Color.*` keys and not `SolidColorBrush` elements, so `ThemeContrastTests.ReadVariant` ignores them.
+* `PanelStyles.axaml` and `KanbanStyles.axaml` stay, but their copies of button, chip and focus chrome are deleted once `AutonogrammerControls.axaml` supplies them (clean cutover: `Button.primary` and its presenter duplicates, `Button.destructive`, `Button.chip-button`, `Button.strip`, `Border.chip`, the `Window.reduced-motion` blocks in `App.axaml`). Class names stay: **no existing `Classes=` value or `x:Name` is renamed**.
+* The shared focus style in `App.axaml` (the `*:focus-visible` blocks) moves into `AutonogrammerControls.axaml` unchanged in effect: `BorderBrush = AccentPurple`, `BorderThickness = FocusBorder` (2), `FocusAdorner = null`, on `Button`, `ToggleButton`, `TextBox`, `ListBox`, `ListBoxItem`, `ScrollViewer`, plus the new `TabStripItem`, `ComboBox`, `CheckBox`, `RadioButton`, `ToggleSwitch`, `MenuItem`.
 
 ### 3.2 Fluent resource aliases (same list in `Light` and `Dark`)
 
-Key names are read from Avalonia's `Fluent` theme sources on master (A15). Tokens on the right are `OmpOS.Color.*` unless stated. Write each as `<StaticResource x:Key="ButtonBackground" ResourceKey="OmpOS.Color.SurfaceRaised" />`. A transparent fill cannot be a `OmpOS.Color.*` element, because `EveryColourRoleIsAHexColour` reads every `OmpOS.Color.*` element as a hex role. Define it once outside the variants as `<SolidColorBrush x:Key="OmpOS.Brush.Transparent" Color="Transparent" />` and alias to it.
+Key names are read from Avalonia's `Fluent` theme sources on master (A15). Tokens on the right are `Autonogrammer.Color.*` unless stated. Write each as `<StaticResource x:Key="ButtonBackground" ResourceKey="Autonogrammer.Color.SurfaceRaised" />`. A transparent fill cannot be a `Autonogrammer.Color.*` element, because `EveryColourRoleIsAHexColour` reads every `Autonogrammer.Color.*` element as a hex role. Define it once outside the variants as `<SolidColorBrush x:Key="Autonogrammer.Brush.Transparent" Color="Transparent" />` and alias to it.
 
 | Fluent key (state suffix list) | Alias target |
 |---|---|
@@ -354,7 +354,7 @@ Key names are read from Avalonia's `Fluent` theme sources on master (A15). Token
 | `ButtonBorderBrushPointerOver`, `...Pressed` | `BorderStrong` |
 | `AccentButtonBackground`, `...PointerOver`, `...Pressed`, `...Disabled` | `AccentPurple` (the `primary` class is ours, but a stray `Classes="accent"` stays on palette) |
 | `AccentButtonForeground` (all states) | `AccentPurpleOn` |
-| `AccentButtonBorderBrush` (all states) | `OmpOS.Brush.Transparent` |
+| `AccentButtonBorderBrush` (all states) | `Autonogrammer.Brush.Transparent` |
 | `ToggleButtonBackground`, `...PointerOver`, `...Pressed`, `...Disabled` | `SurfaceRaised`, `Hover`, `SurfaceActive`, `SurfaceRaised` |
 | `ToggleButtonBackgroundChecked`, `...CheckedPointerOver`, `...CheckedPressed`, `...CheckedDisabled` | `Selected`, `Selected`, `SurfaceActive`, `Selected` |
 | `ToggleButtonForeground` (all unchecked and checked states) | `TextPrimary` (Disabled: `TextSecondary`) |
@@ -381,14 +381,14 @@ Key names are read from Avalonia's `Fluent` theme sources on master (A15). Token
 | `SystemControlHighlightListMediumBrush` (ListBoxItem pressed) | `SurfaceActive` |
 | `SystemControlHighlightListAccentLowBrush`, `...MediumBrush` (selected, selected hover) | `Selected` |
 | `SystemControlHighlightListAccentHighBrush` (selected pressed) | `SurfaceActive` |
-| `TabItemHeaderBackgroundUnselected`, `...Selected`, `...SelectedPointerOver`, `...SelectedPressed` | `OmpOS.Brush.Transparent` |
+| `TabItemHeaderBackgroundUnselected`, `...Selected`, `...SelectedPointerOver`, `...SelectedPressed` | `Autonogrammer.Brush.Transparent` |
 | `TabItemHeaderBackgroundUnselectedPointerOver` / `...UnselectedPressed` | `Hover` / `SurfaceActive` |
 | `TabItemHeaderForegroundUnselected`, `...UnselectedPointerOver`, `...UnselectedPressed`, `...Disabled` | `TextSecondary`, `TextPrimary`, `TextPrimary`, `TextSecondary` |
 | `TabItemHeaderForegroundSelected`, `...SelectedPointerOver`, `...SelectedPressed` | `TextPrimary` |
 | `TabItemHeaderSelectedPipeFill` | `AccentPurple` |
 | `TabItemHeaderFontSize` (double), `TabItemHeaderThemeFontWeight` | `13`, `Medium` |
 | `TabStripItemMinHeight` (double), `TabStripItemPipeThickness` | `28`, `2` |
-| `ScrollBarBackground`, `ScrollBarTrackFill` | `OmpOS.Brush.Transparent` |
+| `ScrollBarBackground`, `ScrollBarTrackFill` | `Autonogrammer.Brush.Transparent` |
 | `ScrollBarBackgroundPointerOver`, `ScrollBarTrackFillPointerOver` | `Hover` |
 | `ScrollBarThumbBackgroundColor` and the thumb fill at rest | `BorderStrong` (Fluent defines the thumb through `ScrollBarThumbBackgroundColor`; alias the matching brush) |
 | `ScrollBarThumbFillPointerOver`, `ScrollBarThumbFillPressed` | `TextSecondary`, `TextPrimary` |
@@ -399,11 +399,11 @@ Key names are read from Avalonia's `Fluent` theme sources on master (A15). Token
 | `FlyoutPresenterBackground`, `FlyoutBorderThemeBrush` | `SurfaceRaised`, `Border` |
 | `FlyoutBorderThemePadding`, `FlyoutContentThemePadding` | `12`, `0` |
 | `MenuFlyoutPresenterBackground`, `MenuFlyoutPresenterBorderBrush` | `SurfaceRaised`, `Border` |
-| `MenuFlyoutItemBackground` (rest) / `...PointerOver` / `...Pressed` | `OmpOS.Brush.Transparent` / `Hover` / `SurfaceActive` |
+| `MenuFlyoutItemBackground` (rest) / `...PointerOver` / `...Pressed` | `Autonogrammer.Brush.Transparent` / `Hover` / `SurfaceActive` |
 | `MenuFlyoutItemForeground`, `...PointerOver`, `...Pressed` | `TextPrimary` |
 | `MenuFlyoutItemForegroundDisabled`, `MenuFlyoutItemKeyboardAcceleratorTextForeground` (all states) | `TextSecondary` |
 | `MenuFlyoutItemThemePaddingNarrow` | `8,4` |
-| `ToggleSwitchFillOff` (track fill) | `OmpOS.Brush.Transparent` |
+| `ToggleSwitchFillOff` (track fill) | `Autonogrammer.Brush.Transparent` |
 | `ToggleSwitchFillOn`, `...PointerOver`, `...Pressed` | `AccentPurple` |
 | `ToggleSwitchKnobFillOff` | `TextSecondary` |
 | `ToggleSwitchKnobFillOn` | `AccentPurpleOn` |
@@ -417,7 +417,7 @@ Key names are read from Avalonia's `Fluent` theme sources on master (A15). Token
 
 Suffix completeness: for `ToggleSwitch` (outer stroke keys), `RadioButton` and `CheckBox` (per-state keys) the table names the keys that carry the roles. Every other `...PointerOver`, `...Pressed`, `...Disabled`, `...Checked` variant of a key in the table maps to the same role as its rest key unless the table says otherwise. Complete the list by reading the control's own XAML under `Avalonia.Themes.Fluent/Controls` at the pinned Avalonia version; the acceptance test below walks the keys a control actually requests and fails on any that still resolve to Fluent's grey.
 
-Acceptance (change 3): a headless `ControlStyleTests` creates one of each control in each variant, forces the pseudo-classes (`:pointerover`, `:pressed`, `:disabled`, `:checked`) and asserts the presenter background, foreground and border resolve to the roles in sections 3.3 to 3.12 (compare `SolidColorBrush.Color` with the variant's role). A second test fails if any `ButtonBackground*`, `TextControlBackground*`, `ToggleButtonBackground*` key still resolves to a Fluent value (`Application.TryGetResource` returns a brush that is not one of the OmpOS roles).
+Acceptance (change 3): a headless `ControlStyleTests` creates one of each control in each variant, forces the pseudo-classes (`:pointerover`, `:pressed`, `:disabled`, `:checked`) and asserts the presenter background, foreground and border resolve to the roles in sections 3.3 to 3.12 (compare `SolidColorBrush.Color` with the variant's role). A second test fails if any `ButtonBackground*`, `TextControlBackground*`, `ToggleButtonBackground*` key still resolves to a Fluent value (`Application.TryGetResource` returns a brush that is not one of the Autonogrammer roles).
 
 ### 3.3 Button
 
@@ -447,7 +447,7 @@ Single-line height 32 (`sm` 28); multiline `MinHeight` 32. Radius 6. Font `Label
 | Disabled | `Surface` | `Border` 1 | `Opacity` 0.5 |
 | Invalid | `SurfaceRaised` | `StatusError` 1 (2 when focused), plus an adjacent error text with a glyph | class `invalid` NEW |
 | Read-only | `Surface` | `Border` | text `TextPrimary` |
-| Mono variant | same | same | class `mono` NEW: `FontFamily=OmpOS.Font.Mono`, size `Mono` 12 (API keys, URLs, ids) |
+| Mono variant | same | same | class `mono` NEW: `FontFamily=Autonogrammer.Font.Mono`, size `Mono` 12 (API keys, URLs, ids) |
 | Search variant | same, with an inner-left 14 px magnifier glyph (`TextSecondary`) | | class `search` NEW (the rail filter, model search, settings provider search) |
 
 ### 3.5 ComboBox
@@ -479,7 +479,7 @@ The top-level tabs are a `TabStrip` of `TabStripItem` (Agents, Kanban). Style cl
 | Disabled | opacity 0.5 |
 | Focus-visible | `AccentPurple` 2 around the item |
 
-Generic `TabControl` (used by none of the OmpOS views today) follows the same item style.
+Generic `TabControl` (used by none of the Autonogrammer views today) follows the same item style.
 
 ### 3.8 ListBox and ListBoxItem rows
 
@@ -506,7 +506,7 @@ The agent rail row is a specialisation (section 4.3): `ListBoxItem` inside `Agen
 | `Border.chip-count` NEW | Count pill | Min width 20, height 18, radius `Pill`, bg `Selected`, text `Small` `TextSecondary`. Kanban column counts. |
 | `Border.kbd` NEW | Keyboard hint | Radius 4, 1 px `Border`, padding `4,1`, bg `Hover`, text Space Mono `Small` 12 `TextSecondary`. |
 | `Border.badge-diff` NEW | Added/removed counts | No fill; `+n` in `StatusSuccess`, `-n` in `StatusError`, Space Mono 12. The signs make colour redundant. |
-| Status dot | not used | OmpOS keeps glyph shapes from the 46 Glyph Table; no plain coloured dots. |
+| Status dot | not used | Autonogrammer keeps glyph shapes from the 46 Glyph Table; no plain coloured dots. |
 
 ### 3.10 Scrollbars
 
@@ -538,7 +538,7 @@ The agent rail row is a specialisation (section 4.3): `ListBoxItem` inside `Agen
 
 `Button`: none, `primary`, `ghost`, `icon`, `round`, `sm`, `destructive`, `skip-link`, `chip-button`, `strip`. `ToggleButton`: none, `segment`, `nav`. `RadioButton`: none, `segment`. `TextBox`: none, `mono`, `search`, `invalid`. `TextBlock`: `muted`, `error` (exist), `small` NEW (Small 12), `strong` NEW (weight 500), `heading` NEW (Heading 16 / 600), `display` NEW (Anybody Display 24 / 600), `display-sm` NEW (20), `mono` NEW, `tone-primary|secondary|success|warning|error` and `Path.tone-*` (exist), `Path.running-pulse` (exists). `Border`: `chip`, `chip-flat`, `chip-count`, `kbd`, `card` NEW, `card-sunken` NEW, `banner` NEW, `popup` NEW, `kanban-column`, `kanban-card` (exist), `skeleton` (exists). `TabStrip.top-tabs` NEW.
 
-`TextBlock.display` carries the font family token and a hard floor: `FontSize` 24, `FontWeight` SemiBold; `display-sm` 20. There is no `display` class below 20 px by construction, and a markup test greps `FontFamily="{DynamicResource OmpOS.Font.Display}"` in `Views/**` and asserts the same element's `FontSize` is not below 20 and the element's `FontWeight` is not Thin or Light (see change 14 acceptance).
+`TextBlock.display` carries the font family token and a hard floor: `FontSize` 24, `FontWeight` SemiBold; `display-sm` 20. There is no `display` class below 20 px by construction, and a markup test greps `FontFamily="{DynamicResource Autonogrammer.Font.Display}"` in `Views/**` and asserts the same element's `FontSize` is not below 20 and the element's `FontWeight` is not Thin or Light (see change 14 acceptance).
 
 ---
 
@@ -550,7 +550,7 @@ All measurements in device-independent pixels. The default window is 1280 x 800 
 
 ```
 +----------------------------------------------------------------------------------------------+
-| TOP BAR 40  [inset] ompos        [ Agents | Kanban ]                                          |  SurfaceSunken, 1 px Border below
+| TOP BAR 40  [inset] autonogrammer        [ Agents | Kanban ]                                          |  SurfaceSunken, 1 px Border below
 +------------------+-------------------------------------------------+-------------------------+
 | RAIL 280         | THREAD (Surface)                                                           |
 | SurfaceSunken    | header 40: glyph Title ............ [steering] [Close]                      |
@@ -579,7 +579,7 @@ Widths: below 1200 px the rail is 240; from 1200 px it is 280 (existing `wide` c
 * Tabs: `TopTabs` as 3.7, centred. `TopTabs.IsVisible` logic (only with a Kanban board) is unchanged; when it is hidden the strip column collapses and the workspace label stays.
 * Insets (custom title bar variant, see O2): macOS left 78 (traffic lights); Windows right 138 (caption buttons) **[INFERENCE: read from `Window.WindowDecorationMargin` at run time instead of hard-coding; the property was not opened in the Avalonia 12.1.4 source]**. Without extended client area (Linux, fallback) both insets are 8 and the native title bar sits above the top bar.
 * Custom title bar variant, for `MainWindow.axaml`: `ExtendClientAreaToDecorationsHint="True"`, `ExtendClientAreaChromeHints="PreferSystemChrome"`, `ExtendClientAreaTitleBarHeightHint="40"` on macOS and Windows only (set in code from `OperatingSystem.IsMacOS() || IsWindows()` so Linux keeps its native frame). The top bar background handles `PointerPressed` (left button) with `BeginMoveDrag(e)` and double-click toggles maximise, skipping presses that land on the tabs or the workspace label's interactive children. **[INFERENCE]**: Avalonia may already drag from the extended area; verify per platform before adding the handler.
-* Window title text stays `OmpOS` (`MainWindow.axaml`); it is not drawn in the bar.
+* Window title text stays `Autonogrammer` (`MainWindow.axaml`); it is not drawn in the bar.
 
 **Skip link** (R2). `SkipLink` stays the first focusable element and keeps its `x:Name`, `Content`, `AutomationProperties.Name` and `Click` handler. It leaves the `DockPanel` flow:
 
@@ -599,8 +599,8 @@ Widths: below 1200 px the rail is 240; from 1200 px it is 280 (existing `wide` c
   <Setter Property="ZIndex" Value="100" />
   <Setter Property="Opacity" Value="0" />
   <Setter Property="IsHitTestVisible" Value="False" />
-  <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceRaised}" />
-  <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.BorderStrong}" />
+  <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceRaised}" />
+  <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.BorderStrong}" />
 </Style>
 <Style Selector="Button.skip-link:focus">
   <Setter Property="Opacity" Value="1" />
@@ -687,10 +687,10 @@ Transcript scroller: `VerticalScrollBarVisibility` Auto, scroll bar per 3.10. A 
 The composer is one rounded card. The card is the `PromptInput` `TextBox` itself, so its focus ring and its `x:Name` stay what the tests expect, with the footer overlaid inside the same box:
 
 ```xml
-<Border x:Name="ComposerFrame" Margin="16,8,16,16" MaxWidth="{DynamicResource OmpOS.Size.ThreadContentMaxWidth}">
+<Border x:Name="ComposerFrame" Margin="16,8,16,16" MaxWidth="{DynamicResource Autonogrammer.Size.ThreadContentMaxWidth}">
   <Panel>
     <TextBox x:Name="PromptInput" Classes="composer" AcceptsReturn="True" TextWrapping="Wrap"
-             MinHeight="{DynamicResource OmpOS.Size.ComposerMinHeight}" MaxHeight="{DynamicResource OmpOS.Size.ComposerMaxHeight}"
+             MinHeight="{DynamicResource Autonogrammer.Size.ComposerMinHeight}" MaxHeight="{DynamicResource Autonogrammer.Size.ComposerMaxHeight}"
              ... existing placeholder, AutomationProperties.* ... />
     <Grid x:Name="ComposerFooter" VerticalAlignment="Bottom" Margin="8,0,8,8" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
       <!-- mode chip, ModelPicker chip, spacer, PendingLabel-capable area, FollowUpButton, SendButton, StopButton -->
@@ -711,7 +711,7 @@ The composer is one rounded card. The card is the `PromptInput` `TextBox` itself
 | `PendingLabel` | `Small` 12 `TextSecondary`, inside the footer's free column |
 | `HintLine` | `IsVisible=false`. Its text becomes the `ToolTip.Tip` of `PromptInput` and of `SendButton`; the text also stays in `AutomationProperties.HelpText` (exists). Keyboard hints inside the tooltip render as `Border.kbd`. The shell's `HintVisible` logic keeps working and now defaults to false; the 720 px rule is no longer needed. |
 | `Suggestions` (inline completion box) | Appears above the card as a `Border.popup` list, rows 28 |
-| Slash palette (`SlashPaletteView`, SLASH-1) | Opens above the card when the draft starts with `/` and closes when it no longer does and on Escape (it stays closed until the draft changes). When the typed name matches no command it says so in one line, with the nearest names. Rows are the commands omp advertises in its `available_commands_update` (name in Space Mono with the `/`, input hint, description in muted `Small`, a small `omp` source tag), at most 8 rows tall (`MaxHeight` 8 x `ControlHeightSm`), the rest scrolls. A chat session registers no OmpOS entry: the shipped catalogue (`side`) has no handler wired, so it is not listed (the model merges catalogue entries for when one is wired). Up/Down move the highlight, Tab and a plain Enter complete the name into the draft (Enter with no listed match sends), Escape closes; the count line is a polite live region (`SlashPaletteCopy`). Choosing a row only completes the name: omp runs the command when the prompt is sent. Tests: `SlashPalette/*` (Native.Tests), `SlashPaletteEngineCommandsTests`, `AcpAvailableCommandsTests`. |
+| Slash palette (`SlashPaletteView`, SLASH-1) | Opens above the card when the draft starts with `/` and closes when it no longer does and on Escape (it stays closed until the draft changes). When the typed name matches no command it says so in one line, with the nearest names. Rows are the commands omp advertises in its `available_commands_update` (name in Space Mono with the `/`, input hint, description in muted `Small`, a small `omp` source tag), at most 8 rows tall (`MaxHeight` 8 x `ControlHeightSm`), the rest scrolls. A chat session registers no Autonogrammer entry: the shipped catalogue (`side`) has no handler wired, so it is not listed (the model merges catalogue entries for when one is wired). Up/Down move the highlight, Tab and a plain Enter complete the name into the draft (Enter with no listed match sends), Escape closes; the count line is a polite live region (`SlashPaletteCopy`). Choosing a row only completes the name: omp runs the command when the prompt is sent. Tests: `SlashPalette/*` (Native.Tests), `SlashPaletteEngineCommandsTests`, `AcpAvailableCommandsTests`. |
 
 Tab order is unchanged except where the model chip sits (between prompt and send, as the model-control work places it). Min height 72, grows with text to 220, then the text scrolls.
 
@@ -732,7 +732,7 @@ Tab order is unchanged except where the model chip sits (between prompt and send
 
 * Frame: the whole view sits in `Border` radius 8, 1 px `Border`, margin `0,0,0,8`, clip; body bg `SurfaceSunken`.
 * Status bar (28 high, bg `SurfaceRaised`, 1 px `Border` below, padding `10,0`): `StatusText` left (`Small` 12, glyph 14 by status), then `RestartButton` (`ghost sm`, word kept) and `CloseButton` (`icon sm` X glyph; accessible name `Close omp terminal` unchanged; tooltip shows `Close`). `StatusText` stays a polite live region.
-* Output: `TerminalControl` `FontFamily=OmpOS.Font.Mono`, `FontSize` `MonoTerminal` 13, bg `SurfaceSunken`, fg `TextPrimary`, margin 8, palette per 2.7.
+* Output: `TerminalControl` `FontFamily=Autonogrammer.Font.Mono`, `FontSize` `MonoTerminal` 13, bg `SurfaceSunken`, fg `TextPrimary`, margin 8, palette per 2.7.
 * Unavailable panel: `ScrollViewer` padding 16, `SelectableTextBlock` Space Mono 12 `TextPrimary`, preceded by a Warning glyph and a `Label` 13/600 heading.
 * Steer composer below: section 4.7 (`TerminalSteerView`).
 
@@ -743,7 +743,7 @@ Tab order is unchanged except where the model chip sits (between prompt and send
 | Part | Spec |
 |---|---|
 | Column | bg `SurfaceSunken`, radius `Radius.Column` 10, padding 8, border 2 transparent (kept; drop highlight and focus use it). Drop target (`drop-target`): border `AccentPurple` 2 and bg `Hover`. |
-| Column header | Row 28: column name `Label` 13 weight 600 `TextPrimary` in **DM Sans** (the Anybody header class `kanban-column-header` is changed to `FontFamily=OmpOS.Font.Family`, size `Label`, weight 600, no wrap), then `Border.chip-count` with the card count, then flexible space. Header text stays one `TextBlock` so the code-behind that builds it keeps working. |
+| Column header | Row 28: column name `Label` 13 weight 600 `TextPrimary` in **DM Sans** (the Anybody header class `kanban-column-header` is changed to `FontFamily=Autonogrammer.Font.Family`, size `Label`, weight 600, no wrap), then `Border.chip-count` with the card count, then flexible space. Header text stays one `TextBlock` so the code-behind that builds it keeps working. |
 | Empty column text | `Small` 12 `TextSecondary`, centred in a dashed `BorderStrong` 1 px outline for Backlog and Archived (the drop targets: "Drop a card here" from the existing copy), plain muted text elsewhere ("No tasks"). |
 | Card | Outer `Border#Frame` keeps the transparent 2 px ring border (asserted by `KanbanBoardKeyboardTests`); inside it a new `Border.card` (bg `SurfaceRaised`, 1 px `Border`, radius 8, padding `10,8`, `Shadow.Card`). Hover: inner bg `Hover`. Focus-visible: `Frame` border `AccentPurple` 2 (existing). Margin `0,0,0,8`. |
 | Card line 1 | `TitleText` `Label` 13 weight 600, wraps to two lines max (ellipsis), `KindTag` `chip` (outlined) right (`Chat`, `Terminal`). |
@@ -798,7 +798,7 @@ These open in the thread region under the tool header (4.5). They pick up the co
 
 | View | Change |
 |---|---|
-| `DiffReviewView` | Hunk heading `Label` 13/600 with a `Border.badge-diff`; line rows Space Mono 12/18 through `OmpOS.Font.Mono` (the literal `Cascadia Code,Consolas,...` stack is removed); added lines bg `DiffAdded`, removed `DiffRemoved`, with a sign column (`+` or `-`); `Accept` is `primary sm`, `Reject` is secondary `sm`; `ResultBox` is `TextBox.mono`, `MaxHeight` 220 (unchanged). |
+| `DiffReviewView` | Hunk heading `Label` 13/600 with a `Border.badge-diff`; line rows Space Mono 12/18 through `Autonogrammer.Font.Mono` (the literal `Cascadia Code,Consolas,...` stack is removed); added lines bg `DiffAdded`, removed `DiffRemoved`, with a sign column (`+` or `-`); `Accept` is `primary sm`, `Reject` is secondary `sm`; `ResultBox` is `TextBox.mono`, `MaxHeight` 220 (unchanged). |
 | `EditorView`, `InlineEditView`, `InlineCompletionBox` | Editor body bg `SurfaceSunken`, Space Mono 12; inline completion is a `Border.popup` list (3.11). |
 | `WorkspaceTreeView`, `WorkspaceSearchView` | Generic rows (3.8), `TextBox.search`, match text in Mono 12. |
 | `McpToolsView`, `HooksView`, `AgentsView`, `WorkspaceConventionsView`, `TranscriptExportView`, `TranscriptSearchView`, `SideChatListView`, `RunControlsView` | Setting-row and generic-row layouts from 4.11 and 3.8; buttons per 3.3; no new behaviour. |
@@ -814,12 +814,12 @@ The **visual evidence set** for every view step: re-take screenshots 01 to 05 at
 
 | # | Priority | Change | Files | Acceptance check | Tests updated in the same commit |
 |---|---|---|---|---|---|
-| 1 | P0 | Static font instances and folder URIs (2.4) | `src/OmpOS.Native.Views/Assets/Fonts/**` (add 3 DM Sans, 1 Anybody, 1 Space Mono Bold, their OFL files; remove the two variable files), `Themes/OmpOSTokens.axaml` (three `FontFamily` values), `OmpOS.Native.Views.csproj` if the resource glob is per file | Headless: DM Sans 400 vs 600 widths differ; `OmpOS.Font.Display` at SemiBold resolves a weight-600 face. Screenshot 05: "No sessions yet" solid. | `Theme/FontManifest.txt`, `Theme/FontResourceTests.cs` (`FontFiles`, `Families`, `FamilyNotices`), `ThemeContrastTests.TheFontTokensNameTheBundledFaces` |
-| 2 | P0 | New colour roles and values (2.1), new size, radius, spacing, shadow, weight tokens (2.5); `Body` 15 -> 14, `Heading` 18 -> 16, `Label` stays 13; `TextBlock` default size -> `Label` | `Themes/OmpOSTokens.axaml`, `apps/OmpOS.Native/App.axaml` (`TextBlock` style) | `ThemeContrastTests` pass with the classification of 2.3 (it is the contrast table in executable form); `PanelMarkupTests` token theory passes | `ThemeContrastTests` (2.3), `AgentPanel/Views/PanelMarkupTests` rows for `SessionRowMinHeight` 48, `ChipHeight` 20, `ThreadContentMaxWidth` 760. Do **not** change `TargetMin` yet. Interim look: views that used `SurfaceRaised` for bands render white until steps 5 to 11; this is accepted. |
-| 3 | P0 | Fluent aliases and the control library (3.1 to 3.13); delete the superseded button, chip and focus chrome from `App.axaml` and `PanelStyles.axaml`; `FluentTheme DensityStyle="Compact"` | `Themes/OmpOSTokens.axaml` (aliases), new `Themes/OmpOSControls.axaml`, `apps/OmpOS.Native/App.axaml`, `Views/AgentPanel/PanelStyles.axaml`, `Views/Kanban/KanbanStyles.axaml` | New `ControlStyleTests` (3.2 acceptance) in both variants; existing focus tests still pass (2 px `AccentPurple`, `FocusAdorner` null); screenshots show styled buttons, toggles, inputs with no layout shift | none broken; add `ControlStyleTests` |
-| 4 | P0 | Dark default, theme setting, live re-read (2.6) | `apps/OmpOS.Native/App.axaml` (`RequestedThemeVariant="Dark"`), `src/OmpOS.Presentation/Settings/GeneralPage.cs`, `GeneralSettingsValues.cs`, `IGeneralSettingsSource.cs`, `SettingsCopy.cs`, the head's source implementation, `Views/Blocks/BlockTokens.cs` and its callers, `Views/Terminal/OmpTerminalView.axaml.cs` | `ThemePreferenceTests` (default Dark; Light, System, Dark apply; persisted value survives restart in the source); markdown block and terminal recolour on switch | tests for `GeneralPage` extended |
-| 5 | P1 | Skip link overlay, top bar, window chrome (4.2) | `MainView.axaml` (root `Panel`, `TopBar`), `MainWindow.axaml`, `MainWindow.axaml.cs` (platform chrome, drag), `Themes/OmpOSControls.axaml` (`skip-link`) | Skip link: opacity 0 at rest, 1 on focus, still first in tab order, still activates; screenshots 01 to 05 have no box; top bar 40 px | `ShellHarness`-based tests keep passing; add `SkipLinkVisibilityTests` |
-| 6 | P1 | Density (2.5): `TargetMin` 44 -> 32; every view keeps its `MinHeight={DynamicResource OmpOS.Size.TargetMin}` so one value flips it | `Themes/OmpOSTokens.axaml`; tests only | Rail, header, composer and Kanban show 32 px controls; the WCAG 2.5.8 AA target size (24 x 24) holds for every interactive control (new `DensityTests`: every `Button`, `ToggleButton`, `TextBox`, `TabStripItem`, `ComboBox` in a shell and a Kanban harness has `Bounds` at least 24 x 24; every text button and input has `MinHeight` at least the `TargetMin` token) | **Owner decision O1 first.** Change the 26 assertions `ShouldBeGreaterThanOrEqualTo(44)` in 13 files to a named `MinimumTarget = 24` constant (WCAG 2.5.8 AA) in a shared test helper: `AgentPanel/Shell/AgentPanelTerminalSessionTests` (3), `AgentPanel/Shell/AgentPanelToolsTests` (2), `AgentPanel/Views/AgentRailViewTests` (2), `ComposerViewPanelTests` (3), `ConfirmBarViewTests` (2), `PanelStateViewTests` (1), `PipelineStripViewTests` (2), `PipelineTabViewTests` (1), `ThreadHeaderViewTests` (2), `Kanban/KanbanBoardKeyboardTests` (2), `KanbanBoardViewStateTests` (2), `KanbanSteerFlyoutTests` (2), `ModelPicker/ModelPickerViewTests` (2); retitle the doc comments that say 44 px. |
+| 1 | P0 | Static font instances and folder URIs (2.4) | `src/Autonogrammer.Native.Views/Assets/Fonts/**` (add 3 DM Sans, 1 Anybody, 1 Space Mono Bold, their OFL files; remove the two variable files), `Themes/AutonogrammerTokens.axaml` (three `FontFamily` values), `Autonogrammer.Native.Views.csproj` if the resource glob is per file | Headless: DM Sans 400 vs 600 widths differ; `Autonogrammer.Font.Display` at SemiBold resolves a weight-600 face. Screenshot 05: "No sessions yet" solid. | `Theme/FontManifest.txt`, `Theme/FontResourceTests.cs` (`FontFiles`, `Families`, `FamilyNotices`), `ThemeContrastTests.TheFontTokensNameTheBundledFaces` |
+| 2 | P0 | New colour roles and values (2.1), new size, radius, spacing, shadow, weight tokens (2.5); `Body` 15 -> 14, `Heading` 18 -> 16, `Label` stays 13; `TextBlock` default size -> `Label` | `Themes/AutonogrammerTokens.axaml`, `apps/Autonogrammer.Native/App.axaml` (`TextBlock` style) | `ThemeContrastTests` pass with the classification of 2.3 (it is the contrast table in executable form); `PanelMarkupTests` token theory passes | `ThemeContrastTests` (2.3), `AgentPanel/Views/PanelMarkupTests` rows for `SessionRowMinHeight` 48, `ChipHeight` 20, `ThreadContentMaxWidth` 760. Do **not** change `TargetMin` yet. Interim look: views that used `SurfaceRaised` for bands render white until steps 5 to 11; this is accepted. |
+| 3 | P0 | Fluent aliases and the control library (3.1 to 3.13); delete the superseded button, chip and focus chrome from `App.axaml` and `PanelStyles.axaml`; `FluentTheme DensityStyle="Compact"` | `Themes/AutonogrammerTokens.axaml` (aliases), new `Themes/AutonogrammerControls.axaml`, `apps/Autonogrammer.Native/App.axaml`, `Views/AgentPanel/PanelStyles.axaml`, `Views/Kanban/KanbanStyles.axaml` | New `ControlStyleTests` (3.2 acceptance) in both variants; existing focus tests still pass (2 px `AccentPurple`, `FocusAdorner` null); screenshots show styled buttons, toggles, inputs with no layout shift | none broken; add `ControlStyleTests` |
+| 4 | P0 | Dark default, theme setting, live re-read (2.6) | `apps/Autonogrammer.Native/App.axaml` (`RequestedThemeVariant="Dark"`), `src/Autonogrammer.Presentation/Settings/GeneralPage.cs`, `GeneralSettingsValues.cs`, `IGeneralSettingsSource.cs`, `SettingsCopy.cs`, the head's source implementation, `Views/Blocks/BlockTokens.cs` and its callers, `Views/Terminal/OmpTerminalView.axaml.cs` | `ThemePreferenceTests` (default Dark; Light, System, Dark apply; persisted value survives restart in the source); markdown block and terminal recolour on switch | tests for `GeneralPage` extended |
+| 5 | P1 | Skip link overlay, top bar, window chrome (4.2) | `MainView.axaml` (root `Panel`, `TopBar`), `MainWindow.axaml`, `MainWindow.axaml.cs` (platform chrome, drag), `Themes/AutonogrammerControls.axaml` (`skip-link`) | Skip link: opacity 0 at rest, 1 on focus, still first in tab order, still activates; screenshots 01 to 05 have no box; top bar 40 px | `ShellHarness`-based tests keep passing; add `SkipLinkVisibilityTests` |
+| 6 | P1 | Density (2.5): `TargetMin` 44 -> 32; every view keeps its `MinHeight={DynamicResource Autonogrammer.Size.TargetMin}` so one value flips it | `Themes/AutonogrammerTokens.axaml`; tests only | Rail, header, composer and Kanban show 32 px controls; the WCAG 2.5.8 AA target size (24 x 24) holds for every interactive control (new `DensityTests`: every `Button`, `ToggleButton`, `TextBox`, `TabStripItem`, `ComboBox` in a shell and a Kanban harness has `Bounds` at least 24 x 24; every text button and input has `MinHeight` at least the `TargetMin` token) | **Owner decision O1 first.** Change the 26 assertions `ShouldBeGreaterThanOrEqualTo(44)` in 13 files to a named `MinimumTarget = 24` constant (WCAG 2.5.8 AA) in a shared test helper: `AgentPanel/Shell/AgentPanelTerminalSessionTests` (3), `AgentPanel/Shell/AgentPanelToolsTests` (2), `AgentPanel/Views/AgentRailViewTests` (2), `ComposerViewPanelTests` (3), `ConfirmBarViewTests` (2), `PanelStateViewTests` (1), `PipelineStripViewTests` (2), `PipelineTabViewTests` (1), `ThreadHeaderViewTests` (2), `Kanban/KanbanBoardKeyboardTests` (2), `KanbanBoardViewStateTests` (2), `KanbanSteerFlyoutTests` (2), `ModelPicker/ModelPickerViewTests` (2); retitle the doc comments that say 44 px. |
 | 7 | P1 | Agents rail (4.3) | `MainView.axaml` (rail, tools view, footer), `Views/AgentPanel/AgentRailView.axaml`, `Views/AgentPanel/StatusChip.axaml` (flat variant), `Views/AgentPanel/AgentPanelViewText.cs` / `AgentPanelCopy` (new constants: settings button name, key hint wording is built from the gesture) | Screenshot 01 and 02 rail: 48 px two-line rows, group labels, segmented toggles; keyboard order unchanged (`KeyboardFocusTests`); row accessible name unchanged | `AgentRailViewTests` selectors by `x:Name` keep working |
 | 8 | P1 | Thread header, pipeline strip, notice, banners, tool header, status line (4.5) | `Views/AgentPanel/ThreadHeaderView.axaml`, `PipelineStripView.axaml`, `PanelNoticeView.axaml`, `PanelStateView.axaml`, `MainView.axaml` (ErrorBanner, ClosedNotice, ToolHeader, StatusLine) | Screenshot 02: header 40 px, strip one 28 px line with the latest text on the right; no 4-band stack | `ThreadHeaderViewTests`, `PipelineStripViewTests` unchanged by name |
 | 9 | P1 | Message blocks, markdown, diff card (4.6) | `Views/Blocks/*.axaml`, `Views/Blocks/MarkdownAstBuilder.cs`, `BlockControls.cs`, `BlockTokens.cs` | Block gallery screenshot (one of each block) in both themes; tool-call row 28 px; diff lines carry `+` or `-`; contrast pass is already in 2.2 | block tests keep their `x:Name` lookups |
@@ -827,7 +827,7 @@ The **visual evidence set** for every view step: re-take screenshots 01 to 05 at
 | 11 | P1 | omp terminal view (4.9) | `Views/Terminal/OmpTerminalView.axaml`, `.axaml.cs` (palette), `Views/Terminal/TerminalPanelView.axaml` | Screenshot 03: framed terminal, status bar, steer composer card | terminal tests keep names |
 | 12 | P2 | Kanban (4.10) | `Views/Kanban/KanbanStyles.axaml`, `KanbanBoardView.axaml`, `KanbanCardView.axaml`, the code-behind that builds column headers (class change only) | Screenshots 04 and 05: columns with counts, compact cards, grips only on Backlog and Archived cards; header in DM Sans 13/600; empty heading Anybody 24 | `KanbanBoard*Tests` keep their `Frame`, `SteerTrigger` lookups |
 | 13 | P2 | Settings window (4.11): new views, General theme row, provider cards, API key flow | new `Views/Settings/SettingsWindow.axaml(.cs)`, `SettingsGeneralPage.axaml`, `SettingsModelsPage.axaml`, `ProviderCardView.axaml`, `CustomProviderFormView.axaml`, other page views; entry button in the rail footer; `ViewMapping.cs` if pages are mapped there | Section 4.11 acceptance; keyboard map in section 6 extended with Ctrl+, | new tests |
-| 14 | P2 | Display headings and empty/error states (4.8); DiffReview mono token; markup guards | `Views/AgentPanel/PanelStateView.axaml`, `Views/Kanban/KanbanBoardView.axaml`, `Views/Diff/DiffReviewView.axaml`, `Themes/OmpOSControls.axaml` | New `TypographyMarkupTests`: every `OmpOS.Font.Display` use has `FontSize` >= 20 and weight SemiBold or heavier; no `FontFamily="Cascadia..."` or other literal family in `Views/**` (`ColourLiteralTests` already guards colour) | `ColourLiteralTests` unchanged |
+| 14 | P2 | Display headings and empty/error states (4.8); DiffReview mono token; markup guards | `Views/AgentPanel/PanelStateView.axaml`, `Views/Kanban/KanbanBoardView.axaml`, `Views/Diff/DiffReviewView.axaml`, `Themes/AutonogrammerControls.axaml` | New `TypographyMarkupTests`: every `Autonogrammer.Font.Display` use has `FontSize` >= 20 and weight SemiBold or heavier; no `FontFamily="Cascadia..."` or other literal family in `Views/**` (`ColourLiteralTests` already guards colour) | `ColourLiteralTests` unchanged |
 | 15 | P2 | Visual evidence and regression pass | `docs/runbooks/evidence/ui-parity-2026-10-26/after-dark/`, `after-light/` | The 14-image set exists (5 screens at 1280 x 800 and 2 at 960 x 640, in each theme); `ThemeContrastTests`, `KeyboardFocusTests`, `AccessibilityNameTests` and `ReducedMotionTests` are green | none |
 
 Reduced-motion check inside step 3: `ReducedMotionTests` must still prove that no control in the library carries a transition under `Window.reduced-motion`; the 100 ms `BrushTransition` of 2.5 is added to the list of selectors that class clears (`Button`, `ToggleButton`, `ListBoxItem`, `TabStripItem`, `TextBox`, `ComboBox`, `ScrollViewer`).
@@ -839,12 +839,12 @@ Reduced-motion check inside step 3: `ReducedMotionTests` must still prove that n
 1. **`x:Name` values** (tests and code-behind find controls by them). At minimum: `MainView`: `SkipLink`, `TopTabs`, `AgentsTab`, `KanbanTab`, `RegionGrid`, `RailRegion`, `ThreadRegion`, `SessionsViewToggle`, `ToolsViewToggle`, `RailHost`, `ToolsViewScroll`, `ToolsViewHost`, `AgentsToggle`, `SideChatsToggle`, `SuggestionsToggle`, `EditorToggle`, `ExplorerToggle`, `TerminalToggle`, `DiffToggle`, `InlineEditToggle`, `ConventionsToggle`, `WorkspaceSearchToggle`, `McpToggle`, `ExportToggle`, `ThreadHeaderHost`, `PipelineHost`, `PanelStateHost`, `ClosedNotice`, `ClosedHeading`, `ClosedBody`, `ToolHeader`, `CloseToolButton`, `ToolTitle`, `TranscriptRegion`, `ErrorBanner`, `TranscriptHost`, `AgentsHost`, `ToolHost`, `SearchHost`, `StatusLine`, `RunControlsHost`, `ConfirmBarHost`, `ComposerHost`, `SideChatHost`, `KanbanHost`. `AgentRailView`: `NewAgentButton`, `NewTerminalButton`, `AgentFilter`, `StatePanel`, `StateHeading`, `StateBody`, `AgentRows`, `RowMenu`, `ResumeItem`, `ReopenItem`, `CloseItem`. `ThreadHeaderView`: `HeaderFrame`, `TitleText`, `StatusChipView`, `ResumeButton`, `ReopenButton`, `TaskChipButton`, `TaskChipLabel`, `GraphChipView`, `GraphChipLabel`, `SteeringBadge`, `SteeringBadgeLabel`, `CloseButton`, `TrailingHost`, `PanelNoticeHost`. `PipelineStripView`: `PipelineStrip`, `Pills`, `Details`, `Announcement`. `PanelNoticeView`: `PanelNotice`, `NoticeIcon`, `ShowPipelineButton`, `ResumeButton`, `DismissButton`, `NoticeText`. `PanelStateView`: `PanelError`, `PanelErrorText`, `RetryLoadingButton`, `LoadingBlock`, `LoadingHeading`, `LoadingBody`, `EmptyBlock`, `EmptyHeading`, `EmptyBody`, `StartFirstAgentButton`. `ComposerView`: `PendingLabel`, `PromptInput`, `SendButton`, `FollowUpButton`, `StopButton`, `HintLine`, `Suggestions`. `ModelPickerView`: `ChipButton`, `LabelText`, `ModelFlyout`, `SearchBox`, `ModelList`, `StatusText`. `TerminalSteerView`: `MessageInput`, `SendNowButton`, `QueueButton`. `OmpTerminalView`: `RestartButton`, `CloseButton`, `StatusText`, `Output`, `UnavailablePanel`, `FixText`. Kanban: `Frame`, `TitleText`, `KindTag`, `KindText`, `ModelText`, `StatusChip`, `ActivityText`, `StaleText`, `DisconnectedText`, `ClosedText`, `SubstrateRow`, `TaskField`, `GraphField`, `LessonsField`, `LeaseField`, `SteerButton`, `SteerPanel`, `SteerBox`, `SendNowButton`, `QueueButton`, `SteerResult`, `ErrorBanner`, `BannerText`, `BannerRetryButton`, `LoadingBlock`, `LoadingHeading`, `LoadingBody`, `EmptyBlock`, `EmptyHeading`, `EmptyBody`, `StartSessionButton`, `ErrorBlock`, `ErrorHeading`, `ErrorBody`, `RetryButton`, `ColumnsScroller`, `ColumnsPanel`, `LiveRegion`. New elements may be added; none may be renamed or removed. The inner `Border#Frame` rule of the Kanban card is kept by adding an inner border, not by moving the name.
 2. **Accessible names and live regions**: every `AutomationProperties.Name`, `HelpText` and `LiveSetting` value stays word for word. An icon that replaces a visible word (Close, Settings, copy, reveal) keeps or gains an `AutomationProperties.Name` and a tooltip. Glyph `Path`s stay `AccessibilityView=Raw`; row group headers stay raw. Panel views hold no literal copy (`PanelMarkupTests.NoPanelViewHoldsLiteralCopy`): every new visible string is a constant in `AgentPanelCopy`, `AgentPanelViewText`, `KanbanCopy`, `SettingsCopy` or `ModelsCopy`.
 3. **Keyboard map and tab order**: Tab order follows XAML order as documented in `MainView.axaml`: skip link, top tabs, rail (view toggles, then session list or tool toggles), thread (header, pipeline strip, panel state, transcript or terminal, run controls, confirm bars, composer prompt, send, follow-up, stop, side chats). Shortcuts: Ctrl+N new agent, Ctrl+Shift+T new omp terminal, Ctrl+Shift+A Agents tab, Ctrl+Shift+K Kanban tab, Ctrl+1 and Ctrl+2 as built, F6 region cycle, Ctrl+F transcript search, Esc stops or closes, Enter send, Shift+Enter newline, Ctrl+Enter steer, Ctrl+Shift+Enter queue follow-up. Arrow keys move the rail selection, the tab strip and the Kanban cards (roving). The settings window adds Ctrl+, to open and Esc to close (with the close prompt) **[O4]**.
-4. **Focus indicator**: 2 px `AccentPurple` border, `FocusAdorner` null, no layout shift, on every focusable control in both themes (primary buttons keep `TextPrimary`). `OmpOS.Size.FocusBorder` stays 2.
+4. **Focus indicator**: 2 px `AccentPurple` border, `FocusAdorner` null, no layout shift, on every focusable control in both themes (primary buttons keep `TextPrimary`). `Autonogrammer.Size.FocusBorder` stays 2.
 5. **Colour is never the only signal**: statuses keep glyph plus words; selection keeps bar plus weight; diff lines keep `+` and `-`; checked toggles keep weight and accessible state; switch state has words.
 6. **Contrast contract**: every role in 2.1 is covered by `ThemeContrastTests` as classified in 2.3; no view holds a colour literal (`ColourLiteralTests`, allowlist baseline 0); colour roles stay inside the `Light` and `Dark` dictionaries.
 7. **Reduced motion**: the `reduced-motion` window class removes all transitions; running and skeleton pulses are added only under full motion (existing view logic); popups have no animation.
 8. **Behavioural contracts of Phases 39 and 46**: status vocabulary and group order, Kanban column set and drag rules (only Backlog and Archived accept drops), steering via Send now and Queue, no inspector, one card per session, no invented Substrate data (`unavailable` stays).
-9. **Window**: title `OmpOS`, `MinWidth` 960, `MinHeight` 640, initial 1280 x 800; the 1200 px wide-rail rule.
+9. **Window**: title `Autonogrammer`, `MinWidth` 960, `MinHeight` 640, initial 1280 x 800; the 1200 px wide-rail rule.
 10. **Secrets**: provider API keys are never displayed after entry, never logged, never placed in a tooltip or accessible name.
 
 ---
@@ -855,7 +855,7 @@ Reduced-motion check inside step 3: `ReducedMotionTests` must still prove that n
 |---|---|---|---|
 | O1 | Density. The current contract (Phase 20 and 46 specs, 26 test assertions in 13 files) requires 44 px targets. Cursor-like density needs 28 to 32 px. WCAG 2.2 AA only needs 24 px (SC 2.5.8). May desktop controls drop to 32 (with 28 and 24 for toolbar and icon buttons)? | Yes: `TargetMin` 32; the 44 assertions become the WCAG 24 px minimum. | Step 6. If **no**: keep 44 only for hit areas by wrapping each 28 px visual in a transparent 44 px hit box (icon buttons; rail rows are already 48); the screen is then roomier and less Cursor-like, and the control gallery needs a second pass. |
 | O2 | Custom title bar on Windows and macOS (extended client area, top bar doubles as the title bar), native frame on Linux? | Yes on Windows and macOS, native on Linux. | Section 4.2 chrome code; the rest of the layout is identical. |
-| O3 | What does the top bar show as the workspace name? | Workspace root folder name if the head exposes it, else `OmpOS`. | Needs one string from the head; if the head has none, drop the label. |
+| O3 | What does the top bar show as the workspace name? | Workspace root folder name if the head exposes it, else `Autonogrammer`. | Needs one string from the head; if the head has none, drop the label. |
 | O4 | Settings entry point: gear in the rail footer plus Ctrl+, opening a separate window (this spec), or an in-app page? `46-UI-SPEC.md` says no second window. | Separate window. | Step 13 and the rail footer. |
 | O5 | Primary action colour in Dark: keep the purple fill (this spec) or use a neutral light fill as Cursor does? | Purple (existing "only accent fill" contract). | `AccentPurple`, `AccentPurpleOn` only; no structural change. |
 | O6 | Replace the two variable font files by static instances, one of them (Anybody) derived with fontTools under the OFL. Approved? | Yes. | Step 1; the alternative is to leave Anybody Thin, which breaks the "never thin" rule. |
@@ -899,6 +899,6 @@ Avalonia and fonts.
 | A17 | https://github.com/googlefonts/dm-fonts (`Sans/fonts/ttf`, commit `4412393b7d2de9fe7a92064c2dce9b5af5d7fd26`), https://github.com/google/fonts/tree/main/ofl/anybody, https://api.github.com/repos/google/fonts/contents/ofl/spacemono | Upstream static files; Anybody ships only as a variable font |
 | A18 | fontTools (installed in a temporary virtualenv, not in the repository): read `fvar` axes and name tables of the shipped `DMSans.ttf` (`opsz` 9 to 40 default 9, `wght` 100 to 1000 default 400), `Anybody.ttf` (`wdth` 50 to 150 default 100, `wght` 100 to 900 **default 100**), `SpaceMono-Regular.ttf`; generated and inspected an Anybody SemiBold instance | R3, section 2.4 |
 
-Repository (read 2026-10-26): `src/OmpOS.Native.Views/Themes/OmpOSTokens.axaml`, `apps/OmpOS.Native/App.axaml`, `MainWindow.axaml`, `MainView.axaml`, `Views/AgentPanel/*`, `Views/Kanban/*`, `Views/Terminal/OmpTerminalView.axaml`, `Views/ComposerView.axaml`, `Views/ModelPickerView.axaml`, `Views/Blocks/*`, `Views/Diff/DiffReviewView.axaml`, `Sessions/TerminalSteerView.axaml`, `src/OmpOS.Presentation/Settings/*`, `tests/OmpOS.Native.Tests/{ThemeContrastTests,FocusVisibleToggleTests,KeyboardFocusTests}.cs`, `Theme/{ColourLiteralTests,FontResourceTests}.cs`, `Theme/FontManifest.txt`, `AgentPanel/Views/PanelMarkupTests.cs`, `.planning/phases/46-agent-panel/46-UI-SPEC.md`, `.planning/phases/39-kanban-board/39-CONTEXT.md`, `docs/plans/vision-research/cursor-settings-window.md`, `docs/plans/vision-research/greptile-font.md`, and the five screenshots under `docs/runbooks/evidence/ui-parity-2026-10-26/before/`.
+Repository (read 2026-10-26): `src/Autonogrammer.Native.Views/Themes/AutonogrammerTokens.axaml`, `apps/Autonogrammer.Native/App.axaml`, `MainWindow.axaml`, `MainView.axaml`, `Views/AgentPanel/*`, `Views/Kanban/*`, `Views/Terminal/OmpTerminalView.axaml`, `Views/ComposerView.axaml`, `Views/ModelPickerView.axaml`, `Views/Blocks/*`, `Views/Diff/DiffReviewView.axaml`, `Sessions/TerminalSteerView.axaml`, `src/Autonogrammer.Presentation/Settings/*`, `tests/Autonogrammer.Native.Tests/{ThemeContrastTests,FocusVisibleToggleTests,KeyboardFocusTests}.cs`, `Theme/{ColourLiteralTests,FontResourceTests}.cs`, `Theme/FontManifest.txt`, `AgentPanel/Views/PanelMarkupTests.cs`, `.planning/phases/46-agent-panel/46-UI-SPEC.md`, `.planning/phases/39-kanban-board/39-CONTEXT.md`, `docs/plans/vision-research/cursor-settings-window.md`, `docs/plans/vision-research/greptile-font.md`, and the five screenshots under `docs/runbooks/evidence/ui-parity-2026-10-26/before/`.
 
 Not verified (called out above as **[INFERENCE]**): the Cursor Agents window in a dark theme (only Light captures are official); Cursor's real pixel sizes (captures are scaled); `BoxShadows` as a theme resource; `Window.WindowDecorationMargin` in 12.1.4; whether Avalonia's embedded font collection reads nameID 16 on every platform; the `Iciclecreek.Terminal` palette API; how the `before/` screenshots were produced.

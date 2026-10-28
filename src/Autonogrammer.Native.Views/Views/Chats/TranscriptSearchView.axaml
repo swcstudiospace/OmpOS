@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Chats.TranscriptSearchView">
+
+  <StackPanel Margin="{DynamicResource Autonogrammer.Space.Sm}"
+              Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+    <TextBox x:Name="SearchInput"
+             Classes="mono"
+             AutomationProperties.Name="Search transcript" />
+
+    <StackPanel Orientation="Horizontal"
+                Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+      <Button x:Name="PreviousButton"
+              Classes="sm"
+              Content="Previous"
+              AutomationProperties.Name="Previous match"
+              IsEnabled="False" />
+      <Button x:Name="NextButton"
+              Classes="sm"
+              Content="Next"
+              AutomationProperties.Name="Next match"
+              IsEnabled="False" />
+      <TextBlock x:Name="SearchCount"
+                 VerticalAlignment="Center"
+                 Classes="muted"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                 AutomationProperties.Name="Search match count"
+                 AutomationProperties.LiveSetting="Polite" />
+    </StackPanel>
+
+    <CheckBox x:Name="ChatScopeToggle"
+              Content="Include side chats"
+              AutomationProperties.Name="Include side chats in the search"
+              IsVisible="False" />
+
+    <TextBlock x:Name="SelectedLocation"
+               Classes="muted"
+               FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+               TextTrimming="CharacterEllipsis"
+               MaxLines="1"
+               AutomationProperties.Name="Selected match location"
+               AutomationProperties.LiveSetting="Polite"
+               IsVisible="False" />
+
+    <ListBox x:Name="MatchRows"
+             MaxHeight="160"
+             AutomationProperties.Name="Search matches"
+             Focusable="True"
+             IsVisible="False" />
+
+  </StackPanel>
+
+</UserControl>

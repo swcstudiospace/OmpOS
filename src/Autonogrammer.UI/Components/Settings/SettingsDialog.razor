@@ -1,0 +1,303 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits ObservableComponent
+@implements IAsyncDisposable
+@using Microsoft.JSInterop
+@using Autonogrammer.Presentation.Settings
+@using Autonogrammer.Presentation.Settings.Customize
+@using Autonogrammer.Presentation.Settings.Models
+@inject IJSRuntime JS
+@if (_open)
+{
+    <div class="autonogrammer-settings-scrim" aria-hidden="true" @onclick="RequestCloseAsync"></div>
+    <div class="autonogrammer-settings" role="dialog" aria-modal="true" aria-labelledby="autonogrammer-settings-title" tabindex="-1" @ref="_dialog" @onkeydown="KeyDownAsync">
+        <div class="autonogrammer-settings-header">
+            <h2 class="autonogrammer-settings-title" id="autonogrammer-settings-title">@SettingsCopy.WindowTitle</h2>
+            <button type="button" class="autonogrammer-icon-btn" aria-label="@SettingsWebCopy.CloseName" @onclick="RequestCloseAsync">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18" /></svg>
+            </button>
+        </div>
+        <div class="autonogrammer-settings-body" inert="@Settings.IsClosePromptVisible">
+            <nav class="autonogrammer-settings-nav" aria-label="@SettingsCopy.NavigationName">
+                <ul class="autonogrammer-settings-nav-list">
+                    @foreach (var page in Settings.Pages)
+                    {
+                        var section = page.Section;
+                        var selected = section == Settings.SelectedSection;
+                        <li @key="section">
+                            <button type="button" class="autonogrammer-settings-nav-item" aria-current="@(selected ? "page" : null)"
+                                    aria-label="@(page.IsDirty ? SettingsCopy.NavigationEntryName(page.Title, true) : null)"
+                                    @onclick="() => Settings.SelectSection(section)">
+                                <span>@(page.Title)</span>
+                                @if (page.IsDirty)
+                                {
+                                    <span class="autonogrammer-settings-dirty-dot" aria-hidden="true"></span>
+                                }
+                            </button>
+                        </li>
+                    }
+                </ul>
+            </nav>
+            <div class="autonogrammer-settings-page" role="region" aria-label="@SettingsWebCopy.PageRegionName">
+                <CascadingValue Value="Settings">
+                    @switch (Settings.SelectedPage)
+                    {
+                        case RuntimePage runtime:
+                            <RuntimeSettingsView @key="runtime" Page="runtime" />
+                            break;
+                        case GeneralPage general:
+                            <GeneralSettingsView @key="general" Page="general" />
+                            break;
+                        case AgentsPage agents:
+                            <AgentsSettingsView @key="agents" Page="agents" />
+                            break;
+                        case TabPage tab:
+                            <TabSettingsView @key="tab" Page="tab" />
+                            break;
+                        case PluginsPage plugins:
+                            <PluginsSettingsView @key="plugins" Page="plugins" />
+                            break;
+                        case NetworkSettingsPage network:
+                            <NetworkSettingsView @key="network" Page="network" />
+                            break;
+                        case KeyboardSettingsPage keyboard:
+                            <KeyboardSettingsView @key="keyboard" Page="keyboard" />
+                            break;
+                        case ModelsSettingsPage models:
+                            <ModelsSettingsView @key="models" Page="models" />
+                            break;
+                        case CustomizeCatalogPage customize:
+                            <CustomizeSettingsView @key="customize" Page="customize" />
+                            break;
+                        case RuntimeValuesPage runtimeValues:
+                            <RuntimeValuesView @key="runtimeValues" Page="runtimeValues" />
+                            break;
+                        case HooksListPage hooks:
+                            <HooksListView @key="hooks" Page="hooks" />
+                            break;
+                        case McpFilesPage mcp:
+                            <McpFilesView @key="mcp" Page="mcp" />
+                            break;
+                        case InfoSettingsPage info:
+                            <InfoSettingsView @key="info" Page="info" />
+                            break;
+                        default:
+                            <GenericSettingsView @key="Settings.SelectedPage" Page="Settings.SelectedPage" />
+                            break;
+                    }
+                </CascadingValue>
+            </div>
+        </div>
+        @if (Settings.IsClosePromptVisible)
+        {
+            <div class="autonogrammer-settings-prompt-scrim">
+                <div class="autonogrammer-settings-prompt" role="alertdialog" aria-modal="true" aria-labelledby="autonogrammer-settings-prompt-title" aria-describedby="autonogrammer-settings-prompt-body">
+                    <h3 class="autonogrammer-settings-prompt-title" id="autonogrammer-settings-prompt-title">@SettingsCopy.ClosePromptHeading</h3>
+                    <p id="autonogrammer-settings-prompt-body">@SettingsCopy.ClosePromptBody</p>
+                    <div class="autonogrammer-settings-actions">
+                        <button type="button" class="autonogrammer-btn autonogrammer-btn--primary" @ref="_promptSave" @onclick="() => ResolveAsync(SettingsClosePromptChoice.Save)">@SettingsCopy.ClosePromptSaveLabel</button>
+                        <button type="button" class="autonogrammer-btn" @onclick="() => ResolveAsync(SettingsClosePromptChoice.Discard)">@SettingsCopy.ClosePromptDiscardLabel</button>
+                        <button type="button" class="autonogrammer-btn" @onclick="() => ResolveAsync(SettingsClosePromptChoice.KeepEditing)">@SettingsCopy.ClosePromptKeepEditingLabel</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private const string ModulePath = "./_content/Autonogrammer.UI/scripts/autonogrammer-dialog.js";
+
+    private readonly CancellationTokenSource _lifetime = new();
+    private ElementReference _dialog;
+    private ElementReference _promptSave;
+    private IJSObjectReference? _module;
+    private int? _token;
+    private SettingsWindowModel? _watched;
+    private bool _open;
+    private bool _lastIsOpen;
+    private bool _opening;
+    private bool _closedAtOpen;
+    private bool _promptFocused;
+    private bool _closeNotified;
+    private bool _disposed;
+
+    /// <summary>
+    /// Gets the window model the dialog renders. Create a new model each time the dialog opens: the model closes once and stays closed
+    /// (<see cref="SettingsWindowModel.IsClosed"/>). The dialog loads every page (<see cref="SettingsWindowModel.LoadAllAsync"/>) when it opens, so the host must not.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public SettingsWindowModel Settings { get; set; } = default!;
+
+    /// <summary>Gets whether the dialog is open.</summary>
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    /// <summary>Gets the callback invoked with false when the dialog closed (Escape, the Close button, the scrim, or an answer to the unsaved-changes prompt).</summary>
+    [Parameter]
+    public EventCallback<bool> IsOpenChanged { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_watched, Settings))
+        {
+            StopObserving(_watched);
+            _watched = Settings;
+        }
+
+        Observe(Settings);
+        if (IsOpen != _lastIsOpen)
+        {
+            _lastIsOpen = IsOpen;
+            _open = IsOpen;
+            _closeNotified = false;
+            _closedAtOpen = IsOpen && Settings.IsClosed;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (!_open)
+        {
+            await ReleaseAsync().ConfigureAwait(true);
+            _promptFocused = false;
+            return;
+        }
+
+        if (_token is null && !_opening)
+        {
+            _opening = true;
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
+            _token = await _module.InvokeAsync<int>("trapFocus", _dialog).ConfigureAwait(true);
+            await _dialog.FocusAsync().ConfigureAwait(true);
+            _opening = false;
+            try
+            {
+                await Settings.LoadAllAsync(_lifetime.Token).ConfigureAwait(true);
+            }
+            catch (OperationCanceledException)
+            {
+                // The dialog was disposed while the pages were loading.
+            }
+
+            return;
+        }
+
+        if (Settings.IsClosePromptVisible && !_promptFocused)
+        {
+            _promptFocused = true;
+            await _promptSave.FocusAsync().ConfigureAwait(true);
+        }
+        else if (!Settings.IsClosePromptVisible && _promptFocused)
+        {
+            _promptFocused = false;
+            await _dialog.FocusAsync().ConfigureAwait(true);
+        }
+
+        if (Settings.IsClosed && !_closedAtOpen)
+        {
+            await CloseAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async Task ReleaseAsync()
+    {
+        if (_module is null || _token is not { } token)
+        {
+            return;
+        }
+
+        _token = null;
+        try
+        {
+            await _module.InvokeVoidAsync("releaseFocus", token).ConfigureAwait(true);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The page is gone, and the module went with it.
+        }
+    }
+
+    private Task RequestCloseAsync()
+    {
+        if (Settings.IsClosePromptVisible)
+        {
+            return ResolveAsync(SettingsClosePromptChoice.KeepEditing);
+        }
+
+        return Settings.RequestClose() == SettingsCloseOutcome.Closed ? CloseAsync() : Task.CompletedTask;
+    }
+
+    private async Task ResolveAsync(SettingsClosePromptChoice choice)
+    {
+        var closed = await Settings.ResolveClosePromptAsync(choice, _lifetime.Token).ConfigureAwait(true);
+        if (closed)
+        {
+            await CloseAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async Task CloseAsync()
+    {
+        if (_closeNotified)
+        {
+            return;
+        }
+
+        _closeNotified = true;
+        _open = false;
+        await IsOpenChanged.InvokeAsync(false).ConfigureAwait(true);
+    }
+
+    private Task KeyDownAsync(KeyboardEventArgs args) =>
+        string.Equals(args.Key, "Escape", StringComparison.Ordinal) ? RequestCloseAsync() : Task.CompletedTask;
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            StopObserving(_watched);
+        }
+
+        base.Dispose(disposing);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        Dispose();
+        await _lifetime.CancelAsync().ConfigureAwait(true);
+        _lifetime.Dispose();
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (_token is { } token)
+            {
+                await _module.InvokeVoidAsync("releaseFocus", token).ConfigureAwait(true);
+            }
+
+            await _module.DisposeAsync().ConfigureAwait(true);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The page is gone, and the module went with it.
+        }
+    }
+}

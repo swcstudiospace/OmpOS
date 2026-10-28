@@ -4,15 +4,15 @@
 #
 # Fails closed: the release tarball is used only when its SHA-256 matches the pin, and a download that is
 # not possible (offline, blocked host) fails the scan with a clear message. The one deliberate escape is
-# OMPOS_SKIP_SECRET_SCAN=1, which skips the scan with a warning. CI never sets it.
+# AUTONOGRAMMER_SKIP_SECRET_SCAN=1, which skips the scan with a warning. CI never sets it.
 #
-# Cache: the verified tarball is kept under $OMPOS_GITLEAKS_CACHE_DIR (default: $RUNNER_TEMP in CI, else
-# ${XDG_CACHE_HOME:-$HOME/.cache}/ompos), so a repeat run works offline. The digest is re-checked on every run.
+# Cache: the verified tarball is kept under $AUTONOGRAMMER_GITLEAKS_CACHE_DIR (default: $RUNNER_TEMP in CI, else
+# ${XDG_CACHE_HOME:-$HOME/.cache}/autonogrammer), so a repeat run works offline. The digest is re-checked on every run.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
-if [ "${OMPOS_SKIP_SECRET_SCAN:-}" = "1" ]; then
-  echo "warning: secret scan skipped because OMPOS_SKIP_SECRET_SCAN=1; CI still runs it" >&2
+if [ "${AUTONOGRAMMER_SKIP_SECRET_SCAN:-}" = "1" ]; then
+  echo "warning: secret scan skipped because AUTONOGRAMMER_SKIP_SECRET_SCAN=1; CI still runs it" >&2
   exit 0
 fi
 
@@ -21,7 +21,7 @@ source scripts/ci/gitleaks.env
 
 fail() {
   echo "error: secret scan: $1" >&2
-  echo "       set OMPOS_SKIP_SECRET_SCAN=1 to skip it explicitly (CI still runs it)." >&2
+  echo "       set AUTONOGRAMMER_SKIP_SECRET_SCAN=1 to skip it explicitly (CI still runs it)." >&2
   exit 1
 }
 
@@ -29,7 +29,7 @@ fail() {
   || fail "the pinned gitleaks digest covers linux x64 only, this host is $(uname -s) $(uname -m)"
 git rev-parse --git-dir >/dev/null 2>&1 || fail "not inside a git work tree, gitleaks scans history"
 
-CACHE_DIR="${OMPOS_GITLEAKS_CACHE_DIR:-${RUNNER_TEMP:-${XDG_CACHE_HOME:-$HOME/.cache}/ompos}}"
+CACHE_DIR="${AUTONOGRAMMER_GITLEAKS_CACHE_DIR:-${RUNNER_TEMP:-${XDG_CACHE_HOME:-$HOME/.cache}/autonogrammer}}"
 ARCHIVE="$CACHE_DIR/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
 mkdir -p "$CACHE_DIR"
 

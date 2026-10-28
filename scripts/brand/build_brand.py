@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Reproducible OmpOS brand build: assets/brand/src -> every published asset.
+"""Reproducible Autonogrammer brand build: assets/brand/src -> every published asset.
 
 Inputs  : assets/brand/src/*.svg (editable sources; logos and banners contain <text>),
-          the bundled OFL fonts in src/OmpOS.Native.Views/Assets/Fonts.
+          the bundled OFL fonts in src/Autonogrammer.Native.Views/Assets/Fonts.
 Outputs : see docs/brand.md ("Asset inventory"); the list is also enforced by
           scripts/ci/check-brand.sh.
 Tools   : google-chrome (shaping, screenshots, PDF), pdftocairo (PDF -> glyph
@@ -29,11 +29,11 @@ import chrome_render
 REPO = Path(__file__).resolve().parents[2]
 SRC = REPO / "assets" / "brand" / "src"
 BRAND = REPO / "assets" / "brand"
-WEB = REPO / "apps" / "OmpOS.Web" / "wwwroot"
-RCL = REPO / "src" / "OmpOS.UI" / "wwwroot" / "brand"
-NATIVE = REPO / "apps" / "OmpOS.Native" / "Assets" / "Brand"
-VIEWS = REPO / "src" / "OmpOS.Native.Views" / "Assets" / "Brand"
-ANDROID = REPO / "apps" / "OmpOS.Android" / "Resources"
+WEB = REPO / "apps" / "Autonogrammer.Web" / "wwwroot"
+RCL = REPO / "src" / "Autonogrammer.UI" / "wwwroot" / "brand"
+NATIVE = REPO / "apps" / "Autonogrammer.Native" / "Assets" / "Brand"
+VIEWS = REPO / "src" / "Autonogrammer.Native.Views" / "Assets" / "Brand"
+ANDROID = REPO / "apps" / "Autonogrammer.Android" / "Resources"
 
 PURPLE = "#6d28d9"
 WRITTEN: list[Path] = []
@@ -55,7 +55,7 @@ def write_text(path: Path, text: str) -> None:
 
 def optimise_png(data: bytes) -> bytes:
     """Run optipng over PNG bytes (lossless)."""
-    with tempfile.TemporaryDirectory(prefix="ompos-optipng-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="autonogrammer-optipng-") as tmp:
         p = Path(tmp) / "x.png"
         p.write_bytes(data)
         subprocess.run(["optipng", "-quiet", "-o3", "-strip", "all", str(p)], check=True)
@@ -129,7 +129,7 @@ def outline_text(src: Path) -> str:
     the exact position Chrome chose.
     """
     svg = src.read_text(encoding="utf-8")
-    with tempfile.TemporaryDirectory(prefix="ompos-outline-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="autonogrammer-outline-") as tmp:
         pdf = Path(tmp) / "t.pdf"
         out = Path(tmp) / "t.svg"
         chrome_render.print_pdf(src, pdf)
@@ -188,23 +188,23 @@ def outline_text(src: Path) -> str:
 
 def build_svgs() -> None:
     for name in ("mark", "mark-dark"):
-        write_text(BRAND / f"ompos-{name}.svg", (SRC / f"{name}.svg").read_text(encoding="utf-8"))
+        write_text(BRAND / f"autonogrammer-{name}.svg", (SRC / f"{name}.svg").read_text(encoding="utf-8"))
     for name in ("logo", "logo-dark", "logo-stacked"):
-        write_text(BRAND / f"ompos-{name}.svg", outline_text(SRC / f"{name}.svg"))
-    for name in ("ompos-mark.svg", "ompos-logo.svg", "ompos-logo-dark.svg"):
+        write_text(BRAND / f"autonogrammer-{name}.svg", outline_text(SRC / f"{name}.svg"))
+    for name in ("autonogrammer-mark.svg", "autonogrammer-logo.svg", "autonogrammer-logo-dark.svg"):
         write_bytes(RCL / name, (BRAND / name).read_bytes())
     write_text(WEB / "favicon.svg", (SRC / "mark-small.svg").read_text(encoding="utf-8"))
 
 
 def build_banners() -> None:
-    for src_name, out_name in (("banner", "ompos-banner"), ("banner-dark", "ompos-banner-dark"),
-                               ("social-preview", "ompos-social-preview")):
-        with tempfile.TemporaryDirectory(prefix="ompos-shot-") as tmp:
+    for src_name, out_name in (("banner", "autonogrammer-banner"), ("banner-dark", "autonogrammer-banner-dark"),
+                               ("social-preview", "autonogrammer-social-preview")):
+        with tempfile.TemporaryDirectory(prefix="autonogrammer-shot-") as tmp:
             shot = Path(tmp) / "shot.png"
             chrome_render.screenshot(SRC / f"{src_name}.svg", shot)
             image = Image.open(shot).convert("RGB")
         write_png(BRAND / f"{out_name}.png", image)
-    social = BRAND / "ompos-social-preview.png"
+    social = BRAND / "autonogrammer-social-preview.png"
     if social.stat().st_size >= 1_048_576:
         raise RuntimeError("social preview exceeds 1 MB")
 
@@ -213,7 +213,7 @@ def build_icons() -> None:
     full = Mark("mark.svg")
     small = Mark("mark-small.svg")
 
-    write_png(BRAND / "ompos-icon-1024.png", raster(full.svg(), 1024))
+    write_png(BRAND / "autonogrammer-icon-1024.png", raster(full.svg(), 1024))
 
     # Web head
     write_png(WEB / "favicon.png", raster(small.svg(), 64))
@@ -225,8 +225,8 @@ def build_icons() -> None:
     ico_sizes = {16: small, 32: small, 48: full}
     write_bytes(WEB / "favicon.ico", make_ico({s: raster(m.svg(), s) for s, m in ico_sizes.items()}))
     manifest = {
-        "name": "OmpOS",
-        "short_name": "OmpOS",
+        "name": "Autonogrammer",
+        "short_name": "Autonogrammer",
         "description": "The open agent workspace on the omp engine.",
         "start_url": "/",
         "scope": "/",
@@ -244,17 +244,17 @@ def build_icons() -> None:
 
     # Desktop
     ico_desktop = {16: small, 24: small, 32: small, 48: full, 64: full, 128: full, 256: full}
-    write_bytes(NATIVE / "ompos.ico", make_ico({s: raster(m.svg(), s) for s, m in ico_desktop.items()}))
-    write_png(NATIVE / "ompos-256.png", raster(full.svg(), 256))
-    write_png(NATIVE / "ompos-512.png", raster(full.svg(), 512))
-    write_png(VIEWS / "ompos-mark-256.png", raster(full.svg(), 256))
+    write_bytes(NATIVE / "autonogrammer.ico", make_ico({s: raster(m.svg(), s) for s, m in ico_desktop.items()}))
+    write_png(NATIVE / "autonogrammer-256.png", raster(full.svg(), 256))
+    write_png(NATIVE / "autonogrammer-512.png", raster(full.svg(), 512))
+    write_png(VIEWS / "autonogrammer-mark-256.png", raster(full.svg(), 256))
     chunks = {}
     for code, size in (("ic07", 128), ("ic08", 256), ("ic09", 512), ("ic10", 1024)):
         buf = io.BytesIO()
         # Apple icon grid: the artwork fills 80.5 percent of the canvas.
         raster(full.svg(pad=0.805), size).save(buf, format="PNG")
         chunks[code] = optimise_png(buf.getvalue())
-    write_bytes(NATIVE / "ompos.icns", make_icns(chunks))
+    write_bytes(NATIVE / "autonogrammer.icns", make_icns(chunks))
 
     # Android
     densities = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
@@ -281,7 +281,7 @@ def build_icons() -> None:
 
 def make_ico(images: dict[int, Image.Image]) -> bytes:
     """Write a multi-image ICO using ImageMagick (PNG inputs, no resampling by Pillow)."""
-    with tempfile.TemporaryDirectory(prefix="ompos-ico-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="autonogrammer-ico-") as tmp:
         files = []
         for size, image in sorted(images.items()):
             p = Path(tmp) / f"{size}.png"

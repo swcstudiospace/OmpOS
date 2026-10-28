@@ -1,0 +1,306 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:rem="clr-namespace:Autonogrammer.Presentation.Remote;assembly=Autonogrammer.Presentation"
+             xmlns:views="clr-namespace:Autonogrammer.Native.Views.Remote"
+             x:Class="Autonogrammer.Native.Views.Remote.RuntimeEnvironmentsView"
+             x:DataType="rem:RuntimeEnvironmentsViewModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The Containers and WSL section of the Remote page: the saved container and WSL environments with their status in words and their findings with
+       the fix, the running containers podman lists, and the add or edit form. Nothing starts until Test or Start container is pressed. Tokens only. -->
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+    <TextBlock x:Name="SectionHeading"
+               Classes="settings-section"
+               Text="{x:Static rem:ContainerCopy.Title}" />
+    <TextBlock Classes="settings-help"
+               Text="{x:Static rem:ContainerCopy.Explanation}" />
+
+    <!-- The polite live region: the result of the last command. -->
+    <TextBlock x:Name="AnnouncementText"
+               Classes="settings-body"
+               IsVisible="{CompiledBinding Announcement, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               Text="{CompiledBinding Announcement}"
+               AutomationProperties.LiveSetting="Polite"
+               AutomationProperties.Name="{x:Static rem:ContainerCopy.AnnouncementName}" />
+
+    <TextBlock x:Name="LoadingText"
+               Classes="muted settings-body"
+               IsVisible="{CompiledBinding IsLoading}"
+               Text="{x:Static rem:RemoteCopy.Loading}" />
+
+    <StackPanel x:Name="ErrorPanel"
+                IsVisible="{CompiledBinding IsError}"
+                Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+      <TextBlock x:Name="ErrorText"
+                 Classes="tone-error settings-body"
+                 Text="{CompiledBinding LoadError}"
+                 AutomationProperties.LiveSetting="Assertive" />
+      <Button x:Name="RetryButton"
+              HorizontalAlignment="Left"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              Content="{x:Static rem:RemoteCopy.RetryLabel}"
+              AutomationProperties.Name="{x:Static rem:RemoteCopy.RetryLabel}"
+              Click="OnRetryClick" />
+    </StackPanel>
+
+    <TextBlock x:Name="WarningText"
+               Classes="tone-warning settings-body"
+               IsVisible="{CompiledBinding Warning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               Text="{CompiledBinding Warning}" />
+
+    <TextBlock x:Name="EmptyText"
+               Classes="settings-body"
+               IsVisible="{CompiledBinding IsEmpty}"
+               Text="{x:Static rem:ContainerCopy.EmptyText}" />
+
+    <ItemsControl x:Name="EnvironmentRows"
+                  ItemsSource="{CompiledBinding Rows}"
+                  AutomationProperties.Name="{x:Static rem:ContainerCopy.EnvironmentsListName}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="rem:RuntimeEnvironmentRow">
+          <Border Classes="settings-card"
+                  Margin="0,0,0,8"
+                  AutomationProperties.Name="{CompiledBinding AccessibleName}">
+            <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+              <Grid ColumnDefinitions="*,Auto"
+                    ColumnSpacing="8">
+                <TextBlock Grid.Column="0"
+                           Classes="settings-section"
+                           Text="{CompiledBinding DisplayName}" />
+                <Border Grid.Column="1"
+                        Classes="chip">
+                  <TextBlock Classes="settings-chip-text"
+                             Classes.tone-success="{CompiledBinding IsGood}"
+                             Classes.tone-warning="{CompiledBinding IsWarning}"
+                             Classes.tone-error="{CompiledBinding IsError}"
+                             Text="{CompiledBinding StatusLabel}"
+                             AutomationProperties.LiveSetting="Polite" />
+                </Border>
+              </Grid>
+
+              <TextBlock Classes="settings-label"
+                         Text="{CompiledBinding KindLabel}" />
+              <TextBlock Classes="settings-mono"
+                         Text="{CompiledBinding DestinationText}" />
+              <TextBlock Classes="settings-help"
+                         Text="{CompiledBinding RootText}" />
+              <TextBlock Classes="settings-help"
+                         Text="{CompiledBinding LastUsedText}" />
+              <TextBlock Classes="settings-help"
+                         IsVisible="{CompiledBinding EnvironmentText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                         Text="{CompiledBinding EnvironmentText}" />
+              <TextBlock Classes="settings-body"
+                         Text="{CompiledBinding StatusDetail}" />
+
+              <!-- The findings of the last test: severity in words, the problem, and how to fix it. -->
+              <ItemsControl ItemsSource="{CompiledBinding Diagnoses}"
+                            IsVisible="{CompiledBinding HasDiagnoses}"
+                            AutomationProperties.Name="{x:Static rem:RemoteCopy.DiagnosesLabel}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="rem:RemoteDiagnosisRow">
+                    <StackPanel Spacing="2"
+                                Margin="0,4,0,0"
+                                AutomationProperties.Name="{CompiledBinding AccessibleText}">
+                      <TextBlock Classes="settings-label"
+                                 Classes.tone-error="{CompiledBinding IsError}"
+                                 Classes.tone-warning="{CompiledBinding !IsError}"
+                                 Text="{CompiledBinding SeverityLabel}" />
+                      <TextBlock Classes="settings-body"
+                                 Text="{CompiledBinding Summary}" />
+                      <TextBlock Classes="settings-help"
+                                 Text="{CompiledBinding FixText}" />
+                      <TextBlock Classes="settings-mono"
+                                 IsVisible="{CompiledBinding HasDetail}"
+                                 Text="{CompiledBinding Detail}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <StackPanel Orientation="Horizontal"
+                          Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                          Margin="0,4,0,0">
+                <Button Classes="primary"
+                        MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        Content="{x:Static rem:RemoteCopy.TestLabel}"
+                        IsEnabled="{CompiledBinding CanTest}"
+                        AutomationProperties.Name="{x:Static rem:RemoteCopy.TestLabel}"
+                        Click="OnTestClick" />
+                <Button MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        Content="{x:Static rem:RemoteCopy.CancelTestLabel}"
+                        IsVisible="{CompiledBinding IsTesting}"
+                        AutomationProperties.Name="{x:Static rem:RemoteCopy.CancelTestLabel}"
+                        Click="OnCancelRunClick" />
+                <Button MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        Content="{x:Static rem:ContainerCopy.StartContainerLabel}"
+                        IsVisible="{CompiledBinding CanStartContainer}"
+                        AutomationProperties.Name="{x:Static rem:ContainerCopy.StartContainerLabel}"
+                        Click="OnStartContainerClick" />
+                <Button MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        Content="{x:Static rem:RemoteCopy.EditLabel}"
+                        AutomationProperties.Name="{x:Static rem:RemoteCopy.EditLabel}"
+                        Click="OnEditClick" />
+                <Button MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                        Content="{x:Static rem:RemoteCopy.DeleteLabel}"
+                        AutomationProperties.Name="{x:Static rem:RemoteCopy.DeleteLabel}"
+                        Click="OnDeleteClick" />
+              </StackPanel>
+
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <WrapPanel Orientation="Horizontal">
+      <Button x:Name="AddFromRunningButton"
+              Margin="0,0,8,4"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              Content="{x:Static rem:ContainerCopy.AddFromRunningLabel}"
+              IsEnabled="{CompiledBinding !IsEditing}"
+              AutomationProperties.Name="{x:Static rem:ContainerCopy.AddFromRunningLabel}"
+              Click="OnAddFromRunningClick" />
+      <Button x:Name="AddContainerButton"
+              Margin="0,0,8,4"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              Content="{x:Static rem:ContainerCopy.AddContainerLabel}"
+              IsEnabled="{CompiledBinding !IsEditing}"
+              AutomationProperties.Name="{x:Static rem:ContainerCopy.AddContainerLabel}"
+              Click="OnAddContainerClick" />
+      <Button x:Name="AddWslButton"
+              Margin="0,0,8,4"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              Content="{x:Static rem:ContainerCopy.AddWslLabel}"
+              IsVisible="{CompiledBinding SupportsWsl}"
+              IsEnabled="{CompiledBinding !IsEditing}"
+              AutomationProperties.Name="{x:Static rem:ContainerCopy.AddWslLabel}"
+              Click="OnAddWslClick" />
+    </WrapPanel>
+    <TextBlock x:Name="WslNoteText"
+               Classes="settings-help"
+               IsVisible="{CompiledBinding WslNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               Text="{CompiledBinding WslNote}" />
+
+    <!-- The running containers podman lists. Nothing is started from here. -->
+    <Border x:Name="PickerCard"
+            Classes="settings-card"
+            IsVisible="False">
+      <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                  DataContext="{CompiledBinding Picker}"
+                  x:DataType="rem:RunningContainerPicker">
+        <TextBlock Classes="settings-section"
+                   Text="{x:Static rem:ContainerCopy.PickerHeading}" />
+        <TextBlock x:Name="PickerStateText"
+                   Classes="settings-body"
+                   Text="{CompiledBinding StateText}"
+                   AutomationProperties.LiveSetting="Polite" />
+        <StackPanel x:Name="PickerProblem"
+                    IsVisible="{CompiledBinding IsError}"
+                    Spacing="2">
+          <TextBlock Classes="tone-error settings-body"
+                     Text="{CompiledBinding Problem.Summary}" />
+          <TextBlock Classes="settings-help"
+                     Text="{CompiledBinding Problem.FixText}" />
+        </StackPanel>
+        <ListBox x:Name="PickerList"
+                 ItemsSource="{CompiledBinding Items}"
+                 SelectedItem="{CompiledBinding Selected, Mode=TwoWay}"
+                 AutomationProperties.Name="{x:Static rem:ContainerCopy.PickerListName}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="rem:RunningContainerItem">
+              <StackPanel MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          Spacing="2"
+                          AutomationProperties.Name="{CompiledBinding AccessibleName}">
+                <TextBlock Classes="settings-mono"
+                           Text="{CompiledBinding Name}" />
+                <TextBlock Classes="settings-help"
+                           Text="{CompiledBinding Detail}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+          <Button x:Name="PickerAddButton"
+                  Classes="primary"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Content="{x:Static rem:ContainerCopy.AddChosenLabel}"
+                  IsEnabled="{CompiledBinding CanAdd}"
+                  AutomationProperties.Name="{x:Static rem:ContainerCopy.AddChosenLabel}"
+                  Click="OnPickerAddClick" />
+          <Button x:Name="PickerRefreshButton"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Content="{x:Static rem:ContainerCopy.RefreshLabel}"
+                  AutomationProperties.Name="{x:Static rem:ContainerCopy.RefreshLabel}"
+                  Click="OnAddFromRunningClick" />
+          <Button x:Name="PickerCloseButton"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Content="{x:Static rem:ContainerCopy.ClosePickerLabel}"
+                  AutomationProperties.Name="{x:Static rem:ContainerCopy.ClosePickerLabel}"
+                  Click="OnPickerCloseClick" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- The add or edit form. Keyboard order follows XAML order. -->
+    <Border x:Name="EditorCard"
+            Classes="settings-card"
+            IsVisible="{CompiledBinding IsEditing}">
+      <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <ContentControl x:Name="ContainerEditorHost"
+                        Content="{CompiledBinding ContainerEditor}">
+          <ContentControl.ContentTemplate>
+            <DataTemplate x:DataType="rem:ContainerProfileEditor">
+              <views:ContainerProfileView />
+            </DataTemplate>
+          </ContentControl.ContentTemplate>
+        </ContentControl>
+        <ContentControl x:Name="WslEditorHost"
+                        Content="{CompiledBinding WslEditor}">
+          <ContentControl.ContentTemplate>
+            <DataTemplate x:DataType="rem:WslProfileEditor">
+              <views:WslProfileView />
+            </DataTemplate>
+          </ContentControl.ContentTemplate>
+        </ContentControl>
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                    Margin="0,4,0,0">
+          <Button x:Name="SaveButton"
+                  Classes="primary"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Content="{x:Static rem:RemoteCopy.SaveLabel}"
+                  AutomationProperties.Name="{x:Static rem:RemoteCopy.SaveLabel}"
+                  Click="OnSaveClick" />
+          <Button x:Name="CancelEditButton"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Content="{x:Static rem:RemoteCopy.CancelLabel}"
+                  AutomationProperties.Name="{x:Static rem:RemoteCopy.CancelLabel}"
+                  Click="OnCancelEditClick" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+  </StackPanel>
+</UserControl>

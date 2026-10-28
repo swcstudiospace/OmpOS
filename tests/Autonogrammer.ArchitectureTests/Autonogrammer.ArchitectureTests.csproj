@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Parser/Autonogrammer.Parser.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Sandbox.Abstractions/Autonogrammer.Sandbox.Abstractions.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Acp/Autonogrammer.Harness.Acp.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Rpc/Autonogrammer.Harness.Rpc.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.InMemory/Autonogrammer.Harness.InMemory.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Worktrees/Autonogrammer.Harness.Worktrees.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Terminal/Autonogrammer.Harness.Terminal.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Workspace/Autonogrammer.Harness.Workspace.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Mcp/Autonogrammer.Harness.Mcp.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.McpGateway/Autonogrammer.Harness.McpGateway.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Completion/Autonogrammer.Harness.Completion.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Plugins/Autonogrammer.Harness.Plugins.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Automations/Autonogrammer.Harness.Automations.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Registry/Autonogrammer.Harness.Registry.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.OmpLauncher/Autonogrammer.Harness.OmpLauncher.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.OmpConfig/Autonogrammer.Harness.OmpConfig.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Providers/Autonogrammer.Harness.Providers.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Secrets/Autonogrammer.Harness.Secrets.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Herdr/Autonogrammer.Harness.Herdr.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Agent/Autonogrammer.Harness.Agent.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.AgentLoop/Autonogrammer.Harness.AgentLoop.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Remote/Autonogrammer.Harness.Remote.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.EngineHost/Autonogrammer.EngineHost.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Sessions/Autonogrammer.Sessions.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Sessions.Postgres/Autonogrammer.Sessions.Postgres.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Coordination/Autonogrammer.Coordination.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Coordination.Dragonfly/Autonogrammer.Coordination.Dragonfly.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.SessionRuns/Autonogrammer.SessionRuns.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.GenUi/Autonogrammer.GenUi.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Presentation/Autonogrammer.Presentation.csproj" />
+    <ProjectReference Include="../../apps/Autonogrammer.Native/Autonogrammer.Native.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Sandbox/Autonogrammer.Sandbox.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Workflows/Autonogrammer.Workflows.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.UI/Autonogrammer.UI.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Native.Views/Autonogrammer.Native.Views.csproj" />
+    <ProjectReference Include="../../services/Autonogrammer.Api/Autonogrammer.Api.csproj" />
+    <ProjectReference Include="../../services/Autonogrammer.AgentWorker/Autonogrammer.AgentWorker.csproj" />
+    <ProjectReference Include="../../apps/Autonogrammer.Web/Autonogrammer.Web.csproj" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="TngTech.ArchUnitNET.xUnitV3" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+</Project>

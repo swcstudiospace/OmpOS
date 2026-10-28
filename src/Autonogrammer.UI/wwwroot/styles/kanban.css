@@ -1,0 +1,342 @@
+/* Kanban tab: ten columns on a horizontally scrolling board, one card per session. Colours, sizes and fonts come from tokens.css only.
+   Every column keeps its full width (--autonogrammer-kanban-column) and the board scrolls, so no column is ever cut off. */
+
+.autonogrammer-kanban {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-12);
+  min-width: 0;
+  padding: 16px;
+}
+
+.autonogrammer-kanban-title {
+  margin: 0;
+  font-family: var(--autonogrammer-font-display);
+  font-size: var(--autonogrammer-font-size-display-sm);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-display-sm);
+}
+
+.autonogrammer-kanban-hint {
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+/* Panel states: a centred column, as wide as 420 px. */
+.autonogrammer-kanban-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--autonogrammer-gap-12);
+  width: 100%;
+  max-width: 420px;
+  margin: 48px auto;
+  text-align: center;
+}
+
+.autonogrammer-kanban-state-heading {
+  font-family: var(--autonogrammer-font-display);
+  font-size: var(--autonogrammer-font-size-display);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-display);
+}
+
+.autonogrammer-kanban-state-body {
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-kanban-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+  padding: var(--autonogrammer-gap-8) var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface-sunken);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+  font-size: var(--autonogrammer-font-size-label);
+  line-height: var(--autonogrammer-line-height-label);
+}
+
+.autonogrammer-kanban-banner[data-tone='error'] {
+  color: var(--autonogrammer-error);
+}
+
+.autonogrammer-kanban-skeleton {
+  display: flex;
+  gap: var(--autonogrammer-gap-8);
+  width: 100%;
+}
+
+.autonogrammer-kanban-skeleton-bar {
+  flex: 1;
+  height: 12px;
+  background: var(--autonogrammer-surface-active);
+  border-radius: var(--autonogrammer-radius-4);
+}
+
+/* The board. It scrolls sideways; a column never shrinks below its own width. */
+.autonogrammer-kanban-columns {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--autonogrammer-gap-8);
+  padding-bottom: var(--autonogrammer-gap-8);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.autonogrammer-kanban-column {
+  flex: 0 0 var(--autonogrammer-kanban-column);
+  min-width: 240px;
+  padding: var(--autonogrammer-gap-8);
+  background: var(--autonogrammer-surface);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-10);
+}
+
+.autonogrammer-kanban-column-header {
+  display: flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+  min-height: 28px;
+  margin-bottom: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-kanban-column-title {
+  font-family: var(--autonogrammer-font-sans);
+  font-size: var(--autonogrammer-font-size-label);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-label);
+  white-space: nowrap;
+}
+
+.autonogrammer-kanban-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 var(--autonogrammer-gap-6);
+  background: var(--autonogrammer-tint-strong);
+  border-radius: var(--autonogrammer-radius-pill);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-kanban-column-empty {
+  padding: var(--autonogrammer-gap-12) var(--autonogrammer-gap-8);
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+  text-align: center;
+}
+
+/* A lane scrolls inside itself, so the board is never taller than the window and its sideways scrollbar stays in view. */
+.autonogrammer-kanban-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+  max-height: max(16rem, calc(100dvh - 18rem));
+  margin: calc(-1 * var(--autonogrammer-gap-4));
+  padding: var(--autonogrammer-gap-4);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.autonogrammer-kanban-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-6);
+  padding: var(--autonogrammer-gap-8) 10px;
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+  box-shadow: var(--autonogrammer-shadow-card);
+}
+
+.autonogrammer-kanban-card:hover {
+  background: var(--autonogrammer-hover);
+}
+
+.autonogrammer-kanban-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-kanban-card-title {
+  min-width: 0;
+  font-size: var(--autonogrammer-font-size-label);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-label);
+}
+
+.autonogrammer-kanban-card-open {
+  display: -webkit-box;
+  min-height: var(--autonogrammer-control-height);
+  max-width: 100%;
+  padding: var(--autonogrammer-gap-4) 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  color: var(--autonogrammer-text);
+  font: inherit;
+  text-align: left;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-kanban-card-open:hover {
+  text-decoration: underline;
+}
+
+.autonogrammer-kanban-meta {
+  margin: 0;
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-kanban-model {
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+  line-height: var(--autonogrammer-line-height-mono);
+}
+
+.autonogrammer-kanban-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-kanban-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-4);
+  height: var(--autonogrammer-chip-height);
+  padding: 0 var(--autonogrammer-gap-8);
+  border: 1px solid var(--autonogrammer-border-strong);
+  border-radius: var(--autonogrammer-radius-pill);
+  font-size: var(--autonogrammer-font-size-small);
+  font-weight: var(--autonogrammer-font-weight-medium);
+  line-height: var(--autonogrammer-line-height-small);
+  white-space: nowrap;
+}
+
+.autonogrammer-kanban-status-chip[data-tone='primary'] {
+  color: var(--autonogrammer-accent);
+}
+
+.autonogrammer-kanban-status-chip[data-tone='success'] {
+  color: var(--autonogrammer-success);
+}
+
+.autonogrammer-kanban-status-chip[data-tone='warning'] {
+  color: var(--autonogrammer-warning);
+}
+
+.autonogrammer-kanban-status-chip[data-tone='error'] {
+  color: var(--autonogrammer-error);
+}
+
+.autonogrammer-kanban-warn {
+  display: flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-4);
+  margin: 0;
+  color: var(--autonogrammer-warning);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-kanban-substrate {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--autonogrammer-gap-2) var(--autonogrammer-gap-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-kanban-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--autonogrammer-gap-4);
+  margin-top: var(--autonogrammer-gap-2);
+}
+
+.autonogrammer-kanban-actions .autonogrammer-btn--ghost {
+  padding-inline: var(--autonogrammer-gap-6);
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-kanban-actions .autonogrammer-btn--ghost:hover {
+  color: var(--autonogrammer-text);
+}
+
+/* When the whole board says the substrate is unavailable, each card need not repeat it four times. */
+.autonogrammer-kanban:has(.autonogrammer-kanban-hint[data-substrate='unavailable']) .autonogrammer-kanban-substrate {
+  display: none;
+}
+
+.autonogrammer-kanban-steer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+  padding-top: var(--autonogrammer-gap-8);
+  border-top: 1px solid var(--autonogrammer-border);
+}
+
+.autonogrammer-kanban-steer-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-kanban-steer-result[data-failed='true'] {
+  color: var(--autonogrammer-error);
+}
+
+/* The board announces moves and steers through this region; it is for assistive technology and takes no room on screen. */
+.autonogrammer-kanban-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 559.98px) {
+  .autonogrammer-kanban {
+    padding: var(--autonogrammer-gap-8);
+  }
+
+  /* One column: the board stacks its lanes instead of scrolling sideways. */
+  .autonogrammer-kanban-columns {
+    flex-direction: column;
+    align-items: stretch;
+    overflow-x: visible;
+  }
+
+  .autonogrammer-kanban-column {
+    flex: none;
+    min-width: 0;
+  }
+
+  .autonogrammer-kanban-cards {
+    max-height: none;
+  }
+}

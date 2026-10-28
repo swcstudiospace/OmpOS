@@ -1,0 +1,22 @@
+name: xterm.js
+package: @xterm/xterm
+version: 6.0.0
+licence: MIT
+licence-file: LICENSE
+homepage: https://github.com/xtermjs/xterm.js
+npm-integrity: sha512-TQwDdQGtwwDt+2cgKDLn0IRaSxYu1tSUjgKarSDkUM0ZNiSRXFpjxEsvc/Zgc5kq5omJ+V0a8/kIM2WD3sMOYg==
+source-files: node_modules/@xterm/xterm/lib/xterm.mjs, node_modules/@xterm/xterm/css/xterm.css (unmodified)
+sha256 xterm.mjs: b336ec65a086c056d4804b3d4c2347da5663d3f23c3f25be866467bd8857ad59
+sha256 xterm.css: 854a7c0fb70e8b1a083c16797ab827299fb18744f5ad34f227b48337e33293c6
+sha256 LICENSE: b569f629d00f2626a8100df2a1798210535621e42164dfd426a6fe5aac7b0ccd
+
+name: xterm.js fit addon
+package: @xterm/addon-fit
+version: 0.11.0
+licence: MIT
+licence-file: LICENSE.addon-fit
+source-files: node_modules/@xterm/addon-fit/lib/addon-fit.mjs (unmodified)
+sha256 addon-fit.mjs: 2d87e1bddc73be9111de8beee5370c3bb7aac9c94e18e6f245f02ca741ef1769
+sha256 LICENSE.addon-fit: e256f01188af527e4d06d21d06fbf785ae9c50d4b328bf03cbe0ba7f0aa4228f
+
+How it was vendored: `npm install @xterm/xterm@6.0.0 @xterm/addon-fit` in an empty temporary directory, then only the files above were copied here. No CDN is used; the module scripts/autonogrammer-terminal.js imports these files by relative path.

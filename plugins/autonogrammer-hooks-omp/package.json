@@ -1,0 +1,25 @@
+{
+  "name": "autonogrammer-hooks-omp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "omp extension that forwards omp events to the Autonogrammer hook bridge (Cursor-compatible hooks) over a loopback HTTP endpoint",
+  "license": "AGPL-3.0-or-later",
+  "engines": {
+    "bun": ">=1.2",
+    "node": ">=24"
+  },
+  "omp": {
+    "extensions": [
+      "./src/index.mjs"
+    ]
+  },
+  "pi": {
+    "extensions": [
+      "./src/index.mjs"
+    ]
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  }
+}

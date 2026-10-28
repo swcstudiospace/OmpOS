@@ -1,13 +1,13 @@
 ---
 name: update-settings
-description: Explain and change OmpOS settings safely, using the Settings window first and editing settings files only with a backup and your approval.
+description: Explain and change Autonogrammer settings safely, using the Settings window first and editing settings files only with a backup and your approval.
 disable-model-invocation: false
 user-invocable: true
 ---
 
 # Update settings
 
-Answers "how do I change X" for OmpOS and, when asked, makes the change. The text the user typed after the command says which setting. This skill replaces Cursor's `update-cursor-settings` and `update-cli-config`: OmpOS has no Cursor configuration file, so settings live in the places below.
+Answers "how do I change X" for Autonogrammer and, when asked, makes the change. The text the user typed after the command says which setting. This skill replaces Cursor's `update-cursor-settings` and `update-cli-config`: Autonogrammer has no Cursor configuration file, so settings live in the places below.
 
 ## 1. Where each setting lives
 
@@ -15,12 +15,12 @@ Answers "how do I change X" for OmpOS and, when asked, makes the change. The tex
 | --- | --- | --- |
 | Theme, motion, terminal auto-run, idle stop and retention | Settings window, `config/settings.json` under the state directory | Settings window (type `/config` or open Settings). Edit the file only if the window is not available. |
 | Models, providers and credentials | omp's own configuration (`~/.omp/agent/models.yml`, its credential store) | The Models page. Never write keys into any file yourself. |
-| MCP servers | `.ompos/mcp.json` in the workspace (OmpOS writes this one); Cursor, Claude and VS Code MCP files are read only | The MCP page: add from a template or a preset. |
-| Hooks | `.ompos/hooks.json`, `~/.ompos/hooks.json` | `/create-hook` or the Hooks page. |
-| Rules, skills, commands, subagents | `.ompos/` folders (and the other convention folders OmpOS reads) | `/create-rule`, `/create-skill`, `/create-subagent`. |
+| MCP servers | `.autonogrammer/mcp.json` in the workspace (Autonogrammer writes this one); Cursor, Claude and VS Code MCP files are read only | The MCP page: add from a template or a preset. |
+| Hooks | `.autonogrammer/hooks.json`, `~/.autonogrammer/hooks.json` | `/create-hook` or the Hooks page. |
+| Rules, skills, commands, subagents | `.autonogrammer/` folders (and the other convention folders Autonogrammer reads) | `/create-rule`, `/create-skill`, `/create-subagent`. |
 | Per-session choices (mode, model, working directory) | The conversation | Slash commands such as `/plan`, `/ask`, `/model`, and the composer. |
 
-The state directory is `$OMPOS_STATE_DIR` when set; otherwise `$XDG_DATA_HOME/OmpOS` when that is an absolute path; otherwise `~/.local/share/OmpOS` on Linux. Use the platform's application data folder when the user runs another system.
+The state directory is `$AUTONOGRAMMER_STATE_DIR` when set; otherwise `$XDG_DATA_HOME/Autonogrammer` when that is an absolute path; otherwise `~/.local/share/Autonogrammer` on Linux. Use the platform's application data folder when the user runs another system.
 
 ## 2. Answer first
 
@@ -43,6 +43,6 @@ The state directory is `$OMPOS_STATE_DIR` when set; otherwise `$XDG_DATA_HOME/Om
 
 - Never write an API key, token or password into any file, and never print one. Credentials are added on the Models page, which hands them to omp.
 - Never edit omp's `models.yml` or credential store by hand from this skill. Point to the Models page.
-- Never edit files outside the OmpOS state directory, the workspace's `.ompos` folder and the user's `~/.ompos` folder.
-- Never change settings that affect other people (a shared repository's `.ompos` files) without saying so and getting a yes.
+- Never edit files outside the Autonogrammer state directory, the workspace's `.autonogrammer` folder and the user's `~/.autonogrammer` folder.
+- Never change settings that affect other people (a shared repository's `.autonogrammer` files) without saying so and getting a yes.
 - If the user wants a Cursor, VS Code or terminal-emulator setting, say that this skill does not touch those applications.

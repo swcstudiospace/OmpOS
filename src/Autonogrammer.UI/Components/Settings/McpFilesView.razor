@@ -1,0 +1,47 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits SettingsPageView<McpFilesPage>
+@using Autonogrammer.Presentation.Settings
+<SettingsPageFrame Page="Page" Title="@SettingsWebCopy.McpTitle" Description="@SettingsWebCopy.McpDescription" Editable="false">
+    @if (Page.State != SettingsPageState.Ready)
+    {
+        <SettingsStateView Loading="@(Page.State == SettingsPageState.Loading)" Error="@(Page.State == SettingsPageState.Error ? Page.LoadError : null)" OnRetry="Retry" />
+    }
+    else
+    {
+        <p class="autonogrammer-settings-banner" data-tone="info">@SettingsWebCopy.McpReadOnly</p>
+        if (Page.IsEmpty)
+        {
+            <p class="autonogrammer-settings-state">@SettingsWebCopy.McpEmpty</p>
+        }
+        else
+        {
+            <ul class="autonogrammer-settings-list" aria-label="@SettingsWebCopy.McpTitle">
+                @foreach (var file in Page.Files)
+                {
+                    <li class="autonogrammer-settings-list-row" @key="file.Origin">
+                        <div class="autonogrammer-settings-list-main">
+                            <span class="autonogrammer-settings-mono">@file.Origin</span>
+                            <span class="autonogrammer-settings-help">@SettingsWebCopy.McpFileLine(file)</span>
+                        </div>
+                        <span class="autonogrammer-chip">@(file.Scope == Autonogrammer.Contracts.WorkspaceSettings.ConventionScopeKind.Project ? SettingsWebCopy.ScopeProject : SettingsWebCopy.ScopeUser)</span>
+                    </li>
+                }
+            </ul>
+        }
+
+        @if (Page.Problems.Count > 0)
+        {
+            <h4 class="autonogrammer-settings-section-title">@SettingsWebCopy.ProblemsHeading</h4>
+            <ul class="autonogrammer-settings-problems">
+                @foreach (var problem in Page.Problems)
+                {
+                    <li class="autonogrammer-settings-mono">@SettingsWebCopy.McpProblemLine(problem)</li>
+                }
+            </ul>
+        }
+    }
+</SettingsPageFrame>
+
+@code {
+    private Task Retry() => Page.LoadAsync(CancellationToken.None);
+}

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Autonogrammer.Harness.OmpLauncher/Autonogrammer.Harness.OmpLauncher.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.AgentLoop/Autonogrammer.Harness.AgentLoop.csproj" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+  <!-- The live proofs of the plugin connection share their sandbox, process scan and evidence helpers with the engine live test. -->
+  <ItemGroup>
+    <Compile Include="../Autonogrammer.Harness.AgentLoop.Tests/Live/LiveSandbox.cs" Link="Live/Shared/LiveSandbox.cs" />
+    <Compile Include="../Autonogrammer.Harness.AgentLoop.Tests/Live/LiveProcessInfo.cs" Link="Live/Shared/LiveProcessInfo.cs" />
+    <Compile Include="../Autonogrammer.Harness.AgentLoop.Tests/Live/LiveProcessScan.cs" Link="Live/Shared/LiveProcessScan.cs" />
+    <Compile Include="../Autonogrammer.Harness.AgentLoop.Tests/Live/LiveHeartbeat.cs" Link="Live/Shared/LiveHeartbeat.cs" />
+    <Compile Include="../Autonogrammer.Harness.AgentLoop.Tests/Live/LivePluginObservation.cs" Link="Live/Shared/LivePluginObservation.cs" />
+    <Compile Include="../Autonogrammer.Harness.AgentLoop.Tests/Live/LivePluginEvidence.cs" Link="Live/Shared/LivePluginEvidence.cs" />
+  </ItemGroup>
+
+</Project>

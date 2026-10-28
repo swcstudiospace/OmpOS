@@ -1,0 +1,45 @@
+@namespace Autonogrammer.UI.Components.Kanban
+@using Autonogrammer.Presentation.Kanban
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" data-icon="@IconName">
+    @switch (Status)
+    {
+        case RuntimeStatus.Queued:
+            <circle cx="12" cy="12" r="8" />
+            <path d="M12 7v5l3 2" />
+            break;
+        case RuntimeStatus.Running:
+            <path d="M12 4a8 8 0 1 0 8 8" />
+            break;
+        case RuntimeStatus.AwaitingInput:
+            <path d="M5 5h14v10h-9l-5 4z" />
+            break;
+        case RuntimeStatus.NeedsAttention:
+            <path d="M12 4 3 20h18z" />
+            <path d="M12 10v5M12 18v.5" />
+            break;
+        case RuntimeStatus.Paused:
+            <path d="M9 6v12M15 6v12" />
+            break;
+        case RuntimeStatus.Completed:
+            <path d="m5 12 5 5 9-10" />
+            break;
+        case RuntimeStatus.Failed:
+            <path d="M6 6l12 12M18 6 6 18" />
+            break;
+        case RuntimeStatus.Unreachable:
+            <circle cx="12" cy="12" r="8" />
+            <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17v.5" />
+            break;
+        default:
+            <circle cx="12" cy="12" r="8" />
+            break;
+    }
+</svg>
+
+@code {
+    /// <summary>Gets the runtime status whose glyph is drawn, or null when the runtime reported none.</summary>
+    [Parameter]
+    public RuntimeStatus? Status { get; set; }
+
+    private string IconName => Status?.ToString() ?? "None";
+}

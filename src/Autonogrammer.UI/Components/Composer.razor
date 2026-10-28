@@ -1,0 +1,364 @@
+@namespace Autonogrammer.UI.Components
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using Autonogrammer.Presentation.AgentPanel
+@using Autonogrammer.Presentation.Runs
+@using Autonogrammer.UI.Components.Composing
+@inherits ObservableComponent
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<div class="autonogrammer-composer" data-run="@(SteerMode ? "active" : Streaming ? "streaming" : "idle")">
+    <p class="autonogrammer-composer-pending" role="status" aria-live="polite" aria-atomic="true">@PendingText</p>
+    <div class="autonogrammer-composer-card">
+        @if (_viewModel.SlashPalette is { } palette)
+        {
+            <SlashPalette Model="palette" ListId="@PaletteId" OnPick="PickSlashAsync" />
+        }
+
+        <textarea class="autonogrammer-composer-input"
+                  aria-label="Message"
+                  aria-describedby="@HintId"
+                  placeholder="@Placeholder"
+                  rows="2"
+                  data-slash-open="@(PaletteOpenWithSelection ? "true" : null)"
+                  aria-autocomplete="@(HasPalette ? "list" : null)"
+                  aria-controls="@(PaletteOpen ? PaletteId : null)"
+                  aria-activedescendant="@ActiveOption"
+                  @ref="_textarea"
+                  @bind="_viewModel.Draft"
+                  @bind:event="oninput"
+                  @onkeydown="HandleKeyDown"></textarea>
+        <div class="autonogrammer-composer-footer">
+            <div class="autonogrammer-composer-chips">
+                @if (_viewModel.ModelPicker is { } picker)
+                {
+                    <ModelPicker Model="picker" OnFocusReturn="@(() => FocusTextareaAsync().AsTask())" />
+                }
+
+                @if (_viewModel.ModeChip is { } mode)
+                {
+                    <OptionChip Model="mode" Name="Mode" Kind="mode" OnFocusReturn="@(() => FocusTextareaAsync().AsTask())" />
+                }
+
+                @if (_viewModel.ThinkingChip is { } thinking)
+                {
+                    <OptionChip Model="thinking" Name="Thinking level" Kind="thinking" OnFocusReturn="@(() => FocusTextareaAsync().AsTask())" />
+                }
+            </div>
+            <div class="autonogrammer-composer-actions">
+                @if (SteerMode)
+                {
+                    <button type="button" class="autonogrammer-btn autonogrammer-btn--small" aria-label="@QueueName" @onclick="() => SteerAsync(SteeringMode.FollowUp)">@AgentPanelCopy.QueueFollowUpLabel</button>
+                    <button type="button" class="autonogrammer-icon-btn autonogrammer-stop-btn" aria-label="Stop response" @onclick="() => OnStop.InvokeAsync()"><svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true" focusable="false"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5" /></svg></button>
+                    <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--primary autonogrammer-send-now" aria-label="@SendNowName" @onclick="() => SteerAsync(SteeringMode.Steer)">@AgentPanelCopy.SendNow</button>
+                }
+                else if (Streaming)
+                {
+                    <button type="button" class="autonogrammer-icon-btn" aria-label="Stop response" @onclick="() => OnStop.InvokeAsync()"><svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true" focusable="false"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5" /></svg></button>
+                }
+                else
+                {
+                    <button type="button" class="autonogrammer-icon-btn" aria-label="Send message" @onclick="_viewModel.SendAsync"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M3 3.5 21 12 3 20.5 7 12Z" /></svg></button>
+                }
+            </div>
+        </div>
+    </div>
+    @if (_status is { } status)
+    {
+        <p class="autonogrammer-composer-status" role="alert">@status</p>
+    }
+
+    @if (SteerMode && _viewModel.Draft.Length > SteeringInputModel.MaxTextChars)
+    {
+        <p class="autonogrammer-composer-count" role="status">@CountText</p>
+    }
+
+    <p class="autonogrammer-composer-hint" id="@HintId">@AgentPanelViewText.ComposerHint</p>
+    @if (Steering is { } steering && (steering.IsRunActive || steering.History.Count > 0))
+    {
+        <details class="autonogrammer-steering-details">
+            <summary>Steering history (@steering.History.Count)</summary>
+            <SteeringHistory Steering="steering" />
+        </details>
+    }
+</div>
+
+@code {
+    private const string ModulePath = "./_content/Autonogrammer.UI/scripts/autonogrammer-keys.js";
+    private static int s_nextId;
+
+    private readonly string _id = "autonogrammer-composer-" + System.Threading.Interlocked.Increment(ref s_nextId).ToString(System.Globalization.CultureInfo.InvariantCulture);
+    private readonly CancellationTokenSource _lifetime = new();
+    private ComposerViewModel _viewModel = null!;
+    private bool _ownsModel;
+    private ElementReference _textarea;
+    private IJSObjectReference? _module;
+    private int _guardToken;
+    private bool _guarded;
+    private bool _disposed;
+    private string? _status;
+    private string PaletteId => _id + "-palette";
+    private string HintId => _id + "-hint";
+
+    /// <summary>Gets whether the assistant is currently streaming; Escape stops, and the stop control replaces send. A composer that owns its view model hands the value to it; a composer given a <see cref="Model"/> also shows the stop control while this is true, so a transcript that streams without a send from this composer (a run observed or resumed) can always be stopped.</summary>
+    [Parameter]
+    public bool IsStreaming { get; set; }
+
+    /// <summary>
+    /// Gets the callback that submits the draft text. It resolves to true when the host accepted the send and to false when the host refused it;
+    /// the draft is cleared only on true. Not used when a <see cref="Model"/> is given: the model submits through its own host callback.
+    /// </summary>
+    [Parameter]
+    public Func<string, Task<bool>> OnSend { get; set; } = null!;
+
+    /// <summary>Gets the callback invoked when the user stops the stream (the Stop control or Escape).</summary>
+    [Parameter]
+    public EventCallback OnStop { get; set; }
+
+    /// <summary>Gets the composer view model of an Agent Panel session: its draft, chips and slash palette. When null the composer builds its own from <see cref="OnSend"/>.</summary>
+    [Parameter]
+    public ComposerViewModel? Model { get; set; }
+
+    /// <summary>
+    /// Gets the steering model of the session. While a run is active the primary button becomes Send now (steer), a Queue button queues a
+    /// follow-up, and the steering history lists what each message reached. Null keeps the plain send and stop controls.
+    /// </summary>
+    [Parameter]
+    public SteeringInputModel? Steering { get; set; }
+
+    private bool Streaming => _viewModel.IsStreaming || IsStreaming;
+
+    private bool SteerMode => Steering is { IsRunActive: true };
+
+    private bool LiveSteering => Steering is { IsLive: true };
+
+    private bool HasPalette => _viewModel.SlashPalette is not null;
+
+    private bool PaletteOpen => _viewModel.SlashPalette is { IsOpen: true };
+
+    private bool PaletteOpenWithSelection => _viewModel.SlashPalette is { IsOpen: true, SelectedEntry: not null };
+
+    private string? ActiveOption => _viewModel.SlashPalette is { IsOpen: true, SelectedEntry: not null } palette
+        ? SlashPalette.OptionIdOf(PaletteId, palette.SelectedIndex)
+        : null;
+
+    private string Placeholder => !SteerMode
+        ? AgentPanelCopy.ComposerPlaceholderIdle
+        : LiveSteering ? AgentPanelCopy.ComposerPlaceholderRunningLive : AgentPanelCopy.ComposerPlaceholderRunning;
+
+    private string SendNowName => LiveSteering ? AgentPanelCopy.ComposerSendNowName : AgentPanelViewText.SteerName;
+
+    private string QueueName => LiveSteering ? AgentPanelCopy.QueueFollowUpName : AgentPanelViewText.QueueFollowUpName;
+
+    private string CountText => string.Create(
+        System.Globalization.CultureInfo.InvariantCulture,
+        $"{_viewModel.Draft.Length} characters. The steering history keeps the first {SteeringInputModel.MaxTextChars}.");
+
+    private string PendingText
+    {
+        get
+        {
+            if (Steering is not { } steering)
+            {
+                return string.Empty;
+            }
+
+            var held = steering.HeldText ?? string.Empty;
+            var pending = steering.QueuedFollowUpCount switch
+            {
+                1 => AgentPanelViewText.QueuedOne,
+                > 1 => AgentPanelViewText.QueuedMany(steering.QueuedFollowUpCount),
+                _ => steering.IsRunActive
+                    ? steering.IsLive ? AgentPanelCopy.ComposerPendingActiveLive : AgentPanelViewText.RunActiveIdle
+                    : string.Empty,
+            };
+            return held.Length == 0 ? pending : pending.Length == 0 ? held : held + " " + pending;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        var desired = Model ?? (_viewModel is not null && _ownsModel ? _viewModel : null);
+        if (desired is null)
+        {
+            desired = new ComposerViewModel(text => OnSend(text), () => OnStop.InvokeAsync());
+            _ownsModel = true;
+        }
+        else if (Model is not null)
+        {
+            _ownsModel = false;
+        }
+
+        if (!ReferenceEquals(_viewModel, desired))
+        {
+            StopObserving(_viewModel);
+            _viewModel = desired;
+        }
+
+        if (_ownsModel)
+        {
+            _viewModel.IsStreaming = IsStreaming;
+        }
+
+        Observe(_viewModel);
+        Observe(Steering);
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_disposed)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
+            _guardToken = await _module.InvokeAsync<int>("guardComposer", _textarea).ConfigureAwait(true);
+            _guarded = true;
+        }
+    }
+
+    private ValueTask FocusTextareaAsync() => _textarea.FocusAsync();
+
+    private async Task PickSlashAsync(int index)
+    {
+        _viewModel.SlashPalette?.Select(index);
+        _ = _viewModel.AcceptSlashEntry();
+        await _textarea.FocusAsync().ConfigureAwait(true);
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        var shift = args.ShiftKey;
+        var ctrl = args.CtrlKey || args.MetaKey;
+        if (!shift && !ctrl && _viewModel.HandleSlashPaletteKey(args.Key))
+        {
+            return;
+        }
+
+        if (string.Equals(args.Key, "Escape", StringComparison.Ordinal))
+        {
+            if (SteerMode || Streaming)
+            {
+                await OnStop.InvokeAsync().ConfigureAwait(true);
+            }
+
+            return;
+        }
+
+        if (!string.Equals(args.Key, "Enter", StringComparison.Ordinal) || (shift && !ctrl))
+        {
+            return;
+        }
+
+        if (ctrl && shift)
+        {
+            if (SteerMode)
+            {
+                await SteerAsync(SteeringMode.FollowUp).ConfigureAwait(true);
+            }
+
+            return;
+        }
+
+        if (SteerMode)
+        {
+            await SteerAsync(SteeringMode.Steer).ConfigureAwait(true);
+        }
+        else
+        {
+            await _viewModel.SendAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async Task SteerAsync(SteeringMode mode)
+    {
+        if (Steering is not { } steering)
+        {
+            return;
+        }
+
+        var text = _viewModel.Draft;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        _status = null;
+        SteeringSubmitOutcome outcome;
+        try
+        {
+            outcome = await steering.SubmitAsync(text, mode, _lifetime.Token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception fault) when (fault is not OutOfMemoryException)
+        {
+            _status = AgentPanelCopy.DeliveryFailed(fault.Message);
+            return;
+        }
+
+        switch (outcome)
+        {
+            case SteeringSubmitOutcome.Accepted:
+                // Clear only the text that was accepted. Text typed while the message was in flight stays.
+                if (string.Equals(_viewModel.Draft, text, StringComparison.Ordinal))
+                {
+                    _viewModel.Draft = string.Empty;
+                }
+
+                break;
+            case SteeringSubmitOutcome.QueueFull:
+                // The draft stays, so the user can send it again once the queue has room.
+                _status = steering.RefusalText ?? AgentPanelCopy.QueueFull(RunInputScheduler.MaxQueuedMessages);
+                break;
+            case SteeringSubmitOutcome.NoActiveRun:
+                // The run ended while the key was pressed: the text is a new prompt.
+                await _viewModel.SendAsync().ConfigureAwait(true);
+                break;
+            case SteeringSubmitOutcome.Failed:
+                // The draft stays; the history lists the entry as not delivered.
+                _status = AgentPanelCopy.DeliveryNotDelivered + ".";
+                break;
+            default:
+                break;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (!_disposed && disposing)
+        {
+            _lifetime.Cancel();
+            _lifetime.Dispose();
+        }
+
+        _disposed = true;
+        base.Dispose(disposing);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        Dispose();
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (_guarded)
+            {
+                await _module.InvokeVoidAsync("release", _guardToken).ConfigureAwait(false);
+            }
+
+            await _module.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the listeners went with it.
+        }
+    }
+}

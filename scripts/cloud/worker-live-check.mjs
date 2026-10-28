@@ -1,4 +1,4 @@
-// Live check of the OmpOS agent worker image (services/OmpOS.AgentWorker, deploy/worker.Containerfile) under podman. No model is called.
+// Live check of the Autonogrammer agent worker image (services/Autonogrammer.AgentWorker, deploy/worker.Containerfile) under podman. No model is called.
 //
 // It generates an ECDSA P-256 key pair, starts the image with the public key, and checks: /healthz and /readyz; the JWT gate of GET /acp
 // (no token, wrong audience, expired, living longer than 15 minutes, unsafe subject: refused before any upgrade); the WebSocket upgrade with a
@@ -6,20 +6,20 @@
 // (a second connection for the same session is refused); and that the container log holds no key or token material. The container and its
 // volume are removed at the end. Nothing is written to the repository.
 //
-// Usage:  podman build -f deploy/worker.Containerfile -t ompos-agent-worker:local .
+// Usage:  podman build -f deploy/worker.Containerfile -t autonogrammer-agent-worker:local .
 //         node scripts/cloud/worker-live-check.mjs
-// Env:    OMPOS_WORKER_IMAGE (default localhost/ompos-agent-worker:local), OMPOS_WORKER_LIVE_PORT (default 18088; bound to 127.0.0.1 only)
+// Env:    AUTONOGRAMMER_WORKER_IMAGE (default localhost/autonogrammer-agent-worker:local), AUTONOGRAMMER_WORKER_LIVE_PORT (default 18088; bound to 127.0.0.1 only)
 // Needs:  podman, Node 22 or later (global WebSocket with request headers). Exit code 0 when every check passed, 1 otherwise, 2 when the container did not start.
 import { generateKeyPairSync, sign } from "node:crypto";
 import { spawnSync } from "node:child_process";
-const NAME = "ompos-worker-live", VOL = "ompos-worker-live-data", PORT = Number(process.env.OMPOS_WORKER_LIVE_PORT || 18088);
-const IMAGE = process.env.OMPOS_WORKER_IMAGE || "localhost/ompos-agent-worker:local";
+const NAME = "autonogrammer-worker-live", VOL = "autonogrammer-worker-live-data", PORT = Number(process.env.AUTONOGRAMMER_WORKER_LIVE_PORT || 18088);
+const IMAGE = process.env.AUTONOGRAMMER_WORKER_IMAGE || "localhost/autonogrammer-agent-worker:local";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const sh = (args) => spawnSync("podman", args, { encoding: "utf8" });
 const b64u = (b) => Buffer.from(b).toString("base64url");
 const { publicKey, privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
 const pem = publicKey.export({ type: "spki", format: "pem" });
-function mint({ sub = "live-session-1", aud = "ompos-worker", iss = "ompos-api", ttl = 600, iat = Math.floor(Date.now() / 1000) } = {}) {
+function mint({ sub = "live-session-1", aud = "autonogrammer-worker", iss = "autonogrammer-api", ttl = 600, iat = Math.floor(Date.now() / 1000) } = {}) {
   const head = b64u(JSON.stringify({ alg: "ES256", typ: "JWT" }));
   const body = b64u(JSON.stringify({ iss, aud, sub, iat, exp: iat + ttl }));
   const sig = sign("sha256", Buffer.from(`${head}.${body}`), { key: privateKey, dsaEncoding: "ieee-p1363" });
@@ -29,7 +29,7 @@ const results = [];
 const check = (name, ok, detail = "") => { results.push({ name, ok, detail }); console.log(ok ? "PASS" : "FAIL", name, detail); };
 sh(["rm", "-f", NAME]); sh(["volume", "rm", "-f", VOL]);
 const run = sh(["run", "-d", "--name", NAME, "-p", `127.0.0.1:${PORT}:8080`, "-v", `${VOL}:/data`,
-  "-e", `Worker__Auth__PublicKeysPem__0=${pem}`, "-e", "Worker__Auth__Issuer=ompos-api", "-e", "PORT=8080", IMAGE]);
+  "-e", `Worker__Auth__PublicKeysPem__0=${pem}`, "-e", "Worker__Auth__Issuer=autonogrammer-api", "-e", "PORT=8080", IMAGE]);
 if (run.status !== 0) { console.log(run.stderr); process.exit(2); }
 try {
   let up = false;

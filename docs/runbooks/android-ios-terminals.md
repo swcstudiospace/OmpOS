@@ -26,7 +26,7 @@ Phase 43 criterion 4 needs an Android 16 AccessibilityNodeInfo dump from a devic
 
 - Status: NOT RUN, BLOCKED.
 - Prerequisites missing on this host (`/dev/kvm` and `ANDROID_HOME` checked on 2026-10-26): no `/dev/kvm`, so no hardware-accelerated emulator can run; `ANDROID_HOME` is unset; no Android SDK API 36 is recorded. No Android 16 device or emulator is recorded for this host.
-- What exists: the Android head `apps/OmpOS.Android` builds locally with `-warnaserror` (evidence: `docs/runbooks/evidence/phase-24-android-2026-10-25/`). The `android` CI job is written and no CI run is recorded.
+- What exists: the Android head `apps/Autonogrammer.Android` builds locally with `-warnaserror` (evidence: `docs/runbooks/evidence/phase-24-android-2026-10-25/`). The `android` CI job is written and no CI run is recorded.
 - Related unmet check: Phase 24 criterion 5 (Android 16 accessibility dump of prompt, send and transcript), blocked for the same reasons.
 - Owner: owner, device or emulator host. Route: OQ-74.
 - Evidence to record when the run happens: device or emulator model and Android build, the app build, the command that produced the dump, and the dump file under `docs/runbooks/evidence/`.
@@ -42,8 +42,8 @@ Phase 43 criterion 4 needs an Android 16 AccessibilityNodeInfo dump from a devic
 
 Phase 43 criterion 1 requires that mobile and web builds reference no local process spawning, and that the local terminal shows as unavailable with a reason.
 
-- `apps/OmpOS.Android` references `src/OmpOS.Native.Views`, and `src/OmpOS.Native.Views/OmpOS.Native.Views.csproj` references `src/OmpOS.Harness.Terminal`, which spawns processes. The terminal panel is hosted in the native shell.
-- The web head `apps/OmpOS.Web` references only Contracts and the shared UI library, and has no terminal surface (roadmap scout of 2026-10-26; not re-read for this record).
+- `apps/Autonogrammer.Android` references `src/Autonogrammer.Native.Views`, and `src/Autonogrammer.Native.Views/Autonogrammer.Native.Views.csproj` references `src/Autonogrammer.Harness.Terminal`, which spawns processes. The terminal panel is hosted in the native shell.
+- The web head `apps/Autonogrammer.Web` references only Contracts and the shared UI library, and has no terminal surface (roadmap scout of 2026-10-26; not re-read for this record).
 - No "unavailable with reason" surface exists. The architecture rule for the web head covers `Harness.Acp` and `Harness.Rpc`, not `Harness.Terminal` or the Android head.
 - This is a unit of work, not an external blocker: a guard test and a split of the terminal panel out of the shared views assembly. It is recorded here so the mobile runs above are not read as clearing criterion 1.
 

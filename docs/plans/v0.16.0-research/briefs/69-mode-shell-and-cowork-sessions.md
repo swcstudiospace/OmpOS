@@ -1,6 +1,6 @@
 # Brief 69: Surface switch (Code | Cowork), Cowork layout and the Cowork session model
 
-Decision record: [ADR-0032](../../../decisions/ADR-0032-cowork-shell-sessions-chat-and-tool-host.md). Research: reports 02, 03, 06, 09. Names are post-rename (OmpOS becomes Autonogrammer: `OmpOS.Native` is `Autonogrammer.Native`, `OmpOS.Native.Views` is `Autonogrammer.Native.Views`, `ompos-*` CSS is `autonogrammer-*`); the tree on disk still uses the old names and the rename tool is applied later. The word "surface" means Code or Cowork; the type is `SessionSurface` {Code, Cowork} (ADR-0030, `Autonogrammer.Contracts.Sessions`).
+Decision record: [ADR-0032](../../../decisions/ADR-0032-cowork-shell-sessions-chat-and-tool-host.md). Research: reports 02, 03, 06, 09. Names are post-rename (Autonogrammer becomes Autonogrammer: `Autonogrammer.Native` is `Autonogrammer.Native`, `Autonogrammer.Native.Views` is `Autonogrammer.Native.Views`, `autonogrammer-*` CSS is `autonogrammer-*`); the tree on disk still uses the old names and the rename tool is applied later. The word "surface" means Code or Cowork; the type is `SessionSurface` {Code, Cowork} (ADR-0030, `Autonogrammer.Contracts.Sessions`).
 
 ## Goal
 

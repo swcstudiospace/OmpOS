@@ -1,0 +1,85 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:rem="clr-namespace:Autonogrammer.Presentation.Remote;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Remote.ContainerProfileView"
+             x:DataType="rem:ContainerProfileEditor"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The fields of a container environment. The Save and Cancel buttons belong to the section that hosts the form. Keyboard order follows XAML order. -->
+  <StackPanel x:Name="EditorPanel"
+              Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+    <TextBlock x:Name="EditorHeading"
+               Classes="settings-section"
+               Text="{CompiledBinding Heading}" />
+
+    <TextBlock Classes="settings-label"
+               Text="{x:Static rem:RemoteCopy.DisplayNameLabel}" />
+    <TextBox x:Name="DisplayNameBox"
+             Text="{CompiledBinding DisplayName, Mode=TwoWay}"
+             AutomationProperties.Name="{x:Static rem:RemoteCopy.DisplayNameLabel}" />
+
+    <TextBlock Classes="settings-label"
+               Text="{x:Static rem:ContainerCopy.ContainerNameLabel}" />
+    <TextBox x:Name="ContainerBox"
+             Classes="settings-mono"
+             Text="{CompiledBinding Container, Mode=TwoWay}"
+             AutomationProperties.Name="{x:Static rem:ContainerCopy.ContainerNameLabel}" />
+
+    <TextBlock Classes="settings-label"
+               Text="{x:Static rem:ContainerCopy.ContainerUserLabel}" />
+    <TextBox x:Name="UserBox"
+             Classes="settings-mono"
+             Text="{CompiledBinding RemoteUser, Mode=TwoWay}"
+             AutomationProperties.Name="{x:Static rem:ContainerCopy.ContainerUserLabel}" />
+
+    <TextBlock Classes="settings-label"
+               Text="{x:Static rem:ContainerCopy.ContainerFolderLabel}" />
+    <TextBox x:Name="FolderBox"
+             Classes="settings-mono"
+             Text="{CompiledBinding WorkspaceFolder, Mode=TwoWay}"
+             AutomationProperties.Name="{x:Static rem:ContainerCopy.ContainerFolderLabel}" />
+    <TextBlock Classes="settings-help"
+               Text="{x:Static rem:ContainerCopy.WorkspaceFolderHint}" />
+
+    <TextBlock Classes="settings-label"
+               Text="{x:Static rem:ContainerCopy.PodmanPathLabel}" />
+    <TextBox x:Name="PodmanPathBox"
+             Classes="settings-mono"
+             Text="{CompiledBinding PodmanPath, Mode=TwoWay}"
+             AutomationProperties.Name="{x:Static rem:ContainerCopy.PodmanPathLabel}" />
+    <TextBlock Classes="settings-help"
+               Text="{x:Static rem:ContainerCopy.PodmanPathHelp}" />
+
+    <TextBlock Classes="settings-label"
+               Text="{x:Static rem:ContainerCopy.OmpPathInsideLabel}" />
+    <TextBox x:Name="OmpPathBox"
+             Classes="settings-mono"
+             Text="{CompiledBinding OmpPath, Mode=TwoWay}"
+             AutomationProperties.Name="{x:Static rem:ContainerCopy.OmpPathInsideLabel}" />
+    <TextBlock Classes="settings-help"
+               Text="{x:Static rem:ContainerCopy.OmpPathInsideHelp}" />
+
+    <TextBlock Classes="settings-help"
+               Text="{x:Static rem:ContainerCopy.LoopbackNote}" />
+
+    <!-- The problems of the current values, one line each. -->
+    <ItemsControl x:Name="IssueRows"
+                  ItemsSource="{CompiledBinding Issues}"
+                  AutomationProperties.Name="{x:Static rem:RemoteCopy.IssuesLabel}"
+                  AutomationProperties.LiveSetting="Polite">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="rem:RemoteFieldIssue">
+          <TextBlock Classes="tone-error settings-help"
+                     Text="{CompiledBinding Message}" />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+  </StackPanel>
+</UserControl>

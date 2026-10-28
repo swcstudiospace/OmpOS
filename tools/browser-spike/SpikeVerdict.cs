@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace OmpOS.BrowserSpike;
+namespace Autonogrammer.BrowserSpike;
 
 /// <summary>The verdict printed as one line on stdout and returned as the process exit code.</summary>
 internal sealed record SpikeVerdict(bool Passed, string Stage, string Detail)

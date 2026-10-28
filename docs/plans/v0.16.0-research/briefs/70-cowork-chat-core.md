@@ -1,6 +1,6 @@
 # Brief 70: Cowork chat core on omp over ACP and the Cowork tool host
 
-Decision record: [ADR-0032](../../../decisions/ADR-0032-cowork-shell-sessions-chat-and-tool-host.md) (D4 chat core, D5 tool host contract, D6 policy). Research: reports 02, 06, 07 (section 4, section 5), 03, 09. Names are post-rename (OmpOS becomes Autonogrammer; `OmpOS.Harness.McpGateway` is `Autonogrammer.Harness.McpGateway`); the tree on disk still uses the old names. The bare token `omp`, `omp acp`, `OMP_*` and `models.yml` keep their names.
+Decision record: [ADR-0032](../../../decisions/ADR-0032-cowork-shell-sessions-chat-and-tool-host.md) (D4 chat core, D5 tool host contract, D6 policy). Research: reports 02, 06, 07 (section 4, section 5), 03, 09. Names are post-rename (Autonogrammer becomes Autonogrammer; `Autonogrammer.Harness.McpGateway` is `Autonogrammer.Harness.McpGateway`); the tree on disk still uses the old names. The bare token `omp`, `omp acp`, `OMP_*` and `models.yml` keep their names.
 
 ## Goal
 

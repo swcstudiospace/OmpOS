@@ -1,8 +1,8 @@
 ---
-description: "OmpOS documentation: an agent workspace on the omp engine with a desktop app, a web app, cloud agents and remote environments. Install, configure, use every feature and see what is built, partial or blocked."
+description: "Autonogrammer documentation: an agent workspace on the omp engine with a desktop app, a web app, cloud agents and remote environments. Install, configure, use every feature and see what is built, partial or blocked."
 ---
 
-# OmpOS documentation
+# Autonogrammer documentation
 
 Status: Built (this page is the entry point; every feature page states its own status)
 
@@ -10,17 +10,17 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-OmpOS is a workspace for coding agents, aimed at the Cursor 3.27 feature set under an open licence (AGPL-3.0-or-later). Its engine is [omp](https://github.com/can1357/oh-my-pi): you open a **desktop app** or a **web app**, start several agents, watch them work, steer them while they run, review their file changes, and optionally run them in a git worktree, on another machine over `ssh`, or in the cloud. Every omp process OmpOS starts runs with four plugins: Ultrathink, Substrate, Swarm and GSD-Core.
+Autonogrammer is a workspace for coding agents, aimed at the Cursor 3.27 feature set under an open licence (AGPL-3.0-or-later). Its engine is [omp](https://github.com/can1357/oh-my-pi): you open a **desktop app** or a **web app**, start several agents, watch them work, steer them while they run, review their file changes, and optionally run them in a git worktree, on another machine over `ssh`, or in the cloud. Every omp process Autonogrammer starts runs with four plugins: Ultrathink, Substrate, Swarm and GSD-Core.
 
 These pages say only what is implemented. Where something is built but has not been exercised live (no model turn, no Windows, macOS or Android run, no API on Railway; only a staged private worker ran there) the page says so, and the [parity audit](quality/cursor-parity-audit-2026-10-28.md) lists every Cursor feature with its status. The two live proofs on Linux are a real `omp acp` through a loopback `sshd` and a `podman exec` test, both recorded 2026-10-28.
 
 Try the web app without installing anything: the **Demo** at <https://ompos-web.vercel.app> is a static build with a simulated engine (no backend, no model, no secret).
 
-![The OmpOS web app, Demo build, Light theme: the agent rail with six scripted agents, a running thread and the composer.](assets/screens/web-agents-light.png)
+![The Autonogrammer web app, Demo build, Light theme: the agent rail with six scripted agents, a running thread and the composer.](assets/screens/web-agents-light.png)
 
 *Screenshot of the Demo build: a simulated engine produces the thread; no model is called.*
 
-![The OmpOS desktop app on Linux, Light theme: a new empty session with the slash palette open.](assets/screens/desktop-agents-light.png)
+![The Autonogrammer desktop app on Linux, Light theme: a new empty session with the slash palette open.](assets/screens/desktop-agents-light.png)
 
 *Screenshot of the real desktop app on Linux (Xvfb, sandbox profile, no model turn). The degraded-pipeline banner appears because the plugin submodules were not checked out in that sandbox.*
 
@@ -28,7 +28,7 @@ Try the web app without installing anything: the **Demo** at <https://ompos-web.
 
 | I want to | Read |
 |---|---|
-| Install and run OmpOS | [Getting started](guides/getting-started.md) |
+| Install and run Autonogrammer | [Getting started](guides/getting-started.md) |
 | Use the desktop app | [Desktop app guide](guides/desktop-app-guide.md) |
 | Use the web app, or see the Demo | [Web app guide](guides/web-app-guide.md) |
 | Understand the ideas | [Concepts](guides/concepts.md), [Architecture](architecture.md), [Glossary](guides/glossary.md) |
