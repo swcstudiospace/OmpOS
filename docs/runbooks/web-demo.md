@@ -64,6 +64,8 @@ Never point a hosted page at the development API through a tunnel: that would pu
 
 **Recorded deployment (2026-10-28).** The Demo is live at <https://ompos-web.vercel.app>: the Vercel production alias of project `ompos-web` in team `swcstudiospace`. It is the static Demo bundle (simulated engine, no backend, no secret). The repository homepage points to it. Headless Chrome captured it from the live URL with `URL=https://ompos-web.vercel.app node scripts/web-demo/capture.mjs`: no console error and no failed request ([evidence](evidence/web-app-2026-10-28/README.md)). This follows the default recorded in OQ-99.
 
+Deployment record: project id `prj_5clbARYWIOrfgkMSK2Fvw2p0iXAc`; deployment `ompos-px32dymvw-swcstudiospace.vercel.app` (the deployment URL itself sits behind Vercel's deployment protection and answers 302, the alias is public); created with `vercel deploy <bundle> --scope swcstudiospace --project ompos-web --yes` after `scripts/vercel/build-demo.sh <bundle>`. Because it was the project's first deployment, Vercel assigned it to Production, which is why the alias is public. To take the Demo down: `vercel remove ompos-web --scope swcstudiospace --yes`, or delete the project in the dashboard; then clear the repository homepage with `gh repo edit swcstudiospace/OmpOS --homepage ""`. To update it: rebuild the bundle and run `vercel deploy <bundle> --prod --scope swcstudiospace --project ompos-web --yes`.
+
 ## 3a. Capture and smoke
 
 ```bash
