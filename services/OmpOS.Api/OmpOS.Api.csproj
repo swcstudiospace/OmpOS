@@ -78,6 +78,7 @@
     <ProjectReference Include="../../src/OmpOS.Sessions.Postgres/OmpOS.Sessions.Postgres.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Automations/OmpOS.Harness.Automations.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.OmpConfig/OmpOS.Harness.OmpConfig.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.OmpLauncher/OmpOS.Harness.OmpLauncher.csproj" />

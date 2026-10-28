@@ -45,6 +45,7 @@ public sealed class SshAcpTransport : IAcpTransport
             "The ssh stderr drain ended on a pipe failure.");
 
     private readonly SshInvocation _invocation;
+    private readonly ExecTransportFlavor _flavor;
     private readonly string[] _redactions;
     private readonly ILogger<SshAcpTransport> _logger;
     private readonly SemaphoreSlim _writeGate = new(1, 1);
@@ -63,9 +64,21 @@ public sealed class SshAcpTransport : IAcpTransport
     /// <param name="redactions">Secret values that are removed from every diagnostic text. Values shorter than four characters are ignored.</param>
     /// <param name="logger">Receives stderr drain failures at Debug. Null discards them.</param>
     public SshAcpTransport(SshInvocation invocation, IEnumerable<string>? redactions = null, ILogger<SshAcpTransport>? logger = null)
+        : this(invocation, ExecTransportFlavor.Ssh, redactions, logger)
+    {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="SshAcpTransport"/> class for a client other than ssh (podman or wsl.exe): the process runner, framing and noise handling are the same, the messages and the diagnoses name the client.</summary>
+    /// <param name="invocation">The client process to start.</param>
+    /// <param name="flavor">Names the client and explains its failures.</param>
+    /// <param name="redactions">Secret values that are removed from every diagnostic text. Values shorter than four characters are ignored.</param>
+    /// <param name="logger">Receives stderr drain failures at Debug. Null discards them.</param>
+    internal SshAcpTransport(SshInvocation invocation, ExecTransportFlavor flavor, IEnumerable<string>? redactions, ILogger<SshAcpTransport>? logger)
     {
         ArgumentNullException.ThrowIfNull(invocation);
+        ArgumentNullException.ThrowIfNull(flavor);
         _invocation = invocation;
+        _flavor = flavor;
         _redactions = redactions is null
             ? []
             : [.. redactions.Where(value => value is not null && value.Length >= MinimumRedactionLength).OrderByDescending(value => value.Length)];
@@ -118,12 +131,12 @@ public sealed class SshAcpTransport : IAcpTransport
         {
             if (_closed)
             {
-                throw new DisconnectedHarnessException("The ssh transport is closed.", "ssh");
+                throw new DisconnectedHarnessException($"The {_flavor.Name} transport is closed.", _flavor.Name);
             }
 
             if (_connected)
             {
-                throw new InvalidOperationException("The ssh transport is already connected.");
+                throw new InvalidOperationException($"The {_flavor.Name} transport is already connected.");
             }
 
             process = StartProcess();
@@ -156,7 +169,7 @@ public sealed class SshAcpTransport : IAcpTransport
         }
         catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {
-            throw new DisconnectedHarnessException("Failed to write to the ssh connection.", "ssh", ex);
+            throw new DisconnectedHarnessException($"Failed to write to the {_flavor.Name} connection.", _flavor.Name, ex);
         }
     }
 
@@ -196,7 +209,7 @@ public sealed class SshAcpTransport : IAcpTransport
                     throw new MalformedFrameHarnessException(
                         "The remote shell printed text on stdout before omp answered, and no protocol frame followed. Check the remote ~/.bashrc and ~/.profile for output in non-interactive sessions. First lines: "
                         + string.Join(" | ", PreHandshakeNoise.Take(3)),
-                        "ssh");
+                        _flavor.Name);
                 }
 
                 continue;
@@ -372,9 +385,9 @@ public sealed class SshAcpTransport : IAcpTransport
 
     private ProcessStartHarnessException MissingClient(Exception? inner)
     {
-        var diagnosis = RemoteDiagnosisCatalog.Create(RemoteDiagnosisKind.SshMissing);
+        var diagnosis = _flavor.MissingClient();
         _diagnosis = diagnosis;
-        return new ProcessStartHarnessException(diagnosis.Summary + " " + diagnosis.FixText, "ssh", inner);
+        return new ProcessStartHarnessException(diagnosis.Summary + " " + diagnosis.FixText, _flavor.Name, inner);
     }
 
     private async Task WritePreambleAsync(Process process)
@@ -432,7 +445,7 @@ public sealed class SshAcpTransport : IAcpTransport
         {
             if (_closed || !_connected || _process is null)
             {
-                throw new DisconnectedHarnessException("The ssh transport is not open.", "ssh");
+                throw new DisconnectedHarnessException($"The {_flavor.Name} transport is not open.", _flavor.Name);
             }
 
             return _process.StandardInput.BaseStream;
@@ -445,7 +458,7 @@ public sealed class SshAcpTransport : IAcpTransport
         {
             if (_closed || !_connected || _process is null)
             {
-                throw new DisconnectedHarnessException("The ssh transport is not open.", "ssh");
+                throw new DisconnectedHarnessException($"The {_flavor.Name} transport is not open.", _flavor.Name);
             }
 
             return _process;
@@ -478,7 +491,7 @@ public sealed class SshAcpTransport : IAcpTransport
     private MalformedFrameHarnessException Malformed(byte[] frame, string detail)
     {
         var preview = Redact(Encoding.UTF8.GetString(frame.AsSpan(0, Math.Min(frame.Length, FramePreviewBytes))));
-        return new MalformedFrameHarnessException($"Malformed frame from omp acp over ssh ({detail}): {preview}", "ssh");
+        return new MalformedFrameHarnessException($"Malformed frame from omp acp over {_flavor.Name} ({detail}): {preview}", _flavor.Name);
     }
 
     private async Task<DisconnectedHarnessException> ExitedAsync(Process process)
@@ -490,7 +503,7 @@ public sealed class SshAcpTransport : IAcpTransport
         }
         catch (OperationCanceledException)
         {
-            return new DisconnectedHarnessException("ssh closed its output.", "ssh");
+            return new DisconnectedHarnessException($"{_flavor.Name} closed its output.", _flavor.Name);
         }
 
         Task? drain;
@@ -506,13 +519,13 @@ public sealed class SshAcpTransport : IAcpTransport
 
         var code = process.ExitCode;
         var tail = string.Join('\n', StandardErrorTail);
-        var diagnosis = RemoteDiagnosisCatalog.FromFailure(code, tail);
+        var diagnosis = _flavor.FromFailure(code, tail);
         lock (_gate)
         {
             _diagnosis = diagnosis;
         }
 
-        var message = string.Create(CultureInfo.InvariantCulture, $"ssh exited with code {code}.");
+        var message = string.Create(CultureInfo.InvariantCulture, $"{_flavor.Name} exited with code {code}.");
         if (diagnosis is not null)
         {
             message += " " + diagnosis.Summary;
@@ -522,6 +535,6 @@ public sealed class SshAcpTransport : IAcpTransport
             message += " " + excerpt.Replace('\n', ' ');
         }
 
-        return new DisconnectedHarnessException(message, "ssh");
+        return new DisconnectedHarnessException(message, _flavor.Name);
     }
 }

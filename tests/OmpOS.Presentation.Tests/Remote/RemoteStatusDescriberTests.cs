@@ -37,6 +37,9 @@ public sealed class RemoteStatusDescriberTests
             RemoteEnvironmentStatus.Unreachable,
             RemoteEnvironmentStatus.VersionMismatch,
             RemoteEnvironmentStatus.NeedsSetup,
+            RemoteEnvironmentStatus.RuntimeUnavailable,
+            RemoteEnvironmentStatus.NotRunning,
+            RemoteEnvironmentStatus.NotFound,
         ]);
     }
 

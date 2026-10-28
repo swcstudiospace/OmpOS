@@ -30,8 +30,7 @@ public sealed class RemoteTerminalLauncher
     public RemoteTerminalCommand BuildShell(SshProfile profile)
     {
         ArgumentNullException.ThrowIfNull(profile);
-        var script = SshCommandBuilder.PathSetup + "; cd " + PosixQuoting.Quote(profile.RemoteWorkspaceRoot) + " || exit 71; " + LoginShellScript;
-        return new RemoteTerminalCommand { Invocation = _builder.BuildTerminal(profile, script), OmittedEnvironmentNames = [] };
+        return new RemoteTerminalCommand { Invocation = _builder.BuildTerminal(profile, ShellScript(profile.RemoteWorkspaceRoot)), OmittedEnvironmentNames = [] };
     }
 
     /// <summary>Builds the host trust terminal: ssh connects, shows the host key fingerprint for the user to confirm, runs <c>true</c> and exits.</summary>
@@ -57,6 +56,27 @@ public sealed class RemoteTerminalLauncher
     {
         ArgumentNullException.ThrowIfNull(profile);
         ArgumentNullException.ThrowIfNull(launch);
+        var (script, omitted, overlayOmitted) = OmpScript(launch, options);
+        var invocation = _builder.BuildTerminal(profile, script);
+        return new RemoteTerminalCommand { Invocation = invocation, OmittedEnvironmentNames = omitted, ConfigOverlayOmitted = overlayOmitted };
+    }
+
+    /// <summary>The script of a login shell in a workspace folder: <c>PATH</c> setup, <c>cd</c> (exit code 71 when the folder is missing) and an exec of the login shell.</summary>
+    /// <param name="workspaceRoot">The absolute workspace folder in the environment.</param>
+    /// <returns>The one-line script.</returns>
+    internal static string ShellScript(string workspaceRoot) =>
+        SshCommandBuilder.PathSetup + "; cd " + PosixQuoting.Quote(workspaceRoot) + " || exit 71; " + LoginShellScript;
+
+    /// <summary>
+    /// The script of the interactive omp of a launch: <c>PATH</c> setup, the non-secret environment, <c>cd</c> and <c>exec omp ...</c>. Secret variables and the
+    /// settings overlay are left out because a terminal has no private channel; what was left out is returned.
+    /// </summary>
+    /// <param name="launch">The launch.</param>
+    /// <param name="options">What omp starts with, or <see langword="null"/>.</param>
+    /// <returns>The one-line script, the names of the environment variables that were left out, and whether the overlay was left out.</returns>
+    /// <exception cref="ArgumentException">The launch is not safe to turn into a shell line, or the resume reference or prompt is not allowed.</exception>
+    internal static (string Script, List<string> OmittedEnvironmentNames, bool ConfigOverlayOmitted) OmpScript(RemoteLaunch launch, RemoteOmpTerminalOptions? options)
+    {
         if (!SshProfileRules.IsValidAbsoluteRemotePath(launch.WorkingDirectory) || !SshProfileRules.IsValidRemoteExecutable(launch.OmpPath))
         {
             throw new ArgumentException("The remote working directory and omp path must be valid remote paths.", nameof(launch));
@@ -68,8 +88,7 @@ public sealed class RemoteTerminalLauncher
         statements.Add("cd " + PosixQuoting.Quote(launch.WorkingDirectory) + " || exit 71");
         var overlayOmitted = FilterArguments(launch, out var arguments);
         statements.Add(ExecStatement(launch.OmpPath, arguments, options));
-        var invocation = _builder.BuildTerminal(profile, string.Join("; ", statements));
-        return new RemoteTerminalCommand { Invocation = invocation, OmittedEnvironmentNames = omitted, ConfigOverlayOmitted = overlayOmitted };
+        return (string.Join("; ", statements), omitted, overlayOmitted);
     }
 
     /// <summary>
@@ -95,17 +114,43 @@ public sealed class RemoteTerminalLauncher
         string? localWorkingDirectory,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(backend);
         ArgumentNullException.ThrowIfNull(command);
+        return await StartInvocationAsync(backend, command.Invocation, output, columns, rows, localWorkingDirectory, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Starts any client invocation (ssh, <c>podman exec -it</c>, <c>wsl.exe</c>) in a local pseudo-terminal. A client whose path is not absolute is found on <c>PATH</c>.
+    /// </summary>
+    /// <param name="backend">The terminal backend.</param>
+    /// <param name="invocation">The client process. It carries no stdin preamble.</param>
+    /// <param name="output">Receives the terminal output.</param>
+    /// <param name="columns">The starting width, at least 1.</param>
+    /// <param name="rows">The starting height, at least 1.</param>
+    /// <param name="localWorkingDirectory">An existing local directory the client starts in, or <see langword="null"/> for the user's home directory.</param>
+    /// <param name="cancellationToken">Cancels the spawn.</param>
+    /// <returns>The running terminal session.</returns>
+    /// <exception cref="FileNotFoundException">The client was not found.</exception>
+    /// <exception cref="ArgumentException">The invocation carries data for the stdin preamble: a terminal cannot send it.</exception>
+    internal static async Task<ITerminalSession> StartInvocationAsync(
+        ITerminalBackend backend,
+        SshInvocation invocation,
+        IProcessOutputSink output,
+        int columns,
+        int rows,
+        string? localWorkingDirectory,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(backend);
+        ArgumentNullException.ThrowIfNull(invocation);
         ArgumentNullException.ThrowIfNull(output);
-        if (command.Invocation.Preamble is not null)
+        if (invocation.Preamble is not null)
         {
-            throw new ArgumentException("A terminal has no private channel: the command must not carry a stdin preamble.", nameof(command));
+            throw new ArgumentException("A terminal has no private channel: the command must not carry a stdin preamble.", nameof(invocation));
         }
 
-        var executable = ResolveExecutable(command.Invocation.FileName);
+        var executable = ResolveExecutable(invocation.FileName);
         var directory = localWorkingDirectory ?? LocalHome();
-        var terminal = new TerminalSessionOptions(executable, command.Invocation.Arguments, directory, columns, rows, output);
+        var terminal = new TerminalSessionOptions(executable, invocation.Arguments, directory, columns, rows, output);
         return await backend.StartAsync(terminal, cancellationToken).ConfigureAwait(false);
     }
 
@@ -132,7 +177,7 @@ public sealed class RemoteTerminalLauncher
             }
         }
 
-        throw new FileNotFoundException("The ssh client '" + fileName + "' was not found on PATH.", fileName);
+        throw new FileNotFoundException("The client '" + fileName + "' was not found on PATH.", fileName);
     }
 
     private static IEnumerable<string> ExportStatements(RemoteLaunch launch, List<string> omitted)

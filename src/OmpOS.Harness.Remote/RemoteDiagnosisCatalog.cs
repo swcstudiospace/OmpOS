@@ -195,6 +195,38 @@ public static class RemoteDiagnosisCatalog
             RemoteDiagnosisKind.RequiredToolMissing => (
                 $"The remote machine has no '{name}' command, which OmpOS needs.",
                 "Install the standard tool on the remote machine (coreutils provides mktemp) and test the connection again."),
+            _ => ContainerTextFor(kind, subject),
+        };
+    }
+
+    private static (string Summary, string Fix) ContainerTextFor(RemoteDiagnosisKind kind, string? subject)
+    {
+        return kind switch
+        {
+            RemoteDiagnosisKind.ContainerRuntimeMissing => (
+                "podman is not installed or cannot be started on this machine.",
+                "Install podman (https://podman.io) or set its full path in the profile (Podman path). OmpOS uses podman only."),
+            RemoteDiagnosisKind.ContainerRuntimeUnavailable => (
+                "podman is installed but its service did not answer.",
+                "Start the podman service (on macOS and Windows: 'podman machine start') and test the environment again."),
+            RemoteDiagnosisKind.ContainerMissing => (
+                string.IsNullOrWhiteSpace(subject) ? "The container of this environment does not exist." : $"No podman container is named {subject}.",
+                "Check the name with 'podman ps -a' or pick a running container in the list. For a dev container, start it with the devcontainer CLI or podman first, then attach."),
+            RemoteDiagnosisKind.ContainerNotRunning => (
+                string.IsNullOrWhiteSpace(subject) ? "The container of this environment is not running." : $"The container {subject} is not running.",
+                "Start it with 'podman start' (OmpOS offers the button) or with the devcontainer CLI, then test the environment again."),
+            RemoteDiagnosisKind.ContainerUserMissing => (
+                string.IsNullOrWhiteSpace(subject) ? "The user of this environment does not exist inside the container." : $"The user {subject} does not exist inside the container.",
+                "Choose a user that exists in the container (see the Remote user of the profile), or leave the user empty to use the container's default user."),
+            RemoteDiagnosisKind.WslMissing => (
+                "wsl.exe is not available on this machine.",
+                "WSL environments need Windows with the Windows Subsystem for Linux installed. Run 'wsl --install' in an administrator terminal, then test the environment again."),
+            RemoteDiagnosisKind.WslDistroMissing => (
+                string.IsNullOrWhiteSpace(subject) ? "The WSL distribution of this environment does not exist." : $"No WSL distribution is named {subject}.",
+                "Check the name with 'wsl --list --verbose' or install the distribution with 'wsl --install -d <name>', then test the environment again."),
+            RemoteDiagnosisKind.WslUserMissing => (
+                string.IsNullOrWhiteSpace(subject) ? "The user of this environment does not exist in the WSL distribution." : $"The user {subject} does not exist in the WSL distribution.",
+                "Choose a user that exists in the distribution, or leave the user empty to use the distribution's default user."),
             _ => (
                 "The connection test failed for a reason OmpOS does not know.",
                 "Run 'ssh <alias> true' in a terminal to see the message ssh prints, fix it and test the connection again."),

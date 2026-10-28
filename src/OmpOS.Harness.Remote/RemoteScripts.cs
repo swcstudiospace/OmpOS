@@ -6,7 +6,7 @@ namespace OmpOS.Harness.Remote;
 /// The POSIX shell scripts the remote file system and the remote convention discovery run through <see cref="RemoteExec"/>. Each script is one
 /// line, starts with the same prelude and ends with an exit code from the <c>Exit*</c> constants. The prelude resolves the allowed root to its
 /// real path with <c>cd -P</c> and <c>pwd -P</c>, and checks every path it is about to touch with <c>realpath</c>, then <c>readlink -f</c>, then a
-/// <c>cd -P</c> fallback that refuses a symbolic link it cannot resolve: a path whose real location is not inside the root is never read, listed,
+/// <c>cd -P</c> fallback that refuses a symbolic link it cannot resolve (a <c>realpath</c> that fails, as BusyBox's does for a path that does not exist yet, hands over to the next one; it is called without <c>--</c> because BusyBox takes that as a file name): a path whose real location is not inside the root is never read, listed,
 /// written or deleted. Every dynamic value is single-quoted with <see cref="PosixQuoting"/>.
 /// </summary>
 internal static class RemoteScripts
@@ -51,7 +51,7 @@ internal static class RemoteScripts
     public const string StatMarker = "OMPOS_STAT ";
 
     private const string Functions =
-        """within() { p=$1; shift; for r; do if [ "$r" = / ]; then return 0; fi; case "$p" in "$r"|"$r"/*) return 0;; esac; done; return 1; }; rp() { if command -v realpath >/dev/null 2>&1; then realpath -- "$1" 2>/dev/null; elif readlink -f / >/dev/null 2>&1; then readlink -f -- "$1" 2>/dev/null; elif [ -d "$1" ]; then (cd -P -- "$1" 2>/dev/null && pwd -P); elif [ -L "$1" ]; then return 1; else rpd=$(dirname -- "$1"); rpb=$(basename -- "$1"); rpd=$(cd -P -- "$rpd" 2>/dev/null && pwd -P) || return 1; printf '%s/%s\n' "$rpd" "$rpb"; fi; }; sig() { stat -L -c '%Y %s' -- "$1" 2>/dev/null || stat -L -f '%m %z' -- "$1" 2>/dev/null; }""";
+        """within() { p=$1; shift; for r; do if [ "$r" = / ]; then return 0; fi; case "$p" in "$r"|"$r"/*) return 0;; esac; done; return 1; }; rp() { if command -v realpath >/dev/null 2>&1 && realpath "$1" 2>/dev/null; then return 0; elif readlink -f / >/dev/null 2>&1; then readlink -f -- "$1" 2>/dev/null; elif [ -d "$1" ]; then (cd -P -- "$1" 2>/dev/null && pwd -P); elif [ -L "$1" ]; then return 1; else rpd=$(dirname -- "$1"); rpb=$(basename -- "$1"); rpd=$(cd -P -- "$rpd" 2>/dev/null && pwd -P) || return 1; printf '%s/%s\n' "$rpd" "$rpb"; fi; }; sig() { stat -L -c '%Y %s' -- "$1" 2>/dev/null || stat -L -f '%m %z' -- "$1" 2>/dev/null; }""";
 
     /// <summary>Builds the lines every script starts with: the extended <c>PATH</c>, the real allowed root and the helper functions.</summary>
     /// <param name="root">The absolute allowed root on the remote machine.</param>

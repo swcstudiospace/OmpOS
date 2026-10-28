@@ -1,5 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:att="clr-namespace:OmpOS.Native.Views.Attachments"
+             xmlns:atc="clr-namespace:OmpOS.Presentation.Composer.Attachments;assembly=OmpOS.Presentation"
              xmlns:completion="clr-namespace:OmpOS.Native.Views.Completion"
              xmlns:copy="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
              xmlns:local="clr-namespace:OmpOS.Native.Views"
@@ -7,6 +9,10 @@
              xmlns:panel="clr-namespace:OmpOS.Native.Views.AgentPanel"
              x:Class="OmpOS.Native.Views.ComposerView"
              Background="{DynamicResource OmpOS.Color.Surface}">
+
+  <UserControl.Resources>
+    <att:ThumbnailConverter x:Key="ThumbnailConverter" />
+  </UserControl.Resources>
 
   <UserControl.Styles>
     <StyleInclude Source="avares://OmpOS.Native.Views/Views/ComposerStyles.axaml" />
@@ -19,7 +25,7 @@
        Grid.Column only places the controls. The keyboard hint is the prompt's tooltip; the hint line is kept for assistive technology and
        the shell, and is hidden unless the shell asks for it. -->
   <Grid x:Name="ComposerColumn"
-        RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+        RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
         MaxWidth="{DynamicResource OmpOS.Size.ThreadContentMaxWidth}"
         Margin="16,8,16,16">
 
@@ -33,7 +39,7 @@
                AutomationProperties.LiveSetting="Polite" />
 
     <Border x:Name="ComposerFrame"
-            Grid.Row="3"
+            Grid.Row="4"
             CornerRadius="{DynamicResource OmpOS.Radius.Lg}"
             BoxShadow="{DynamicResource OmpOS.Shadow.Card}">
       <Panel>
@@ -99,13 +105,35 @@
                                 Grid.Column="2"
                                 VerticalAlignment="Center" />
 
+          <!-- Image input: hidden until the composer carries an attachments model. It is declared after the chips so it follows them in the keyboard order. -->
+          <Button x:Name="AttachButton"
+                  Grid.Column="3"
+                  Classes="ghost sm"
+                  HorizontalAlignment="Left"
+                  VerticalAlignment="Bottom"
+                  IsVisible="False"
+                  MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                  MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                  AutomationProperties.Name="{x:Static atc:AttachmentCopy.AttachName}"
+                  ToolTip.Tip="{x:Static atc:AttachmentCopy.AttachName}">
+            <Path Data="M2 3H14V13H2ZM2 11 6 7 9 10 11 8 14 11"
+                  Stroke="{DynamicResource OmpOS.Color.TextSecondary}"
+                  StrokeThickness="1.5"
+                  StrokeLineCap="Round"
+                  StrokeJoin="Round"
+                  Stretch="Uniform"
+                  Width="16"
+                  Height="16"
+                  AutomationProperties.AccessibilityView="Raw" />
+          </Button>
+
         </Grid>
 
       </Panel>
     </Border>
 
     <TextBlock x:Name="HintLine"
-               Grid.Row="4"
+               Grid.Row="5"
                Classes="muted small"
                Margin="4,6,4,0"
                TextWrapping="Wrap"
@@ -183,6 +211,73 @@
                              Grid.Column="1"
                              VerticalAlignment="Top" />
     </Grid>
+
+    <!-- The attached images above the card: a thumbnail that takes focus (Delete removes it) and a remove button each, then the notice (why attaching is off, a refused image, or the caution that the
+         model may ignore images). Declared last so its stops come after the chips. Hidden while there is nothing to show. -->
+    <StackPanel x:Name="ImageStripPanel"
+                Grid.Row="3"
+                Margin="4,0,4,6"
+                Spacing="{DynamicResource OmpOS.Gap.Xs}"
+                IsVisible="False">
+      <ItemsControl x:Name="ImageStrip"
+                    AutomationProperties.Name="{x:Static atc:AttachmentCopy.StripName}"
+                    AutomationProperties.HelpText="{x:Static atc:AttachmentCopy.StripHelp}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="atc:ComposerAttachment">
+            <Border Classes="attachment-item"
+                    Margin="0,0,6,6">
+              <StackPanel Orientation="Horizontal">
+                <Button Classes="ghost attachment-thumb"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="{CompiledBinding AccessibleName}"
+                        AutomationProperties.HelpText="{x:Static atc:AttachmentCopy.StripHelp}"
+                        ToolTip.Tip="{CompiledBinding AltText}">
+                  <Panel>
+                    <Path Data="M2 3H14V13H2ZM2 11 6 7 9 10 11 8 14 11"
+                          Stroke="{DynamicResource OmpOS.Color.TextSecondary}"
+                          StrokeThickness="1.5"
+                          Stretch="Uniform"
+                          Width="20"
+                          Height="20"
+                          AutomationProperties.AccessibilityView="Raw" />
+                    <Image Source="{CompiledBinding Thumbnail, Converter={StaticResource ThumbnailConverter}}"
+                           Stretch="UniformToFill"
+                           IsVisible="{CompiledBinding HasThumbnail}"
+                           AutomationProperties.AccessibilityView="Raw" />
+                  </Panel>
+                </Button>
+                <Button Classes="ghost attachment-remove"
+                        MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                        MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                        AutomationProperties.Name="{CompiledBinding RemoveName}"
+                        ToolTip.Tip="{CompiledBinding RemoveName}">
+                  <Path Data="M2 2 10 10M10 2 2 10"
+                        Stroke="{DynamicResource OmpOS.Color.TextSecondary}"
+                        StrokeThickness="1.5"
+                        StrokeLineCap="Round"
+                        Stretch="Uniform"
+                        Width="10"
+                        Height="10"
+                        AutomationProperties.AccessibilityView="Raw" />
+                </Button>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBlock x:Name="ImageNotice"
+                 Classes="muted small"
+                 TextWrapping="Wrap"
+                 IsVisible="False"
+                 AutomationProperties.Name="{x:Static atc:AttachmentCopy.NoticeName}"
+                 AutomationProperties.LiveSetting="Polite" />
+    </StackPanel>
 
   </Grid>
 

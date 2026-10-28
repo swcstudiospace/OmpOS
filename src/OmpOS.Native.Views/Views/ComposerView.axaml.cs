@@ -48,6 +48,7 @@ internal partial class ComposerView : UserControl
         SlashPalette.EntryChosen += OnSlashEntryChosen;
         MentionPicker.RowChosen += OnMentionRowChosen;
         MentionChips.AddHandler(Button.ClickEvent, OnChipClick);
+        InitialiseAttachments();
         RefreshRunState();
     }
 
@@ -194,6 +195,7 @@ internal partial class ComposerView : UserControl
         ThinkingChipView.DataContext = _composer?.ThinkingChip;
         SlashPalette.DataContext = _composer?.SlashPalette;
         BindMentions();
+        BindAttachments();
     }
 
     private void OnComposerChanged(object? sender, PropertyChangedEventArgs e)

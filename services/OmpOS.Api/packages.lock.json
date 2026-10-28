@@ -219,6 +219,12 @@
           "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
+      "ompos.harness.automations": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Harness.Plugins": "[0.15.0, )"
+        }
+      },
       "ompos.harness.inmemory": {
         "type": "Project",
         "dependencies": {

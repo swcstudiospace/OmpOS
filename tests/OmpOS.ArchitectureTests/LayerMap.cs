@@ -95,5 +95,7 @@ internal static class LayerMap
         ("OmpOS.Harness.AgentLoop", "OmpOS.Harness.Plugins"),
         // intentional: the MCP catalog maps configured servers to ACP mcpServers entries
         ("OmpOS.Harness.Mcp", "OmpOS.Harness.Acp"),
+        // intentional: the API hosts the automation scheduler, the webhook receiver and the management routes over the automations library
+        ("OmpOS.Api", "OmpOS.Harness.Automations"),
     };
 }

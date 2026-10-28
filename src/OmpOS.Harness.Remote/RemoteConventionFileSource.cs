@@ -18,14 +18,14 @@ public sealed class RemoteConventionFileSource : IConventionFileSource
 
     private const int ListingBytes = 4 * 1024 * 1024;
 
-    private readonly RemoteExec _exec;
+    private readonly IRemoteExec _exec;
     private readonly List<string> _roots = [];
 
     /// <summary>Initializes a new instance of the <see cref="RemoteConventionFileSource"/> class limited to the given roots.</summary>
     /// <param name="exec">Runs the scripts on the remote machine.</param>
     /// <param name="roots">The absolute remote directories reads may stay inside. A value that is not an absolute path is ignored.</param>
     /// <exception cref="ArgumentNullException"><paramref name="exec"/> or <paramref name="roots"/> is null.</exception>
-    public RemoteConventionFileSource(RemoteExec exec, IEnumerable<string> roots)
+    public RemoteConventionFileSource(IRemoteExec exec, IEnumerable<string> roots)
     {
         ArgumentNullException.ThrowIfNull(exec);
         ArgumentNullException.ThrowIfNull(roots);
