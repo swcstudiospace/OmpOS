@@ -37,7 +37,7 @@ public sealed class RunModePolicyHolderTests
         holder.BashOverlayYaml.ShouldBeNull();
         var file = SafetyFileLocations.Permissions(tree.Root, null).First(static location => location.Path.EndsWith(SafetyFileLocations.PermissionsFileName, StringComparison.Ordinal)).Path;
         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
-        File.WriteAllText(file, "{\"deny\":[\"Shell(rm)\"]}");
+        await File.WriteAllTextAsync(file, "{\"permissions\":{\"deny\":[\"Shell(rm)\"]}}", ct).ConfigureAwait(true);
 
         _ = holder.Current;
         await holder.RefreshAsync(ct).ConfigureAwait(true);
@@ -50,9 +50,9 @@ public sealed class RunModePolicyHolderTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var tree = new TempTree();
-        var file = SafetyFileLocations.Permissions(tree.Root, null).First().Path;
+        var file = SafetyFileLocations.Permissions(tree.Root, null)[0].Path;
         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
-        File.WriteAllText(file, "{ not json");
+        await File.WriteAllTextAsync(file, "{ not json", ct).ConfigureAwait(true);
         var hub = new RunModeHub(tree.Root, new FileRunModeStore(tree.Root), static _ => true);
         using var holder = hub.Open(tree.Workspace);
 

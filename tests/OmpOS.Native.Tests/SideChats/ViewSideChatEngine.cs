@@ -18,15 +18,15 @@ internal sealed class ViewSideChatEngine : ISideChatEngine
     public TaskCompletionSource<string>? Gate { get; set; }
 
     /// <inheritdoc/>
-    public Task<string> AskAsync(SideChatRequest request, CancellationToken cancellationToken)
+    public async Task<string> AskAsync(SideChatRequest request, CancellationToken cancellationToken)
     {
         Requests.Add(request);
         if (Gate is not null)
         {
-            return Gate.Task;
+            return await Gate.Task.WaitAsync(cancellationToken).ConfigureAwait(true);
         }
 
-        return Answer is null ? Task.FromException<string>(new InvalidOperationException("engine offline")) : Task.FromResult(Answer);
+        return Answer ?? throw new InvalidOperationException("engine offline");
     }
 
     /// <inheritdoc/>

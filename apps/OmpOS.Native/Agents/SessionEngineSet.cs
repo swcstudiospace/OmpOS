@@ -436,12 +436,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             }
 
             var settings = Settings(reachable, reason, reachable ? loop.ReadSubstrateToken() : null);
-            IReadOnlyList<string>? additionalDirectories;
-            lock (_gate)
-            {
-                _additionalDirectories.TryGetValue(scope.SessionId, out var kept);
-                additionalDirectories = kept;
-            }
+            var additionalDirectories = AdditionalDirectoriesOf(scope.SessionId);
 
             // What the head's services add to the plan. Each one degrades to a stage notice: a missing file or a failed start never stops the session.
             var notices = new List<StageEvent>();
@@ -449,52 +444,9 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             hooks = await StartHooksAsync(slot, scope, additionalDirectories, extras, notices, cancellationToken).ConfigureAwait(false);
             await RefreshMcpAsync(scope, additionalDirectories, extras, notices, cancellationToken).ConfigureAwait(false);
 
-            var bashOverlay = runModes?.BashOverlayYaml;
             var hookBridge = extras.IsRemote ? null : hooks?.Endpoint;
-            var launch = OmpLaunchPlanner.Plan(settings, plugins, scope.SessionId, scope.WorkspaceRoot, scope.GraphId, clock, additionalDirectories, hookBridge, runModes?.Launch, bashOverlay);
-            if (launch.ConfigOverlayPath is not null)
-            {
-                try
-                {
-                    overlay = ConfigOverlayWriter.Write(settings, scope.SessionStateDirectory, additionalDirectories, bashOverlay);
-                }
-                catch (Exception exception) when (bashOverlay is not null && exception is IOException or UnauthorizedAccessException)
-                {
-                    // The deny rules for shell commands could not reach omp: plan again without them and say so, so the session still starts.
-                    bashOverlay = null;
-                    notices.Add(Notice(scope, "run-mode-overlay", "Run mode", StageStatus.Degraded, "The settings file with the shell deny rules could not be written, so omp does not enforce them itself in this session. " + exception.GetType().Name));
-                    launch = OmpLaunchPlanner.Plan(settings, plugins, scope.SessionId, scope.WorkspaceRoot, scope.GraphId, clock, additionalDirectories, hookBridge, runModes?.Launch, bashOverlay);
-                    overlay = launch.ConfigOverlayPath is null ? null : ConfigOverlayWriter.Write(settings, scope.SessionStateDirectory, additionalDirectories);
-                }
-            }
-
-            var events = new List<StageEvent>(launch.PlanningEvents);
-            events.AddRange(notices);
-            if (loop.SubstrateProblem is { } problem)
-            {
-                events.Add(SubstrateProblemEvent(scope, problem));
-            }
-
-            var substrateActive = gateway is not null && reachable;
-            var recheck = new RecheckStageSource();
-            var stages = new GraphTapStageSource(
-                new CompositeStageSource(StageChildren(slot, launch, plugins, settings, events, gateway, substrateActive, recheck), clock),
-                slot.OnGraphId);
-            ITaskContextSource context = new ScopeFollowingTaskContextSource(
-                new GsdTaskContextSource(_gsd, substrateActive ? new SubstrateContextReader(gateway!, _logger) : null),
-                slot.Scope);
-            var steering = substrateActive
-                ? new SteeringRecorderAdapter(new SubstrateSteeringRecorder(gateway!, _logger), slot.Scope)
-                : null;
-
-            var plan = new SessionPlan(launch, stages, context, steering, recheck, gateway, substrateActive, client)
-            {
-                Hooks = hooks,
-                RunModes = runModes,
-                Overlay = overlay,
-                Extras = extras,
-                SessionId = scope.SessionId,
-            };
+            (var launch, overlay) = PlanLaunch(settings, plugins, scope, additionalDirectories, hookBridge, runModes, notices);
+            var plan = AssemblePlan(slot, scope, launch, plugins, settings, notices, gateway, reachable, client, extras, hooks, runModes, overlay);
             client = null;
             hooks = null;
             runModes = null;
@@ -511,6 +463,91 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
                 await hooks.DisposeAsync().ConfigureAwait(false);
             }
         }
+    }
+
+    private string[]? AdditionalDirectoriesOf(string sessionId)
+    {
+        lock (_gate)
+        {
+            _ = _additionalDirectories.TryGetValue(sessionId, out var kept);
+            return kept;
+        }
+    }
+
+    /// <summary>Plans the launch of omp with the run mode's arguments and, when the mode has shell deny rules, writes the overlay settings file. A file that cannot be written re-plans without the rules and says so.</summary>
+    private (OmpLaunchPlan Launch, ConfigOverlayWriter? Overlay) PlanLaunch(
+        AgentLoopSettings settings,
+        IReadOnlyList<ResolvedPlugin> plugins,
+        StageObservationScope scope,
+        IReadOnlyList<string>? additionalDirectories,
+        HookBridgeEndpoint? hookBridge,
+        RunModePolicyHolder? runModes,
+        List<StageEvent> notices)
+    {
+        var clock = _options.TimeProvider;
+        var bashOverlay = runModes?.BashOverlayYaml;
+        var launch = OmpLaunchPlanner.Plan(settings, plugins, scope.SessionId, scope.WorkspaceRoot, scope.GraphId, clock, additionalDirectories, hookBridge, runModes?.Launch, bashOverlay);
+        if (launch.ConfigOverlayPath is null)
+        {
+            return (launch, null);
+        }
+
+        try
+        {
+            return (launch, ConfigOverlayWriter.Write(settings, scope.SessionStateDirectory, additionalDirectories, bashOverlay));
+        }
+        catch (Exception exception) when (bashOverlay is not null && exception is IOException or UnauthorizedAccessException)
+        {
+            // The deny rules for shell commands could not reach omp: plan again without them and say so, so the session still starts.
+            notices.Add(Notice(scope, "run-mode-overlay", "Run mode", StageStatus.Degraded, "The settings file with the shell deny rules could not be written, so omp does not enforce them itself in this session. " + exception.GetType().Name));
+            launch = OmpLaunchPlanner.Plan(settings, plugins, scope.SessionId, scope.WorkspaceRoot, scope.GraphId, clock, additionalDirectories, hookBridge, runModes?.Launch, null);
+            return (launch, launch.ConfigOverlayPath is null ? null : ConfigOverlayWriter.Write(settings, scope.SessionStateDirectory, additionalDirectories));
+        }
+    }
+
+    /// <summary>Merges the stage sources of the session, its task context and its steering recorder into the plan. The caller keeps the ownership of every disposable it passes in until this returns.</summary>
+    private SessionPlan AssemblePlan(
+        SessionSlot slot,
+        StageObservationScope scope,
+        OmpLaunchPlan launch,
+        IReadOnlyList<ResolvedPlugin> plugins,
+        AgentLoopSettings settings,
+        List<StageEvent> notices,
+        SubstrateGateway? gateway,
+        bool reachable,
+        HttpClient? client,
+        SessionExtras extras,
+        IHooksSession? hooks,
+        RunModePolicyHolder? runModes,
+        ConfigOverlayWriter? overlay)
+    {
+        var events = new List<StageEvent>(launch.PlanningEvents);
+        events.AddRange(notices);
+        if (_options.Loop.SubstrateProblem is { } problem)
+        {
+            events.Add(SubstrateProblemEvent(scope, problem));
+        }
+
+        var substrateActive = gateway is not null && reachable;
+        var recheck = new RecheckStageSource();
+        var stages = new GraphTapStageSource(
+            new CompositeStageSource(StageChildren(slot, launch, plugins, settings, events, gateway, substrateActive, recheck), _options.TimeProvider),
+            slot.OnGraphId);
+        ITaskContextSource context = new ScopeFollowingTaskContextSource(
+            new GsdTaskContextSource(_gsd, substrateActive ? new SubstrateContextReader(gateway!, _logger) : null),
+            slot.Scope);
+        var steering = substrateActive
+            ? new SteeringRecorderAdapter(new SubstrateSteeringRecorder(gateway!, _logger), slot.Scope)
+            : null;
+
+        return new SessionPlan(launch, stages, context, steering, recheck, gateway, substrateActive, client)
+        {
+            Hooks = hooks,
+            RunModes = runModes,
+            Overlay = overlay,
+            Extras = extras,
+            SessionId = scope.SessionId,
+        };
     }
 
     /// <summary>
@@ -719,7 +756,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
                     Files = extras.IsRemote ? new NoHookFiles() : null,
                 },
                 cancellationToken).ConfigureAwait(false);
-            session.NoticeRaised += (_, e) => slot.LiveEvents.RaiseHookNotice(e.Notice);
+            session.NoticeRaised += (_, e) => slot.LiveEvents.NotifyHookNotice(e.Notice);
             if (extras.IsRemote && session.IsActive)
             {
                 notices.Add(Notice(scope, "hooks", "Hooks", StageStatus.Degraded, "The hook files of the remote host are not read in this version: only hooks from plugins and the events omp reports apply."));

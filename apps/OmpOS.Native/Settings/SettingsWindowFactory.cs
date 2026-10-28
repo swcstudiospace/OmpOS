@@ -63,25 +63,7 @@ internal static class SettingsWindowFactory
             pages.Add(models());
         }
 
-        pages.Add(new TabPage(tab));
-        pages.Add(new RulesSettingsPage(new RulesSettingsSource(options.WorkspaceRoot, userHome)));
-        pages.Add(new SkillsSettingsPage(new SkillsSettingsSource(options.WorkspaceRoot, userHome)));
-        pages.Add(new CommandsSettingsPage(new SlashCommandsSettingsSource(
-            options.Commands ?? SlashCommandCatalogue.Shipped,
-            new ConventionsCommandsSource(options.WorkspaceRoot, userHome))));
-        if (options.Hooks is { } hooks)
-        {
-            var workspaceRoot = options.WorkspaceRoot;
-            pages.Add(new HooksSettingsPage(
-                SettingsSection.Hooks,
-                new HooksServiceSource(hooks, () => new HooksWorkspace { Roots = [workspaceRoot] })));
-        }
-
-        if (options.Mcp is not null)
-        {
-            pages.Add(CreateMcpPage(options, userHome));
-        }
-
+        AddConventionPages(pages, options, tab, userHome);
         pages.Add(new PluginsPage(new PluginsSettingsSource(options.PluginsRoot)));
         if (options.WorkspaceSets is { } workspaceSets)
         {
@@ -101,6 +83,29 @@ internal static class SettingsWindowFactory
         pages.Add(new NetworkSettingsPage(options.NetworkSource ?? new NetworkDiagnosticsSource()));
         pages.Add(new KeyboardSettingsPage(new KeyboardSettingsSource()));
         return pages;
+    }
+
+    // Tab, Rules, Skills, Commands, Hooks and MCP: the pages of what the user's files and the hooks service supply.
+    private static void AddConventionPages(List<ISettingsPage> pages, SettingsWindowOptions options, TabSettingsSource tab, string userHome)
+    {
+        pages.Add(new TabPage(tab));
+        pages.Add(new RulesSettingsPage(new RulesSettingsSource(options.WorkspaceRoot, userHome)));
+        pages.Add(new SkillsSettingsPage(new SkillsSettingsSource(options.WorkspaceRoot, userHome)));
+        pages.Add(new CommandsSettingsPage(new SlashCommandsSettingsSource(
+            options.Commands ?? SlashCommandCatalogue.Shipped,
+            new ConventionsCommandsSource(options.WorkspaceRoot, userHome))));
+        if (options.Hooks is { } hooks)
+        {
+            var workspaceRoot = options.WorkspaceRoot;
+            pages.Add(new HooksSettingsPage(
+                SettingsSection.Hooks,
+                new HooksServiceSource(hooks, () => new HooksWorkspace { Roots = [workspaceRoot] })));
+        }
+
+        if (options.Mcp is not null)
+        {
+            pages.Add(CreateMcpPage(options, userHome));
+        }
     }
 
     /// <summary>Creates the window model over a new set of pages. The first page, Runtime, is selected.</summary>

@@ -45,17 +45,17 @@ public sealed class WorkspacesSettingsSourceTests
 
         listed.Select(row => row.Name).ShouldBe(["Docs", "Team A"]);
         var team = listed[1];
-        team.Id.ShouldBe("team-a", Case.Sensitive);
+        team.Id.ShouldBe("team-a");
         team.FolderCount.ShouldBe(2);
-        team.PrimaryPath.ShouldBe(api, Case.Sensitive);
-        team.LastUsedText.ShouldBe("2026-10-28 12:30 UTC", Case.Sensitive);
+        team.PrimaryPath.ShouldBe(api);
+        team.LastUsedText.ShouldBe("2026-10-28 12:30 UTC");
         team.Roots.Select(root => (root.Id, root.Path, root.IsPrimary)).ShouldBe([("api", api, true), ("web", web, false)]);
 
         await source.SaveAsync(" team   a ", [Root("web", web, primary: true)], token).ConfigureAwait(true);
         var replaced = await source.ListRecentsAsync(token).ConfigureAwait(true);
 
         replaced.Select(row => row.Id).ShouldBe(["team-a", "docs"], "the same name replaces the set and moves it to the front");
-        replaced[0].Name.ShouldBe("team   a", Case.Sensitive);
+        replaced[0].Name.ShouldBe("team   a");
         replaced[0].FolderCount.ShouldBe(1);
 
         (await source.ForgetAsync("team-a", token).ConfigureAwait(true)).ShouldBeTrue();
@@ -79,9 +79,9 @@ public sealed class WorkspacesSettingsSourceTests
         var recents = await other.ListAsync(token).ConfigureAwait(true);
 
         var recent = recents.ShouldHaveSingleItem();
-        recent.Set.Name.ShouldBe("Backend", Case.Sensitive);
-        recent.Set.Id.ShouldBe(WorkspacesSettingsSource.SetIdFor("Backend"), Case.Sensitive);
-        recent.Set.PrimaryPath.ShouldBe(api, Case.Sensitive);
+        recent.Set.Name.ShouldBe("Backend");
+        recent.Set.Id.ShouldBe(WorkspacesSettingsSource.SetIdFor("Backend"));
+        recent.Set.PrimaryPath.ShouldBe(api);
     }
 
     /// <summary>Names that are not plain ASCII keep their own identity instead of collapsing to one identifier.</summary>
@@ -94,7 +94,7 @@ public sealed class WorkspacesSettingsSourceTests
     [InlineData("a?b", "a?b")]
     [InlineData("---", "---")]
     public void TheIdentifierFollowsTheName(string name, string expected) =>
-        WorkspacesSettingsSource.SetIdFor(name).ShouldBe(expected, Case.Sensitive);
+        WorkspacesSettingsSource.SetIdFor(name).ShouldBe(expected);
 
     /// <summary>A name or set the commands could not use is refused with a sentence, and nothing is written.</summary>
     [Fact]
@@ -107,10 +107,10 @@ public sealed class WorkspacesSettingsSourceTests
         var api = Folder(temp, "api");
         WorkspacePickerRoot[] one = [Root("api", api, primary: true)];
 
-        (await Should.ThrowAsync<SettingsSourceException>(() => source.SaveAsync("  ", one, token)).ConfigureAwait(true)).Message.ShouldBe(WorkspacesSourceCopy.NameBlank, Case.Sensitive);
-        (await Should.ThrowAsync<SettingsSourceException>(() => source.SaveAsync(new string('n', 81), one, token)).ConfigureAwait(true)).Message.ShouldBe(WorkspacesSourceCopy.NameUnusable, Case.Sensitive);
-        (await Should.ThrowAsync<SettingsSourceException>(() => source.SaveAsync("a\nb", one, token)).ConfigureAwait(true)).Message.ShouldBe(WorkspacesSourceCopy.NameUnusable, Case.Sensitive);
-        (await Should.ThrowAsync<SettingsSourceException>(() => source.SaveAsync("Empty", [], token)).ConfigureAwait(true)).Message.ShouldBe(WorkspacesSourceCopy.NothingToSave, Case.Sensitive);
+        (await Should.ThrowAsync<SettingsSourceException>(() => source.SaveAsync("  ", one, token)).ConfigureAwait(true)).Message.ShouldBe(WorkspacesSourceCopy.NameBlank);
+        (await Should.ThrowAsync<SettingsSourceException>(() => source.SaveAsync(new string('n', 81), one, token)).ConfigureAwait(true)).Message.ShouldBe(WorkspacesSourceCopy.NameUnusable);
+        (await Should.ThrowAsync<SettingsSourceException>(() => source.SaveAsync("a\nb", one, token)).ConfigureAwait(true)).Message.ShouldBe(WorkspacesSourceCopy.NameUnusable);
+        (await Should.ThrowAsync<SettingsSourceException>(() => source.SaveAsync("Empty", [], token)).ConfigureAwait(true)).Message.ShouldBe(WorkspacesSourceCopy.NothingToSave);
 
         (await store.ListAsync(token).ConfigureAwait(true)).ShouldBeEmpty();
         File.Exists(temp.PathOf("config/workspace-sets.json")).ShouldBeFalse();
@@ -149,11 +149,11 @@ public sealed class WorkspacesSettingsSourceTests
 
         var plainIssue = backend.Validate([Root("api", api, primary: true), Root("plain", plain)]).ShouldHaveSingleItem();
         plainIssue.IsError.ShouldBeFalse();
-        plainIssue.RootId.ShouldBe("plain", Case.Sensitive);
+        plainIssue.RootId.ShouldBe("plain");
 
         var missing = backend.Validate([Root("api", api, primary: true), Root("ghost", ghost)]).ShouldHaveSingleItem();
         missing.IsError.ShouldBeTrue();
-        missing.RootId.ShouldBe("ghost", Case.Sensitive);
+        missing.RootId.ShouldBe("ghost");
         missing.Message.ShouldContain("does not exist", Case.Sensitive);
     }
 
@@ -190,7 +190,7 @@ public sealed class WorkspacesSettingsSourceTests
 
         var import = backend.ImportCodeWorkspace(file);
 
-        import.Name.ShouldBe("team", Case.Sensitive);
+        import.Name.ShouldBe("team");
         import.Warnings.ShouldBeEmpty();
         import.Roots.Select(root => (root.Path, root.DisplayName, root.IsPrimary)).ShouldBe([(api, "api", true), (web, "Frontend", false)]);
     }
@@ -232,7 +232,7 @@ public sealed class WorkspacesSettingsSourceTests
         var back = backend.ImportCodeWorkspace(created);
 
         File.Exists(created).ShouldBeTrue();
-        back.Name.ShouldBe("new", Case.Sensitive);
+        back.Name.ShouldBe("new");
         back.Roots.Select(root => (root.Path, root.IsPrimary)).ShouldBe([(api, true), (web, false), (docs, false)]);
     }
 
@@ -248,7 +248,7 @@ public sealed class WorkspacesSettingsSourceTests
         var empty = Should.Throw<InvalidOperationException>(() => backend.ExportCodeWorkspace(target, []));
 
         remote.Message.ShouldContain("ssh-dev", Case.Sensitive);
-        empty.Message.ShouldBe(WorkspacesSourceCopy.NothingToExport, Case.Sensitive);
+        empty.Message.ShouldBe(WorkspacesSourceCopy.NothingToExport);
         File.Exists(target).ShouldBeFalse();
     }
 
@@ -278,7 +278,7 @@ public sealed class WorkspacesSettingsSourceTests
         (await page.SaveAsync(token).ConfigureAwait(true)).ShouldBeTrue();
 
         var recent = page.Recents.ShouldHaveSingleItem();
-        recent.Name.ShouldBe("Team", Case.Sensitive);
+        recent.Name.ShouldBe("Team");
         recent.FolderCount.ShouldBe(2);
         (await store.ListAsync(token).ConfigureAwait(true)).ShouldHaveSingleItem().Set.Roots.Select(root => root.Path).ShouldBe([api, web]);
 

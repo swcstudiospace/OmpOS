@@ -139,7 +139,7 @@ internal sealed class WorkspaceMentionFiles : IMentionFileSource
         return new Uri(full, UriKind.Absolute);
     }
 
-    private static bool IsLink(FileSystemInfo info) => (info.Attributes & FileAttributes.ReparsePoint) != 0 && info.LinkTarget is not null;
+    private static bool IsLink(FileSystemInfo info) => info.Attributes.HasFlag(FileAttributes.ReparsePoint) && info.LinkTarget is not null;
 
     private IReadOnlyList<MentionFileEntry> WalkAndStamp()
     {

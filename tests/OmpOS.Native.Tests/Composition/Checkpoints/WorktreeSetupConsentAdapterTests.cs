@@ -77,10 +77,10 @@ public sealed class WorktreeSetupConsentAdapterTests : IDisposable
         granted.ShouldBeTrue();
         store.Recorded.ShouldBe(1);
         var asked = prompt.Asked.Single();
-        asked.Key.RepositoryPath.ShouldBe(request.Identity.StoreRepositoryPath, Case.Sensitive);
-        asked.Key.SetupSha256.ShouldBe(request.Identity.Sha256, Case.Sensitive);
+        asked.Key.RepositoryPath.ShouldBe(request.Identity.StoreRepositoryPath);
+        asked.Key.SetupSha256.ShouldBe(request.Identity.Sha256);
         asked.Setup.Steps.Select(static step => step.Arguments[1]).ShouldBe(["npm ci", "echo hi"]);
-        asked.Setup.Environment["ROOT_WORKTREE_PATH"].ShouldBe(_root, Case.Sensitive);
+        asked.Setup.Environment["ROOT_WORKTREE_PATH"].ShouldBe(_root);
     }
 
     /// <summary>A prompt that throws or is cancelled is a refusal, and nothing is recorded.</summary>

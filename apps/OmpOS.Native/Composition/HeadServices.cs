@@ -5,6 +5,7 @@ using OmpOS.Harness.AgentLoop.Safety;
 using OmpOS.Harness.Mcp.Catalog;
 using OmpOS.Harness.Mcp.Config;
 using OmpOS.Harness.Remote;
+using OmpOS.Native.Agents;
 using OmpOS.Native.Cloud;
 using OmpOS.Native.Composition.Checkpoints;
 using OmpOS.Native.Views;
@@ -41,6 +42,9 @@ internal sealed class HeadServices : IAsyncDisposable
 
     /// <summary>The variable that holds the bearer token for the OmpOS API. Only its name is ever shown; the value is read for each request.</summary>
     internal const string ApiTokenVariable = "OMPOS_API_TOKEN";
+
+    private static readonly Action<ILogger, string, Exception?> HooksReleaseFailed =
+        LoggerMessage.Define<string>(LogLevel.Warning, new EventId(1, "HooksReleaseFailed"), "Releasing the hooks service failed ({ExceptionType}).");
 
     private readonly HttpClient? _apiClient;
     private readonly FileSetupConsentStore _consentStore;
@@ -202,101 +206,101 @@ internal sealed class HeadServices : IAsyncDisposable
         var clock = options.TimeProvider ?? TimeProvider.System;
         var home = string.IsNullOrWhiteSpace(options.HomeDirectory) ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) : options.HomeDirectory;
         var config = string.IsNullOrWhiteSpace(options.ConfigDirectory) ? DefaultConfigDirectory(options.StateRoot) : options.ConfigDirectory;
-        var variable = options.GetVariable ?? (static name => Environment.GetEnvironmentVariable(name));
         var hookApproval = new ForwardingHookApprovalPrompt();
-        var hooks = await HooksService.OpenAsync(
+        var hooks = await OpenHooksAsync(options, home, hookApproval, clock, cancellationToken).ConfigureAwait(false);
+        // The stores and the API client are owned here until the services take them over; a failure part way disposes the ones that exist.
+        Stores? stores = null;
+        HttpClient? apiClient = null;
+        var created = false;
+        try
+        {
+            stores = new Stores(options, config, clock);
+            var holder = new TrustTerminalHolder();
+            var sshOptions = new SshClientOptions { ControlPathDirectory = PrivateSshControlDirectory() };
+            var remoteEnvironments = new RemoteEnvironmentsHost(stores.RemoteProfiles, sshOptions, openTrustTerminal: holder.OpenAsync, clock: clock);
+            var mcp = new McpServerCatalog(new LocalMcpFileStore(), new FileMcpStateStore(Path.Combine(config, "mcp-state.json")));
+            var setupConsent = new ForwardingSetupConsentPrompt();
+            var worktrees = CreateWorktrees(options, stores.ConsentStore, setupConsent);
+            var urlLauncher = new SystemUrlLauncher(options.TopLevel ?? (static () => null));
+            var display = new DisplaySettings(new FileDisplaySettingsStore(Path.Combine(options.StateRoot, "config", "display.json")));
+            await display.LoadAsync(cancellationToken).ConfigureAwait(false);
+            var (runModeHub, runModes) = CreateRunModes(options, string.IsNullOrWhiteSpace(home) ? config : home, hooks, clock);
+            var (cloud, client) = CreateCloud(options, clock, urlLauncher);
+            apiClient = client;
+
+            var services = new HeadServices(
+                options, runModeHub.HomeDirectory, config, hooks, hookApproval, stores.RemoteProfiles, remoteEnvironments, mcp, stores.Checkpoints, setupConsent, stores.ConsentStore,
+                worktrees, new AboutLauncher(), urlLauncher, display, runModeHub, runModes, stores.WorkspaceSets, cloud, apiClient, sshOptions);
+            holder.Owner = services;
+            created = true;
+
+            // The services own the stores and the client from here on.
+            stores = null;
+            apiClient = null;
+            return services;
+        }
+        finally
+        {
+            apiClient?.Dispose();
+            stores?.Dispose();
+            if (!created)
+            {
+                await hooks.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+    }
+
+    private static WorktreeBackend CreateWorktrees(HeadServicesOptions options, FileSetupConsentStore consentStore, ForwardingSetupConsentPrompt setupConsent) =>
+        new(
+            Path.Combine(options.StateRoot, "worktrees"),
+            () => options.WorkspaceRoot,
+            new ConsentedWorktreeSetupRunner(new WorktreeSetupConsentAdapter(consentStore, setupConsent), new ShellWorktreeSetupExecutor()));
+
+    private static (RunModeHub Hub, RefreshingRunModeSource Source) CreateRunModes(HeadServicesOptions options, string modeHome, HooksService hooks, TimeProvider clock)
+    {
+        var hub = new RunModeHub(modeHome, new FileRunModeStore(modeHome), hooks.IsWorkspaceTrusted, clock);
+        var source = new RefreshingRunModeSource(
+            new RunModeSettingsSource(hub.HomeDirectory, () => options.WorkspaceRoot, hub.Store, () => hooks.IsWorkspaceTrusted(options.WorkspaceRoot)),
+            hub);
+        return (hub, source);
+    }
+
+    /// <summary>Creates the cloud agents host and its HTTP client when an API address is configured; otherwise both are null.</summary>
+    private static (ICloudAgentsHost? Host, HttpClient? Client) CreateCloud(HeadServicesOptions options, TimeProvider clock, IUrlLauncher urlLauncher)
+    {
+        var variable = options.GetVariable ?? (static name => Environment.GetEnvironmentVariable(name));
+        if (ApiAddress(variable) is not { } address)
+        {
+            return (null, null);
+        }
+
+        var client = CreateApiClient(options.ApiHandler);
+        var host = new ApiCloudAgentsHost(
+            client,
+            address,
+            clock,
+            _ => ValueTask.FromResult(Token(variable)),
+            urlLauncher: urlLauncher,
+            logger: options.LoggerFactory?.CreateLogger("OmpOS.Native.Cloud"));
+        return (host, client);
+    }
+
+    private static Task<HooksService> OpenHooksAsync(HeadServicesOptions options, string home, ForwardingHookApprovalPrompt approval, TimeProvider clock, CancellationToken cancellationToken) =>
+        HooksService.OpenAsync(
             new HooksServiceOptions
             {
                 StateDirectory = Path.Combine(options.StateRoot, "hooks"),
                 SessionStateRoot = options.StateRoot,
                 PluginsRoot = options.PluginsRoot,
                 HomeDirectory = string.IsNullOrWhiteSpace(home) ? null : home,
-                ApprovalPrompt = hookApproval,
+                ApprovalPrompt = approval,
                 Clock = clock,
                 LoggerFactory = options.LoggerFactory,
             },
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken);
 
-        var remoteProfiles = new EnvironmentProfileStore(Path.Combine(config, "environments.json"), clock);
-        HttpClient? apiClient = null;
-        var created = false;
-        try
-        {
-            var holder = new TrustTerminalHolder();
-            var sshOptions = new SshClientOptions { ControlPathDirectory = PrivateSshControlDirectory() };
-            var remoteEnvironments = new RemoteEnvironmentsHost(
-                remoteProfiles,
-                sshOptions,
-                openTrustTerminal: holder.OpenAsync,
-                clock: clock);
-            var mcp = new McpServerCatalog(new LocalMcpFileStore(), new FileMcpStateStore(Path.Combine(config, "mcp-state.json")));
-            var checkpoints = new CheckpointStore(options.StateRoot, [ExistingRoot(options)], clock: clock);
-            var setupConsent = new ForwardingSetupConsentPrompt();
-            var consentStore = new FileSetupConsentStore(Path.Combine(config, "setup-consent.json"), clock);
-            var worktrees = new WorktreeBackend(
-                Path.Combine(options.StateRoot, "worktrees"),
-                () => options.WorkspaceRoot,
-                new ConsentedWorktreeSetupRunner(new WorktreeSetupConsentAdapter(consentStore, setupConsent), new ShellWorktreeSetupExecutor()));
-            var urlLauncher = new SystemUrlLauncher(options.TopLevel ?? (static () => null));
-            var about = new AboutLauncher();
-            var display = new DisplaySettings(new FileDisplaySettingsStore(Path.Combine(options.StateRoot, "config", "display.json")));
-            await display.LoadAsync(cancellationToken).ConfigureAwait(false);
-
-            var runModeHub = new RunModeHub(string.IsNullOrWhiteSpace(home) ? config : home, new FileRunModeStore(string.IsNullOrWhiteSpace(home) ? config : home), hooks.IsWorkspaceTrusted, clock);
-            var runModes = new RefreshingRunModeSource(
-                new RunModeSettingsSource(runModeHub.HomeDirectory, () => options.WorkspaceRoot, runModeHub.Store, () => hooks.IsWorkspaceTrusted(options.WorkspaceRoot)),
-                runModeHub);
-            var workspaceSets = new WorkspaceSetStore(Path.Combine(config, "workspace-sets.json"), clock);
-
-            ICloudAgentsHost? cloud = null;
-            if (ApiAddress(variable) is { } address)
-            {
-                apiClient = options.ApiHandler is { } handler ? new HttpClient(handler, disposeHandler: false) : new HttpClient();
-                cloud = new ApiCloudAgentsHost(
-                    apiClient,
-                    address,
-                    clock,
-                    _ => ValueTask.FromResult(Token(variable)),
-                    urlLauncher: urlLauncher,
-                    logger: options.LoggerFactory?.CreateLogger("OmpOS.Native.Cloud"));
-            }
-
-            var services = new HeadServices(
-                options,
-                runModeHub.HomeDirectory,
-                config,
-                hooks,
-                hookApproval,
-                remoteProfiles,
-                remoteEnvironments,
-                mcp,
-                checkpoints,
-                setupConsent,
-                consentStore,
-                worktrees,
-                about,
-                urlLauncher,
-                display,
-                runModeHub,
-                runModes,
-                workspaceSets,
-                cloud,
-                apiClient,
-                sshOptions);
-            holder.Owner = services;
-            created = true;
-            return services;
-        }
-        finally
-        {
-            if (!created)
-            {
-                apiClient?.Dispose();
-                remoteProfiles.Dispose();
-                await hooks.DisposeAsync().ConfigureAwait(false);
-            }
-        }
-    }
+    private static HttpClient CreateApiClient(HttpMessageHandler? handler) =>
+        handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
 
     /// <summary>
     /// Returns the locator context the MCP catalog reads its files with: the workspace roots (primary first), the user's home directory and the process environment, for the expansion of <c>${VAR}</c> in the files.
@@ -353,7 +357,7 @@ internal sealed class HeadServices : IAsyncDisposable
             // The hooks service holds only its state files; a failure to release them must not hold the shutdown.
             if (_logger is not null)
             {
-                _logger.LogWarning("Releasing the hooks service failed ({ExceptionType}).", exception.GetType().Name);
+                HooksReleaseFailed(_logger, exception.GetType().Name, null);
             }
         }
     }
@@ -426,5 +430,33 @@ internal sealed class HeadServices : IAsyncDisposable
 
         public Task<bool> OpenAsync(RemoteTerminalCommand command, CancellationToken cancellationToken) =>
             Owner?.TrustTerminalOpener is { } opener ? opener(command, cancellationToken) : Task.FromResult(false);
+    }
+
+    /// <summary>The stores that hold a file handle, made together so a failure part way releases the ones that exist.</summary>
+    private sealed class Stores : IDisposable
+    {
+        public Stores(HeadServicesOptions options, string config, TimeProvider clock)
+        {
+            RemoteProfiles = new EnvironmentProfileStore(Path.Combine(config, "environments.json"), clock);
+            Checkpoints = new CheckpointStore(options.StateRoot, [ExistingRoot(options)], clock: clock);
+            ConsentStore = new FileSetupConsentStore(Path.Combine(config, "setup-consent.json"), clock);
+            WorkspaceSets = new WorkspaceSetStore(Path.Combine(config, "workspace-sets.json"), clock);
+        }
+
+        public EnvironmentProfileStore RemoteProfiles { get; }
+
+        public CheckpointStore Checkpoints { get; }
+
+        public FileSetupConsentStore ConsentStore { get; }
+
+        public WorkspaceSetStore WorkspaceSets { get; }
+
+        public void Dispose()
+        {
+            WorkspaceSets.Dispose();
+            ConsentStore.Dispose();
+            Checkpoints.Dispose();
+            RemoteProfiles.Dispose();
+        }
     }
 }

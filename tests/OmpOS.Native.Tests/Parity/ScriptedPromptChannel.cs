@@ -13,6 +13,7 @@ internal sealed class ScriptedPromptChannel(params ScriptedTurn[] turns) : IProm
     private readonly Queue<ScriptedTurn> _turns = new(turns);
     private readonly List<string> _prompts = [];
     private readonly TaskCompletionSource _cancelled = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly List<PromptOptions> _options = [];
     private int _cancelCount;
 
     /// <summary>Gets the text of every prompt submitted, in order.</summary>
@@ -20,6 +21,9 @@ internal sealed class ScriptedPromptChannel(params ScriptedTurn[] turns) : IProm
 
     /// <summary>Gets how many times the client asked the channel to cancel the turn in flight.</summary>
     public int CancelCount => _cancelCount;
+
+    /// <summary>Gets the options (the mentions that travel as resources) of every prompt submitted with options, in order.</summary>
+    public IReadOnlyList<PromptOptions> Options => _options.ToArray();
 
     /// <inheritdoc />
     public async IAsyncEnumerable<HarnessEvent> SubmitAsync(string prompt, [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -41,6 +45,14 @@ internal sealed class ScriptedPromptChannel(params ScriptedTurn[] turns) : IProm
             await _cancelled.Task.WaitAsync(cancellationToken).ConfigureAwait(true);
             yield return new CompletedEvent("cancelled");
         }
+    }
+
+    /// <inheritdoc />
+    public IAsyncEnumerable<HarnessEvent> SubmitAsync(string prompt, PromptOptions options, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        _options.Add(options);
+        return SubmitAsync(prompt, cancellationToken);
     }
 
     /// <inheritdoc />

@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -184,6 +185,6 @@ internal partial class QueuedMessagesView : UserControl
     // Focus is on the message already when its container kept it. A removed container leaves focus on nothing (or on a control that left the tree), and a container that was reused for another message holds that message.
     private bool FocusRestsOn(string id) =>
         TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is Control { DataContext: QueuedMessage held } focused
-        && focused.GetVisualRoot() is not null
+        && TopLevel.GetTopLevel(focused) is not null
         && string.Equals(held.Id, id, StringComparison.Ordinal);
 }

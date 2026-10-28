@@ -20,7 +20,8 @@ public sealed class CloudHandoffViewTests
 
     private static async Task RunAsync(string? repository, Action<FakeCloudAgentsHost>? arrange, Func<Rig, Task> body)
     {
-        await using var session = TestAppBuilder.StartSession();
+        var session = TestAppBuilder.StartSession();
+        await using var sessionScope = session.ConfigureAwait(true);
         await session.RunAsync(async () =>
         {
             var rig = new Rig(repository, arrange);
@@ -41,13 +42,13 @@ public sealed class CloudHandoffViewTests
     {
         await RunAsync(null, null, rig =>
         {
-            rig.Window.Title.ShouldBe(CloudCopy.HandoffTitle, Case.Sensitive);
-            rig.View.TaskField.Text.ShouldBe(TaskText, Case.Sensitive);
+            rig.Window.Title.ShouldBe(CloudCopy.HandoffTitle);
+            rig.View.TaskField.Text.ShouldBe(TaskText);
             rig.View.TaskField.IsReadOnly.ShouldBeTrue();
-            rig.View.CostNotice.Text.ShouldBe(CloudCopy.CostNotice(15), Case.Sensitive);
+            rig.View.CostNotice.Text.ShouldBe(CloudCopy.CostNotice(15));
             rig.View.Start.IsEnabled.ShouldBeFalse();
             rig.View.WhyDisabled.IsEffectivelyVisible.ShouldBeTrue();
-            rig.View.WhyDisabled.Text.ShouldBe(CloudCopy.RepositoryRequired, Case.Sensitive);
+            rig.View.WhyDisabled.Text.ShouldBe(CloudCopy.RepositoryRequired);
             SettingsTree.FocusedName(rig.Window).ShouldBe(CloudCopy.RepositoryEntryLabel);
             SettingsTree.Unnamed(rig.Window).ShouldBeEmpty();
             return Task.CompletedTask;
@@ -60,15 +61,15 @@ public sealed class CloudHandoffViewTests
     {
         await RunAsync(Repository, null, rig =>
         {
-            rig.View.RepositoryField.Text.ShouldBe(Repository, Case.Sensitive);
+            rig.View.RepositoryField.Text.ShouldBe(Repository);
             rig.View.CostConfirm.IsChecked.ShouldNotBe(true);
             rig.View.Start.IsEnabled.ShouldBeFalse();
-            rig.View.WhyDisabled.Text.ShouldBe(CloudCopy.CostNotConfirmed, Case.Sensitive);
+            rig.View.WhyDisabled.Text.ShouldBe(CloudCopy.CostNotConfirmed);
 
             rig.View.RepositoryField.Text = "http://github.com/owner/app";
             rig.Settle();
             rig.View.RepositoryError.IsEffectivelyVisible.ShouldBeTrue();
-            rig.View.RepositoryError.Text.ShouldBe(CloudCopy.RepositoryNotHttps, Case.Sensitive);
+            rig.View.RepositoryError.Text.ShouldBe(CloudCopy.RepositoryNotHttps);
 
             rig.View.CostConfirm.IsChecked = true;
             rig.Settle();
@@ -125,7 +126,7 @@ public sealed class CloudHandoffViewTests
             var result = rig.Window.Result.ShouldNotBeNull();
             result.Outcome.ShouldBe(CloudHandoffOutcome.Started);
             result.Agent.ShouldNotBeNull().Name.ShouldBe("Fix the flaky test");
-            result.Message.ShouldBe(CloudCopy.HandoffStarted("Fix the flaky test"), Case.Sensitive);
+            result.Message.ShouldBe(CloudCopy.HandoffStarted("Fix the flaky test"));
             return Task.CompletedTask;
         }).ConfigureAwait(true);
     }
@@ -175,7 +176,7 @@ public sealed class CloudHandoffViewTests
                 rig.Closed.ShouldBe(0);
                 rig.Window.Result.ShouldBeNull();
                 rig.View.Status.IsEffectivelyVisible.ShouldBeTrue();
-                rig.View.Status.Text.ShouldBe("The compute quota is used up.", Case.Sensitive);
+                rig.View.Status.Text.ShouldBe("The compute quota is used up.");
                 AutomationProperties.GetLiveSetting(rig.View.Status).ShouldBe(AutomationLiveSetting.Assertive);
                 rig.View.Start.IsEnabled.ShouldBeTrue();
 
@@ -198,8 +199,9 @@ public sealed class CloudHandoffViewTests
                 .Concat(SettingsTree.Visible<TextBox>(rig.View))
                 .Concat(SettingsTree.Visible<CheckBox>(rig.View))
                 .Where(static control => control.TemplatedParent is null)
+                .Distinct()
                 .ToArray();
-            controls.Length.ShouldBe(5);
+            controls.Length.ShouldBe(5, string.Join(", ", controls.Select(static control => control.GetType().Name + ":" + control.Name)));
             foreach (var control in controls)
             {
                 var name = AutomationProperties.GetName(control);

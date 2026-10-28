@@ -46,9 +46,9 @@ public sealed class SessionCatalogOverlayTests
         var cloud = Find(model, "cloud-1");
         cloud.Status.ShouldBe(AgentRowStatus.NeedsApproval);
         cloud.Group.ShouldBe(AgentRowGroup.NeedsYou);
-        cloud.StatusText.ShouldBe("Limit reached", Case.Sensitive);
-        cloud.IconKey.ShouldBe(StatusIcon.Alert, Case.Sensitive);
-        cloud.AccessibleName.ShouldBe("Agent cloud-1, cloud agent, Limit reached, 3 min ago", Case.Sensitive);
+        cloud.StatusText.ShouldBe("Limit reached");
+        cloud.IconKey.ShouldBe(StatusIcon.Alert);
+        cloud.AccessibleName.ShouldBe("Agent cloud-1, cloud agent, Limit reached, 3 min ago");
         (Find(model, "plain") with { IsGroupStart = plainBefore.IsGroupStart }).ShouldBe(plainBefore);
         model.Rows.Select(row => row.Id).ShouldBe(["cloud-1", "plain"]);
     }
@@ -66,7 +66,7 @@ public sealed class SessionCatalogOverlayTests
         row.Status.ShouldBe(AgentRowStatus.Running);
         row.Group.ShouldBe(AgentRowGroup.Running);
         row.IsStale.ShouldBeTrue();
-        row.AccessibleName.ShouldBe("Agent cloud-1, cloud agent, Running, 2 min ago, quiet for 2 min", Case.Sensitive);
+        row.AccessibleName.ShouldBe("Agent cloud-1, cloud agent, Running, 2 min ago, quiet for 2 min");
     }
 
     /// <summary>Records with no session identifier or an unknown session change nothing, and an empty list clears every cloud look.</summary>
@@ -101,11 +101,11 @@ public sealed class SessionCatalogOverlayTests
 
         _catalog.Put(Session("cloud-1", SessionLifecycle.Failed, minutesAgo: 1));
         Find(model, "cloud-1").Status.ShouldBe(AgentRowStatus.Paused);
-        Find(model, "cloud-1").StatusText.ShouldBe("Stopped", Case.Sensitive);
+        Find(model, "cloud-1").StatusText.ShouldBe("Stopped");
 
         _catalog.Put(Session("cloud-2", SessionLifecycle.Created, minutesAgo: 1));
         Find(model, "cloud-2").Status.ShouldBe(AgentRowStatus.Queued);
-        Find(model, "cloud-2").StatusText.ShouldBe("Provisioning", Case.Sensitive);
+        Find(model, "cloud-2").StatusText.ShouldBe("Provisioning");
     }
 
     /// <summary>The cloud look of a session that left the catalog is dropped: the session shows its own status if it comes back.</summary>
@@ -120,7 +120,7 @@ public sealed class SessionCatalogOverlayTests
         _catalog.Put(Session("cloud-1", SessionLifecycle.Completed, minutesAgo: 3));
 
         Find(model, "cloud-1").Status.ShouldBe(AgentRowStatus.Completed);
-        Find(model, "cloud-1").StatusText.ShouldBe("Completed", Case.Sensitive);
+        Find(model, "cloud-1").StatusText.ShouldBe("Completed");
     }
 
     /// <summary>Every mapped connection state gives the row its status, group, words, glyph and a card state of the matching runtime status.</summary>
@@ -136,8 +136,8 @@ public sealed class SessionCatalogOverlayTests
         var row = Find(model, "ssh-1");
         row.Status.ShouldBe(status);
         row.Group.ShouldBe(group);
-        row.StatusText.ShouldBe(text, Case.Sensitive);
-        row.IconKey.ShouldBe(icon, Case.Sensitive);
+        row.StatusText.ShouldBe(text);
+        row.IconKey.ShouldBe(icon);
         row.Card.ShouldNotBeNull();
         row.IsStale.ShouldBeFalse();
         row.IsLost.ShouldBe(status == AgentRowStatus.Lost);
@@ -154,8 +154,8 @@ public sealed class SessionCatalogOverlayTests
         model.SetRemoteStatus("ssh-1", RemoteEnvironmentStatus.Interrupted);
 
         var row = Find(model, "ssh-1");
-        row.StatusText.ShouldBe(RemoteCopy.InterruptedBadge, Case.Sensitive);
-        row.AccessibleName.ShouldBe("Agent ssh-1, ssh session, Disconnected, turn interrupted, 3 min ago", Case.Sensitive);
+        row.StatusText.ShouldBe(RemoteCopy.InterruptedBadge);
+        row.AccessibleName.ShouldBe("Agent ssh-1, ssh session, Disconnected, turn interrupted, 3 min ago");
     }
 
     /// <summary>States that say nothing about a session's connection leave the row exactly as its session makes it.</summary>
@@ -226,12 +226,12 @@ public sealed class SessionCatalogOverlayTests
         _catalog.Put(Session("ssh-1", SessionLifecycle.Running, minutesAgo: 0));
         model.Refresh();
         model.RefreshTimes();
-        Find(model, "ssh-1").StatusText.ShouldBe("Reconnecting", Case.Sensitive);
+        Find(model, "ssh-1").StatusText.ShouldBe("Reconnecting");
 
         _catalog.Remove("ssh-1");
         _catalog.Put(Session("ssh-1", SessionLifecycle.Running, minutesAgo: 0));
 
-        Find(model, "ssh-1").StatusText.ShouldBe("Running", Case.Sensitive);
+        Find(model, "ssh-1").StatusText.ShouldBe("Running");
     }
 
     /// <summary>A state reported before its session registers is kept and shows once the session is listed.</summary>
@@ -245,7 +245,7 @@ public sealed class SessionCatalogOverlayTests
         model.Refresh();
         _catalog.Put(Session("ssh-1", SessionLifecycle.Created, minutesAgo: 0));
 
-        Find(model, "ssh-1").StatusText.ShouldBe("Connecting", Case.Sensitive);
+        Find(model, "ssh-1").StatusText.ShouldBe("Connecting");
     }
 
     /// <summary>A connection state wins over a cloud look on the same row, and the cloud look returns when it clears.</summary>
@@ -260,8 +260,8 @@ public sealed class SessionCatalogOverlayTests
         Find(model, "s").Status.ShouldBe(AgentRowStatus.Lost);
 
         model.SetRemoteStatus("s", null);
-        Find(model, "s").StatusText.ShouldBe("Idle", Case.Sensitive);
-        Find(model, "s").AccessibleName.ShouldBe("Agent s, cloud agent, Idle, 3 min ago", Case.Sensitive);
+        Find(model, "s").StatusText.ShouldBe("Idle");
+        Find(model, "s").AccessibleName.ShouldBe("Agent s, cloud agent, Idle, 3 min ago");
     }
 
     /// <summary>Both overlays announce the changed rows once, announce nothing when set again unchanged, and the filter matches the overlaid words.</summary>

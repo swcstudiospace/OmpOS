@@ -24,33 +24,33 @@ public sealed class NotConfiguredCloudHost : ICloudAgentsHost
         Task.FromResult(CloudSetup.NotConfigured(CloudCopy.NotConfiguredIntro));
 
     /// <inheritdoc/>
-    public Task<CloudLimits> GetLimitsAsync(CancellationToken cancellationToken) => Refuse<CloudLimits>();
+    public Task<CloudLimits> GetLimitsAsync(CancellationToken cancellationToken) => RefuseAsync<CloudLimits>();
 
     /// <inheritdoc/>
-    public Task<IReadOnlyList<CloudAgentRecord>> ListAsync(CancellationToken cancellationToken) => Refuse<IReadOnlyList<CloudAgentRecord>>();
+    public Task<IReadOnlyList<CloudAgentRecord>> ListAsync(CancellationToken cancellationToken) => RefuseAsync<IReadOnlyList<CloudAgentRecord>>();
 
     /// <inheritdoc/>
-    public Task<CloudAgentRecord> CreateAsync(CloudAgentRequest request, CancellationToken cancellationToken) => Refuse<CloudAgentRecord>();
+    public Task<CloudAgentRecord> CreateAsync(CloudAgentRequest request, CancellationToken cancellationToken) => RefuseAsync<CloudAgentRecord>();
 
     /// <inheritdoc/>
-    public Task<CloudAgentRecord> WakeAsync(string agentId, CancellationToken cancellationToken) => Refuse<CloudAgentRecord>();
+    public Task<CloudAgentRecord> WakeAsync(string agentId, CancellationToken cancellationToken) => RefuseAsync<CloudAgentRecord>();
 
     /// <inheritdoc/>
-    public Task<CloudAgentRecord> StopAsync(string agentId, CancellationToken cancellationToken) => Refuse<CloudAgentRecord>();
+    public Task<CloudAgentRecord> StopAsync(string agentId, CancellationToken cancellationToken) => RefuseAsync<CloudAgentRecord>();
 
     /// <inheritdoc/>
-    public Task DeleteAsync(string agentId, CancellationToken cancellationToken) => Refuse<object>();
+    public Task DeleteAsync(string agentId, CancellationToken cancellationToken) => RefuseAsync<object>();
 
     /// <inheritdoc/>
-    public Task PromptAsync(string agentId, string text, CancellationToken cancellationToken) => Refuse<object>();
+    public Task PromptAsync(string agentId, string text, CancellationToken cancellationToken) => RefuseAsync<object>();
 
     /// <inheritdoc/>
     public Task<CloudPullRequestLink> CreatePullRequestAsync(string agentId, CloudPullRequestRequest request, CancellationToken cancellationToken) =>
-        Refuse<CloudPullRequestLink>();
+        RefuseAsync<CloudPullRequestLink>();
 
     /// <inheritdoc/>
-    public Task OpenPullRequestAsync(CloudPullRequestLink link, CancellationToken cancellationToken) => Refuse<object>();
+    public Task OpenPullRequestAsync(CloudPullRequestLink link, CancellationToken cancellationToken) => RefuseAsync<object>();
 
-    private static Task<T> Refuse<T>() =>
+    private static Task<T> RefuseAsync<T>() =>
         Task.FromException<T>(new CloudHostException(CloudFailureKind.NotConfigured, CloudCopy.NotConfiguredIntro));
 }

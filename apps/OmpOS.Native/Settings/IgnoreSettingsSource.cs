@@ -1,5 +1,4 @@
 using System.Globalization;
-using OmpOS.Presentation.Settings;
 using OmpOS.Presentation.Settings.Ignore;
 using OmpOS.Workspace.Ignore;
 

@@ -33,5 +33,5 @@ internal static class CloudHookFilter
         && !hook.IsOmpEvent
         && hook.Event is { } hookEvent
         && CloudHookEvents.IsSupported(hookEvent)
-        && (hook.RunsIn & HookLocations.Remote) != 0;
+        && hook.RunsIn.HasFlag(HookLocations.Remote);
 }

@@ -24,12 +24,13 @@ public sealed class ShellAdaptersTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var runtime = fixture.Runtime("session-1");
             string? requestId = null;
             var context = new SessionSlashContext(runtime.ViewModel, () => requestId);
 
-            context.SessionId.ShouldBe("session-1", Case.Sensitive);
+            context.SessionId.ShouldBe("session-1");
             context.LastRequestId.ShouldBeNull();
             context.LastResponseText.ShouldBeNull();
             context.LastUserMessageText.ShouldBeNull();
@@ -39,9 +40,9 @@ public sealed class ShellAdaptersTests
             Apply(runtime.Session, 3, new CompletedPayload { Reason = "end_turn" });
             requestId = "request-7";
 
-            context.LastUserMessageText.ShouldBe("explain the build", Case.Sensitive);
-            context.LastResponseText.ShouldBe("The build has two steps.", Case.Sensitive);
-            context.LastRequestId.ShouldBe("request-7", Case.Sensitive);
+            context.LastUserMessageText.ShouldBe("explain the build");
+            context.LastResponseText.ShouldBe("The build has two steps.");
+            context.LastRequestId.ShouldBe("request-7");
         }, Token).ConfigureAwait(true);
     }
 

@@ -35,6 +35,7 @@
                 Padding="{DynamicResource OmpOS.Space.Xs}">
           <ListBox x:Name="ModeList"
                    SelectionMode="Single"
+                   AutoScrollToSelectedItem="False"
                    AutomationProperties.Name="{x:Static safety:SafetyCopy.ModeLabel}" />
         </Border>
         <TextBlock x:Name="EffectiveModeText"
@@ -133,6 +134,7 @@
                   Padding="{DynamicResource OmpOS.Space.Xs}">
             <ListBox x:Name="BoundaryList"
                      SelectionMode="Single"
+                     AutoScrollToSelectedItem="False"
                      AutomationProperties.Name="{x:Static safety:SafetyCopy.ReadHeading}" />
           </Border>
           <TextBlock x:Name="BoundarySourceText"

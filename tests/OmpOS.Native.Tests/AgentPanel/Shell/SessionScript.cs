@@ -1,4 +1,5 @@
 using OmpOS.Contracts.Agents;
+using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.AgentLoop.Steering;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Tests.Parity;
@@ -6,6 +7,8 @@ using OmpOS.Native.Views.Sessions;
 using OmpOS.Native.Views.Terminal;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Approvals;
+using OmpOS.Presentation.Mentions;
+using OmpOS.Presentation.SideChats;
 
 namespace OmpOS.Native.Tests.AgentPanel.Shell;
 
@@ -32,6 +35,18 @@ internal sealed class SessionScript
 
     /// <summary>Gets the starter of the omp terminal of the session, or null for a chat session.</summary>
     public IOmpTerminalStarter? TerminalStarter { get; init; }
+
+    /// <summary>Gets the slash commands the session's engine advertises, or null for a session without a slash palette.</summary>
+    public IOmpSessionCommands? SessionCommands { get; init; }
+
+    /// <summary>Gets the sources of the session's <c>@</c> mentions, or null for a session without mentions.</summary>
+    public Func<IReadOnlyList<IMentionSource>>? MentionSources { get; init; }
+
+    /// <summary>Gets the forker of the session, or null for a session that cannot fork.</summary>
+    public ISessionForker? Forker { get; init; }
+
+    /// <summary>Gets the live signals of the session (hook notices, connection changes, interrupted turns), or null.</summary>
+    public SessionLiveEvents? LiveEvents { get; init; }
 
     /// <summary>Gets the scripted channel when the send path is one, or fails the test.</summary>
     public ScriptedPromptChannel Scripted => (ScriptedPromptChannel)Prompts;

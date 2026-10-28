@@ -87,9 +87,9 @@ public sealed class WorktreesPageViewTests
             using var screen = await ShowAsync(source, ct).ConfigureAwait(true);
 
             screen.View.SetupError.IsEffectivelyVisible.ShouldBeTrue();
-            screen.View.SetupError.Text.ShouldBe("worktrees.json is not valid JSON: x", Case.Sensitive);
-            screen.View.SetupError.Classes.ShouldContain("tone-error");
-            screen.View.SetupState.Text.ShouldBe(WorktreesCopy.Invalid, Case.Sensitive);
+            screen.View.SetupError.Text.ShouldBe("worktrees.json is not valid JSON: x");
+            screen.View.SetupError.Classes.ShouldContain("tone-error", StringComparer.Ordinal);
+            screen.View.SetupState.Text.ShouldBe(WorktreesCopy.Invalid);
             screen.View.Commands.IsEffectivelyVisible.ShouldBeFalse();
         }, ct).ConfigureAwait(true);
     }
@@ -106,7 +106,7 @@ public sealed class WorktreesPageViewTests
             var buttons = SettingsTree.Visible<Button>(screen.View);
 
             buttons.ShouldBe([screen.View.Refresher]);
-            AutomationProperties.GetName(screen.View.Refresher).ShouldBe(WorktreesCopy.RefreshLabel, Case.Sensitive);
+            AutomationProperties.GetName(screen.View.Refresher).ShouldBe(WorktreesCopy.RefreshLabel);
             screen.View.Refresher.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             screen.View.Refresher.MinWidth.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
 

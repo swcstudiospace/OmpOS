@@ -9,7 +9,7 @@ using OmpOS.Presentation;
 
 namespace OmpOS.Native.Agents;
 
-/// <summary>What <see cref="AgentHead.Create"/> needs: the three roots, and the seams a test replaces. The production head is built from the process environment instead (<see cref="AgentHead.CreateProduction"/>).</summary>
+/// <summary>What <see cref="AgentHead.Create"/> needs: the three roots, and the seams a test replaces. The production head is built from the process environment instead (<see cref="AgentHead.CreateProduction()"/>).</summary>
 internal sealed class AgentHeadOptions
 {
     /// <summary>Gets the plugins root. It may be missing: the plugin stages then report Unavailable with the fix.</summary>

@@ -61,7 +61,7 @@ public sealed class MentionSourceFactoryTests
         var folders = await sources.Single(static source => source.Kind == MentionKind.Folder).SearchAsync("src", 20, Token).ConfigureAwait(true);
 
         files.Items.Select(static item => item.Id).ShouldBe(["src/Program.cs"], ignoreOrder: true);
-        folders.Items.Select(static item => item.Id).ShouldContain("src");
+        folders.Items.Select(static item => item.Id).ShouldContain("src", StringComparer.Ordinal);
     }
 
     /// <summary>A source the head supplies replaces the local one: a remote file source is the one the file source reads.</summary>
@@ -92,7 +92,7 @@ public sealed class MentionSourceFactoryTests
         var resolved = await sources.Single(static source => source.Kind == MentionKind.Terminal).ResolveAsync(terminals.Items.Single(), Token).ConfigureAwait(true);
         var refused = await Should.ThrowAsync<MentionUnavailableException>(() => resolved.ReadAsync(1000, Token)).ConfigureAwait(true);
 
-        refused.Message.ShouldBe("The output of this terminal is not available in this window.", Case.Sensitive);
+        refused.Message.ShouldBe("The output of this terminal is not available in this window.");
     }
 
     /// <summary>With no pull request source the pull request mention is the unavailable one.</summary>
@@ -105,6 +105,6 @@ public sealed class MentionSourceFactoryTests
         var result = await sources.Single(static source => source.Kind == MentionKind.PullRequest).SearchAsync(string.Empty, 5, Token).ConfigureAwait(true);
 
         result.Items.ShouldBeEmpty();
-        result.UnavailableReason.ShouldBe(MentionCopy.PullRequestsNoHost, Case.Sensitive);
+        result.UnavailableReason.ShouldBe(MentionCopy.PullRequestsNoHost);
     }
 }

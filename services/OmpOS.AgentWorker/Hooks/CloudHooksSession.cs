@@ -179,6 +179,7 @@ internal sealed class CloudHooksSession : IAsyncDisposable
         }
         catch (Exception ex) when (ex is IOException or SocketException or UnauthorizedAccessException)
         {
+            await server.DisposeAsync().ConfigureAwait(false);
             BridgeFailed(_logger, _sessionId, ex.GetType().Name, null);
             return Unavailable(set, "The hook bridge could not start, so no hook is enforced.");
         }

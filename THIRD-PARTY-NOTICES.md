@@ -7834,6 +7834,8 @@ implication, estoppel or otherwise.
 | Item | Version | Licence | Notes |
 |---|---|---|---|
 | plugins/gsd-core-omp | 0.1.0 | AGPL-3.0-or-later | first-party OmpOS code; declares no npm dependencies |
+| xterm.js (`src/OmpOS.UI/wwwroot/lib/xterm`) | 6.0.0 | MIT | npm package @xterm/xterm, vendored unmodified, no CDN; Copyright (c) 2017-2019, The xterm.js authors (https://github.com/xtermjs/xterm.js); read from its licence file; MIT text in section 8 |
+| xterm.js fit addon (`src/OmpOS.UI/wwwroot/lib/xterm`) | 0.11.0 | MIT | npm package @xterm/addon-fit, vendored unmodified, no CDN; Copyright (c) 2019, The xterm.js authors (https://github.com/xtermjs/xterm.js); read from its licence file; MIT text in section 8 |
 | axe-core (`scripts/web-smoke/axe-core-4.14.0.sha256`) | from the file name | MPL-2.0 | smoke-test tool downloaded at test time with `npm pack`; never committed or shipped, so its text is not reproduced |
 
 ## 5. Fonts

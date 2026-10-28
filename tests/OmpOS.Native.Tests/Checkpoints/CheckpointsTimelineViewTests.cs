@@ -67,28 +67,28 @@ public sealed class CheckpointsTimelineViewTests
             ShellHarness.Settle(window);
             view.IsEffectivelyVisible.ShouldBeTrue();
             view.Empty.IsVisible.ShouldBeTrue();
-            view.Empty.Text.ShouldBe(CheckpointsCopy.Empty, Case.Sensitive);
-            view.Count.Text.ShouldBe(CheckpointsCopy.Count(0), Case.Sensitive);
+            view.Empty.Text.ShouldBe(CheckpointsCopy.Empty);
+            view.Count.Text.ShouldBe(CheckpointsCopy.Count(0));
             view.Rows.ItemCount.ShouldBe(0);
 
             SettingsTree.Click(window, view.Refresh);
 
             view.Rows.ItemCount.ShouldBe(2);
             view.Empty.IsVisible.ShouldBeFalse();
-            view.Count.Text.ShouldBe(CheckpointsCopy.Count(2), Case.Sensitive);
-            view.Status.Text.ShouldBe(CheckpointsCopy.Count(2) + ".", Case.Sensitive);
+            view.Count.Text.ShouldBe(CheckpointsCopy.Count(2));
+            view.Status.Text.ShouldBe(CheckpointsCopy.Count(2) + ".");
             var texts = SettingsTree.Texts(view);
-            texts.ShouldContain("#1");
-            texts.ShouldContain("Prompt 1");
-            texts.ShouldContain("Prompt 2");
-            texts.ShouldContain("10 min ago");
-            texts.ShouldContain("20 min ago");
-            texts.ShouldContain("f2.txt");
+            texts.ShouldContain("#1", StringComparer.Ordinal);
+            texts.ShouldContain("Prompt 1", StringComparer.Ordinal);
+            texts.ShouldContain("Prompt 2", StringComparer.Ordinal);
+            texts.ShouldContain("10 min ago", StringComparer.Ordinal);
+            texts.ShouldContain("20 min ago", StringComparer.Ordinal);
+            texts.ShouldContain("f2.txt", StringComparer.Ordinal);
 
             backend.Turns = [Turn(1)];
             SettingsTree.Click(window, view.Refresh);
             view.Rows.ItemCount.ShouldBe(1);
-            view.Count.Text.ShouldBe(CheckpointsCopy.Count(1), Case.Sensitive);
+            view.Count.Text.ShouldBe(CheckpointsCopy.Count(1));
             window.Close();
             return Task.CompletedTask;
         }, Token).ConfigureAwait(true);
@@ -110,13 +110,13 @@ public sealed class CheckpointsTimelineViewTests
             scene.Model.PendingTurnId.ShouldBe(2);
             scene.View.Details.IsVisible.ShouldBeTrue();
             scene.View.Confirmation.IsVisible.ShouldBeTrue();
-            scene.View.Confirmation.Text.ShouldBe(scene.Model.ConfirmationText, Case.Sensitive);
-            scene.View.Confirmation.Text.ShouldContain("The conversation is not changed", Case.Sensitive);
+            scene.View.Confirmation.Text.ShouldBe(scene.Model.ConfirmationText);
+            scene.View.Confirmation.Text.ShouldNotBeNull().ShouldContain("The conversation is not changed", Case.Sensitive);
             var texts = SettingsTree.Texts(scene.View);
-            texts.ShouldContain("a.txt: a.txt detail");
-            texts.ShouldContain("b.txt: b.txt detail");
+            texts.ShouldContain("a.txt: a.txt detail", StringComparer.Ordinal);
+            texts.ShouldContain("b.txt: b.txt detail", StringComparer.Ordinal);
             scene.View.Force.IsEffectivelyVisible.ShouldBeFalse();
-            SettingsTree.FocusedName(scene.Window).ShouldBe(CheckpointsViewText.CancelName, Case.Sensitive);
+            SettingsTree.FocusedName(scene.Window).ShouldBe(CheckpointsViewText.CancelName);
 
             var rewound = 0;
             scene.Model.Rewound += (_, _) => rewound++;
@@ -126,7 +126,7 @@ public sealed class CheckpointsTimelineViewTests
             rewound.ShouldBe(1);
             scene.Model.IsConfirming.ShouldBeFalse();
             scene.View.Details.IsVisible.ShouldBeFalse();
-            scene.View.Status.Text.ShouldContain("Restored 1 file.", Case.Sensitive);
+            scene.View.Status.Text.ShouldNotBeNull().ShouldContain("Restored 1 file.", Case.Sensitive);
             scene.View.Status.Text.ShouldContain(CheckpointsCopy.ConversationUnchanged, Case.Sensitive);
             scene.Window.Close();
             return Task.CompletedTask;
@@ -150,7 +150,7 @@ public sealed class CheckpointsTimelineViewTests
             Click(scene, RowButton(scene, CheckpointsCopy.RewindName(1)));
             scene.View.Force.IsEffectivelyVisible.ShouldBeTrue();
             scene.View.Force.Content.ShouldBe(CheckpointsCopy.ForceLabel);
-            AutomationProperties.GetName(scene.View.Force).ShouldBe(CheckpointsCopy.ForceLabel, Case.Sensitive);
+            AutomationProperties.GetName(scene.View.Force).ShouldBe(CheckpointsCopy.ForceLabel);
 
             Click(scene, scene.View.Confirm);
             scene.Backend.Rewinds.ShouldBe([(1, false)]);
@@ -183,16 +183,16 @@ public sealed class CheckpointsTimelineViewTests
             scene.Model.IsOpen.ShouldBeTrue();
             closed.ShouldBe(0);
             scene.View.Details.IsVisible.ShouldBeFalse();
-            scene.View.Status.Text.ShouldBe(CheckpointsCopy.Cancelled, Case.Sensitive);
-            SettingsTree.FocusedName(scene.Window).ShouldBe(CheckpointsCopy.RewindName(1), Case.Sensitive);
+            scene.View.Status.Text.ShouldBe(CheckpointsCopy.Cancelled);
+            SettingsTree.FocusedName(scene.Window).ShouldBe(CheckpointsCopy.RewindName(1));
 
             Click(scene, RowButton(scene, CheckpointsCopy.RewindName(2)));
             scene.Model.IsConfirming.ShouldBeTrue();
             Click(scene, scene.View.Cancel);
 
             scene.Model.IsConfirming.ShouldBeFalse();
-            scene.View.Status.Text.ShouldBe(CheckpointsCopy.Cancelled, Case.Sensitive);
-            SettingsTree.FocusedName(scene.Window).ShouldBe(CheckpointsCopy.RewindName(2), Case.Sensitive);
+            scene.View.Status.Text.ShouldBe(CheckpointsCopy.Cancelled);
+            SettingsTree.FocusedName(scene.Window).ShouldBe(CheckpointsCopy.RewindName(2));
             scene.Backend.Rewinds.ShouldBeEmpty();
 
             SettingsTree.Press(scene.Window, Key.Escape, PhysicalKey.Escape);
@@ -244,8 +244,8 @@ public sealed class CheckpointsTimelineViewTests
             scene.View.Confirmation.IsVisible.ShouldBeFalse();
             scene.View.Confirm.IsEffectivelyVisible.ShouldBeFalse();
             scene.View.PreviewFiles.ItemCount.ShouldBe(2);
-            SettingsTree.Texts(scene.View).ShouldContain("a.txt: a.txt detail");
-            scene.View.Status.Text.ShouldBe(CheckpointsCopy.PreviewSummary(1, scene.Model.Preview!), Case.Sensitive);
+            SettingsTree.Texts(scene.View).ShouldContain("a.txt: a.txt detail", StringComparer.Ordinal);
+            scene.View.Status.Text.ShouldBe(CheckpointsCopy.PreviewSummary(1, scene.Model.Preview!));
 
             Click(scene, scene.View.Refresh);
             scene.View.Details.IsVisible.ShouldBeFalse();
@@ -269,7 +269,7 @@ public sealed class CheckpointsTimelineViewTests
             scene.Model.PendingTurnId.ShouldBe(3);
             scene.View.Details.IsVisible.ShouldBeTrue();
             scene.Backend.Rewinds.ShouldBeEmpty();
-            SettingsTree.FocusedName(scene.Window).ShouldBe(CheckpointsViewText.CancelName, Case.Sensitive);
+            SettingsTree.FocusedName(scene.Window).ShouldBe(CheckpointsViewText.CancelName);
             scene.Window.Close();
             return Task.CompletedTask;
         }, Token).ConfigureAwait(true);
@@ -284,13 +284,13 @@ public sealed class CheckpointsTimelineViewTests
         {
             var scene = Open(1);
             AutomationProperties.GetLiveSetting(scene.View.Status).ShouldBe(AutomationLiveSetting.Polite);
-            AutomationProperties.GetName(scene.View.Status).ShouldBe(CheckpointsViewText.StatusName, Case.Sensitive);
+            AutomationProperties.GetName(scene.View.Status).ShouldBe(CheckpointsViewText.StatusName);
 
             scene.Backend.Failure = new InvalidOperationException("backend down");
             Click(scene, scene.View.Refresh);
 
             scene.Model.HasError.ShouldBeTrue();
-            scene.View.Status.Text.ShouldBe(CheckpointsCopy.Failed("backend down"), Case.Sensitive);
+            scene.View.Status.Text.ShouldBe(CheckpointsCopy.Failed("backend down"));
             AutomationProperties.GetLiveSetting(scene.View.Status).ShouldBe(AutomationLiveSetting.Assertive);
             scene.View.Status.Classes.Contains("tone-error").ShouldBeTrue();
 

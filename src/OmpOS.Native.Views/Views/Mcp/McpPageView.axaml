@@ -39,6 +39,7 @@
                  Classes="settings-body"
                  Classes.tone-error="{CompiledBinding IsError}"
                  Text="{CompiledBinding Summary}"
+                 AutomationProperties.Name="{CompiledBinding Summary}"
                  AutomationProperties.LiveSetting="Polite" />
 
       <StackPanel IsVisible="{CompiledBinding IsEmpty}"

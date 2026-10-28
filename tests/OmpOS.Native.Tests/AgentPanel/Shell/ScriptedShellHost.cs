@@ -126,6 +126,10 @@ internal sealed class ScriptedShellHost(FakeAgentCatalog catalog, ShellClock clo
             RecordSteering = script.RecordSteering,
             Steering = script.Steering,
             TerminalStarter = script.TerminalStarter,
+            SessionCommands = script.SessionCommands,
+            MentionSources = script.MentionSources,
+            Forker = script.Forker,
+            LiveEvents = script.LiveEvents,
             Reopen = _ => ReopenAsync(row.Id),
             Resume = _ => ResumeAsync(row.Id),
             StageRecheck = (source, _) =>

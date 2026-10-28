@@ -378,9 +378,9 @@ internal sealed class SessionSlot : IAsyncDisposable
         }
     }
 
-    private void OnConnectionStateChanged(object? sender, ConnectionStateChangedEventArgs e) => LiveEvents.RaiseConnectionChanged(e.State, e.Attempt, e.LastFailure);
+    private void OnConnectionStateChanged(object? sender, ConnectionStateChangedEventArgs e) => LiveEvents.NotifyConnectionChanged(e.State, e.Attempt, e.LastFailure);
 
-    private void OnTurnInterrupted(object? sender, EngineInterrupted e) => LiveEvents.RaiseTurnInterrupted(e.NativeSessionId);
+    private void OnTurnInterrupted(object? sender, EngineInterrupted e) => LiveEvents.NotifyTurnInterrupted(e.NativeSessionId);
 
     private void OnNativeSessionIdChanged(object? sender, EventArgs e)
     {

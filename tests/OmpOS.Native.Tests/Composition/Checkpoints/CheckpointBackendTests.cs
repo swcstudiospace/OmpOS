@@ -50,8 +50,8 @@ public sealed class CheckpointBackendTests : IDisposable
         var turns = await backend.ListAsync("s1", ct).ConfigureAwait(true);
 
         turns.Count.ShouldBe(2);
-        turns[0].Label.ShouldBe("turn t1", Case.Sensitive);
-        turns[1].Label.ShouldBe("turn t2", Case.Sensitive);
+        turns[0].Label.ShouldBe("turn t1");
+        turns[1].Label.ShouldBe("turn t2");
         turns[0].TurnId.ShouldBeLessThan(turns[1].TurnId);
         turns[1].Files.ShouldBe(["a.txt"]);
     }
@@ -71,13 +71,13 @@ public sealed class CheckpointBackendTests : IDisposable
         var turnId = (await backend.ListAsync("s1", ct).ConfigureAwait(true))[1].TurnId;
 
         var preview = await backend.PreviewAsync("s1", turnId, ct).ConfigureAwait(true);
-        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("three", Case.Sensitive);
+        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("three");
         var outcome = await backend.RewindAsync("s1", turnId, force: false, ct).ConfigureAwait(true);
 
         preview.Files.Count.ShouldBe(1);
         preview.Files[0].State.ShouldBe(CheckpointFileState.Restore);
         outcome.Status.ShouldBe(CheckpointRewindStatus.Completed);
-        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("two", Case.Sensitive);
+        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("two");
     }
 
     /// <summary>A file changed after the agent's last edit is stale: it blocks the rewind until forced.</summary>
@@ -94,14 +94,14 @@ public sealed class CheckpointBackendTests : IDisposable
         var turnId = (await backend.ListAsync("s1", ct).ConfigureAwait(true))[0].TurnId;
 
         var blocked = await backend.RewindAsync("s1", turnId, force: false, ct).ConfigureAwait(true);
-        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("by hand", Case.Sensitive);
+        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("by hand");
         var forced = await backend.RewindAsync("s1", turnId, force: true, ct).ConfigureAwait(true);
 
         blocked.Status.ShouldBe(CheckpointRewindStatus.Blocked);
         blocked.Preview.Files[0].State.ShouldBe(CheckpointFileState.Stale);
         blocked.Preview.StaleCount.ShouldBe(1);
         forced.Status.ShouldBe(CheckpointRewindStatus.Completed);
-        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("one", Case.Sensitive);
+        (await File.ReadAllTextAsync(file, ct).ConfigureAwait(true)).ShouldBe("one");
     }
 
     /// <summary>A file the turn created is deleted by the rewind, and an unknown turn is a status, not an exception.</summary>

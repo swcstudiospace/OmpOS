@@ -52,7 +52,7 @@ public sealed class QueuedMessagesViewTests
             _ = model.Enqueue("second");
             ShellHarness.Settle(window);
             view.IsVisible.ShouldBeTrue();
-            view.Pill.Text.ShouldBe(QueueCopy.Count(2), Case.Sensitive);
+            view.Pill.Text.ShouldBe(QueueCopy.Count(2));
 
             _ = model.Clear();
             ShellHarness.Settle(window);
@@ -77,9 +77,9 @@ public sealed class QueuedMessagesViewTests
             var window = ViewHost.Show(view);
 
             var shown = SettingsTree.Texts(view);
-            shown.ShouldContain("first");
-            shown.ShouldContain("second");
-            shown.ShouldContain("third");
+            shown.ShouldContain("first", StringComparer.Ordinal);
+            shown.ShouldContain("second", StringComparer.Ordinal);
+            shown.ShouldContain("third", StringComparer.Ordinal);
             RowOf(view, 2, "second").Focusable.ShouldBeTrue();
 
             for (var position = 1; position <= 3; position++)
@@ -105,7 +105,7 @@ public sealed class QueuedMessagesViewTests
             }
 
             AutomationProperties.GetLiveSetting(view.Announcement).ShouldBe(AutomationLiveSetting.Polite);
-            AutomationProperties.GetName(view.Rows).ShouldBe(QueueCopy.Title, Case.Sensitive);
+            AutomationProperties.GetName(view.Rows).ShouldBe(QueueCopy.Title);
             window.Close();
             return Task.CompletedTask;
         }, Token).ConfigureAwait(true);
@@ -130,7 +130,7 @@ public sealed class QueuedMessagesViewTests
 
             SettingsTree.Click(window, Named(view, QueueCopy.MoveDownName(1)));
             Order(model).ShouldBe(["second", "first", "third"]);
-            view.Announcement.Text.ShouldBe(QueueCopy.Moved(1, 2, 3), Case.Sensitive);
+            view.Announcement.Text.ShouldBe(QueueCopy.Moved(1, 2, 3));
 
             SettingsTree.Click(window, Named(view, QueueCopy.MoveUpName(3)));
             Order(model).ShouldBe(["second", "third", "first"]);
@@ -138,11 +138,11 @@ public sealed class QueuedMessagesViewTests
             SettingsTree.Click(window, Named(view, QueueCopy.SendNowName(2)));
             sent.ShouldBe(["third"]);
             Order(model).ShouldBe(["second", "first"]);
-            view.Announcement.Text.ShouldBe(QueueCopy.SentNow(2), Case.Sensitive);
+            view.Announcement.Text.ShouldBe(QueueCopy.SentNow(2));
 
             SettingsTree.Click(window, Named(view, QueueCopy.RemoveName(1)));
             Order(model).ShouldBe(["first"]);
-            view.Pill.Text.ShouldBe(QueueCopy.Count(1), Case.Sensitive);
+            view.Pill.Text.ShouldBe(QueueCopy.Count(1));
 
             SettingsTree.Click(window, view.ClearAll);
             model.IsEmpty.ShouldBeTrue();
@@ -166,15 +166,15 @@ public sealed class QueuedMessagesViewTests
             RowOf(view, 1, "first").Focus().ShouldBeTrue();
             SettingsTree.Press(window, Key.Down, PhysicalKey.ArrowDown, RawInputModifiers.Alt);
             Order(model).ShouldBe(["second", "first", "third"]);
-            SettingsTree.FocusedName(window).ShouldBe(QueueCopy.RowName(2, "first"), Case.Sensitive);
+            SettingsTree.FocusedName(window).ShouldBe(QueueCopy.RowName(2, "first"));
 
             SettingsTree.Press(window, Key.Up, PhysicalKey.ArrowUp, RawInputModifiers.Alt);
             Order(model).ShouldBe(["first", "second", "third"]);
-            SettingsTree.FocusedName(window).ShouldBe(QueueCopy.RowName(1, "first"), Case.Sensitive);
+            SettingsTree.FocusedName(window).ShouldBe(QueueCopy.RowName(1, "first"));
 
             SettingsTree.Press(window, Key.Delete, PhysicalKey.Delete);
             Order(model).ShouldBe(["second", "third"]);
-            SettingsTree.FocusedName(window).ShouldBe(QueueCopy.RowName(1, "second"), Case.Sensitive);
+            SettingsTree.FocusedName(window).ShouldBe(QueueCopy.RowName(1, "second"));
             window.Close();
             return Task.CompletedTask;
         }, Token).ConfigureAwait(true);

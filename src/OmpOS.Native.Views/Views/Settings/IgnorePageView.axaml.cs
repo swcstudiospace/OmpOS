@@ -126,8 +126,8 @@ internal partial class IgnorePageView : SettingsPageViewBase
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 8 };
         grid.Children.Add(Text(pattern, "settings-mono"));
         var button = new Button { Content = IgnoreCopy.RemoveLabel };
-        button.SetResourceReference(MinHeightProperty, "OmpOS.Size.TargetMin");
-        button.SetResourceReference(MinWidthProperty, "OmpOS.Size.TargetMin");
+        _ = button.Bind(MinHeightProperty, button.GetResourceObservable("OmpOS.Size.TargetMin"));
+        _ = button.Bind(MinWidthProperty, button.GetResourceObservable("OmpOS.Size.TargetMin"));
         AutomationProperties.SetName(button, IgnoreCopy.RemoveName(pattern));
         button.Click += (_, _) =>
         {

@@ -20,7 +20,7 @@ namespace OmpOS.Native.Cloud;
 /// lists the agents every <see cref="DefaultPollInterval"/> and raises the event only when an agent appeared, went, changed status or finished
 /// something. The API's per-agent SSE stream (<c>GET /cloud/agents/{id}/events</c>) carries a session log, not status changes, so it is not used here.
 /// </remarks>
-public sealed class ApiCloudAgentsHost : ICloudAgentsHost, IDisposable
+internal sealed class ApiCloudAgentsHost : ICloudAgentsHost, IDisposable
 {
     /// <summary>Gets how often the poll lists the agents while the Cloud page is attached.</summary>
     public static readonly TimeSpan DefaultPollInterval = TimeSpan.FromSeconds(15);
@@ -186,7 +186,7 @@ public sealed class ApiCloudAgentsHost : ICloudAgentsHost, IDisposable
             [
                 .. request.Repositories.Select(repository => new Contracts.Cloud.CloudRepository
                 {
-                    Url = repository.Url,
+                    Address = repository.Address,
                     Branch = request.Branch,
                     BaseBranch = request.BaseBranch,
                 }),

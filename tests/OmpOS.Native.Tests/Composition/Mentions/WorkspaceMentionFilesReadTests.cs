@@ -23,7 +23,7 @@ public sealed class WorkspaceMentionFilesReadTests
 
         var content = await files.ReadAsync("src/hello.txt", 1024, Token).ConfigureAwait(true);
 
-        content.Text.ShouldBe("h\u00E9llo\n", Case.Sensitive);
+        content.Text.ShouldBe("h\u00E9llo\n");
         content.SizeBytes.ShouldBe(7);
         content.Truncated.ShouldBeFalse();
     }
@@ -70,7 +70,7 @@ public sealed class WorkspaceMentionFilesReadTests
 
         var content = await files.ReadAsync("text.txt", maxBytes, Token).ConfigureAwait(true);
 
-        content.Text.ShouldBe(expected, Case.Sensitive);
+        content.Text.ShouldBe(expected);
         content.SizeBytes.ShouldBe(8);
         content.Truncated.ShouldBe(truncated);
     }
@@ -88,7 +88,7 @@ public sealed class WorkspaceMentionFilesReadTests
 
         var refused = await Should.ThrowAsync<MentionUnavailableException>(() => files.ReadAsync("data.bin", 4, Token)).ConfigureAwait(true);
 
-        refused.Message.ShouldBe("'data.bin' is a binary file and cannot be attached.", Case.Sensitive);
+        refused.Message.ShouldBe("'data.bin' is a binary file and cannot be attached.");
     }
 
     /// <summary>A missing file and a folder are both refused as missing.</summary>
@@ -102,8 +102,8 @@ public sealed class WorkspaceMentionFilesReadTests
         var missing = await Should.ThrowAsync<MentionUnavailableException>(() => files.ReadAsync("src/none.cs", 100, Token)).ConfigureAwait(true);
         var folder = await Should.ThrowAsync<MentionUnavailableException>(() => files.ReadAsync("src", 100, Token)).ConfigureAwait(true);
 
-        missing.Message.ShouldBe("'src/none.cs' no longer exists in the workspace.", Case.Sensitive);
-        folder.Message.ShouldBe("'src' no longer exists in the workspace.", Case.Sensitive);
+        missing.Message.ShouldBe("'src/none.cs' no longer exists in the workspace.");
+        folder.Message.ShouldBe("'src' no longer exists in the workspace.");
     }
 
     /// <summary>A path that climbs out of the root, an absolute path and an empty path are refused, even when the target file exists.</summary>
@@ -118,7 +118,7 @@ public sealed class WorkspaceMentionFilesReadTests
         foreach (var candidate in new[] { "../outside/outside.txt", "src/../../outside/outside.txt", outside, string.Empty, "." })
         {
             var refused = await Should.ThrowAsync<MentionUnavailableException>(() => files.ReadAsync(candidate, 100, Token)).ConfigureAwait(true);
-            refused.Message.ShouldBe("'" + candidate + "' is outside the workspace and cannot be attached.", Case.Sensitive);
+            refused.Message.ShouldBe("'" + candidate + "' is outside the workspace and cannot be attached.");
         }
     }
 
@@ -143,8 +143,8 @@ public sealed class WorkspaceMentionFilesReadTests
         var file = await Should.ThrowAsync<MentionUnavailableException>(() => files.ReadAsync("linked.txt", 100, Token)).ConfigureAwait(true);
         var behind = await Should.ThrowAsync<MentionUnavailableException>(() => files.ReadAsync("linked-folder/secret.txt", 100, Token)).ConfigureAwait(true);
 
-        file.Message.ShouldBe("'linked.txt' is a symbolic link and cannot be attached.", Case.Sensitive);
-        behind.Message.ShouldBe("'linked-folder/secret.txt' is a symbolic link and cannot be attached.", Case.Sensitive);
+        file.Message.ShouldBe("'linked.txt' is a symbolic link and cannot be attached.");
+        behind.Message.ShouldBe("'linked-folder/secret.txt' is a symbolic link and cannot be attached.");
     }
 
     /// <summary>The resource identifier is the absolute <c>file:</c> URI of the full path, escaped.</summary>
@@ -158,7 +158,7 @@ public sealed class WorkspaceMentionFilesReadTests
 
         uri.IsAbsoluteUri.ShouldBeTrue();
         uri.IsFile.ShouldBeTrue();
-        uri.LocalPath.ShouldBe(tree.Combine("src/a b.cs"), Case.Sensitive);
+        uri.LocalPath.ShouldBe(tree.Combine("src/a b.cs"));
         uri.AbsoluteUri.ShouldEndWith("/src/a%20b.cs", Case.Sensitive);
     }
 

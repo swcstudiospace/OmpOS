@@ -55,15 +55,15 @@ public sealed class CustomModeChipViewTests
             (await model.UseAsModeAsync("review", Token).ConfigureAwait(true)).ShouldBeTrue();
             ShellHarness.Settle(window);
             view.Chip.IsVisible.ShouldBeTrue();
-            view.ChipLabel.Text.ShouldBe(CustomModeCopy.ChipText("review"), Case.Sensitive);
+            view.ChipLabel.Text.ShouldBe(CustomModeCopy.ChipText("review"));
             ToneOf(view).ShouldBe(["mode-success"]);
-            AutomationProperties.GetName(view.ClearButton).ShouldBe(CustomModeCopy.ChipName("review"), Case.Sensitive);
-            view.Status.Text.ShouldBe(CustomModeCopy.Started("review"), Case.Sensitive);
+            AutomationProperties.GetName(view.ClearButton).ShouldBe(CustomModeCopy.ChipName("review"));
+            view.Status.Text.ShouldBe(CustomModeCopy.Started("review"));
 
             SettingsTree.Click(window, view.ClearButton);
             model.IsActive.ShouldBeFalse();
             view.Chip.IsVisible.ShouldBeFalse();
-            view.Status.Text.ShouldBe(CustomModeCopy.Exited, Case.Sensitive);
+            view.Status.Text.ShouldBe(CustomModeCopy.Exited);
             window.Close();
         }, Token).ConfigureAwait(true);
     }
@@ -129,10 +129,10 @@ public sealed class CustomModeChipViewTests
             PressEnterInList(view);
             ShellHarness.Settle(window);
 
-            model.Active.ShouldNotBeNull().Skill.Name.ShouldBe("plan", Case.Sensitive);
+            model.Active.ShouldNotBeNull().Skill.Name.ShouldBe("plan");
             view.IsOpen.ShouldBeFalse();
             view.Chip.IsVisible.ShouldBeTrue();
-            view.ChipLabel.Text.ShouldBe(CustomModeCopy.ChipText("plan"), Case.Sensitive);
+            view.ChipLabel.Text.ShouldBe(CustomModeCopy.ChipText("plan"));
             window.Close();
         }, Token).ConfigureAwait(true);
     }
@@ -157,9 +157,9 @@ public sealed class CustomModeChipViewTests
             PressEnterInList(view);
             ShellHarness.Settle(window);
 
-            model.Active.ShouldNotBeNull().Skill.Name.ShouldBe("review", Case.Sensitive);
+            model.Active.ShouldNotBeNull().Skill.Name.ShouldBe("review");
             view.IsOpen.ShouldBeTrue();
-            view.Status.Text.ShouldBe(CustomModeCopy.Unreadable("plan"), Case.Sensitive);
+            view.Status.Text.ShouldBe(CustomModeCopy.Unreadable("plan"));
             view.Status.Classes.Contains("tone-error").ShouldBeTrue();
             window.Close();
         }, Token).ConfigureAwait(true);
@@ -180,7 +180,7 @@ public sealed class CustomModeChipViewTests
             ShellHarness.Settle(window);
             view.Skills.ItemCount.ShouldBe(0);
             view.EmptyLine.IsVisible.ShouldBeTrue();
-            view.EmptyLine.Text.ShouldBe(CustomModeCopy.Empty, Case.Sensitive);
+            view.EmptyLine.Text.ShouldBe(CustomModeCopy.Empty);
 
             PressEnterInList(view);
             model.IsActive.ShouldBeFalse();

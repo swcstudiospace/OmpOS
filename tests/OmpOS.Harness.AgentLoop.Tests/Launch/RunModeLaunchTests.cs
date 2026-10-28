@@ -18,7 +18,7 @@ public sealed class RunModeLaunchTests
     {
         var plan = Plan(runMode: null);
 
-        plan.ExtraArguments.ShouldNotContain("--approval-mode");
+        plan.ExtraArguments.Contains("--approval-mode", StringComparer.Ordinal).ShouldBeFalse();
         plan.ConfigOverlayPath.ShouldBeNull();
     }
 
@@ -40,7 +40,7 @@ public sealed class RunModeLaunchTests
     {
         var plan = Plan(RunModeLaunchMapper.Map(RunMode.AutoReview, readsNeedGate: false));
 
-        plan.ExtraArguments.ToList().SkipWhile(static argument => argument != "--approval-mode").Skip(1).First().ShouldBe("always-ask");
+        plan.ExtraArguments.ToList().SkipWhile(static argument => !string.Equals(argument, "--approval-mode", StringComparison.Ordinal)).Skip(1).First().ShouldBe("always-ask");
     }
 
     [Fact]
@@ -68,6 +68,6 @@ public sealed class RunModeLaunchTests
 
         var text = ConfigOverlayWriter.Render(settings, null, "bash:\n  patterns:\n    - pattern: \"rm *\"\n");
 
-        text.ShouldBe("mcp:\n  enableProjectConfig: false\nbash:\n  patterns:\n    - pattern: \"rm *\"\n", Case.Sensitive);
+        text.ShouldBe("mcp:\n  enableProjectConfig: false\nbash:\n  patterns:\n    - pattern: \"rm *\"\n");
     }
 }

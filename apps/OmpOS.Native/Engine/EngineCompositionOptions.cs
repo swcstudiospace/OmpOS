@@ -1,4 +1,3 @@
-using OmpOS.Harness.Abstractions;
 using OmpOS.Harness.Acp;
 using OmpOS.Harness.AgentLoop.Safety;
 using OmpOS.Harness.Remote;

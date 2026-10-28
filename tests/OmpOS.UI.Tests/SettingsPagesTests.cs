@@ -82,8 +82,8 @@ public sealed class SettingsPagesTests : UiTestContext
 
         await cut.FindAll(".ompos-settings-footer button").Single(static button => string.Equals(button.TextContent, SettingsCopy.ResetLabel, StringComparison.Ordinal)).ClickAsync().ConfigureAwait(true);
 
-        await cut.WaitForAssertionAsync(() => ThemeCalls(module).ShouldBe(["light", "system", "dark"])).ConfigureAwait(true);
-        PressedLabels(cut, "#ompos-setting-theme").ShouldBe(["Dark"]);
+        await cut.WaitForAssertionAsync(() => ThemeCalls(module).ShouldBe(["light", "system", "light"])).ConfigureAwait(true);
+        PressedLabels(cut, "#ompos-setting-theme").ShouldBe(["Light"]);
         PressedLabels(cut, "#ompos-setting-motion").ShouldBe(["Follow system"]);
     }
 

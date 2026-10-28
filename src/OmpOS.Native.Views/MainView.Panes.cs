@@ -5,9 +5,9 @@ using Avalonia.Threading;
 using OmpOS.Native.Views.Checkpoints;
 using OmpOS.Native.Views.Modes;
 using OmpOS.Native.Views.Queue;
+using OmpOS.Native.Views.Sessions;
 using OmpOS.Native.Views.Shell;
 using OmpOS.Native.Views.SideChats;
-using OmpOS.Native.Views.Sessions;
 using OmpOS.Presentation.Checkpoints;
 using OmpOS.Presentation.Commands.Handlers;
 using OmpOS.Presentation.Modes;
@@ -82,7 +82,7 @@ public partial class MainView
         _ = model.RefreshAsync(CancellationToken.None);
     }
 
-    private async Task RecordCheckpointsAsync(SessionPane pane)
+    private static async Task RecordCheckpointsAsync(SessionPane pane)
     {
         if (pane.CheckpointRecorder is not { } recorder || pane.CheckpointsModel is not { } model)
         {
@@ -301,17 +301,17 @@ public partial class MainView
     }
 
     // /open path[:line]: the file opens in the editor tool. The editor shows the line when it has the file selected.
-    private Task<bool> OpenInEditorAsync(string workspacePath, int? line, CancellationToken cancellationToken)
+    private async Task<bool> OpenInEditorAsync(string workspacePath, int? line, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
-            var text = File.ReadAllText(_workspace.Resolve(workspacePath));
+            var text = await File.ReadAllTextAsync(_workspace.Resolve(workspacePath), cancellationToken).ConfigureAwait(true);
             _editorTabs.Open(workspacePath, text);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or WorkspacePathException)
         {
-            return Task.FromResult(false);
+            return false;
         }
 
         OpenTool(_editorTool);
@@ -320,7 +320,7 @@ public partial class MainView
             editor.GoToLine(number);
         }
 
-        return Task.FromResult(true);
+        return true;
     }
 
     // Show on /changes: the transcript comes back (a tool or the Agents view closes) and focus lands on the Changes bar.

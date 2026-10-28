@@ -29,7 +29,6 @@ public sealed class ProviderListingPlanRuleTests
 
         plan.RequiresPlanRule.ShouldBeTrue();
         plain.RequiresPlanRule.ShouldBeFalse();
-        plan.PlanRuleAcceptLabel.ShouldBe(ProviderListingCopy.PlanRuleAcceptLabel, Case.Sensitive);
         plan.PlanRuleAcceptName.ShouldContain(plan.DisplayName, Case.Sensitive);
 
         plan.BeginSetup();
@@ -50,7 +49,7 @@ public sealed class ProviderListingPlanRuleTests
 
         (await card.SaveAsync(ct).ConfigureAwait(true)).ShouldBeFalse();
 
-        card.ErrorText.ShouldBe(ProviderListingCopy.PlanRuleRequired, Case.Sensitive);
+        card.ErrorText.ShouldBe(ProviderListingCopy.PlanRuleRequired);
         source.OmpKeys.ShouldBeEmpty();
         source.CatalogueAdds.ShouldBeEmpty();
 
@@ -71,13 +70,13 @@ public sealed class ProviderListingPlanRuleTests
 
         card.IsKeyDisabled.ShouldBeTrue();
         card.IsKeyEnabled.ShouldBeFalse();
-        card.KeyDisabledReason.ShouldBe(Reason, Case.Sensitive);
+        card.KeyDisabledReason.ShouldBe(Reason);
 
         card.BeginSetup();
         Type(card);
         (await card.SaveAsync(ct).ConfigureAwait(true)).ShouldBeFalse();
 
-        card.ErrorText.ShouldBe(Reason, Case.Sensitive);
+        card.ErrorText.ShouldBe(Reason);
         card.ApiKey.ShouldNotBeNull().Entry.ShouldBeEmpty();
         source.OmpKeys.ShouldBeEmpty();
         source.CatalogueAdds.ShouldBeEmpty();

@@ -96,13 +96,13 @@ public sealed class WorkspacesPageViewTests
 
             SettingsTree.Click(window, SettingsTree.Named<Button>(view, WorkspacesCopy.LoadName("Backend")));
 
-            page.Picker.Name.ShouldBe("Backend", Case.Sensitive);
+            page.Picker.Name.ShouldBe("Backend");
             page.Picker.Rows.Count.ShouldBe(2);
             page.IsDirty.ShouldBeTrue();
             view.Announcement.IsVisible.ShouldBeTrue();
-            view.Announcement.Text.ShouldBe(WorkspacesCopy.Loaded("Backend"), Case.Sensitive);
+            view.Announcement.Text.ShouldBe(WorkspacesCopy.Loaded("Backend"));
             AutomationProperties.GetLiveSetting(view.Announcement).ShouldBe(AutomationLiveSetting.Polite);
-            AutomationProperties.GetName(view.Announcement).ShouldBe(WorkspacesCopy.AnnouncementName, Case.Sensitive);
+            AutomationProperties.GetName(view.Announcement).ShouldBe(WorkspacesCopy.AnnouncementName);
             SettingsTree.Has<Button>(view, WorkspaceSetPickerCopy.RemoveName("r1")).ShouldBeTrue("the loaded folders have their own row buttons");
             window.Close();
         }, token).ConfigureAwait(true);
@@ -124,15 +124,15 @@ public sealed class WorkspacesPageViewTests
             source.Recents.Select(row => row.Name).ShouldBe(["Docs"]);
             view.Recents.ItemCount.ShouldBe(1);
             SettingsTree.Has<Button>(view, WorkspacesCopy.ForgetName("Backend")).ShouldBeFalse();
-            view.Announcement.Text.ShouldBe(WorkspacesCopy.Forgot("Backend"), Case.Sensitive);
-            SettingsTree.FocusedName(window).ShouldBe(WorkspacesCopy.LoadName("Docs"), Case.Sensitive);
+            view.Announcement.Text.ShouldBe(WorkspacesCopy.Forgot("Backend"));
+            SettingsTree.FocusedName(window).ShouldBe(WorkspacesCopy.LoadName("Docs"));
 
             SettingsTree.Click(window, SettingsTree.Named<Button>(view, WorkspacesCopy.ForgetName("Docs")));
             SettingsTree.SettleSafe(window);
 
             page.HasNoRecents.ShouldBeTrue();
             view.NoRecents.IsVisible.ShouldBeTrue();
-            SettingsTree.FocusedName(window).ShouldBe(AutomationProperties.GetName(view.Editor.AddFolder), Case.Sensitive);
+            SettingsTree.FocusedName(window).ShouldBe(AutomationProperties.GetName(view.Editor.AddFolder));
             window.Close();
         }, token).ConfigureAwait(true);
     }
@@ -181,10 +181,10 @@ public sealed class WorkspacesPageViewTests
             SettingsTree.SettleSafe(window);
 
             view.SaveFailed.IsVisible.ShouldBeTrue();
-            view.SaveFailed.Text.ShouldBe(WorkspacesCopy.SaveFailedHeading, Case.Sensitive);
+            view.SaveFailed.Text.ShouldBe(WorkspacesCopy.SaveFailedHeading);
             AutomationProperties.GetLiveSetting(view.SaveFailed).ShouldBe(AutomationLiveSetting.Assertive);
             view.SaveFailedDetail.IsVisible.ShouldBeTrue();
-            view.SaveFailedDetail.Text.ShouldContain("does not exist", Case.Sensitive);
+            view.SaveFailedDetail.Text.ShouldNotBeNull().ShouldContain("does not exist", Case.Sensitive);
             SettingsTree.Visible<TextBlock>(view.Editor).ShouldContain(
                 block => (block.Text ?? string.Empty).Contains("does not exist", StringComparison.Ordinal),
                 "the embedded editor words the finding itself");

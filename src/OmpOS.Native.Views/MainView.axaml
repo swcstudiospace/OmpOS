@@ -159,6 +159,12 @@
                       IsVisible="False"
                       Margin="0,0,0,8"
                       AutomationProperties.Name="New session environment">
+              <Expander.HeaderTemplate>
+                <!-- The header names the current choice after the question; in the rail's narrow column it wraps instead of clipping the choice. -->
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                </DataTemplate>
+              </Expander.HeaderTemplate>
               <ContentControl x:Name="EnvironmentHost" />
             </Expander>
 

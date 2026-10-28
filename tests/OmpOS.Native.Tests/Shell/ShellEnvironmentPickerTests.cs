@@ -22,7 +22,8 @@ public sealed class ShellEnvironmentPickerTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var host = new ScriptedRemoteHost().With("box-1", "alpha").With("box-2", "beta");
             var main = fixture.ShowWithServices(new ShellServices { RemoteEnvironments = host, NewSessionTarget = new PendingSessionTarget() });
             await Task.Yield();
@@ -30,8 +31,8 @@ public sealed class ShellEnvironmentPickerTests
 
             main.FindControl<Expander>("EnvironmentExpander")!.IsVisible.ShouldBeTrue();
             var model = main.TargetModel.ShouldNotBeNull();
-            model.Options.Select(static option => option.Id).ShouldBe([NewSessionTargetModel.LocalId, "ssh:box-1", "ssh:box-2"]);
-            model.Selected!.Id.ShouldBe(NewSessionTargetModel.LocalId, Case.Sensitive);
+            model.Options.Select(static option => option.Id).ShouldBe([NewSessionTargetModel.LocalId, "ssh:box-1", "ssh:box-2", NewSessionTargetModel.CloudId]);
+            model.Selected!.Id.ShouldBe(NewSessionTargetModel.LocalId);
         }, Token).ConfigureAwait(true);
     }
 
@@ -42,7 +43,8 @@ public sealed class ShellEnvironmentPickerTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var pending = new PendingSessionTarget();
             var host = new ScriptedRemoteHost().With("box-1", "alpha");
             var main = fixture.ShowWithServices(new ShellServices { RemoteEnvironments = host, NewSessionTarget = pending });
@@ -52,7 +54,7 @@ public sealed class ShellEnvironmentPickerTests
             model.Select("ssh:box-1");
             var chosen = pending.Take().ShouldNotBeNull();
             chosen.Kind.ShouldBe(SessionTargetKind.Ssh);
-            chosen.ProfileId.ShouldBe("box-1", Case.Sensitive);
+            chosen.ProfileId.ShouldBe("box-1");
 
             model.Select("ssh:box-1");
             model.Select(NewSessionTargetModel.LocalId);
@@ -67,7 +69,8 @@ public sealed class ShellEnvironmentPickerTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var pending = new PendingSessionTarget();
             var host = new ScriptedRemoteHost().With("box-1", "alpha");
             var main = fixture.ShowWithServices(new ShellServices { RemoteEnvironments = host, NewSessionTarget = pending });
@@ -89,7 +92,8 @@ public sealed class ShellEnvironmentPickerTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices { RemoteEnvironments = new ScriptedRemoteHost(), NewSessionTarget = new PendingSessionTarget() });
             var seen = new List<SettingsSection?>();
             main.SettingsRequested += (_, e) => seen.Add(e.Section);
@@ -111,7 +115,8 @@ public sealed class ShellEnvironmentPickerTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var pending = new PendingSessionTarget();
             var host = new ScriptedRemoteHost().With("box-1", "alpha");
             var main = fixture.ShowWithServices(new ShellServices { RemoteEnvironments = host, NewSessionTarget = pending });

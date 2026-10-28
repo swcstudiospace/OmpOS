@@ -44,7 +44,7 @@ public sealed class IgnoreSettingsSourceTests : IDisposable
         await source.SaveAsync(values, token).ConfigureAwait(true);
 
         (await Source().LoadAsync(token).ConfigureAwait(true)).ShouldBe(values);
-        using var json = JsonDocument.Parse(File.ReadAllText(_state.PathOf("state/config/settings.json")));
+        using var json = JsonDocument.Parse(await File.ReadAllTextAsync(_state.PathOf("state/config/settings.json"), token).ConfigureAwait(true));
         var ignore = json.RootElement.GetProperty("ignore");
         ignore.GetProperty("globalPatterns").EnumerateArray().Select(static item => item.GetString()).ShouldBe(["build/", "!keep.png", "*.log"]);
         ignore.GetProperty("useDefaultList").GetBoolean().ShouldBeFalse();
@@ -63,11 +63,11 @@ public sealed class IgnoreSettingsSourceTests : IDisposable
 
         await source.SaveAsync(new IgnoreSettingsValues(["new/"], true, false), token).ConfigureAwait(true);
 
-        using var json = JsonDocument.Parse(File.ReadAllText(_state.PathOf("state/config/settings.json")));
+        using var json = JsonDocument.Parse(await File.ReadAllTextAsync(_state.PathOf("state/config/settings.json"), token).ConfigureAwait(true));
         json.RootElement.GetProperty("futureThing").GetProperty("a").GetInt32().ShouldBe(1);
-        json.RootElement.GetProperty("theme").GetString().ShouldBe("dark", Case.Sensitive);
+        json.RootElement.GetProperty("theme").GetString().ShouldBe("dark");
         json.RootElement.GetProperty("ignore").GetProperty("futureFlag").GetBoolean().ShouldBeTrue();
-        json.RootElement.GetProperty("ignore").GetProperty("globalPatterns")[0].GetString().ShouldBe("new/", Case.Sensitive);
+        json.RootElement.GetProperty("ignore").GetProperty("globalPatterns")[0].GetString().ShouldBe("new/");
     }
 
     /// <summary>A file from a newer major schema fails the read and the write with the same message and is left untouched.</summary>
@@ -83,8 +83,8 @@ public sealed class IgnoreSettingsSourceTests : IDisposable
         var write = await Should.ThrowAsync<SettingsSourceException>(() => source.SaveAsync(IgnoreSettingsValues.Defaults, token)).ConfigureAwait(true);
 
         read.Message.ShouldContain("newer OmpOS", Case.Sensitive);
-        write.Message.ShouldBe(read.Message, Case.Sensitive);
-        File.ReadAllText(path).ShouldBe(Newer);
+        write.Message.ShouldBe(read.Message);
+        (await File.ReadAllTextAsync(path, token).ConfigureAwait(true)).ShouldBe(Newer);
     }
 
     /// <summary>A stored pattern the page would refuse (blank) makes the file an error state that is reported and never overwritten.</summary>
@@ -100,7 +100,7 @@ public sealed class IgnoreSettingsSourceTests : IDisposable
         _ = await Should.ThrowAsync<SettingsSourceException>(() => source.SaveAsync(IgnoreSettingsValues.Defaults, token)).ConfigureAwait(true);
 
         read.Message.ShouldContain("ignore.globalPatterns", Case.Sensitive);
-        File.ReadAllText(path).ShouldBe(Bad);
+        (await File.ReadAllTextAsync(path, token).ConfigureAwait(true)).ShouldBe(Bad);
     }
 
     /// <summary>A list over the limits is refused before anything is written.</summary>
@@ -151,7 +151,7 @@ public sealed class IgnoreSettingsSourceTests : IDisposable
         var files = await Source().FoundFilesAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         var file = files.ShouldHaveSingleItem();
-        file.Name.ShouldBe(".ompos/ignore", Case.Sensitive);
+        file.Name.ShouldBe(".ompos/ignore");
         file.RuleCount.ShouldBe(1);
         file.Problems.ShouldHaveSingleItem().ShouldStartWith("Line 2:", Case.Sensitive);
     }

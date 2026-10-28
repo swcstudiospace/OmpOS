@@ -49,7 +49,8 @@ internal sealed class SettingsFixture : IDisposable
         Ignore = new IgnoreSettingsPage(IgnoreSource);
         Remote = new RemoteEnvironmentsSettingsPage(new RemoteEnvironmentsViewModel(RemoteHost));
         CloudHost = new FakeCloudAgentsHost(Clock);
-        Cloud = new CloudSettingsPage(new CloudAgentsViewModel(CloudHost, Clock));
+        CloudModel = new CloudAgentsViewModel(CloudHost, Clock);
+        Cloud = new CloudSettingsPage(CloudModel);
         Privacy = new PrivacySettingsPage();
         Network = new NetworkSettingsPage(NetworkSource);
         Keyboard = new KeyboardSettingsPage(KeyboardSource);
@@ -182,6 +183,9 @@ internal sealed class SettingsFixture : IDisposable
     /// <summary>Gets the Cloud page.</summary>
     internal CloudSettingsPage Cloud { get; }
 
+    /// <summary>Gets the model behind the Cloud page; the fixture disposes it.</summary>
+    internal CloudAgentsViewModel CloudModel { get; }
+
     /// <summary>Gets the Privacy page.</summary>
     internal PrivacySettingsPage Privacy { get; }
 
@@ -242,5 +246,6 @@ internal sealed class SettingsFixture : IDisposable
 
         _ = Model.RequestClose();
         Dispatcher.UIThread.RunJobs();
+        CloudModel.Dispose();
     }
 }

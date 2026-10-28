@@ -245,7 +245,7 @@
           <CheckBox x:Name="PlanRuleBox"
                     IsVisible="{CompiledBinding RequiresPlanRule}"
                     IsChecked="{CompiledBinding PlanRuleAccepted, Mode=TwoWay}"
-                    Content="{CompiledBinding PlanRuleAcceptLabel}"
+                    Content="{x:Static models:ProviderListingCopy.PlanRuleAcceptLabel}"
                     AutomationProperties.Name="{CompiledBinding PlanRuleAcceptName}" />
 
           <StackPanel Orientation="Horizontal"

@@ -35,7 +35,7 @@ public sealed class WorktreesSettingsSourceTests : IDisposable
         var snapshot = await source.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         snapshot.SetupState.ShouldBe(WorktreeSetupState.NoSetupFile);
-        snapshot.WorkspaceRoot.ShouldBe(Path.GetFullPath(_workspace.Root), Case.Sensitive);
+        snapshot.WorkspaceRoot.ShouldBe(Path.GetFullPath(_workspace.Root));
         snapshot.MaxWorktrees.ShouldBe(WorktreeRunSet.DefaultMaxWorktrees);
         snapshot.MaxWorktrees.ShouldBe(25);
         snapshot.SetupFile.ShouldBeEmpty();
@@ -53,7 +53,7 @@ public sealed class WorktreesSettingsSourceTests : IDisposable
 
         snapshot.SetupState.ShouldBe(WorktreeSetupState.NotGranted);
         snapshot.Commands.ShouldBe(["npm ci", "npm run build"]);
-        snapshot.SetupFile.ShouldBe(Path.GetFullPath(path), Case.Sensitive);
+        snapshot.SetupFile.ShouldBe(Path.GetFullPath(path));
         snapshot.ScriptPath.ShouldBeEmpty();
         snapshot.Error.ShouldBeEmpty();
     }
@@ -90,10 +90,10 @@ public sealed class WorktreesSettingsSourceTests : IDisposable
         var snapshot = await source.LoadAsync(token).ConfigureAwait(true);
 
         snapshot.SetupState.ShouldBe(WorktreeSetupState.Granted);
-        snapshot.ScriptPath.ShouldBe(Path.GetFullPath(script), Case.Sensitive);
+        snapshot.ScriptPath.ShouldBe(Path.GetFullPath(script));
         snapshot.Commands.ShouldBeEmpty();
 
-        File.WriteAllText(script, "echo two");
+        await File.WriteAllTextAsync(script, "echo two", token).ConfigureAwait(true);
 
         (await source.LoadAsync(token).ConfigureAwait(true)).SetupState.ShouldBe(WorktreeSetupState.NotGranted);
     }
@@ -149,7 +149,7 @@ public sealed class WorktreesSettingsSourceTests : IDisposable
         var snapshot = await source.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         snapshot.SetupState.ShouldBe(WorktreeSetupState.NoSetupForThisSystem);
-        snapshot.SetupFile.ShouldBe(Path.GetFullPath(path), Case.Sensitive);
+        snapshot.SetupFile.ShouldBe(Path.GetFullPath(path));
         snapshot.Commands.ShouldBeEmpty();
     }
 

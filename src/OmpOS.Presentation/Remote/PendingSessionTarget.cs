@@ -8,7 +8,7 @@ namespace OmpOS.Presentation.Remote;
 /// </summary>
 public sealed class PendingSessionTarget
 {
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
     private SessionTarget? _target;
     private IReadOnlyList<WorkspacePickerRoot>? _roots;
 

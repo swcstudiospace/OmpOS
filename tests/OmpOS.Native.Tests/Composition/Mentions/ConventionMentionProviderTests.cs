@@ -50,10 +50,10 @@ public sealed class ConventionMentionProviderTests
         var skill = await provider.ReadAsync(MentionKind.Skill, "deploy", 1000, Token).ConfigureAwait(true);
         var cut = await provider.ReadAsync(MentionKind.Rule, "wide", 5, Token).ConfigureAwait(true);
 
-        whole.Text.ShouldBe("Use tabs for indentation.\n", Case.Sensitive);
+        whole.Text.ShouldBe("Use tabs for indentation.\n");
         whole.Truncated.ShouldBeFalse();
-        skill.Text.ShouldBe("Run the deploy script.\n", Case.Sensitive);
-        cut.Text.ShouldBe("\u00E9\u00E9", Case.Sensitive);
+        skill.Text.ShouldBe("Run the deploy script.\n");
+        cut.Text.ShouldBe("\u00E9\u00E9");
         cut.SizeBytes.ShouldBe(9);
         cut.Truncated.ShouldBeTrue();
     }
@@ -65,14 +65,14 @@ public sealed class ConventionMentionProviderTests
         using var tree = WorkspaceWithConventions();
         var home = Path.Combine(tree.Base, "home");
         Directory.CreateDirectory(Path.Combine(home, ".cursor", "skills", "personal"));
-        File.WriteAllText(Path.Combine(home, ".cursor", "skills", "personal", "SKILL.md"), "---\ndescription: My own\n---\nPersonal steps.\n");
+        await File.WriteAllTextAsync(Path.Combine(home, ".cursor", "skills", "personal", "SKILL.md"), "---\ndescription: My own\n---\nPersonal steps.\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
         var provider = new ConventionMentionProvider([tree.Root], home);
 
         var skills = await provider.ListSkillsAsync(Token).ConfigureAwait(true);
         var body = await provider.ReadAsync(MentionKind.Skill, "personal", 1000, Token).ConfigureAwait(true);
 
         skills.ShouldContain(new MentionConventionItem("personal", "My own", "user"));
-        body.Text.ShouldBe("Personal steps.\n", Case.Sensitive);
+        body.Text.ShouldBe("Personal steps.\n");
     }
 
     /// <summary>The discovery is kept until <c>RefreshAsync</c>: a rule written meanwhile appears only after it.</summary>
@@ -89,7 +89,7 @@ public sealed class ConventionMentionProviderTests
         var refreshed = await provider.ListRulesAsync(Token).ConfigureAwait(true);
 
         cached.Count.ShouldBe(before.Count);
-        refreshed.Select(static item => item.Name).ShouldContain("added");
+        refreshed.Select(static item => item.Name).ShouldContain("added", StringComparer.Ordinal);
         refreshed.Count.ShouldBe(before.Count + 1);
     }
 
@@ -104,9 +104,9 @@ public sealed class ConventionMentionProviderTests
         var wrongKind = await Should.ThrowAsync<MentionUnavailableException>(() => provider.ReadAsync(MentionKind.File, "style", 100, Token)).ConfigureAwait(true);
         var gone = await Should.ThrowAsync<MentionUnavailableException>(() => provider.ReadAsync(MentionKind.Skill, "style", 100, Token)).ConfigureAwait(true);
 
-        unknown.Message.ShouldBe("The rule 'nothing' no longer exists.", Case.Sensitive);
-        wrongKind.Message.ShouldBe("Only a rule or a skill can be read here.", Case.Sensitive);
-        gone.Message.ShouldBe("The skill 'style' no longer exists.", Case.Sensitive);
+        unknown.Message.ShouldBe("The rule 'nothing' no longer exists.");
+        wrongKind.Message.ShouldBe("Only a rule or a skill can be read here.");
+        gone.Message.ShouldBe("The skill 'style' no longer exists.");
     }
 
     /// <summary>A workspace with no convention folders offers nothing and does not throw.</summary>

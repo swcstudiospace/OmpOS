@@ -1,8 +1,11 @@
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Input;
 using OmpOS.Native.Tests.AgentPanel.Shell;
+using OmpOS.Native.Tests.Parity;
+using OmpOS.Native.Tests.SlashPalette;
 using OmpOS.Native.Views;
 using OmpOS.Native.Views.Shell;
 using OmpOS.Presentation.Editor;
@@ -26,13 +29,14 @@ public sealed class ShellServicesTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var about = new RecordingAboutLauncher();
             var main = fixture.ShowWithServices(new ShellServices { About = about });
             var button = main.FindControl<Button>("AboutButton")!;
             var settings = main.FindControl<Button>("SettingsButton")!;
 
-            AutomationProperties.GetName(button).ShouldBe("About OmpOS", Case.Sensitive);
+            AutomationProperties.GetName(button).ShouldBe("About OmpOS");
             button.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             button.MinWidth.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             ((Panel)settings.Parent!).Children.IndexOf(button).ShouldBeGreaterThan(((Panel)settings.Parent!).Children.IndexOf(settings));
@@ -53,7 +57,8 @@ public sealed class ShellServicesTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices());
             var model = main.ConversationSearch.ShouldNotBeNull();
             model.IsOpen.ShouldBeFalse();
@@ -73,7 +78,8 @@ public sealed class ShellServicesTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices());
 
             Press(fixture, Key.F, PhysicalKey.F, KeyModifiers.Control);
@@ -90,7 +96,8 @@ public sealed class ShellServicesTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             fixture.AddSession("session-2", "Second agent");
             var main = fixture.ShowWithServices(new ShellServices());
             fixture.Panel.SelectSession("session-1");
@@ -106,7 +113,7 @@ public sealed class ShellServicesTests
 
             Press(fixture, Key.Enter, PhysicalKey.Enter, KeyModifiers.None);
 
-            fixture.Panel.Selected!.Id.ShouldBe("session-2", Case.Sensitive);
+            fixture.Panel.Selected!.Id.ShouldBe("session-2");
             model.IsOpen.ShouldBeFalse();
         }, Token).ConfigureAwait(true);
     }
@@ -118,7 +125,8 @@ public sealed class ShellServicesTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices());
             var seen = new List<SettingsSection?>();
             main.SettingsRequested += (_, e) => seen.Add(e.Section);
@@ -144,7 +152,8 @@ public sealed class ShellServicesTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession(new SessionScript { Prompts = new ScriptedPromptChannel(), SessionCommands = new FakeSessionCommands() });
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices());
             var seen = new List<SettingsSection?>();
             main.SettingsRequested += (_, e) => seen.Add(e.Section);
@@ -164,7 +173,8 @@ public sealed class ShellServicesTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices());
 
             main.FindControl<Button>("AboutButton")!.IsVisible.ShouldBeTrue();
@@ -186,7 +196,8 @@ public sealed class ShellServicesTests
             await using var headless = TestAppBuilder.StartSession();
             await headless.RunAsync(async () =>
             {
-                await using var fixture = ShellFixture.CreateWithSession();
+                var fixture = ShellFixture.CreateWithSession();
+                await using var fixtureScope = fixture.ConfigureAwait(true);
                 using var store = new WorkspaceSetStore(Path.Combine(directory, "sets.json"));
                 var main = fixture.ShowWithServices(new ShellServices { WorkspacePicker = new NoIssuesBackend(), WorkspaceSets = store, NewSessionTarget = new PendingSessionTarget() });
                 var button = main.FindControl<Button>("WorkspacesButton")!;
@@ -198,7 +209,7 @@ public sealed class ShellServicesTests
                     picker.AddFolder("/work/lib");
                     return Task.FromResult(start);
                 };
-                AutomationProperties.GetName(button).ShouldBe("Workspace sets", Case.Sensitive);
+                AutomationProperties.GetName(button).ShouldBe("Workspace sets");
                 button.IsVisible.ShouldBeTrue();
                 var sessions = fixture.Host.Runtimes.Count;
 
@@ -215,7 +226,7 @@ public sealed class ShellServicesTests
 
                 var saved = (await store.ListAsync(Token).ConfigureAwait(true)).ShouldHaveSingleItem();
                 saved.Set.Roots.Count.ShouldBe(2);
-                saved.Set.Roots[1].Path.ShouldBe("/work/lib", Case.Sensitive);
+                saved.Set.Roots[1].Path.ShouldBe("/work/lib");
                 fixture.Host.Runtimes.Count.ShouldBeGreaterThan(sessions);
             }, Token).ConfigureAwait(true);
         }
@@ -232,7 +243,8 @@ public sealed class ShellServicesTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices { RemoteEnvironments = new OmpOS.Native.Tests.Remote.ScriptedRemoteHost(), NewSessionTarget = new PendingSessionTarget() });
 
             (string Name, string Accessible)[] controls =
@@ -246,12 +258,12 @@ public sealed class ShellServicesTests
             foreach (var (name, accessible) in controls)
             {
                 var control = main.FindControl<Control>(name).ShouldNotBeNull(name);
-                AutomationProperties.GetName(control).ShouldBe(accessible, Case.Sensitive, name);
+                AutomationProperties.GetName(control).ShouldBe(accessible, name);
             }
 
             main.FindControl<Button>("AboutButton")!.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
             main.FindControl<Button>("WorkspacesButton")!.MinHeight.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget);
-            AutomationProperties.GetName(main.FindControl<Expander>("EnvironmentExpander")!).ShouldStartWith("Environment", Case.Sensitive);
+            AutomationProperties.GetName(main.FindControl<Expander>("EnvironmentExpander")!).ShouldStartWith(RemoteCopy.PickerHeading, Case.Sensitive);
         }, Token).ConfigureAwait(true);
     }
 

@@ -1,7 +1,10 @@
+using Avalonia.Controls;
 using OmpOS.Native.Tests.AgentPanel.Shell;
 using OmpOS.Native.Tests.Checkpoints;
 using OmpOS.Native.Tests.Cloud;
 using OmpOS.Native.Tests.Display;
+using OmpOS.Native.Tests.Parity;
+using OmpOS.Native.Tests.SlashPalette;
 using OmpOS.Native.Tests.Worktrees;
 using OmpOS.Native.Views.Shell;
 using OmpOS.Presentation.Cloud;
@@ -31,7 +34,8 @@ public sealed class ShellSlashHandlerTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            await using var rigScope = rig.ConfigureAwait(true);
             var composer = rig.Fixture.Runtime("session-1").Composer;
 
             composer.Draft = "/";
@@ -61,7 +65,8 @@ public sealed class ShellSlashHandlerTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            await using var rigScope = rig.ConfigureAwait(true);
 
             await rig.SendAsync("/about").ConfigureAwait(true);
 
@@ -77,12 +82,13 @@ public sealed class ShellSlashHandlerTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            await using var rigScope = rig.ConfigureAwait(true);
 
             await rig.SendAsync("/feedback the rail flickers").ConfigureAwait(true);
 
             var opened = rig.Urls.Opened.ShouldHaveSingleItem();
-            opened.AbsoluteUri.ShouldBe(FeedbackSlashHandler.DefaultIssuesUrl + "?title=the%20rail%20flickers", Case.Sensitive);
+            opened.AbsoluteUri.ShouldBe(FeedbackSlashHandler.DefaultIssuesUrl + "?title=the%20rail%20flickers");
         }, Token).ConfigureAwait(true);
     }
 
@@ -93,7 +99,8 @@ public sealed class ShellSlashHandlerTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            await using var rigScope = rig.ConfigureAwait(true);
             rig.Display.ShowLineNumbers.ShouldBeTrue();
 
             await rig.SendAsync("/line-numbers off").ConfigureAwait(true);
@@ -105,7 +112,7 @@ public sealed class ShellSlashHandlerTests
 
             await rig.Display.SetAsync(DisplaySetting.Rewind, false, Token).ConfigureAwait(true);
             await rig.SendAsync("/rewind").ConfigureAwait(true);
-            rig.StatusText.ShouldBe(HandlerCopy.RewindOff, Case.Sensitive);
+            rig.StatusText.ShouldBe(HandlerCopy.RewindOff);
         }, Token).ConfigureAwait(true);
     }
 
@@ -116,14 +123,15 @@ public sealed class ShellSlashHandlerTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            await using var rigScope = rig.ConfigureAwait(true);
             var toggle = rig.Main.FindControl<Avalonia.Controls.Primitives.ToggleButton>("CheckpointsToggle")!;
             toggle.IsChecked.ShouldNotBe(true);
 
             await rig.SendAsync("/rewind").ConfigureAwait(true);
 
             toggle.IsChecked.ShouldBe(true, "the timeline is open and the Tools toggle says so");
-            rig.StatusText.ShouldBe(HandlerCopy.CheckpointsOpened, Case.Sensitive);
+            rig.StatusText.ShouldBe(HandlerCopy.CheckpointsOpened);
         }, Token).ConfigureAwait(true);
     }
 
@@ -134,7 +142,8 @@ public sealed class ShellSlashHandlerTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            await using var rigScope = rig.ConfigureAwait(true);
 
             await rig.SendAsync("/save-workspace demo").ConfigureAwait(true);
             var saved = await rig.Sets.ListAsync(Token).ConfigureAwait(true);
@@ -156,7 +165,8 @@ public sealed class ShellSlashHandlerTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            await using var rigScope = rig.ConfigureAwait(true);
             CloudHandoffModel? shown = null;
             rig.Main.CloudHandoffDialog = (model, _) =>
             {
@@ -166,26 +176,27 @@ public sealed class ShellSlashHandlerTests
 
             await rig.SendAsync("/in-cloud fix the login bug").ConfigureAwait(true);
 
-            shown.ShouldNotBeNull().Task.ShouldBe("fix the login bug", Case.Sensitive);
-            shown.CostNotice.ShouldBe(CloudCopy.CostNotice(rig.Cloud.Setup.DefaultIdleMinutes), Case.Sensitive);
+            shown.ShouldNotBeNull().Task.ShouldBe("fix the login bug");
+            shown.CostNotice.ShouldBe(CloudCopy.CostNotice(rig.Cloud.Setup.DefaultIdleMinutes));
             shown.CanStart.ShouldBeFalse("nothing is started before the repository and the cost are confirmed");
             rig.Cloud.CreateRequests.ShouldBeEmpty();
-            rig.StatusText.ShouldBe("Started cloud agent demo with your task.", Case.Sensitive);
+            rig.StatusText.ShouldBe("Started cloud agent demo with your task.");
         }, Token).ConfigureAwait(true);
     }
 
-    /// <summary>The & prefix runs the same hand-off; a dialog that was cancelled says so and a head with no cloud configured says why.</summary>
+    /// <summary>The &amp; prefix runs the same hand-off; a dialog that was cancelled says so and a head with no cloud configured says why.</summary>
     [Fact]
     public async Task TheAmpersandPrefixHandsOffAndSaysWhyWhenItCannot()
     {
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            var rig = await Rig.CreateAsync().ConfigureAwait(true);
+            await using var rigScope = rig.ConfigureAwait(true);
             rig.Main.CloudHandoffDialog = (_, _) => Task.FromResult<CloudHandoffResult?>(null);
 
             await rig.SendAsync("& refactor the auth module").ConfigureAwait(true);
-            rig.StatusText.ShouldBe(CloudCopy.CreateCancelled, Case.Sensitive);
+            rig.StatusText.ShouldBe(CloudCopy.CreateCancelled);
 
             rig.Cloud.Setup = CloudSetup.NotConfigured("The OmpOS API address is not set.");
             await rig.SendAsync("& refactor the auth module").ConfigureAwait(true);
@@ -200,7 +211,8 @@ public sealed class ShellSlashHandlerTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession(new SessionScript { Prompts = new ScriptedPromptChannel(), SessionCommands = new FakeSessionCommands() });
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices());
             var dialogs = 0;
             main.CloudHandoffDialog = (_, _) =>
@@ -256,7 +268,7 @@ public sealed class ShellSlashHandlerTests
 
         public static async Task<Rig> CreateAsync()
         {
-            var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession(new SessionScript { Prompts = new ScriptedPromptChannel(), SessionCommands = new FakeSessionCommands() });
             var directory = Path.Combine(Path.GetTempPath(), "ompos-shell-slash-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
             var about = new RecordingAbout();

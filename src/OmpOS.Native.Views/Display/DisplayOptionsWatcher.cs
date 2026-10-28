@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.VisualTree;
 using OmpOS.Presentation.Commands.Handlers;
 
 namespace OmpOS.Native.Views.Display;
@@ -33,7 +32,7 @@ internal sealed class DisplayOptionsWatcher
         _control.AttachedToVisualTree += OnAttached;
         _control.DetachedFromVisualTree += OnDetached;
         _control.PropertyChanged += OnControlPropertyChanged;
-        if (_control.GetVisualRoot() is not null)
+        if (TopLevel.GetTopLevel(_control) is not null)
         {
             _attached = true;
             Track(DisplayOptions.GetSettings(_control));

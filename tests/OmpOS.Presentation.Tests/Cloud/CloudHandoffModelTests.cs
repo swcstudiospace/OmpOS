@@ -143,7 +143,7 @@ public sealed class CloudHandoffModelTests
         var request = host.CreateRequests.ShouldHaveSingleItem();
         request.Prompt.ShouldBe(TaskText);
         request.IdleMinutes.ShouldBe(30);
-        request.Repositories.Select(repository => repository.Url).ShouldBe([Repository]);
+        request.Repositories.Select(repository => repository.Address).ShouldBe([Repository]);
         request.SecretNames.ShouldBeEmpty();
         started.ShouldHaveSingleItem().ShouldBe(result.Agent);
         model.Result.ShouldBe(result);

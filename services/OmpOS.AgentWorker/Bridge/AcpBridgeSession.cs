@@ -45,19 +45,35 @@ internal static class AcpBridgeSession
         CancellationToken requestAborted,
         ChannelReader<ReadOnlyMemory<byte>>? hookFrames = null)
     {
+        using var sendGate = new SemaphoreSlim(1, 1);
+        await RunPumpsAsync(socket, omp, sessionId, closeTimeout, logger, hookFrames, sendGate, stopping, requestAborted).ConfigureAwait(false);
+    }
+
+    private static async Task RunPumpsAsync(
+        WebSocket socket,
+        IAcpTransport omp,
+        string sessionId,
+        TimeSpan closeTimeout,
+        ILogger logger,
+        ChannelReader<ReadOnlyMemory<byte>>? hookFrames,
+        SemaphoreSlim sendGate,
+        CancellationToken stopping,
+        CancellationToken requestAborted)
+    {
         using var pumps = new CancellationTokenSource();
         using var interruption = CancellationTokenSource.CreateLinkedTokenSource(stopping, requestAborted);
-        using var sendGate = new SemaphoreSlim(1, 1);
         var interrupted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var registration = interruption.Token.Register(static state => ((TaskCompletionSource)state!).TrySetResult(), interrupted);
 
-        using var hookPump = HookFramePump.Start(socket, hookFrames, sendGate);
+        using var hookStop = new CancellationTokenSource();
+        var hookPump = HookFramePump.RunAsync(socket, hookFrames, sendGate, hookStop.Token);
         var client = PumpClientAsync(socket, omp, pumps.Token);
         var engine = PumpOmpAsync(socket, omp, sendGate, pumps.Token);
         var first = await Task.WhenAny(client, engine, interrupted.Task).ConfigureAwait(false);
 
         // A close frame is a send too: no hook frame may be in flight when it goes out.
-        await hookPump.StopAsync().ConfigureAwait(false);
+        await hookStop.CancelAsync().ConfigureAwait(false);
+        await hookPump.ConfigureAwait(false);
 
         Outcome outcome;
         if (first == client)

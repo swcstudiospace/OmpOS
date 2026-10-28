@@ -1,7 +1,6 @@
 using System.Text;
-using OmpOS.Native.Engine;
 using OmpOS.Harness.Abstractions;
-using OmpOS.Presentation.Chats;
+using OmpOS.Native.Engine;
 using OmpOS.Presentation.SideChats;
 
 namespace OmpOS.Native.Agents;
@@ -54,7 +53,8 @@ internal sealed class OmpSideChatEngine : ISideChatEngine, IAsyncDisposable
         Chat? chat;
         lock (_gate)
         {
-            _ = _chats.Remove(chatId, out chat);
+            _ = _chats.TryGetValue(chatId, out chat);
+            _ = _chats.Remove(chatId);
         }
 
         if (chat is not null)

@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using OmpOS.Harness.Abstractions;
 using Shouldly;
@@ -7,7 +6,6 @@ using Xunit;
 namespace OmpOS.Harness.Acp.Tests;
 
 /// <summary>The usage update becomes a context usage event, and mention resources travel as embedded resource blocks of the prompt.</summary>
-[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session under test owns and disposes the scripted transport.")]
 public sealed class AcpUsageAndResourcesTests
 {
     private static byte[] Update(string update) =>
@@ -31,7 +29,9 @@ public sealed class AcpUsageAndResourcesTests
     private static async Task<List<HarnessEvent>> RunAsync(PromptOptions options, JsonObject[] seen, CancellationToken ct)
     {
         var transport = new ScriptedAcpTransport(frame => Script(frame, seen));
-        await using var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent" });
+        await using var transportScope = transport.ConfigureAwait(true);
+        var session = new AcpAgentSession(transport, new AcpClientOptions { WorkingDirectory = AcpFixtures.CapturedCwd, AuthMethodId = "agent" });
+        await using var sessionScope = session.ConfigureAwait(true);
         await session.CreateAsync(ct).ConfigureAwait(true);
         var events = new List<HarnessEvent>();
         await foreach (var harnessEvent in session.SubmitPromptAsync("look at this", options, ct).WithCancellation(ct).ConfigureAwait(true))

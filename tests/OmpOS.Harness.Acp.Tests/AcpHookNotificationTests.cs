@@ -1,6 +1,5 @@
 using System.Text.Json;
 using OmpOS.Contracts.Hooks;
-using OmpOS.Contracts.Streaming;
 using Shouldly;
 using Xunit;
 
@@ -45,8 +44,8 @@ public sealed class AcpHookNotificationTests
         var frame = AcpHookNotificationFrames.Serialize(new AcpHookNotification { Run = Run() });
 
         using var document = JsonDocument.Parse(frame);
-        document.RootElement.GetProperty("jsonrpc").GetString().ShouldBe("2.0", Case.Sensitive);
-        document.RootElement.GetProperty("method").GetString().ShouldBe("_ompos/hook", Case.Sensitive);
+        document.RootElement.GetProperty("jsonrpc").GetString().ShouldBe("2.0");
+        document.RootElement.GetProperty("method").GetString().ShouldBe("_ompos/hook");
         document.RootElement.TryGetProperty("id", out _).ShouldBeFalse();
         document.RootElement.GetProperty("params").GetProperty("version").GetInt32().ShouldBe(1);
         System.Text.Encoding.UTF8.GetString(frame).ShouldNotContain("\n", Case.Sensitive);
@@ -65,9 +64,9 @@ public sealed class AcpHookNotificationTests
         AcpHookNotificationFrames.TryParse(ParamsOf(frame), out var notification).ShouldBeTrue();
         notification.ShouldNotBeNull();
         notification.Run.ShouldBeNull();
-        notification.State.ShouldBe("untrusted", Case.Sensitive);
+        notification.State.ShouldBe("untrusted");
         notification.HookCount.ShouldBe(3);
-        notification.Reason.ShouldBe("No snapshot.", Case.Sensitive);
+        notification.Reason.ShouldBe("No snapshot.");
     }
 
     /// <summary>A notification must carry exactly one of a run and a state.</summary>
@@ -127,11 +126,11 @@ public sealed class AcpHookNotificationTests
 
             lock (received)
             {
-                received[0].Notification.State.ShouldBe("active", Case.Sensitive);
+                received[0].Notification.State.ShouldBe("active");
                 received[0].StreamPayload.ShouldBeNull();
                 received[1].Notification.Run.ShouldBe(Run());
                 var payload = received[1].StreamPayload.ShouldNotBeNull();
-                payload.OriginalKind.ShouldBe("hook", Case.Sensitive);
+                payload.OriginalKind.ShouldBe("hook");
                 HookStreamPayload.TryRead(payload, out var read).ShouldBeTrue();
                 read.ShouldBe(Run());
             }

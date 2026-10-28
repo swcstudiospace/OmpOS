@@ -33,7 +33,7 @@ public sealed class HooksConsentSnapshotReaderTests
         read.Problem.ShouldBeNull();
         var snapshot = read.Snapshot.ShouldNotBeNull();
         snapshot.Version.ShouldBe(2);
-        snapshot.Approver.ShouldBe("ada@example.test", Case.Sensitive);
+        snapshot.Approver.ShouldBe("ada@example.test");
         snapshot.ApprovedAt.ShouldBe(new DateTimeOffset(2026, 10, 27, 12, 0, 0, TimeSpan.Zero));
         snapshot.Hashes.ToArray().ShouldBe([HashA, HashB]);
     }

@@ -16,7 +16,7 @@ public sealed class PrivacySettingsPageTests
 
         page.State.ShouldBe(SettingsPageState.Ready);
         page.Section.ShouldBe(SettingsSection.Privacy);
-        page.Title.ShouldBe(PrivacyCopy.Title, Case.Sensitive);
+        page.Title.ShouldBe(PrivacyCopy.Title);
         page.IsDirty.ShouldBeFalse();
         page.HasError.ShouldBeFalse();
     }
@@ -53,7 +53,7 @@ public sealed class PrivacySettingsPageTests
             ],
             ignoreOrder: false);
         rows.ShouldAllBe(static row => row.Text.Length > 0);
-        rows[0].Summary.ShouldBe(PrivacyCopy.LeavesHeading + ". " + PrivacyCopy.LeavesText, Case.Sensitive);
+        rows[0].Summary.ShouldBe(PrivacyCopy.LeavesHeading + ". " + PrivacyCopy.LeavesText);
     }
 
     /// <summary>The statements about third parties are worded as what OmpOS does, not as a guarantee: the provider's own handling is said to be the provider's.</summary>

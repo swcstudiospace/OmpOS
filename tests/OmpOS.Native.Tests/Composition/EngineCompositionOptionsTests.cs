@@ -1,4 +1,3 @@
-using OmpOS.Contracts.Agents;
 using OmpOS.Harness.Acp;
 using OmpOS.Harness.AgentLoop.Launch;
 using OmpOS.Harness.AgentLoop.Safety;

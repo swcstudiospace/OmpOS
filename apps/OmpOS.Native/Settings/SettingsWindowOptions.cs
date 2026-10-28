@@ -1,6 +1,5 @@
 using OmpOS.Harness.AgentLoop.Hooks;
 using OmpOS.Harness.Mcp.Catalog;
-using OmpOS.Native.Views;
 using OmpOS.Presentation.Cloud;
 using OmpOS.Presentation.Commands;
 using OmpOS.Presentation.Commands.Handlers;
@@ -9,6 +8,7 @@ using OmpOS.Presentation.Safety;
 using OmpOS.Presentation.Settings;
 using OmpOS.Workspace;
 using OmpOS.Workspace.Sets;
+using IUrlLauncher = OmpOS.Native.Views.IUrlLauncher;
 
 namespace OmpOS.Native.Settings;
 

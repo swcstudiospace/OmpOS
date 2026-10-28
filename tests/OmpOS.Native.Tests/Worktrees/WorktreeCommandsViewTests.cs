@@ -13,6 +13,8 @@ namespace OmpOS.Native.Tests.Worktrees;
 /// <summary>The worktree runs panel: the rows with their commands, the patch preview, the apply outcome, the two-step delete, the best-of-n section and the keyboard and accessibility contract.</summary>
 public sealed class WorktreeCommandsViewTests
 {
+    private static readonly string[] WorktreeNames = ["alpha", "beta"];
+
     private const string RefreshName = "Refresh the worktree list";
     private const string CloseName = "Close the worktree panel";
     private const string NewNameName = "Name of the new worktree";
@@ -29,7 +31,8 @@ public sealed class WorktreeCommandsViewTests
 
     private static async Task RunAsync(ViewWorktreeBackend backend, IBestOfNHost? host, Func<WorktreeCommandsModel, WorktreeCommandsView, Window, Task> body)
     {
-        await using var session = TestAppBuilder.StartSession();
+        var session = TestAppBuilder.StartSession();
+        await using var sessionScope = session.ConfigureAwait(true);
         await session.RunAsync(async () =>
         {
             var model = new WorktreeCommandsModel(backend, new ManualTimeProvider(), host);
@@ -64,7 +67,7 @@ public sealed class WorktreeCommandsViewTests
             var texts = SettingsTree.Texts(view);
             texts.ShouldContain("alpha on ompos/run/alpha, 2 files changed", StringComparer.Ordinal);
             texts.ShouldContain("beta on ompos/run/beta, 1 file changed", StringComparer.Ordinal);
-            foreach (var run in new[] { "alpha", "beta" })
+            foreach (var run in WorktreeNames)
             {
                 SettingsTree.Has<Button>(view, WorktreeCommandsCopy.PreviewName(run)).ShouldBeTrue();
                 SettingsTree.Has<Button>(view, WorktreeCommandsCopy.ApplyName(run)).ShouldBeTrue();
@@ -200,7 +203,7 @@ public sealed class WorktreeCommandsViewTests
             backend.Calls.ShouldBeEmpty();
             view.DeleteConfirmation.IsVisible.ShouldBeTrue();
             view.DeleteWarning.Text.ShouldBe(model.DeleteConfirmationText);
-            view.DeleteWarning.Text.ShouldContain("alpha", Case.Sensitive);
+            view.DeleteWarning.Text.ShouldNotBeNull().ShouldContain("alpha", Case.Sensitive);
             SettingsTree.FocusedName(window).ShouldBe(WorktreeCommandsCopy.CancelLabel);
 
             SettingsTree.Press(window, Key.Escape, PhysicalKey.Escape);
@@ -231,7 +234,7 @@ public sealed class WorktreeCommandsViewTests
             view.Runs.ItemCount.ShouldBe(2);
 
             Click(window, view, WorktreeCommandsCopy.DeleteName("beta"));
-            view.DeleteWarning.Text.ShouldContain("beta", Case.Sensitive);
+            view.DeleteWarning.Text.ShouldNotBeNull().ShouldContain("beta", Case.Sensitive);
             view.DeleteWarning.Text.ShouldNotContain("alpha", Case.Sensitive);
             Click(window, view, ConfirmDeleteName);
 
@@ -360,7 +363,7 @@ public sealed class WorktreeCommandsViewTests
 
             backend.Calls.ShouldBeEmpty();
             view.DeleteConfirmation.IsVisible.ShouldBeTrue();
-            view.DeleteWarning.Text.ShouldContain(discarded, Case.Sensitive);
+            view.DeleteWarning.Text.ShouldNotBeNull().ShouldContain(discarded, Case.Sensitive);
             view.DeleteWarning.Text.ShouldNotContain(kept, Case.Sensitive);
             SettingsTree.FocusedName(window).ShouldBe(WorktreeCommandsCopy.CancelLabel);
 

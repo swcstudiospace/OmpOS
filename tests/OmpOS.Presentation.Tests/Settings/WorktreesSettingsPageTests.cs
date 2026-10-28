@@ -33,10 +33,10 @@ public sealed class WorktreesSettingsPageTests
         await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         page.State.ShouldBe(SettingsPageState.Ready);
-        page.WorkspaceRoot.ShouldBe("/work/app", Case.Sensitive);
+        page.WorkspaceRoot.ShouldBe("/work/app");
         page.CapText.ShouldContain("25", Case.Sensitive);
         page.CapText.ShouldContain("fixed in this build", Case.Sensitive);
-        page.SetupStateText.ShouldBe(WorktreesCopy.NoSetupFile, Case.Sensitive);
+        page.SetupStateText.ShouldBe(WorktreesCopy.NoSetupFile);
         page.HasSetupFile.ShouldBeFalse();
         page.HasCommands.ShouldBeFalse();
         page.HasSetupError.ShouldBeFalse();
@@ -53,7 +53,7 @@ public sealed class WorktreesSettingsPageTests
 
         await page.LoadAsync(token).ConfigureAwait(true);
 
-        page.SetupStateText.ShouldBe("Commands will not run until you approve them when the first worktree is created.", Case.Sensitive);
+        page.SetupStateText.ShouldBe("Commands will not run until you approve them when the first worktree is created.");
         page.Commands.ShouldBe(["npm ci", "npm run build"]);
         page.HasCommands.ShouldBeTrue();
         page.HasSetupFile.ShouldBeTrue();
@@ -62,7 +62,7 @@ public sealed class WorktreesSettingsPageTests
         await page.LoadAsync(token).ConfigureAwait(true);
 
         page.SetupState.ShouldBe(WorktreeSetupState.Granted);
-        page.SetupStateText.ShouldBe(WorktreesCopy.Granted, Case.Sensitive);
+        page.SetupStateText.ShouldBe(WorktreesCopy.Granted);
         page.Commands.ShouldBe(["npm ci"]);
     }
 
@@ -76,7 +76,7 @@ public sealed class WorktreesSettingsPageTests
         await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         page.HasScript.ShouldBeTrue();
-        page.ScriptPath.ShouldBe("/work/app/.cursor/setup.sh", Case.Sensitive);
+        page.ScriptPath.ShouldBe("/work/app/.cursor/setup.sh");
         page.HasCommands.ShouldBeFalse();
     }
 
@@ -92,7 +92,7 @@ public sealed class WorktreesSettingsPageTests
         page.State.ShouldBe(SettingsPageState.Ready);
         page.HasSetupError.ShouldBeTrue();
         page.SetupError.ShouldContain("is not valid JSON", Case.Sensitive);
-        page.SetupStateText.ShouldBe(WorktreesCopy.Invalid, Case.Sensitive);
+        page.SetupStateText.ShouldBe(WorktreesCopy.Invalid);
         page.HasCommands.ShouldBeFalse();
     }
 
@@ -105,7 +105,7 @@ public sealed class WorktreesSettingsPageTests
         await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         page.State.ShouldBe(SettingsPageState.Error);
-        page.LoadError.ShouldBe("the workspace is gone", Case.Sensitive);
+        page.LoadError.ShouldBe("the workspace is gone");
     }
 
     /// <summary>Loading again reads the source again and announces the new facts, so Refresh sees a file that changed.</summary>

@@ -244,9 +244,9 @@ internal sealed class GitMentionDiffSource : IGitDiffSource
         {
             throw new MentionUnavailableException("Git is not installed or is not on the PATH.", exception);
         }
-        catch (OperationCanceledException) when (deadline.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException exception) when (deadline.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            throw new MentionUnavailableException(string.Create(CultureInfo.InvariantCulture, $"Git took longer than {_timeout.TotalSeconds:0} seconds to answer."));
+            throw new MentionUnavailableException(string.Create(CultureInfo.InvariantCulture, $"Git took longer than {_timeout.TotalSeconds:0} seconds to answer."), exception);
         }
     }
 }

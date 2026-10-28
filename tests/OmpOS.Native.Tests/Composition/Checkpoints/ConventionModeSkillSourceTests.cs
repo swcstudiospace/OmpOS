@@ -39,9 +39,9 @@ public sealed class ConventionModeSkillSourceTests : IDisposable
         var skills = await source.ListAsync(ct).ConfigureAwait(true);
 
         var skill = skills.ShouldHaveSingleItem();
-        skill.Name.ShouldBe("review", Case.Sensitive);
-        skill.Description.ShouldBe("Review the diff", Case.Sensitive);
-        skill.Icon.ShouldBe("eye", Case.Sensitive);
+        skill.Name.ShouldBe("review");
+        skill.Description.ShouldBe("Review the diff");
+        skill.Icon.ShouldBe("eye");
         skill.Scope.ShouldBe(SlashScope.Project);
     }
 

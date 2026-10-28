@@ -26,7 +26,7 @@ internal static class ApiCloudAgentMapper
             Name = wire.Name,
             Status = ToStatus(wire.Status),
             CreatedAt = wire.CreatedAt,
-            Repositories = [.. repositories.Select(static repository => new Presentation.Cloud.CloudRepository(repository.Url))],
+            Repositories = [.. repositories.Select(static repository => new Presentation.Cloud.CloudRepository(repository.Address))],
             Branch = string.IsNullOrWhiteSpace(wire.Branch) ? null : wire.Branch,
             BaseBranch = repositories.Count > 0 && !string.IsNullOrWhiteSpace(repositories[0].BaseBranch) ? repositories[0].BaseBranch : null,
             Model = string.IsNullOrWhiteSpace(wire.Model) ? null : wire.Model,
@@ -46,8 +46,8 @@ internal static class ApiCloudAgentMapper
     public static CloudPullRequestLink? ToLink(CloudPullRequest wire, string? title = null)
     {
         ArgumentNullException.ThrowIfNull(wire);
-        return Uri.TryCreate(wire.Url, UriKind.Absolute, out var url) && string.Equals(url.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal)
-            ? new CloudPullRequestLink(wire.Repository, url, title)
+        return wire.Url.IsAbsoluteUri && string.Equals(wire.Url.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal)
+            ? new CloudPullRequestLink(wire.Repository, wire.Url, title)
             : null;
     }
 
@@ -73,7 +73,7 @@ internal static class ApiCloudAgentMapper
     /// Builds the history the page can show from what the control plane reports: the creation and the current status. The control plane keeps no
     /// status history yet, so this is two rows at most.
     /// </summary>
-    private static IReadOnlyList<CloudStatusEvent> Timeline(CloudAgentResponse wire)
+    private static List<CloudStatusEvent> Timeline(CloudAgentResponse wire)
     {
         var events = new List<CloudStatusEvent> { new(wire.CreatedAt, Presentation.Cloud.CloudAgentStatus.Provisioning) };
         var current = ToStatus(wire.Status);

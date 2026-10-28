@@ -93,17 +93,17 @@ public sealed class CloudHooksWorkerTests
         using var decision = await PostToBridgeAsync(url, bridgeToken, CloudHooksFixture.ShellRequest, timeout.Token).ConfigureAwait(true);
         var rest = await CollectAsync(socket, static texts => texts.Any(static text => Notification(text) is { Run: { Status: "denied" } }), timeout.Token).ConfigureAwait(true);
 
-        decision.RootElement.GetProperty("permission").GetString().ShouldBe("deny", Case.Sensitive);
-        decision.RootElement.GetProperty("user_message").GetString().ShouldBe("Blocked by the project guard.", Case.Sensitive);
+        decision.RootElement.GetProperty("permission").GetString().ShouldBe("deny");
+        decision.RootElement.GetProperty("user_message").GetString().ShouldBe("Blocked by the project guard.");
         var notifications = first.Concat(rest).Select(Notification).OfType<AcpHookNotification>().ToArray();
         var state = notifications.Single(static notification => notification.State is not null);
-        state.State.ShouldBe(AcpHookNotification.StateActive, Case.Sensitive);
+        state.State.ShouldBe(AcpHookNotification.StateActive);
         state.HookCount.ShouldBe(1);
         var run = notifications.Single(static notification => notification.Run is not null).Run!;
-        run.EventName.ShouldBe("beforeShellExecution", Case.Sensitive);
-        run.Scope.ShouldBe("project", Case.Sensitive);
-        run.Decision.ShouldBe("deny", Case.Sensitive);
-        run.SessionId.ShouldBe(Session, Case.Sensitive);
+        run.EventName.ShouldBe("beforeShellExecution");
+        run.Scope.ShouldBe("project");
+        run.Decision.ShouldBe("deny");
+        run.SessionId.ShouldBe(Session);
         (await File.ReadAllTextAsync(fixture.ArgvFile, timeout.Token).ConfigureAwait(true)).ShouldContain("ompos-hooks-omp", Case.Sensitive);
         bridgeToken.ShouldNotBeNullOrWhiteSpace();
     }
@@ -147,7 +147,7 @@ public sealed class CloudHooksWorkerTests
         var frames = await CollectAsync(socket, static texts => HasState(texts, "untrusted"), timeout.Token).ConfigureAwait(true);
 
         var state = frames.Select(Notification).OfType<AcpHookNotification>().Single();
-        state.Reason.ShouldBe("The consent claim is not a valid snapshot.", Case.Sensitive);
+        state.Reason.ShouldBe("The consent claim is not a valid snapshot.");
         frames.ShouldAllBe(static text => !text.Contains("secret-looking", StringComparison.Ordinal));
     }
 
@@ -171,9 +171,9 @@ public sealed class CloudHooksWorkerTests
         using var decision = await PostToBridgeAsync(url, bridgeToken, CloudHooksFixture.ShellRequest, timeout.Token).ConfigureAwait(true);
         var frames = await CollectAsync(socket, static texts => texts.Any(static text => Notification(text) is { Run: not null }), timeout.Token).ConfigureAwait(true);
 
-        decision.RootElement.GetProperty("permission").GetString().ShouldBe("deny", Case.Sensitive);
+        decision.RootElement.GetProperty("permission").GetString().ShouldBe("deny");
         var run = frames.Select(Notification).OfType<AcpHookNotification>().First(static notification => notification.Run is not null).Run!;
-        run.Status.ShouldBe("awaitingConsent", Case.Sensitive);
+        run.Status.ShouldBe("awaitingConsent");
         run.ExitCode.ShouldBeNull();
         run.PayloadSha256.ShouldBeNull();
     }

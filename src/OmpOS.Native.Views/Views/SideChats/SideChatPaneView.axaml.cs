@@ -225,7 +225,7 @@ internal partial class SideChatPaneView : UserControl
     private bool FocusIsInPaneOrLost()
     {
         var focused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() as Visual;
-        return focused is null || ReferenceEquals(focused, this) || focused.GetVisualRoot() is null || focused.GetVisualAncestors().Contains(this);
+        return focused is null || ReferenceEquals(focused, this) || TopLevel.GetTopLevel(focused) is null || focused.GetVisualAncestors().Contains(this);
     }
 
     // The card of a new side chat is realized by the next layout pass, so the focus request waits for it a few turns.

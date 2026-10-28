@@ -27,7 +27,7 @@ namespace OmpOS.Native;
 /// <summary>The window-level wiring of the shell: About, the conversation search overlay, the environment picker, cloud rows and hand-off, the workspace sets dialog, hooks and worktrees tools, and the Settings route.</summary>
 public partial class MainView
 {
-    private ShellServices _services = new();
+    private readonly ShellServices _services = new();
     private IAboutLauncher? _about;
     private ConversationSearchIndex? _searchIndex;
     private ConversationSearchModel? _searchModel;

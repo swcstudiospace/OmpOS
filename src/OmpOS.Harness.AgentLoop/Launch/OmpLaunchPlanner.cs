@@ -107,11 +107,7 @@ public static class OmpLaunchPlanner
         }
 
         var hooksLoaded = AddHookBridge(hookBridge, sessionId, graphId, now, arguments, events);
-        if (runMode is not null)
-        {
-            arguments.AddRange(runMode.Arguments);
-        }
-
+        arguments.AddRange(runMode?.Arguments ?? []);
         var overlayPath = AddConfigOverlay(settings, sessionDirectory, bashOverlayYaml, arguments);
         AddDirectories(extraDirectories, arguments);
 

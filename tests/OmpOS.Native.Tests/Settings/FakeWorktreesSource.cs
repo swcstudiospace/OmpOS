@@ -1,4 +1,3 @@
-using OmpOS.Presentation.Settings;
 using OmpOS.Presentation.Settings.Worktrees;
 
 namespace OmpOS.Native.Tests.Settings;

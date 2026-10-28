@@ -25,7 +25,8 @@ public sealed class SideChatPaneViewTests
 
     private static async Task RunAsync(ViewSideChatEngine engine, ViewSessionForker? forker, Func<SideChatHub, SideChatPaneView, Window, Task> body)
     {
-        await using var session = TestAppBuilder.StartSession();
+        var session = TestAppBuilder.StartSession();
+        await using var sessionScope = session.ConfigureAwait(true);
         await session.RunAsync(async () =>
         {
             var hub = new SideChatHub(new SideChatPanel("parent"), engine, static () => []);

@@ -25,8 +25,8 @@ public sealed class BestOfNHostTests
         var result = await host.RunAsync(Request(), TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         result.Succeeded.ShouldBeTrue();
-        result.Summary.ShouldBe("done: fixed", Case.Sensitive);
-        seen.ShouldNotBeNull().Run.Path.ShouldBe("/tmp/run-1", Case.Sensitive);
+        result.Summary.ShouldBe("done: fixed");
+        seen.ShouldNotBeNull().Run.Path.ShouldBe("/tmp/run-1");
     }
 
     /// <summary>A candidate that throws is reported with its message.</summary>
@@ -38,7 +38,7 @@ public sealed class BestOfNHostTests
         var result = await host.RunAsync(Request(), TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         result.Succeeded.ShouldBeFalse();
-        result.Summary.ShouldBe("engine crashed", Case.Sensitive);
+        result.Summary.ShouldBe("engine crashed");
     }
 
     /// <summary>A cancellation requested by the caller is not a candidate fault.</summary>

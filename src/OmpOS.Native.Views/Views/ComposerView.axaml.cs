@@ -387,6 +387,52 @@ internal partial class ComposerView : UserControl
         return true;
     }
 
+    // Tab queues the draft behind the active run (Cursor's rule); Enter keeps steering. A refused message stays in the box.
+    private bool TryQueueDraft(ComposerViewModel composer, KeyEventArgs e)
+    {
+        if (e.Key != Key.Tab || e.KeyModifiers != KeyModifiers.None || QueueRequest is not { } queue || _runs is not { IsRunActive: true } || string.IsNullOrWhiteSpace(composer.Draft))
+        {
+            return false;
+        }
+
+        e.Handled = true;
+        if (queue(composer.Draft))
+        {
+            composer.Draft = string.Empty;
+        }
+
+        return true;
+    }
+
+    private void HandleEnter(ComposerViewModel composer, KeyEventArgs e, bool shift, bool ctrl)
+    {
+        if (shift && !ctrl)
+        {
+            // Shift+Enter is left alone, so the text box inserts the newline.
+            return;
+        }
+
+        // Handled stops the text box from inserting the newline.
+        e.Handled = true;
+        if (ctrl && shift)
+        {
+            // Ctrl+Shift+Enter queues a follow-up while a run is active and is a no-op otherwise.
+            if (_runs is { IsRunActive: true } active)
+            {
+                Track(composer, () => FollowUpAsync(composer, active));
+            }
+        }
+        else if (ctrl)
+        {
+            // Ctrl+Enter steers while a run is active and sends otherwise.
+            Track(composer, () => _runs is { IsRunActive: true } active ? SteerAsync(composer, active) : composer.SendAsync());
+        }
+        else
+        {
+            Track(composer, () => SubmitAsync(composer));
+        }
+    }
+
     private void OnPromptKeyDown(object? sender, KeyEventArgs e)
     {
         if (DataContext is not ComposerViewModel composer)
@@ -406,46 +452,15 @@ internal partial class ComposerView : UserControl
             return;
         }
 
-        if (e.Key == Key.Tab && e.KeyModifiers == KeyModifiers.None && QueueRequest is { } queue && _runs is { IsRunActive: true } && !string.IsNullOrWhiteSpace(composer.Draft))
+        if (TryQueueDraft(composer, e))
         {
-            // Tab queues the draft behind the active run (Cursor's rule); Enter keeps steering. A refused message stays in the box.
-            e.Handled = true;
-            if (queue(composer.Draft))
-            {
-                composer.Draft = string.Empty;
-            }
-
             return;
         }
 
         var ctrl = (e.KeyModifiers & KeyModifiers.Control) != KeyModifiers.None;
         if (e.Key == Key.Enter)
         {
-            if (shift && !ctrl)
-            {
-                // Shift+Enter is left alone, so the text box inserts the newline.
-                return;
-            }
-
-            // Handled stops the text box from inserting the newline.
-            e.Handled = true;
-            if (ctrl && shift)
-            {
-                // Ctrl+Shift+Enter queues a follow-up while a run is active and is a no-op otherwise.
-                if (_runs is { IsRunActive: true } active)
-                {
-                    Track(composer, () => FollowUpAsync(composer, active));
-                }
-            }
-            else if (ctrl)
-            {
-                // Ctrl+Enter steers while a run is active and sends otherwise.
-                Track(composer, () => _runs is { IsRunActive: true } active ? SteerAsync(composer, active) : composer.SendAsync());
-            }
-            else
-            {
-                Track(composer, () => SubmitAsync(composer));
-            }
+            HandleEnter(composer, e, shift, ctrl);
         }
         else if (e.Key == Key.Escape)
         {

@@ -124,8 +124,8 @@ public sealed class WorkspaceSetPickerViewTests
             rig.Click(rig.View.Import);
 
             backend.ImportedPaths.ShouldBe(["/work/set.code-workspace"]);
-            rig.Picker.Name.ShouldBe("imported", Case.Sensitive);
-            rig.View.NameInput.Text.ShouldBe("imported", Case.Sensitive);
+            rig.Picker.Name.ShouldBe("imported");
+            rig.View.NameInput.Text.ShouldBe("imported");
             rig.Picker.Rows.Select(row => row.Id).ShouldBe(["y", "x"]);
             rig.View.ImportWarnings.ItemCount.ShouldBe(1);
             var shown = rig.Shown();
@@ -256,18 +256,18 @@ public sealed class WorkspaceSetPickerViewTests
         await session.Dispatch(() =>
         {
             var rig = new Rig();
-            rig.View.NameInput.Text.ShouldBe("Workspace", Case.Sensitive);
+            rig.View.NameInput.Text.ShouldBe("Workspace");
 
             _ = rig.View.NameInput.Focus();
             rig.View.NameInput.Text = "Renamed";
-            rig.Picker.Name.ShouldBe("Renamed", Case.Sensitive);
+            rig.Picker.Name.ShouldBe("Renamed");
             rig.View.NameInput.Text = "   ";
-            rig.Picker.Name.ShouldBe("Renamed", Case.Sensitive);
+            rig.Picker.Name.ShouldBe("Renamed");
 
             _ = rig.View.AddFolder.Focus();
             ShellHarness.Settle(rig.Window);
 
-            rig.View.NameInput.Text.ShouldBe("Renamed", Case.Sensitive);
+            rig.View.NameInput.Text.ShouldBe("Renamed");
             rig.Window.Close();
         }, Token).ConfigureAwait(true);
     }
@@ -283,7 +283,7 @@ public sealed class WorkspaceSetPickerViewTests
             rig.Picker.Load("set", [Root("api", primary: true)]);
             ShellHarness.Settle(rig.Window);
             _ = rig.View.NameInput.Focus();
-            SettingsTree.FocusedName(rig.Window).ShouldBe(WorkspaceSetPickerCopy.NameLabel, Case.Sensitive);
+            SettingsTree.FocusedName(rig.Window).ShouldBe(WorkspaceSetPickerCopy.NameLabel);
 
             var visited = new List<string?>();
             for (var step = 0; step < 7; step++)
@@ -337,7 +337,7 @@ public sealed class WorkspaceSetPickerViewTests
             AutomationProperties.GetLiveSetting(rig.View.Findings).ShouldBe(AutomationLiveSetting.Polite);
             AutomationProperties.GetLiveSetting(rig.View.ImportWarnings).ShouldBe(AutomationLiveSetting.Polite);
             AutomationProperties.GetLiveSetting(rig.View.LastErrorLine).ShouldBe(AutomationLiveSetting.Assertive);
-            AutomationProperties.GetName(rig.View.Folders).ShouldBe(WorkspaceSetPickerCopy.FolderListName, Case.Sensitive);
+            AutomationProperties.GetName(rig.View.Folders).ShouldBe(WorkspaceSetPickerCopy.FolderListName);
             rig.View.LastErrorLine.IsVisible.ShouldBeTrue();
             rig.Window.Close();
         }, Token).ConfigureAwait(true);
@@ -353,7 +353,7 @@ public sealed class WorkspaceSetPickerViewTests
             var backend = new ViewScriptedBackend();
 
             var byEscape = new WindowRig(backend);
-            byEscape.Window.Title.ShouldBe(WorkspaceSetPickerCopy.WindowTitle, Case.Sensitive);
+            byEscape.Window.Title.ShouldBe(WorkspaceSetPickerCopy.WindowTitle);
             SettingsTree.Press(byEscape.Window, Key.Escape, PhysicalKey.Escape);
             byEscape.Closed.ShouldBe(1);
             byEscape.Starts.ShouldBe(0);

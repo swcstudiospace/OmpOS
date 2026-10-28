@@ -65,14 +65,14 @@ public sealed class IgnoreSettingsPageTests
         page.AddPattern("*.log").ShouldBeTrue();
 
         page.AddPattern("   ").ShouldBeFalse();
-        page.EntryError.ShouldBe(IgnoreCopy.BlankPattern, Case.Sensitive);
+        page.EntryError.ShouldBe(IgnoreCopy.BlankPattern);
         page.AddPattern(null).ShouldBeFalse();
         page.AddPattern(new string('a', IgnoreSettingsLimits.MaxPatternLength + 1)).ShouldBeFalse();
-        page.EntryError.ShouldBe(IgnoreCopy.PatternTooLong(IgnoreSettingsLimits.MaxPatternLength), Case.Sensitive);
+        page.EntryError.ShouldBe(IgnoreCopy.PatternTooLong(IgnoreSettingsLimits.MaxPatternLength));
         page.AddPattern("a\nb").ShouldBeFalse();
-        page.EntryError.ShouldBe(IgnoreCopy.PatternHasLineBreak, Case.Sensitive);
+        page.EntryError.ShouldBe(IgnoreCopy.PatternHasLineBreak);
         page.AddPattern(" *.log ").ShouldBeFalse();
-        page.EntryError.ShouldBe(IgnoreCopy.DuplicatePattern, Case.Sensitive);
+        page.EntryError.ShouldBe(IgnoreCopy.DuplicatePattern);
         page.HasEntryError.ShouldBeTrue();
         page.Patterns.ShouldBe(["*.log"]);
 
@@ -89,7 +89,7 @@ public sealed class IgnoreSettingsPageTests
 
         page.AddPattern("one-more").ShouldBeFalse();
 
-        page.EntryError.ShouldBe(IgnoreCopy.TooManyPatterns(IgnoreSettingsLimits.MaxPatterns), Case.Sensitive);
+        page.EntryError.ShouldBe(IgnoreCopy.TooManyPatterns(IgnoreSettingsLimits.MaxPatterns));
         page.Patterns.Count.ShouldBe(IgnoreSettingsLimits.MaxPatterns);
     }
 
@@ -103,7 +103,7 @@ public sealed class IgnoreSettingsPageTests
 
         page.AddPattern("y").ShouldBeFalse();
 
-        page.EntryError.ShouldBe(IgnoreCopy.ListTooLong, Case.Sensitive);
+        page.EntryError.ShouldBe(IgnoreCopy.ListTooLong);
     }
 
     /// <summary>Removing deletes exactly the pattern named, in order, and an unknown pattern changes nothing.</summary>
@@ -193,7 +193,7 @@ public sealed class IgnoreSettingsPageTests
 
         (await page.SaveAsync(token).ConfigureAwait(true)).ShouldBeFalse();
 
-        page.SaveError.ShouldBe("settings file is locked", Case.Sensitive);
+        page.SaveError.ShouldBe("settings file is locked");
         page.IsDirty.ShouldBeTrue();
         page.Saved.GlobalPatterns.ShouldBeEmpty();
         page.Patterns.ShouldBe(["tmp/"]);

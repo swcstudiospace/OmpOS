@@ -121,7 +121,7 @@ internal sealed class AgentHead : IAsyncDisposable
     }
 
     /// <summary>
-    /// Builds the head of the running process like <see cref="CreateProduction"/>, and first opens the services every window shares (hooks, remote environments, MCP catalog, checkpoints, run mode,
+    /// Builds the head of the running process like <see cref="CreateProduction()"/>, and first opens the services every window shares (hooks, remote environments, MCP catalog, checkpoints, run mode,
     /// cloud agents). The services are opened asynchronously, so the application shows its window once this has completed.
     /// </summary>
     /// <param name="topLevel">Returns the window the system browser is asked through, or null.</param>

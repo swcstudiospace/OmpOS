@@ -21,7 +21,8 @@ internal static class AgentLoopFixtures
         string? ompPath = null,
         TimeSpan? detailsRefresh = null,
         TimeSpan? steerAck = null,
-        OmpLocatorOptions? terminalLocator = null) => new()
+        OmpLocatorOptions? terminalLocator = null,
+        OmpOS.Native.Composition.HeadServices? services = null) => new()
         {
             PluginsRoot = tree.Plugins,
             StateRoot = tree.State,
@@ -36,6 +37,7 @@ internal static class AgentLoopFixtures
             DetailsRefreshInterval = detailsRefresh ?? Timeout.InfiniteTimeSpan,
             SteerAckTimeout = steerAck,
             TerminalLocator = terminalLocator,
+            Services = services,
         };
 
     /// <summary>Creates a session in the registry and its slot, as the panel does when the user starts an agent.</summary>

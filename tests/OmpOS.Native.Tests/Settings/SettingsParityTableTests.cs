@@ -15,7 +15,7 @@ public sealed class SettingsParityTableTests
         var rows = new List<string[]>();
         foreach (var line in File.ReadAllLines(path))
         {
-            if (!line.StartsWith("| S", StringComparison.Ordinal))
+            if (!line.StartsWith("| S", StringComparison.Ordinal) || line.Length < 5 || !char.IsAsciiDigit(line[3]))
             {
                 continue;
             }
@@ -37,7 +37,7 @@ public sealed class SettingsParityTableTests
         rows.Select(static row => row[0]).ShouldBe(Enumerable.Range(1, 50).Select(static n => "S" + n.ToString("D2", System.Globalization.CultureInfo.InvariantCulture)));
         foreach (var row in rows)
         {
-            Statuses.ShouldContain(row[2], row[0]);
+            Statuses.ShouldContain(row[2], StringComparer.Ordinal, row[0]);
             row[5].ShouldNotBeNullOrWhiteSpace(row[0]);
         }
     }
@@ -50,18 +50,18 @@ public sealed class SettingsParityTableTests
         foreach (var row in Rows())
         {
             var (id, status, page, key) = (row[0], row[2], row[3], row[4]);
-            if (page != "-")
+            if (!string.Equals(page, "-", StringComparison.Ordinal))
             {
-                sections.ShouldContain(page, id);
+                sections.ShouldContain(page, StringComparer.Ordinal, id);
             }
 
             if (status is "Built" or "Wired")
             {
-                page.ShouldNotBe("-", id);
-                key.ShouldNotBe("-", id);
+                string.Equals(page, "-", StringComparison.Ordinal).ShouldBeFalse(id);
+                string.Equals(key, "-", StringComparison.Ordinal).ShouldBeFalse(id);
             }
 
-            if (status == "Omitted")
+            if (string.Equals(status, "Omitted", StringComparison.Ordinal))
             {
                 page.ShouldBe("-", id);
                 key.ShouldBe("-", id);

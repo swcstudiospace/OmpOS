@@ -214,7 +214,7 @@ public sealed class SettingsWindowHostTests : IDisposable
             UserHome = Directory.CreateDirectory(_tree.PathOf("home")).FullName,
             GetVariable = static _ => null,
             ModelsPageFactory = () => new StubSettingsPage(SettingsSection.Models),
-            Hooks = new OmpOS.Harness.AgentLoop.Tests.Hooks.FakeHooksService(),
+            Hooks = new OmpOS.Native.Tests.Hooks.FakeHooksService(),
             Mcp = new OmpOS.Harness.Mcp.Catalog.McpServerCatalog(files, files),
             RunModes = new FakeRunModeSource(),
             Display = new OmpOS.Presentation.Commands.Handlers.DisplaySettings(new MemoryDisplayStore()),

@@ -30,11 +30,11 @@ public sealed class WorkspacesSettingsPageTests
 
         page.State.ShouldBe(SettingsPageState.Ready);
         page.Section.ShouldBe(SettingsSection.Workspaces);
-        page.Title.ShouldBe(WorkspacesCopy.Title, Case.Sensitive);
+        page.Title.ShouldBe(WorkspacesCopy.Title);
         page.Recents.Select(row => row.Name).ShouldBe(["Backend", "Docs"]);
         page.HasRecents.ShouldBeTrue();
         page.HasNoRecents.ShouldBeFalse();
-        page.Picker.Name.ShouldBe(WorkspacesCopy.DefaultName, Case.Sensitive);
+        page.Picker.Name.ShouldBe(WorkspacesCopy.DefaultName);
         page.Picker.Rows.ShouldBeEmpty();
         page.IsDirty.ShouldBeFalse();
         page.HasError.ShouldBeFalse();
@@ -58,7 +58,7 @@ public sealed class WorkspacesSettingsPageTests
         var (page, source) = await OpenAsync(s => s.ListFailure = "The file is locked.").ConfigureAwait(true);
 
         page.State.ShouldBe(SettingsPageState.Error);
-        page.LoadError.ShouldBe("The file is locked.", Case.Sensitive);
+        page.LoadError.ShouldBe("The file is locked.");
         page.IsDirty.ShouldBeFalse();
         page.HasNoRecents.ShouldBeFalse();
 
@@ -185,7 +185,7 @@ public sealed class WorkspacesSettingsPageTests
         page.IsDirty.ShouldBeFalse();
         page.SaveError.ShouldBeEmpty();
         page.Recents.Select(row => row.Name).ShouldBe(["Backend", "Docs"]);
-        page.Announcement.ShouldBe(WorkspacesCopy.Saved("Backend"), Case.Sensitive);
+        page.Announcement.ShouldBe(WorkspacesCopy.Saved("Backend"));
 
         (await page.SaveAsync(token).ConfigureAwait(true)).ShouldBeTrue();
 
@@ -202,7 +202,7 @@ public sealed class WorkspacesSettingsPageTests
 
         (await page.SaveAsync(token).ConfigureAwait(true)).ShouldBeFalse();
 
-        page.SaveError.ShouldBe("The disk is full.", Case.Sensitive);
+        page.SaveError.ShouldBe("The disk is full.");
         page.HasError.ShouldBeTrue();
         page.IsDirty.ShouldBeTrue();
         page.Recents.ShouldBeEmpty();
@@ -244,7 +244,7 @@ public sealed class WorkspacesSettingsPageTests
         page.Reset();
 
         page.Picker.Rows.ShouldBeEmpty();
-        page.Picker.Name.ShouldBe(WorkspacesCopy.DefaultName, Case.Sensitive);
+        page.Picker.Name.ShouldBe(WorkspacesCopy.DefaultName);
         page.IsDirty.ShouldBeFalse("the empty set is what the page loaded with");
 
         page.Picker.AddFolder("/work/api");
@@ -288,7 +288,7 @@ public sealed class WorkspacesSettingsPageTests
 
         page.Discard();
 
-        page.Picker.Name.ShouldBe("Backend", Case.Sensitive);
+        page.Picker.Name.ShouldBe("Backend");
         page.Picker.Rows.Select(row => (row.Id, row.IsPrimary)).ShouldBe([("api", true), ("lib", false)]);
         page.IsDirty.ShouldBeFalse();
         page.SaveError.ShouldBeEmpty();
@@ -302,14 +302,14 @@ public sealed class WorkspacesSettingsPageTests
 
         page.LoadRecentIntoEditor("backend").ShouldBeTrue();
 
-        page.Picker.Name.ShouldBe("Backend", Case.Sensitive);
+        page.Picker.Name.ShouldBe("Backend");
         page.Picker.Snapshot().Select(root => (root.Path, root.IsPrimary)).ShouldBe([("/work/api", true), ("/work/lib", false)]);
         page.IsDirty.ShouldBeTrue();
-        page.Announcement.ShouldBe(WorkspacesCopy.Loaded("Backend"), Case.Sensitive);
+        page.Announcement.ShouldBe(WorkspacesCopy.Loaded("Backend"));
         source.SavedNames.ShouldBeEmpty("loading into the editor saves nothing");
 
         page.LoadRecentIntoEditor("missing").ShouldBeFalse();
-        page.Picker.Name.ShouldBe("Backend", Case.Sensitive);
+        page.Picker.Name.ShouldBe("Backend");
     }
 
     /// <summary>A recent set whose stored folders repeat an identifier is not loaded: the editor keeps its folders and the page says what to do.</summary>
@@ -329,7 +329,7 @@ public sealed class WorkspacesSettingsPageTests
         page.LoadRecentIntoEditor("broken").ShouldBeFalse();
 
         page.Picker.Rows.Select(row => row.Id).ShouldBe(["api"]);
-        page.Announcement.ShouldBe(WorkspacesCopy.RecentUnusable("Broken"), Case.Sensitive);
+        page.Announcement.ShouldBe(WorkspacesCopy.RecentUnusable("Broken"));
     }
 
     /// <summary>Forgetting a recent set removes it from the source and the list, announces it and leaves the editor alone.</summary>
@@ -349,7 +349,7 @@ public sealed class WorkspacesSettingsPageTests
         removed.ShouldBeTrue();
         page.Recents.Select(row => row.Name).ShouldBe(["Docs"]);
         source.Recents.Select(row => row.Name).ShouldBe(["Docs"]);
-        page.Announcement.ShouldBe(WorkspacesCopy.Forgot("Backend"), Case.Sensitive);
+        page.Announcement.ShouldBe(WorkspacesCopy.Forgot("Backend"));
         page.Picker.Rows.ShouldHaveSingleItem();
 
         (await page.ForgetRecentAsync("backend", token).ConfigureAwait(true)).ShouldBeFalse("it is no longer listed");
@@ -372,7 +372,7 @@ public sealed class WorkspacesSettingsPageTests
 
         removed.ShouldBeFalse();
         page.Recents.ShouldHaveSingleItem();
-        page.Announcement.ShouldBe("The file is read-only.", Case.Sensitive);
+        page.Announcement.ShouldBe("The file is read-only.");
     }
 
     /// <summary>A set another process already forgot leaves the list and the page says it was gone.</summary>
@@ -386,7 +386,7 @@ public sealed class WorkspacesSettingsPageTests
 
         removed.ShouldBeFalse();
         page.Recents.ShouldBeEmpty();
-        page.Announcement.ShouldBe(WorkspacesCopy.AlreadyForgotten("Backend"), Case.Sensitive);
+        page.Announcement.ShouldBe(WorkspacesCopy.AlreadyForgotten("Backend"));
     }
 
     /// <summary>The picker's import and export work through the page's source backend; an imported file is a draft that is saved like any other.</summary>
@@ -401,7 +401,7 @@ public sealed class WorkspacesSettingsPageTests
 
         page.Picker.ImportCodeWorkspace("/work/mono.code-workspace").ShouldBeTrue();
 
-        page.Picker.Name.ShouldBe("Mono", Case.Sensitive);
+        page.Picker.Name.ShouldBe("Mono");
         page.IsDirty.ShouldBeTrue();
         page.Picker.ImportWarnings.ShouldBe(["A remote folder was skipped."]);
 
@@ -419,11 +419,11 @@ public sealed class WorkspacesSettingsPageTests
         var one = ScriptedWorkspacesSource.Row("Docs", "/work/docs");
         var two = ScriptedWorkspacesSource.Row("Backend", "/work/api", "/work/lib");
 
-        one.FoldersText.ShouldBe("1 folder", Case.Sensitive);
-        two.FoldersText.ShouldBe("2 folders", Case.Sensitive);
-        two.Summary.ShouldBe("Backend, 2 folders, primary /work/api. Last used 2026-10-28 09:00 UTC.", Case.Sensitive);
+        one.FoldersText.ShouldBe("1 folder");
+        two.FoldersText.ShouldBe("2 folders");
+        two.Summary.ShouldBe("Backend, 2 folders, primary /work/api. Last used 2026-10-28 09:00 UTC.");
         two.LoadName.ShouldContain("Backend", Case.Sensitive);
         two.ForgetName.ShouldContain("Backend", Case.Sensitive);
-        two.LoadName.ShouldNotBe(two.ForgetName, Case.Sensitive);
+        string.Equals(two.LoadName, two.ForgetName, StringComparison.Ordinal).ShouldBeFalse();
     }
 }

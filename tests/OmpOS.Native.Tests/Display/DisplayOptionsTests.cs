@@ -208,7 +208,7 @@ public sealed class DisplayOptionsTests
     [InlineData("a\n\nb", "1\n2\n3")]
     [InlineData("", "1")]
     public void NumberLinesCountsTheLinesOfTheCode(string code, string expected) =>
-        CodeBlockView.NumberLines(code).ShouldBe(expected, Case.Sensitive);
+        CodeBlockView.NumberLines(code).ShouldBe(expected);
 
     /// <summary>Switching status indicators off hides the glyph of every agent row, keeps the status words, and switching on brings the glyphs back.</summary>
     [Fact]
@@ -269,7 +269,7 @@ public sealed class DisplayOptionsTests
 
             glyph.IsEffectivelyVisible.ShouldBeFalse();
             chip.IsEffectivelyVisible.ShouldBeTrue();
-            AutomationProperties.GetName(chip).ShouldBe(name, Case.Sensitive);
+            AutomationProperties.GetName(chip).ShouldBe(name);
             ViewHarness.VisibleTexts(chip).ShouldContain("Running", StringComparer.Ordinal);
 
             await settings.SetAsync(DisplaySetting.StatusIndicators, true, TestContext.Current.CancellationToken).ConfigureAwait(true);

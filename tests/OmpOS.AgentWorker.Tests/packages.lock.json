@@ -268,7 +268,9 @@
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
           "OmpOS.Harness.Abstractions": "[0.15.0, )",
-          "OmpOS.Harness.Acp": "[0.15.0, )"
+          "OmpOS.Harness.Acp": "[0.15.0, )",
+          "OmpOS.Harness.AgentLoop": "[0.15.0, )",
+          "OmpOS.Harness.Plugins": "[0.15.0, )"
         }
       },
       "ompos.contracts": {
@@ -286,6 +288,19 @@
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
           "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
+      },
+      "ompos.harness.agentloop": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Harness.Acp": "[0.15.0, )",
+          "OmpOS.Harness.Plugins": "[0.15.0, )"
+        }
+      },
+      "ompos.harness.plugins": {
+        "type": "Project"
       },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {
         "type": "CentralTransitive",

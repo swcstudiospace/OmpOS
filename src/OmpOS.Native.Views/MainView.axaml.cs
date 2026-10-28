@@ -7,14 +7,15 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
+using OmpOS.Contracts.Ui;
 using OmpOS.Harness.Mcp;
 using OmpOS.Harness.Terminal;
 using OmpOS.Native.Engine;
 using OmpOS.Native.Views;
 using OmpOS.Native.Views.AgentPanel;
 using OmpOS.Native.Views.Changes;
-using OmpOS.Native.Views.Checkpoints;
 using OmpOS.Native.Views.Chats;
+using OmpOS.Native.Views.Checkpoints;
 using OmpOS.Native.Views.Diff;
 using OmpOS.Native.Views.Editor;
 using OmpOS.Native.Views.Explorer;
@@ -26,18 +27,16 @@ using OmpOS.Native.Views.Modes;
 using OmpOS.Native.Views.Queue;
 using OmpOS.Native.Views.RunControls;
 using OmpOS.Native.Views.Search;
-using OmpOS.Native.Views.Shell;
-using OmpOS.Native.Views.SideChats;
 using OmpOS.Native.Views.Sessions;
+using OmpOS.Native.Views.Shell;
 using OmpOS.Native.Views.Terminal;
 using OmpOS.Native.Views.Workspace;
 using OmpOS.Presentation;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Agents;
-using OmpOS.Contracts.Ui;
 using OmpOS.Presentation.Changes;
-using OmpOS.Presentation.Checkpoints;
 using OmpOS.Presentation.Chats;
+using OmpOS.Presentation.Checkpoints;
 using OmpOS.Presentation.Editor;
 using OmpOS.Presentation.Export;
 using OmpOS.Presentation.Kanban;
@@ -202,18 +201,11 @@ public partial class MainView : UserControl
         _stateView.NewAgentCompleted += OnNewAgentCompleted;
         PanelStateHost.Content = _stateView;
 
-        SessionsViewToggle.IsCheckedChanged += OnRailViewToggleChanged;
-        ToolsViewToggle.IsCheckedChanged += OnRailViewToggleChanged;
-        SizeChanged += OnLayoutSizeChanged;
-
         // The Agents window: one registry of runs and one view model over it. The view opens in place of the transcript.
         AgentRuns = new AgentRunRegistry();
         Agents = new AgentsViewModel(AgentRuns);
         AgentsHost.Content = ViewMapping.Create(Agents);
-        AgentsToggle.IsCheckedChanged += OnAgentsToggleChanged;
-        SideChatsToggle.IsCheckedChanged += OnSideChatsToggleChanged;
-        SuggestionsToggle.IsCheckedChanged += OnSuggestionsToggleChanged;
-        SettingsButton.Click += OnSettingsClick;
+        WireToggles();
 
         // The editor model is shared by the editor tool and the explorer, which opens files into it.
         EditorModel = new EditorViewModel(_editorTabs);
@@ -234,6 +226,18 @@ public partial class MainView : UserControl
         _panel.PropertyChanged += OnPanelChanged;
         _panel.Catalog.PropertyChanged += OnCatalogChanged;
         BindSelected();
+    }
+
+    // The toggles of the rail, the top bar and the layout, wired once the Agents window exists.
+    private void WireToggles()
+    {
+        SessionsViewToggle.IsCheckedChanged += OnRailViewToggleChanged;
+        ToolsViewToggle.IsCheckedChanged += OnRailViewToggleChanged;
+        SizeChanged += OnLayoutSizeChanged;
+        AgentsToggle.IsCheckedChanged += OnAgentsToggleChanged;
+        SideChatsToggle.IsCheckedChanged += OnSideChatsToggleChanged;
+        SuggestionsToggle.IsCheckedChanged += OnSuggestionsToggleChanged;
+        SettingsButton.Click += OnSettingsClick;
     }
 
     // The top bar names the workspace folder the view was given, or the product when it was given none (or a root with no folder name).
@@ -543,6 +547,20 @@ public partial class MainView : UserControl
         }
     }
 
+    // A terminal session shows omp in the thread and steers it from a steer-only composer. The views are kept with the pane, so
+    // another tab or session never restarts omp: the runtime keeps omp running and stops it when the session closes.
+    private void WireTerminal(SessionPane pane, AgentSessionRuntime? runtime, AgentSessionViewModel viewModel)
+    {
+        if (runtime?.Terminal is not { } terminal)
+        {
+            return;
+        }
+
+        pane.TerminalView = (OmpTerminalView)ViewMapping.Create(terminal);
+        pane.SteerView = new TerminalSteerView { DataContext = viewModel };
+        pane.SteerView.StatusMessage += (_, e) => ReportFor(pane, e.Message);
+    }
+
     private SessionPane CreatePane(AgentSessionViewModel viewModel)
     {
         var runtime = AgentSessionRuntime.For(viewModel);
@@ -588,14 +606,7 @@ public partial class MainView : UserControl
         pane.Header.CloseClicked += (_, _) => pane.ConfirmBar.OpenClose();
         pane.Header.ShowPipelineRequested += (_, _) => pane.Strip.ShowDetails();
         pane.Header.TaskChipClicked += (_, _) => ShowKanbanTab(viewModel.Id);
-        if (runtime?.Terminal is { } terminal)
-        {
-            // A terminal session shows omp in the thread and steers it from a steer-only composer. The views are kept with the pane, so
-            // another tab or session never restarts omp: the runtime keeps omp running and stops it when the session closes.
-            pane.TerminalView = (OmpTerminalView)ViewMapping.Create(terminal);
-            pane.SteerView = new TerminalSteerView { DataContext = viewModel };
-            pane.SteerView.StatusMessage += (_, e) => ReportFor(pane, e.Message);
-        }
+        WireTerminal(pane, runtime, viewModel);
         pane.ConfirmBar.StopConfirmed += (_, _) =>
         {
             // Stopping a turn discards the messages queued behind it: they were written for a run that no longer continues.
@@ -797,6 +808,17 @@ public partial class MainView : UserControl
                 ShowThread();
                 FocusThread();
                 break;
+            default:
+                HandleShellShortcut(e, control, shift, meta);
+                break;
+        }
+    }
+
+    // The rest of the keyboard map: Settings, region cycling, the two searches and Escape.
+    private void HandleShellShortcut(KeyEventArgs e, bool control, bool shift, bool meta)
+    {
+        switch (e.Key)
+        {
             case Key.OemComma when control && !shift:
                 e.Handled = true;
                 RequestSettings();

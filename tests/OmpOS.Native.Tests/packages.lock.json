@@ -482,6 +482,19 @@
       "ompos.harness.providers": {
         "type": "Project"
       },
+      "ompos.harness.remote": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Harness.Acp": "[0.15.0, )",
+          "OmpOS.Harness.AgentLoop": "[0.15.0, )",
+          "OmpOS.Harness.Terminal": "[0.15.0, )",
+          "OmpOS.Harness.Workspace": "[0.15.0, )",
+          "OmpOS.Presentation": "[0.15.0, )"
+        }
+      },
       "ompos.harness.secrets": {
         "type": "Project"
       },
@@ -494,6 +507,9 @@
       "ompos.harness.workspace": {
         "type": "Project"
       },
+      "ompos.harness.worktrees": {
+        "type": "Project"
+      },
       "ompos.native": {
         "type": "Project",
         "dependencies": {
@@ -504,9 +520,15 @@
           "OmpOS.EngineHost": "[0.15.0, )",
           "OmpOS.Harness.Acp": "[0.15.0, )",
           "OmpOS.Harness.AgentLoop": "[0.15.0, )",
+          "OmpOS.Harness.Mcp": "[0.15.0, )",
           "OmpOS.Harness.OmpConfig": "[0.15.0, )",
+          "OmpOS.Harness.Plugins": "[0.15.0, )",
           "OmpOS.Harness.Providers": "[0.15.0, )",
+          "OmpOS.Harness.Remote": "[0.15.0, )",
           "OmpOS.Harness.Secrets": "[0.15.0, )",
+          "OmpOS.Harness.Terminal": "[0.15.0, )",
+          "OmpOS.Harness.Workspace": "[0.15.0, )",
+          "OmpOS.Harness.Worktrees": "[0.15.0, )",
           "OmpOS.Native.Views": "[0.15.0, )",
           "OmpOS.Presentation": "[0.15.0, )"
         }

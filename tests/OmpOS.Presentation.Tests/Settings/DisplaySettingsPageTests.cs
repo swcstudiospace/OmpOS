@@ -82,13 +82,13 @@ public sealed class DisplaySettingsPageTests
         (await page.SaveAsync(Token).ConfigureAwait(true)).ShouldBeFalse();
 
         page.HasError.ShouldBeTrue();
-        page.SaveError.ShouldBe(DisplayCopy.SaveFailed, Case.Sensitive);
+        page.SaveError.ShouldBe(DisplayCopy.SaveFailed);
         page.IsDirty.ShouldBeTrue();
 
         var broken = new DisplaySettingsPage(new DisplaySettings(new Store { LoadFailure = new UnauthorizedAccessException() }));
         await broken.LoadAsync(Token).ConfigureAwait(true);
         broken.State.ShouldBe(SettingsPageState.Error);
-        broken.LoadError.ShouldBe(DisplayCopy.LoadFailed, Case.Sensitive);
+        broken.LoadError.ShouldBe(DisplayCopy.LoadFailed);
     }
 
     /// <summary>The About button exists only when the head supplied an action, and pressing it runs the action.</summary>
@@ -117,7 +117,7 @@ public sealed class DisplaySettingsPageTests
         await model.LoadAsync(Token).ConfigureAwait(true);
 
         page.Section.ShouldBe(SettingsSection.Cloud);
-        page.Title.ShouldBe(CloudCopy.Title, Case.Sensitive);
+        page.Title.ShouldBe(CloudCopy.Title);
         page.IsDirty.ShouldBeFalse();
         model.State.ShouldBe(CloudAgentsViewState.NotConfigured);
         model.Rows.ShouldBeEmpty();

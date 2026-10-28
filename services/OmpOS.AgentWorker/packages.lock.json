@@ -104,6 +104,18 @@
         "dependencies": {
           "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
+      },
+      "ompos.harness.agentloop": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Harness.Acp": "[0.15.0, )",
+          "OmpOS.Harness.Plugins": "[0.15.0, )"
+        }
+      },
+      "ompos.harness.plugins": {
+        "type": "Project"
       }
     }
   }

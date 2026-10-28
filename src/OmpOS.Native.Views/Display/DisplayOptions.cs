@@ -13,7 +13,7 @@ public static class DisplayOptions
 {
     /// <summary>The display settings of the window. Inherited by every descendant; null means the defaults of <see cref="DisplaySettingsValues.Defaults"/>.</summary>
     public static readonly AttachedProperty<DisplaySettings?> SettingsProperty =
-        AvaloniaProperty.RegisterAttached<DisplayOptions, Control, DisplaySettings?>("Settings", defaultValue: null, inherits: true);
+        AvaloniaProperty.RegisterAttached<Control, DisplaySettings?>("Settings", typeof(DisplayOptions), defaultValue: null, inherits: true);
 
     /// <summary>Gets the display settings that apply to a control.</summary>
     /// <param name="control">The control.</param>

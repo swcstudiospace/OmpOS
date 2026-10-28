@@ -60,7 +60,7 @@ public sealed class CloudHandoffModel : ObservableModel
     }
 
     /// <summary>Gets the sentence of what is wrong with the repository address. Empty while nothing was typed or the address is valid; it never repeats the entry.</summary>
-    public string RepositoryError => _repositoryText.Trim().Length == 0 ? string.Empty : CloudInputValidator.ValidateRepositoryUrl(_repositoryText, out _) ?? string.Empty;
+    public string RepositoryError => _repositoryText.Trim().Length == 0 ? string.Empty : CloudInputValidator.ValidateRepositoryAddress(_repositoryText, out _) ?? string.Empty;
 
     /// <summary>Gets the sentence that says what is billed and when idle workers sleep.</summary>
     public string CostNotice => CloudCopy.CostNotice(_setup.DefaultIdleMinutes);
@@ -155,7 +155,7 @@ public sealed class CloudHandoffModel : ObservableModel
             return notReady;
         }
 
-        _ = CloudInputValidator.ValidateRepositoryUrl(_repositoryText, out var repository);
+        _ = CloudInputValidator.ValidateRepositoryAddress(_repositoryText, out var repository);
         var request = new CloudHandoffRequest
         {
             Prompt = Task,

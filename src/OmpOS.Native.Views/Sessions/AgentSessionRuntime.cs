@@ -138,7 +138,24 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             liveEvents.TurnInterrupted += OnTurnInterrupted;
         }
 
-        ViewModel = new AgentSessionViewModel(new AgentSessionOptions
+        ViewModel = CreateViewModel(options);
+        RunControls.Approvals.CollectionChanged += OnApprovalsChanged;
+        Registry.AddOrUpdate(ViewModel, this);
+        if (options.TerminalStarter is { } starter)
+        {
+            // The runtime owns the terminal for as long as the session lives, so a view that is hidden by a tab or session switch leaves omp running.
+            _terminalClosed = ViewModel.IsClosed;
+            _terminalLost = ViewModel.IsLost;
+            Terminal = new OmpTerminalViewModel(starter) { KeepRunningWhenDetached = true, AutoStart = !_terminalClosed && !_terminalLost };
+            Terminal.PropertyChanged += OnTerminalChanged;
+            Terminal.CloseRequested += OnTerminalCloseRequested;
+            ViewModel.PropertyChanged += OnViewModelChanged;
+        }
+    }
+
+    private AgentSessionViewModel CreateViewModel(AgentSessionRuntimeOptions options)
+    {
+        return new AgentSessionViewModel(new AgentSessionOptions
         {
             Row = options.Row,
             Session = Session,
@@ -154,18 +171,6 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             ApprovalCoordinator = RunControls.Coordinator,
             LiveSteering = options.Steering is null && options.NativeSteering is null ? null : DeliverLiveAsync,
         });
-        RunControls.Approvals.CollectionChanged += OnApprovalsChanged;
-        Registry.AddOrUpdate(ViewModel, this);
-        if (options.TerminalStarter is { } starter)
-        {
-            // The runtime owns the terminal for as long as the session lives, so a view that is hidden by a tab or session switch leaves omp running.
-            _terminalClosed = ViewModel.IsClosed;
-            _terminalLost = ViewModel.IsLost;
-            Terminal = new OmpTerminalViewModel(starter) { KeepRunningWhenDetached = true, AutoStart = !_terminalClosed && !_terminalLost };
-            Terminal.PropertyChanged += OnTerminalChanged;
-            Terminal.CloseRequested += OnTerminalCloseRequested;
-            ViewModel.PropertyChanged += OnViewModelChanged;
-        }
     }
 
     /// <summary>Occurs on the UI context when a run started, completed or faulted.</summary>
@@ -588,7 +593,7 @@ public sealed class AgentSessionRuntime : IAsyncDisposable
             await _queued.FollowUpAsync(text, cancellationToken).ConfigureAwait(true);
             Runs.NotifySteersHeldChanged();
         }
-        else if (!await StartTurnAsync(text).ConfigureAwait(true))
+        else if (!await StartTurnAsync(text, cancellationToken).ConfigureAwait(true))
         {
             return SteeringDelivery.Failed(MainView.RefusedSendStatus);
         }

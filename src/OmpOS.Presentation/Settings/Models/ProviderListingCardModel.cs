@@ -261,9 +261,6 @@ public sealed class ProviderListingCardModel : ObservableModel
     /// <summary>Gets a value indicating whether the form asks the user to tick that they read the vendor's rule text: the listing is a coding plan that takes a key.</summary>
     public bool RequiresPlanRule => HasPlan && TakesKey;
 
-    /// <summary>Gets the label of the plan rule tick box.</summary>
-    public string PlanRuleAcceptLabel => ProviderListingCopy.PlanRuleAcceptLabel;
-
     /// <summary>Gets the accessible name of the plan rule tick box.</summary>
     public string PlanRuleAcceptName => ProviderListingCopy.PlanRuleAcceptName(_listing.DisplayName);
 

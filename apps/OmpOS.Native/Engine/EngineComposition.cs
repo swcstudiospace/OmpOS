@@ -99,8 +99,13 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
         }
 
         var host = InProcessEngineHost.ForAcp(clientOptions, resolver, transportFactory: transportFactory, loggerFactory: loggerFactory, resumeSessionId: resumeSessionId, resumeAfterFault: remote is not null);
-        var reconnecting = remote is null ? null : new ReconnectingEngineHost(host, clock: options.Clock);
-        return new EngineComposition(host, new EngineToolApprovalBridge(pending, kinds), pending, reconnecting, remote);
+        var bridge = new EngineToolApprovalBridge(pending, kinds);
+        if (remote is null)
+        {
+            return new EngineComposition(host, bridge, pending, null, null);
+        }
+
+        return new EngineComposition(host, bridge, pending, null, remote) { Reconnecting = new ReconnectingEngineHost(host, clock: options.Clock) };
     }
 
     /// <summary>Joins the plan's HTTP servers and the servers of the user's own files. The plan wins a name clash, because the ACP names of one session must be unique.</summary>

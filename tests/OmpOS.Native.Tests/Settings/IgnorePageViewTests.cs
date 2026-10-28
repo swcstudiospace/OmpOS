@@ -44,7 +44,7 @@ public sealed class IgnorePageViewTests
             screen.View.UseDefault.IsChecked.ShouldBe(true);
             screen.View.Hierarchical.IsChecked.ShouldBe(false);
             screen.View.Defaults.IsEffectivelyVisible.ShouldBeFalse();
-            texts.ShouldNotContain("node_modules/");
+            texts.ShouldNotContain("node_modules/", StringComparer.Ordinal);
         }, ct).ConfigureAwait(true);
     }
 
@@ -64,7 +64,7 @@ public sealed class IgnorePageViewTests
 
             screen.Page.Patterns.ShouldBe(["build/"]);
             screen.View.Pattern.Text.ShouldBeNullOrEmpty();
-            SettingsTree.Texts(screen.View).ShouldNotContain(IgnoreCopy.EmptyList);
+            SettingsTree.Texts(screen.View).ShouldNotContain(IgnoreCopy.EmptyList, StringComparer.Ordinal);
             SettingsTree.Has<Button>(screen.View, IgnoreCopy.RemoveLabel + " build/").ShouldBeTrue();
             source.Saved.ShouldBeEmpty("an edit is a draft until Save");
 
@@ -92,16 +92,16 @@ public sealed class IgnorePageViewTests
             screen.View.Pattern.Text = "dup";
             SettingsTree.Click(screen.Window, screen.View.Add);
 
-            screen.View.Pattern.Text.ShouldBe("dup", Case.Sensitive);
+            screen.View.Pattern.Text.ShouldBe("dup");
             screen.View.EntryError.IsEffectivelyVisible.ShouldBeTrue();
-            screen.View.EntryError.Text.ShouldBe(IgnoreCopy.DuplicatePattern, Case.Sensitive);
-            screen.View.EntryError.Classes.ShouldContain("tone-error");
+            screen.View.EntryError.Text.ShouldBe(IgnoreCopy.DuplicatePattern);
+            screen.View.EntryError.Classes.ShouldContain("tone-error", StringComparer.Ordinal);
             screen.Page.Patterns.ShouldBe(["dup"]);
 
             screen.View.Pattern.Text = "  ";
             SettingsTree.Click(screen.Window, screen.View.Add);
 
-            screen.View.EntryError.Text.ShouldBe(IgnoreCopy.BlankPattern, Case.Sensitive);
+            screen.View.EntryError.Text.ShouldBe(IgnoreCopy.BlankPattern);
         }, ct).ConfigureAwait(true);
     }
 
@@ -167,18 +167,18 @@ public sealed class IgnorePageViewTests
         await session.RunAsync(async () =>
         {
             using var screen = await ShowAsync(new FakeIgnoreSource(), ct).ConfigureAwait(true);
-            AutomationProperties.GetName(screen.View.ToggleDefaults).ShouldBe(IgnoreCopy.ShowDefaultsLabel, Case.Sensitive);
+            AutomationProperties.GetName(screen.View.ToggleDefaults).ShouldBe(IgnoreCopy.ShowDefaultsLabel);
 
             SettingsTree.Click(screen.Window, screen.View.ToggleDefaults);
 
             screen.View.Defaults.IsEffectivelyVisible.ShouldBeTrue();
             SettingsTree.Texts(screen.View).ShouldContain("node_modules/", StringComparer.Ordinal);
-            AutomationProperties.GetName(screen.View.ToggleDefaults).ShouldBe(IgnoreCopy.HideDefaultsLabel, Case.Sensitive);
+            AutomationProperties.GetName(screen.View.ToggleDefaults).ShouldBe(IgnoreCopy.HideDefaultsLabel);
 
             SettingsTree.Click(screen.Window, screen.View.ToggleDefaults);
 
             screen.View.Defaults.IsEffectivelyVisible.ShouldBeFalse();
-            AutomationProperties.GetName(screen.View.ToggleDefaults).ShouldBe(IgnoreCopy.ShowDefaultsLabel, Case.Sensitive);
+            AutomationProperties.GetName(screen.View.ToggleDefaults).ShouldBe(IgnoreCopy.ShowDefaultsLabel);
         }, ct).ConfigureAwait(true);
     }
 
@@ -197,7 +197,7 @@ public sealed class IgnorePageViewTests
             texts.ShouldContain(".cursorignore: 3 rules, 1 skipped.", StringComparer.Ordinal);
             texts.ShouldContain(".gitignore: 1 rule.", StringComparer.Ordinal);
             texts.ShouldContain(IgnoreCopy.ProblemsLabel + ": Line 2: a rule was too long", StringComparer.Ordinal);
-            texts.ShouldNotContain(IgnoreCopy.NoFiles);
+            texts.ShouldNotContain(IgnoreCopy.NoFiles, StringComparer.Ordinal);
         }, ct).ConfigureAwait(true);
     }
 
@@ -222,10 +222,10 @@ public sealed class IgnorePageViewTests
                 control.MinWidth.ShouldBeGreaterThanOrEqualTo(TargetSize.MinimumTarget, AutomationProperties.GetName(control));
             }
 
-            AutomationProperties.GetName(screen.View.Pattern).ShouldBe(IgnoreCopy.PatternLabel, Case.Sensitive);
-            AutomationProperties.GetName(screen.View.Add).ShouldBe(IgnoreCopy.AddLabel, Case.Sensitive);
-            AutomationProperties.GetName(screen.View.UseDefault).ShouldBe(IgnoreCopy.UseDefaultLabel, Case.Sensitive);
-            AutomationProperties.GetName(screen.View.Hierarchical).ShouldBe(IgnoreCopy.HierarchicalLabel, Case.Sensitive);
+            AutomationProperties.GetName(screen.View.Pattern).ShouldBe(IgnoreCopy.PatternLabel);
+            AutomationProperties.GetName(screen.View.Add).ShouldBe(IgnoreCopy.AddLabel);
+            AutomationProperties.GetName(screen.View.UseDefault).ShouldBe(IgnoreCopy.UseDefaultLabel);
+            AutomationProperties.GetName(screen.View.Hierarchical).ShouldBe(IgnoreCopy.HierarchicalLabel);
         }, ct).ConfigureAwait(true);
     }
 

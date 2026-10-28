@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -147,7 +148,7 @@ internal partial class CheckpointsTimelineView : UserControl
 
     // The row's Rewind button when it still exists and can take focus; otherwise Refresh, otherwise Close, which is always enabled. Rows are rebuilt after a rewind,
     // so the button is looked up when the focus is given, never held.
-    private Control? FocusTargetAfterConfirmation(int? turn)
+    private Button? FocusTargetAfterConfirmation(int? turn)
     {
         if (turn is { } id)
         {

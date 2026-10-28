@@ -87,6 +87,7 @@
   * [ADR-0018 AGPL licence and source offer](decisions/ADR-0018-licence-agpl-and-source-offer.md)
   * [ADR-0019 Provider catalogue](decisions/ADR-0019-provider-catalogue.md)
   * [ADR-0020 Cloud agents on Railway](decisions/ADR-0020-cloud-agents-on-railway.md)
+  * [Addendum to ADR-0020 Hooks in cloud workers](decisions/addendum-ADR-0020-hooks.md)
 * [Open questions register](open-questions.md)
 * [Deferred and blocked items, 2026-10-26](runbooks/deferred-and-blocked-2026-10-26.md)
 * [Quality bar, 2026-10-22](quality/quality-bar.md)

@@ -14,12 +14,17 @@ internal sealed class FakeWorkspacesSource : IWorkspacesSettingsSource
     /// <inheritdoc/>
     public IWorkspaceSetPickerBackend PickerBackend => _backend;
 
+    /// <summary>The identifier of a set: its name in lower case.</summary>
+    /// <param name="name">The name of the set.</param>
+    /// <returns>The identifier.</returns>
+    private static string IdOf(string name) => System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToLower(name);
+
     /// <summary>Builds a recent row with one folder per path; the first is the primary.</summary>
     /// <param name="name">The name of the set.</param>
     /// <param name="paths">The folder paths.</param>
-    /// <returns>The row.</returns>
+    /// <returns>The row; its identifier is the lower-case name.</returns>
     internal static WorkspaceRecentRow Row(string name, params string[] paths) => new(
-        name.ToLowerInvariant(),
+        IdOf(name),
         name,
         paths.Length,
         paths[0],
@@ -34,7 +39,7 @@ internal sealed class FakeWorkspacesSource : IWorkspacesSettingsSource
     public Task SaveAsync(string name, IReadOnlyList<WorkspacePickerRoot> roots, CancellationToken cancellationToken)
     {
         Recents.RemoveAll(row => string.Equals(row.Name, name, StringComparison.Ordinal));
-        Recents.Insert(0, new WorkspaceRecentRow(name.ToLowerInvariant(), name, roots.Count, roots[0].Path, "2026-10-28 10:00 UTC", roots));
+        Recents.Insert(0, new WorkspaceRecentRow(IdOf(name), name, roots.Count, roots[0].Path, "2026-10-28 10:00 UTC", roots));
         return Task.CompletedTask;
     }
 

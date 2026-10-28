@@ -95,7 +95,7 @@ public sealed class DesktopSlashHandlerRoutingTests
         var result = await host.RunAsync(Request(SlashActionIds.CloudHandoff, "fix the login"), Token).ConfigureAwait(true);
 
         result.ShouldBe(SlashActionResult.Completed("handed off"));
-        task.ShouldBe("fix the login", Case.Sensitive);
+        task.ShouldBe("fix the login");
     }
 
     /// <summary>A handler that throws is a failed command with the message, and a cancelled one is not swallowed.</summary>

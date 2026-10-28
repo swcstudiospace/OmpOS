@@ -95,7 +95,7 @@ public sealed class GitMentionDiffSourceTests
         var content = await source.ReadAsync(MentionGitDiffKind.Working, 1000, Token).ConfigureAwait(true);
 
         summary.ShouldBe(new MentionGitDiffSummary(true, 0, null, null));
-        content.Text.ShouldBe("There are no uncommitted changes.", Case.Sensitive);
+        content.Text.ShouldBe("There are no uncommitted changes.");
         content.Truncated.ShouldBeFalse();
     }
 
@@ -137,8 +137,8 @@ public sealed class GitMentionDiffSourceTests
         var refused = await Should.ThrowAsync<MentionUnavailableException>(() => source.ReadAsync(MentionGitDiffKind.Branch, 1000, Token)).ConfigureAwait(true);
 
         summary.Available.ShouldBeFalse();
-        summary.Reason.ShouldBe("Git found no base branch to compare with. It looked for origin/HEAD, main and master.", Case.Sensitive);
-        refused.Message.ShouldBe(summary.Reason, Case.Sensitive);
+        summary.Reason.ShouldBe("Git found no base branch to compare with. It looked for origin/HEAD, main and master.");
+        refused.Message.ShouldBe(summary.Reason);
     }
 
     /// <summary>A repository with no commit has no diff to show.</summary>
@@ -170,8 +170,8 @@ public sealed class GitMentionDiffSourceTests
         var missing = await absent.GetSummaryAsync(MentionGitDiffKind.Working, Token).ConfigureAwait(true);
 
         summary.ShouldBe(new MentionGitDiffSummary(false, 0, null, MentionCopy.NoRepository));
-        refused.Message.ShouldBe(MentionCopy.NoRepository, Case.Sensitive);
-        missing.Reason.ShouldBe(MentionCopy.NoRepository, Case.Sensitive);
+        refused.Message.ShouldBe(MentionCopy.NoRepository);
+        missing.Reason.ShouldBe(MentionCopy.NoRepository);
     }
 
     /// <summary>When git cannot be started the summary and the read both say that git is missing, without throwing anything else.</summary>
@@ -186,7 +186,7 @@ public sealed class GitMentionDiffSourceTests
         var refused = await Should.ThrowAsync<MentionUnavailableException>(() => source.ReadAsync(MentionGitDiffKind.Branch, 1000, Token)).ConfigureAwait(true);
 
         summary.ShouldBe(new MentionGitDiffSummary(false, 0, null, "Git is not installed or is not on the PATH."));
-        refused.Message.ShouldBe("Git is not installed or is not on the PATH.", Case.Sensitive);
+        refused.Message.ShouldBe("Git is not installed or is not on the PATH.");
         refused.InnerException.ShouldBeOfType<Win32Exception>();
     }
 
@@ -206,13 +206,13 @@ public sealed class GitMentionDiffSourceTests
         var reading = source.ReadAsync(MentionGitDiffKind.Working, 1000, Token);
         clock.Timers.Count.ShouldBe(1);
         clock.Timers[0].Fire();
-        var refused = await Should.ThrowAsync<MentionUnavailableException>(() => reading).ConfigureAwait(true);
+        var refused = await Should.ThrowAsync<MentionUnavailableException>(() => reading.WaitAsync(Token)).ConfigureAwait(true);
 
-        refused.Message.ShouldBe("Git took longer than 5 seconds to answer.", Case.Sensitive);
+        refused.Message.ShouldBe("Git took longer than 5 seconds to answer.");
 
         using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(Token);
         var again = source.ReadAsync(MentionGitDiffKind.Working, 1000, cancelled.Token);
         await cancelled.CancelAsync().ConfigureAwait(true);
-        await Should.ThrowAsync<TaskCanceledException>(() => again).ConfigureAwait(true);
+        await Should.ThrowAsync<TaskCanceledException>(() => again.WaitAsync(Token)).ConfigureAwait(true);
     }
 }

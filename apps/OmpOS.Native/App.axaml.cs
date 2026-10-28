@@ -84,7 +84,7 @@ internal partial class App : Application
             {
                 var head = factory();
                 _head = head;
-                _initialisation = OpenWindow(desktop, head);
+                _initialisation = OpenWindowAsync(desktop, head);
             }
             else
             {
@@ -117,7 +117,7 @@ internal partial class App : Application
         await head.InitializeAsync(CancellationToken.None).ConfigureAwait(true);
     }
 
-    private Task OpenWindow(IClassicDesktopStyleApplicationLifetime desktop, AgentHead head)
+    private Task OpenWindowAsync(IClassicDesktopStyleApplicationLifetime desktop, AgentHead head)
     {
         desktop.MainWindow = CreateWindow(head);
         return head.InitializeAsync(CancellationToken.None);

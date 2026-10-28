@@ -84,23 +84,23 @@ public sealed class WorktreeBackendTests : IDisposable
 
         var started = await backend.StartAsync("run-1", ct).ConfigureAwait(true);
         Directory.Exists(started.Run.Path).ShouldBeTrue();
-        started.Run.Branch.ShouldBe("ompos/run/run-1", Case.Sensitive);
-        started.SetupMessage.ShouldBe("setup said hi", Case.Sensitive);
+        started.Run.Branch.ShouldBe("ompos/run/run-1");
+        started.SetupMessage.ShouldBe("setup said hi");
 
         await File.WriteAllTextAsync(Path.Combine(started.Run.Path, "a.txt"), "changed\n", ct).ConfigureAwait(true);
         var listed = await backend.ListAsync(ct).ConfigureAwait(true);
         var preview = await backend.PreviewAsync("run-1", ct).ConfigureAwait(true);
         var outcome = await backend.ApplyAsync("run-1", WorktreeApplyMethod.Clean, ct).ConfigureAwait(true);
 
-        listed.Single(run => run.RunId == "run-1").ChangedFiles.ShouldBe(1);
+        listed.Single(run => string.Equals(run.RunId, "run-1", StringComparison.Ordinal)).ChangedFiles.ShouldBe(1);
         preview.Files.Count.ShouldBe(1);
-        preview.Files[0].Path.ShouldBe("a.txt", Case.Sensitive);
+        preview.Files[0].Path.ShouldBe("a.txt");
         preview.Files[0].Change.ShouldBe(WorktreeFileChange.Modified);
         preview.Added.ShouldBe(1);
         preview.Removed.ShouldBe(1);
         preview.Text.ShouldContain("+changed", Case.Sensitive);
         outcome.State.ShouldBe(WorktreeApplyState.Applied);
-        (await File.ReadAllTextAsync(Path.Combine(repository, "a.txt"), ct).ConfigureAwait(true)).ShouldBe("changed\n", Case.Sensitive);
+        (await File.ReadAllTextAsync(Path.Combine(repository, "a.txt"), ct).ConfigureAwait(true)).ShouldBe("changed\n");
 
         await backend.DeleteAsync("run-1", ct).ConfigureAwait(true);
 

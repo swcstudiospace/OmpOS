@@ -593,7 +593,9 @@
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
           "OmpOS.Harness.Abstractions": "[0.15.0, )",
-          "OmpOS.Harness.Acp": "[0.15.0, )"
+          "OmpOS.Harness.Acp": "[0.15.0, )",
+          "OmpOS.Harness.AgentLoop": "[0.15.0, )",
+          "OmpOS.Harness.Plugins": "[0.15.0, )"
         }
       },
       "ompos.api": {
@@ -795,9 +797,15 @@
           "OmpOS.EngineHost": "[0.15.0, )",
           "OmpOS.Harness.Acp": "[0.15.0, )",
           "OmpOS.Harness.AgentLoop": "[0.15.0, )",
+          "OmpOS.Harness.Mcp": "[0.15.0, )",
           "OmpOS.Harness.OmpConfig": "[0.15.0, )",
+          "OmpOS.Harness.Plugins": "[0.15.0, )",
           "OmpOS.Harness.Providers": "[0.15.0, )",
+          "OmpOS.Harness.Remote": "[0.15.0, )",
           "OmpOS.Harness.Secrets": "[0.15.0, )",
+          "OmpOS.Harness.Terminal": "[0.15.0, )",
+          "OmpOS.Harness.Workspace": "[0.15.0, )",
+          "OmpOS.Harness.Worktrees": "[0.15.0, )",
           "OmpOS.Native.Views": "[0.15.0, )",
           "OmpOS.Presentation": "[0.15.0, )"
         }

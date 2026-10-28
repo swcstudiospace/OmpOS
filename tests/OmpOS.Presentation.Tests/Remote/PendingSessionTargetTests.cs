@@ -21,7 +21,7 @@ public sealed class PendingSessionTargetTests
         var pending = new PendingSessionTarget();
         pending.Set(Ssh());
 
-        pending.Take().ShouldNotBeNull().ProfileId.ShouldBe("box", Case.Sensitive);
+        pending.Take().ShouldNotBeNull().ProfileId.ShouldBe("box");
         pending.Take().ShouldBeNull();
     }
 

@@ -53,7 +53,7 @@ internal sealed class WorkspacesSettingsSource : IWorkspacesSettingsSource
     internal static string SetIdFor(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        var lower = name.Trim().ToLowerInvariant();
+        var lower = CultureInfo.InvariantCulture.TextInfo.ToLower(name.Trim());
         if (!lower.All(static character => character is (>= 'a' and <= 'z') or (>= '0' and <= '9') or ' ' or '-' or '_'))
         {
             return lower;

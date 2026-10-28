@@ -36,7 +36,8 @@ public sealed class ShellPaneToolsTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices { Worktrees = new ViewWorktreeBackend() });
             var toggle = main.FindControl<ToggleButton>("WorktreesToggle")!;
             var model = main.Worktrees.ShouldNotBeNull();
@@ -47,7 +48,7 @@ public sealed class ShellPaneToolsTests
             ShellHarness.Settle(fixture.ServicesWindow!);
             model.IsOpen.ShouldBeTrue();
             main.FindControl<ContentControl>("ToolHost")!.IsVisible.ShouldBeTrue();
-            main.FindControl<TextBlock>("ToolTitle")!.Text.ShouldBe("Worktrees", Case.Sensitive);
+            main.FindControl<TextBlock>("ToolTitle")!.Text.ShouldBe("Worktrees");
 
             model.Close();
             ShellHarness.Settle(fixture.ServicesWindow!);
@@ -66,7 +67,8 @@ public sealed class ShellPaneToolsTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices { Checkpoints = new ScriptedCheckpointBackend() });
             var toggle = main.FindControl<ToggleButton>("CheckpointsToggle")!;
             var view = (CheckpointsTimelineView)main.FindControl<ContentControl>("CheckpointsHost")!.Content!;
@@ -90,7 +92,8 @@ public sealed class ShellPaneToolsTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices());
             var runtime = fixture.Runtime(SessionId);
             var queueView = (QueuedMessagesView)main.FindControl<ContentControl>("QueueHost")!.Content!;
@@ -118,7 +121,8 @@ public sealed class ShellPaneToolsTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices());
             var runtime = fixture.Runtime(SessionId);
             var queue = (QueuedMessagesModel)((QueuedMessagesView)main.FindControl<ContentControl>("QueueHost")!.Content!).DataContext!;
@@ -141,7 +145,8 @@ public sealed class ShellPaneToolsTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices());
             var session = fixture.Runtime(SessionId).Session;
             var transcript = (SessionView)main.FindControl<ContentControl>("TranscriptHost")!.Content!;
@@ -172,7 +177,8 @@ public sealed class ShellPaneToolsTests
         await using var headless = TestAppBuilder.StartSession();
         await headless.RunAsync(async () =>
         {
-            await using var fixture = ShellFixture.CreateWithSession();
+            var fixture = ShellFixture.CreateWithSession();
+            await using var fixtureScope = fixture.ConfigureAwait(true);
             var main = fixture.ShowWithServices(new ShellServices());
             var seen = new List<SettingsSection?>();
             main.SettingsRequested += (_, e) => seen.Add(e.Section);

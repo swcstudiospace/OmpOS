@@ -112,7 +112,7 @@ public sealed class WorkspaceMentionFilesListTests
 
         paths.Count.ShouldBe(7);
         paths.Count(static path => path.StartsWith("top", StringComparison.Ordinal)).ShouldBe(6);
-        paths.ShouldContain("deep", Case.Sensitive);
+        paths.ShouldContain("deep", StringComparer.Ordinal);
     }
 
     /// <summary>The tree is walked once per cache lifetime: a file added meanwhile shows up only after the clock passes it.</summary>

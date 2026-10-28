@@ -22,7 +22,7 @@ public sealed class SessionLiveEvents
     /// <summary>Raises <see cref="HookNoticeRaised"/>.</summary>
     /// <param name="notice">The notice.</param>
     /// <exception cref="ArgumentNullException"><paramref name="notice"/> is null.</exception>
-    public void RaiseHookNotice(HookNotice notice)
+    public void NotifyHookNotice(HookNotice notice)
     {
         ArgumentNullException.ThrowIfNull(notice);
         HookNoticeRaised?.Invoke(this, new HookNoticeRaisedEventArgs(notice));
@@ -32,11 +32,11 @@ public sealed class SessionLiveEvents
     /// <param name="state">The new connection state.</param>
     /// <param name="attempt">The reconnect attempt the state belongs to, or zero.</param>
     /// <param name="lastFailure">The plain reason of the last failed attempt, or null.</param>
-    public void RaiseConnectionChanged(RemoteConnectionState state, int attempt, string? lastFailure) =>
+    public void NotifyConnectionChanged(RemoteConnectionState state, int attempt, string? lastFailure) =>
         ConnectionChanged?.Invoke(this, new SessionConnectionChangedEventArgs(state, attempt, lastFailure));
 
     /// <summary>Raises <see cref="TurnInterrupted"/>.</summary>
     /// <param name="nativeSessionId">The identifier the engine gave the session, or null.</param>
-    public void RaiseTurnInterrupted(string? nativeSessionId) =>
+    public void NotifyTurnInterrupted(string? nativeSessionId) =>
         TurnInterrupted?.Invoke(this, new TurnInterruptedEventArgs(nativeSessionId));
 }

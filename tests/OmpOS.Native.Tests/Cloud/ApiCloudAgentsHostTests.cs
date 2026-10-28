@@ -23,22 +23,22 @@ public sealed class ApiCloudAgentsHostTests
         Contracts.Cloud.CloudAgentStatus status = Contracts.Cloud.CloudAgentStatus.Running,
         IReadOnlyList<CloudPullRequest>? pullRequests = null,
         CloudAgentError? error = null) => new()
-    {
-        Id = id,
-        Name = "Fix the build",
-        Status = status,
-        CreatedAt = Origin,
-        Repositories = [new Contracts.Cloud.CloudRepository { Url = "https://github.com/owner/app", BaseBranch = "main" }],
-        Branch = "ompos/agent-1",
-        SessionId = "cloud-" + id,
-        PullRequests = pullRequests ?? [],
-        LastActivityAt = Origin.AddMinutes(5),
-        IdleMinutes = 15,
-        ComputeSeconds = 12.5,
-        SecretRefs = [],
-        Model = "model-a",
-        Error = error,
-    };
+        {
+            Id = id,
+            Name = "Fix the build",
+            Status = status,
+            CreatedAt = Origin,
+            Repositories = [new Contracts.Cloud.CloudRepository { Address = "https://github.com/owner/app", BaseBranch = "main" }],
+            Branch = "ompos/agent-1",
+            SessionId = "cloud-" + id,
+            PullRequests = pullRequests ?? [],
+            LastActivityAt = Origin.AddMinutes(5),
+            IdleMinutes = 15,
+            ComputeSeconds = 12.5,
+            SecretRefs = [],
+            Model = "model-a",
+            Error = error,
+        };
 
     private static string Serialize(CloudAgentResponse agent) => JsonSerializer.Serialize(agent, CloudJsonContext.Default.CloudAgentResponse);
 
@@ -69,7 +69,7 @@ public sealed class ApiCloudAgentsHostTests
         var failure = await Should.ThrowAsync<CloudHostException>(() => rig.Host.ListAsync(Cancel)).ConfigureAwait(true);
 
         setup.IsConfigured.ShouldBeFalse();
-        setup.NotConfiguredReason.ShouldBe(CloudCopy.NotConfiguredIntro, Case.Sensitive);
+        setup.NotConfiguredReason.ShouldBe(CloudCopy.NotConfiguredIntro);
         failure.Kind.ShouldBe(CloudFailureKind.NotConfigured);
         rig.Calls.ShouldBeEmpty();
     }
@@ -80,8 +80,8 @@ public sealed class ApiCloudAgentsHostTests
     {
         var pullRequests = new[]
         {
-            new CloudPullRequest { Repository = "owner/app", Number = 7, Url = "https://github.com/owner/app/pull/7", Branch = "ompos/agent-1", BaseBranch = "main", Draft = true, CreatedAt = Origin },
-            new CloudPullRequest { Repository = "owner/app", Number = 8, Url = "http://insecure.example/pull/8", Branch = "ompos/agent-1", BaseBranch = "main", Draft = true, CreatedAt = Origin },
+            new CloudPullRequest { Repository = "owner/app", Number = 7, Url = new Uri("https://github.com/owner/app/pull/7", UriKind.Absolute), Branch = "ompos/agent-1", BaseBranch = "main", Draft = true, CreatedAt = Origin },
+            new CloudPullRequest { Repository = "owner/app", Number = 8, Url = new Uri("http://insecure.example/pull/8", UriKind.Absolute), Branch = "ompos/agent-1", BaseBranch = "main", Draft = true, CreatedAt = Origin },
         };
         var body = SerializeList(Wire(pullRequests: pullRequests, error: new CloudAgentError { Code = "x", Message = "The worker did not wake in time." }));
         using var rig = new CloudHostRig(_ => ScriptedCloudHandler.Json(HttpStatusCode.OK, body), api: new Uri("https://host.example/api", UriKind.Absolute));
@@ -89,19 +89,19 @@ public sealed class ApiCloudAgentsHostTests
         var agents = await rig.Host.ListAsync(Cancel).ConfigureAwait(true);
 
         var call = rig.Calls.ShouldHaveSingleItem();
-        call.Url.AbsoluteUri.ShouldBe("https://host.example/api/cloud/agents", Case.Sensitive);
-        call.Authorization.ShouldBe("Bearer " + CloudHostRig.BearerToken, Case.Sensitive);
+        call.Url.AbsoluteUri.ShouldBe("https://host.example/api/cloud/agents");
+        call.Authorization.ShouldBe("Bearer " + CloudHostRig.BearerToken);
         var agent = agents.ShouldHaveSingleItem();
-        agent.Id.ShouldBe("agent-1", Case.Sensitive);
+        agent.Id.ShouldBe("agent-1");
         agent.Status.ShouldBe(Presentation.Cloud.CloudAgentStatus.Running);
-        agent.Branch.ShouldBe("ompos/agent-1", Case.Sensitive);
-        agent.BaseBranch.ShouldBe("main", Case.Sensitive);
-        agent.SessionId.ShouldBe("cloud-agent-1", Case.Sensitive);
+        agent.Branch.ShouldBe("ompos/agent-1");
+        agent.BaseBranch.ShouldBe("main");
+        agent.SessionId.ShouldBe("cloud-agent-1");
         agent.IdleMinutes.ShouldBe(15);
-        agent.Model.ShouldBe("model-a", Case.Sensitive);
-        agent.StatusDetail.ShouldBe("The worker did not wake in time.", Case.Sensitive);
-        agent.Repositories.Select(static repository => repository.Url).ToArray().ShouldBe(["https://github.com/owner/app"]);
-        agent.PullRequests.ShouldHaveSingleItem().Url.AbsoluteUri.ShouldBe("https://github.com/owner/app/pull/7", Case.Sensitive);
+        agent.Model.ShouldBe("model-a");
+        agent.StatusDetail.ShouldBe("The worker did not wake in time.");
+        agent.Repositories.Select(static repository => repository.Address).ToArray().ShouldBe(["https://github.com/owner/app"]);
+        agent.PullRequests.ShouldHaveSingleItem().Url.AbsoluteUri.ShouldBe("https://github.com/owner/app/pull/7");
     }
 
     /// <summary>A user who is not signed in sends no authorization header; the API's 401 comes back as the unauthorized kind.</summary>
@@ -114,7 +114,7 @@ public sealed class ApiCloudAgentsHostTests
 
         rig.Calls.ShouldHaveSingleItem().Authorization.ShouldBeNull();
         failure.Kind.ShouldBe(CloudFailureKind.Unauthorized);
-        failure.Message.ShouldBe("Sign in first.", Case.Sensitive);
+        failure.Message.ShouldBe("Sign in first.");
     }
 
     /// <summary>Each status and problem code maps to one failure kind, and the message is the problem's detail without the token or the address.</summary>
@@ -136,7 +136,7 @@ public sealed class ApiCloudAgentsHostTests
         var failure = await Should.ThrowAsync<CloudHostException>(() => rig.Host.WakeAsync("agent-1", Cancel)).ConfigureAwait(true);
 
         failure.Kind.ShouldBe(expected);
-        failure.Message.ShouldBe("Plain sentence from the service.", Case.Sensitive);
+        failure.Message.ShouldBe("Plain sentence from the service.");
         failure.Message.ShouldNotContain(CloudHostRig.BearerToken, Case.Sensitive);
         failure.Message.ShouldNotContain("api.example.test", Case.Sensitive);
     }
@@ -205,17 +205,17 @@ public sealed class ApiCloudAgentsHostTests
         rig.Calls.Count.ShouldBe(2);
         var create = rig.Calls[0];
         create.Method.ShouldBe(HttpMethod.Post);
-        create.PathAndQuery.ShouldBe("/cloud/agents", Case.Sensitive);
+        create.PathAndQuery.ShouldBe("/cloud/agents");
         using var body = JsonDocument.Parse(create.Body);
-        body.RootElement.GetProperty("name").GetString().ShouldBe("Fix the build", Case.Sensitive);
+        body.RootElement.GetProperty("name").GetString().ShouldBe("Fix the build");
         body.RootElement.GetProperty("repositories").GetArrayLength().ShouldBe(2);
-        body.RootElement.GetProperty("repositories")[0].GetProperty("branch").GetString().ShouldBe("work", Case.Sensitive);
-        body.RootElement.GetProperty("repositories")[1].GetProperty("baseBranch").GetString().ShouldBe("develop", Case.Sensitive);
-        body.RootElement.GetProperty("secretRefs")[0].GetString().ShouldBe("NPM_TOKEN", Case.Sensitive);
+        body.RootElement.GetProperty("repositories")[0].GetProperty("branch").GetString().ShouldBe("work");
+        body.RootElement.GetProperty("repositories")[1].GetProperty("baseBranch").GetString().ShouldBe("develop");
+        body.RootElement.GetProperty("secretRefs")[0].GetString().ShouldBe("NPM_TOKEN");
         body.RootElement.GetProperty("idleMinutes").GetInt32().ShouldBe(30);
-        body.RootElement.GetProperty("model").GetString().ShouldBe("model-a", Case.Sensitive);
+        body.RootElement.GetProperty("model").GetString().ShouldBe("model-a");
         var prompt = rig.Calls[1];
-        prompt.PathAndQuery.ShouldBe("/cloud/agents/agent-1/prompts", Case.Sensitive);
+        prompt.PathAndQuery.ShouldBe("/cloud/agents/agent-1/prompts");
         prompt.Body.ShouldContain("Make the tests pass.", Case.Sensitive);
         record.Status.ShouldBe(Presentation.Cloud.CloudAgentStatus.Provisioning);
         record.StatusDetail.ShouldBeNull();
@@ -233,8 +233,8 @@ public sealed class ApiCloudAgentsHostTests
             new CloudAgentRequest { Name = "n", Repositories = [new Presentation.Cloud.CloudRepository("https://github.com/owner/app")], Prompt = "Go." },
             Cancel).ConfigureAwait(true);
 
-        record.Id.ShouldBe("agent-1", Case.Sensitive);
-        record.StatusDetail.ShouldBe("The agent was created but its first task could not be sent.", Case.Sensitive);
+        record.Id.ShouldBe("agent-1");
+        record.StatusDetail.ShouldBe("The agent was created but its first task could not be sent.");
     }
 
     /// <summary>Wake and stop post to their routes and return the agent the API answers with; delete uses DELETE and an escaped id.</summary>
@@ -308,7 +308,7 @@ public sealed class ApiCloudAgentsHostTests
     public async Task CreatePullRequestSendsTheRequestAndReturnsTheLink()
     {
         var created = JsonSerializer.Serialize(
-            new CloudPullRequest { Repository = "owner/app", Number = 9, Url = "https://github.com/owner/app/pull/9", Branch = "b", BaseBranch = "main", Draft = true, CreatedAt = Origin },
+            new CloudPullRequest { Repository = "owner/app", Number = 9, Url = new Uri("https://github.com/owner/app/pull/9", UriKind.Absolute), Branch = "b", BaseBranch = "main", Draft = true, CreatedAt = Origin },
             CloudJsonContext.Default.CloudPullRequest);
         using var rig = new CloudHostRig(_ => ScriptedCloudHandler.Json(HttpStatusCode.Created, created));
 
@@ -317,14 +317,14 @@ public sealed class ApiCloudAgentsHostTests
             new CloudPullRequestRequest { Repository = "owner/app", Title = "Fix", Body = "Why", BaseBranch = "main", Draft = false },
             Cancel).ConfigureAwait(true);
 
-        link.Url.AbsoluteUri.ShouldBe("https://github.com/owner/app/pull/9", Case.Sensitive);
-        link.Title.ShouldBe("Fix", Case.Sensitive);
+        link.Url.AbsoluteUri.ShouldBe("https://github.com/owner/app/pull/9");
+        link.Title.ShouldBe("Fix");
         var call = rig.Calls.ShouldHaveSingleItem();
-        call.PathAndQuery.ShouldBe("/cloud/agents/agent-1/pull-request", Case.Sensitive);
+        call.PathAndQuery.ShouldBe("/cloud/agents/agent-1/pull-request");
         using var body = JsonDocument.Parse(call.Body);
         body.RootElement.GetProperty("draft").GetBoolean().ShouldBeFalse();
-        body.RootElement.GetProperty("baseBranch").GetString().ShouldBe("main", Case.Sensitive);
-        body.RootElement.GetProperty("repository").GetString().ShouldBe("owner/app", Case.Sensitive);
+        body.RootElement.GetProperty("baseBranch").GetString().ShouldBe("main");
+        body.RootElement.GetProperty("repository").GetString().ShouldBe("owner/app");
     }
 
     /// <summary>An address that is not https cannot be handed to the browser, so a pull request that has one is refused.</summary>
@@ -332,7 +332,7 @@ public sealed class ApiCloudAgentsHostTests
     public async Task APullRequestWithAnInsecureAddressIsRefused()
     {
         var created = JsonSerializer.Serialize(
-            new CloudPullRequest { Repository = "owner/app", Number = 9, Url = "http://github.com/owner/app/pull/9", Branch = "b", BaseBranch = "main", Draft = true, CreatedAt = Origin },
+            new CloudPullRequest { Repository = "owner/app", Number = 9, Url = new Uri("http://github.com/owner/app/pull/9", UriKind.Absolute), Branch = "b", BaseBranch = "main", Draft = true, CreatedAt = Origin },
             CloudJsonContext.Default.CloudPullRequest);
         using var rig = new CloudHostRig(_ => ScriptedCloudHandler.Json(HttpStatusCode.Created, created));
 
@@ -359,7 +359,7 @@ public sealed class ApiCloudAgentsHostTests
         var noBrowser = await Should.ThrowAsync<CloudHostException>(() => withFailingLauncher.Host.OpenPullRequestAsync(secure, Cancel)).ConfigureAwait(true);
         var noLauncher = await Should.ThrowAsync<CloudHostException>(() => withoutLauncher.Host.OpenPullRequestAsync(secure, Cancel)).ConfigureAwait(true);
 
-        launcher.Opened.ShouldHaveSingleItem().AbsoluteUri.ShouldBe("https://github.com/owner/app/pull/1", Case.Sensitive);
+        launcher.Opened.ShouldHaveSingleItem().AbsoluteUri.ShouldBe("https://github.com/owner/app/pull/1");
         plain.Kind.ShouldBe(CloudFailureKind.Rejected);
         noBrowser.Kind.ShouldBe(CloudFailureKind.Unavailable);
         noLauncher.Kind.ShouldBe(CloudFailureKind.Unavailable);
@@ -430,7 +430,7 @@ public sealed class ApiCloudAgentsHostTests
     {
         var clock = new CloudPollClock();
         using var rig = new CloudHostRig(static _ => ScriptedCloudHandler.Json(HttpStatusCode.OK, "{\"agents\":[]}"), clock: clock);
-        void OnChanges(object? sender, EventArgs e)
+        static void OnChanges(object? sender, EventArgs e)
         {
         }
 
@@ -447,7 +447,7 @@ public sealed class ApiCloudAgentsHostTests
             timeout.Token.ThrowIfCancellationRequested();
         }
 
-        rig.Calls[0].PathAndQuery.ShouldBe("/cloud/agents", Case.Sensitive);
+        rig.Calls[0].PathAndQuery.ShouldBe("/cloud/agents");
         rig.Host.Changes -= OnChanges;
         clock.ArmedTimers.ShouldBe(0);
     }

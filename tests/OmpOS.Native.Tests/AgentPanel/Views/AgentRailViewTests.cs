@@ -408,16 +408,16 @@ public sealed class AgentRailViewTests
             items.Count.ShouldBe(rows.Count);
             var interrupted = rows.Single(static row => string.Equals(row.Id, "run-1", StringComparison.Ordinal));
             var limit = rows.Single(static row => string.Equals(row.Id, "idle-1", StringComparison.Ordinal));
-            interrupted.StatusText.ShouldBe(RemoteCopy.InterruptedBadge, Case.Sensitive);
-            limit.StatusText.ShouldBe("Limit reached", Case.Sensitive);
+            interrupted.StatusText.ShouldBe(RemoteCopy.InterruptedBadge);
+            limit.StatusText.ShouldBe("Limit reached");
             for (var index = 0; index < rows.Count; index++)
             {
                 ViewHarness.VisibleTexts(items[index]).ShouldContain(rows[index].StatusText, StringComparer.Ordinal);
-                AutomationProperties.GetName(items[index]).ShouldBe(rows[index].AccessibleName, Case.Sensitive);
+                AutomationProperties.GetName(items[index]).ShouldBe(rows[index].AccessibleName);
             }
 
-            AutomationProperties.GetName(items[rows.IndexOf(interrupted)]).ShouldContain("Disconnected, turn interrupted", Case.Sensitive);
-            AutomationProperties.GetName(items[rows.IndexOf(limit)]).ShouldContain("cloud agent", Case.Sensitive);
+            AutomationProperties.GetName(items[rows.IndexOf(interrupted)]).ShouldNotBeNull().ShouldContain("Disconnected, turn interrupted", Case.Sensitive);
+            AutomationProperties.GetName(items[rows.IndexOf(limit)]).ShouldNotBeNull().ShouldContain("cloud agent", Case.Sensitive);
             window.Close();
         }, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }

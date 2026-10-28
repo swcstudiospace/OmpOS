@@ -45,7 +45,7 @@ public static class IgnoreSettingsLimits
         var total = 0;
         foreach (var pattern in patterns)
         {
-            if (pattern is null)
+            if (string.IsNullOrWhiteSpace(pattern))
             {
                 return IgnoreCopy.BlankPattern;
             }
