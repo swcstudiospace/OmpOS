@@ -9,8 +9,10 @@ namespace OmpOS.Presentation.Settings.Models;
 /// <param name="RouteId">The <see cref="ProviderListingRoute.Id"/> to use.</param>
 /// <param name="UrlValues">The value of each base URL placeholder by name.</param>
 /// <param name="ModelIds">The model ids the user added; empty when the route discovers models.</param>
+/// <param name="PlanRuleAccepted">True when the user confirmed that they read the vendor's rule text of a coding plan. A source refuses a coding plan listing without it; it is false for every other listing.</param>
 public sealed record CatalogueProviderRequest(
     string ListingId,
     string RouteId,
     IReadOnlyDictionary<string, string> UrlValues,
-    IReadOnlyList<string> ModelIds);
+    IReadOnlyList<string> ModelIds,
+    bool PlanRuleAccepted = false);

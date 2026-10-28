@@ -1,3 +1,4 @@
+using OmpOS.Api.Cloud;
 using OmpOS.Contracts.Catalog;
 using OmpOS.Contracts.Sessions;
 
@@ -124,7 +125,7 @@ internal static class CatalogProjector
             SandboxId = session.SandboxId,
             Messages = session.Messages,
             Events = session.Events,
-            Kind = CatalogSessionKind.Agent,
+            Kind = CloudSessionIds.IsCloud(session.Id) ? CatalogSessionKind.Cloud : CatalogSessionKind.Agent,
             RowStatus = status,
             Group = group,
             LastActivityAt = LastActivity(session),

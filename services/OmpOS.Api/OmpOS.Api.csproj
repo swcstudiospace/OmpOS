@@ -79,6 +79,12 @@
     <ProjectReference Include="../../src/OmpOS.Harness.Abstractions/OmpOS.Harness.Abstractions.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.Acp/OmpOS.Harness.Acp.csproj" />
     <ProjectReference Include="../../src/OmpOS.Harness.InMemory/OmpOS.Harness.InMemory.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.OmpConfig/OmpOS.Harness.OmpConfig.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.OmpLauncher/OmpOS.Harness.OmpLauncher.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Plugins/OmpOS.Harness.Plugins.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Providers/OmpOS.Harness.Providers.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Secrets/OmpOS.Harness.Secrets.csproj" />
+    <ProjectReference Include="../../src/OmpOS.Harness.Workspace/OmpOS.Harness.Workspace.csproj" />
     <ProjectReference Include="../../src/OmpOS.Parser/OmpOS.Parser.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sandbox.Abstractions/OmpOS.Sandbox.Abstractions.csproj" />
     <ProjectReference Include="../../src/OmpOS.Sandbox/OmpOS.Sandbox.csproj" />

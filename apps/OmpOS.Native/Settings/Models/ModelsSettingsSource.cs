@@ -27,7 +27,7 @@ namespace OmpOS.Native.Settings.Models;
 /// keeps a provider's display name and routes is written first and restored when omp refuses the block.
 /// </para>
 /// </remarks>
-internal sealed class ModelsSettingsSource : IModelsSettingsSource, IDisposable
+internal sealed partial class ModelsSettingsSource : IModelsSettingsSource, IDisposable
 {
     private const int TokenParallelism = 6;
 
@@ -108,7 +108,8 @@ internal sealed class ModelsSettingsSource : IModelsSettingsSource, IDisposable
             roles.DefaultSelector,
             warnings.Count == 0 ? null : string.Join(' ', warnings),
             listing.IsComplete,
-            ProviderTemplateMapper.FromCatalogue());
+            ProviderTemplateMapper.FromCatalogue(),
+            CatalogueListingMapper.FromCatalogue());
     }
 
     /// <inheritdoc />

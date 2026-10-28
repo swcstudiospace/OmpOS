@@ -226,6 +226,38 @@
           "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
+      "ompos.harness.ompconfig": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Harness.OmpLauncher": "[0.15.0, )",
+          "OmpOS.Harness.Providers": "[0.15.0, )",
+          "OmpOS.Harness.Secrets": "[0.15.0, )"
+        }
+      },
+      "ompos.harness.omplauncher": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Harness.Terminal": "[0.15.0, )"
+        }
+      },
+      "ompos.harness.plugins": {
+        "type": "Project"
+      },
+      "ompos.harness.providers": {
+        "type": "Project"
+      },
+      "ompos.harness.secrets": {
+        "type": "Project"
+      },
+      "ompos.harness.terminal": {
+        "type": "Project",
+        "dependencies": {
+          "Porta.Pty": "[2.2.3, )"
+        }
+      },
+      "ompos.harness.workspace": {
+        "type": "Project"
+      },
       "ompos.harness.worktrees": {
         "type": "Project"
       },
@@ -280,11 +312,26 @@
           "OmpOS.Contracts": "[0.15.0, )"
         }
       },
+      "Microsoft.Windows.Console.ConPTY": {
+        "type": "CentralTransitive",
+        "requested": "[1.24.260710001, )",
+        "resolved": "1.24.260710001",
+        "contentHash": "JR1xAkZbNnAALBjzFpqSwEx7YZfD1LI228jF9j9cgKknBPCiFy9mpphlgH+TpTN8vajTUpcgg9Miy5Y8eUAH9g=="
+      },
       "Npgsql": {
         "type": "CentralTransitive",
         "requested": "[10.0.3, )",
         "resolved": "10.0.3",
         "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w=="
+      },
+      "Porta.Pty": {
+        "type": "CentralTransitive",
+        "requested": "[2.2.3, )",
+        "resolved": "2.2.3",
+        "contentHash": "Q+U4BOiKQP8AR68Fjy6h+rLlcXcH5ao+qwIO7xAejO0U4MqFqM9/SdtcG/cZwOlQydciagiA0I7HWVRkfealyQ==",
+        "dependencies": {
+          "Microsoft.Windows.Console.ConPTY": "1.24.260710001"
+        }
       },
       "YamlDotNet": {
         "type": "CentralTransitive",
