@@ -72,26 +72,26 @@ public sealed class GeneralPageTests
         (await page.SaveAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeTrue();
 
         source.SaveCalls.ShouldBe(1);
-        source.Values.ShouldBe(new GeneralSettingsValues(MotionPreference.Reduced, ThemePreference.Dark));
+        source.Values.ShouldBe(new GeneralSettingsValues(MotionPreference.Reduced, ThemePreference.Light));
         page.Saved.Motion.ShouldBe(MotionPreference.Reduced);
         page.IsDirty.ShouldBeFalse();
     }
 
-    /// <summary>The theme defaults to Dark and is offered as System, Light, Dark, in that order.</summary>
+    /// <summary>The theme defaults to Light (OQ-94) and is offered as System, Light, Dark, in that order.</summary>
     [Fact]
-    public async Task TheThemeDefaultsToDarkAndIsOfferedInOrder()
+    public async Task TheThemeDefaultsToLightAndIsOfferedInOrder()
     {
         var page = new GeneralPage(new ScriptedGeneralSource(GeneralSettingsValues.Defaults));
         await page.LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
-        page.Theme.ShouldBe(ThemePreference.Dark);
-        page.SelectedThemeOption.Value.ShouldBe(ThemePreference.Dark);
+        page.Theme.ShouldBe(ThemePreference.Light);
+        page.SelectedThemeOption.Value.ShouldBe(ThemePreference.Light);
         GeneralPage.ThemeOptions.Select(option => option.Value).ToArray()
             .ShouldBe([ThemePreference.System, ThemePreference.Light, ThemePreference.Dark]);
         GeneralPage.ThemeOptions.Select(option => option.Label).ToArray()
             .ShouldBe([SettingsCopy.ThemeSystemLabel, SettingsCopy.ThemeLightLabel, SettingsCopy.ThemeDarkLabel]);
         GeneralPage.ThemeOptions.ShouldAllBe(option => option.Label.Length > 0 && option.Description.Length > 0);
-        GeneralSettingsValues.Defaults.Theme.ShouldBe(ThemePreference.Dark);
+        GeneralSettingsValues.Defaults.Theme.ShouldBe(ThemePreference.Light);
     }
 
     /// <summary>Choosing a theme is a draft like motion: dirty and announced, nothing reaches the source until Save, and Save keeps the motion.</summary>
@@ -131,7 +131,7 @@ public sealed class GeneralPageTests
 
         page.Discard();
 
-        page.Theme.ShouldBe(ThemePreference.Dark);
+        page.Theme.ShouldBe(ThemePreference.Light);
         page.IsDirty.ShouldBeFalse();
         Should.Throw<ArgumentOutOfRangeException>(() => page.SetTheme((ThemePreference)42));
     }

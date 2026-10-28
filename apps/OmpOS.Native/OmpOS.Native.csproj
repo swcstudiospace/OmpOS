@@ -3,7 +3,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
+    <ApplicationIcon>Assets/Brand/ompos.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/Brand/*" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />

@@ -14,4 +14,9 @@
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="../OmpOS.Presentation.Tests/Hooks/ScriptedHooksPageSource.cs" Link="Hooks/Shared/ScriptedHooksPageSource.cs" />
+    <Compile Include="../OmpOS.Presentation.Tests/Hooks/HookItems.cs" Link="Hooks/Shared/HookItems.cs" />
+  </ItemGroup>
+
 </Project>

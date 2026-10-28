@@ -8,6 +8,13 @@ namespace OmpOS.Contracts.Environments;
 /// </summary>
 public sealed record SshProfile
 {
+    private static readonly IReadOnlyDictionary<string, string> NoOptions = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    // The source-generated deserializer passes default (null, 0) for a member a hand-edited document omits and skips property
+    // initializers, so the defaults live in the getters.
+    private IReadOnlyDictionary<string, string>? _options;
+    private int _keepAliveSeconds;
+
     /// <summary>
     /// Gets the host alias: a <c>Host</c> name from <c>~/.ssh/config</c> or a label for a custom profile. It is passed to ssh as the
     /// destination when <see cref="Hostname"/> is <see langword="null"/>. It matches <see cref="SshProfileRules.IsValidAlias"/>.
@@ -36,7 +43,11 @@ public sealed record SshProfile
     /// Gets extra ssh options by name. Only names in <see cref="SshProfileRules.AllowedOptionNames"/> with a value that passes the
     /// rule of the name are accepted: nothing that runs a command, loosens host key checking or forwards a port can be set here.
     /// </summary>
-    public IReadOnlyDictionary<string, string> Options { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+    public IReadOnlyDictionary<string, string> Options
+    {
+        get => _options ?? NoOptions;
+        init => _options = value;
+    }
 
     /// <summary>Gets the absolute POSIX path of the workspace directory on the remote machine: the working directory of <c>omp acp</c>.</summary>
     public required string RemoteWorkspaceRoot { get; init; }
@@ -53,6 +64,13 @@ public sealed record SshProfile
     /// </summary>
     public bool ForwardAgent { get; init; }
 
-    /// <summary>Gets the ssh <c>ServerAliveInterval</c> in seconds. Defaults to <see cref="SshProfileRules.DefaultKeepAliveSeconds"/>.</summary>
-    public int KeepAliveSeconds { get; init; } = SshProfileRules.DefaultKeepAliveSeconds;
+    /// <summary>
+    /// Gets the ssh <c>ServerAliveInterval</c> in seconds. Defaults to <see cref="SshProfileRules.DefaultKeepAliveSeconds"/>, which is also
+    /// what 0 means: a source-generated JSON deserializer passes 0 for a member the document omits, and OmpOS never switches keep-alive off.
+    /// </summary>
+    public int KeepAliveSeconds
+    {
+        get => _keepAliveSeconds == 0 ? SshProfileRules.DefaultKeepAliveSeconds : _keepAliveSeconds;
+        init => _keepAliveSeconds = value;
+    }
 }

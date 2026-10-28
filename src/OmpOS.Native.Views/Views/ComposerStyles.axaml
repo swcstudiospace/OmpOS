@@ -43,4 +43,14 @@
     <Setter Property="Opacity" Value="0.45" />
   </Style>
 
+  <!-- An attached mention above the card: a pill with the name, the size and a remove button. Its height is the target size, because the remove button is one. Tokens only. -->
+  <Style Selector="Border.mention-chip">
+    <Setter Property="MinHeight" Value="{DynamicResource OmpOS.Size.TargetMin}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource OmpOS.Radius.Pill}" />
+    <Setter Property="Background" Value="{DynamicResource OmpOS.Color.SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource OmpOS.Color.Border}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource OmpOS.Border.Hairline}" />
+    <Setter Property="Padding" Value="10,0,0,0" />
+  </Style>
+
 </Styles>

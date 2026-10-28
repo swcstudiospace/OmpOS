@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -7,14 +8,17 @@ namespace OmpOS.Harness.Acp.Tests;
 internal sealed class TestWebSocketSession : IDisposable
 {
     private readonly WebSocket _socket;
+    private readonly HttpListenerResponse _response;
 
     /// <summary>Initializes a new instance of the <see cref="TestWebSocketSession"/> class.</summary>
     /// <param name="socket">The accepted socket.</param>
+    /// <param name="response">The response of the upgrade request, whose abort closes the TCP connection.</param>
     /// <param name="authorization">The <c>Authorization</c> header of the upgrade request, or null.</param>
     /// <param name="path">The request path.</param>
-    public TestWebSocketSession(WebSocket socket, string? authorization, string path)
+    public TestWebSocketSession(WebSocket socket, HttpListenerResponse response, string? authorization, string path)
     {
         _socket = socket;
+        _response = response;
         Authorization = authorization;
         Path = path;
     }
@@ -98,7 +102,11 @@ internal sealed class TestWebSocketSession : IDisposable
         _socket.CloseOutputAsync(status, description, cancellationToken);
 
     /// <summary>Drops the connection without a close frame.</summary>
-    public void Abort() => _socket.Abort();
+    public void Abort()
+    {
+        _socket.Abort();
+        _response.Abort();
+    }
 
     /// <inheritdoc />
     public void Dispose() => _socket.Dispose();

@@ -5,10 +5,12 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using OmpOS.Harness.Completion;
 using OmpOS.Native.Views.AgentPanel;
 using OmpOS.Presentation.AgentPanel;
 using OmpOS.Presentation.Composer;
+using OmpOS.Presentation.Mentions;
 using OmpOS.Presentation.Runs;
 
 namespace OmpOS.Native.Views;
@@ -28,6 +30,8 @@ internal partial class ComposerView : UserControl
     private RunInputScheduler? _runs;
     private SteeringInputModel? _steering;
     private ComposerViewModel? _composer;
+    private MentionComposerModel? _mentionModel;
+    private ContextRingModel? _ringModel;
 
     /// <summary>Creates the composer with no data context and no run input.</summary>
     public ComposerView()
@@ -42,6 +46,8 @@ internal partial class ComposerView : UserControl
         ModeChipView.FocusReturnRequested += OnModelPickerFocusReturn;
         ThinkingChipView.FocusReturnRequested += OnModelPickerFocusReturn;
         SlashPalette.EntryChosen += OnSlashEntryChosen;
+        MentionPicker.RowChosen += OnMentionRowChosen;
+        MentionChips.AddHandler(Button.ClickEvent, OnChipClick);
         RefreshRunState();
     }
 
@@ -148,6 +154,18 @@ internal partial class ComposerView : UserControl
     /// <summary>Gets the slash palette above the card. It is hidden until the draft starts with a slash and the composer carries a palette.</summary>
     internal SlashPaletteView SlashPaletteControl => SlashPalette;
 
+    /// <summary>Gets the mention picker above the card. It is hidden until the caret is in an @ or # token and the composer carries mentions.</summary>
+    internal MentionPickerView MentionPickerControl => MentionPicker;
+
+    /// <summary>Gets the list of chips of the attached mentions. It is hidden while nothing is attached.</summary>
+    internal ItemsControl MentionChipsList => MentionChips;
+
+    /// <summary>Gets the context ring beside the chips. It is hidden until the composer carries a ring that has usage to show.</summary>
+    internal ContextRingView ContextRingControl => ContextRing;
+
+    /// <summary>Gets the row above the card that holds the chips and the context ring. It is hidden while there is neither.</summary>
+    internal Grid ContextRowControl => ContextRow;
+
     /// <summary>Copies the draft into the prompt and binds the model, mode and thinking chips when the data context changes.</summary>
     protected override void OnDataContextChanged(EventArgs e)
     {
@@ -169,6 +187,7 @@ internal partial class ComposerView : UserControl
         ModeChipView.DataContext = _composer?.ModeChip;
         ThinkingChipView.DataContext = _composer?.ThinkingChip;
         SlashPalette.DataContext = _composer?.SlashPalette;
+        BindMentions();
     }
 
     private void OnComposerChanged(object? sender, PropertyChangedEventArgs e)
@@ -189,6 +208,129 @@ internal partial class ComposerView : UserControl
         {
             SlashPalette.DataContext = _composer?.SlashPalette;
         }
+        else if (string.Equals(e.PropertyName, nameof(ComposerViewModel.Mentions), StringComparison.Ordinal)
+            || string.Equals(e.PropertyName, nameof(ComposerViewModel.ContextRing), StringComparison.Ordinal))
+        {
+            BindMentions();
+        }
+        else if (string.Equals(e.PropertyName, nameof(ComposerViewModel.CaretIndex), StringComparison.Ordinal) && _composer is not null
+            && PromptInput.CaretIndex != _composer.CaretIndex && _composer.CaretIndex <= (PromptInput.Text ?? string.Empty).Length)
+        {
+            // The composer moved the caret (a mention replaced the typed token): the text box follows.
+            PromptInput.CaretIndex = _composer.CaretIndex;
+        }
+    }
+
+    /// <summary>Binds the picker, the chips and the context ring to the mention state and the ring of the composer, and follows their changes.</summary>
+    private void BindMentions()
+    {
+        var mentions = _composer?.Mentions;
+        if (!ReferenceEquals(_mentionModel, mentions))
+        {
+            if (_mentionModel is not null)
+            {
+                _mentionModel.PropertyChanged -= OnMentionModelChanged;
+            }
+
+            _mentionModel = mentions;
+            if (_mentionModel is not null)
+            {
+                _mentionModel.PropertyChanged += OnMentionModelChanged;
+            }
+        }
+
+        var ring = _composer?.ContextRing;
+        if (!ReferenceEquals(_ringModel, ring))
+        {
+            if (_ringModel is not null)
+            {
+                _ringModel.PropertyChanged -= OnRingModelChanged;
+            }
+
+            _ringModel = ring;
+            if (_ringModel is not null)
+            {
+                _ringModel.PropertyChanged += OnRingModelChanged;
+            }
+        }
+
+        MentionPicker.DataContext = mentions?.Picker;
+        ContextRing.DataContext = ring;
+        RefreshContextRow();
+    }
+
+    private void OnMentionModelChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.Equals(e.PropertyName, nameof(MentionComposerModel.Chips), StringComparison.Ordinal))
+        {
+            RefreshContextRow();
+        }
+        else if (string.Equals(e.PropertyName, nameof(MentionComposerModel.Notice), StringComparison.Ordinal) && _mentionModel?.Notice is { } notice)
+        {
+            StatusMessage?.Invoke(this, new ComposerStatusEventArgs(notice));
+        }
+    }
+
+    private void OnRingModelChanged(object? sender, PropertyChangedEventArgs e) => RefreshContextRow();
+
+    private void RefreshContextRow()
+    {
+        var chips = _mentionModel?.Chips ?? [];
+        if (!ReferenceEquals(MentionChips.ItemsSource, chips))
+        {
+            MentionChips.ItemsSource = chips;
+        }
+
+        MentionChips.IsVisible = chips.Count > 0;
+        ContextRow.IsVisible = chips.Count > 0 || _ringModel is { Text.Length: > 0 };
+    }
+
+    private void OnMentionRowChosen(object? sender, EventArgs e)
+    {
+        if (DataContext is ComposerViewModel composer)
+        {
+            Track(composer, () => composer.AcceptMentionAsync());
+        }
+
+        FocusPrompt();
+    }
+
+    private void OnChipClick(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is Control source && source.FindAncestorOfType<Button>(includeSelf: true) is { DataContext: MentionChip chip } && DataContext is ComposerViewModel composer)
+        {
+            composer.RemoveMention(chip);
+            SyncPrompt(composer);
+            FocusPrompt();
+        }
+    }
+
+    /// <summary>
+    /// Offers a key to the mention picker. The picker takes the arrow, Enter, Tab and Escape keys while it is open and has something to act on, before the send and stop rules.
+    /// It attaches the highlighted item in the composer: Enter and Tab never send while the picker has a row selected.
+    /// </summary>
+    private bool TryHandleMentionPickerKey(ComposerViewModel composer, KeyEventArgs e)
+    {
+        if (e.KeyModifiers != KeyModifiers.None || composer.Mentions is not { Picker: { IsOpen: true } picker } || SlashPaletteKeyName(e.Key) is not { } key)
+        {
+            return false;
+        }
+
+        var takes = key switch
+        {
+            "ArrowDown" or "ArrowUp" => picker.Rows.Count > 0,
+            "Enter" or "Tab" => picker.SelectedRow is not null,
+            "Escape" => true,
+            _ => false,
+        };
+        if (!takes)
+        {
+            return false;
+        }
+
+        e.Handled = true;
+        Track(composer, () => composer.HandleMentionPickerKeyAsync(key));
+        return true;
     }
 
     private void OnModelPickerFocusReturn(object? sender, EventArgs e) => FocusPrompt();
@@ -197,9 +339,18 @@ internal partial class ComposerView : UserControl
 
     private void OnPromptPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        if (e.Property == TextBox.TextProperty && DataContext is ComposerViewModel composer)
+        if (DataContext is not ComposerViewModel composer)
+        {
+            return;
+        }
+
+        if (e.Property == TextBox.TextProperty)
         {
             composer.Draft = PromptInput.Text ?? string.Empty;
+        }
+        else if (e.Property == TextBox.CaretIndexProperty)
+        {
+            composer.CaretIndex = PromptInput.CaretIndex;
         }
     }
 
@@ -240,6 +391,11 @@ internal partial class ComposerView : UserControl
         var shift = (e.KeyModifiers & KeyModifiers.Shift) != KeyModifiers.None;
 
         if (TryHandleSlashPaletteKey(composer, e))
+        {
+            return;
+        }
+
+        if (TryHandleMentionPickerKey(composer, e))
         {
             return;
         }
@@ -463,9 +619,13 @@ internal partial class ComposerView : UserControl
 
     private void SyncPrompt(ComposerViewModel composer)
     {
+        var caret = composer.CaretIndex;
         if (!string.Equals(PromptInput.Text ?? string.Empty, composer.Draft, StringComparison.Ordinal))
         {
             PromptInput.Text = composer.Draft;
+
+            // Setting the text moves the caret; the composer's caret is the one that counts, so it is put back.
+            PromptInput.CaretIndex = Math.Min(caret, composer.Draft.Length);
         }
     }
 

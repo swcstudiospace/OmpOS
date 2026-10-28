@@ -2,7 +2,7 @@
 
 Scope: requirement PX-15 (Phase 58 part 1), decision [ADR-0015](../decisions/ADR-0015-remote-environments.md). A session runs on another machine that you reach with your own `ssh`. This page says what you need, how a profile works, what runs where, what is not there yet, and how to read each diagnosis.
 
-Status as of 2026-10-27: the core is written (profiles, ssh transport, connection test, launch rewrite, reconnect) and its tests were written but not yet run by an automated gate. The Settings page that edits profiles, the remote file view and the remote terminal are the next wave. Until the page exists, a profile is a JSON entry in the user settings (see "A profile as stored").
+Status as of 2026-10-28: the core (profiles, ssh transport, connection test, launch rewrite, reconnect) and the part-2 pieces (remote file system, remote convention discovery, remote terminals, profile store, the Remote environments page and the New session picker) are written. Their tests were written but not yet run by an automated gate, and the head wiring that shows the page, the picker and the remote explorer in the app is the next wave (see "Part 2 status"). Until the page is wired, a profile is a JSON entry in the user settings (see "A profile as stored").
 
 ## What runs where
 
@@ -61,6 +61,33 @@ A custom profile can also set host name, port, user, identity file, jump hosts a
 
 A profile holds references only: there is no field for a password, a passphrase, a key or a token.
 
+## Part 2 status
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Remote file system (list, read with a 1 MiB cap, stat, write with a stale-content guard, create, delete) | written; tests not run | `RemoteWorkspaceFileSystem` over `RemoteExec`; the explorer models take it through `IAsyncWorkspaceFileSystem` |
+| Discovery of slash commands, skills, rules and subagents on the remote workspace | written; tests not run | `RemoteConventionFileSource`, `RemoteConventionSources.CreateAsync` |
+| Remote terminals (login shell, omp CLI, host trust) | written; tests not run; a real PTY is not tested | `RemoteTerminalLauncher` |
+| Profile store (`environments.json`, atomic, owner-only) | written; tests not run | `EnvironmentProfileStore` |
+| Remote environments page and New session picker | models and desktop views written; not yet registered in the Settings window or the New session dialog | `OmpOS.Presentation.Remote`, `OmpOS.Native.Views.Remote` |
+| Real ssh, real omp, real PTY | NOT RUN | needs a host and an owner decision |
+
+### Remote files
+
+Every operation is one short POSIX script run through your own `ssh` (`ssh -T`, `BatchMode=yes`, `--` before the host, one single-quoted `sh -c` line; no secret is ever on a command line). Before it touches a path the remote machine resolves the real path of the workspace root and of the path (`realpath`, else `readlink -f`, else `cd -P`) and refuses the operation when the real path is not inside the root, so a symbolic link that leads outside is not listed, not read and not written. Listings use shell globbing, so they work with busybox, dash, bash and zsh (`sh`), with GNU or BSD tools; a directory is cut at 5000 entries. A read keeps at most the cap you give (1 MiB by default) and the remote side stops reading there. A write reads the file and its signature (modification time and size), compares the text with the text you based the edit on, then one script copies the file mode to a temporary file in the same directory, writes the new bytes to it, checks the signature again and renames it over the file: a concurrent change wins, nothing is half-written, a UTF-8 byte order mark is kept. Create uses a no-clobber link or move, so a file that appeared meanwhile is never replaced.
+
+### Convention discovery on the remote workspace
+
+Commands, skills, rules and subagents (the six directories `.ompos`, `.omp`, `.cursor`, `.claude`, `.codex`, `.agents`, at the remote workspace and in the remote home, which is `printf %s "$HOME"` there) are found through the same ssh exec layer as the local ones, with the same precedence and diagnostics. Each folder listing is one ssh call, so discovery bounds itself to depth 3, 300 folders and 1000 entries per folder (`RemoteConventionSources.DiscoveryOptions`). Set `SshClientOptions.ControlPathDirectory` to share one connection and make it much faster. A symbolic link that leaves the root becomes an `EscapesRoot` diagnostic; a file the remote user cannot read an `Unreadable` one; a host that does not answer is a problem in the result, never an exception.
+
+### Remote terminal
+
+Three commands are built for the terminal pane (a local pseudo-terminal running `ssh -tt`; Linux only until OQ-69): a login shell in the workspace (`exec "${SHELL:-/bin/sh}" -l`), the omp command line (`exec omp ...` with the plugin arguments and `--resume <id>` of the same launch an ACP session uses) and the host trust terminal. The terminal is interactive, so ssh may prompt in it. A terminal has no private channel: provider tokens and the settings overlay file of the launch are left out (the page lists them), so the remote omp must be logged in on its own (`omp login` there).
+
+### Host key first trust
+
+The first connection to a host happens in the interactive terminal on purpose: the fingerprint is shown by ssh itself and you decide. The Remote environments page offers it ("Trust host in a terminal") exactly when the connection test reports an unknown host key; a changed host key offers nothing but the explanation. The page says this in its own text.
+
 ## First connection and host key trust
 
 A new host fails the connection test with "The host key of this machine is not trusted yet". OmpOS does not trust it for you. Open the host trust terminal (Remote environments, Trust host): it runs an interactive `ssh -tt` to the host in a terminal tab, shows ssh's own fingerprint prompt, and you compare the fingerprint with the one your administrator published before you type `yes`. After that, connections run non-interactively with ssh's normal host key checking. If the key later changes, the test reports "The host key differs from the one stored in known_hosts"; do not connect until you know why (`ssh-keygen -R <host>` removes the old entry once you are sure).
@@ -78,8 +105,8 @@ If the connection drops while a turn runs, the turn is shown as interrupted (not
 ## Limits
 
 - No Windows remote machine (a POSIX shell is required). A Windows desktop head cannot start a remote session yet: `AcpAgentSession` rejects a working directory that is not fully qualified for the local OS, and `/home/dev/work` is not on Windows.
-- No remote file view yet: the file tree, editor and diff review show local files only. The agent edits remote files through omp's own tools, and the transcript shows them.
-- No remote terminal yet: it is a local terminal running `ssh -tt` and arrives with the next wave.
+- The remote file view reads files up to 1 MiB, refuses binary files, and needs `realpath` or `readlink -f` (or a plain `cd -P`) on the remote machine to prove a path stays inside the workspace; without any of them every path through a symbolic link is refused. It has no file watcher: refresh the folder to see remote changes.
+- The remote terminal is a local terminal running `ssh -tt`; it needs the Linux PTY backend (OQ-69), so Windows and macOS heads cannot open it yet. Provider tokens are not sent to it (see "Remote terminal").
 - No detach: closing the laptop ends the connection; the turn is interrupted.
 - Plugins are not synchronised; MCP servers on a non-loopback address must be reachable from the remote machine themselves.
 - Devcontainers and Railway sandboxes as hosts are not designed here. Cloud workers are described in ADR-0020.
@@ -125,5 +152,7 @@ Record the run in `docs/runbooks/evidence/`. It is also the place to find out wh
 | Unit tests with a fake ssh and a fake omp (quoting, argument list, banner, drop, diagnoses, canary secrets, reconnect schedule) | written, not run |
 | `ssh -G` against the real client for `Include`, `Match`, `ProxyJump` | written, not run |
 | Remote bootstrap script under `dash` and `bash` by hand | run once during design: environment and file delivery and cleanup worked |
+| Remote file and convention scripts by hand on the design host (GNU coreutils): listing under `dash`, `bash` and `sh`; signed read, signature-checked replace and no-clobber create under `dash`, with symlink escape, dangling link, FIFO and hostile names | run once: behaved as designed. macOS, busybox and zsh not run |
+| Remote file system, convention discovery (differential against the local source), terminal argv, profile store, models and views tests | written, not run |
 | Live test against a loopback sshd and a real omp | NOT RUN; needs the orchestrator |
 | Real remote host, macOS remote, Windows desktop head | NOT RUN |

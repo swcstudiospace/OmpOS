@@ -1,0 +1,394 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cloud="clr-namespace:OmpOS.Presentation.Cloud;assembly=OmpOS.Presentation"
+             xmlns:agent="clr-namespace:OmpOS.Native.Views.AgentPanel"
+             xmlns:glyphs="clr-namespace:OmpOS.Presentation.AgentPanel;assembly=OmpOS.Presentation"
+             xmlns:local="clr-namespace:OmpOS.Native.Views.Cloud"
+             x:Class="OmpOS.Native.Views.Cloud.CloudAgentsPageView"
+             x:DataType="cloud:CloudAgentsViewModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The Cloud agents page. Exactly one state shows at a time: loading, not set up (the setup steps and no agent control), failed load,
+       empty, or the list with its details. The new-agent form replaces the list while it is open. Keyboard order follows XAML order. -->
+  <ScrollViewer x:Name="PageScroll"
+                Focusable="False"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Classes="settings-column">
+
+      <TextBlock x:Name="PageHeading"
+                 Classes="settings-heading"
+                 Text="{x:Static cloud:CloudCopy.Heading}" />
+      <TextBlock Classes="settings-description"
+                 Text="{x:Static cloud:CloudCopy.Description}" />
+
+      <StackPanel x:Name="Toolbar"
+                  Orientation="Horizontal"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+        <Button x:Name="NewAgentButton"
+                Classes="primary"
+                Content="{x:Static cloud:CloudCopy.NewAgentLabel}"
+                AutomationProperties.Name="{x:Static cloud:CloudCopy.NewAgentLabel}"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                Click="OnNewAgentClick" />
+        <Button x:Name="RefreshButton"
+                Content="{x:Static cloud:CloudCopy.RefreshLabel}"
+                AutomationProperties.Name="{x:Static cloud:CloudCopy.RefreshLabel}"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                Click="OnRefreshClick" />
+        <StackPanel x:Name="FilterPanel"
+                    Orientation="Horizontal"
+                    Spacing="{DynamicResource OmpOS.Gap.Sm}">
+          <TextBlock Classes="settings-label"
+                     VerticalAlignment="Center"
+                     Text="{x:Static cloud:CloudCopy.FilterLabel}" />
+          <ComboBox x:Name="StatusFilterBox"
+                    MinWidth="160"
+                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                    AutomationProperties.Name="{x:Static cloud:CloudCopy.FilterName}"
+                    SelectionChanged="OnFilterChanged">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="cloud:CloudFilterOption">
+                <TextBlock Text="{CompiledBinding Label}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+      </StackPanel>
+
+      <TextBlock x:Name="CreateDisabledText"
+                 Classes="settings-help"
+                 Text="{CompiledBinding CreateDisabledReason}"
+                 IsVisible="{CompiledBinding CreateDisabledReason, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      <TextBlock x:Name="LimitsLine"
+                 Classes="settings-help"
+                 Text="{CompiledBinding LimitsText}"
+                 IsVisible="{CompiledBinding LimitsText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 AutomationProperties.Name="{x:Static cloud:CloudCopy.LimitsName}" />
+
+      <TextBlock x:Name="LoadingText"
+                 Classes="muted settings-body"
+                 Text="{x:Static cloud:CloudCopy.Loading}"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="{x:Static cloud:CloudCopy.Loading}" />
+
+      <!-- Not set up: the steps, and nothing that acts on an agent. -->
+      <StackPanel x:Name="NotConfiguredPanel"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+        <TextBlock x:Name="NotConfiguredHeading"
+                   Classes="settings-section"
+                   Text="{x:Static cloud:CloudCopy.NotConfiguredHeading}" />
+        <TextBlock x:Name="NotConfiguredReason"
+                   Classes="settings-body"
+                   Text="{CompiledBinding NotConfiguredReason}" />
+        <TextBlock Classes="settings-label"
+                   Text="{x:Static cloud:CloudCopy.SetupStepsIntro}" />
+        <ItemsControl x:Name="SetupStepList"
+                      AutomationProperties.Name="{x:Static cloud:CloudCopy.SetupStepsName}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock Classes="settings-body"
+                         Margin="0,0,0,4"
+                         Text="{CompiledBinding .}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button x:Name="CheckAgainButton"
+                HorizontalAlignment="Left"
+                Content="{x:Static cloud:CloudCopy.CheckAgainLabel}"
+                AutomationProperties.Name="{x:Static cloud:CloudCopy.CheckAgainLabel}"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                Click="OnCheckAgainClick" />
+      </StackPanel>
+
+      <!-- The first load failed. -->
+      <StackPanel x:Name="ErrorPanel"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                  AutomationProperties.LiveSetting="Assertive"
+                  AutomationProperties.Name="{x:Static cloud:CloudCopy.LoadFailedHeading}">
+        <TextBlock Classes="settings-section"
+                   Text="{x:Static cloud:CloudCopy.LoadFailedHeading}" />
+        <Border Classes="banner"
+                Background="{DynamicResource OmpOS.Color.DiffRemoved}">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="{DynamicResource OmpOS.Gap.Sm}">
+            <agent:StageIcon IconKey="{x:Static glyphs:StatusIcon.Cross}"
+                             VerticalAlignment="Top" />
+            <TextBlock x:Name="LoadErrorText"
+                       Classes="tone-error settings-body"
+                       Text="{CompiledBinding LoadError}" />
+          </StackPanel>
+        </Border>
+        <Button x:Name="TryAgainButton"
+                HorizontalAlignment="Left"
+                Content="{x:Static cloud:CloudCopy.TryAgainLabel}"
+                AutomationProperties.Name="{x:Static cloud:CloudCopy.TryAgainLabel}"
+                MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                Click="OnTryAgainClick" />
+      </StackPanel>
+
+      <!-- Cloud is set up and there is no agent. -->
+      <StackPanel x:Name="EmptyPanel"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+        <TextBlock Classes="settings-section"
+                   Text="{x:Static cloud:CloudCopy.EmptyHeading}" />
+        <TextBlock Classes="settings-body"
+                   Text="{x:Static cloud:CloudCopy.EmptyBody}" />
+      </StackPanel>
+
+      <Border x:Name="RefreshErrorBanner"
+              Classes="banner"
+              AutomationProperties.LiveSetting="Assertive"
+              AutomationProperties.Name="{x:Static cloud:CloudCopy.RefreshErrorName}">
+        <TextBlock x:Name="RefreshErrorText"
+                   Classes="tone-error settings-body"
+                   Text="{CompiledBinding RefreshError}" />
+      </Border>
+
+      <!-- The new-agent form, shown in place of the list while it is open. -->
+      <ContentControl x:Name="NewAgentHost"
+                      Focusable="False" />
+
+      <StackPanel x:Name="ReadyPanel"
+                  Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+        <TextBlock x:Name="NoMatchLine"
+                   Classes="muted settings-body"
+                   Text="{CompiledBinding NoMatchText}"
+                   IsVisible="{CompiledBinding HasNoMatches}" />
+
+        <ListBox x:Name="AgentList"
+                 AutomationProperties.Name="{x:Static cloud:CloudCopy.ListName}"
+                 SelectionChanged="OnAgentSelected">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="cloud:CloudAgentRow">
+              <Grid ColumnDefinitions="Auto,*,Auto"
+                    MinHeight="{DynamicResource OmpOS.Size.TargetMin}">
+                <agent:StageIcon Grid.Column="0"
+                                 IconKey="{CompiledBinding IconKey}"
+                                 Margin="0,0,8,0"
+                                 VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1"
+                            VerticalAlignment="Center">
+                  <TextBlock Text="{CompiledBinding Name}"
+                             FontWeight="{DynamicResource OmpOS.Font.Weight.Semibold}"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Classes="settings-help"
+                             Text="{CompiledBinding DetailText}"
+                             TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <StackPanel Grid.Column="2"
+                            Margin="12,0,0,0"
+                            VerticalAlignment="Center">
+                  <agent:StatusChip Text="{CompiledBinding StatusText}"
+                                    IconKey="{CompiledBinding IconKey}"
+                                    Tone="{CompiledBinding Status, Converter={x:Static local:CloudStatusVisuals.Tone}}"
+                                    HorizontalAlignment="Right" />
+                  <TextBlock Classes="settings-help"
+                             HorizontalAlignment="Right"
+                             Text="{CompiledBinding LastActivityText}" />
+                </StackPanel>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <TextBlock x:Name="NoSelectionText"
+                   Classes="muted settings-body"
+                   Text="{x:Static cloud:CloudCopy.NoSelection}" />
+
+        <!-- The details of the selected agent. Every action sits in XAML order after the facts; a button that does not fit the status is disabled. -->
+        <Border x:Name="DetailsCard"
+                Classes="settings-card">
+          <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+
+            <TextBlock x:Name="DetailName"
+                       Classes="settings-section"
+                       AutomationProperties.Name="{x:Static cloud:CloudCopy.DetailsHeading}" />
+
+            <StackPanel Orientation="Horizontal"
+                        Spacing="{DynamicResource OmpOS.Gap.Sm}">
+              <agent:StatusChip x:Name="DetailStatusChip" />
+            </StackPanel>
+            <TextBlock x:Name="DetailStatusDescription"
+                       Classes="settings-body" />
+            <TextBlock x:Name="DetailStatusReason"
+                       Classes="tone-error settings-body" />
+
+            <TextBlock Classes="settings-label"
+                       Text="{x:Static cloud:CloudCopy.RepositoriesLabel}" />
+            <ItemsControl x:Name="RepositoryList"
+                          AutomationProperties.Name="{x:Static cloud:CloudCopy.RepositoriesLabel}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Classes="settings-mono"
+                             Text="{CompiledBinding .}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock x:Name="DetailBranch"
+                       Classes="settings-body" />
+            <TextBlock x:Name="DetailBaseBranch"
+                       Classes="settings-body" />
+            <TextBlock x:Name="DetailEnvironment"
+                       Classes="settings-body" />
+            <TextBlock x:Name="DetailModel"
+                       Classes="settings-body" />
+            <TextBlock x:Name="DetailIdle"
+                       Classes="settings-body" />
+            <TextBlock x:Name="DetailLastActivity"
+                       Classes="settings-body" />
+
+            <TextBlock Classes="settings-label"
+                       Text="{x:Static cloud:CloudCopy.PullRequestsLabel}" />
+            <ItemsControl x:Name="PullRequestList"
+                          AutomationProperties.Name="{x:Static cloud:CloudCopy.PullRequestsLabel}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="cloud:CloudPullRequestRow">
+                  <Grid ColumnDefinitions="*,Auto"
+                        Margin="0,0,0,4">
+                    <StackPanel Grid.Column="0"
+                                VerticalAlignment="Center">
+                      <TextBlock Classes="settings-mono"
+                                 Text="{CompiledBinding RepositoryName}" />
+                      <TextBlock Classes="settings-help"
+                                 Text="{CompiledBinding Title}"
+                                 IsVisible="{CompiledBinding Title, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+                    <Button Grid.Column="1"
+                            Classes="sm"
+                            Content="{CompiledBinding ActionLabel}"
+                            IsEnabled="{CompiledBinding CanAct}"
+                            AutomationProperties.Name="{CompiledBinding ActionName}"
+                            MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                            MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                            Click="OnPullRequestClick" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Classes="settings-label"
+                       Text="{x:Static cloud:CloudCopy.HistoryLabel}" />
+            <TextBlock x:Name="NoHistoryText"
+                       Classes="settings-help"
+                       Text="{x:Static cloud:CloudCopy.NoHistory}" />
+            <ItemsControl x:Name="TimelineList"
+                          AutomationProperties.Name="{x:Static cloud:CloudCopy.HistoryLabel}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="cloud:CloudTimelineRow">
+                  <StackPanel Orientation="Horizontal"
+                              Spacing="{DynamicResource OmpOS.Gap.Sm}"
+                              Margin="0,0,0,4"
+                              AutomationProperties.Name="{CompiledBinding AccessibleName}">
+                    <agent:StageIcon IconKey="{CompiledBinding IconKey}"
+                                     VerticalAlignment="Center" />
+                    <TextBlock Classes="settings-body"
+                               Text="{CompiledBinding StatusText}" />
+                    <TextBlock Classes="settings-help"
+                               VerticalAlignment="Center"
+                               Text="{CompiledBinding TimeText}" />
+                    <TextBlock Classes="settings-help"
+                               VerticalAlignment="Center"
+                               Text="{CompiledBinding Note}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <WrapPanel x:Name="ActionsPanel"
+                       Orientation="Horizontal"
+                       AutomationProperties.Name="{x:Static cloud:CloudCopy.ActionsName}">
+              <Button x:Name="WakeButton"
+                      Margin="0,0,8,8"
+                      Content="{x:Static cloud:CloudCopy.WakeLabel}"
+                      MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                      MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                      Click="OnWakeClick" />
+              <Button x:Name="StopButton"
+                      Margin="0,0,8,8"
+                      Content="{x:Static cloud:CloudCopy.StopLabel}"
+                      MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                      MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                      Click="OnStopClick" />
+              <Button x:Name="OpenInAgentsButton"
+                      Margin="0,0,8,8"
+                      Content="{x:Static cloud:CloudCopy.OpenInAgentsLabel}"
+                      MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                      MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                      Click="OnOpenInAgentsClick" />
+              <Button x:Name="DeleteButton"
+                      Margin="0,0,8,8"
+                      Content="{x:Static cloud:CloudCopy.DeleteLabel}"
+                      MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                      MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                      Click="OnDeleteClick" />
+            </WrapPanel>
+
+            <!-- The delete confirmation: what is removed and what stays, then Delete agent or Cancel. Focus lands on Cancel. -->
+            <Border x:Name="DeleteConfirmBar"
+                    Classes="banner"
+                    AutomationProperties.LiveSetting="Assertive"
+                    AutomationProperties.Name="{x:Static cloud:CloudCopy.DeleteConfirmationName}">
+              <StackPanel Spacing="{DynamicResource OmpOS.Gap.Sm}">
+                <TextBlock x:Name="DeleteWarningText"
+                           Classes="settings-body" />
+                <WrapPanel Orientation="Horizontal">
+                  <Button x:Name="CancelDeleteButton"
+                          Margin="0,0,8,0"
+                          Content="{x:Static cloud:CloudCopy.CancelLabel}"
+                          AutomationProperties.Name="{x:Static cloud:CloudCopy.CancelLabel}"
+                          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                          MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                          Click="OnCancelDeleteClick" />
+                  <Button x:Name="ConfirmDeleteButton"
+                          Content="{x:Static cloud:CloudCopy.ConfirmDeleteLabel}"
+                          MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                          MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                          Click="OnConfirmDeleteClick" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Classes="settings-label"
+                       Text="{x:Static cloud:CloudCopy.PromptLabel}" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox x:Name="PromptBox"
+                       Grid.Column="0"
+                       MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                       TextChanged="OnPromptChanged" />
+              <Button x:Name="SendButton"
+                      Grid.Column="1"
+                      Margin="8,0,0,0"
+                      Content="{x:Static cloud:CloudCopy.SendLabel}"
+                      MinHeight="{DynamicResource OmpOS.Size.TargetMin}"
+                      MinWidth="{DynamicResource OmpOS.Size.TargetMin}"
+                      Click="OnSendClick" />
+            </Grid>
+
+            <TextBlock x:Name="NoticeText"
+                       Classes="settings-body"
+                       AutomationProperties.LiveSetting="Polite"
+                       AutomationProperties.Name="{x:Static cloud:CloudCopy.NoticeName}" />
+            <TextBlock x:Name="ActionErrorText"
+                       Classes="tone-error settings-body"
+                       AutomationProperties.LiveSetting="Assertive"
+                       AutomationProperties.Name="{x:Static cloud:CloudCopy.ActionErrorName}" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

@@ -5,6 +5,6 @@ namespace OmpOS.Presentation.Settings;
 /// <param name="Theme">The colour theme a head applies to its window.</param>
 public sealed record GeneralSettingsValues(MotionPreference Motion, ThemePreference Theme)
 {
-    /// <summary>Gets the page defaults: motion follows the operating system and the theme is dark.</summary>
-    public static GeneralSettingsValues Defaults { get; } = new(MotionPreference.System, ThemePreference.Dark);
+    /// <summary>Gets the page defaults: motion follows the operating system and the theme is light.</summary>
+    public static GeneralSettingsValues Defaults { get; } = new(MotionPreference.System, ThemePreference.Light);
 }

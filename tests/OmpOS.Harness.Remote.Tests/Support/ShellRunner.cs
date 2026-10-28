@@ -30,6 +30,8 @@ internal static class ShellRunner
         };
         startInfo.ArgumentList.Add("-c");
         startInfo.ArgumentList.Add(script);
+        // A remote non-interactive shell has a short PATH; the machine that runs the tests may have a real omp on its own.
+        startInfo.Environment["PATH"] = "/usr/bin:/bin";
         if (environment is not null)
         {
             foreach (var (name, value) in environment)

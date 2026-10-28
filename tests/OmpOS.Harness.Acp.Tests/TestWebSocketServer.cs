@@ -38,7 +38,7 @@ internal sealed class TestWebSocketServer : IDisposable
         var authorization = context.Request.Headers["Authorization"];
         var path = context.Request.Url?.AbsolutePath ?? string.Empty;
         var socketContext = await context.AcceptWebSocketAsync(subProtocol: null).ConfigureAwait(false);
-        return new TestWebSocketSession(socketContext.WebSocket, authorization, path);
+        return new TestWebSocketSession(socketContext.WebSocket, context.Response, authorization, path);
     }
 
     /// <summary>Waits for the next upgrade request and answers it with a plain HTTP status instead of accepting it.</summary>

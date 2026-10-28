@@ -10,6 +10,6 @@ namespace OmpOS.Native.Settings;
 /// <param name="Runtime">The idle stop and retention windows.</param>
 internal sealed record StoredSettings(MotionPreference Motion, ThemePreference Theme, bool TerminalAutoRun, RuntimeSettingsValues Runtime)
 {
-    /// <summary>Gets the defaults: motion follows the system, the theme is dark, every terminal command waits for an approval, 24 hours idle stop and 7 days retention.</summary>
-    public static StoredSettings Defaults { get; } = new(MotionPreference.System, ThemePreference.Dark, TerminalAutoRun: false, RuntimeSettingsValues.Defaults);
+    /// <summary>Gets the defaults: motion follows the system, the theme is light, every terminal command waits for an approval, 24 hours idle stop and 7 days retention.</summary>
+    public static StoredSettings Defaults { get; } = new(MotionPreference.System, ThemePreference.Light, TerminalAutoRun: false, RuntimeSettingsValues.Defaults);
 }

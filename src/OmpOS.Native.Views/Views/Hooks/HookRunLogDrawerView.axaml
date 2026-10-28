@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:hk="clr-namespace:OmpOS.Presentation.Hooks;assembly=OmpOS.Presentation"
+             xmlns:local="clr-namespace:OmpOS.Native.Views.Hooks"
+             x:Class="OmpOS.Native.Views.Hooks.HookRunLogDrawerView"
+             x:DataType="hk:HookRunLogModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The run-log drawer a thread opens from a hook notice: the same log under a close button. The host places it at the edge of the thread. -->
+  <Border Classes="settings-card"
+          AutomationProperties.Name="{x:Static hk:HooksCopy.RunLogHeading}">
+    <DockPanel LastChildFill="True">
+
+      <Button x:Name="CloseButton"
+              DockPanel.Dock="Top"
+              HorizontalAlignment="Right"
+              Content="{x:Static hk:HooksCopy.CloseLogLabel}"
+              AutomationProperties.Name="{x:Static hk:HooksCopy.CloseLogLabel}"
+              Click="OnCloseClick" />
+
+      <ScrollViewer Focusable="False"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+        <local:HookRunLogView x:Name="Log" />
+      </ScrollViewer>
+
+    </DockPanel>
+  </Border>
+
+</UserControl>

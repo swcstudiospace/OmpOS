@@ -214,6 +214,12 @@
           "OmpOS.Harness.InMemory": "[0.15.0, )"
         }
       },
+      "ompos.genui": {
+        "type": "Project",
+        "dependencies": {
+          "OmpOS.Contracts": "[0.15.0, )"
+        }
+      },
       "ompos.harness.abstractions": {
         "type": "Project",
         "dependencies": {
@@ -231,7 +237,10 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
-          "OmpOS.Contracts": "[0.15.0, )"
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.Harness.Abstractions": "[0.15.0, )",
+          "OmpOS.Harness.Acp": "[0.15.0, )",
+          "OmpOS.Harness.Plugins": "[0.15.0, )"
         }
       },
       "ompos.harness.inmemory": {
@@ -241,6 +250,9 @@
           "OmpOS.Harness.Abstractions": "[0.15.0, )"
         }
       },
+      "ompos.harness.plugins": {
+        "type": "Project"
+      },
       "ompos.harness.remote": {
         "type": "Project",
         "dependencies": {
@@ -248,8 +260,42 @@
           "OmpOS.Contracts": "[0.15.0, )",
           "OmpOS.Harness.Abstractions": "[0.15.0, )",
           "OmpOS.Harness.Acp": "[0.15.0, )",
-          "OmpOS.Harness.AgentLoop": "[0.15.0, )"
+          "OmpOS.Harness.AgentLoop": "[0.15.0, )",
+          "OmpOS.Harness.Terminal": "[0.15.0, )",
+          "OmpOS.Harness.Workspace": "[0.15.0, )",
+          "OmpOS.Presentation": "[0.15.0, )"
         }
+      },
+      "ompos.harness.terminal": {
+        "type": "Project",
+        "dependencies": {
+          "Porta.Pty": "[2.2.3, )"
+        }
+      },
+      "ompos.harness.workspace": {
+        "type": "Project"
+      },
+      "ompos.parser": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
+          "OmpOS.Contracts": "[0.15.0, )"
+        }
+      },
+      "ompos.presentation": {
+        "type": "Project",
+        "dependencies": {
+          "Markdig": "[1.4.2, )",
+          "OmpOS.Contracts": "[0.15.0, )",
+          "OmpOS.GenUi": "[0.15.0, )",
+          "OmpOS.Parser": "[0.15.0, )"
+        }
+      },
+      "Markdig": {
+        "type": "CentralTransitive",
+        "requested": "[1.4.2, )",
+        "resolved": "1.4.2",
+        "contentHash": "C5jl2hFLK5KHxWWWO6JxfuQCRirW5DGnCn9IEhJ7xgBMVnd+PjRNdAKO2C6YHpkOtVvZMJ8Zbma7B+CDi+hl+g=="
       },
       "Microsoft.Extensions.Configuration": {
         "type": "CentralTransitive",
@@ -356,6 +402,21 @@
         "requested": "[2.5.1, )",
         "resolved": "2.5.1",
         "contentHash": "FAMaFFWnULW+hDHMb40Qzhcgz9cAU2/EtgRCBNX/DdQoKo0sPG2EiY+w7bQdl/BgHnf/DbpXLbf5Xy0o15M8NA=="
+      },
+      "Microsoft.Windows.Console.ConPTY": {
+        "type": "CentralTransitive",
+        "requested": "[1.24.260710001, )",
+        "resolved": "1.24.260710001",
+        "contentHash": "JR1xAkZbNnAALBjzFpqSwEx7YZfD1LI228jF9j9cgKknBPCiFy9mpphlgH+TpTN8vajTUpcgg9Miy5Y8eUAH9g=="
+      },
+      "Porta.Pty": {
+        "type": "CentralTransitive",
+        "requested": "[2.2.3, )",
+        "resolved": "2.2.3",
+        "contentHash": "Q+U4BOiKQP8AR68Fjy6h+rLlcXcH5ao+qwIO7xAejO0U4MqFqM9/SdtcG/cZwOlQydciagiA0I7HWVRkfealyQ==",
+        "dependencies": {
+          "Microsoft.Windows.Console.ConPTY": "1.24.260710001"
+        }
       }
     }
   }

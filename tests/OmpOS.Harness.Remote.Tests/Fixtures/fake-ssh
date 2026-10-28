@@ -71,4 +71,7 @@ if [ -n "$FAKE_SSH_PATH" ]; then
   export PATH
 fi
 
-exec sh -c "$*"
+# The "remote machine" has no /usr/local/bin: the developer machine that runs the tests may have a real omp there, which the
+# PATH line of the command appends and which must never be found instead of the fixture (or instead of "no omp installed").
+command_text=$(printf '%s' "$*" | sed 's#/usr/local/bin#/nonexistent-ompos-bin#g')
+exec sh -c "$command_text"

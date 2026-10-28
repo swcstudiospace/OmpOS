@@ -34,6 +34,13 @@ public sealed record AcpClientOptions
     public AcpApprovalPolicy ApprovalPolicy { get; init; } = AcpApprovalPolicy.DenyAll;
 
     /// <summary>
+    /// Gets the gate through which hooks see the session's traffic: the prompt, permission requests, <c>fs/*</c> calls, tool call updates
+    /// and the end of each turn. <see langword="null"/> (the default) is the behaviour without hooks. A gate can only tighten what the
+    /// <see cref="ApprovalPolicy"/> admits, never grant more.
+    /// </summary>
+    public IAcpHookGate? HookGate { get; init; }
+
+    /// <summary>
     /// Gets the ACP authentication method id sent in <c>authenticate</c> when the agent advertises
     /// <c>authMethods</c> in its <c>initialize</c> result. <see langword="null"/> (the default) means no
     /// method is configured: a handshake that requires authentication then fails instead of guessing a method.

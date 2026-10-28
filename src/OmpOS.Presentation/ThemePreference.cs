@@ -2,7 +2,7 @@ namespace OmpOS.Presentation;
 
 /// <summary>
 /// The colour theme a head applies to the whole window. <c>System</c> follows the operating system; a head that cannot read the
-/// operating-system setting shows the dark theme. Dark is the default.
+/// operating-system setting shows the dark theme. Light is the default (OQ-94).
 /// </summary>
 public enum ThemePreference
 {

@@ -16,7 +16,7 @@ internal sealed class SettingsDocument
     /// <summary>Gets or sets the motion setting: <c>system</c>, <c>reduced</c> or <c>full</c>.</summary>
     public string? Motion { get; set; }
 
-    /// <summary>Gets or sets the theme setting: <c>system</c>, <c>light</c> or <c>dark</c>. Absent means dark.</summary>
+    /// <summary>Gets or sets the theme setting: <c>system</c>, <c>light</c> or <c>dark</c>. Absent means light.</summary>
     public string? Theme { get; set; }
 
     /// <summary>Gets or sets the terminal settings.</summary>

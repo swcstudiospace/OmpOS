@@ -142,7 +142,7 @@ internal sealed class FakeRemoteHost : IDisposable
             "FAKE_SSH_MODE=" + Quote(Options.Mode),
             "FAKE_SSH_BANNER=" + Quote(Options.Banner ? "1" : string.Empty),
             "FAKE_SSH_HOME=" + Quote(HomeDirectory),
-            "FAKE_SSH_PATH=" + Quote(overrideBin + ":/usr/local/bin:/usr/bin:/bin"),
+            "FAKE_SSH_PATH=" + Quote(overrideBin + ":/usr/bin:/bin"),
             "FAKE_OMP_VERSION=" + Quote(Options.OmpVersion),
             "FAKE_OMP_NOISE=" + Quote(Options.NoiseAfterHandshake ? "1" : string.Empty),
         };

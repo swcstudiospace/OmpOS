@@ -16,4 +16,7 @@ public enum OmpPluginRole
 
     /// <summary>Drives the phases and plans the session works through.</summary>
     WorkflowEngine,
+
+    /// <summary>Forwards omp events to the host's hook bridge so Cursor-compatible hooks can block and observe tool calls. It is not part of the built-in catalogue; the host adds it when hooks are on.</summary>
+    HookBridge,
 }

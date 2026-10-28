@@ -29,13 +29,13 @@ public sealed class FileSettingsStoreTests : IDisposable
         Directory.Exists(store.ConfigDirectory).ShouldBeFalse();
     }
 
-    /// <summary>A file with no theme member reads as the Dark default, and each theme survives a write, case-insensitively on read.</summary>
+    /// <summary>A file with no theme member reads as the Light default (OQ-94), a saved Dark is respected, and each theme survives a write, case-insensitively on read.</summary>
     [Fact]
-    public void TheThemeDefaultsToDarkAndRoundTrips()
+    public void TheThemeDefaultsToLightAndRoundTrips()
     {
-        StoredSettings.Defaults.Theme.ShouldBe(ThemePreference.Dark);
+        StoredSettings.Defaults.Theme.ShouldBe(ThemePreference.Light);
         var store = new FileSettingsStore(_state.PathOf("theme"));
-        store.Read().Theme.ShouldBe(ThemePreference.Dark);
+        store.Read().Theme.ShouldBe(ThemePreference.Light);
 
         foreach (var theme in new[] { ThemePreference.System, ThemePreference.Light, ThemePreference.Dark })
         {
@@ -46,6 +46,12 @@ public sealed class FileSettingsStoreTests : IDisposable
 
         _state.Write("theme2/config/settings.json", "{\"theme\":\"LIGHT\"}");
         new FileSettingsStore(_state.PathOf("theme2")).Read().Theme.ShouldBe(ThemePreference.Light);
+
+        _state.Write("theme3/config/settings.json", "{\"motion\":\"full\",\"theme\":\"dark\"}");
+        new FileSettingsStore(_state.PathOf("theme3")).Read().Theme.ShouldBe(ThemePreference.Dark);
+
+        _state.Write("theme4/config/settings.json", "{\"motion\":\"full\"}");
+        new FileSettingsStore(_state.PathOf("theme4")).Read().Theme.ShouldBe(ThemePreference.Light);
     }
 
     /// <summary>The file lives at config/settings.json below the state directory.</summary>

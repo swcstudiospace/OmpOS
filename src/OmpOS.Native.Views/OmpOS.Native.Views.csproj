@@ -37,6 +37,7 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets/Fonts/**/*.ttf" />
     <AvaloniaResource Include="Assets/Fonts/**/OFL.txt" />
+    <AvaloniaResource Include="Assets/Brand/*.png" />
   </ItemGroup>
 
 </Project>

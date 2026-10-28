@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:hk="clr-namespace:OmpOS.Presentation.Hooks;assembly=OmpOS.Presentation"
+             x:Class="OmpOS.Native.Views.Hooks.HookNoticeRowView"
+             x:DataType="hk:HookNoticeRow"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://OmpOS.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- A row a hook adds to the thread. A denial and a continuation are one line of plain text. A context row is collapsed to its summary;
+       expanding it shows what the hook injected, so the injection is never hidden. -->
+  <Border Classes="settings-banner"
+          AutomationProperties.Name="{CompiledBinding AutomationName}">
+    <StackPanel Spacing="{DynamicResource OmpOS.Gap.Xs}">
+
+      <TextBlock x:Name="NoticeText"
+                 Classes="settings-body"
+                 IsVisible="{CompiledBinding !IsCollapsible}"
+                 Text="{CompiledBinding Text}" />
+
+      <Expander x:Name="ContextExpander"
+                IsVisible="{CompiledBinding IsCollapsible}"
+                Header="{CompiledBinding Text}"
+                AutomationProperties.Name="{CompiledBinding AutomationName}">
+        <SelectableTextBlock x:Name="ContextText"
+                             Classes="settings-selectable settings-body"
+                             Text="{CompiledBinding Detail}" />
+      </Expander>
+
+      <Button x:Name="ReviewButton"
+              HorizontalAlignment="Left"
+              IsVisible="{CompiledBinding OffersReview}"
+              Content="{CompiledBinding ReviewLabel}"
+              AutomationProperties.Name="{CompiledBinding ReviewLabel}"
+              Click="OnReviewClick" />
+
+    </StackPanel>
+  </Border>
+
+</UserControl>

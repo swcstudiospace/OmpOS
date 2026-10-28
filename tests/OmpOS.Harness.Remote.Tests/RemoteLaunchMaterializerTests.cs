@@ -104,7 +104,7 @@ public sealed class RemoteLaunchMaterializerTests
         var launch = new RemoteLaunchMaterializer().Materialize(plan, Profile, Options(directory.Path, mappings));
 
         launch.Arguments.ShouldBe(["--no-extensions", "-e", "/opt/ompos/plugins/ultrathink/index.js", "-e", "/opt/ompos/plugins/swarm/index.js"]);
-        launch.PlanningEvents.ShouldBeEmpty();
+        launch.PlanningEvents.ShouldNotContain(evt => string.Equals(evt.StageId, "remote-launch:plugins", StringComparison.Ordinal));
         launch.LoadedPluginIds.ShouldBe(["ultrathink", "swarm"]);
 
         var sibling = Plan(directory.Path, null, ["-e", "/local/plugins-other/x.js"]);

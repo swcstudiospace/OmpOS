@@ -1,4 +1,5 @@
 using OmpOS.Presentation.Commands;
+using OmpOS.Presentation.Mentions;
 using OmpOS.Presentation.Observable;
 
 namespace OmpOS.Presentation.Composer;
@@ -22,6 +23,10 @@ public sealed class ComposerViewModel : ObservableModel
     private OptionChipModel? _thinkingChip;
     private SlashPaletteModel? _slashPalette;
     private bool _isStreaming;
+    private MentionComposerModel? _mentions;
+    private ContextRingModel? _contextRing;
+    private Func<string, IReadOnlyList<MentionAttachment>, Task<bool>>? _mentionSender;
+    private int _caretIndex;
 
     /// <summary>Creates a composer that submits drafts through <paramref name="onSend"/> and stops responses through <paramref name="onStop"/>.</summary>
     /// <param name="onSend">Submits the draft. Resolves to true when the host accepted the send and to false when it refused it.</param>
@@ -42,9 +47,17 @@ public sealed class ComposerViewModel : ObservableModel
         get => _draft;
         set
         {
+            ArgumentNullException.ThrowIfNull(value);
             if (SetProperty(ref _draft, value))
             {
+                if (_caretIndex > value.Length)
+                {
+                    _caretIndex = value.Length;
+                    NotifyPropertyChanged(nameof(CaretIndex));
+                }
+
                 _slashPalette?.UpdateDraft(value);
+                _mentions?.UpdateDraft(value, _caretIndex);
             }
         }
     }
@@ -194,6 +207,172 @@ public sealed class ComposerViewModel : ObservableModel
         return true;
     }
 
+    /// <summary>
+    /// Gets or sets the mention state of the session (the picker, the chips and the context estimate), or null when the session offers no @ mentions (an omp terminal).
+    /// While it is set, every change of <see cref="Draft"/> and <see cref="CaretIndex"/> is reported to it, so the picker opens while the caret is in an <c>@</c> or <c>#</c> token, and
+    /// the estimate of the attached items feeds <see cref="ContextRing"/>. The owner of the model disposes it.
+    /// </summary>
+    public MentionComposerModel? Mentions
+    {
+        get => _mentions;
+        set
+        {
+            if (ReferenceEquals(_mentions, value))
+            {
+                return;
+            }
+
+            if (_mentions is not null)
+            {
+                _mentions.PropertyChanged -= OnMentionsChanged;
+            }
+
+            _mentions = value;
+            if (_mentions is not null)
+            {
+                _mentions.PropertyChanged += OnMentionsChanged;
+                _mentions.UpdateDraft(_draft, Math.Min(_caretIndex, _draft.Length));
+            }
+
+            NotifyPropertyChanged();
+            _contextRing?.SetPending(_mentions?.Budget.EstimatedTokens ?? 0);
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the context ring of the session: the window usage the engine reported, shown beside the chips. The composer keeps its pending estimate equal to the
+    /// estimate of the attached items. It is null when the session reports no usage.
+    /// </summary>
+    public ContextRingModel? ContextRing
+    {
+        get => _contextRing;
+        set
+        {
+            if (SetProperty(ref _contextRing, value))
+            {
+                value?.SetPending(_mentions?.Budget.EstimatedTokens ?? 0);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the send path of a message that carries mentions: it receives the text and the content read for each attached item, and resolves to true when the host accepted the
+    /// send. With no sender, a message that carries mentions is sent as its text alone, through the callback given to the constructor.
+    /// </summary>
+    public Func<string, IReadOnlyList<MentionAttachment>, Task<bool>>? MentionSender
+    {
+        get => _mentionSender;
+        set => _mentionSender = value;
+    }
+
+    /// <summary>
+    /// Gets or sets the caret index in <see cref="Draft"/>. The head reports it as the caret moves; the mention picker opens while the caret is inside an <c>@</c> or <c>#</c> token. It is
+    /// clamped to the draft. The composer also sets it, after a mention replaced the typed token, and the head moves its caret to it.
+    /// </summary>
+    public int CaretIndex
+    {
+        get => _caretIndex;
+        set
+        {
+            var clamped = Math.Clamp(value, 0, _draft.Length);
+            if (SetProperty(ref _caretIndex, clamped))
+            {
+                _mentions?.UpdateDraft(_draft, clamped);
+            }
+        }
+    }
+
+    /// <summary>Gets whether the mention picker is open.</summary>
+    public bool IsMentionPickerOpen => _mentions is { Picker.IsOpen: true };
+
+    /// <summary>
+    /// Handles a key while the mention picker is open. Down and Up move the highlight, Enter and Tab attach the highlighted item (they replace the typed token with the mention
+    /// and add a chip; they do not send), and Escape closes the picker. Enter with no row listed is not handled, so the draft is sent as written. Nothing is handled while the picker is closed.
+    /// </summary>
+    /// <param name="key">The key name as the browser reports it, for example <c>ArrowDown</c>, <c>Enter</c>, <c>Tab</c> or <c>Escape</c>.</param>
+    /// <returns><see langword="true"/> when the picker took the key, so the caller must not act on it again.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="key"/> is null.</exception>
+    public async Task<bool> HandleMentionPickerKeyAsync(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        if (_mentions is not { Picker.IsOpen: true } mentions)
+        {
+            return false;
+        }
+
+        var picker = mentions.Picker;
+        switch (key)
+        {
+            case "ArrowDown" when picker.Rows.Count > 0:
+                picker.MoveSelection(1);
+                return true;
+            case "ArrowUp" when picker.Rows.Count > 0:
+                picker.MoveSelection(-1);
+                return true;
+            case "Enter" or "Tab" when picker.SelectedRow is not null:
+                await AcceptMentionAsync().ConfigureAwait(true);
+                return true;
+            case "Escape":
+                picker.Dismiss();
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// Attaches the picker's highlighted item: the typed token in the draft becomes the mention's text, a chip is added and the caret moves after the text. A file that may hold secrets
+    /// is not attached the first time: the picker asks the user to confirm, and the next call attaches it. Nothing is changed when the user typed on while the item was being resolved.
+    /// </summary>
+    /// <returns><see langword="true"/> when the draft was changed.</returns>
+    public async Task<bool> AcceptMentionAsync()
+    {
+        if (_mentions is null)
+        {
+            return false;
+        }
+
+        var before = _draft;
+        var edit = await _mentions.AcceptSelectedAsync(before, CancellationToken.None).ConfigureAwait(true);
+        if (edit is null || !string.Equals(_draft, before, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        // The caret first: the draft change reports the draft and the caret to the picker, which must see the caret after the inserted text so it closes.
+        _caretIndex = Math.Clamp(edit.Caret, 0, edit.Draft.Length);
+        Draft = edit.Draft;
+        NotifyPropertyChanged(nameof(CaretIndex));
+        return true;
+    }
+
+    /// <summary>Removes an attached item: its chip goes, and so does its text in the draft.</summary>
+    /// <param name="chip">The chip to remove.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="chip"/> is null.</exception>
+    public void RemoveMention(MentionChip chip)
+    {
+        ArgumentNullException.ThrowIfNull(chip);
+
+        if (_mentions is null)
+        {
+            return;
+        }
+
+        var edit = _mentions.RemoveChip(chip, _draft);
+        _caretIndex = Math.Clamp(edit.Caret, 0, edit.Draft.Length);
+        Draft = edit.Draft;
+        NotifyPropertyChanged(nameof(CaretIndex));
+    }
+
+    private void OnMentionsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (string.Equals(e.PropertyName, nameof(MentionComposerModel.Budget), StringComparison.Ordinal))
+        {
+            _contextRing?.SetPending(_mentions?.Budget.EstimatedTokens ?? 0);
+        }
+    }
+
     /// <summary>Submits the draft unless it is blank, a send is already in flight, or a response is streaming.</summary>
     /// <returns>A task that completes when the host has answered the send.</returns>
     public async Task SendAsync()
@@ -207,13 +386,34 @@ public sealed class ComposerViewModel : ObservableModel
         _sending = true;
         try
         {
+            // The content of each attached item is read now, so a diff or a terminal is as fresh as the send.
+            IReadOnlyList<MentionAttachment> attachments = [];
+            if (_mentions is { HasChips: true } mentions)
+            {
+                var collected = await mentions.CollectAsync(CancellationToken.None).ConfigureAwait(true);
+                if (collected.Failures.Count > 0)
+                {
+                    // The unreadable items were dropped and named in the mentions' notice; the draft stays so the user can send again.
+                    return;
+                }
+
+                attachments = collected.Attachments;
+            }
+
             // Continue on the captured context: the code below writes Draft, which the UI binds to.
-            var accepted = await _onSend(text).ConfigureAwait(true);
+            var accepted = attachments.Count > 0 && _mentionSender is { } sender
+                ? await sender(text, attachments).ConfigureAwait(true)
+                : await _onSend(text).ConfigureAwait(true);
 
             // Clear only the message the host accepted. Text typed while the send was pending is not the sent text, so it stays.
             if (accepted && string.Equals(Draft, text, StringComparison.Ordinal))
             {
                 Draft = string.Empty;
+            }
+
+            if (accepted)
+            {
+                _mentions?.Clear();
             }
         }
         finally
@@ -227,29 +427,37 @@ public sealed class ComposerViewModel : ObservableModel
     public Task StopAsync() => _onStop();
 
     /// <summary>
-    /// Handles one key press in the draft. While the slash palette is open it takes the keys of <see cref="HandleSlashPaletteKey"/> first. Otherwise
-    /// Enter without Shift sends and Escape stops while a response streams. Shift+Enter and every other key are left to the text control.
+    /// Handles one key press in the draft. While the slash palette is open it takes the keys of <see cref="HandleSlashPaletteKey"/> first, then the mention picker takes the keys of
+    /// <see cref="HandleMentionPickerKeyAsync"/>. Otherwise Enter without Shift sends and Escape stops while a response streams. Shift+Enter and every other key are left to the text control.
     /// </summary>
     /// <param name="key">The key name as the browser reports it, for example <c>Enter</c> or <c>Escape</c>.</param>
     /// <param name="shift">Whether Shift was held when the key was pressed.</param>
     /// <returns>A task that completes when the resulting send or stop has been handled.</returns>
-    public Task HandleKeyAsync(string key, bool shift)
+    public async Task HandleKeyAsync(string key, bool shift)
     {
         if (!shift && HandleSlashPaletteKey(key))
         {
-            return Task.CompletedTask;
+            return;
+        }
+
+        if (!shift && await HandleMentionPickerKeyAsync(key).ConfigureAwait(true))
+        {
+            return;
         }
 
         if (string.Equals(key, "Escape", StringComparison.Ordinal))
         {
-            return IsStreaming ? StopAsync() : Task.CompletedTask;
+            if (IsStreaming)
+            {
+                await StopAsync().ConfigureAwait(true);
+            }
+
+            return;
         }
 
         if (string.Equals(key, "Enter", StringComparison.Ordinal) && !shift)
         {
-            return SendAsync();
+            await SendAsync().ConfigureAwait(true);
         }
-
-        return Task.CompletedTask;
     }
 }
