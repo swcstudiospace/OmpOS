@@ -59,6 +59,7 @@
     {"name": "vercel.app host of the OmpOS project", "owner": "rename the Vercel project first", "pattern": "(?i)(?<![A-Za-z0-9-])ompos-[A-Za-z0-9-]+\\.vercel\\.app"},
     {"name": "railway host of the ompos-web/ompos-api project", "owner": "rename the Railway service first", "pattern": "(?i)(?<![A-Za-z0-9-])ompos-(?:web|api)[A-Za-z0-9-]*\\.(?:up\\.railway\\.app|railway\\.app|railway\\.internal)"},
     {"name": "Vercel/Railway project or service name on a line that mentions Vercel or Railway", "owner": "rename the Vercel project / Railway service first", "pattern": "(?i)(?<![A-Za-z0-9_-])ompos-(?:web|api)(?![A-Za-z0-9_-])", "lineMustMatch": "(?i)vercel|railway"},
+    {"name": "Railway project, service and volume names of the staged worker (ompos-staging, ompos-worker, ompos-worker-data) on a line that mentions Railway", "owner": "rename the Railway project ompos-staging, the service ompos-worker and the volume ompos-worker-data first", "pattern": "(?i)(?<![A-Za-z0-9_-])ompos-(?:staging|worker-data|worker(?![A-Za-z0-9_-]))", "lineMustMatch": "(?i)railway"},
     {"name": "owned domain ompos.dev", "owner": "register the new domain first", "pattern": "(?i)(?<![A-Za-z0-9-])ompos\\.dev(?![A-Za-z0-9-])"}
   ],
 
