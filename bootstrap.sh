@@ -76,7 +76,11 @@ cleanup() {
 trap cleanup EXIT
 TEST_SERVICES_ENV="$(bash scripts/test-services.sh up)"
 source "$TEST_SERVICES_ENV"
-dotnet test OmpOS.Linux.slnf -c Release --no-build -- --filter-not-trait "Category=Live"
+# OMPOS_TEST_PARALLEL_MODULES caps how many test modules run at once (CI uses 2); unset leaves the runner's default. A shared or loaded host
+# sets it so the assemblies that drive a UI thread are not starved by the other modules.
+test_modules=()
+if [ -n "${OMPOS_TEST_PARALLEL_MODULES:-}" ]; then test_modules=(--max-parallel-test-modules "$OMPOS_TEST_PARALLEL_MODULES"); fi
+dotnet test OmpOS.Linux.slnf -c Release --no-build "${test_modules[@]+"${test_modules[@]}"}" -- --filter-not-trait "Category=Live"
 dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
 
 # Browser smoke with the axe-core gate (Phase 23 criterion 2). scripts/web-smoke/run-smoke.sh publishes the web head and the API,

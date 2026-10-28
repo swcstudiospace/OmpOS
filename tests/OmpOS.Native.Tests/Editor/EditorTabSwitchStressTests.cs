@@ -16,7 +16,10 @@ public sealed class EditorTabSwitchStressTests
     private const int QuickRounds = 60;
     private const int Rounds = 6;
     private const int Switches = 100;
-    private const int TimeoutMilliseconds = 120_000;
+    // The test makes progress on every switch, so a deadlock is the only reason for it to run this long. The limit is generous because the sequence is
+    // CPU bound and the suite runs beside other heavy processes: at a load average of 96 on 8 cores 120 seconds were not enough, and the cancelled run left
+    // its work on the shared UI thread, which made the next 190 tests of the assembly fail.
+    private const int TimeoutMilliseconds = 900_000;
 
     /// <summary>
     /// Switching between a long C# file and a file without a grammar, then closing both tabs, always completes and leaves the right text. Each switch back to
