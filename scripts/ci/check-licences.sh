@@ -3,7 +3,7 @@
 #   1. LICENSE is the canonical GNU AGPL v3 text (length and SHA-256), and LICENSES/AGPL-3.0-or-later.txt is identical;
 #   2. NOTICE exists and names the licence and the source URL;
 #   3. THIRD-PARTY-NOTICES.md is fresh (scripts/legal/generate-third-party-notices.py --check; needs the NuGet cache,
-#      so run it after bootstrap.sh or dotnet restore);
+#      so run it after bootstrap.sh or dotnet restore; packages of unrestored heads are reported, and fail only with OMPOS_RELEASE=1);
 #   4. every directory holding font files has an OFL.txt;
 #   5. plugins/gsd-core-omp/package.json declares license AGPL-3.0-or-later;
 #   6. README.md has a License section that names AGPL-3.0-or-later;
@@ -49,8 +49,19 @@ else
   grep -q 'THIRD-PARTY-NOTICES.md' NOTICE || fail "NOTICE does not point at THIRD-PARTY-NOTICES.md"
 fi
 
-# 3. Generated third-party notices
-if ! python3 scripts/legal/generate-third-party-notices.py --check; then
+# 3. Generated third-party notices. The generator reads the lock file of every head, including the heads this machine may not have restored
+#    (Android, browser, macOS): a package missing from the NuGet cache cannot be verified and the generator exits 2. A development or CI machine that
+#    restores only OmpOS.Linux.slnf says so and goes on, as long as that is the only problem; OMPOS_RELEASE=1 makes it a failure (restore OmpOS.slnx first).
+notices_status=0
+notices_output="$(python3 scripts/legal/generate-third-party-notices.py --check 2>&1)" || notices_status=$?
+if [[ "$notices_status" -eq 0 ]]; then
+  echo "$notices_output"
+elif [[ "$notices_status" -eq 2 && "${OMPOS_RELEASE:-}" != "1" ]] \
+  && ! grep -E '^  - ' <<<"$notices_output" | grep -qv 'not in the NuGet cache'; then
+  echo "warning: THIRD-PARTY-NOTICES.md was not verified: the NuGet cache lacks packages of heads this machine did not restore (OMPOS_RELEASE=1 makes this a failure)" >&2
+  echo "::warning::THIRD-PARTY-NOTICES.md was not verified (incomplete NuGet cache)"
+else
+  echo "$notices_output" >&2
   fail "THIRD-PARTY-NOTICES.md is stale or a licence is undetermined (see the message above)"
 fi
 

@@ -77,7 +77,7 @@ python3 scripts/legal/generate-third-party-notices.py --check  # exit 1 when it 
 bash scripts/ci/check-licences.sh                              # the whole licence gate
 ```
 
-The generator reads every `packages.lock.json` and the licence data of the restored packages from the local NuGet cache, so run `./bootstrap.sh` first. It never guesses: a package whose licence it cannot determine is listed and the run fails. Adding a package therefore needs a regenerated notices file in the same commit.
+The generator reads every `packages.lock.json` and the licence data of the restored packages from the local NuGet cache, so run `./bootstrap.sh` first. The lock files include the heads that `OmpOS.Linux.slnf` does not restore (Android, browser, macOS), so on a machine that restored only the Linux filter (a fresh clone, the CI runner) the generator exits 2 with `not in the NuGet cache` for those packages: `check-licences.sh` then prints a warning and does not verify the file, and fails only when `OMPOS_RELEASE=1` is set (restore `OmpOS.slnx` first). The complete check ran in the gate of 2026-10-28 on a machine with a full cache. It never guesses: a package whose licence it cannot determine is listed and the run fails. Adding a package therefore needs a regenerated notices file in the same commit.
 
 What the generator cannot confirm:
 
