@@ -5,6 +5,7 @@
 - Owner: ompos-maintainers
 - Deciders: ompos-maintainers
 - Scope: how an omp session runs in a Railway container for a cloud agent (requirement PX-17, milestone v0.15.0, Phase 60): the execution tiers, the run contract, the worker bridge protocol, authentication, isolation, the idle model, secrets and what is blocked. The research is [09-remote-cloud-plan.md](../plans/v0.15.0-research/09-remote-cloud-plan.md) (sections D, G, H, I, J). The control plane in the API (units U16 and U18 to U22) is the next wave and is not part of this record's implementation. Remote environments over ssh are a separate record.
+- Update 2026-10-28: a staged private worker was deployed to Railway from `deploy/worker.Containerfile` and exercised (health check, JWT gate, `initialize` and `session/new` through the bridge); the decision is unchanged and the record stays Accepted. See `docs/runbooks/evidence/railway-ompos-worker-2026-10-28.md`.
 - Defaults taken 2026-10-27, both non-blocking: OQ-97 (the worker bridges `omp acp` to a WebSocket with a bearer JWT of at most 15 minutes) and OQ-100 (private networking, no public domain for an unauthenticated API, no browser or desktop streaming).
 
 ## Context
@@ -17,8 +18,8 @@ omp has no session server: `omp acp` speaks ACP over stdio only (OQ-75, `omp://c
 
 | Tier | What runs omp | Built by this record | Live status |
 | --- | --- | --- | --- |
-| T0 in-API | omp child inside the API container (exists) | no change | blocked: Railway deploys paused, OD-03, HOST-04 |
-| T1 pooled workers | a few always-warm worker services, each with one volume; a session is a directory on that volume | yes: `StaticPoolEnvironmentClient` | blocked, same reasons; also the route for the first live run on one hand-made worker |
+| T0 in-API | omp child inside the API container (exists) | no change | blocked: OD-03, HOST-04 (the deploy refusal of 2026-10-21 did not recur on 2026-10-28) |
+| T1 pooled workers | a few always-warm worker services, each with one volume; a session is a directory on that volume | yes: `StaticPoolEnvironmentClient` | partly exercised 2026-10-28: one hand-made worker (one volume, private, JWT-gated) was deployed and handshaken on Railway (`docs/runbooks/evidence/railway-ompos-worker-2026-10-28.md`); the pool client itself and a live run through the API are blocked by OD-03 and HOST-04 |
 | T2 service per session | one Railway service plus one volume per session, Serverless on (owner decision 2026-10-22) | yes: `RailwayCloudEnvironmentClient` over the Railway GraphQL API, tested against recorded fixtures | blocked: no live schema capture, no deploy |
 | T3 Railway Sandbox | VM from a template, network ISOLATED, checkpoints | no | needs introspection of `sandboxCreate` (Q-SB-RAILWAY); `RailwaySwarmProvider` stays fail-closed |
 
@@ -95,10 +96,10 @@ The service for a session is named `ompos-agent-<sanitised session id>` (a short
 
 ## Blocked, and by what
 
-- Live deploy of API, workers or any Railway object: Railway deploys paused (hosting Known blocker 5) and the written Railway answers (OQ-73, K3).
+- Live deploy of the API, of a cloud agent a user can start, and every Railway object the control plane would create: OD-03 and the written Railway answers (OQ-73, K3). Railway refused deploys as paused on 2026-10-21 (hosting Known blocker 5); that did not recur on 2026-10-28, when one hand-made private worker was deployed and handshaken (no model turn, no clone, no sleep and wake; `docs/runbooks/evidence/railway-ompos-worker-2026-10-28.md`).
 - Public worker domain and any public API domain: OD-03 (identity provider).
 - Cloud runs with a model: HOST-04 and OQ-71 (credential strategy).
-- Browser or desktop streaming from a cloud agent: OQ-73, paused.
+- Browser or desktop streaming from a cloud agent: OQ-73, paused (the worker deployed on 2026-10-28 has none).
 - T3 Railway Sandbox: Q-SB-RAILWAY (`sandboxCreate` inputs).
 - Live GraphQL schema capture and the UNVERIFIED rows above: an API token and an introspection query run by the orchestrator.
 - Volume files over the Railway API: there is no file endpoint; `RailwayCloudEnvironmentClient` and `StaticPoolEnvironmentClient` throw `Unsupported` from `AppendVolumeFileAsync` and `ReadVolumeFileAsync`. The control plane keeps the transcript in its own store, or a worker endpoint is added (proposed OQ).

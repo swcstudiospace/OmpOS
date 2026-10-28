@@ -10,7 +10,7 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-The web head (`apps/OmpOS.Web`, Blazor WebAssembly) can run in three ways. The decision is [ADR-0017](../decisions/ADR-0017-web-head-demo-mode.md). The only public deployment is the static Demo (simulated engine, no backend, no secret): <https://ompos-web.vercel.app>. The API must stay private until sign-in (OD-03) exists ([hosting runbook](hosting.md)); nothing of OmpOS is deployed to Railway.
+The web head (`apps/OmpOS.Web`, Blazor WebAssembly) can run in three ways. The decision is [ADR-0017](../decisions/ADR-0017-web-head-demo-mode.md). The only public deployment is the static Demo (simulated engine, no backend, no secret): <https://ompos-web.vercel.app>. The API must stay private until sign-in (OD-03) exists ([hosting runbook](hosting.md)); the API is not deployed to Railway (a staged private worker is, see the [cloud agents runbook](cloud-agents.md)).
 
 ## 1. The real API and the web head, both on this machine
 

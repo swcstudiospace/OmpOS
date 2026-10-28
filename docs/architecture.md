@@ -14,16 +14,16 @@ This document records the layering every later phase must respect, and the sessi
 
 ## Overview
 
-![Architecture overview: three heads on one presentation layer; the desktop head runs the harness libraries that start omp or reach a remote omp over ssh; the web head calls the API, which runs sessions and talks to a cloud agent worker over a WebSocket; Railway is intended and not deployed.](assets/architecture-overview.svg)
+![Architecture overview: three heads on one presentation layer; the desktop head runs the harness libraries that start omp or reach a remote omp over ssh; the web head calls the API, which runs sessions and talks to a cloud agent worker over a WebSocket; Railway is intended, and only a staged private worker is deployed there.](assets/architecture-overview.svg)
 
-*Hand-drawn diagram. The Railway band is the intended topology: nothing is deployed.*
+*Hand-drawn diagram. The Railway band is the intended topology: the API is not deployed and only a staged private worker runs there (2026-10-28).*
 
 - **Heads** (`apps/`): the Avalonia desktop head, the Blazor WebAssembly web head and the Android head. A head owns windows, process lifetime and platform services, and nothing else.
 - **Presentation layer** (`src/OmpOS.Presentation`, `OmpOS.Native.Views`, `OmpOS.UI`): view models with no UI framework, drawn by Avalonia views on desktop and Android and by Razor components on the web. The web head also has a styled shell (top bar, agent rail, footer, theme switch) on White-and-Purple tokens, and a **Demo** build whose HTTP client is answered inside the browser ([ADR-0017](decisions/ADR-0017-web-head-demo-mode.md)).
 - **API** (`services/OmpOS.Api`): sessions, runs, server-sent events, tool approvals, the change review, steering, providers, workspace settings, the source offer, and the cloud agent control plane.
 - **Harness** (`src/OmpOS.Harness.*`): the libraries that talk to omp (ACP over stdio), plan a launch with the four plugins, run Cursor-compatible hooks through a loopback bridge and an omp extension, enforce run modes, read MCP configuration, keep file checkpoints and worktrees, resolve `@` mentions and ignore files, and reach a remote machine over your own `ssh`.
 - **omp**: the engine. OmpOS starts `omp acp` per chat session and an embedded omp terminal on request, always with Ultrathink, Substrate, Swarm and GSD-Core.
-- **Worker and Railway**: the cloud agent path (API, `OmpOS.AgentWorker`, PostgreSQL). Built and tested against fakes; no Railway deploy has happened.
+- **Worker and Railway**: the cloud agent path (API, `OmpOS.AgentWorker`, PostgreSQL). Built and tested against fakes; no Railway deploy of the API has happened. A staged private worker was deployed to Railway and exercised on 2026-10-28 ([evidence](runbooks/evidence/railway-ompos-worker-2026-10-28.md)).
 
 ### What is built where
 

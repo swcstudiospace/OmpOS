@@ -47,7 +47,7 @@ The research found no primary statement that settles the question. Whether Railw
 
 The live cloud-terminal run is not performed. Prerequisites that are not met:
 
-1. Railway deploys are paused. `docs/runbooks/hosting.md` (Known blocker 5) states that nothing has been deployed to Railway and that no Railway service or deploy exists while deploys are paused.
+1. Railway deploys are paused. `docs/runbooks/hosting.md` (Known blocker 5) states that nothing has been deployed to Railway and that no Railway service or deploy exists while deploys are paused. Update 2026-10-28: the pause did not recur that day and a staged private worker was deployed to Railway ([evidence](evidence/railway-ompos-worker-2026-10-28.md)); that worker has no remote desktop and no streaming, and the API is still not deployed (OD-03).
 2. The sign-in authority is not configured (`docs/runbooks/hosting.md`, Known blocker 1; the OD-03 decision).
 3. The cloud runtime needs v0.9.2 Phase 13, which is blocked on the same external prerequisites (ROADMAP).
 

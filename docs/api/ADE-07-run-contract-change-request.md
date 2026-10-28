@@ -137,7 +137,7 @@ Proposed on 2026-10-22, with no endpoint, schema, test or code implemented by th
 
 ## 9. Implementation note (2026-10-26)
 
-The run resource exists in `services/OmpOS.Api` (`Endpoints/RunEndpoints.cs`) and in `docs/api/openapi.json`, with contract types in `src/OmpOS.Contracts/Runs`. The API is not deployed (Railway deploys are paused, OQ-70), so no public run endpoint exists and OD-03 is not yet needed. Tests: `CloudRunTests`, `CloudRunOwnerScopeTests`, `CloudRunOpenApiTests`, `RunContractJsonTests`.
+The run resource exists in `services/OmpOS.Api` (`Endpoints/RunEndpoints.cs`) and in `docs/api/openapi.json`, with contract types in `src/OmpOS.Contracts/Runs`. The API is not deployed (Railway refused deploys as paused on 2026-10-21 and the refusal did not recur on 2026-10-28, but the API still waits for an identity provider, OD-03; OQ-70), so no public run endpoint exists and OD-03 is not yet needed. Tests: `CloudRunTests`, `CloudRunOwnerScopeTests`, `CloudRunOpenApiTests`, `RunContractJsonTests`.
 
 Differences from this request:
 

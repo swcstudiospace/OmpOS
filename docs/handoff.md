@@ -199,7 +199,7 @@ Accessibility run section):
 
 ## Temporal removal and Railway topology (2026-10-21)
 
-Decision recorded by the orchestrator on 2026-10-21. The worker removal is recorded as resolved in Q-SB-WORKER-COMPOSE. The compose file was not re-checked against this text in this pass, and the deployment does not match it: nothing is deployed to Railway (docs/runbooks/hosting.md). Nothing here was deployed or executed.
+Decision recorded by the orchestrator on 2026-10-21. The worker removal is recorded as resolved in Q-SB-WORKER-COMPOSE. The compose file was not re-checked against this text in this pass, and the deployment does not match it: nothing was deployed to Railway on 2026-10-21 (docs/runbooks/hosting.md). Update 2026-10-28: a staged private agent worker was later deployed to Railway in a separate project (`docs/runbooks/evidence/railway-ompos-worker-2026-10-28.md`); the API is still not deployed. Nothing here was deployed or executed.
 
 ### Decisions
 
@@ -211,7 +211,7 @@ Decision recorded by the orchestrator on 2026-10-21. The worker removal is recor
 6. **Run ownership.** Admission acquires the run lease (TTL 30 s, renewed every 10 s). Admission is synchronous: a conflict returns 409 before any 202. A reaper every 15 s settles a Running session older than 60 s whose lease is absent, with detail `run owner lost`. A lost lease settles the run with detail `run lease lost`. Terminal failure detail is persisted in the terminal event text.
 7. **Idempotency.** Optional `Idempotency-Key` on prompt submission. Completed records last 24 h; a pending claim lasts 60 s. Replay returns the stored 202 body. A different body under the same key returns 409 `/problems/idempotency-key-reused`. A concurrent claim returns 409 `/problems/idempotency-in-progress`.
 8. **Signals.** Published after commit and best-effort: failures are logged and swallowed. Polling (about 200 ms) remains the source of truth for SSE.
-9. **Hosted runtime limits.** The hosted API is configured for the ACP harness (`Harness:Adapter=Acp`), and Production refuses the in-memory adapter at startup. No deployed image contains omp, no sandbox provider is wired to the hosted path, and no model credential is deployed. HOST-04 stays open.
+9. **Hosted runtime limits.** The hosted API is configured for the ACP harness (`Harness:Adapter=Acp`), and Production refuses the in-memory adapter at startup. No deployed API image contains omp (update 2026-10-28: the staged worker image on Railway does contain omp 18.12.5), no sandbox provider is wired to the hosted path, and no model credential is deployed. HOST-04 stays open.
 10. **Vercel.** Hosts the Blazor WebAssembly web head unchanged. The CSP mechanism is decided and implemented (Q-VERCEL-CSP, `vercel.ts`); the deployed check waits for the production origin.
 
 ### Supersessions

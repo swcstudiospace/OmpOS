@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" width="960" height="560" role="img" aria-labelledby="t d" font-family="'DM Sans', 'Segoe UI', Arial, sans-serif" font-size="14">
   <title id="t">OmpOS architecture overview</title>
-  <desc id="d">Three heads (desktop, web, Android) sit on one presentation layer. The desktop head runs the harness libraries in its own process, which start omp and its four plugins, or reach omp on a remote machine over ssh. The web head talks to the ASP.NET Core API over HTTPS and server-sent events. The API runs sessions through the same harness libraries and, for cloud agents, reaches an agent worker over a WebSocket; the API, the worker and the PostgreSQL session log are intended to run on Railway, which is not deployed yet.</desc>
+  <desc id="d">Three heads (desktop, web, Android) sit on one presentation layer. The desktop head runs the harness libraries in its own process, which start omp and its four plugins, or reach omp on a remote machine over ssh. The web head talks to the ASP.NET Core API over HTTPS and server-sent events. The API runs sessions through the same harness libraries and, for cloud agents, reaches an agent worker over a WebSocket; the API, the worker and the PostgreSQL session log are intended to run on Railway, where only a staged private worker is deployed so far.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#5b21b6"/>
@@ -8,9 +8,9 @@
   </defs>
   <rect x="0" y="0" width="960" height="560" fill="#ffffff"/>
 
-  <!-- Railway band (intended topology, not deployed) -->
+  <!-- Railway band (intended topology; only a staged private worker is deployed) -->
   <rect x="500" y="228" width="440" height="296" rx="12" fill="#faf5ff" stroke="#6d28d9" stroke-width="1.5" stroke-dasharray="6 5"/>
-  <text x="516" y="514" fill="#5b21b6" font-weight="600">Railway (intended; nothing is deployed yet)</text>
+  <text x="516" y="514" fill="#5b21b6" font-weight="600">Railway (intended; only a staged worker runs)</text>
 
   <!-- Heads -->
   <g fill="#ffffff" stroke="#6d28d9" stroke-width="1.5">

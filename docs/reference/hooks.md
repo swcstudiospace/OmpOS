@@ -247,7 +247,7 @@ Cursor's cloud agents run 14 of the 21 events. The OmpOS cloud worker (`services
 - **The claim is not minted yet.** `services/OmpOS.Api` does not mint `ompos_hooks_consent` (the only minter is the test helper `HooksTokenMinter`), so a real cloud session has no snapshot: no project hook runs and the session reports `untrusted`.
 - **The worker has no clone bootstrap yet,** so without a checkout the state is `none`.
 - **Failure policy.** If the extension is missing and a hook is `failClosed`, the connection is refused (503); otherwise the session runs without hooks and reports `unavailable`. Every run reaches the client as an `_ompos/hook` notification.
-- **Proof.** `CloudHooksWorkerTests` (9 loopback tests with a fake omp: a denying project hook stops a tool call; no snapshot means `untrusted`; an invalid snapshot runs nothing; a hook the snapshot does not cover denies; off by default; a fail-closed hook without the extension refuses the connection), `CloudHookFilterTests` and `HooksConsentSnapshotReaderTests`. No real omp and no deployed worker ran them; nothing of OmpOS is deployed on Railway.
+- **Proof.** `CloudHooksWorkerTests` (9 loopback tests with a fake omp: a denying project hook stops a tool call; no snapshot means `untrusted`; an invalid snapshot runs nothing; a hook the snapshot does not cover denies; off by default; a fail-closed hook without the extension refuses the connection), `CloudHookFilterTests` and `HooksConsentSnapshotReaderTests`. No real omp and no deployed worker ran them; the staged private worker on Railway (2026-10-28) ran no hook.
 
 The design is in the [ADR-0020 addendum](../decisions/addendum-ADR-0020-hooks.md).
 

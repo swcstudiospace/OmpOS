@@ -4,19 +4,19 @@ description: "Cloud agents on Railway: what runs where, the control plane API, s
 
 # Cloud agents: user and operator guide
 
-Status: Partial (control plane, worker bridge, Railway client, desktop Cloud host and page, and worker hooks are built, wired and tested against fakes on Linux; the worker has no clone bootstrap; the control plane does not mint the hooks consent claim; nothing of OmpOS is deployed on Railway and no live run has happened)
+Status: Partial (control plane, worker bridge, Railway client, desktop Cloud host and page, and worker hooks are built, wired and tested against fakes on Linux; the worker has no clone bootstrap; the control plane does not mint the hooks consent claim; the API is not deployed on Railway and no live cloud run has happened; a staged private worker was deployed and handshaken on Railway on 2026-10-28)
 
 Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-Details (recorded 2026-10-28, tree 7535859). **No live run on Railway has happened**: nothing of OmpOS is deployed on Railway, the identity provider is not chosen and no model credential is configured (see "What is verified and what is blocked"). Design record: [ADR-0020](../decisions/ADR-0020-cloud-agents-on-railway.md). Research: [09-remote-cloud-plan.md](../plans/v0.15.0-research/09-remote-cloud-plan.md).
+Details (recorded 2026-10-28, tree 7535859). **No live cloud run on Railway has happened**: the API is not deployed (a staged private worker is, see "Staged worker on Railway" below), the identity provider is not chosen and no model credential is configured (see "What is verified and what is blocked"). Design record: [ADR-0020](../decisions/ADR-0020-cloud-agents-on-railway.md). Research: [09-remote-cloud-plan.md](../plans/v0.15.0-research/09-remote-cloud-plan.md).
 
 **Status of this release.**
 
 - **Built, wired, proven against fakes.** *API:* `AddCloudAgentServices` and `MapCloudAgentEndpoints` are called in `services/OmpOS.Api/Program.cs`, the routes are in `docs/api/openapi.json` (11 `/cloud` paths), and `OmpOS.Api.IntegrationTests` (`Cloud/`: `CloudAgentLifecycleTests`, `CloudAgentAccessTests`, `CloudSecretTests`, `CloudPullRequestTests`, `CloudOrphanTests`, `CloudDisabledTests` and more, over `FakeCloudWorker` and `FakeGitHubHandler`) passed 1027 of 1027 on the final tree. *Worker:* `services/OmpOS.AgentWorker` bridges `omp acp` to a WebSocket (`OmpOS.AgentWorker.Tests`: `AcpBridgeProtocolTests`, `WorkerAuthenticationTests`, `OmpProcessLifecycleTests`, `WorkerEntrypointScriptTests`, `WorkerSecretHandlingTests`, with a fake omp). *Desktop:* `HeadServices` creates `ApiCloudAgentsHost` only when `OMPOS_API_BASE_URL` is a valid http or https address (the token comes only from `OMPOS_API_TOKEN`); Settings > Cloud, the rail rows and the `/in-cloud` hand-off use it; tests: `ApiCloudAgentsHostTests` (a scripted HTTP handler, no real API), `CloudAgentsPageViewTests`, `NewCloudAgentViewTests`, `CloudHandoffViewTests`, `HeadServicesWiringTests` (the host is null without the address).
 - **Built, not wired.** The worker has no clone bootstrap: it does not check out the repositories, run `OMPOS_ENVIRONMENT` or enforce `OMPOS_PROTECTED_BRANCHES`, so a live agent has no repository on disk. Hooks in the worker (`Worker:Hooks`, see [Hooks](../reference/hooks.md#hooks-in-cloud-workers)) read their consent from the `ompos_hooks_consent` claim of the worker token, and the control plane does not mint that claim: a cloud session reports `untrusted` and runs no project hook (`CloudHooksWorkerTests` prove the worker side with a test-minted token). Cloud automations start these agents only when `Automations:Enabled` and `Cloud:Enabled` are both on (see [Automations](../reference/automations.md)).
-- **Not live-verified.** No Railway deploy, create, sleep, wake or delete; the worker image itself was built and run under podman and checked with `scripts/cloud/worker-live-check.mjs` (probes, the JWT gate, a real omp 18.12.5 answering `initialize` and `session/new` through the bridge, 14 of 14 checks; [evidence](evidence/cloud-worker-container-2026-10-28/README.md)), but no worker runs on Railway; no live GitHub; no model turn (open question OD-07). Nothing ran on Windows, macOS or Android.
+- **Not live-verified.** No Railway create, sleep, wake or delete through the control plane, and no API on Railway; the worker image itself was built and run under podman and checked with `scripts/cloud/worker-live-check.mjs` (probes, the JWT gate, a real omp 18.12.5 answering `initialize` and `session/new` through the bridge, 14 of 14 checks; [evidence](evidence/cloud-worker-container-2026-10-28/README.md)), a staged private worker was later deployed to Railway and handshaken (`initialize` and `session/new` through the bridge, no model turn; see "Staged worker on Railway" below); no live GitHub; no model turn (open question OD-07). Nothing ran on Windows, macOS or Android.
 
 ## What runs where
 
@@ -85,9 +85,28 @@ Status values: `provisioning`, `starting`, `running`, `idle`, `stopping`, `stopp
 | Lifecycle, caps, idempotency, ownership, idle sweep, orphan handling, secret canaries, pull requests, token minting and expiry, environment file | Written and tested against `FakeCloudEnvironmentClient`, an in-process fake worker and a fake GitHub. Ran on the final tree: `OmpOS.Api.IntegrationTests` 1027 of 1027, recorded 2026-10-28. |
 | Postgres store | `OmpOS.Sessions.Postgres.Tests` 58 passed against a throwaway podman PostgreSQL on the final tree, recorded 2026-10-28. |
 | Worker-side checkout, install, start, git credential helper and push guard | **Not built.** The worker bridge only runs `omp acp`; it does not clone, run `OMPOS_ENVIRONMENT`, or enforce `OMPOS_PROTECTED_BRANCHES`. Until it does, a live agent has no repository on disk. |
-| Live Railway (create, sleep, wake, delete) | Blocked: nothing of OmpOS is deployed on Railway, GraphQL operations unverified (ADR-0020 D8), a Railway API token is needed. |
+| Live Railway (create, sleep, wake, delete) | Blocked: the API is not deployed on Railway, GraphQL operations unverified (ADR-0020 D8), a Railway API token is needed. A staged private worker was deployed and handshaken on 2026-10-28 (see "Staged worker on Railway" below); no create, sleep, wake or delete went through the control plane. |
 | Listing Railway workers (orphan workers without a record) | Not possible: the client has no list operation. |
 | Public exposure | Blocked by OD-03 (identity provider). |
 | Model credential in workers | Blocked by HOST-04 and OQ-71. |
 | GitLab, Bitbucket, Azure DevOps | Not supported (gap against Cursor). |
 | Commit-message redaction of a secret the agent typed into a commit | Not possible from the control plane; needs a worker-side `commit-msg` hook. |
+
+## Staged worker on Railway (2026-10-28)
+
+After the v0.15.0 release a staged agent worker was deployed to Railway and exercised: the project `ompos-staging` (environment `staging`, service `ompos-worker`, volume `ompos-worker-data` at `/data`), private (no domain, no TCP proxy), built by Railway from the released tree with `deploy/worker.Containerfile`. The record, with object ids, the steps and the teardown steps, is [evidence/railway-ompos-worker-2026-10-28.md](evidence/railway-ompos-worker-2026-10-28.md). The refusal of 2026-10-21 (`Deploys have been paused temporarily`) did not recur that day; this does not say that Railway deploys are unrestricted. The service stays up and is billed at Railway usage rates; whether to keep it is OQ-171.
+
+What it proves:
+
+- The worker image builds on Railway's builder from the repository with the committed Containerfile and lockfiles; the entrypoint copes with a root-owned Railway volume and binds `[::]:$PORT`; Railway's health check accepts `/healthz`; the JWT gate and the omp bridge work on Railway's runtime as they did under podman ([evidence](evidence/cloud-worker-container-2026-10-28/README.md)).
+
+What it does not prove:
+
+- The control plane on Railway (the API is not deployed: production mode needs an identity provider, OD-03, and the substrate databases of the `Ultrathink` project were not touched).
+- That the control plane mints tokens the worker accepts (a script played that role).
+- A prompt turn (no model credential, OD-07).
+- A git checkout, branch or pull request from the worker (the worker bootstrap is not built).
+- Hooks in the worker.
+- Sleep and wake of the service (serverless mode is off).
+- The private network between two services (there is one service).
+- Any remote desktop or browser streaming (OQ-73 is untouched: the worker has none).

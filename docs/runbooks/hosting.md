@@ -4,7 +4,7 @@ description: "Hosting runbook for the OmpOS API on Railway: topology, limits and
 
 # Hosting runbook (HOST-01)
 
-Status: Blocked (nothing is deployed; Railway deploys and the production API origin are owner decisions)
+Status: Blocked (the API is not deployed; the production API origin and the sign-in authority are owner decisions; a staged private worker was deployed on 2026-10-28)
 
 Last verified: 2026-10-28
 
@@ -12,14 +12,14 @@ Applies to: v0.15.0
 
 ## Status
 
-Nothing is deployed by this runbook. The `ompos-api` service does not exist yet. This document and `deploy/api.Containerfile` are the hosting definition only.
+Nothing is deployed by this runbook. The `ompos-api` service does not exist yet; the only OmpOS object on Railway is a staged private worker (section "Staged worker on Railway (2026-10-28)" below). This document and `deploy/api.Containerfile` are the hosting definition only.
 
 The topology below is the owner decision of 2026-10-21 ([decision text](../handoff.md#temporal-removal-and-railway-topology-2026-10-21)). Services marked "existing" are described from that decision. They were not re-inspected in this rewrite [INFERENCE: state at deploy time].
 
 Hosted runtime limits:
 
 - The hosted API is configured for the ACP harness (`Harness__Adapter=Acp`). Production refuses the InMemory adapter at startup.
-- No real omp runtime, sandbox provider, or model credential is deployed.
+- No real omp runtime, sandbox provider, or model credential is deployed for the API. The staged worker of 2026-10-28 carries omp 18.12.5 and no model credential.
 - HOST-04 stays open.
 
 ## Topology
@@ -37,7 +37,7 @@ Railway project `Ultrathink`, environment `production`. All service-to-service t
 
 Not services:
 
-- **Worker.** None. The Temporal worker project was removed on 2026-10-21, and `deploy/` no longer contains a worker image.
+- **Worker.** No Temporal worker. The staged agent worker of 2026-10-28 is a different thing (see "Staged worker on Railway (2026-10-28)" below). The Temporal worker project was removed on 2026-10-21, and `deploy/` no longer contains a Temporal worker image (`deploy/worker.Containerfile` is the agent worker image).
 - **Web.** Vercel hosts the Blazor WebAssembly web head outside Railway. Its configuration is `vercel.ts`; the CSP `connect-src` is generated at build time from `OMPOS_API_ORIGIN` by `scripts/vercel/render-csp.sh`. The **Demo** build is deployed (recorded 2026-10-28) at <https://ompos-web.vercel.app>, the production alias of project `ompos-web` in team `swcstudiospace`: static, simulated engine, no backend and no secret, so it needs no API origin (see [Web head runbook](web-demo.md)). The Vercel origin for a real web head and the production API origin are still open items (Q-VERCEL-CSP). Nothing of OmpOS is deployed to Railway: its project "Ultrathink" holds TimescaleDB, Dragonfly, GreptimeDB and two tailscale services only.
 
 ## Network and ports
@@ -163,12 +163,12 @@ Decided, not open: worker placement is none.
 2. The hosted API is configured for the ACP harness (`Harness__Adapter=Acp`); Production refuses the in-memory adapter at startup. The API image now contains an omp runtime, installed as `/usr/local/bin/omp`: Bun `1.4.3` (`bun-linux-x64.zip`, SHA-256 `3e730528d89775f03f87f05c06787c4df4099d0a37f3f252e7b829cb23816e18`, from the release's `SHASUMS256.txt`) and `@oh-my-pi/pi-coding-agent` `18.12.5` (npm integrity `sha512-MZxW8b5bM2OMwRQzz5j0JQp6nsCXS0gHmwxSpbotWcNt6dpi1Sr1nMABjseHkPk3sFEXdGpSGJgfHmROxSASJA==`, checked before extraction). The omp package ships no lockfile, so its transitive dependencies are not frozen; `bun install` resolves them at image build time. Image build and `omp --version` as uid 10001 were verified locally on 2026-10-21 (see Verification); the deployed image is not verified. No model credential is deployed, and no sandbox provider is wired to the hosted path. HOST-04 criterion 2 still needs a deploy, OD-03, and a model credential.
 3. Private-path reachability of GreptimeDB and Dragonfly is unverified (Q-HOST-PRIVNET).
 4. The Dragonfly image is unpinned (Q-HOST-DFLY-PIN).
-5. Nothing has been deployed to Railway. The production image builds with podman locally (verified), but no Railway service or deploy exists while deploys are paused.
+5. The API has not been deployed to Railway. The production image builds with podman locally (verified), and no `ompos-api` service exists. On 2026-10-21 Railway refused deploys as paused (`docs/runbooks/evidence/railway-ompos-api-2026-10-21.md`); that refusal did not recur on 2026-10-28, when a staged private worker was deployed in a separate project (section "Staged worker on Railway (2026-10-28)" below). The API stays blocked by item 1 (OD-03).
 6. The local compose stack does not match hosted TLS or extensions (Q-LOCAL-PARITY).
 
 ## Deploy checklist (Phase 12, OD-03 gated)
 
-Status on 2026-10-21: nothing is deployed. Railway refuses deploys for this account while they are paused, so no item below has been observed on a deployed URL. Each item states how it was verified.
+Status on 2026-10-21: nothing is deployed. Railway refuses deploys for this account while they are paused, so no item below has been observed on a deployed URL. Update 2026-10-28: the refusal did not recur and a staged private worker was deployed (section "Staged worker on Railway (2026-10-28)" below); the API is still not deployed, so no item below has been observed on a deployed API URL. Each item states how it was verified.
 
 1. **Build settings.** Set them on the service, not in a committed file: builder Dockerfile, Dockerfile path `deploy/api.Containerfile`, healthcheck path `/health/ready`. Verified: the image builds with podman (`ompos-api:local`, 244 MB, runs as uid 10001, honors `PORT`). Railway config-as-code is not used. Its own docs say it is deprecated and that new services cannot opt in (https://docs.railway.com/config-as-code, hard cutoff 2026-12-01), so no `railway.json` is committed.
 2. **Variables.** Set them in the Railway service, never committed: `Api__Auth__Authority` (https), `Api__Auth__Audience`, `Harness__Adapter=Acp`, `Sessions__Store=Postgres` with `Sessions__Postgres__ConnectionString`, `Coordination__Store=Dragonfly` with `Coordination__Dragonfly__ConnectionString`, `Api__Cors__Origins__0` (the web origin), and the OTLP variables. The API refuses to start when a required value is missing, and `.env.example` documents each key.
@@ -178,3 +178,22 @@ Status on 2026-10-21: nothing is deployed. Railway refuses deploys for this acco
 4. **Sign-in gate.** `GET https://<api-host>/sessions` without a token returns 401. `/health/live` and `/health/ready` answer without a token.
 5. **Public exposure.** No public domain is generated for `ompos-api` until `Api__Auth__Authority` and `Api__Auth__Audience` are set (OD-03, HOST-02). Generate the domain only after items 2 and 4 pass.
 6. **Not verified until a deploy exists:** `/health/live` and `/health/ready` on the deployed URL (Phase 12 criterion 2), the hosted real omp run (Phase 13 criterion 2), and the Vercel origin (Phase 14 criteria 2 and 3).
+
+## Staged worker on Railway (2026-10-28)
+
+After the v0.15.0 release a staged agent worker was deployed to Railway and exercised: the project `ompos-staging` (environment `staging`, service `ompos-worker`, volume `ompos-worker-data` at `/data`), private (no domain, no TCP proxy), built by Railway from the released tree with `deploy/worker.Containerfile`. The record, with object ids, the steps and the teardown steps, is [evidence/railway-ompos-worker-2026-10-28.md](evidence/railway-ompos-worker-2026-10-28.md). The refusal of 2026-10-21 (`Deploys have been paused temporarily`) did not recur that day; this does not say that Railway deploys are unrestricted. The service stays up and is billed at Railway usage rates; whether to keep it is OQ-171. It is not the `ompos-api` service of this runbook and it sits in a separate project from `Ultrathink`.
+
+What it proves:
+
+- The worker image builds on Railway's builder from the repository with the committed Containerfile and lockfiles; the entrypoint copes with a root-owned Railway volume and binds `[::]:$PORT`; Railway's health check accepts `/healthz`; the JWT gate and the omp bridge work on Railway's runtime as they did under podman ([evidence](evidence/cloud-worker-container-2026-10-28/README.md)).
+
+What it does not prove:
+
+- The control plane on Railway (the API is not deployed: production mode needs an identity provider, OD-03, and the substrate databases of the `Ultrathink` project were not touched).
+- That the control plane mints tokens the worker accepts (a script played that role).
+- A prompt turn (no model credential, OD-07).
+- A git checkout, branch or pull request from the worker (the worker bootstrap is not built).
+- Hooks in the worker.
+- Sleep and wake of the service (serverless mode is off).
+- The private network between two services (there is one service).
+- Any remote desktop or browser streaming (OQ-73 is untouched: the worker has none).

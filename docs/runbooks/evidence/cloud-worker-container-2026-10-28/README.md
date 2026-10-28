@@ -30,3 +30,5 @@
 
 - Proves: the image builds with the pinned Bun and omp, the entrypoint drops privileges and the program listens on `[::]:$PORT`, the JWT gate rejects the five bad-token cases before any upgrade, the bridge carries ACP frames both ways to a real omp, and one session has one attached connection.
 - Does not prove: a prompt turn (needs a model credential, OD-07); a Railway deploy (nothing of OmpOS is deployed; OQ-73 and OQ-100 stay open); a control plane that mints the tokens (the script plays that role); a git checkout, a branch or a pull request from the worker (the worker bootstrap is not built, see the cloud agents reference); hooks in the worker (covered by unit tests with fakes); sleep and wake on Railway.
+
+Update 2026-10-28, later the same day: the statements above ("nothing was deployed to Railway", "nothing of OmpOS is deployed", "sleep and wake on Railway") describe the time of this run. The same image was afterwards built by Railway and run as a staged private worker, health-checked and handshaken (`../railway-ompos-worker-2026-10-28.md`); the API is still not deployed and no sleep and wake test was made.
