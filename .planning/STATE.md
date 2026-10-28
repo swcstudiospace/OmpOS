@@ -1,16 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.14.0
-milestone_name: Agent loop and Agent Panel
+milestone: v0.15.0
+milestone_name: Cursor completeness, brand and public launch
 status: partial
-last_updated: "2026-10-27"
-last_activity: 2026-10-27
+last_updated: "2026-10-28"
+last_activity: 2026-10-28
 progress:
-  total_phases: 7
-  completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
-  percent: 43
+  total_phases: 15
+  completed_phases: 2
+  total_plans: 15
+  completed_plans: 15
+  percent: 13
 ---
 
 # Project State
@@ -20,14 +20,66 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-21)
 
 **Core value:** A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
-**Current focus:** Milestone v0.14.0, Agent loop and Agent Panel, audited at commit `d75fd88` on 2026-10-27. The Agent Panel, the Kanban tab, omp terminals with the four plugins, live steering, the Settings window with model providers and the Cursor-style visual parity are built and verified without a model turn. The Cursor parity audit is `docs/quality/cursor-parity-audit-2026-10-26.md`; what is not done is listed in its section 4 and below.
+**Current focus:** Milestone v0.15.0, Cursor completeness, brand and public launch (Phases 51 to 65), built in the tree at commit `7535859` on 2026-10-28; the release is pending (gate log, push, tag, GitHub Release). Two phases are complete (53, 58), thirteen are Partial and none is claimed that needs a live model turn, Windows, macOS, Android, a Railway deploy, the sign-in authority or a GitBook publish. The previous focus, v0.14.0 (audited at `d75fd88` on 2026-10-27), is in the section "Final position 2026-10-27". The audit of the final tree is `docs/quality/cursor-parity-audit-2026-10-28.md` (it covers `fbd5266`, before the Wave 3 wiring); the records are `.planning/phases/51-*` to `65-*`.
 
 ## Current Position
 
-Phase: v0.14.0 (Phases 44 to 50): Phases 45, 48 and 50 complete; Phases 44, 46 and 49 partial; Phase 47 deferred. The earlier phases: 20, 21, 25 and 25.1 to 25.9 complete; 22 deferred by the owner; 23 and 24 partial; 26 to 33, 35, 37 to 43 partial or deferred as the audit records (Phase 36 complete as recorded). v0.9.2 Phases 6, 12, 13, 14 remain blocked on external criteria and OD-03.
-Plan: the records of Phases 25.9, 35 and 44 to 50 are written (`.planning/phases/`). Phase 34 is blocked (OD-06, OQ-75).
-Status: the code is committed through `d75fd88`. Nothing is waiting on a decision to continue; the open owner items are in the section "Final position 2026-10-27" below. The sections after it are logs of earlier runs and are kept as history where they conflict.
-Last activity: 2026-10-27 - the Cursor parity audit of the final tree, the Phase 50, 35 and 25.9 records, and the correction of the records the audit found stale (README, ROADMAP, REQUIREMENTS, STATE, the Phase 36, 40, 44, 46, 48 and 49 records, `docs/runbooks/cloud-terminals.md`).
+Phase: v0.15.0 (Phases 51 to 65): Phases 53 and 58 complete (58 with caveats); Phases 51, 52, 54 to 57, 59 to 65 partial, Phase 60 criterion 4 blocked (nothing deployed on Railway). v0.14.0 (Phases 44 to 50): Phases 45, 48 and 50 complete; Phases 44, 46 and 49 partial; Phase 47 deferred (the web head Agent Panel surfaces were built under Phases 53 and 54). Phase 34 is superseded in part by Phase 58 (OD-06 and OQ-75 answered by design). The earlier phases: 20, 21, 25 and 25.1 to 25.9 complete; 22 deferred by the owner; 23 and 24 partial; 26 to 33, 35, 37 to 43 partial or deferred as the audit records. v0.9.2 Phases 6, 12, 13, 14 remain blocked on external criteria and OD-03.
+Plan: the records of Phases 51 to 65 are written (`NN-01-PLAN.md`, `NN-SUMMARY.md`, `NN-VERIFICATION.md` in `.planning/phases/`); the final report with the verified and owner items is `65-SUMMARY.md`.
+Status: the code is committed through `7535859`. The full `./bootstrap.sh` gate on that commit is recorded by the orchestrator in `docs/runbooks/evidence/bootstrap-gate-2026-10-28-*.log`; these records do not claim it. Nothing is waiting on a decision to continue; the open owner items are in the section "Final position 2026-10-28" below. The sections after it are logs of earlier runs and are kept as history where they conflict.
+Last activity: 2026-10-28 - the phase records of 51 to 65, the ROADMAP and REQUIREMENTS audit lines, the open-question rows OQ-105 to OQ-167, the skip-marker rows SUP-165 to SUP-236 and the updates of OQ-62, OQ-75, OQ-84, Q-HARN-WS and OQ-99 to OQ-101.
+
+## Final position 2026-10-28
+
+Tree: commit `7535859` (the integrated final tree of milestone v0.15.0). Records: `.planning/phases/51-brand-theme-and-licence/` to `65-integration-and-release-v0150/`. Audit: `docs/quality/cursor-parity-audit-2026-10-28.md` (494 rows in 18 families; settings 50 rows, slash 92 rows, shortcuts 55 rows). The audit describes tree `fbd5266` and says the rows wired after it need re-verification; that was not done, so its PARTIAL rows for wired features are stale. The README and `docs/runbooks/web-demo.md`, `remote-ssh.md`, `multi-repo.md` and `cloud-agents.md` describe how to run the new parts.
+
+Built (each with its test classes and evidence in the phase record):
+- Brand and licence (51): the Light default theme in the desktop, Android and web heads with Dark and System persisted; the brand set under `assets/brand/` built by `scripts/brand/build-brand.sh`; `LICENSE` (AGPL-3.0-or-later), `NOTICE`, `THIRD-PARTY-NOTICES.md`, `REUSE.toml`; `GET /source` and the desktop About.
+- Repository (52): community files, issue forms, `dependabot.yml`, `release.yml`, `CHANGELOG.md` (0.15.0 to 0.9.1, one version in `Directory.Build.props`); the GitHub settings applied 2026-10-28 with `scripts/github/apply-repo-settings.sh`.
+- Web head (53 to 55): the White and Purple shell with self-hosted fonts, the API surface the screens need (in `docs/api/openapi.json`), the thread, composer, approvals, Changes bar, Kanban, terminal view and an 18-page Settings dialog, and the labelled Demo build with a simulated engine, hosted at https://ompos-web.vercel.app.
+- Slash commands and conventions (56): 92 Cursor tokens plus `/update-settings` with handler kinds, `/skill-name`, custom commands, `/subagent-name` and `&`; discovery over `.ompos`, `.omp`, `.cursor`, `.claude`, `.codex` and `.agents` in desktop and (wired, untested at the seam) remote sessions; built-in skills.
+- Hooks (57): the 21-event catalogue, loaders, dispatcher, consent v2, the omp extension `plugins/ompos-hooks-omp`, the ACP tap, `HooksService`, the Hooks page and the run log in the desktop head.
+- Remote (58): ssh stdio sessions, preflight, reconnect with `session/load`, remote files, conventions and terminal, the environment picker; podman containers and WSL as an addendum.
+- Multi-repo (59): workspace sets, validator, store, `.code-workspace` round trip, `--add-dir` launch (probed), `WorktreeRunSet`, the desktop picker.
+- Cloud (60): the worker bridge (`OmpOS.AgentWorker`, `AcpWebSocketTransport`), the control plane with caps, idle sweeper, redaction and a Postgres store, the Railway client over recorded fixtures, the desktop Cloud agents page.
+- Settings and providers (61, 62): `docs/settings-parity.md` (50 rows: 6 Built, 2 Wired, 20 Partial, 22 Omitted), the new Settings pages, the provider catalogue of 103 rows (EU, US, CN, global, local; 23 coding plans) with the `models.yml` writer and the Models page.
+- Feature completion (63): `@` mentions, run modes with `permissions.json` and `sandbox.json`, `.cursorignore`, `.cursor/mcp.json` import, `.cursor/worktrees.json`, checkpoints with rewind, queue versus send now, conversation search, automations, image attach.
+- Documentation (64): `.gitbook.yaml`, `docs/SUMMARY.md`, the guides, the runbook `docs/runbooks/gitbook-publish.md`, the refreshed audit.
+
+Verified (recorded 2026-10-28):
+- The web Demo is deployed at https://ompos-web.vercel.app (Vercel production alias of project ompos-web in team swcstudiospace; static bundle, simulated engine, no backend, no secret) and was captured with headless Chrome from the live URL: no console errors, no failed requests.
+- The web head smoke (`scripts/web-smoke/smoke-demo.mjs`) ran 68 axe runs (light and dark at 1440, 1024, 390 across every screen) with 0 violations in the Wave 5 tree.
+- A live run against a loopback `sshd` with the real omp 18.12.6 opened a session (`docs/runbooks/evidence/remote-ssh-live-2026-10-28/README.md`); a live podman test passed in the Wave 4 tree (alpine image).
+- Api.IntegrationTests 1027/1027, Coordination 32 and Sessions.Postgres 58 passed on the final tree with throwaway podman services.
+- Per-project counts on the final tree before the last wiring: Presentation 2303, Native 2012 (2 skipped), AgentLoop 1221, Acp 201, Mcp 197, Plugins 429, Remote 520+ (2 skipped as root), Workspace 364, Automations 386, Web 262+, UI 595, Architecture 46, AgentWorker 153, Contracts 137, Sandbox 329. The node tests of `plugins/ompos-hooks-omp` ran 76 of 76 during the records pass.
+- The omp `--add-dir` probe: `docs/runbooks/evidence/multi-repo-omp-probe-2026-10-27/`.
+- GitHub settings applied 2026-10-28 with `scripts/github/apply-repo-settings.sh` (description, homepage = the Demo URL, 15 topics, discussions on, wiki off, delete-branch-on-merge, private vulnerability reporting, Dependabot security updates, secret scanning and push protection, 22 labels). No read-back is saved under `docs/runbooks/evidence/`.
+- Railway read-back: nothing of OmpOS is deployed; the project 'Ultrathink' holds TimescaleDB, Dragonfly, GreptimeDB and two tailscale services only.
+
+Not verified (stated, not claimed):
+- `./bootstrap.sh` on the final commit (recorded by the orchestrator in `docs/runbooks/evidence/bootstrap-gate-2026-10-28-*.log`), `dotnet format --verify-no-changes`, a fresh clone at the final tree, and the web smoke on the final commit.
+- Any live model turn (OD-07): hooks blocking a tool call inside a real omp, slash commands run against omp, mentions as embedded resources, run-mode permission requests, a remote prompt turn, a cloud agent run, provider keys (OQ-71).
+- Windows, macOS, Android (a Windows head cannot start a remote session; WSL was never run), a real network ssh host, a Railway worker, a hosted API.
+
+Known gaps:
+- Web head: no Cloud or Remote view (information pages only), the terminal view is Unavailable against the real API, the slash palette lists no discovered rows, no web About page; the smoke walks one of 18 Settings pages; the evidence folder `docs/runbooks/evidence/web-app-2026-10-28/` holds 16 images and no README.
+- Conventions: no discovery for cloud sessions; the heads read the primary root only, so multi-root merge, the multi-root explorer and per-run worktrees (`WorktreeRunSet`) are not wired.
+- Hooks: no unit test loads the extension in a fake omp process; remote ssh sessions run no hook files; cloud hooks are off by default, the worker image lacks the extension and nothing produces the consent snapshot.
+- Cloud: the worker has no clone, branch or credential-helper bootstrap; the secret store is in memory; the Railway operations marked UNVERIFIED in ADR-0020 D8 stay unverified (no schema introspection record); the staged Railway deploy is blocked (OD-03, OQ-71, OQ-73, OQ-100, a Railway API token).
+- Settings and providers: no Labs page; Worktrees and Ignore have no web page; the C# `models.yml` writer's output was not validated by omp in a committed record; 49 catalogue rows are Partial and 4 Unverified.
+- Feature completion: the pull request, browser and terminal-output mentions are not composed; Auto-review has no hosted classifier; `sandbox.json` is a read boundary (omp has no OS sandbox); `.cursorignore` does not bind omp's own tools; the context ring has no per-category counts.
+- Repository and docs: the licence check script and the brand check are not in the gate; `THIRD-PARTY-NOTICES.md` is stale (regenerate with `python3 scripts/legal/generate-third-party-notices.py`); `scripts/ci/check-docs.sh` reports 4 orphan pages missing from `docs/SUMMARY.md` (`docs/decisions/addendum-ADR-0015-containers.md`, `docs/reference/automations.md`, `docs/reference/builtin-skills.md`, `docs/runbooks/remote-containers.md`); status banners in `docs/reference/hooks.md`, `builtin-skills.md`, `checkpoints-and-worktrees.md`, `mcp.md`, `docs/runbooks/multi-repo.md` and `hosting.md` and the audit rows still say wired features are not wired; ADR-0019 still reads Proposed.
+- The tag `v0.15.0` and the GitHub Release do not exist; `origin/main` was not fetched.
+
+Open owner items (all recorded in `docs/open-questions.md` unless noted):
+- Release: the gate log, the fast-forward push, the tag and the GitHub Release (the orchestrator), the social preview upload and the discussion categories (OQ-109), the GitBook space (OQ-101), the Notion authentication.
+- OQ-93: `AGPL-3.0-or-later` versus `-only`; OQ-102: the licences of `agent-swarm` and `agent-substrate`; OQ-105 and OQ-106: the trademark and the code ownership.
+- OQ-94 and OQ-87 to OQ-91: the owner's sign-off of the White and Purple look.
+- OD-07 (a live model turn), OQ-71 (provider credentials), OD-03 (the sign-in authority), OQ-100 and OQ-73 (Railway deploys and its acceptable-use text), OQ-98 (coding-plan keys).
+- OQ-69 and OQ-74: Windows, macOS and Android runs.
+- OQ-84: the ADR-0013 isolation sign-off (hooks are wired; `PluginHost` is not).
+- New rows OQ-105 to OQ-167: web, hosted-API, hooks, remote, cloud, settings, providers, safety and automation defaults, each with its default in force.
+- Still open from earlier records: OQ-60, OQ-61, OQ-63, OQ-64, OQ-66, OQ-68, OQ-72, OQ-76, OQ-77, OQ-80, OQ-83, OQ-92.
 
 ## Final position 2026-10-27
 

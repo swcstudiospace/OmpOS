@@ -705,7 +705,7 @@ Source: user request 2026-10-22. The ADE harness must match Cursor desktop capab
 - [ ] **Phase 31: Plugin Manifests and Hooks** - Manifest validation, API version gate and quarantine; lifecycle hooks with consent per exact command (CX-01, CX-02)
 - [ ] **Phase 32: Automations** - Event, schedule and manual triggers with loop, chain, rate and runtime guards (CX-03)
 - [ ] **Phase 33: Omp CLI Terminal and Shared Registry** - Terminal opens omp; one registry for the UI and omp; host-owned MCP gateway (CX-04)
-- [ ] **Phase 34: Remote Development** - Authenticated, encrypted remote transport; BLOCKED on OD-06 and owner decisions (CX-05)
+- [ ] **Phase 34: Remote Development** - Authenticated, encrypted remote transport; BLOCKED on OD-06 and owner decisions (CX-05) Superseded in part 2026-10-28: Phase 58 answers OD-06 by design (omp over ssh stdio, ADR-0015); its host-trust and reconnect criteria are implemented and unit tested, live only to the session open.
 - [ ] **Phase 35: Code Quality Bar** - Repository-wide review, enforced gates and decision records (CX-06, CX-07, CX-08) Partial 2026-10-27: criteria 1 and 4 partly met (see its Status line).
 
 ### Phase 31: Plugin Manifests and Hooks
@@ -755,6 +755,7 @@ Source: user request 2026-10-22. The ADE harness must match Cursor desktop capab
 **Goal**: Remote development connects to a host over an authenticated, encrypted transport and verifies host identity before the first connection.
 **Requirements**: CX-05
 **Status (2026-10-22)**: BLOCKED. The remote omp endpoint and WebSocket upgrade authentication are unverified (OD-06, Q-HARN-WS). The remote protocol and host-key storage are not decided. No Cursor primary docs page for SSH remote development was found (https://cursor.com/docs/remote-ssh.md and https://cursor.com/docs/remote-development return 404). This phase stays deferred in writing until OD-06 has a verified spec and the owner decides the protocol and host-key store. No stub ships.
+**Update (2026-10-28)**: OD-06 and OQ-75 are answered by design: a remote omp runs over `ssh` stdio (ADR-0015, Phase 58) and a cloud agent over the OmpOS-owned WebSocket bridge (ADR-0020, Phase 60). The host-trust terminal (host identity before the first connection) and the reconnect with `session/load` are built and tested with a fake ssh; a real omp opened a session through a real `sshd` on loopback (`docs/runbooks/evidence/remote-ssh-live-2026-10-28/README.md`). Not verified: a prompt turn (OD-07), a real network host, a live connection drop, Windows heads. The 2026-10-22 text above is the history.
 **Plans**: TBD
 
 ### Phase 35: Code Quality Bar
@@ -1031,7 +1032,7 @@ Revision 2026-10-26 (source: the user message of 2026-10-26; the shared decision
   7. The gate is green. Verify: `./bootstrap.sh`. **Result: Met (recorded whole-solution test runs, F10; `./bootstrap.sh`, `dotnet format` and the web smoke are not recorded for the final tree).**
 **Plans**: `50-01-PLAN.md` (units built), `50-SUMMARY.md`, `50-VERIFICATION.md` in `.planning/phases/50-cursor-visual-parity/`
 
-## v0.15.0 Cursor completeness, brand and public launch (planned, added 2026-10-27)
+## v0.15.0 Cursor completeness, brand and public launch (built 2026-10-28; release pending)
 
 Source: user request 2026-10-27 (show the finished Web Application; a GitHub presentation with a logo and banner; up-to-date documentation and a GitBook site; AGPL-3.0; the standard repository documents; every Cursor feature including hooks, cloud programming on Railway, remote environments, multi-repo programming, all slash commands picked up in the Remote and Desktop environments and Cursor-equivalent Settings; all EU, US and CN providers and coding plans; White and Purple in the Greptile typefaces) and the ultrathink plan graph ut-mvr8q2x6-c0fc2bc6 (spec `/root/.omp/agent/ultrathink/sessions/01a16494-919f-77b4-bd0c-d594d2a3137c.xml`, which restates the standing authority to deploy to Railway). The research behind every phase is in `docs/plans/v0.15.0-research/` (12 files, researched 2026-10-27 against Cursor 3.27 and omp 18.12.6).
 
@@ -1046,21 +1047,23 @@ Settled decisions (each has an open-question row with the default taken):
 - SD-8 Deploys. The request restates the authority to deploy to Railway. Deploys are staged, health-checked and private until the sign-in authority exists; every deploy records its version and state (OQ-100). Anything that Railway's acceptable-use text may forbid stays paused (OQ-73).
 - SD-9 GitBook. The documentation lives in the repository in GitBook's Git Sync layout; connecting the space is an account action (OQ-101).
 
-- [ ] **Phase 51: Brand, Theme and Licence** - the Light default, the logo set, AGPL-3.0-or-later with notices and the section 13 source offer
-- [ ] **Phase 52: Repository, Release and Community Health** - GitHub presentation, community files, CHANGELOG, release workflow, tag and release
-- [ ] **Phase 53: Web Head Foundation and API Surface** - styled shell and rail in White and Purple, self-hosted fonts, the client abstraction, and the API endpoints the screens need
-- [ ] **Phase 54: Web Agent Panel and Workspace Screens** - thread, composer, approvals, changes, Kanban, Settings, terminal, cloud and remote views, smoke v2
-- [ ] **Phase 55: Showing the Web Application** - Demo build, hosted preview, local run, screenshots in both themes
-- [ ] **Phase 56: Slash Commands and Convention Discovery** - all 92 Cursor tokens plus the open-ended forms, automatic pickup of commands, skills, rules, subagents and MCP in desktop, remote and cloud sessions
-- [ ] **Phase 57: Hooks** - Cursor-compatible hooks run in every environment
-- [ ] **Phase 58: Remote Environments over SSH** - profiles, transport, preflight, reconnect, remote files and terminal
-- [ ] **Phase 59: Multi-repo Workspaces** - several repositories in one session
-- [ ] **Phase 60: Cloud Agents on Railway** - worker bridge, control plane, Railway client, secrets, pull requests, heads, staged deploy
-- [ ] **Phase 61: Settings Parity** - Cursor's configuration surface in both heads
-- [ ] **Phase 62: Providers, EU US CN and Coding Plans** - the full catalogue in Settings
-- [ ] **Phase 63: Cursor Feature Completion** - the remaining agent, chat, context and safety features
-- [ ] **Phase 64: Documentation and GitBook** - up-to-date guides, GitBook layout, link gate, parity audit refresh
-- [ ] **Phase 65: Integration and Release v0.15.0** - clean-tree gate, fast-forward push, tag, GitHub release, deploy records
+Build status (2026-10-28): the code of Phases 51 to 65 is in the tree at `7535859`; the per-project test runs recorded 2026-10-28 on the final tree before the last wiring passed (counts in `65-SUMMARY.md`; they are per project, not one gate). Two phases are complete (53, 58); thirteen are Partial or hold Partial or Blocked criteria; no criterion needing a live model turn (OD-07), Windows, macOS, Android, a Railway deploy, the sign-in authority (OD-03) or a GitBook publish is claimed. The full `./bootstrap.sh` gate on the final commit is recorded by the orchestrator in `docs/runbooks/evidence/bootstrap-gate-2026-10-28-*.log`; this file does not claim it. The tag `v0.15.0` and the GitHub Release do not exist yet. Records: `.planning/phases/51-*` to `65-*`; the final report with the owner items is `65-SUMMARY.md`.
+
+- [ ] **Phase 51: Brand, Theme and Licence** - the Light default, the logo set, AGPL-3.0-or-later with notices and the section 13 source offer Partial 2026-10-28: Light default and brand set met; the licence check is not in the gate and `THIRD-PARTY-NOTICES.md` is stale; the web head has no About page.
+- [ ] **Phase 52: Repository, Release and Community Health** - GitHub presentation, community files, CHANGELOG, release workflow, tag and release Partial 2026-10-28: community files, changelog and version in place and settings applied; no saved read-back; social preview and discussion categories are owner steps; the tag and release are pending Phase 65.
+- [x] **Phase 53: Web Head Foundation and API Surface** - styled shell and rail in White and Purple, self-hosted fonts, the client abstraction, and the API endpoints the screens need Complete 2026-10-28 (recorded test runs; no `./bootstrap.sh` claim).
+- [ ] **Phase 54: Web Agent Panel and Workspace Screens** - thread, composer, approvals, changes, Kanban, Settings, terminal, cloud and remote views, smoke v2 Partial 2026-10-28: no Cloud or Remote view in the web workbench; the smoke walks one of 18 Settings pages.
+- [ ] **Phase 55: Showing the Web Application** - Demo build, hosted preview, local run, screenshots in both themes Partial 2026-10-28: the Demo is hosted at https://ompos-web.vercel.app; the commit and build id are not recorded in the tree; the evidence folder holds 16 images and no README.
+- [ ] **Phase 56: Slash Commands and Convention Discovery** - all 92 Cursor tokens plus the open-ended forms, automatic pickup of commands, skills, rules, subagents and MCP in desktop, remote and cloud sessions Partial 2026-10-28: 92 tokens resolve; no cloud-session discovery; the web palette lists no discovered rows.
+- [ ] **Phase 57: Hooks** - Cursor-compatible hooks run in every environment Partial 2026-10-28: hooks built and wired in the desktop head; enforcement inside a real omp is UNVERIFIED (OD-07); remote sessions run no hook files; cloud hooks are off by default.
+- [x] **Phase 58: Remote Environments over SSH** - profiles, transport, preflight, reconnect, remote files and terminal Complete 2026-10-28 with caveats: criteria 1 to 3 met by recorded test runs and one live ssh run (session opened, no prompt turn); PX-15 stays Partial.
+- [ ] **Phase 59: Multi-repo Workspaces** - several repositories in one session Partial 2026-10-28: library, picker and `--add-dir` launch met; the multi-root explorer, per-run worktree set and head-side convention merge are not wired.
+- [ ] **Phase 60: Cloud Agents on Railway** - worker bridge, control plane, Railway client, secrets, pull requests, heads, staged deploy Partial 2026-10-28: worker bridge, control plane, Railway client and desktop page built; criterion 4 Blocked (nothing deployed on Railway; OD-03, OQ-71, OQ-73, OQ-100).
+- [ ] **Phase 61: Settings Parity** - Cursor's configuration surface in both heads Partial 2026-10-28: 50 rows each have a status (6 Built, 2 Wired, 20 Partial, 22 Omitted); Labs page missing; Worktrees and Ignore have no web page.
+- [ ] **Phase 62: Providers, EU US CN and Coding Plans** - the full catalogue in Settings Partial 2026-10-28: catalogue of 103 rows and Models page met; omp validation of the C# writer is not a committed record; no live key check (OQ-71).
+- [ ] **Phase 63: Cursor Feature Completion** - the remaining agent, chat, context and safety features Partial 2026-10-28: every feature has code and tests; pull request, browser and terminal-output mentions are not composed; nothing observed with a live omp (OD-07).
+- [ ] **Phase 64: Documentation and GitBook** - up-to-date guides, GitBook layout, link gate, parity audit refresh Partial 2026-10-28: layout, guides and audit exist; `check-docs.sh` fails with 4 orphan pages and is not in the gate; the GitBook space is not created (owner step); the audit describes tree `fbd5266`.
+- [ ] **Phase 65: Integration and Release v0.15.0** - clean-tree gate, fast-forward push, tag, GitHub release, deploy records Partial 2026-10-28: final report written; the `./bootstrap.sh` log, the push, the tag and the GitHub Release are pending the orchestrator.
 
 ### Phase 51: Brand, Theme and Licence
 **Goal**: OmpOS looks like one product in White and Purple with a real logo, and the repository carries a correct AGPL-3.0-or-later licence with notices and the network source offer.
@@ -1068,12 +1071,13 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phase 50
 **Mac channel**: No.
 **UI hint**: yes
+**Status (2026-10-28)**: Partial: Light default and brand set met; the licence check is not in the gate and `THIRD-PARTY-NOTICES.md` is stale; the web head has no About page.
 **Success Criteria** (what must be TRUE):
-  1. A new installation starts in the Light theme in the desktop head, and the web head starts Light; Dark and System remain choices and persist. Verify: theme preference tests (default Light), `ThemeContrastTests` in both variants, screenshots.
-  2. The brand set exists under `assets/brand/` with its build script: mark, wordmark lockup, banner 1280 by 320, social preview 1280 by 640 below 1 MB, favicons, desktop and Android icons; text is outlined from the bundled Greptile faces. Verify: a script test of file sizes and dimensions; the images open and look right (reviewed by eye).
-  3. `LICENSE` holds the canonical AGPL-3.0 text, `NOTICE` and `THIRD-PARTY-NOTICES.md` cover every shipped package, font and bundled asset, package metadata declares the SPDX expression, and the README states the licence. Verify: a licence check script run in the gate against the lock files.
-  4. The API answers `GET /source` anonymously with the licence, repository URL and commit; the web head footer and About page and the desktop About link to the source of the running revision. Verify: API integration test, bUnit test, headless view test.
-**Plans**: `51-01-PLAN.md` in `.planning/phases/51-brand-theme-and-licence/`
+  1. A new installation starts in the Light theme in the desktop head, and the web head starts Light; Dark and System remain choices and persist. Verify: theme preference tests (default Light), `ThemeContrastTests` in both variants, screenshots. **Result: Met (`DefaultThemeTests`, `ThemePreferenceTests`, `FileSettingsStoreTests`, `ThemeSwitchTests`, `ThemeContrastTests` in Light and Dark, each inside its passing project run recorded 2026-10-28; desktop and web Light screenshots under `docs/assets/screens/` and `docs/runbooks/evidence/web-app-2026-10-28/`).**
+  2. The brand set exists under `assets/brand/` with its build script: mark, wordmark lockup, banner 1280 by 320, social preview 1280 by 640 below 1 MB, favicons, desktop and Android icons; text is outlined from the bundled Greptile faces. Verify: a script test of file sizes and dimensions; the images open and look right (reviewed by eye). **Result: Met (`assets/brand/` set built by `scripts/brand/build-brand.sh`; `bash scripts/ci/check-brand.sh` run 2026-10-28: ok, 28 PNGs, 9 SVGs, 18 other files; banner 1280x320, social preview 1280x640 and 51609 bytes read from the files; a shell check, not a C# test, and not in the gate).**
+  3. `LICENSE` holds the canonical AGPL-3.0 text, `NOTICE` and `THIRD-PARTY-NOTICES.md` cover every shipped package, font and bundled asset, package metadata declares the SPDX expression, and the README states the licence. Verify: a licence check script run in the gate against the lock files. **Result: Partial (`LICENSE`, `NOTICE`, `THIRD-PARTY-NOTICES.md`, `REUSE.toml`, SPDX in `Directory.Build.props`, README licence section exist; `scripts/ci/check-licences.sh` is not in `bootstrap.sh` or `ci.yml` and failed on the final tree on 2026-10-28 with a stale `THIRD-PARTY-NOTICES.md`: regenerate with `python3 scripts/legal/generate-third-party-notices.py`; LICENSE not compared with gnu.org, UNVERIFIED).**
+  4. The API answers `GET /source` anonymously with the licence, repository URL and commit; the web head footer and About page and the desktop About link to the source of the running revision. Verify: API integration test, bUnit test, headless view test. **Result: Partial (`GET /source` anonymous, `SourceEndpointTests`; desktop About links the revision, `AboutViewTests`; web footer shows the version and revision from `/source` and links the repository root, `ShellFooterTests`; no web About page and no revision link on the web).**
+**Plans**: `51-01-PLAN.md` (units built), `51-SUMMARY.md`, `51-VERIFICATION.md` in `.planning/phases/51-brand-theme-and-licence/`
 
 ### Phase 52: Repository, Release and Community Health
 **Goal**: The GitHub repository presents the product properly and follows the community standards.
@@ -1081,11 +1085,12 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phase 51 (brand files, licence)
 **Mac channel**: No.
 **UI hint**: no
+**Status (2026-10-28)**: Partial: community files, changelog and version in place and settings applied; no saved read-back; social preview and discussion categories are owner steps; the tag and release are pending Phase 65.
 **Success Criteria** (what must be TRUE):
-  1. The repository has a description, homepage, topics, a licence that GitHub detects, security reporting, secret scanning and Dependabot security updates, applied with `gh` and recorded; the social preview is prepared with the manual upload step. Verify: `gh api` read-back saved under `docs/runbooks/evidence/`.
-  2. CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, SUPPORT, CODEOWNERS, issue forms, the pull request template, `dependabot.yml`, release notes configuration and labels exist and pass the community profile check. Verify: `gh api repos/.../community/profile` health percentage and a YAML validity test.
-  3. `CHANGELOG.md` follows Keep a Changelog from v0.9.1 to v0.15.0, `Directory.Build.props` holds one version, and release v0.15.0 exists as a tag and GitHub Release with notes. Verify: the changelog check script and `gh release view`.
-**Plans**: `52-01-PLAN.md` in `.planning/phases/52-repository-release-and-community-health/`
+  1. The repository has a description, homepage, topics, a licence that GitHub detects, security reporting, secret scanning and Dependabot security updates, applied with `gh` and recorded; the social preview is prepared with the manual upload step. Verify: `gh api` read-back saved under `docs/runbooks/evidence/`. **Result: Partial (settings applied 2026-10-28 with `scripts/github/apply-repo-settings.sh`: description, homepage = https://ompos-web.vercel.app, 15 topics, discussions, wiki off, private reporting, secret scanning and push protection, Dependabot security updates, 22 labels; no `gh api` read-back saved under `docs/runbooks/evidence/` (`scripts/github/read-back.sh` exists); licence detection not read; social preview image `assets/brand/ompos-social-preview.png` ready, upload is an owner step).**
+  2. CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, SUPPORT, CODEOWNERS, issue forms, the pull request template, `dependabot.yml`, release notes configuration and labels exist and pass the community profile check. Verify: `gh api repos/.../community/profile` health percentage and a YAML validity test. **Result: Partial (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`, `.github/CODEOWNERS`, three issue forms, PR template, `dependabot.yml`, `release.yml`, `labels.yml` (22) exist; nine `.github` YAML files parse (PyYAML, 2026-10-28); community profile percentage not read and no YAML test in the suite).**
+  3. `CHANGELOG.md` follows Keep a Changelog from v0.9.1 to v0.15.0, `Directory.Build.props` holds one version, and release v0.15.0 exists as a tag and GitHub Release with notes. Verify: the changelog check script and `gh release view`. **Result: Partial (`CHANGELOG.md` has 8 sections 0.15.0 to 0.9.1 and `bash scripts/ci/check-changelog.sh` printed valid on 2026-10-28; `Directory.Build.props` holds `VersionPrefix` 0.15.0; `.github/workflows/release.yml` exists; tag v0.15.0 and the GitHub Release do not exist yet, release pending Phase 65).**
+**Plans**: `52-01-PLAN.md` (units built), `52-SUMMARY.md`, `52-VERIFICATION.md` in `.planning/phases/52-repository-release-and-community-health/`
 
 ### Phase 53: Web Head Foundation and API Surface
 **Goal**: The web head is styled in White and Purple with the Greptile typefaces on a shell that mirrors the desktop, and the API exposes what the screens need.
@@ -1093,11 +1098,12 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phase 51 (brand and tokens)
 **Mac channel**: No.
 **UI hint**: yes
+**Status (2026-10-28)**: Complete (recorded test runs; no `./bootstrap.sh` claim).
 **Success Criteria** (what must be TRUE):
-  1. Bootstrap and the template CSS are gone; tokens, fonts (self-hosted woff2 with the OFL texts), reduced motion and the theme boot script exist; the loading ring, error bar and skip link keep their contract. Verify: CSS contract tests, `AccessibilityTests`, the existing web smoke.
-  2. The shell has a top bar, an agent rail (groups, status, New, Close), a thread region and a responsive drawer below 840 px. Verify: bUnit landmark and drawer-focus tests; screenshots at three widths.
-  3. The API serves the catalog, stages, context, steering, config options, slash commands, changes, board, lifecycle and workspace endpoints, owner-scoped, rate-limited and in OpenAPI 3.1. Verify: integration tests per endpoint (404 for other owners, 409, 413, 415) and a contract test against `docs/api/openapi.json`.
-**Plans**: `53-01-PLAN.md` in `.planning/phases/53-web-head-foundation-and-api-surface/`
+  1. Bootstrap and the template CSS are gone; tokens, fonts (self-hosted woff2 with the OFL texts), reduced motion and the theme boot script exist; the loading ring, error bar and skip link keep their contract. Verify: CSS contract tests, `AccessibilityTests`, the existing web smoke. **Result: Met (`CssContractTests`, `AccessibilityTests`, `IndexHtmlTests` inside the passing UI and Web runs; `wwwroot/lib/bootstrap` deleted; `css/app.css` kept for `WebShellAccessibilityTests`; 68 smoke axe runs, 0 violations).**
+  2. The shell has a top bar, an agent rail (groups, status, New, Close), a thread region and a responsive drawer below 840 px. Verify: bUnit landmark and drawer-focus tests; screenshots at three widths. **Result: Met (`AppShellTests`, `AgentRailTests`, `ShellRegionTests`, `ShellLayoutTests`; screenshots `L1440-01-agents.png`, `L1024-01-agents.png`, `L390-01-agents.png`, `L390-02-drawer.png` in `docs/runbooks/evidence/web-app-2026-10-28/`).**
+  3. The API serves the catalog, stages, context, steering, config options, slash commands, changes, board, lifecycle and workspace endpoints, owner-scoped, rate-limited and in OpenAPI 3.1. Verify: integration tests per endpoint (404 for other owners, 409, 413, 415) and a contract test against `docs/api/openapi.json`. **Result: Met (OpenAPI 3.1.1, 60 paths; endpoint tests incl. 404 other owner, 409, 413, 415 inside the passing `Api.IntegrationTests` run, 1027/1027; `OpenApiCoverageTests`, `WorkspaceSettingsOpenApiTests`; limits: one engine session per prompt so config options, commands and live steering exist only during a run; closed flag, change decisions and stages are in memory).**
+**Plans**: `53-01-PLAN.md` (units built), `53-SUMMARY.md`, `53-VERIFICATION.md` in `.planning/phases/53-web-head-foundation-and-api-surface/`
 
 ### Phase 54: Web Agent Panel and Workspace Screens
 **Goal**: The web head offers the same working surfaces as the desktop Agent Panel.
@@ -1105,11 +1111,12 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phase 53
 **Mac channel**: No.
 **UI hint**: yes
+**Status (2026-10-28)**: Partial: no Cloud or Remote view in the web workbench; the smoke walks one of 18 Settings pages.
 **Success Criteria** (what must be TRUE):
-  1. The thread header with the plugin connection row, the twelve block views, the composer with model, mode and thinking chips and the slash palette, steering, tool approval decisions, the Changes bar with Keep, Undo and Review, the Kanban tab, the omp terminal view, and Cloud and Remote views render from the shared presentation models. Verify: bUnit tests per component and state.
-  2. Settings in the web head covers General, Runtime, Agents, Models and providers, Tab, Rules, Skills, Commands, Hooks, Plugins, Network and Keyboard, and no page ever renders a stored key. Verify: bUnit tests and a test that no key is rendered back or logged.
-  3. Smoke v2 drives every screen in both themes at three widths with axe clean. Verify: `scripts/web-smoke/run-smoke.sh` in the gate.
-**Plans**: `54-01-PLAN.md` in `.planning/phases/54-web-agent-panel-and-workspace-screens/`
+  1. The thread header with the plugin connection row, the twelve block views, the composer with model, mode and thinking chips and the slash palette, steering, tool approval decisions, the Changes bar with Keep, Undo and Review, the Kanban tab, the omp terminal view, and Cloud and Remote views render from the shared presentation models. Verify: bUnit tests per component and state. **Result: Partial (thread header, plugin connection row in `PipelineStrip`, blocks, composer chips and slash palette, steering, approvals, Changes bar, Kanban and terminal view have components and tests inside the passing UI run: `ThreadViewTests`, `ComposerPanelTests`, `ToolApprovalTests`, `ChangesBarTests`, `KanbanViewTests`, `TerminalViewTests`; missing: Cloud and Remote views in the web workbench, they exist only as Settings information pages; the terminal is Unavailable against the real API, scripted in the Demo).**
+  2. Settings in the web head covers General, Runtime, Agents, Models and providers, Tab, Rules, Skills, Commands, Hooks, Plugins, Network and Keyboard, and no page ever renders a stored key. Verify: bUnit tests and a test that no key is rendered back or logged. **Result: Met (`WebSettingsOrder` registers 18 pages including all twelve named; `SettingsModelsPageTests`, `SettingsPagesRenderTests`, `DemoProvidersRouteTests` and `ProvidersCredentialEndpointTests` show the key is write-only, never echoed or logged; Agents, Run mode, Workspaces, Remote, Cloud and Privacy are information pages, Tab is "not available in the web head").**
+  3. Smoke v2 drives every screen in both themes at three widths with axe clean. Verify: `scripts/web-smoke/run-smoke.sh` in the gate. **Result: Partial (`scripts/web-smoke/smoke-demo.mjs` ran 68 axe runs in light and dark at 1440, 1024 and 390 with 0 violations, Wave 5 tree; `run-smoke.sh` is called by `bootstrap.sh` line 81 and `.github/workflows/ci.yml` line 96; the smoke opens one Settings page of 18, and no gate result on the final commit is recorded).**
+**Plans**: `54-01-PLAN.md` (units built), `54-SUMMARY.md`, `54-VERIFICATION.md` in `.planning/phases/54-web-agent-panel-and-workspace-screens/`
 
 ### Phase 55: Showing the Web Application
 **Goal**: The owner can see the web application: running locally with real screens and on a hosted preview in a labelled Demo build.
@@ -1117,11 +1124,12 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phase 54
 **Mac channel**: No.
 **UI hint**: yes
+**Status (2026-10-28)**: Partial: the Demo is hosted at https://ompos-web.vercel.app; the commit and build id are not recorded in the tree; the evidence folder holds 16 images and no README.
 **Success Criteria** (what must be TRUE):
-  1. A Demo build replaces the HTTP handler with an in-browser simulated API that answers the real routes, shows a permanent Demo banner, needs no network and keeps `connect-src 'self'`. Verify: contract test that every fixture validates against `docs/api/openapi.json`; `RenderCspScriptTests`.
-  2. A hosted preview of the Demo build is reachable and recorded with its URL, commit and build id. Verify: `curl` of the URL and a headless Chrome screenshot of the hosted page.
-  3. A runbook shows how to run the web application locally against the real API, and screenshots of every screen in both themes at 1440, 1024 and 390 px are committed under `docs/runbooks/evidence/web-app-2026-10-27/`. Verify: the evidence README names the method and what is simulated.
-**Plans**: `55-01-PLAN.md` in `.planning/phases/55-showing-the-web-application/`
+  1. A Demo build replaces the HTTP handler with an in-browser simulated API that answers the real routes, shows a permanent Demo banner, needs no network and keeps `connect-src 'self'`. Verify: contract test that every fixture validates against `docs/api/openapi.json`; `RenderCspScriptTests`. **Result: Met (`DemoApiHandlerTests`, `DemoFixturesContractTests`, `OpenApiCoverageTests`, `DemoExclusionTests`, `RenderCspScriptTests` inside the passing Web run; permanent `DemoBanner`, `connect-src 'self'`; fixtures are checked against the contract types and routes against the OpenAPI paths, not against the JSON schemas).**
+  2. A hosted preview of the Demo build is reachable and recorded with its URL, commit and build id. Verify: `curl` of the URL and a headless Chrome screenshot of the hosted page. **Result: Partial (hosted at https://ompos-web.vercel.app, Vercel project `ompos-web`, captured with headless Chrome from the live URL; commit and build id not recorded in the tree, UNVERIFIED: `vercel inspect ompos-web.vercel.app`; no curl output or hosted screenshot committed).**
+  3. A runbook shows how to run the web application locally against the real API, and screenshots of every screen in both themes at 1440, 1024 and 390 px are committed under `docs/runbooks/evidence/web-app-2026-10-27/`. Verify: the evidence README names the method and what is simulated. **Result: Partial (`docs/runbooks/web-demo.md` exists; `docs/runbooks/evidence/web-app-2026-10-28/` holds 16 images: Light 1440 8, Dark 1440 3, Light 1024 1, Dark 1024 0, Light 390 2, Dark 390 0, plus two Models views; the 68-run smoke images are not committed; no evidence README; the runbook status line still says no public deployment exists).**
+**Plans**: `55-01-PLAN.md` (units built), `55-SUMMARY.md`, `55-VERIFICATION.md` in `.planning/phases/55-showing-the-web-application/`
 
 ### Phase 56: Slash Commands and Convention Discovery
 **Goal**: Every Cursor slash command resolves in the palette and the conventions of the workspace are picked up automatically in desktop, remote and cloud sessions.
@@ -1129,11 +1137,12 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phase 53 (web palette), Phase 50
 **Mac channel**: No.
 **UI hint**: yes
+**Status (2026-10-28)**: Partial: 92 tokens resolve; no cloud-session discovery; the web palette lists no discovered rows.
 **Success Criteria** (what must be TRUE):
-  1. The catalogue holds all 92 documented tokens and aliases, each with a handler kind (native action, omp-delegated, skill, cloud hand-off, or unavailable with a stated reason), and the open-ended forms resolve: `/skill-name`, custom markdown commands, `/subagent-name` and the `&` prefix. Verify: a test that every token in `docs/reference/slash-commands.md` has a handler, resolver tests per kind.
-  2. Commands, skills, rules and subagents are discovered from `.ompos`, `.omp`, `.cursor`, `.claude`, `.codex` and `.agents` at project and user scope with precedence and diagnostics, in desktop sessions, remote sessions and cloud sessions. Verify: discovery tests over fixture trees for each source and each environment kind.
-  3. The palette in both heads lists engine commands (from omp), OmpOS commands, discovered commands and skills with their source. Verify: palette model tests, bUnit and headless tests.
-**Plans**: `56-01-PLAN.md` in `.planning/phases/56-slash-commands-and-convention-discovery/`
+  1. The catalogue holds all 92 documented tokens and aliases, each with a handler kind (native action, omp-delegated, skill, cloud hand-off, or unavailable with a stated reason), and the open-ended forms resolve: `/skill-name`, custom markdown commands, `/subagent-name` and the `&` prefix. Verify: a test that every token in `docs/reference/slash-commands.md` has a handler, resolver tests per kind. **Result: Met (`SlashCommandCatalogueTests`, `SlashCommandResolverTests`, `SlashCommandDispatcherTests`, `SlashCommandArgumentsTests`, `SlashPromptComposerTests`, inside the passing Presentation run of 2303; the table of `docs/reference/slash-commands.md` has 93 rows = 92 Cursor tokens plus `/update-settings`, 47 NativeAction, 11 OmpDelegated, 10 Skill, 1 CloudHandoff, 24 Unavailable; statuses 36 Built, 24 Partial, 9 Delegated, 24 Unavailable).**
+  2. Commands, skills, rules and subagents are discovered from `.ompos`, `.omp`, `.cursor`, `.claude`, `.codex` and `.agents` at project and user scope with precedence and diagnostics, in desktop sessions, remote sessions and cloud sessions. Verify: discovery tests over fixture trees for each source and each environment kind. **Result: Partial (desktop: `ConventionCatalogTests`, `ConventionCatalogSourceTests`, `LocalConventionFileSourceTests`, `ConventionMappingTests`; remote: `RemoteConventionFileSourceTests` and `RemoteSlashDiscoverySource` wired in `SessionEngineSet`, no test of the Native source and not exercised by the live ssh run; cloud: no discovery source exists in the tree; the heads read the primary root only).**
+  3. The palette in both heads lists engine commands (from omp), OmpOS commands, discovered commands and skills with their source. Verify: palette model tests, bUnit and headless tests. **Result: Partial (desktop palette: `SlashPaletteModelTests`, `SlashPaletteDiscoveryTests`, `ComposerSlashPaletteViewTests`, `SlashPaletteBindingTests`; web palette lists the catalogue and the engine commands from `WebSessionControls` but passes `SlashDiscovery.Empty`, so no discovered command, skill or subagent).**
+**Plans**: `56-01-PLAN.md` (units built), `56-SUMMARY.md`, `56-VERIFICATION.md` in `.planning/phases/56-slash-commands-and-convention-discovery/`
 
 ### Phase 57: Hooks
 **Goal**: Cursor-compatible hooks run in desktop, remote and cloud sessions, with consent, a log and a settings page.
@@ -1141,12 +1150,13 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phase 53 (hosted event), ADR-0013
 **Mac channel**: No.
 **UI hint**: yes
+**Status (2026-10-28)**: Partial: hooks built and wired in the desktop head; enforcement inside a real omp is UNVERIFIED (OD-07); remote sessions run no hook files; cloud hooks are off by default.
 **Success Criteria** (what must be TRUE):
-  1. `hooks.json` files (managed, project, user, Claude settings, plugins) parse with the 21 Cursor events, command and prompt hook types, matchers, timeouts, `failClosed`, `loop_limit` and exit code 2 as deny; invalid files are diagnosed, not fatal. Verify: parser and runner tests over fixtures.
-  2. Blocking events (`preToolUse`, `beforeShellExecution`, `beforeMCPExecution`, `beforeReadFile`, `beforeSubmitPrompt`, `subagentStart`) are enforced inside omp by the OmpOS extension, and the observe-only events come from ACP traffic. Verify: node tests of the extension and an integration test with a fake omp that a denying hook stops a tool call.
-  3. First use of a project hook asks for consent against a hash that does not depend on the absolute path; changed hooks are quarantined until re-approved. Verify: consent tests (hash v2).
-  4. The Hooks settings page and the per-run log show every hook, its source, its last result and its timing; the head wiring replaces the test-only `PluginHost` construction (closes OQ-84). Verify: view model and headless tests.
-**Plans**: `57-01-PLAN.md` in `.planning/phases/57-hooks/`
+  1. `hooks.json` files (managed, project, user, Claude settings, plugins) parse with the 21 Cursor events, command and prompt hook types, matchers, timeouts, `failClosed`, `loop_limit` and exit code 2 as deny; invalid files are diagnosed, not fatal. Verify: parser and runner tests over fixtures. **Result: Met (`HookEventsTests` 21 events, `HooksConfigParserTests`, `HooksConfigLoaderTests`, `HookSourceLocatorTests`, `HookOutputParserTests`, `HookDispatcherFailurePolicyTests`, `HookDispatcherLoopLimitTests`, `HookDispatcherPromptTests`, `SystemHookCommandRunnerTests`, inside the passing Plugins run of 429; invalid files are diagnostics).**
+  2. Blocking events (`preToolUse`, `beforeShellExecution`, `beforeMCPExecution`, `beforeReadFile`, `beforeSubmitPrompt`, `subagentStart`) are enforced inside omp by the OmpOS extension, and the observe-only events come from ACP traffic. Verify: node tests of the extension and an integration test with a fake omp that a denying hook stops a tool call. **Result: Partial (extension: `plugins/ompos-hooks-omp/test/bridge.test.mjs` and `e2e.test.mjs`, 76 tests, 76 pass when the records pass ran `node --test`; ACP tap: `AcpHookTapTests`, `AcpHookGateTests`; `HookExtensionEndToEndTests` runs the real extension under node against the real bridge and shows a block until consent; `CloudHooksWorkerTests.ADenyingProjectHookStopsAToolCallInTheCloud` uses a fake omp behind the worker WebSocket and the test posts to the bridge itself. No test makes a fake omp process load the extension and have a denying hook stop a tool call; real omp enforcement is UNVERIFIED (OD-07).)**
+  3. First use of a project hook asks for consent against a hash that does not depend on the absolute path; changed hooks are quarantined until re-approved. Verify: consent tests (hash v2). **Result: Met (`HookConsentIdentityTests`: same hash under different checkout directories, edits void consent, v1 readable beside v2; `HooksServiceTests`: consent before a guarding hook runs, an edit invalidates consent and keeps the approved version, a runner fault quarantines the source; inside the passing Plugins and AgentLoop runs).**
+  4. The Hooks settings page and the per-run log show every hook, its source, its last result and its timing; the head wiring replaces the test-only `PluginHost` construction (closes OQ-84). Verify: view model and headless tests. **Result: Partial (`HooksSettingsPageTests`, `HookRunLogModelTests`, `HookConsentPromptTests`, `HooksPageViewTests`, `HooksServiceSourceTests`, `HookLogAndNoticeViewTests`; the desktop head constructs `HooksService` (`HeadServices.Hooks`, `SessionEngineSet.StartHooksAsync`) and the Hooks page; no unit test of the head wiring itself; OQ-84 is only partly closed: `PluginHost` and the v1 `HookRunner` are still constructed only in tests and the product path is `HooksService`).**
+**Plans**: `57-01-PLAN.md` (units built), `57-SUMMARY.md`, `57-VERIFICATION.md` in `.planning/phases/57-hooks/`
 
 ### Phase 58: Remote Environments over SSH
 **Goal**: A session can run on another machine reached over SSH, with its files and terminal.
@@ -1154,11 +1164,12 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phase 53
 **Mac channel**: No.
 **UI hint**: yes
+**Status (2026-10-28)**: Complete with caveats: criteria 1 to 3 met by recorded test runs and one live ssh run (session opened, no prompt turn); PX-15 stays Partial.
 **Success Criteria** (what must be TRUE):
-  1. Profiles come from `ssh -G` and the user's ssh config, preflight diagnoses a missing ssh, host key, omp or directory with fix text, and no secret appears in an argument list. Verify: tests with a fake ssh executable and canary secrets.
-  2. `SshAcpTransport` runs `omp acp` on the remote host, survives a login banner, reconnects with `session/load` and marks the interrupted turn. Verify: fake-ssh tests and a recorded run against a loopback `sshd` on this host.
-  3. The remote file tree and the remote terminal work over ssh; New Session offers the environment. Verify: tests with fake ssh and a headless view test.
-**Plans**: `58-01-PLAN.md` in `.planning/phases/58-remote-environments-over-ssh/`
+  1. Profiles come from `ssh -G` and the user's ssh config, preflight diagnoses a missing ssh, host key, omp or directory with fix text, and no secret appears in an argument list. Verify: tests with a fake ssh executable and canary secrets. **Result: Met (`SshConfigResolverTests`, `RemotePreflightTests`, `RemoteDiagnosisCatalogTests`, `CanarySecretTests`, `PosixQuotingTests` inside the passing Remote run; the preflight minimum omp version 18.12.0 is a guess).**
+  2. `SshAcpTransport` runs `omp acp` on the remote host, survives a login banner, reconnects with `session/load` and marks the interrupted turn. Verify: fake-ssh tests and a recorded run against a loopback `sshd` on this host. **Result: Met (`SshAcpTransportTests`, `ReconnectingEngineHostTests` inside the passing Remote run; `RemoteSshLiveTests.ARealOmpOpensASessionThroughARealSshd` against a loopback sshd and omp 18.12.6 in `docs/runbooks/evidence/remote-ssh-live-2026-10-28/README.md`; no prompt turn (OD-07) and no dropped connection against a real host).**
+  3. The remote file tree and the remote terminal work over ssh; New Session offers the environment. Verify: tests with fake ssh and a headless view test. **Result: Met (`RemoteWorkspaceFileSystemTests`, `RemoteTerminalLauncherTests`, `NewSessionTargetModelTests`, `RemoteViewTests` inside the passing Remote, Presentation and Native runs; wired in `SessionEngineSet`; not run against a real host).**
+**Plans**: `58-01-PLAN.md` (units built), `58-SUMMARY.md`, `58-VERIFICATION.md` in `.planning/phases/58-remote-environments-over-ssh/`
 
 ### Phase 59: Multi-repo Workspaces
 **Goal**: One session works across several repositories.
@@ -1166,11 +1177,12 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phase 58 (remote roots), Phase 56 (convention merge)
 **Mac channel**: No.
 **UI hint**: yes
+**Status (2026-10-28)**: Partial: library, picker and `--add-dir` launch met; the multi-root explorer, per-run worktree set and head-side convention merge are not wired.
 **Success Criteria** (what must be TRUE):
-  1. A workspace set of several roots (local and remote) is validated, launched through omp's additional-directory support, and shown in the explorer with one tree per root. Verify: launch argument tests, a recorded omp probe, explorer tests.
-  2. Worktrees are created per git root for a run and closed with it, and `.code-workspace` files import and export. Verify: tests with real git in temporary directories and a file round trip.
-  3. Rules, skills and commands merge across roots with per-root diagnostics. Verify: merge precedence tests.
-**Plans**: `59-01-PLAN.md` in `.planning/phases/59-multi-repo-workspaces/`
+  1. A workspace set of several roots (local and remote) is validated, launched through omp's additional-directory support, and shown in the explorer with one tree per root. Verify: launch argument tests, a recorded omp probe, explorer tests. **Result: Partial (`WorkspaceSetValidatorTests`, `WorkspaceSetStoreTests`, `MultiRootLaunchTests`, `MultiRootWorkspaceTreeTests`, `WorkspaceSetPickerViewTests`, recorded probe `docs/runbooks/evidence/multi-repo-omp-probe-2026-10-27/` (omp 18.12.6, four transcripts); the desktop starts a session on the picked roots with one `--add-dir` pair each; missing: no head binds `MultiRootWorkspaceTree` (explorer is single-root), the validator refuses roots in different environments so a mixed local and remote set is not accepted, and a remote set with `--add-dir` on the remote host is untested).**
+  2. Worktrees are created per git root for a run and closed with it, and `.code-workspace` files import and export. Verify: tests with real git in temporary directories and a file round trip. **Result: Partial (`WorktreeRunSetTests` and `CursorWorktreesConfigTests` with real git in temporary repositories, `CodeWorkspaceFileTests` file round trip, picker import and export in `WorkspaceSetPickerViewTests`; `WorktreeRunSet.CreateAsync` is not called by any session start, so per-run worktrees are a library only; the Worktrees project run is not in the recorded run list).**
+  3. Rules, skills and commands merge across roots with per-root diagnostics. Verify: merge precedence tests. **Result: Partial (`ConventionCatalogTests.AnEarlierWorkspaceRootWinsASharedName` and duplicate diagnostics inside the passing Workspace run; `SessionEngineSet.SlashDiscoveryFor` and `ConventionSettingsLoader` pass the primary root only, so no head shows a merge across roots).**
+**Plans**: `59-01-PLAN.md` (units built), `59-SUMMARY.md`, `59-VERIFICATION.md` in `.planning/phases/59-multi-repo-workspaces/`
 
 ### Phase 60: Cloud Agents on Railway
 **Goal**: An agent can be started in the cloud against one or more repositories, run on Railway workers, and return a pull request.
@@ -1178,12 +1190,13 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phase 58 (transport and materializer), Phase 57 (hooks in cloud)
 **Mac channel**: No.
 **UI hint**: yes
+**Status (2026-10-28)**: Partial: worker bridge, control plane, Railway client and desktop page built; criterion 4 Blocked (nothing deployed on Railway; OD-03, OQ-71, OQ-73, OQ-100).
 **Success Criteria** (what must be TRUE):
-  1. The worker bridges `omp acp` over an authenticated WebSocket and the API holds the cloud agent records durably, with caps, an idle sweeper and secret redaction. Verify: loopback tests with a fake omp, JWT tests (expired, wrong audience), canary tests that no secret reaches a transcript, a log or an argument list.
-  2. The Railway client provisions, wakes and idles worker services through the verified GraphQL operations; the first live provisioning is recorded after schema introspection. Verify: tests over recorded fixtures; the live record under `docs/runbooks/evidence/`.
-  3. Both heads list cloud agents, create one with repositories, a branch and secrets, and show the pull request. Verify: view model and bUnit tests.
-  4. A staged Railway deployment of the worker and the API is made within the granted authority, health-checked and recorded with its version and state, or the exact blocker is recorded. Verify: Railway status read-back.
-**Plans**: `60-01-PLAN.md` in `.planning/phases/60-cloud-agents-on-railway/`
+  1. The worker bridges `omp acp` over an authenticated WebSocket and the API holds the cloud agent records durably, with caps, an idle sweeper and secret redaction. Verify: loopback tests with a fake omp, JWT tests (expired, wrong audience), canary tests that no secret reaches a transcript, a log or an argument list. **Result: Met (`WorkerAuthenticationTests`, `AcpBridgeProtocolTests`, `WorkerSecretHandlingTests` inside the passing AgentWorker run; `CloudAgentLifecycleTests` caps and idle sweep, `CloudSecretRedactorTests` inside the passing Api.IntegrationTests run; `PostgresCloudAgentStoreTests` inside the passing Sessions.Postgres run; secret store is in memory and the worker has no clone bootstrap).**
+  2. The Railway client provisions, wakes and idles worker services through the verified GraphQL operations; the first live provisioning is recorded after schema introspection. Verify: tests over recorded fixtures; the live record under `docs/runbooks/evidence/`. **Result: Partial (`RailwayCloudEnvironmentClientTests`, `RailwayWakeTests`, `RailwayErrorMappingTests` over recorded fixtures inside the passing Sandbox run; no live provisioning and no schema introspection record under `docs/runbooks/evidence/`; the rows ADR-0020 D8 marks UNVERIFIED stay unverified; blocked by a Railway API token, OQ-100, OD-03).**
+  3. Both heads list cloud agents, create one with repositories, a branch and secrets, and show the pull request. Verify: view model and bUnit tests. **Result: Partial (desktop Cloud agents page, form, pull request and hand-off: `CloudAgentsViewModelTests`, `NewCloudAgentModelTests`, `CloudAgentsPageViewTests`, `ApiCloudAgentsHostTests` inside the passing Presentation and Native runs; the web head page is information only, no list, form or bUnit test).**
+  4. A staged Railway deployment of the worker and the API is made within the granted authority, health-checked and recorded with its version and state, or the exact blocker is recorded. Verify: Railway status read-back. **Result: Blocked (Railway read-back 2026-10-28: nothing of OmpOS deployed, project "Ultrathink" holds TimescaleDB, Dragonfly, GreptimeDB and two tailscale services; `docs/runbooks/cloud-agents.md`: deploys paused, GraphQL operations unverified (ADR-0020 D8), a Railway API token is needed, public exposure blocked by OD-03, model credential blocked by HOST-04 and OQ-71; OQ-100 allows staged private deploys only; OQ-73 acceptable-use text unresolved; `ompos-api` service not created per `docs/runbooks/hosting.md`).**
+**Plans**: `60-01-PLAN.md` (units built), `60-SUMMARY.md`, `60-VERIFICATION.md` in `.planning/phases/60-cloud-agents-on-railway/`
 
 ### Phase 61: Settings Parity
 **Goal**: The Settings of both heads cover Cursor's configuration surface.
@@ -1191,10 +1204,11 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phases 56 to 60 (their pages), Phase 53
 **Mac channel**: No.
 **UI hint**: yes
+**Status (2026-10-28)**: Partial: 50 rows each have a status (6 Built, 2 Wired, 20 Partial, 22 Omitted); Labs page missing; Worktrees and Ignore have no web page.
 **Success Criteria** (what must be TRUE):
-  1. Each of the 50 settings rows of the 2026-10-27 inventory is built, wired to omp, or listed as omitted with the reason, in `docs/settings-parity.md`. Verify: a test that every row id has a status.
-  2. The new pages (Hooks, MCP, Cloud agents, Remote, Workspaces, Privacy, Worktrees, Ignore, Run mode, Labs) exist in the desktop and the web head. Verify: view model tests and headless tests per page.
-**Plans**: `61-01-PLAN.md` in `.planning/phases/61-settings-parity/`
+  1. Each of the 50 settings rows of the 2026-10-27 inventory is built, wired to omp, or listed as omitted with the reason, in `docs/settings-parity.md`. Verify: a test that every row id has a status. **Result: Partial (`SettingsParityTableTests` inside the passing Native run asserts S01 to S50 once each with a status and note; counted from the file: 6 Built, 2 Wired, 20 Partial, 22 Omitted; 30 rows are Built, Wired or Omitted with a reason, 20 are Partial with the missing piece stated; `scripts/check-settings-parity.sh` is in no gate).**
+  2. The new pages (Hooks, MCP, Cloud agents, Remote, Workspaces, Privacy, Worktrees, Ignore, Run mode, Labs) exist in the desktop and the web head. Verify: view model tests and headless tests per page. **Result: Partial (desktop: Hooks, MCP, Cloud agents, Remote, Workspaces, Privacy, Worktrees, Ignore and Run mode exist with `*SettingsPageTests`, `McpSettingsViewModel*Tests` and `*PageViewTests` inside the passing Presentation and Native runs; web: Hooks, MCP list and information pages for Run mode, Workspaces, Remote, Cloud agents and Privacy; no Worktrees or Ignore page in the web; no Labs page in either head).**
+**Plans**: `61-01-PLAN.md` (units built), `61-SUMMARY.md`, `61-VERIFICATION.md` in `.planning/phases/61-settings-parity/`
 
 ### Phase 62: Providers, EU US CN and Coding Plans
 **Goal**: Settings lists every EU, US and CN provider and coding plan of the research, ready to take a key.
@@ -1202,11 +1216,12 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phase 61 shell (Models page), Phase 53 (API)
 **Mac channel**: No.
 **UI hint**: yes
+**Status (2026-10-28)**: Partial: catalogue of 103 rows and Models page met; omp validation of the C# writer is not a committed record; no live key check (OQ-71).
 **Success Criteria** (what must be TRUE):
-  1. The catalogue holds at least the EU, US, CN, aggregator and local rows of the research with base URL, authentication, API style, region, residency, omp id or `models.yml` template, docs and key links, and plan terms; retired or unconfirmed vendors (GitHub Models, Lambda, Replicate) are not offered. Verify: catalogue tests (unique ids, https, no placeholders, every row has a source URL).
-  2. The writer produces valid `models.yml` blocks for all ten omp API styles, validated by omp itself. Verify: writer tests and an `omp models` probe in a sandbox.
-  3. The Models page filters by region and kind, shows coding-plan cards with their rule text, and never renders a key. Verify: view model tests and screenshots.
-**Plans**: `62-01-PLAN.md` in `.planning/phases/62-providers-eu-us-cn-and-coding-plans/`
+  1. The catalogue holds at least the EU, US, CN, aggregator and local rows of the research with base URL, authentication, API style, region, residency, omp id or `models.yml` template, docs and key links, and plan terms; retired or unconfirmed vendors (GitHub Models, Lambda, Replicate) are not offered. Verify: catalogue tests (unique ids, https, no placeholders, every row has a source URL). **Result: Met (103 rows counted in the tree: 50 verified, 49 partial, 4 unverified, 23 coding plans, 46 omp ids, 7 sign-in rows, 150 routes (the report said 151); `CatalogueRowsTests`, `CatalogueRowValidatorTests`, `CatalogueUrlTemplateTests`, `ProviderIdMapTests` present, project not in the recorded per-project list so the bootstrap gate log is the record; no cell-by-cell audit against the research).**
+  2. The writer produces valid `models.yml` blocks for all ten omp API styles, validated by omp itself. Verify: writer tests and an `omp models` probe in a sandbox. **Result: Partial (writer for all 13 omp api values: `OmpManagedBlockWriterApiTests`, `OmpProviderApiNamesTests`, `OmpCatalogueBlockTests`; omp 18.12.6 accepted a Python replica of the layout in a sandbox on 2026-10-27, recorded only as text in ADR-0019, no evidence file; UNVERIFIED: C# writer output through `omp models --json` with empty stderr).**
+  3. The Models page filters by region and kind, shows coding-plan cards with their rule text, and never renders a key. Verify: view model tests and screenshots. **Result: Met (`ProviderDirectoryTests`, `ProviderListingCardTests`, `ModelsListingViewTests`, `ApiModelsSettingsSourceTests`, `ProvidersCredentialEndpointTests` inside the passing Presentation, Native, Web and Api.IntegrationTests runs; screenshots `docs/runbooks/evidence/web-app-2026-10-28/M-11-models-cn-coding-plans.png` and `M-12-models-eu.png`; no desktop screenshot of the listing).**
+**Plans**: `62-01-PLAN.md` (units built), `62-SUMMARY.md`, `62-VERIFICATION.md` in `.planning/phases/62-providers-eu-us-cn-and-coding-plans/`
 
 ### Phase 63: Cursor Feature Completion
 **Goal**: The agent, chat, context and safety features of the inventory that are not covered by the phases above are built or recorded.
@@ -1214,10 +1229,11 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phases 56 to 62
 **Mac channel**: No.
 **UI hint**: yes
+**Status (2026-10-28)**: Partial: every feature has code and tests; pull request, browser and terminal-output mentions are not composed; nothing observed with a live omp (OD-07).
 **Success Criteria** (what must be TRUE):
-  1. `@` mentions cover files, folders, terminals, chats, git diffs, browser, rules, skills and pull requests, sent to omp as embedded resources. Verify: mention resolver tests.
-  2. Run mode (Auto-review, Allowlist, Run Everything), `permissions.json`, `sandbox.json`, `.cursorignore`, `.cursor/mcp.json` import into the session's MCP servers, `.cursor/worktrees.json` with the worktree commands, file checkpoints with rewind, queue versus send now, conversation search and the context ring exist or are listed as PARTIAL with the missing piece. Verify: tests per feature and the refreshed audit.
-**Plans**: `63-01-PLAN.md` in `.planning/phases/63-cursor-feature-completion/`
+  1. `@` mentions cover files, folders, terminals, chats, git diffs, browser, rules, skills and pull requests, sent to omp as embedded resources. Verify: mention resolver tests. **Result: Partial (`MentionParserTests`, `MentionSourceTests`, `MentionComposerModelTests`, `MentionSecretFilesTests`, `ComposerMentionViewTests`, `AcpPromptContentTests`: files, folders, chats, git diffs, rules and skills are wired and sent as ACP `resource` blocks; pull requests resolve to "needs a configured Git host", terminal output is not available in the window and the browser source is not composed (no browser pane, ADR-0009); not observed with a live omp).**
+  2. Run mode (Auto-review, Allowlist, Run Everything), `permissions.json`, `sandbox.json`, `.cursorignore`, `.cursor/mcp.json` import into the session's MCP servers, `.cursor/worktrees.json` with the worktree commands, file checkpoints with rewind, queue versus send now, conversation search and the context ring exist or are listed as PARTIAL with the missing piece. Verify: tests per feature and the refreshed audit. **Result: Partial (`RunModePolicyTests`, `PermissionsFileTests`, `SandboxBoundaryTests`, `McpServerCatalogTests`, `CheckpointStoreTests`, `QueuedMessagesModelTests`, `ConversationSearchModelTests`, `ContextRingModelTests`, `WorktreeApplierTests`: run modes, `permissions.json`, `.cursor/mcp.json` import, worktree commands, checkpoints with rewind, queue, search are wired; Auto-review has no hosted classifier, `sandbox.json` is a read boundary only (no OS sandbox, omp has none), `.cursorignore` does not bind omp's tools, the context ring has no per-category counts; omp's permission field names UNVERIFIED, OQ-84).**
+**Plans**: `63-01-PLAN.md` (units built), `63-SUMMARY.md`, `63-VERIFICATION.md` in `.planning/phases/63-cursor-feature-completion/`
 
 ### Phase 64: Documentation and GitBook
 **Goal**: The documentation is up to date, honest about status, and published in GitBook's layout.
@@ -1225,11 +1241,12 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phases 51 to 63
 **Mac channel**: No.
 **UI hint**: no
+**Status (2026-10-28)**: Partial: layout, guides and audit exist; `check-docs.sh` fails with 4 orphan pages and is not in the gate; the GitBook space is not created (owner step); the audit describes tree `fbd5266`.
 **Success Criteria** (what must be TRUE):
-  1. `.gitbook.yaml`, `SUMMARY.md` and about 30 pages exist (get started, use, concepts, configure, agents everywhere, reference, project), every page states what is built, partial or blocked, and the README is the landing page. Verify: `scripts/docs/check_gitbook.py` in the gate (no orphan, duplicate, broken link or unbalanced block).
-  2. The owner steps to publish the space are in `docs/runbooks/gitbook-publish.md`; if a signed-in session is available the space is created and connected, otherwise the exact steps remain. Verify: the runbook and, if done, the space URL.
-  3. The Cursor parity audit is refreshed against the 2026-10-27 inventory with a status for every feature. Verify: the audit file counts and the settings and slash tables.
-**Plans**: `64-01-PLAN.md` in `.planning/phases/64-documentation-and-gitbook/`
+  1. `.gitbook.yaml`, `SUMMARY.md` and about 30 pages exist (get started, use, concepts, configure, agents everywhere, reference, project), every page states what is built, partial or blocked, and the README is the landing page. Verify: `scripts/docs/check_gitbook.py` in the gate (no orphan, duplicate, broken link or unbalanced block). **Result: Partial (`.gitbook.yaml`, `docs/SUMMARY.md` with 69 entries, `docs/README.md` landing, root `README.md`, ten guides; `bash scripts/ci/check-docs.sh` run 2026-10-28: 138 markdown files, 4 errors, all orphans: `docs/decisions/addendum-ADR-0015-containers.md`, `docs/reference/automations.md`, `docs/reference/builtin-skills.md`, `docs/runbooks/remote-containers.md`; not called from `bootstrap.sh` or `ci.yml`; the eight pinned screenshots exist; `docs/reference/hooks.md` still says the heads do not construct the hooks service).**
+  2. The owner steps to publish the space are in `docs/runbooks/gitbook-publish.md`; if a signed-in session is available the space is created and connected, otherwise the exact steps remain. Verify: the runbook and, if done, the space URL. **Result: Partial (`docs/runbooks/gitbook-publish.md` holds the exact owner steps and a Blocked status; no GitBook session or credential was available, so the space was not created and no URL exists; blocked on the owner, OQ-101).**
+  3. The Cursor parity audit is refreshed against the 2026-10-27 inventory with a status for every feature. Verify: the audit file counts and the settings and slash tables. **Result: Partial (`docs/quality/cursor-parity-audit-2026-10-28.md`: 494 rows in 18 families, summed from its summary table; counted 2026-10-28: settings 50 rows (MET 5, PARTIAL 16, DEFERRED 6, NOT-STARTED 9, OMITTED-BY-DECISION 14), slash 92 rows (MET 16, PARTIAL 53, DEFERRED 5, NOT-STARTED 3, OMITTED-BY-DECISION 15), shortcuts 55; the audit covers tree fbd5266 and says wired rows need re-verification, not done after the Wave 3 and 4 wiring).**
+**Plans**: `64-01-PLAN.md` (units built), `64-SUMMARY.md`, `64-VERIFICATION.md` in `.planning/phases/64-documentation-and-gitbook/`
 
 ### Phase 65: Integration and Release v0.15.0
 **Goal**: The whole is green on a clean tree, pushed as a fast-forward, tagged and released.
@@ -1237,8 +1254,29 @@ Settled decisions (each has an open-question row with the default taken):
 **Depends on**: Phases 51 to 64
 **Mac channel**: No.
 **UI hint**: no
+**Status (2026-10-28)**: Partial: final report written; the `./bootstrap.sh` log, the push, the tag and the GitHub Release are pending the orchestrator.
 **Success Criteria** (what must be TRUE):
-  1. `./bootstrap.sh` passes on a clean worktree of the final commit; the log is saved under `docs/runbooks/evidence/`. Verify: the log.
-  2. `origin/main` is an ancestor of the final commit and the push is a fast-forward; tag `v0.15.0` and its GitHub Release exist. Verify: `git merge-base --is-ancestor`, `gh release view`.
-  3. The final report separates verified items from items that need the owner (GitBook connection, social preview upload, Notion authentication, live model turn, provider credentials, Windows and macOS runs, the sign-in authority).
-**Plans**: `65-01-PLAN.md` in `.planning/phases/65-integration-and-release-v0150/`
+  1. `./bootstrap.sh` passes on a clean worktree of the final commit; the log is saved under `docs/runbooks/evidence/`. Verify: the log. **Result: Partial (the full `./bootstrap.sh` gate on the final commit was running; its result is recorded in `docs/runbooks/evidence/bootstrap-gate-2026-10-28-*.log`, no such log existed when the record was written; per-project runs on the final tree passed, recorded 2026-10-28).**
+  2. `origin/main` is an ancestor of the final commit and the push is a fast-forward; tag `v0.15.0` and its GitHub Release exist. Verify: `git merge-base --is-ancestor`, `gh release view`. **Result: Partial (pending the orchestrator: `origin/main` (`04e80d1`, local ref) is an ancestor of `7535859`; nothing pushed, no tag `v0.15.0`, no GitHub Release).**
+  3. The final report separates verified items from items that need the owner (GitBook connection, social preview upload, Notion authentication, live model turn, provider credentials, Windows and macOS runs, the sign-in authority). **Result: Met (`65-SUMMARY.md` Final report: verified items with evidence, and the owner list: GitBook connection, social preview upload and discussion categories, Notion authentication, live model turn, provider credentials, Windows, macOS and Android runs, the sign-in authority, Railway deploy approval, AGPL -only or -or-later, owner sign-off of the look).**
+**Plans**: `65-01-PLAN.md` (units built), `65-SUMMARY.md`, `65-VERIFICATION.md` in `.planning/phases/65-integration-and-release-v0150/`
+
+### Progress (v0.15.0)
+
+| Phase | Records | Status | Completed |
+|-------|---------|--------|-----------|
+| 51. Brand, Theme and Licence | `51-SUMMARY.md` | Partial (criteria 1, 2 met; licence check not in the gate, no web About page) | - |
+| 52. Repository, Release and Community Health | `52-SUMMARY.md` | Partial (no saved read-back; owner steps; tag and release pending) | - |
+| 53. Web Head Foundation and API Surface | `53-SUMMARY.md` | Complete | 2026-10-28 |
+| 54. Web Agent Panel and Workspace Screens | `54-SUMMARY.md` | Partial (no Cloud or Remote view on the web) | - |
+| 55. Showing the Web Application | `55-SUMMARY.md` | Partial (Demo hosted; build id and evidence README missing) | - |
+| 56. Slash Commands and Convention Discovery | `56-SUMMARY.md` | Partial (criterion 1 met; no cloud discovery; web palette without discovered rows) | - |
+| 57. Hooks | `57-SUMMARY.md` | Partial (real-omp enforcement UNVERIFIED, OD-07) | - |
+| 58. Remote Environments over SSH | `58-SUMMARY.md` | Complete with caveats (session open live; no prompt turn) | 2026-10-28 |
+| 59. Multi-repo Workspaces | `59-SUMMARY.md` | Partial (explorer, per-run worktrees, convention merge unwired) | - |
+| 60. Cloud Agents on Railway | `60-SUMMARY.md` | Partial; criterion 4 Blocked (nothing deployed) | - |
+| 61. Settings Parity | `61-SUMMARY.md` | Partial (Labs page missing; web pages missing) | - |
+| 62. Providers, EU US CN and Coding Plans | `62-SUMMARY.md` | Partial (writer validation by omp not committed) | - |
+| 63. Cursor Feature Completion | `63-SUMMARY.md` | Partial (three mention sources not composed) | - |
+| 64. Documentation and GitBook | `64-SUMMARY.md` | Partial (4 orphan pages; space not created) | - |
+| 65. Integration and Release v0.15.0 | `65-SUMMARY.md` | Partial (gate log, push, tag, release pending) | - |

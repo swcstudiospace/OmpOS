@@ -346,6 +346,7 @@ Source: user request 2026-10-22 and the ultrathink plan graph ut-mvirx2k5-37cf01
 - [ ] **CX-05**: Remote development connects to a host over an authenticated, encrypted transport, with host-identity verification.
   - Acceptance: host identity is verified before the first connection; a changed key is refused with no auto-accept path; the disconnected state says local development remains available.
   - Verification: deferred, blocked on OD-06 (verified remote omp endpoint and WebSocket upgrade authentication) and the owner's protocol and host-key decision. No Cursor primary docs page for SSH remote development was found (https://cursor.com/docs/remote-ssh.md and https://cursor.com/docs/remote-development return 404) (Phase 34).
+  - Audit (2026-10-28): PARTIAL. Host-identity verification and reconnect are built for ssh stdio (ADR-0015, PX-15) and a live loopback `sshd` run opened a session; no prompt turn (OD-07), no real network host, no live drop, and no Windows head.
 - [ ] **CX-06**: The codebase meets a state-of-the-art, enterprise and production-ready bar, checked by a repository-wide review in which every finding is fixed or recorded.
   - Acceptance: every finding has a disposition (fixed, or recorded with an owner and an open-question link); no finding is silently suppressed.
   - Verification: findings table in the Phase 35 record.
@@ -479,76 +480,127 @@ Source: user request 2026-10-26 and ultrathink plan graph ut-mvp0bh59-2dd6ef4c. 
   - Acceptance: the font files and their licence texts are in the application assets; no Thin weight renders; every `OmpOS.Font.Display` use is 20 px or larger and semibold or heavier; no literal family exists in AXAML (AL-19).
   - Verification: `FontResourceTests`, a typography markup test and the recorded screenshots (Phase 50).
 
-## Parity and publication (PX, v0.15.0, planned 2026-10-27)
+## Parity and publication (PX, v0.15.0, planned 2026-10-27; audited 2026-10-28)
 
 Source: the user request of 2026-10-27 and the research in `docs/plans/v0.15.0-research/`. Every requirement names its phase; verification follows the gate rules of the earlier milestones (no live model turn, no external account action without a record).
 
-- [ ] **PX-01**: The default look is White and Purple.
+- [x] **PX-01**: The default look is White and Purple.
   - Acceptance: a new installation starts in the Light theme (white surfaces, purple `#6d28d9`) in the desktop and the web head; System, Light and Dark remain choices and persist; every colour pair keeps its contrast in both variants. Supersedes the Dark default of AL-21 (OQ-94).
   - Verification: theme preference tests (default Light), `ThemeContrastTests`, screenshots in both themes (Phase 51).
-- [ ] **PX-02**: OmpOS has a brand set built from the Greptile typefaces.
+  - Audit (2026-10-28): MET. Light default on desktop, Android and web; Dark and System persist; `DefaultThemeTests`, `ThemeSwitchTests`. The owner has not signed off the look (OQ-94 default). See `.planning/phases/51-brand-theme-and-licence/51-VERIFICATION.md`.
+- [x] **PX-02**: OmpOS has a brand set built from the Greptile typefaces.
   - Acceptance: mark, wordmark lockup, banner (1280 by 320), social preview (1280 by 640, under 1 MB), favicons and desktop and Android icons exist under `assets/brand/` with the script that builds them; text is outlined from the bundled faces; the heads and the README use them.
   - Verification: a script test of sizes and dimensions and review by eye (Phase 51).
+  - Audit (2026-10-28): MET. Brand set and `check-brand.sh` run 2026-10-28; the images were reviewed by the builder only; `.icns`, `.ico` and Android adaptive icon not seen in their native shells. See `.planning/phases/51-brand-theme-and-licence/51-VERIFICATION.md`.
 - [ ] **PX-03**: The repository is licensed AGPL-3.0-or-later.
   - Acceptance: `LICENSE` holds the canonical text; `NOTICE` and `THIRD-PARTY-NOTICES.md` account for every shipped package, font and bundled asset; package metadata carries the SPDX expression; the README states it; OQ-93 records the reading of "AGL 3.0" and closes OQ-62.
   - Verification: a licence check script run in the gate (Phase 51).
+  - Audit (2026-10-28): PARTIAL. Files, SPDX and README are in place; the licence check is not in the gate and `THIRD-PARTY-NOTICES.md` is stale (check failed 2026-10-28); LICENSE not byte-compared with gnu.org. See `.planning/phases/51-brand-theme-and-licence/51-VERIFICATION.md`.
 - [ ] **PX-04**: The network source offer of AGPL section 13 is met on every surface.
   - Acceptance: `GET /source` is anonymous and returns the licence, the repository URL and the commit; the web footer and About page and the desktop About show them.
   - Verification: API integration test, bUnit test, headless view test (Phase 51).
+  - Audit (2026-10-28): PARTIAL. API `GET /source` and desktop About met; web footer offers the source repository root and version, no web About page and no revision link. See `.planning/phases/51-brand-theme-and-licence/51-VERIFICATION.md`.
 - [ ] **PX-05**: The GitHub repository is presented properly.
   - Acceptance: description, homepage, topics, detected licence, security reporting, secret scanning and Dependabot security updates are set and recorded; the social preview is prepared with its manual step.
   - Verification: `gh api` read-back saved as evidence (Phase 52).
+  - Audit (2026-10-28): PARTIAL. Settings applied 2026-10-28 (recorded by the orchestrator); no saved read-back and the social preview upload is an owner step. See `.planning/phases/52-repository-release-and-community-health/52-VERIFICATION.md`.
 - [ ] **PX-06**: The standard community files exist.
   - Acceptance: CONTRIBUTING (with the DCO rule), CODE_OF_CONDUCT, SECURITY, SUPPORT, CODEOWNERS, issue forms, a pull request template, `dependabot.yml`, release notes configuration and labels.
   - Verification: community profile check and YAML validity tests (Phase 52).
+  - Audit (2026-10-28): PARTIAL. All community files exist and parse; the community profile health percentage was not read. See `.planning/phases/52-repository-release-and-community-health/52-VERIFICATION.md`.
 - [ ] **PX-07**: The changelog and the release are in place.
   - Acceptance: `CHANGELOG.md` in Keep a Changelog form from v0.9.1 to v0.15.0; one version source; tag and GitHub Release v0.15.0.
   - Verification: changelog check script, `gh release view` (Phases 52 and 65).
-- [ ] **PX-08**: The web head is styled in White and Purple with self-hosted Greptile faces.
+  - Audit (2026-10-28): PARTIAL. Changelog and version are in place and the check passes; the tag and the GitHub Release are pending Phase 65. See `.planning/phases/52-repository-release-and-community-health/52-VERIFICATION.md`.
+- [x] **PX-08**: The web head is styled in White and Purple with self-hosted Greptile faces.
   - Acceptance: no Bootstrap; tokens mirror the desktop; woff2 fonts with their OFL texts; reduced motion; theme boot script; the shell has a top bar, rail, thread region and a drawer below 840 px.
   - Verification: CSS contract tests, `AccessibilityTests`, bUnit tests, smoke (Phase 53).
+  - Audit (2026-10-28): MET. Tokens, self-hosted woff2 with OFL texts, theme boot and shell exist in the tree; contract and shell tests inside the passing UI and Web runs; smoke 0 axe violations. See `.planning/phases/53-web-head-foundation-and-api-surface/53-VERIFICATION.md`.
 - [ ] **PX-09**: The web head offers the desktop's working surfaces.
   - Acceptance: thread header with the plugin connection row, the block views, composer chips and slash palette, steering, approvals, Changes bar, Kanban, Settings, omp terminal, Cloud and Remote views.
   - Verification: bUnit tests per component and state; smoke v2 with axe on every screen in both themes at three widths (Phase 54).
-- [ ] **PX-10**: The API serves the endpoints the screens need.
+  - Audit (2026-10-28): PARTIAL. The working surfaces except Cloud and Remote views are built and tested (UI 595 passed); Kanban moves by buttons, not drag and drop; terminal needs a stream endpoint. See `.planning/phases/54-web-agent-panel-and-workspace-screens/54-VERIFICATION.md`.
+- [x] **PX-10**: The API serves the endpoints the screens need.
   - Acceptance: catalog, stages, context, steering, config options, commands, changes, board, lifecycle, workspace, settings, providers (write-only credentials), hooks, automations, files, terminal stream and cloud endpoints, owner-scoped and in OpenAPI 3.1; none echoes a credential.
   - Verification: integration tests per endpoint and a contract test against `docs/api/openapi.json` (Phases 53, 54, 60, 62).
+  - Audit (2026-10-28): MET. Catalog, events, stages, context, steering, config, commands, changes, board, lifecycle, workspace, source and the settings routes are in `docs/api/openapi.json`; Api.IntegrationTests 1027/1027 passed. Behaviour limits in Known gaps. See `.planning/phases/53-web-head-foundation-and-api-surface/53-VERIFICATION.md`.
 - [ ] **PX-11**: The web application can be seen.
   - Acceptance: a labelled Demo build with a simulated engine and a hosted preview; a local run against the real API; screenshots of every screen in both themes at 1440, 1024 and 390 px with the method stated.
   - Verification: fixture contract test, `curl` and a screenshot of the hosted page, the evidence folder (Phase 55).
+  - Audit (2026-10-28): PARTIAL. The Demo is built, tested and hosted at https://ompos-web.vercel.app; missing: recorded commit and build id, the full screenshot matrix and the evidence README. See `.planning/phases/55-showing-the-web-application/55-VERIFICATION.md`.
 - [ ] **PX-12**: All Cursor slash commands resolve.
   - Acceptance: the 92 documented tokens and aliases each have a handler kind and a visible status; `/skill-name`, custom markdown commands, `/subagent-name` and the `&` hand-off resolve; the palette of both heads lists engine, OmpOS, discovered and skill commands with their source.
   - Verification: a test that every documented token has a handler; resolver and palette tests (Phase 56).
+  - Audit (2026-10-28): PARTIAL. All 92 tokens plus `/update-settings` have a kind and status and resolve; 24 are Partial and 24 Unavailable with stated reasons; the web head lists no discovered rows; no command ran against a live omp (OD-07). See `.planning/phases/56-slash-commands-and-convention-discovery/56-VERIFICATION.md`.
 - [ ] **PX-13**: The conventions of a workspace are picked up automatically.
   - Acceptance: commands, skills, rules and subagents are discovered from `.ompos`, `.omp`, `.cursor`, `.claude`, `.codex` and `.agents` at project and user scope with precedence and diagnostics, in desktop, remote and cloud sessions.
   - Verification: discovery tests over fixture trees per source and per environment kind (Phase 56).
+  - Audit (2026-10-28): PARTIAL. Six directories at two scopes with precedence and diagnostics work in desktop sessions and are wired for remote sessions (untested at the Native seam); cloud sessions have no discovery; multi-root merge exists in the library but no head passes more than one root. See `.planning/phases/56-slash-commands-and-convention-discovery/56-VERIFICATION.md`.
 - [ ] **PX-14**: Cursor-compatible hooks run in every environment.
   - Acceptance: 21 events, command and prompt hooks, matchers, timeouts, `failClosed`, `loop_limit`, exit code 2 as deny; blocking events enforced inside omp by an OmpOS extension; consent on a path-independent hash; Hooks page and run log; head wiring (closes OQ-84).
   - Verification: parser, runner, consent and extension tests; a fake-omp test that a denying hook stops a tool call (Phase 57).
+  - Audit (2026-10-28): PARTIAL. 21 events, consent v2, extension, tap, page and desktop wiring are built and tested; real-omp enforcement is UNVERIFIED (OD-07); remote ssh sessions read no hook files and run no bridge; cloud hooks are off by default, not in the worker image, with no consent snapshot producer. See `.planning/phases/57-hooks/57-VERIFICATION.md`.
 - [ ] **PX-15**: A session can run on a remote host over SSH.
   - Acceptance: profiles from `ssh -G`, preflight with fix text, `SshAcpTransport` for `omp acp`, banner tolerance, reconnect with `session/load`, remote file tree and terminal, no secret in an argument list.
   - Verification: fake-ssh tests with canary secrets and a recorded run against a loopback `sshd` (Phase 58).
+  - Audit (2026-10-28): PARTIAL. Ssh stdio remote sessions, files, conventions, terminal, picker and reconnect are built, wired into the desktop head and unit tested; a real omp opened a session through a real sshd on loopback; no prompt turn, no real network host, no live drop, and a Windows head rejects a POSIX remote working directory (`AcpAgentSession.cs` line 982). Containers (podman) and WSL are built and wired as an addendum (live podman passed in the Wave 4 tree; WSL unrun on Windows). See `.planning/phases/58-remote-environments-over-ssh/58-VERIFICATION.md`.
 - [ ] **PX-16**: A session can cover several repositories.
   - Acceptance: a workspace set of several roots is validated and launched through omp's additional-directory support; worktrees per git root; explorer with one tree per root; `.code-workspace` import and export; convention merge across roots.
   - Verification: launch, worktree and merge tests with real git, a recorded omp probe (Phase 59).
+  - Audit (2026-10-28): PARTIAL. Set, validator, store, `.code-workspace` round trip, `--add-dir` launch (probed), worktree set and a desktop picker exist; explorer per root, per-run worktrees and head-side convention merge are unwired; no remote multi-root run and no model turn (OD-07). See `.planning/phases/59-multi-repo-workspaces/59-VERIFICATION.md`.
 - [ ] **PX-17**: An agent can run in the cloud on Railway and return a pull request.
   - Acceptance: authenticated WebSocket worker bridge, durable cloud agent records, caps, idle sweeper, secret redaction, Railway client, pull request flow, heads, and a staged deployment recorded with version and state or the exact blocker.
   - Verification: loopback and fake-worker tests, canary tests, recorded fixtures, Railway status read-back (Phase 60).
+  - Audit (2026-10-28): PARTIAL. Worker bridge, JWT, control plane with caps, idle sweeper, redaction and Postgres store, Railway client, desktop Cloud agents page and host are built and tested against fakes and recorded fixtures; no Railway deploy, no live run, the worker cannot clone or branch, cloud hooks are not wired end to end, the web head has no cloud page beyond information. See `.planning/phases/60-cloud-agents-on-railway/60-VERIFICATION.md`.
 - [ ] **PX-18**: Settings cover Cursor's configuration surface.
   - Acceptance: each of the 50 inventory rows is built, wired to omp or listed as omitted with the reason; the new pages exist in both heads.
   - Verification: a status test over the row ids and page tests (Phase 61).
+  - Audit (2026-10-28): PARTIAL. 50 rows tracked by id with a test, 20 of them Partial; Labs page missing; Worktrees and Ignore have no web page. See `.planning/phases/61-settings-parity/61-VERIFICATION.md`.
 - [ ] **PX-19**: Settings lists every EU, US and CN provider and coding plan of the research.
   - Acceptance: catalogue rows with base URL, authentication, API style, region, residency, omp id or `models.yml` template, links and plan terms; retired or unconfirmed vendors are not offered; writer support for all ten omp API styles; region filter; coding-plan cards with the vendor rule text; no key is ever rendered.
   - Verification: catalogue and writer tests, an omp validation probe in a sandbox, view model tests (Phase 62).
+  - Audit (2026-10-28): PARTIAL. 103 rows (EU 20, US 25, CN 41, global 8, local 9; 23 coding plans) with writer, directory page, desktop adapter, API endpoints and web source built; 49 rows Partial and 4 Unverified, no live key check (OQ-71, OD-07), and the omp acceptance of the C# writer is unrecorded. See `.planning/phases/62-providers-eu-us-cn-and-coding-plans/62-VERIFICATION.md`.
 - [ ] **PX-20**: The remaining Cursor agent, chat, context and safety features are built or recorded.
   - Acceptance: `@` mentions, run modes, `permissions.json`, `sandbox.json`, `.cursorignore`, `.cursor/mcp.json` import, worktree commands, file checkpoints, queue versus send now, conversation search and context ring each exist or are listed as PARTIAL with the missing piece.
   - Verification: tests per feature and the refreshed audit (Phase 63).
+  - Audit (2026-10-28): PARTIAL. All features built and composed in the desktop head except pull request, browser and terminal-output mentions; the audit file predates the wiring and still reads PARTIAL; no live model turn. See `.planning/phases/63-cursor-feature-completion/63-VERIFICATION.md`.
 - [ ] **PX-21**: The documentation is current and published in GitBook's layout.
   - Acceptance: `.gitbook.yaml`, `SUMMARY.md`, about 30 pages stating status honestly, README as the landing page, the owner's publish steps; the offline checker passes.
   - Verification: `scripts/docs/check_gitbook.py` in the gate (Phase 64).
+  - Audit (2026-10-28): PARTIAL. Layout, landing, guides and runbook exist; the checker fails on 4 orphans and is not in the gate; the space is not published (owner step). See `.planning/phases/64-documentation-and-gitbook/64-VERIFICATION.md`.
 - [ ] **PX-22**: The Cursor parity audit is refreshed against the 2026-10-27 inventory.
   - Acceptance: every feature of the inventory has a status with evidence; counts are updated.
   - Verification: the audit file (Phase 64).
+  - Audit (2026-10-28): PARTIAL. Every inventory row has a status and the settings, slash and shortcuts counts match; statuses of rows wired after fbd5266 are stale. See `.planning/phases/64-documentation-and-gitbook/64-VERIFICATION.md`.
 - [ ] **PX-23**: The release is verified and published.
   - Acceptance: `./bootstrap.sh` green on a clean worktree, fast-forward push, tag v0.15.0, GitHub Release, deploy records, a final report separating verified from owner-dependent items.
   - Verification: the saved log, git ancestry check, `gh release view` (Phase 65).
+  - Audit (2026-10-28): PARTIAL. Final report written; gate log, fast-forward push, tag and GitHub Release pending the orchestrator. See `.planning/phases/65-integration-and-release-v0150/65-VERIFICATION.md`.
+
+### Traceability (PX)
+
+| REQ-ID | Phase | Status (2026-10-28) |
+|--------|-------|---------------------|
+| PX-01 | 51 | Met |
+| PX-02 | 51 | Met |
+| PX-03 | 51 | Partial (licence check not in the gate; notices stale) |
+| PX-04 | 51 | Partial (no web About page) |
+| PX-05 | 52 | Partial (no saved read-back; owner steps) |
+| PX-06 | 52 | Partial (community profile not read) |
+| PX-07 | 52 | Partial (tag and release pending Phase 65) |
+| PX-08 | 53 | Met |
+| PX-09 | 54 | Partial (no Cloud or Remote view; terminal stream missing) |
+| PX-10 | 53 | Met |
+| PX-11 | 55 | Partial (build id, screenshot matrix, README) |
+| PX-12 | 56 | Partial (web palette without discovered rows; no live omp) |
+| PX-13 | 56 | Partial (no cloud discovery; primary root only) |
+| PX-14 | 57 | Partial (real-omp enforcement UNVERIFIED, OD-07) |
+| PX-15 | 58 | Partial (no prompt turn; no Windows head) |
+| PX-16 | 59 | Partial (explorer, per-run worktrees, convention merge unwired) |
+| PX-17 | 60 | Partial; staged Railway deploy Blocked (OD-03, OQ-71, OQ-73, OQ-100) |
+| PX-18 | 61 | Partial (Labs page; web pages) |
+| PX-19 | 62 | Partial (writer validation by omp not committed) |
+| PX-20 | 63 | Partial (three mention sources not composed; no live omp) |
+| PX-21 | 64 | Partial (4 orphan pages; space not published) |
+| PX-22 | 64 | Partial (audit covers tree `fbd5266`) |
+| PX-23 | 65 | Partial (gate log, push, tag, release pending) |
