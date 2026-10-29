@@ -183,7 +183,7 @@ curl -sSi -X OPTIONS "$API/sessions" -H 'Origin: https://example.invalid' -H 'Ac
 
 Also read the deploy log for the Coordination warning (event 32, store `InMemory` in Production) and for `RateLimitRejected` noise. Remove the domain again if any check fails ([Incident response](incident-response.md), "Contain").
 
-Status: not yet executed against a real deployment. The 401 behaviour, the CORS policy and `/source` are read from the code (`Program.cs`, `Security/ConfigureCorsOptions.cs`, `Endpoints/SourceEndpoints.cs`); `/auth/config` and the security headers belong to units not merged when this page was written.
+Status: not yet executed against a real deployment. The same checks of the authentication (`/auth/config`, a request without a token, a wrong token, a valid token) ran against a locally started API on 2026-10-29 ([hosted-web-2026-10-29](evidence/hosted-web-2026-10-29/README.md)); the CORS policy, `/source` and the security headers are read from the code (`Program.cs`, `Security/ConfigureCorsOptions.cs`, `Endpoints/SourceEndpoints.cs`) and the integration tests.
 
 ### Step 6: web head build with the API origin
 
