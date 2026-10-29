@@ -565,6 +565,8 @@ async function main() {
       await sendAndAwaitAnswer(options.prompt, 1);
       const announced = await waitFor('the "Response complete." announcement', () => evalValue(`Array.from(document.querySelectorAll('[role="status"], [aria-live]')).map((el) => el.textContent).join(" ").includes("Response complete.")`), 20_000).then(() => true, () => false);
       check(await bannerOf() === null, "a Demo banner appeared while answering");
+      // The engine reports its context use after every turn; that is session state, and a thread that shows it as "Unsupported content" reads as a failure.
+      check(!(await helper("bodyText")).includes("Unsupported content"), 'the transcript shows "Unsupported content" after a plain answer');
       await shot("answer");
       const axe = await runAxe("answer");
       return { responseCompleteAnnounced: announced, ...axe };

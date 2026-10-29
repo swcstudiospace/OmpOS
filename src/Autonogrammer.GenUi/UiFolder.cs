@@ -31,6 +31,7 @@ namespace Autonogrammer.GenUi;
 public static class UiFolder
 {
     private const string ThoughtKind = "thought";
+    private const string ContextUsageKind = "context_usage";
     private const string ToolCallKind = "tool_call";
     private const string ToolCallUpdateKind = "tool_call_update";
     private const string PermissionRequestKind = "permission_request";
@@ -78,6 +79,10 @@ public static class UiFolder
         {
             case ThoughtKind:
                 // Thoughts are kept in the log but deliberately not rendered as UI blocks.
+                return state;
+
+            case ContextUsageKind:
+                // How much of the context window the conversation uses is session state for a meter, not transcript content: kept in the log, never rendered.
                 return state;
 
             case ToolCallKind when TryString(raw, "callId", out var callId) && TryString(raw, "name", out var name):

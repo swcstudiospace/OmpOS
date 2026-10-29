@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Autonogrammer.Contracts.Streaming;
@@ -32,6 +33,7 @@ namespace Autonogrammer.Sessions;
 public static class HarnessEventProjection
 {
     private const string ThoughtKind = "thought";
+    private const string ContextUsageKind = "context_usage";
     private const string ToolCallKind = "tool_call";
     private const string ToolCallUpdateKind = "tool_call_update";
     private const string PermissionRequestKind = "permission_request";
@@ -102,6 +104,7 @@ public static class HarnessEventProjection
         ToolCallUpdateEvent update => Unknown(ToolCallUpdateKind, ("callId", update.CallId), ("status", update.Status), ("payloadJson", update.PayloadJson)),
         PermissionRequestEvent permission => Unknown(PermissionRequestKind, ("callId", permission.CallId), ("name", permission.Name), ("payloadJson", permission.PayloadJson)),
         PlanEvent plan => Unknown(PlanKind, ("markdown", plan.Markdown)),
+        ContextUsageEvent usage => Unknown(ContextUsageKind, ("used", usage.Used.ToString(CultureInfo.InvariantCulture)), ("size", usage.Size.ToString(CultureInfo.InvariantCulture))),
         DiagnosticEvent diagnostic => new DiagnosticPayload { Message = diagnostic.Message },
         _ => throw new ArgumentOutOfRangeException(nameof(evt), evt.GetType(), "No stream mapping exists for this harness event."),
     };
@@ -147,6 +150,10 @@ public static class HarnessEventProjection
         {
             case ThoughtKind:
                 // Thoughts are kept in the log but deliberately not rendered as UI blocks.
+                return state;
+
+            case ContextUsageKind:
+                // How much of the context window the conversation uses is session state for a meter, not transcript content: kept in the log, never rendered.
                 return state;
 
             case ToolCallKind when TryString(raw, "callId", out var callId) && TryString(raw, "name", out var name):

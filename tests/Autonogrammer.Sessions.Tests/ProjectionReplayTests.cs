@@ -123,6 +123,21 @@ public sealed class ProjectionReplayTests
             .Single().Payload.ShouldBeOfType<UnknownPayload>().OriginalKind.ShouldBe("thought");
     }
 
+    /// <summary>The context window use stays in the log under its own kind with its two numbers, and produces no UI block: it feeds a meter, it is not transcript content.</summary>
+    [Fact]
+    public void ContextUsageIsLoggedWithItsNumbersButNotRendered()
+    {
+        var usage = new ContextUsageEvent(1234, 200000);
+
+        var after = HarnessEventProjection.Fold(ProjectionState.Empty, usage);
+
+        Snapshot(after).ShouldBe(Snapshot(ProjectionState.Empty));
+        var logged = HarnessEventProjection.ToStreamEvents(1, SessionId, CorrelationId, Stamp, usage).Single().Payload.ShouldBeOfType<UnknownPayload>();
+        logged.OriginalKind.ShouldBe("context_usage");
+        logged.Raw.GetProperty("used").GetString().ShouldBe("1234");
+        logged.Raw.GetProperty("size").GetString().ShouldBe("200000");
+    }
+
     /// <summary>Text deltas accumulate in the streaming buffer and flush into a markdown block at the next block boundary.</summary>
     [Fact]
     public void TextDeltasFlushIntoMarkdownBlockAtBoundary()

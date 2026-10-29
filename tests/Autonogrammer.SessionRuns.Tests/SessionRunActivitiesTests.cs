@@ -34,6 +34,27 @@ public sealed class SessionRunActivitiesTests
         observer.SessionChanges.Distinct(StringComparer.Ordinal).ToArray().ShouldBe([sessionId]);
     }
 
+    /// <summary>The engine reports its context use at the end of a turn. The log keeps it under its own kind with the two numbers, not under the name of a CLR type.</summary>
+    [Fact]
+    public async Task ContextUsageIsStoredUnderItsOwnKind()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repository = new InMemorySessionRepository();
+        var sessions = new SessionService(repository, TimeProvider.System);
+        var sessionId = await RunFixtures.StartPromptAsync(sessions, "hello", ct).ConfigureAwait(true);
+        var harness = new ScriptedHarnessFactory([new TextDeltaEvent("hi"), new ContextUsageEvent(1234, 200000), new CompletedEvent("end_turn")]);
+        var activities = RunFixtures.Activities(new RecordingSandboxProvider(), harness, repository, sessions, new RecordingObserver());
+
+        await activities.RunPromptAsync(RunFixtures.InputFor(sessionId, "hello"), static _ => { }, ct).ConfigureAwait(true);
+
+        var stored = await repository.GetAsync(sessionId, ct).ConfigureAwait(true);
+        stored.ShouldNotBeNull();
+        var usage = stored.Events[2].Payload.ShouldBeOfType<UnknownPayload>();
+        usage.OriginalKind.ShouldBe("context_usage");
+        usage.Raw.GetProperty("used").GetString().ShouldBe("1234");
+        usage.Raw.GetProperty("size").GetString().ShouldBe("200000");
+    }
+
     /// <summary>Harness events are appended in stream order, each mapped to its log payload, under the run's correlation identifier.</summary>
     [Fact]
     public async Task HarnessEventsAreAppendedInOrderThroughTheMapper()

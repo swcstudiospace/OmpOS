@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Autonogrammer.Contracts.Streaming;
@@ -31,6 +32,7 @@ internal static class HarnessEventMapper
             ToolCallUpdateEvent update => Unknown("tool_call_update", ("callId", update.CallId), ("status", update.Status), ("payloadJson", update.PayloadJson)),
             PermissionRequestEvent permission => Unknown("permission_request", ("callId", permission.CallId), ("name", permission.Name), ("payloadJson", permission.PayloadJson)),
             PlanEvent plan => Unknown("plan", ("markdown", plan.Markdown)),
+            ContextUsageEvent usage => Unknown("context_usage", ("used", usage.Used.ToString(CultureInfo.InvariantCulture)), ("size", usage.Size.ToString(CultureInfo.InvariantCulture))),
             _ => Unknown(evt.GetType().Name, ("type", evt.GetType().FullName ?? "unknown")),
         };
     }
