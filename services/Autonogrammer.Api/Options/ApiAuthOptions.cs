@@ -38,6 +38,20 @@ internal sealed class ApiAuthOptions
     public string? ValidIssuer { get; set; }
 
     /// <summary>
+    /// Gets or sets the signature algorithms a bearer token may use, a subset of <c>ES256</c> and <c>RS256</c>. Left empty (the default),
+    /// only <c>ES256</c> is accepted (see <see cref="EffectiveAlgorithms"/>), so a token signed with any other algorithm, including
+    /// <c>HS256</c> keyed with a public value, is refused. Refused in owner-token mode.
+    /// </summary>
+    public IList<string> Algorithms { get; set; } = [];
+
+    /// <summary>Gets the algorithms bearer validation accepts: the configured list, or <c>ES256</c> only when none is configured.</summary>
+    public IReadOnlyList<string> EffectiveAlgorithms =>
+        Algorithms.Any(static a => !string.IsNullOrWhiteSpace(a)) ? [.. Algorithms.Where(static a => !string.IsNullOrWhiteSpace(a))] : ["ES256"];
+
+    /// <summary>Gets or sets the public client sign-in settings served to anonymous callers. Valid in OIDC mode only.</summary>
+    public ApiAuthClientOptions Client { get; set; } = new();
+
+    /// <summary>
     /// Gets or sets whether requests without a validated token run as the single developer principal. Defaults to false and is
     /// refused outside the Development environment.
     /// </summary>

@@ -106,8 +106,10 @@ Config keys use `:` in code and `__` in the environment. Mark every variable mar
 | `Api__Auth__OwnerToken__Sha256__0` (and `__1`, `__2` for rotation) | no | `<64 lowercase hexadecimal characters: SHA-256 of the token>` | Added by unit api-auth | None; one to three digests are required in `OwnerToken` mode |
 | `Api__Auth__OwnerToken__Subject` | no | `owner` | Added by unit api-auth | `owner` |
 | `Api__Auth__OwnerToken__MaxFailuresPerMinute` | no | `10` | In progress, unit api-auth | `10` |
-| `Api__Auth__Authority`, `Api__Auth__Audience`, `Api__Auth__ValidIssuer` | no | `https://<issuer>` | `Options/ApiAuthOptions.cs`, `Options/ApiAuthOptionsValidator.cs` | Only for `Oidc` mode; in `OwnerToken` mode the unit's validator refuses them (in progress). No identity provider is chosen (OD-03) |
-| `Api__Auth__AllowedSubjects__0`, `Api__Auth__AllowAnyAuthenticatedUser` | no | `<subject>`, `false` | In progress, unit api-auth | Only for `Oidc` mode |
+| `Api__Auth__Authority`, `Api__Auth__Audience`, `Api__Auth__ValidIssuer` | no | `https://<issuer>` | `Options/ApiAuthOptions.cs`, `Options/ApiAuthOptionsValidator.cs` | Only for `Oidc` mode; in `OwnerToken` mode the validator refuses them. `ValidIssuer` is required (absolute https) outside Development in `Oidc` mode |
+| `Api__Auth__Algorithms__0` (and `__1`) | no | `ES256` | `Options/ApiAuthOptions.cs`, `Security/JwtBearerSetup.cs` | Unset: ES256 only. Allowed values `ES256`, `RS256`; refused in `OwnerToken` mode |
+| `Api__Auth__Client__ProjectUrl`, `Api__Auth__Client__PublishableKey` | no (public by design) | `https://<project>.supabase.co`, `<publishable key>` | `Options/ApiAuthClientOptions.cs`, `Options/ApiAuthOptionsValidator.cs` | Unset. `Oidc` mode only; a secret key, a service-role token or a non-https URL stops startup; refused in `OwnerToken` mode |
+| `Api__Auth__AllowedSubjects__0`, `Api__Auth__AllowAnyAuthenticatedUser` | no | `<subject>`, `false` | `Options/ApiAuthOptionsValidator.cs` | Only for `Oidc` mode. Open sign-up is deployed as `Api__Auth__AllowAnyAuthenticatedUser=true`, set on purpose |
 | `Api__Auth__AllowDevelopmentPrincipal` | no | not set | `Options/ApiAuthOptions.cs`, `Program.cs` lines 148 to 159 | Unset. The validator refuses it outside Development |
 
 The owner token itself is never a Railway variable. See `docs/runbooks/incident-response.md` for generating the token and its digest.
@@ -121,8 +123,8 @@ The owner token itself is never a Railway variable. See `docs/runbooks/incident-
 | `Api__MaxRequestBodyBytes` | no | `1048576` | `Options/ApiOptions.cs` | `1048576` |
 | `Api__RateLimit__PromptsPerMinute`, `Api__RateLimit__SessionsPerMinute` | no | `60`, `60` | `Options/ApiRateLimitOptions.cs`, `Security/SessionRateLimiterPolicy.cs` | `60`, `60` |
 | `Api__Workspace__Root` | no | `<absolute directory>` | `Services/SessionWorkspaceOptions.cs`, `Services/WorkspaceLocator.cs` | Unset: the workspace endpoints answer that no workspace exists |
-| `Api__Workspace__IncludeUserScope`, `Api__Workspace__Owners__0`, `Api__Workspace__RequestsPerMinute` | no | `false`, `<subject>`, `120` | `Services/WorkspaceSettings/WorkspaceSettingsOptions.cs` | `false`, unset (any authenticated caller), `120` |
-| `Hosting__ForwardedHeaders__Mode` | no | `TrustAllSingleHop` | Added by unit api-hosting | `None`. Choose at the first deploy by checking the client address the API sees behind Railway's edge [INFERENCE: the edge sets `X-Forwarded-For` and `X-Forwarded-Proto`] |
+| `Api__Workspace__IncludeUserScope`, `Api__Workspace__Owners__0`, `Api__Workspace__RequestsPerMinute` | no | `false`, `<subject>`, `120` | `Services/WorkspaceSettings/WorkspaceSettingsOptions.cs` | `false`, unset (denies every caller except the owner-token operator and the Development principal), `120` |
+| `Hosting__ForwardedHeaders__Mode` | no | `TrustAllSingleHop` | Added by unit api-hosting | `None`. Set `TrustAllSingleHop` behind Railway's edge: with `None` every caller shares the edge address, so the per-address limits of anonymous callers (and the per-caller fallback) become one shared budget. Confirm the client address the API sees at the first deploy [INFERENCE: the edge sets `X-Forwarded-For` and `X-Forwarded-Proto`] |
 | `Hosting__Hsts__Enabled` | no | `true` | Added by unit api-hosting | `true` in the unit's worktree |
 | `Hosting__Sse__HeartbeatSeconds` | no | `15` | Added by unit api-hosting | `15` in the unit's worktree |
 | Other `Hosting__*` keys (`RequestTimeoutSeconds`, `ShutdownTimeoutSeconds`, `SecurityHeaders__Enabled`, `Kestrel__*`, `JsonLogs`) | no | see the unit | In progress, unit api-hosting | The unit's defaults |

@@ -50,6 +50,82 @@ public sealed class RateLimitPartitionTests
         bobFirst.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
+    /// <summary>
+    /// Verifies two unauthenticated callers behind different remote addresses get independent budgets and one address shares its own: there is
+    /// no single bucket for every unauthenticated caller (D-47).
+    /// </summary>
+    [Fact]
+    public async Task TwoUnauthenticatedAddresses_DoNotShareABudget_AndOneAddressSharesItsOwn()
+    {
+        using var factory = OwnerTokenTestHost.CreateFactory();
+        using var client = factory.CreateClient();
+        var testToken = TestContext.Current.CancellationToken;
+
+        var firstStatuses = new List<HttpStatusCode>();
+        for (var request = 0; request <= AuthConfigRateLimiterPolicy.RequestsPerMinute; request++)
+        {
+            using var response = await GetAuthConfigAsync(client, "203.0.113.10", testToken).ConfigureAwait(true);
+            firstStatuses.Add(response.StatusCode);
+        }
+
+        using var otherAddress = await GetAuthConfigAsync(client, "203.0.113.11", testToken).ConfigureAwait(true);
+
+        firstStatuses.Take(AuthConfigRateLimiterPolicy.RequestsPerMinute).ShouldAllBe(static status => status == HttpStatusCode.OK);
+        firstStatuses[^1].ShouldBe(HttpStatusCode.TooManyRequests);
+        otherAddress.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    /// <summary>
+    /// Verifies every per-caller policy partitions through <see cref="RateLimitPartitionKey.For"/>, so a policy that buckets on a constant
+    /// key (one shared budget for everyone) fails. The auth-config and automation-webhook policies are anonymous endpoints and use the address
+    /// key by design.
+    /// </summary>
+    [Fact]
+    public void EveryPerCallerPolicy_PartitionsThroughTheCallerKey()
+    {
+        string[] addressPolicies = [nameof(AuthConfigRateLimiterPolicy), "AutomationWebhookRateLimiterPolicy"];
+        var policies = typeof(RateLimitPartitionKey).Assembly.GetTypes()
+            .Where(static type => type is { IsClass: true, IsAbstract: false } && type.GetInterfaces().Contains(typeof(Microsoft.AspNetCore.RateLimiting.IRateLimiterPolicy<string>)))
+            .Select(static type => type.Name)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        var root = FindRepoRoot();
+        var apiSources = Directory.EnumerateFiles(Path.Combine(root, "services", "Autonogrammer.Api"), "*.cs", SearchOption.AllDirectories)
+            .Where(static path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .ToArray();
+
+        policies.Length.ShouldBeGreaterThanOrEqualTo(7);
+        foreach (var policy in policies)
+        {
+            var file = apiSources.SingleOrDefault(path => string.Equals(Path.GetFileName(path), policy + ".cs", StringComparison.Ordinal));
+            file.ShouldNotBeNull($"no source file named {policy}.cs");
+            var source = StripComments(File.ReadAllText(file));
+            var expected = addressPolicies.Contains(policy, StringComparer.Ordinal) ? "RateLimitPartitionKey.ForAddress(" : "RateLimitPartitionKey.For(";
+            source.ShouldContain(expected, Case.Sensitive, $"{policy} must partition through {expected}");
+        }
+    }
+
+    private static async Task<HttpResponseMessage> GetAuthConfigAsync(HttpClient client, string address, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri("/auth/config", UriKind.Relative));
+        request.Headers.TryAddWithoutValidation(OwnerTokenTestHost.RemoteAddressHeader, address);
+        return await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static string StripComments(string source) =>
+        System.Text.RegularExpressions.Regex.Replace(source, @"//[^\r\n]*|/\*.*?\*/", string.Empty, System.Text.RegularExpressions.RegexOptions.Singleline, TimeSpan.FromSeconds(5));
+
+    private static string FindRepoRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Autonogrammer.slnx")))
+        {
+            directory = directory.Parent;
+        }
+
+        return directory?.FullName ?? throw new InvalidOperationException("Could not locate Autonogrammer.slnx walking up from " + AppContext.BaseDirectory);
+    }
+
     private static DefaultHttpContext Context(string? subject, string? address)
     {
         var context = new DefaultHttpContext();

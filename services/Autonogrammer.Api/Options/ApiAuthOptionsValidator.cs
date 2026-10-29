@@ -12,6 +12,8 @@ internal sealed class ApiAuthOptionsValidator : IValidateOptions<ApiAuthOptions>
     private const int MaxDigests = 3;
     private const int DigestLength = 64;
     private const int MaxFailuresLimit = 1000;
+    private const int DefaultOtpExpirySeconds = 3600;
+    private const int DefaultResendCooldownSeconds = 60;
 
     private readonly IHostEnvironment _environment;
 
@@ -62,12 +64,29 @@ internal sealed class ApiAuthOptionsValidator : IValidateOptions<ApiAuthOptions>
             failures.Add("Api:Auth:Authority must be an absolute https URI.");
         }
 
+        if (!development && string.IsNullOrWhiteSpace(options.ValidIssuer))
+        {
+            failures.Add("Api:Auth:ValidIssuer is required outside the Development environment.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.ValidIssuer) && !IsAbsoluteHttps(options.ValidIssuer))
+        {
+            failures.Add("Api:Auth:ValidIssuer must be an absolute https URI.");
+        }
+
+        if (options.Algorithms.Any(static a => !string.IsNullOrWhiteSpace(a) && a is not ("ES256" or "RS256")))
+        {
+            failures.Add("Api:Auth:Algorithms may list only ES256 and RS256.");
+        }
+
         if (!development && !options.AllowAnyAuthenticatedUser && !options.AllowedSubjects.Any(static subject => !string.IsNullOrWhiteSpace(subject)))
         {
             failures.Add(
                 "Api:Auth:AllowedSubjects must list at least one subject outside the Development environment, or Api:Auth:AllowAnyAuthenticatedUser must be true " +
                 "(risky: the API runs an agent that can execute commands, so every account the identity provider admits could run it).");
         }
+
+        ValidateClient(options.Client, failures);
     }
 
     private static void ValidateOwnerToken(ApiAuthOptions options, List<string> failures)
@@ -75,6 +94,16 @@ internal sealed class ApiAuthOptionsValidator : IValidateOptions<ApiAuthOptions>
         if (!string.IsNullOrWhiteSpace(options.Authority) || !string.IsNullOrWhiteSpace(options.Audience) || !string.IsNullOrWhiteSpace(options.ValidIssuer))
         {
             failures.Add("Api:Auth:Authority, Api:Auth:Audience and Api:Auth:ValidIssuer must not be set when Api:Auth:Mode is OwnerToken.");
+        }
+
+        if (options.Algorithms.Any(static a => !string.IsNullOrWhiteSpace(a)))
+        {
+            failures.Add("Api:Auth:Algorithms must not be set when Api:Auth:Mode is OwnerToken.");
+        }
+
+        if (ClientIsConfigured(options.Client))
+        {
+            failures.Add("Api:Auth:Client must not be set when Api:Auth:Mode is OwnerToken.");
         }
 
         var digests = options.OwnerToken.Sha256;
@@ -95,6 +124,78 @@ internal sealed class ApiAuthOptionsValidator : IValidateOptions<ApiAuthOptions>
         if (options.OwnerToken.MaxFailuresPerMinute is < 1 or > MaxFailuresLimit)
         {
             failures.Add($"Api:Auth:OwnerToken:MaxFailuresPerMinute must be between 1 and {MaxFailuresLimit}.");
+        }
+    }
+
+    private static void ValidateClient(ApiAuthClientOptions client, List<string> failures)
+    {
+        var key = client.PublishableKey;
+        if (!string.IsNullOrWhiteSpace(key))
+        {
+            if (key.StartsWith("sb_secret_", StringComparison.Ordinal))
+            {
+                failures.Add("Api:Auth:Client:PublishableKey must be a publishable key, not a secret key.");
+            }
+            else if (IsServiceRoleJwt(key))
+            {
+                failures.Add("Api:Auth:Client:PublishableKey must be a publishable key, not a service-role token.");
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(client.ProjectUrl)
+            && (!Uri.TryCreate(client.ProjectUrl, UriKind.Absolute, out var url)
+                || !string.Equals(url.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal)
+                || url.UserInfo.Length > 0))
+        {
+            failures.Add("Api:Auth:Client:ProjectUrl must be an absolute https URI without user information.");
+        }
+
+        if (client.MagicLinkEnabled && !client.EmailCodeEnabled)
+        {
+            failures.Add("Api:Auth:Client:MagicLinkEnabled requires Api:Auth:Client:EmailCodeEnabled.");
+        }
+
+        if (client.EmailOtpExpirySeconds < 1)
+        {
+            failures.Add("Api:Auth:Client:EmailOtpExpirySeconds must be at least 1.");
+        }
+
+        if (client.ResendCooldownSeconds < 0)
+        {
+            failures.Add("Api:Auth:Client:ResendCooldownSeconds must not be negative.");
+        }
+    }
+
+    private static bool ClientIsConfigured(ApiAuthClientOptions client) =>
+        client.HasAny
+        || client.MagicLinkEnabled
+        || !client.EmailCodeEnabled
+        || client.SignupEmailHasCode
+        || client.EmailOtpExpirySeconds != DefaultOtpExpirySeconds
+        || client.ResendCooldownSeconds != DefaultResendCooldownSeconds;
+
+    /// <summary>Returns whether a key is a JWT whose payload carries <c>role</c> equal to <c>service_role</c>; a key that is not a readable JWT is not.</summary>
+    private static bool IsServiceRoleJwt(string key)
+    {
+        var parts = key.Split('.');
+        if (parts.Length != 3)
+        {
+            return false;
+        }
+
+        try
+        {
+            var payload = parts[1].Replace('-', '+').Replace('_', '/');
+            payload = payload.PadRight(payload.Length + ((4 - (payload.Length % 4)) % 4), '=');
+            using var document = System.Text.Json.JsonDocument.Parse(Convert.FromBase64String(payload));
+            return document.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
+                && document.RootElement.TryGetProperty("role", out var role)
+                && role.ValueKind == System.Text.Json.JsonValueKind.String
+                && string.Equals(role.GetString(), "service_role", StringComparison.Ordinal);
+        }
+        catch (Exception ex) when (ex is FormatException or System.Text.Json.JsonException)
+        {
+            return false;
         }
     }
 

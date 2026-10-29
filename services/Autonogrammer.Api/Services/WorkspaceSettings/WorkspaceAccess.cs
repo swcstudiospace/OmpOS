@@ -1,3 +1,4 @@
+using Autonogrammer.Api.Options;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
 
@@ -5,23 +6,27 @@ namespace Autonogrammer.Api.Services.WorkspaceSettings;
 
 /// <summary>
 /// What the settings and workspace endpoints may read: the workspace folder (<c>Api:Workspace:Root</c>), the user home only when
-/// <c>Api:Workspace:IncludeUserScope</c> is true, and which callers may read at all (<c>Api:Workspace:Owners</c>).
+/// <c>Api:Workspace:IncludeUserScope</c> is true, and which callers may read at all (<c>Api:Workspace:Owners</c>). An empty owner
+/// list permits no caller, except on the single operator's deployment (owner-token mode) and under the Development-only developer principal.
 /// </summary>
 internal sealed class WorkspaceAccess
 {
     private readonly WorkspaceLocator _locator;
     private readonly IOptions<WorkspaceSettingsOptions> _options;
     private readonly IUserHomeProvider _home;
+    private readonly IOptions<ApiAuthOptions> _auth;
 
     /// <summary>Initializes a new instance of the <see cref="WorkspaceAccess"/> class.</summary>
     /// <param name="locator">Resolves the workspace folder.</param>
     /// <param name="options">The workspace-reading options.</param>
     /// <param name="home">Names the home directory of the API process.</param>
-    public WorkspaceAccess(WorkspaceLocator locator, IOptions<WorkspaceSettingsOptions> options, IUserHomeProvider home)
+    /// <param name="auth">The validated authentication options.</param>
+    public WorkspaceAccess(WorkspaceLocator locator, IOptions<WorkspaceSettingsOptions> options, IUserHomeProvider home, IOptions<ApiAuthOptions> auth)
     {
         _locator = locator;
         _options = options;
         _home = home;
+        _auth = auth;
     }
 
     /// <summary>Gets a value indicating whether the user directories of the process home may be read.</summary>
@@ -54,12 +59,18 @@ internal sealed class WorkspaceAccess
 
     /// <summary>Returns whether a caller may read the workspace and settings endpoints.</summary>
     /// <param name="caller">The caller's subject.</param>
-    /// <returns>True when no owner list is configured or the list names the caller.</returns>
+    /// <returns>True when the owner list names the caller; with an empty owner list, true only in owner-token mode or with the development principal on.</returns>
     public bool Permits(string caller)
     {
         ArgumentNullException.ThrowIfNull(caller);
         var owners = _options.Value.Owners;
-        return owners.Count == 0 || owners.Contains(caller, StringComparer.Ordinal);
+        if (owners.Count == 0)
+        {
+            var auth = _auth.Value;
+            return auth.Mode == ApiAuthMode.OwnerToken || auth.AllowDevelopmentPrincipal;
+        }
+
+        return owners.Contains(caller, StringComparer.Ordinal);
     }
 
     /// <summary>Builds the 404 a caller outside the owner list receives.</summary>

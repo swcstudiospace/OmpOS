@@ -38,7 +38,8 @@
               }
             }
           }
-        }
+        },
+        "security": [ ]
       }
     },
     "/sessions": {
@@ -105,6 +106,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -126,6 +133,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -165,6 +178,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -275,6 +294,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -365,6 +390,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
           }
         }
       }
@@ -407,6 +435,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -506,6 +540,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -553,6 +593,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -600,6 +646,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -657,6 +709,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -677,6 +735,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -717,6 +781,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -757,6 +827,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -797,6 +873,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -857,6 +939,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -877,6 +965,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -900,6 +994,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -940,6 +1040,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -980,6 +1086,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1080,6 +1192,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1120,6 +1238,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1160,6 +1284,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1278,6 +1408,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1318,6 +1454,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1358,6 +1500,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1446,6 +1594,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1534,6 +1688,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1555,7 +1715,8 @@
               }
             }
           }
-        }
+        },
+        "security": [ ]
       }
     },
     "/workspace/conventions": {
@@ -1594,6 +1755,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1634,6 +1801,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1674,6 +1847,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1714,6 +1893,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1754,6 +1939,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1794,6 +1985,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -1862,6 +2059,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -1931,6 +2134,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2020,6 +2229,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2083,6 +2298,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2133,6 +2354,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2263,6 +2490,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
           }
         }
       }
@@ -2363,6 +2593,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
           }
         }
       }
@@ -2473,6 +2706,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
           }
         }
       }
@@ -2546,6 +2782,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
           }
         }
       }
@@ -2596,6 +2835,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2686,6 +2931,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -2704,6 +2955,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2744,6 +3001,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -2795,6 +3058,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2895,6 +3164,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2945,6 +3220,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -2995,6 +3276,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3065,6 +3352,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3108,6 +3401,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3208,6 +3507,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3228,6 +3533,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3268,6 +3579,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -3346,6 +3663,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -3377,6 +3700,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3397,6 +3726,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3417,6 +3752,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3465,6 +3806,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3505,6 +3852,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -3563,6 +3916,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -3594,6 +3953,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3644,6 +4009,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3694,6 +4065,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3744,6 +4121,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       },
@@ -3782,6 +4165,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
           }
         }
       }
@@ -3863,7 +4252,8 @@
               }
             }
           }
-        }
+        },
+        "security": [ ]
       }
     }
   },
@@ -8141,8 +8531,26 @@
         },
         "description": "The answer of `GET /workspace/tree`: the entries of one folder. Secret files and links that leave the workspace are not listed."
       }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "description": "A bearer token issued by the identity provider the deployment trusts (or the owner token on a single-operator deployment).",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "DispatchDevice": {
+        "type": "http",
+        "description": "The long-lived credential of a paired dispatch device. It is accepted only on the device connect route and never as an access token.",
+        "scheme": "bearer"
+      }
     }
   },
+  "security": [
+    {
+      "bearerAuth": [ ]
+    }
+  ],
   "tags": [
     {
       "name": "Auth"
