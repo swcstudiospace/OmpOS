@@ -12,7 +12,7 @@
 
 import { analyzeRoute, analyzeStops } from "./logic.mjs";
 import { finding } from "./report.mjs";
-import { probeAxe } from "./states.mjs";
+import { LOAD_TIMEOUT_MS, probeAxe } from "./states.mjs";
 import { probeReflow } from "./reflow.mjs";
 import { probeTargetSize } from "./target-size.mjs";
 import { probeTextSpacing } from "./text-spacing.mjs";
@@ -88,7 +88,7 @@ export async function checkConnect(page, report, { baseUrl, axeJs }) {
   const stopInterception = await installInterception(page);
   try {
     await page.navigate(baseUrl);
-    const reached = await page.waitFor("location.pathname === '/connect' && !!document.querySelector('main h1') && !!document.getElementById('autonogrammer-connect-token')", 150000);
+    const reached = await page.waitFor("location.pathname === '/connect' && !!document.querySelector('main h1') && !!document.getElementById('autonogrammer-connect-token')", LOAD_TIMEOUT_MS);
     if (!reached) {
       report.add(finding("connect", "connect-not-reached", "error", `with an owner-token configuration ${baseUrl} did not lead to /connect with a token field (the page is at ${await page.evalValue("location.pathname")})`, at));
       return;

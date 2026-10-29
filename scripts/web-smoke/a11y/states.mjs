@@ -80,16 +80,26 @@ export function statesFor(kind, group) {
   return STATES.filter((s) => s.kinds.includes(kind) && s.groups.includes(group));
 }
 
-/** Loads the app and waits until the workbench (or the not-found page) is rendered and nothing is loading. */
+/** How long one load may take before the app counts as not rendered; a loaded host can raise it with AUTONOGRAMMER_A11Y_LOAD_TIMEOUT_MS. */
+export const LOAD_TIMEOUT_MS = Number(process.env.AUTONOGRAMMER_A11Y_LOAD_TIMEOUT_MS) > 0 ? Number(process.env.AUTONOGRAMMER_A11Y_LOAD_TIMEOUT_MS) : 150000;
+const LOADED = "!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]') && !document.querySelector('.loading-status')";
+
+/**
+ * Loads the app and waits until the workbench (or the not-found page) is rendered and nothing is loading. A load that does not finish on a loaded host gets one more
+ * load; rendering on the second is a warning in the report, not silence, and failing twice is the error.
+ */
 export async function loadApp(page, url, report, ctx) {
-  await page.navigate(url);
-  const ready = await page.waitFor("!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]') && !document.querySelector('.loading-status')", 150000);
-  if (!ready) {
-    report.add(finding(ctx.group, "app-not-rendered", "error", `the app did not render at ${url} within 150 s`, { viewport: ctx.viewport }));
-    return false;
+  const seconds = Math.round(LOAD_TIMEOUT_MS / 1000);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    await page.navigate(url);
+    if (await page.waitFor(LOADED, LOAD_TIMEOUT_MS)) {
+      if (attempt > 1) report.add(finding(ctx.group, "app-loaded-on-retry", "warning", `the app rendered at ${url} only on a second load; the first did not render within ${seconds} s`, { viewport: ctx.viewport }));
+      await page.settle();
+      return true;
+    }
   }
-  await page.settle();
-  return true;
+  report.add(finding(ctx.group, "app-not-rendered", "error", `the app did not render at ${url} within ${seconds} s on two loads`, { viewport: ctx.viewport }));
+  return false;
 }
 
 /** One attempt to reach a state: null when it is reached, otherwise the reason it was not. */

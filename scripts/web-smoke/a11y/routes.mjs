@@ -10,7 +10,7 @@
 // docs/accessibility/README.md so that nobody mistakes them for a miss.
 
 import { analyzeRoute, analyzeTitleSet } from "./logic.mjs";
-import { DEMO_SESSION, loadApp } from "./states.mjs";
+import { DEMO_SESSION, LOAD_TIMEOUT_MS, loadApp } from "./states.mjs";
 
 const DIRECT_ROUTES = [
   { route: "/", layout: "shell", ready: "!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]')" },
@@ -46,10 +46,10 @@ async function checkDirectLoads(page, report, baseUrl) {
   for (const spec of DIRECT_ROUTES) {
     const url = new URL(spec.route.slice(1), baseUrl).href;
     const { status } = await page.navigate(url);
-    const ready = await page.waitFor(spec.ready, 150000);
+    const ready = await page.waitFor(spec.ready, LOAD_TIMEOUT_MS);
     if (ready) await page.waitFor("document.title !== '' && document.title !== 'Autonogrammer'", 10000);
     if (!ready) {
-      report.add({ check: "routes", id: "route-not-rendered", severity: "error", message: `${spec.route} did not render within 150 s`, state: `route ${spec.route}`, viewport: "direct" });
+      report.add({ check: "routes", id: "route-not-rendered", severity: "error", message: `${spec.route} did not render within ${Math.round(LOAD_TIMEOUT_MS / 1000)} s`, state: `route ${spec.route}`, viewport: "direct" });
       continue;
     }
     await page.settle();
