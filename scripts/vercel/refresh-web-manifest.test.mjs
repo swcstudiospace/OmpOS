@@ -234,6 +234,31 @@ describe("refresh-web-manifest", () => {
     assert.equal(readFileSync(join(dir, "service-worker.js"), "utf8").split("\n")[0], `/* Manifest version: ${newVersion} */`);
   });
 
+  test("a file named twice, in any spelling, is edited once", () => {
+    // The old hash literal is much longer than the new one (ten \u002B escapes), so a second edit at the old position would corrupt the text.
+    const oldHash = `sha256-${"\\u002B".repeat(10)}${"x".repeat(30)}=`;
+    const bundle = () => {
+      const dir = makeBundle();
+      writeFileSync(
+        join(dir, "service-worker-assets.js"),
+        `self.assetsManifest = {\n  "version": "v1",\n  "assets": [\n    {\n      "hash": "${oldHash}",\n      "url": "appsettings.json"\n    },\n    {\n      "hash": "${sha(FILES["css/app.css"])}",\n      "url": "css/app.css"\n    }\n  ]\n};\n`,
+      );
+      writeFileSync(join(dir, "service-worker.js"), "/* Manifest version: v1 */\n");
+      return dir;
+    };
+    const once = bundle();
+    const repeated = bundle();
+
+    assert.equal(run(once, "appsettings.json").status, 0);
+    const result = run(repeated, "appsettings.json", "./appsettings.json", "appsettings.json");
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /updated appsettings\.json; manifest version/);
+    assert.equal(snapshot(repeated).manifest, snapshot(once).manifest);
+    assert.equal(snapshot(repeated).worker, snapshot(once).worker);
+    assert.equal(run("--verify", repeated).status, 0);
+  });
+
   test("--verify reads hashes that the manifest spells with \\u002B", () => {
     let content = "";
     for (let attempt = 0; !sha(content).includes("+"); attempt += 1) {

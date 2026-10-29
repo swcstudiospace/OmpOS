@@ -94,11 +94,15 @@ export function parseManifest(text) {
   return { manifest, entries, versionSpan: versions[0].indices[1] };
 }
 
-/** Replaces the given [start, end) spans of the text with their replacement text; the spans do not overlap. */
+/** Replaces the given [start, end) spans of the text with their replacement text. Throws when two spans overlap: the positions would no longer hold. */
 function splice(text, edits) {
-  return [...edits]
-    .sort((a, b) => b.span[0] - a.span[0])
-    .reduce((result, { span: [start, end], text: replacement }) => result.slice(0, start) + replacement + result.slice(end), text);
+  const ordered = [...edits].sort((a, b) => b.span[0] - a.span[0]);
+  for (let index = 1; index < ordered.length; index += 1) {
+    if (ordered[index].span[1] > ordered[index - 1].span[0]) {
+      throw new Error(`${MANIFEST_FILE}: two edits overlap; refusing to write`);
+    }
+  }
+  return ordered.reduce((result, { span: [start, end], text: replacement }) => result.slice(0, start) + replacement + result.slice(end), text);
 }
 
 /** Reads the version from the first line of service-worker.js and returns it with the text after that line. */
@@ -138,8 +142,13 @@ export function planRefresh(bundleDir, files) {
   const edits = [];
   const changed = [];
   const notInManifest = [];
+  // A file named twice (`appsettings.json ./appsettings.json`) is one file: its entry is edited once.
+  const named = new Map();
   for (const file of files) {
     const { full, url } = insideBundle(bundleDir, file);
+    named.set(url, full);
+  }
+  for (const [url, full] of named) {
     const matches = entries.filter((entry) => entry.url === url);
     if (matches.length === 0) {
       notInManifest.push(url);
