@@ -27,8 +27,10 @@ internal static class JwtTestHost
     public const string PostgresConnectionEnvironmentVariable = "AUTONOGRAMMER_TEST_POSTGRES_CONNECTION";
 
     private const string KeyId = "autonogrammer-api-test-key";
+    private const string HmacKeyId = "autonogrammer-api-test-hmac-key";
 
     private static readonly ECDsaSecurityKey SigningKey = NewEcKey(KeyId);
+    private static readonly SymmetricSecurityKey HmacKey = new(Encoding.UTF8.GetBytes("published-hmac-key-material-0123456789-abcdef")) { KeyId = HmacKeyId };
 
     /// <summary>Returns the settings of a Development host with JWT validation on and the development principal off.</summary>
     /// <returns>The configuration overrides.</returns>
@@ -110,11 +112,26 @@ internal static class JwtTestHost
 #pragma warning restore CA2000
     }
 
-    /// <summary>Returns a symmetric key under the test key id, for algorithm-confusion tests.</summary>
-    /// <returns>An HS256 key.</returns>
+    /// <summary>
+    /// Returns a symmetric key that the test metadata publishes under its own key id, for the algorithm pin test. A token signed with it passes signature and key
+    /// checks, so only the <c>ValidAlgorithms</c> pin can reject it.
+    /// </summary>
+    /// <returns>An HS256 key the host trusts as a key.</returns>
     public static SecurityKey HmacSigningKey()
     {
-        return new SymmetricSecurityKey(Encoding.UTF8.GetBytes("attacker-controlled-key-material-0123456789")) { KeyId = KeyId };
+        return HmacKey;
+    }
+
+    /// <summary>Returns an unsigned token (<c>alg</c> none) with otherwise valid claims, for the signed-token requirement test.</summary>
+    /// <param name="subject">The subject claim value.</param>
+    /// <returns>The compact token with an empty signature.</returns>
+    public static string IssueUnsignedToken(string subject)
+    {
+        var header = Base64UrlEncoder.Encode("""{"alg":"none","typ":"JWT"}""");
+        var expires = DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds();
+        var payload = Base64UrlEncoder.Encode(
+            $$"""{"sub":"{{subject}}","exp":{{expires}},"iss":"{{Issuer}}","aud":"{{Audience}}","role":"authenticated"}""");
+        return header + "." + payload + ".";
     }
 
     /// <summary>Installs static metadata that holds exactly <paramref name="key"/>, replacing the previous test key, so a host can rotate keys.</summary>
@@ -182,6 +199,7 @@ internal static class JwtTestHost
     {
         var metadata = new OpenIdConnectConfiguration { Issuer = Issuer };
         metadata.SigningKeys.Add(key);
+        metadata.SigningKeys.Add(HmacKey);
         return metadata;
     }
 

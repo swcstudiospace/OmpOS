@@ -55,9 +55,13 @@ public sealed class ApiAuthBoundaryTests
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
-    /// <summary>Verifies tokens that break the ES256, issuer, lifetime, anonymity or role pins each answer 401.</summary>
+    /// <summary>
+    /// Verifies tokens that break the ES256, signed-token, issuer, lifetime, anonymity or role pins each answer 401. The hs256 token is signed with a key the test
+    /// metadata publishes, so only the <c>ValidAlgorithms</c> pin rejects it.
+    /// </summary>
     [Theory]
     [InlineData("hs256")]
+    [InlineData("alg-none")]
     [InlineData("wrong-issuer")]
     [InlineData("expired-31s")]
     [InlineData("anonymous")]
@@ -72,6 +76,7 @@ public sealed class ApiAuthBoundaryTests
         var token = violation switch
         {
             "hs256" => JwtTestHost.IssueToken("alice", signingKey: JwtTestHost.HmacSigningKey()),
+            "alg-none" => JwtTestHost.IssueUnsignedToken("alice"),
             "wrong-issuer" => JwtTestHost.IssueToken("alice", issuer: "https://other.test.invalid/"),
             "expired-31s" => JwtTestHost.IssueToken("alice", expires: DateTime.UtcNow.AddSeconds(-31)),
             "anonymous" => JwtTestHost.IssueToken("alice", anonymous: true),
