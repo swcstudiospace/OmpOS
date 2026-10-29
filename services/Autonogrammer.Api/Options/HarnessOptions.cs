@@ -65,6 +65,12 @@ internal sealed class HarnessOptions
         /// <c>Worktrees:Root</c> and <c>Worktrees:Repository</c> are not both set, so the engine never starts in the API's own directory.
         /// </summary>
         public string? WorkspaceRoot { get; set; }
+
+        /// <summary>
+        /// Gets or sets which tool permission requests of the engine reach the user-approval flow and which of them a decision may allow
+        /// (<c>Harness:Acp:Approval</c>). Defaults to deny everything.
+        /// </summary>
+        public HarnessApprovalOptions Approval { get; set; } = new();
     }
 
     /// <summary>The <c>Harness:Acp:Environment</c> section: the environment the engine process inherits.</summary>
