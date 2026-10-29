@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Autonogrammer.Harness.Mcp/Autonogrammer.Harness.Mcp.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
     <ProjectReference Include="../Autonogrammer.Harness.Mcp.Fixtures/Autonogrammer.Harness.Mcp.Fixtures.csproj" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="Shouldly" />

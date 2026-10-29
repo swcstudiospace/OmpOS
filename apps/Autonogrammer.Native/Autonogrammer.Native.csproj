@@ -22,6 +22,7 @@
     <ProjectReference Include="../../src/Autonogrammer.Presentation/Autonogrammer.Presentation.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.EngineHost/Autonogrammer.EngineHost.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Acp/Autonogrammer.Harness.Acp.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.AgentLoop/Autonogrammer.Harness.AgentLoop.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Automations/Autonogrammer.Harness.Automations.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.OmpConfig/Autonogrammer.Harness.OmpConfig.csproj" />

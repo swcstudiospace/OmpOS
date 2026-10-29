@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Autonogrammer.Harness.Remote/Autonogrammer.Harness.Remote.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.EngineHost/Autonogrammer.EngineHost.csproj" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="Shouldly" />

@@ -49,6 +49,9 @@ internal sealed class HeadServices : IAsyncDisposable
     private static readonly Action<ILogger, string, Exception?> HooksReleaseFailed =
         LoggerMessage.Define<string>(LogLevel.Warning, new EventId(1, "HooksReleaseFailed"), "Releasing the hooks service failed ({ExceptionType}).");
 
+    private static readonly Action<ILogger, string, Exception?> UserDataMigrationWarning =
+        LoggerMessage.Define<string>(LogLevel.Warning, new EventId(2, "UserDataMigrationWarning"), "{Warning}");
+
     private readonly HttpClient? _apiClient;
     private readonly FileSetupConsentStore _consentStore;
     private readonly IDisposable? _cloudDisposable;
@@ -230,7 +233,12 @@ internal sealed class HeadServices : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(options);
         var clock = options.TimeProvider ?? TimeProvider.System;
         var home = string.IsNullOrWhiteSpace(options.HomeDirectory) ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) : options.HomeDirectory;
-        var config = string.IsNullOrWhiteSpace(options.ConfigDirectory) ? DefaultConfigDirectory(options.StateRoot) : options.ConfigDirectory;
+        var config = string.IsNullOrWhiteSpace(options.ConfigDirectory)
+            ? ResolveDefaultConfigDirectory(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify),
+                options.StateRoot,
+                options.LoggerFactory)
+            : options.ConfigDirectory;
         var hookApproval = new ForwardingHookApprovalPrompt();
         var hooks = await OpenHooksAsync(options, home, hookApproval, clock, cancellationToken).ConfigureAwait(false);
         // The stores and the API client are owned here until the services take them over; a failure part way disposes the ones that exist.
@@ -418,10 +426,25 @@ internal sealed class HeadServices : IAsyncDisposable
         }
     }
 
-    private static string DefaultConfigDirectory(string stateRoot)
+    /// <summary>
+    /// Resolves the directory the head keeps its configuration in when none was configured, and moves a legacy per-user data directory into it once.
+    /// This is the head services' call of <see cref="Autonogrammer.Harness.Abstractions.UserDataDirectory.EnsureCurrent"/>: it applies to this default root only, never to
+    /// a configured <see cref="HeadServicesOptions.ConfigDirectory"/>. A warning reaches the factory's logger, or the trace listeners when there is no factory.
+    /// </summary>
+    /// <param name="applicationData">The per-user application data folder. Empty when the platform has none.</param>
+    /// <param name="stateRoot">The state root the config directory falls back under when there is no application data folder.</param>
+    /// <param name="loggerFactory">The factory of the head's loggers, or null.</param>
+    /// <returns>The configuration directory.</returns>
+    internal static string ResolveDefaultConfigDirectory(string applicationData, string stateRoot, ILoggerFactory? loggerFactory)
     {
-        var applicationData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify);
-        return string.IsNullOrEmpty(applicationData) ? Path.Combine(stateRoot, "config") : Path.Combine(applicationData, "Autonogrammer");
+        if (string.IsNullOrEmpty(applicationData))
+        {
+            return Path.Combine(stateRoot, "config");
+        }
+
+        var logger = loggerFactory?.CreateLogger("Autonogrammer.Native.Composition");
+        Action<string>? warn = logger is null ? null : warning => UserDataMigrationWarning(logger, warning, null);
+        return Autonogrammer.Harness.Abstractions.UserDataDirectory.EnsureCurrent(applicationData, warn).Path;
     }
 
     /// <summary>Returns the workspace root when it exists, otherwise the state root, which the store creates: a checkpoint store refuses a root that is missing.</summary>
