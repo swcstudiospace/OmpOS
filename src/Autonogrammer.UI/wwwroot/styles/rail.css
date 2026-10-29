@@ -178,6 +178,11 @@
   padding-right: var(--autonogrammer-icon-button);
 }
 
+/* The title line of the selected row leaves the room of the close control too: the control is taller than the status line, so without it the control covers the end of the time. */
+.autonogrammer-agent-row.is-selected .autonogrammer-agent-line {
+  padding-right: var(--autonogrammer-icon-button);
+}
+
 .autonogrammer-agent-close {
   color: var(--autonogrammer-text-secondary);
 }

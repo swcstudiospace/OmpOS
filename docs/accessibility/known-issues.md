@@ -4,7 +4,7 @@ description: "Accessibility defects the scripted checks found and that were fixe
 
 # Accessibility known issues
 
-Status: Open. The scripted checks ran against built bundles on 2026-10-29 and found nine defects; all nine are fixed (section 1). Section 2 lists what is still open. Nothing here was observed with assistive technology.
+Status: Open. The scripted checks ran against built bundles on 2026-10-29 and found nine defects (F1 to F9, two of them seen in screenshots, not by a check); looking at the screenshots of the final bundles found a tenth (F10). All ten are fixed (section 1). Section 2 lists what is still open. Nothing here was observed with assistive technology.
 
 Last verified: 2026-10-29
 
@@ -23,6 +23,7 @@ Evidence of the recorded runs is in [`docs/runbooks/evidence/web-accessibility-2
 | F7 | 2.4.3 Focus Order | After choosing an agent in the rail the focus call ran before the render that shows its thread, so the focus landed on the thread about to be replaced and fell to the page. | The call follows the render. | a11y/routes (`focus-not-moved`); `WorkbenchViewTests` |
 | F8 | 4.1.2 Name, Role, Value | axe could only report "needs review" for `aria-controls` next to `aria-haspopup` on the model and option chips and on the composer. | The chips set no `aria-controls`; the textarea sets no `aria-haspopup`. | smoke `demoAxeNoIncomplete`; `ComposerPanelTests` |
 | F9 | 1.4.11 Non-text Contrast, 1.4.3 | Under forced colours a primary button was drawn with a highlight fill; in a palette whose highlight is not opaque the browser drew a canvas-coloured plate behind the label and hid it. Found by looking at a screenshot, not by a check. | A thicker highlight border and no fill. | `StyleAccessibilityTests` (system colours only). No check measures label visibility under forced colours: the fix was seen in screenshots of a bundle of commit `eece6e52` under emulated forced colours (`docs/runbooks/evidence/web-accessibility-2026-10-29/screenshots/`) |
+| F10 | No single criterion; related: 1.4.12 Text Spacing (content hidden by another element), 2.5.8 Target Size (a target over other content) | The 28 px close control of the selected agent row lay over the status line, which is about 16 px high, so with a short title its box covered the end of the relative time. Measured on the real bundle (1440x900): the time's box x 220 to 263, y 278 to 296; the control's x 239 to 267, y 286 to 314; an overlap of 24 by 10 px. Under forced colours, where the control has a visible border, the end of "ago" was hidden; with default colours a click on that part of the time reached the control. Found by looking at a screenshot of the real bundle, not by a check. | The title line of the selected row leaves the room of the close control (`padding-right: var(--autonogrammer-icon-button)`, as the status line already did). Measured with the rule on the real bundle: the time's box x 191 to 235, no overlap, the row keeps its height. | Measured once in the browser with a throwaway script; no check (see K14) |
 
 K1 (suspected: focus on the heading after load makes the first Tab skip the skip link) is cleared: the `first-load-focus` check passed on every recorded run.
 
@@ -73,6 +74,10 @@ The control exists only while the view is scrolled away from the end, so the wal
 ### K13: accessible names that replace visible text
 
 `AgentRail.razor` and `KanbanCardView.razor` set an `aria-label` that composes the visible parts of a row or a card. No `label-in-name` finding appeared in the recorded runs, so the visible text is part of each name (criterion 2.5.3); this is a note, not a defect.
+
+### K14: no check compares the boxes of two controls or of a control and text
+
+F10 (a control covering the end of a time) was found by looking at a screenshot of the real bundle. The checks measure each control's size, name, focus ring and contrast, and the page's reflow and text spacing; none compares the box of an interactive control with the boxes of other controls or of text, so an overlap of that kind can only be found by eye. A check that does it needs a rule for what is allowed to overlap (a control inside a field, a badge on an icon), which is why it was not written in this run.
 
 ## 3 How verified
 

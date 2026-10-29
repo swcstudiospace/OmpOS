@@ -39,7 +39,7 @@ Decisions (the plan's defaults, the owner may override):
 - The target is WCAG 2.2 level AA with the scripted checks; no screen reader or device was available, so those results are not claimed.
 - Nothing is pushed, merged, deployed or provisioned, and no secret changes, without one explicit approval at the end of the run (question 4).
 
-Done on `feat/autonogrammer-integration`: the integration; the owner-token sign-in, access control, hosting hardening, engine isolation and approval policy; the real web bundle with no Demo code; the production-shaped local run (`docs/runbooks/evidence/hosted-web-2026-10-29/`); the accessibility checks, nine defects fixed and the final runs (`docs/runbooks/evidence/web-accessibility-2026-10-29/`); the security and quality review fixes; SBOM, image policy, operations documents, threat model and brand.
+Done on `feat/autonogrammer-integration`: the integration; the owner-token sign-in, access control, hosting hardening, engine isolation and approval policy; the real web bundle with no Demo code; the production-shaped local run (`docs/runbooks/evidence/hosted-web-2026-10-29/`); the accessibility checks, ten defects fixed and the final runs (`docs/runbooks/evidence/web-accessibility-2026-10-29/`); the security and quality review fixes; SBOM, image policy, operations documents, threat model and brand.
 
 Not done, by design: a deployment; a live model turn (no credential, OQ-172); a sandbox provider (OQ-173); a run of CodeQL, Scorecard, trivy or an image build (OQ-175); a screen-reader pass (OQ-178); the other session's phases.
 

@@ -19,7 +19,7 @@ Last verified: 2026-10-29
 
 ## Result
 
-All steps passed (run of 2026-10-29, 08:15 to 08:18 UTC; the code under test is the one of commit `849780ef`, plus a stylesheet change to the agent rail that no step depends on).
+All steps passed. The files in this folder are those of the second full run, 2026-10-29 13:46 to 13:48 UTC, on a real bundle and an API built from commit `f26f66cb` (the first full run, 08:15 to 08:18 UTC on the code of `849780ef`, passed the same steps; later commits changed the stylesheets, the theme switch, tests and documents). The result of the API steps: `auth-config`, `unauthenticated`, `bad-token`, `text-turn`, `tool-turn` and `resume` passed in one invocation, and `rate-limit` in a second one that starts from a fresh session (the other steps are skipped in each, by `--skip`).
 
 | Where | Step | Result | What it shows |
 |-------|------|--------|---------------|

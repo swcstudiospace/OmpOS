@@ -92,22 +92,30 @@ export async function loadApp(page, url, report, ctx) {
   return true;
 }
 
-/** Enters a state; false (after a finding) when it cannot be reached. */
+/** One attempt to reach a state: null when it is reached, otherwise the reason it was not. */
+async function attemptState(page, state) {
+  if (state.path && !(await page.spaNavigate(state.path))) return `could not navigate to ${state.path} inside the app`;
+  if (!(await page.waitFor(state.ready, 20000))) return "its screen did not render";
+  if (state.prepare && !(await state.prepare(page))) return "its preparation failed";
+  return null;
+}
+
+/**
+ * Enters a state; false (after a finding) when it cannot be reached. A navigation that raced the one before it is lost now and then on a loaded host, so a
+ * state that was not reached gets one more attempt from the start page; reaching it on the second attempt is a warning, not silence, and failing twice is the finding.
+ */
 export async function enterState(page, state, report, ctx) {
   const where = { state: state.name, viewport: ctx.viewport };
-  if (state.path) {
-    const moved = await page.spaNavigate(state.path);
-    if (!moved) {
-      report.add(finding(ctx.group, "state-unreachable", state.required ? "error" : "warning", `could not navigate to ${state.path} inside the app`, where));
+  let reason = await attemptState(page, state);
+  if (reason) {
+    const first = reason;
+    await page.spaNavigate("/");
+    reason = await attemptState(page, state);
+    if (reason) {
+      report.add(finding(ctx.group, "state-unreachable", state.required ? "error" : "warning", `the state "${state.name}" was not reached (${reason}; the first attempt: ${first})`, where));
       return false;
     }
-  }
-  const ready = await page.waitFor(state.ready, 20000);
-  let prepared = true;
-  if (ready && state.prepare) prepared = await state.prepare(page);
-  if (!ready || !prepared) {
-    report.add(finding(ctx.group, "state-unreachable", state.required ? "error" : "warning", `the state "${state.name}" was not reached (${!ready ? "its screen did not render" : "its preparation failed"})`, where));
-    return false;
+    report.add(finding(ctx.group, "state-reached-on-retry", "warning", `the state "${state.name}" was reached only on a second attempt; the first failed (${first})`, where));
   }
   await page.settle();
   await page.waitForCalm();

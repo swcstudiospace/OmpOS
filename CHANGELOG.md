@@ -52,6 +52,8 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 - Under forced colours a primary button was drawn with a highlight fill, and a palette whose highlight is not opaque made the browser draw a canvas-coloured plate behind its label; it now takes a thicker highlight border and no fill. Agent titles in the rail wrap instead of being cut with an ellipsis.
 - The scripted accessibility checks had false findings of their own, found by their first runs and removed: visually hidden live regions read as clipped text, a card around a field was not accepted as its focus ring and its boundary, a focus scroll under the sticky bar read as an undersized target, a control that exists in one walk direction only read as a different Shift+Tab path, Back and Forward assumed an agent row, and the size budget read a comment as an import.
 - A theme chosen in the theme switch before the saved theme had finished loading was overwritten by the saved one, so the switch showed the old theme as pressed while the new one had been saved; the person's choice now wins. Found by the full gate on a loaded host, as a failing test.
+- The close control of the selected agent row covered the end of its relative time ("ago") when the title was short, and a click on that part of the time reached the control; the title line of the selected row now leaves the room of the control. Found by looking at a screenshot of the real bundle under forced colours.
+- The scripted accessibility checks give a state one more attempt from the start page before they call it unreachable, and report a second-attempt success as a warning; a navigation lost on a loaded host stopped a whole group once.
 
 ### Security
 

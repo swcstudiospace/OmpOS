@@ -1,6 +1,6 @@
 {
   "api": "http://127.0.0.1:5187",
-  "startedAt": "2026-10-29T08:18:11.237Z",
+  "startedAt": "2026-10-29T13:48:26.635Z",
   "mode": "unknown",
   "steps": [
     {
@@ -26,8 +26,8 @@
     {
       "name": "session",
       "status": "passed",
-      "ms": 589,
-      "sessionId": "46792da9b07a4a64a3a36b930f27104f"
+      "ms": 201,
+      "sessionId": "3d6f673b94d2461c98c260fa841b7e5c"
     },
     {
       "name": "tool-turn",
@@ -42,12 +42,12 @@
     {
       "name": "rate-limit",
       "status": "passed",
-      "ms": 895,
-      "requestsUntil429": 59,
+      "ms": 1586,
+      "requestsUntil429": 61,
       "retryAfterSeconds": 60
     }
   ],
-  "finishedAt": "2026-10-29T08:18:12.723Z",
-  "sessionId": "46792da9b07a4a64a3a36b930f27104f",
+  "finishedAt": "2026-10-29T13:48:28.425Z",
+  "sessionId": "3d6f673b94d2461c98c260fa841b7e5c",
   "result": "passed"
 }

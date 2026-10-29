@@ -100,5 +100,5 @@ Evidence names: `a11y/<group>` is a check group of `scripts/web-smoke/a11y` (see
 - The 55 rows were written on 2026-10-29 from the WCAG 2.2 list of Level A and AA criteria (31 A and 24 AA, with 4.1.1 removed) and checked against the sources named in the evidence column.
 - "Supports" rows rest on a direct read of the named file. "Not applicable" rows rest on a search of the UI sources for the element or event named in the evidence column; the search was a text search, not a review of runtime content.
 - Check names were verified to exist in `scripts/web-smoke/a11y/logic.mjs` (their rules are covered by `logic.test.mjs`). The checks ran against a built Demo bundle and a built real bundle on 2026-10-29; rows that name "recorded 2026-10-29" rest on those runs, and no row claims a pass of a manual test.
-- The unit test classes named here ran in the same session (`tests/Autonogrammer.UI.Tests`, 786 tests).
+- The unit test classes named here ran in the same session (`tests/Autonogrammer.UI.Tests`, 787 tests, all passing on 2026-10-29).
 - Not verified: everything marked "Not evaluated", all assistive-technology behaviour, and any browser other than Chrome.

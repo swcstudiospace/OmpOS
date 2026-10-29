@@ -1,38 +1,38 @@
 {
   "app": "http://127.0.0.1:5180/",
-  "startedAt": "2026-10-29T08:16:13.829Z",
-  "outDir": "/tmp/ag-scratch/hosted-run8/browser",
+  "startedAt": "2026-10-29T13:46:02.243Z",
+  "outDir": "/tmp/ag-scratch/hosted-run9/browser",
   "mode": "owner-token",
   "steps": [
     {
       "name": "load",
       "status": "passed",
-      "ms": 35876,
+      "ms": 46388,
       "screen": "connect"
     },
     {
       "name": "connect-screen",
       "status": "passed",
-      "ms": 3619,
+      "ms": 5289,
       "axeVersion": "4.14.0",
       "incomplete": 0
     },
     {
       "name": "connect",
       "status": "passed",
-      "ms": 3400
+      "ms": 3325
     },
     {
       "name": "workbench",
       "status": "passed",
-      "ms": 10192,
+      "ms": 19483,
       "axeVersion": "4.14.0",
-      "incomplete": 1
+      "incomplete": 0
     },
     {
       "name": "prompt-and-answer",
       "status": "passed",
-      "ms": 30108,
+      "ms": 30913,
       "responseCompleteAnnounced": true,
       "axeVersion": "4.14.0",
       "incomplete": 1
@@ -40,12 +40,12 @@
     {
       "name": "second-prompt",
       "status": "passed",
-      "ms": 18898
+      "ms": 23377
     },
     {
       "name": "credential-storage",
       "status": "passed",
-      "ms": 98
+      "ms": 11
     },
     {
       "name": "no-browser-problems",
@@ -55,7 +55,7 @@
     {
       "name": "sign-out",
       "status": "passed",
-      "ms": 10397
+      "ms": 5313
     }
   ],
   "screenshots": [
@@ -73,15 +73,7 @@
     "workbench": {
       "version": "4.14.0",
       "violations": [],
-      "incomplete": [
-        {
-          "id": "color-contrast",
-          "impact": "serious",
-          "targets": [
-            ".autonogrammer-agent-time"
-          ]
-        }
-      ]
+      "incomplete": []
     },
     "answer": {
       "version": "4.14.0",
@@ -105,6 +97,6 @@
       "failedRequests": []
     }
   },
-  "finishedAt": "2026-10-29T08:18:10.813Z",
+  "finishedAt": "2026-10-29T13:48:26.125Z",
   "result": "passed"
 }

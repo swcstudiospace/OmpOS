@@ -1,31 +1,31 @@
 {
   "api": "http://127.0.0.1:5187",
-  "startedAt": "2026-10-29T08:15:18.944Z",
+  "startedAt": "2026-10-29T13:43:46.427Z",
   "mode": "owner-token",
   "steps": [
     {
       "name": "auth-config",
       "status": "passed",
-      "ms": 488,
+      "ms": 811,
       "mode": "owner-token"
     },
     {
       "name": "unauthenticated",
       "status": "passed",
-      "ms": 92,
+      "ms": 93,
       "wwwAuthenticate": "Bearer"
     },
     {
       "name": "bad-token",
       "status": "passed",
-      "ms": 92,
+      "ms": 117,
       "contentType": null
     },
     {
       "name": "text-turn",
       "status": "passed",
-      "ms": 17524,
-      "sessionId": "552be97ecf9e48b3a6e6970410b25c7f",
+      "ms": 40371,
+      "sessionId": "ba6bd18cd1f140dfb8b4302861da475c",
       "events": 11,
       "eventKinds": "prompt_accepted,text_delta,context_usage,completed",
       "firstSeq": 1,
@@ -35,17 +35,17 @@
     {
       "name": "tool-turn",
       "status": "passed",
-      "ms": 14513,
+      "ms": 53019,
       "approval": "approved",
-      "requestId": "0c5dbf4287f54b2197e1f073910c8fc9:0",
+      "requestId": "8edeba8bc20f41469846a901438de1d5:0",
       "toolCallEvents": true,
-      "reply": "done: 18",
+      "reply": "done: 43",
       "eventKinds": "prompt_accepted,tool_approval_requested,tool_approval_approved,tool_call,tool_call_update,text_delta,context_usage,completed"
     },
     {
       "name": "resume",
       "status": "passed",
-      "ms": 20472,
+      "ms": 39695,
       "firstConnectionEvents": 2,
       "resumedFrom": 24,
       "resumedEvents": 15,
@@ -57,7 +57,7 @@
       "detail": "skipped by --skip"
     }
   ],
-  "finishedAt": "2026-10-29T08:16:12.126Z",
-  "sessionId": "552be97ecf9e48b3a6e6970410b25c7f",
+  "finishedAt": "2026-10-29T13:46:00.535Z",
+  "sessionId": "ba6bd18cd1f140dfb8b4302861da475c",
   "result": "passed"
 }

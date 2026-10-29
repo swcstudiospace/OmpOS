@@ -4,7 +4,7 @@ description: "Accessibility conformance statement of the Autonogrammer web head:
 
 # Accessibility conformance statement
 
-Status: Draft for publication. The conformance status below is "partially conformant". The automated checks ran on built bundles on 2026-10-29, found nine defects that are fixed, and report no error finding in their final runs; the first screen reader run, a real device and a Windows High Contrast check have not happened.
+Status: Draft for publication. The conformance status below is "partially conformant". The automated checks ran on built bundles on 2026-10-29 and found nine defects; looking at the screenshots of the final bundles found a tenth. All ten are fixed, and the final runs report no error finding; the first screen reader run, a real device and a Windows High Contrast check have not happened.
 
 Last verified: 2026-10-29
 

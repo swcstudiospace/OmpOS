@@ -4,22 +4,6 @@
   "axeCore": "4.14.0",
   "findings": [
     {
-      "check": "routes",
-      "id": "route-not-reached",
-      "severity": "error",
-      "message": "browser Back: the address did not become /",
-      "state": "in-app browser Back",
-      "viewport": "inapp"
-    },
-    {
-      "check": "routes",
-      "id": "route-not-reached",
-      "severity": "error",
-      "message": "browser Forward: the address did not become /sessions/…",
-      "state": "in-app browser Forward",
-      "viewport": "inapp"
-    },
-    {
       "check": "axe",
       "id": "axe-incomplete-color-contrast",
       "severity": "info",
@@ -129,42 +113,6 @@
       ]
     },
     {
-      "check": "media",
-      "id": "axe-incomplete-color-contrast",
-      "severity": "info",
-      "message": "axe could not decide color-contrast on 1 node(s)",
-      "state": "dark agents",
-      "viewport": "1440x900",
-      "target": ".is-selected > .autonogrammer-agent-main > .autonogrammer-agent-line > .autonogrammer-agent-time"
-    },
-    {
-      "check": "media",
-      "id": "axe-incomplete-color-contrast",
-      "severity": "info",
-      "message": "axe could not decide color-contrast on 1 node(s)",
-      "state": "dark kanban",
-      "viewport": "1440x900",
-      "target": ".is-selected > .autonogrammer-agent-main > .autonogrammer-agent-line > .autonogrammer-agent-time"
-    },
-    {
-      "check": "media",
-      "id": "axe-incomplete-color-contrast",
-      "severity": "info",
-      "message": "axe could not decide color-contrast on 1 node(s)",
-      "state": "dark about",
-      "viewport": "1440x900",
-      "target": ".is-selected > .autonogrammer-agent-main > .autonogrammer-agent-line > .autonogrammer-agent-time"
-    },
-    {
-      "check": "media",
-      "id": "axe-incomplete-color-contrast",
-      "severity": "info",
-      "message": "axe could not decide color-contrast on 1 node(s)",
-      "state": "dark settings-dialog",
-      "viewport": "1440x900",
-      "target": ".is-selected > .autonogrammer-agent-main > .autonogrammer-agent-line > .autonogrammer-agent-time"
-    },
-    {
       "check": "reflow",
       "id": "wide-content-in-undeclared-container",
       "severity": "warning",
@@ -233,15 +181,23 @@
       "viewport": "1280x1024@4x",
       "wcag": "1.4.10",
       "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Archived, 0 tasks\" data-column=\"archived\"><div class=\"autonogrammer-kanban"
+    },
+    {
+      "check": "target-size",
+      "id": "state-unreachable",
+      "severity": "error",
+      "message": "the state \"page-not-found\" was not reached (its screen did not render)",
+      "state": "page-not-found",
+      "viewport": "1440x900"
     }
   ],
   "counters": {
     "connect:views": 1,
     "axe:runs": 18,
     "reflow:views": 26,
-    "target-size:targets": 405,
+    "target-size:targets": 404,
     "text-spacing:views": 18,
-    "routes:inapp": 4,
+    "routes:inapp": 6,
     "first-load-focus:loads": 1,
     "keyboard:states": 3,
     "keyboard:stops": 57,
@@ -254,7 +210,7 @@
     "media:reduced-motion:views": 4,
     "media:dark:axe-runs": 4,
     "reflow:states": 24,
-    "target-size:states": 16,
+    "target-size:states": 15,
     "text-spacing:states": 16
   },
   "skipped": [
@@ -268,11 +224,6 @@
     }
   ],
   "summary": {
-    "routes": {
-      "errors": 2,
-      "warnings": 0,
-      "infos": 0
-    },
     "axe": {
       "errors": 0,
       "warnings": 0,
@@ -281,11 +232,16 @@
     "media": {
       "errors": 0,
       "warnings": 4,
-      "infos": 4
+      "infos": 0
     },
     "reflow": {
       "errors": 0,
       "warnings": 7,
+      "infos": 0
+    },
+    "target-size": {
+      "errors": 1,
+      "warnings": 0,
       "infos": 0
     }
   },
