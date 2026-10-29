@@ -61,10 +61,26 @@ public sealed record AcpClientOptions
     public IReadOnlyList<string> ExtraArguments { get; init; } = [];
 
     /// <summary>
-    /// Gets the environment variables set on the omp child. The child still inherits the parent environment; an entry here
-    /// overrides an inherited variable of the same name. Values may be secrets: they are never logged or placed in a message. Defaults to none.
+    /// Gets the environment variables set on the omp child. With <see cref="EnvironmentMode"/> <see cref="EngineEnvironmentMode.Inherit"/> the child
+    /// still inherits the parent environment and an entry here overrides an inherited variable of the same name; with
+    /// <see cref="EngineEnvironmentMode.Allowlist"/> an entry here is one of the few variables the child gets. Values may be secrets: they are never
+    /// logged or placed in a message. Defaults to none.
     /// </summary>
     public IReadOnlyDictionary<string, string> EnvironmentVariables { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Gets how the omp child obtains the rest of its environment. <see cref="EngineEnvironmentMode.Inherit"/> (the default) is the desktop
+    /// behaviour: the child sees the parent's whole environment. <see cref="EngineEnvironmentMode.Allowlist"/> clears the inherited environment
+    /// and keeps only the variables <see cref="EngineEnvironmentPolicy"/> allows, so a hosted API's secrets never reach the engine's tools.
+    /// Only a child process this library starts is affected; a remote or WebSocket transport has its own environment.
+    /// </summary>
+    public EngineEnvironmentMode EnvironmentMode { get; init; } = EngineEnvironmentMode.Inherit;
+
+    /// <summary>
+    /// Gets the extra inherited variables kept in <see cref="EngineEnvironmentMode.Allowlist"/> mode: exact names, or prefixes when an entry ends in
+    /// <c>*</c>. Ignored in <see cref="EngineEnvironmentMode.Inherit"/> mode. Defaults to none.
+    /// </summary>
+    public IReadOnlyList<string> EnvironmentAllowList { get; init; } = [];
 
     /// <summary>
     /// Gets the MCP servers attached to the session in <c>session/new</c> and <c>session/load</c>. Header and environment values may

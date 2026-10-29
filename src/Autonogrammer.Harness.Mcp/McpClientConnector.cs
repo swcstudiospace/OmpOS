@@ -1,3 +1,4 @@
+using Autonogrammer.Harness.Acp;
 using ModelContextProtocol.Client;
 
 namespace Autonogrammer.Harness.Mcp;
@@ -31,9 +32,7 @@ public static class McpClientConnector
 
         ArgumentNullException.ThrowIfNull(options.Arguments, nameof(options));
 
-        var environment = options.EnvironmentVariables is null
-            ? null
-            : new Dictionary<string, string?>(options.EnvironmentVariables, StringComparer.Ordinal);
+        var environment = BuildEnvironment(options, CurrentEnvironment);
 
         var transport = new StdioClientTransport(new StdioClientTransportOptions
         {
@@ -41,9 +40,70 @@ public static class McpClientConnector
             Arguments = options.Arguments.ToList(),
             WorkingDirectory = options.WorkingDirectory,
             EnvironmentVariables = environment,
+            InheritEnvironmentVariables = options.EnvironmentMode == EngineEnvironmentMode.Inherit,
         });
 
         return await McpClient.CreateAsync(transport, PinnedOptions(), cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Builds the environment of a stdio server. In <see cref="EngineEnvironmentMode.Inherit"/> mode these are overrides on top of the inherited
+    /// environment (a <c>null</c> value unsets a variable). In <see cref="EngineEnvironmentMode.Allowlist"/> mode the server inherits nothing
+    /// (<see cref="StdioClientTransportOptions.InheritEnvironmentVariables"/> is <see langword="false"/>) and the result is the allowed subset of
+    /// <paramref name="inheritedEnvironment"/> plus the explicit variables, which win. Names and values are never logged.
+    /// </summary>
+    /// <param name="options">How to launch the server.</param>
+    /// <param name="inheritedEnvironment">Reads the variables of this process, which the server would inherit. Called only in <see cref="EngineEnvironmentMode.Allowlist"/> mode.</param>
+    /// <returns>The environment, or <see langword="null"/> when there is nothing to set.</returns>
+    internal static Dictionary<string, string?>? BuildEnvironment(McpStdioServerOptions options, Func<IEnumerable<KeyValuePair<string, string>>> inheritedEnvironment)
+    {
+        var policy = new EngineEnvironmentPolicy(options.EnvironmentMode, options.EnvironmentAllowList);
+        if (policy.Mode == EngineEnvironmentMode.Inherit)
+        {
+            return options.EnvironmentVariables is null
+                ? null
+                : new Dictionary<string, string?>(options.EnvironmentVariables, StringComparer.Ordinal);
+        }
+
+        var environment = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var (name, value) in inheritedEnvironment())
+        {
+            if (policy.IsAllowed(name))
+            {
+                environment[name] = value;
+            }
+        }
+
+        if (options.EnvironmentVariables is not null)
+        {
+            foreach (var (name, value) in options.EnvironmentVariables)
+            {
+                if (value is null)
+                {
+                    _ = environment.Remove(name);
+                }
+                else
+                {
+                    environment[name] = value;
+                }
+            }
+        }
+
+        return environment;
+    }
+
+    private static List<KeyValuePair<string, string>> CurrentEnvironment()
+    {
+        var variables = new List<KeyValuePair<string, string>>();
+        foreach (System.Collections.DictionaryEntry entry in Environment.GetEnvironmentVariables())
+        {
+            if (entry.Key is string name && entry.Value is string value)
+            {
+                variables.Add(new KeyValuePair<string, string>(name, value));
+            }
+        }
+
+        return variables;
     }
 
     private static McpClientOptions PinnedOptions() => new() { ProtocolVersion = ProtocolVersion };

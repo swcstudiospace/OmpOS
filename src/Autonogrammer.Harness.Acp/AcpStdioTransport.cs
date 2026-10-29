@@ -33,6 +33,7 @@ public sealed class AcpStdioTransport : IAcpTransport
     private readonly string? _workingDirectory;
     private readonly string[] _arguments;
     private readonly KeyValuePair<string, string>[] _environment;
+    private readonly EngineEnvironmentPolicy _environmentPolicy;
     private readonly ILogger<AcpStdioTransport> _logger;
     private readonly SemaphoreSlim _writeGate = new(1, 1);
     private readonly System.Threading.Lock _gate = new();
@@ -69,8 +70,28 @@ public sealed class AcpStdioTransport : IAcpTransport
         IReadOnlyList<string> arguments,
         IReadOnlyDictionary<string, string> environment,
         ILogger<AcpStdioTransport>? logger = null)
+        : this(ompPath, workingDirectory, arguments, environment, EngineEnvironmentPolicy.Inherit, logger)
+    {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="AcpStdioTransport"/> class that also restricts which parent environment variables the child inherits.</summary>
+    /// <param name="ompPath">The omp executable. A bare name is resolved from <c>PATH</c>.</param>
+    /// <param name="workingDirectory">The child's working directory, or <see langword="null"/> to inherit the current one.</param>
+    /// <param name="arguments">The arguments appended after <c>acp</c>, one argv element each and in order.</param>
+    /// <param name="environment">The explicit environment variables of the child. They are set after the policy has removed what it does not allow, so they always reach the child and override an inherited variable of the same name. Values may be secrets and are never logged.</param>
+    /// <param name="environmentPolicy">Which parent environment variables the child inherits.</param>
+    /// <param name="logger">Receives stderr drain failures at Debug. Null discards them.</param>
+    /// <exception cref="ArgumentException">An argument is null or an environment variable name is blank or contains <c>=</c> or NUL.</exception>
+    public AcpStdioTransport(
+        string ompPath,
+        string? workingDirectory,
+        IReadOnlyList<string> arguments,
+        IReadOnlyDictionary<string, string> environment,
+        EngineEnvironmentPolicy environmentPolicy,
+        ILogger<AcpStdioTransport>? logger)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ompPath);
+        ArgumentNullException.ThrowIfNull(environmentPolicy);
         ArgumentNullException.ThrowIfNull(arguments);
         ArgumentNullException.ThrowIfNull(environment);
         foreach (var argument in arguments)
@@ -93,6 +114,7 @@ public sealed class AcpStdioTransport : IAcpTransport
         _workingDirectory = workingDirectory;
         _arguments = arguments.ToArray();
         _environment = environment.ToArray();
+        _environmentPolicy = environmentPolicy;
     }
 
     /// <summary>Gets the most recent stderr lines written by the child process.</summary>
@@ -232,11 +254,9 @@ public sealed class AcpStdioTransport : IAcpTransport
             startInfo.ArgumentList.Add(argument);
         }
 
-        // The child inherits the parent environment; an explicit entry overrides the inherited variable of the same name.
-        foreach (var (name, value) in _environment)
-        {
-            startInfo.Environment[name] = value;
-        }
+        // Inherit keeps the parent environment. Allowlist first removes every inherited variable the policy does not allow, so a hosted
+        // API's secrets never reach the engine's tools. Either way an explicit entry is set last and overrides the inherited variable of the same name.
+        _environmentPolicy.Apply(startInfo.Environment, _environment);
 
         if (_workingDirectory is not null)
         {
