@@ -36,7 +36,8 @@ public sealed class AppShellTests : UiTestContext
         main.Id.ShouldBe("main");
         main.TextContent.ShouldContain("thread-content");
         main.TextContent.ShouldNotContain("rail-content");
-        cut.FindAll("h1").Select(static heading => heading.TextContent).ShouldBe(["Autonogrammer"]);
+        cut.FindAll("h1").ShouldBeEmpty("the shell draws no heading: each view renders its own h1, and the wordmark is a link home");
+        cut.Find("header a.autonogrammer-wordmark").TextContent.ShouldBe("Autonogrammer");
     }
 
     /// <summary>The skip link is the first control a Tab reaches, it targets the main landmark by default, and a host can retarget it.</summary>
