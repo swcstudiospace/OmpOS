@@ -136,7 +136,7 @@ public sealed class ConnectViewTests : UiTestContext
         await TypeAndSubmitAsync(cut, Token).ConfigureAwait(true);
 
         cut.Find("[role='alert']").TextContent.ShouldBe(AuthCopy.ConnectUnreachable);
-        cut.Find("[role='alert']").TextContent.ShouldNotBe(AuthCopy.TokenRejected, Case.Sensitive);
+        string.Equals(cut.Find("[role='alert']").TextContent, AuthCopy.TokenRejected, StringComparison.Ordinal).ShouldBeFalse("a network failure must not say the token was rejected");
         cut.Find(TokenSelector).GetAttribute("value").ShouldBe(Token);
 
         await cut.Find("form").SubmitAsync().ConfigureAwait(true);

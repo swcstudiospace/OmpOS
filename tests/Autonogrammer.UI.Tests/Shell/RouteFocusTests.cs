@@ -14,7 +14,7 @@ public sealed class RouteFocusTests : UiTestContext
     private static readonly Type FirstPage = typeof(NotFoundView);
     private static readonly Type SecondPage = typeof(ViewTabs);
 
-    private static RouteData Route(Type page) => new(page, new Dictionary<string, object?>());
+    private static RouteData Route(Type page) => new(page, new Dictionary<string, object?>(StringComparer.Ordinal));
 
     private int FocusCalls() =>
         JSInterop.Invocations.Count(static call => string.Equals(call.Identifier, FocusBySelector, StringComparison.Ordinal));

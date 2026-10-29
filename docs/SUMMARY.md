@@ -83,6 +83,7 @@
 * [Hosted threat model](security/hosted-threat-model.md)
 * [Data inventory and retention](privacy/data-retention.md)
 * [Rebrand to Autonogrammer](runbooks/rebrand-autonogrammer.md)
+* [Integration of the rename line (2026-10-29)](runbooks/integration-autonogrammer-2026-10-29.md)
 
 ## Decisions and records
 

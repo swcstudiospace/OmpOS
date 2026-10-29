@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Autonogrammer.Api.Harness;
 using Autonogrammer.Api.Options;
+using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Sessions;
 using Shouldly;
