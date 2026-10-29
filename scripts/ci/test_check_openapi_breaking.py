@@ -73,6 +73,37 @@ class DiffTests(unittest.TestCase):
         new = doc({"/a": {"post": op(body=obj({"n": {"type": "string"}, "m": {"type": "string"}}))}})
         self.assertEqual(cob.diff(old, new), [])
 
+    def test_a_self_referencing_schema_ends_and_reports_a_removed_property_once(self):
+        node = lambda props: {"type": "object", "properties": dict(props, child={"$ref": "#/components/schemas/Node"})}
+        resp = {"200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Node"}}}}}
+        old = doc({"/a": {"get": op(responses=resp)}})
+        old["components"]["schemas"]["Node"] = node({"name": {"type": "string"}})
+        unchanged = doc({"/a": {"get": op(responses=resp)}})
+        unchanged["components"]["schemas"]["Node"] = node({"name": {"type": "string"}})
+        self.assertEqual(cob.diff(old, unchanged), [])
+        changed = doc({"/a": {"get": op(responses=resp)}})
+        changed["components"]["schemas"]["Node"] = node({})
+        self.assertEqual(cob.diff(old, changed), ["GET /a response 200: property 'name' removed"])
+
+    def test_schemas_that_refer_to_each_other_end(self):
+        a = lambda extra: {"type": "object", "properties": dict(extra, b={"$ref": "#/components/schemas/B"})}
+        b = {"type": "object", "properties": {"a": {"$ref": "#/components/schemas/A"}}}
+        resp = {"200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/A"}}}}}
+        old = doc({"/a": {"get": op(responses=resp)}})
+        old["components"]["schemas"].update({"A": a({"id": {"type": "integer"}}), "B": b})
+        new = doc({"/a": {"get": op(responses=resp)}})
+        new["components"]["schemas"].update({"A": a({"id": {"type": "string"}}), "B": b})
+        self.assertEqual(cob.diff(old, new), ["GET /a response 200.id: type changed from integer to string"])
+
+    def test_a_removed_response_body_is_breaking_and_an_added_one_is_not(self):
+        with_body = {"200": {"content": {"application/json": {"schema": obj({"x": {"type": "string"}})}}}}
+        without_body = {"200": {"description": "ok"}}
+        self.assertEqual(
+            cob.diff(doc({"/a": {"get": op(responses=with_body)}}), doc({"/a": {"get": op(responses=without_body)}})),
+            ["GET /a response 200: response body removed"],
+        )
+        self.assertEqual(cob.diff(doc({"/a": {"get": op(responses=without_body)}}), doc({"/a": {"get": op(responses=with_body)}})), [])
+
     def test_allowance_from_env_or_commit_message(self):
         self.assertEqual(cob.allowance({"ALLOW_BREAKING_API": "v2"}, ""), "v2")
         self.assertEqual(cob.allowance({}, "feat: x\n\nBREAKING-API: drop legacy route\n"), "drop legacy route")

@@ -31,9 +31,12 @@ export const config = {
     "curl -fsSL https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.402/dotnet-sdk-10.0.402-linux-x64.tar.gz -o /tmp/dotnet-sdk.tar.gz && " +
     "echo '1904a98dda2db34ba78ba3c4fb1b224455329af91c341d83547843c1839e112b04ae699ee92fa2449a8f62249196a938723078c0c60b9f65c88539d5687729c2  /tmp/dotnet-sdk.tar.gz' | sha512sum -c - && " +
     "mkdir -p ./.dotnet && tar -xzf /tmp/dotnet-sdk.tar.gz -C ./.dotnet",
+  // The real head also writes the validated API origin into appsettings.json (the one place the head reads it) and refreshes the
+  // service-worker manifest for that edit: scripts/vercel/finish-web-bundle.sh, the same step scripts/vercel/build-web.sh runs.
+  // A plain publish would keep the checked-in loopback default while connect-src allows only the real origin.
   buildCommand: demo
     ? "./.dotnet/dotnet publish apps/Autonogrammer.Web -c Release -p:AutonogrammerDemo=true -o output"
-    : "./.dotnet/dotnet publish apps/Autonogrammer.Web -c Release -o output",
+    : "./.dotnet/dotnet publish apps/Autonogrammer.Web -c Release -o output && bash scripts/vercel/finish-web-bundle.sh output/wwwroot",
   outputDirectory: "output/wwwroot",
   env: {
     DOTNET_CLI_TELEMETRY_OPTOUT: "1",

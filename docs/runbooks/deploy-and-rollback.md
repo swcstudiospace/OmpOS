@@ -187,22 +187,32 @@ Status: not yet executed against a real deployment. The same checks of the authe
 
 ### Step 6: web head build with the API origin
 
-Use a Vercel project for the real web head. The build fails closed without a valid origin (`scripts/vercel/render-csp.sh`: `https://host[:port]`, no path, wildcard or credentials).
+Use a Vercel project for the real web head. The build fails closed without a valid origin (`scripts/vercel/render-csp.sh`: `https://host[:port]`, no path, wildcard or credentials). The origin reaches two places, which must agree: the content-security policy (`connect-src`) and `Api:BaseUrl` in the published `appsettings.json`, the one place the head reads it. After the publish, `scripts/vercel/finish-web-bundle.sh` writes the origin there, refreshes the service-worker asset manifest (the worker pre-caches `appsettings.json` with the manifest hash) and verifies every asset against it; `build-web.sh` and `vercel.ts` both run it, and it needs Node.
+
+Build path A, the one the Demo took on 2026-10-28: build on a machine with the pinned SDK, then deploy the static output.
+
+```sh
+AUTONOGRAMMER_API_ORIGIN=https://<api-host> scripts/vercel/build-web.sh output/web
+cd output/web && vercel deploy --prod                   # the output holds its own vercel.json (headers and the SPA rewrite)
+```
+
+Build path B, a Vercel project that builds from the repository (`vercel.ts` installs the pinned SDK and runs the publish and the finishing step):
 
 ```sh
 vercel env add AUTONOGRAMMER_API_ORIGIN production      # value: the API origin, https only
 vercel deploy --prod                                    # from a checkout of the same commit; AUTONOGRAMMER_DEMO must be unset
 ```
 
-Check the deployed headers:
+Check the deployed headers and the origin the head will call:
 
 ```sh
 curl -sSI "$WEB/" | grep -i -E 'content-security-policy|x-frame-options|x-content-type-options'
+curl -sS "$WEB/appsettings.json"                        # Api:BaseUrl must be the API origin, not 127.0.0.1
 ```
 
 Expect `connect-src 'self' <the API origin>` in the policy and no wildcard. Then set `Api__Cors__Origins__0` on the API to `$WEB` if step 4 did not, and redeploy the API.
 
-Status: the Demo deployment path was executed on 2026-10-28 (`scripts/vercel/build-demo.sh` and `vercel deploy`); a build with `AUTONOGRAMMER_API_ORIGIN` has not been run on Vercel.
+Status: the Demo deployment path (A) was executed on 2026-10-28 (`scripts/vercel/build-demo.sh` and `vercel deploy`); a build with `AUTONOGRAMMER_API_ORIGIN` has not been run on Vercel by either path. The finishing step ran on a copy of a real published bundle (origin written, manifest refreshed, all 111 assets verified) and in `scripts/vercel/refresh-web-manifest.test.mjs`.
 
 ### Step 7: smoke
 

@@ -83,7 +83,7 @@ jobs:
         run: bash scripts/ci/repo-checks.sh
       - name: Licence checks (NOTICE and THIRD-PARTY-NOTICES.md against the restored NuGet cache; the same script bootstrap.sh runs)
         run: bash scripts/ci/check-licences.sh
-      - name: SBOM freshness (docs/legal/sbom.spdx.json against the lock files and container pins; needs the restored NuGet cache)
+      - name: SBOM freshness (docs/legal/sbom.spdx.json against the lock files and container pins; licences the restored NuGet cache lacks come from the committed file)
         run: bash scripts/ci/check-sbom.sh
       - name: OpenAPI breaking changes (pull requests only; ALLOW_BREAKING_API or a BREAKING-API commit line permits them)
         if: github.event_name == 'pull_request'
@@ -94,6 +94,8 @@ jobs:
       # The web payload budget is not a step of its own: scripts/web-smoke/run-smoke.sh ends its real-bundle half with it (size-budget.mjs, limits in size-budget.json), so it runs in the browser smoke step below.
       - name: Python unit tests of the CI and legal scripts
         run: python3 -m unittest scripts/ci/test_check_skip_markers.py scripts/legal/test_generate_sbom.py
+      - name: Node tests of the web build scripts (service-worker manifest refresh, finishing step of the real bundle)
+        run: node --test scripts/vercel/refresh-web-manifest.test.mjs
       - name: Browser smoke with axe-core, the accessibility checks and the web payload budget (needs Node and Chrome on the runner; mirrors the bootstrap step)
         run: |
           out_dir="$RUNNER_TEMP/web-smoke"

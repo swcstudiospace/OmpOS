@@ -32,27 +32,36 @@ def resolve(schema, doc, depth=0):
     return schema if isinstance(schema, dict) else {}
 
 
-def compare_schema(old, new, old_doc, new_doc, where, request, out, seen):
-    """Compare two schemas recursively; request=True means required additions are breaking."""
+def compare_schema(old, new, old_doc, new_doc, where, request, out, active):
+    """Compare two schemas recursively; request=True means required additions are breaking.
+
+    `active` holds the (old, new, request) schema pairs of the current descent, not of the display path, so a schema that refers to itself,
+    directly or through others, ends the descent at its second visit instead of recursing without end.
+    """
     old, new = resolve(old, old_doc), resolve(new, new_doc)
-    key = (where, id(old), id(new))
-    if key in seen or not old:
+    if not old:
         return
-    seen.add(key)
-    if old.get("type") != new.get("type") and old.get("type") is not None:
-        out.append(f"{where}: type changed from {old.get('type')} to {new.get('type')}")
+    key = (id(old), id(new), request)
+    if key in active:
         return
-    old_props, new_props = old.get("properties", {}) or {}, new.get("properties", {}) or {}
-    for name in sorted(old_props):
-        if name not in new_props:
-            out.append(f"{where}: property '{name}' removed")
-        else:
-            compare_schema(old_props[name], new_props[name], old_doc, new_doc, f"{where}.{name}", request, out, seen)
-    if request:
-        for name in sorted(set(new.get("required", []) or []) - set(old.get("required", []) or [])):
-            out.append(f"{where}: property '{name}' is newly required")
-    if "items" in old and "items" in new:
-        compare_schema(old["items"], new["items"], old_doc, new_doc, f"{where}[]", request, out, seen)
+    active.add(key)
+    try:
+        if old.get("type") != new.get("type") and old.get("type") is not None:
+            out.append(f"{where}: type changed from {old.get('type')} to {new.get('type')}")
+            return
+        old_props, new_props = old.get("properties", {}) or {}, new.get("properties", {}) or {}
+        for name in sorted(old_props):
+            if name not in new_props:
+                out.append(f"{where}: property '{name}' removed")
+            else:
+                compare_schema(old_props[name], new_props[name], old_doc, new_doc, f"{where}.{name}", request, out, active)
+        if request:
+            for name in sorted(set(new.get("required", []) or []) - set(old.get("required", []) or [])):
+                out.append(f"{where}: property '{name}' is newly required")
+        if "items" in old and "items" in new:
+            compare_schema(old["items"], new["items"], old_doc, new_doc, f"{where}[]", request, out, active)
+    finally:
+        active.discard(key)
 
 
 def content_schema(node, doc):
@@ -71,7 +80,7 @@ def param_map(item, doc):
 def diff(old_doc: dict, new_doc: dict) -> list[str]:
     """List of human-readable breaking changes."""
     out: list[str] = []
-    seen: set = set()
+    active: set = set()
     old_paths, new_paths = old_doc.get("paths", {}), new_doc.get("paths", {})
     for path in sorted(old_paths):
         if path not in new_paths:
@@ -103,11 +112,13 @@ def diff(old_doc: dict, new_doc: dict) -> list[str]:
                 else:
                     old_schema = content_schema(old_op["responses"][code], old_doc)
                     new_schema = content_schema(new_op["responses"][code], new_doc)
-                    if old_schema is not None and new_schema is not None:
-                        compare_schema(old_schema, new_schema, old_doc, new_doc, f"{tag} response {code}", False, out, seen)
+                    if old_schema is not None and new_schema is None:
+                        out.append(f"{tag} response {code}: response body removed")
+                    elif old_schema is not None:
+                        compare_schema(old_schema, new_schema, old_doc, new_doc, f"{tag} response {code}", False, out, active)
             old_body, new_body = content_schema(old_op.get("requestBody") or {}, old_doc), content_schema(new_op.get("requestBody") or {}, new_doc)
             if old_body is not None and new_body is not None:
-                compare_schema(old_body, new_body, old_doc, new_doc, f"{tag} request", True, out, seen)
+                compare_schema(old_body, new_body, old_doc, new_doc, f"{tag} request", True, out, active)
             elif new_body is not None and resolve(new_op.get("requestBody"), new_doc).get("required") and old_body is None:
                 out.append(f"{tag}: request body is newly required")
     return out

@@ -75,8 +75,8 @@ RUN if [ "${OMP_DEPS_MODE}" = "write" ]; then \
       bash /opt/snapshot-omp-deps.sh write /opt/omp /tmp/omp-deps.lock.json; \
     else \
       bash /opt/snapshot-omp-deps.sh check /opt/omp /opt/omp-deps.committed.json; \
-    fi; \
-    rm -f /opt/snapshot-omp-deps.sh /opt/omp-deps.committed.json
+    fi \
+ && rm -f /opt/snapshot-omp-deps.sh /opt/omp-deps.committed.json
 
 # Licence notices for what the final image conveys (AGPL-3.0 section 6; MIT notice duty). omp's LICENSE comes from its tarball.
 # Bun's notice file records version, licence summary and source; the full component list is on Bun's licensing page

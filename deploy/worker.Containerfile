@@ -78,8 +78,8 @@ RUN if [ "${OMP_DEPS_MODE}" = "write" ]; then \
       bash /opt/snapshot-omp-deps.sh write /opt/omp /tmp/omp-deps.lock.json; \
     else \
       bash /opt/snapshot-omp-deps.sh check /opt/omp /opt/omp-deps.committed.json; \
-    fi; \
-    rm -f /opt/snapshot-omp-deps.sh /opt/omp-deps.committed.json
+    fi \
+ && rm -f /opt/snapshot-omp-deps.sh /opt/omp-deps.committed.json
 
 FROM ${RUNTIME_IMAGE} AS final
 WORKDIR /app

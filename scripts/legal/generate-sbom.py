@@ -11,7 +11,9 @@ Usage:
   python3 scripts/legal/generate-sbom.py            write docs/legal/sbom.spdx.json
   python3 scripts/legal/generate-sbom.py --check    exit 1 when the committed file is stale
   options: --output PATH, --cache DIR (default $NUGET_PACKAGES or ~/.nuget/packages), --root DIR (default repository)
-A package whose licence cannot be read from the cache gets NOASSERTION (never a guess). Exit 2 on invalid output or inputs.
+A package's licence is the nuspec expression when the cache has one; otherwise the licence the committed SBOM (the --output file, read before
+it is overwritten) records for the same package name and version; otherwise NOASSERTION. A licence is never carried to another version or guessed.
+Exit 2 on invalid output or inputs.
 """
 
 from __future__ import annotations
@@ -63,6 +65,33 @@ def nuspec_licence(cache: Path, name: str, version: str) -> str:
     return NOASSERTION
 
 
+def committed_licences(path: Path) -> dict[tuple[str, str], str]:
+    """Licences recorded for NuGet packages in the committed SBOM at path, keyed by (lower-case name, version); empty when it cannot be read."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    found: dict[tuple[str, str], str] = {}
+    packages = doc.get("packages", []) if isinstance(doc, dict) else []
+    for pkg in packages:
+        if not isinstance(pkg, dict):
+            continue
+        refs = pkg.get("externalRefs") or []
+        is_nuget = any(isinstance(r, dict) and str(r.get("referenceLocator", "")).startswith("pkg:nuget/") for r in refs)
+        name, version, licence = pkg.get("name"), pkg.get("versionInfo"), pkg.get("licenseDeclared")
+        if is_nuget and isinstance(name, str) and isinstance(version, str) and isinstance(licence, str) and licence.strip() and licence != NOASSERTION:
+            found[(name.lower(), version)] = licence
+    return found
+
+
+def package_licence(cache: Path, committed: dict[tuple[str, str], str], name: str, version: str) -> str:
+    """Cache nuspec expression, else the committed SBOM's licence for the same name and version, else NOASSERTION."""
+    licence = nuspec_licence(cache, name, version)
+    if licence != NOASSERTION:
+        return licence
+    return committed.get((name.lower(), version), NOASSERTION)
+
+
 def container_pins(root: Path) -> dict[str, str]:
     """Read BUN_VERSION and OMP_VERSION (ARG defaults) from deploy/*.Containerfile; names must agree across files."""
     pins: dict[str, str] = {}
@@ -88,8 +117,9 @@ def created_timestamp(root: Path) -> str:
     return moment.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def build_sbom(root: Path, cache: Path, created: str, name: str = "Autonogrammer") -> dict:
-    """Build the SPDX document from lock files under root."""
+def build_sbom(root: Path, cache: Path, created: str, name: str = "Autonogrammer", committed: dict[tuple[str, str], str] | None = None) -> dict:
+    """Build the SPDX document from lock files under root; committed holds licences from the previous SBOM as a fallback for a cold cache."""
+    committed = committed or {}
     packages: dict[str, dict] = {}
     relationships: set[tuple[str, str, str]] = set()
     projects: dict[str, str] = {}
@@ -112,7 +142,7 @@ def build_sbom(root: Path, cache: Path, created: str, name: str = "Autonogrammer
                         "downloadLocation": f"https://www.nuget.org/api/v2/package/{dep}/{version}",
                         "filesAnalyzed": False,
                         "licenseConcluded": NOASSERTION,
-                        "licenseDeclared": nuspec_licence(cache, dep, version),
+                        "licenseDeclared": package_licence(cache, committed, dep, version),
                         "copyrightText": NOASSERTION,
                         "externalRefs": [{"referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl", "referenceLocator": f"pkg:nuget/{dep}@{version}"}],
                     }
@@ -217,7 +247,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     root = args.root.resolve()
     output = args.output or root / OUTPUT
-    doc = build_sbom(root, args.cache, created_timestamp(root))
+    doc = build_sbom(root, args.cache, created_timestamp(root), committed=committed_licences(output))
     problems = validate(doc)
     if problems:
         print("\n".join(problems), file=sys.stderr)
