@@ -1,0 +1,99 @@
+2026-10-29T16:51:25.025Z config light 1440
+2026-10-29T16:52:03.139Z light 1440 agents: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:52:09.319Z light 1440 running: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T16:52:21.523Z light 1440 slash-palette: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T16:52:26.529Z light 1440 composer-menu: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T16:52:32.835Z light 1440 approval: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:52:36.923Z light 1440 completed-changes: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T16:52:41.242Z light 1440 failed: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:52:45.119Z light 1440 closed: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:52:49.026Z light 1440 terminal: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:52:51.429Z light 1440 kanban: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:52:57.844Z light 1440 settings: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:52:58.438Z config light 1024
+2026-10-29T16:53:26.314Z light 1024 agents: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T16:53:32.916Z light 1024 running: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T16:53:39.017Z light 1024 slash-palette: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T16:53:43.937Z light 1024 composer-menu: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T16:53:49.933Z light 1024 approval: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T16:53:55.337Z light 1024 completed-changes: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T16:54:00.315Z light 1024 failed: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T16:54:04.439Z light 1024 closed: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T16:54:08.831Z light 1024 terminal: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T16:54:11.239Z light 1024 kanban: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T16:54:18.621Z light 1024 settings: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T16:54:19.442Z config light 390
+2026-10-29T16:54:43.031Z light 390 agents: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:54:45.442Z light 390 drawer: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:55:01.025Z light 390 running: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:55:08.445Z light 390 slash-palette: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:55:12.226Z light 390 composer-menu: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:55:18.831Z light 390 approval: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:55:24.440Z light 390 completed-changes: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:55:29.138Z light 390 failed: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:55:33.033Z light 390 closed: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:55:37.726Z light 390 terminal: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:55:41.639Z light 390 kanban: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:55:50.727Z light 390 settings: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:55:51.233Z config dark 1440
+2026-10-29T16:56:11.119Z dark 1440 agents: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:56:16.437Z dark 1440 running: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:56:20.721Z dark 1440 slash-palette: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T16:56:25.820Z dark 1440 composer-menu: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T16:56:31.046Z dark 1440 approval: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:56:35.641Z dark 1440 completed-changes: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T16:56:40.340Z dark 1440 failed: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:56:45.816Z dark 1440 closed: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:56:50.131Z dark 1440 terminal: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:56:53.027Z dark 1440 kanban: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:57:01.742Z dark 1440 settings: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T16:57:02.843Z config dark 1024
+2026-10-29T16:57:27.817Z dark 1024 agents: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T16:57:32.234Z dark 1024 running: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T16:57:36.423Z dark 1024 slash-palette: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T16:57:41.139Z dark 1024 composer-menu: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T16:57:45.520Z dark 1024 approval: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T16:57:49.632Z dark 1024 completed-changes: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T16:57:53.828Z dark 1024 failed: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T16:57:57.733Z dark 1024 closed: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T16:58:02.734Z dark 1024 terminal: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T16:58:05.445Z dark 1024 kanban: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T16:58:12.426Z dark 1024 settings: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T16:58:13.013Z config dark 390
+2026-10-29T16:58:35.133Z dark 390 agents: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:58:39.720Z dark 390 drawer: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:59:04.944Z dark 390 running: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:59:10.215Z dark 390 slash-palette: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:59:13.336Z dark 390 composer-menu: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:59:18.828Z dark 390 approval: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:59:24.119Z dark 390 completed-changes: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:59:28.631Z dark 390 failed: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:59:32.717Z dark 390 closed: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:59:36.942Z dark 390 terminal: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:59:39.033Z dark 390 kanban: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:59:45.731Z dark 390 settings: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T16:59:46.233Z theme switch persists
+2026-10-29T17:00:17.537Z accessibility checks
+2026-10-29T17:00:17.538Z a11y step routes
+2026-10-29T17:01:57.515Z a11y step keyboard
+2026-10-29T17:03:40.420Z a11y step axe
+2026-10-29T17:07:45.824Z a11y step media
+2026-10-29T17:10:26.431Z a11y step reflow
+2026-10-29T17:16:52.341Z a11y step target-size
+2026-10-29T17:20:30.225Z a11y step text-spacing
+2026-10-29T17:24:47.621Z a11y findings:
+severity | check            | where                        | id                         | message
+-------- | ---------------- | ------------------------     | ------------------------   | ------------------------
+warning  | keyboard         | agents view @ 1440x900       | backward-path-set-differs  | 1 stop(s) are met by one direction of the walk only (an element that appears or goes away as focus moves): body:2>div:2…
+error    | media            | 1440x900                     | app-not-rendered           | the app did not render at http://127.0.0.1:5191/ within 150 s
+error    | reflow           | 320x568@1x                   | app-not-rendered           | the app did not render at http://127.0.0.1:5191/ within 150 s
+error    | reflow           | 320x256@4x (400% of 1280x10… | app-not-rendered           | the app did not render at http://127.0.0.1:5191/ within 150 s
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 1440px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 1728px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 2016px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 2304px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 2592px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 2880px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 3168px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+error    | text-spacing     | 1440x900                     | app-not-rendered           | the app did not render at http://127.0.0.1:5191/ within 150 s
+2026-10-29T17:24:47.622Z a11y counters: {"routes:direct":6,"routes:inapp":7,"first-load-focus:loads":1,"keyboard:states":3,"keyboard:stops":162,"dialog:tab-presses":60,"axe:states":30,"axe:runs":30,"reflow:states":15,"reflow:views":15,"target-size:states":30,"target-size:targets":1938,"text-spacing:states":14,"text-spacing:views":14}

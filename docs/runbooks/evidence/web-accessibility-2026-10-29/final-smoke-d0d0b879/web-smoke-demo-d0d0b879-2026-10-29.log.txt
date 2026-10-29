@@ -1,0 +1,102 @@
+2026-10-29T18:20:49.841Z config light 1440
+2026-10-29T18:21:23.540Z light 1440 agents: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:21:31.143Z light 1440 running: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T18:21:36.235Z light 1440 slash-palette: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T18:21:39.347Z light 1440 composer-menu: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T18:21:44.128Z light 1440 approval: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:21:48.021Z light 1440 completed-changes: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T18:21:51.420Z light 1440 failed: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:21:55.438Z light 1440 closed: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:21:59.329Z light 1440 terminal: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:22:02.330Z light 1440 kanban: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:22:09.831Z light 1440 settings: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:22:10.423Z config light 1024
+2026-10-29T18:22:37.434Z light 1024 agents: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T18:22:42.533Z light 1024 running: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T18:22:47.139Z light 1024 slash-palette: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T18:22:52.541Z light 1024 composer-menu: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T18:22:56.630Z light 1024 approval: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T18:23:01.248Z light 1024 completed-changes: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T18:23:06.619Z light 1024 failed: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T18:23:09.538Z light 1024 closed: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T18:23:13.124Z light 1024 terminal: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T18:23:15.825Z light 1024 kanban: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T18:23:22.636Z light 1024 settings: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T18:23:23.249Z config light 390
+2026-10-29T18:23:44.734Z light 390 agents: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:23:48.126Z light 390 drawer: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:24:06.020Z light 390 running: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:24:12.934Z light 390 slash-palette: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:24:16.033Z light 390 composer-menu: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:24:20.643Z light 390 approval: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:24:26.150Z light 390 completed-changes: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:24:31.838Z light 390 failed: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:24:36.541Z light 390 closed: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:24:40.730Z light 390 terminal: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:24:43.334Z light 390 kanban: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:24:50.121Z light 390 settings: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:24:50.542Z config dark 1440
+2026-10-29T18:25:13.226Z dark 1440 agents: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:25:17.731Z dark 1440 running: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T18:25:24.836Z dark 1440 slash-palette: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T18:25:29.734Z dark 1440 composer-menu: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T18:25:33.919Z dark 1440 approval: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:25:37.538Z dark 1440 completed-changes: axe 0 violations, 0 incomplete, scrollWidth 1430/1440
+2026-10-29T18:25:40.943Z dark 1440 failed: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:25:44.432Z dark 1440 closed: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:25:47.819Z dark 1440 terminal: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:25:49.529Z dark 1440 kanban: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:25:53.937Z dark 1440 settings: axe 0 violations, 0 incomplete, scrollWidth 1440/1440
+2026-10-29T18:25:54.533Z config dark 1024
+2026-10-29T18:26:08.429Z dark 1024 agents: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T18:26:12.722Z dark 1024 running: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T18:26:17.830Z dark 1024 slash-palette: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T18:26:20.524Z dark 1024 composer-menu: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T18:26:25.218Z dark 1024 approval: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T18:26:29.941Z dark 1024 completed-changes: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T18:26:33.748Z dark 1024 failed: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T18:26:37.935Z dark 1024 closed: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T18:26:41.351Z dark 1024 terminal: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T18:26:44.227Z dark 1024 kanban: axe 0 violations, 0 incomplete, scrollWidth 1014/1024
+2026-10-29T18:26:51.334Z dark 1024 settings: axe 0 violations, 0 incomplete, scrollWidth 1024/1024
+2026-10-29T18:26:52.220Z config dark 390
+2026-10-29T18:27:14.744Z dark 390 agents: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:27:18.230Z dark 390 drawer: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:27:31.718Z dark 390 running: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:27:36.139Z dark 390 slash-palette: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:27:39.945Z dark 390 composer-menu: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:27:46.445Z dark 390 approval: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:27:52.119Z dark 390 completed-changes: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:27:57.530Z dark 390 failed: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:28:03.437Z dark 390 closed: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:28:09.820Z dark 390 terminal: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:28:14.227Z dark 390 kanban: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:28:22.421Z dark 390 settings: axe 0 violations, 0 incomplete, scrollWidth 390/390
+2026-10-29T18:28:23.116Z theme switch persists
+2026-10-29T18:28:51.218Z accessibility checks
+2026-10-29T18:28:51.219Z a11y step routes
+2026-10-29T18:31:26.041Z a11y step keyboard
+2026-10-29T18:33:35.523Z a11y step axe
+2026-10-29T18:38:11.621Z a11y step media
+2026-10-29T18:42:53.639Z a11y step reflow
+2026-10-29T18:46:22.115Z a11y step target-size
+2026-10-29T18:49:37.937Z a11y step text-spacing
+2026-10-29T18:56:33.042Z a11y findings:
+severity | check            | where                        | id                         | message
+-------- | ---------------- | ------------------------     | ------------------------   | ------------------------
+warning  | keyboard         | agents view @ 1440x900       | backward-path-set-differs  | 5 stop(s) are met by one direction of the walk only (an element that appears or goes away as focus moves): body:2>div:2…
+warning  | media            | 1440x900                     | app-loaded-on-retry        | the app rendered at http://127.0.0.1:5191/ only on a second load; the first did not render within 150 s
+warning  | media            | prefers-contrast agents @ 1… | icon-button-without-bound… | 3 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autono…
+warning  | media            | prefers-contrast kanban @ 1… | icon-button-without-bound… | 1 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autono…
+warning  | media            | prefers-contrast about @ 14… | icon-button-without-bound… | 1 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autono…
+warning  | media            | prefers-contrast settings-d… | icon-button-without-bound… | 5 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autono…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 1440px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 1728px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 2016px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 2304px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 2592px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 2880px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 3168px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | text-spacing     | 1440x900                     | app-loaded-on-retry        | the app rendered at http://127.0.0.1:5191/ only on a second load; the first did not render within 150 s
+2026-10-29T18:56:33.043Z a11y counters: {"routes:direct":6,"routes:inapp":7,"first-load-focus:loads":1,"keyboard:states":3,"keyboard:stops":162,"dialog:tab-presses":60,"axe:states":30,"axe:runs":30,"media:states":16,"media:forced-colors:controls":138,"media:forced-colors-stops":31,"media:prefers-contrast:controls":153,"media:reduced-motion:views":4,"media:dark:axe-runs":4,"reflow:states":45,"reflow:views":45,"target-size:states":30,"target-size:targets":1935,"text-spacing:states":28,"text-spacing:views":28}
+2026-10-29T18:56:33.133Z a11y report written to /tmp/ag-scratch/smoke-final/a11y/demo/a11y-report.json
