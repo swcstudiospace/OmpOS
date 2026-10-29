@@ -400,17 +400,20 @@ input[type='radio'] {
     color: Highlight;
   }
 
+  /* A primary button is told from the others by a thicker border in the highlight colour and bolder text, not by a fill: a fill depends on the system
+     palette, and a palette whose highlight is not opaque makes the browser draw a canvas-coloured plate behind the label, which hides it. */
   .autonogrammer-btn--primary {
-    background: Highlight;
-    border-color: Highlight;
-    color: HighlightText;
+    background: ButtonFace;
+    border: 2px solid Highlight;
+    color: ButtonText;
+    font-weight: var(--autonogrammer-font-weight-semibold);
   }
 
   .autonogrammer-btn--primary:hover,
   .autonogrammer-btn--primary:active {
-    background: ButtonText;
-    border-color: ButtonText;
-    color: ButtonFace;
+    background: ButtonFace;
+    border-color: Highlight;
+    color: Highlight;
   }
 
   .autonogrammer-btn:disabled,

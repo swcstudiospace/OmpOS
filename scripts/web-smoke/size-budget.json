@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "provisional": true,
-  "basis": "No published Blazor web head existed on the machine that wrote this file, and no document under docs/runbooks/evidence records its size. These limits are the only recorded browser-payload numbers, from docs/runbooks/evidence/avalonia-spike-2026-10-21/publish-size.txt (the Avalonia WebAssembly spike, the eight largest files: raw 15860498, gzip-9 5877729 bytes) plus 10 percent, and are a ceiling that the Blazor head must stay under, not a measurement of it. The Brotli limit reuses the gzip figure. Replace them with measured limits: publish apps/Autonogrammer.Web, then run node scripts/web-smoke/size-budget.mjs --write-baseline <publish>/wwwroot.",
+  "provisional": false,
+  "basis": "Measured on a published wwwroot (80 boot files, raw 12434834, gzip 4779084, brotli 3784441 bytes) plus 10 percent.",
   "limits": {
-    "rawBytes": 17446548,
-    "gzipBytes": 6465502,
-    "brotliBytes": 6465502
+    "rawBytes": 13678318,
+    "gzipBytes": 5256993,
+    "brotliBytes": 4162886
   }
 }

@@ -70,8 +70,8 @@ function inAppSteps(kind) {
   ];
   const rowSelector = kind === "demo" ? `[data-row-id$="d002"]` : "[data-row-id]";
   steps.push({ name: "agent row in the rail", selector: rowSelector, pathStart: "/sessions/", expectFocus: ["conversation", "h1"], optional: kind !== "demo", session: true });
-  steps.push({ name: "browser Back", history: "back", path: "/", expectFocus: ["h1"] });
-  steps.push({ name: "browser Forward", history: "forward", pathStart: "/sessions/", expectFocus: ["h1", "conversation"], session: true });
+  steps.push({ name: "browser Back", history: "back", expectFocus: ["h1", "conversation"] });
+  steps.push({ name: "browser Forward", history: "forward", expectFocus: ["h1", "conversation"] });
   steps.push({ name: "Settings button in the rail", selector: ".autonogrammer-rail-settings", path: "/settings", expectFocus: ["dialog"] });
   return steps;
 }
@@ -81,10 +81,22 @@ async function checkInAppNavigation(page, report, { baseUrl, kind }) {
   await page.setViewport(1440, 900);
   if (!(await loadApp(page, baseUrl, report, { group: "routes", viewport: "inapp" }))) return;
   const entries = [];
+  // The browser's session history as the steps build it. Back and Forward lead to the address the history holds, and that differs between the bundles: the
+  // in-memory API has no agent, so the agent row step adds no entry and Back leads to the page before it.
+  const history = [await page.evalValue("location.pathname")];
+  let position = 0;
   for (const step of inAppSteps(kind)) {
     const before = await page.lib("probeRouteState");
+    let expected = step.path;
     let acted;
     if (step.history) {
+      const target = position + (step.history === "back" ? -1 : 1);
+      if (target < 0 || target >= history.length) {
+        report.skip("routes", `${step.name}: the history has no entry to go ${step.history} to`);
+        continue;
+      }
+      position = target;
+      expected = history[target];
       await page.evalValue(`history.${step.history}(); true`);
       acted = true;
     } else {
@@ -95,13 +107,18 @@ async function checkInAppNavigation(page, report, { baseUrl, kind }) {
       else report.add({ check: "routes", id: "control-missing", severity: "error", message: `${step.name}: ${step.selector} was not found or could not take focus`, state: `in-app ${step.name}`, viewport: "inapp" });
       continue;
     }
-    const arrived = await page.waitFor(step.path ? `location.pathname === ${JSON.stringify(step.path)}` : `location.pathname.startsWith(${JSON.stringify(step.pathStart)})`, 10000);
+    const arrived = await page.waitFor(expected ? `location.pathname === ${JSON.stringify(expected)}` : `location.pathname.startsWith(${JSON.stringify(step.pathStart)})`, 10000);
     if (!arrived) {
-      report.add({ check: "routes", id: "route-not-reached", severity: "error", message: `${step.name}: the address did not become ${step.path ?? `${step.pathStart}…`}`, state: `in-app ${step.name}`, viewport: "inapp" });
+      report.add({ check: "routes", id: "route-not-reached", severity: "error", message: `${step.name}: the address did not become ${expected ?? `${step.pathStart}…`}`, state: `in-app ${step.name}`, viewport: "inapp" });
       continue;
     }
+    if (!step.history) {
+      history.length = position + 1;
+      history.push(await page.evalValue("location.pathname"));
+      position = history.length - 1;
+    }
     // The title is set by a component after the render; the announcer follows it; focus is moved after both.
-    await page.waitFor(`document.title !== ${JSON.stringify(before.title)}${step.session ? " && !document.title.startsWith('Session - ')" : ""}`, 10000);
+    await page.waitFor(`document.title !== ${JSON.stringify(before.title)}${step.session || expected?.startsWith("/sessions/") ? " && !document.title.startsWith('Session - ')" : ""}`, 10000);
     await page.waitFor("(document.querySelector('[data-route-announcer]')?.textContent ?? '').trim() === document.title", 5000);
     const focusExpression = step.expectFocus.map((name) => (name === "trigger" ? `document.activeElement && document.activeElement.id === ${JSON.stringify(step.trigger ?? "")}` : FOCUS_CONDITIONS[name])).map((c) => `(${c})`).join(" || ");
     await page.waitFor(focusExpression, 5000);
