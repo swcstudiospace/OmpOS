@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Autonogrammer.Api.Endpoints;
+using Autonogrammer.Api.Security;
 using Autonogrammer.Contracts.Sessions;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,6 +20,7 @@ namespace Autonogrammer.Api.Serialization;
 [JsonSerializable(typeof(PromptRequest))]
 [JsonSerializable(typeof(PromptAcceptedResponse))]
 [JsonSerializable(typeof(Session[]))]
+[JsonSerializable(typeof(AuthConfigResponse))]
 internal sealed partial class ApiJsonContext : JsonSerializerContext
 {
 }

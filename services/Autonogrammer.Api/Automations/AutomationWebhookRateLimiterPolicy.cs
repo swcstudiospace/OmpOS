@@ -6,8 +6,8 @@ using Microsoft.Extensions.Options;
 namespace Autonogrammer.Api.Automations;
 
 /// <summary>
-/// Token-bucket limiter of the public webhook receiver. It is one global bucket, like the other policies: the receiver is anonymous, and a
-/// bucket per automation identifier would grow one limiter per identifier an attacker invents. The bucket is its own, so a burst of
+/// Token-bucket limiter of the public webhook receiver. It keeps one bucket per remote address (the receiver is anonymous, and a bucket per automation
+/// identifier would grow one limiter per identifier an attacker invents; idle address buckets are evicted). The bucket is its own, so a burst of
 /// deliveries cannot use up the prompt budget. Rejections answer 429 with a Retry-After hint.
 /// </summary>
 internal sealed class AutomationWebhookRateLimiterPolicy : IRateLimiterPolicy<string>
@@ -34,6 +34,6 @@ internal sealed class AutomationWebhookRateLimiterPolicy : IRateLimiterPolicy<st
     public RateLimitPartition<string> GetPartition(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
-        return AutomationRateLimits.Bucket("automation-webhooks", _options.Value.WebhookRequestsPerMinute);
+        return AutomationRateLimits.Bucket("automation-webhooks:" + RateLimitPartitionKey.ForAddress(httpContext), _options.Value.WebhookRequestsPerMinute);
     }
 }
