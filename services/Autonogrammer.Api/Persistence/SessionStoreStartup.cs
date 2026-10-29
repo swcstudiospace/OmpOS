@@ -1,5 +1,6 @@
 using Autonogrammer.Api.Options;
 using Autonogrammer.Sessions.Postgres;
+using Autonogrammer.Sessions.Postgres.Migrations;
 using Microsoft.Extensions.Options;
 using Npgsql;
 
@@ -7,7 +8,9 @@ namespace Autonogrammer.Api.Persistence;
 
 /// <summary>
 /// Startup for the session store. When <c>Sessions:Store</c> is <c>Postgres</c>, <see cref="StartingAsync"/> resolves the data source,
-/// which throws naming <c>Sessions:Postgres:ConnectionString</c> when that key is missing, and creates the session schema (idempotent).
+/// which throws naming <c>Sessions:Postgres:ConnectionString</c> when that key is missing. The schema is created by the migration runner, not by the
+/// API: the one-shot migrate service runs it with the migration role. Only when <c>Sessions:Postgres:AutoMigrate</c> is <see langword="true"/> (development
+/// and tests; default <see langword="false"/>) does this step run the same runner with the runtime connection string.
 /// The host runs every service's <see cref="StartingAsync"/> before any <c>StartAsync</c>, and the web server listens only in its
 /// <c>StartAsync</c>, so no request can run before the schema exists. A failure stops startup. When the store is <c>InMemory</c> it
 /// creates nothing outside the Production environment. In the Production environment an <c>InMemory</c> store refuses startup, naming
@@ -50,7 +53,11 @@ internal sealed class SessionStoreStartup : IHostedLifecycleService
         }
 
         var dataSource = _services.GetRequiredService<NpgsqlDataSource>();
-        await PostgresSessionSchema.EnsureCreatedAsync(dataSource, cancellationToken).ConfigureAwait(false);
+        if (_options.Value.Postgres.AutoMigrate)
+        {
+            var runner = new MigrationRunner(dataSource, resilience: _services.GetRequiredService<PostgresResilience>());
+            await runner.MigrateAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     /// <inheritdoc />

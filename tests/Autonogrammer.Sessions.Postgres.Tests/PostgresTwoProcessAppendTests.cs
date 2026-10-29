@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using Autonogrammer.Contracts.Streaming;
+using Autonogrammer.Sessions.Postgres.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -94,7 +95,7 @@ public sealed class PostgresTwoProcessAppendTests
         var provider = BuildStore(connectionString);
         await using (provider.ConfigureAwait(false))
         {
-            await PostgresSessionSchema.EnsureCreatedAsync(provider.GetRequiredService<NpgsqlDataSource>(), ct).ConfigureAwait(true);
+            await new MigrationRunner(provider.GetRequiredService<NpgsqlDataSource>()).MigrateAsync(ct).ConfigureAwait(true);
             await provider.GetRequiredService<PostgresSessionRepository>().SaveAsync(Sample(SessionId), ct).ConfigureAwait(true);
         }
     }
