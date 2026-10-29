@@ -4,6 +4,7 @@ using Autonogrammer.Api.Coordination;
 using Autonogrammer.Api.Endpoints;
 using Autonogrammer.Api.Harness;
 using Autonogrammer.Api.Health;
+using Autonogrammer.Api.Hosting;
 using Autonogrammer.Api.Metrics;
 using Autonogrammer.Api.Middleware;
 using Autonogrammer.Api.OpenApi;
@@ -15,7 +16,6 @@ using Autonogrammer.Api.Services;
 using Autonogrammer.Api.Services.Providers;
 using Autonogrammer.Api.Services.WorkspaceSettings;
 using Autonogrammer.Api.Sse;
-using Autonogrammer.Api.Telemetry;
 using Autonogrammer.Api.Workflows;
 using Autonogrammer.Contracts.Serialization;
 using Autonogrammer.Harness.Abstractions;
@@ -27,15 +27,11 @@ using Autonogrammer.SessionRuns;
 using Autonogrammer.Sessions;
 using Autonogrammer.Workflows;
 using Autonogrammer.Worktrees;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -55,6 +51,7 @@ builder.Services.AddOptions<HarnessOptions>()
     .Validate(options => harnessInDevelopment || !HarnessOptions.IsInMemoryAdapter(options.Adapter), "Harness:Adapter must be Acp outside the Development environment; InMemory is a development-only adapter.")
     .Validate(static options => !HarnessOptions.IsAcpAdapter(options.Adapter) || !string.IsNullOrWhiteSpace(options.Acp.OmpPath), "Harness:Acp:OmpPath must be set when Harness:Adapter is Acp.")
     .ValidateOnStart();
+builder.Services.AddEngineIsolation(builder.Environment);
 builder.Services.AddOptions<SessionsOptions>()
     .BindConfiguration(SessionsOptions.SectionName)
     .ValidateDataAnnotations()
@@ -77,16 +74,10 @@ builder.Services.AddOptions<WorktreesOptions>()
     .Validate(static options => string.IsNullOrWhiteSpace(options.Repository) || Path.IsPathFullyQualified(options.Repository), "Worktrees:Repository must be an absolute path when set.")
     .ValidateOnStart();
 
-// OIDC bearer sign-in (OD-03). ApiAuthOptionsValidator checks these options against the host environment on start: outside
-// Development, Authority and Audience are required, Authority must be https, and the development principal is refused.
-builder.Services.AddOptions<ApiAuthOptions>()
-    .BindConfiguration(ApiAuthOptions.SectionName)
-    .ValidateOnStart();
-builder.Services.AddSingleton<IValidateOptions<ApiAuthOptions>, ApiAuthOptionsValidator>();
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
-builder.Services.AddSingleton<IPostConfigureOptions<JwtBearerOptions>, JwtBearerSetup>();
-// Default policy: every endpoint without an explicit policy requires an authenticated user. Health and (in Development) OpenAPI opt out below.
-builder.Services.AddAuthorizationBuilder().SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+// Authentication: OIDC bearer (OD-03) or the single-operator owner token (Api:Auth:Mode). ApiAuthOptionsValidator checks the options against the
+// host environment on start. The fallback policy requires an authenticated user for every endpoint without its own policy; health and, in
+// Development, OpenAPI opt out below.
+builder.Services.AddApiAuthentication(builder.Environment);
 
 // Source-generation-only JSON: API DTOs plus every contract shape.
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -145,18 +136,6 @@ builder.Services.AddSingleton<IHostedService>(static services => services.GetReq
 builder.Services.AddSingleton<SessionRunReaper>();
 builder.Services.AddSingleton<IHostedService>(static services => services.GetRequiredService<SessionRunReaper>());
 builder.Services.AddSingleton<ApiMetrics>();
-// The caller is the subject of the validated bearer token. The development principal is used only behind the explicit
-// Api:Auth:AllowDevelopmentPrincipal opt-in, which the options validator refuses outside Development.
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IUserContext>(static services =>
-{
-    if (services.GetRequiredService<IOptions<ApiAuthOptions>>().Value.AllowDevelopmentPrincipal)
-    {
-        return new SingleDevPrincipal();
-    }
-
-    return new AuthenticatedUserContext(services.GetRequiredService<IHttpContextAccessor>());
-});
 
 // CORS locked to Api:Cors:Origins; empty means no cross-origin traffic. The policy is
 // built from IOptions on first use (see ConfigureCorsOptions) so late configuration
@@ -201,34 +180,16 @@ builder.Services.AddHealthChecks()
 
 builder.Services.AddAutonogrammerOpenApi();
 
-var otelExporter = builder.Configuration.GetValue<string>("Otel:Exporter") ?? "none";
-builder.Services.AddOpenTelemetry()
-    .WithTracing(tracing =>
-    {
-        tracing.AddAspNetCoreInstrumentation().AddSource(ApiTelemetry.SourceName);
-        if (otelExporter.Equals("console", StringComparison.OrdinalIgnoreCase))
-        {
-            tracing.AddConsoleExporter();
-        }
-        else if (otelExporter.Equals("otlp", StringComparison.OrdinalIgnoreCase))
-        {
-            tracing.AddOtlpExporter();
-        }
-    })
-    .WithMetrics(metrics =>
-    {
-        metrics.AddAspNetCoreInstrumentation().AddMeter(ApiTelemetry.SourceName);
-        if (otelExporter.Equals("console", StringComparison.OrdinalIgnoreCase))
-        {
-            metrics.AddConsoleExporter();
-        }
-        else if (otelExporter.Equals("otlp", StringComparison.OrdinalIgnoreCase))
-        {
-            metrics.AddOtlpExporter();
-        }
-    });
+builder.Services.AddApiTelemetry(builder.Configuration, builder.Environment);
+
+builder.AddHostingHardening();
 
 var app = builder.Build();
+
+// Before the first engine process exists: the engine runs model-chosen commands as this user, so the API's own /proc entries are closed first.
+ProcessHardening.ApplyIfEnabled(app.Logger, app.Configuration, app.Environment);
+
+app.UseHostingHardening();
 
 // Unhandled exceptions become ProblemDetails 500s outside Development. The developer
 // exception page stays Development-only (framework default); Production never leaks internals.
@@ -239,12 +200,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseCors(ConfigureCorsOptions.PolicyName);
-app.UseAuthentication();
-var authOptions = app.Services.GetRequiredService<IOptions<ApiAuthOptions>>().Value;
-if (authOptions.AllowDevelopmentPrincipal)
-{
-    app.UseMiddleware<AuthBoundaryMiddleware>();
-}
+app.UseApiAuthentication();
 
 app.UseRateLimiter();
 app.UseAuthorization();
@@ -273,6 +229,8 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
         [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable,
     },
 }).AllowAnonymous();
+app.MapHostingEndpoints();
+app.MapAuthConfigEndpoints();
 app.MapSessionEndpoints();
 app.MapToolApprovalEndpoints();
 app.MapEventStreamEndpoints();
