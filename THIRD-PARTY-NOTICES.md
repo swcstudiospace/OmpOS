@@ -1,6 +1,6 @@
 # Third-party notices
 
-OmpOS is licensed under AGPL-3.0-or-later (see [LICENSE](LICENSE) and [NOTICE](NOTICE)). It uses and conveys the third-party components below, each under its own licence. This file is generated; do not edit it by hand.
+Autonogrammer is licensed under AGPL-3.0-or-later (see [LICENSE](LICENSE) and [NOTICE](NOTICE)). It uses and conveys the third-party components below, each under its own licence. This file is generated; do not edit it by hand.
 
 Regenerate: `python3 scripts/legal/generate-third-party-notices.py` (check without writing: `--check`). Input: every `packages.lock.json` in the repository, the NuGet cache, the font and image directories, and `deploy/*.Containerfile`.
 
@@ -7833,9 +7833,9 @@ implication, estoppel or otherwise.
 
 | Item | Version | Licence | Notes |
 |---|---|---|---|
-| plugins/gsd-core-omp | 0.1.0 | AGPL-3.0-or-later | first-party OmpOS code; declares no npm dependencies |
-| xterm.js (`src/OmpOS.UI/wwwroot/lib/xterm`) | 6.0.0 | MIT | npm package @xterm/xterm, vendored unmodified, no CDN; Copyright (c) 2017-2019, The xterm.js authors (https://github.com/xtermjs/xterm.js); read from its licence file; MIT text in section 8 |
-| xterm.js fit addon (`src/OmpOS.UI/wwwroot/lib/xterm`) | 0.11.0 | MIT | npm package @xterm/addon-fit, vendored unmodified, no CDN; Copyright (c) 2019, The xterm.js authors (https://github.com/xtermjs/xterm.js); read from its licence file; MIT text in section 8 |
+| plugins/gsd-core-omp | 0.1.0 | AGPL-3.0-or-later | first-party Autonogrammer code; declares no npm dependencies |
+| xterm.js (`src/Autonogrammer.UI/wwwroot/lib/xterm`) | 6.0.0 | MIT | npm package @xterm/xterm, vendored unmodified, no CDN; Copyright (c) 2017-2019, The xterm.js authors (https://github.com/xtermjs/xterm.js); read from its licence file; MIT text in section 8 |
+| xterm.js fit addon (`src/Autonogrammer.UI/wwwroot/lib/xterm`) | 0.11.0 | MIT | npm package @xterm/addon-fit, vendored unmodified, no CDN; Copyright (c) 2019, The xterm.js authors (https://github.com/xtermjs/xterm.js); read from its licence file; MIT text in section 8 |
 | axe-core (`scripts/web-smoke/axe-core-4.14.0.sha256`) | from the file name | MPL-2.0 | smoke-test tool downloaded at test time with `npm pack`; never committed or shipped, so its text is not reproduced |
 
 ## 5. Fonts
@@ -7844,87 +7844,87 @@ Fonts are under the SIL Open Font License 1.1 (text in section 8). Each director
 
 | Family | Directory | Copyright | Files |
 |---|---|---|---|
-| Anybody | `src/OmpOS.Native.Views/Assets/Fonts/Anybody` | Copyright 2020 The Anybody Project Authors (https://github.com/Etcetera-Type-Co/Anybody) | Anybody-SemiBold.ttf |
-| DMSans | `src/OmpOS.Native.Views/Assets/Fonts/DMSans` | Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts) | DMSans-Medium.ttf, DMSans-Regular.ttf, DMSans-SemiBold.ttf |
-| SpaceMono | `src/OmpOS.Native.Views/Assets/Fonts/SpaceMono` | Copyright 2016 The Space Mono Project Authors (https://github.com/googlefonts/spacemono) | SpaceMono-Bold.ttf, SpaceMono-Regular.ttf |
-| Anybody | `src/OmpOS.UI/wwwroot/fonts/Anybody` | Copyright 2020 The Anybody Project Authors (https://github.com/Etcetera-Type-Co/Anybody) | Anybody-SemiBold.woff2 |
-| DMSans | `src/OmpOS.UI/wwwroot/fonts/DMSans` | Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts) | DMSans-Medium.woff2, DMSans-Regular.woff2, DMSans-SemiBold.woff2 |
-| SpaceMono | `src/OmpOS.UI/wwwroot/fonts/SpaceMono` | Copyright 2016 The Space Mono Project Authors (https://github.com/googlefonts/spacemono) | SpaceMono-Bold.woff2, SpaceMono-Regular.woff2 |
+| Anybody | `src/Autonogrammer.Native.Views/Assets/Fonts/Anybody` | Copyright 2020 The Anybody Project Authors (https://github.com/Etcetera-Type-Co/Anybody) | Anybody-SemiBold.ttf |
+| DMSans | `src/Autonogrammer.Native.Views/Assets/Fonts/DMSans` | Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts) | DMSans-Medium.ttf, DMSans-Regular.ttf, DMSans-SemiBold.ttf |
+| SpaceMono | `src/Autonogrammer.Native.Views/Assets/Fonts/SpaceMono` | Copyright 2016 The Space Mono Project Authors (https://github.com/googlefonts/spacemono) | SpaceMono-Bold.ttf, SpaceMono-Regular.ttf |
+| Anybody | `src/Autonogrammer.UI/wwwroot/fonts/Anybody` | Copyright 2020 The Anybody Project Authors (https://github.com/Etcetera-Type-Co/Anybody) | Anybody-SemiBold.woff2 |
+| DMSans | `src/Autonogrammer.UI/wwwroot/fonts/DMSans` | Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts) | DMSans-Medium.woff2, DMSans-Regular.woff2, DMSans-SemiBold.woff2 |
+| SpaceMono | `src/Autonogrammer.UI/wwwroot/fonts/SpaceMono` | Copyright 2016 The Space Mono Project Authors (https://github.com/googlefonts/spacemono) | SpaceMono-Bold.woff2, SpaceMono-Regular.woff2 |
 
 ## 6. Images
 
 | File | SHA-256 prefix | Provenance |
 |---|---|---|
-| `apps/OmpOS.Android/Resources/mipmap-hdpi/ic_launcher.png` | 92a21d085b9b | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-hdpi/ic_launcher_foreground.png` | c36a92b90d30 | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-hdpi/ic_launcher_round.png` | 1b54afad51a5 | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-mdpi/ic_launcher.png` | 234e99332338 | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-mdpi/ic_launcher_foreground.png` | 1c7530deda44 | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-mdpi/ic_launcher_round.png` | 41b39f50a481 | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-xhdpi/ic_launcher.png` | cf312e5939ef | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-xhdpi/ic_launcher_foreground.png` | 4dbb2343610c | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-xhdpi/ic_launcher_round.png` | eb0e42a39adf | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-xxhdpi/ic_launcher.png` | c5204f109d5c | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-xxhdpi/ic_launcher_foreground.png` | 27b67e639707 | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-xxhdpi/ic_launcher_round.png` | e05ceea30407 | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-xxxhdpi/ic_launcher.png` | 733f8020bfec | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-xxxhdpi/ic_launcher_foreground.png` | 7db51f36a2bb | provenance not recorded |
-| `apps/OmpOS.Android/Resources/mipmap-xxxhdpi/ic_launcher_round.png` | 6b6f316d3bbe | provenance not recorded |
-| `apps/OmpOS.Native/Assets/Brand/ompos-256.png` | 19255a62aadb | provenance not recorded |
-| `apps/OmpOS.Native/Assets/Brand/ompos-512.png` | 2dffa1be9da0 | provenance not recorded |
-| `apps/OmpOS.Native/Assets/Brand/ompos.ico` | 984d1333a969 | provenance not recorded |
-| `apps/OmpOS.Web/wwwroot/apple-touch-icon.png` | a9d8dd010672 | provenance not recorded |
-| `apps/OmpOS.Web/wwwroot/favicon-32.png` | 4a125cd7cb34 | provenance not recorded |
-| `apps/OmpOS.Web/wwwroot/favicon.ico` | 418525b8a905 | provenance not recorded |
-| `apps/OmpOS.Web/wwwroot/favicon.png` | 946f8f9f543a | provenance not recorded; the file names match the stock Blazor WebAssembly template [INFERENCE]; replace with OmpOS-authored artwork |
-| `apps/OmpOS.Web/wwwroot/favicon.svg` | fe9083660416 | provenance not recorded |
-| `apps/OmpOS.Web/wwwroot/icon-192.png` | 733f8020bfec | provenance not recorded; the file names match the stock Blazor WebAssembly template [INFERENCE]; replace with OmpOS-authored artwork |
-| `apps/OmpOS.Web/wwwroot/icon-512.png` | 2dffa1be9da0 | provenance not recorded |
-| `apps/OmpOS.Web/wwwroot/icon-maskable-512.png` | b0aface5a4d3 | provenance not recorded |
-| `assets/brand/ompos-banner-dark.png` | 23967f8281d4 | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/ompos-banner.png` | aaa68300d30b | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/ompos-icon-1024.png` | 961ce70c501b | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/ompos-logo-dark.svg` | 339e7c7856eb | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/ompos-logo-stacked.svg` | 6a537622eb83 | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/ompos-logo.svg` | f3cbb2fc3871 | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/ompos-mark-dark.svg` | 2cda67c16d5c | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/ompos-mark.svg` | a523b5af11f6 | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/ompos-social-preview.png` | b552c56f0000 | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/banner-dark.svg` | 809f752e9362 | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/banner.svg` | 98ee5efac099 | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/logo-dark.svg` | 6b6789a8b8cb | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/logo-stacked.svg` | 13e074289f86 | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/logo.svg` | c3fdb1834876 | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/mark-dark.svg` | 2cda67c16d5c | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/mark-small.svg` | fe9083660416 | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/mark.svg` | a523b5af11f6 | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/social-preview.svg` | 9ceccedd7a4f | OmpOS-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `src/OmpOS.Native.Views/Assets/Brand/ompos-mark-256.png` | 19255a62aadb | provenance not recorded |
-| `src/OmpOS.UI/wwwroot/brand/ompos-logo-dark.svg` | 339e7c7856eb | provenance not recorded |
-| `src/OmpOS.UI/wwwroot/brand/ompos-logo.svg` | f3cbb2fc3871 | provenance not recorded |
-| `src/OmpOS.UI/wwwroot/brand/ompos-mark-dark.svg` | 2cda67c16d5c | provenance not recorded |
-| `src/OmpOS.UI/wwwroot/brand/ompos-mark.svg` | a523b5af11f6 | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-hdpi/ic_launcher.png` | 92a21d085b9b | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-hdpi/ic_launcher_foreground.png` | c36a92b90d30 | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-hdpi/ic_launcher_round.png` | 1b54afad51a5 | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-mdpi/ic_launcher.png` | 234e99332338 | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-mdpi/ic_launcher_foreground.png` | 1c7530deda44 | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-mdpi/ic_launcher_round.png` | 41b39f50a481 | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-xhdpi/ic_launcher.png` | cf312e5939ef | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-xhdpi/ic_launcher_foreground.png` | 4dbb2343610c | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-xhdpi/ic_launcher_round.png` | eb0e42a39adf | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-xxhdpi/ic_launcher.png` | c5204f109d5c | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-xxhdpi/ic_launcher_foreground.png` | 27b67e639707 | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-xxhdpi/ic_launcher_round.png` | e05ceea30407 | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-xxxhdpi/ic_launcher.png` | 733f8020bfec | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-xxxhdpi/ic_launcher_foreground.png` | 7db51f36a2bb | provenance not recorded |
+| `apps/Autonogrammer.Android/Resources/mipmap-xxxhdpi/ic_launcher_round.png` | 6b6f316d3bbe | provenance not recorded |
+| `apps/Autonogrammer.Native/Assets/Brand/autonogrammer-256.png` | 19255a62aadb | provenance not recorded |
+| `apps/Autonogrammer.Native/Assets/Brand/autonogrammer-512.png` | 2dffa1be9da0 | provenance not recorded |
+| `apps/Autonogrammer.Native/Assets/Brand/autonogrammer.ico` | 984d1333a969 | provenance not recorded |
+| `apps/Autonogrammer.Web/wwwroot/apple-touch-icon.png` | a9d8dd010672 | provenance not recorded |
+| `apps/Autonogrammer.Web/wwwroot/favicon-32.png` | 4a125cd7cb34 | provenance not recorded |
+| `apps/Autonogrammer.Web/wwwroot/favicon.ico` | 418525b8a905 | provenance not recorded |
+| `apps/Autonogrammer.Web/wwwroot/favicon.png` | 946f8f9f543a | provenance not recorded; the file names match the stock Blazor WebAssembly template [INFERENCE]; replace with Autonogrammer-authored artwork |
+| `apps/Autonogrammer.Web/wwwroot/favicon.svg` | b329e2237cfe | provenance not recorded |
+| `apps/Autonogrammer.Web/wwwroot/icon-192.png` | 733f8020bfec | provenance not recorded; the file names match the stock Blazor WebAssembly template [INFERENCE]; replace with Autonogrammer-authored artwork |
+| `apps/Autonogrammer.Web/wwwroot/icon-512.png` | 2dffa1be9da0 | provenance not recorded |
+| `apps/Autonogrammer.Web/wwwroot/icon-maskable-512.png` | b0aface5a4d3 | provenance not recorded |
+| `assets/brand/autonogrammer-banner-dark.png` | 23967f8281d4 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-banner.png` | aaa68300d30b | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-icon-1024.png` | 961ce70c501b | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-logo-dark.svg` | 3079b0bf1e1d | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-logo-stacked.svg` | 4a87f0e78185 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-logo.svg` | 3cbc7f18d696 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-mark-dark.svg` | 0a58be11e347 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-mark.svg` | ccdd50fa8d4a | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-social-preview.png` | b552c56f0000 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/banner-dark.svg` | 4faea45d4300 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/banner.svg` | 2ff6fe2aa4cf | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/logo-dark.svg` | feabc82bce17 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/logo-stacked.svg` | ea68c76b2c4f | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/logo.svg` | f520ca6ece36 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/mark-dark.svg` | 0a58be11e347 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/mark-small.svg` | b329e2237cfe | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/mark.svg` | ccdd50fa8d4a | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/social-preview.svg` | 1a9ac56778f9 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `src/Autonogrammer.Native.Views/Assets/Brand/autonogrammer-mark-256.png` | 19255a62aadb | provenance not recorded |
+| `src/Autonogrammer.UI/wwwroot/brand/autonogrammer-logo-dark.svg` | 3079b0bf1e1d | provenance not recorded |
+| `src/Autonogrammer.UI/wwwroot/brand/autonogrammer-logo.svg` | 3cbc7f18d696 | provenance not recorded |
+| `src/Autonogrammer.UI/wwwroot/brand/autonogrammer-mark-dark.svg` | 0a58be11e347 | provenance not recorded |
+| `src/Autonogrammer.UI/wwwroot/brand/autonogrammer-mark.svg` | ccdd50fa8d4a | provenance not recorded |
 
 ## 7. Components conveyed outside the NuGet graph
 
 | Component | Where | Licence | Notices |
 |---|---|---|---|
-| Bun 1.4.3 | `deploy/api.Containerfile` final image (`/usr/local/bin/bun`) | MIT, plus statically linked components (JavaScriptCore under LGPL-2, tinycc under LGPL-2.1, zlib-ng, ICU, SQLite and others) | https://bun.sh/docs/project/licensing; the image carries `/licenses/bun-NOTICE.txt`. Bun's source is available at https://github.com/oven-sh/bun/tree/bun-v1.4.3. Bun is a separate program that OmpOS does not link. |
+| Bun 1.4.3 | `deploy/api.Containerfile` final image (`/usr/local/bin/bun`) | MIT, plus statically linked components (JavaScriptCore under LGPL-2, tinycc under LGPL-2.1, zlib-ng, ICU, SQLite and others) | https://bun.sh/docs/project/licensing; the image carries `/licenses/bun-NOTICE.txt`. Bun's source is available at https://github.com/oven-sh/bun/tree/bun-v1.4.3. Bun is a separate program that Autonogrammer does not link. |
 | omp (`@oh-my-pi/pi-coding-agent`) 18.12.5 | `deploy/api.Containerfile` final image (`/opt/omp`) | MIT, Copyright (c) 2025 Mario Zechner, 2025-2026 Can Bölük | the tarball's LICENSE is copied to `/licenses/omp-LICENSE`. omp's own npm dependency tree is resolved at image build time and is not audited here. |
 | .NET runtime and ASP.NET Core shared framework | `deploy/api.Containerfile` base images; desktop and web payloads | MIT, with third-party notices (ICU and others) | the runtime's `LICENSE.txt` and `ThirdPartyNotices.txt` are copied to `/licenses` when the base image provides them (https://github.com/dotnet/runtime/blob/main/THIRD-PARTY-NOTICES.TXT) |
 | Ubuntu 24.04 base image packages | `deploy/api.Containerfile` | per package, see `/usr/share/doc/*/copyright` inside the image | standard image distribution duties |
-| Bun 1.4.3 | `deploy/worker.Containerfile` final image (`/usr/local/bin/bun`) | MIT, plus statically linked components (JavaScriptCore under LGPL-2, tinycc under LGPL-2.1, zlib-ng, ICU, SQLite and others) | https://bun.sh/docs/project/licensing; the image carries `/licenses/bun-NOTICE.txt`. Bun's source is available at https://github.com/oven-sh/bun/tree/bun-v1.4.3. Bun is a separate program that OmpOS does not link. |
+| Bun 1.4.3 | `deploy/worker.Containerfile` final image (`/usr/local/bin/bun`) | MIT, plus statically linked components (JavaScriptCore under LGPL-2, tinycc under LGPL-2.1, zlib-ng, ICU, SQLite and others) | https://bun.sh/docs/project/licensing; the image carries `/licenses/bun-NOTICE.txt`. Bun's source is available at https://github.com/oven-sh/bun/tree/bun-v1.4.3. Bun is a separate program that Autonogrammer does not link. |
 | omp (`@oh-my-pi/pi-coding-agent`) 18.12.5 | `deploy/worker.Containerfile` final image (`/opt/omp`) | MIT, Copyright (c) 2025 Mario Zechner, 2025-2026 Can Bölük | the tarball's LICENSE is copied to `/licenses/omp-LICENSE`. omp's own npm dependency tree is resolved at image build time and is not audited here. |
 | .NET runtime and ASP.NET Core shared framework | `deploy/worker.Containerfile` base images; desktop and web payloads | MIT, with third-party notices (ICU and others) | the runtime's `LICENSE.txt` and `ThirdPartyNotices.txt` are copied to `/licenses` when the base image provides them (https://github.com/dotnet/runtime/blob/main/THIRD-PARTY-NOTICES.TXT) |
 | Ubuntu 24.04 base image packages | `deploy/worker.Containerfile` | per package, see `/usr/share/doc/*/copyright` inside the image | standard image distribution duties |
 
-Submodules under `plugins/` are separate programs pinned by reference; their files are not part of OmpOS source archives.
+Submodules under `plugins/` are separate programs pinned by reference; their files are not part of Autonogrammer source archives.
 
 | Submodule | Repository | Licence |
 |---|---|---|
 | `plugins/agent-substrate` | https://github.com/swcstudiospace/substrate.git | none published (no LICENSE file, private repository; OQ-102) |
 | `plugins/agent-swarm` | https://github.com/swcstudiospace/swarm.git | none published (no LICENSE file; OQ-102) |
-| `plugins/claude-ultrathink` | https://github.com/swcstudiospace/ultrathink.git | AGPL-3.0-or-later (its LICENSE; same family as OmpOS) |
+| `plugins/claude-ultrathink` | https://github.com/swcstudiospace/ultrathink.git | AGPL-3.0-or-later (its LICENSE; same family as Autonogrammer) |
 
 ## 8. Licence texts
 
