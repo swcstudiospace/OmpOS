@@ -86,6 +86,55 @@ public sealed partial class GateParityTests
     }
 
     [Fact]
+    public void BootstrapAndCiStartAndStopTheSameTestServices()
+    {
+        const string callerScript = "scripts/test-services.sh";
+        var bootstrap = CodeLines("bootstrap.sh");
+        var workflow = CodeLines(".github/workflows/ci.yml");
+
+        // Both callers start the services with the same arguments. Plain `up` is the contract: neither passes --with-greptime,
+        // so the container tests that need only PostgreSQL and Dragonfly run identically in the local gate and in CI.
+        var bootstrapUp = bootstrap.FindAll(line => TestServicesUp().IsMatch(line));
+        var workflowUp = workflow.FindAll(line => TestServicesUp().IsMatch(line));
+        bootstrapUp.Count.ShouldBe(1, "bootstrap.sh must run `bash " + callerScript + " up` exactly once");
+        workflowUp.Count.ShouldBe(1, "ci.yml must run `bash " + callerScript + " up` exactly once");
+        var bootstrapArguments = TestServicesUp().Match(bootstrapUp[0]).Groups["arguments"].Value.Trim();
+        var workflowArguments = TestServicesUp().Match(workflowUp[0]).Groups["arguments"].Value.Trim();
+        bootstrapArguments.ShouldBe(workflowArguments, "bootstrap.sh and ci.yml must start the test services with the same arguments");
+        bootstrapArguments.ShouldBeEmpty("both gate paths run plain `up`");
+
+        // bootstrap.sh stops them on every exit path: `down` sits inside the cleanup function that an EXIT trap runs,
+        // and the trap is installed before `up`.
+        var cleanupStart = bootstrap.FindIndex(static line => line.StartsWith("cleanup() {", StringComparison.Ordinal));
+        var trap = bootstrap.FindIndex(static line => line == "trap cleanup EXIT");
+        var bootstrapDown = bootstrap.FindAll(line => RunsScript(line, callerScript) && line.EndsWith(" down", StringComparison.Ordinal));
+        cleanupStart.ShouldBeGreaterThanOrEqualTo(0, "bootstrap.sh must define cleanup()");
+        trap.ShouldBeGreaterThan(cleanupStart, "bootstrap.sh must install `trap cleanup EXIT` after defining cleanup()");
+        trap.ShouldBeLessThan(bootstrap.IndexOf(bootstrapUp[0]), "the EXIT trap must be installed before the test services start");
+        bootstrapDown.Count.ShouldBe(1, "bootstrap.sh must run `bash " + callerScript + " down` exactly once");
+        var cleanupEnd = bootstrap.FindIndex(cleanupStart, static line => line == "}");
+        var downIndex = bootstrap.IndexOf(bootstrapDown[0]);
+        downIndex.ShouldBeGreaterThan(cleanupStart, "down must be inside cleanup()");
+        downIndex.ShouldBeLessThan(cleanupEnd, "down must be inside cleanup()");
+
+        // ci.yml stops them in a later step that always runs.
+        var workflowDown = workflow.FindAll(line => RunsScript(line, callerScript) && line.EndsWith(" down", StringComparison.Ordinal));
+        workflowDown.Count.ShouldBe(1, "ci.yml must run `bash " + callerScript + " down` exactly once");
+        var upLine = workflow.IndexOf(workflowUp[0]);
+        var workflowDownLine = workflow.IndexOf(workflowDown[0]);
+        workflowDownLine.ShouldBeGreaterThan(upLine, "the stop step must follow the start step");
+        var stepStart = workflow.FindLastIndex(workflowDownLine, static line => line.StartsWith("- name:", StringComparison.Ordinal));
+        stepStart.ShouldBeGreaterThan(upLine, "the stop step must be its own step after the start step");
+        workflow.GetRange(stepStart, workflowDownLine - stepStart).ShouldContain("if: always()", "the stop step must run `if: always()`");
+
+        // Container names live only in the script, the compose file and the tests; the callers never name one.
+        foreach (var path in new[] { "bootstrap.sh", ".github/workflows/ci.yml" })
+        {
+            File.ReadAllText(RepoPath(path)).ShouldNotContain("autonogrammer-test-", Case.Sensitive, path + " must not name a test container");
+        }
+    }
+
+    [Fact]
     public void GitleaksPinFileCarriesAVersionAndADigestAndNoOtherAssignment()
     {
         var assignments = CodeLines(PinFile);
@@ -112,6 +161,9 @@ public sealed partial class GateParityTests
             line => line.Contains("AUTONOGRAMMER_SKIP_SECRET_SCAN", StringComparison.Ordinal),
             "CI must never skip the secret scan");
     }
+
+    [GeneratedRegex(@"bash scripts/test-services\.sh up\b(?<arguments>[^)""]*)", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex TestServicesUp();
 
     [GeneratedRegex(@"^GITLEAKS_VERSION=\d+\.\d+\.\d+$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 2000)]
     private static partial Regex VersionAssignment();

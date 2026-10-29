@@ -2,14 +2,17 @@
 # Throwaway TimescaleDB and Dragonfly for test runs that need real servers: the session store and the run-lease,
 # idempotency and signal tests. `up` starts both containers on loopback with random passwords and random host
 # ports, waits until each accepts authenticated connections, writes two export lines to a mode 600 file, and prints
-# only that file's path. `down` removes both containers and is idempotent. Podman only. No password is written to
-# the repository.
+# only that file's path. `up --with-greptime` also starts a throwaway GreptimeDB (no authentication, loopback only),
+# waits for its /health and adds AUTONOGRAMMER_TEST_GREPTIME_URL to the file. Plain `up` is what bootstrap.sh and CI
+# call. `down` removes all three containers and is idempotent. Podman only. No password is written to the repository.
 set -euo pipefail
 
 POSTGRES_NAME=autonogrammer-test-postgres
 DRAGONFLY_NAME=autonogrammer-test-dragonfly
+GREPTIME_NAME=autonogrammer-test-greptimedb
 POSTGRES_IMAGE=docker.io/timescale/timescaledb:2.13.1-pg16@sha256:1b2b5508848bbbbd671e02aeafd75fefb57771168f0782b6842bfb2f66af444b
 DRAGONFLY_IMAGE=docker.io/dragonflydb/dragonfly:v1.27.1@sha256:385cb73078f4dabe43d536766842eab444f3d791b0fcf86951decdcbcda37917
+GREPTIME_IMAGE=docker.io/greptime/greptimedb:v1.1.4@sha256:9726587eac95d0360755254cd59a528dbf48abfdf268478aea6a644f62afe44c
 DB=autonogrammer_test
 DB_USER=autonogrammer
 READY_BUDGET_SECONDS=90
@@ -33,6 +36,16 @@ dragonfly_ping() {
   [ "$auth" = $'+OK\r' ] && [ "$pong" = $'+PONG\r' ]
 }
 
+# Succeeds when GreptimeDB answers GET /health with 200 on the loopback host port $1.
+greptime_health() {
+  local port="$1" status=""
+  { exec 3<>"/dev/tcp/127.0.0.1/$port"; } 2>/dev/null || return 1
+  printf 'GET /health HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3
+  IFS= read -r -t 5 status <&3 || true
+  exec 3>&-
+  [[ "$status" == *" 200 "* ]]
+}
+
 # Usage: wait_ready <description> <command...>. Polls once per second within the readiness budget.
 wait_ready() {
   local description="$1"
@@ -50,11 +63,13 @@ wait_ready() {
 down() {
   podman rm -f "$POSTGRES_NAME" >/dev/null 2>&1 || true
   podman rm -f "$DRAGONFLY_NAME" >/dev/null 2>&1 || true
+  podman rm -f "$GREPTIME_NAME" >/dev/null 2>&1 || true
 }
 
 up() {
+  local with_greptime="$1"
   down
-  local postgres_password dragonfly_password postgres_port dragonfly_port env_file
+  local postgres_password dragonfly_password postgres_port dragonfly_port greptime_port="" env_file
   postgres_password="$(openssl rand -hex 16)"
   dragonfly_password="$(openssl rand -hex 16)"
 
@@ -63,7 +78,11 @@ up() {
     -e POSTGRES_USER="$DB_USER" -e POSTGRES_DB="$DB" -e POSTGRES_PASSWORD \
     -p 127.0.0.1::5432 "$POSTGRES_IMAGE" >/dev/null
   DFLY_requirepass="$dragonfly_password" podman run -d --name "$DRAGONFLY_NAME" \
-    -e DFLY_requirepass -p 127.0.0.1::6379 "$DRAGONFLY_IMAGE" --bind=0.0.0.0 >/dev/null
+    -e DFLY_requirepass -p 127.0.0.1::6379 "$DRAGONFLY_IMAGE" --bind=0.0.0.0 --proactor_threads=2 --maxmemory=512m >/dev/null
+  if [ "$with_greptime" = "1" ]; then
+    podman run -d --name "$GREPTIME_NAME" -p 127.0.0.1::4000 "$GREPTIME_IMAGE" \
+      standalone start --http-addr=0.0.0.0:4000 --rpc-bind-addr=0.0.0.0:4001 >/dev/null
+  fi
 
   postgres_port="$(host_port "$POSTGRES_NAME" 5432/tcp)"
   dragonfly_port="$(host_port "$DRAGONFLY_NAME" 6379/tcp)"
@@ -80,6 +99,14 @@ up() {
     down
     exit 1
   fi
+  if [ "$with_greptime" = "1" ]; then
+    greptime_port="$(host_port "$GREPTIME_NAME" 4000/tcp)"
+    if ! wait_ready "test GreptimeDB" greptime_health "$greptime_port"; then
+      podman logs "$GREPTIME_NAME" >&2 || true
+      down
+      exit 1
+    fi
+  fi
 
   env_file="$(mktemp "${TMPDIR:-/tmp}/autonogrammer-test-services.XXXXXX")"
   chmod 600 "$env_file"
@@ -87,14 +114,26 @@ up() {
     "$postgres_port" "$DB" "$DB_USER" "$postgres_password" >>"$env_file"
   printf "export AUTONOGRAMMER_TEST_DRAGONFLY_CONNECTION='127.0.0.1:%s,password=%s,abortConnect=false'\n" \
     "$dragonfly_port" "$dragonfly_password" >>"$env_file"
+  if [ "$with_greptime" = "1" ]; then
+    printf "export AUTONOGRAMMER_TEST_GREPTIME_URL='http://127.0.0.1:%s'\n" "$greptime_port" >>"$env_file"
+  fi
   echo "$env_file"
 }
 
 case "${1:-}" in
-  up) up ;;
+  up)
+    case "${2:-}" in
+      "") up 0 ;;
+      --with-greptime) up 1 ;;
+      *)
+        echo "usage: $0 up [--with-greptime]|down" >&2
+        exit 2
+        ;;
+    esac
+    ;;
   down) down ;;
   *)
-    echo "usage: $0 up|down" >&2
+    echo "usage: $0 up [--with-greptime]|down" >&2
     exit 2
     ;;
 esac

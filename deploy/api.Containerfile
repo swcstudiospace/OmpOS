@@ -137,4 +137,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
 
 # Runs under /bin/sh -c so ${PORT} expands at start and binds dual-stack ([::] accepts IPv4 and IPv6; Railway private networking needs IPv6). ASPNETCORE_HTTP_PORTS is unset so it cannot override ASPNETCORE_URLS.
 # exec replaces the shell, so the .NET process is PID 1 and receives termination signals.
-ENTRYPOINT ["/bin/sh", "-c", "unset ASPNETCORE_HTTP_PORTS; export ASPNETCORE_URLS=\"http://[::]:${PORT:-8080}\"; exec dotnet /app/Autonogrammer.Api.dll"]
+# "$@" forwards the container arguments (the word after the script is $0) so the one-shot service autonogrammer-migrate can run `migrate` and `migrate --down 3`; with no arguments the API starts as before.
+ENTRYPOINT ["/bin/sh", "-c", "unset ASPNETCORE_HTTP_PORTS; export ASPNETCORE_URLS=\"http://[::]:${PORT:-8080}\"; exec dotnet /app/Autonogrammer.Api.dll \"$@\"", "autonogrammer-api"]

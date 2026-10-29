@@ -28,7 +28,7 @@ services:
   dragonfly:
     image: docker.io/dragonflydb/dragonfly:v1.27.1@sha256:385cb73078f4dabe43d536766842eab444f3d791b0fcf86951decdcbcda37917
     container_name: autonogrammer-dragonfly
-    command: ["--bind=0.0.0.0", "--dir=/data"]
+    command: ["--bind=0.0.0.0", "--dir=/data", "--proactor_threads=2", "--maxmemory=512m"]
     environment:
       DFLY_requirepass: ${AUTONOGRAMMER_DRAGONFLY_PASSWORD:?set AUTONOGRAMMER_DRAGONFLY_PASSWORD}
     ports:
