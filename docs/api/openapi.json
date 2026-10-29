@@ -10,6 +10,37 @@
     }
   ],
   "paths": {
+    "/auth/config": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Describes how clients authenticate to this deployment. Anonymous; carries no secret.",
+        "operationId": "GetAuthConfig",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthConfigResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sessions": {
       "post": {
         "tags": [
@@ -3838,6 +3869,35 @@
   },
   "components": {
     "schemas": {
+      "AuthConfigResponse": {
+        "required": [
+          "mode",
+          "authority",
+          "audience"
+        ],
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "description": "How the client authenticates: `owner-token`, `oidc` or `development`."
+          },
+          "authority": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The OIDC authority in `oidc` mode, otherwise null."
+          },
+          "audience": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The OIDC audience in `oidc` mode, otherwise null."
+          }
+        },
+        "description": "Public sign-in configuration answered by `GET /auth/config`. It carries no secret."
+      },
       "AutomationCronPreviewResponse": {
         "required": [
           "nextRuns"
@@ -8084,6 +8144,9 @@
     }
   },
   "tags": [
+    {
+      "name": "Auth"
+    },
     {
       "name": "SessionEndpoints"
     },

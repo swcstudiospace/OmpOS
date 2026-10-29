@@ -4,15 +4,17 @@ description: "Hosting runbook for the Autonogrammer API on Railway: topology, li
 
 # Hosting runbook (HOST-01)
 
-Status: Blocked (the API is not deployed; the production API origin and the sign-in authority are owner decisions; a staged private worker was deployed on 2026-10-28)
+Status: Ready for an approved first deploy, nothing deployed: the API, its databases and the real web bundle are built and checked locally (ADR-0021); a staged private worker has existed on Railway since 2026-10-28
 
-Last verified: 2026-10-28
+Last verified: 2026-10-29
 
-Applies to: v0.15.0
+Applies to: the integration branch `feat/autonogrammer-integration` (v0.16.0 work, phases 66 to 66.4)
 
 ## Status
 
-Nothing is deployed by this runbook. The `ompos-api` service does not exist yet; the only Autonogrammer object on Railway is a staged private worker (section "Staged worker on Railway (2026-10-28)" below). This document and `deploy/api.Containerfile` are the hosting definition only.
+Nothing is deployed by this runbook. The `autonogrammer-api` service does not exist yet; the only Autonogrammer object on Railway is a staged private worker (section "Staged worker on Railway (2026-10-28)" below). This document, `deploy/api.Containerfile` and `deploy/railway/` are the hosting definition only.
+
+Since 2026-10-29 the sign-in blocker is decided for one operator ([ADR-0021](../decisions/ADR-0021-hosted-single-operator-deployment.md)): `Api:Auth:Mode=OwnerToken` with a SHA-256 digest, or `Oidc` with an allow-list, and the start-up refuses every other shape outside Development. The engine child gets a scrubbed environment, a per-session workspace and an approval policy; the edge has forwarded-header, HSTS, security-header, timeout, startup-probe and SSE keep-alive handling. The variable list is in [`deploy/railway/README.md`](../../deploy/railway/README.md), the order of a first deploy and its rollback in [Deploy and rollback](deploy-and-rollback.md), the risks in the [hosted threat model](../security/hosted-threat-model.md). The first deploy needs the owner's approval (Q-DEP-1, Q-DEP-2) and a model credential for anything beyond the scripted-model check (OQ-172).
 
 The topology below is the owner decision of 2026-10-21 ([decision text](../handoff.md#temporal-removal-and-railway-topology-2026-10-21)). Services marked "existing" are described from that decision. They were not re-inspected in this rewrite [INFERENCE: state at deploy time].
 
@@ -42,7 +44,7 @@ Not services:
 
 ## Network and ports
 
-- **No public domain for `autonogrammer-api`.** Do not generate one until the sign-in method is decided (OD-03). Until then the API has no authentication (single local dev principal), so it must stay private.
+- **Public domain for `autonogrammer-api`.** Generate one only after the checks of [Deploy and rollback](deploy-and-rollback.md) pass: `Api__Auth__Mode=OwnerToken` with `Api__Auth__OwnerToken__Sha256__0` set (or `Oidc` with `Api__Auth__AllowedSubjects__0`), `GET /sessions` without a token answers 401, `Api__Cors__Origins__0` names the web origin and `Hosting__ForwardedHeaders__Mode=TrustAllSingleHop` is set behind the Railway edge. The API refuses to start in any other authenticated shape outside Development (OD-03 decided for a single operator, ADR-0021). `AllowDevelopmentPrincipal` must never be set on a public API.
 - **Listener.** The API listens on `[::]:8080` (dual-stack). Dual-stack is required for private networking in legacy IPv6-only environments.
 - **PORT=8080 rule.** Set `PORT=8080` on `autonogrammer-api`. The API binds the `PORT` value, and the hosted value is 8080. Confirm the injected value and the listener in the deploy logs (decided at deploy time).
 - **Fallback domain (telemetry only).** GreptimeDB has a public service domain, `greptimedb-production.up.railway.app` over HTTPS. Use it only if the private path fails (Q-HOST-PRIVNET). It is not an API domain.

@@ -109,6 +109,7 @@
   * [ADR-0019 Provider catalogue](decisions/ADR-0019-provider-catalogue.md)
   * [ADR-0020 Cloud agents on Railway](decisions/ADR-0020-cloud-agents-on-railway.md)
   * [Addendum to ADR-0020 Hooks in cloud workers](decisions/addendum-ADR-0020-hooks.md)
+  * [ADR-0021 Hosted single-operator deployment](decisions/ADR-0021-hosted-single-operator-deployment.md)
   * [ADR-0030 Accounts: Supabase passwordless sign-in](decisions/ADR-0030-accounts-supabase-passwordless.md)
   * [ADR-0031 Data plane namespaces and resilience](decisions/ADR-0031-data-plane-namespaces-and-resilience.md)
   * [ADR-0032 Cowork shell, sessions, chat and tool host](decisions/ADR-0032-cowork-shell-sessions-chat-and-tool-host.md)

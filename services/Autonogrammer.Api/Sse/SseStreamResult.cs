@@ -1,5 +1,6 @@
 using System.Net.ServerSentEvents;
 using System.Text;
+using System.Threading.Channels;
 using Autonogrammer.Api.Hosting;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Timeouts;
@@ -45,45 +46,16 @@ internal sealed class SseStreamResult : IResult
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted, stopping);
         var token = linked.Token;
         var body = httpContext.Response.Body;
-        var enumerator = _source.GetAsyncEnumerator(token);
-        using var timer = heartbeat > TimeSpan.Zero ? new PeriodicTimer(heartbeat, time) : null;
-        var lastWrite = time.GetTimestamp();
-        Task<bool> pending = Task.FromResult(false);
-        var pendingStarted = false;
+        var channel = Channel.CreateBounded<SseItem<string>>(new BoundedChannelOptions(1)
+        {
+            SingleReader = true,
+            SingleWriter = true,
+            FullMode = BoundedChannelFullMode.Wait,
+        });
+        var producer = ProduceAsync(_source, channel.Writer, token);
         try
         {
-            pending = enumerator.MoveNextAsync().AsTask();
-            pendingStarted = true;
-            Task<bool>? tick = null;
-            while (true)
-            {
-                if (timer is not null)
-                {
-                    tick ??= timer.WaitForNextTickAsync(token).AsTask();
-                    var done = await Task.WhenAny(pending, tick).ConfigureAwait(false);
-                    if (ReferenceEquals(done, tick))
-                    {
-                        _ = await tick.ConfigureAwait(false);
-                        tick = null;
-                        if (time.GetElapsedTime(lastWrite) >= heartbeat)
-                        {
-                            lastWrite = time.GetTimestamp();
-                            await WriteRawAsync(body, KeepAliveFrame, token).ConfigureAwait(false);
-                        }
-
-                        continue;
-                    }
-                }
-
-                if (!await pending.ConfigureAwait(false))
-                {
-                    return;
-                }
-
-                lastWrite = time.GetTimestamp();
-                await SseFormatter.WriteAsync(SingleAsync(enumerator.Current), body, token).ConfigureAwait(false);
-                pending = enumerator.MoveNextAsync().AsTask();
-            }
+            await WriteLoopAsync(channel.Reader, body, time, heartbeat, token).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (!httpContext.RequestAborted.IsCancellationRequested && stopping.IsCancellationRequested)
         {
@@ -96,8 +68,14 @@ internal sealed class SseStreamResult : IResult
         finally
         {
             await linked.CancelAsync().ConfigureAwait(false);
-            await DrainAsync(pending, pendingStarted).ConfigureAwait(false);
-            await enumerator.DisposeAsync().ConfigureAwait(false);
+            try
+            {
+                await producer.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Cancelled above; the source ends with the stream.
+            }
         }
     }
 
@@ -112,20 +90,52 @@ internal sealed class SseStreamResult : IResult
         await response.StartAsync(httpContext.RequestAborted).ConfigureAwait(false);
     }
 
-    private static async Task DrainAsync(Task<bool> pending, bool started)
+    /// <summary>Copies the source into the channel one item at a time, and completes the channel when the source ends or fails.</summary>
+    private static async Task ProduceAsync(IAsyncEnumerable<SseItem<string>> source, ChannelWriter<SseItem<string>> writer, CancellationToken token)
     {
-        if (!started || pending.IsCompleted)
-        {
-            return;
-        }
-
         try
         {
-            _ = await pending.ConfigureAwait(false);
+            await foreach (var item in source.WithCancellation(token).ConfigureAwait(false))
+            {
+                await writer.WriteAsync(item, token).ConfigureAwait(false);
+            }
         }
-        catch (OperationCanceledException)
+        finally
         {
-            // Cancelled by the caller; the enumerator is idle and can be disposed.
+            _ = writer.TryComplete();
+        }
+    }
+
+    /// <summary>
+    /// Writes every item of the channel to the response. When nothing arrives for the heartbeat period the loop writes a keep-alive comment
+    /// and waits again, so an idle stream is never silent for longer than one heartbeat.
+    /// </summary>
+    private static async Task WriteLoopAsync(ChannelReader<SseItem<string>> reader, Stream body, TimeProvider time, TimeSpan heartbeat, CancellationToken token)
+    {
+        while (true)
+        {
+            using var idle = heartbeat > TimeSpan.Zero ? new CancellationTokenSource(heartbeat, time) : new CancellationTokenSource();
+            using var either = CancellationTokenSource.CreateLinkedTokenSource(token, idle.Token);
+            bool more;
+            try
+            {
+                more = await reader.WaitToReadAsync(either.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (idle.IsCancellationRequested && !token.IsCancellationRequested)
+            {
+                await WriteRawAsync(body, KeepAliveFrame, token).ConfigureAwait(false);
+                continue;
+            }
+
+            if (!more)
+            {
+                return;
+            }
+
+            while (reader.TryRead(out var item))
+            {
+                await SseFormatter.WriteAsync(SingleAsync(item), body, token).ConfigureAwait(false);
+            }
         }
     }
 
