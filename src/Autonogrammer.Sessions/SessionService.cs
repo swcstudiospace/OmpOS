@@ -51,6 +51,10 @@ public sealed class SessionService
 {
     /// <summary>The message of a failed turn's terminal error event when the harness supplied no message of its own.</summary>
     public const string FailedTurnMessage = "Prompt execution failed.";
+
+    /// <summary>The wildcard entry of a tool approval's ceiling: a decision may allow any tool the request names.</summary>
+    public const string AnyToolCeiling = "*";
+
     private const string UserRole = "user";
     private const string SteerRole = "steer";
     private const string FollowUpRole = "follow_up";
@@ -308,7 +312,7 @@ public sealed class SessionService
     /// <param name="toolName">The tool the request concerns. A decision may allow it only when the ceiling permits it.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>
     /// <param name="grantableTools">
-    /// The policy ceiling: the tools a decision may allow. Null is the default ceiling, which permits none (DenyAll).
+    /// The policy ceiling: the tools a decision may allow, or <see cref="AnyToolCeiling"/> to permit any tool. Null is the default ceiling, which permits none (DenyAll).
     /// </param>
     /// <exception cref="SessionException">
     /// <see cref="ErrorCode.SessionNotFound"/> when the session does not exist;
@@ -376,7 +380,8 @@ public sealed class SessionService
     /// <see cref="RecordCompletionAsync"/>. Any waiter on the request, in this process or another, receives the decision.
     /// </summary>
     /// <remarks>
-    /// An approval may allow only what the request's ceiling permits. A refused approval leaves the request pending, so a
+    /// An approval may allow only what the request's ceiling permits: the request's tool is named in the ceiling, or the ceiling holds
+    /// <see cref="AnyToolCeiling"/>. A refused approval leaves the request pending, so a
     /// denial can still arrive.
     /// </remarks>
     /// <param name="sessionId">The session identifier.</param>
@@ -409,7 +414,7 @@ public sealed class SessionService
                 throw InvalidTransition($"No tool approval '{requestId}' is pending in session '{sessionId}'; it is unknown or already decided.");
             }
 
-            if (approved && !pending.GrantableTools.Contains(pending.ToolName, StringComparer.Ordinal))
+            if (approved && !CeilingPermits(pending.GrantableTools, pending.ToolName))
             {
                 throw new UnauthorizedAccessException($"The policy ceiling does not permit approving tool '{pending.ToolName}'.");
             }
@@ -421,6 +426,10 @@ public sealed class SessionService
             await lease.ExitAsync().ConfigureAwait(false);
         }
     }
+
+    /// <summary>Returns whether a request's ceiling permits allowing <paramref name="toolName"/>: the ceiling names it, or holds <see cref="AnyToolCeiling"/>.</summary>
+    private static bool CeilingPermits(IReadOnlyList<string> ceiling, string toolName) =>
+        ceiling.Contains(AnyToolCeiling, StringComparer.Ordinal) || ceiling.Contains(toolName, StringComparer.Ordinal);
 
     /// <summary>
     /// Waits for the decision on a tool approval. A decision already recorded is returned at once. A request that no decision

@@ -6,10 +6,11 @@ using Microsoft.Extensions.Options;
 namespace Autonogrammer.Api.Harness;
 
 /// <summary>
-/// Validates the engine isolation keys of <see cref="HarnessOptions"/> on start, for the ACP adapter only. Outside Development the engine must not
+/// Validates the engine keys of <see cref="HarnessOptions"/> on start. For the ACP adapter, outside Development the engine must not
 /// inherit the API's environment unless <c>Harness:Acp:AllowInheritedEnvironment</c> says so, an allow-list entry must be a usable name or
 /// prefix, <c>Harness:Acp:WorkspaceRoot</c> must be an absolute path, and the engine must have a working directory of its own: a run worktree
-/// (<c>Worktrees:Root</c> and <c>Worktrees:Repository</c>) or <c>Harness:Acp:WorkspaceRoot</c>. Messages name keys, never values.
+/// (<c>Worktrees:Root</c> and <c>Worktrees:Repository</c>) or <c>Harness:Acp:WorkspaceRoot</c>. For every adapter, the <c>Harness:Acp:Approval</c> keys
+/// must be well formed (<see cref="HarnessApprovalValidation"/>). Messages name keys, never values.
 /// </summary>
 internal sealed class EngineIsolationOptionsValidator : IValidateOptions<HarnessOptions>
 {
@@ -29,14 +30,15 @@ internal sealed class EngineIsolationOptionsValidator : IValidateOptions<Harness
     public ValidateOptionsResult Validate(string? name, HarnessOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
+        var failures = new List<string>();
+        HarnessApprovalValidation.Collect(options.Acp.Approval, failures);
         if (!HarnessOptions.IsAcpAdapter(options.Adapter))
         {
-            return ValidateOptionsResult.Success;
+            return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
         }
 
         var development = _environment.IsDevelopment();
         var settings = EngineIsolationSettings.Resolve(options.Acp, development);
-        var failures = new List<string>();
         if (!development && settings.Mode == EngineEnvironmentMode.Inherit && !options.Acp.AllowInheritedEnvironment)
         {
             failures.Add(

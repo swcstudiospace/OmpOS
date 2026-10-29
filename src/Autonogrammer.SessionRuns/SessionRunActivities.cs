@@ -25,7 +25,8 @@ namespace Autonogrammer.SessionRuns;
 /// </para>
 /// <para>
 /// A permission request is routed into the store-backed tool approval. The run waits for its decision for at most the
-/// approval timeout (the shared <see cref="PermissionDecisionWindow"/>, 30 seconds); a request that no decision reaches is denied, so the default outcome is deny.
+/// approval timeout (the shared <see cref="PermissionDecisionWindow"/>, 30 seconds, unless <see cref="IToolApprovalSettings"/> says otherwise); a request that no decision reaches is denied, so the default outcome is deny.
+/// The request is stored with the ceiling of <see cref="IToolApprovalSettings.GrantableTools"/>, which is empty without settings, so an allow decision is refused unless the operator configured one.
 /// </para>
 /// <para>
 /// Provisioned sandbox ids are tracked per idempotency key because the provider assigns the sandbox id at
@@ -59,6 +60,7 @@ public sealed class SessionRunActivities : ISessionRunActivities
     private readonly TimeProvider _time;
     private readonly ISessionRunObserver _observer;
     private readonly TimeSpan _toolApprovalTimeout;
+    private readonly IReadOnlySet<string>? _grantableTools;
     private readonly ILogger<SessionRunActivities> _logger;
 
     /// <summary>Initializes a new instance of the <see cref="SessionRunActivities"/> class.</summary>
@@ -69,6 +71,10 @@ public sealed class SessionRunActivities : ISessionRunActivities
     /// <param name="timeProvider">The clock.</param>
     /// <param name="observer">Receives the log-changed and provisioning signals of the hosting process.</param>
     /// <param name="logger">The logger.</param>
+    /// <param name="toolApprovalSettings">
+    /// The operator policy for routed permission requests: the ceiling of the tools a decision may allow and the decision timeout. Null keeps the
+    /// default: an empty ceiling (an allow decision is refused) and the shared decision window.
+    /// </param>
     public SessionRunActivities(
         ISandboxProvider sandbox,
         IHarnessSessionFactory factory,
@@ -76,8 +82,9 @@ public sealed class SessionRunActivities : ISessionRunActivities
         SessionService sessions,
         TimeProvider timeProvider,
         ISessionRunObserver observer,
-        ILogger<SessionRunActivities> logger)
-        : this(sandbox, factory, repository, sessions, timeProvider, observer, logger, DefaultToolApprovalTimeout)
+        ILogger<SessionRunActivities> logger,
+        IToolApprovalSettings? toolApprovalSettings = null)
+        : this(sandbox, factory, repository, sessions, timeProvider, observer, logger, toolApprovalSettings?.DecisionTimeout ?? DefaultToolApprovalTimeout, toolApprovalSettings)
     {
     }
 
@@ -90,6 +97,7 @@ public sealed class SessionRunActivities : ISessionRunActivities
     /// <param name="observer">The run observer.</param>
     /// <param name="logger">The logger.</param>
     /// <param name="toolApprovalTimeout">How long a routed permission request waits for its decision. Must be positive.</param>
+    /// <param name="toolApprovalSettings">The ceiling stored with each routed request. Null stores an empty ceiling.</param>
     internal SessionRunActivities(
         ISandboxProvider sandbox,
         IHarnessSessionFactory factory,
@@ -98,7 +106,8 @@ public sealed class SessionRunActivities : ISessionRunActivities
         TimeProvider timeProvider,
         ISessionRunObserver observer,
         ILogger<SessionRunActivities> logger,
-        TimeSpan toolApprovalTimeout)
+        TimeSpan toolApprovalTimeout,
+        IToolApprovalSettings? toolApprovalSettings = null)
     {
         ArgumentNullException.ThrowIfNull(sandbox);
         ArgumentNullException.ThrowIfNull(factory);
@@ -119,6 +128,7 @@ public sealed class SessionRunActivities : ISessionRunActivities
         _time = timeProvider;
         _observer = observer;
         _toolApprovalTimeout = toolApprovalTimeout;
+        _grantableTools = toolApprovalSettings?.GrantableTools;
         _logger = logger;
     }
 
@@ -222,7 +232,7 @@ public sealed class SessionRunActivities : ISessionRunActivities
     {
         try
         {
-            await _sessions.RequestToolApprovalAsync(input.SessionId, requestId, toolName, cancellationToken).ConfigureAwait(false);
+            await _sessions.RequestToolApprovalAsync(input.SessionId, requestId, toolName, cancellationToken, _grantableTools).ConfigureAwait(false);
         }
         catch (SessionException)
         {

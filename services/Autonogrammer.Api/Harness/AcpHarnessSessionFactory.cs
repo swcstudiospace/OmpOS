@@ -15,12 +15,13 @@ namespace Autonogrammer.Api.Harness;
 /// store answers that run's ACP permission request. The prompt-only overload keeps the shared client and its resolver.
 /// Every engine it starts is isolated by <see cref="EngineIsolationSettings"/>: the environment policy goes into each <see cref="AcpClientOptions"/>, and a run
 /// without a worktree works in <c>&lt;Harness:Acp:WorkspaceRoot&gt;/&lt;sessionId&gt;</c> instead of the API's working directory.
+/// The permission requests that reach a decision are those of the kinds in <c>Harness:Acp:Approval:Kinds</c> (<see cref="HarnessApprovalOptions"/>); with none configured every request is denied at once.
 /// </summary>
 internal sealed class AcpHarnessSessionFactory : IHarnessSessionFactory
 {
     /// <summary>
-    /// How long an admitted permission request waits for its decision. The ACP session and the store-backed resolver share it,
-    /// so both end the wait together and the store records the denial.
+    /// The default time an admitted permission request waits for its decision (the default of <c>Harness:Acp:Approval:DecisionTimeoutSeconds</c>).
+    /// The ACP session and the store-backed resolver share the configured value, so both end the wait together and the store records the denial.
     /// </summary>
     internal static readonly TimeSpan PermissionDecisionTimeout = PermissionDecisionWindow.Default;
 
@@ -42,7 +43,7 @@ internal sealed class AcpHarnessSessionFactory : IHarnessSessionFactory
     /// <param name="worktrees">The worktree settings. When both keys are set, each run works in its own worktree; unset gives the run its own directory under <c>Harness:Acp:WorkspaceRoot</c>, or keeps the process working directory in Development.</param>
     /// <param name="environment">The host environment. Outside Development the engine gets an allow-listed environment by default and needs a working directory of its own. Null is treated as Development.</param>
     public AcpHarnessSessionFactory(OmpAcpClient client, IOptions<HarnessOptions> options, ISessionRepository repository, SessionService sessions, IOptions<WorktreesOptions>? worktrees = null, IHostEnvironment? environment = null)
-        : this(client, options, repository, sessions, null, AcpApprovalPolicy.DenyAll, PermissionDecisionTimeout, worktrees, environment)
+        : this(client, options, repository, sessions, null, ApprovalOf(options).CreatePolicy(), ApprovalOf(options).DecisionTimeout, worktrees, environment)
     {
     }
 
@@ -94,7 +95,7 @@ internal sealed class AcpHarnessSessionFactory : IHarnessSessionFactory
         ArgumentNullException.ThrowIfNull(prompt);
         var isolation = Isolation();
         var workingDirectory = isolation.WorkspaceRoot is { } root ? EngineWorkspace.EnsureSessionDirectory(root, PromptDirectoryName()) : null;
-        return _client.CreateSession(ClientOptions(isolation, workingDirectory, AcpApprovalPolicy.DenyAll));
+        return _client.CreateSession(ClientOptions(isolation, workingDirectory, _approvalPolicy));
     }
 
     /// <inheritdoc />
@@ -126,6 +127,13 @@ internal sealed class AcpHarnessSessionFactory : IHarnessSessionFactory
 
         var sessionDirectory = isolation.WorkspaceRoot is { } root ? EngineWorkspace.EnsureSessionDirectory(root, sessionId) : null;
         return client.CreateSession(ClientOptions(isolation, sessionDirectory, _approvalPolicy));
+    }
+
+    /// <summary>Reads the <c>Harness:Acp:Approval</c> settings that decide the approval policy and the decision timeout.</summary>
+    private static HarnessApprovalOptions ApprovalOf(IOptions<HarnessOptions> options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return options.Value.Acp.Approval;
     }
 
     private static string PromptDirectoryName() => "prompt-" + Guid.NewGuid().ToString("N");
