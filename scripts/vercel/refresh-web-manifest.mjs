@@ -26,6 +26,10 @@ export const VERIFY_SKIPPED = new Set([WORKER_FILE, MANIFEST_FILE, "appsettings.
 
 const MANIFEST_ASSIGNMENT = "self.assetsManifest =";
 const WORKER_FIRST_LINE = /^\/\* Manifest version: (.+) \*\/$/;
+// A JSON string literal with its escapes, as the SDK wrote it: System.Text.Json writes `+` as \u002B in some SDK versions and as `+` in others.
+const STRING_LITERAL = String.raw`"(?:[^"\\]|\\.)*"`;
+const ASSET_ENTRY = new RegExp(String.raw`\{\s*"hash"\s*:\s*(${STRING_LITERAL})\s*,\s*"url"\s*:\s*(${STRING_LITERAL})\s*\}`, "gd");
+const VERSION_ENTRY = new RegExp(String.raw`"version"\s*:\s*(${STRING_LITERAL})`, "gd");
 
 /** `sha256-` plus the base64 SHA-256 of the bytes, the format of the manifest hash. */
 export function integrityOf(bytes) {
@@ -40,10 +44,10 @@ export function deriveVersion(oldVersion, changed) {
 }
 
 /**
- * Splits service-worker-assets.js into the text around the object literal and the parsed manifest. The object literal is the
- * JSON between the first `{` after `self.assetsManifest =` and the last `}`.
+ * Reads service-worker-assets.js. The manifest is the JSON object literal between the first `{` after `self.assetsManifest =` and
+ * the last `}`. JSON.parse decodes the SDK's escapes (`\u002B` for `+`), so the values are read as they are, not as they are spelled.
  */
-export function parseManifest(text) {
+export function readManifest(text) {
   const assignment = text.indexOf(MANIFEST_ASSIGNMENT);
   const start = assignment < 0 ? -1 : text.indexOf("{", assignment);
   const end = text.lastIndexOf("}");
@@ -62,13 +66,39 @@ export function parseManifest(text) {
   if (!Array.isArray(manifest.assets)) {
     throw new Error(`${MANIFEST_FILE}: no "assets" array in the manifest`);
   }
-  const head = text.slice(0, start);
-  const tail = text.slice(end + 1);
-  // The rewrite serialises the parsed manifest; it is only safe when that reproduces the published text exactly.
-  if (head + JSON.stringify(manifest, null, 2) + tail !== text) {
-    throw new Error(`${MANIFEST_FILE}: not in the published format (two-space JSON); refusing to rewrite it`);
+  return manifest;
+}
+
+/**
+ * Reads the manifest and finds where the values a refresh edits sit in the text: the hash literal of every asset entry and the
+ * version literal. A refresh replaces exactly those literals, so every other byte stays as the SDK wrote it, whatever its escaping
+ * and spacing. Throws when the entries are not `{ "hash": ..., "url": ... }` objects that agree with the parsed manifest, so a
+ * refresh never writes a guess.
+ */
+export function parseManifest(text) {
+  const manifest = readManifest(text);
+  const entries = [...text.matchAll(ASSET_ENTRY)].map((match) => ({
+    hash: JSON.parse(match[1]),
+    url: JSON.parse(match[2]),
+    hashSpan: match.indices[1],
+  }));
+  const versions = [...text.matchAll(VERSION_ENTRY)];
+  const understood =
+    entries.length === manifest.assets.length &&
+    entries.every((entry, index) => entry.url === manifest.assets[index].url && entry.hash === manifest.assets[index].hash) &&
+    versions.length === 1 &&
+    JSON.parse(versions[0][1]) === manifest.version;
+  if (!understood) {
+    throw new Error(`${MANIFEST_FILE}: not in the published format (one "version" and { "hash", "url" } entries); refusing to edit it`);
   }
-  return { head, tail, manifest };
+  return { manifest, entries, versionSpan: versions[0].indices[1] };
+}
+
+/** Replaces the given [start, end) spans of the text with their replacement text; the spans do not overlap. */
+function splice(text, edits) {
+  return [...edits]
+    .sort((a, b) => b.span[0] - a.span[0])
+    .reduce((result, { span: [start, end], text: replacement }) => result.slice(0, start) + replacement + result.slice(end), text);
 }
 
 /** Reads the version from the first line of service-worker.js and returns it with the text after that line. */
@@ -101,27 +131,29 @@ function insideBundle(bundleDir, file) {
 export function planRefresh(bundleDir, files) {
   const manifestPath = join(bundleDir, MANIFEST_FILE);
   const workerPath = join(bundleDir, WORKER_FILE);
-  const { head, tail, manifest } = parseManifest(readFileSync(manifestPath, "utf8"));
+  const manifestText = readFileSync(manifestPath, "utf8");
+  const { manifest, entries, versionSpan } = parseManifest(manifestText);
   const worker = parseWorker(readFileSync(workerPath, "utf8"));
 
+  const edits = [];
   const changed = [];
   const notInManifest = [];
   for (const file of files) {
     const { full, url } = insideBundle(bundleDir, file);
-    const entries = manifest.assets.filter((asset) => asset.url === url);
-    if (entries.length === 0) {
+    const matches = entries.filter((entry) => entry.url === url);
+    if (matches.length === 0) {
       notInManifest.push(url);
       continue;
     }
-    if (entries.length > 1) {
-      throw new Error(`${MANIFEST_FILE}: ${entries.length} entries for ${url}`);
+    if (matches.length > 1) {
+      throw new Error(`${MANIFEST_FILE}: ${matches.length} entries for ${url}`);
     }
     if (!existsSync(full)) {
       throw new Error(`${url}: listed in the manifest but missing from the bundle`);
     }
     const hash = integrityOf(readFileSync(full));
-    if (entries[0].hash !== hash) {
-      entries[0].hash = hash;
+    if (matches[0].hash !== hash) {
+      edits.push({ span: matches[0].hashSpan, text: JSON.stringify(hash) });
       changed.push({ url, hash });
     }
   }
@@ -130,9 +162,9 @@ export function planRefresh(bundleDir, files) {
   }
 
   const version = deriveVersion(manifest.version, changed);
-  manifest.version = version;
+  edits.push({ span: versionSpan, text: JSON.stringify(version) });
   const writes = [
-    { path: manifestPath, text: head + JSON.stringify(manifest, null, 2) + tail },
+    { path: manifestPath, text: splice(manifestText, edits) },
     { path: workerPath, text: `/* Manifest version: ${version} */${worker.carriageReturn}${worker.rest}` },
   ];
   return { writes, changed, notInManifest, version };
@@ -141,7 +173,7 @@ export function planRefresh(bundleDir, files) {
 /** Compares every checked manifest asset with the file on disk. Returns one message per problem and the number of assets checked. */
 export function verifyBundle(bundleDir) {
   const problems = [];
-  const { manifest } = parseManifest(readFileSync(join(bundleDir, MANIFEST_FILE), "utf8"));
+  const manifest = readManifest(readFileSync(join(bundleDir, MANIFEST_FILE), "utf8"));
   let checked = 0;
   for (const asset of manifest.assets) {
     if (VERIFY_SKIPPED.has(asset.url)) {

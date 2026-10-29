@@ -209,6 +209,74 @@ describe("refresh-web-manifest", () => {
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /3 assets/);
   });
+
+  test("replaces only the changed hash and the version, so the SDK's escaping stays as published", () => {
+    const dir = makeBundle();
+    const oldHash = "sha256-OLD\\u002Bhash\\u002B=";
+    const otherHash = "sha256-t1s0fC4j\\u002B2cSBhh/i8CGutWm\\u002B\\u002BPUhuYuxyjfls=";
+    const manifestText =
+      "self.assetsManifest = {\n" +
+      '  "version": "ab\\u002Bcd/Ef",\n' +
+      '  "assets": [\n' +
+      `    {\n      "hash": "${otherHash}",\n      "url": "css/app.css"\n    },\n` +
+      `    {\n      "hash": "${oldHash}",\n      "url": "appsettings.json"\n    }\n` +
+      "  ]\n};\n";
+    writeFileSync(join(dir, "service-worker-assets.js"), manifestText);
+    writeFileSync(join(dir, "service-worker.js"), "/* Manifest version: ab+cd/Ef */\nself.addEventListener('install', () => {});\n");
+
+    const result = run(dir, "appsettings.json");
+    assert.equal(result.status, 0, result.stderr);
+
+    const newHash = sha(FILES["appsettings.json"]);
+    const newVersion = createHash("sha256").update(`ab+cd/Ef\nappsettings.json=${newHash}`).digest("base64").slice(0, 8);
+    const expected = manifestText.replace(`"${oldHash}"`, JSON.stringify(newHash)).replace('"ab\\u002Bcd/Ef"', JSON.stringify(newVersion));
+    assert.equal(readFileSync(join(dir, "service-worker-assets.js"), "utf8"), expected);
+    assert.equal(readFileSync(join(dir, "service-worker.js"), "utf8").split("\n")[0], `/* Manifest version: ${newVersion} */`);
+  });
+
+  test("--verify reads hashes that the manifest spells with \\u002B", () => {
+    let content = "";
+    for (let attempt = 0; !sha(content).includes("+"); attempt += 1) {
+      content = `settings ${attempt}\n`;
+    }
+    const dir = makeBundle();
+    writeFileSync(join(dir, "appsettings.json"), content);
+    const files = { ...FILES, "appsettings.json": content };
+    const entries = Object.entries(files).map(([url, text]) => `{ "hash": "${sha(text).replaceAll("+", "\\u002B")}", "url": "${url}" }`);
+    const manifestText = `self.assetsManifest = {"version":"v1","assets":[${entries.join(",")}]};\n`;
+    assert.match(manifestText, /\\u002B/);
+    writeFileSync(join(dir, "service-worker-assets.js"), manifestText);
+    writeFileSync(join(dir, "service-worker.js"), "/* Manifest version: v1 */\n");
+
+    const result = run("--verify", dir);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /3 assets/);
+  });
+
+  test("a compact manifest refreshes too", () => {
+    const dir = makeBundle();
+    writeFileSync(join(dir, "service-worker-assets.js"), 'self.assetsManifest = {"version":"v1","assets":[{"hash":"sha256-OLD","url":"appsettings.json"}]};\n');
+    writeFileSync(join(dir, "service-worker.js"), "/* Manifest version: v1 */\n");
+
+    const result = run(dir, "appsettings.json");
+    assert.equal(result.status, 0, result.stderr);
+
+    const text = readFileSync(join(dir, "service-worker-assets.js"), "utf8");
+    assert.ok(text.startsWith(`self.assetsManifest = {"version":"`));
+    assert.ok(text.includes(`{"hash":${JSON.stringify(sha(FILES["appsettings.json"]))},"url":"appsettings.json"}`));
+  });
+
+  test("entries it does not understand fail and nothing is written", () => {
+    const dir = makeBundle();
+    writeFileSync(join(dir, "service-worker-assets.js"), 'self.assetsManifest = {"version":"v1","assets":[{"url":"appsettings.json","hash":"sha256-OLD"}]};\n');
+    writeFileSync(join(dir, "service-worker.js"), "/* Manifest version: v1 */\n");
+    const before = snapshot(dir);
+
+    const result = run(dir, "appsettings.json");
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /not in the published format/);
+    assert.deepEqual(snapshot(dir), before);
+  });
 });
 
 const FINISH = join(dirname(fileURLToPath(import.meta.url)), "finish-web-bundle.sh");

@@ -115,6 +115,24 @@ class CommittedLicenceFallbackTests(unittest.TestCase):
             doc = gs.build_sbom(root, empty, "2026-01-01T00:00:00Z", committed=gs.committed_licences(out))
             self.assertEqual(self.licence(doc, "Foo.Bar"), "NOASSERTION")
 
+    def test_a_nuspec_without_a_licence_expression_is_not_overridden_by_the_committed_licence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, cache = tree(tmp)
+            out = self.committed_file(tmp, root, cache, "MIT")
+            (cache / "foo.bar" / "1.2.3" / "foo.bar.nuspec").write_text(NUSPEC.replace('<license type="expression">MIT</license>', "<licenseUrl>https://example.invalid/license</licenseUrl>"))
+            doc = gs.build_sbom(root, cache, "2026-01-01T00:00:00Z", committed=gs.committed_licences(out))
+            self.assertEqual(self.licence(doc, "Foo.Bar"), "NOASSERTION")
+
+    def test_check_reports_a_licence_the_cache_no_longer_declares(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, cache = tree(tmp)
+            out = pathlib.Path(tmp) / "sbom.json"
+            base = ["--root", str(root), "--cache", str(cache), "--output", str(out)]
+            self.assertEqual(gs.main(base), 0)
+            self.assertEqual(gs.main(base + ["--check"]), 0)
+            (cache / "foo.bar" / "1.2.3" / "foo.bar.nuspec").write_text(NUSPEC.replace('<license type="expression">MIT</license>', ""))
+            self.assertEqual(gs.main(base + ["--check"]), 1)
+
     def test_missing_or_unreadable_committed_file_yields_nothing(self):
         with tempfile.TemporaryDirectory() as tmp:
             bad = pathlib.Path(tmp) / "bad.json"

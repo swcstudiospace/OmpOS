@@ -11,8 +11,9 @@ Usage:
   python3 scripts/legal/generate-sbom.py            write docs/legal/sbom.spdx.json
   python3 scripts/legal/generate-sbom.py --check    exit 1 when the committed file is stale
   options: --output PATH, --cache DIR (default $NUGET_PACKAGES or ~/.nuget/packages), --root DIR (default repository)
-A package's licence is the nuspec expression when the cache has one; otherwise the licence the committed SBOM (the --output file, read before
-it is overwritten) records for the same package name and version; otherwise NOASSERTION. A licence is never carried to another version or guessed.
+A package's licence is the expression in its cached nuspec (NOASSERTION when that nuspec declares none). Only when the cache has no nuspec for
+that version is it the licence the committed SBOM (the --output file, read before it is overwritten) records for the same package name and
+version; otherwise NOASSERTION. A licence is never carried to another version or guessed.
 Exit 2 on invalid output or inputs.
 """
 
@@ -51,9 +52,14 @@ def lock_files(root: Path) -> list[Path]:
     return sorted(found, key=lambda p: p.relative_to(root).as_posix())
 
 
+def nuspec_path(cache: Path, name: str, version: str) -> Path:
+    """Where the NuGet cache keeps the nuspec of a package version."""
+    return cache / name.lower() / version / f"{name.lower()}.nuspec"
+
+
 def nuspec_licence(cache: Path, name: str, version: str) -> str:
     """SPDX expression from the cached nuspec, or NOASSERTION."""
-    spec = cache / name.lower() / version / f"{name.lower()}.nuspec"
+    spec = nuspec_path(cache, name, version)
     if not spec.is_file():
         return NOASSERTION
     root = ET.fromstring(spec.read_bytes().decode("utf-8-sig"))
@@ -85,10 +91,13 @@ def committed_licences(path: Path) -> dict[tuple[str, str], str]:
 
 
 def package_licence(cache: Path, committed: dict[tuple[str, str], str], name: str, version: str) -> str:
-    """Cache nuspec expression, else the committed SBOM's licence for the same name and version, else NOASSERTION."""
-    licence = nuspec_licence(cache, name, version)
-    if licence != NOASSERTION:
-        return licence
+    """Cache nuspec expression; only when the cache has no nuspec for this version, the committed SBOM's licence for the same name and version; else NOASSERTION.
+
+    A nuspec that is present is the evidence even when it declares no licence expression: falling back there would keep a licence the
+    package no longer declares and hide the drift from --check.
+    """
+    if nuspec_path(cache, name, version).is_file():
+        return nuspec_licence(cache, name, version)
     return committed.get((name.lower(), version), NOASSERTION)
 
 
