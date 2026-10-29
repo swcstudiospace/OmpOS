@@ -1,9 +1,32 @@
-<Router AppAssembly="@typeof(App).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" />
-    </Found>
-    <NotFound>
-        <PageTitle>Not found</PageTitle>
-        <p role="alert">Sorry, there is nothing at this address.</p>
-    </NotFound>
-</Router>
+@using Autonogrammer.UI.Components.Auth
+@using Autonogrammer.UI.Components.Shell
+@using Autonogrammer.Web.Services
+@implements IDisposable
+@inject NavigationManager Navigation
+@inject WebWorkbenchOptions Options
+<CascadingValue Value="_announcer" IsFixed="true">
+    <RouteAnnouncerRegion />
+    <AppErrorBoundary>
+        <Router AppAssembly="@typeof(App).Assembly">
+            <Found Context="routeData">
+                <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+                <AuthGate IsDemo="Options.IsDemo">
+                    <RouteView RouteData="@routeData" />
+                </AuthGate>
+            </Found>
+            <NotFound>
+                <Autonogrammer.Web.Pages.NotFound />
+            </NotFound>
+        </Router>
+    </AppErrorBoundary>
+</CascadingValue>
+
+@code {
+    private RouteAnnouncer? _announcer;
+
+    /// <inheritdoc />
+    protected override void OnInitialized() => _announcer = new RouteAnnouncer(Navigation);
+
+    /// <inheritdoc />
+    public void Dispose() => _announcer?.Dispose();
+}

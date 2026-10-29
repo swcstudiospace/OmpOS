@@ -7,17 +7,17 @@
             aria-selected="@(IsAgents ? "true" : "false")"
             aria-controls="@PanelId"
             aria-keyshortcuts="Control+Shift+A"
-            tabindex="@(IsAgents ? 0 : -1)"
+            tabindex="@(IsKanban ? -1 : 0)"
             @ref="_agents"
             @onclick="() => SelectAsync(AgentsView)">Agents</button>
     <button type="button"
             role="tab"
             id="@KanbanTabId"
             class="autonogrammer-tab"
-            aria-selected="@(IsAgents ? "false" : "true")"
+            aria-selected="@(IsKanban ? "true" : "false")"
             aria-controls="@PanelId"
             aria-keyshortcuts="Control+Shift+K"
-            tabindex="@(IsAgents ? -1 : 0)"
+            tabindex="@(IsKanban ? 0 : -1)"
             @ref="_kanban"
             @onclick="() => SelectAsync(KanbanView)">Kanban</button>
 </div>
@@ -28,6 +28,9 @@
 
     /// <summary>The value of <see cref="Selected"/> for the Kanban view.</summary>
     public const string KanbanView = "kanban";
+
+    /// <summary>The value of <see cref="Selected"/> when a view that is neither tab is showing (About): no tab is selected and the Agents tab stays the tab stop.</summary>
+    public const string NoView = "none";
 
     /// <summary>The identifier of the Agents tab.</summary>
     public const string AgentsTabId = "autonogrammer-tab-agents";
@@ -41,7 +44,7 @@
     private ElementReference _agents;
     private ElementReference _kanban;
 
-    /// <summary>Gets the selected view: <see cref="AgentsView"/> or <see cref="KanbanView"/>.</summary>
+    /// <summary>Gets the selected view: <see cref="AgentsView"/>, <see cref="KanbanView"/> or <see cref="NoView"/>.</summary>
     [Parameter]
     public string Selected { get; set; } = AgentsView;
 
@@ -49,11 +52,13 @@
     [Parameter]
     public EventCallback<string> SelectedChanged { get; set; }
 
-    private bool IsAgents => !string.Equals(Selected, KanbanView, StringComparison.Ordinal);
+    private bool IsAgents => string.Equals(Selected, AgentsView, StringComparison.Ordinal);
+
+    private bool IsKanban => string.Equals(Selected, KanbanView, StringComparison.Ordinal);
 
     /// <summary>Moves keyboard focus to the selected tab.</summary>
     /// <returns>A task that completes when the focus request has been sent.</returns>
-    public ValueTask FocusSelectedAsync() => (IsAgents ? _agents : _kanban).FocusAsync();
+    public ValueTask FocusSelectedAsync() => (IsKanban ? _kanban : _agents).FocusAsync();
 
     private async Task SelectAsync(string view)
     {
@@ -67,7 +72,7 @@
     {
         string? target = args.Key switch
         {
-            "ArrowRight" or "ArrowLeft" => IsAgents ? KanbanView : AgentsView,
+            "ArrowRight" or "ArrowLeft" => IsKanban ? AgentsView : KanbanView,
             "Home" => AgentsView,
             "End" => KanbanView,
             _ => null,

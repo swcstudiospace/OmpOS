@@ -1,0 +1,121 @@
+/* The pages that sit outside the workbench shell: the connect page (owner-token sign-in), the gate's loading, unreachable and unsupported states, the
+   not-found page and the error fallback. They share one centred card. Tokens only: a theme switch and forced colours reach every rule. Imported by
+   autonogrammer.css after workbench.css. */
+
+.autonogrammer-connect,
+.autonogrammer-auth-state,
+.autonogrammer-notfound-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  min-width: 0;
+  padding: var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-auth-state {
+  justify-content: center;
+  gap: var(--autonogrammer-gap-12);
+  text-align: center;
+}
+
+.autonogrammer-connect-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-12);
+  width: 100%;
+  max-width: 420px;
+  min-width: 0;
+  margin: 12vh auto var(--autonogrammer-gap-12);
+  padding: var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+}
+
+.autonogrammer-connect-card .autonogrammer-state-mark {
+  align-self: center;
+}
+
+.autonogrammer-connect-heading,
+.autonogrammer-auth-heading {
+  margin: 0;
+  font-family: var(--autonogrammer-font-display);
+  font-size: var(--autonogrammer-font-size-display);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-display);
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-connect-heading {
+  text-align: center;
+}
+
+.autonogrammer-connect-help,
+.autonogrammer-auth-text,
+.autonogrammer-connect-status {
+  margin: 0;
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-connect-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-12);
+  min-width: 0;
+}
+
+.autonogrammer-connect-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  min-width: 0;
+}
+
+.autonogrammer-connect-label {
+  font-size: var(--autonogrammer-font-size-label);
+  font-weight: var(--autonogrammer-font-weight-medium);
+  line-height: var(--autonogrammer-line-height-label);
+}
+
+.autonogrammer-connect-form .autonogrammer-btn {
+  align-self: stretch;
+}
+
+/* The sign-out control of the top bar keeps its label on one line and never shrinks below a comfortable target. */
+.autonogrammer-topbar-signout {
+  flex: none;
+  min-width: var(--autonogrammer-target-min);
+  min-height: var(--autonogrammer-target-min);
+  white-space: nowrap;
+}
+
+/* The wordmark is a link to the home page. It keeps the look the heading had: no underline, the text colour. */
+.autonogrammer-topbar .autonogrammer-wordmark {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Below 560 px the wordmark is visually hidden (layout.css) to fit the tabs. A link must stay visible while it has keyboard focus. */
+@media (max-width: 559.98px) {
+  .autonogrammer-topbar .autonogrammer-wordmark:focus-visible {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+}
+
+.autonogrammer-error-fallback,
+.autonogrammer-notfound-page .autonogrammer-notfound {
+  max-width: 440px;
+}
+
+@media (forced-colors: active) {
+  .autonogrammer-connect-card {
+    border: 1px solid CanvasText;
+  }
+}

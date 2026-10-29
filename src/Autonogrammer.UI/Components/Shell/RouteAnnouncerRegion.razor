@@ -1,0 +1,41 @@
+@namespace Autonogrammer.UI.Components.Shell
+@implements IDisposable
+<div class="autonogrammer-sr-only" role="status" aria-live="polite" aria-atomic="true" data-route-announcer="true">@(Announcer?.Text)</div>
+
+@code {
+    private RouteAnnouncer? _watched;
+
+    /// <summary>Gets the announcer the app provides as a fixed cascading value; the region stays empty without one.</summary>
+    [CascadingParameter]
+    public RouteAnnouncer? Announcer { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_watched, Announcer))
+        {
+            return;
+        }
+
+        Unwatch();
+        _watched = Announcer;
+        if (_watched is not null)
+        {
+            _watched.Changed += OnChanged;
+        }
+    }
+
+    /// <inheritdoc />
+    public void Dispose() => Unwatch();
+
+    private void Unwatch()
+    {
+        if (_watched is not null)
+        {
+            _watched.Changed -= OnChanged;
+            _watched = null;
+        }
+    }
+
+    private void OnChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
+}

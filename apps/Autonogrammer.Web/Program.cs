@@ -9,7 +9,7 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 // The API origin comes from wwwroot/appsettings.json (Api:BaseUrl). A ?apiBaseUrl= query override is accepted only for loopback hosts (local
-// development). No host is hardcoded. The browser holds no credential: sign-in (OD-03) replaces IApiTokenProvider.
+// development). No host is hardcoded. The browser stores no credential: the owner token the operator types on the connect page is held in memory only (OwnerTokenSession).
 static Uri ResolveApiBase(IServiceProvider sp)
 {
     var navigation = sp.GetRequiredService<NavigationManager>();

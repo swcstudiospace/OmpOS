@@ -1,0 +1,40 @@
+@namespace Autonogrammer.UI.Components.Shell
+<section class="autonogrammer-panel-state autonogrammer-notfound" data-state="not-found">
+    <span class="autonogrammer-state-mark" aria-hidden="true"></span>
+    <h1 class="autonogrammer-panel-state-heading" tabindex="-1" @ref="_heading">@Heading</h1>
+    <p>@Body</p>
+    <a class="autonogrammer-btn autonogrammer-btn--primary" href="@Href">@LinkText</a>
+</section>
+
+@code {
+    private ElementReference _heading;
+
+    /// <summary>Gets the heading, which is the page's only <c>h1</c> and takes focus after the navigation.</summary>
+    [Parameter, EditorRequired]
+    public string Heading { get; set; } = string.Empty;
+
+    /// <summary>Gets the sentence that says what was not found.</summary>
+    [Parameter, EditorRequired]
+    public string Body { get; set; } = string.Empty;
+
+    /// <summary>Gets the text of the link that leads home.</summary>
+    [Parameter]
+    public string LinkText { get; set; } = "Go to Agents";
+
+    /// <summary>Gets the address of the link; the base address of the app by default.</summary>
+    [Parameter]
+    public string Href { get; set; } = "/";
+
+    /// <summary>Gets whether the heading takes keyboard focus when the view first renders, so the user who arrived here by a link is told where they are. The workbench shell moves focus itself and leaves this off.</summary>
+    [Parameter]
+    public bool FocusOnRender { get; set; }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && FocusOnRender)
+        {
+            await _heading.FocusAsync().ConfigureAwait(true);
+        }
+    }
+}

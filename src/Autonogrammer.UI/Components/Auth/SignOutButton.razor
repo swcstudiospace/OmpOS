@@ -1,0 +1,44 @@
+@namespace Autonogrammer.UI.Components.Auth
+@implements IDisposable
+@inject IServiceProvider Services
+@inject NavigationManager Navigation
+@if (_session is { HasToken: true })
+{
+    <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-topbar-signout" @onclick="SignOut">@AuthCopy.SignOut</button>
+}
+
+@code {
+    private IAuthSession? _session;
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        // Heads without a sign-in (the Demo, a development API, the shell tests) register no session: the button then never shows.
+        _session = Services.GetService(typeof(IAuthSession)) as IAuthSession;
+        if (_session is not null)
+        {
+            _session.Changed += OnChanged;
+        }
+    }
+
+    // Forgetting the token is what ends the session: the gate removes the workbench, which stops its event streams, and the connect page follows.
+    private void SignOut()
+    {
+        _session?.Clear();
+        if (!AuthRoutes.IsConnectLocation(Navigation))
+        {
+            Navigation.NavigateTo(AuthRoutes.ConnectPath);
+        }
+    }
+
+    private void OnChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (_session is not null)
+        {
+            _session.Changed -= OnChanged;
+        }
+    }
+}

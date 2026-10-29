@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Autonogrammer.UI.Components.Auth;
 
 namespace Autonogrammer.Web.Services;
 
@@ -14,6 +15,7 @@ namespace Autonogrammer.Web.Services;
 [JsonSerializable(typeof(SubmitPromptRequest))]
 [JsonSerializable(typeof(ToolDecisionRequest))]
 [JsonSerializable(typeof(ApiProblemBody))]
+[JsonSerializable(typeof(AuthConfig))]
 internal sealed partial class WebJsonContext : JsonSerializerContext
 {
 }
