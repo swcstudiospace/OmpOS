@@ -1,4 +1,6 @@
 {
+  "id": "/",
+  "lang": "en",
   "name": "Autonogrammer",
   "short_name": "Autonogrammer",
   "description": "The open agent workspace on the omp engine.",
