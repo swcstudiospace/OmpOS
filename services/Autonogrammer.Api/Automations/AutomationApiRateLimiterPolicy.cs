@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Automations;
 
-/// <summary>Token-bucket limiter of the automation management routes: one global bucket of its own. Rejections answer 429 with a Retry-After hint.</summary>
+/// <summary>Token-bucket limiter of the automation management routes: one bucket per caller (<see cref="RateLimitPartitionKey"/>) of its own. Rejections answer 429 with a Retry-After hint.</summary>
 internal sealed class AutomationApiRateLimiterPolicy : IRateLimiterPolicy<string>
 {
     /// <summary>The name the management routes require.</summary>
@@ -30,6 +30,6 @@ internal sealed class AutomationApiRateLimiterPolicy : IRateLimiterPolicy<string
     public RateLimitPartition<string> GetPartition(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
-        return AutomationRateLimits.Bucket("automations", _options.Value.RequestsPerMinute);
+        return AutomationRateLimits.Bucket("automations:" + RateLimitPartitionKey.For(httpContext), _options.Value.RequestsPerMinute);
     }
 }

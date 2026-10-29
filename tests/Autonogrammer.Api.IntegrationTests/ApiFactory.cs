@@ -59,7 +59,8 @@ internal sealed class ApiFactory : WebApplicationFactory<Program>
 
     /// <summary>
     /// Development hosts get the development principal through its explicit opt-in, so tests that send unauthenticated requests keep
-    /// working. Per-test overrides win. Other environments never get the opt-in.
+    /// working. Other environments never get that opt-in; they admit any authenticated user instead, so the OIDC allow-list rule does not
+    /// stop fixtures that test something else. Per-test overrides win.
     /// </summary>
     private Dictionary<string, string?> EffectiveConfig()
     {
@@ -67,6 +68,11 @@ internal sealed class ApiFactory : WebApplicationFactory<Program>
         if (_environment is null || string.Equals(_environment, Environments.Development, StringComparison.Ordinal))
         {
             effective["Api:Auth:AllowDevelopmentPrincipal"] = "true";
+        }
+        else
+        {
+            // An OIDC deployment outside Development must name who may use it; fixtures that are not about the allow-list admit any valid token.
+            effective["Api:Auth:AllowAnyAuthenticatedUser"] = "true";
         }
 
         foreach (var (key, value) in _config)

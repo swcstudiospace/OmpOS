@@ -6,9 +6,8 @@ using Microsoft.Extensions.Options;
 namespace Autonogrammer.Api.Security;
 
 /// <summary>
-/// Token-bucket limiter for session creation. One global bucket for the same reason as
-/// <see cref="SessionRateLimiterPolicy"/>: there is no auth identity to partition on, and the
-/// creation route has no id to key by. Rejections answer 429 with a Retry-After hint.
+/// Token-bucket limiter for session creation, one bucket per caller like <see cref="SessionRateLimiterPolicy"/> (same key, same
+/// idle-eviction memory bound). Rejections answer 429 with a Retry-After hint.
 /// </summary>
 internal sealed class SessionCreationRateLimiterPolicy : IRateLimiterPolicy<string>
 {
@@ -33,7 +32,7 @@ internal sealed class SessionCreationRateLimiterPolicy : IRateLimiterPolicy<stri
         ArgumentNullException.ThrowIfNull(httpContext);
         var limit = _options.Value.RateLimit.SessionsPerMinute;
         return RateLimitPartition.GetTokenBucketLimiter(
-            "sessions",
+            "sessions:" + RateLimitPartitionKey.For(httpContext),
             _ => new TokenBucketRateLimiterOptions
             {
                 TokenLimit = limit,

@@ -6,10 +6,9 @@ using Microsoft.Extensions.Options;
 namespace Autonogrammer.Api.Security;
 
 /// <summary>
-/// Token-bucket limiter for prompt submissions. Phase 2 serves a single dev principal with no
-/// auth identity worth partitioning on, so this is one global bucket: keying limiter lifetime
-/// on the unauthenticated session id route value would grow one limiter plus timer per id
-/// forever. A per-session fairness upgrade is blocked on real auth.
+/// Token-bucket limiter for prompt submissions, one bucket per caller (<see cref="RateLimitPartitionKey"/>: the authenticated subject,
+/// else the remote address) with the configured budget per key. The limiter runs after authentication, so the subject is known; the
+/// unauthenticated session id route value is never a key. Idle buckets are disposed by the partitioned limiter, which bounds memory.
 /// Rejections answer 429 with a Retry-After hint.
 /// </summary>
 internal sealed class SessionRateLimiterPolicy : IRateLimiterPolicy<string>
@@ -35,7 +34,7 @@ internal sealed class SessionRateLimiterPolicy : IRateLimiterPolicy<string>
         ArgumentNullException.ThrowIfNull(httpContext);
         var limit = _options.Value.RateLimit.PromptsPerMinute;
         return RateLimitPartition.GetTokenBucketLimiter(
-            "prompts",
+            "prompts:" + RateLimitPartitionKey.For(httpContext),
             _ => new TokenBucketRateLimiterOptions
             {
                 TokenLimit = limit,

@@ -12,7 +12,8 @@ namespace Autonogrammer.Api.Middleware;
 /// </summary>
 internal sealed class AuthBoundaryMiddleware
 {
-    private const string DevelopmentAuthenticationType = "development";
+    /// <summary>The authentication type of the development principal.</summary>
+    public const string DevelopmentAuthenticationType = "development";
 
     private readonly RequestDelegate _next;
 

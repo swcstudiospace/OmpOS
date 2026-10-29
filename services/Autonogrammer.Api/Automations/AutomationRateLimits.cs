@@ -5,7 +5,7 @@ namespace Autonogrammer.Api.Automations;
 /// <summary>Builds the token-bucket partitions of the automation rate-limit policies.</summary>
 internal static class AutomationRateLimits
 {
-    /// <summary>Creates a one-bucket partition: <paramref name="limit"/> requests per minute across all callers.</summary>
+    /// <summary>Creates a one-bucket partition: <paramref name="limit"/> requests per minute for that key.</summary>
     /// <param name="key">The partition key.</param>
     /// <param name="limit">The requests per minute.</param>
     /// <returns>The partition.</returns>

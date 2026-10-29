@@ -6,8 +6,8 @@ using Microsoft.Extensions.Options;
 namespace Autonogrammer.Api.Services.WorkspaceSettings;
 
 /// <summary>
-/// Token-bucket limiter for the settings and workspace reads. It is one global bucket, like the prompt limiter: the limiter runs before authorization,
-/// so no caller identity exists yet to partition on. The bucket is its own, so a settings page that refreshes cannot use up the prompt budget.
+/// Token-bucket limiter for the settings and workspace reads. It keeps one bucket per caller (<see cref="RateLimitPartitionKey"/>: the authenticated subject, else the remote
+/// address; the limiter runs after authentication, and idle buckets are evicted). The bucket is its own, so a settings page that refreshes cannot use up the prompt budget.
 /// Rejections answer 429 with a Retry-After hint.
 /// </summary>
 internal sealed class WorkspaceSettingsRateLimiterPolicy : IRateLimiterPolicy<string>
@@ -36,7 +36,7 @@ internal sealed class WorkspaceSettingsRateLimiterPolicy : IRateLimiterPolicy<st
         ArgumentNullException.ThrowIfNull(httpContext);
         var limit = _options.Value.RequestsPerMinute;
         return RateLimitPartition.GetTokenBucketLimiter(
-            PolicyName,
+            PolicyName + ":" + RateLimitPartitionKey.For(httpContext),
             _ => new TokenBucketRateLimiterOptions
             {
                 TokenLimit = limit,

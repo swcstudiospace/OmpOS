@@ -6,8 +6,8 @@ using Microsoft.Extensions.Options;
 namespace Autonogrammer.Api.Services.Providers;
 
 /// <summary>
-/// Token-bucket limiter for the provider endpoints: one global bucket of <see cref="ProvidersOptions.RequestsPerMinute"/> requests a
-/// minute, like the session policies. Rejections answer 429 with a Retry-After hint and log the method and path, never a body.
+/// Token-bucket limiter for the provider endpoints: one bucket per caller (<see cref="RateLimitPartitionKey"/>, idle buckets are evicted) of
+/// <see cref="ProvidersOptions.RequestsPerMinute"/> requests a minute. Rejections answer 429 with a Retry-After hint and log the method and path, never a body.
 /// </summary>
 internal sealed class ProviderRateLimiterPolicy : IRateLimiterPolicy<string>
 {
@@ -34,7 +34,7 @@ internal sealed class ProviderRateLimiterPolicy : IRateLimiterPolicy<string>
         ArgumentNullException.ThrowIfNull(httpContext);
         var limit = _options.Value.RequestsPerMinute;
         return RateLimitPartition.GetTokenBucketLimiter(
-            "providers",
+            "providers:" + RateLimitPartitionKey.For(httpContext),
             _ => new TokenBucketRateLimiterOptions
             {
                 TokenLimit = limit,
