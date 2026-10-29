@@ -61,11 +61,27 @@
 * [Contributing, security and support](guides/community.md)
 * [Changelog](https://github.com/swcstudiospace/OmpOS/blob/main/CHANGELOG.md)
 
+## Accessibility
+
+* [Accessibility evidence](accessibility/README.md)
+  * [Conformance statement](accessibility/statement.md)
+  * [WCAG 2.2 conformance table](accessibility/wcag-2.2-conformance.md)
+  * [Manual keyboard test script](accessibility/manual-keyboard-test.md)
+  * [Screen reader test plan](accessibility/screen-reader-test-plan.md)
+  * [Reduced motion and forced colors](accessibility/reduced-motion-and-forced-colors.md)
+  * [Accessibility known issues](accessibility/known-issues.md)
+
 ## Operate and publish
 
 * [Publish the docs with GitBook](runbooks/gitbook-publish.md)
 * [GitHub setup](runbooks/github-setup.md)
 * [Hosting](runbooks/hosting.md)
+* [Deploy and rollback](runbooks/deploy-and-rollback.md)
+* [SLOs, alerting and uptime monitoring](runbooks/slo-and-alerting.md)
+* [Incident response](runbooks/incident-response.md)
+* [Backup, restore and migrations](runbooks/backup-and-restore.md)
+* [Hosted threat model](security/hosted-threat-model.md)
+* [Data inventory and retention](privacy/data-retention.md)
 * [Rebrand to Autonogrammer](runbooks/rebrand-autonogrammer.md)
 
 ## Decisions and records
