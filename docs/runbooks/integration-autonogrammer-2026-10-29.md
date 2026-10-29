@@ -8,6 +8,29 @@ Status: Done on branch `feat/autonogrammer-integration`; not pushed
 
 Last verified: 2026-10-29
 
+## Decision
+
+| | |
+|---|---|
+| Decision | ADOPT, by replay. The committed state of the other line is applied on a fresh branch of `origin/main`. Nothing is merged and nothing is vendored. |
+| What the other line is | A newer generation of this application: the same repository, diverged from `82129b9d`, with the mechanical rename to Autonogrammer (the owner's decision of 2026-10-28, a hard cutover: `.planning/STATE.md`, "Direction Update 2026-10-28"), a rebrand tool, the v0.16.0 research, ADR-0030 to ADR-0037 and the plans of phases 66 to 77. |
+| Alternatives | MERGE: rejected; the rename touches 5,495 files, so a merge conflicts on every file this line changed after the divergence, and the other line's own rule says replay (`rebrand-autonogrammer.md`, section 3). COMBINE through an adapter or a shared module: not applicable; the two lines are one codebase under two names, not two components. DEFER: rejected; the owner asked to use the new line or to work the two together, and the rename touches every path the web work edits. |
+| Rationale | The tool redoes the mechanical rename on any base, so the replay is repeatable and checkable (`verify --baseline` clean, 0 collisions); the owner's rename decision is applied as written; the other session's uncommitted work is not touched. |
+| Provenance | Read through git only, from the commits `5cd0ada1`, `50b7757d`, `9aa8aa8a`, `246448a0`, `3c41f10f` and `f7a93884` of `feat/autonogrammer`; its two rename commits were dropped and redone by the tool. No file was copied from its working tree, which was not written; the 47 uncommitted paths there are not part of the result. |
+| Reversibility | Before the pull request, deleting the branch restores `origin/main`. After the merge, reverting the squash commit does. |
+
+## Deployed interfaces that the rename changed (hard cutover, no alias)
+
+The rename is the owner's decision of 2026-10-28 and has no alias. This table says what each change touches today, from the repository and the recorded deployments; the steps that move existing state are in [Rebrand to Autonogrammer](rebrand-autonogrammer.md), section 5 (owner actions) and section 7 (runtime migrations).
+
+| Interface | Before, after | What is live today | Where the move is written |
+|-----------|---------------|--------------------|---------------------------|
+| Environment variables | `OMPOS_*`, `AUTONOGRAMMER_*` (no source, script, workflow or configuration file outside the rebrand tool contains an `OMPOS_` literal; `git grep -l OMPOS_` finds it only in markdown, the evidence and the planning text) | Nothing known: the Demo is a static bundle with no variables, and the recorded deployment of the staged worker names none of them (`evidence/railway-autonogrammer-worker-2026-10-28.md`; the live service's variables were not read for this record) | Section 5, item 2: Vercel settings, Railway variables, GitHub secrets, developer `.env` files |
+| JWT issuer and audience of the cloud worker | `ompos-api` and `ompos-worker`, `autonogrammer-api` and `autonogrammer-worker` (`WorkerAuthOptions.cs`, `WorkerTokenIssuer.cs`) | The API is not deployed, so no live token carries either | Section 5, item 3: deploy the API and the worker together |
+| PostgreSQL schema and role, Dragonfly key prefixes, container, volume and secret names | `ompos`, `autonogrammer` | No deployed database; the test containers are throwaway (`scripts/test-services.sh`) | Section 5, item 3; ADR-0031 and phase 68 of the other line |
+| Railway project, service and volume of the staged worker; the Vercel project `ompos-web` | Not renamed: they keep the old names until the owner renames them | The staged worker and the Demo | Section 5, item 1 |
+| Local user data and convention directories (`.ompos`, the user data directory, `models.yml` markers) | The old names are not read any more | **Not migrated by this branch.** The three runtime migrations are the other session's phase 66 (AG-66-7 to AG-66-9, unit 66-04 and later, on `feat/autonogrammer-next`). Until they land, an existing local install starts with empty settings under the new names; this branch contains no code that reads, moves or removes the old directories | Section 7 |
+
 ## What was integrated
 
 Two lines of the same repository had diverged from `82129b9d`:
