@@ -1302,8 +1302,8 @@ Execution order and parallel waves (from `briefs/00-index.md`): Phase 66, then P
 
 Nothing in this milestone is built yet; every phase below is planned.
 
-- [ ] **Phase 66: Rebrand to Autonogrammer** - one mechanical pass renames every owned name, three C# migrations keep existing user data, regenerated files, one gate run
-- [ ] **Phase 66.1: Scaffold: projects, registration and contract bump** - ONE serialised step creates and registers the 21 source and 19 test projects with AssemblyMarker.cs only, the LayerMap rows and six tuples, the package pins and the single ContractVersion bump 1.5.0 to 1.6.0
+- [ ] **Phase 66: Rebrand to Autonogrammer** - one mechanical pass renames every owned name, three C# migrations keep existing user data, regenerated files, one gate run Plans 66-01 to 66-03 done (tool, rename, regenerate; the integration line re-ran them on its base); 66-04 to 66-07 remain.
+- [x] **Phase 66.1: Scaffold: projects, registration and contract bump** - ONE serialised step creates and registers the 21 source and 19 test projects with AssemblyMarker.cs only, the LayerMap rows and six tuples, the package pins and the single ContractVersion bump 1.5.0 to 1.6.0 Done 2026-10-29 (verification human_needed: the Android lock is hand-patched and UNVERIFIED until the CI android job; bootstrap.sh and CI not run; replayed onto the integration base, build, 50 architecture tests green).
 - [ ] **Phase 67: Accounts: Supabase passwordless sign-in** - email code and magic link against the shared Supabase project, OS-store tokens on desktop, owner-scoped account and sessions API; Code works signed out
 - [ ] **Phase 68: Data plane: names, schema and resilience** - physical names cut over to autonogrammer, additive reversible migrations M0001 to M0010, least-privilege roles, GreptimeDB telemetry, bounded resilience, default-off ledger sink
 - [ ] **Phase 69: Surface switch and Cowork sessions** - Code or Cowork switch in the title bar and web top bar, the Cowork layout and the Cowork session model that can never reach the Kanban
@@ -1512,8 +1512,8 @@ Nothing in this milestone is built yet; every phase below is planned.
 
 | Phase | Records | Status | Completed |
 |-------|---------|--------|-----------|
-| 66. Rebrand to Autonogrammer | - | Planned | - |
-| 66.1. Scaffold: projects, registration and contract bump | - | Planned | - |
+| 66. Rebrand to Autonogrammer | 3/7 | In progress | - |
+| 66.1. Scaffold: projects, registration and contract bump | 1/1 | Complete (human_needed) | 2026-10-29 |
 | 67. Accounts: Supabase passwordless sign-in | - | Planned | - |
 | 68. Data plane: names, schema and resilience | - | Planned | - |
 | 69. Surface switch and Cowork sessions | - | Planned | - |

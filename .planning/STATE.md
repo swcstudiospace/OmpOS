@@ -2,15 +2,15 @@
 gsd_state_version: "1.0"
 milestone: v0.16.0
 milestone_name: Autonogrammer: accounts, Cowork and Dispatch
-status: planned
-last_updated: "2026-10-28"
-last_activity: 2026-10-28
+status: in_progress
+last_updated: "2026-10-29"
+last_activity: 2026-10-29
 progress:
   total_phases: 13
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 0
   completed_plans: 0
-  percent: 0
+  percent: 8
 ---
 
 # Project State
@@ -24,10 +24,25 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 
 ## Current Position
 
-Phase: v0.16.0 Autonogrammer: accounts, Cowork and Dispatch (Phases 66, 66.1 and 67 to 77, 13 phases): planned 2026-10-28, none started. The milestone runs on branch `feat/autonogrammer` in its own git worktree; the mechanical rename is commit `4af7d83`. The v0.15.0 line of Phases 51 to 65 belongs to a separate session on another branch and is out of scope here; the sections below describe it as history.
-Plan: the roadmap section, the requirements (AG-66-* to AG-77-*, AG-SC-1 to AG-SC-6) and the research (`docs/plans/v0.16.0-research/`, ADR-0030 to ADR-0037) are written; the phase directories and `NN-01-PLAN.md` files are not (another task creates them). Execution order: 66, 66.1, then 68 with 67 units 1 to 3, 69, 70, then 71, 72, 73 and 75 in parallel, then 74 and 76, then 77.
-Status: nothing is built. No criterion is claimed that needs a live Supabase call, a live omp turn (OD-07), a Railway deploy, Windows, macOS or Android.
-Last activity: 2026-10-28 - planning records for v0.16.0 written (ROADMAP section, REQUIREMENTS section and traceability, STATE direction update, PROJECT current milestone).
+Phase: v0.16.0 Autonogrammer: accounts, Cowork and Dispatch (Phases 66, 66.1 and 67 to 77): in progress. Phase 66.1 (scaffold) is complete with verification human_needed; Phase 66 has plans 66-01 to 66-03 done and 66-04 to 66-07 open. The milestone runs on branch `feat/autonogrammer-next` in the worktree `/root/src/repos/ompos-autonogrammer`, replayed onto the integration line `feat/autonogrammer-integration` (see Coordination 2026-10-29 below).
+Plan: plan-checked plans exist for every phase (66, 66.1, 67 to 77); phases that touch the API composition, the web shell, the launch environment or approvals are re-checked against the integration base before execution.
+Status: Linux x64 only; nothing that needs a live Supabase call, a live omp turn (OD-07), a Railway deploy, Windows, macOS or Android is claimed. The GSD sub-agent types (gsd-executor, gsd-code-reviewer and others) returned HTTP 403 client_attestation_denied in this environment; general `task` agents carry out those roles.
+Last activity: 2026-10-29 - scaffold of 21 source and 19 test projects, contract 1.6.0, replay onto the integration base (build 0 warnings, ArchitectureTests 50 of 50).
+
+## Coordination 2026-10-29
+
+Two sessions work on this repository by the owner's instruction ("work them together"). The other session built `feat/autonogrammer-integration`: `origin/main` (v0.15.0) plus the cherry-picked planning, research and tool commits of this milestone, its own run of `scripts/rebrand`, and the hosted real web app (phases 66.2 to 66.4, ADR-0021). This session replayed its scaffold (phase 66.1) on top as `feat/autonogrammer-next` and merges `feat/autonogrammer-integration` into it regularly (merge, not rebase, so history stays shared).
+
+- Phase numbers: this line owns 66, 66.1 and 67 to 77; the other line owns 66.2 to 66.4 (decimal phases) and records its own work in `.planning/phases/66.2-*`.
+- Numbering: ADR-0021 and OQ-172 to OQ-183 belong to the other line; this line uses ADR-0030 to ADR-0037 and OQ-300 upward.
+- Overlap areas to keep consistent: `GET /auth/config` (the other line returns `{ mode, authority, audience }`; keep `mode`, ADR-0030 adds the project URL, publishable key and methods), the web sign-in seam (`IApiTokenProvider`, `OwnerTokenSession`, `AuthGate`), `Api:Auth:*`, the engine environment allow-list and isolation options, `Harness:Acp:Approval`, the hosting hardening in `Program.cs`, the web shell routes and top bar. The report is in `docs/plans/v0.16.0-research/10-integration-overlaps.md`.
+- `dotnet format --verify-no-changes` reports one finding that belongs to the other line (`services/Autonogrammer.Api/Hosting/HostingBuilderExtensions.cs` imports order); it is not touched here.
+
+## Deferred Verification
+
+| Phase | State | Resume |
+|-------|-------|--------|
+| 66.1 | verification_deferred_human | /gsd:verify-work 66.1 (Android lock restore in CI; ./bootstrap.sh at the phase 66 gate) |
 
 ## Direction Update 2026-10-28 (ultrathink graph ut-mvs8ru79-82536fbd)
 
