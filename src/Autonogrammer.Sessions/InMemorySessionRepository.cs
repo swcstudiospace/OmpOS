@@ -20,6 +20,9 @@ public sealed class InMemorySessionRepository : ISessionRepository
     /// <summary>The most session identifiers one <see cref="ListSessionIdsByStatusAsync"/> call returns.</summary>
     private const int MaxSessionIdsPerListing = 200;
 
+    /// <summary>The most sessions one <see cref="ListByOwnerAsync"/> call returns.</summary>
+    private const int MaxSessionsPerListing = 200;
+
     /// <inheritdoc />
     public Task<Session?> GetAsync(string id, CancellationToken cancellationToken)
     {
@@ -62,7 +65,10 @@ public sealed class InMemorySessionRepository : ISessionRepository
                 }
             }
 
-            entry.Header = session with { Events = ImmutableList<StreamEvent>.Empty };
+            // Surface and ClosedAt are fixed at creation and changed only by SetClosedAsync, so a stale save cannot reopen a closed session.
+            entry.Header = entry.Header is { } stored
+                ? session with { Events = ImmutableList<StreamEvent>.Empty, Surface = stored.Surface, ClosedAt = stored.ClosedAt }
+                : session with { Events = ImmutableList<StreamEvent>.Empty };
             if (session.Events.Count > entry.Log.Count)
             {
                 // The incoming events extend the stored log: same Seq prefix, strictly longer.
@@ -165,6 +171,80 @@ public sealed class InMemorySessionRepository : ISessionRepository
         }
 
         return Task.FromResult<IReadOnlyList<string>>(ids);
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<Session>> ListByOwnerAsync(
+        string ownerId,
+        SessionSurface surface,
+        bool includeClosed,
+        int limit,
+        SessionCursor? cursor,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(ownerId);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var matches = new List<Session>();
+        foreach (var entry in _sessions.Values)
+        {
+            Session? header;
+            lock (entry.Gate)
+            {
+                header = entry.Header;
+            }
+
+            if (header is null
+                || !string.Equals(header.OwnerId, ownerId, StringComparison.Ordinal)
+                || header.Surface != surface
+                || (!includeClosed && header.ClosedAt is not null)
+                || (cursor is not null && !IsAfter(header, cursor)))
+            {
+                continue;
+            }
+
+            matches.Add(header);
+        }
+
+        matches.Sort(CompareNewestFirst);
+        var page = matches.Count > Math.Min(limit, MaxSessionsPerListing) ? matches.GetRange(0, Math.Min(limit, MaxSessionsPerListing)) : matches;
+        return Task.FromResult<IReadOnlyList<Session>>(page);
+    }
+
+    /// <inheritdoc />
+    public Task<bool> SetClosedAsync(string sessionId, bool closed, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(sessionId);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!_sessions.TryGetValue(sessionId, out var entry))
+        {
+            return Task.FromResult(false);
+        }
+
+        lock (entry.Gate)
+        {
+            if (entry.Header is not { } header || (header.ClosedAt is not null) == closed)
+            {
+                return Task.FromResult(false);
+            }
+
+            entry.Header = header with { ClosedAt = closed ? TimeProvider.System.GetUtcNow() : null };
+            return Task.FromResult(true);
+        }
+    }
+
+    /// <summary>Whether a session sorts strictly after the cursor in the newest-first order.</summary>
+    private static bool IsAfter(Session session, SessionCursor cursor) =>
+        session.UpdatedAt < cursor.UpdatedAt
+        || (session.UpdatedAt == cursor.UpdatedAt && string.CompareOrdinal(session.Id, cursor.Id) < 0);
+
+    /// <summary>The listing order: <see cref="Session.UpdatedAt"/> descending, then <see cref="Session.Id"/> descending in ordinal order.</summary>
+    private static int CompareNewestFirst(Session left, Session right)
+    {
+        var byTime = right.UpdatedAt.CompareTo(left.UpdatedAt);
+        return byTime != 0 ? byTime : string.CompareOrdinal(right.Id, left.Id);
     }
 
     /// <inheritdoc />

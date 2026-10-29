@@ -1,5 +1,8 @@
+using System.Globalization;
+using Autonogrammer.Resilience;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 
 namespace Autonogrammer.Sessions.Postgres;
@@ -10,11 +13,11 @@ public static class ServiceCollectionExtensions
     /// <summary>The configuration key that holds the PostgreSQL connection string. The environment form is <c>Sessions__Postgres__ConnectionString</c>.</summary>
     public const string ConnectionStringKey = "Sessions:Postgres:ConnectionString";
 
-    /// <summary>The search path of every session connection. Unqualified table names resolve in <c>autonogrammer</c> first.</summary>
-    private const string SessionSearchPath = "autonogrammer,public";
+    /// <summary>The configuration key that holds the connection string of the migration role. Only the one-shot migrate service sets it. The environment form is <c>Sessions__Postgres__MigratorConnectionString</c>.</summary>
+    public const string MigratorConnectionStringKey = "Sessions:Postgres:MigratorConnectionString";
 
     /// <summary>
-    /// Registers <see cref="NpgsqlDataSource"/> and <see cref="PostgresSessionRepository"/> as singletons.
+    /// Registers <see cref="NpgsqlDataSource"/> (the runtime role), <see cref="PostgresResilience"/> and <see cref="PostgresSessionRepository"/> as singletons.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -25,6 +28,11 @@ public static class ServiceCollectionExtensions
     /// The connection string is read when <see cref="NpgsqlDataSource"/> is first resolved. A missing or blank value
     /// throws <see cref="InvalidOperationException"/> whose message names <see cref="ConnectionStringKey"/>. The data source
     /// uses the search path <c>autonogrammer,public</c>, whatever search path the string carries. The value is never logged.
+    /// The pipeline every store command runs through reads the keys of <see cref="PostgresResilienceOptions.SectionName"/>; an absent key keeps its default
+    /// and a value that is not a whole number fails naming the key.
+    /// </para>
+    /// <para>
+    /// The store never creates schema objects: the <see cref="Migrations.MigrationRunner"/> does, as the migration role.
     /// </para>
     /// </remarks>
     /// <param name="services">The service collection to register into.</param>
@@ -36,16 +44,14 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration);
 
         services.AddSingleton(_ => new PostgresSessionConnection(ReadConnectionString(configuration)));
-        services.AddSingleton(static provider => NpgsqlDataSource.Create(WithSessionSearchPath(provider.GetRequiredService<PostgresSessionConnection>().ConnectionString)));
+        services.AddSingleton(provider => PostgresResilience.Create(
+            ReadResilienceOptions(configuration),
+            provider.GetService<TimeProvider>(),
+            provider.GetService<ILogger<ResiliencePipeline>>()));
+        services.AddSingleton(provider => provider.GetRequiredService<PostgresSessionConnection>().CreateDataSource(PostgresRole.Runtime, ReadResilienceOptions(configuration)));
         services.AddSingleton<PostgresSessionRepository>();
         return services;
     }
-
-    /// <summary>Sets the session search path on a connection string, leaving every other setting as it is.</summary>
-    /// <param name="connectionString">The non-blank connection string from configuration.</param>
-    /// <returns>The connection string with the session search path.</returns>
-    private static string WithSessionSearchPath(string connectionString) =>
-        new NpgsqlConnectionStringBuilder(connectionString) { SearchPath = SessionSearchPath }.ConnectionString;
 
     /// <summary>Reads the connection string, failing with the key name when it is missing or blank.</summary>
     /// <param name="configuration">The configuration to read.</param>
@@ -62,5 +68,40 @@ public static class ServiceCollectionExtensions
         }
 
         return connectionString;
+    }
+
+    private static PostgresResilienceOptions ReadResilienceOptions(IConfiguration configuration)
+    {
+        var section = configuration.GetSection(PostgresResilienceOptions.SectionName);
+        var defaults = new PostgresResilienceOptions();
+        return new PostgresResilienceOptions
+        {
+            ConnectSeconds = ReadInt(section, nameof(PostgresResilienceOptions.ConnectSeconds), defaults.ConnectSeconds),
+            InteractiveCommandSeconds = ReadInt(section, nameof(PostgresResilienceOptions.InteractiveCommandSeconds), defaults.InteractiveCommandSeconds),
+            BackgroundCommandSeconds = ReadInt(section, nameof(PostgresResilienceOptions.BackgroundCommandSeconds), defaults.BackgroundCommandSeconds),
+            MaxRetries = ReadInt(section, nameof(PostgresResilienceOptions.MaxRetries), defaults.MaxRetries),
+            MinDelayMs = ReadInt(section, nameof(PostgresResilienceOptions.MinDelayMs), defaults.MinDelayMs),
+            MaxDelayMs = ReadInt(section, nameof(PostgresResilienceOptions.MaxDelayMs), defaults.MaxDelayMs),
+            BudgetSeconds = ReadInt(section, nameof(PostgresResilienceOptions.BudgetSeconds), defaults.BudgetSeconds),
+            PoolInteractive = ReadInt(section, nameof(PostgresResilienceOptions.PoolInteractive), defaults.PoolInteractive),
+            PoolBackground = ReadInt(section, nameof(PostgresResilienceOptions.PoolBackground), defaults.PoolBackground),
+            BreakerOpenSeconds = ReadInt(section, nameof(PostgresResilienceOptions.BreakerOpenSeconds), defaults.BreakerOpenSeconds),
+        };
+    }
+
+    private static int ReadInt(IConfigurationSection section, string key, int fallback)
+    {
+        var text = section[key];
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return fallback;
+        }
+
+        if (!int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+        {
+            throw new InvalidOperationException($"Configuration key '{section.Path}:{key}' must be a whole number.");
+        }
+
+        return value;
     }
 }

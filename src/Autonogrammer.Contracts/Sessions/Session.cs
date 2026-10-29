@@ -25,6 +25,12 @@ public sealed record Session
     /// <summary>Gets the sandbox identifier, or null when the session runs without a sandbox.</summary>
     public string? SandboxId { get; init; }
 
+    /// <summary>Gets the product surface the session belongs to. It is fixed when the session is created; <see cref="SessionSurface.Code"/> is the default.</summary>
+    public SessionSurface Surface { get; init; } = SessionSurface.Code;
+
+    /// <summary>Gets when the session was closed, or null while it is open. Only <c>ISessionRepository.SetClosedAsync</c> changes it after creation.</summary>
+    public DateTimeOffset? ClosedAt { get; init; }
+
     /// <summary>Gets the ordered chat messages.</summary>
     public required IReadOnlyList<Message> Messages { get; init; }
 
