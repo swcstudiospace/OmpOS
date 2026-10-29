@@ -1,0 +1,190 @@
+@namespace Autonogrammer.UI.Components.Auth
+@using Microsoft.AspNetCore.Components.Routing
+@using Autonogrammer.UI.Components.Shell
+@implements IDisposable
+@inject IAuthSession Session
+@inject IAuthConfigSource ConfigSource
+@inject NavigationManager Navigation
+@{
+    var view = CurrentView;
+}
+@if (view == GateView.Content)
+{
+    @ChildContent
+}
+else if (view == GateView.Loading)
+{
+    <ViewTitle Text="@ViewTitles.Compose(AuthCopy.LoadingTitle)" />
+    <main id="main" class="autonogrammer-auth-state">
+        <h1 class="autonogrammer-auth-heading" tabindex="-1">@AuthCopy.ProductName</h1>
+        <p class="autonogrammer-auth-text" role="status">@AuthCopy.Loading</p>
+    </main>
+}
+else if (view == GateView.Redirecting)
+{
+    <ViewTitle Text="@ViewTitles.Compose(AuthCopy.ConnectTitle)" />
+    <main id="main" class="autonogrammer-auth-state">
+        <h1 class="autonogrammer-auth-heading" tabindex="-1">@AuthCopy.ProductName</h1>
+        <p class="autonogrammer-auth-text" role="status">@AuthCopy.Redirecting</p>
+    </main>
+}
+else if (view == GateView.Unavailable)
+{
+    <ViewTitle Text="@ViewTitles.Compose(AuthCopy.UnavailableTitle)" />
+    <main id="main" class="autonogrammer-auth-state">
+        <h1 class="autonogrammer-auth-heading" tabindex="-1">@AuthCopy.UnavailableHeading</h1>
+        <p class="autonogrammer-error" role="alert">@AuthCopy.UnavailableBody</p>
+        <button type="button" class="autonogrammer-btn autonogrammer-btn--primary" @onclick="RetryAsync">@AuthCopy.Retry</button>
+    </main>
+}
+else
+{
+    <ViewTitle Text="@ViewTitles.Compose(AuthCopy.OidcTitle)" />
+    <main id="main" class="autonogrammer-auth-state">
+        <h1 class="autonogrammer-auth-heading" tabindex="-1">@AuthCopy.OidcHeading</h1>
+        <p class="autonogrammer-auth-text">@AuthCopy.OidcBody</p>
+    </main>
+}
+
+@code {
+    private readonly CancellationTokenSource _lifetime = new();
+    private AuthConfig? _config;
+    private bool _failed;
+    private bool _subscribed;
+    private bool _disposed;
+
+    private enum GateView
+    {
+        Content,
+        Loading,
+        Redirecting,
+        Unavailable,
+        SignInUnsupported,
+    }
+
+    /// <summary>Gets the content the gate protects: the routed page.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Gets whether the build runs on the in-browser Demo. There is no API and no sign-in then, so the content shows at once.</summary>
+    [Parameter]
+    public bool IsDemo { get; set; }
+
+    private GateView CurrentView
+    {
+        get
+        {
+            if (IsDemo)
+            {
+                return GateView.Content;
+            }
+
+            if (_config is null)
+            {
+                return _failed ? GateView.Unavailable : GateView.Loading;
+            }
+
+            return _config.Mode switch
+            {
+                AuthConfig.DevelopmentMode => GateView.Content,
+                AuthConfig.OidcMode => GateView.SignInUnsupported,
+                _ => Session.HasToken || AuthRoutes.IsConnectLocation(Navigation) ? GateView.Content : GateView.Redirecting,
+            };
+        }
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsDemo)
+        {
+            return;
+        }
+
+        Session.Changed += OnSessionChanged;
+        Navigation.LocationChanged += OnLocationChanged;
+        _subscribed = true;
+        await LoadAsync().ConfigureAwait(true);
+    }
+
+    private async Task LoadAsync()
+    {
+        _failed = false;
+        _config = null;
+        AuthConfig? loaded;
+        try
+        {
+            loaded = await ConfigSource.LoadAsync(_lifetime.Token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
+        {
+            return;
+        }
+
+        if (loaded is null || !loaded.IsKnownMode())
+        {
+            _failed = true;
+            return;
+        }
+
+        _config = loaded;
+        SendToConnectIfNeeded();
+    }
+
+    private async Task RetryAsync()
+    {
+        _failed = false;
+        await InvokeAsync(StateHasChanged).ConfigureAwait(true);
+        await LoadAsync().ConfigureAwait(true);
+    }
+
+    // An owner-token deployment needs a token for every page except the connect page. The path the user asked for is remembered in memory so the
+    // connect page can return to it; it replaces the history entry so Back does not return to a page that would only bounce again.
+    private void SendToConnectIfNeeded()
+    {
+        if (_disposed
+            || _config is not { Mode: AuthConfig.OwnerTokenMode }
+            || Session.HasToken
+            || AuthRoutes.IsConnectLocation(Navigation))
+        {
+            return;
+        }
+
+        Session.ReturnPath = AuthRoutes.CurrentRelativePath(Navigation);
+        Navigation.NavigateTo(AuthRoutes.ConnectPath, replace: true);
+    }
+
+    private void OnSessionChanged(object? sender, EventArgs e) => _ = InvokeAsync(Refresh);
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => _ = InvokeAsync(Refresh);
+
+    private void Refresh()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        SendToConnectIfNeeded();
+        StateHasChanged();
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        if (_subscribed)
+        {
+            Session.Changed -= OnSessionChanged;
+            Navigation.LocationChanged -= OnLocationChanged;
+        }
+
+        _lifetime.Cancel();
+        _lifetime.Dispose();
+    }
+}

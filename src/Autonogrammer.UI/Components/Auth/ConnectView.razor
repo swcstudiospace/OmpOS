@@ -1,0 +1,137 @@
+@namespace Autonogrammer.UI.Components.Auth
+@using Autonogrammer.UI.Components.Shell
+@implements IDisposable
+@inject IOwnerTokenConnector Connector
+@inject IAuthSession Session
+@inject NavigationManager Navigation
+<ViewTitle Text="@ViewTitles.Compose(AuthCopy.ConnectTitle)" />
+<main id="main" class="autonogrammer-connect">
+    <div class="autonogrammer-connect-card">
+        <span class="autonogrammer-state-mark" aria-hidden="true"></span>
+        <h1 class="autonogrammer-connect-heading" tabindex="-1">@AuthCopy.ConnectHeading</h1>
+        @if (Session.SessionEnded)
+        {
+            <p class="autonogrammer-error" role="alert">@AuthCopy.SessionEnded</p>
+        }
+
+        <p id="@HelpId" class="autonogrammer-connect-help">@AuthCopy.ConnectHelp</p>
+        <form class="autonogrammer-connect-form" @onsubmit="SubmitAsync">
+            <label class="autonogrammer-sr-only" for="@UsernameId">@AuthCopy.UsernameLabel</label>
+            <input id="@UsernameId" class="autonogrammer-sr-only" type="text" name="username" value="@AuthCopy.Username" readonly autocomplete="username" tabindex="-1" />
+            <div class="autonogrammer-connect-field">
+                <label class="autonogrammer-connect-label" for="@TokenId">@AuthCopy.TokenLabel</label>
+                <input @ref="_tokenInput"
+                       id="@TokenId"
+                       class="autonogrammer-input"
+                       type="password"
+                       name="password"
+                       autocomplete="current-password"
+                       spellcheck="false"
+                       autocapitalize="off"
+                       aria-required="true"
+                       aria-invalid="@(_error is null ? null : "true")"
+                       aria-describedby="@DescribedBy"
+                       readonly="@_busy"
+                       value="@_token"
+                       @oninput="OnInput" />
+            </div>
+            @if (_error is not null)
+            {
+                <p id="@ErrorId" class="autonogrammer-error" role="alert">@_error</p>
+            }
+
+            @if (_busy)
+            {
+                <p class="autonogrammer-connect-status" role="status">@AuthCopy.Checking</p>
+            }
+
+            <button type="submit" class="autonogrammer-btn autonogrammer-btn--primary" aria-disabled="@(_busy ? "true" : null)">@AuthCopy.Connect</button>
+        </form>
+    </div>
+</main>
+
+@code {
+    private const string HelpId = "autonogrammer-connect-help";
+    private const string ErrorId = "autonogrammer-connect-error";
+    private const string TokenId = "autonogrammer-connect-token";
+    private const string UsernameId = "autonogrammer-connect-username";
+
+    private readonly CancellationTokenSource _lifetime = new();
+    private ElementReference _tokenInput;
+    private string _token = string.Empty;
+    private string? _error;
+    private bool _busy;
+
+    private string DescribedBy => _error is null ? HelpId : HelpId + " " + ErrorId;
+
+    private void OnInput(ChangeEventArgs args) => _token = args.Value as string ?? string.Empty;
+
+    private async Task SubmitAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        // A token holds no whitespace, so a space or a newline that came with a paste is not part of it.
+        var candidate = _token.Trim();
+        if (candidate.Length == 0)
+        {
+            _token = string.Empty;
+            _error = AuthCopy.TokenRequired;
+            await FocusTokenAsync().ConfigureAwait(true);
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        ConnectOutcome outcome;
+        try
+        {
+            outcome = await Connector.ConnectAsync(candidate, _lifetime.Token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
+        {
+            return;
+        }
+        finally
+        {
+            _busy = false;
+        }
+
+        switch (outcome)
+        {
+            case ConnectOutcome.Connected:
+                _token = string.Empty;
+                var destination = AuthRoutes.SafeReturnPath(Session.ReturnPath);
+                Session.ReturnPath = null;
+                Navigation.NavigateTo(destination);
+                return;
+            case ConnectOutcome.Rejected:
+                // The typed token is gone from the field, so a wrong one is never shown again and the next attempt starts empty.
+                _token = string.Empty;
+                _error = AuthCopy.TokenRejected;
+                break;
+            default:
+                _error = AuthCopy.ConnectUnreachable;
+                break;
+        }
+
+        // The field keeps focus (the failure is announced by the alert), so a keyboard user types again without searching for the form.
+        await InvokeAsync(StateHasChanged).ConfigureAwait(true);
+        await FocusTokenAsync().ConfigureAwait(true);
+    }
+
+    private async Task FocusTokenAsync()
+    {
+        await InvokeAsync(StateHasChanged).ConfigureAwait(true);
+        await _tokenInput.FocusAsync().ConfigureAwait(true);
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        _lifetime.Cancel();
+        _lifetime.Dispose();
+    }
+}
