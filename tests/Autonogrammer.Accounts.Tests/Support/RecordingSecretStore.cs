@@ -74,12 +74,12 @@ internal sealed class RecordingSecretStore(Journal? journal = null) : ISecretSto
     }
 
     /// <summary>Makes every following <see cref="GetAsync"/> wait, after it has read its value, until <see cref="ReleaseGets"/>.</summary>
-    /// <returns>A task that completes when a read is waiting.</returns>
-    public Task HoldGets()
+    /// <returns>A source whose task completes when a read is waiting.</returns>
+    public TaskCompletionSource HoldGets()
     {
         _getReached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Volatile.Write(ref _getGate, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously));
-        return _getReached.Task;
+        return _getReached;
     }
 
     /// <summary>Lets the reads held by <see cref="HoldGets"/> return.</summary>

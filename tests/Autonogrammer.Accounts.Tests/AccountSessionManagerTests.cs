@@ -588,10 +588,10 @@ public sealed class AccountSessionManagerTests
         await harness.Manager.SignInAsync(harness.Handler.IssueSession(Email), harness.Options.Issuer, Token).ConfigureAwait(true);
         harness.Time.Advance(TimeSpan.FromMinutes(50));
         await harness.SeedStoredSessionAsync(harness.Handler.IssueSession(Email)).ConfigureAwait(true);
-        Task reached = harness.Store.HoldGets();
+        TaskCompletionSource reached = harness.Store.HoldGets();
 
         Task<AuthResult<SecretString>> pending = harness.Manager.GetAccessTokenAsync(Token).AsTask();
-        await reached.WaitAsync(TimeSpan.FromSeconds(30), Token).ConfigureAwait(true);
+        await reached.Task.WaitAsync(TimeSpan.FromSeconds(30), Token).ConfigureAwait(true);
         _ = await harness.Manager.SignOutAsync(SignOutScope.Local, Token).ConfigureAwait(true);
         harness.Store.ReleaseGets();
         AuthResult<SecretString> token = await pending.ConfigureAwait(true);
