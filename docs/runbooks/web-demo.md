@@ -4,13 +4,13 @@ description: "Run the Autonogrammer web head against the real API or as a static
 
 # Web head runbook: real API, Demo, and static Demo deployment
 
-Status: Built (real API and Demo run locally; the Demo is deployed at https://ompos-web.vercel.app, recorded 2026-10-28); the real API is not deployed anywhere
+Status: Built (the real bundle ran against the local API and the real omp on 2026-10-29, and the Demo is deployed at https://ompos-web.vercel.app, recorded 2026-10-28); the real application is not deployed anywhere
 
-Last verified: 2026-10-28
+Last verified: 2026-10-29
 
-Applies to: v0.15.0
+Applies to: v0.15.0 and the integration branch (Phases 66.2 to 66.4)
 
-The web head (`apps/Autonogrammer.Web`, Blazor WebAssembly) can run in three ways. The decision is [ADR-0017](../decisions/ADR-0017-web-head-demo-mode.md). The only public deployment is the static Demo (simulated engine, no backend, no secret): <https://ompos-web.vercel.app>. The API must stay private until sign-in (OD-03) exists ([hosting runbook](hosting.md)); the API is not deployed to Railway (a staged private worker is, see the [cloud agents runbook](cloud-agents.md)).
+The web head (`apps/Autonogrammer.Web`, Blazor WebAssembly) can run in three ways. The decision is [ADR-0017](../decisions/ADR-0017-web-head-demo-mode.md). The only public deployment is the static Demo (simulated engine, no backend, no secret): <https://ompos-web.vercel.app>. The API stays private until the owner deploys it: the first internet-facing mode is the single-operator owner token of [ADR-0021](../decisions/ADR-0021-hosted-single-operator-deployment.md) ([hosting runbook](hosting.md), [deploy and rollback](deploy-and-rollback.md)); multi-user sign-in (OD-03, ADR-0030) is later. The API is not deployed to Railway (a staged private worker is, see the [cloud agents runbook](cloud-agents.md)).
 
 ## 1. The real API and the web head, both on this machine
 
@@ -84,3 +84,19 @@ dotnet test tests/Autonogrammer.Web.Tests
 ```
 
 The Demo sources are compiled into the test project, so the Demo handler is tested on a manual clock (`ManualTimeProvider`) without a browser or a network. `OpenApiCoverageTests` reads `docs/api/openapi.json`, which the API build regenerates: build the API first.
+
+## 5. The Demo and the real application: what differs and where each gap stands
+
+Recorded 2026-10-29. "Evidence" names a run that exists in the repository; "not exercised" means no run covered it.
+
+| Area | The Demo at the public URL | The real bundle (`scripts/vercel/build-web.sh`) | Evidence | Where it stands |
+|------|----------------------------|-----------------------------------------------|----------|-----------------|
+| Engine | Every API route is answered in the browser from scripted fixtures (ADR-0017); no agent runs | The API starts `omp acp` per session and streams its events | [hosted-web-2026-10-29](evidence/hosted-web-2026-10-29/README.md): real omp 18.12.6, scripted model | Works on one machine. A deployment needs the owner's approval; a live model turn needs a credential (OQ-172) |
+| Sign-in | None | Owner token: its SHA-256 digest is in the API configuration, the browser keeps the token in memory | the same run: `connect`, `credential-storage`, `sign-out`; `Api.IntegrationTests` | Done for one operator. Multi-user sign-in is ADR-0030 (OQ-182) |
+| Streaming and resume | Simulated by the scripted fixtures | Server-sent events with sequence numbers; a second connection with `Last-Event-ID` receives the missed events | the same run: `text-turn`, `resume` | Done. A lost connection in a browser, a page reload and an API restart were not exercised |
+| Tool approvals | Simulated | The approval endpoints grant a request under `Harness:Acp:Approval` (deny-all by default) | the same run: `tool-turn` (the real omp raised `session/request_permission` for `bash`) | Done. The recipe a deployment should use is OQ-183 |
+| What an agent can reach | Nothing | The engine gets an allow-listed environment and a 0700 workspace per session; the API process is non-dumpable | `Api.IntegrationTests` | Done in code; its effect inside a container is not observed (OQ-174). No sandbox provider exists (OQ-173): the host is the boundary |
+| Banner and code | "Demo: simulated engine, no real agent, no network" banner; Demo code in the bundle | No banner, no Demo code | `scripts/vercel/check-no-demo.sh` with its positive control | Done |
+| Routes, titles, focus, announcements | The same web shell | The same web shell | [web-accessibility-2026-10-29](evidence/web-accessibility-2026-10-29/README.md) | Done as far as scripted checks go; no screen reader pass (OQ-178) |
+| Offline shell | Not compared | Never caches cross-origin, `Authorization`, event-stream or `/auth/*` requests | `Web.Tests` (`ServiceWorkerRulesTests`) | Done; the behaviour in a browser was not exercised |
+| Public URL | Serves the Demo (`appsettings.demo.json` answered 200 on 2026-10-29) | Not deployed | [deploy and rollback](deploy-and-rollback.md) | The owner decides: a new Vercel project for the real bundle, or the switch of this URL (Q-DEP-1) |

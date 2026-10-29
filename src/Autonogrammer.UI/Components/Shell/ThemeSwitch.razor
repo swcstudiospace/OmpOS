@@ -37,6 +37,12 @@
 
         var module = await EnsureModuleAsync().ConfigureAwait(true);
         var saved = await module.InvokeAsync<string?>("getTheme").ConfigureAwait(true);
+        if (_loaded)
+        {
+            // A theme was chosen while the saved one was being read: the choice wins, or the switch would show the old theme as pressed.
+            return;
+        }
+
         _current = FromKey(saved);
         _loaded = true;
         StateHasChanged();

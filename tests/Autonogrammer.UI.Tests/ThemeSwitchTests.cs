@@ -64,11 +64,29 @@ public sealed class ThemeSwitchTests : UiTestContext
         module.Setup<string>("getTheme").SetResult("light");
         module.SetupVoid("setTheme", expectedKey);
         var cut = Render<ThemeSwitch>();
+        // The module and the saved theme are loaded first, so the click reaches the module in the same step and nothing is left to race.
+        AssertPressed(cut, "Light");
 
         cut.FindAll("button").Single(button => string.Equals(button.TextContent, label, StringComparison.Ordinal)).Click();
 
         module.VerifyInvoke("setTheme").Arguments.ShouldBe([expectedKey]);
         AssertPressed(cut, label);
+    }
+
+    /// <summary>A theme chosen before the saved one has been read stays pressed when the saved one arrives.</summary>
+    [Fact]
+    public async Task AThemeChosenBeforeTheSavedOneIsReadIsNotOverwrittenByIt()
+    {
+        var module = JSInterop.SetupModule(ThemeModule);
+        var saved = module.Setup<string>("getTheme");
+        module.SetupVoid("setTheme", "dark").SetVoidResult();
+        var cut = Render<ThemeSwitch>();
+
+        await cut.FindAll("button").Single(button => string.Equals(button.TextContent, "Dark", StringComparison.Ordinal)).ClickAsync().ConfigureAwait(true);
+        saved.SetResult("light");
+        await cut.InvokeAsync(static () => { }).ConfigureAwait(true);
+
+        AssertPressed(cut, "Dark");
     }
 
     private static void AssertPressed(IRenderedComponent<ThemeSwitch> cut, string label)
