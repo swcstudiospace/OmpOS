@@ -310,7 +310,7 @@ internal static class CloudAgentEndpoints
             query = parsed;
         }
 
-        return TypedResults.ServerSentEvents(StreamAsync(sessionId, header ?? query ?? 0, streamer, cancellationToken));
+        return new SseStreamResult(StreamAsync(sessionId, header ?? query ?? 0, streamer, cancellationToken));
     }
 
     private static async IAsyncEnumerable<SseItem<string>> StreamAsync(

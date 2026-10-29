@@ -71,7 +71,7 @@ internal static class EventStreamEndpoints
 
         // Last-Event-ID takes precedence over since; absent both, delivery starts at the log head.
         var afterSeq = header ?? query ?? 0;
-        return TypedResults.ServerSentEvents(EnumerateAsync(id, afterSeq, streamer, cancellationToken));
+        return new SseStreamResult(EnumerateAsync(id, afterSeq, streamer, cancellationToken));
     }
 
     private static async IAsyncEnumerable<SseItem<string>> EnumerateAsync(
