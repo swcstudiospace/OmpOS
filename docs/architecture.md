@@ -99,7 +99,7 @@ There is no Temporal worker: it was removed on 2026-10-21 and session runs execu
 | `Autonogrammer.Harness.AgentLoop` (extended) | Hooks service and loopback bridge, run modes and permissions, safety policy |
 | `Autonogrammer.Sandbox` (extended) | Cloud environment client for Railway, a static pool client, a cloud session host |
 | `Autonogrammer.AgentWorker` | The cloud agent worker: JWT-authenticated WebSocket bridge to `omp acp` |
-|
+
 ### Projects added in v0.16.0
 
 | Project | Responsibility |
@@ -121,7 +121,7 @@ There is no Temporal worker: it was removed on 2026-10-21 and session runs execu
 | `Autonogrammer.Cowork.Memory.Postgres` | Memory persistence over PostgreSQL (Phase 75) |
 | `Autonogrammer.Harness.PluginBundles` | Plugin bundle install over launch contributors (Phase 76) |
 | `Autonogrammer.Harness.Isolation` | Process isolation over the launch wrapper (Phase 76) |
-| `Autonogrammer.Harness.Notifications` | Desktop notifications over the launch wrapper (Phase 76) |
+| `Autonogrammer.Harness.Notifications` | Desktop notification sinks over OS commands run by argument vector (Phase 76) |
 | `Autonogrammer.Accounts.Desktop` | Desktop account session selector and loopback reader (Phase 67) |
 | `Autonogrammer.Dispatch.Client` | Dispatch HTTP and SSE client for native and Android heads (Phase 74) |
 | `Autonogrammer.Dispatch.Desktop` | Desktop dispatch connector, verifier and policy store (Phase 74) |
