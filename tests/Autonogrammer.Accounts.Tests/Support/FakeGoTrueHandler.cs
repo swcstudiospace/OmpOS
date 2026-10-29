@@ -7,32 +7,6 @@ using Autonogrammer.Harness.Secrets;
 
 namespace Autonogrammer.Accounts.Tests.Support;
 
-#pragma warning disable CA2000 // Every response the fake builds is handed to HttpClient, which owns and disposes it.
-#pragma warning disable MA0048 // The two records the fake produces stay beside it; they exist for no other file.
-/// <summary>One request the fake saw. Bodies and queries are kept so a test can assert what was sent; nothing logs them.</summary>
-/// <param name="Method">The HTTP method.</param>
-/// <param name="Path">The path below <c>/auth/v1/</c>.</param>
-/// <param name="Query">The raw query, without the question mark.</param>
-/// <param name="Body">The request body text.</param>
-/// <param name="ApiKey">The <c>apikey</c> header, or null.</param>
-/// <param name="Bearer">The bearer token, or null.</param>
-internal sealed record RecordedRequest(string Method, string Path, string Query, string Body, string? ApiKey, string? Bearer)
-{
-    /// <summary>Tells whether the request went to a path below the auth root.</summary>
-    /// <param name="path">The path to compare with, for example <c>logout</c>.</param>
-    /// <returns>True when the paths are equal.</returns>
-    public bool PathIs(string path) => string.Equals(Path, path, StringComparison.Ordinal);
-}
-
-/// <summary>One email the fake project "sent".</summary>
-/// <param name="Email">The address.</param>
-/// <param name="Kind">The template: <c>signup</c> for a first-time user, <c>magiclink</c> for a confirmed one.</param>
-/// <param name="Code">The one-time code in the email, or null when the template shows only a link.</param>
-/// <param name="LinkAuthCode">The code the link carries back to the redirect address, or null when no PKCE challenge was sent.</param>
-/// <param name="RedirectTo">The redirect address the request named, or null.</param>
-internal sealed record SentEmail(string Email, string Kind, string? Code, string? LinkAuthCode, string? RedirectTo);
-#pragma warning restore MA0048
-
 /// <summary>
 /// An in-process fake of the six auth service routes: OTP issue and expiry on a <see cref="ManualTimeProvider"/>, S256 verifier checking, single-use
 /// refresh tokens with a 10 second reuse interval, scope-aware logout, scripted errors and transport failures, and 429 with and without
@@ -276,22 +250,21 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
         bool lostResponse = scripted is { LostResponse: true };
         if (scripted is not null && !lostResponse)
         {
-            return Error(scripted.Status, scripted.ErrorCode, scripted.RetryAfterSeconds);
+            return Render(Error(scripted.Status, scripted.ErrorCode, scripted.RetryAfterSeconds));
         }
 
         if (!string.Equals(apiKey, PublishableKey, StringComparison.Ordinal))
         {
-            return Error(401, "no_authorization", null);
+            return Render(Error(401, "no_authorization", null));
         }
 
-        HttpResponseMessage response = Dispatch(route, query, body, bearer);
+        Answer answer = Dispatch(route, query, body, bearer);
         if (lostResponse)
         {
-            response.Dispose();
             throw new HttpRequestException("The fake connection was dropped after the request was handled.");
         }
 
-        return response;
+        return Render(answer);
     }
 
     private (Scripted? Scripted, TaskCompletionSource? Gate) Record(RecordedRequest seen, string route)
@@ -305,7 +278,7 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
         }
     }
 
-    private HttpResponseMessage Dispatch(string route, string query, string body, string? bearer)
+    private Answer Dispatch(string route, string query, string body, string? bearer)
     {
         lock (_gate)
         {
@@ -336,22 +309,31 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
     private static string Base64UrlSha256(string text) =>
         Convert.ToBase64String(SHA256.HashData(Encoding.ASCII.GetBytes(text))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
-    private static HttpResponseMessage Error(int status, string? errorCode, int? retryAfterSeconds)
+    private static Answer Error(int status, string? errorCode, int? retryAfterSeconds)
     {
         string json = errorCode is null
             ? $$"""{"code":{{status}},"msg":"{{ServerMessageText}}"}"""
             : $$"""{"code":{{status}},"error_code":"{{errorCode}}","msg":"{{ServerMessageText}}"}""";
-        var response = new HttpResponseMessage((HttpStatusCode)status) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
-        if (retryAfterSeconds is { } seconds)
+        return new Answer(status, json, retryAfterSeconds);
+    }
+
+    private static Answer Json(HttpStatusCode status, string json) => new((int)status, json, null);
+
+    private static HttpResponseMessage Render(Answer answer)
+    {
+        var response = new HttpResponseMessage((HttpStatusCode)answer.Status);
+        if (answer.Json is not null)
+        {
+            response.Content = new StringContent(answer.Json, Encoding.UTF8, "application/json");
+        }
+
+        if (answer.RetryAfterSeconds is { } seconds)
         {
             response.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromSeconds(seconds));
         }
 
         return response;
     }
-
-    private static HttpResponseMessage Json(HttpStatusCode status, string json) =>
-        new(status) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
 
     private static string Escape(string value) => JsonEncodedText.Encode(value).ToString();
 
@@ -385,7 +367,7 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
 
     private string NextCode() => (++_codeCounter).ToString(CultureInfo.InvariantCulture);
 
-    private HttpResponseMessage HandleOtp(string query, string body)
+    private Answer HandleOtp(string query, string body)
     {
         using JsonDocument document = JsonDocument.Parse(body);
         string email = document.RootElement.GetProperty("email").GetString()!;
@@ -422,7 +404,7 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
         return Json(HttpStatusCode.OK, "{}");
     }
 
-    private HttpResponseMessage HandleVerify(string body)
+    private Answer HandleVerify(string body)
     {
         using JsonDocument document = JsonDocument.Parse(body);
         string email = document.RootElement.GetProperty("email").GetString()!;
@@ -440,7 +422,7 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
         return Json(HttpStatusCode.OK, SessionJson(NewSession(user)));
     }
 
-    private HttpResponseMessage HandlePkce(string body)
+    private Answer HandlePkce(string body)
     {
         using JsonDocument document = JsonDocument.Parse(body);
         string authCode = document.RootElement.GetProperty("auth_code").GetString()!;
@@ -467,7 +449,7 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
         return Json(HttpStatusCode.OK, SessionJson(NewSession(user)));
     }
 
-    private HttpResponseMessage HandleRefresh(string body)
+    private Answer HandleRefresh(string body)
     {
         using JsonDocument document = JsonDocument.Parse(body);
         string token = document.RootElement.GetProperty("refresh_token").GetString()!;
@@ -501,12 +483,13 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
         return Json(HttpStatusCode.OK, SessionJson(IssueAccess(session, successor)));
     }
 
-    private HttpResponseMessage HandleLogout(string query, string? bearer)
+    private Answer HandleLogout(string query, string? bearer)
     {
         OnLogout?.Invoke();
-        if (!TryAuthorize(bearer, out AccessRecord? access, out HttpResponseMessage? refusal))
+        Answer? refusal = Authorize(bearer, out AccessRecord? access);
+        if (refusal is not null)
         {
-            return refusal!;
+            return refusal;
         }
 
         string scope = query.Split('&').FirstOrDefault(part => part.StartsWith("scope=", StringComparison.Ordinal))?["scope=".Length..] ?? "global";
@@ -522,43 +505,35 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
             }
         }
 
-        return new HttpResponseMessage(HttpStatusCode.NoContent);
+        return new Answer((int)HttpStatusCode.NoContent, null, null);
     }
 
-    private HttpResponseMessage HandleUser(string? bearer)
+    private Answer HandleUser(string? bearer)
     {
-        if (!TryAuthorize(bearer, out AccessRecord? access, out HttpResponseMessage? refusal))
+        Answer? refusal = Authorize(bearer, out AccessRecord? access);
+        if (refusal is not null)
         {
-            return refusal!;
+            return refusal;
         }
 
         FakeUser user = _users.Values.First(u => string.Equals(u.Id, _sessions[access!.SessionId].UserId, StringComparison.Ordinal));
         return Json(HttpStatusCode.OK, $$"""{"id":"{{user.Id}}","email":"{{Escape(user.Email)}}","aud":"authenticated"}""");
     }
 
-    private bool TryAuthorize(string? bearer, out AccessRecord? access, out HttpResponseMessage? refusal)
+    private Answer? Authorize(string? bearer, out AccessRecord? access)
     {
         access = null;
-        refusal = null;
         if (bearer is null || string.Equals(bearer, PublishableKey, StringComparison.Ordinal) || !_accessTokens.TryGetValue(bearer, out access))
         {
-            refusal = Error(401, "bad_jwt", null);
-            return false;
+            return Error(401, "bad_jwt", null);
         }
 
         if (_time.GetUtcNow() >= access.ExpiresAt)
         {
-            refusal = Error(401, "bad_jwt", null);
-            return false;
+            return Error(401, "bad_jwt", null);
         }
 
-        if (_sessions[access.SessionId].Revoked)
-        {
-            refusal = Error(403, "session_not_found", null);
-            return false;
-        }
-
-        return true;
+        return _sessions[access.SessionId].Revoked ? Error(403, "session_not_found", null) : null;
     }
 
     private SessionRecord NewSession(FakeUser user)
@@ -646,6 +621,8 @@ internal sealed class FakeGoTrueHandler : HttpMessageHandler
     private sealed record FlowRecord(string Email, string Challenge, DateTimeOffset ExpiresAt);
 
     private sealed record Scripted(int Status, string? ErrorCode, int? RetryAfterSeconds, bool Transport, bool LostResponse = false);
+
+    private sealed record Answer(int Status, string? Json, int? RetryAfterSeconds);
 
     private sealed record IssuedTokens(SessionRecord Session, string Access, string Refresh, int ExpiresIn, DateTimeOffset ExpiresAt);
 }

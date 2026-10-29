@@ -81,7 +81,7 @@ public sealed partial class LogHygieneTests
         harness.Handler.ScriptError("token:refresh", 500, null, times: 2);
         harness.Time.Advance(TimeSpan.FromMinutes(50));
         Task<AuthResult<Autonogrammer.Harness.Secrets.SecretString>> pending = harness.Manager.GetAccessTokenAsync(Token).AsTask();
-        await harness.Time.AdvanceUntilAsync(pending, TimeSpan.FromSeconds(1)).ConfigureAwait(true);
+        await harness.Time.AdvanceUntilAsync(() => pending.IsCompleted, TimeSpan.FromSeconds(1)).ConfigureAwait(true);
         harness.Handler.ScriptError("logout", 503, null);
         _ = await harness.Manager.SignOutAsync(SignOutScope.Local, Token).ConfigureAwait(true);
     }

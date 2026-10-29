@@ -732,9 +732,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
         {
             secret = await _store.GetAsync(SecretName, cancellationToken).ConfigureAwait(false);
         }
-#pragma warning disable CA1031 // A failing store must never break startup or a refresh; the caller treats it as nothing stored.
-        catch (Exception exception) when (exception is not OperationCanceledException)
-#pragma warning restore CA1031
+        catch (SecretStoreException exception)
         {
             LogStoreFailure("read", exception);
             return (null, false);
@@ -771,9 +769,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
             _knownStored = stored.RefreshToken;
             return true;
         }
-#pragma warning disable CA1031 // A failing store keeps the session in memory and raises a notice; it never signs the person out.
-        catch (Exception exception) when (exception is not OperationCanceledException)
-#pragma warning restore CA1031
+        catch (SecretStoreException exception)
         {
             LogStoreFailure("write", exception);
             return false;
@@ -787,9 +783,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
             _ = await _store.RemoveAsync(SecretName, cancellationToken).ConfigureAwait(false);
             _knownStored = null;
         }
-#pragma warning disable CA1031 // Clearing is best effort: the local state is already gone.
-        catch (Exception exception) when (exception is not OperationCanceledException)
-#pragma warning restore CA1031
+        catch (SecretStoreException exception)
         {
             LogStoreFailure("remove", exception);
         }

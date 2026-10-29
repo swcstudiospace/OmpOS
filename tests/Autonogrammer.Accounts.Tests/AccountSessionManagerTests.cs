@@ -194,7 +194,7 @@ public sealed class AccountSessionManagerTests
         harness.Handler.ScriptLostResponse("token:refresh");
 
         Task<AuthResult<SecretString>> pending = harness.Manager.GetAccessTokenAsync(Token).AsTask();
-        await harness.Time.AdvanceUntilAsync(pending, TimeSpan.FromMilliseconds(500)).ConfigureAwait(true);
+        await harness.Time.AdvanceUntilAsync(() => pending.IsCompleted, TimeSpan.FromMilliseconds(500)).ConfigureAwait(true);
 
         (await pending.ConfigureAwait(true)).IsSuccess.ShouldBeTrue();
         harness.Handler.Count("token:refresh").ShouldBe(2);
@@ -211,7 +211,7 @@ public sealed class AccountSessionManagerTests
         harness.Handler.ScriptTransportFailure("token:refresh", times: 1000);
 
         Task<AuthResult<SecretString>> first = harness.Manager.GetAccessTokenAsync(Token).AsTask();
-        await harness.Time.AdvanceUntilAsync(first, TimeSpan.FromSeconds(1)).ConfigureAwait(true);
+        await harness.Time.AdvanceUntilAsync(() => first.IsCompleted, TimeSpan.FromSeconds(1)).ConfigureAwait(true);
         harness.Manager.State.Connectivity.ShouldBe(AccountConnectivity.Offline);
         for (int i = 0; i < 40; i++)
         {
