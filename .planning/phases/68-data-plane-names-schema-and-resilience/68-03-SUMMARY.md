@@ -2,7 +2,7 @@
 phase: 68-data-plane-names-schema-and-resilience
 plan: 03
 requirements: [AG-68-3, AG-68-4, AG-68-5, AG-68-6, AG-68-14]
-status: code complete; final full-project rerun of Sessions.Postgres.Tests pending (see Verification)
+status: complete
 ---
 
 # 68-03 Summary: Postgres data plane (runner, M0001-M0009, roles, erasure, resilience, EnsureCreated gone)
@@ -22,7 +22,7 @@ The one-hunk edit of `JwtTestHost.PostgresConnectionString()` (call to `TestData
 
 - `Sessions.Tests` (in-memory contract incl. the new list/close tests): 122 passed, 0 failed.
 - `Sessions.Postgres.Tests` against the throwaway container, run 1: 94 total, 92 passed, 2 failed: `Update_IsAtomicAcrossStores` (40 concurrent calls exceed the interactive bulkhead of 16 by design, DataPlaneTimeoutException BulkheadFull) and a `DROP SCHEMA` deadlock in test cleanup. Run 2 used a stale binary (the combined msbuild step did not rebuild that project because of analyzer error MA0006 in my cleanup code): 89/94, the other failures were the same cleanup deadlock (SQLSTATE 40P01 against the TimescaleDB retention jobs the migrations start).
-- Fixes (committed): test cleanup deletes the schema's TimescaleDB jobs and retries the drop on 40P01; the atomic-update test builds its stores with a wider bulkhead; MA0006 fixed. The project builds (`Build succeeded`, 0 warnings); the rerun of the whole project is queued as job bg_1310 and had NOT reported when this summary was written. Not claimed as passed.
+- Fixes (committed): test cleanup deletes the schema's TimescaleDB jobs and retries the drop on 40P01; the atomic-update test builds its stores with a wider bulkhead; MA0006 fixed. Run 3 (rebuilt with the fixes): 94 total, 94 passed, 0 failed, 0 skipped (6m 32s).
 - All new classes passed in run 1: `MigrationRunnerTests`, `PostgresRoleTests` (bootstrap.sql applied by psql in the container, twice, plus after the migrations), `PostgresAccountErasureTests`, `PostgresTwoProcessFeedTests` (two OS processes), `PostgresResilienceTests`, `PostgresSessionRepositoryContractTests`.
 - `Api.IntegrationTests` `ApiAuthStartupTests`, `SessionStoreProductionTests`, `PostgresRoutedRunTests` (container): 8 passed, 0 failed.
 - Builds: Api (regenerates `docs/api/openapi.json`) and `Api.IntegrationTests` with `-warnaserror` succeeded on the last attempt (an earlier CA2000 in `JwtTestHost.NewEcKey` came from commit 23c7c2b2, not mine; lead-67a told).
