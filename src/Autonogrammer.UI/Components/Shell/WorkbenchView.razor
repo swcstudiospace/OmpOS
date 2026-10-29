@@ -1,10 +1,12 @@
 @namespace Autonogrammer.UI.Components.Shell
+@using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.JSInterop
 @using Autonogrammer.Contracts.Catalog
 @using Autonogrammer.Presentation.AgentPanel
 @using Autonogrammer.Presentation.Changes
 @using Autonogrammer.Presentation.Kanban
 @using Autonogrammer.Presentation.Settings
+@using Autonogrammer.UI.Components.About
 @using Autonogrammer.UI.Components.Kanban
 @using Autonogrammer.UI.Components.Rail
 @using Autonogrammer.UI.Components.Settings
@@ -13,79 +15,99 @@
 @inherits ObservableComponent
 @implements IAsyncDisposable
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 <AppShell SkipLinkHref="@(ShowsThread ? "#autonogrammer-conversation" : "#main")"
           SkipLinkText="@(ShowsThread ? "Skip to conversation" : "Skip to main content")"
           WorkspaceLabel="@WorkspaceLabel"
           Version="@Version">
     <TopBarTabs>
-        <ViewTabs @ref="_tabs" Selected="@_view" SelectedChanged="SelectView" />
+        <ViewTabs @ref="_tabs" Selected="@TabSelection" SelectedChanged="SelectView" />
     </TopBarTabs>
     <Rail>
-        <AgentRail Panel="Panel" OnOpened="OnOpenedAsync" OnNewCompleted="FocusThreadAsync" OnNewTerminalCompleted="FocusThreadAsync" OnOpenSettings="OpenSettings" />
+        <AgentRail Panel="Panel" OnOpened="OnOpenedAsync" OnNewCompleted="OnNewCompletedAsync" OnNewTerminalCompleted="OnNewCompletedAsync" OnOpenSettings="OpenSettings" />
     </Rail>
     <ChildContent>
+        <ViewTitle Text="@DocumentTitle" />
         @if (IsDemo)
         {
             <DemoBanner />
         }
 
-        <div class="autonogrammer-view-panel" id="@ViewTabs.PanelId" role="tabpanel" aria-labelledby="@(IsAgentsView ? ViewTabs.AgentsTabId : ViewTabs.KanbanTabId)">
-            @if (!IsAgentsView)
-            {
-                <KanbanView Board="Board" OnOpenSession="OpenSessionFromBoardAsync" />
-            }
-            else if (Panel.State == PanelState.Loading)
-            {
-                <div class="autonogrammer-panel-state" data-state="loading" role="status">
-                    <span class="autonogrammer-state-mark" aria-hidden="true"></span>
-                    <h2 class="autonogrammer-panel-state-heading">@AgentPanelCopy.PanelLoadingHeading</h2>
-                    <p>@AgentPanelCopy.PanelLoadingBody</p>
-                </div>
-            }
-            else if (Panel.State == PanelState.Error)
-            {
-                <div class="autonogrammer-panel-state" data-state="error">
-                    <span class="autonogrammer-state-mark" aria-hidden="true"></span>
-                    @if (Panel.BannerText is { } banner)
+        @if (IsAbout)
+        {
+            <div class="autonogrammer-view-panel" id="@ViewTabs.PanelId">
+                <AboutView Source="Source" />
+            </div>
+        }
+        else
+        {
+            <div class="autonogrammer-view-panel" id="@ViewTabs.PanelId" role="tabpanel" aria-labelledby="@(IsAgentsView ? ViewTabs.AgentsTabId : ViewTabs.KanbanTabId)">
+                @if (_sessionMissing)
+                {
+                    <NotFoundView Heading="@SessionNotFoundHeading" Body="@SessionNotFoundBody" LinkText="Go to Agents" Href="/" />
+                }
+                else
+                {
+                    <h1 class="autonogrammer-sr-only" tabindex="-1">@(IsAgentsView ? AgentsLabel : KanbanLabel)</h1>
+                    @if (!IsAgentsView)
                     {
-                        <p class="autonogrammer-error" role="alert">@banner</p>
+                        <KanbanView Board="Board" OnOpenSession="OpenSessionFromBoardAsync" />
+                    }
+                    else if (Panel.State == PanelState.Loading || IsResolvingSession)
+                    {
+                        <div class="autonogrammer-panel-state" data-state="loading" role="status">
+                            <span class="autonogrammer-state-mark" aria-hidden="true"></span>
+                            <h2 class="autonogrammer-panel-state-heading">@AgentPanelCopy.PanelLoadingHeading</h2>
+                            <p>@AgentPanelCopy.PanelLoadingBody</p>
+                        </div>
+                    }
+                    else if (Panel.State == PanelState.Error)
+                    {
+                        <div class="autonogrammer-panel-state" data-state="error">
+                            <span class="autonogrammer-state-mark" aria-hidden="true"></span>
+                            @if (Panel.BannerText is { } banner)
+                            {
+                                <p class="autonogrammer-error" role="alert">@banner</p>
+                            }
+
+                            <button type="button" class="autonogrammer-btn" aria-label="@AgentPanelCopy.RetryLoadingName" @onclick="() => Panel.RetryLoadingCommand.ExecuteAsync(null)">@AgentPanelCopy.RetryLoading</button>
+                        </div>
+                    }
+                    else if (Panel.SessionCount == 0)
+                    {
+                        <div class="autonogrammer-panel-state" data-state="empty">
+                            <span class="autonogrammer-state-mark" aria-hidden="true"></span>
+                            <h2 class="autonogrammer-panel-state-heading">@AgentPanelCopy.EmptyThreadHeading</h2>
+                            <p>@AgentPanelCopy.EmptyThreadBody</p>
+                            <button type="button" class="autonogrammer-btn autonogrammer-btn--primary" @onclick="() => Panel.NewSessionCommand.ExecuteAsync(null)">@AgentPanelCopy.StartFirstAgent</button>
+                        </div>
+                    }
+                    else if (Panel.Selected is not { } selected)
+                    {
+                        <div class="autonogrammer-panel-state" data-state="no-selection">
+                            <span class="autonogrammer-state-mark" aria-hidden="true"></span>
+                            <h2 class="autonogrammer-panel-state-heading">Select an agent</h2>
+                            <p>Pick an agent in the list, or start a new one.</p>
+                        </div>
+                    }
+                    else if (selected.Row.IsTerminal)
+                    {
+                        <TerminalView @key="selected.Id" SessionId="@selected.Id" />
+                    }
+                    else
+                    {
+                        <ThreadView @key="selected.Id" Session="selected" Changes="ChangesFactory?.Invoke(selected)" WorkspaceLabel="@ThreadWorkspaceLabel(selected)" OnRetry="RetryOf(selected)" />
                     }
 
-                    <button type="button" class="autonogrammer-btn" aria-label="@AgentPanelCopy.RetryLoadingName" @onclick="() => Panel.RetryLoadingCommand.ExecuteAsync(null)">@AgentPanelCopy.RetryLoading</button>
-                </div>
-            }
-            else if (Panel.SessionCount == 0)
-            {
-                <div class="autonogrammer-panel-state" data-state="empty">
-                    <span class="autonogrammer-state-mark" aria-hidden="true"></span>
-                    <h2 class="autonogrammer-panel-state-heading">@AgentPanelCopy.EmptyThreadHeading</h2>
-                    <p>@AgentPanelCopy.EmptyThreadBody</p>
-                    <button type="button" class="autonogrammer-btn autonogrammer-btn--primary" @onclick="() => Panel.NewSessionCommand.ExecuteAsync(null)">@AgentPanelCopy.StartFirstAgent</button>
-                </div>
-            }
-            else if (Panel.Selected is not { } selected)
-            {
-                <div class="autonogrammer-panel-state" data-state="no-selection">
-                    <span class="autonogrammer-state-mark" aria-hidden="true"></span>
-                    <h2 class="autonogrammer-panel-state-heading">Select an agent</h2>
-                    <p>Pick an agent in the list, or start a new one.</p>
-                </div>
-            }
-            else if (selected.Row.IsTerminal)
-            {
-                <TerminalView @key="selected.Id" SessionId="@selected.Id" />
-            }
-            else
-            {
-                <ThreadView @key="selected.Id" Session="selected" Changes="ChangesFactory?.Invoke(selected)" WorkspaceLabel="@ThreadWorkspaceLabel(selected)" OnRetry="RetryOf(selected)" />
-            }
+                    @if (Panel.ActionError is { } actionError && Panel.State == PanelState.Ready)
+                    {
+                        <p class="autonogrammer-error autonogrammer-action-error" role="alert">@actionError</p>
+                    }
+                }
+            </div>
+        }
 
-            @if (Panel.ActionError is { } actionError && Panel.State == PanelState.Ready)
-            {
-                <p class="autonogrammer-error autonogrammer-action-error" role="alert">@actionError</p>
-            }
-        </div>
-        <SettingsDialog Settings="Settings" IsOpen="_settingsOpen" IsOpenChanged="OnSettingsOpenChanged" />
+        <SettingsDialog Settings="Settings" IsOpen="@(_route.Kind == WorkbenchViewKind.Settings)" IsOpenChanged="OnSettingsOpenChanged" />
     </ChildContent>
 </AppShell>
 <ShortcutHost OnShortcut="OnShortcutAsync" />
@@ -93,11 +115,24 @@
 @code {
     private const string ModulePath = "./_content/Autonogrammer.UI/scripts/autonogrammer-keys.js";
 
+    // The same function Blazor's FocusOnNavigate calls. FocusOnNavigate only reacts to a change of page type, and the whole workbench is one page type,
+    // so a view change inside it focuses the new view's heading through the same call.
+    private const string FocusBySelectorInterop = "Blazor._internal.domWrapper.focusBySelector";
+    private const string HeadingSelector = "main h1";
+    private const string AgentsLabel = "Agents";
+    private const string KanbanLabel = "Kanban";
+    private const string SettingsLabel = "Settings";
+    private const string SessionNotFoundHeading = "Session not found";
+    private const string SessionNotFoundBody = "No agent has this address. It may have been closed, or the link may be wrong.";
+
     private ViewTabs? _tabs;
     private IJSObjectReference? _module;
-    private string _view = ViewTabs.AgentsView;
-    private bool _settingsOpen;
+    private WorkbenchRoute _route = WorkbenchRoute.Agents;
+    private WorkbenchRoute _background = WorkbenchRoute.Agents;
     private bool _resetScroll;
+    private bool _focusHeading;
+    private bool _resolvePending;
+    private bool _sessionMissing;
 
     /// <summary>Gets the Agent Panel view model: the rail rows, the selected agent and the commands.</summary>
     [Parameter, EditorRequired]
@@ -134,9 +169,23 @@
     [Parameter]
     public Func<string, Task>? RetryAsync { get; set; }
 
-    private bool IsAgentsView => string.Equals(_view, ViewTabs.AgentsView, StringComparison.Ordinal);
+    // The Settings dialog opens over the view that was showing; every other route is the view itself.
+    private WorkbenchRoute Shown => _route.Kind == WorkbenchViewKind.Settings ? _background : _route;
 
-    private bool ShowsThread => IsAgentsView && Panel.State == PanelState.Ready && Panel.Selected is { Row.IsTerminal: false };
+    private bool IsAbout => Shown.Kind == WorkbenchViewKind.About;
+
+    private bool IsAgentsView => Shown.Kind is WorkbenchViewKind.Agents or WorkbenchViewKind.Session;
+
+    private bool IsResolvingSession => _resolvePending && Shown.Kind == WorkbenchViewKind.Session && Panel.State != PanelState.Error;
+
+    private string TabSelection => Shown.Kind switch
+    {
+        WorkbenchViewKind.Kanban => ViewTabs.KanbanView,
+        WorkbenchViewKind.About => ViewTabs.NoView,
+        _ => ViewTabs.AgentsView,
+    };
+
+    private bool ShowsThread => IsAgentsView && !_sessionMissing && !IsResolvingSession && Panel.State == PanelState.Ready && Panel.Selected is { Row.IsTerminal: false };
 
     private string? Version => Source is { Version.Length: > 0 } source ? ShellInfo.FormatVersion(source.Version) : null;
 
@@ -147,11 +196,72 @@
             ? Workspace.Name
             : Workspace.Name + " · " + Workspace.FolderLabel;
 
+    // Most specific part first, the product last. The Settings dialog names its page; a session names itself once the catalogue knows it.
+    private string DocumentTitle
+    {
+        get
+        {
+            if (_route.Kind == WorkbenchViewKind.Settings)
+            {
+                return SettingsPageTitle(_route.SettingsPage) is { } page
+                    ? ViewTitles.Compose(page, SettingsLabel)
+                    : ViewTitles.Compose(SettingsLabel);
+            }
+
+            return _route.Kind switch
+            {
+                WorkbenchViewKind.Kanban => ViewTitles.Compose(KanbanLabel),
+                WorkbenchViewKind.About => ViewTitles.Compose("About"),
+                WorkbenchViewKind.Session when _sessionMissing => ViewTitles.Compose(SessionNotFoundHeading),
+                WorkbenchViewKind.Session when Panel.Selected is { } selected && string.Equals(selected.Id, _route.SessionId, StringComparison.Ordinal) =>
+                    ViewTitles.Compose(selected.Title, AgentsLabel),
+                WorkbenchViewKind.Session => ViewTitles.Compose("Session", AgentsLabel),
+                _ => ViewTitles.Compose(AgentsLabel),
+            };
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        _route = WorkbenchRoute.TryParse(CurrentPath(), out var initial) ? initial : WorkbenchRoute.Agents;
+        _background = _route.Kind == WorkbenchViewKind.Settings ? WorkbenchRoute.Agents : _route;
+        _resolvePending = Shown.Kind == WorkbenchViewKind.Session;
+        if (_route.Kind == WorkbenchViewKind.Settings)
+        {
+            SelectSettingsPage(_route.SettingsPage);
+        }
+
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
     /// <inheritdoc />
     protected override void OnParametersSet()
     {
         Observe(Panel);
         Observe(Panel.Catalog);
+    }
+
+    private string CurrentPath() => Navigation.ToBaseRelativePath(Navigation.Uri);
+
+    private string? SettingsPageTitle(string? page) =>
+        TryParseSection(page, out var section) ? Settings.Pages.FirstOrDefault(candidate => candidate.Section == section)?.Title : null;
+
+    private static bool TryParseSection(string? page, out SettingsSection section)
+    {
+        section = default;
+        return !string.IsNullOrWhiteSpace(page)
+            && !char.IsAsciiDigit(page.Trim()[0])
+            && Enum.TryParse(page.Trim(), ignoreCase: true, out section)
+            && Enum.IsDefined(section);
+    }
+
+    private void SelectSettingsPage(string? page)
+    {
+        if (TryParseSection(page, out var section) && Settings.Pages.Any(candidate => candidate.Section == section))
+        {
+            Settings.SelectSection(section);
+        }
     }
 
     private string? ThreadWorkspaceLabel(AgentSessionViewModel session)
@@ -178,40 +288,133 @@
     }
 
     private void SelectView(string view) =>
-        SetView(string.Equals(view, ViewTabs.KanbanView, StringComparison.Ordinal) ? ViewTabs.KanbanView : ViewTabs.AgentsView);
+        GoTo(string.Equals(view, ViewTabs.KanbanView, StringComparison.Ordinal) ? WorkbenchRoute.Kanban : WorkbenchRoute.Agents);
 
-    // The document is the scroll container, so a view switch starts at the top instead of keeping the other view's scroll offset.
-    private void SetView(string view)
+    // Applies the route to the shell at once, then moves the address to it. The address change comes back as a location change that finds the route already
+    // applied, so a tab, a shortcut or a link changes the view in one step whether or not the navigation manager reports back before the next render.
+    private void GoTo(WorkbenchRoute route)
     {
-        if (!string.Equals(_view, view, StringComparison.Ordinal))
+        ApplyRoute(route, external: false);
+        if (!WorkbenchRoute.TryParse(CurrentPath(), out var current) || current != route)
         {
-            _resetScroll = true;
+            Navigation.NavigateTo(route.RelativePath);
+        }
+    }
+
+    // external: the address changed without the shell asking (Back, Forward, a link, a deep link). The shell then focuses the new view's heading, and a
+    // session address waits for the catalogue so it can select that session or say it does not exist.
+    private void ApplyRoute(WorkbenchRoute route, bool external)
+    {
+        if (route == _route)
+        {
+            return;
         }
 
-        _view = view;
+        var before = Shown;
+        _route = route;
+        if (route.Kind != WorkbenchViewKind.Settings)
+        {
+            _background = route;
+        }
+
+        var after = Shown;
+        if (after != before)
+        {
+            _sessionMissing = false;
+            _resolvePending = external && after.Kind == WorkbenchViewKind.Session;
+            _resetScroll |= ViewFamily(before) != ViewFamily(after);
+            _focusHeading |= external;
+        }
+
+        if (route.Kind == WorkbenchViewKind.Settings)
+        {
+            SelectSettingsPage(route.SettingsPage);
+        }
+    }
+
+    // A session is the Agents view, so moving between sessions keeps the scroll of the thread.
+    private static WorkbenchViewKind ViewFamily(WorkbenchRoute route) =>
+        route.Kind == WorkbenchViewKind.Session ? WorkbenchViewKind.Agents : route.Kind;
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        if (!WorkbenchRoute.TryParse(Navigation.ToBaseRelativePath(e.Location), out var route))
+        {
+            // Another page of the app (the connect page): this view is about to be replaced and must not react.
+            return;
+        }
+
+        _ = InvokeAsync(() =>
+        {
+            ApplyRoute(route, external: true);
+            StateHasChanged();
+        });
+    }
+
+    // The deep link names a session the catalogue may not have loaded yet: once it has, the session is selected, or the view says there is none.
+    private void ResolveSessionRoute()
+    {
+        if (!_resolvePending || Shown.Kind != WorkbenchViewKind.Session || Panel.State is not (PanelState.Ready or PanelState.Empty))
+        {
+            return;
+        }
+
+        _resolvePending = false;
+        if (!Panel.SelectSession(Shown.SessionId))
+        {
+            _sessionMissing = true;
+            _focusHeading = true;
+        }
+
+        StateHasChanged();
     }
 
     /// <inheritdoc />
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_resetScroll)
+        ResolveSessionRoute();
+        if (_resetScroll)
         {
-            return;
+            _resetScroll = false;
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
+            await _module.InvokeVoidAsync("resetScroll").ConfigureAwait(true);
         }
 
-        _resetScroll = false;
-        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
-        await _module.InvokeVoidAsync("resetScroll").ConfigureAwait(true);
+        if (_focusHeading)
+        {
+            _focusHeading = false;
+            await JS.InvokeVoidAsync(FocusBySelectorInterop, HeadingSelector).ConfigureAwait(true);
+        }
     }
 
     private Task OpenSessionFromBoardAsync(string sessionId)
     {
         Panel.SelectSession(sessionId);
-        SetView(ViewTabs.AgentsView);
+        GoTo(WorkbenchRoute.ForSession(sessionId));
         return FocusThreadAsync();
     }
 
-    private Task OnOpenedAsync(string sessionId) => FocusThreadAsync();
+    // Choosing an agent in the rail puts its address in the bar, so the view can be shared and Back returns to the agent shown before. In the Kanban
+    // view the rail keeps its old behaviour: the choice is made and the board stays.
+    private async Task OnOpenedAsync(string sessionId)
+    {
+        if (IsAgentsView)
+        {
+            GoTo(WorkbenchRoute.ForSession(sessionId));
+        }
+
+        await FocusThreadAsync().ConfigureAwait(true);
+    }
+
+    private async Task OnNewCompletedAsync()
+    {
+        if (IsAgentsView && Panel.Selected is { } created)
+        {
+            GoTo(WorkbenchRoute.ForSession(created.Id));
+        }
+
+        await FocusThreadAsync().ConfigureAwait(true);
+    }
 
     private async Task FocusThreadAsync()
     {
@@ -220,22 +423,33 @@
         await _module.InvokeVoidAsync("focusId", ShowsThread ? "autonogrammer-conversation" : "main").ConfigureAwait(true);
     }
 
-    private void OpenSettings() => _settingsOpen = true;
+    private void OpenSettings() => GoTo(WorkbenchRoute.ForSettings(null));
 
-    private void OnSettingsOpenChanged(bool open) => _settingsOpen = open;
+    // Closing the dialog returns to the view it opened over, so Back and the address agree with what is on screen.
+    private void OnSettingsOpenChanged(bool open)
+    {
+        if (open)
+        {
+            GoTo(WorkbenchRoute.ForSettings(_route.SettingsPage));
+        }
+        else if (_route.Kind == WorkbenchViewKind.Settings)
+        {
+            GoTo(_background);
+        }
+    }
 
     private async Task OnShortcutAsync(string id)
     {
         switch (id)
         {
             case ShortcutHost.Agents:
-                SetView(ViewTabs.AgentsView);
+                GoTo(IsAgentsView ? Shown : WorkbenchRoute.Agents);
                 break;
             case ShortcutHost.Kanban:
-                SetView(ViewTabs.KanbanView);
+                GoTo(WorkbenchRoute.Kanban);
                 break;
             case ShortcutHost.Settings:
-                _settingsOpen = true;
+                GoTo(WorkbenchRoute.ForSettings(null));
                 return;
             default:
                 return;
@@ -246,6 +460,17 @@
         {
             await _tabs.FocusSelectedAsync().ConfigureAwait(true);
         }
+    }
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            Navigation.LocationChanged -= OnLocationChanged;
+        }
+
+        base.Dispose(disposing);
     }
 
     /// <inheritdoc />

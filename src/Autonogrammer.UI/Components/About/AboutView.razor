@@ -1,0 +1,64 @@
+@namespace Autonogrammer.UI.Components.About
+@using Autonogrammer.Contracts.Catalog
+@using Autonogrammer.Presentation.About
+@using Autonogrammer.Presentation.Commands.Handlers
+@using Autonogrammer.UI.Components.Shell
+<section class="autonogrammer-about">
+    <h1 class="autonogrammer-about-title" tabindex="-1">@AboutCopy.WindowTitle</h1>
+    <dl class="autonogrammer-about-facts">
+        <div class="autonogrammer-about-fact">
+            <dt>@AboutViewCopy.VersionLabel</dt>
+            <dd>@VersionText</dd>
+        </div>
+        @if (Source is { } source && !string.IsNullOrWhiteSpace(source.Revision))
+        {
+            <div class="autonogrammer-about-fact">
+                <dt>@AboutViewCopy.RevisionLabel</dt>
+                <dd>@source.Revision</dd>
+            </div>
+        }
+
+        <div class="autonogrammer-about-fact">
+            <dt>@AboutViewCopy.LicenceLabel</dt>
+            <dd>@LicenceId</dd>
+        </div>
+    </dl>
+    <h2 class="autonogrammer-about-heading">@AboutViewCopy.LicenceHeading</h2>
+    <p>@AboutViewCopy.LicenceNotice</p>
+    <p>
+        <a class="autonogrammer-about-link" href="@LicenceAddress" target="_blank" rel="noopener noreferrer">@AboutViewCopy.LicenceLinkLabel<span class="autonogrammer-sr-only"> @AboutViewCopy.NewTab</span></a>
+    </p>
+    @if (SourceAddress is { } sourceAddress)
+    {
+        <p>@AboutViewCopy.SourceOffer</p>
+        <p>
+            <a class="autonogrammer-about-link" href="@sourceAddress" target="_blank" rel="noopener noreferrer">@AboutViewCopy.SourceLinkLabel<span class="autonogrammer-sr-only"> @AboutViewCopy.NewTab</span></a>
+        </p>
+    }
+
+    <h2 class="autonogrammer-about-heading">@AboutViewCopy.AccessibilityHeading</h2>
+    <p>@AboutViewCopy.AccessibilityTarget</p>
+    <p>
+        @AboutViewCopy.AccessibilityReport
+        <a class="autonogrammer-about-link" href="@FeedbackSlashHandler.DefaultIssuesUrl" target="_blank" rel="noopener noreferrer">@AboutViewCopy.IssueLinkLabel<span class="autonogrammer-sr-only"> @AboutViewCopy.NewTab</span></a>
+    </p>
+    <p class="autonogrammer-about-copyright">@AboutCopy.Copyright</p>
+</section>
+
+@code {
+    /// <summary>Gets the licence and source facts the API reported (<c>GET /source</c>), or null while it has not answered or when not connected. The source link is hidden without them.</summary>
+    [Parameter]
+    public SourceInfo? Source { get; set; }
+
+    private string VersionText => Source is { Version.Length: > 0 } source ? ShellInfo.FormatVersion(source.Version) : ShellInfo.CurrentVersion;
+
+    private string LicenceId => Source is { Licence.Length: > 0 } source ? source.Licence : ShellInfo.LicenceId;
+
+    private string LicenceAddress => Source is { } source && IsWeb(source.LicenceUrl) ? source.LicenceUrl.AbsoluteUri : ShellInfo.LicenceUrl;
+
+    private string? SourceAddress => Source is { } source && IsWeb(source.SourceUrl) ? source.SourceUrl.AbsoluteUri : null;
+
+    // Only an absolute http or https address is drawn as a link; the API's answer is data, never a script address.
+    private static bool IsWeb(Uri address) =>
+        address.IsAbsoluteUri && (address.Scheme == Uri.UriSchemeHttps || address.Scheme == Uri.UriSchemeHttp);
+}
