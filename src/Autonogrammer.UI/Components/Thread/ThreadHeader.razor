@@ -63,9 +63,10 @@
         <p class="autonogrammer-panel-notice" data-kind="error" role="alert">@actionError</p>
     }
 
+    <div class="autonogrammer-live-region" role="status" aria-live="polite" aria-atomic="true" aria-label="@AgentPanelViewText.PanelNoticeName">@(Session.HasNotice ? Session.NoticeText : null)</div>
     @if (Session.HasNotice)
     {
-        <div class="autonogrammer-panel-notice" data-kind="@Session.NoticeKind.ToString().ToLowerInvariant()" role="status" aria-label="@AgentPanelViewText.PanelNoticeName">
+        <div class="autonogrammer-panel-notice" data-kind="@Session.NoticeKind.ToString().ToLowerInvariant()" role="group" aria-label="@AgentPanelViewText.PanelNoticeName">
             <p class="autonogrammer-panel-notice-text">@Session.NoticeText</p>
             @if (Session.NoticeKind is PanelNoticeKind.Degraded or PanelNoticeKind.NoPlugins or PanelNoticeKind.Resumed)
             {

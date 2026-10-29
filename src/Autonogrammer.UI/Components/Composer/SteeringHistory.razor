@@ -4,7 +4,7 @@
 <section class="autonogrammer-steering" aria-label="@AgentPanelViewText.SteeringEntriesName">
     @if (Steering.HeldText is { } held)
     {
-        <p class="autonogrammer-steering-held" role="status">@held</p>
+        <p class="autonogrammer-steering-held">@held</p>
     }
 
     @if (Steering.History.Count == 0)

@@ -22,6 +22,7 @@
                   rows="2"
                   data-slash-open="@(PaletteOpenWithSelection ? "true" : null)"
                   aria-autocomplete="@(HasPalette ? "list" : null)"
+                  aria-haspopup="@(HasPalette ? "listbox" : null)"
                   aria-controls="@(PaletteOpen ? PaletteId : null)"
                   aria-activedescendant="@ActiveOption"
                   @ref="_textarea"
@@ -68,10 +69,7 @@
         <p class="autonogrammer-composer-status" role="alert">@status</p>
     }
 
-    @if (SteerMode && _viewModel.Draft.Length > SteeringInputModel.MaxTextChars)
-    {
-        <p class="autonogrammer-composer-count" role="status">@CountText</p>
-    }
+    <p class="autonogrammer-composer-count autonogrammer-live" role="status" aria-live="polite" aria-atomic="true" data-empty="@(CountVisible ? null : "true")">@(CountVisible ? CountText : null)</p>
 
     <p class="autonogrammer-composer-hint" id="@HintId">@AgentPanelViewText.ComposerHint</p>
     @if (Steering is { } steering && (steering.IsRunActive || steering.History.Count > 0))
@@ -149,6 +147,8 @@
     private string SendNowName => LiveSteering ? AgentPanelCopy.ComposerSendNowName : AgentPanelViewText.SteerName;
 
     private string QueueName => LiveSteering ? AgentPanelCopy.QueueFollowUpName : AgentPanelViewText.QueueFollowUpName;
+
+    private bool CountVisible => SteerMode && _viewModel.Draft.Length > SteeringInputModel.MaxTextChars;
 
     private string CountText => string.Create(
         System.Globalization.CultureInfo.InvariantCulture,

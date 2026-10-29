@@ -33,10 +33,7 @@
         </div>
     }
 
-    @if (_result is { } result)
-    {
-        <p class="autonogrammer-review-result" role="status" data-outcome="@result.Outcome.ToString().ToLowerInvariant()" aria-label="@ChangeCopy.ResultName">@result.Message</p>
-    }
+    <p class="autonogrammer-review-result autonogrammer-live" role="status" aria-live="polite" aria-atomic="true" data-outcome="@(_result?.Outcome.ToString().ToLowerInvariant())" data-empty="@(_result is null ? "true" : null)" aria-label="@ChangeCopy.ResultName">@_result?.Message</p>
 </aside>
 
 @code {

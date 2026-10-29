@@ -10,9 +10,10 @@
                     aria-describedby="@SettingsField.DescribedBy(AutoRunId, true)"
                     @onclick="Toggle"></button>
         </SettingsField>
+        <span class="autonogrammer-live-region" role="status" aria-live="polite" aria-atomic="true">@(Page.IsAutoRunWarningVisible ? SettingsCopy.AutoRunWarning : null)</span>
         if (Page.IsAutoRunWarningVisible)
         {
-            <p class="autonogrammer-settings-warning" role="status">@SettingsCopy.AutoRunWarning</p>
+            <p class="autonogrammer-settings-warning">@SettingsCopy.AutoRunWarning</p>
         }
 
         <p class="autonogrammer-settings-help">@SettingsCopy.ApprovalPolicyNote</p>

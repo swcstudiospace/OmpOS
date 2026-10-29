@@ -20,10 +20,7 @@
                     OnCancel="CancelStop" />
     }
 
-    @if (_notice is { } notice)
-    {
-        <p class="autonogrammer-thread-notice" role="status">@notice</p>
-    }
+    <p class="autonogrammer-thread-notice autonogrammer-live" role="status" aria-live="polite" aria-atomic="true" data-empty="@(_notice is null ? "true" : null)">@_notice</p>
 
     <SessionView Tree="Transcript.Tree"
                  ShowStop="false"
@@ -34,10 +31,13 @@
                  OnRetry="RetryAsync"
                  OnJumpToLatest="JumpToLatest"
                  AutoScrollPausedChanged="OnAutoScrollPausedChanged" />
-    @if (Session.RunSummaryText is { } summary)
-    {
-        <p class="autonogrammer-run-summary" role="status"><strong>@AgentPanelCopy.AgentFinished</strong> @summary</p>
-    }
+    <p class="autonogrammer-run-summary autonogrammer-live" role="status" aria-live="polite" aria-atomic="true" data-empty="@(Session.RunSummaryText is null ? "true" : null)">
+        @if (Session.RunSummaryText is { } summary)
+        {
+            <strong>@AgentPanelCopy.AgentFinished</strong> @summary
+        }
+    </p>
+    <div class="autonogrammer-live-region" role="status" aria-live="polite" aria-atomic="true">@(Session.IsClosed ? AgentPanelCopy.ClosedHeading + " " + AgentPanelCopy.ClosedBody : null)</div>
 
     <ToolApprovalList Session="Session" Time="Time" />
     @if (Changes is not null)
@@ -47,7 +47,7 @@
 
     @if (Session.IsClosed)
     {
-        <div class="autonogrammer-closed-note" role="status">
+        <div class="autonogrammer-closed-note">
             <p><strong>@AgentPanelCopy.ClosedHeading</strong> @AgentPanelCopy.ClosedBody</p>
         </div>
     }

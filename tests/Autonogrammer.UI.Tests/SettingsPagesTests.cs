@@ -115,11 +115,14 @@ public sealed class SettingsPagesTests : UiTestContext
         cut.Find("label[for='" + toggle.Id + "']").TextContent.ShouldBe(SettingsCopy.AutoRunLabel);
         toggle.GetAttribute("aria-checked").ShouldBe("false");
         cut.FindAll(".autonogrammer-settings-warning").Count.ShouldBe(0);
+        cut.Find(".autonogrammer-live-region[role='status']").TextContent.ShouldBeEmpty();
 
         await toggle.ClickAsync().ConfigureAwait(true);
 
         cut.Find("button[role='switch']").GetAttribute("aria-checked").ShouldBe("true");
         cut.Find(".autonogrammer-settings-warning").TextContent.ShouldBe(SettingsCopy.AutoRunWarning);
+        cut.Find(".autonogrammer-settings-warning").GetAttribute("role").ShouldBeNull();
+        cut.Find(".autonogrammer-live-region[role='status']").TextContent.ShouldBe(SettingsCopy.AutoRunWarning);
         SaveLine(cut).TextContent.ShouldBe(SettingsCopy.UnsavedBadge);
 
         await cut.Find("button.autonogrammer-btn--primary").ClickAsync().ConfigureAwait(true);
