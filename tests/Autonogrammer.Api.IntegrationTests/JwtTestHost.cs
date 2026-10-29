@@ -104,7 +104,10 @@ internal static class JwtTestHost
     /// <returns>The key.</returns>
     public static ECDsaSecurityKey NewEcKey(string keyId)
     {
+        // The key and its ECDsa live for the test process: tokens signed with it are validated by hosts that outlive this call.
+#pragma warning disable CA2000
         return new ECDsaSecurityKey(ECDsa.Create(ECCurve.NamedCurves.nistP256)) { KeyId = keyId };
+#pragma warning restore CA2000
     }
 
     /// <summary>Returns a symmetric key under the test key id, for algorithm-confusion tests.</summary>
