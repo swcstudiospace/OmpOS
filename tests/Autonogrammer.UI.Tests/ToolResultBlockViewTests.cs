@@ -36,7 +36,7 @@ public sealed class ToolResultBlockViewTests : BunitContext
         cut.FindAll("img").ShouldBeEmpty();
     }
 
-    /// <summary>Output keeps its line breaks, and the scrollable output can be reached with the keyboard.</summary>
+    /// <summary>Output keeps its line breaks, and the scrollable output can be reached with the keyboard as a named group, so the focus stop says what it is.</summary>
     [Fact]
     public void MultilineOutputKeepsItsLinesAndIsFocusable()
     {
@@ -45,6 +45,8 @@ public sealed class ToolResultBlockViewTests : BunitContext
         var output = cut.Find("pre.autonogrammer-tool-output");
         output.TextContent.ShouldBe("a.txt\nb.txt");
         output.GetAttribute("tabindex").ShouldBe("0");
+        output.GetAttribute("role").ShouldBe("group");
+        output.GetAttribute("aria-label").ShouldBe("Output of ls");
     }
 
     private IRenderedComponent<UiBlockRenderer> RenderResult(ToolResultBlock block) =>

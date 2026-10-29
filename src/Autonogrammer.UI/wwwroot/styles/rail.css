@@ -120,12 +120,11 @@
   gap: var(--autonogrammer-gap-8);
 }
 
+/* The title wraps and is never cut: wider letter, word and line spacing then cannot hide any of it. */
 .autonogrammer-agent-title {
   min-width: 0;
-  overflow: hidden;
   font-weight: var(--autonogrammer-font-weight-medium);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .autonogrammer-agent-row.is-selected .autonogrammer-agent-title {

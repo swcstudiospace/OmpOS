@@ -397,6 +397,54 @@ export function isDeclaredScrollContainer(element) {
   return element.getAttribute("role") === "region" && element.getAttribute("tabindex") === "0" && accessibleName(element) !== "";
 }
 
+/** True when a computed style draws a border on at least one side: a width, a style other than none or hidden, and a colour that is not transparent. */
+export function hasVisibleBorder(style) {
+  for (const side of ["Top", "Right", "Bottom", "Left"]) {
+    const width = parseFloat(style[`border${side}Width`]) || 0;
+    const sideStyle = style[`border${side}Style`];
+    const colour = parseColor(style[`border${side}Color`]);
+    if (width > 0 && sideStyle !== "none" && sideStyle !== "hidden" && (!colour || colour.a > 0)) return true;
+  }
+  return false;
+}
+
+/**
+ * The boundary of a text field that has none of its own: the border of the card around it, within three levels, when that card holds this one field and the field
+ * fills most of its width, as the composer's card does around the prompt. A card that holds several fields, or a field that is a small part of it, is not the
+ * field's boundary. Only the nearest bordered ancestor is judged.
+ */
+export function fieldContainerHasBorder(field) {
+  const fieldRect = field.getBoundingClientRect();
+  let node = field.parentElement;
+  for (let depth = 0; node && node !== document.body && depth < 3; depth += 1, node = node.parentElement) {
+    if (!hasVisibleBorder(getComputedStyle(node))) continue;
+    const rect = node.getBoundingClientRect();
+    const fields = node.querySelectorAll("input:not([type=hidden]), textarea, select").length;
+    return fields === 1 && fieldRect.width >= rect.width * 0.6;
+  }
+  return false;
+}
+
+/**
+ * The focus ring an ancestor draws while it holds the focus, judged like an element's own ring: a field inside a card often leaves the ring to the card. It looks at
+ * most three levels up, stops at an ancestor that does not contain the focus, and gives null when none of them draws a visible ring.
+ */
+export function ancestorFocusRing(element, forced) {
+  let node = element.parentElement;
+  for (let depth = 0; node && node !== document.body && depth < 3; depth += 1, node = node.parentElement) {
+    if (!node.matches(":focus-within")) break;
+    const style = getComputedStyle(node);
+    const offset = parseFloat(style.outlineOffset) || 0;
+    const ring = describeFocusRing(
+      { outlineStyle: style.outlineStyle, outlineWidth: style.outlineWidth, outlineColor: style.outlineColor, boxShadow: style.boxShadow },
+      effectiveBackground(node, offset < 0),
+      forced,
+    );
+    if (ring.visible) return { ...ring, kind: `ancestor ${ring.kind}`, via: describeNode(node) };
+  }
+  return null;
+}
+
 /** Describes the focused element: identity, name, role, geometry, focus indicator and whether another element covers its centre. */
 export function probeStop() {
   const active = document.activeElement;
@@ -407,11 +455,12 @@ export function probeStop() {
   const style = getComputedStyle(active);
   const offset = parseFloat(style.outlineOffset) || 0;
   const background = effectiveBackground(active, offset < 0);
-  const ring = describeFocusRing(
+  let ring = describeFocusRing(
     { outlineStyle: style.outlineStyle, outlineWidth: style.outlineWidth, outlineColor: style.outlineColor, boxShadow: style.boxShadow },
     background,
     forced,
   );
+  if (!ring.visible) ring = ancestorFocusRing(active, forced) ?? ring;
   const rects = active.getClientRects();
   const rect = rects.length > 0 ? rects[0] : active.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
@@ -581,7 +630,7 @@ export function collectTextClipping() {
     const clipsX = style.overflowX === "hidden" || style.overflowX === "clip";
     const clipsY = style.overflowY === "hidden" || style.overflowY === "clip";
     if (!clipsX && !clipsY) continue;
-    if (style.display === "none" || !(element.textContent || "").trim()) continue;
+    if (style.display === "none" || !(element.textContent || "").trim() || isVisuallyHidden(element)) continue;
     if (!isExposed(element)) continue;
     const tooWide = clipsX && element.scrollWidth > element.clientWidth + 1;
     const tooTall = clipsY && element.scrollHeight > element.clientHeight + 1;
@@ -615,9 +664,15 @@ export function collectTextBoxes() {
     if (style.display === "contents") continue;
     const range = document.createRange();
     range.selectNodeContents(element);
-    const rect = element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.tagName === "SELECT" ? element.getBoundingClientRect() : range.getBoundingClientRect();
+    let rect = element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.tagName === "SELECT" ? element.getBoundingClientRect() : range.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) continue;
     if (isVisuallyHidden(element)) continue;
+    if (["hidden", "clip"].includes(style.overflowX) || ["hidden", "clip"].includes(style.overflowY)) {
+      // Text the element's own box clips is not drawn, so it cannot overlap anything; the clipping check reports it.
+      const own = element.getBoundingClientRect();
+      rect = { left: Math.max(rect.left, own.left), top: Math.max(rect.top, own.top), right: Math.min(rect.right, own.right), bottom: Math.min(rect.bottom, own.bottom) };
+      if (rect.right <= rect.left || rect.bottom <= rect.top) continue;
+    }
     let positioned = false;
     for (let node = element; node && node !== document.body; node = node.parentElement) {
       const position = getComputedStyle(node).position;
@@ -650,19 +705,14 @@ export function collectControlAffordances() {
     if (nativeTypes.includes(type)) continue;
     const isField = tag === "textarea" || tag === "select" || (tag === "input" && !["button", "submit", "reset", "image"].includes(type));
     const style = getComputedStyle(element);
-    let border = false;
-    for (const side of ["Top", "Right", "Bottom", "Left"]) {
-      const width = parseFloat(style[`border${side}Width`]) || 0;
-      const sideStyle = style[`border${side}Style`];
-      const colour = parseColor(style[`border${side}Color`]);
-      if (width > 0 && sideStyle !== "none" && sideStyle !== "hidden" && (!colour || colour.a > 0)) border = true;
-    }
+    const border = hasVisibleBorder(style);
     const text = normaliseSpace(element.innerText || element.getAttribute("value") || "");
     result.push({
       key: pathKey(element),
       description: describeNode(element),
       kind: isField ? "field" : "button",
       border,
+      containerBorder: isField && !border && fieldContainerHasBorder(element),
       hasText: text !== "",
       hasIcon: !!element.querySelector("svg, img"),
       outline: style.outlineStyle !== "none" && (parseFloat(style.outlineWidth) || 0) > 0,
@@ -718,6 +768,9 @@ const LIBRARY = [
   splitTopLevel,
   parseBoxShadow,
   describeFocusRing,
+  hasVisibleBorder,
+  fieldContainerHasBorder,
+  ancestorFocusRing,
   longestDuration,
   rectsOverlapArea,
   circleIntersectsRect,

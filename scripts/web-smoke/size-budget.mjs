@@ -78,14 +78,15 @@ export function htmlReferences(html) {
   return found;
 }
 
-/** Reads what a stylesheet pulls in: its @import files and the stylesheets and fonts its url() values name. */
+/** Reads what a stylesheet pulls in: its @import files and the stylesheets and fonts its url() values name. Comments are not code and name nothing. */
 export function cssReferences(css) {
   const found = [];
-  for (const match of css.matchAll(/@import\s+(?:url\(\s*)?["']?([^"')\s;]+)["']?/gi)) {
+  const code = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const match of code.matchAll(/@import\s+(?:url\(\s*)?["']?([^"')\s;]+)["']?/gi)) {
     found.push(match[1]);
   }
 
-  for (const match of css.matchAll(/url\(\s*["']?([^"')\s]+)["']?\s*\)/gi)) {
+  for (const match of code.matchAll(/url\(\s*["']?([^"')\s]+)["']?\s*\)/gi)) {
     const value = match[1].split("#")[0].split("?")[0];
     if (FONT.test(value) || STYLESHEET.test(value)) {
       found.push(match[1]);
@@ -237,7 +238,7 @@ function selfTest() {
     ["_content/Lib/scripts/unused.js", filler(5000)],
     ["_content/Lib/fonts/a.woff2", filler(800)],
     ["_content/Lib/fonts/b.woff2", filler(900)],
-    ["_content/Lib/styles/main.css", text("@import \"tokens.css\"; @import url('./base.css'); @font-face { src: url('../fonts/b.woff2') format('woff2'); } .x { background: url(../img/x.png); }")],
+    ["_content/Lib/styles/main.css", text("/* The @import urls are relative to this file; url(missing.woff2) in a comment is not a reference. */ @import \"tokens.css\"; @import url('./base.css'); @font-face { src: url('../fonts/b.woff2') format('woff2'); } .x { background: url(../img/x.png); }")],
     ["_content/Lib/styles/tokens.css", text(":root { --a: 1; }")],
     ["_content/Lib/styles/base.css", text("body { margin: 0; }")],
     ["_content/Lib/img/x.png", filler(7000)],

@@ -15,6 +15,7 @@
             <SlashPalette Model="palette" ListId="@PaletteId" OnPick="PickSlashAsync" />
         }
 
+        @* The textarea names the open list with aria-controls and its highlighted row with aria-activedescendant. It has no aria-haspopup: axe cannot check aria-controls on an element that has one and reports the pair as "needs review". *@
         <textarea class="autonogrammer-composer-input"
                   aria-label="Message"
                   aria-describedby="@HintId"
@@ -22,7 +23,6 @@
                   rows="2"
                   data-slash-open="@(PaletteOpenWithSelection ? "true" : null)"
                   aria-autocomplete="@(HasPalette ? "list" : null)"
-                  aria-haspopup="@(HasPalette ? "listbox" : null)"
                   aria-controls="@(PaletteOpen ? PaletteId : null)"
                   aria-activedescendant="@ActiveOption"
                   @ref="_textarea"

@@ -10,12 +10,12 @@
     {
         <div class="autonogrammer-file-edit-before">
             <p class="autonogrammer-file-edit-label">Before</p>
-            <pre class="autonogrammer-file-edit-text" tabindex="0">@Block.OldText</pre>
+            <pre class="autonogrammer-file-edit-text" tabindex="0" role="group" aria-label="Text of the file before the edit">@Block.OldText</pre>
         </div>
     }
     <div class="autonogrammer-file-edit-after">
         <p class="autonogrammer-file-edit-label">After</p>
-        <pre class="autonogrammer-file-edit-text" tabindex="0">@Block.NewText</pre>
+        <pre class="autonogrammer-file-edit-text" tabindex="0" role="group" aria-label="@(Block.OldText is null ? "Text of the new file" : "Text of the file after the edit")">@Block.NewText</pre>
     </div>
     @if (CanDiff)
     {

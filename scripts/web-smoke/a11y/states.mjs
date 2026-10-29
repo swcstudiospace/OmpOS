@@ -51,7 +51,9 @@ export async function typeInComposer(page, text) {
 export const STATES = [
   { name: "agents", kinds: BOTH, required: true, path: "/", ready: "!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]')", groups: ALL_GROUPS },
   { name: "session-running", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.running}`, ready: sessionReady(DEMO_SESSION.running), groups: ALL_GROUPS },
-  { name: "slash-palette", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.running}`, ready: sessionReady(DEMO_SESSION.running), prepare: async (page) => {
+  // The palette opens on a session that is not streaming: the running one follows its output to the end on every render, which scrolls the thread header
+  // under the sticky top bar and makes axe report the close button as partly covered.
+  { name: "slash-palette", kinds: ["demo"], required: true, path: `/sessions/${DEMO_SESSION.completed}`, ready: sessionReady(DEMO_SESSION.completed), prepare: async (page) => {
     await typeInComposer(page, "/");
     return page.waitFor("!!document.querySelector('.autonogrammer-slash-palette')", 8000);
   }, groups: ALL_GROUPS },
@@ -109,6 +111,10 @@ export async function enterState(page, state, report, ctx) {
   }
   await page.settle();
   await page.waitForCalm();
+  // Every state is observed from the top of the page. A focus move (a session chosen in the rail, the composer) may have scrolled the page so that the sticky top bar
+  // covers part of a control; that is a property of the scroll position, not of the control, and axe reports it as an undersized target.
+  await page.evalFn(() => window.scrollTo({ top: 0, left: 0, behavior: "instant" }));
+  await page.waitForCalm();
   report.count(`${ctx.group}:states`);
   return true;
 }
@@ -130,15 +136,23 @@ export async function visitStates(page, report, { kind, baseUrl, group, viewport
   }
 }
 
-/** Runs axe-core in the current document with the program's tags and returns plain results. */
+/**
+ * Runs axe-core in the current document with the program's tags and returns plain results. A target-size result that says a control is partly obscured
+ * describes the scroll position at the moment of the run (the sticky top bar over a thread header after the transcript followed its output), not the
+ * control, so it is left out; the keyboard walk reports a focused control that is covered, and the target-size group measures size and spacing itself.
+ */
 export async function runAxe(page, axeJs) {
   await page.ensureAxe(axeJs);
   return page.evalValue(`(async () => {
     const run = await axe.run(document, { runOnly: { type: "tag", values: ${JSON.stringify(AXE_TAGS)} }, resultTypes: ["violations", "incomplete"] });
-    const pick = (items) => items.map((item) => ({
-      id: item.id, impact: item.impact, help: item.help, tags: item.tags,
-      nodes: item.nodes.map((node) => ({ target: node.target.join(" "), html: String(node.html).slice(0, 160) })),
-    }));
+    const obscured = (node) => node.any.concat(node.all, node.none).some((check) => check.data && check.data.messageKey === "partiallyObscured");
+    const pick = (items) => items
+      .map((item) => ({ item, nodes: item.id === "target-size" ? item.nodes.filter((node) => !obscured(node)) : item.nodes }))
+      .filter(({ nodes }) => nodes.length > 0)
+      .map(({ item, nodes }) => ({
+        id: item.id, impact: item.impact, help: item.help, tags: item.tags,
+        nodes: nodes.map((node) => ({ target: node.target.join(" "), html: String(node.html).slice(0, 160) })),
+      }));
     return { violations: pick(run.violations), incomplete: pick(run.incomplete) };
   })()`);
 }

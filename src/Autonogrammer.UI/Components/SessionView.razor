@@ -5,7 +5,7 @@
 @using Microsoft.JSInterop
 @implements IAsyncDisposable
 @inject IJSRuntime JS
-<section class="autonogrammer-session" id="autonogrammer-conversation" aria-label="Session" tabindex="-1" data-state="@ViewState.ToString().ToLowerInvariant()">
+<section class="autonogrammer-session" id="autonogrammer-conversation" aria-label="Session" tabindex="-1" data-state="@ViewState.ToString().ToLowerInvariant()" @ref="_sectionRef">
     <div class="autonogrammer-announcement" aria-live="polite" aria-atomic="true">@_status</div>
     @if (ViewState == SessionViewState.LoadingHistory)
     {
@@ -56,7 +56,7 @@
         }
         @if (ShowJumpToLatest)
         {
-            <button type="button" class="autonogrammer-btn autonogrammer-icon-btn" aria-label="Jump to latest" @onclick="JumpToLatestAsync"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M6 13l6 6 6-6" /></svg></button>
+            <button type="button" class="autonogrammer-btn autonogrammer-icon-btn" aria-label="Jump to latest" @onclick="JumpToLatestAsync" @onfocus="OnJumpFocused" @onblur="OnJumpBlurred"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M6 13l6 6 6-6" /></svg></button>
         }
     }
 </section>
@@ -109,8 +109,10 @@
     private IJSObjectReference? _transcriptModule;
     private DotNetObjectReference<SessionView>? _self;
     private ElementReference _blocksRef;
+    private ElementReference _sectionRef;
     private int _observerToken;
     private bool _scrolledUp;
+    private bool _jumpFocused;
     private bool _focusFirstBlock;
     private string? _status;
 
@@ -127,7 +129,8 @@
     private int _hiddenTurns;
     private string[] _keys = [];
 
-    private bool ShowJumpToLatest => AutoScrollPaused || _scrolledUp;
+    // The control also stays while it has the focus: reaching it with Tab scrolls the view to the end, which would remove it from under the keyboard and drop the focus to the page.
+    private bool ShowJumpToLatest => AutoScrollPaused || _scrolledUp || _jumpFocused;
 
     /// <inheritdoc />
     protected override void OnParametersSet()
@@ -253,10 +256,17 @@
         await AutoScrollPausedChanged.InvokeAsync(scrolledUp);
     }
 
+    private void OnJumpFocused() => _jumpFocused = true;
+
+    private void OnJumpBlurred() => _jumpFocused = false;
+
+    // The control goes away once the view follows the output again; the focus moves to the transcript first, so a keyboard user keeps their place.
     private async Task JumpToLatestAsync()
     {
         _scrolledUp = false;
+        _jumpFocused = false;
         await OnJumpToLatest.InvokeAsync();
+        await _sectionRef.FocusAsync(preventScroll: true);
     }
 
     /// <inheritdoc />

@@ -197,17 +197,11 @@ input[type='radio'] {
 
 @media (max-width: 559.98px) {
   /* Text that an ellipsis would cut wraps instead; every cut title also carries a title attribute at wider widths. */
-  .autonogrammer-thread-title,
-  .autonogrammer-agent-title,
   .autonogrammer-conversation-title,
   .autonogrammer-list-row-title,
   .autonogrammer-change-path,
   .autonogrammer-pipeline-latest,
   .autonogrammer-chip-value,
-  .autonogrammer-slash-head,
-  .autonogrammer-slash-hint,
-  .autonogrammer-slash-description,
-  .autonogrammer-slash-reason,
   .autonogrammer-approval-arguments code {
     overflow: visible;
     text-overflow: clip;

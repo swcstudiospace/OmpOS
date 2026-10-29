@@ -173,7 +173,7 @@ public sealed class WorkbenchViewTests : UiTestContext
         await cut.FindAll("button.autonogrammer-agent-row")[0].ClickAsync().ConfigureAwait(true);
 
         await cut.WaitForAssertionAsync(() => cut.Find(".autonogrammer-thread h2.autonogrammer-thread-title").TextContent.ShouldBe("Alpha")).ConfigureAwait(true);
-        keys.VerifyInvoke("focusId").Arguments[0].ShouldBe("autonogrammer-conversation");
+        await cut.WaitForAssertionAsync(() => keys.VerifyInvoke("focusId").Arguments[0].ShouldBe("autonogrammer-conversation")).ConfigureAwait(true);
     }
 
     /// <summary>With no agent the page offers to start the first one, and starting it opens its thread.</summary>

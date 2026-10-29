@@ -131,6 +131,7 @@
     private WorkbenchRoute _background = WorkbenchRoute.Agents;
     private bool _resetScroll;
     private bool _focusHeading;
+    private bool _focusThread;
     private bool _resolvePending;
     private bool _sessionMissing;
 
@@ -168,6 +169,10 @@
     /// <summary>Gets the host's retry of a session's last prompt, or null when the host has none: the thread then sends the last user message again itself.</summary>
     [Parameter]
     public Func<string, Task>? RetryAsync { get; set; }
+
+    /// <summary>Gets the announcer that says the title of the view after a navigation; the workbench arms it before it changes the view itself.</summary>
+    [CascadingParameter]
+    public RouteAnnouncer? Announcer { get; set; }
 
     // The Settings dialog opens over the view that was showing; every other route is the view itself.
     private WorkbenchRoute Shown => _route.Kind == WorkbenchViewKind.Settings ? _background : _route;
@@ -291,11 +296,18 @@
         GoTo(string.Equals(view, ViewTabs.KanbanView, StringComparison.Ordinal) ? WorkbenchRoute.Kanban : WorkbenchRoute.Agents);
 
     // Applies the route to the shell at once, then moves the address to it. The address change comes back as a location change that finds the route already
-    // applied, so a tab, a shortcut or a link changes the view in one step whether or not the navigation manager reports back before the next render.
+    // applied, so a tab, a shortcut or a link changes the view in one step whether or not the navigation manager reports back before the next render. The
+    // announcer is armed first for the same reason: the report may come after the render that shows the new title, and that title is what it announces.
     private void GoTo(WorkbenchRoute route)
     {
+        var navigates = !WorkbenchRoute.TryParse(CurrentPath(), out var current) || current != route;
+        if (navigates)
+        {
+            Announcer?.Arm(route.RelativePath);
+        }
+
         ApplyRoute(route, external: false);
-        if (!WorkbenchRoute.TryParse(CurrentPath(), out var current) || current != route)
+        if (navigates)
         {
             Navigation.NavigateTo(route.RelativePath);
         }
@@ -385,42 +397,52 @@
             _focusHeading = false;
             await JS.InvokeVoidAsync(FocusBySelectorInterop, HeadingSelector).ConfigureAwait(true);
         }
+
+        if (_focusThread)
+        {
+            // After the render that shows the chosen thread. A call made before it reaches the thread that is about to be replaced, and the focus falls to the page.
+            _focusThread = false;
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
+            await _module.InvokeVoidAsync("focusId", ShowsThread ? "autonogrammer-conversation" : "main").ConfigureAwait(true);
+        }
     }
 
     private Task OpenSessionFromBoardAsync(string sessionId)
     {
         Panel.SelectSession(sessionId);
         GoTo(WorkbenchRoute.ForSession(sessionId));
-        return FocusThreadAsync();
+        RequestThreadFocus();
+        return Task.CompletedTask;
     }
 
     // Choosing an agent in the rail puts its address in the bar, so the view can be shared and Back returns to the agent shown before. In the Kanban
     // view the rail keeps its old behaviour: the choice is made and the board stays.
-    private async Task OnOpenedAsync(string sessionId)
+    private Task OnOpenedAsync(string sessionId)
     {
         if (IsAgentsView)
         {
             GoTo(WorkbenchRoute.ForSession(sessionId));
         }
 
-        await FocusThreadAsync().ConfigureAwait(true);
+        RequestThreadFocus();
+        return Task.CompletedTask;
     }
 
-    private async Task OnNewCompletedAsync()
+    private Task OnNewCompletedAsync()
     {
         if (IsAgentsView && Panel.Selected is { } created)
         {
             GoTo(WorkbenchRoute.ForSession(created.Id));
         }
 
-        await FocusThreadAsync().ConfigureAwait(true);
+        RequestThreadFocus();
+        return Task.CompletedTask;
     }
 
-    private async Task FocusThreadAsync()
+    private void RequestThreadFocus()
     {
-        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", ModulePath).ConfigureAwait(true);
-        await InvokeAsync(StateHasChanged).ConfigureAwait(true);
-        await _module.InvokeVoidAsync("focusId", ShowsThread ? "autonogrammer-conversation" : "main").ConfigureAwait(true);
+        _focusThread = true;
+        StateHasChanged();
     }
 
     private void OpenSettings() => GoTo(WorkbenchRoute.ForSettings(null));

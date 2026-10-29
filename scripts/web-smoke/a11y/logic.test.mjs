@@ -156,6 +156,16 @@ test("analyzeWalk: loops, a missing end, a short walk, unreachable landmarks and
   assert.match(differs[0].message, /step 1/);
 });
 
+test("analyzeWalk: a stop met in one direction only is a warning; the order of the shared stops still has to match", () => {
+  const backward = [forward[3], forward[2], forward[1], forward[0]];
+  const dynamicForward = [forward[0], forward[1], stop("jump", { landmark: "main" }), forward[2], forward[3]];
+  const onlyForward = analyzeWalk(dynamicForward, backward, walkCtx);
+  assert.deepEqual(ids(onlyForward), ["backward-path-set-differs"]);
+  assert.equal(onlyForward[0].severity, "warning");
+  const skewed = [forward[3], forward[1], forward[2], forward[0]];
+  assert.deepEqual(ids(analyzeWalk(dynamicForward, skewed, walkCtx)), ["backward-path-differs", "backward-path-set-differs"]);
+});
+
 test("analyzeDialog: each way the dialog can fail", () => {
   const ok = { opened: true, focusInside: true, stayedInside: true, leaks: [], escapeClosed: true, returnedToOpener: true };
   const ctx = { state: "settings dialog", viewport: "1440x900" };
@@ -244,6 +254,7 @@ test("analyzeAffordances: the emulation must be on; fields need a border; button
   assert.deepEqual(ids(analyzeAffordances(data([], { forcedColors: false }), "forced-colors", ctx)), ["emulation-not-applied"]);
   assert.deepEqual(ids(analyzeAffordances(data([], { contrastMore: true, forcedColors: false }), "prefers-contrast", ctx)), []);
   assert.deepEqual(ids(analyzeAffordances(data([ctl("field", { border: false })]), "forced-colors", ctx)), ["field-without-boundary"]);
+  assert.deepEqual(analyzeAffordances(data([ctl("field", { border: false, containerBorder: true })]), "forced-colors", ctx), [], "the card around a field is its boundary");
   assert.deepEqual(analyzeAffordances(data([ctl("button", { border: false })]), "forced-colors", ctx), [], "a button with a text label is perceivable");
   assert.deepEqual(ids(analyzeAffordances(data([ctl("button", { border: false, hasText: false, hasIcon: true })]), "forced-colors", ctx)), ["icon-button-without-boundary"]);
   assert.deepEqual(ids(analyzeAffordances(data([ctl("button", { border: false, hasText: false })]), "forced-colors", ctx)), ["button-without-affordance"]);

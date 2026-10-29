@@ -35,6 +35,34 @@ public sealed class RouteAnnouncerTests : UiTestContext
         announcer.Text.ShouldBe("Kanban - Autonogrammer", "one navigation is announced once");
     }
 
+    /// <summary>The app arms the announcer before it changes the view: a title that renders before the browser reports the address is announced, and that address does not arm the announcer again.</summary>
+    [Fact]
+    public void ATitleThatRendersBeforeTheAddressIsReportedIsAnnounced()
+    {
+        using var announcer = new RouteAnnouncer(Navigation);
+
+        announcer.Arm("kanban");
+        announcer.Report(ViewTitles.Compose("Kanban"));
+        Navigation.NavigateTo("kanban");
+        announcer.Report(ViewTitles.Compose("Later", "Kanban"));
+
+        announcer.Text.ShouldBe("Kanban - Autonogrammer", "the address of a navigation the app made is not a second navigation");
+    }
+
+    /// <summary>An address the app did not arm for (Back, Forward, a link) arms the announcer even after the app armed it for another one.</summary>
+    [Fact]
+    public void AnotherAddressStillArmsTheAnnouncer()
+    {
+        using var announcer = new RouteAnnouncer(Navigation);
+        announcer.Arm("kanban");
+        announcer.Report(ViewTitles.Compose("Kanban"));
+
+        Navigation.NavigateTo("about");
+        announcer.Report(ViewTitles.Compose("About"));
+
+        announcer.Text.ShouldBe("About - Autonogrammer");
+    }
+
     /// <summary>The region is a visually hidden polite status that is present before anything is announced, so a screen reader registers it.</summary>
     [Fact]
     public void TheRegionIsAVisuallyHiddenPoliteStatus()

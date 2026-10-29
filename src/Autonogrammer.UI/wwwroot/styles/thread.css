@@ -16,18 +16,17 @@
   min-width: 0;
 }
 
-/* The conversation title is the page title: the display face, cut with an ellipsis when it does not fit beside the status and the close control. */
+/* The conversation title is the page title: the display face, wrapping beside the status and the close control. It is never cut, so wider letter, word and
+   line spacing cannot hide any of it. */
 .autonogrammer-thread-title {
   flex: 1 1 10rem;
   min-width: 0;
   margin: 0;
-  overflow: hidden;
   font-family: var(--autonogrammer-font-display);
   font-size: var(--autonogrammer-font-size-display-sm);
   font-weight: var(--autonogrammer-font-weight-semibold);
   line-height: var(--autonogrammer-line-height-display-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .autonogrammer-thread-context .autonogrammer-steering-badge {

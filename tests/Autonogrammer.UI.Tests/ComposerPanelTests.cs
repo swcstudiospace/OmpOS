@@ -71,7 +71,7 @@ public sealed class ComposerPanelTests : UiTestContext
 
     // Chips -----------------------------------------------------------------------------------------------------------------------------------------------
 
-    /// <summary>The mode chip names itself by what it changes and its value, and opens a listbox that marks the current choice.</summary>
+    /// <summary>The mode chip names itself by what it changes and its value, and opens a listbox that marks the current choice. It says it has a popup and whether it is open; it names no aria-controls, which axe cannot validate next to aria-haspopup.</summary>
     [Fact]
     public async Task TheModeChipOpensAListboxWithTheCurrentChoiceSelected()
     {
@@ -88,7 +88,7 @@ public sealed class ComposerPanelTests : UiTestContext
         await chip.ClickAsync().ConfigureAwait(true);
 
         cut.Find("button.autonogrammer-chip-btn").GetAttribute("aria-expanded").ShouldBe("true");
-        cut.Find("button.autonogrammer-chip-btn").GetAttribute("aria-controls").ShouldBe(cut.Find("ul[role='listbox']").Id);
+        cut.Find("button.autonogrammer-chip-btn").GetAttribute("aria-controls").ShouldBeNull("axe can only report aria-controls next to aria-haspopup as needs review");
         var options = cut.FindAll("ul[role='listbox'] li[role='option']");
         options.Select(static option => option.GetAttribute("aria-selected")).ShouldBe(["true", "false"]);
         cut.Find("ul[role='listbox']").GetAttribute("aria-label").ShouldBe("Mode");
@@ -213,7 +213,7 @@ public sealed class ComposerPanelTests : UiTestContext
         return (model, palette);
     }
 
-    /// <summary>Typing a slash opens the palette as a listbox the textarea controls, with a source badge per row and the result count in a polite status.</summary>
+    /// <summary>Typing a slash opens the palette as a listbox the textarea controls, with a source badge per row and the result count in a polite status. The textarea has no aria-haspopup: axe cannot validate it next to aria-controls.</summary>
     [Fact]
     public async Task ASlashOpensTheListboxTheTextareaControls()
     {
@@ -227,7 +227,7 @@ public sealed class ComposerPanelTests : UiTestContext
         var textarea = cut.Find("textarea");
         textarea.GetAttribute("aria-controls").ShouldBe(list.Id);
         textarea.GetAttribute("aria-autocomplete").ShouldBe("list");
-        textarea.GetAttribute("aria-haspopup").ShouldBe("listbox");
+        textarea.GetAttribute("aria-haspopup").ShouldBeNull("axe can only report aria-controls next to aria-haspopup as needs review");
         textarea.GetAttribute("data-slash-open").ShouldBe("true");
         var options = cut.FindAll("li[role='option']");
         options.Count.ShouldBe(palette.Entries.Count);

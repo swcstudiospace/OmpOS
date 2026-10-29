@@ -10,6 +10,7 @@ import {
   compositeOver,
   contrastRatio,
   describeFocusRing,
+  hasVisibleBorder,
   longestDuration,
   pageLibSource,
   parseBoxShadow,
@@ -95,6 +96,17 @@ test("describeFocusRing under forced colours needs 1 px, and judges geometry onl
   const unknown = describeFocusRing({ outlineStyle: "solid", outlineWidth: "2px", outlineColor: "rgb(250, 250, 250)", boxShadow: "none" }, null, false);
   assert.equal(unknown.visible, true);
   assert.equal(unknown.contrast, null);
+});
+
+test("hasVisibleBorder needs a width, a style that draws and a colour that is not transparent on at least one side", () => {
+  const side = (width, style, colour) => ({ borderTopWidth: width, borderTopStyle: style, borderTopColor: colour });
+  assert.equal(hasVisibleBorder(side("1px", "solid", "rgb(0, 0, 0)")), true);
+  assert.equal(hasVisibleBorder(side("0px", "solid", "rgb(0, 0, 0)")), false);
+  assert.equal(hasVisibleBorder(side("1px", "none", "rgb(0, 0, 0)")), false);
+  assert.equal(hasVisibleBorder(side("1px", "hidden", "rgb(0, 0, 0)")), false);
+  assert.equal(hasVisibleBorder(side("1px", "solid", "rgba(0, 0, 0, 0)")), false);
+  assert.equal(hasVisibleBorder({ borderLeftWidth: "2px", borderLeftStyle: "solid", borderLeftColor: "rgb(1, 2, 3)" }), true);
+  assert.equal(hasVisibleBorder({}), false);
 });
 
 // ---- geometry ------------------------------------------------------------------------------------------------

@@ -129,6 +129,9 @@
     display: inline-flex;
   }
 
+  /* The drawer is as tall as the space between the top bar and the footer, and scrolls inside it. The height comes from the base rule: with
+     height auto the rail's align-self: start sizes a fixed box to its content, which pushed the last rows and the Settings button below the
+     screen on a short phone, out of reach for the pointer and the keyboard. */
   .autonogrammer-rail {
     position: fixed;
     top: var(--autonogrammer-topbar-block);
@@ -136,7 +139,6 @@
     left: 0;
     z-index: var(--autonogrammer-z-drawer);
     width: min(var(--autonogrammer-rail-width), 86vw);
-    height: auto;
     border-right: 1px solid var(--autonogrammer-border);
     transform: translateX(-100%);
     visibility: hidden;

@@ -163,5 +163,7 @@ public sealed class SharedScenarioParityTests : UiTestContext
         }
     }
 
-    private static bool IsControl(IElement element) => !string.IsNullOrEmpty(element.GetAttribute("aria-label"));
+    // A control is named by an aria-label and has no text of its own to compare. A named group (the focusable output of a tool, the code of a block) is content.
+    private static bool IsControl(IElement element) =>
+        !string.IsNullOrEmpty(element.GetAttribute("aria-label")) && !string.Equals(element.GetAttribute("role"), "group", StringComparison.Ordinal);
 }

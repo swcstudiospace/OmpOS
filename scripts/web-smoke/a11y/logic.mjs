@@ -166,14 +166,24 @@ export function analyzeWalk(forward, backward, ctx) {
   if (!ctx.backwardEnded) {
     out.push(finding("keyboard", "backward-walk-no-end", "error", "Shift+Tab did not leave or wrap the page: a focus loop", { ...base, wcag: "2.1.2" }));
   }
-  const expected = stops.slice(0, -1).map((s) => s.key).reverse();
-  const actual = backward.filter((s) => !s.left).slice(1).map((s) => s.key);
+  // A stop that only one direction meets (a button that appears once the transcript has scrolled, a control that goes away when a run ends) has nothing to be
+  // compared with. The order of the stops both directions meet must match; the others are listed as a warning.
+  const forwardKeys = new Set(stops.map((s) => s.key));
+  const backwardStops = backward.filter((s) => !s.left);
+  const backwardKeys = new Set(backwardStops.map((s) => s.key));
+  const shared = (key) => forwardKeys.has(key) && backwardKeys.has(key);
+  const expected = stops.slice(0, -1).map((s) => s.key).reverse().filter(shared);
+  const actual = backwardStops.slice(1).map((s) => s.key).filter(shared);
   const length = Math.max(expected.length, actual.length);
   for (let index = 0; index < length; index += 1) {
     if (expected[index] !== actual[index]) {
       out.push(finding("keyboard", "backward-path-differs", "error", `Shift+Tab does not return along the Tab path: at step ${index + 1} it reached ${actual[index] ?? "(the end)"}, expected ${expected[index] ?? "(the end)"}`, { ...base, wcag: "2.4.3", detail: { expected: expected.slice(index, index + 3), actual: actual.slice(index, index + 3) } }));
       break;
     }
+  }
+  const onlyOne = [...forwardKeys].filter((key) => !backwardKeys.has(key)).concat([...backwardKeys].filter((key) => !forwardKeys.has(key)));
+  if (backward.length > 0 && onlyOne.length > 0) {
+    out.push(finding("keyboard", "backward-path-set-differs", "warning", `${onlyOne.length} stop(s) are met by one direction of the walk only (an element that appears or goes away as focus moves): ${onlyOne.slice(0, 3).join(", ")}`, { ...base, wcag: "2.4.3" }));
   }
   return out;
 }
@@ -313,7 +323,7 @@ export function analyzeTextSpacing(before, after, ctx) {
 
 // ---- media emulation ---------------------------------------------------------------------------------------
 
-/** Findings for forced colours and increased contrast: every field keeps a border; a button keeps a border or a text label. */
+/** Findings for forced colours and increased contrast: every field keeps a border of its own or of the card that wraps it; a button keeps a border or a text label. */
 export function analyzeAffordances(data, emulation, ctx) {
   const out = [];
   const base = { ...where(ctx), wcag: "1.4.11" };
@@ -322,7 +332,7 @@ export function analyzeAffordances(data, emulation, ctx) {
     out.push(finding("media", "emulation-not-applied", "error", `the emulated ${emulation} media feature is not active in the page, so this run proves nothing for it`, base));
     return out;
   }
-  const fields = data.controls.filter((c) => c.kind === "field" && !c.border);
+  const fields = data.controls.filter((c) => c.kind === "field" && !c.border && !c.containerBorder);
   const iconOnly = data.controls.filter((c) => c.kind === "button" && !c.border && !c.hasText && c.hasIcon);
   const bare = data.controls.filter((c) => c.kind === "button" && !c.border && !c.hasText && !c.hasIcon);
   if (fields.length > 0) out.push(finding("media", "field-without-boundary", "error", `${fields.length} text field(s) have no border under ${emulation}: ${fields[0].description}`, { ...base, target: fields[0].description, detail: fields.slice(0, 5).map((c) => c.description) }));

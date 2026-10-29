@@ -70,6 +70,42 @@ public sealed class SessionScrollTests : UiTestContext
         module.VerifyInvoke(ScrollToEnd, 2);
     }
 
+    /// <summary>Reaching jump-to-latest with Tab scrolls the view to the end. The control must not be taken away from under the keyboard (that dropped the focus to the page and ended the Tab walk before the composer and the footer); it goes when the focus leaves it.</summary>
+    [Fact]
+    public async Task JumpToLatestStaysWhileItHasTheFocusAndGoesWhenTheFocusLeaves()
+    {
+        JSInterop.SetupModule(ScrollModule);
+        var cut = Render<SessionView>(parameters => parameters
+            .Add(p => p.Tree, UiTree.Empty)
+            .Add(p => p.ViewState, SessionViewState.Streaming)
+            .Add(p => p.AutoScrollPaused, false));
+        await cut.InvokeAsync(() => cut.Instance.ReportScrollPositionAsync(true));
+        await cut.Find(JumpSelector).FocusAsync();
+
+        await cut.InvokeAsync(() => cut.Instance.ReportScrollPositionAsync(false));
+
+        cut.FindAll(JumpSelector).Count.ShouldBe(1, "focusing the control brought the view to the end, and the control stays under the keyboard");
+
+        await cut.Find(JumpSelector).BlurAsync();
+
+        cut.FindAll(JumpSelector).Count.ShouldBe(0, "the control goes once the focus has left it");
+    }
+
+    /// <summary>Using jump-to-latest removes the control, so the focus moves to the transcript first and a keyboard user keeps their place.</summary>
+    [Fact]
+    public async Task ActivatingJumpToLatestMovesTheFocusToTheTranscript()
+    {
+        JSInterop.SetupModule(ScrollModule);
+        var cut = Render<SessionView>(parameters => parameters
+            .Add(p => p.Tree, UiTree.Empty)
+            .Add(p => p.ViewState, SessionViewState.Streaming)
+            .Add(p => p.AutoScrollPaused, true));
+
+        await cut.Find(JumpSelector).ClickAsync();
+
+        JSInterop.Invocations.Count(static call => string.Equals(call.Identifier, "Blazor._internal.domWrapper.focus", StringComparison.Ordinal)).ShouldBe(1);
+    }
+
     /// <summary>Scroll transitions across the bottom edge are reported to the host once per change.</summary>
     [Fact]
     public async Task ScrollTransitionsAreReportedToTheHostOncePerChange()

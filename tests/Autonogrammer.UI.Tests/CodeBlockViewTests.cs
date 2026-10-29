@@ -33,6 +33,21 @@ public sealed class CodeBlockViewTests : UiTestContext
         copied.ShouldBeEmpty();
     }
 
+    /// <summary>The scrollable code can be reached with the keyboard, and the focus stop is a group named after the language, so it is not an anonymous stop.</summary>
+    [Theory]
+    [InlineData("csharp", "csharp code")]
+    [InlineData("", "Code")]
+    public void TheFocusableCodeIsANamedGroup(string language, string name)
+    {
+        var cut = Render<CodeBlockView>(parameters => parameters.Add(p => p.Block, new CodeBlock { Id = "code-2", Language = language, Code = "var x = 1;" }));
+
+        var pre = cut.Find("pre");
+
+        pre.GetAttribute("tabindex").ShouldBe("0");
+        pre.GetAttribute("role").ShouldBe("group");
+        pre.GetAttribute("aria-label").ShouldBe(name);
+    }
+
     /// <summary>A logger that records the level and exception of every entry it receives.</summary>
     private sealed class RecordingLogger : ILogger<CodeBlockView>
     {

@@ -208,6 +208,38 @@ public sealed class WorkbenchRoutingTests : UiTestContext
         await cut.WaitForAssertionAsync(() => cut.Find("h2.autonogrammer-thread-title").TextContent.ShouldBe("Beta")).ConfigureAwait(true);
     }
 
+    /// <summary>
+    /// In the browser the address change is reported after the render of the click that caused it. The tab still announces the title of its view, and the late
+    /// report does not arm the announcer again, so a later title change stays silent.
+    /// </summary>
+    [Fact]
+    public async Task ATabAnnouncesItsTitleWhenTheAddressIsReportedAfterTheRender()
+    {
+        var navigation = new DeferredNavigationManager();
+        Services.AddSingleton<NavigationManager>(navigation);
+        using var announcer = new RouteAnnouncer(navigation);
+        using var harness = TwoAgents();
+        var cut = Render<WorkbenchView>(parameters => parameters
+            .Add(p => p.Panel, harness.Panel)
+            .Add(p => p.Board, harness.Board)
+            .Add(p => p.Settings, new SettingsWindowModel([new StubSettingsPage()]))
+            .AddCascadingValue(announcer));
+        announcer.Text.ShouldBeEmpty("nothing is announced on the first load");
+
+        await cut.Find($"#{ViewTabs.KanbanTabId}").ClickAsync().ConfigureAwait(true);
+
+        announcer.Text.ShouldBe("Kanban - Autonogrammer", "the title rendered before the address was reported");
+
+        navigation.DeliverAddressChanges();
+        announcer.Report(ViewTitles.Compose("Later", "Kanban"));
+
+        announcer.Text.ShouldBe("Kanban - Autonogrammer", "the late address change belongs to the announcement already made");
+
+        await cut.Find($"#{ViewTabs.AgentsTabId}").ClickAsync().ConfigureAwait(true);
+
+        announcer.Text.ShouldBe("Agents - Autonogrammer");
+    }
+
     /// <summary>The footer links to the About view.</summary>
     [Fact]
     public void TheFooterLinksToAbout()

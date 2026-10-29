@@ -174,20 +174,17 @@
   line-height: var(--autonogrammer-line-height-label);
 }
 
+/* The card title opens the agent. It wraps in full: a clamp would hide words once the user widens the text spacing. */
 .autonogrammer-kanban-card-open {
-  display: -webkit-box;
+  display: block;
   min-height: var(--autonogrammer-control-height);
   max-width: 100%;
   padding: var(--autonogrammer-gap-4) 0;
-  overflow: hidden;
   background: transparent;
   border: 0;
   color: var(--autonogrammer-text);
   font: inherit;
   text-align: left;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
   overflow-wrap: anywhere;
 }
 
