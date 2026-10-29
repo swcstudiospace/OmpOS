@@ -3,6 +3,7 @@ using System.Net.ServerSentEvents;
 using System.Runtime.CompilerServices;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Services;
+using Autonogrammer.Api.Sse;
 
 namespace Autonogrammer.Api.Endpoints;
 
@@ -51,7 +52,7 @@ internal static class CatalogEventEndpoints
             afterId = parsed;
         }
 
-        return TypedResults.ServerSentEvents(EnumerateAsync(user.Name, afterId, hub, cancellationToken));
+        return new SseStreamResult(EnumerateAsync(user.Name, afterId, hub, cancellationToken));
     }
 
     private static async IAsyncEnumerable<SseItem<string>> EnumerateAsync(
