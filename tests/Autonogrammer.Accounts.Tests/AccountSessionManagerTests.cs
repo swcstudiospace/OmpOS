@@ -146,7 +146,7 @@ public sealed class AccountSessionManagerTests
     }
 
     [Fact]
-    public async Task AFiveSecondBudgetEndsAStartupRefreshAsOfflineNotSignedOut()
+    public async Task FiveSecondBudgetsEndAStartupRefreshAsOfflineNotSignedOutAfterTheOneSecondRetry()
     {
         using var harness = AccountsHarness.Create();
         GoTrueSession issued = harness.Handler.IssueSession(Email);
@@ -155,6 +155,8 @@ public sealed class AccountSessionManagerTests
         await harness.Manager.StartAsync(Token).ConfigureAwait(true);
         await TimeDriver.UntilAsync(() => harness.Handler.Count("token:refresh") == 1).ConfigureAwait(true);
 
+        harness.Time.Advance(TimeSpan.FromSeconds(5));
+        await harness.Time.AdvanceUntilAsync(() => harness.Handler.Count("token:refresh") == 2, TimeSpan.FromSeconds(1)).ConfigureAwait(true);
         harness.Time.Advance(TimeSpan.FromSeconds(5));
         _ = await harness.Manager.StartupRefreshAsync().ConfigureAwait(true);
 
@@ -165,15 +167,32 @@ public sealed class AccountSessionManagerTests
     }
 
     [Fact]
+    public async Task AStartupRefreshWhoseResponseWasLostIsRetriedOnceAfterOneSecondInsideTheReuseInterval()
+    {
+        using var harness = AccountsHarness.Create();
+        await harness.SeedStoredSessionAsync(harness.Handler.IssueSession(Email)).ConfigureAwait(true);
+        harness.Handler.ScriptLostResponse("token:refresh");
+        await harness.Manager.StartAsync(Token).ConfigureAwait(true);
+
+        await harness.Time.AdvanceUntilAsync(() => harness.Manager.StartupRefresh!.IsCompleted, TimeSpan.FromMilliseconds(500)).ConfigureAwait(true);
+
+        (await harness.Manager.StartupRefreshAsync().ConfigureAwait(true)).IsSuccess.ShouldBeTrue();
+        harness.Handler.Count("token:refresh").ShouldBe(2);
+        harness.Manager.State.Phase.ShouldBe(AuthPhase.SignedIn);
+        harness.Manager.State.Connectivity.ShouldBe(AccountConnectivity.Online);
+        harness.Handler.LiveSessions(Email).ShouldBe(1);
+    }
+
+    [Fact]
     public async Task OfflineStartIsASignedInNoticeAndTheRetryLoopBringsItBackOnline()
     {
         using var harness = AccountsHarness.Create();
         GoTrueSession issued = harness.Handler.IssueSession(Email);
         await harness.SeedStoredSessionAsync(issued).ConfigureAwait(true);
-        harness.Handler.ScriptTransportFailure("token:refresh");
+        harness.Handler.ScriptTransportFailure("token:refresh", times: 2);
         await harness.Manager.StartAsync(Token).ConfigureAwait(true);
 
-        _ = await harness.Manager.StartupRefreshAsync().ConfigureAwait(true);
+        await harness.Time.AdvanceUntilAsync(() => harness.Manager.StartupRefresh!.IsCompleted, TimeSpan.FromSeconds(1)).ConfigureAwait(true);
 
         harness.Manager.State.Phase.ShouldBe(AuthPhase.SignedIn);
         harness.Manager.State.Connectivity.ShouldBe(AccountConnectivity.Offline);
@@ -182,7 +201,7 @@ public sealed class AccountSessionManagerTests
         await harness.Time.AdvanceUntilAsync(() => harness.Manager.State.Connectivity == AccountConnectivity.Online, TimeSpan.FromSeconds(30)).ConfigureAwait(true);
 
         harness.Manager.State.Phase.ShouldBe(AuthPhase.SignedIn);
-        harness.Handler.Count("token:refresh").ShouldBe(2);
+        harness.Handler.Count("token:refresh").ShouldBe(3);
     }
 
     [Fact]
@@ -560,5 +579,99 @@ public sealed class AccountSessionManagerTests
         using var harness = AccountsHarness.Create();
 
         await Should.ThrowAsync<ArgumentOutOfRangeException>(() => harness.Manager.SignOutAsync((SignOutScope)42, Token)).ConfigureAwait(true);
+    }
+
+    [Fact]
+    public async Task AStoredTokenReadBeforeASignOutIsNeverAdoptedAfterItAndTheOldAccessTokenIsNotHandedOut()
+    {
+        using var harness = AccountsHarness.Create();
+        await harness.Manager.SignInAsync(harness.Handler.IssueSession(Email), harness.Options.Issuer, Token).ConfigureAwait(true);
+        harness.Time.Advance(TimeSpan.FromMinutes(50));
+        await harness.SeedStoredSessionAsync(harness.Handler.IssueSession(Email)).ConfigureAwait(true);
+        Task reached = harness.Store.HoldGets();
+
+        Task<AuthResult<SecretString>> pending = harness.Manager.GetAccessTokenAsync(Token).AsTask();
+        await reached.WaitAsync(TimeSpan.FromSeconds(30), Token).ConfigureAwait(true);
+        _ = await harness.Manager.SignOutAsync(SignOutScope.Local, Token).ConfigureAwait(true);
+        harness.Store.ReleaseGets();
+        AuthResult<SecretString> token = await pending.ConfigureAwait(true);
+
+        token.IsSuccess.ShouldBeFalse();
+        token.Failure.Kind.ShouldBe(AuthErrorKind.SessionEnded);
+        harness.Manager.CurrentAccessToken.ShouldBeNull();
+        harness.Manager.State.Phase.ShouldBe(AuthPhase.SignedOut);
+        (await harness.Manager.GetAccessTokenAsync(Token).ConfigureAwait(true)).Failure.Kind.ShouldBe(AuthErrorKind.SessionEnded);
+        (await harness.Store.ReadSessionJsonAsync().ConfigureAwait(true)).ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task AStoreThatCannotRemoveTheSecretWithAnUnconfirmedRevokeRaisesTheNoticeAfterOneRetryAndNeverThrows()
+    {
+        using var harness = AccountsHarness.Create();
+        await harness.Manager.SignInAsync(harness.Handler.IssueSession(Email), harness.Options.Issuer, Token).ConfigureAwait(true);
+        harness.Store.FailRemovals(int.MaxValue);
+        harness.Handler.ScriptTransportFailure("logout");
+
+        AuthResult<AuthUnit> result = await harness.Manager.SignOutAsync(SignOutScope.Local, Token).ConfigureAwait(true);
+
+        result.IsSuccess.ShouldBeFalse();
+        result.Failure.Kind.ShouldBe(AuthErrorKind.NetworkUnavailable);
+        harness.Manager.State.Phase.ShouldBe(AuthPhase.SignedOut);
+        harness.Manager.State.Notices.ShouldBe(AccountNotices.SignOutNotConfirmed | AccountNotices.SignOutNotCleared);
+        harness.Manager.CurrentAccessToken.ShouldBeNull();
+        harness.Store.Events.Count(entry => string.Equals(entry, "remove:autonogrammer.account.session", StringComparison.Ordinal)).ShouldBe(2);
+        (await harness.Store.ReadSessionJsonAsync().ConfigureAwait(true)).ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task AStoreThatCannotRemoveTheSecretWithAConfirmedRevokeNeedsNoNotice()
+    {
+        using var harness = AccountsHarness.Create();
+        await harness.Manager.SignInAsync(harness.Handler.IssueSession(Email), harness.Options.Issuer, Token).ConfigureAwait(true);
+        harness.Store.FailRemovals(int.MaxValue);
+
+        AuthResult<AuthUnit> result = await harness.Manager.SignOutAsync(SignOutScope.Local, Token).ConfigureAwait(true);
+
+        result.IsSuccess.ShouldBeTrue();
+        harness.Manager.State.ShouldBe(AccountState.SignedOut);
+        harness.Handler.LiveSessions(Email).ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task AOneOffRemovalFailureIsRetriedAndLeavesNoClearNotice()
+    {
+        using var harness = AccountsHarness.Create();
+        await harness.Manager.SignInAsync(harness.Handler.IssueSession(Email), harness.Options.Issuer, Token).ConfigureAwait(true);
+        harness.Store.FailRemovals(1);
+        harness.Handler.ScriptTransportFailure("logout");
+
+        _ = await harness.Manager.SignOutAsync(SignOutScope.Local, Token).ConfigureAwait(true);
+
+        harness.Manager.State.Notices.ShouldBe(AccountNotices.SignOutNotConfirmed);
+        (await harness.Store.ReadSessionJsonAsync().ConfigureAwait(true)).ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task AnExceptionInsideTheRefreshLeavesTheSessionOfflineAndRetriesInsteadOfStayingRefreshing()
+    {
+        using var harness = AccountsHarness.Create();
+        await harness.SeedStoredSessionAsync(harness.Handler.IssueSession(Email)).ConfigureAwait(true);
+        int calls = 0;
+        using var manager = new AccountSessionManager(
+            harness.Store,
+            _ => Interlocked.Increment(ref calls) == 1 ? throw new InvalidOperationException("provider failed") : ValueTask.FromResult<GoTrueClient?>(harness.Client),
+            harness.Time)
+        {
+            Jitter = static interval => interval,
+        };
+        await manager.StartAsync(Token).ConfigureAwait(true);
+
+        AuthResult<AuthUnit> first = await manager.StartupRefreshAsync().ConfigureAwait(true);
+
+        first.Failure.Kind.ShouldBe(AuthErrorKind.Unexpected);
+        manager.State.Phase.ShouldBe(AuthPhase.SignedIn);
+        manager.State.Connectivity.ShouldBe(AccountConnectivity.Offline);
+        await harness.Time.AdvanceUntilAsync(() => manager.State.Connectivity == AccountConnectivity.Online, TimeSpan.FromSeconds(30)).ConfigureAwait(true);
+        harness.Handler.Count("token:refresh").ShouldBe(1);
     }
 }

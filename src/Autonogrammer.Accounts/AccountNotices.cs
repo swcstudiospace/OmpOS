@@ -18,4 +18,10 @@ public enum AccountNotices
 
     /// <summary>A stored session could not be refreshed any more and was cleared.</summary>
     SessionEnded = 8,
+
+    /// <summary>
+    /// The device signed the person out but the stored secret could not be removed and the service did not confirm the sign-out, so this device may
+    /// sign in again at the next start; the person can remove it in the system's password settings.
+    /// </summary>
+    SignOutNotCleared = 16,
 }

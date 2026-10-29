@@ -11,6 +11,9 @@ internal sealed class RecordingSecretStore(Journal? journal = null) : ISecretSto
 {
     private readonly InMemorySessionSecretStore _inner = new();
     private readonly ConcurrentQueue<string> _events = new();
+    private TaskCompletionSource? _getGate;
+    private TaskCompletionSource? _getReached;
+    private int _failRemoveCount;
 
     /// <summary>Gets or sets a value indicating whether <see cref="SetAsync"/> throws.</summary>
     public bool FailSet { get; set; }
@@ -20,6 +23,10 @@ internal sealed class RecordingSecretStore(Journal? journal = null) : ISecretSto
 
     /// <summary>Gets or sets a value indicating whether <see cref="GetAsync"/> throws.</summary>
     public bool FailGet { get; set; }
+
+    /// <summary>Makes the next <paramref name="count"/> <see cref="RemoveAsync"/> calls throw before it works again; use <see cref="int.MaxValue"/> for a store that never removes.</summary>
+    /// <param name="count">How many removals fail.</param>
+    public void FailRemovals(int count) => Volatile.Write(ref _failRemoveCount, count);
 
     /// <summary>Gets the operations seen so far, as <c>set:name</c>, <c>get:name</c> and <c>remove:name</c>.</summary>
     public IReadOnlyList<string> Events => [.. _events];
@@ -33,18 +40,50 @@ internal sealed class RecordingSecretStore(Journal? journal = null) : ISecretSto
     }
 
     /// <inheritdoc />
-    public Task<SecretString?> GetAsync(string name, CancellationToken cancellationToken)
+    public async Task<SecretString?> GetAsync(string name, CancellationToken cancellationToken)
     {
         Record("get:" + name);
-        return FailGet ? Task.FromException<SecretString?>(new SecretStoreException("The test store refuses reads.")) : _inner.GetAsync(name, cancellationToken);
+        if (FailGet)
+        {
+            throw new SecretStoreException("The test store refuses reads.");
+        }
+
+        // The value is read before the hold, so a held read returns what was stored when it began, as a slow keyring would.
+        SecretString? value = await _inner.GetAsync(name, cancellationToken).ConfigureAwait(false);
+        TaskCompletionSource? gate = Volatile.Read(ref _getGate);
+        if (gate is not null)
+        {
+            _ = _getReached?.TrySetResult();
+            await gate.Task.ConfigureAwait(false);
+        }
+
+        return value;
     }
 
     /// <inheritdoc />
     public Task<bool> RemoveAsync(string name, CancellationToken cancellationToken)
     {
         Record("remove:" + name);
+        if (Interlocked.Decrement(ref _failRemoveCount) >= 0)
+        {
+            return Task.FromException<bool>(new SecretStoreException("The test store refuses removals."));
+        }
+
+        _ = Interlocked.Exchange(ref _failRemoveCount, 0);
         return _inner.RemoveAsync(name, cancellationToken);
     }
+
+    /// <summary>Makes every following <see cref="GetAsync"/> wait, after it has read its value, until <see cref="ReleaseGets"/>.</summary>
+    /// <returns>A task that completes when a read is waiting.</returns>
+    public Task HoldGets()
+    {
+        _getReached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Volatile.Write(ref _getGate, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously));
+        return _getReached.Task;
+    }
+
+    /// <summary>Lets the reads held by <see cref="HoldGets"/> return.</summary>
+    public void ReleaseGets() => Volatile.Read(ref _getGate)?.TrySetResult();
 
     /// <inheritdoc />
     public Task<IReadOnlyList<string>> ListNamesAsync(CancellationToken cancellationToken) => _inner.ListNamesAsync(cancellationToken);

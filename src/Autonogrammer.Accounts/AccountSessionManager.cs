@@ -152,7 +152,8 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
 
     /// <summary>
     /// Restores a stored session without waiting on the network. A stored session makes the state <see cref="AuthPhase.SignedIn"/> at once with
-    /// <see cref="AccountConnectivity.Refreshing"/>; one refresh with a 5 second budget then settles it to online or offline. Calling it again does nothing.
+    /// <see cref="AccountConnectivity.Refreshing"/>; one refresh whose every request has a 5 second budget (and, like any refresh, one retry after 1 second when
+    /// the response was lost, which stays inside the service's reuse interval) then settles it to online or offline. Calling it again does nothing.
     /// </summary>
     /// <param name="cancellationToken">Cancels the read of the secret store.</param>
     /// <returns>A task that completes when the stored session has been read, not when the refresh has finished.</returns>
@@ -173,7 +174,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
                     StoredSessionUnreadable(_logger, null);
                 }
 
-                await TryRemoveStoredAsync(cancellationToken).ConfigureAwait(false);
+                _ = await TryRemoveStoredAsync(cancellationToken).ConfigureAwait(false);
             }
 
             return;
@@ -183,7 +184,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
         try
         {
             _knownStored = stored.RefreshToken;
-            _live = new LiveSession(stored.Issuer, stored.UserId, stored.Email, new SecretString(stored.RefreshToken), null, DateTimeOffset.MinValue, TimeSpan.Zero);
+            Volatile.Write(ref _live, new LiveSession(stored.Issuer, stored.UserId, stored.Email, new SecretString(stored.RefreshToken), null, DateTimeOffset.MinValue, TimeSpan.Zero));
             Publish(new AccountState(AuthPhase.SignedIn, new AccountIdentity(stored.UserId, stored.Email), AccountConnectivity.Refreshing, AccountNotices.None));
         }
         finally
@@ -218,7 +219,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
             _ = Interlocked.Increment(ref _epoch);
             var live = new LiveSession(issuer, session.UserId, session.Email, session.RefreshToken, session.AccessToken, session.ExpiresAt, session.Lifetime);
             bool remembered = await TryWriteStoredAsync(live, cancellationToken).ConfigureAwait(false);
-            _live = live;
+            Volatile.Write(ref _live, live);
             Publish(new AccountState(
                 AuthPhase.SignedIn,
                 new AccountIdentity(live.UserId, live.Email),
@@ -279,13 +280,14 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
         }
 
         LiveSession? live;
+        bool cleared;
         await _mutation.WaitAsync(CancellationToken.None).ConfigureAwait(false);
         try
         {
-            live = _live;
-            _live = null;
+            live = Volatile.Read(ref _live);
+            Volatile.Write(ref _live, null);
             _ = Interlocked.Increment(ref _epoch);
-            await TryRemoveStoredAsync(CancellationToken.None).ConfigureAwait(false);
+            cleared = await TryRemoveStoredAsync(CancellationToken.None).ConfigureAwait(false);
             Publish(AccountState.SignedOut);
         }
         finally
@@ -295,13 +297,20 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
 
         if (live is null)
         {
+            if (!cleared)
+            {
+                Mutate(static state => state.Phase == AuthPhase.SignedOut ? state with { Notices = state.Notices | AccountNotices.SignOutNotCleared } : state);
+            }
+
             return AuthResult.Success(AuthUnit.Value);
         }
 
         AuthResult<AuthUnit> revoked = await RevokeAsync(live, scope, cancellationToken).ConfigureAwait(false);
         if (!revoked.IsSuccess)
         {
-            Mutate(static state => state.Phase == AuthPhase.SignedOut ? state with { Notices = state.Notices | AccountNotices.SignOutNotConfirmed } : state);
+            // A secret that could not be removed is only a risk while the service has not revoked its token: then the next start would restore the session.
+            AccountNotices add = cleared ? AccountNotices.SignOutNotConfirmed : AccountNotices.SignOutNotConfirmed | AccountNotices.SignOutNotCleared;
+            Mutate(state => state.Phase == AuthPhase.SignedOut ? state with { Notices = state.Notices | add } : state);
         }
 
         if (_logger is not null)
@@ -374,6 +383,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
         catch (OperationCanceledException)
         {
             result = AuthResult.Fail<AuthUnit>(AuthErrorKind.NetworkUnavailable);
+            ScheduleRetryAfterFailure();
         }
 #pragma warning disable CA1031 // The shared refresh is a boundary: every caller must get a result, never a thrown exception.
         catch (Exception exception)
@@ -385,6 +395,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
             }
 
             result = AuthResult.Fail<AuthUnit>(AuthErrorKind.Unexpected);
+            ScheduleRetryAfterFailure();
         }
 
         lock (_flightGate)
@@ -422,7 +433,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
             return AuthResult.Fail<AuthUnit>(AuthErrorKind.SessionEnded);
         }
 
-        bool lostResponseRetried = startup;
+        bool lostResponseRetried = false;
         bool reread = true;
         while (true)
         {
@@ -468,7 +479,11 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
             return (Step.Ended, new AuthFailure(AuthErrorKind.SessionEnded));
         }
 
-        live = await AdoptStoredTokenAsync(live, cancellationToken).ConfigureAwait(false);
+        live = await AdoptStoredTokenAsync(epoch, live, cancellationToken).ConfigureAwait(false);
+        if (live is null)
+        {
+            return (Step.Ended, new AuthFailure(AuthErrorKind.SessionEnded));
+        }
 
         AuthResult<GoTrueSession> result = await RequestRefreshAsync(client, live.RefreshToken, startup ? StartupRefreshBudget : null, cancellationToken).ConfigureAwait(false);
         if (result.IsSuccess)
@@ -493,14 +508,8 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
             StoredSession? again = (await ReadStoredAsync(cancellationToken).ConfigureAwait(false)).Stored;
             if (again is not null && IsRotatedElsewhere(again, live))
             {
-                _knownStored = again.RefreshToken;
-                _live = live with { RefreshToken = new SecretString(again.RefreshToken) };
-                if (_logger is not null)
-                {
-                    StoredTokenAdopted(_logger, null);
-                }
-
-                return (Step.Retry, null);
+                LiveSession? adopted = await AdoptAsync(epoch, live, again, cancellationToken).ConfigureAwait(false);
+                return adopted is null ? (Step.Ended, new AuthFailure(AuthErrorKind.SessionEnded)) : (Step.Retry, null);
             }
         }
 
@@ -513,17 +522,33 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
         return (Step.Ended, failure);
     }
 
-    private async Task<LiveSession> AdoptStoredTokenAsync(LiveSession live, CancellationToken cancellationToken)
+    private async Task<LiveSession?> AdoptStoredTokenAsync(long epoch, LiveSession live, CancellationToken cancellationToken)
     {
         StoredSession? stored = (await ReadStoredAsync(cancellationToken).ConfigureAwait(false)).Stored;
-        if (stored is null || !IsRotatedElsewhere(stored, live))
+        return stored is null || !IsRotatedElsewhere(stored, live) ? live : await AdoptAsync(epoch, live, stored, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Makes the refresh token another process stored the live one, unless a sign-in, sign-out or discard has ended this refresh's session since it began.</summary>
+    private async Task<LiveSession?> AdoptAsync(long epoch, LiveSession live, StoredSession stored, CancellationToken cancellationToken)
+    {
+        LiveSession adopted;
+        await _mutation.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            return live;
+            if (Volatile.Read(ref _live) is null || Interlocked.Read(ref _epoch) != epoch)
+            {
+                return null;
+            }
+
+            adopted = live with { RefreshToken = new SecretString(stored.RefreshToken) };
+            _knownStored = stored.RefreshToken;
+            Volatile.Write(ref _live, adopted);
+        }
+        finally
+        {
+            _ = _mutation.Release();
         }
 
-        LiveSession adopted = live with { RefreshToken = new SecretString(stored.RefreshToken) };
-        _knownStored = stored.RefreshToken;
-        _live = adopted;
         if (_logger is not null)
         {
             StoredTokenAdopted(_logger, null);
@@ -557,7 +582,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
         await _mutation.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_live is null || Interlocked.Read(ref _epoch) != epoch)
+            if (Volatile.Read(ref _live) is null || Interlocked.Read(ref _epoch) != epoch)
             {
                 return false;
             }
@@ -572,7 +597,7 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
                 session.Lifetime);
 
             bool remembered = await TryWriteStoredAsync(next, cancellationToken).ConfigureAwait(false);
-            _live = next;
+            Volatile.Write(ref _live, next);
             AccountNotices notices = State.Notices & ~AccountNotices.SessionNotRemembered;
             Publish(new AccountState(
                 AuthPhase.SignedIn,
@@ -603,9 +628,9 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
                 return;
             }
 
-            _live = null;
+            Volatile.Write(ref _live, null);
             _ = Interlocked.Increment(ref _epoch);
-            await TryRemoveStoredAsync(cancellationToken).ConfigureAwait(false);
+            _ = await TryRemoveStoredAsync(cancellationToken).ConfigureAwait(false);
             Publish(AccountState.SignedOut with { Notices = notice });
         }
         finally
@@ -776,16 +801,42 @@ public sealed class AccountSessionManager : IAccountSession, IDisposable
         }
     }
 
-    private async Task TryRemoveStoredAsync(CancellationToken cancellationToken)
+    private async Task<bool> TryRemoveStoredAsync(CancellationToken cancellationToken)
     {
+        // One immediate retry: a keyring that was busy or momentarily locked often answers the second request.
+        for (int attempt = 0; attempt < 2; attempt++)
+        {
+            try
+            {
+                _ = await _store.RemoveAsync(SecretName, cancellationToken).ConfigureAwait(false);
+                _knownStored = null;
+                return true;
+            }
+            catch (SecretStoreException exception)
+            {
+                LogStoreFailure("remove", exception);
+            }
+        }
+
+        return false;
+    }
+
+    private void ScheduleRetryAfterFailure()
+    {
+        // A stopped manager has nothing to retry; a flight that fails otherwise must not leave the state at Refreshing with nobody to try again.
+        if (_lifetime.IsCancellationRequested)
+        {
+            return;
+        }
+
         try
         {
-            _ = await _store.RemoveAsync(SecretName, cancellationToken).ConfigureAwait(false);
-            _knownStored = null;
+            SetConnectivity(AccountConnectivity.Offline);
+            EnsureOfflineRetryLoop();
         }
-        catch (SecretStoreException exception)
+        catch (ObjectDisposedException)
         {
-            LogStoreFailure("remove", exception);
+            // The manager was disposed between the check and the call.
         }
     }
 
