@@ -33,6 +33,20 @@
     <ProjectReference Include="../../src/Autonogrammer.Harness.Terminal/Autonogrammer.Harness.Terminal.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Workspace/Autonogrammer.Harness.Workspace.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Worktrees/Autonogrammer.Harness.Worktrees.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Accounts/Autonogrammer.Accounts.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Accounts.Desktop/Autonogrammer.Accounts.Desktop.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Secrets.Os/Autonogrammer.Harness.Secrets.Os.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Cowork/Autonogrammer.Cowork.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Dispatch.Client/Autonogrammer.Dispatch.Client.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Dispatch.Desktop/Autonogrammer.Dispatch.Desktop.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.BrowserUse/Autonogrammer.Harness.BrowserUse.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.ComputerUse/Autonogrammer.Harness.ComputerUse.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.ComputerUse.X11/Autonogrammer.Harness.ComputerUse.X11.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.ComputerUse.Windows/Autonogrammer.Harness.ComputerUse.Windows.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.ComputerUse.MacOS/Autonogrammer.Harness.ComputerUse.MacOS.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.PluginBundles/Autonogrammer.Harness.PluginBundles.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Isolation/Autonogrammer.Harness.Isolation.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Notifications/Autonogrammer.Harness.Notifications.csproj" />
   </ItemGroup>
 
 </Project>

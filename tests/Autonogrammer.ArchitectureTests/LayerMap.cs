@@ -18,6 +18,9 @@ internal static class LayerMap
         ["Autonogrammer.Sandbox.Abstractions"] = 1,
         ["Autonogrammer.Coordination"] = 1,
         ["Autonogrammer.Harness.Acp"] = 2,
+        ["Autonogrammer.Resilience"] = 1,
+        ["Autonogrammer.Cowork.Abstractions"] = 1,
+        ["Autonogrammer.Harness.ComputerUse.Abstractions"] = 1,
         ["Autonogrammer.Harness.Rpc"] = 2,
         ["Autonogrammer.Harness.InMemory"] = 2,
         ["Autonogrammer.Harness.Worktrees"] = 2,
@@ -33,12 +36,30 @@ internal static class LayerMap
         ["Autonogrammer.Harness.Automations"] = 3,
         ["Autonogrammer.Harness.Providers"] = 2,
         ["Autonogrammer.Harness.Secrets"] = 2,
+        ["Autonogrammer.Harness.Secrets.Os"] = 2,
+        ["Autonogrammer.Accounts"] = 2,
+        ["Autonogrammer.Cowork"] = 2,
+        ["Autonogrammer.Cowork.Artifacts"] = 2,
+        ["Autonogrammer.Cowork.Artifacts.Stores"] = 2,
+        ["Autonogrammer.Harness.BrowserUse"] = 2,
+        ["Autonogrammer.Harness.ComputerUse"] = 2,
+        ["Autonogrammer.Harness.ComputerUse.X11"] = 2,
+        ["Autonogrammer.Harness.ComputerUse.Windows"] = 2,
+        ["Autonogrammer.Harness.ComputerUse.MacOS"] = 2,
+        ["Autonogrammer.Cowork.Memory"] = 2,
+        ["Autonogrammer.Cowork.Memory.Postgres"] = 2,
+        ["Autonogrammer.Harness.PluginBundles"] = 2,
+        ["Autonogrammer.Harness.Isolation"] = 2,
+        ["Autonogrammer.Harness.Notifications"] = 2,
         ["Autonogrammer.Harness.Herdr"] = 2,
         ["Autonogrammer.Harness.Agent"] = 2,
         ["Autonogrammer.Harness.AgentLoop"] = 2,
         ["Autonogrammer.Harness.Remote"] = 2,
         ["Autonogrammer.Coordination.Dragonfly"] = 2,
         ["Autonogrammer.EngineHost"] = 3,
+        ["Autonogrammer.Accounts.Desktop"] = 3,
+        ["Autonogrammer.Dispatch.Client"] = 3,
+        ["Autonogrammer.Dispatch.Desktop"] = 3,
         ["Autonogrammer.Sessions"] = 2,
         ["Autonogrammer.Sessions.Postgres"] = 2,
         ["Autonogrammer.SessionRuns"] = 2,
@@ -97,5 +118,17 @@ internal static class LayerMap
         ("Autonogrammer.Harness.Mcp", "Autonogrammer.Harness.Acp"),
         // intentional: the API hosts the automation scheduler, the webhook receiver and the management routes over the automations library
         ("Autonogrammer.Api", "Autonogrammer.Harness.Automations"),
+        // intentional: accounts authenticate through the secrets library's SecretString (Phase 67)
+        ("Autonogrammer.Accounts", "Autonogrammer.Harness.Secrets"),
+        // intentional: the OS secret store implements the secrets library's store contract (Phase 67)
+        ("Autonogrammer.Harness.Secrets.Os", "Autonogrammer.Harness.Secrets"),
+        // intentional: cowork launches sessions through the AgentLoop launch plan (Phase 69)
+        ("Autonogrammer.Cowork", "Autonogrammer.Harness.AgentLoop"),
+        // intentional: the artifact stores persist the artifact library's shapes (Phase 71)
+        ("Autonogrammer.Cowork.Artifacts.Stores", "Autonogrammer.Cowork.Artifacts"),
+        // intentional: the web UI renders cowork artifact shapes (Phase 71)
+        ("Autonogrammer.UI", "Autonogrammer.Cowork.Artifacts"),
+        // intentional: the memory Postgres store persists the memory library's shapes (Phase 75)
+        ("Autonogrammer.Cowork.Memory.Postgres", "Autonogrammer.Cowork.Memory"),
     };
 }

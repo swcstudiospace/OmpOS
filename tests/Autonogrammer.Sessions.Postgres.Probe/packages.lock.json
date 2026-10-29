@@ -63,6 +63,9 @@
           "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
+      "autonogrammer.resilience": {
+        "type": "Project"
+      },
       "autonogrammer.sessions": {
         "type": "Project",
         "dependencies": {
@@ -75,6 +78,7 @@
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )",
           "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Resilience": "[0.15.0, )",
           "Autonogrammer.Sessions": "[0.15.0, )",
           "Microsoft.Extensions.Configuration.Abstractions": "[10.0.13, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",

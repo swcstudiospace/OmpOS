@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../Autonogrammer.Cowork.Artifacts/Autonogrammer.Cowork.Artifacts.csproj" />
+    <ProjectReference Include="../Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Autonogrammer.Cowork.Artifacts.Stores.Tests" />
+  </ItemGroup>
+
+</Project>

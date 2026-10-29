@@ -13,6 +13,7 @@
     <ProjectReference Include="../Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
     <ProjectReference Include="../Autonogrammer.GenUi/Autonogrammer.GenUi.csproj" />
     <ProjectReference Include="../Autonogrammer.Presentation/Autonogrammer.Presentation.csproj" />
+    <ProjectReference Include="../Autonogrammer.Cowork.Artifacts/Autonogrammer.Cowork.Artifacts.csproj" />
   </ItemGroup>
 
 </Project>

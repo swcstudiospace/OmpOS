@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Autonogrammer.Coordination/Autonogrammer.Coordination.csproj" />
+    <ProjectReference Include="../Autonogrammer.Resilience/Autonogrammer.Resilience.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -241,8 +241,12 @@
         "type": "Project",
         "dependencies": {
           "Autonogrammer.Coordination": "[0.15.0, )",
+          "Autonogrammer.Resilience": "[0.15.0, )",
           "StackExchange.Redis": "[3.4.5, )"
         }
+      },
+      "autonogrammer.resilience": {
+        "type": "Project"
       },
       "Microsoft.Extensions.Configuration": {
         "type": "CentralTransitive",

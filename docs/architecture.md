@@ -99,6 +99,32 @@ There is no Temporal worker: it was removed on 2026-10-21 and session runs execu
 | `Autonogrammer.Harness.AgentLoop` (extended) | Hooks service and loopback bridge, run modes and permissions, safety policy |
 | `Autonogrammer.Sandbox` (extended) | Cloud environment client for Railway, a static pool client, a cloud session host |
 | `Autonogrammer.AgentWorker` | The cloud agent worker: JWT-authenticated WebSocket bridge to `omp acp` |
+|
+### Projects added in v0.16.0
+
+| Project | Responsibility |
+| ------- | -------------- |
+| `Autonogrammer.Resilience` | Retry and resilience primitives for the data plane (Phase 68) |
+| `Autonogrammer.Cowork.Abstractions` | Cowork contracts shared by the engine and the stores (Phase 70) |
+| `Autonogrammer.Harness.ComputerUse.Abstractions` | Computer-use contracts shared by the engine and the OS backends (Phase 73) |
+| `Autonogrammer.Harness.Secrets.Os` | OS secret store over the secrets library contract (Phase 67) |
+| `Autonogrammer.Accounts` | Account sessions over Supabase (Phase 67) |
+| `Autonogrammer.Cowork` | Cowork project registry, resolver and tool host (Phases 69, 70) |
+| `Autonogrammer.Cowork.Artifacts` | Pure artifact shapes and diffing (Phase 71) |
+| `Autonogrammer.Cowork.Artifacts.Stores` | Artifact persistence over PostgreSQL (Phase 71) |
+| `Autonogrammer.Harness.BrowserUse` | Browser automation over PuppeteerSharp (Phase 72) |
+| `Autonogrammer.Harness.ComputerUse` | Computer-use engine over the L1 abstractions (Phase 73) |
+| `Autonogrammer.Harness.ComputerUse.X11` | X11 backend over libX11 and libXtst (Phase 73) |
+| `Autonogrammer.Harness.ComputerUse.Windows` | Windows backend over user32 and gdi32 (Phase 73) |
+| `Autonogrammer.Harness.ComputerUse.MacOS` | macOS backend over CoreGraphics and screencapture (Phase 73) |
+| `Autonogrammer.Cowork.Memory` | Memory store contracts and policy (Phase 75) |
+| `Autonogrammer.Cowork.Memory.Postgres` | Memory persistence over PostgreSQL (Phase 75) |
+| `Autonogrammer.Harness.PluginBundles` | Plugin bundle install over launch contributors (Phase 76) |
+| `Autonogrammer.Harness.Isolation` | Process isolation over the launch wrapper (Phase 76) |
+| `Autonogrammer.Harness.Notifications` | Desktop notifications over the launch wrapper (Phase 76) |
+| `Autonogrammer.Accounts.Desktop` | Desktop account session selector and loopback reader (Phase 67) |
+| `Autonogrammer.Dispatch.Client` | Dispatch HTTP and SSE client for native and Android heads (Phase 74) |
+| `Autonogrammer.Dispatch.Desktop` | Desktop dispatch connector, verifier and policy store (Phase 74) |
 
 ## Data flow
 

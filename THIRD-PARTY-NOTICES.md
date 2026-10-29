@@ -10,17 +10,17 @@ Scope column: **shipped** reaches users in a desktop build, the Android build, t
 
 | Scope | Packages |
 |---|---|
-| shipped | 156 |
+| shipped | 164 |
 | build-time | 9 |
-| tools | 5 |
+| tools | 4 |
 | test | 59 |
 
 | Licence expression | Packages |
 |---|---|
-| Apache-2.0 | 21 |
+| Apache-2.0 | 22 |
 | BSD-2-Clause | 1 |
 | BSD-3-Clause | 3 |
-| MIT | 143 |
+| MIT | 149 |
 | MIT AND Apache-2.0 | 60 |
 | PostgreSQL | 1 |
 
@@ -36,6 +36,8 @@ All of these licences are permissive and compatible with AGPL-3.0-or-later (`doc
 | Avalonia.Android | 12.1.4 | MIT | Copyright 2013-2026 © The AvaloniaUI Project | https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link |
 | Avalonia.Angle.Windows.Natives | 2.1.27548.20260419 | BSD-3-Clause | Copyright 2013-2026 © The AvaloniaUI Project | https://avaloniaui.net/ |
 | Avalonia.AvaloniaEdit | 12.0.0 | MIT | Copyright 2017-2026 © The AvaloniaUI Project | - |
+| Avalonia.Controls.DataGrid | 12.1.2 | MIT | Copyright 2013-2026 © The AvaloniaUI Project | https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link |
+| Avalonia.Controls.WebView | 12.1.1 | MIT | Copyright 2019-2026 © AvaloniaUI OÜ | https://avaloniaui.net/ |
 | Avalonia.Desktop | 12.1.4 | MIT | Copyright 2013-2026 © The AvaloniaUI Project | https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link |
 | Avalonia.FreeDesktop | 12.1.4 | MIT | Copyright 2013-2026 © The AvaloniaUI Project | https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link |
 | Avalonia.FreeDesktop.AtSpi | 12.1.4 | MIT | Copyright 2013-2026 © The AvaloniaUI Project | https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link |
@@ -47,6 +49,7 @@ All of these licences are permissive and compatible with AGPL-3.0-or-later (`doc
 | Avalonia.Win32 | 12.1.4 | MIT | Copyright 2013-2026 © The AvaloniaUI Project | https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link |
 | Avalonia.X11 | 12.1.4 | MIT | Copyright 2013-2026 © The AvaloniaUI Project | https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link |
 | AvaloniaEdit.TextMate | 12.0.0 | MIT | Copyright 2017-2026 © The AvaloniaUI Project | - |
+| DiffPlex | 1.9.0 | Apache-2.0 | Authors: Matthew Manela | https://github.com/mmanela/diffplex/ |
 | HarfBuzzSharp | 8.3.1.5 | MIT | © Microsoft Corporation. All rights reserved. | https://go.microsoft.com/fwlink/?linkid=868515 |
 | HarfBuzzSharp.NativeAssets.Android | 8.3.1.5 | MIT | © Microsoft Corporation. All rights reserved. | https://go.microsoft.com/fwlink/?linkid=868515 |
 | HarfBuzzSharp.NativeAssets.Linux | 8.3.1.3 | MIT | © Microsoft Corporation. All rights reserved. | https://go.microsoft.com/fwlink/?linkid=868515 |
@@ -93,6 +96,7 @@ All of these licences are permissive and compatible with AGPL-3.0-or-later (`doc
 | Microsoft.IdentityModel.Protocols | 8.19.2 | MIT | © Microsoft Corporation. All rights reserved. | https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet |
 | Microsoft.IdentityModel.Protocols.OpenIdConnect | 8.19.2 | MIT | © Microsoft Corporation. All rights reserved. | https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet |
 | Microsoft.IdentityModel.Tokens | 8.19.2 | MIT | © Microsoft Corporation. All rights reserved. | https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet |
+| Microsoft.IO.RecyclableMemoryStream | 3.0.1 | MIT | © Microsoft Corporation. All rights reserved. | https://github.com/Microsoft/Microsoft.IO.RecyclableMemoryStream |
 | Microsoft.JSInterop | 10.0.13 | MIT | © Microsoft Corporation. All rights reserved. | https://asp.net/ |
 | Microsoft.JSInterop.WebAssembly | 10.0.13 | MIT | © Microsoft Corporation. All rights reserved. | https://asp.net/ |
 | Microsoft.OpenApi | 2.12.2 | MIT | © Microsoft Corporation. All rights reserved. | https://github.com/Microsoft/OpenAPI.NET |
@@ -109,6 +113,8 @@ All of these licences are permissive and compatible with AGPL-3.0-or-later (`doc
 | OpenTelemetry.Extensions.Hosting | 1.20.0 | Apache-2.0 | Copyright The OpenTelemetry Authors | https://opentelemetry.io/ |
 | OpenTelemetry.Instrumentation.AspNetCore | 1.20.0 | Apache-2.0 | Copyright The OpenTelemetry Authors | https://opentelemetry.io/ |
 | Porta.Pty | 2.2.3 | MIT | Tom Laird-McConnell All Rights Reserved | https://github.com/tomlm/Porta.Pty |
+| PuppeteerSharp | 25.15.0 | MIT | Authors: Darío Kondratiuk | https://github.com/hardkoded/puppeteer-sharp |
+| ReactiveExtensionsSharp | 0.3.0 | MIT | Authors: Darío Kondratiuk | https://github.com/hardkoded/ReactiveExtensions-Sharp |
 | RESPite | 3.4.5 | MIT | 2025 - 2026 Marc Gravell | https://seredis.dev/ |
 | Scalar.AspNetCore | 2.18.0 | MIT | Authors: Scalar | https://scalar.com/ |
 | SkiaSharp | 3.119.4 | MIT | © Microsoft Corporation. All rights reserved. | https://go.microsoft.com/fwlink/?linkid=868515 |
@@ -121,11 +127,13 @@ All of these licences are permissive and compatible with AGPL-3.0-or-later (`doc
 | StackExchange.Redis | 3.4.5 | MIT | 2014 - 2026 Stack Exchange, Inc. | https://seredis.dev/ |
 | System.IdentityModel.Tokens.Jwt | 8.19.2 | MIT | © Microsoft Corporation. All rights reserved. | https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet |
 | System.IO.Hashing | 10.0.12 | MIT | © Microsoft Corporation. All rights reserved. | https://dot.net/ |
+| System.Security.Cryptography.ProtectedData | 10.0.13 | MIT | © Microsoft Corporation. All rights reserved. | https://dot.net/ |
 | TextMateSharp | 2.0.3 | MIT | Authors: Daniel Peñalba | https://github.com/danipen/TextMateSharp |
 | TextMateSharp.Grammars | 2.0.3 | MIT | Authors: Daniel Peñalba | https://github.com/danipen/TextMateSharp |
 | Tmds.DBus.Protocol | 0.94.1 | MIT | Tom Deseyn | - |
 | Unicode.net | 2.0.0 | MIT | Copyright NeoSmart Technologies 2017 - 2021 | https://github.com/neosmart/unicode.net |
 | Wcwidth | 4.0.1 | MIT | Authors: Patrik Svensson and contributors | https://github.com/spectreconsole/wcwidth |
+| WebDriverBiDi | 0.0.61 | MIT | Authors: WebDriverBiDi.NET Committers | https://github.com/webdriverbidi-net/webdriverbidi-net |
 | Xamarin.AndroidX.Activity | 1.12.4.1 | MIT AND Apache-2.0 | © Microsoft Corporation. All rights reserved. | https://aka.ms/android-libraries |
 | Xamarin.AndroidX.Annotation | 1.9.1.7 | MIT AND Apache-2.0 | © Microsoft Corporation. All rights reserved. | https://aka.ms/android-libraries |
 | Xamarin.AndroidX.Annotation.Experimental | 1.5.1.3 | MIT AND Apache-2.0 | © Microsoft Corporation. All rights reserved. | https://aka.ms/android-libraries |
@@ -208,7 +216,6 @@ All of these licences are permissive and compatible with AGPL-3.0-or-later (`doc
 | Package | Version | Licence | Copyright | Project |
 |---|---|---|---|---|
 | Avalonia.Browser | 12.1.4 | MIT | Copyright 2013-2026 © The AvaloniaUI Project | https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link |
-| Avalonia.Controls.WebView | 12.1.1 | MIT | Copyright 2019-2026 © AvaloniaUI OÜ | https://avaloniaui.net/ |
 | HarfBuzzSharp | 8.3.1.3 | MIT | © Microsoft Corporation. All rights reserved. | https://go.microsoft.com/fwlink/?linkid=868515 |
 | HarfBuzzSharp.NativeAssets.macOS | 8.3.1.3 | MIT | © Microsoft Corporation. All rights reserved. | https://go.microsoft.com/fwlink/?linkid=868515 |
 | HarfBuzzSharp.NativeAssets.Win32 | 8.3.1.3 | MIT | © Microsoft Corporation. All rights reserved. | https://go.microsoft.com/fwlink/?linkid=868515 |
@@ -6186,7 +6193,7 @@ Copyright 2019 The gRPC Authors
 
 ### THIRD-PARTY-NOTICES.TXT (sha256 c6926930d018)
 
-Carried by: Microsoft.Bcl.Cryptography 10.0.2, Microsoft.Extensions.Caching.Abstractions 10.0.13, Microsoft.Extensions.Configuration 10.0.13, Microsoft.Extensions.Configuration.Abstractions 10.0.13, Microsoft.Extensions.Configuration.Binder 10.0.13, Microsoft.Extensions.Configuration.FileExtensions 10.0.13 and 15 more.
+Carried by: Microsoft.Bcl.Cryptography 10.0.2, Microsoft.Extensions.Caching.Abstractions 10.0.13, Microsoft.Extensions.Configuration 10.0.13, Microsoft.Extensions.Configuration.Abstractions 10.0.13, Microsoft.Extensions.Configuration.Binder 10.0.13, Microsoft.Extensions.Configuration.FileExtensions 10.0.13 and 16 more.
 
 ```text
 .NET Runtime uses third-party libraries or other resources that may be

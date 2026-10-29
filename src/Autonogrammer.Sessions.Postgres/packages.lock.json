@@ -59,6 +59,9 @@
           "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
+      "autonogrammer.resilience": {
+        "type": "Project"
+      },
       "autonogrammer.sessions": {
         "type": "Project",
         "dependencies": {

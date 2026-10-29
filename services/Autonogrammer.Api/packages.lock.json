@@ -204,7 +204,44 @@
         "type": "Project",
         "dependencies": {
           "Autonogrammer.Coordination": "[0.15.0, )",
+          "Autonogrammer.Resilience": "[0.15.0, )",
           "StackExchange.Redis": "[3.4.5, )"
+        }
+      },
+      "autonogrammer.cowork.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.cowork.artifacts": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
+          "DiffPlex": "[1.9.0, )"
+        }
+      },
+      "autonogrammer.cowork.artifacts.stores": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Artifacts": "[0.15.0, )",
+          "Npgsql": "[10.0.3, )"
+        }
+      },
+      "autonogrammer.cowork.memory": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.cowork.memory.postgres": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Cowork.Memory": "[0.15.0, )",
+          "Npgsql": "[10.0.3, )"
         }
       },
       "autonogrammer.harness.abstractions": {
@@ -217,6 +254,15 @@
         "type": "Project",
         "dependencies": {
           "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.harness.agentloop": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.Acp": "[0.15.0, )",
+          "Autonogrammer.Harness.Plugins": "[0.15.0, )"
         }
       },
       "autonogrammer.harness.automations": {
@@ -273,6 +319,9 @@
           "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
+      "autonogrammer.resilience": {
+        "type": "Project"
+      },
       "autonogrammer.sandbox": {
         "type": "Project",
         "dependencies": {
@@ -308,6 +357,7 @@
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )",
           "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Resilience": "[0.15.0, )",
           "Autonogrammer.Sessions": "[0.15.0, )",
           "Npgsql": "[10.0.3, )"
         }
@@ -317,6 +367,12 @@
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )"
         }
+      },
+      "DiffPlex": {
+        "type": "CentralTransitive",
+        "requested": "[1.9.0, )",
+        "resolved": "1.9.0",
+        "contentHash": "Z4IDEH6iOb6d+Y2QUjsbq1Fp5I/kwZzNdr/evBTbCGq+ShAjE4baLm7lX1tfjV2p34QI3V9kctCQziFuuKqeCA=="
       },
       "Microsoft.Windows.Console.ConPTY": {
         "type": "CentralTransitive",

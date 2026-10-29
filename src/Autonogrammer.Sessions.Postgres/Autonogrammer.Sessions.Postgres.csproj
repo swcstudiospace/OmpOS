@@ -4,6 +4,7 @@
     <ProjectReference Include="../Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
     <ProjectReference Include="../Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
     <ProjectReference Include="../Autonogrammer.Sessions/Autonogrammer.Sessions.csproj" />
+    <ProjectReference Include="../Autonogrammer.Resilience/Autonogrammer.Resilience.csproj" />
   </ItemGroup>
 
   <ItemGroup>

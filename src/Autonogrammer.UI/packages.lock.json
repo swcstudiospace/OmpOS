@@ -86,6 +86,20 @@
       "autonogrammer.contracts": {
         "type": "Project"
       },
+      "autonogrammer.cowork.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.cowork.artifacts": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
+          "DiffPlex": "[1.9.0, )"
+        }
+      },
       "autonogrammer.genui": {
         "type": "Project",
         "dependencies": {
@@ -107,6 +121,12 @@
           "Autonogrammer.Parser": "[0.15.0, )",
           "Markdig": "[1.4.2, )"
         }
+      },
+      "DiffPlex": {
+        "type": "CentralTransitive",
+        "requested": "[1.9.0, )",
+        "resolved": "1.9.0",
+        "contentHash": "Z4IDEH6iOb6d+Y2QUjsbq1Fp5I/kwZzNdr/evBTbCGq+ShAjE4baLm7lX1tfjV2p34QI3V9kctCQziFuuKqeCA=="
       },
       "Markdig": {
         "type": "CentralTransitive",

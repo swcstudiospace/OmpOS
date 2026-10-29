@@ -4,7 +4,7 @@ description: "The Autonogrammer HTTP API: sessions, runs, events, changes, steer
 
 # HTTP API
 
-Status: Built (every route group below is registered in `services/Autonogrammer.Api/Program.cs` and appears in `docs/api/openapi.json`, 60 paths, contract version 1.5.0); Partial (cloud agents run against fakes and `Cloud:Enabled` is false by default; automations are off by default and answer 404 `automations_disabled`; the API is not deployed on Railway; a staged private worker was exercised there on 2026-10-28, see the [cloud agents runbook](../runbooks/cloud-agents.md))
+Status: Built (every route group below is registered in `services/Autonogrammer.Api/Program.cs` and appears in `docs/api/openapi.json`, 60 paths, contract version 1.6.0); Partial (cloud agents run against fakes and `Cloud:Enabled` is false by default; automations are off by default and answer 404 `automations_disabled`; the API is not deployed on Railway; a staged private worker was exercised there on 2026-10-28, see the [cloud agents runbook](../runbooks/cloud-agents.md))
 
 Last verified: 2026-10-28
 
