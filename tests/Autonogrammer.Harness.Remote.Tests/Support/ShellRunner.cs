@@ -45,8 +45,16 @@ internal static class ShellRunner
         var error = process.StandardError.ReadToEndAsync(cancellationToken);
         if (stdin is { } bytes)
         {
-            await process.StandardInput.BaseStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(true);
-            await process.StandardInput.BaseStream.FlushAsync(cancellationToken).ConfigureAwait(true);
+            try
+            {
+                await process.StandardInput.BaseStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(true);
+                await process.StandardInput.BaseStream.FlushAsync(cancellationToken).ConfigureAwait(true);
+            }
+            catch (IOException)
+            {
+                // A script that refuses its input before it reads it has already exited when this write happens (a broken pipe);
+                // its exit code and output are the verdict, so the write is not an error.
+            }
         }
 
         process.StandardInput.Close();

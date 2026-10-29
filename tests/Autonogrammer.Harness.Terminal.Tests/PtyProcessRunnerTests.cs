@@ -136,7 +136,9 @@ public sealed class PtyProcessRunnerTests
         });
         var runner = new PtyProcessRunner(sink);
 
-        var run = runner.RunAsync(Sh(workspace.Path, "printf ready; sleep 1; stty size"), Token);
+        // The command prints its size only once it is no longer the default (at most 20 s), so the test does not depend on how fast the resize arrives.
+        const string script = "printf ready; i=0; while [ \"$(stty size)\" = \"24 80\" ] && [ $i -lt 200 ]; do sleep 0.1; i=$((i+1)); done; stty size";
+        var run = runner.RunAsync(Sh(workspace.Path, script), Token);
         await ready.Task.WaitAsync(TimeSpan.FromSeconds(20), Token);
         runner.Resize(100, 40);
         var outcome = await run.ConfigureAwait(true);

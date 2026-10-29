@@ -55,7 +55,7 @@ public sealed class ContainerTerminalLauncherTests
         script.ShouldContain("export ULTRATHINK_STATE_DIR=", Case.Sensitive);
         script.ShouldContain("'--resume'", Case.Sensitive);
         command.ConfigOverlayOmitted.ShouldBeTrue();
-        command.OmittedEnvironmentNames.Order(StringComparer.Ordinal).ToArray().ShouldBe(["MULTI", "AUTONOGRAMMER_PROVIDER_TOKEN"]);
+        command.OmittedEnvironmentNames.Order(StringComparer.Ordinal).ToArray().ShouldBe(["AUTONOGRAMMER_PROVIDER_TOKEN", "MULTI"]);
         command.Invocation.Arguments.ShouldAllBe(argument => !argument.Contains(Secret, StringComparison.Ordinal));
         command.Invocation.Preamble.ShouldBeNull();
     }

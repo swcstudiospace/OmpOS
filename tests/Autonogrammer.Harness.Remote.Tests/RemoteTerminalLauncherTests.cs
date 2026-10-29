@@ -77,7 +77,7 @@ public sealed class RemoteTerminalLauncherTests
         script.ShouldNotContain("--config", Case.Sensitive);
         script.ShouldNotContain("/evil", Case.Sensitive);
         command.ConfigOverlayOmitted.ShouldBeTrue();
-        command.OmittedEnvironmentNames.Order(StringComparer.Ordinal).ToArray().ShouldBe(["MULTI", "AUTONOGRAMMER_PROVIDER_TOKEN", "PATH"]);
+        command.OmittedEnvironmentNames.Order(StringComparer.Ordinal).ToArray().ShouldBe(["AUTONOGRAMMER_PROVIDER_TOKEN", "MULTI", "PATH"]);
         command.Invocation.Arguments.ShouldAllBe(argument => !argument.Contains(Secret, StringComparison.Ordinal));
         command.Invocation.Preamble.ShouldBeNull();
         command.Invocation.Arguments.ShouldContain("-tt", StringComparer.Ordinal);
