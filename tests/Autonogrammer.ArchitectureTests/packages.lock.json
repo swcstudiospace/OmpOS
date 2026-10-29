@@ -1030,7 +1030,10 @@
         }
       },
       "autonogrammer.resilience": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
+        }
       },
       "autonogrammer.sandbox": {
         "type": "Project",
