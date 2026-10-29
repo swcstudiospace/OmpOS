@@ -14,7 +14,7 @@ Autonogrammer is an open agent workspace on the omp engine. The identity is Whit
 
 ## Mark
 
-A rounded purple tile holding a white **O** ring with a prompt inside it: a chevron and an underscore cursor. The ring is the "O" of Autonogrammer, the prompt is the agent. Two cuts exist:
+A rounded purple tile holding a white ring with a prompt inside it: a chevron and an underscore cursor. The ring echoes the "o" of Autonogrammer, the prompt is the agent. Two cuts exist:
 
 | Cut | Source | Use |
 |---|---|---|
@@ -26,7 +26,7 @@ The tile gradient runs diagonally from `#7c3aed` to `#5b21b6` (white glyph contr
 
 ## Logo
 
-* `autonogrammer-logo.svg` horizontal lockup for light surfaces: mark, then **Omp** in `#1c1c1a` and **OS** in `#6d28d9`, Anybody SemiBold, outlined.
+* `autonogrammer-logo.svg` horizontal lockup for light surfaces: mark, then **Auto** in `#1c1c1a` and **nogrammer** in `#6d28d9`, Anybody SemiBold, outlined. The name is one word; the colour split after "Auto" is the only accent rule (the 13-letter name stays legible at lockup scale, and the accent carries 4.5:1 or better on white).
 * `autonogrammer-logo-dark.svg` the same for dark surfaces (`#ececec` and `#a78bfa`, dark mark).
 * `autonogrammer-logo-stacked.svg` mark above the wordmark, for square spaces.
 
@@ -35,7 +35,7 @@ Published SVGs contain no `<text>` and no font reference: they render identicall
 ### Clear space and minimum size
 
 * **Clear space** on all four sides: 25 percent of the mark height (for the 96 px tall horizontal lockup, 24 px). Nothing else (text, edges, other logos) enters it.
-* **Minimum size**: full mark 24 px, small cut 16 px; horizontal lockup 120 px wide; stacked lockup 80 px wide. Below 120 px wide use the mark alone.
+* **Minimum size**: full mark 24 px, small cut 16 px; horizontal lockup 224 px wide (wordmark 20 px, the smallest Anybody size); stacked lockup 190 px wide. Below those widths use the mark alone.
 * The tile is never recoloured, rotated, outlined, stretched, drop-shadowed or animated in its resting state.
 
 ## Colour roles
@@ -48,7 +48,7 @@ Values are the tokens in `src/Autonogrammer.Native.Views/AutonogrammerTokens.axa
 | Raised surface | `#fafaf9` | | |
 | Text | `#1c1c1a` | `#ececec` | 17.07:1 on `#ffffff`, 16.34:1 on `#fafaf9`; 15.03:1 on `#181818` |
 | Secondary text (taglines) | `#44403c` | `#d6d3d1` | 10.27:1 on `#ffffff`; 11.92:1 on `#181818` |
-| Accent (links, "OS", highlights) | `#6d28d9` | `#a78bfa` | 7.10:1 on `#ffffff`, 6.80:1 on `#fafaf9`; 6.52:1 on `#181818` |
+| Accent (links, "nogrammer", highlights) | `#6d28d9` | `#a78bfa` | 7.10:1 on `#ffffff`, 6.80:1 on `#fafaf9`; 6.52:1 on `#181818` |
 | Focus ring | `#5b21b6` | `#c4b5fd` | 8.98:1 on `#ffffff`; 9.62:1 on `#181818` |
 | Tile gradient | `#7c3aed` to `#5b21b6` | `#c4b5fd` to `#a78bfa` | glyph: 5.70:1 / 8.98:1 (white); 9.62:1 / 6.52:1 (`#181818`) |
 | Quiet geometry (banners only) | `#f5f1ff` | `#232130` | decorative, 1.1:1 by design; never carries text |
@@ -75,8 +75,8 @@ Editable sources are in `assets/brand/src/` (`mark`, `mark-dark`, `mark-small`, 
 | File | Size | Notes |
 |---|---|---|
 | `assets/brand/autonogrammer-mark.svg`, `autonogrammer-mark-dark.svg` | vector, 512 box | mark, light and dark |
-| `assets/brand/autonogrammer-logo.svg`, `autonogrammer-logo-dark.svg` | 380 x 96 viewBox | horizontal lockups, outlined |
-| `assets/brand/autonogrammer-logo-stacked.svg` | 320 x 272 viewBox | stacked lockup, outlined |
+| `assets/brand/autonogrammer-logo.svg`, `autonogrammer-logo-dark.svg` | 624 x 96 viewBox | horizontal lockups, outlined |
+| `assets/brand/autonogrammer-logo-stacked.svg` | 520 x 256 viewBox | stacked lockup, outlined |
 | `assets/brand/autonogrammer-banner.png`, `autonogrammer-banner-dark.png` | 1280 x 320 | README / GitBook banner |
 | `assets/brand/autonogrammer-social-preview.png` | 1280 x 640, under 1 MB | GitHub social preview (upload in repository settings) |
 | `assets/brand/autonogrammer-icon-1024.png` | 1024 x 1024 | master raster of the mark |
@@ -101,8 +101,9 @@ Editable sources are in `assets/brand/src/` (`mark`, `mark-dark`, `mark-small`, 
 
 Do:
 
-* Use the horizontal lockup first, the stacked lockup for square spaces, the mark alone below 120 px.
-* Keep "OS" in the accent colour and "Omp" in the text colour; use the dark variants on dark surfaces.
+* Use the horizontal lockup first, the stacked lockup for square spaces, the mark alone below 224 px (horizontal) or 190 px (stacked) width.
+* Keep "Auto" in the text colour and "nogrammer" in the accent colour; use the dark variants on dark surfaces.
+* Write the name as one word with a capital A only: "Autonogrammer". Never "AutoNoGrammer", "Auto Nogrammer" or "AUTONOGRAMMER", and never split the colours anywhere else than after "Auto".
 * Leave generous white space; the identity depends on it.
 
 Don't:

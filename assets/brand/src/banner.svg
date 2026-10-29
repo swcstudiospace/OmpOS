@@ -17,7 +17,7 @@
       <path d="M276 302H312" stroke-width="42"/>
     </g>
   </g>
-  <text x="242" y="146" font-family="Anybody" font-weight="600" font-size="84" fill="#1c1c1a">Omp<tspan fill="#6d28d9">OS</tspan></text>
+  <text x="242" y="146" font-family="Anybody" font-weight="600" font-size="76" fill="#1c1c1a">Auto<tspan fill="#6d28d9">nogrammer</tspan></text>
   <text x="244" y="198" font-family="DM Sans" font-weight="400" font-size="26" fill="#44403c">The open agent workspace on the omp engine</text>
   <text x="244" y="238" font-family="DM Sans" font-weight="500" font-size="19" letter-spacing="0.6" fill="#6d28d9">Desktop  ·  Web  ·  Cloud  ·  Remote</text>
   
