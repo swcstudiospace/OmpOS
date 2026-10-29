@@ -2,6 +2,7 @@ using System.Text.Json;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.UI.Components.Blocks;
 using Bunit;
+using Microsoft.AspNetCore.Components;
 using Shouldly;
 using Xunit;
 
@@ -117,18 +118,22 @@ public sealed class BlockViewTests : UiTestContext
         cut.FindAll("button").ShouldBeEmpty();
     }
 
-    /// <summary>After a copy the code block says so in a polite status region, which is empty before.</summary>
+    /// <summary>A code block draws no live region of its own: a copy is reported to its host, and the transcript's one status region announces it.</summary>
     [Fact]
-    public async Task ACopiedCodeBlockSaysSo()
+    public async Task ACopiedCodeBlockReportsTheCopyToItsHostWithoutALiveRegion()
     {
         JSInterop.SetupVoid("navigator.clipboard.writeText", _ => true).SetVoidResult();
-        var cut = Render<UiBlockRenderer>(parameters => parameters.Add(p => p.Block, new CodeBlock { Id = "c-1", Language = "csharp", Code = "var x = 1;" }));
-        cut.Find(".autonogrammer-sr-only[role='status']").TextContent.ShouldBeEmpty();
+        var copied = new List<string>();
+        var cut = Render<UiBlockRenderer>(parameters => parameters
+            .Add(p => p.Block, new CodeBlock { Id = "c-1", Language = "csharp", Code = "var x = 1;" })
+            .Add(p => p.OnCopy, EventCallback.Factory.Create<string>(this, copied.Add)));
+        cut.FindAll("[role='status'], [aria-live]").ShouldBeEmpty();
         cut.Find(".autonogrammer-code-language").TextContent.ShouldBe("csharp");
 
         await cut.Find("button[aria-label='Copy code']").ClickAsync().ConfigureAwait(true);
 
-        cut.Find(".autonogrammer-sr-only[role='status']").TextContent.ShouldBe("Copied to clipboard");
+        copied.ShouldBe(["var x = 1;"]);
+        cut.FindAll("[role='status'], [aria-live]").ShouldBeEmpty();
     }
 
     /// <summary>An error block is an assertive alert with a named retry control.</summary>
