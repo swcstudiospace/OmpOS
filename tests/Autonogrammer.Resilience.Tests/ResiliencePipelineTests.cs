@@ -11,20 +11,26 @@ public sealed class ResiliencePipelineTests
 {
     private const string Secret = "Host=db.internal;Password=hunter2";
 
-    private static readonly string[] AllowedTagKeys = ["component", "operation_class", "result", "reason"];
+    private static readonly string[] ExpectedInstruments =
+    [
+        "autonogrammer.dataplane.call.duration",
+        "autonogrammer.dataplane.retry.count",
+        "autonogrammer.dataplane.breaker.transitions",
+        "autonogrammer.dataplane.bulkhead.rejected",
+    ];
 
-    private static Task<int> Hang(CancellationToken cancellationToken) => HangAsync(cancellationToken);
+    private static readonly string[] AllowedTagKeys = ["component", "operation_class", "result", "reason"];
 
     private static async Task<int> HangAsync(CancellationToken cancellationToken)
     {
         try
         {
-            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
+            await new TaskCompletionSource().Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException exception)
         {
             // A driver exception that quotes the connection string, the way a provider message can.
-            throw new InvalidOperationException(Secret);
+            throw new InvalidOperationException(Secret, exception);
         }
 
         return 0;
@@ -35,7 +41,7 @@ public sealed class ResiliencePipelineTests
     {
         var pipeline = new ResiliencePipeline(TestPolicies.Postgres(), new ManualTimeProvider());
 
-        var value = await pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: true, _ => Task.FromResult(42), CancellationToken.None);
+        var value = await pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: true, _ => Task.FromResult(42), CancellationToken.None).ConfigureAwait(true);
 
         value.ShouldBe(42);
         pipeline.State.ShouldBe(DependencyState.Healthy);
@@ -47,11 +53,11 @@ public sealed class ResiliencePipelineTests
     {
         var pipeline = new ResiliencePipeline(TestPolicies.Postgres(), new ManualTimeProvider());
         using var cts = new CancellationTokenSource();
-        await cts.CancelAsync();
+        await cts.CancelAsync().ConfigureAwait(true);
         var calls = 0;
 
         var thrown = await Should.ThrowAsync<OperationCanceledException>(
-            pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: true, _ => Task.FromResult(++calls), cts.Token));
+            pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: true, _ => Task.FromResult(++calls), cts.Token)).ConfigureAwait(true);
 
         thrown.ShouldNotBeOfType<DataPlaneTimeoutException>();
         calls.ShouldBe(0);
@@ -72,14 +78,14 @@ public sealed class ResiliencePipelineTests
             {
                 calls++;
                 started.SetResult();
-                await Task.Delay(Timeout.InfiniteTimeSpan, ct).ConfigureAwait(false);
+                await new TaskCompletionSource().Task.WaitAsync(ct).ConfigureAwait(true);
                 return 0;
             },
             cts.Token);
-        await started.Task;
-        await cts.CancelAsync();
+        await started.Task.ConfigureAwait(true);
+        await cts.CancelAsync().ConfigureAwait(true);
 
-        var thrown = await Should.ThrowAsync<OperationCanceledException>(running);
+        var thrown = await Should.ThrowAsync<OperationCanceledException>(running).ConfigureAwait(true);
 
         thrown.ShouldNotBeOfType<DataPlaneTimeoutException>();
         calls.ShouldBe(1, "a cancelled caller is never retried");
@@ -92,9 +98,9 @@ public sealed class ResiliencePipelineTests
         var clock = new ManualTimeProvider();
         var pipeline = new ResiliencePipeline(TestPolicies.Postgres(), clock);
 
-        var running = pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, Hang, CancellationToken.None);
+        var running = pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, HangAsync, CancellationToken.None);
         clock.Advance(TimeSpan.FromSeconds(5));
-        var thrown = await Should.ThrowAsync<DataPlaneTimeoutException>(running);
+        var thrown = await Should.ThrowAsync<DataPlaneTimeoutException>(running).ConfigureAwait(true);
 
         thrown.Component.ShouldBe("postgres");
         thrown.Reason.ShouldBe(DataPlaneTimeoutReason.Timeout);
@@ -110,17 +116,17 @@ public sealed class ResiliencePipelineTests
         var clock = new ManualTimeProvider();
         var pipeline = new ResiliencePipeline(TestPolicies.Postgres(), clock);
 
-        var background = pipeline.ExecuteAsync(OperationClass.Background, idempotent: false, Hang, CancellationToken.None);
+        var background = pipeline.ExecuteAsync(OperationClass.Background, idempotent: false, HangAsync, CancellationToken.None);
         clock.Advance(TimeSpan.FromSeconds(29));
         background.IsCompleted.ShouldBeFalse("the background command timeout is 30 seconds");
         clock.Advance(TimeSpan.FromSeconds(1));
-        (await Should.ThrowAsync<DataPlaneTimeoutException>(background)).Component.ShouldBe("postgres");
+        (await Should.ThrowAsync<DataPlaneTimeoutException>(background).ConfigureAwait(true)).Component.ShouldBe("postgres");
 
-        var interactive = pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, Hang, CancellationToken.None);
+        var interactive = pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, HangAsync, CancellationToken.None);
         clock.Advance(TimeSpan.FromSeconds(4));
         interactive.IsCompleted.ShouldBeFalse();
         clock.Advance(TimeSpan.FromSeconds(1));
-        await Should.ThrowAsync<DataPlaneTimeoutException>(interactive);
+        await Should.ThrowAsync<DataPlaneTimeoutException>(interactive).ConfigureAwait(true);
     }
 
     [Fact]
@@ -129,12 +135,12 @@ public sealed class ResiliencePipelineTests
         var clock = new ManualTimeProvider();
         var pipeline = new ResiliencePipeline(TestPolicies.Dragonfly(), clock);
 
-        var running = pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, Hang, CancellationToken.None);
+        var running = pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, HangAsync, CancellationToken.None);
         clock.Advance(TimeSpan.FromMilliseconds(249));
         running.IsCompleted.ShouldBeFalse();
         clock.Advance(TimeSpan.FromMilliseconds(1));
 
-        (await Should.ThrowAsync<DataPlaneTimeoutException>(running)).Component.ShouldBe("dragonfly");
+        (await Should.ThrowAsync<DataPlaneTimeoutException>(running).ConfigureAwait(true)).Component.ShouldBe("dragonfly");
     }
 
     [Fact]
@@ -148,7 +154,7 @@ public sealed class ResiliencePipelineTests
             OperationClass.Interactive,
             idempotent: true,
             _ => ++calls < 3 ? throw new TransientFault() : Task.FromResult("ok"),
-            CancellationToken.None));
+            CancellationToken.None)).ConfigureAwait(true);
 
         result.ShouldBe("ok");
         calls.ShouldBe(3, "two retries after the first attempt");
@@ -169,7 +175,7 @@ public sealed class ResiliencePipelineTests
                 calls++;
                 throw new TransientFault();
             },
-            CancellationToken.None)));
+            CancellationToken.None))).ConfigureAwait(true);
 
         calls.ShouldBe(3);
     }
@@ -189,7 +195,7 @@ public sealed class ResiliencePipelineTests
                 calls++;
                 throw new TransientFault();
             },
-            CancellationToken.None)));
+            CancellationToken.None))).ConfigureAwait(true);
 
         calls.ShouldBe(2);
     }
@@ -205,7 +211,7 @@ public sealed class ResiliencePipelineTests
             OperationClass.Interactive,
             idempotent: true,
             _ => ++calls < 2 ? throw new TransientFault() : Task.FromResult(1),
-            CancellationToken.None));
+            CancellationToken.None)).ConfigureAwait(true);
 
         // The requested delays include the deadline timers (5 s, 8 s); the retry wait is the only one between 100 ms and 2 s.
         var waits = clock.RequestedDelays.Where(delay => delay < TimeSpan.FromSeconds(5)).ToList();
@@ -229,7 +235,7 @@ public sealed class ResiliencePipelineTests
                 calls++;
                 throw new TransientFault();
             },
-            CancellationToken.None));
+            CancellationToken.None)).ConfigureAwait(true);
 
         calls.ShouldBe(1);
     }
@@ -249,7 +255,7 @@ public sealed class ResiliencePipelineTests
                 calls++;
                 throw original;
             },
-            CancellationToken.None));
+            CancellationToken.None)).ConfigureAwait(true);
 
         thrown.ShouldBeSameAs(original);
         calls.ShouldBe(1);
@@ -268,9 +274,9 @@ public sealed class ResiliencePipelineTests
             ct =>
             {
                 calls++;
-                return Hang(ct);
+                return HangAsync(ct);
             },
-            CancellationToken.None)));
+            CancellationToken.None))).ConfigureAwait(true);
 
         thrown.Component.ShouldBe("postgres");
         calls.ShouldBeInRange(1, 3);
@@ -296,7 +302,7 @@ public sealed class ResiliencePipelineTests
                 clock.Advance(TimeSpan.FromSeconds(calls == 1 ? 4 : 2));
                 throw new TransientFault();
             },
-            CancellationToken.None)));
+            CancellationToken.None))).ConfigureAwait(true);
 
         calls.ShouldBe(2);
     }
@@ -311,7 +317,7 @@ public sealed class ResiliencePipelineTests
         var result = await clock.DriveAsync(pipeline.ExecuteTransactionAsync(
             OperationClass.Interactive,
             _ => ++calls < 2 ? throw new SerializationFault() : Task.FromResult("committed"),
-            CancellationToken.None));
+            CancellationToken.None)).ConfigureAwait(true);
 
         result.ShouldBe("committed");
         calls.ShouldBe(2);
@@ -331,7 +337,7 @@ public sealed class ResiliencePipelineTests
                 calls++;
                 throw new SerializationFault();
             },
-            CancellationToken.None)));
+            CancellationToken.None))).ConfigureAwait(true);
 
         calls.ShouldBe(2);
     }
@@ -349,7 +355,7 @@ public sealed class ResiliencePipelineTests
                 calls++;
                 throw new TransientFault();
             },
-            CancellationToken.None));
+            CancellationToken.None)).ConfigureAwait(true);
 
         calls.ShouldBe(1);
     }
@@ -365,16 +371,16 @@ public sealed class ResiliencePipelineTests
             await Should.ThrowAsync<SerializationFault>(clock.DriveAsync(pipeline.ExecuteTransactionAsync<int>(
                 OperationClass.Interactive,
                 _ => throw new SerializationFault(),
-                CancellationToken.None)));
+                CancellationToken.None))).ConfigureAwait(true);
             await Should.ThrowAsync<InvalidOperationException>(pipeline.ExecuteAsync<int>(
                 OperationClass.Interactive,
                 idempotent: false,
                 _ => throw new InvalidOperationException("constraint"),
-                CancellationToken.None));
+                CancellationToken.None)).ConfigureAwait(true);
         }
 
         pipeline.State.ShouldBe(DependencyState.Healthy);
-        (await pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, _ => Task.FromResult(1), CancellationToken.None)).ShouldBe(1);
+        (await pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, _ => Task.FromResult(1), CancellationToken.None).ConfigureAwait(true)).ShouldBe(1);
     }
 
     [Fact]
@@ -394,7 +400,7 @@ public sealed class ResiliencePipelineTests
                     calls++;
                     throw new TransientFault();
                 },
-                CancellationToken.None));
+                CancellationToken.None)).ConfigureAwait(true);
         }
 
         pipeline.State.ShouldBe(DependencyState.Open);
@@ -403,7 +409,7 @@ public sealed class ResiliencePipelineTests
             OperationClass.Interactive,
             idempotent: false,
             _ => Task.FromResult(++calls),
-            CancellationToken.None));
+            CancellationToken.None)).ConfigureAwait(true);
 
         rejected.Reason.ShouldBe(DataPlaneTimeoutReason.CircuitOpen);
         rejected.Component.ShouldBe("postgres");
@@ -418,17 +424,17 @@ public sealed class ResiliencePipelineTests
         var pipeline = new ResiliencePipeline(TestPolicies.Postgres(), clock);
         for (var i = 0; i < 5; i++)
         {
-            await Should.ThrowAsync<TransientFault>(pipeline.ExecuteAsync<int>(OperationClass.Interactive, false, _ => throw new TransientFault(), CancellationToken.None));
+            await Should.ThrowAsync<TransientFault>(pipeline.ExecuteAsync<int>(OperationClass.Interactive, idempotent: false, _ => throw new TransientFault(), CancellationToken.None)).ConfigureAwait(true);
         }
 
         clock.Advance(TimeSpan.FromSeconds(14));
-        await Should.ThrowAsync<DataPlaneTimeoutException>(pipeline.ExecuteAsync(OperationClass.Interactive, false, _ => Task.FromResult(1), CancellationToken.None));
+        await Should.ThrowAsync<DataPlaneTimeoutException>(pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, _ => Task.FromResult(1), CancellationToken.None)).ConfigureAwait(true);
         clock.Advance(TimeSpan.FromSeconds(1));
 
-        (await pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, _ => Task.FromResult(9), CancellationToken.None)).ShouldBe(9);
+        (await pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, _ => Task.FromResult(9), CancellationToken.None).ConfigureAwait(true)).ShouldBe(9);
 
         pipeline.State.ShouldBe(DependencyState.Healthy);
-        (await pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, _ => Task.FromResult(10), CancellationToken.None)).ShouldBe(10);
+        (await pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, _ => Task.FromResult(10), CancellationToken.None).ConfigureAwait(true)).ShouldBe(10);
     }
 
     [Fact]
@@ -439,9 +445,9 @@ public sealed class ResiliencePipelineTests
 
         for (var i = 0; i < 5; i++)
         {
-            var running = pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, Hang, CancellationToken.None);
+            var running = pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, HangAsync, CancellationToken.None);
             clock.Advance(TimeSpan.FromSeconds(5));
-            await Should.ThrowAsync<DataPlaneTimeoutException>(running);
+            await Should.ThrowAsync<DataPlaneTimeoutException>(running).ConfigureAwait(true);
         }
 
         pipeline.State.ShouldBe(DependencyState.Open);
@@ -459,7 +465,7 @@ public sealed class ResiliencePipelineTests
                 OperationClass.Interactive,
                 idempotent: false,
                 _ => throw new TransientFault(Secret),
-                CancellationToken.None));
+                CancellationToken.None)).ConfigureAwait(true);
         }
 
         logger.Entries.ShouldContain(entry => entry.Level == LogLevel.Warning && entry.Message.Contains("postgres", StringComparison.Ordinal) && entry.EventId.Id != 0);
@@ -469,7 +475,7 @@ public sealed class ResiliencePipelineTests
     [Fact]
     public async Task TheMeterReportsTheFourInstrumentsWithOnlyTheBoundedTags()
     {
-        var names = new ConcurrentDictionary<string, byte>();
+        var names = new ConcurrentDictionary<string, byte>(StringComparer.Ordinal);
         var badKeys = new ConcurrentBag<string>();
 
         void OnMeasurement(Instrument instrument, ReadOnlySpan<KeyValuePair<string, object?>> tags)
@@ -477,7 +483,7 @@ public sealed class ResiliencePipelineTests
             names[instrument.Name] = 0;
             foreach (var tag in tags)
             {
-                if (Array.IndexOf(AllowedTagKeys, tag.Key) < 0)
+                if (!AllowedTagKeys.Contains(tag.Key, StringComparer.Ordinal))
                 {
                     badKeys.Add($"{instrument.Name}:{tag.Key}");
                 }
@@ -487,7 +493,7 @@ public sealed class ResiliencePipelineTests
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, meterListener) =>
         {
-            if (instrument.Meter.Name == ResilienceTelemetry.MeterName)
+            if (string.Equals(instrument.Meter.Name, ResilienceTelemetry.MeterName, StringComparison.Ordinal))
             {
                 meterListener.EnableMeasurementEvents(instrument);
             }
@@ -496,6 +502,20 @@ public sealed class ResiliencePipelineTests
         listener.SetMeasurementEventCallback<double>((instrument, _, tags, _) => OnMeasurement(instrument, tags));
         listener.Start();
 
+        await TouchEveryInstrumentAsync().ConfigureAwait(true);
+
+        foreach (var expected in ExpectedInstruments)
+        {
+            names.ContainsKey(expected).ShouldBeTrue(expected);
+        }
+
+        names.Keys.Count(name => name.StartsWith("autonogrammer.dataplane.", StringComparison.Ordinal)).ShouldBe(4);
+        badKeys.ShouldBeEmpty();
+        ResilienceTelemetry.MeterName.ShouldBe("Autonogrammer.Resilience");
+    }
+
+    private static async Task TouchEveryInstrumentAsync()
+    {
         // One scenario that touches every instrument: a duration, a retry, a breaker transition and a bulkhead rejection.
         var clock = new ManualTimeProvider();
         var pipeline = new ResiliencePipeline(TestPolicies.Postgres(), clock, new Random(4));
@@ -504,10 +524,10 @@ public sealed class ResiliencePipelineTests
             OperationClass.Interactive,
             idempotent: true,
             _ => ++calls < 2 ? throw new TransientFault() : Task.FromResult(1),
-            CancellationToken.None));
+            CancellationToken.None)).ConfigureAwait(true);
         for (var i = 0; i < 5; i++)
         {
-            await Should.ThrowAsync<TransientFault>(pipeline.ExecuteAsync<int>(OperationClass.Interactive, false, _ => throw new TransientFault(), CancellationToken.None));
+            await Should.ThrowAsync<TransientFault>(pipeline.ExecuteAsync<int>(OperationClass.Interactive, idempotent: false, _ => throw new TransientFault(), CancellationToken.None)).ConfigureAwait(true);
         }
 
         var ledger = new ResiliencePipeline(TestPolicies.Ledger(), clock);
@@ -517,24 +537,16 @@ public sealed class ResiliencePipelineTests
         {
             var gate = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
             gates.Add(gate);
-            running.Add(ledger.ExecuteAsync(OperationClass.Background, false, _ => gate.Task, CancellationToken.None));
+            running.Add(ledger.ExecuteAsync(OperationClass.Background, idempotent: false, ct => gate.Task.WaitAsync(ct), CancellationToken.None));
         }
 
-        await Should.ThrowAsync<DataPlaneTimeoutException>(ledger.ExecuteAsync(OperationClass.Background, false, _ => Task.FromResult(1), CancellationToken.None));
+        await Should.ThrowAsync<DataPlaneTimeoutException>(ledger.ExecuteAsync(OperationClass.Background, idempotent: false, _ => Task.FromResult(1), CancellationToken.None)).ConfigureAwait(true);
         foreach (var gate in gates)
         {
             gate.SetResult(1);
         }
 
-        await Task.WhenAll(running);
-
-        names.Keys.ShouldContain("autonogrammer.dataplane.call.duration");
-        names.Keys.ShouldContain("autonogrammer.dataplane.retry.count");
-        names.Keys.ShouldContain("autonogrammer.dataplane.breaker.transitions");
-        names.Keys.ShouldContain("autonogrammer.dataplane.bulkhead.rejected");
-        names.Keys.Count(name => name.StartsWith("autonogrammer.dataplane.", StringComparison.Ordinal)).ShouldBe(4);
-        badKeys.ShouldBeEmpty();
-        ResilienceTelemetry.MeterName.ShouldBe("Autonogrammer.Resilience");
+        await Task.WhenAll(running).ConfigureAwait(true);
     }
 
     [Fact]

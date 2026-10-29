@@ -13,7 +13,7 @@ public sealed class BulkheadTests
         {
             var gate = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
             gates.Add(gate);
-            running.Add(pipeline.ExecuteAsync(operationClass, idempotent: false, _ => gate.Task, CancellationToken.None));
+            running.Add(pipeline.ExecuteAsync(operationClass, idempotent: false, ct => gate.Task.WaitAsync(ct), CancellationToken.None));
         }
 
         return gates;
@@ -66,20 +66,20 @@ public sealed class BulkheadTests
         var gates = Hold(pipeline, OperationClass.Background, 4, running);
 
         var rejected = await Should.ThrowAsync<DataPlaneTimeoutException>(
-            pipeline.ExecuteAsync(OperationClass.Background, idempotent: false, _ => Task.FromResult(1), CancellationToken.None));
+            pipeline.ExecuteAsync(OperationClass.Background, idempotent: false, _ => Task.FromResult(1), CancellationToken.None)).ConfigureAwait(true);
         rejected.Reason.ShouldBe(DataPlaneTimeoutReason.BulkheadFull);
         rejected.Component.ShouldBe("postgres");
 
-        (await pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, _ => Task.FromResult(7), CancellationToken.None)).ShouldBe(7);
+        (await pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, _ => Task.FromResult(7), CancellationToken.None).ConfigureAwait(true)).ShouldBe(7);
 
         foreach (var gate in gates)
         {
             gate.SetResult(1);
         }
 
-        await Task.WhenAll(running);
+        await Task.WhenAll(running).ConfigureAwait(true);
         pipeline.State.ShouldBe(DependencyState.Healthy, "a full bulkhead is local overload, not a dependency failure");
-        (await pipeline.ExecuteAsync(OperationClass.Background, idempotent: false, _ => Task.FromResult(2), CancellationToken.None)).ShouldBe(2);
+        (await pipeline.ExecuteAsync(OperationClass.Background, idempotent: false, _ => Task.FromResult(2), CancellationToken.None).ConfigureAwait(true)).ShouldBe(2);
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public sealed class BulkheadTests
         var gates = Hold(pipeline, OperationClass.Interactive, 16, running);
 
         var rejected = await Should.ThrowAsync<DataPlaneTimeoutException>(
-            pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, _ => Task.FromResult(1), CancellationToken.None));
+            pipeline.ExecuteAsync(OperationClass.Interactive, idempotent: false, _ => Task.FromResult(1), CancellationToken.None)).ConfigureAwait(true);
         rejected.Reason.ShouldBe(DataPlaneTimeoutReason.BulkheadFull);
 
         foreach (var gate in gates)
@@ -98,7 +98,7 @@ public sealed class BulkheadTests
             gate.SetResult(1);
         }
 
-        await Task.WhenAll(running);
+        await Task.WhenAll(running).ConfigureAwait(true);
     }
 
     [Fact]
@@ -109,7 +109,7 @@ public sealed class BulkheadTests
         var gates = Hold(pipeline, OperationClass.Interactive, 64, running);
 
         var rejected = await Should.ThrowAsync<DataPlaneTimeoutException>(
-            pipeline.ExecuteAsync(OperationClass.Background, idempotent: false, _ => Task.FromResult(1), CancellationToken.None));
+            pipeline.ExecuteAsync(OperationClass.Background, idempotent: false, _ => Task.FromResult(1), CancellationToken.None)).ConfigureAwait(true);
         rejected.Reason.ShouldBe(DataPlaneTimeoutReason.BulkheadFull);
         rejected.Component.ShouldBe("dragonfly");
 
@@ -118,7 +118,7 @@ public sealed class BulkheadTests
             gate.SetResult(1);
         }
 
-        await Task.WhenAll(running);
+        await Task.WhenAll(running).ConfigureAwait(true);
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public sealed class BulkheadTests
         var gates = Hold(pipeline, OperationClass.Background, 2, running);
 
         var rejected = await Should.ThrowAsync<DataPlaneTimeoutException>(
-            pipeline.ExecuteAsync(OperationClass.Background, idempotent: false, _ => Task.FromResult(1), CancellationToken.None));
+            pipeline.ExecuteAsync(OperationClass.Background, idempotent: false, _ => Task.FromResult(1), CancellationToken.None)).ConfigureAwait(true);
         rejected.Reason.ShouldBe(DataPlaneTimeoutReason.BulkheadFull);
         rejected.Component.ShouldBe("ledger");
 
@@ -138,7 +138,7 @@ public sealed class BulkheadTests
             gate.SetResult(1);
         }
 
-        await Task.WhenAll(running);
+        await Task.WhenAll(running).ConfigureAwait(true);
     }
 
     [Fact]
@@ -149,9 +149,9 @@ public sealed class BulkheadTests
         for (var i = 0; i < 5; i++)
         {
             await Should.ThrowAsync<InvalidOperationException>(
-                pipeline.ExecuteAsync<int>(OperationClass.Background, idempotent: false, _ => throw new InvalidOperationException("boom"), CancellationToken.None));
+                pipeline.ExecuteAsync<int>(OperationClass.Background, idempotent: false, _ => throw new InvalidOperationException("boom"), CancellationToken.None)).ConfigureAwait(true);
         }
 
-        (await pipeline.ExecuteAsync(OperationClass.Background, idempotent: false, _ => Task.FromResult(3), CancellationToken.None)).ShouldBe(3);
+        (await pipeline.ExecuteAsync(OperationClass.Background, idempotent: false, _ => Task.FromResult(3), CancellationToken.None).ConfigureAwait(true)).ShouldBe(3);
     }
 }

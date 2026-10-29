@@ -2,7 +2,7 @@ namespace Autonogrammer.Resilience.Tests;
 
 /// <summary>
 /// A clock that only moves when a test says so. Timers fire when <see cref="Advance"/> passes their due time, so a wait that is built on
-/// <see cref="Task.Delay(TimeSpan, TimeProvider, CancellationToken)"/> finishes without any real time passing. Every timer's due time is recorded,
+/// a timer of this clock finishes without any real time passing. Every timer's due time is recorded,
 /// which lets a test assert a retry schedule.
 /// </summary>
 internal sealed class ManualTimeProvider : TimeProvider

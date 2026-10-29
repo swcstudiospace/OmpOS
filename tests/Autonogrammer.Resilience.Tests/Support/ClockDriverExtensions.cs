@@ -30,7 +30,7 @@ internal static class ClockDriverExtensions
             }
         }
 
-        return await task.ConfigureAwait(false);
+        return await task.WaitAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <summary>Same as <see cref="DriveAsync{T}"/> for an operation without a result.</summary>
@@ -54,6 +54,6 @@ internal static class ClockDriverExtensions
             }
         }
 
-        await task.ConfigureAwait(false);
+        await task.WaitAsync(CancellationToken.None).ConfigureAwait(false);
     }
 }
