@@ -221,16 +221,23 @@ public sealed partial class CssContractTests
             "every weight the design uses is declared once");
     }
 
-    /// <summary>autonogrammer.css is the single entry: it imports every other stylesheet of the shared UI styles, tokens first.</summary>
+    /// <summary>autonogrammer.css is the single entry: it imports every other stylesheet of the shared UI styles, tokens first, and the vendored xterm stylesheet beside them rather than from inside another file.</summary>
     [Fact]
     public void AutonogrammerCssImportsEveryOtherStylesheet()
     {
         var entry = CssSources.StripComments(CssSources.ReadStyle("autonogrammer.css"));
         var imported = ImportPattern().Matches(entry).Select(static match => match.Groups["value"].Value).ToList();
+        var vendored = imported.Where(static value => value.StartsWith("../lib/", StringComparison.Ordinal)).ToList();
+        var own = imported.Except(vendored, StringComparer.Ordinal).ToList();
         var shipped = Directory.GetFiles(CssSources.StylesDirectory, "*.css").Select(file => Path.GetFileName(file)).Where(static name => !string.Equals(name, "autonogrammer.css", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToList();
 
-        imported.Order(StringComparer.Ordinal).ShouldBe(shipped, Case.Sensitive, "every stylesheet beside autonogrammer.css must be imported by it");
-        imported[0].ShouldBe("tokens.css", "tokens must load first");
+        own.Order(StringComparer.Ordinal).ShouldBe(shipped, Case.Sensitive, "every stylesheet beside autonogrammer.css must be imported by it");
+        own[0].ShouldBe("tokens.css", "tokens must load first");
+        vendored.ShouldBe(["../lib/xterm/xterm.css"], Case.Sensitive, "the vendored stylesheet of the terminal screen is imported by the entry file");
+        foreach (var file in CssSources.AllCssFiles().Where(static file => !string.Equals(Path.GetFileName(file), "autonogrammer.css", StringComparison.Ordinal)))
+        {
+            CssSources.StripComments(File.ReadAllText(file)).ShouldNotContain("@import", Case.Sensitive, $"{Path.GetFileName(file)} must not nest an import: the entry file imports every stylesheet, vendored ones included");
+        }
     }
 
     /// <summary>Only tokens.css holds colour literals: every other rule takes its colour from a token, so a theme switch reaches it.</summary>

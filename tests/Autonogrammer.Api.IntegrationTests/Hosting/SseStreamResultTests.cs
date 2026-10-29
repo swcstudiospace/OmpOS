@@ -17,6 +17,9 @@ public sealed class SseStreamResultTests
     private static Action<WebApplication> MapStream(Channel<SseItem<string>> channel) =>
         app => app.MapGet("/sse", () => new SseStreamResult(channel.Reader.ReadAllAsync()));
 
+    // Tests that read whole frames in order switch the keep-alive off, so a slow machine cannot slip a comment frame between the frames they expect.
+    private static Dictionary<string, string?> NoKeepAlive() => new(StringComparer.Ordinal) { ["Hosting:Sse:HeartbeatSeconds"] = "0" };
+
     private static async Task<List<string>> ReadFrameAsync(StreamReader reader, CancellationToken testToken)
     {
         var lines = new List<string>();
@@ -127,7 +130,7 @@ public sealed class SseStreamResultTests
     {
         var ct = TestContext.Current.CancellationToken;
         var channel = Channel.CreateUnbounded<SseItem<string>>();
-        var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapStream(channel)).ConfigureAwait(true);
+        var app = await HostingTestHost.StartAsync(ct, config: NoKeepAlive(), mapEndpoints: MapStream(channel)).ConfigureAwait(true);
         await using var appScope = app.ConfigureAwait(true);
         using var client = app.GetTestClient();
         _ = channel.Writer.TryWrite(Item("a", "5"));
@@ -148,7 +151,8 @@ public sealed class SseStreamResultTests
     {
         var ct = TestContext.Current.CancellationToken;
         var channel = Channel.CreateUnbounded<SseItem<string>>();
-        var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapStream(channel)).ConfigureAwait(true);
+        _ = channel.Writer.TryWrite(Item("one", "1"));
+        var app = await HostingTestHost.StartAsync(ct, config: NoKeepAlive(), mapEndpoints: MapStream(channel)).ConfigureAwait(true);
         await using var appScope = app.ConfigureAwait(true);
         using var client = app.GetTestClient();
         using var response = await client.GetAsync(new Uri("/sse", UriKind.Relative), HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(true);
@@ -156,7 +160,7 @@ public sealed class SseStreamResultTests
         await using (stream.ConfigureAwait(true))
         {
             using var reader = new StreamReader(stream);
-            _ = channel.Writer.TryWrite(Item("one", "1"));
+            // The event was queued before the request, so it is the first frame.
             _ = await ReadFrameAsync(reader, ct).ConfigureAwait(true);
 
             app.Lifetime.StopApplication();

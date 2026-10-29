@@ -93,6 +93,15 @@ await test("planReply: content arrays, the last user message wins, and a tool re
   assert.deepEqual(textChunks("a b  c").join(""), "a b  c");
 });
 
+await test("planReply: the system reminder omp puts before the prompt is not part of what the user said", () => {
+  const reminder = "<system-reminder>\nToday: 2026-10-29; current working directory: '/tmp/work'. Do not repeat this information in your reply.\n</system-reminder>";
+  const say = planReply({ messages: [{ role: "user", content: `${reminder}@say hello there` }] });
+  assert.deepEqual([say.scenario, say.text], ["say", "hello there"]);
+  const tool = planReply({ tools: [{ type: "function", function: { name: "bash" } }], messages: [{ role: "user", content: `${reminder}@tool bash {"command":"echo x"}` }] });
+  assert.deepEqual([tool.type, tool.name], ["tool", "bash"]);
+  assert.equal(planReply({ messages: [{ role: "user", content: `${reminder}plain words` }] }).text, "You said: plain words");
+});
+
 // ---- the server over HTTP -------------------------------------------------------------------------------------
 
 const fake = await startFakeModel({ port: 0 });

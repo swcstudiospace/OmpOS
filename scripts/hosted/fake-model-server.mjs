@@ -33,6 +33,7 @@ const MAX_BODY_BYTES = 8 * 1024 * 1024;
 const MAX_RECORDED_REQUESTS = 1000;
 const MAX_SLOW_MS = 60_000;
 const DIRECTIVE = /^\s*@(say|tool|slow|error)(?:[ \t]+(.*?))?\s*$/;
+const REMINDER = /^\s*<system-reminder>[\s\S]*?<\/system-reminder>\s*/;
 const TOOL_NAME = /^[A-Za-z0-9_.-]{1,64}$/;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -112,7 +113,8 @@ export function planReply(body) {
       break;
     }
   }
-  const userText = userIndex === -1 ? "" : messageText(messages[userIndex]);
+  // omp puts a <system-reminder> block (the date and the working directory) in front of the prompt, on the same line as the prompt's first line; it is not what the user said.
+  const userText = userIndex === -1 ? "" : messageText(messages[userIndex]).replace(REMINDER, "");
   const scenario = parseScenario(userText);
   const last = messages.at(-1);
 
@@ -272,7 +274,11 @@ export async function startFakeModel({ host = "127.0.0.1", port = 0, modelId = D
         hasAuthorization: typeof req.headers.authorization === "string" && req.headers.authorization.length > 0,
       });
     }
-    if (verbose) process.stderr.write(`fake-model: ${plan.scenario} stream=${body.stream === true} messages=${body.messages.length}\n`);
+    if (verbose) {
+      const lastUser = [...body.messages].reverse().find((message) => message?.role === "user");
+      const preview = JSON.stringify(messageText(lastUser).slice(-400));
+      process.stderr.write(`fake-model: ${plan.scenario} stream=${body.stream === true} messages=${body.messages.length} tools=${offeredToolNames(body).join(",") || "-"} lastUser=${preview}\n`);
+    }
 
     if (plan.type === "error") return sendError(res, plan.status, plan.message, plan.status >= 500 ? "server_error" : "invalid_request_error");
 

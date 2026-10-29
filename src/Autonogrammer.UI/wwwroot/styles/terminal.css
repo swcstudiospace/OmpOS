@@ -1,6 +1,5 @@
-/* omp terminal view: the xterm.js screen (vendored under lib/xterm, no CDN), its status line and the steer-only composer below it.
+/* omp terminal view: the xterm.js screen (vendored under lib/xterm, no CDN, its stylesheet is imported by autonogrammer.css), its status line and the steer-only composer below it.
    The screen's colours are read from tokens.css by scripts/autonogrammer-terminal.js, so a theme switch reaches it. */
-@import url('../lib/xterm/xterm.css');
 
 /* The terminal column is wider than the 760 px reading column (terminal output is wide monospace text) and centred in the panel. */
 .autonogrammer-terminal {

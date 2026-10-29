@@ -74,8 +74,9 @@ public sealed class WorkspaceAssetsTests
         module.ShouldContain("screenReaderMode: true", Case.Sensitive);
         module.ShouldContain("disableStdin: true", Case.Sensitive);
         ContainsHexColour(module).ShouldBeFalse("the terminal palette must come from tokens, not literals");
-        var terminalCss = CssSources.StripComments(CssSources.ReadStyle("terminal.css"));
-        terminalCss.TrimStart().ShouldStartWith("@import url('../lib/xterm/xterm.css');", Case.Sensitive);
+        var entryCss = CssSources.StripComments(CssSources.ReadStyle("autonogrammer.css"));
+        entryCss.IndexOf("@import url('../lib/xterm/xterm.css');", StringComparison.Ordinal).ShouldBeGreaterThan(-1);
+        entryCss.IndexOf("@import url('../lib/xterm/xterm.css');", StringComparison.Ordinal).ShouldBeLessThan(entryCss.IndexOf("@import url('terminal.css');", StringComparison.Ordinal), "xterm's own rules come before the terminal's");
         File.Exists(Path.Combine(XtermDirectory, "xterm.css")).ShouldBeTrue();
     }
 
