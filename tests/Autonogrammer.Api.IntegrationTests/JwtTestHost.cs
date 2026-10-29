@@ -42,7 +42,7 @@ internal static class JwtTestHost
     }
 
     /// <summary>
-    /// Returns the settings a production host needs to start: an HTTPS authority, an audience, and the PostgreSQL session store. The
+    /// Returns the settings a production host needs to start: an HTTPS authority, an audience, the ACP engine's workspace root, and the PostgreSQL session store. The
     /// store's connection string is read from <see cref="PostgresConnectionEnvironmentVariable"/>, so the test run must set it.
     /// </summary>
     /// <returns>The configuration overrides.</returns>
@@ -54,6 +54,7 @@ internal static class JwtTestHost
             ["Api:Auth:Authority"] = Issuer,
             ["Api:Auth:Audience"] = Audience,
             ["Harness:Adapter"] = "Acp",
+            ["Harness:Acp:WorkspaceRoot"] = Path.Combine(Path.GetTempPath(), "autonogrammer-test-workspaces"),
             ["Api:Auth:ValidIssuer"] = Issuer,
             ["Sessions:Store"] = "Postgres",
             ["Sessions:Postgres:ConnectionString"] = PostgresConnectionString(),
