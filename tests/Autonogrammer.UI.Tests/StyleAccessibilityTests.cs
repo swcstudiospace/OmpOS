@@ -131,9 +131,9 @@ public sealed partial class StyleAccessibilityTests
     {
         var overrides = ContrastOverrides();
 
-        overrides.Keys.ShouldContain("--autonogrammer-border");
-        overrides.Keys.ShouldContain("--autonogrammer-text-secondary");
-        overrides.Keys.ShouldContain("--autonogrammer-tint-border");
+        overrides.Keys.ShouldContain("--autonogrammer-border", StringComparer.Ordinal);
+        overrides.Keys.ShouldContain("--autonogrammer-text-secondary", StringComparer.Ordinal);
+        overrides.Keys.ShouldContain("--autonogrammer-tint-border", StringComparer.Ordinal);
         foreach (var (name, value) in overrides)
         {
             HexLiteral().IsMatch(value).ShouldBeFalse($"{name} must reference a token, not a literal");
@@ -318,13 +318,13 @@ public sealed partial class StyleAccessibilityTests
     [GeneratedRegex("#[0-9a-fA-F]{8}\\b|#[0-9a-fA-F]{6}\\b|#[0-9a-fA-F]{3}\\b", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
     private static partial Regex HexLiteral();
 
-    [GeneratedRegex("\\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color-mix|color)\\(", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
+    [GeneratedRegex("\\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color-mix|color)\\(", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]
     private static partial Regex ColourFunction();
 
     [GeneratedRegex("(?<![-\\w])(?<property>color|background|background-color|border|border-top|border-right|border-bottom|border-left|border-inline-start|border-inline-end|border-color|border-inline-start-color|outline|outline-color|accent-color|text-decoration-color)\\s*:\\s*(?<value>[^;]+);", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]
     private static partial Regex ColourDeclaration();
 
-    [GeneratedRegex("var\\(--autonogrammer-(focus-width|focus-offset)\\)", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
+    [GeneratedRegex("var\\(--autonogrammer-(focus-width|focus-offset)\\)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]
     private static partial Regex LengthTokenReference();
 
     [GeneratedRegex("(?<![-\\w])color:\\s*var\\((?<name>--autonogrammer-[a-z0-9-]+)\\)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]

@@ -33,7 +33,7 @@ public sealed class TranscriptRenderingTests : UiTestContext
 
         var after = cut.FindComponents<MarkdownBlockView>();
         after.Count.ShouldBe(2);
-        after.Single(component => component.Instance.Block.Id == "markdown-1").Instance.ShouldBeSameAs(before);
+        after.Single(component => string.Equals(component.Instance.Block.Id, "markdown-1", StringComparison.Ordinal)).Instance.ShouldBeSameAs(before);
     }
 
     /// <summary>Two blocks of one tree can share an identifier (a tool call and the permission asked for it); both are drawn.</summary>

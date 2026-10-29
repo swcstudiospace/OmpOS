@@ -15,7 +15,7 @@ internal sealed class OwnerTokenFailureLimiter
 
     private readonly TimeProvider _time;
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
 
     /// <summary>Initializes a new instance of the <see cref="OwnerTokenFailureLimiter"/> class.</summary>
     /// <param name="time">The clock.</param>

@@ -40,18 +40,12 @@ internal sealed class SseStreamResult : IResult
         var time = services.GetRequiredService<TimeProvider>();
         var stopping = services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping;
 
-        var response = httpContext.Response;
-        response.ContentType = "text/event-stream";
-        response.Headers[HeaderNames.CacheControl] = "no-store, no-transform";
-        response.Headers["X-Accel-Buffering"] = "no";
-        httpContext.Features.Get<IHttpRequestTimeoutFeature>()?.DisableTimeout();
-        httpContext.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
-        await response.StartAsync(httpContext.RequestAborted).ConfigureAwait(false);
+        await StartResponseAsync(httpContext).ConfigureAwait(false);
 
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted, stopping);
         var token = linked.Token;
-        var body = response.Body;
-        await using var enumerator = _source.GetAsyncEnumerator(token);
+        var body = httpContext.Response.Body;
+        var enumerator = _source.GetAsyncEnumerator(token);
         using var timer = heartbeat > TimeSpan.Zero ? new PeriodicTimer(heartbeat, time) : null;
         var lastWrite = time.GetTimestamp();
         Task<bool> pending = Task.FromResult(false);
@@ -87,7 +81,7 @@ internal sealed class SseStreamResult : IResult
                 }
 
                 lastWrite = time.GetTimestamp();
-                await SseFormatter.WriteAsync(Single(enumerator.Current), body, token).ConfigureAwait(false);
+                await SseFormatter.WriteAsync(SingleAsync(enumerator.Current), body, token).ConfigureAwait(false);
                 pending = enumerator.MoveNextAsync().AsTask();
             }
         }
@@ -102,17 +96,36 @@ internal sealed class SseStreamResult : IResult
         finally
         {
             await linked.CancelAsync().ConfigureAwait(false);
-            if (pendingStarted && !pending.IsCompleted)
-            {
-                try
-                {
-                    _ = await pending.ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    // Cancelled above; the enumerator is idle and can be disposed.
-                }
-            }
+            await DrainAsync(pending, pendingStarted).ConfigureAwait(false);
+            await enumerator.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    private static async Task StartResponseAsync(HttpContext httpContext)
+    {
+        var response = httpContext.Response;
+        response.ContentType = "text/event-stream";
+        response.Headers[HeaderNames.CacheControl] = "no-store, no-transform";
+        response.Headers["X-Accel-Buffering"] = "no";
+        httpContext.Features.Get<IHttpRequestTimeoutFeature>()?.DisableTimeout();
+        httpContext.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
+        await response.StartAsync(httpContext.RequestAborted).ConfigureAwait(false);
+    }
+
+    private static async Task DrainAsync(Task<bool> pending, bool started)
+    {
+        if (!started || pending.IsCompleted)
+        {
+            return;
+        }
+
+        try
+        {
+            _ = await pending.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelled by the caller; the enumerator is idle and can be disposed.
         }
     }
 
@@ -122,7 +135,7 @@ internal sealed class SseStreamResult : IResult
         await body.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static async IAsyncEnumerable<SseItem<string>> Single(SseItem<string> item)
+    private static async IAsyncEnumerable<SseItem<string>> SingleAsync(SseItem<string> item)
     {
         yield return item;
         await Task.CompletedTask.ConfigureAwait(false);

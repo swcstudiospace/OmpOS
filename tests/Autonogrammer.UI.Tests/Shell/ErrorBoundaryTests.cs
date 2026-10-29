@@ -1,5 +1,6 @@
 using Autonogrammer.UI.Components.Shell;
 using Bunit;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
@@ -10,6 +11,9 @@ namespace Autonogrammer.UI.Tests.Shell;
 /// <summary>The root error boundary: a failing page shows a plain alert with a Reload button instead of a blank screen, and neither the screen nor the log carries the exception's text.</summary>
 public sealed class ErrorBoundaryTests : UiTestContext
 {
+    // The text EditForm throws when it has neither a model nor an edit context: it stands for an exception message the user must never see.
+    private const string ExceptionText = "requires a Model parameter";
+
     private readonly RecordingBoundaryLogger _logger = new();
 
     /// <summary>Initializes a new instance of the <see cref="ErrorBoundaryTests"/> class.</summary>
@@ -19,7 +23,7 @@ public sealed class ErrorBoundaryTests : UiTestContext
     }
 
     private IRenderedComponent<AppErrorBoundary> RenderBoundary() => Render<AppErrorBoundary>(parameters => parameters
-        .AddChildContent<ThrowingComponent>());
+        .AddChildContent<EditForm>());
 
     /// <summary>A healthy child renders as it is, with no fallback.</summary>
     [Fact]
@@ -43,7 +47,7 @@ public sealed class ErrorBoundaryTests : UiTestContext
         alert.TextContent.ShouldContain(ErrorFallback.Body, Case.Sensitive);
         cut.FindAll("h1").Select(static heading => heading.TextContent).ShouldBe([ErrorFallback.Heading]);
         cut.Find("button").TextContent.ShouldBe(ErrorFallback.ReloadText);
-        cut.Markup.ShouldNotContain(ThrowingComponent.Message);
+        cut.Markup.ShouldNotContain(ExceptionText);
         cut.Markup.ShouldNotContain("InvalidOperationException");
         cut.Markup.ShouldNotContain("StackTrace");
     }
@@ -57,7 +61,7 @@ public sealed class ErrorBoundaryTests : UiTestContext
         var entry = _logger.Entries.ShouldHaveSingleItem();
         entry.Level.ShouldBe(LogLevel.Error);
         entry.Message.ShouldContain(nameof(InvalidOperationException), Case.Sensitive);
-        entry.Message.ShouldNotContain(ThrowingComponent.Message);
+        entry.Message.ShouldNotContain(ExceptionText);
         entry.Exception.ShouldBeNull("the exception object carries the message and the stack");
     }
 

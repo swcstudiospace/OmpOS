@@ -46,7 +46,7 @@ public sealed class AboutViewTests : UiTestContext
     {
         var cut = Render<AboutView>();
 
-        cut.FindAll("a").Select(static link => link.GetAttribute("href")).ShouldNotContain("https://github.com/swcstudiospace/OmpOS");
+        cut.FindAll("a").Select(static link => link.GetAttribute("href")).ShouldNotContain("https://github.com/swcstudiospace/OmpOS", StringComparer.Ordinal);
         cut.Markup.ShouldNotContain(AboutViewCopy.SourceOffer);
         cut.Markup.ShouldContain(ShellInfo.CurrentVersion, Case.Sensitive);
         cut.Markup.ShouldContain(AboutViewCopy.LicenceNotice, Case.Sensitive);

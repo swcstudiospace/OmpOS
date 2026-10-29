@@ -1,6 +1,7 @@
 using Autonogrammer.Api.Options;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Serialization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Endpoints;
@@ -31,7 +32,7 @@ internal static class AuthConfigEndpoints
         return endpoints;
     }
 
-    private static IResult Handle(HttpContext context, IOptions<ApiAuthOptions> options)
+    private static JsonHttpResult<AuthConfigResponse> Handle(HttpContext context, IOptions<ApiAuthOptions> options)
     {
         ArgumentNullException.ThrowIfNull(context);
         var auth = options.Value;
@@ -41,10 +42,9 @@ internal static class AuthConfigEndpoints
             return TypedResults.Json(new AuthConfigResponse("owner-token", null, null), ApiJsonContext.Default.AuthConfigResponse);
         }
 
-        var mode = auth.AllowDevelopmentPrincipal ? "development" : "oidc";
-        var response = mode == "oidc"
-            ? new AuthConfigResponse(mode, Blank(auth.Authority), Blank(auth.Audience))
-            : new AuthConfigResponse(mode, null, null);
+        var response = auth.AllowDevelopmentPrincipal
+            ? new AuthConfigResponse("development", null, null)
+            : new AuthConfigResponse("oidc", Blank(auth.Authority), Blank(auth.Audience));
         return TypedResults.Json(response, ApiJsonContext.Default.AuthConfigResponse);
     }
 

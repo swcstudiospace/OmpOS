@@ -50,7 +50,7 @@ public sealed class RouteAnnouncerTests : UiTestContext
         var status = region.Find("[role='status']");
         status.GetAttribute("aria-live").ShouldBe("polite");
         status.GetAttribute("aria-atomic").ShouldBe("true");
-        status.ClassList.ShouldContain("autonogrammer-sr-only");
+        status.ClassList.ShouldContain("autonogrammer-sr-only", StringComparer.Ordinal);
         status.TextContent.ShouldBeEmpty();
     }
 

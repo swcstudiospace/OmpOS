@@ -43,7 +43,7 @@ public sealed class ConnectViewTests : UiTestContext
         var label = form.QuerySelector("label[for='autonogrammer-connect-token']");
         label.ShouldNotBeNull();
         label.TextContent.ShouldBe(AuthCopy.TokenLabel);
-        label.ClassList.ShouldNotContain("autonogrammer-sr-only", "the label is visible");
+        label.ClassList.ShouldNotContain("autonogrammer-sr-only", StringComparer.Ordinal, "the label is visible");
         var field = cut.Find(TokenSelector);
         field.GetAttribute("type").ShouldBe("password");
         field.GetAttribute("autocomplete").ShouldBe("current-password");
@@ -65,7 +65,7 @@ public sealed class ConnectViewTests : UiTestContext
 
         var username = cut.Find("input[autocomplete='username']");
         username.HasAttribute("readonly").ShouldBeTrue();
-        username.ClassList.ShouldContain("autonogrammer-sr-only");
+        username.ClassList.ShouldContain("autonogrammer-sr-only", StringComparer.Ordinal);
         username.GetAttribute("value").ShouldBe(AuthCopy.Username);
         cut.Find("label[for='" + username.Id + "']").TextContent.ShouldBe(AuthCopy.UsernameLabel);
     }
@@ -136,7 +136,7 @@ public sealed class ConnectViewTests : UiTestContext
         await TypeAndSubmitAsync(cut, Token).ConfigureAwait(true);
 
         cut.Find("[role='alert']").TextContent.ShouldBe(AuthCopy.ConnectUnreachable);
-        cut.Find("[role='alert']").TextContent.ShouldNotBe(AuthCopy.TokenRejected);
+        cut.Find("[role='alert']").TextContent.ShouldNotBe(AuthCopy.TokenRejected, Case.Sensitive);
         cut.Find(TokenSelector).GetAttribute("value").ShouldBe(Token);
 
         await cut.Find("form").SubmitAsync().ConfigureAwait(true);

@@ -56,7 +56,7 @@ public sealed class ToolApprovalCeilingRunTests
 
         var stored = await repository.GetAsync(sessionId, ct).ConfigureAwait(true);
         stored.ShouldNotBeNull().Status.ShouldBe(SessionStatus.Completed);
-        stored.Events.Select(static evt => evt.Payload).OfType<UnknownPayload>().Select(static payload => payload.OriginalKind).ShouldContain("tool_approval_approved");
+        stored.Events.Select(static evt => evt.Payload).OfType<UnknownPayload>().Select(static payload => payload.OriginalKind).ShouldContain("tool_approval_approved", StringComparer.Ordinal);
     }
 
     /// <summary>A ceiling that names another tool refuses the allow, and the request stays pending.</summary>

@@ -1,0 +1,46 @@
+@namespace Autonogrammer.UI.Components.Shell
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.JSInterop
+@inject IJSRuntime Js
+
+@code {
+    // The function Blazor's FocusOnNavigate calls.
+    private const string FocusBySelectorInterop = "Blazor._internal.domWrapper.focusBySelector";
+
+    private RouteData? _previous;
+    private bool _focusAfterRender;
+
+    /// <summary>Gets or sets the route data of the page that is shown.</summary>
+    [Parameter]
+    [EditorRequired]
+    public RouteData? RouteData { get; set; }
+
+    /// <summary>Gets or sets the CSS selector of the element that receives focus after the page type changes.</summary>
+    [Parameter]
+    public string Selector { get; set; } = "h1";
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        // The first page that renders keeps the browser's initial focus, so the first Tab reaches the skip link (WCAG 2.4.1 Bypass Blocks).
+        // Only a later change of page type, for example from the connect page to the workbench, moves focus to the new page's heading.
+        if (_previous is not null && RouteData?.PageType != _previous.PageType)
+        {
+            _focusAfterRender = true;
+        }
+
+        _previous = RouteData;
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_focusAfterRender)
+        {
+            return;
+        }
+
+        _focusAfterRender = false;
+        await Js.InvokeVoidAsync(FocusBySelectorInterop, Selector).ConfigureAwait(true);
+    }
+}

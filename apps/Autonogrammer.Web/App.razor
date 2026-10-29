@@ -9,7 +9,7 @@
     <AppErrorBoundary>
         <Router AppAssembly="@typeof(App).Assembly">
             <Found Context="routeData">
-                <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+                <RouteFocus RouteData="@routeData" Selector="h1" />
                 <AuthGate IsDemo="Options.IsDemo">
                     <RouteView RouteData="@routeData" />
                 </AuthGate>
