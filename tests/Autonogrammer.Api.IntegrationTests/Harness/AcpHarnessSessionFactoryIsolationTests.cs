@@ -44,7 +44,7 @@ public sealed class AcpHarnessSessionFactoryIsolationTests : IDisposable
         options.EnvironmentAllowList.ShouldBeEmpty();
         options.WorkingDirectory.ShouldBe(Path.Combine(Root, "session-prod"));
         Directory.Exists(options.WorkingDirectory).ShouldBeTrue();
-        options.WorkingDirectory.ShouldNotBe(Environment.CurrentDirectory);
+        string.Equals(options.WorkingDirectory, Environment.CurrentDirectory, StringComparison.Ordinal).ShouldBeFalse("the engine must not start in the API's working directory");
     }
 
     /// <summary>The configured allow-list reaches the options, and an explicit Inherit with the unsafe opt-in is passed as Inherit.</summary>

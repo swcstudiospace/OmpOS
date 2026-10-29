@@ -108,7 +108,7 @@ public sealed class HarnessApprovalOptionsValidationTests
         result.Succeeded.ShouldBe(valid);
         if (!valid)
         {
-            result.FailureMessage.ShouldContain("Harness:Acp:Approval:DecisionTimeoutSeconds must be between 1 and");
+            result.FailureMessage.ShouldNotBeNull().ShouldContain("Harness:Acp:Approval:DecisionTimeoutSeconds must be between 1 and");
         }
     }
 

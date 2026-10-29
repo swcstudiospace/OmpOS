@@ -10,8 +10,8 @@ internal static class AcpFixtures
     /// <summary>The session identifier recorded in <c>acp-out.ndjson</c>.</summary>
     public const string CapturedSessionId = "01a1582d-a7c8-724b-a542-695b31c7d7b4";
 
-    /// <summary>The working directory recorded in <c>acp-in.ndjson</c>.</summary>
-    public const string CapturedCwd = "/root/src/repos/autonogrammer";
+    /// <summary>The working directory recorded in <c>acp-in.ndjson</c> (the checkout path at capture time; the frames are replayed byte for byte, so this is not renamed with the product).</summary>
+    public const string CapturedCwd = "/root/src/repos/ompos";
 
     private static readonly FrozenDictionary<long, byte[]> CapturedResponses = Lines("acp-out.ndjson")
         .Select(Utf8)

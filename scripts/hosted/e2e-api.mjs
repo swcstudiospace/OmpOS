@@ -6,7 +6,7 @@
 // Steps (each can be skipped with --skip <name>[,<name>...]):
 //   auth-config      GET /auth/config: anonymous, no-store, only {mode, authority, audience}
 //   unauthenticated  a request with no credential is 401                      (skipped in mode "development")
-//   bad-token        a wrong bearer token is 401 with a ProblemDetails body   (skipped in mode "development")
+//   bad-token        a wrong bearer token is 401 with a Bearer challenge; a body, if any, is ProblemDetails (skipped in mode "development")
 //   text-turn        create a session, stream a prompt: ids, text deltas, completed, session settles
 //   tool-turn        "@tool" prompt: the permission request is decided through the tool-approval endpoints
 //   resume           second prompt, forced disconnect, resume with Last-Event-ID: no gap, no duplicate, log matches
@@ -40,7 +40,6 @@ function parseArgs(argv) {
     burst: 200,
     out: "",
     allowInsecure: false,
-    lenient401: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -70,7 +69,6 @@ function parseArgs(argv) {
     } else if (arg === "--rate-limit-burst") options.burst = integer();
     else if (arg === "--out") options.out = value();
     else if (arg === "--allow-insecure") options.allowInsecure = true;
-    else if (arg === "--lenient-401-body") options.lenient401 = true;
     else if (arg === "--help" || arg === "-h") throw new Usage("help");
     else throw new Usage(`unknown argument ${arg}`);
   }
@@ -92,7 +90,7 @@ function parseArgs(argv) {
 
 const HELP = `usage: node scripts/hosted/e2e-api.mjs --api <url> [--token <t>] [--skip steps] [--approval-expect ${APPROVAL_EXPECTATIONS.join("|")}]
        [--tool-name bash] [--tool-args '{"command":"..."}'] [--rate-limit-burst 200] [--turn-timeout-ms 120000]
-       [--request-timeout-ms 30000] [--out report.json] [--allow-insecure] [--lenient-401-body]
+       [--request-timeout-ms 30000] [--out report.json] [--allow-insecure]
 environment: AUTONOGRAMMER_API_URL, AUTONOGRAMMER_E2E_TOKEN
 steps: ${STEP_NAMES.join(", ")}`;
 
@@ -230,22 +228,18 @@ async function readEvents(id, { lastEventId = 0, onEvent, signal }) {
   return { events, stopped, terminal };
 }
 
-/** Starts reading the stream, submits the prompt, and returns what the stream delivered. */
+/**
+ * Submits the prompt, then reads the stream from lastEventId and returns what it delivered. The prompt goes first: the API ends the stream of a
+ * session that is not running, so a stream opened before the second prompt of a session would end at once. Every event is persisted with its
+ * number, so reading after the 202 loses nothing, even when the run has finished by then.
+ */
 async function runTurn(id, prompt, { lastEventId = 0, onEvent } = {}) {
-  const controller = new AbortController();
+  const response = await call("POST", `/sessions/${id}/prompts`, { body: { prompt } });
+  const { json } = await expectStatus(response, 202, `POST /sessions/${id}/prompts`);
+  check(statusIs(json, "accepted") && json.sessionId === id, "the prompt acceptance body is not {sessionId, status: accepted}");
   const deadline = AbortSignal.timeout(options.turnTimeoutMs);
-  const reading = readEvents(id, { lastEventId, onEvent, signal: AbortSignal.any([controller.signal, deadline]) });
-  reading.catch(() => {});
   try {
-    const response = await call("POST", `/sessions/${id}/prompts`, { body: { prompt } });
-    const { json } = await expectStatus(response, 202, `POST /sessions/${id}/prompts`);
-    check(statusIs(json, "accepted") && json.sessionId === id, "the prompt acceptance body is not {sessionId, status: accepted}");
-  } catch (error) {
-    controller.abort();
-    throw error;
-  }
-  try {
-    return await reading;
+    return await readEvents(id, { lastEventId, onEvent, signal: deadline });
   } catch (error) {
     if (deadline.aborted) throw new Failure(`the turn did not finish within ${options.turnTimeoutMs} ms`);
     throw error;
@@ -323,9 +317,11 @@ await step("bad-token", async () => {
   const { text, json } = await readJson(response);
   check(response.status === 401, `a wrong token: expected HTTP 401, got ${response.status}`);
   check(!text.includes(badToken), "the 401 body echoes the presented token");
-  if (!options.lenient401) {
+  const challenge = response.headers.get("www-authenticate") ?? "";
+  check(/^Bearer\b/i.test(challenge), `the 401 must carry a Bearer challenge (WWW-Authenticate), got "${challenge}"`);
+  if (text.length > 0) {
     const type = response.headers.get("content-type") ?? "";
-    check(/^application\/problem\+json/i.test(type), `the 401 content type is "${type}", expected application/problem+json (the shared ProblemDetails shape)`);
+    check(/^application\/problem\+json/i.test(type), `a 401 body must be ProblemDetails; the content type is "${type}"`);
     check(json !== null && json.status === 401 && typeof json.title === "string" && json.title.length > 0, `the 401 body is not ProblemDetails with status 401 and a title: ${text.slice(0, 200)}`);
   }
   return { contentType: response.headers.get("content-type") ?? null };

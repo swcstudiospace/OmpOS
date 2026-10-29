@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -42,7 +43,7 @@ internal static class OwnerTokenTestHost
     /// <param name="logs">An optional capturing log provider.</param>
     /// <returns>The factory.</returns>
     public static ApiFactory CreateFactory(Dictionary<string, string?>? config = null, ILoggerProvider? logs = null) =>
-        new(config ?? Config(), static services => services.AddTransient<IStartupFilter, RemoteAddressFilter>(), logs);
+        new(config ?? Config(), static services => services.AddTransient<IStartupFilter>(static _ => new RemoteAddressFilter()), logs);
 
     /// <summary>Sends <c>GET /sessions</c> with an Authorization header value and an optional simulated remote address.</summary>
     /// <param name="client">The client.</param>
@@ -80,7 +81,7 @@ internal static class OwnerTokenTestHost
     private sealed class RemoteAddressFilter : IStartupFilter
     {
         /// <inheritdoc />
-        public Action<Microsoft.AspNetCore.Builder.IApplicationBuilder> Configure(Action<Microsoft.AspNetCore.Builder.IApplicationBuilder> next)
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next)
         {
             ArgumentNullException.ThrowIfNull(next);
             return app =>

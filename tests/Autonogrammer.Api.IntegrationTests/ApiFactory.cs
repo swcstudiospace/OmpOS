@@ -60,11 +60,12 @@ internal sealed class ApiFactory : WebApplicationFactory<Program>
     /// <summary>
     /// Development hosts get the development principal through its explicit opt-in, so tests that send unauthenticated requests keep
     /// working. Other environments never get that opt-in; they admit any authenticated user instead, so the OIDC allow-list rule does not
-    /// stop fixtures that test something else. Per-test overrides win.
+    /// stop fixtures that test something else. The request timeout is long (the product default is 30 seconds) so that a loaded machine
+    /// cannot cancel a slow first request such as the OpenAPI document; the timeout itself is tested with its own host. Per-test overrides win.
     /// </summary>
     private Dictionary<string, string?> EffectiveConfig()
     {
-        var effective = new Dictionary<string, string?>(StringComparer.Ordinal);
+        var effective = new Dictionary<string, string?>(StringComparer.Ordinal) { ["Hosting:RequestTimeoutSeconds"] = "600" };
         if (_environment is null || string.Equals(_environment, Environments.Development, StringComparison.Ordinal))
         {
             effective["Api:Auth:AllowDevelopmentPrincipal"] = "true";

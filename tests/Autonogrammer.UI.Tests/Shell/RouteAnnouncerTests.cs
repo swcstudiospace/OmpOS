@@ -25,16 +25,12 @@ public sealed class RouteAnnouncerTests : UiTestContext
         announcer.Text.ShouldBeEmpty("nothing is announced on the first load");
 
         Navigation.NavigateTo("kanban");
-        title.Render(parameters => parameters
-            .Add(p => p.Text, ViewTitles.Compose("Kanban"))
-            .AddCascadingValue(announcer));
+        title.Render(parameters => parameters.Add(p => p.Text, ViewTitles.Compose("Kanban")));
 
         region.WaitForAssertion(() => region.Find("[role='status']").TextContent.ShouldBe("Kanban - Autonogrammer"));
         announcer.Text.ShouldBe("Kanban - Autonogrammer");
 
-        title.Render(parameters => parameters
-            .Add(p => p.Text, ViewTitles.Compose("Later", "Kanban"))
-            .AddCascadingValue(announcer));
+        title.Render(parameters => parameters.Add(p => p.Text, ViewTitles.Compose("Later", "Kanban")));
 
         announcer.Text.ShouldBe("Kanban - Autonogrammer", "one navigation is announced once");
     }

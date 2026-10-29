@@ -1,9 +1,9 @@
+using System.IO.Pipelines;
 using System.Net.ServerSentEvents;
 using System.Threading.Channels;
 using Autonogrammer.Api.Sse;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 
@@ -34,17 +34,28 @@ public sealed class SseStreamResultTests
 
     private static SseItem<string> Item(string data, string id) => new(data, "message") { EventId = id };
 
-    /// <summary>The stream sets its headers, frames events as before, and writes a keep-alive only after it has been idle for the interval.</summary>
+    // The stream's idle period is a timer of the manual clock. A test may only move the clock once the stream has registered the timer of its current
+    // wait; otherwise the timer would be created after the move and nothing would ever fire it.
+    private static async Task WaitForTimersAsync(ManualTimeProvider time, int atLeast, CancellationToken testToken)
+    {
+        while (time.TimersCreated < atLeast)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(5), testToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Over HTTP a stream carries its headers, frames an event as before, and an idle stream gets a keep-alive comment (the interval is shortened to one second).</summary>
     [Fact]
     public async Task IdleStream_GetsAKeepAliveComment_AndHeadersArePresent()
     {
-        var ct = TestContext.Current.CancellationToken;
-        var time = new ManualTimeProvider();
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        limit.CancelAfter(TimeSpan.FromSeconds(30));
+        var ct = limit.Token;
         var channel = Channel.CreateUnbounded<SseItem<string>>();
-        await using var app = await HostingTestHost.StartAsync(
-            ct,
-            configureServices: services => services.AddSingleton<TimeProvider>(time),
-            mapEndpoints: MapStream(channel)).ConfigureAwait(true);
+        _ = channel.Writer.TryWrite(Item("one", "1"));
+        var config = new Dictionary<string, string?>(StringComparer.Ordinal) { ["Hosting:Sse:HeartbeatSeconds"] = "1" };
+        var app = await HostingTestHost.StartAsync(ct, config: config, mapEndpoints: MapStream(channel)).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
         using var client = app.GetTestClient();
 
         using var response = await client.GetAsync(new Uri("/sse", UriKind.Relative), HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(true);
@@ -59,16 +70,54 @@ public sealed class SseStreamResultTests
         await using (stream.ConfigureAwait(true))
         {
             using var reader = new StreamReader(stream);
+            // The event was queued before the request, so it is the first frame however slow the machine is; the keep-alive can only come after it.
+            (await ReadFrameAsync(reader, ct).ConfigureAwait(true)).ShouldBe(["event: message", "data: one", "id: 1"]);
 
+            (await ReadFrameAsync(reader, ct).ConfigureAwait(true)).ShouldBe([": keepalive"]);
+        }
+    }
+
+    // Runs the write loop over a pipe. The stream over the pipe's writer belongs to this task, so it is disposed when the loop ends, which is also what lets the reader see the end.
+    private static async Task RunLoopAsync(PipeWriter writer, ChannelReader<SseItem<string>> items, TimeProvider time, CancellationToken testToken)
+    {
+        var body = writer.AsStream();
+        await using (body.ConfigureAwait(false))
+        {
+            await SseStreamResult.WriteLoopAsync(items, body, time, Heartbeat, testToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>The write loop writes a keep-alive only after a full idle interval counted from the last write, and an item restarts the interval.</summary>
+    [Fact]
+    public async Task WriteLoop_WritesAKeepAliveOnlyAfterAFullIdlePeriod()
+    {
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        limit.CancelAfter(TimeSpan.FromSeconds(30));
+        var ct = limit.Token;
+        var time = new ManualTimeProvider();
+        var channel = Channel.CreateUnbounded<SseItem<string>>();
+        var pipe = new Pipe();
+        var loop = RunLoopAsync(pipe.Writer, channel.Reader, time, ct);
+        var incoming = pipe.Reader.AsStream();
+        await using (incoming.ConfigureAwait(true))
+        {
+            using var reader = new StreamReader(incoming);
+
+            await WaitForTimersAsync(time, 1, ct).ConfigureAwait(true);
             _ = channel.Writer.TryWrite(Item("one", "1"));
-            (await ReadFrameAsync(reader, ct).ConfigureAwait(true)).ShouldBe(new[] { "id: 1", "data: one" }, ignoreOrder: true);
+            (await ReadFrameAsync(reader, ct).ConfigureAwait(true)).ShouldBe(["event: message", "data: one", "id: 1"]);
 
+            await WaitForTimersAsync(time, 2, ct).ConfigureAwait(true);
             time.Advance(Heartbeat - TimeSpan.FromSeconds(1));
             _ = channel.Writer.TryWrite(Item("two", "2"));
-            (await ReadFrameAsync(reader, ct).ConfigureAwait(true)).ShouldBe(new[] { "id: 2", "data: two" }, ignoreOrder: true);
+            (await ReadFrameAsync(reader, ct).ConfigureAwait(true)).ShouldBe(["event: message", "data: two", "id: 2"]);
 
+            await WaitForTimersAsync(time, 3, ct).ConfigureAwait(true);
             time.Advance(Heartbeat * 2);
-            (await ReadFrameAsync(reader, ct).ConfigureAwait(true)).ShouldBe(new[] { ": keepalive" });
+            (await ReadFrameAsync(reader, ct).ConfigureAwait(true)).ShouldBe([": keepalive"]);
+
+            channel.Writer.Complete();
+            await loop.ConfigureAwait(true);
         }
     }
 
@@ -78,7 +127,8 @@ public sealed class SseStreamResultTests
     {
         var ct = TestContext.Current.CancellationToken;
         var channel = Channel.CreateUnbounded<SseItem<string>>();
-        await using var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapStream(channel)).ConfigureAwait(true);
+        var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapStream(channel)).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
         using var client = app.GetTestClient();
         _ = channel.Writer.TryWrite(Item("a", "5"));
         _ = channel.Writer.TryWrite(Item("b", "6"));
@@ -88,8 +138,8 @@ public sealed class SseStreamResultTests
 
         var frames = body.ReplaceLineEndings("\n").Split("\n\n", StringSplitOptions.RemoveEmptyEntries);
         frames.Length.ShouldBe(2);
-        frames[0].Split('\n').ShouldBe(new[] { "id: 5", "data: a" }, ignoreOrder: true);
-        frames[1].Split('\n').ShouldBe(new[] { "id: 6", "data: b" }, ignoreOrder: true);
+        frames[0].Split('\n').ShouldBe(["event: message", "data: a", "id: 5"]);
+        frames[1].Split('\n').ShouldBe(["event: message", "data: b", "id: 6"]);
     }
 
     /// <summary>When the host stops, the stream writes <c>retry: 2000</c> and ends so the client reconnects elsewhere.</summary>
@@ -98,7 +148,8 @@ public sealed class SseStreamResultTests
     {
         var ct = TestContext.Current.CancellationToken;
         var channel = Channel.CreateUnbounded<SseItem<string>>();
-        await using var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapStream(channel)).ConfigureAwait(true);
+        var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapStream(channel)).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
         using var client = app.GetTestClient();
         using var response = await client.GetAsync(new Uri("/sse", UriKind.Relative), HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(true);
         var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(true);

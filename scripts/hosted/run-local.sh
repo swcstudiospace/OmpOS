@@ -104,13 +104,14 @@ env "${OMP_ENV[@]}" "${API_ENV[@]}" dotnet "$API_DLL" >"$OUT/api.log" 2>&1 &
 PIDS+=("$!")
 waitfor "http://127.0.0.1:$API_PORT/health/ready" "the API"
 
-# 5. The API checks. The expected approval outcome depends on the policy that was started.
+# 5. The API checks. The expected approval outcome depends on the policy that was started. The rate-limit step drains the session-creation bucket for
+#    about a minute, so it runs last, after the browser check, which creates a session of its own.
 EXPECT="approved"
 [[ "$APPROVALS" -eq 0 ]] && EXPECT="policy-denied"
-SKIP_ARGS=()
-[[ -n "$SKIP" ]] && SKIP_ARGS=(--skip "$SKIP")
+FIRST_SKIP="rate-limit"
+[[ -n "$SKIP" ]] && FIRST_SKIP="rate-limit,$SKIP"
 STATUS=0
-AUTONOGRAMMER_E2E_TOKEN="$TOKEN" node scripts/hosted/e2e-api.mjs --api "http://127.0.0.1:$API_PORT" --approval-expect "$EXPECT" "${SKIP_ARGS[@]}" --out "$OUT/e2e-api.json" || STATUS=$?
+AUTONOGRAMMER_E2E_TOKEN="$TOKEN" node scripts/hosted/e2e-api.mjs --api "http://127.0.0.1:$API_PORT" --approval-expect "$EXPECT" --skip "$FIRST_SKIP" --out "$OUT/e2e-api.json" || STATUS=$?
 
 # 6. The browser check, only with a bundle.
 if [[ -n "$WEB_BUNDLE" ]]; then
@@ -118,6 +119,11 @@ if [[ -n "$WEB_BUNDLE" ]]; then
   PIDS+=("$!")
   waitfor "http://127.0.0.1:$WEB_PORT/" "the static server"
   AUTONOGRAMMER_E2E_TOKEN="$TOKEN" node scripts/hosted/e2e-browser.mjs --url "http://127.0.0.1:$WEB_PORT/" --out "$OUT/browser" || STATUS=$?
+fi
+
+# 7. The rate limit, last.
+if [[ ",$SKIP," != *",rate-limit,"* ]]; then
+  AUTONOGRAMMER_E2E_TOKEN="$TOKEN" node scripts/hosted/e2e-api.mjs --api "http://127.0.0.1:$API_PORT" --skip "auth-config,unauthenticated,bad-token,text-turn,tool-turn,resume" --out "$OUT/e2e-api-rate-limit.json" || STATUS=$?
 fi
 
 printf 'run-local: model requests logged: %s\n' "$(grep -c . "$OUT/model.log" || true)"

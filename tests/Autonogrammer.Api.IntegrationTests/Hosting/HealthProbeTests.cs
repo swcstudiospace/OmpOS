@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Hosting;
 using Shouldly;
 using Xunit;
 
@@ -39,9 +38,10 @@ public sealed class HealthProbeTests
     public async Task Startup_IsUnhealthyUntilTheGateOpens()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = await HostingTestHost.StartAsync(
+        var app = await HostingTestHost.StartAsync(
             ct,
-            configureServices: static services => services.AddSingleton<ISessionRepository, FailingSessionRepository>()).ConfigureAwait(true);
+            configureServices: static services => services.AddSingleton<ISessionRepository>(static _ => new FailingSessionRepository())).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
         var gate = app.Services.GetRequiredService<HostingStartupGate>();
 
         gate.IsOpen.ShouldBeFalse();
@@ -58,7 +58,7 @@ public sealed class HealthProbeTests
     {
         var ct = TestContext.Current.CancellationToken;
         var gate = new HostingStartupGate();
-        var service = new StartupGateHostedService(
+        using var service = new StartupGateHostedService(
             new InMemorySessionRepository(),
             gate,
             TimeProvider.System,
@@ -76,7 +76,8 @@ public sealed class HealthProbeTests
     public async Task Ready_FlipsToUnhealthyWhenTheHostIsStopping()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapReady).ConfigureAwait(true);
+        var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapReady).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
 
         (await StatusAsync(app, "/health/ready", ct).ConfigureAwait(true)).ShouldBe(HttpStatusCode.OK);
 

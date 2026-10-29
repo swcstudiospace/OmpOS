@@ -55,6 +55,13 @@ Prerequisites: Node 24, `omp` on `PATH` (or its path), the .NET SDK in `$HOME/.d
 browser script. Run everything from the repository root. Use two or three terminals, or put the servers in the
 background as shown.
 
+`scripts/hosted/run-local.sh [--web-bundle <dir>] [--out <dir>] [--no-approvals] [--skip <steps>]` does everything below in one
+command and removes what it created: the scripted model, the isolated agent directory, a token and its digest, the API (a
+Development run with the engine environment on the allow-list, a per-session workspace and the approval policy for `execute`
+and `edit`), `e2e-api.mjs`, and, when a published real web bundle is given with `--web-bundle`, a static server and
+`e2e-browser.mjs`. It needs a Release build of `services/Autonogrammer.Api` and exits with the status of the checks. The commands
+below are the same steps by hand.
+
 ```sh
 ROOT=$(pwd)
 export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH
@@ -119,15 +126,17 @@ in your shell variable, the API's digest and the browser's memory.
 | --- | --- |
 | `auth-config` | `GET /auth/config` is 200, anonymous, `Cache-Control: no-store`, and has only `mode`, `authority`, `audience` |
 | `unauthenticated` | a request without a credential is 401 (skipped when the mode is `development`) |
-| `bad-token` | a wrong bearer token is 401 as `application/problem+json` with `status` 401 and a `title`; the body does not echo the token (`--lenient-401-body` accepts any body) |
+| `bad-token` | a wrong bearer token is 401 with a `WWW-Authenticate: Bearer` challenge; the body is empty (as the JWT handler's) or `application/problem+json` with `status` 401 and a `title`; it never echoes the token |
 | `text-turn` | `POST /sessions` (201, `Location`), `POST /sessions/{id}/prompts` (202), `GET /sessions/{id}/events` yields numeric, gap-free, growing ids; the SSE event name equals the payload `kind`; `text_delta` events carry the scripted reply; the stream ends with `completed` and the session settles |
 | `tool-turn` | `@tool bash {...}`: omp's permission request is handled (see below), the run completes, and the reply after the tool result is `done: <n>` |
 | `resume` | a second prompt; the client drops the stream after the first `text_delta`; reconnecting with `Last-Event-ID` continues at the next id with no gap or duplicate, the stitched text is complete, every event matches the session log, and a replay from the turn start returns the same ids |
 | `rate-limit` | hammering `POST /sessions` ends in 429 with a numeric `Retry-After` (`--rate-limit-burst`, default 200, must exceed `Api:RateLimit:SessionsPerMinute`) |
 
-Tool approvals. The hosted adapter is built with `AcpApprovalPolicy.DenyAll` (`AcpHarnessSessionFactory`), and
-`RequestToolApprovalAsync` is never given a ceiling, so a request that reaches the approval endpoints lists no
-grantable tools. The script therefore handles all three outcomes and reports which one happened:
+Tool approvals. The direct-run adapter denies every permission request unless `Harness:Acp:Approval` allows its kind:
+`Kinds` lists the engine's tool kinds that reach the approval endpoints (`read`, `search`, `edit`, `delete`, `move`,
+`execute`, ...) and `GrantableTools` lists the tool names an `allow` may grant (`*` means any). With the defaults
+(empty lists) nothing is grantable; `run-local.sh` starts the API with `Kinds=execute,edit` and `GrantableTools=*` and
+with `--no-approvals` without them. The script handles all three outcomes and reports which one happened:
 
 - `approved`: the request is announced (`tool_approval_requested`), listed by `GET /sessions/{id}/tool-approvals`, and an `allow` is 204;
 - `denied-after-ceiling`: `allow` is refused with 403 (the request stays pending), `deny` is 204, a second decision is 409;
@@ -135,7 +144,7 @@ grantable tools. The script therefore handles all three outcomes and reports whi
 
 `--approval-expect auto` (default) accepts any of them but fails when omp asked for no permission at all (it needs
 `tools.approvalMode: always-ask`, which `prepare-omp-home.mjs` writes). Use `approved`, `denied`, `policy-denied` or
-`none` to pin one. Read the report: with the current code the expected outcome is `policy-denied`.
+`none` to pin one. `run-local.sh` pins `approved` with the policy on and `policy-denied` with `--no-approvals`.
 
 ## (b) Against a hosted deployment
 

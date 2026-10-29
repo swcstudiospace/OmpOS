@@ -11,12 +11,15 @@ namespace Autonogrammer.UI.Tests.Shell;
 /// <summary>The top bar offers Sign out only while a token is held.</summary>
 public sealed class TopBarSignOutTests : UiTestContext
 {
-    /// <summary>A bar over a signed-out tab, and a bar in a head with no sign-in at all, show no Sign out button.</summary>
+    /// <summary>A head with no sign-in at all (the Demo, a development API) registers no session, and its bar shows no Sign out button.</summary>
+    [Fact]
+    public void AHeadWithoutSignInHasNoSignOut() =>
+        Render<TopBar>().FindAll(".autonogrammer-topbar-signout").ShouldBeEmpty();
+
+    /// <summary>A signed-out tab shows no Sign out button.</summary>
     [Fact]
     public void WithoutATokenTheBarHasNoSignOut()
     {
-        Render<TopBar>().FindAll(".autonogrammer-topbar-signout").ShouldBeEmpty();
-
         Services.AddSingleton<IAuthSession>(new FakeAuthSession());
 
         Render<TopBar>().FindAll(".autonogrammer-topbar-signout").ShouldBeEmpty();

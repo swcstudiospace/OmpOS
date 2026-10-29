@@ -317,6 +317,14 @@ const PAGE_HELPERS = `(() => {
       return [...document.querySelectorAll(selectors[role])].filter(visible).map((el) => text(el) || nameOf(el));
     },
     bodyText: () => document.body ? document.body.innerText : "",
+    selectedAgent() {
+      const el = document.querySelector(".autonogrammer-agent-row.is-selected .autonogrammer-agent-title");
+      return el ? text(el) : "";
+    },
+    value(role, name) {
+      const el = find(role, name);
+      return el && "value" in el ? String(el.value) : "";
+    },
     demoBanner() {
       const byClass = document.querySelector(".autonogrammer-demo-banner");
       if (byClass) return text(byClass);
@@ -462,6 +470,20 @@ async function main() {
     check(!navigation.errorText, `navigation to ${url} failed: ${navigation.errorText}`);
     await loaded;
   };
+  // Types the prompt, checks that the text stayed in the composer, sends it and waits until the scripted model's answer is on screen. The model answers
+  // "You said: <prompt>", so `answers` counts the answers expected in the transcript so far (the second prompt of a conversation expects two).
+  const sendAndAwaitAnswer = async (prompt, answers = 1) => {
+    const needle = prompt.slice(0, 40);
+    const count = (text, part) => text.split(part).length - 1;
+    await waitForControl("textbox", "Message", 30_000);
+    await type("textbox", "Message", prompt);
+    await waitFor("the typed text to stay in the composer", async () => (await helper("value", "textbox", "Message")).includes(needle), 10_000);
+    await click("button", "Send message");
+    await waitFor("the streamed answer", async () => {
+      const body = await helper("bodyText");
+      return count(body, "You said:") >= answers && count(body, needle) >= 1;
+    }, options.answerTimeoutMs);
+  };
 
   const step = async (name, fn) => {
     const started = Date.now();
@@ -533,19 +555,25 @@ async function main() {
       return runAxe("workbench");
     }],
     ["prompt-and-answer", async () => {
+      const before = await helper("selectedAgent");
       await click("button", "New conversation");
-      await waitForControl("textbox", "Message", 30_000);
-      await type("textbox", "Message", options.prompt);
-      await click("button", "Send message");
-      await waitFor("the streamed answer", async () => {
-        const body = await helper("bodyText");
-        return body.includes("You said:") && body.includes(options.prompt.slice(0, 40));
-      }, options.answerTimeoutMs);
+      // The composer of the previous conversation is still on screen until the new one is selected, and text typed into it is lost with it.
+      await waitFor("the new conversation to be selected", async () => {
+        const now = await helper("selectedAgent");
+        return now !== "" && now !== before;
+      }, 30_000);
+      await sendAndAwaitAnswer(options.prompt, 1);
       const announced = await waitFor('the "Response complete." announcement', () => evalValue(`Array.from(document.querySelectorAll('[role="status"], [aria-live]')).map((el) => el.textContent).join(" ").includes("Response complete.")`), 20_000).then(() => true, () => false);
       check(await bannerOf() === null, "a Demo banner appeared while answering");
       await shot("answer");
       const axe = await runAxe("answer");
       return { responseCompleteAnnounced: announced, ...axe };
+    }],
+    ["second-prompt", async () => {
+      // A second prompt in the same conversation: the stream of the finished run has ended, so the head has to subscribe again.
+      await sendAndAwaitAnswer(`Second question: ${options.prompt}`, 2);
+      await shot("second-answer");
+      return {};
     }],
     ["credential-storage", async () => {
       if (!needsToken) return { skipped: "no token was used" };

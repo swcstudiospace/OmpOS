@@ -32,7 +32,7 @@ const WITHOUT_INTEGRITY = [/\.html$/];
 const AUTH_CONFIG_PATH = "/auth/config";
 const AUTH_PATH_PREFIX = "/auth/";
 // The roots of the API routes. A page navigation to one of these is a page of this app and still gets the shell (Settings has pages of its own).
-const API_PATH_PREFIXES = ["/api/", "/sessions", "/providers", "/models", "/cloud", "/settings/", "/workspace", "/events", "/automations", "/board", "/hooks", "/source", "/health", "/metrics"];
+const API_PATH_PREFIXES = ["/api/", "/auth/", "/sessions", "/providers", "/models", "/cloud", "/settings/", "/workspace", "/events", "/automations", "/board", "/hooks", "/source", "/health", "/metrics"];
 
 const scopeUrl = new URL(self.registration.scope);
 const shellFiles = self.assetsManifest.assets.filter(isCachedAsset);

@@ -8,6 +8,20 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 
 ## [Unreleased]
 
+### Added
+
+- Hosted web app (Phases 66.2 to 66.4; ADR-0021): the web head can be built as the real application with no Demo code (`scripts/vercel/build-web.sh`, asserted by `scripts/vercel/check-no-demo.sh`, which has an `--expect-demo` positive control for the Demo bundle) and used against a hosted API. Nothing is deployed by this change: the public URL still serves the Demo until the owner approves the switch (`docs/runbooks/deploy-and-rollback.md`).
+- Sign-in for one operator: `Api:Auth:Mode=OwnerToken` accepts a bearer token whose SHA-256 digest is listed in `Api:Auth:OwnerToken:Sha256` (constant-time comparison, a failure throttle that answers 429 with `Retry-After`, rotation by listing two digests); `Api:Auth:Mode=Oidc` stays the default. `GET /auth/config` (anonymous, `no-store`) gives a client the mode, authority and audience. The web head has a connect screen, an auth gate and a sign-out button; the token is held in memory only and a 401 ends the session.
+- Access control for hosted use: `Api:Auth:AllowedSubjects` and `Api:Auth:AllowAnyAuthenticatedUser`, a 403 `subject_not_allowed` problem, and a per-subject partition on all six rate-limit policies.
+- API hosting hardening (`Hosting:*`): forwarded headers (`None`, `TrustAllSingleHop`, `KnownNetworks`), HSTS, security headers with a strict content-security policy for API responses, Kestrel limits, request timeouts (a 504 problem; event streams are exempt), a readiness flip on shutdown, `GET /health/startup`, SSE keep-alive comments and `retry: 2000` on shutdown, JSON logs and an OpenTelemetry resource.
+- Engine isolation on the direct-run path: `Harness:Acp:Environment` (an allow-list outside Development), a 0700 workspace per session under `Harness:Acp:WorkspaceRoot`, a non-dumpable API process (`Hosting:RestrictProcessInspection`), and `Harness:Acp:Approval` (`Kinds`, `GrantableTools`, `DecisionTimeoutSeconds`; deny everything by default) so the tool-approval endpoints can grant a tool there.
+- Web shell: routes (`/`, `/kanban`, `/sessions/{id}`, `/settings[/{page}]`, `/about`, `/connect`), a title per view, a route announcer and route focus, an error boundary, a not-found page and an About page; a transcript that renders the latest 50 turns with a "Show earlier messages" button and batched announcements; an offline app shell (a service worker that never caches cross-origin requests, `Authorization`, event streams or `/auth/*`); loading and `<noscript>` text.
+- Accessibility (target: WCAG 2.2 AA, Phase 66.3): forced-colors and `prefers-contrast` styles, scroll padding, 24 px targets, reflow at 560 and 360 px, text spacing, persistent live regions, heading fixes, and scripted checks (`scripts/web-smoke/a11y/`: routes, keyboard walk, media emulation, reflow, text spacing, target size, states, connect) that the web smoke runs. `docs/accessibility/` holds the conformance statement (partially conformant), a 55-row WCAG table, a keyboard script, a screen-reader plan that has not been run, and the known issues.
+- Hosted end-to-end harness (`scripts/hosted/`): a scripted OpenAI-compatible model server, an isolated omp home, `e2e-api.mjs`, `e2e-browser.mjs` and `run-local.sh`, which drive the real `omp acp`.
+- Supply chain and CI: a generated SPDX SBOM (`docs/legal/sbom.spdx.json`, `check-sbom.sh`), base images pinned by tag and digest with a `HEALTHCHECK`, `scripts/ci/scan-images.sh`, `check-skip-markers.sh` (a skip marker needs a SUP row), an OpenAPI breaking-change check, a snapshot script for the omp dependencies, job timeouts and least permissions in `ci.yml`, an artifacts job in `release.yml`, and CodeQL and OpenSSF Scorecard workflows (SHA-pinned; never run).
+- Operations and security documents: the hosted threat model, the data inventory and retention, SLOs and alerting, incident response, backup and restore, deploy and rollback, Railway Config as Code files in `deploy/railway/`, ADR-0021, and the record of the integration of the rename line (`docs/runbooks/integration-autonogrammer-2026-10-29.md`).
+- Brand: the wordmark in two layouts with "Auto" in the text colour and "nogrammer" in the accent colour, the six SVG sources and the assets regenerated for the name Autonogrammer.
+
 ### Changed
 
 <!-- rebrand:keep-start -->
@@ -17,6 +31,19 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 <!-- rebrand:keep-start -->
 - Owner actions after the rename: rename the GitHub repository, the Vercel project and the Railway services and then update the URLs; rename the `OMPOS_*` variables to `AUTONOGRAMMER_*` in Vercel, Railway, GitHub secrets and local `.env` files; recreate or migrate the podman containers, volumes, secrets and image, the PostgreSQL schema and its advisory-lock key and the Dragonfly keys, and deploy the API and the worker together; change the three plugin submodules that may read the old names in their own repositories; confirm the legal wording and the trademark.
 <!-- rebrand:keep-end -->
+- Breaking: an OIDC deployment outside Development must set `Api:Auth:AllowedSubjects` or `Api:Auth:AllowAnyAuthenticatedUser=true`; startup fails otherwise.
+- Outside Development the engine process starts with an allow-listed environment instead of the API's whole environment; `Harness:Acp:Environment:Mode=Inherit` there needs `Harness:Acp:AllowInheritedEnvironment=true`.
+- `scripts/web-smoke/size-budget.json` is provisional until it is measured on a real publish (`size-budget.mjs --write-baseline`).
+
+### Fixed
+
+- Direct-run tool approvals: the hosted adapter denied every request and no tool was ever grantable, so every `allow` answered 403; the new `Harness:Acp:Approval` options set the kinds that reach the endpoints and the tools an allow may grant.
+- First load moved focus to the heading and skipped the skip link (WCAG 2.4.1); focus now moves to the heading only when the page changes after the first render (`RouteFocus`).
+
+### Security
+
+- Owner tokens are never stored or logged: the API holds a digest, compares in constant time and throttles failures; the browser keeps the token in memory only.
+- The engine environment allow-list, a per-session workspace, a non-dumpable API process, security headers, request timeouts and Kestrel limits narrow what a hosted run exposes; the threat model and its open questions are in `docs/security/hosted-threat-model.md`.
 
 ## [0.15.0] - 2026-10-28
 

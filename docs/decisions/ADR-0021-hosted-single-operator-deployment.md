@@ -61,10 +61,27 @@ One workbench page with routes `/`, `/kanban`, `/sessions/{id}`, `/settings[/{pa
 - Breaking: an Oidc deployment outside Development fails to start without `AllowedSubjects` or `AllowAnyAuthenticatedUser`; `ApiFactory` and the Production-shaped fixtures set the latter.
 - The a11y checks added to the web smoke fail until a real defect they find is fixed; that is intended.
 
-## Verification
+## Candidate chosen
 
-Recorded in `.planning/phases/66.2-hosted-real-web-app/66.2-VERIFICATION.md` at closeout: what was built and run, and what was only written. Nothing in this record was run against a real model, on Windows, macOS or Android, against a deployed Railway API, or with a screen reader.
+Owner-token authentication next to the existing OIDC mode (a SHA-256 digest of a high-entropy token in configuration, constant-time comparison, a per-client failure throttle, an anonymous `GET /auth/config`), an allow-listed engine environment with a per-session 0700 workspace and a non-dumpable API process, and an approval policy for the direct run path (`Harness:Acp:Approval`: kinds that reach the endpoints and the tools an allow may grant). Everything is Autonogrammer-owned code on the framework's own authentication, forwarded-header, rate-limit and request-timeout components. D1 to D6 above give the rules. Alternatives left out on purpose: a cloud identity provider and user accounts (ADR-0030) and a sandbox provider (HOST-04).
 
-## Open items
+## Licence
 
-OQ-172 to OQ-190 in `docs/open-questions.md`, notably the sandbox provider (HOST-04), the model credential, the hosted run of the scripted-model harness, and the screen-reader pass.
+| Component | SPDX | Source | Verified |
+| --- | --- | --- | --- |
+| Owner-token handler, hosting extensions, engine isolation, approval options, web routes, connect screen, hosted scripts | AGPL-3.0-or-later | https://www.gnu.org/licenses/agpl-3.0.html | Autonogrammer-owned code under the project licence (ADR-0018) |
+| `Microsoft.AspNetCore.Authentication.JwtBearer`, the ASP.NET Core forwarded-header, rate-limit and request-timeout middleware, OpenTelemetry (existing central packages; no package was added) | MIT | https://github.com/dotnet/aspnetcore/blob/main/LICENSE.txt | Already in `Directory.Packages.props`; `bash scripts/ci/check-licences.sh` |
+| axe-core 4.14.0 (a test tool the web smoke installs and checks against `scripts/web-smoke/axe-core-4.14.0.sha256`; not shipped) | MPL-2.0 | https://github.com/dequelabs/axe-core/blob/develop/LICENSE | Pinned by hash |
+
+## Verification route
+
+`dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release --no-build` (Security, Hosting and Harness tests), `dotnet test --project tests/Autonogrammer.UI.Tests -c Release --no-build`, `dotnet test --project tests/Autonogrammer.Web.Tests -c Release --no-build`, `node --test scripts/web-smoke/a11y/*.test.mjs`, `node scripts/hosted/selftest.mjs`, `bash scripts/hosted/run-local.sh`, `bash scripts/web-smoke/run-smoke.sh` and `bash scripts/vercel/check-no-demo.sh`. What ran, with its output, is recorded in `.planning/phases/66.2-hosted-real-web-app/66.2-VERIFICATION.md`. Nothing in this record was run against a real model, on Windows, macOS or Android, against a deployed Railway API, or with a screen reader.
+
+## Open risks
+
+- No model credential exists and the sandbox provider is still `FakeSandboxProvider` (OQ-172, OQ-173, HOST-04): an approved command runs as the API user, so the host is the only boundary.
+- `prctl(PR_SET_DUMPABLE, 0)` is checked in-process only; whether it holds in the Railway container is unobserved (OQ-174).
+- The owner token is one shared secret with no expiry; rotation is manual (two digests at once) until multi-user sign-in replaces it (OQ-182).
+- The skeleton CodeQL, Scorecard, image-scan and attestation checks have never run (OQ-175 to OQ-177).
+- The accessibility target is WCAG 2.2 AA; no screen reader or device pass has been done (OQ-178), and the desktop head is out of scope (OQ-179).
+- The remaining open items are OQ-172 to OQ-183 in `docs/open-questions.md`.

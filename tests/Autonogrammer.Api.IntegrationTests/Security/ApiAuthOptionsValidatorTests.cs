@@ -115,8 +115,8 @@ public sealed class ApiAuthOptionsValidatorTests
 
         var failures = Failures(options);
 
-        failures.ShouldContain("Api:Auth:Authority is required outside the Development environment.");
-        failures.ShouldContain("Api:Auth:Audience is required outside the Development environment.");
+        failures.ShouldContain("Api:Auth:Authority is required outside the Development environment.", StringComparer.Ordinal);
+        failures.ShouldContain("Api:Auth:Audience is required outside the Development environment.", StringComparer.Ordinal);
     }
 
     /// <summary>Verifies the development principal stays Development-only in either mode.</summary>
@@ -129,11 +129,11 @@ public sealed class ApiAuthOptionsValidatorTests
         oidc.AllowAnyAuthenticatedUser = true;
         oidc.AllowDevelopmentPrincipal = true;
 
-        Failures(owner).ShouldContain("Api:Auth:AllowDevelopmentPrincipal is allowed only in the Development environment.");
-        Failures(oidc).ShouldContain("Api:Auth:AllowDevelopmentPrincipal is allowed only in the Development environment.");
+        Failures(owner).ShouldContain("Api:Auth:AllowDevelopmentPrincipal is allowed only in the Development environment.", StringComparer.Ordinal);
+        Failures(oidc).ShouldContain("Api:Auth:AllowDevelopmentPrincipal is allowed only in the Development environment.", StringComparer.Ordinal);
     }
 
-    private static IReadOnlyList<string> Failures(ApiAuthOptions options)
+    private static string[] Failures(ApiAuthOptions options)
     {
         var result = Validate(options, Environments.Production);
         result.Failed.ShouldBeTrue();

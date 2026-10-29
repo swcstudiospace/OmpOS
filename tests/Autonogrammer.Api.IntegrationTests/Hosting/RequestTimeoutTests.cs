@@ -38,10 +38,10 @@ public sealed class RequestTimeoutTests
             await Task.Delay(Timeout.InfiniteTimeSpan, context.RequestAborted).ConfigureAwait(false);
             return Results.Ok();
         });
-        _ = app.MapGet("/stream", static () => new SseStreamResult(SlowStream()));
+        _ = app.MapGet("/stream", static () => new SseStreamResult(SlowStreamAsync()));
     }
 
-    private static async IAsyncEnumerable<SseItem<string>> SlowStream([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    private static async IAsyncEnumerable<SseItem<string>> SlowStreamAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         yield return new SseItem<string>("first", "message") { EventId = "1" };
         await Task.Delay(PastTimeout, cancellationToken).ConfigureAwait(false);
@@ -53,7 +53,8 @@ public sealed class RequestTimeoutTests
     public async Task SlowRoute_Answers504WithProblemDetails()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = await HostingTestHost.StartAsync(ct, configureServices: ShortenDefaultPolicy, mapEndpoints: MapStubs).ConfigureAwait(true);
+        var app = await HostingTestHost.StartAsync(ct, configureServices: ShortenDefaultPolicy, mapEndpoints: MapStubs).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
         using var client = app.GetTestClient();
 
         using var response = await client.GetAsync(new Uri("/slow", UriKind.Relative), ct).ConfigureAwait(true);
@@ -69,7 +70,8 @@ public sealed class RequestTimeoutTests
     public async Task StreamingRoute_IsExemptFromTheTimeout()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = await HostingTestHost.StartAsync(ct, configureServices: ShortenDefaultPolicy, mapEndpoints: MapStubs).ConfigureAwait(true);
+        var app = await HostingTestHost.StartAsync(ct, configureServices: ShortenDefaultPolicy, mapEndpoints: MapStubs).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
         using var client = app.GetTestClient();
 
         using var response = await client.GetAsync(new Uri("/stream", UriKind.Relative), ct).ConfigureAwait(true);
@@ -85,7 +87,7 @@ public sealed class RequestTimeoutTests
     public async Task NoTimeoutPolicy_ExemptsARoute()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = await HostingTestHost.StartAsync(
+        var app = await HostingTestHost.StartAsync(
             ct,
             configureServices: ShortenDefaultPolicy,
             mapEndpoints: static application => application.MapGet("/exempt", static async (HttpContext context) =>
@@ -93,6 +95,7 @@ public sealed class RequestTimeoutTests
                 await Task.Delay(PastTimeout, context.RequestAborted).ConfigureAwait(false);
                 return Results.Ok();
             }).WithRequestTimeout(HostingPolicies.NoTimeout)).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
         using var client = app.GetTestClient();
 
         using var response = await client.GetAsync(new Uri("/exempt", UriKind.Relative), ct).ConfigureAwait(true);

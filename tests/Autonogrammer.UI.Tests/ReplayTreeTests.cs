@@ -20,7 +20,7 @@ public sealed class ReplayTreeTests : UiTestContext
     private const string CorrelationId = "s-replay/turn-1";
     private static readonly DateTimeOffset Stamp = new(2026, 10, 20, 9, 30, 0, TimeSpan.Zero);
 
-    private static readonly Regex HandlerIds = new(" blazor:[a-z]+=\"\\d+\"", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex HandlerIds = new(" blazor:[A-Za-z]+=\"[0-9a-f-]+\"", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
     /// <summary>Folding the fixed 23-event script twice yields identical trees with the same block sequence.</summary>
     [Fact]
@@ -87,7 +87,7 @@ public sealed class ReplayTreeTests : UiTestContext
         var cut = Render<SessionView>(parameters => parameters
             .Add(p => p.Tree, tree)
             .Add(p => p.ViewState, SessionViewState.Success));
-        // Blazor numbers event-handler wirings per render session; they carry no tree content.
+        // Blazor numbers event-handler wirings per render session and gives every captured element reference (@ref) a fresh GUID; neither carries tree content.
         return HandlerIds.Replace(cut.Markup, string.Empty);
     }
 

@@ -6,6 +6,7 @@ internal sealed class ManualTimeProvider : TimeProvider
     private readonly Lock _gate = new();
     private readonly List<ManualTimer> _timers = [];
     private DateTimeOffset _now;
+    private int _created;
 
     /// <summary>Initializes a new instance of the <see cref="ManualTimeProvider"/> class.</summary>
     /// <param name="start">The start time, or null for 2026-10-27 09:00 UTC.</param>
@@ -16,6 +17,18 @@ internal sealed class ManualTimeProvider : TimeProvider
 
     /// <inheritdoc />
     public override long TimestampFrequency => TimeSpan.TicksPerSecond;
+
+    /// <summary>Gets how many timers this clock has created so far, including disposed and fired ones.</summary>
+    internal int TimersCreated
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _created;
+            }
+        }
+    }
 
     /// <inheritdoc />
     public override DateTimeOffset GetUtcNow()
@@ -37,6 +50,7 @@ internal sealed class ManualTimeProvider : TimeProvider
         lock (_gate)
         {
             _timers.Add(timer);
+            _created++;
         }
 
         return timer;

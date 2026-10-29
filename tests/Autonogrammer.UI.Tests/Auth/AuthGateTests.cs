@@ -1,6 +1,7 @@
 using Autonogrammer.UI.Components.Auth;
 using Bunit;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
@@ -14,6 +15,7 @@ public sealed class AuthGateTests : UiTestContext
 
     private readonly FakeAuthSession _session = new();
     private readonly FakeAuthConfigSource _config = new();
+    private readonly List<string> _renderedAt = [];
 
     /// <summary>Initializes a new instance of the <see cref="AuthGateTests"/> class.</summary>
     public AuthGateTests()
@@ -26,7 +28,17 @@ public sealed class AuthGateTests : UiTestContext
 
     private IRenderedComponent<AuthGate> RenderGate(bool isDemo = false) => Render<AuthGate>(parameters => parameters
         .Add(p => p.IsDemo, isDemo)
-        .AddChildContent(Content));
+        .Add(p => p.ChildContent, (RenderFragment)TrackedContent));
+
+    // The protected content, which also records the location it was rendered at: what must never happen is that it renders for a page that needs a token.
+    private void TrackedContent(RenderTreeBuilder builder)
+    {
+        _renderedAt.Add(Navigation.ToBaseRelativePath(Navigation.Uri));
+        builder.AddMarkupContent(0, Content);
+    }
+
+    private IEnumerable<string> RenderedOutsideConnect() =>
+        _renderedAt.Where(static path => !string.Equals(path, AuthRoutes.ConnectPath, StringComparison.Ordinal));
 
     /// <summary>A Demo build has no API and no sign-in: the content shows at once and the configuration is never loaded.</summary>
     [Fact]
@@ -77,7 +89,8 @@ public sealed class AuthGateTests : UiTestContext
 
         cut.WaitForAssertion(() => Navigation.ToBaseRelativePath(Navigation.Uri).ShouldBe(AuthRoutes.ConnectPath));
         _session.ReturnPath.ShouldBe("sessions/abc?x=1");
-        cut.FindAll("#content").ShouldBeEmpty();
+        cut.WaitForAssertion(() => cut.Find("#content").ShouldNotBeNull());
+        RenderedOutsideConnect().ShouldBeEmpty("the page that asked for a token was never rendered, only the connect page that the gate lets through");
     }
 
     /// <summary>The connect page itself is never gated, or nobody could sign in.</summary>
@@ -108,7 +121,7 @@ public sealed class AuthGateTests : UiTestContext
         _session.SetSignedIn(false);
 
         cut.WaitForAssertion(() => Navigation.ToBaseRelativePath(Navigation.Uri).ShouldBe(AuthRoutes.ConnectPath));
-        cut.FindAll("#content").ShouldBeEmpty();
+        cut.WaitForAssertion(() => _renderedAt.Last().ShouldBe(AuthRoutes.ConnectPath));
     }
 
     /// <summary>A deployment that signs in with OIDC gets an explanation that is information, not an error: no alert, no content, one heading.</summary>

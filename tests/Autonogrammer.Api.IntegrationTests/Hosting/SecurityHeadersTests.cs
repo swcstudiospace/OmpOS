@@ -12,13 +12,13 @@ public sealed class SecurityHeadersTests
 {
     private static void MapStubs(WebApplication app)
     {
-        _ = app.MapGet("/json", static () => Results.Json(new { ok = true }));
+        _ = app.MapGet("/json", static () => Results.Text("{\"ok\":true}", "application/json"));
         _ = app.MapGet("/problem", static () => Results.Problem(statusCode: 409, title: "Conflict."));
         _ = app.MapGet("/html", static () => Results.Content("<p>reference</p>", "text/html"));
         _ = app.MapGet("/cached", static (HttpContext context) =>
         {
             context.Response.Headers.CacheControl = "public, max-age=60";
-            return Results.Json(new { ok = true });
+            return Results.Text("{\"ok\":true}", "application/json");
         });
     }
 
@@ -61,7 +61,8 @@ public sealed class SecurityHeadersTests
     public async Task Responses_CarryTheSecurityHeaders(string path, HttpStatusCode status)
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapStubs).ConfigureAwait(true);
+        var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapStubs).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
 
         using var response = await GetAsync(app, path, ct).ConfigureAwait(true);
 
@@ -75,7 +76,8 @@ public sealed class SecurityHeadersTests
     public async Task HtmlResponse_HasNoContentSecurityPolicy()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = await HostingTestHost.StartAsync(ct, environment: "Development", mapEndpoints: MapStubs).ConfigureAwait(true);
+        var app = await HostingTestHost.StartAsync(ct, environment: "Development", mapEndpoints: MapStubs).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
 
         using var response = await GetAsync(app, "/html", ct).ConfigureAwait(true);
 
@@ -88,7 +90,8 @@ public sealed class SecurityHeadersTests
     public async Task AuthenticatedResponses_GetNoStoreUnlessTheyChooseCaching()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapStubs).ConfigureAwait(true);
+        var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapStubs).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
 
         using var plain = await GetAsync(app, "/json", ct, authorization: true).ConfigureAwait(true);
         using var cached = await GetAsync(app, "/cached", ct, authorization: true).ConfigureAwait(true);
@@ -104,8 +107,9 @@ public sealed class SecurityHeadersTests
     public async Task Disabled_AddsNoHeaders()
     {
         var ct = TestContext.Current.CancellationToken;
-        var config = new Dictionary<string, string?> { ["Hosting:SecurityHeaders:Enabled"] = "false" };
-        await using var app = await HostingTestHost.StartAsync(ct, config: config, mapEndpoints: MapStubs).ConfigureAwait(true);
+        var config = new Dictionary<string, string?>(StringComparer.Ordinal) { ["Hosting:SecurityHeaders:Enabled"] = "false" };
+        var app = await HostingTestHost.StartAsync(ct, config: config, mapEndpoints: MapStubs).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
 
         using var response = await GetAsync(app, "/json", ct).ConfigureAwait(true);
 
@@ -117,8 +121,9 @@ public sealed class SecurityHeadersTests
     public async Task Hsts_IsSentOverHttpsInProduction()
     {
         var ct = TestContext.Current.CancellationToken;
-        var config = new Dictionary<string, string?> { ["Hosting:Hsts:MaxAgeDays"] = "30" };
-        await using var app = await HostingTestHost.StartAsync(ct, config: config, mapEndpoints: MapStubs).ConfigureAwait(true);
+        var config = new Dictionary<string, string?>(StringComparer.Ordinal) { ["Hosting:Hsts:MaxAgeDays"] = "30" };
+        var app = await HostingTestHost.StartAsync(ct, config: config, mapEndpoints: MapStubs).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
 
         using var response = await GetAsync(app, "/json", ct, scheme: "https").ConfigureAwait(true);
 
@@ -130,7 +135,8 @@ public sealed class SecurityHeadersTests
     public async Task Hsts_IsNotSentOverHttp()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapStubs).ConfigureAwait(true);
+        var app = await HostingTestHost.StartAsync(ct, mapEndpoints: MapStubs).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
 
         using var response = await GetAsync(app, "/json", ct, scheme: "http").ConfigureAwait(true);
 
@@ -142,7 +148,8 @@ public sealed class SecurityHeadersTests
     public async Task Hsts_IsNotSentInDevelopment()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = await HostingTestHost.StartAsync(ct, environment: "Development", mapEndpoints: MapStubs).ConfigureAwait(true);
+        var app = await HostingTestHost.StartAsync(ct, environment: "Development", mapEndpoints: MapStubs).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
 
         using var response = await GetAsync(app, "/json", ct, scheme: "https").ConfigureAwait(true);
 
@@ -154,8 +161,9 @@ public sealed class SecurityHeadersTests
     public async Task Hsts_CanBeDisabled()
     {
         var ct = TestContext.Current.CancellationToken;
-        var config = new Dictionary<string, string?> { ["Hosting:Hsts:Enabled"] = "false" };
-        await using var app = await HostingTestHost.StartAsync(ct, config: config, mapEndpoints: MapStubs).ConfigureAwait(true);
+        var config = new Dictionary<string, string?>(StringComparer.Ordinal) { ["Hosting:Hsts:Enabled"] = "false" };
+        var app = await HostingTestHost.StartAsync(ct, config: config, mapEndpoints: MapStubs).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
 
         using var response = await GetAsync(app, "/json", ct, scheme: "https").ConfigureAwait(true);
 

@@ -108,9 +108,15 @@ internal sealed class SseStreamResult : IResult
 
     /// <summary>
     /// Writes every item of the channel to the response. When nothing arrives for the heartbeat period the loop writes a keep-alive comment
-    /// and waits again, so an idle stream is never silent for longer than one heartbeat.
+    /// and waits again, so an idle stream is never silent for longer than one heartbeat. Internal so that a test can drive it with a manual clock.
     /// </summary>
-    private static async Task WriteLoopAsync(ChannelReader<SseItem<string>> reader, Stream body, TimeProvider time, TimeSpan heartbeat, CancellationToken token)
+    /// <param name="reader">The items to write; the loop ends when the reader completes.</param>
+    /// <param name="body">The response body.</param>
+    /// <param name="time">The clock the idle period is measured with.</param>
+    /// <param name="heartbeat">The idle period; zero or less disables keep-alive comments.</param>
+    /// <param name="token">Cancels the loop.</param>
+    /// <returns>A task that completes when the reader completes.</returns>
+    internal static async Task WriteLoopAsync(ChannelReader<SseItem<string>> reader, Stream body, TimeProvider time, TimeSpan heartbeat, CancellationToken token)
     {
         while (true)
         {
