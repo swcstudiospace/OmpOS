@@ -30,7 +30,7 @@
         <DiffPlaceholderView Block="diff" />
         break;
     case ErrorBlock error:
-        <ErrorBlockView Block="error" OnRetry="OnRetry" />
+        <ErrorBlockView Block="error" Alert="Alert" OnRetry="OnRetry" />
         break;
     case A2uiSurfaceBlock surface:
         <A2uiSurfaceView Block="surface" />
@@ -45,11 +45,32 @@
     [Parameter, EditorRequired]
     public UiBlock Block { get; set; } = null!;
 
-    /// <summary>Gets the callback invoked with code text when a copy control is activated.</summary>
+    /// <summary>Gets whether an error block announces itself as an assertive alert. A transcript turns it on for the failure it is showing now, so an error in the history it loads is not read out again.</summary>
+    [Parameter]
+    public bool Alert { get; set; } = true;
+
+    /// <summary>Gets the callback invoked with code text when a copy control is activated. Changing only the callback does not draw the block again, so a host passes a stable one.</summary>
     [Parameter]
     public EventCallback<string> OnCopy { get; set; }
 
-    /// <summary>Gets the callback invoked when a retry affordance is activated.</summary>
+    /// <summary>Gets the callback invoked when a retry affordance is activated. Changing only the callback does not draw the block again, so a host passes a stable one.</summary>
     [Parameter]
     public EventCallback OnRetry { get; set; }
+
+    private UiBlock? _renderedBlock;
+    private bool _renderedAlert;
+    private bool _changed = true;
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        // A parent that re-renders sets the parameters of every block again. Blocks are immutable values, so a block that is the
+        // same one (or equal to it) has nothing new to draw: only the block that changed is rendered again.
+        _changed = !(ReferenceEquals(_renderedBlock, Block) || Equals(_renderedBlock, Block)) || _renderedAlert != Alert;
+        _renderedBlock = Block;
+        _renderedAlert = Alert;
+    }
+
+    /// <inheritdoc />
+    protected override bool ShouldRender() => _changed;
 }

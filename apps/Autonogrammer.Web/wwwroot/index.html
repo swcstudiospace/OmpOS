@@ -7,7 +7,7 @@
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#181818" media="(prefers-color-scheme: dark)" />
-    <meta name="description" content="Autonogrammer: an agent workspace for the omp coding agent." />
+    <meta name="description" content="Autonogrammer is an open agent workspace for the omp coding agent: start sessions, follow the agent's work and review its changes." />
     <title>Autonogrammer</title>
     <base href="/" />
     <link rel="preload" id="webassembly" />
@@ -25,12 +25,16 @@
 </head>
 
 <body>
+    <noscript>
+        <p>Autonogrammer needs JavaScript and WebAssembly to run. Turn on JavaScript in your browser settings, then reload this page.</p>
+    </noscript>
     <div id="app">
-        <svg class="loading-progress">
+        <svg class="loading-progress" aria-hidden="true" focusable="false">
             <circle r="40%" cx="50%" cy="50%" />
             <circle r="40%" cx="50%" cy="50%" />
         </svg>
-        <div class="loading-progress-text"></div>
+        <div class="loading-progress-text" aria-hidden="true"></div>
+        <p class="loading-status" role="status">Loading Autonogrammer...</p>
     </div>
 
     <div id="blazor-error-ui" role="alert">
@@ -39,6 +43,8 @@
         <button type="button" class="dismiss" aria-label="Dismiss error"><span aria-hidden="true">🗙</span></button>
     </div>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+    <!-- Registers the offline-shell service worker. A file, not an inline script, because the CSP forbids inline script; the host's CSP must also allow the worker (worker-src 'self') and the manifest (manifest-src 'self'). -->
+    <script src="register-service-worker.js" defer></script>
 </body>
 
 </html>
