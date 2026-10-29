@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 272" width="320" height="272">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 256" width="520" height="256">
   <title>Autonogrammer</title>
   <defs>
     <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
@@ -6,7 +6,7 @@
       <stop offset="1" stop-color="#5b21b6"/>
     </linearGradient>
   </defs>
-  <g transform="translate(80 0) scale(0.3125)">
+  <g transform="translate(180 0) scale(0.3125)">
     <rect width="512" height="512" rx="116" fill="url(#tile)"/>
     <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="256" cy="256" r="146" stroke-width="56"/>
@@ -14,5 +14,5 @@
       <path d="M276 302H312" stroke-width="42"/>
     </g>
   </g>
-  <text x="160" y="251" text-anchor="middle" font-family="Anybody" font-weight="600" font-size="80" fill="#1c1c1a">Omp<tspan fill="#6d28d9">OS</tspan></text>
+  <text x="260" y="231" text-anchor="middle" font-family="Anybody" font-weight="600" font-size="56" fill="#1c1c1a">Auto<tspan fill="#6d28d9">nogrammer</tspan></text>
 </svg>
