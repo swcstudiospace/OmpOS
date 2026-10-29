@@ -6,6 +6,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Autonogrammer.Coordination.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- IHealthCheck ships in the ASP.NET Core shared framework; no separate package is pinned for it. -->
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="StackExchange.Redis" />

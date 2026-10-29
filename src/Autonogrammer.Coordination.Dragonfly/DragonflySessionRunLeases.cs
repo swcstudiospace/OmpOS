@@ -12,13 +12,16 @@ public sealed class DragonflySessionRunLeases : ISessionRunLeases
     internal static readonly TimeSpan MinimumTimeToLive = TimeSpan.FromMilliseconds(1);
 
     private readonly IDatabase _database;
+    private readonly DragonflyResilience _resilience;
 
     /// <summary>Creates a lease store over the database of <paramref name="multiplexer"/>.</summary>
     /// <param name="multiplexer">The connection to Dragonfly. The caller owns its lifetime.</param>
-    public DragonflySessionRunLeases(IConnectionMultiplexer multiplexer)
+    /// <param name="resilience">The pipeline of the connection. Null builds one from the defaults.</param>
+    public DragonflySessionRunLeases(IConnectionMultiplexer multiplexer, DragonflyResilience? resilience = null)
     {
         ArgumentNullException.ThrowIfNull(multiplexer);
         _database = multiplexer.GetDatabase();
+        _resilience = resilience ?? DragonflyResilience.Create();
     }
 
     /// <summary>Attempts to take the exclusive run lease for a session.</summary>
@@ -27,15 +30,19 @@ public sealed class DragonflySessionRunLeases : ISessionRunLeases
     /// <param name="timeToLive">How long the lease lasts unless renewed.</param>
     /// <param name="cancellationToken">Cancels the request before the command is sent.</param>
     /// <returns>The acquired lease, or <see langword="null"/> when another owner holds an unexpired lease.</returns>
+    /// <exception cref="Autonogrammer.Resilience.DataPlaneTimeoutException">Dragonfly could not answer: the run is refused because it could double-execute.</exception>
     public async Task<ISessionRunLease?> TryAcquireAsync(string sessionId, string ownerId, TimeSpan timeToLive, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerId);
         ArgumentOutOfRangeException.ThrowIfLessThan(timeToLive, MinimumTimeToLive);
+        _ = DragonflyKeyspace.RequireTimeToLive(timeToLive);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var acquired = await _database.StringSetAsync(DragonflyKeys.RunLease(sessionId), ownerId, timeToLive, when: When.NotExists).ConfigureAwait(false);
-        return acquired ? new DragonflySessionRunLease(_database, sessionId, ownerId) : null;
+        var key = DragonflyKeyspace.LeaseRun(sessionId);
+        // Not idempotent: a retry after a lost reply would report a lease this owner already holds as taken.
+        var acquired = await _resilience.ClosedAsync(false, () => _database.StringSetAsync(key, ownerId, timeToLive, when: When.NotExists), cancellationToken).ConfigureAwait(false);
+        return acquired ? new DragonflySessionRunLease(_database, _resilience, sessionId, ownerId) : null;
     }
 
     /// <summary>Reports whether an unexpired lease exists for a session, whoever holds it.</summary>
@@ -47,6 +54,7 @@ public sealed class DragonflySessionRunLeases : ISessionRunLeases
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await _database.KeyExistsAsync(DragonflyKeys.RunLease(sessionId)).ConfigureAwait(false);
+        var key = DragonflyKeyspace.LeaseRun(sessionId);
+        return await _resilience.ClosedAsync(true, () => _database.KeyExistsAsync(key), cancellationToken).ConfigureAwait(false);
     }
 }
