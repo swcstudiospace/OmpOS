@@ -9,6 +9,12 @@
 #         (zero violations, zero incomplete), no horizontal scroll, no console error, no failed request, the Demo banner, the skip link
 #         first in the tab order, the drawer's focus trap and the persistent theme switch (scripts/web-smoke/smoke-demo.mjs).
 #
+# Both halves finish with the accessibility checks of scripts/web-smoke/a11y (WCAG 2.2 AA evidence: routes, keyboard walk and focus not obscured, the
+# Settings dialog, axe on every state, forced colours, contrast, reduced motion, dark scheme, reflow at 320 px and 400 percent, text spacing, target
+# size; the real-bundle half also checks the connect screen). Each check group is one assertion named a11y<Group>. The real-bundle half ends with the
+# payload budget of the published wwwroot (scripts/web-smoke/size-budget.mjs). Usage: run-smoke.sh [--a11y-report DIR]; with it, a11y-report.json and the
+# screenshots of each half are written to DIR/api and DIR/demo (the evidence for docs/accessibility). AUTONOGRAMMER_SMOKE_TIMEOUT (default 3600 s) bounds each half.
+#
 # Deliberate differences from the runbook text:
 #   - The API and the web head are published with --no-restore, under a timeout each (AUTONOGRAMMER_SMOKE_PUBLISH_TIMEOUT, default 300 s;
 #     the Demo build has AUTONOGRAMMER_SMOKE_DEMO_TIMEOUT, default 1200 s; raise both on a loaded host), and
@@ -45,6 +51,18 @@ WEB_PORT="${WEB_PORT:-5180}"
 DEMO_PORT="${DEMO_PORT:-5191}"
 SMOKE_TARGETS="${SMOKE_TARGETS:-api demo}"
 AXE_VERSION="4.14.0"
+A11Y_REPORT="${A11Y_REPORT_DIR:-}"
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --a11y-report)
+      [ "$#" -ge 2 ] || { echo "error: --a11y-report needs a directory" >&2; exit 2; }
+      A11Y_REPORT="$2"
+      shift 2
+      ;;
+    *) echo "error: unknown argument '$1' (usage: run-smoke.sh [--a11y-report DIR])" >&2; exit 2 ;;
+  esac
+done
 
 wants() {
   case " $SMOKE_TARGETS " in
@@ -147,22 +165,33 @@ if wants demo; then
   wait_http "http://127.0.0.1:$DEMO_PORT/" "Demo bundle"
 fi
 
-# Owned headless Chrome with an empty profile (runbook: "Browser smoke").
-PROFILE="$WORK/chrome-profile"
-mkdir -p "$PROFILE"
+# Owned headless Chrome with an empty profile (runbook: "Browser smoke"). Starting a browser is the one step that is retried: on a loaded shared host
+# Chrome sometimes does not open its DevTools port in time (up to 3 attempts, each with a fresh profile).
 "$CHROME" --version >"$OUT_DIR/chrome-version-$STAMP.txt" 2>&1 || true
-"$CHROME" --headless --no-sandbox --disable-dev-shm-usage --remote-debugging-port=0 \
-  --user-data-dir="$PROFILE" about:blank >"$OUT_DIR/chrome-$STAMP.log" 2>&1 &
-PIDS+=($!)
-for _ in $(seq 1 60); do
-  [ -s "$PROFILE/DevToolsActivePort" ] && break
-  sleep 0.5
+CDP_PORT=""
+for attempt in 1 2 3; do
+  PROFILE="$WORK/chrome-profile-$attempt"
+  mkdir -p "$PROFILE"
+  "$CHROME" --headless --no-sandbox --disable-dev-shm-usage --remote-debugging-port=0 \
+    --user-data-dir="$PROFILE" about:blank >"$OUT_DIR/chrome-$STAMP-$attempt.log" 2>&1 &
+  CHROME_PID=$!
+  PIDS+=("$CHROME_PID")
+  for _ in $(seq 1 60); do
+    [ -s "$PROFILE/DevToolsActivePort" ] && break
+    kill -0 "$CHROME_PID" 2>/dev/null || break
+    sleep 0.5
+  done
+  if [ -s "$PROFILE/DevToolsActivePort" ]; then
+    IFS= read -r CDP_PORT <"$PROFILE/DevToolsActivePort"
+    break
+  fi
+  echo "warning: Chrome exposed no DevTools port on attempt $attempt" >&2
+  kill "$CHROME_PID" 2>/dev/null || true
 done
-if [ ! -s "$PROFILE/DevToolsActivePort" ]; then
-  echo "error: Chrome exposed no DevTools port" >&2
+if [ -z "$CDP_PORT" ]; then
+  echo "error: Chrome exposed no DevTools port after 3 attempts" >&2
   exit 1
 fi
-IFS= read -r CDP_PORT <"$PROFILE/DevToolsActivePort"
 
 # Pinned axe-core engine (runbook: "Re-run of axe-core", step 3).
 AXE_DIR="$WORK/axe"
@@ -177,23 +206,35 @@ sha256sum "$AXE_DIR/package/axe.min.js" >"$OUT_DIR/axe-core-$AXE_VERSION-$STAMP.
 
 STATUS=0
 
+# Upper bound for one half (the legacy steps plus the accessibility checks of scripts/web-smoke/a11y); a hung browser cannot stall the gate for ever.
+SMOKE_TIMEOUT="${AUTONOGRAMMER_SMOKE_TIMEOUT:-3600}"
+
 if wants api; then
   set +e
   CDP_PORT="$CDP_PORT" APP_URL="http://127.0.0.1:$WEB_PORT/" API_ORIGIN="http://127.0.0.1:$API_PORT" \
-    OUT_DIR="$OUT_DIR" COMMIT="$COMMIT" RUN_DATE="$RUN_DATE" AXE_JS="$AXE_DIR/package/axe.min.js" \
-    node "$ROOT/scripts/web-smoke/smoke.mjs" \
+    OUT_DIR="$OUT_DIR" COMMIT="$COMMIT" RUN_DATE="$RUN_DATE" AXE_JS="$AXE_DIR/package/axe.min.js" A11Y_REPORT_DIR="${A11Y_REPORT:+$A11Y_REPORT/api}" \
+    timeout "$SMOKE_TIMEOUT" node "$ROOT/scripts/web-smoke/smoke.mjs" \
     >"$OUT_DIR/web-smoke-$STAMP.json" 2>"$OUT_DIR/web-smoke-$STAMP.log"
   API_STATUS=$?
   set -e
   echo "api smoke exit=$API_STATUS output=$OUT_DIR/web-smoke-$STAMP.json"
   [ "$API_STATUS" -eq 0 ] || STATUS=$API_STATUS
+
+  # Last step of the real-bundle path: the payload budget of the published wwwroot (scripts/web-smoke/size-budget.mjs; exit 0 within budget, 1 over it).
+  set +e
+  node "$ROOT/scripts/web-smoke/size-budget.mjs" "$WORK/web/wwwroot" \
+    >"$OUT_DIR/size-budget-$STAMP.json" 2>"$OUT_DIR/size-budget-$STAMP.log"
+  BUDGET_STATUS=$?
+  set -e
+  echo "size budget exit=$BUDGET_STATUS output=$OUT_DIR/size-budget-$STAMP.json"
+  [ "$BUDGET_STATUS" -eq 0 ] || STATUS=$BUDGET_STATUS
 fi
 
 if wants demo; then
   set +e
   CDP_PORT="$CDP_PORT" DEMO_URL="http://127.0.0.1:$DEMO_PORT/" \
-    OUT_DIR="$OUT_DIR" COMMIT="$COMMIT" RUN_DATE="$RUN_DATE" AXE_JS="$AXE_DIR/package/axe.min.js" SHOT_DIR="${SHOT_DIR:-}" \
-    node "$ROOT/scripts/web-smoke/smoke-demo.mjs" \
+    OUT_DIR="$OUT_DIR" COMMIT="$COMMIT" RUN_DATE="$RUN_DATE" AXE_JS="$AXE_DIR/package/axe.min.js" SHOT_DIR="${SHOT_DIR:-}" A11Y_REPORT_DIR="${A11Y_REPORT:+$A11Y_REPORT/demo}" \
+    timeout "$SMOKE_TIMEOUT" node "$ROOT/scripts/web-smoke/smoke-demo.mjs" \
     >"$OUT_DIR/web-smoke-demo-summary-$STAMP.json" 2>"$OUT_DIR/web-smoke-demo-$STAMP.log"
   DEMO_STATUS=$?
   set -e

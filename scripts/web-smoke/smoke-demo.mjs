@@ -11,9 +11,14 @@
 //
 // Stdout: one JSON document. Stderr: progress. Exit 0 only when every assertion holds.
 // Env: CDP_PORT, DEMO_URL, OUT_DIR, COMMIT, RUN_DATE, AXE_JS; optional SHOT_DIR (a PNG per screen is written there, named theme-width-screen).
+//
+// After those assertions the accessibility checks of scripts/web-smoke/a11y run on their own page: routes, keyboard walk, dialog, axe on every state (WCAG 2.2 tags),
+// forced colours, contrast, reduced motion and dark scheme, reflow, target size and text spacing. Each check group is one assertion named a11y<Group> (a11yRoutes,
+// a11yKeyboard, ...). Optional: --a11y-report DIR (or A11Y_REPORT_DIR) writes a11y-report.json and the screenshots there; AUTONOGRAMMER_SMOKE_A11Y=0 skips them.
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { reportDirFromArgs, runA11yChecks } from "./a11y/index.mjs";
 
 function need(name) {
   const value = process.env[name];
@@ -411,6 +416,17 @@ try {
   result.themeSwitch = { switched: switched.theme, stored: switched.stored, afterReload: reloaded.theme };
   if (switched.theme !== "dark" || reloaded.theme !== "dark" || reloaded.stored !== "dark") fail("demoThemeSwitchPersists", JSON.stringify(result.themeSwitch));
   hold("demoThemeSwitchPersists");
+
+  if (process.env.AUTONOGRAMMER_SMOKE_A11Y !== "0") {
+    note("accessibility checks");
+    const a11y = await runA11yChecks({ cdpPort: CDP_PORT, baseUrl: DEMO_URL, kind: "demo", axeJs: AXE_JS, reportDir: reportDirFromArgs(), log: note, meta: { commit: COMMIT, runDate: RUN_DATE } });
+    result.a11y = { summary: a11y.report.summary(), counters: Object.fromEntries(a11y.report.counters), skipped: a11y.report.skipped, errors: a11y.report.errors().length };
+    for (const [name, ok] of Object.entries(a11y.assertions)) {
+      if (ok) hold(name);
+      else assertions[name] = false;
+    }
+    failures.push(...a11y.failures);
+  }
 } catch (error) {
   result.error = error instanceof Error ? error.message : String(error);
   note(`demo smoke failed: ${result.error}`);
