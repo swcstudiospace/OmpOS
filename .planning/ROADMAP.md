@@ -1383,7 +1383,7 @@ Nothing in this milestone is built yet; every phase below is planned.
 **Success Criteria** (what must be TRUE):
   1. The repository checks pass. Verify: `bash scripts/ci/repo-checks.sh` (brand, changelog, docs, providers, skip markers).
   2. The SBOM is current. Verify: `bash scripts/ci/check-sbom.sh`.
-  3. The full gate passes on the final commit. Verify: `./bootstrap.sh` on a clean worktree; the log is under `docs/runbooks/evidence/`. **Result: Partial**: `561a83b5` passed every step through the format check (12670 tests, 0 failed) and failed the smoke on host load (`bootstrap-gate-2026-10-29-561a83b5.log`); the smoke alone passed on `d0d0b879` (`web-accessibility-2026-10-29/final-smoke-d0d0b879/`); a full pass on the last commit is Run 5 of `66.4-VERIFICATION.md`.
+  3. The full gate passes on the final commit. Verify: `./bootstrap.sh` on a clean worktree; the log is under `docs/runbooks/evidence/`. **Result: Partial**: `561a83b5` passed every step through the format check (12670 tests, 0 failed) and failed the smoke on host load (`bootstrap-gate-2026-10-29-561a83b5.log`); the smoke alone passed on `d0d0b879` (`web-accessibility-2026-10-29/final-smoke-d0d0b879/`); a full pass on the shipped commit is Run 6 of `66.4-VERIFICATION.md` (Run 5 lost its service containers to another session; fixed).
 **Plans**: `66.4-01-PLAN.md` in `.planning/phases/66.4-quality-uplift-ci-ops-brand/`
 
 ### Phase 67: Accounts: Supabase passwordless sign-in

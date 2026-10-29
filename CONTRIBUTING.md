@@ -37,7 +37,7 @@ Prerequisites: the .NET SDK pinned in `global.json` (`./bootstrap.sh` installs i
 | The whole gate: secret scan, plugin tests, locked restore, warnings-as-errors build, tests, format check, web smoke with axe | `./bootstrap.sh` |
 | Locked restore | `dotnet restore Autonogrammer.Linux.slnf --locked-mode` |
 | Build | `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` |
-| Tests (needs the test services of `scripts/test-services.sh`, which the gate starts) | `dotnet test Autonogrammer.Linux.slnf -c Release --no-build` |
+| Tests (needs the test services of `scripts/test-services.sh`, which the gate starts on a pair of containers of its own; set `AUTONOGRAMMER_TEST_SERVICES_NAME` to give any other run its own pair when sessions share a host) | `dotnet test Autonogrammer.Linux.slnf -c Release --no-build` |
 | Format (the single rule source is `.editorconfig`) | `dotnet format Autonogrammer.Linux.slnf` |
 | Changelog check | `bash scripts/ci/check-changelog.sh` |
 

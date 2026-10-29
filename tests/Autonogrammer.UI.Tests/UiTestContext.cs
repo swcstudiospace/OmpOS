@@ -10,10 +10,14 @@ namespace Autonogrammer.UI.Tests;
 [SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "Public test classes derive from this base; the xUnit test discovery and the derived classes require consistent accessibility.")]
 public abstract class UiTestContext : BunitContext
 {
-    /// <summary>Creates the context in loose JS interop mode.</summary>
+    /// <summary>Creates the context in loose JS interop mode, with a wait that a loaded host does not outrun.</summary>
     protected UiTestContext()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
+
+        // The default wait of one second ends a test that is only late: on a host at a load average of 20 or more a render that is on its way misses it.
+        // A test that passes does not wait longer; only one that fails does.
+        DefaultWaitTimeout = TimeSpan.FromSeconds(10);
     }
 
     /// <summary>Records a send and reports that the host accepted it, as the Composer's OnSend contract requires.</summary>

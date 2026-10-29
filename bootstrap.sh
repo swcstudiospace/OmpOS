@@ -61,6 +61,11 @@ dotnet restore Autonogrammer.Linux.slnf --locked-mode
 bash scripts/ci/check-licences.sh
 dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror
 
+# The gate runs on its own pair of test containers: `scripts/test-services.sh up` begins with `down`, so another session or another gate on this host that used the same
+# container names would remove them in the middle of the test run (every test that needs a server then fails with a refused connection; seen on 2026-10-29). A name set
+# by the caller wins. A run that is killed without its exit trap leaves its pair behind: `podman ps -a` lists them as autonogrammer-test-*-gate-<pid>.
+export AUTONOGRAMMER_TEST_SERVICES_NAME="${AUTONOGRAMMER_TEST_SERVICES_NAME:-gate-$$}"
+
 # Cleanup runs on every exit path. `down` is idempotent; the export file holds test passwords and is removed.
 TEST_SERVICES_ENV=""
 cleanup() {

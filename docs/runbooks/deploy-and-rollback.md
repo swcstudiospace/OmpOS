@@ -285,7 +285,7 @@ Copy this table into the deploy record and fill the last column.
 
 | ID | Question |
 |----|----------|
-| Q-DEP-1 | Does the real web head get its own Vercel project, leaving the public Demo at `https://ompos-web.vercel.app` untouched? |
+| Q-DEP-1 | Does the real web head get its own Vercel project, leaving the public Demo at `https://ompos-web.vercel.app` untouched? Answered by the owner on 2026-10-29: no, switch `https://ompos-web.vercel.app` to the real bundle; the Demo then needs a project of its own (`scripts/vercel/build-demo.sh` builds it). The deployment itself waits for an API origin, because the real build fails closed without one (`scripts/vercel/render-csp.sh`). |
 | Q-DEP-2 | Which commit of program 66 is the first to deploy, and who runs the first deploy with the Railway MCP and CLI? |
 | Q-DEP-3 | Is the `[INFERENCE]` in-container `/dev/tcp` check acceptable, or should the image carry a probe tool? |
 
