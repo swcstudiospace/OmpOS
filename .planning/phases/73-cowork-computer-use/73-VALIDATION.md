@@ -7,14 +7,15 @@ criteria of the ROADMAP phase 73 block. No build or test was run while writing t
 
 | Requirement | Plans | Test classes |
 | --- | --- | --- |
-| AG-73-1, 3, 10, 18 (states) | 73-01 | CoordinateMapTests, ComputerUseOptionsValidatorTests, DenialCodeCatalogTests |
-| AG-73-2, 4, 5, 6, 7, 9, 11, 12 (takeover) | 73-02 | GateOrderTests, GrantTierTests, DenylistTests, ForbiddenChordTests, SensitivityClassifierTests, RateLimiterTests, KillSwitchCoordinatorTests, ApprovalSerialisationTests, OwnWindowTests, ComputerUseBoundaryTests |
+| AG-73-1, 3, 10, 18 (states) | 73-01 | CoordinateMapTests, ComputerUseOptionsValidatorTests, ComputerUseOptionsReaderTests, DenialCodeCatalogTests |
+| AG-73-2, 4, 5, 6, 7, 9, 11, 12 (takeover) | 73-02 | GateOrderTests, GrantTierTests, DenylistTests, ForbiddenChordTests, SensitivityClassifierTests, RateLimiterTests, KillSwitchCoordinatorTests, ApprovalSerialisationTests, OwnWindowTests, ComputerUseCompositionTests, NullComputerUseBackendTests, ComputerUseBoundaryTests |
 | AG-73-13, 14, 15 | 73-03 | VisibleRegionMaskerTests, FrameScalerTests, PngEncoderTests, ImageBudgetTests, AuditLogChainTests, AuditRedactionTests, ComputerToolProviderTests |
 | AG-73-22 (non-UI: registration rule, no relay op, Dispatch grant ceiling) | 73-02, 73-03 | GrantTierTests (30-minute ceiling), ComputerUseDispatchRegistrationTests |
+| AG-73-18 (platform-less heads) | 73-02 | NullComputerUseBackendTests |
 | AG-73-16, 17, 18 (Wayland) | 73-04 | KeysymMapperTests, WaylandDetectionTests, X11BackendLiveTests (Live) |
 | AG-73-19, 20 | 73-05 | SendInputBuilderTests, CoordinateScaleTests, ScreenCaptureArgumentsTests |
-| AG-73-8, 12 (indicator), 21, 22 (UI side), 23 | 73-06 | ApprovalDialogViewTests, IndicatorWindowViewTests, ComputerUseSettingsPageTests, PermissionAdvisorTests, DispatchOriginTests |
-| AG-73-24 | 73-06 | ProjectGraphTests unchanged, licence plus notices checks unchanged |
+| AG-73-8, 12 (indicator), 21, 22 (UI side), 23 | 73-06 | ApprovalDialogViewTests, IndicatorWindowViewTests, ComputerUseSettingsPageTests, PermissionAdvisorTests, DispatchOriginTests, FileComputerUseSettingsStoreTests, ComputerUseHeadCompositionTests; list-locking: NetworkAndKeyboardCopyTests (SettingsSection count and ordinals), SettingsWindowTests (Pages row), SettingsAccessibilityTests and SettingsFontTests (every section has a fixture page) |
+| AG-73-24 | 73-06 | ProjectGraphTests and ScaffoldRegistrationTests unchanged (62 layers, 29 tuples, seven process-spawning names), PresentationIsolationTests, licence plus notices checks unchanged |
 
 ## Quick run (per plan, from the worktree root)
 
@@ -23,9 +24,9 @@ criteria of the ROADMAP phase 73 block. No build or test was run while writing t
 /tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.Harness.ComputerUse.X11.Tests -c Release -- --filter-not-trait "Category=Live"
 /tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.Harness.ComputerUse.Windows.Tests -c Release -- --filter-not-trait "Category=Live"
 /tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.Harness.ComputerUse.MacOS.Tests -c Release -- --filter-not-trait "Category=Live"
-/tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.Presentation.Tests -c Release -- --filter-class "*PermissionAdvisorTests*" --filter-class "*DispatchOriginTests*"
-/tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.Native.Tests -c Release -- --filter-class "*ApprovalDialogViewTests*" --filter-class "*IndicatorWindowViewTests*" --filter-class "*ComputerUseSettingsPageTests*"
-/tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*ComputerUseBoundaryTests*" --filter-class "*ProjectGraphTests*"
+/tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.Presentation.Tests -c Release -- --filter-class "*PermissionAdvisorTests*" --filter-class "*DispatchOriginTests*" --filter-class "*NetworkAndKeyboardCopyTests*" --filter-class "*PresentationIsolationTests*"
+/tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.Native.Tests -c Release -- --filter-class "*ApprovalDialogViewTests*" --filter-class "*IndicatorWindowViewTests*" --filter-class "*ComputerUseSettingsPageTests*" --filter-class "*FileComputerUseSettingsStoreTests*" --filter-class "*ComputerUseHeadCompositionTests*" --filter-class "*SettingsWindowTests*" --filter-class "*SettingsAccessibilityTests*" --filter-class "*SettingsFontTests*"
+/tmp/ag-bin/ag-dotnet test --project tests/Autonogrammer.ArchitectureTests -c Release -- --filter-class "*ComputerUseBoundaryTests*" --filter-class "*ProjectGraphTests*" --filter-class "*ScaffoldRegistrationTests*" --filter-class "*SuppressionLedgerTests*"
 ```
 
 Each runnable command fails when: non-zero exit, or the `Failed:` count is above 0,
@@ -76,3 +77,11 @@ model vision accuracy and cost; omp reaching the tools and honouring
 `nyquist_compliant` holds for this phase when every row above has a passing (or
 reason-stated skipped, for Live-only) run recorded at the phase HEAD, and any gap names
 its blocker from the cannot-be-verified list instead of claiming success.
+
+## Integration amendments (2026-10-29)
+
+- The desktop head has no DI container, so there is no DI registration test; `ComputerUseCompositionTests` (73-02) proves validate-before-build, the disabled default and the signed-out denial at gate step 1, and `ComputerUseOptionsReaderTests` (73-01) proves the `Cowork__ComputerUse__<Key>` environment form.
+- `ComputerUseBoundaryTests` also asserts the web head, `Autonogrammer.UI`, the API, `AgentWorker` and Android reference no `Harness.ComputerUse*` project and that Presentation references only `ComputerUse.Abstractions`.
+- `SuppressionLedgerTests` must stay green: no suppression is added by this phase.
+- Settings list locks: `NetworkAndKeyboardCopyTests` (count and ordinals) and `SettingsFixture` change together with `SettingsSection`; the order of phases 72, 73, 76 decides the numbers, so read them on disk before editing.
+- Web checks (`IndexRoutesTests`, `WebSettingsPagesTests`, `scripts/web-smoke/*`) are not part of this phase and must stay unchanged; the full repo gate (report 09 section 5) still runs them.
