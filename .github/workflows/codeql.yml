@@ -1,0 +1,46 @@
+# CodeQL for C# (manual build mode: the repository's restore and build commands, as in ci.yml).
+# Manual runs and a weekly schedule only; it is not a required check.
+# UNVERIFIED: this workflow has never run. The self-hosted Omega runners must be able to download the CodeQL bundle
+# (github/codeql-action fetches it from github.com at run time); if the pool blocks that, the init step fails.
+name: codeql
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_PROCESSOR_COUNT: 2
+  MSBUILDDISABLENODEREUSE: 1
+
+jobs:
+  analyze:
+    runs-on: [self-hosted, linux, x64, omega-ci]
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          global-json-file: global.json
+      # github/codeql-action v4.39.1 (tag object 8498dc4c resolved to this commit with gh api, 2026-10-29).
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: csharp
+          build-mode: manual
+      - run: dotnet restore Autonogrammer.Linux.slnf --locked-mode
+      - run: dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: /language:csharp

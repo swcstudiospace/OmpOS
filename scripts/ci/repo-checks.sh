@@ -11,5 +11,6 @@ bash scripts/ci/check-brand.sh
 bash scripts/ci/check-changelog.sh
 bash scripts/ci/check-docs.sh
 bash scripts/ci/check-providers-doc.sh
+bash scripts/ci/check-skip-markers.sh
 bash scripts/check-settings-parity.sh
 echo "repo-checks: ok"

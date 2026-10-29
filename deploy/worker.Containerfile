@@ -11,8 +11,9 @@
 # The noble (Ubuntu 24.04) variant is used rather than chiseled because the entrypoint is a /bin/sh script and
 # the worker needs git, openssh-client and curl. Chiseled images contain no shell and no package manager.
 
-ARG SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:10.0.402-noble
-ARG RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0.13-noble
+# Digests resolved 2026-10-29 from mcr.microsoft.com (manifest-list digest, HTTP Docker-Content-Digest header). Refresh with the tag bump.
+ARG SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:10.0.402-noble@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2
+ARG RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0.13-noble@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca
 
 FROM ${SDK_IMAGE} AS build
 WORKDIR /src
@@ -67,6 +68,19 @@ RUN cd /opt/omp \
  && chmod 0755 /opt/omp/dist/cli.js \
  && rm -rf /tmp/bun-cache /tmp/omp-build
 
+# Dependency drift gate: the resolved top-level omp dependencies must equal deploy/omp-deps.lock.json
+# (scripts/ci/snapshot-omp-deps.sh). With OMP_DEPS_MODE=write the build writes /tmp/omp-deps.lock.json instead, to
+# produce the committed snapshot. While the committed file says "pending": true the check only warns (first podman build).
+ARG OMP_DEPS_MODE=check
+COPY scripts/ci/snapshot-omp-deps.sh /opt/snapshot-omp-deps.sh
+COPY deploy/omp-deps.lock.json /opt/omp-deps.committed.json
+RUN if [ "${OMP_DEPS_MODE}" = "write" ]; then \
+      bash /opt/snapshot-omp-deps.sh write /opt/omp /tmp/omp-deps.lock.json; \
+    else \
+      bash /opt/snapshot-omp-deps.sh check /opt/omp /opt/omp-deps.committed.json; \
+    fi; \
+    rm -f /opt/snapshot-omp-deps.sh /opt/omp-deps.committed.json
+
 FROM ${RUNTIME_IMAGE} AS final
 WORKDIR /app
 
@@ -105,6 +119,12 @@ ENV ASPNETCORE_ENVIRONMENT=Production \
 
 # Documents the default port only; the entrypoint binds to PORT (set by the platform) or 8080.
 EXPOSE 8080
+
+# Liveness probe without curl or wget (the aspnet base has neither): bash /dev/tcp sends a bare HTTP request and
+# the status line must be 200. NOT RUN here: written without a podman build; verify with `podman healthcheck run`.
+# HEALTHCHECK exists only in the docker image format: build with `podman build --format docker` (the OCI format drops it).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD ["/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/${PORT:-8080} && printf 'GET %s HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' \"/healthz\" >&3 && head -n 1 <&3 | grep -q ' 200 '"]
 
 LABEL org.opencontainers.image.title="autonogrammer-agent-worker" \
       org.opencontainers.image.description="Autonogrammer cloud agent worker: serves GET /healthz and the ACP WebSocket GET /acp, runs omp against a workspace on the volume" \

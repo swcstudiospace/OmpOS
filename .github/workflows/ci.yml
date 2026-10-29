@@ -15,7 +15,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded pull-request runs only; a push to main (or any branch) always runs to completion.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CI: true
@@ -34,6 +35,9 @@ env:
 
 jobs:
   build-test:
+    timeout-minutes: 90
+    permissions:
+      contents: read
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, linux, x64, omega-ci]
     steps:
@@ -62,6 +66,8 @@ jobs:
           cache-dependency-path: '**/packages.lock.json'
       - run: dotnet restore Autonogrammer.Linux.slnf --locked-mode
       - run: dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror
+      # apps/Autonogrammer.App does not exist in this repository, and tools/gweb holds only the named/ and stock/ asset
+      # folders (no project), so neither can join Autonogrammer.Linux.slnf or this build step. Add them here when they gain projects.
       # The next steps need no podman: they run before the test services so that CI reports them even when the runner cannot start containers
       # (OQ-168: rootless podman cannot create a user namespace inside the runner container, and the image has no Chrome, so the browser smoke comes last).
       - run: dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore
@@ -77,6 +83,19 @@ jobs:
         run: bash scripts/ci/repo-checks.sh
       - name: Licence checks (NOTICE and THIRD-PARTY-NOTICES.md against the restored NuGet cache; the same script bootstrap.sh runs)
         run: bash scripts/ci/check-licences.sh
+      - name: SBOM freshness (docs/legal/sbom.spdx.json against the lock files and container pins; needs the restored NuGet cache)
+        run: bash scripts/ci/check-sbom.sh
+      - name: OpenAPI breaking changes (pull requests only; ALLOW_BREAKING_API or a BREAKING-API commit line permits them)
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          python3 scripts/ci/test_check_openapi_breaking.py
+          python3 scripts/ci/check-openapi-breaking.py --base "origin/${{ github.base_ref }}"
+      - name: Web size budget (runs only when scripts/web-smoke/size-budget.sh exists; owned by the web-perf unit)
+        run: |
+          if [ -f scripts/web-smoke/size-budget.sh ]; then bash scripts/web-smoke/size-budget.sh; else echo "size-budget.sh is not present; skipped"; fi
+      - name: Python unit tests of the CI and legal scripts
+        run: python3 -m unittest scripts/ci/test_check_skip_markers.py scripts/legal/test_generate_sbom.py
       - name: Browser smoke with axe-core (needs Node and Chrome on the runner; mirrors the bootstrap step)
         run: |
           out_dir="$RUNNER_TEMP/web-smoke"
@@ -154,9 +173,33 @@ jobs:
         if: always()
         run: podman-compose --profile backend -f deploy/compose.yaml down -v
 
+  # Optional image scan: runs only on a runner that has trivy AND podman (OQ-168: the pool lacks rootless podman today), so it
+  # skips gracefully. Pull requests are excluded; it builds both images (--format docker keeps HEALTHCHECK) and scans them.
+  image-scan:
+    if: github.event_name == 'push'
+    runs-on: [self-hosted, linux, x64, omega-ci]
+    needs: build-test
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Build and scan (skips without trivy or podman)
+        run: |
+          if ! command -v trivy >/dev/null || ! command -v podman >/dev/null; then
+            echo "::notice::trivy or podman is not on this runner; image scan skipped."
+            exit 0
+          fi
+          podman build --format docker -f deploy/api.Containerfile -t autonogrammer-api:ci .
+          podman build --format docker -f deploy/worker.Containerfile -t autonogrammer-agent-worker:ci .
+          bash scripts/ci/scan-images.sh localhost/autonogrammer-api:ci localhost/autonogrammer-agent-worker:ci
+
   # Builds the Android head (apps/Autonogrammer.Android) on the Omega CI pool (Phase 24 criterion 4). No device or emulator is needed.
   # The workflow runs on push and pull_request, so the first green run of this job needs the branch pushed.
   android:
+    timeout-minutes: 60
+    permissions:
+      contents: read
     # The runner image pre-installs the Android workloads, JDK 17 and Android SDK 36; its SDK directory is read-only.
     # iOS and MacCatalyst need macOS and Xcode, which the Linux pool does not have.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
