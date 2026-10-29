@@ -1304,6 +1304,9 @@ Nothing in this milestone is built yet; every phase below is planned.
 
 - [ ] **Phase 66: Rebrand to Autonogrammer** - one mechanical pass renames every owned name, three C# migrations keep existing user data, regenerated files, one gate run
 - [ ] **Phase 66.1: Scaffold: projects, registration and contract bump** - ONE serialised step creates and registers the 21 source and 19 test projects with AssemblyMarker.cs only, the LayerMap rows and six tuples, the package pins and the single ContractVersion bump 1.5.0 to 1.6.0
+- [x] **Phase 66.2: Hosted real web app** - the web head builds as the real application with no Demo code, signs in with an owner token, and runs end to end against the API and the real omp (scripted model); hosting and engine hardening; review findings fixed. Nothing is deployed.
+- [x] **Phase 66.3: Web accessibility (WCAG 2.2 AA)** - scripted checks of routes, keyboard, focus, forced colours, reflow, text spacing, target size and axe on every state, run against built bundles; nine defects fixed; statement, 55-row table and known issues. Screen readers and devices not run.
+- [ ] **Phase 66.4: Quality uplift: CI, operations and brand** - SBOM, pinned images, skip-marker and OpenAPI checks, operations documents, the hosted threat model, wordmark and assets; full gate on the final commit (pending)
 - [ ] **Phase 67: Accounts: Supabase passwordless sign-in** - email code and magic link against the shared Supabase project, OS-store tokens on desktop, owner-scoped account and sessions API; Code works signed out
 - [ ] **Phase 68: Data plane: names, schema and resilience** - physical names cut over to autonogrammer, additive reversible migrations M0001 to M0010, least-privilege roles, GreptimeDB telemetry, bounded resilience, default-off ledger sink
 - [ ] **Phase 69: Surface switch and Cowork sessions** - Code or Cowork switch in the title bar and web top bar, the Cowork layout and the Cowork session model that can never reach the Kanban
@@ -1344,6 +1347,44 @@ Nothing in this milestone is built yet; every phase below is planned.
   5. `ContractVersion.Current` is 1.6.0 and was bumped once; no `Contracts/Plugins` type references a `Contracts/Ui` type. Verify: `dotnet test --project tests/Autonogrammer.Contracts.Tests -c Release` and the scaffold check of manifest section 4 step 1.
   6. One relock and one notices regeneration are committed and the gate is green. Verify: `dotnet restore Autonogrammer.Linux.slnf --locked-mode`, `python3 scripts/legal/generate-third-party-notices.py --check`, then `./bootstrap.sh`.
 **Plans**: `66.1-01-PLAN.md` in `.planning/phases/66.1-scaffold-projects-and-registration/`
+
+### Phase 66.2: Hosted real web app
+**Goal**: The web head built without Demo code is a working application: the owner signs in with a token, starts agents, watches real engine output stream, approves tool calls, reloads and resumes, against an API that narrows what a hosted run exposes. Not delivered: a deployment (needs the owner's approval), a live model turn (no credential), multi-user sign-in (ADR-0030), a sandbox provider (HOST-04).
+**Requirements**: AG-HW-1 to AG-HW-12
+**Depends on**: Phase 66 (the renamed tree, replayed onto `origin/main`); the committed state of the concurrent line, read through git only.
+**Mac channel**: No.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The real bundle carries no Demo code. Verify: `bash scripts/vercel/build-web.sh <dir>` then `bash scripts/vercel/check-no-demo.sh <dir>`; `--expect-demo` on the Demo bundle finds Demo code.
+  2. Owner-token sign-in, access control, hosting and engine hardening and the approval policy hold. Verify: `dotnet test --project tests/Autonogrammer.Api.IntegrationTests -c Release` (with `bash scripts/test-services.sh up`), `Harness.Acp.Tests`, `Web.Tests`, `UI.Tests`.
+  3. The hosted path works end to end with the real omp. Verify: `bash scripts/hosted/run-local.sh --web-bundle <dir>` ends with `result: passed` for the API steps and the browser steps (`docs/runbooks/evidence/hosted-web-2026-10-29/`).
+  4. Review findings are fixed or recorded. Verify: threat model rows T1.4 and T4.1 to T4.7, open questions OQ-184 to OQ-190.
+  5. Nothing is deployed, pushed or provisioned without approval. Verify: `docs/runbooks/deploy-and-rollback.md` preconditions; `git ls-remote origin` shows no branch of this work.
+**Plans**: `66.2-01-PLAN.md` in `.planning/phases/66.2-hosted-real-web-app/`
+
+### Phase 66.3: Web accessibility (WCAG 2.2 AA)
+**Goal**: The web head can be used with a keyboard, with text zoom to 400 percent, with forced colours, reduced motion and the dark scheme, and its state changes are announced; the scripted checks that show it run in the web smoke. Not delivered: a screen-reader pass, a real device, a Windows High Contrast check, the desktop head (OQ-178, OQ-179).
+**Requirements**: AG-AX-1 to AG-AX-8
+**Depends on**: Phase 66.2 (the routes, the connect screen and the real bundle the checks run against).
+**Mac channel**: No.
+**UI hint**: yes
+**Success Criteria** (what must be TRUE):
+  1. The checks find no error on the Demo bundle and on the real bundle. Verify: `bash scripts/web-smoke/run-smoke.sh --a11y-report <dir>` (assertions `a11y<Group>`), and `docs/runbooks/evidence/web-accessibility-2026-10-29/`.
+  2. The checks' own logic holds. Verify: `node --test scripts/web-smoke/a11y/*.test.mjs` (42 tests).
+  3. The statement and the table say only what was shown. Verify: `docs/accessibility/statement.md`, `wcag-2.2-conformance.md`, `known-issues.md`.
+**Plans**: `66.3-01-PLAN.md` in `.planning/phases/66.3-web-accessibility-wcag-22-aa/`
+
+### Phase 66.4: Quality uplift: CI, operations and brand
+**Goal**: The supply chain, the operations documents, the threat model and the brand assets reach the bar of a hosted product, and the whole tree passes the gate once. Not delivered: a run of CodeQL, Scorecard, trivy, an image build or an attestation (OQ-175), measured SLOs (OQ-180), the trademark decision.
+**Requirements**: AG-QU-1 to AG-QU-8
+**Depends on**: Phases 66.2 and 66.3.
+**Mac channel**: No.
+**UI hint**: no
+**Success Criteria** (what must be TRUE):
+  1. The repository checks pass. Verify: `bash scripts/ci/repo-checks.sh` (brand, changelog, docs, providers, skip markers).
+  2. The SBOM is current. Verify: `bash scripts/ci/check-sbom.sh`.
+  3. The full gate passes on the final commit. Verify: `./bootstrap.sh` on a clean worktree; the log is under `docs/runbooks/evidence/`.
+**Plans**: `66.4-01-PLAN.md` in `.planning/phases/66.4-quality-uplift-ci-ops-brand/`
 
 ### Phase 67: Accounts: Supabase passwordless sign-in
 **Goal**: A person can sign in on the desktop and web heads with an email code or a magic link against the shared Supabase project, stay signed in across restarts on desktop with the token in the operating system store, and read their own account and sessions through the owner-scoped API. Code mode keeps working signed out; Cowork, Dispatch and the account surface need an account.
@@ -1514,6 +1555,9 @@ Nothing in this milestone is built yet; every phase below is planned.
 |-------|---------|--------|-----------|
 | 66. Rebrand to Autonogrammer | - | Planned | - |
 | 66.1. Scaffold: projects, registration and contract bump | - | Planned | - |
+| 66.2. Hosted real web app | 66.2-CONTEXT.md, 66.2-01-PLAN.md, 66.2-SUMMARY.md, 66.2-VERIFICATION.md | Complete (not deployed) | 2026-10-29 |
+| 66.3. Web accessibility (WCAG 2.2 AA) | 66.3-CONTEXT.md, 66.3-01-PLAN.md, 66.3-SUMMARY.md, 66.3-VERIFICATION.md | Complete with caveats (no screen reader, no device) | 2026-10-29 |
+| 66.4. Quality uplift: CI, operations and brand | 66.4-CONTEXT.md, 66.4-01-PLAN.md, 66.4-SUMMARY.md, 66.4-VERIFICATION.md | In progress (the gate is running) | - |
 | 67. Accounts: Supabase passwordless sign-in | - | Planned | - |
 | 68. Data plane: names, schema and resilience | - | Planned | - |
 | 69. Surface switch and Cowork sessions | - | Planned | - |

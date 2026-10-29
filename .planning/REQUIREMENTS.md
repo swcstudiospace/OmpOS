@@ -635,6 +635,49 @@ Source: the user request of 2026-10-28, the ultrathink plan graph ut-mvs8ru79-82
 - [ ] **AG-66-13**: The desktop head window title is `Autonogrammer` (`apps/Autonogrammer.Native/MainWindow.axaml`), checked by a launch under a private Xvfb display.
 - [ ] **AG-66-14**: The owner-action list of runbook s.5 is delivered with the result, each item marked open; nothing in the tree claims an external rename happened.
 
+### Hosted real web app (66.2) (AG-HW)
+
+Added 2026-10-29 from the owner request "ultrathink orchestrate workflowz" and the ultrathink plan graph `ut-mvsrdwhx-64862aaa`. Evidence: `.planning/phases/66.2-hosted-real-web-app/66.2-VERIFICATION.md`.
+
+- [x] **AG-HW-1**: The web head builds as a real application with no Demo code (`scripts/vercel/build-web.sh`), and `scripts/vercel/check-no-demo.sh` asserts it, with a positive control on the Demo bundle (`--expect-demo`).
+- [x] **AG-HW-2**: `Api:Auth:Mode=OwnerToken` accepts a bearer token whose SHA-256 digest is configured (constant-time comparison, rotation by two digests), throttles failures with a 429 and `Retry-After`, and `GET /auth/config` tells a client the mode without a credential.
+- [x] **AG-HW-3**: The web head has a connect screen and an auth gate, holds the token in memory only (no web storage, no cookie), ends the session on a 401 that answers a request that carried it, and has a sign-out.
+- [x] **AG-HW-4**: `Api:Auth:AllowedSubjects` and `AllowAnyAuthenticatedUser` decide who may use an OIDC deployment (403 `subject_not_allowed`), and all six rate-limit policies partition per subject.
+- [x] **AG-HW-5**: Hosting hardening under `Hosting:*`: forwarded headers, HSTS outside Development, security headers with a strict content-security policy for API responses, Kestrel limits, request timeouts that answer a 504 problem (event streams exempt), `GET /health/startup`, a readiness check that turns unhealthy at shutdown, SSE keep-alive comments.
+- [x] **AG-HW-6**: The engine child gets an allow-listed environment outside Development, a 0700 workspace per session, and a non-dumpable API process; failing to make the process non-dumpable stops the start outside Development.
+- [x] **AG-HW-7**: `Harness:Acp:Approval` (kinds, grantable tools, decision timeout) lets the tool-approval endpoints grant a tool on the direct run path; the default denies everything.
+- [x] **AG-HW-8**: The web shell has routes (`/`, `/kanban`, `/sessions/{id}`, `/settings[/{page}]`, `/about`, `/connect`), a title per view, a route announcer that speaks the title of the view the app changes to, route focus, an error boundary and a not-found page; the transcript renders the latest 50 turns with a button for earlier ones; an offline shell never caches cross-origin, `Authorization`, event-stream or `/auth/*` requests.
+- [x] **AG-HW-9**: The hosted path runs end to end on one machine with the real `omp acp` and a scripted model: sign-in, a streamed answer, an approved tool call, resume, the rate limit, and a browser flow with no console error, no failed request and no unsupported content in the transcript (`scripts/hosted/`, `docs/runbooks/evidence/hosted-web-2026-10-29/`).
+- [x] **AG-HW-10**: The findings of the read-only security and quality reviews are fixed or recorded as open questions with a default (OQ-184 to OQ-190, threat model rows T4.7 and T1.4).
+- [x] **AG-HW-11**: Nothing is pushed, merged, deployed or provisioned and no secret changes without the owner's approval; the deploy runbook, its readiness checklist and the exact smoke steps exist (`docs/runbooks/deploy-and-rollback.md`).
+- [x] **AG-HW-12**: The Demo remains a build-time variant that is not mistaken for the real application: the public URL still serves the Demo until the owner approves the switch, and the real bundle carries no Demo code.
+
+### Web accessibility to WCAG 2.2 AA (66.3) (AG-AX)
+
+Evidence: `.planning/phases/66.3-web-accessibility-wcag-22-aa/66.3-VERIFICATION.md`, `docs/runbooks/evidence/web-accessibility-2026-10-29/`.
+
+- [x] **AG-AX-1**: Scripted checks (`scripts/web-smoke/a11y/`) cover titles, headings, landmarks and route announcements, the keyboard walk, focus visibility and obscuring, the Settings dialog, the drawer, axe on every reachable state, forced colours, increased contrast, reduced motion, the dark scheme, reflow, text spacing, target size and the connect screen.
+- [x] **AG-AX-2**: The web smoke runs the checks on both halves as assertions named `a11y<Group>` (the Demo bundle, and the real bundle against the in-memory API), and a report with counts can be written (`--a11y-report DIR`).
+- [x] **AG-AX-3**: The final runs of both halves report zero error findings; warnings are listed in the report and in the known issues.
+- [x] **AG-AX-4**: Every defect the checks found in the web head is fixed (nine, F1 to F9 of `docs/accessibility/known-issues.md`) and each is guarded by a check or a test.
+- [x] **AG-AX-5**: The checks' own false findings were corrected with self-tests (`node --test scripts/web-smoke/a11y/*.test.mjs`, 42 tests), not by loosening a rule that finds a real defect.
+- [x] **AG-AX-6**: The conformance statement says "partially conformant", the 55-row table separates what a check showed from what nobody evaluated, and the known issues list every open item.
+- [x] **AG-AX-7**: A manual keyboard script, a screen-reader plan and a forced-colours and motion guide exist and are marked as not carried out.
+- [x] **AG-AX-8**: What is out of scope is recorded: the desktop head (OQ-179), a screen-reader and device pass (OQ-178), browsers other than Chrome, a real Windows High Contrast theme (K11).
+
+### Quality uplift: CI, operations and brand (66.4) (AG-QU)
+
+Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.md`.
+
+- [x] **AG-QU-1**: A generated SPDX SBOM (`docs/legal/sbom.spdx.json`) and its check (`scripts/ci/check-sbom.sh`), with the third-party notices fresh.
+- [ ] **AG-QU-2**: Base images are pinned by tag and digest with a `HEALTHCHECK`, the application files are read-only for the engine's user, the runtime opens no diagnostics socket, and `scripts/ci/scan-images.sh` scans a built image. Built and checked in the Containerfile; **no image was built or scanned here**.
+- [ ] **AG-QU-3**: CI has job timeouts and least permissions, an artifacts job in `release.yml`, and CodeQL and OpenSSF Scorecard workflows pinned by SHA. Written; **never run**.
+- [x] **AG-QU-4**: A skip marker needs a SUP row (`scripts/ci/check-skip-markers.sh`), an OpenAPI breaking-change check compares `docs/api/openapi.json` with its base, and `scripts/ci/snapshot-omp-deps.sh` records the omp dependency set (the first snapshot is OQ-176).
+- [x] **AG-QU-5**: Operations documents exist: SLOs and alerting (proposals, OQ-180), incident response, backup and restore, deploy and rollback, the data inventory and retention, and the hosted threat model with its questions answered or defaulted.
+- [x] **AG-QU-6**: The wordmark exists in two layouts with "Auto" in the text colour and "nogrammer" in the accent colour, the six SVG sources are refitted and the 28 PNGs regenerated (`scripts/ci/check-brand.sh`); the owner has not signed off the logo or the trademark.
+- [ ] **AG-QU-7**: `./bootstrap.sh` passes on the final commit and its log is stored under `docs/runbooks/evidence/`.
+- [x] **AG-QU-8**: The records are current: `CHANGELOG.md` `[Unreleased]`, ADR-0021, `docs/open-questions.md`, the planning records of the three phases.
+
 ### Accounts (67) (AG-67)
 
 - [ ] **AG-67-1**: The desktop head signs in with an email one-time code (6 to 10 digits) through POST /otp and POST /verify with type email.
@@ -881,6 +924,34 @@ Source: the user request of 2026-10-28, the ultrathink plan graph ut-mvs8ru79-82
 | AG-66-12 | 66 | Planned |
 | AG-66-13 | 66 | Planned |
 | AG-66-14 | 66 | Planned |
+| AG-HW-1 | 66.2 | Met |
+| AG-HW-2 | 66.2 | Met |
+| AG-HW-3 | 66.2 | Met |
+| AG-HW-4 | 66.2 | Met |
+| AG-HW-5 | 66.2 | Met |
+| AG-HW-6 | 66.2 | Met (the effect inside a container is not observed) |
+| AG-HW-7 | 66.2 | Met |
+| AG-HW-8 | 66.2 | Met |
+| AG-HW-9 | 66.2 | Met (scripted model, one machine) |
+| AG-HW-10 | 66.2 | Met |
+| AG-HW-11 | 66.2 | Met (nothing deployed; the owner's approval is pending) |
+| AG-HW-12 | 66.2 | Met |
+| AG-AX-1 | 66.3 | Met |
+| AG-AX-2 | 66.3 | Met |
+| AG-AX-3 | 66.3 | Met (local final runs; the gate repeats them) |
+| AG-AX-4 | 66.3 | Met |
+| AG-AX-5 | 66.3 | Met |
+| AG-AX-6 | 66.3 | Met (draft statement, partially conformant) |
+| AG-AX-7 | 66.3 | Met (written, not carried out) |
+| AG-AX-8 | 66.3 | Met |
+| AG-QU-1 | 66.4 | Met |
+| AG-QU-2 | 66.4 | Partial (no image built or scanned) |
+| AG-QU-3 | 66.4 | Partial (workflows never run) |
+| AG-QU-4 | 66.4 | Met |
+| AG-QU-5 | 66.4 | Met |
+| AG-QU-6 | 66.4 | Met |
+| AG-QU-7 | 66.4 | Pending (the gate is running) |
+| AG-QU-8 | 66.4 | Met |
 | AG-67-1 | 67 | Planned |
 | AG-67-2 | 67 | Planned |
 | AG-67-3 | 67 | Planned |

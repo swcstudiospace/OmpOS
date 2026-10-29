@@ -2,15 +2,15 @@
 gsd_state_version: "1.0"
 milestone: v0.16.0
 milestone_name: Autonogrammer: accounts, Cowork and Dispatch
-status: planned
-last_updated: "2026-10-28"
-last_activity: 2026-10-28
+status: executing
+last_updated: "2026-10-29"
+last_activity: 2026-10-29
 progress:
-  total_phases: 13
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 16
+  completed_phases: 2
+  total_plans: 3
+  completed_plans: 2
+  percent: 12
 ---
 
 # Project State
@@ -24,10 +24,24 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 
 ## Current Position
 
-Phase: v0.16.0 Autonogrammer: accounts, Cowork and Dispatch (Phases 66, 66.1 and 67 to 77, 13 phases): planned 2026-10-28, none started. The milestone runs on branch `feat/autonogrammer` in its own git worktree; the mechanical rename is commit `4af7d83`. The v0.15.0 line of Phases 51 to 65 belongs to a separate session on another branch and is out of scope here; the sections below describe it as history.
-Plan: the roadmap section, the requirements (AG-66-* to AG-77-*, AG-SC-1 to AG-SC-6) and the research (`docs/plans/v0.16.0-research/`, ADR-0030 to ADR-0037) are written; the phase directories and `NN-01-PLAN.md` files are not (another task creates them). Execution order: 66, 66.1, then 68 with 67 units 1 to 3, 69, 70, then 71, 72, 73 and 75 in parallel, then 74 and 76, then 77.
-Status: nothing is built. No criterion is claimed that needs a live Supabase call, a live omp turn (OD-07), a Railway deploy, Windows, macOS or Android.
-Last activity: 2026-10-28 - planning records for v0.16.0 written (ROADMAP section, REQUIREMENTS section and traceability, STATE direction update, PROJECT current milestone).
+Phase: v0.16.0 Autonogrammer: accounts, Cowork and Dispatch (Phases 66, 66.1, 66.2, 66.3, 66.4 and 67 to 77, 16 phases). The branch `feat/autonogrammer-integration` (base `origin/main` at `2e21f8df`) holds the rename line replayed onto the v0.15.0 line (`docs/runbooks/integration-autonogrammer-2026-10-29.md`) and Phases 66.2 (hosted real web app, complete, not deployed), 66.3 (web accessibility, complete with caveats) and 66.4 (quality uplift, the full gate is running). Phases 66 and 66.1 are recorded by the other session on its branch `feat/autonogrammer-next`; this file does not repeat them.
+Plan: the roadmap section, the requirements (AG-66-* to AG-77-*, AG-SC-1 to AG-SC-6, AG-HW-*, AG-AX-*, AG-QU-*) and the research (`docs/plans/v0.16.0-research/`, ADR-0030 to ADR-0037) are written. Execution order after 66.4: 68 with 67 units 1 to 3, 69, 70, then 71, 72, 73 and 75 in parallel, then 74 and 76, then 77.
+Status: the web head, the API and the engine path run end to end on one machine with the real omp and a scripted model; the scripted accessibility checks report no error finding on the built Demo and real bundles. Nothing is deployed, pushed or provisioned: that needs the owner's approval (the ultrathink plan, question 4). No criterion is claimed that needs a live Supabase call, a live model turn (OD-07), a Railway deploy of the API, a screen reader, Windows, macOS or Android.
+Last activity: 2026-10-29 - hosted real web app, accessibility and quality uplift (Phases 66.2 to 66.4) implemented and verified locally; records written; the gate on the final commit is running.
+
+## Direction Update 2026-10-29 (ultrathink graph ut-mvsrdwhx-64862aaa)
+
+Owner request ("ultrathink orchestrate workflowz"): bring the code to a production-ready, enterprise-grade standard; make `https://ompos-web.vercel.app`, which is only a Demo, a fully working and accessible web application; use the files of the concurrent session in `~/src/repos/ompos-autonogrammer` or work them together with ours.
+
+Decisions (the plan's defaults, the owner may override):
+- The other line is used through its committed state only, by replay onto a fresh branch of `origin/main`, never by merge, and its worktree is never written.
+- The scope is the web head and the API behind it; no new features. The desktop head's accessibility is OQ-179.
+- The target is WCAG 2.2 level AA with the scripted checks; no screen reader or device was available, so those results are not claimed.
+- Nothing is pushed, merged, deployed or provisioned, and no secret changes, without one explicit approval at the end of the run (question 4).
+
+Done on `feat/autonogrammer-integration`: the integration; the owner-token sign-in, access control, hosting hardening, engine isolation and approval policy; the real web bundle with no Demo code; the production-shaped local run (`docs/runbooks/evidence/hosted-web-2026-10-29/`); the accessibility checks, nine defects fixed and the final runs (`docs/runbooks/evidence/web-accessibility-2026-10-29/`); the security and quality review fixes; SBOM, image policy, operations documents, threat model and brand.
+
+Not done, by design: a deployment; a live model turn (no credential, OQ-172); a sandbox provider (OQ-173); a run of CodeQL, Scorecard, trivy or an image build (OQ-175); a screen-reader pass (OQ-178); the other session's phases.
 
 ## Direction Update 2026-10-28 (ultrathink graph ut-mvs8ru79-82536fbd)
 
