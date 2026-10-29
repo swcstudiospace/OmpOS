@@ -129,12 +129,13 @@ public sealed record GoTrueOptions
             return GoTrueOptionsResult.Invalid("PublishableKey", "is required.");
         }
 
-        if (publishableKey.StartsWith(SecretKeyPrefix, StringComparison.Ordinal) || IsServiceRoleJwt(publishableKey))
+        string key = publishableKey.Trim();
+        if (key.StartsWith(SecretKeyPrefix, StringComparison.OrdinalIgnoreCase) || IsServiceRoleJwt(key))
         {
             return GoTrueOptionsResult.Invalid("PublishableKey", "must be a publishable key, not a secret or service-role key.");
         }
 
-        return GoTrueOptionsResult.Valid(new GoTrueOptions(url, publishableKey.Trim())
+        return GoTrueOptionsResult.Valid(new GoTrueOptions(url, key)
         {
             MagicLinkEnabled = magicLink,
             EmailCodeEnabled = emailCode,
@@ -154,7 +155,7 @@ public sealed record GoTrueOptions
 
         try
         {
-            byte[] payload = Base64Url.DecodeFromChars(parts[1]);
+            byte[] payload = Base64Url.DecodeFromChars(parts[1].TrimEnd('='));
             using JsonDocument document = JsonDocument.Parse(payload);
             return document.RootElement.ValueKind == JsonValueKind.Object
                 && document.RootElement.TryGetProperty("role", out JsonElement role)

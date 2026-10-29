@@ -174,17 +174,31 @@ public sealed class ApiAuthOptionsValidatorTests
         Validate(ValidOidc(), Environments.Production).Succeeded.ShouldBeTrue();
     }
 
-    /// <summary>Verifies a secret key as the publishable key fails naming the key and never echoing the value.</summary>
-    [Fact]
-    public void Client_SecretKey_FailsNamingKeyWithoutEchoingIt()
+    /// <summary>Verifies a secret key as the publishable key fails naming the key and never echoing the value, however it is padded or cased.</summary>
+    [Theory]
+    [InlineData("sb_secret_do-not-echo")]
+    [InlineData(" sb_secret_do-not-echo")]
+    [InlineData("\tsb_secret_do-not-echo\n")]
+    [InlineData("SB_SECRET_do-not-echo")]
+    public void Client_SecretKey_FailsNamingKeyWithoutEchoingIt(string key)
     {
         var options = ValidOidc();
-        options.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co", PublishableKey = "sb_secret_do-not-echo" };
+        options.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co", PublishableKey = key };
 
         var failures = Failures(options);
 
         failures.ShouldContain(static m => m.Contains("Api:Auth:Client:PublishableKey", StringComparison.Ordinal));
         failures.ShouldNotContain(static m => m.Contains("do-not-echo", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies a service-role JWT with surrounding whitespace still fails.</summary>
+    [Fact]
+    public void Client_ServiceRoleJwtWithSurroundingWhitespace_Fails()
+    {
+        var options = ValidOidc();
+        options.Client = new ApiAuthClientOptions { ProjectUrl = "https://project.supabase.co", PublishableKey = " " + Jwt("service_role") + "\n" };
+
+        Failures(options).ShouldContain(static m => m.Contains("Api:Auth:Client:PublishableKey", StringComparison.Ordinal));
     }
 
     /// <summary>Verifies a JWT whose role claim is service_role fails, and an anon-role JWT passes.</summary>

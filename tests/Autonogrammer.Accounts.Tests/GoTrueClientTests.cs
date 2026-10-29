@@ -23,6 +23,9 @@ public sealed class GoTrueClientTests
 
     [Theory]
     [InlineData("sb_secret_abcdef0123456789")]
+    [InlineData(" sb_secret_abcdef0123456789")]
+    [InlineData("\tsb_secret_abcdef0123456789\n")]
+    [InlineData("SB_SECRET_abcdef0123456789")]
     public void OptionsRefuseASecretKeyNamingTheFieldNotTheValue(string key)
     {
         GoTrueOptionsResult result = GoTrueOptions.Create(FakeGoTrueHandler.ProjectUrl, key);
@@ -45,6 +48,22 @@ public sealed class GoTrueClientTests
         result.Field.ShouldBe("PublishableKey");
         result.Message!.ShouldNotContain(key);
         result.Message!.ShouldNotContain("service_role");
+    }
+
+    [Fact]
+    public void OptionsRefuseAServiceRoleJwtWithSurroundingWhitespaceOrPaddedPayload()
+    {
+        string unpadded = Jwt("service_role");
+        string[] parts = unpadded.Split('.');
+        string padded = parts[0] + "." + parts[1] + new string('=', (4 - (parts[1].Length % 4)) % 4) + "." + parts[2];
+
+        foreach (string key in new[] { " " + unpadded, unpadded + "\n", padded, "\t" + padded + " " })
+        {
+            GoTrueOptionsResult result = GoTrueOptions.Create(FakeGoTrueHandler.ProjectUrl, key);
+
+            result.IsValid.ShouldBeFalse();
+            result.Field.ShouldBe("PublishableKey");
+        }
     }
 
     [Theory]

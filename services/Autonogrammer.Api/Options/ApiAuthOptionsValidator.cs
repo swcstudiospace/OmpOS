@@ -129,10 +129,10 @@ internal sealed class ApiAuthOptionsValidator : IValidateOptions<ApiAuthOptions>
 
     private static void ValidateClient(ApiAuthClientOptions client, List<string> failures)
     {
-        var key = client.PublishableKey;
-        if (!string.IsNullOrWhiteSpace(key))
+        var key = client.PublishableKey?.Trim();
+        if (!string.IsNullOrEmpty(key))
         {
-            if (key.StartsWith("sb_secret_", StringComparison.Ordinal))
+            if (key.StartsWith("sb_secret_", StringComparison.OrdinalIgnoreCase))
             {
                 failures.Add("Api:Auth:Client:PublishableKey must be a publishable key, not a secret key.");
             }
