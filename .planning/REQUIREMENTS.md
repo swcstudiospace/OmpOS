@@ -675,7 +675,7 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 - [x] **AG-QU-4**: A skip marker needs a SUP row (`scripts/ci/check-skip-markers.sh`), an OpenAPI breaking-change check compares `docs/api/openapi.json` with its base, and `scripts/ci/snapshot-omp-deps.sh` records the omp dependency set (the first snapshot is OQ-176).
 - [x] **AG-QU-5**: Operations documents exist: SLOs and alerting (proposals, OQ-180), incident response, backup and restore, deploy and rollback, the data inventory and retention, and the hosted threat model with its questions answered or defaulted.
 - [x] **AG-QU-6**: The wordmark exists in two layouts with "Auto" in the text colour and "nogrammer" in the accent colour, the six SVG sources are refitted and the 28 PNGs regenerated (`scripts/ci/check-brand.sh`); the owner has not signed off the logo or the trademark.
-- [ ] **AG-QU-7**: `./bootstrap.sh` passes on the final commit and its log is stored under `docs/runbooks/evidence/`.
+- [ ] **AG-QU-7**: `./bootstrap.sh` passes on the final commit and its log is stored under `docs/runbooks/evidence/`. Two passes so far (every step through the format check on `561a83b5`, the web smoke on `d0d0b879`); the single pass on the last commit is running.
 - [x] **AG-QU-8**: The records are current: `CHANGELOG.md` `[Unreleased]`, ADR-0021, `docs/open-questions.md`, the planning records of the three phases.
 
 ### Accounts (67) (AG-67)
@@ -950,7 +950,7 @@ Evidence: `.planning/phases/66.4-quality-uplift-ci-ops-brand/66.4-VERIFICATION.m
 | AG-QU-4 | 66.4 | Met |
 | AG-QU-5 | 66.4 | Met |
 | AG-QU-6 | 66.4 | Met |
-| AG-QU-7 | 66.4 | Pending (the gate is running) |
+| AG-QU-7 | 66.4 | Partial (two passes; a full pass is running) |
 | AG-QU-8 | 66.4 | Met |
 | AG-67-1 | 67 | Planned |
 | AG-67-2 | 67 | Planned |

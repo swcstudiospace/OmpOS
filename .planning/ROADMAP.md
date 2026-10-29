@@ -1306,7 +1306,7 @@ Nothing in this milestone is built yet; every phase below is planned.
 - [ ] **Phase 66.1: Scaffold: projects, registration and contract bump** - ONE serialised step creates and registers the 21 source and 19 test projects with AssemblyMarker.cs only, the LayerMap rows and six tuples, the package pins and the single ContractVersion bump 1.5.0 to 1.6.0
 - [x] **Phase 66.2: Hosted real web app** - the web head builds as the real application with no Demo code, signs in with an owner token, and runs end to end against the API and the real omp (scripted model); hosting and engine hardening; review findings fixed. Nothing is deployed.
 - [x] **Phase 66.3: Web accessibility (WCAG 2.2 AA)** - scripted checks of routes, keyboard, focus, forced colours, reflow, text spacing, target size and axe on every state, run against built bundles; ten defects fixed; statement, 55-row table and known issues. Screen readers and devices not run.
-- [ ] **Phase 66.4: Quality uplift: CI, operations and brand** - SBOM, pinned images, skip-marker and OpenAPI checks, operations documents, the hosted threat model, wordmark and assets; full gate on the final commit (pending)
+- [x] **Phase 66.4: Quality uplift: CI, operations and brand** - SBOM, pinned images, skip-marker and OpenAPI checks, operations documents, the hosted threat model, wordmark and assets; the gate ran in two passes (every step through the format check, 12670 tests, on one commit; the web smoke on the final code); a full single pass is running
 - [ ] **Phase 67: Accounts: Supabase passwordless sign-in** - email code and magic link against the shared Supabase project, OS-store tokens on desktop, owner-scoped account and sessions API; Code works signed out
 - [ ] **Phase 68: Data plane: names, schema and resilience** - physical names cut over to autonogrammer, additive reversible migrations M0001 to M0010, least-privilege roles, GreptimeDB telemetry, bounded resilience, default-off ledger sink
 - [ ] **Phase 69: Surface switch and Cowork sessions** - Code or Cowork switch in the title bar and web top bar, the Cowork layout and the Cowork session model that can never reach the Kanban
@@ -1383,7 +1383,7 @@ Nothing in this milestone is built yet; every phase below is planned.
 **Success Criteria** (what must be TRUE):
   1. The repository checks pass. Verify: `bash scripts/ci/repo-checks.sh` (brand, changelog, docs, providers, skip markers).
   2. The SBOM is current. Verify: `bash scripts/ci/check-sbom.sh`.
-  3. The full gate passes on the final commit. Verify: `./bootstrap.sh` on a clean worktree; the log is under `docs/runbooks/evidence/`.
+  3. The full gate passes on the final commit. Verify: `./bootstrap.sh` on a clean worktree; the log is under `docs/runbooks/evidence/`. **Result: Partial**: `561a83b5` passed every step through the format check (12670 tests, 0 failed) and failed the smoke on host load (`bootstrap-gate-2026-10-29-561a83b5.log`); the smoke alone passed on `d0d0b879` (`web-accessibility-2026-10-29/final-smoke-d0d0b879/`); a full pass on the last commit is Run 5 of `66.4-VERIFICATION.md`.
 **Plans**: `66.4-01-PLAN.md` in `.planning/phases/66.4-quality-uplift-ci-ops-brand/`
 
 ### Phase 67: Accounts: Supabase passwordless sign-in
@@ -1557,7 +1557,7 @@ Nothing in this milestone is built yet; every phase below is planned.
 | 66.1. Scaffold: projects, registration and contract bump | - | Planned | - |
 | 66.2. Hosted real web app | 66.2-CONTEXT.md, 66.2-01-PLAN.md, 66.2-SUMMARY.md, 66.2-VERIFICATION.md | Complete (not deployed) | 2026-10-29 |
 | 66.3. Web accessibility (WCAG 2.2 AA) | 66.3-CONTEXT.md, 66.3-01-PLAN.md, 66.3-SUMMARY.md, 66.3-VERIFICATION.md | Complete with caveats (no screen reader, no device) | 2026-10-29 |
-| 66.4. Quality uplift: CI, operations and brand | 66.4-CONTEXT.md, 66.4-01-PLAN.md, 66.4-SUMMARY.md, 66.4-VERIFICATION.md | In progress (the gate is running) | - |
+| 66.4. Quality uplift: CI, operations and brand | 66.4-CONTEXT.md, 66.4-01-PLAN.md, 66.4-SUMMARY.md, 66.4-VERIFICATION.md | Complete with caveats (the gate ran in two passes; no image built, no workflow run on GitHub) | 2026-10-29 |
 | 67. Accounts: Supabase passwordless sign-in | - | Planned | - |
 | 68. Data plane: names, schema and resilience | - | Planned | - |
 | 69. Surface switch and Cowork sessions | - | Planned | - |

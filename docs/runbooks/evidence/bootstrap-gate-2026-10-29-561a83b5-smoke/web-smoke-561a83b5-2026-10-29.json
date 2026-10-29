@@ -1,0 +1,287 @@
+{
+  "app": "http://127.0.0.1:5180/",
+  "apiOrigin": "http://127.0.0.1:5187",
+  "commit": "561a83b5",
+  "axeCore": "4.14.0",
+  "startedAt": "2026-10-29T16:24:42.634Z",
+  "firstRender": {
+    "rendered": true,
+    "errorBarVisible": false,
+    "exceptionCount": 0,
+    "consoleErrorCount": 0,
+    "reflectionDisabledHits": 0,
+    "exceptionSample": [],
+    "consoleErrorSample": [],
+    "logErrorSample": []
+  },
+  "skipLinkInitial": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BODY",
+    "targetExists": true
+  },
+  "shotInitial": "web-first-render-561a83b5-2026-10-29.png",
+  "skipLinkBeforeAxeEmpty": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "BODY",
+    "targetExists": true
+  },
+  "axeEmptyState": {
+    "axeVersion": "4.14.0",
+    "violations": [],
+    "incomplete": []
+  },
+  "iconButtonContrastEmptyState": {
+    "color": "rgb(28, 28, 26)",
+    "ownBackground": "rgba(0, 0, 0, 0)",
+    "effectiveBackground": "rgb(255, 255, 255)",
+    "contrastRatio": 17.07,
+    "outerHTML": "<button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-topbar-menu\" aria-label=\"Agents panel\" aria-controls=\"autonogrammer-rail\" aria-expanded=\"false\" _bl_3=\"\"><!--!--><svg width=\"18\" heigh"
+  },
+  "shotAxeEmpty": "web-axe-empty-561a83b5-2026-10-29.png",
+  "newConversationClicked": true,
+  "composerReady": true,
+  "promptTyped": true,
+  "sendClicked": true,
+  "responseCompleted": true,
+  "probeChecks": {
+    "appPresent": true,
+    "strong": 2,
+    "img": 0,
+    "script": 0,
+    "unsupported": false,
+    "userTurnEscaped": true,
+    "links": [
+      {
+        "href": "#autonogrammer-conversation",
+        "text": "Skip to conversation"
+      },
+      {
+        "href": "/",
+        "text": "Autonogrammer"
+      },
+      {
+        "href": "https://github.com/swcstudiospace/OmpOS",
+        "text": "Source"
+      },
+      {
+        "href": "https://example.com/",
+        "text": "site"
+      },
+      {
+        "href": "https://evil.example/x.png",
+        "text": "pic"
+      },
+      {
+        "href": "https://github.com/swcstudiospace/OmpOS",
+        "text": "Source code"
+      },
+      {
+        "href": "about",
+        "text": "About"
+      },
+      {
+        "href": "https://www.gnu.org/licenses/agpl-3.0.html",
+        "text": "AGPL-3.0-or-later"
+      }
+    ],
+    "announcement": "Response complete.",
+    "errorMessages": []
+  },
+  "errorBarAfterPrompt": false,
+  "consoleErrorsAfterPrompt": [],
+  "skipLinkBeforeAxeAfter": {
+    "present": true,
+    "width": 1,
+    "height": 1,
+    "clip": "rect(0px, 0px, 0px, 0px)",
+    "visibility": "visible",
+    "activeIsSkip": false,
+    "active": "TEXTAREA",
+    "targetExists": true
+  },
+  "axeAfterResponse": {
+    "axeVersion": "4.14.0",
+    "violations": [],
+    "incomplete": []
+  },
+  "iconButtonContrastAfterResponse": {
+    "color": "rgb(28, 28, 26)",
+    "ownBackground": "rgba(0, 0, 0, 0)",
+    "effectiveBackground": "rgb(255, 255, 255)",
+    "contrastRatio": 17.07,
+    "outerHTML": "<button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-topbar-menu\" aria-label=\"Agents panel\" aria-controls=\"autonogrammer-rail\" aria-expanded=\"false\" _bl_3=\"\"><!--!--><svg width=\"18\" heigh"
+  },
+  "shotAxeAfterResponse": "web-axe-after-response-561a83b5-2026-10-29.png",
+  "shotVerticalSlice": "web-vertical-slice-561a83b5-2026-10-29.webp",
+  "reload": {
+    "conversationItems": 1,
+    "openedIndex": 0,
+    "historyRendered": true,
+    "appPresent": true,
+    "strong": 2,
+    "img": 0,
+    "script": 0,
+    "unsupported": false,
+    "userTurnEscaped": true,
+    "links": [
+      {
+        "href": "#autonogrammer-conversation",
+        "text": "Skip to conversation"
+      },
+      {
+        "href": "/",
+        "text": "Autonogrammer"
+      },
+      {
+        "href": "https://github.com/swcstudiospace/OmpOS",
+        "text": "Source"
+      },
+      {
+        "href": "https://example.com/",
+        "text": "site"
+      },
+      {
+        "href": "https://evil.example/x.png",
+        "text": "pic"
+      },
+      {
+        "href": "https://github.com/swcstudiospace/OmpOS",
+        "text": "Source code"
+      },
+      {
+        "href": "about",
+        "text": "About"
+      },
+      {
+        "href": "https://www.gnu.org/licenses/agpl-3.0.html",
+        "text": "AGPL-3.0-or-later"
+      }
+    ],
+    "announcement": "Response complete.",
+    "errorMessages": [],
+    "errorBarVisible": false,
+    "consoleErrorsSinceReload": []
+  },
+  "skipLinkAfterTabFocus": {
+    "present": true,
+    "width": 161.046875,
+    "height": 33,
+    "clip": "auto",
+    "visibility": "visible",
+    "activeIsSkip": true,
+    "active": "A",
+    "targetExists": true
+  },
+  "shotSkipLinkFocused": "web-skip-link-focused-561a83b5-2026-10-29.png",
+  "shotErrorBanner": "web-error-banner-561a83b5-2026-10-29.png",
+  "errorBanner": {
+    "shape": {
+      "present": true,
+      "role": "alert",
+      "dismissTag": "BUTTON",
+      "dismissType": "button",
+      "dismissName": "Dismiss error"
+    },
+    "tabReachesDismiss": {
+      "activeIsDismiss": true,
+      "outlineStyle": "solid",
+      "outlineWidth": 2,
+      "clicks": 0
+    },
+    "clicksAfterEnterAndSpace": 2,
+    "axeShown": {
+      "axeVersion": "4.14.0",
+      "violations": [],
+      "incomplete": []
+    }
+  },
+  "a11y": {
+    "summary": {
+      "keyboard": {
+        "errors": 0,
+        "warnings": 1,
+        "infos": 0
+      },
+      "media": {
+        "errors": 0,
+        "warnings": 4,
+        "infos": 0
+      },
+      "reflow": {
+        "errors": 0,
+        "warnings": 7,
+        "infos": 0
+      },
+      "text-spacing": {
+        "errors": 1,
+        "warnings": 0,
+        "infos": 0
+      }
+    },
+    "counters": {
+      "connect:views": 1,
+      "axe:runs": 18,
+      "reflow:views": 26,
+      "target-size:targets": 420,
+      "text-spacing:views": 10,
+      "routes:inapp": 7,
+      "first-load-focus:loads": 1,
+      "keyboard:states": 3,
+      "keyboard:stops": 100,
+      "dialog:tab-presses": 60,
+      "axe:states": 16,
+      "media:states": 16,
+      "media:forced-colors:controls": 102,
+      "media:forced-colors-stops": 21,
+      "media:prefers-contrast:controls": 102,
+      "media:reduced-motion:views": 4,
+      "media:dark:axe-runs": 4,
+      "reflow:states": 24,
+      "target-size:states": 16,
+      "text-spacing:states": 8
+    },
+    "skipped": [
+      {
+        "check": "routes",
+        "reason": "direct loads of /kanban, /sessions/<id>, /settings, /about and an unknown path: the static server of the real-bundle smoke has no SPA rewrite (covered by the Demo half)"
+      }
+    ],
+    "failures": [
+      "a11yTextSpacing: 1440x900: the app did not render at http://127.0.0.1:5180/ within 150 s"
+    ]
+  },
+  "finishedAt": "2026-10-29T16:44:45.838Z",
+  "assertions": {
+    "firstRenderClean": true,
+    "responseCompleted": true,
+    "probeMarkupAsExpected": true,
+    "noErrorBarOrConsoleErrorsAfterPrompt": true,
+    "reloadHistoryRendersSame": true,
+    "axeEmptyClean": true,
+    "axeAfterResponseClean": true,
+    "iconContrastMeetsNonText": true,
+    "skipLinkFocusedOnTab": true,
+    "errorBannerAnnouncesAndDismissesByKeyboard": true,
+    "a11yConnect": true,
+    "a11yAxe": true,
+    "a11yReflow": true,
+    "a11yTargetSize": true,
+    "a11yTextSpacing": false,
+    "a11yRoutes": true,
+    "a11yFirstLoadFocus": true,
+    "a11yKeyboard": true,
+    "a11yDialog": true,
+    "a11yMedia": true
+  },
+  "passed": false
+}

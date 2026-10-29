@@ -1,0 +1,995 @@
+{
+  "demo": "http://127.0.0.1:5191/",
+  "commit": "561a83b5",
+  "axeCore": "4.14.0",
+  "startedAt": "2026-10-29T16:51:25.025Z",
+  "configs": [
+    {
+      "theme": "light",
+      "viewport": "1440",
+      "screens": [
+        {
+          "screen": "agents",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "running",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1430,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "slash-palette",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-after > .autonogrammer-file-edit-text",
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-diff-toggle.autonogrammer-btn--small.autonogrammer-btn",
+                ".autonogrammer-tool-result[aria-label=\"Tool result: bash\"][data-status=\"completed\"]:nth-child(10) > .autonogrammer-tool-result-heading > .autonogrammer-tool-name",
+                ".autonogrammer-tool-result[aria-label=\"Tool result: bash\"][data-status=\"completed\"]:nth-child(10) > .autonogrammer-tool-result-heading > .autonogrammer-tool-status"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "scrollWidth": 1430,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "composer-menu",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                ".autonogrammer-run-summary",
+                ".autonogrammer-run-summary > strong",
+                ".autonogrammer-changes-summary",
+                "span[title=\"src/Checkout/OrderTotals.cs\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "scrollWidth": 1430,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "approval",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "completed-changes",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1430,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "failed",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "closed",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "terminal",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                "div[aria-posinset=\"1\"]",
+                "div[aria-posinset=\"3\"]",
+                "div[aria-posinset=\"4\"]",
+                ".xterm-fg-5"
+              ],
+              "summary": "Fix any of the following:\n  Element has a 1:1 contrast ratio with the background"
+            }
+          ],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "kanban",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "settings",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        }
+      ],
+      "problems": [],
+      "state": {
+        "theme": "light",
+        "stored": "light",
+        "bannerText": "Demo: simulated engine, no real agent, no network",
+        "bannerDismissible": false,
+        "skipLinkPresent": true,
+        "activeIsSkipLink": false,
+        "activeTag": "BODY"
+      }
+    },
+    {
+      "theme": "light",
+      "viewport": "1024",
+      "screens": [
+        {
+          "screen": "agents",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1024,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "running",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1014,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "slash-palette",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-after > .autonogrammer-file-edit-text",
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-diff-toggle.autonogrammer-btn--small.autonogrammer-btn",
+                ".autonogrammer-tool-result[aria-label=\"Tool result: bash\"][data-status=\"completed\"]:nth-child(10) > .autonogrammer-tool-result-heading > .autonogrammer-tool-name",
+                ".autonogrammer-tool-result[aria-label=\"Tool result: bash\"][data-status=\"completed\"]:nth-child(10) > .autonogrammer-tool-result-heading > .autonogrammer-tool-status"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "scrollWidth": 1014,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "composer-menu",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                ".autonogrammer-run-summary",
+                ".autonogrammer-run-summary > strong",
+                ".autonogrammer-changes-summary",
+                "span[title=\"src/Checkout/OrderTotals.cs\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "scrollWidth": 1014,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "approval",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1024,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "completed-changes",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1014,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "failed",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1024,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "closed",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1024,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "terminal",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                "div[aria-posinset=\"1\"]",
+                ".xterm-fg-5",
+                ".xterm-rows > div:nth-child(1) > span:nth-child(2)",
+                "div:nth-child(3) > .xterm-dim"
+              ],
+              "summary": "Fix any of the following:\n  Element has a 1:1 contrast ratio with the background"
+            }
+          ],
+          "scrollWidth": 1024,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "kanban",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1014,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "settings",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1024,
+          "innerWidth": 1024,
+          "offenders": []
+        }
+      ],
+      "problems": [],
+      "state": {
+        "theme": "light",
+        "stored": "light",
+        "bannerText": "Demo: simulated engine, no real agent, no network",
+        "bannerDismissible": false,
+        "skipLinkPresent": true,
+        "activeIsSkipLink": false,
+        "activeTag": "BODY"
+      }
+    },
+    {
+      "theme": "light",
+      "viewport": "390",
+      "screens": [
+        {
+          "screen": "agents",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "drawer",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "running",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                "code"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element"
+            }
+          ],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "slash-palette",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                ".autonogrammer-markdown.autonogrammer-block:nth-child(2) > p:nth-child(2)",
+                ".autonogrammer-tool-call > .autonogrammer-tool-name",
+                ".autonogrammer-tool-call > .autonogrammer-tool-status",
+                ".autonogrammer-tool-result[aria-label=\"Tool result: bash\"][data-status=\"completed\"]:nth-child(4) > .autonogrammer-tool-output[aria-label=\"Output of bash\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "composer-menu",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                ".autonogrammer-tool-call > .autonogrammer-tool-name",
+                ".autonogrammer-tool-call > .autonogrammer-tool-status",
+                ".autonogrammer-tool-result[aria-label=\"Tool result: bash\"][data-status=\"completed\"]:nth-child(4) > .autonogrammer-tool-output[aria-label=\"Output of bash\"]",
+                ".autonogrammer-markdown.autonogrammer-block:nth-child(5) > p"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "approval",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "completed-changes",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "failed",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "closed",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "terminal",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "kanban",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "settings",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        }
+      ],
+      "problems": [],
+      "state": {
+        "theme": "light",
+        "stored": "light",
+        "bannerText": "Demo: simulated engine, no real agent, no network",
+        "bannerDismissible": false,
+        "skipLinkPresent": true,
+        "activeIsSkipLink": false,
+        "activeTag": "BODY"
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": "1440",
+      "screens": [
+        {
+          "screen": "agents",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "running",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "slash-palette",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-heading > .autonogrammer-file-edit-path",
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-heading > .autonogrammer-file-edit-change",
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-before > .autonogrammer-file-edit-label",
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-before > .autonogrammer-file-edit-text"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "scrollWidth": 1430,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "composer-menu",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1430,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "approval",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "completed-changes",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1430,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "failed",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "closed",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "terminal",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                "div[aria-posinset=\"1\"]",
+                ".xterm-fg-5",
+                ".xterm-rows > div:nth-child(1) > span:nth-child(2)"
+              ],
+              "summary": "Fix any of the following:\n  Element has a 1:1 contrast ratio with the background"
+            }
+          ],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "kanban",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        },
+        {
+          "screen": "settings",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                "div[aria-posinset=\"1\"]",
+                ".xterm-fg-5",
+                ".xterm-rows > div:nth-child(1) > span:nth-child(2)",
+                ".autonogrammer-settings-privacy"
+              ],
+              "summary": "Fix any of the following:\n  Element has a 1:1 contrast ratio with the background"
+            }
+          ],
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "offenders": []
+        }
+      ],
+      "problems": [],
+      "state": {
+        "theme": "dark",
+        "stored": "dark",
+        "bannerText": "Demo: simulated engine, no real agent, no network",
+        "bannerDismissible": false,
+        "skipLinkPresent": true,
+        "activeIsSkipLink": false,
+        "activeTag": "BODY"
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": "1024",
+      "screens": [
+        {
+          "screen": "agents",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1024,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "running",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1014,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "slash-palette",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-after > .autonogrammer-file-edit-text",
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-diff-toggle.autonogrammer-btn--small.autonogrammer-btn",
+                ".autonogrammer-tool-result[aria-label=\"Tool result: bash\"][data-status=\"completed\"]:nth-child(10) > .autonogrammer-tool-result-heading > .autonogrammer-tool-name",
+                ".autonogrammer-tool-result[aria-label=\"Tool result: bash\"][data-status=\"completed\"]:nth-child(10) > .autonogrammer-tool-result-heading > .autonogrammer-tool-status"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            }
+          ],
+          "scrollWidth": 1014,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "composer-menu",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1014,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "approval",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1024,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "completed-changes",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1014,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "failed",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1024,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "closed",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1024,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "terminal",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1024,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "kanban",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 1014,
+          "innerWidth": 1024,
+          "offenders": []
+        },
+        {
+          "screen": "settings",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                "div[aria-posinset=\"1\"]",
+                "div[aria-posinset=\"3\"]",
+                ".xterm-fg-5",
+                ".xterm-rows > div:nth-child(1) > span:nth-child(2)"
+              ],
+              "summary": "Fix any of the following:\n  Element has a 1:1 contrast ratio with the background"
+            }
+          ],
+          "scrollWidth": 1024,
+          "innerWidth": 1024,
+          "offenders": []
+        }
+      ],
+      "problems": [],
+      "state": {
+        "theme": "dark",
+        "stored": "dark",
+        "bannerText": "Demo: simulated engine, no real agent, no network",
+        "bannerDismissible": false,
+        "skipLinkPresent": true,
+        "activeIsSkipLink": false,
+        "activeTag": "BODY"
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": "390",
+      "screens": [
+        {
+          "screen": "agents",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "drawer",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "running",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                "code"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element"
+            }
+          ],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "slash-palette",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                "code",
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-after > .autonogrammer-file-edit-text",
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-diff-toggle.autonogrammer-btn--small.autonogrammer-btn",
+                ".autonogrammer-tool-result[aria-label=\"Tool result: bash\"][data-status=\"completed\"]:nth-child(10) > .autonogrammer-tool-result-heading > .autonogrammer-tool-name"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element"
+            }
+          ],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "composer-menu",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "targets": [
+                "code",
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-after > .autonogrammer-file-edit-text",
+                ".autonogrammer-file-edit.autonogrammer-block[data-change=\"edited\"]:nth-child(9) > .autonogrammer-file-edit-diff-toggle.autonogrammer-btn--small.autonogrammer-btn",
+                ".autonogrammer-tool-result[aria-label=\"Tool result: bash\"][data-status=\"completed\"]:nth-child(10) > .autonogrammer-tool-result-heading > .autonogrammer-tool-name"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element"
+            }
+          ],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "approval",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "completed-changes",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "failed",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "closed",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "terminal",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "kanban",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        },
+        {
+          "screen": "settings",
+          "axeViolations": [],
+          "axeIncomplete": [],
+          "axeContrastWarnings": [],
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "offenders": []
+        }
+      ],
+      "problems": [],
+      "state": {
+        "theme": "dark",
+        "stored": "dark",
+        "bannerText": "Demo: simulated engine, no real agent, no network",
+        "bannerDismissible": false,
+        "skipLinkPresent": true,
+        "activeIsSkipLink": false,
+        "activeTag": "BODY"
+      }
+    }
+  ],
+  "themeSwitch": {
+    "switched": "dark",
+    "stored": "dark",
+    "afterReload": "dark"
+  },
+  "a11y": {
+    "summary": {
+      "keyboard": {
+        "errors": 0,
+        "warnings": 1,
+        "infos": 0
+      },
+      "axe": {
+        "errors": 0,
+        "warnings": 0,
+        "infos": 7
+      },
+      "media": {
+        "errors": 1,
+        "warnings": 0,
+        "infos": 0
+      },
+      "reflow": {
+        "errors": 2,
+        "warnings": 7,
+        "infos": 0
+      },
+      "text-spacing": {
+        "errors": 1,
+        "warnings": 0,
+        "infos": 0
+      }
+    },
+    "counters": {
+      "routes:direct": 6,
+      "routes:inapp": 7,
+      "first-load-focus:loads": 1,
+      "keyboard:states": 3,
+      "keyboard:stops": 162,
+      "dialog:tab-presses": 60,
+      "axe:states": 30,
+      "axe:runs": 30,
+      "reflow:states": 15,
+      "reflow:views": 15,
+      "target-size:states": 30,
+      "target-size:targets": 1938,
+      "text-spacing:states": 14,
+      "text-spacing:views": 14
+    },
+    "skipped": [],
+    "errors": 4
+  },
+  "finishedAt": "2026-10-29T17:24:47.626Z",
+  "ignoredHostNetworkChanges": 0,
+  "assertions": {
+    "demoThemeApplied": true,
+    "demoBannerPresent": true,
+    "demoSkipLinkFirstInTabOrder": true,
+    "demoAxeNoViolations": true,
+    "demoAxeNoIncomplete": true,
+    "demoNoHorizontalScroll": true,
+    "demoNoConsoleErrorsOrFailedRequests": true,
+    "demoDrawerTrapsFocus": true,
+    "demoDrawerEscapeCloses": true,
+    "demoThemeSwitchPersists": true,
+    "a11yRoutes": true,
+    "a11yFirstLoadFocus": true,
+    "a11yKeyboard": true,
+    "a11yDialog": true,
+    "a11yAxe": true,
+    "a11yMedia": false,
+    "a11yReflow": false,
+    "a11yTargetSize": true,
+    "a11yTextSpacing": false
+  },
+  "failures": [
+    "a11yMedia: 1440x900: the app did not render at http://127.0.0.1:5191/ within 150 s",
+    "a11yReflow: 320x568@1x: the app did not render at http://127.0.0.1:5191/ within 150 s",
+    "a11yReflow: 320x256@4x (400% of 1280x1024): the app did not render at http://127.0.0.1:5191/ within 150 s",
+    "a11yTextSpacing: 1440x900: the app did not render at http://127.0.0.1:5191/ within 150 s"
+  ],
+  "passed": false
+}

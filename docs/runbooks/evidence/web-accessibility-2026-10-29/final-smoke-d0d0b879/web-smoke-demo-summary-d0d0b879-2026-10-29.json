@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "assertions": {
+    "demoThemeApplied": true,
+    "demoBannerPresent": true,
+    "demoSkipLinkFirstInTabOrder": true,
+    "demoAxeNoViolations": true,
+    "demoAxeNoIncomplete": true,
+    "demoNoHorizontalScroll": true,
+    "demoNoConsoleErrorsOrFailedRequests": true,
+    "demoDrawerTrapsFocus": true,
+    "demoDrawerEscapeCloses": true,
+    "demoThemeSwitchPersists": true,
+    "a11yRoutes": true,
+    "a11yFirstLoadFocus": true,
+    "a11yKeyboard": true,
+    "a11yDialog": true,
+    "a11yAxe": true,
+    "a11yMedia": true,
+    "a11yReflow": true,
+    "a11yTargetSize": true,
+    "a11yTextSpacing": true
+  },
+  "failures": [],
+  "error": null
+}

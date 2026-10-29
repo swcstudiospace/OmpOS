@@ -68,7 +68,7 @@ Evidence names: `a11y/<group>` is a check group of `scripts/web-smoke/a11y` (see
 | 2.5.3 | Label in Name | A | Partially supports | a11y/keyboard (`label-in-name`, reported as a warning) | Rail rows and Kanban cards set an `aria-label` that composes their visible parts. |
 | 2.5.4 | Motion Actuation | A | Not applicable | no use of device motion or orientation events (grep 2026-10-29) | |
 | 2.5.7 | Dragging Movements | AA | Not applicable | no drag handlers or draggable elements in the UI sources (grep 2026-10-29) | |
-| 2.5.8 | Target Size (Minimum) | AA | Partially supports | a11y/target-size, recorded 2026-10-29: zero error findings over 1930 targets in 30 Demo states and 405 in 16 real-bundle states; axe (`target-size`, tag `wcag22aa`), whose "partly obscured" results the check leaves out because they depend on the scroll position | Inline links in text and disabled controls are exempt by the criterion. |
+| 2.5.8 | Target Size (Minimum) | AA | Partially supports | a11y/target-size, recorded 2026-10-29 in the web smoke of the final commit: zero error findings over 1935 targets in 30 Demo states and 420 in 16 real-bundle states; axe (`target-size`, tag `wcag22aa`), whose "partly obscured" results the check leaves out because they depend on the scroll position | Inline links in text and disabled controls are exempt by the criterion. |
 
 ## 3 Understandable
 

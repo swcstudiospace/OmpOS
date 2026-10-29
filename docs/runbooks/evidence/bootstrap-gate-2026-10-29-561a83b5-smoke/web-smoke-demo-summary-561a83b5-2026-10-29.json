@@ -1,0 +1,31 @@
+{
+  "passed": false,
+  "assertions": {
+    "demoThemeApplied": true,
+    "demoBannerPresent": true,
+    "demoSkipLinkFirstInTabOrder": true,
+    "demoAxeNoViolations": true,
+    "demoAxeNoIncomplete": true,
+    "demoNoHorizontalScroll": true,
+    "demoNoConsoleErrorsOrFailedRequests": true,
+    "demoDrawerTrapsFocus": true,
+    "demoDrawerEscapeCloses": true,
+    "demoThemeSwitchPersists": true,
+    "a11yRoutes": true,
+    "a11yFirstLoadFocus": true,
+    "a11yKeyboard": true,
+    "a11yDialog": true,
+    "a11yAxe": true,
+    "a11yMedia": false,
+    "a11yReflow": false,
+    "a11yTargetSize": true,
+    "a11yTextSpacing": false
+  },
+  "failures": [
+    "a11yMedia: 1440x900: the app did not render at http://127.0.0.1:5191/ within 150 s",
+    "a11yReflow: 320x568@1x: the app did not render at http://127.0.0.1:5191/ within 150 s",
+    "a11yReflow: 320x256@4x (400% of 1280x1024): the app did not render at http://127.0.0.1:5191/ within 150 s",
+    "a11yTextSpacing: 1440x900: the app did not render at http://127.0.0.1:5191/ within 150 s"
+  ],
+  "error": null
+}
