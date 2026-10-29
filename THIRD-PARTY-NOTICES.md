@@ -7881,27 +7881,27 @@ Fonts are under the SIL Open Font License 1.1 (text in section 8). Each director
 | `apps/Autonogrammer.Web/wwwroot/icon-192.png` | 733f8020bfec | provenance not recorded; the file names match the stock Blazor WebAssembly template [INFERENCE]; replace with Autonogrammer-authored artwork |
 | `apps/Autonogrammer.Web/wwwroot/icon-512.png` | 2dffa1be9da0 | provenance not recorded |
 | `apps/Autonogrammer.Web/wwwroot/icon-maskable-512.png` | b0aface5a4d3 | provenance not recorded |
-| `assets/brand/autonogrammer-banner-dark.png` | 23967f8281d4 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/autonogrammer-banner.png` | aaa68300d30b | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-banner-dark.png` | 6d3055efd8ff | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-banner.png` | 78bfc04f2ae1 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
 | `assets/brand/autonogrammer-icon-1024.png` | 961ce70c501b | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/autonogrammer-logo-dark.svg` | 3079b0bf1e1d | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/autonogrammer-logo-stacked.svg` | 4a87f0e78185 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/autonogrammer-logo.svg` | 3cbc7f18d696 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-logo-dark.svg` | 4406ada651c1 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-logo-stacked.svg` | 9378f0d4d7b5 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-logo.svg` | b75b347c2e23 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
 | `assets/brand/autonogrammer-mark-dark.svg` | 0a58be11e347 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
 | `assets/brand/autonogrammer-mark.svg` | ccdd50fa8d4a | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/autonogrammer-social-preview.png` | b552c56f0000 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/banner-dark.svg` | 4faea45d4300 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/banner.svg` | 2ff6fe2aa4cf | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/logo-dark.svg` | feabc82bce17 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/logo-stacked.svg` | ea68c76b2c4f | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/logo.svg` | f520ca6ece36 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/autonogrammer-social-preview.png` | 4068a2dc02fd | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/banner-dark.svg` | 204753914806 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/banner.svg` | 47f63d369221 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/logo-dark.svg` | 6d39b9f4a391 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/logo-stacked.svg` | ebf5a11e9a66 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/logo.svg` | e2c334653e28 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
 | `assets/brand/src/mark-dark.svg` | 0a58be11e347 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
 | `assets/brand/src/mark-small.svg` | b329e2237cfe | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
 | `assets/brand/src/mark.svg` | ccdd50fa8d4a | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
-| `assets/brand/src/social-preview.svg` | 1a9ac56778f9 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
+| `assets/brand/src/social-preview.svg` | dbe0a0e415a0 | Autonogrammer-authored brand artwork; AGPL-3.0-or-later, name and logo reserved (see NOTICE) |
 | `src/Autonogrammer.Native.Views/Assets/Brand/autonogrammer-mark-256.png` | 19255a62aadb | provenance not recorded |
-| `src/Autonogrammer.UI/wwwroot/brand/autonogrammer-logo-dark.svg` | 3079b0bf1e1d | provenance not recorded |
-| `src/Autonogrammer.UI/wwwroot/brand/autonogrammer-logo.svg` | 3cbc7f18d696 | provenance not recorded |
+| `src/Autonogrammer.UI/wwwroot/brand/autonogrammer-logo-dark.svg` | 4406ada651c1 | provenance not recorded |
+| `src/Autonogrammer.UI/wwwroot/brand/autonogrammer-logo.svg` | b75b347c2e23 | provenance not recorded |
 | `src/Autonogrammer.UI/wwwroot/brand/autonogrammer-mark-dark.svg` | 0a58be11e347 | provenance not recorded |
 | `src/Autonogrammer.UI/wwwroot/brand/autonogrammer-mark.svg` | ccdd50fa8d4a | provenance not recorded |
 
