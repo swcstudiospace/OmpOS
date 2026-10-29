@@ -4,7 +4,7 @@ description: "Index of the Autonogrammer accessibility evidence: the automated W
 
 # Accessibility evidence
 
-Status: Written 2026-10-29. The automated checks described here are in the repository and their pure logic is covered by Node self-tests; they have NOT yet been run against a built web head by the author of these documents, so no check result is recorded here (see "How verified").
+Status: Written 2026-10-29 and updated the same day. The automated checks described here ran against a built Demo bundle and a built real bundle (see "How verified"); their final runs report zero error findings, after nine defects of the web head and a set of false findings of the checks were fixed. No person has done the manual scripts.
 
 Last verified: 2026-10-29
 
@@ -55,9 +55,9 @@ node scripts/web-smoke/a11y/fixture-selftest.mjs                   # the harness
 
 ## How verified
 
-- The 40 Node self-tests of `scripts/web-smoke/a11y/*.test.mjs` pass on 2026-10-29 (`node --test`): colour maths, focus-indicator classification, accessible name and role on a hand-made tree, serialisation of the in-page library, and every rule of the judgement module on hand-made data.
+- The 42 Node self-tests of `scripts/web-smoke/a11y/*.test.mjs` pass on 2026-10-29 (`node --test`): colour maths, focus-indicator classification, accessible name and role on a hand-made tree, serialisation of the in-page library, and every rule of the judgement module on hand-made data.
 - `scripts/web-smoke/a11y/fixture-selftest.mjs` passed on 2026-10-29 in a local Chrome against its fixture page: the Tab walk, targets, reflow, text-spacing probe, forced-colors and reduced-motion emulation find the defects planted in the fixture.
 - Every script passes `node --check`; `run-smoke.sh` passes `bash -n`.
-- NOT verified: the checks against the built Demo bundle or the real bundle. The web head could not be published in the environment where these files were written, so the selectors that name app elements (`.autonogrammer-agent-row`, `.autonogrammer-rail-settings`, `#autonogrammer-tab-kanban`, `.autonogrammer-footer-about` and the others in `scripts/web-smoke/a11y/states.mjs` and `routes.mjs`) were taken from the Razor sources and not exercised. The first run may need selector or timing corrections and may report real defects; see [known issues](known-issues.md).
-- NOT verified: anything a person has to judge or hear (screen reader output, meaningful sequence, link purpose, plain language) and any browser other than Chrome.
+- The checks ran against the built Demo bundle and the built real bundle on 2026-10-29: [`docs/runbooks/evidence/web-accessibility-2026-10-29/`](../runbooks/evidence/web-accessibility-2026-10-29/README.md) holds the final reports and the counts. The selectors that name app elements were exercised, and the first runs needed corrections on both sides: nine defects of the web head ([known issues](known-issues.md), section 1) and false findings of the checks.
+- NOT verified: anything a person has to judge or hear (screen reader output, meaningful sequence, link purpose, plain language), a real device, a real Windows High Contrast theme, and any browser other than Chrome.
 - Recorded earlier result that these checks extend: axe-core 4.14.0 with the tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` on the Demo bundle, 68 runs, 0 violations, recorded 2026-10-28 in `docs/runbooks/evidence/web-app-2026-10-28/README.md`.

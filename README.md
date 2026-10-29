@@ -12,7 +12,7 @@
 
 Autonogrammer is a Cursor-class workspace for coding agents on the **omp** engine: a desktop app, a web app, cloud agents and remote environments, under an open licence (AGPL-3.0-or-later). You start several agents, watch them work, steer them while they run and review their file changes. Every omp process Autonogrammer starts runs with four plugins: Ultrathink, Substrate, Swarm and GSD-Core. Autonogrammer has no model of its own: you bring a provider and a key, chosen from a catalogue of 103 European, US, Chinese, global and local providers and coding plans.
 
-Be clear about maturity: this is pre-1.0 software. The desktop app is built and verified on Linux without a model turn; **no live model turn has been run** since a bounded capture in Phase 11, nothing was run on Windows, macOS or Android, and neither the API nor a cloud agent a user can start is deployed to Railway (a private staged worker is: see the Cloud agents row). The one public deployment is the web **Demo**, <https://ompos-web.vercel.app>: a static build whose engine is simulated in the browser (no backend, no model, no secret). The tables below say what is Built, Partial or Blocked.
+Be clear about maturity: this is pre-1.0 software. The desktop app is built and verified on Linux without a model turn; **no live model turn has been run** since a bounded capture in Phase 11, nothing was run on Windows, macOS or Android, and neither the API nor a cloud agent a user can start is deployed to Railway (a private staged worker is: see the Cloud agents row). The one public deployment is the web **Demo**, <https://ompos-web.vercel.app>: a static build whose engine is simulated in the browser (no backend, no model, no secret). The same web head can be built as the real application with no Demo code (`scripts/vercel/build-web.sh`) and used against the API with owner-token sign-in; that path was run end to end on this machine with the real `omp acp` and a scripted model (`scripts/hosted/`, [evidence](docs/runbooks/evidence/hosted-web-2026-10-29/README.md)). It is **not deployed**: moving the public URL, creating the Railway project and supplying a model key are owner decisions ([deploy and rollback](docs/runbooks/deploy-and-rollback.md)). The tables below say what is Built, Partial or Blocked.
 
 ## Screenshots
 
@@ -61,7 +61,8 @@ Status words: **Built** = implemented, reachable from a head and covered by test
 | White-and-Purple brand, Light default | Built | Owner sign-off of the logo is open |
 | AGPL-3.0-or-later licence, notices, `GET /source` offer | Built | Licence of two submodules is open |
 | Web Demo, deployed | Built | <https://ompos-web.vercel.app>; simulated engine; headless Chrome capture without console error or failed request; 68 axe runs, 0 violations |
-| Web app: shell, rail, thread, composer, Changes, Kanban, Settings (18 pages) | Partial | Unit-tested; real Models page over `GET /providers`; Hooks and MCP pages read-only; no hosted API behind it; no image attach |
+| Web app: shell, rail, thread, composer, Changes, Kanban, Settings (18 pages), routes, connect screen | Partial | Built as a real application (`scripts/vercel/build-web.sh`, no Demo code) and run locally against the API and the real omp with a scripted model: owner-token sign-in, a streamed answer, an approved tool call, resume; real Models page over `GET /providers`; Hooks and MCP pages read-only; not deployed; no image attach |
+| Web accessibility (target WCAG 2.2 AA) | Partial | Scripted checks of keyboard use, focus, forced colours, reflow at 320 px, text spacing, target size and axe on every state ran in headless Chrome; no screen reader, no real device, no manual audit: [statement](docs/accessibility/statement.md) |
 | Model provider catalogue (103 rows) and coding plans | Partial | omp accepts a `models.yml` with every route; no live credential used; 49 rows partly verified |
 | Slash commands (92 Cursor tokens, 93 rows) | Partial | Built 36, Partial 24, Delegated 9, Unavailable 24; each has a handler or a stated reason |
 | Built-in skills (10) | Partial | In the desktop palette and Skills page; ssh, container, API-hosted and web sessions carry none; no live turn |
@@ -99,6 +100,8 @@ scripts/web-demo/serve-demo.sh      # http://127.0.0.1:5190/
 ```
 
 **Web with a local API:** see [docs/runbooks/web-demo.md](docs/runbooks/web-demo.md). **Everything (build, test, format, web smoke):** `./bootstrap.sh`, see [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md).
+
+**Real web app against a local API (owner token, real omp, scripted model).** `scripts/hosted/run-local.sh --web-bundle <dir>` builds nothing itself: build `services/Autonogrammer.Api` in Release, and publish the bundle with `AUTONOGRAMMER_API_ORIGIN=http://127.0.0.1:5187 AUTONOGRAMMER_API_ORIGIN_ALLOW_LOOPBACK=1 scripts/vercel/build-web.sh <dir>`. See [scripts/hosted/README.md](scripts/hosted/README.md).
 
 The desktop head reads these variables (`apps/Autonogrammer.Native/Agents/AgentLoopEnvironment.cs`):
 

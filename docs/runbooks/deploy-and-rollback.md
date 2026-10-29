@@ -31,6 +31,8 @@ Only these facts are recorded. Everything else in this page is a plan.
 | Railway refused creating the API service on 2026-10-21 ("Deploys have been paused temporarily") | [railway-autonogrammer-api-2026-10-21.md](evidence/railway-autonogrammer-api-2026-10-21.md) |
 | A private staged worker (not the API) was created, configured with `update-service`, built with `railway up` and health-checked on 2026-10-28, in project `ompos-staging` | [railway-autonogrammer-worker-2026-10-28.md](evidence/railway-autonogrammer-worker-2026-10-28.md) |
 | The static Demo web head is live on Vercel (project `ompos-web`, team `swcstudiospace`), built from `scripts/vercel/build-demo.sh` | [Web head runbook](web-demo.md) |
+| The real web bundle (no Demo code) ran against the API in owner-token mode and the real `omp acp` with a scripted model, on one machine: sign-in, a streamed answer, an approved tool call, resume with `Last-Event-ID`, the rate limit; the browser flow ended with no console error and no failed request (2026-10-29) | [hosted-web-2026-10-29](evidence/hosted-web-2026-10-29/README.md) |
+| The scripted accessibility checks ran against the built Demo and real bundles with zero error findings in their final runs (2026-10-29) | [web-accessibility-2026-10-29](evidence/web-accessibility-2026-10-29/README.md) |
 
 Every step below ends with a status. "Not yet executed against a real deployment" means exactly that. A step that cites evidence says what the evidence covers.
 
@@ -40,7 +42,7 @@ Every step below ends with a status. "Not yet executed against a real deployment
 |--------------|-------|
 | Owner decision on the Railway project for the API: a new project, or `Ultrathink` (threat model Q-TM-1) | Open |
 | Owner decision on the database role and the shared TimescaleDB (Q-TM-2, Q-BR-1) | Open |
-| Units api-auth, api-hosting and engine-isolation of program 66 merged, so that `Api__Auth__Mode=OwnerToken`, the `Hosting__*` and `Harness__Acp__*` names exist in the image | Not merged when this page was written |
+| Units api-auth, api-hosting and engine-isolation of program 66 merged, so that `Api__Auth__Mode=OwnerToken`, the `Hosting__*` and `Harness__Acp__*` names exist in the image | Merged on the branch `feat/autonogrammer-integration`, not yet on `main`: pushing it and opening the pull request need the owner's approval |
 | An owner token generated and its digest computed ([Incident response](incident-response.md), "Rotate the owner token") | Not done |
 | A separate Vercel project (or an explicit decision to replace the Demo at `https://ompos-web.vercel.app`) for the real web head | Open (Q-DEP-1) |
 | A model credential (HOST-04) | Not available; the smoke below cannot complete an agent turn without it |
@@ -69,7 +71,7 @@ Expect HTTP 200 for both, and `revision` equal to `$REV` in the second. This is 
 
 To rehearse the production-shaped start (Postgres, Dragonfly, owner token), start the backend stack with `podman-compose -f deploy/compose.yaml --profile backend up -d` (the password variables `AUTONOGRAMMER_POSTGRES_PASSWORD` and `AUTONOGRAMMER_DRAGONFLY_PASSWORD` are required), then run the image with the connection strings, `Sessions__Store=Postgres`, `Coordination__Store=Dragonfly`, `Harness__Adapter=Acp`, `Api__Auth__Mode=OwnerToken` and a digest, and repeat the checks of step 5. Compose boots are recorded for the earlier stack (`evidence/ho-02-compose-boot-2026-10-21.log`); the rehearsal with the owner token is not.
 
-Status: image build and Development smoke verified locally on 2026-10-21 (older tree); the rehearsal with the owner token is not yet executed.
+Status: image build and Development smoke verified locally on 2026-10-21 (older tree). The same checks with the owner token, without a container, are executed: `scripts/hosted/run-local.sh` (see the first rows of the table above). The rehearsal in a container is not: the Containerfile changes of the security review of 2026-10-29 (read-only `/app`, `DOTNET_EnableDiagnostics=0`) have not been built, and neither has the `HEALTHCHECK`.
 
 ### Step 1: choose or create the project and environment
 
@@ -119,7 +121,7 @@ Status: not executed.
    | `Api__Auth__Mode` | `OwnerToken` |
    | `Api__Auth__OwnerToken__Sha256__0` | the digest |
    | `Api__Cors__Origins__0` | `$WEB` (set after step 7, or now if the web origin is known) |
-   | `Hosting__ForwardedHeaders__Mode` | chosen from the behaviour behind the edge |
+   | `Hosting__ForwardedHeaders__Mode` | `TrustAllSingleHop` (the default `None` makes every client look like the edge: shared throttles and no HSTS) |
    | `Autonogrammer__Debug__LogPrompts` | `false` |
 
 3. Apply the build and deploy settings of `deploy/railway/api.railway.json` with `update-service`: `dockerfilePath` `deploy/api.Containerfile`, `healthcheckPath` `/health/ready`, `healthcheckTimeout` 120, `restartPolicyType` `ON_FAILURE`, `restartPolicyMaxRetries` 3, `drainingSeconds` 35, one replica.

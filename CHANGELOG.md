@@ -33,17 +33,31 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 <!-- rebrand:keep-end -->
 - Breaking: an OIDC deployment outside Development must set `Api:Auth:AllowedSubjects` or `Api:Auth:AllowAnyAuthenticatedUser=true`; startup fails otherwise.
 - Outside Development the engine process starts with an allow-listed environment instead of the API's whole environment; `Harness:Acp:Environment:Mode=Inherit` there needs `Harness:Acp:AllowInheritedEnvironment=true`.
-- `scripts/web-smoke/size-budget.json` is provisional until it is measured on a real publish (`size-budget.mjs --write-baseline`).
+- `scripts/web-smoke/size-budget.json` is now measured on a real publish of the web head (2026-10-29: 12.4 MB raw, 4.8 MB gzip, 3.8 MB Brotli) with 10 percent headroom, instead of a provisional ceiling taken from the Avalonia spike; the budget check no longer reads a comment in a stylesheet as an import.
+- Breaking: outside Development the API stops at start when the non-dumpable setting (`Hosting:RestrictProcessInspection`, on by default) cannot be applied, instead of continuing; `Api:Cors:Origins` entries must be `scheme://host[:port]` and are checked at start.
 
 ### Fixed
 
 - Direct-run tool approvals: the hosted adapter denied every request and no tool was ever grantable, so every `allow` answered 403; the new `Harness:Acp:Approval` options set the kinds that reach the endpoints and the tools an allow may grant.
 - First load moved focus to the heading and skipped the skip link (WCAG 2.4.1); focus now moves to the heading only when the page changes after the first render (`RouteFocus`).
+- Markdown from an agent could carry attributes and media links through the generic-attributes and media-link extensions; the renderer no longer enables them and judges every link it renders, with no limit on their number.
+- A refused sign-in for rate limiting looked like a wrong token; the connect screen now says to wait. The connect and auth-config requests end after 15 seconds instead of waiting for ever, and a late refusal of an old token no longer ends a newer session.
+- Request timeouts ran before the exception handler, so a timed-out request could be reported as a client cancellation; they now run after it and still answer a 504 problem.
+- The route announcer said nothing, or the previous title, after a tab, an agent in the rail or Settings: the browser reports the new address after the render that shows the new title. The workbench now arms the announcer before it changes the view.
+- Scrollable code, tool output and file-edit text took keyboard focus without a name or a role; they are now named groups. Kanban card titles, the conversation title and the slash palette wrap instead of being clamped or cut with an ellipsis, so wider text spacing hides none of their words (WCAG 1.4.12). The composer card draws the same two-pixel focus ring as every control.
+- After every turn of a real omp session the transcript showed a disclosure "Unsupported content (ContextUsageEvent)": omp reports the context window use at the end of each turn, the API stored it under the name of its CLR type and the web head rendered every unknown kind. The event is now stored as `context_usage` with its two numbers and the transcript does not render it. Found by the local run against the real omp, not by a test.
+- Choosing an agent in the rail called the focus before the render that shows its thread, so the focus landed on the thread about to be replaced and fell to the page; it now follows the render. The "Jump to latest" control was removed while it had the keyboard focus (focusing it scrolled the view to the end), which dropped the focus to the page and ended the Tab walk before the composer and the footer; it now stays while it has the focus and hands the focus to the transcript when it is used.
+- On a short screen the agents drawer was as tall as its content (a fixed box with `height: auto` under `align-self: start`), so the last agents and the Settings button lay below the screen where neither a pointer nor the keyboard could reach them; it now has the height between the top bar and the footer and scrolls inside it.
+- axe reported "needs review" for `aria-controls` next to `aria-haspopup`; the model and option chips no longer set `aria-controls`, and the composer textarea no longer sets `aria-haspopup`.
+- Under forced colours a primary button was drawn with a highlight fill, and a palette whose highlight is not opaque made the browser draw a canvas-coloured plate behind its label; it now takes a thicker highlight border and no fill. Agent titles in the rail wrap instead of being cut with an ellipsis.
+- The scripted accessibility checks had false findings of their own, found by their first runs and removed: visually hidden live regions read as clipped text, a card around a field was not accepted as its focus ring and its boundary, a focus scroll under the sticky bar read as an undersized target, a control that exists in one walk direction only read as a different Shift+Tab path, Back and Forward assumed an agent row, and the size budget read a comment as an import.
 
 ### Security
 
 - Owner tokens are never stored or logged: the API holds a digest, compares in constant time and throttles failures; the browser keeps the token in memory only.
 - The engine environment allow-list, a per-session workspace, a non-dumpable API process, security headers, request timeouts and Kestrel limits narrow what a hosted run exposes; the threat model and its open questions are in `docs/security/hosted-threat-model.md`.
+- The API image no longer makes `/app` writable by the engine's user (the application files are read-only for it) and starts with `DOTNET_EnableDiagnostics=0`, which closes the runtime's diagnostics socket.
+- A warning at start when `Hosting:ForwardedHeaders:Mode` is `None` outside Development: behind a proxy the API would see the proxy's address for every client, which makes the per-client rate limits and sign-in throttle useless.
 
 ## [0.15.0] - 2026-10-28
 

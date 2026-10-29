@@ -4,7 +4,7 @@ description: "How to verify by hand that Autonogrammer respects reduced motion, 
 
 # Reduced motion and forced colors: manual verification
 
-Status: Written, not yet carried out by a person on any of the three systems. The scripted emulation checks exist and have no recorded run.
+Status: Written, not yet carried out by a person on any of the three systems. The scripted emulation checks ran against the built bundles on 2026-10-29 with zero error findings ([evidence](../runbooks/evidence/web-accessibility-2026-10-29/README.md)); the emulation palette is not a Windows High Contrast theme (known issue K11).
 
 Last verified: 2026-10-29
 

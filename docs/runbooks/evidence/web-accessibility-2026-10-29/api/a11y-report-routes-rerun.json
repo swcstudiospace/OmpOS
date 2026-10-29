@@ -1,0 +1,21 @@
+{
+  "kind": "api",
+  "baseUrl": "http://127.0.0.1:5180/",
+  "axeCore": "4.14.0",
+  "findings": [],
+  "counters": {
+    "routes:inapp": 6
+  },
+  "skipped": [
+    {
+      "check": "routes",
+      "reason": "direct loads of /kanban, /sessions/<id>, /settings, /about and an unknown path: the static server of the real-bundle smoke has no SPA rewrite (covered by the Demo half)"
+    },
+    {
+      "check": "routes",
+      "reason": "agent row in the rail: the control is not on the page (the in-memory API has no session yet)"
+    }
+  ],
+  "summary": {},
+  "screenshotFiles": []
+}

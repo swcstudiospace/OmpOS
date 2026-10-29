@@ -1,0 +1,110 @@
+{
+  "app": "http://127.0.0.1:5180/",
+  "startedAt": "2026-10-29T08:16:13.829Z",
+  "outDir": "/tmp/ag-scratch/hosted-run8/browser",
+  "mode": "owner-token",
+  "steps": [
+    {
+      "name": "load",
+      "status": "passed",
+      "ms": 35876,
+      "screen": "connect"
+    },
+    {
+      "name": "connect-screen",
+      "status": "passed",
+      "ms": 3619,
+      "axeVersion": "4.14.0",
+      "incomplete": 0
+    },
+    {
+      "name": "connect",
+      "status": "passed",
+      "ms": 3400
+    },
+    {
+      "name": "workbench",
+      "status": "passed",
+      "ms": 10192,
+      "axeVersion": "4.14.0",
+      "incomplete": 1
+    },
+    {
+      "name": "prompt-and-answer",
+      "status": "passed",
+      "ms": 30108,
+      "responseCompleteAnnounced": true,
+      "axeVersion": "4.14.0",
+      "incomplete": 1
+    },
+    {
+      "name": "second-prompt",
+      "status": "passed",
+      "ms": 18898
+    },
+    {
+      "name": "credential-storage",
+      "status": "passed",
+      "ms": 98
+    },
+    {
+      "name": "no-browser-problems",
+      "status": "passed",
+      "ms": 0
+    },
+    {
+      "name": "sign-out",
+      "status": "passed",
+      "ms": 10397
+    }
+  ],
+  "screenshots": [
+    "connect.png",
+    "workbench.png",
+    "answer.png",
+    "second-answer.png"
+  ],
+  "axe": {
+    "connect": {
+      "version": "4.14.0",
+      "violations": [],
+      "incomplete": []
+    },
+    "workbench": {
+      "version": "4.14.0",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "targets": [
+            ".autonogrammer-agent-time"
+          ]
+        }
+      ]
+    },
+    "answer": {
+      "version": "4.14.0",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "targets": [
+            ".is-selected > .autonogrammer-agent-main > .autonogrammer-agent-line > .autonogrammer-agent-time"
+          ]
+        }
+      ]
+    }
+  },
+  "problems": {
+    "before sign-out": {
+      "consoleErrors": [],
+      "exceptions": [],
+      "logErrors": [],
+      "failedRequests": []
+    }
+  },
+  "finishedAt": "2026-10-29T08:18:10.813Z",
+  "result": "passed"
+}
