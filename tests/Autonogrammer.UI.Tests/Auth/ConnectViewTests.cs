@@ -146,6 +146,20 @@ public sealed class ConnectViewTests : UiTestContext
         Navigation.ToBaseRelativePath(Navigation.Uri).ShouldBeEmpty();
     }
 
+    /// <summary>A throttled sign-in tells the user to wait, not to check the connection or the token, and keeps what was typed.</summary>
+    [Fact]
+    public async Task AThrottledAttemptSaysToWaitAndKeepsTheToken()
+    {
+        _connector.Enqueue(ConnectOutcome.RateLimited);
+        var cut = Render<ConnectView>();
+
+        await TypeAndSubmitAsync(cut, Token).ConfigureAwait(true);
+
+        cut.Find("[role='alert']").TextContent.ShouldBe(AuthCopy.ConnectRateLimited);
+        cut.Find(TokenSelector).GetAttribute("value").ShouldBe(Token);
+        cut.Markup.ShouldNotContain(AuthCopy.ConnectUnreachable);
+    }
+
     /// <summary>An empty field is reported without calling the API, and the focus returns to the field.</summary>
     [Fact]
     public async Task AnEmptyFieldIsReportedWithoutCallingTheApi()

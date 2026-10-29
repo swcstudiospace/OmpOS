@@ -88,6 +88,40 @@ public sealed class OwnerTokenConnectorTests : IDisposable
         _session.HasToken.ShouldBeFalse();
     }
 
+    /// <summary>A throttled attempt (429, which the API answers with no body and a Retry-After) is not a verdict on the token: the outcome says so and nothing is kept.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task AThrottledAttemptKeepsNothingAndSaysSo()
+    {
+        _routes.On(HttpMethod.Get, "/workspace", static _ =>
+        {
+            var throttled = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+            throttled.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromSeconds(60));
+            return throttled;
+        });
+
+        var outcome = await _connector.ConnectAsync(Token, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        outcome.ShouldBe(ConnectOutcome.RateLimited);
+        _session.HasToken.ShouldBeFalse();
+        _session.SessionEnded.ShouldBeFalse();
+    }
+
+    /// <summary>An API that accepts the connection and then says nothing ends as unreachable at the connector's deadline, not after the browser's own timeout.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task ASilentApiEndsAsUnreachableAtTheDeadline()
+    {
+        using var silent = new HangingHandler();
+        using var http = new HttpClient(silent, disposeHandler: false) { BaseAddress = new Uri("http://api.invalid/", UriKind.Absolute) };
+        var connector = new OwnerTokenConnector(_session, new OmpApiClient(http), TimeSpan.FromMilliseconds(50));
+
+        var outcome = await connector.ConnectAsync(Token, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        outcome.ShouldBe(ConnectOutcome.Unreachable);
+        _session.HasToken.ShouldBeFalse();
+    }
+
     /// <summary>A cancelled attempt is cancelled and leaves no token behind.</summary>
     /// <returns>A task that completes when the assertions ran.</returns>
     [Fact]

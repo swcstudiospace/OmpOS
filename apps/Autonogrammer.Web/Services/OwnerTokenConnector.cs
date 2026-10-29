@@ -8,18 +8,24 @@ namespace Autonogrammer.Web.Services;
 /// </summary>
 internal sealed class OwnerTokenConnector : IOwnerTokenConnector
 {
+    /// <summary>How long the check may take. A browser would otherwise wait for its own timeout (100 seconds) with the field locked on "Checking the token".</summary>
+    internal static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(15);
+
     private readonly OwnerTokenSession _session;
     private readonly IOmpApiClient _api;
+    private readonly TimeSpan _timeout;
 
     /// <summary>Initializes a new instance of the <see cref="OwnerTokenConnector"/> class.</summary>
     /// <param name="session">The session that holds the token.</param>
     /// <param name="api">The API client whose requests carry the token.</param>
-    internal OwnerTokenConnector(OwnerTokenSession session, IOmpApiClient api)
+    /// <param name="timeout">How long the check may take; <see cref="DefaultTimeout"/> when null.</param>
+    internal OwnerTokenConnector(OwnerTokenSession session, IOmpApiClient api, TimeSpan? timeout = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(api);
         _session = session;
         _api = api;
+        _timeout = timeout ?? DefaultTimeout;
     }
 
     /// <inheritdoc />
@@ -27,14 +33,22 @@ internal sealed class OwnerTokenConnector : IOwnerTokenConnector
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(token);
         _session.Offer(token);
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(_timeout);
         try
         {
-            _ = await _api.GetWorkspaceAsync(cancellationToken).ConfigureAwait(false);
+            _ = await _api.GetWorkspaceAsync(deadline.Token).ConfigureAwait(false);
         }
         catch (ApiProblemException problem) when (problem.Kind is ApiProblemKind.Unauthorized or ApiProblemKind.Forbidden)
         {
             _session.Clear();
             return ConnectOutcome.Rejected;
+        }
+        catch (ApiProblemException problem) when (problem.Kind is ApiProblemKind.RateLimited)
+        {
+            // The API is throttling failed attempts from this address: that is not a verdict on the token.
+            _session.Clear();
+            return ConnectOutcome.RateLimited;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -43,7 +57,7 @@ internal sealed class OwnerTokenConnector : IOwnerTokenConnector
         }
         catch (Exception fault) when (WebFailureText.IsExpected(fault) || fault is OperationCanceledException)
         {
-            // A refused connection, a failing API and a request the browser timed out all mean the token was not checked.
+            // A refused connection, a failing API, a request the browser timed out and the deadline above all mean the token was not checked.
             _session.Clear();
             return ConnectOutcome.Unreachable;
         }

@@ -107,6 +107,19 @@ public sealed class AuthConfigClientTests
         config.ShouldBeNull();
     }
 
+    /// <summary>An API that accepts the connection and then says nothing is no configuration after the deadline, so the page offers Retry instead of waiting for the browser's timeout.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task ASilentApiIsNoConfigurationAtTheDeadline()
+    {
+        using var silent = new HangingHandler();
+        using var http = new HttpClient(silent, disposeHandler: false) { BaseAddress = new Uri("http://api.invalid/", UriKind.Absolute) };
+
+        var config = await new AuthConfigClient(http, TimeSpan.FromMilliseconds(50)).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        config.ShouldBeNull();
+    }
+
     /// <summary>A cancelled load is cancelled, not reported as an unreachable API.</summary>
     /// <returns>A task that completes when the assertions ran.</returns>
     [Fact]

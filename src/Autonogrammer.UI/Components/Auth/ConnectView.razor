@@ -112,6 +112,10 @@
                 _token = string.Empty;
                 _error = AuthCopy.TokenRejected;
                 break;
+            case ConnectOutcome.RateLimited:
+                // The token may be right: it stays in the field, and the message says to wait rather than to check the connection.
+                _error = AuthCopy.ConnectRateLimited;
+                break;
             default:
                 _error = AuthCopy.ConnectUnreachable;
                 break;

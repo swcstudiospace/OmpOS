@@ -65,6 +65,21 @@ public sealed class RequestTimeoutTests
         body.ShouldContain("\"status\":504");
     }
 
+    /// <summary>The same holds in the Production pipeline, which has an exception handler: it must not take the timeout for a client that went away and answer 499.</summary>
+    [Fact]
+    public async Task SlowRoute_Answers504_WithTheProductionExceptionHandlerInThePipeline()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var app = await HostingTestHost.StartAsync(ct, configureServices: ShortenDefaultPolicy, mapEndpoints: MapStubs, exceptionHandler: true).ConfigureAwait(true);
+        await using var appScope = app.ConfigureAwait(true);
+        using var client = app.GetTestClient();
+
+        using var response = await client.GetAsync(new Uri("/slow", UriKind.Relative), ct).ConfigureAwait(true);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.GatewayTimeout);
+        response.Content.Headers.ContentType.ShouldNotBeNull().MediaType.ShouldBe("application/problem+json");
+    }
+
     /// <summary>A server-sent event stream is exempt: it keeps delivering after the default timeout has passed.</summary>
     [Fact]
     public async Task StreamingRoute_IsExemptFromTheTimeout()

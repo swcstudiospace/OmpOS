@@ -100,4 +100,17 @@ internal sealed class OwnerTokenSession : IApiTokenProvider, IAuthSession
         SessionEnded = true;
         Changed?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>
+    /// <see cref="Expire()"/> for the answer to one request: it acts only when the refused token is still the one held. A late 401 for a request that was
+    /// sent with an old token (a stream that was open when the token was replaced) is ignored instead of clearing the newer token.
+    /// </summary>
+    /// <param name="refusedToken">The token the refused request carried.</param>
+    internal void Expire(string refusedToken)
+    {
+        if (string.Equals(_token, refusedToken, StringComparison.Ordinal))
+        {
+            Expire();
+        }
+    }
 }

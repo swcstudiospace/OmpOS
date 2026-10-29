@@ -38,7 +38,7 @@ internal static class WebServiceRegistration
         services.AddScoped(sp =>
         {
             var tokens = sp.GetRequiredService<IApiTokenProvider>();
-            Action? onUnauthorized = null;
+            Action<string>? onUnauthorized = null;
             if (tokens is OwnerTokenSession session)
             {
                 onUnauthorized = session.Expire;

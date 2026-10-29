@@ -67,6 +67,33 @@ public sealed class BearerTokenUnauthorizedTests
         (await session.GetTokenAsync(ct).ConfigureAwait(true)).ShouldBeNull();
     }
 
+    /// <summary>A late 401 to a request that was sent with an old token does not end the session of a newer token.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task ALateRefusalOfAnOldTokenDoesNotEndANewerSession()
+    {
+        const string NewerToken = "newer-owner-token-456";
+        var ct = TestContext.Current.CancellationToken;
+        var session = new OwnerTokenSession();
+        session.SetToken(Token);
+        using var routes = new RoutedHandler();
+
+        // The request went out with the old token; the operator signs in again before its answer arrives, and the answer is a 401.
+        routes.On(HttpMethod.Get, "/board", _ =>
+        {
+            session.SetToken(NewerToken);
+            return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+        });
+        using var handler = HandlerOver(session, routes);
+        using var http = HttpOver(handler);
+
+        _ = await Should.ThrowAsync<ApiProblemException>(() => new OmpApiClient(http).GetBoardAsync(ct)).ConfigureAwait(true);
+
+        session.HasToken.ShouldBeTrue();
+        session.SessionEnded.ShouldBeFalse();
+        (await session.GetTokenAsync(ct).ConfigureAwait(true)).ShouldBe(NewerToken);
+    }
+
     /// <summary>A 401 storm (several requests in flight when the token is refused) ends the session once and issues no extra request.</summary>
     /// <returns>A task that completes when the assertions ran.</returns>
     [Fact]

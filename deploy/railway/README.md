@@ -88,10 +88,11 @@ Config keys use `:` in code and `__` in the environment. Mark every variable mar
 |----------|--------|---------------------|---------|--------------|
 | `Harness__Adapter` | no | `Acp` | `Options/HarnessOptions.cs`, `Program.cs` lines 49 to 57 | Required; Production refuses `InMemory` |
 | `Harness__Acp__OmpPath` | no | `omp` | `Options/HarnessOptions.cs`, `Health/HarnessReadinessCheck.cs` | `omp` (the image links `/usr/local/bin/omp`) |
-| `Harness__Acp__Environment__Mode` | no | `Allowlist` | Added by unit engine-isolation | `Allowlist` for the hosted API |
-| `Harness__Acp__Environment__Allow__0` and following | no | `PATH`, `HOME`, `LANG` | In progress, unit engine-isolation | The smallest list that lets omp start and reach its model provider |
-| `Harness__Acp__AllowInheritedEnvironment` | no | `false` | In progress, unit engine-isolation | `false` |
-| `Harness__Acp__WorkspaceRoot` | no | `<absolute directory the engine starts in>` | Added by unit engine-isolation | A directory outside `/app`, empty at start |
+| `Harness__Acp__Environment__Mode` | no | `Allowlist` | `Options/HarnessOptions.cs`, `Harness/EngineIsolationSettings.cs`, `Harness/EngineIsolationOptionsValidator.cs` | `Allowlist` outside Development (`Inherit` in Development); `Inherit` outside Development is refused at start unless `Harness__Acp__AllowInheritedEnvironment=true` |
+| `Harness__Acp__Environment__Allow__0` and following | no | `PATH`, `HOME`, `LANG` | `Harness/EngineIsolationSettings.cs`, `src/Autonogrammer.Harness.Acp/EngineEnvironmentPolicy.cs` | The smallest list that lets omp start and reach its model provider; a provider key variable such as `AUTONOGRAMMER_PROVIDER_<ID>_KEY` must be on it, which also makes it readable by the engine's tools, so limit its spend at the provider |
+| `Harness__Acp__AllowInheritedEnvironment` | no | `false` | `Harness/EngineIsolationOptionsValidator.cs` | `false` |
+| `Harness__Acp__WorkspaceRoot` | no | `<absolute directory the engine starts in>` | `Harness/EngineWorkspace.cs` | A directory outside `/app` on the volume (a 0700 directory per session is created under it and never removed: see `docs/privacy/data-retention.md`) |
+| `Harness__Acp__Approval__Kinds__0` and following, `Harness__Acp__Approval__GrantableTools__0` and following, `Harness__Acp__Approval__DecisionTimeoutSeconds` | no | `execute`, `edit`; `*`; `300` | `Options/HarnessApprovalOptions.cs`, `Harness/HarnessToolApprovalSettings.cs`, `Harness/SessionPermissionResolver.cs` | Empty lists: the engine's every tool request is denied and no tool is grantable. For one operator who accepts that the engine edits files and runs commands as the API user: `Kinds` `read,search,edit,delete,move,execute`, `GrantableTools` `*`. `Kinds` are the engine's tool kinds that reach the approval endpoints; `GrantableTools` are the tool names an `allow` may grant |
 | `Worktrees__Root`, `Worktrees__Repository` | no | `<absolute paths>` | `Program.cs` lines 72 to 78, `Harness/AcpHarnessSessionFactory.cs` | Unset (the engine uses the process working directory). Both must be absolute |
 | `AUTONOGRAMMER_PROVIDER_<ID>_KEY` | yes | `<provider key>` | `Services/Providers/ProviderKeyNames.cs` (the name omp's `models.yml` block refers to) | Unset until a model credential is decided (HOST-04). Limit its spend at the provider |
 | `Providers__AllowCredentialWrite`, `Providers__AllowConfigWrite`, `Providers__AllowLiveTest` | no | `false` | `Services/Providers/ProvidersOptions.cs` | `false` |
@@ -102,13 +103,13 @@ Config keys use `:` in code and `__` in the environment. Mark every variable mar
 
 | Variable | Secret | Example placeholder | Read in | Safe default |
 |----------|--------|---------------------|---------|--------------|
-| `Api__Auth__Mode` | no | `OwnerToken` | Added by unit api-auth | `Oidc`. Set `OwnerToken` for the single-operator deployment |
-| `Api__Auth__OwnerToken__Sha256__0` (and `__1`, `__2` for rotation) | no | `<64 lowercase hexadecimal characters: SHA-256 of the token>` | Added by unit api-auth | None; one to three digests are required in `OwnerToken` mode |
-| `Api__Auth__OwnerToken__Subject` | no | `owner` | Added by unit api-auth | `owner` |
-| `Api__Auth__OwnerToken__MaxFailuresPerMinute` | no | `10` | In progress, unit api-auth | `10` |
-| `Api__Auth__Authority`, `Api__Auth__Audience`, `Api__Auth__ValidIssuer` | no | `https://<issuer>` | `Options/ApiAuthOptions.cs`, `Options/ApiAuthOptionsValidator.cs` | Only for `Oidc` mode; in `OwnerToken` mode the unit's validator refuses them (in progress). No identity provider is chosen (OD-03) |
-| `Api__Auth__AllowedSubjects__0`, `Api__Auth__AllowAnyAuthenticatedUser` | no | `<subject>`, `false` | In progress, unit api-auth | Only for `Oidc` mode |
-| `Api__Auth__AllowDevelopmentPrincipal` | no | not set | `Options/ApiAuthOptions.cs`, `Program.cs` lines 148 to 159 | Unset. The validator refuses it outside Development |
+| `Api__Auth__Mode` | no | `OwnerToken` | `Options/ApiAuthMode.cs`, `Options/ApiAuthOptions.cs` | `Oidc`. Set `OwnerToken` for the single-operator deployment |
+| `Api__Auth__OwnerToken__Sha256__0` (and `__1`, `__2` for rotation) | no | `<64 lowercase hexadecimal characters: SHA-256 of the token>` | `Options/ApiOwnerTokenOptions.cs`, `Options/ApiAuthOptionsValidator.cs` | None; one to three digests are required in `OwnerToken` mode |
+| `Api__Auth__OwnerToken__Subject` | no | `owner` | `Options/ApiOwnerTokenOptions.cs` | `owner` |
+| `Api__Auth__OwnerToken__MaxFailuresPerMinute` | no | `10` | `Options/ApiOwnerTokenOptions.cs`, `Security/OwnerTokenFailureLimiter.cs` | `10` failed attempts per address per minute; a correct token is never throttled, so only the token's entropy limits guessing (use 32 random bytes) |
+| `Api__Auth__Authority`, `Api__Auth__Audience`, `Api__Auth__ValidIssuer` | no | `https://<issuer>` | `Options/ApiAuthOptions.cs`, `Options/ApiAuthOptionsValidator.cs` | Only for `Oidc` mode; in `OwnerToken` mode the validator refuses them. No identity provider is chosen (OD-03) |
+| `Api__Auth__AllowedSubjects__0`, `Api__Auth__AllowAnyAuthenticatedUser` | no | `<subject>`, `false` | `Options/ApiAuthOptions.cs`, `Security/AllowedSubjectAuthorizationHandler.cs` | Only for `Oidc` mode, where one of them is required outside Development |
+| `Api__Auth__AllowDevelopmentPrincipal` | no | not set | `Options/ApiAuthOptions.cs`, `Options/ApiAuthOptionsValidator.cs` | Unset. The validator refuses it outside Development |
 
 The owner token itself is never a Railway variable. See `docs/runbooks/incident-response.md` for generating the token and its digest.
 
@@ -116,16 +117,16 @@ The owner token itself is never a Railway variable. See `docs/runbooks/incident-
 
 | Variable | Secret | Example placeholder | Read in | Safe default |
 |----------|--------|---------------------|---------|--------------|
-| `Api__Cors__Origins__0` (and `__1`) | no | `https://<web-head-host>` | `Options/ApiCorsOptions.cs`, `Security/ConfigureCorsOptions.cs` | Unset: no cross-origin call is allowed. Set to exactly the Vercel origin |
+| `Api__Cors__Origins__0` (and `__1`) | no | `https://<web-head-host>` | `Options/ApiCorsOptions.cs`, `Options/ApiCorsOptionsValidator.cs`, `Security/ConfigureCorsOptions.cs` | Unset: no cross-origin call is allowed. Set to exactly the Vercel origin, written as a browser sends it: `scheme://host[:port]`, no trailing slash, no path, no default port, no `*`, `http` only for loopback; the API refuses to start on any other form |
 | `Api__MaxPromptLength` | no | `64000` | `Options/ApiOptions.cs` | `64000` |
 | `Api__MaxRequestBodyBytes` | no | `1048576` | `Options/ApiOptions.cs` | `1048576` |
 | `Api__RateLimit__PromptsPerMinute`, `Api__RateLimit__SessionsPerMinute` | no | `60`, `60` | `Options/ApiRateLimitOptions.cs`, `Security/SessionRateLimiterPolicy.cs` | `60`, `60` |
 | `Api__Workspace__Root` | no | `<absolute directory>` | `Services/SessionWorkspaceOptions.cs`, `Services/WorkspaceLocator.cs` | Unset: the workspace endpoints answer that no workspace exists |
 | `Api__Workspace__IncludeUserScope`, `Api__Workspace__Owners__0`, `Api__Workspace__RequestsPerMinute` | no | `false`, `<subject>`, `120` | `Services/WorkspaceSettings/WorkspaceSettingsOptions.cs` | `false`, unset (any authenticated caller), `120` |
-| `Hosting__ForwardedHeaders__Mode` | no | `TrustAllSingleHop` | Added by unit api-hosting | `None`. Choose at the first deploy by checking the client address the API sees behind Railway's edge [INFERENCE: the edge sets `X-Forwarded-For` and `X-Forwarded-Proto`] |
-| `Hosting__Hsts__Enabled` | no | `true` | Added by unit api-hosting | `true` in the unit's worktree |
-| `Hosting__Sse__HeartbeatSeconds` | no | `15` | Added by unit api-hosting | `15` in the unit's worktree |
-| Other `Hosting__*` keys (`RequestTimeoutSeconds`, `ShutdownTimeoutSeconds`, `SecurityHeaders__Enabled`, `Kestrel__*`, `JsonLogs`) | no | see the unit | In progress, unit api-hosting | The unit's defaults |
+| `Hosting__ForwardedHeaders__Mode` | no | `TrustAllSingleHop` | `Hosting/HostingForwardedHeadersOptions.cs`, `Hosting/ConfigureForwardedHeadersOptions.cs` | `None`: the API then ignores `X-Forwarded-*`. **Set `TrustAllSingleHop` on Railway** (the edge is one trusted proxy): with `None` every client appears as the proxy, so the failed-token throttle and the per-address rate limits are shared by all clients (a stranger can lock the operator out of sign-in) and HSTS is never sent; the API logs a warning at start. `TrustAllSingleHop` trusts the one hop in front of it, so keep the API reachable only through the platform's edge; `KnownNetworks` with the edge's range is stricter. |
+| `Hosting__Hsts__Enabled`, `Hosting__Hsts__MaxAgeDays` | no | `true`, `365` | `Hosting/HostingHstsOptions.cs`, `Hosting/HostingApplicationExtensions.cs` | `true`, `365`; HSTS is sent only over HTTPS outside Development, so it needs the forwarded-header mode above |
+| `Hosting__Sse__HeartbeatSeconds` | no | `15` | `Hosting/HostingSseOptions.cs`, `Sse/SseStreamResult.cs` | `15` (0 turns the keep-alive comment off) |
+| Other `Hosting__*` keys (`RequestTimeoutSeconds`, `ShutdownTimeoutSeconds`, `SecurityHeaders__Enabled`, `Kestrel__*`, `JsonLogs`, `RestrictProcessInspection`) | no | see the files | `Hosting/HostingOptions.cs`, `Hosting/HostingKestrelOptions.cs`, `Harness/ProcessHardening.cs` | `30`, `30`, `true`, a 4 MiB body limit, 30 s request headers timeout, 120 s keep-alive, 240 B/s body rate; `JsonLogs` on outside Development; `RestrictProcessInspection` on outside Development and fatal at start if it cannot be applied |
 
 ### Telemetry and logging
 

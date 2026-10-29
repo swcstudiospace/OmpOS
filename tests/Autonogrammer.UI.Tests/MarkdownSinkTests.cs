@@ -11,7 +11,7 @@ namespace Autonogrammer.UI.Tests;
 /// <summary>The MarkupString sink receives only MarkdownRenderer output, so hostile markdown never reaches the DOM as executable markup (IN-01, TD-37).</summary>
 public sealed class MarkdownSinkTests : BunitContext
 {
-    /// <summary>Hostile markdown renders exactly the MarkdownRenderer output and carries no script, handler attribute, or javascript: href.</summary>
+    /// <summary>Hostile markdown renders exactly the MarkdownRenderer output and carries no script, handler attribute, javascript: href, style attribute or media element.</summary>
     /// <param name="markdown">The hostile markdown source.</param>
     [Theory]
     [InlineData("<script>alert(1)</script>")]
@@ -20,6 +20,11 @@ public sealed class MarkdownSinkTests : BunitContext
     [InlineData("![pic](javascript:alert(1))")]
     [InlineData("<div onmouseover=\"alert(1)\">raw block</div>")]
     [InlineData("<a href=\"javascript:alert(1)\">raw link</a>")]
+    [InlineData("[click](javascript:alert(1)){href=\"javascript:alert(2)\"}")]
+    [InlineData("[click](https://example.test){onclick=\"alert(1)\" onmouseover=\"alert(2)\" style=\"position:fixed;inset:0\"}")]
+    [InlineData("![video](https://example.test/clip.mp4)")]
+    [InlineData("![audio](https://example.test/clip.mp3)")]
+    [InlineData("[watch](https://www.youtube.com/watch?v=dQw4w9WgXcQ)")]
     [InlineData("<script>alert(1)</script>\n\n<img src=x onerror=alert(1)>\n\n[click](javascript:alert(1))\n\n<div onmouseover=\"alert(1)\">raw block</div>")]
     public void HostileMarkdownRendersAsMarkdownRendererOutput(string markdown)
     {
@@ -39,6 +44,9 @@ public sealed class MarkdownSinkTests : BunitContext
         cut.FindAll("img").ShouldBeEmpty();
         cut.FindAll("[onerror]").ShouldBeEmpty();
         cut.FindAll("[onmouseover]").ShouldBeEmpty();
+        cut.FindAll("[onclick]").ShouldBeEmpty();
+        cut.FindAll("[style]").ShouldBeEmpty();
+        cut.FindAll("video, audio, iframe, embed, object").ShouldBeEmpty();
         cut.FindAll("[href]")
             .Where(link => (link.GetAttribute("href") ?? string.Empty).TrimStart().StartsWith("javascript:", StringComparison.OrdinalIgnoreCase))
             .ShouldBeEmpty();

@@ -41,6 +41,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Data-annotation validation does not recurse into nested objects, so the nested rate-limit
 // section is bound and validated on its own; ApiOptions.RateLimit reads the same values.
 builder.Services.AddOptions<ApiOptions>().BindConfiguration(ApiOptions.SectionName).ValidateDataAnnotations().ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<ApiOptions>, ApiCorsOptionsValidator>();
 builder.Services.AddOptions<ApiRateLimitOptions>().BindConfiguration($"{ApiOptions.SectionName}:RateLimit").ValidateDataAnnotations().ValidateOnStart();
 // Harness:Adapter selects the harness. Outside Development the in-memory echo adapter is refused: the hosted path runs omp over ACP.
 var harnessInDevelopment = builder.Environment.IsDevelopment();
@@ -197,6 +198,9 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler();
 }
+
+// After the exception handler: the handler would otherwise take a timeout for a client that went away (499) and hide the 504 problem.
+app.UseHostingRequestTimeouts();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseCors(ConfigureCorsOptions.PolicyName);

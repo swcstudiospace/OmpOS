@@ -96,7 +96,10 @@ WORKDIR /app
 # Non-root service account with fixed numeric IDs, so the platform can enforce the user without name lookup.
 RUN groupadd --system --gid 10001 autonogrammer \
  && useradd --system --uid 10001 --gid autonogrammer --no-create-home --shell /usr/sbin/nologin autonogrammer
-COPY --from=build --chown=10001:10001 /app ./
+# The API's own files stay root-owned and read-only for uid 10001: the engine child process runs as that uid and executes model-chosen commands, so it must not be able
+# to rewrite an assembly or appsettings.json that the API loads (now or after a restart). Writable state lives on a volume (Harness__Acp__WorkspaceRoot, HOME).
+COPY --from=build /app ./
+RUN chmod -R a=rX /app
 # omp for Harness__Adapter=Acp. Bun is the runtime omp needs; the omp package is root-owned and read-only to uid 10001.
 COPY --from=omp-runtime /usr/local/bin/bun /usr/local/bin/bun
 COPY --from=omp-runtime /opt/omp /opt/omp
@@ -121,9 +124,12 @@ LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later" \
       org.opencontainers.image.revision="${AUTONOGRAMMER_REVISION}" \
       org.opencontainers.image.version="${AUTONOGRAMMER_VERSION}"
 
+# DOTNET_EnableDiagnostics=0 closes the runtime's diagnostics IPC socket (/tmp/dotnet-diagnostic-*), which a same-uid process such as the engine could use to take a
+# memory dump of the API without ptrace, so it must not exist next to Hosting__RestrictProcessInspection (PR_SET_DUMPABLE).
 ENV ASPNETCORE_ENVIRONMENT=Production \
     ASPNETCORE_URLS=http://[::]:8080 \
-    DOTNET_NOLOGO=1
+    DOTNET_NOLOGO=1 \
+    DOTNET_EnableDiagnostics=0
 USER 10001:10001
 
 # Documents the default port only; the process binds to PORT (set by the platform) or 8080.

@@ -69,6 +69,9 @@ public static class AuthCopy
     /// <summary>The error when the API could not be reached.</summary>
     public const string ConnectUnreachable = "Autonogrammer could not reach its API. Check your connection, then select Connect to try again.";
 
+    /// <summary>The error when the API is throttling sign-in attempts.</summary>
+    public const string ConnectRateLimited = "Too many attempts. Wait a minute, then select Connect to try again.";
+
     /// <summary>The notice when a session ended because the API refused the token.</summary>
     public const string SessionEnded = "Your session ended. Enter the access token again to continue.";
 

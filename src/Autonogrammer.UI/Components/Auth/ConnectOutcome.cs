@@ -11,4 +11,7 @@ public enum ConnectOutcome
 
     /// <summary>The API could not be reached or failed. The session holds nothing, and the same token may be tried again.</summary>
     Unreachable = 2,
+
+    /// <summary>The API refused to check the token for now (429): too many failed attempts from this address. The session holds nothing, and the same token may be tried again after a wait.</summary>
+    RateLimited = 3,
 }

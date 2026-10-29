@@ -72,7 +72,7 @@ internal static class HostingBuilderExtensions
             {
                 options.IncludeScopes = true;
                 options.UseUtcTimestamp = true;
-                options.TimestampFormat = "yyyy-MM-dd'T'HH:mm:ss.fff'Z' ";
+                options.TimestampFormat = "yyyy-MM-dd'T'HH:mm:ss.fff'Z'";
             });
         }
 

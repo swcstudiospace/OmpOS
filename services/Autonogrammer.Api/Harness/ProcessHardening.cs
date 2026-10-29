@@ -50,27 +50,38 @@ internal static partial class ProcessHardening
     internal static void ApplyIfEnabled(ILogger logger, IConfiguration configuration, IHostEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(logger);
-        if (IsEnabled(configuration, environment))
+        if (!IsEnabled(configuration, environment))
         {
-            Apply(logger);
+            LogDisabled(logger, ConfigurationKey);
             return;
         }
 
-        LogDisabled(logger, ConfigurationKey);
+        // Fail closed: outside Development an operator who asked for the restriction, or who left the default, does not get an API that
+        // silently runs without it, because the engine could then read the API's secrets through /proc.
+        if (!TryApply(logger) && !environment.IsDevelopment())
+        {
+            throw new InvalidOperationException(
+                $"The API process could not be made non-dumpable (prctl PR_SET_DUMPABLE failed or is unavailable), so the engine could read its environment through /proc. Fix the container or set {ConfigurationKey}=false to run without the restriction.");
+        }
     }
 
     /// <summary>
     /// Clears the dumpable flag of this process on Linux, so another process of the same user cannot read <c>/proc/&lt;pid&gt;/environ</c> or attach
-    /// to it. A failure is logged as a warning and never thrown: the API still starts, only without this protection. Other platforms do nothing.
+    /// to it. A failure is logged as a warning and never thrown (<see cref="ApplyIfEnabled"/> decides whether it stops the start). Other platforms do nothing.
     /// </summary>
     /// <param name="logger">Receives the outcome.</param>
-    public static void Apply(ILogger logger)
+    public static void Apply(ILogger logger) => _ = TryApply(logger);
+
+    /// <summary>Like <see cref="Apply(ILogger)"/>, and says whether the process is now protected.</summary>
+    /// <param name="logger">Receives the outcome.</param>
+    /// <returns>True when the flag was cleared or the platform has no such flag; false when the call failed or is unavailable.</returns>
+    internal static bool TryApply(ILogger logger)
     {
         ArgumentNullException.ThrowIfNull(logger);
         if (!OperatingSystem.IsLinux())
         {
             LogNotApplicable(logger);
-            return;
+            return true;
         }
 
         try
@@ -78,7 +89,7 @@ internal static partial class ProcessHardening
             if (SetDumpable(dumpable: false))
             {
                 LogApplied(logger);
-                return;
+                return true;
             }
 
             LogFailed(logger, Marshal.GetLastPInvokeError());
@@ -87,6 +98,8 @@ internal static partial class ProcessHardening
         {
             LogUnavailable(logger, ex);
         }
+
+        return false;
     }
 
     /// <summary>

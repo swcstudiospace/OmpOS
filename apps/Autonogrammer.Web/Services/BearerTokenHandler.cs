@@ -10,16 +10,17 @@ namespace Autonogrammer.Web.Services;
 internal sealed class BearerTokenHandler : DelegatingHandler
 {
     private readonly IApiTokenProvider _tokens;
-    private readonly Action? _onUnauthorized;
+    private readonly Action<string>? _onUnauthorized;
 
     /// <summary>Initializes a new instance of the <see cref="BearerTokenHandler"/> class.</summary>
     /// <param name="tokens">The token source.</param>
     /// <param name="inner">The handler that sends the request.</param>
     /// <param name="onUnauthorized">
-    /// Called when the API answers 401 to a request that carried a token, or null to ignore it. It must be idempotent: every request in flight that is
-    /// refused calls it, so a burst of 401 answers calls it many times.
+    /// Called with the token the refused request carried when the API answers 401 to a request that carried a token, or null to ignore it. It must be
+    /// idempotent: every request in flight that is refused calls it, so a burst of 401 answers calls it many times. It gets the token that was sent, not
+    /// the one held now, because a late answer to a request sent with an old token must not end a session that has since been signed in again.
     /// </param>
-    internal BearerTokenHandler(IApiTokenProvider tokens, HttpMessageHandler inner, Action? onUnauthorized = null)
+    internal BearerTokenHandler(IApiTokenProvider tokens, HttpMessageHandler inner, Action<string>? onUnauthorized = null)
         : base(inner)
     {
         ArgumentNullException.ThrowIfNull(tokens);
@@ -41,7 +42,7 @@ internal sealed class BearerTokenHandler : DelegatingHandler
         var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         if (sendsToken && response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            _onUnauthorized?.Invoke();
+            _onUnauthorized?.Invoke(token!);
         }
 
         return response;
