@@ -1,6 +1,6 @@
 {
   "kind": "demo",
-  "baseUrl": "http://127.0.0.1:5202",
+  "baseUrl": "http://127.0.0.1:5209",
   "axeCore": "4.14.0",
   "findings": [
     {
@@ -130,15 +130,6 @@
       "target": "#autonogrammer-thread-title"
     },
     {
-      "check": "axe",
-      "id": "axe-incomplete-color-contrast",
-      "severity": "info",
-      "message": "axe could not decide color-contrast on 1 node(s)",
-      "state": "closed-session",
-      "viewport": "320x568",
-      "target": ".autonogrammer-footer-version"
-    },
-    {
       "check": "media",
       "id": "icon-button-without-boundary",
       "severity": "warning",
@@ -244,7 +235,7 @@
       "state": "kanban",
       "viewport": "1280x1024@4x",
       "wcag": "1.4.10",
-      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Completed, 2 tasks\" data-column=\"completed\"><div class=\"autonogrammer-kanb"
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Completed, 3 tasks\" data-column=\"completed\"><div class=\"autonogrammer-kanb"
     },
     {
       "check": "reflow",
@@ -287,7 +278,7 @@
     "axe:states": 30,
     "axe:runs": 30,
     "media:states": 16,
-    "media:forced-colors:controls": 137,
+    "media:forced-colors:controls": 138,
     "media:forced-colors-stops": 31,
     "media:prefers-contrast:controls": 154,
     "media:reduced-motion:views": 4,
@@ -295,7 +286,7 @@
     "reflow:states": 45,
     "reflow:views": 45,
     "target-size:states": 30,
-    "target-size:targets": 1932,
+    "target-size:targets": 1930,
     "text-spacing:states": 28,
     "text-spacing:views": 28
   },
@@ -309,7 +300,7 @@
     "axe": {
       "errors": 0,
       "warnings": 0,
-      "infos": 14
+      "infos": 13
     },
     "media": {
       "errors": 0,

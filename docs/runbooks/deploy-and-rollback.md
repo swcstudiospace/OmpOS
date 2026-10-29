@@ -293,4 +293,4 @@ Copy this table into the deploy record and fill the last column.
 
 - Read: [Hosting](hosting.md), `deploy/api.Containerfile`, `deploy/compose.yaml`, `vercel.ts`, `scripts/vercel/render-csp.sh`, `services/Autonogrammer.Api/Program.cs`, `Security/ConfigureCorsOptions.cs`, `Endpoints/SessionEndpoints.cs`, `Endpoints/SourceEndpoints.cs`, the evidence files named above.
 - Railway tool contracts read on 2026-10-29: MCP `redeploy`, `set-variables`, `delete-domain`, `update-service`, `get-logs`; CLI pages `railway logs` and the CLI index; the Railway rollback documentation snippets.
-- Not done: no command on this page was run in this work. The Vercel CLI commands are recalled, not read.
+- Not done: no command of steps 1 to 8 was run against a real deployment. The local equivalents of steps 5 and 7 (owner-token sign-in, health, a session, a prompt, the event stream, resume) ran on 2026-10-29 against a locally started API and the real omp (see "What has been run so far"). The Vercel CLI commands are recalled, not read.
