@@ -5,7 +5,7 @@ namespace Autonogrammer.Coordination.Dragonfly;
 
 /// <summary>
 /// <see cref="ITenantKeyEraser"/> for Dragonfly. It runs the only scan the keyspace allows, <c>SCAN MATCH autonogrammer:v1:*:{tenant}:*</c>, and deletes
-/// what it finds. Only keys that carry the tenant segment match (presence and rate-limit keys). Lease, idempotency and nonce keys are addressed by
+/// what it finds. Only entries that carry the tenant segment match (presence and rate-limit keys). Lease, idempotency and nonce entries are addressed by
 /// session id or by hash, hold only reconstructible state and expire on their own within 24 hours, so a tenant scan cannot and need not reach them.
 /// </summary>
 public sealed class DragonflyTenantErasure : ITenantKeyEraser
@@ -28,7 +28,7 @@ public sealed class DragonflyTenantErasure : ITenantKeyEraser
     /// <summary>Deletes every key that carries the tenant segment.</summary>
     /// <param name="tenantHash">The tenant segment: 32 lowercase hexadecimal characters. Anything else throws before a command is sent.</param>
     /// <param name="cancellationToken">Cancels the erasure.</param>
-    /// <returns>A task that completes when the keys are deleted.</returns>
+    /// <returns>A task that completes when the entries are deleted.</returns>
     /// <exception cref="ArgumentException">The tenant segment is malformed.</exception>
     /// <exception cref="DataPlaneTimeoutException">Dragonfly could not answer.</exception>
     public async Task DeleteTenantKeysAsync(string tenantHash, CancellationToken cancellationToken)
@@ -73,8 +73,8 @@ public sealed class DragonflyTenantErasure : ITenantKeyEraser
             return;
         }
 
-        var keys = batch.ToArray();
+        var doomed = batch.ToArray();
         batch.Clear();
-        await _resilience.ClosedAsync(true, () => database.KeyDeleteAsync(keys), cancellationToken).ConfigureAwait(false);
+        await _resilience.ClosedAsync(true, () => database.KeyDeleteAsync(doomed), cancellationToken).ConfigureAwait(false);
     }
 }

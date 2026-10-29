@@ -40,7 +40,7 @@ internal static class DragonflyKeyspace
         return Prefix + "lease:run:" + RequireSegment(sessionId, nameof(sessionId));
     }
 
-    /// <summary>Returns the idempotency key for a scope and key. The hash keeps arbitrary client keys out of the key space.</summary>
+    /// <summary>Returns the idempotency key for a scope and key. The hash keeps arbitrary client ids out of the namespace.</summary>
     /// <param name="scope">The namespace of the key.</param>
     /// <param name="key">The client-supplied idempotency key.</param>
     /// <returns>The key.</returns>
