@@ -421,7 +421,8 @@
         "type": "Project",
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )",
-          "Autonogrammer.Harness.Secrets": "[0.15.0, )"
+          "Autonogrammer.Harness.Secrets": "[0.15.0, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
       "autonogrammer.accounts.desktop": {
@@ -625,6 +626,7 @@
         "type": "Project",
         "dependencies": {
           "Autonogrammer.Harness.Secrets": "[0.15.0, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.13, )"
         }
       },
@@ -635,7 +637,10 @@
         }
       },
       "autonogrammer.harness.workspace": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+        }
       },
       "autonogrammer.harness.worktrees": {
         "type": "Project"
@@ -649,6 +654,7 @@
           "Autonogrammer.Dispatch.Client": "[0.15.0, )",
           "Autonogrammer.Dispatch.Desktop": "[0.15.0, )",
           "Autonogrammer.EngineHost": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
           "Autonogrammer.Harness.Acp": "[0.15.0, )",
           "Autonogrammer.Harness.AgentLoop": "[0.15.0, )",
           "Autonogrammer.Harness.Automations": "[0.15.0, )",

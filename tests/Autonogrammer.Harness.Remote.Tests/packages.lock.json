@@ -273,7 +273,10 @@
         }
       },
       "autonogrammer.harness.workspace": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
+        }
       },
       "autonogrammer.parser": {
         "type": "Project",
