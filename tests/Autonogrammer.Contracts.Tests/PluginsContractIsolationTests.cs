@@ -15,9 +15,11 @@ public sealed class PluginsContractIsolationTests
     {
         var contracts = typeof(ContractVersion).Assembly;
         var offending = new List<string>();
+        var visited = 0;
 
         foreach (var type in contracts.GetTypes().Where(static t => string.Equals(t.Namespace, "Autonogrammer.Contracts.Plugins", StringComparison.Ordinal)))
         {
+            visited++;
             foreach (var referenced in WalkReferencedTypes(type))
             {
                 if (string.Equals(referenced.Namespace, "Autonogrammer.Contracts.Ui", StringComparison.Ordinal))
@@ -27,7 +29,18 @@ public sealed class PluginsContractIsolationTests
             }
         }
 
+        visited.ShouldBeGreaterThanOrEqualTo(5, "the five Plugins contract types must all be visited");
         offending.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void WalkDetectsUiReferences()
+    {
+        var uiType = typeof(ContractVersion).Assembly.GetTypes()
+            .First(static t => string.Equals(t.Namespace, "Autonogrammer.Contracts.Ui", StringComparison.Ordinal));
+
+        WalkReferencedTypes(uiType)
+            .ShouldContain(static t => string.Equals(t.Namespace, "Autonogrammer.Contracts.Ui", StringComparison.Ordinal));
     }
 
     private static IEnumerable<Type> WalkReferencedTypes(Type type)
@@ -46,10 +59,28 @@ public sealed class PluginsContractIsolationTests
 
             yield return current;
 
-            foreach (var next in DirectReferences(current))
+            var nexts = current.Assembly == typeof(ContractVersion).Assembly
+                ? DirectReferences(current)
+                : BoundaryReferences(current);
+
+            foreach (var next in nexts)
             {
                 stack.Push(next);
             }
+        }
+    }
+
+    private static IEnumerable<Type> BoundaryReferences(Type type)
+    {
+        var element = type.GetElementType();
+        if (element is not null)
+        {
+            yield return element;
+        }
+
+        foreach (var argument in type.GenericTypeArguments)
+        {
+            yield return argument;
         }
     }
 
