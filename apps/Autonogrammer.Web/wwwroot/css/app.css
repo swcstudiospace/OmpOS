@@ -89,3 +89,37 @@
     .loading-progress-text:after {
         content: var(--blazor-load-percentage-text, "Loading");
     }
+
+/* Forced colours (WCAG 1.4.11): the browser replaces the author colours and drops the shadow, so the error bar and the boundary keep a border of
+   their own, the dismiss control is outlined, and the loading ring tells its track from its progress with two system colours. */
+@media (forced-colors: active) {
+    #blazor-error-ui {
+        background: Canvas;
+        border: 1px solid CanvasText;
+        border-top-width: 4px;
+        color: CanvasText;
+    }
+
+    #blazor-error-ui .dismiss {
+        background: ButtonFace;
+        border: 1px solid ButtonText;
+        color: ButtonText;
+    }
+
+    #blazor-error-ui .dismiss:focus-visible {
+        outline-color: Highlight;
+    }
+
+    .blazor-error-boundary {
+        border: 1px solid CanvasText;
+        border-left-width: 4px;
+    }
+
+    .loading-progress circle {
+        stroke: GrayText;
+    }
+
+    .loading-progress circle:last-child {
+        stroke: Highlight;
+    }
+}
