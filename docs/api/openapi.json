@@ -7411,6 +7411,18 @@
             ],
             "description": "Gets the sandbox identifier, or null when the session runs without a sandbox."
           },
+          "surface": {
+            "description": "Gets the product surface the session belongs to. It is fixed when the session is created; SessionSurface.Code is the default.",
+            "$ref": "#/components/schemas/SessionSurface"
+          },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets when the session was closed, or null while it is open. Only `ISessionRepository.SetClosedAsync` changes it after creation.",
+            "format": "date-time"
+          },
           "messages": {
             "type": "array",
             "items": {
@@ -7798,6 +7810,13 @@
           "Interrupted"
         ],
         "description": "Lifecycle states of an agent session."
+      },
+      "SessionSurface": {
+        "enum": [
+          "Code",
+          "Cowork"
+        ],
+        "description": "The product surface a session belongs to. The surface is chosen when the session is created and is stored with it, so that\n`ISessionRepository.ListByOwnerAsync` can list the sessions of one surface without reading the others."
       },
       "SetAutomationEnabledRequest": {
         "required": [
