@@ -1,0 +1,693 @@
+/* Accessibility layer (WCAG 2.2 AA): forced colours and high contrast, reduced transparency and motion, focus that sticky bars never cover,
+   24 px targets, reflow at 320 CSS px, text spacing, and the live regions the components announce through. autonogrammer.css imports this
+   file last, so a rule here with the specificity of the rule it adjusts wins without !important.
+
+   Colour rules: this file holds no colour literal. The forced-colors block uses system colours only (Canvas, CanvasText, LinkText,
+   ButtonText, ButtonFace, Highlight, HighlightText, GrayText). The prefers-contrast block re-points tokens at other tokens, so both themes
+   follow; AccessibilityLayerTests parses it and checks every pair against the WCAG ratios. */
+
+/* Live regions --------------------------------------------------------------------------------------------------------------- */
+
+/* A notice is a persistent container whose text changes (role="status"), never a node that is inserted with its text, because assistive
+   technology announces a change inside a region it already knows. While the container is empty it takes no room and no gap, but stays in
+   the accessibility tree: display:none would drop it, and the next text would then arrive as a new node. */
+.autonogrammer-live[data-empty],
+.autonogrammer-live:empty,
+.autonogrammer-live-region,
+.autonogrammer-composer-pending:empty,
+.autonogrammer-pipeline-latest:empty {
+  position: absolute;
+  display: block;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Scroll containers and sticky bars (WCAG 2.4.11 Focus Not Obscured) --------------------------------------------------------- */
+
+:root {
+  /* The sticky bars, measured from the layout tokens: the top bar, the demo banner under it, the footer strip, and the composer dock above
+     the footer (the minimum prompt, plus its footer row, the hint line and the dock padding: 5rem). */
+  --autonogrammer-sticky-top: calc(var(--autonogrammer-titlebar-height) + env(safe-area-inset-top, 0px));
+  --autonogrammer-sticky-bottom: calc(var(--autonogrammer-footer-height) + env(safe-area-inset-bottom, 0px));
+  --autonogrammer-banner-block: 0px;
+  --autonogrammer-dock-block: calc(var(--autonogrammer-composer-min) + 5rem);
+  --autonogrammer-scroll-gap: var(--autonogrammer-gap-8);
+}
+
+/* The demo banner wraps to two lines under 840 px and to three under 360 px (12 px text on a 16 px line, 4 px padding, 1 px rule). */
+:root:has(.autonogrammer-demo-banner) {
+  --autonogrammer-banner-block: var(--autonogrammer-control-height-small);
+}
+
+/* The footer wraps to two lines under 560 px (layout.css sets 52 px on the shell; the root token follows it). */
+@media (max-width: 839.98px) {
+  :root:has(.autonogrammer-demo-banner) {
+    --autonogrammer-banner-block: calc(2 * var(--autonogrammer-line-height-small) + 2 * var(--autonogrammer-gap-4) + 1px);
+  }
+}
+
+@media (max-width: 559.98px) {
+  :root {
+    --autonogrammer-footer-height: 52px;
+  }
+}
+
+@media (max-width: 359.98px) {
+  :root:has(.autonogrammer-demo-banner) {
+    --autonogrammer-banner-block: calc(3 * var(--autonogrammer-line-height-small) + 2 * var(--autonogrammer-gap-4) + 1px);
+  }
+}
+
+/* The document scrolls, so the root takes the sticky bars as padding: a focused element scrolled into view stops below the top bar and the
+   banner and above the composer dock and the footer. */
+html {
+  scroll-padding-block-start: calc(var(--autonogrammer-sticky-top) + var(--autonogrammer-banner-block) + var(--autonogrammer-scroll-gap));
+  scroll-padding-block-end: calc(var(--autonogrammer-sticky-bottom) + var(--autonogrammer-dock-block) + var(--autonogrammer-scroll-gap));
+}
+
+/* Every inner scroll container keeps a gap from its own edges; the ones with a sticky bar inside reserve that bar's height. */
+.autonogrammer-rail,
+.autonogrammer-review-panel,
+.autonogrammer-dialog-body,
+.autonogrammer-settings-nav,
+.autonogrammer-settings-page,
+.autonogrammer-changes-list,
+.autonogrammer-chip-list,
+.autonogrammer-slash-list,
+.autonogrammer-pipeline-details,
+.autonogrammer-kanban-cards,
+.autonogrammer-kanban-columns,
+.autonogrammer-diff-scroll,
+.autonogrammer-tool-output,
+.autonogrammer-file-edit-text,
+.autonogrammer-settings-table-wrap,
+.autonogrammer-code pre,
+.autonogrammer-markdown pre {
+  scroll-padding-block: var(--autonogrammer-scroll-gap);
+}
+
+/* The rail's Settings button sticks to the bottom of the rail: one control, its padding and its rule. */
+.autonogrammer-rail {
+  scroll-padding-block-end: calc(var(--autonogrammer-control-height) + 2 * var(--autonogrammer-gap-8) + 1px);
+}
+
+/* The Settings footer sticks to the bottom of the page and wraps to a second row when the buttons and the save line do not fit. */
+.autonogrammer-settings-page {
+  scroll-padding-block-end: calc(2 * var(--autonogrammer-control-height) + 3 * var(--autonogrammer-gap-8) + 1px + var(--autonogrammer-scroll-gap));
+}
+
+/* A focusable row keeps a margin so scrolling it into view never leaves it flush against a bar. */
+:where(
+  .autonogrammer-agent-row,
+  .autonogrammer-change,
+  .autonogrammer-kanban-card,
+  .autonogrammer-settings-nav-item,
+  .autonogrammer-settings-row,
+  .autonogrammer-approval,
+  .autonogrammer-confirm-bar,
+  .autonogrammer-panel-notice,
+  [role='option'],
+  button,
+  summary,
+  input,
+  select,
+  textarea,
+  a[href],
+  [tabindex='0']
+) {
+  scroll-margin-block: var(--autonogrammer-scroll-gap);
+}
+
+/* The skip link and a programmatic focus target sit under the top bar when the page is scrolled. */
+:where(h1, h2, h3, [tabindex='-1']) {
+  scroll-margin-block-start: calc(var(--autonogrammer-sticky-top) + var(--autonogrammer-banner-block) + var(--autonogrammer-scroll-gap));
+}
+
+/* Target size (WCAG 2.5.8): every control is at least 24 x 24 CSS px ------------------------------------------------------------ */
+
+:where(button, [role='button'], [role='tab'], [role='switch'], [role='menuitem'], [role='option'], summary, select, textarea, input:not([type='hidden'])) {
+  min-block-size: var(--autonogrammer-target-min);
+}
+
+:where(button, [role='button'], [role='tab'], [role='switch'], [role='menuitem'], select) {
+  min-inline-size: var(--autonogrammer-target-min);
+}
+
+/* A standalone link is a target; a link inside a sentence is exempt and stays inline. */
+.autonogrammer-footer-source,
+.autonogrammer-topbar-link,
+.autonogrammer-settings-link {
+  min-block-size: var(--autonogrammer-target-min);
+}
+
+.autonogrammer-footer-source {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The native checkbox grows from 16 px to 24 px; the negative margin takes back the 8 px so the label stays where it was. */
+.autonogrammer-settings-check input,
+input[type='checkbox'],
+input[type='radio'] {
+  min-inline-size: var(--autonogrammer-target-min);
+  min-block-size: var(--autonogrammer-target-min);
+}
+
+.autonogrammer-settings-check input {
+  margin-inline-end: calc(-1 * var(--autonogrammer-gap-8));
+}
+
+/* Text spacing (WCAG 1.4.12) ------------------------------------------------------------------------------------------------- */
+
+/* Fixed heights on text containers become minimums, so line-height 1.5, paragraph spacing 2em, letter-spacing 0.12em and word-spacing
+   0.16em grow the box instead of clipping it. Icon-only squares keep their size: they hold no text. */
+.autonogrammer-topbar {
+  height: auto;
+  min-height: var(--autonogrammer-topbar-block);
+}
+
+.autonogrammer-chip,
+.autonogrammer-kanban-status-chip,
+.autonogrammer-badge {
+  height: auto;
+  min-height: var(--autonogrammer-chip-height);
+}
+
+.autonogrammer-kanban-count {
+  height: auto;
+  min-height: 18px;
+}
+
+.autonogrammer-chip,
+.autonogrammer-kanban-status-chip,
+.autonogrammer-badge,
+.autonogrammer-pill {
+  overflow-wrap: anywhere;
+}
+
+/* Reflow at 320 CSS px and 400 % zoom (WCAG 1.4.10) ---------------------------------------------------------------------------- */
+
+@media (max-width: 559.98px) {
+  /* Text that an ellipsis would cut wraps instead; every cut title also carries a title attribute at wider widths. */
+  .autonogrammer-thread-title,
+  .autonogrammer-agent-title,
+  .autonogrammer-conversation-title,
+  .autonogrammer-list-row-title,
+  .autonogrammer-change-path,
+  .autonogrammer-pipeline-latest,
+  .autonogrammer-chip-value,
+  .autonogrammer-slash-head,
+  .autonogrammer-slash-hint,
+  .autonogrammer-slash-description,
+  .autonogrammer-slash-reason,
+  .autonogrammer-approval-arguments code {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .autonogrammer-chip,
+  .autonogrammer-pill,
+  .autonogrammer-kanban-status-chip,
+  .autonogrammer-kanban-column-title,
+  .autonogrammer-change-counts,
+  .autonogrammer-badge-source,
+  .autonogrammer-badge-scope,
+  .autonogrammer-settings-kbd,
+  .autonogrammer-settings-table th[scope='row'] {
+    white-space: normal;
+  }
+
+  /* The Settings navigation wraps into rows instead of scrolling sideways, and keeps a share of the screen for the page. */
+  .autonogrammer-settings-nav {
+    max-height: 40dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .autonogrammer-settings-nav-list {
+    flex-wrap: wrap;
+  }
+
+  .autonogrammer-settings-nav-item {
+    white-space: normal;
+  }
+
+  .autonogrammer-settings-saveline {
+    min-width: 0;
+  }
+
+  .autonogrammer-settings-toolbar-search,
+  .autonogrammer-settings-toolbar-filter {
+    min-width: 0;
+  }
+
+  .autonogrammer-settings-number {
+    max-width: 100%;
+  }
+}
+
+/* 360 px and narrower: the top bar (menu, mark, two tabs, three theme segments) gives back 76 px, so it still fits in 296 px of content. */
+@media (max-width: 359.98px) {
+  .autonogrammer-topbar {
+    gap: var(--autonogrammer-gap-2);
+    padding-inline: max(var(--autonogrammer-gap-4), env(safe-area-inset-left, 0px)) max(var(--autonogrammer-gap-4), env(safe-area-inset-right, 0px));
+  }
+
+  .autonogrammer-topbar .autonogrammer-logo {
+    display: none;
+  }
+
+  .autonogrammer-viewtabs {
+    gap: 0;
+  }
+
+  .autonogrammer-viewtabs .autonogrammer-tab {
+    padding-inline: var(--autonogrammer-gap-4);
+  }
+
+  .autonogrammer-theme-switch .autonogrammer-segment {
+    padding-inline: var(--autonogrammer-gap-4);
+  }
+
+  .autonogrammer-thread {
+    padding-inline: max(var(--autonogrammer-gap-4), env(safe-area-inset-left, 0px)) max(var(--autonogrammer-gap-4), env(safe-area-inset-right, 0px));
+  }
+
+  .autonogrammer-settings-page-header,
+  .autonogrammer-settings-page-content {
+    padding-inline: var(--autonogrammer-gap-12);
+  }
+}
+
+/* High contrast preference ------------------------------------------------------------------------------------------------- */
+
+/* Both themes: borders and secondary text take the strong values, the purple tints give way to plain surfaces, shadows go (a border
+   outlines every popup instead), and the focus ring grows to 3 px. The selectors repeat :root so they outrank tokens.css whichever
+   theme is active. */
+@media (prefers-contrast: more) {
+  :root:root,
+  :root[data-theme='dark'],
+  :root[data-theme='system'] {
+    --autonogrammer-border: var(--autonogrammer-border-strong);
+    --autonogrammer-tint-border: var(--autonogrammer-border-strong);
+    --autonogrammer-text-secondary: var(--autonogrammer-text);
+    --autonogrammer-tint: var(--autonogrammer-surface-raised);
+    --autonogrammer-tint-strong: var(--autonogrammer-surface-sunken);
+    --autonogrammer-diff-added: var(--autonogrammer-surface-raised);
+    --autonogrammer-diff-removed: var(--autonogrammer-surface-raised);
+    --autonogrammer-scrim: var(--autonogrammer-surface-sunken);
+    --autonogrammer-shadow-popup: none;
+    --autonogrammer-shadow-card: none;
+    --autonogrammer-focus-width: 3px;
+  }
+
+  /* The diff colours are gone, so the markers carry the change: a rule beside the line, a sign in front of it. */
+  .autonogrammer-diff-line[data-kind='added'] .autonogrammer-diff-text,
+  .autonogrammer-diff-text[data-kind='added'] {
+    border-inline-start: 4px solid var(--autonogrammer-success);
+  }
+
+  .autonogrammer-diff-line[data-kind='removed'] .autonogrammer-diff-text,
+  .autonogrammer-diff-text[data-kind='removed'] {
+    border-inline-start: 4px dashed var(--autonogrammer-error);
+  }
+
+  .autonogrammer-composer-card:focus-within {
+    outline: var(--autonogrammer-focus-width) solid var(--autonogrammer-focus);
+    outline-offset: 1px;
+  }
+
+  /* The pressed segment drew its ring from two shadows, one of them the card shadow that is now none. */
+  .autonogrammer-segment[aria-pressed='true'],
+  .autonogrammer-segment[aria-checked='true'] {
+    box-shadow: 0 0 0 1px var(--autonogrammer-border-strong);
+  }
+}
+
+/* Reduced transparency: the scrim and the translucent shadows become opaque. */
+@media (prefers-reduced-transparency: reduce) {
+  :root:root,
+  :root[data-theme='dark'],
+  :root[data-theme='system'] {
+    --autonogrammer-scrim: var(--autonogrammer-surface-sunken);
+    --autonogrammer-shadow-popup: none;
+    --autonogrammer-shadow-card: none;
+  }
+}
+
+/* Reduced motion: base.css zeroes the durations and the animations; the page also stops scrolling smoothly and the drawer slides in no
+   time, whichever way the Settings choice and the operating system differ. */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion='full']) {
+    scroll-behavior: auto;
+  }
+
+  :root:not([data-motion='full']) .autonogrammer-rail,
+  :root:not([data-motion='full']) .autonogrammer-shell[data-drawer='open'] .autonogrammer-rail {
+    transition-duration: 0.01ms;
+    transition-delay: 0s;
+  }
+}
+
+/* Forced colours (Windows High Contrast and its kin) -------------------------------------------------------------------------------- */
+
+/* The browser replaces every author colour with the user's palette, drops backgrounds, shadows and gradients, and keeps system colours the
+   author names. So state may not hang on a background or a shadow: a selection takes a border, an underline or an outline, a status keeps
+   its word or its shape, and a change in a diff gets a rule and a pattern. */
+@media (forced-colors: active) {
+  :root {
+    --autonogrammer-focus-width: 3px;
+  }
+
+  /* The one focus ring: a system-colour outline that no component rule may replace. */
+  :focus-visible {
+    outline: var(--autonogrammer-focus-width) solid Highlight;
+    outline-offset: var(--autonogrammer-focus-offset);
+  }
+
+  .autonogrammer-composer-card:focus-within {
+    outline: var(--autonogrammer-focus-width) solid Highlight;
+    outline-offset: 1px;
+  }
+
+  /* Controls */
+  .autonogrammer-btn,
+  .autonogrammer-icon-btn,
+  .autonogrammer-chip-btn,
+  .autonogrammer-segment,
+  .autonogrammer-tab {
+    background: ButtonFace;
+    border-color: ButtonText;
+    color: ButtonText;
+  }
+
+  .autonogrammer-icon-btn {
+    border-style: solid;
+  }
+
+  .autonogrammer-btn:hover,
+  .autonogrammer-icon-btn:hover,
+  .autonogrammer-chip-btn:hover,
+  .autonogrammer-segment:hover,
+  .autonogrammer-tab:hover,
+  .autonogrammer-agent-row:hover,
+  .autonogrammer-settings-nav-item:hover {
+    border-color: Highlight;
+    color: Highlight;
+  }
+
+  .autonogrammer-btn--primary {
+    background: Highlight;
+    border-color: Highlight;
+    color: HighlightText;
+  }
+
+  .autonogrammer-btn--primary:hover,
+  .autonogrammer-btn--primary:active {
+    background: ButtonText;
+    border-color: ButtonText;
+    color: ButtonFace;
+  }
+
+  .autonogrammer-btn:disabled,
+  .autonogrammer-btn[aria-disabled='true'],
+  .autonogrammer-icon-btn:disabled,
+  .autonogrammer-chip-btn[aria-disabled='true'],
+  .autonogrammer-input:disabled,
+  .autonogrammer-textarea:disabled,
+  .autonogrammer-select:disabled {
+    border-color: GrayText;
+    color: GrayText;
+    opacity: 1;
+  }
+
+  .autonogrammer-input,
+  .autonogrammer-textarea,
+  .autonogrammer-select,
+  .autonogrammer-composer-card {
+    background: Canvas;
+    border-color: ButtonText;
+    color: CanvasText;
+  }
+
+  .autonogrammer-input::placeholder,
+  .autonogrammer-textarea::placeholder,
+  .autonogrammer-composer-input::placeholder {
+    color: GrayText;
+  }
+
+  a {
+    color: LinkText;
+  }
+
+  .autonogrammer-skip-link:focus {
+    background: Canvas;
+    border: 2px solid ButtonText;
+    color: LinkText;
+  }
+
+  /* Selected and current states: a bar, an underline or an outline, never a fill */
+  .autonogrammer-agent-row.is-selected,
+  .autonogrammer-agent-row.is-selected:hover {
+    border-inline-start: 4px solid Highlight;
+    padding-inline-start: calc(var(--autonogrammer-gap-8) - 4px);
+  }
+
+  .autonogrammer-btn.autonogrammer-conversation-item.is-selected,
+  .autonogrammer-list-row[aria-current='true'],
+  .autonogrammer-list-row.is-selected,
+  .autonogrammer-settings-nav-item[aria-current='page'] {
+    border-inline-start: 4px solid Highlight;
+    padding-inline-start: calc(var(--autonogrammer-gap-8) - 4px);
+  }
+
+  .autonogrammer-tab {
+    border-bottom: 3px solid Canvas;
+  }
+
+  .autonogrammer-tab[aria-selected='true'] {
+    border-bottom-color: Highlight;
+    color: Highlight;
+  }
+
+  .autonogrammer-segment[aria-pressed='true'],
+  .autonogrammer-segment[aria-checked='true'] {
+    color: Highlight;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+
+  .autonogrammer-chip-option[aria-selected='true'],
+  .autonogrammer-slash-option[aria-selected='true'] {
+    border-inline-start: 4px solid Highlight;
+    padding-inline-start: calc(var(--autonogrammer-gap-8) - 4px);
+  }
+
+  .autonogrammer-chip-option.is-active,
+  .autonogrammer-slash-option.is-active {
+    outline: 2px solid LinkText;
+    outline-offset: -2px;
+  }
+
+  .autonogrammer-slash-option.is-disabled {
+    color: GrayText;
+  }
+
+  .autonogrammer-chip-btn[aria-expanded='true'] {
+    border-color: Highlight;
+    text-decoration: underline;
+  }
+
+  /* Switches: the thumb moves, and the track and the thumb change colour */
+  .autonogrammer-toggle {
+    background: Canvas;
+    border-color: ButtonText;
+  }
+
+  .autonogrammer-toggle::before {
+    background: ButtonText;
+  }
+
+  .autonogrammer-toggle[aria-checked='true'] {
+    background: Highlight;
+    border-color: Highlight;
+  }
+
+  .autonogrammer-toggle[aria-checked='true']::before {
+    background: HighlightText;
+  }
+
+  .autonogrammer-settings-check input {
+    accent-color: Highlight;
+  }
+
+  /* Chips, badges and status marks keep a border so their text sits in a visible shape; the status words stay, and the glyphs differ in shape */
+  .autonogrammer-chip,
+  .autonogrammer-kanban-status-chip,
+  .autonogrammer-pill,
+  .autonogrammer-kanban-count {
+    background: Canvas;
+    border: 1px solid ButtonText;
+    color: CanvasText;
+  }
+
+  .autonogrammer-badge {
+    background: ButtonFace;
+    border: 1px solid ButtonText;
+    color: ButtonText;
+  }
+
+  .autonogrammer-status-dot,
+  .autonogrammer-settings-dirty-dot {
+    background: ButtonText;
+    border: 1px solid ButtonText;
+  }
+
+  /* Round for ok and active, square for a warning, a diamond for an error. */
+  .autonogrammer-status-dot[data-status='warning'] {
+    border-radius: 0;
+  }
+
+  .autonogrammer-status-dot[data-status='error'] {
+    border-radius: 0;
+    transform: rotate(45deg);
+  }
+
+  .autonogrammer-glyph,
+  .autonogrammer-approval-icon {
+    color: CanvasText;
+  }
+
+  .autonogrammer-agent-time[data-stale='true'],
+  .autonogrammer-settings-saveline[data-state='error'],
+  .autonogrammer-settings-saveline[data-state='saved'],
+  .autonogrammer-approval-message[data-fault='true'] {
+    color: CanvasText;
+    font-weight: var(--autonogrammer-font-weight-semibold);
+  }
+
+  .autonogrammer-approval-message[data-fault='true'],
+  .autonogrammer-settings-saveline[data-state='error'] {
+    text-decoration: underline;
+    text-decoration-style: wavy;
+  }
+
+  /* Panels, popups and dialogs lose their shadows and fills, so each gets an outline */
+  .autonogrammer-settings,
+  .autonogrammer-review-panel,
+  .autonogrammer-dialog,
+  .autonogrammer-tooltip,
+  .autonogrammer-chip-list,
+  .autonogrammer-model-picker,
+  .autonogrammer-slash-palette,
+  .autonogrammer-pipeline-details,
+  .autonogrammer-shell[data-drawer='open'] .autonogrammer-rail,
+  .autonogrammer-demo-banner,
+  .autonogrammer-approval,
+  .autonogrammer-panel-notice,
+  .autonogrammer-kanban-column,
+  .autonogrammer-terminal-frame {
+    background: Canvas;
+    border: 1px solid CanvasText;
+    color: CanvasText;
+  }
+
+  .autonogrammer-approval,
+  .autonogrammer-panel-notice,
+  .autonogrammer-settings-banner[data-tone='info'] {
+    border-inline-start-width: 4px;
+  }
+
+  .autonogrammer-model-picker .autonogrammer-chip-list {
+    border: 0;
+  }
+
+  .autonogrammer-topbar,
+  .autonogrammer-footer,
+  .autonogrammer-rail,
+  .autonogrammer-composer-dock,
+  .autonogrammer-settings-footer {
+    background: Canvas;
+  }
+
+  .autonogrammer-topbar {
+    border-bottom: 1px solid CanvasText;
+  }
+
+  .autonogrammer-footer,
+  .autonogrammer-rail-footer,
+  .autonogrammer-settings-footer {
+    border-top: 1px solid CanvasText;
+  }
+
+  .autonogrammer-rail {
+    border-right: 1px solid CanvasText;
+  }
+
+  .autonogrammer-scrim,
+  .autonogrammer-settings-scrim {
+    background: Canvas;
+    opacity: 0.85;
+  }
+
+  /* Changes and diffs: a change is a rule and a sign as well as a colour */
+  .autonogrammer-diff-line[data-kind='added'] .autonogrammer-diff-text,
+  .autonogrammer-diff-text[data-kind='added'] {
+    border-inline-start: 4px solid Highlight;
+  }
+
+  .autonogrammer-diff-line[data-kind='removed'] .autonogrammer-diff-text,
+  .autonogrammer-diff-text[data-kind='removed'] {
+    border-inline-start: 4px dashed GrayText;
+    text-decoration: line-through;
+  }
+
+  .autonogrammer-diff-text[data-kind='added']::before {
+    content: '+ ';
+    content: '+ ' / '';
+  }
+
+  .autonogrammer-diff-text[data-kind='removed']::before {
+    content: '- ';
+    content: '- ' / '';
+  }
+
+  .autonogrammer-diff-scroll,
+  .autonogrammer-settings-table-wrap,
+  .autonogrammer-code pre,
+  .autonogrammer-markdown pre,
+  .autonogrammer-tool-output,
+  .autonogrammer-file-edit-text {
+    border: 1px solid CanvasText;
+  }
+
+  .autonogrammer-change-added::before {
+    content: '+';
+    content: '+' / '';
+  }
+
+  .autonogrammer-change-removed::before {
+    content: '-';
+    content: '-' / '';
+  }
+
+  /* Kanban cards and steering panels are outlined by their own borders, which the browser keeps in the system colour; the open one gets a heavier rule */
+  .autonogrammer-kanban-card {
+    border-color: CanvasText;
+  }
+
+  .autonogrammer-kanban-card:focus-within {
+    border-width: 2px;
+  }
+}

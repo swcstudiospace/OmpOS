@@ -2,7 +2,7 @@
 @using Autonogrammer.Presentation.Commands
 @inherits ObservableComponent
 <div class="autonogrammer-slash-host">
-    <p class="autonogrammer-sr-only" role="status" aria-live="polite" aria-atomic="true" aria-label="@SlashPaletteCopy.CountName">@(Model.IsOpen ? Model.Announcement : null)</p>
+    <p class="autonogrammer-sr-only" role="status" aria-live="polite" aria-atomic="true" aria-label="@SlashPaletteCopy.CountName">@(Model.IsOpen ? (Model.NoMatchMessage ?? Model.Notice ?? Model.Announcement) : null)</p>
 @if (Model.IsOpen)
 {
     <div class="autonogrammer-slash-palette" data-open="true">
@@ -52,11 +52,11 @@
 
         @if (Model.NoMatchMessage is { } noMatch)
         {
-            <p class="autonogrammer-slash-message" role="status" aria-label="@SlashPaletteCopy.MessageName">@noMatch</p>
+            <p class="autonogrammer-slash-message">@noMatch</p>
         }
         else if (Model.Notice is { } notice)
         {
-            <p class="autonogrammer-slash-message" role="status" aria-label="@SlashPaletteCopy.MessageName">@notice</p>
+            <p class="autonogrammer-slash-message">@notice</p>
         }
     </div>
 }

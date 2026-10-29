@@ -18,10 +18,7 @@
         }
     }
 
-    @if (Message.Length > 0)
-    {
-        <p class="autonogrammer-approval-message" role="@(IsFault ? "alert" : "status")" data-fault="@(IsFault ? "true" : null)">@Message</p>
-    }
+    <p class="autonogrammer-approval-message autonogrammer-live" role="@(IsFault ? "alert" : "status")" data-fault="@(IsFault ? "true" : null)" data-empty="@(Message.Length > 0 ? null : "true")">@Message</p>
 
     @if (CanDecide)
     {

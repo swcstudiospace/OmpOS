@@ -1,6 +1,7 @@
 @namespace Autonogrammer.UI.Components.Approvals
 @using Autonogrammer.Presentation.AgentPanel
 @inherits ObservableComponent
+<div class="autonogrammer-live-region" role="status" aria-live="polite" aria-atomic="true">@AnnouncementText</div>
 @if (Session.PendingApprovals.Count > 0)
 {
     <section class="autonogrammer-approvals" aria-label="Pending tool approvals">
@@ -23,6 +24,13 @@
     /// <summary>Gets the clock the decision timeout runs on.</summary>
     [Parameter]
     public TimeProvider Time { get; set; } = TimeProvider.System;
+
+    private string? AnnouncementText => Session.PendingApprovals.Count switch
+    {
+        0 => null,
+        1 => "1 tool approval is waiting for a decision.",
+        var count => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{count} tool approvals are waiting for a decision."),
+    };
 
     /// <inheritdoc />
     protected override void OnParametersSet() => Observe(Session.PendingApprovals);

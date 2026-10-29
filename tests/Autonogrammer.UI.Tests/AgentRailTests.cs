@@ -185,8 +185,9 @@ public sealed class AgentRailTests : UiTestContext
         var cut = RenderRail(harness);
 
         var state = cut.Find("[data-state='loading']");
-        state.GetAttribute("role").ShouldBe("status");
+        state.GetAttribute("aria-busy").ShouldBe("true");
         state.TextContent.ShouldContain(AgentPanelCopy.RailLoading, Case.Sensitive);
+        cut.Find(".autonogrammer-sr-only[role='status']").TextContent.ShouldContain(AgentPanelCopy.RailLoading, Case.Sensitive);
     }
 
     /// <summary>A failed load shows the reason in an alert and a Retry control that asks the host to reload.</summary>

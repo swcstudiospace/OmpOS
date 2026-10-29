@@ -8,6 +8,7 @@
                 class="autonogrammer-chip-btn"
                 id="@ButtonId"
                 aria-haspopup="listbox"
+                aria-controls="@(IsOpen ? ListId : null)"
                 aria-expanded="@(IsOpen ? "true" : "false")"
                 aria-disabled="@(Model.IsEnabled ? null : "true")"
                 aria-describedby="@ReasonId"
@@ -48,10 +49,7 @@
             </ul>
         }
 
-        @if (Model.Notice is { } notice)
-        {
-            <p class="autonogrammer-chip-notice" role="status">@notice</p>
-        }
+        <p class="autonogrammer-chip-notice autonogrammer-live" role="status" aria-live="polite" aria-atomic="true" data-empty="@(Model.Notice is null ? "true" : null)">@Model.Notice</p>
     </div>
 }
 

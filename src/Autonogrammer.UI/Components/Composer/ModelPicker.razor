@@ -8,6 +8,7 @@
                 class="autonogrammer-chip-btn"
                 id="@ButtonId"
                 aria-haspopup="listbox"
+                aria-controls="@(IsOpen ? PickerId : null)"
                 aria-expanded="@(IsOpen ? "true" : "false")"
                 aria-disabled="@(Model.IsEnabled ? null : "true")"
                 aria-describedby="@ReasonId"
@@ -19,6 +20,7 @@
             <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6l4 4 4-4" /></svg>
         </button>
         <span class="autonogrammer-sr-only" id="@ReasonId">@Model.ToolTipText</span>
+        <span class="autonogrammer-live-region" role="status" aria-live="polite" aria-atomic="true">@(IsOpen ? (Model.IsLoading ? "Loading models…" : Model.HasNoMatches ? "No model matches \"" + Model.FilterText + "\"." : null) : null)</span>
         @if (IsOpen)
         {
             <div class="autonogrammer-model-picker" id="@PickerId">
@@ -38,7 +40,7 @@
                        @onkeydown="OnKeyDownAsync" />
                 @if (Model.IsLoading)
                 {
-                    <p class="autonogrammer-model-state" role="status">Loading models…</p>
+                    <p class="autonogrammer-model-state">Loading models…</p>
                 }
 
                 <ul class="autonogrammer-chip-list autonogrammer-model-list" id="@ListId" role="listbox" aria-label="Models" @ref="ListElement">
@@ -65,15 +67,12 @@
                 </ul>
                 @if (Model.HasNoMatches)
                 {
-                    <p class="autonogrammer-model-state" role="status">No model matches "@Model.FilterText".</p>
+                    <p class="autonogrammer-model-state">No model matches "@Model.FilterText".</p>
                 }
             </div>
         }
 
-        @if (Model.Notice is { } notice)
-        {
-            <p class="autonogrammer-chip-notice" role="status">@notice</p>
-        }
+        <p class="autonogrammer-chip-notice autonogrammer-live" role="status" aria-live="polite" aria-atomic="true" data-empty="@(Model.Notice is null ? "true" : null)">@Model.Notice</p>
     </div>
 }
 

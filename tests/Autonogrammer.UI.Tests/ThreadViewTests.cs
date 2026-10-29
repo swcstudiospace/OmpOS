@@ -2,6 +2,7 @@ using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Approvals;
 using Autonogrammer.Presentation.Changes;
+using Autonogrammer.UI.Components;
 using Autonogrammer.UI.Components.Thread;
 using Autonogrammer.UI.Tests.Fakes;
 using Bunit;
@@ -157,7 +158,8 @@ public sealed class ThreadViewTests : UiTestContext
         session.ApplyStageEvent(PanelEvents.Stage(StageSource.Swarm, "wave", StageStatus.Degraded, "slow"));
 
         await cut.WaitForAssertionAsync(() => cut.Find(".autonogrammer-panel-notice[data-kind='degraded']").TextContent.ShouldContain(AgentPanelCopy.DegradedNotice(1), Case.Sensitive)).ConfigureAwait(true);
-        cut.Find(".autonogrammer-panel-notice[data-kind='degraded']").GetAttribute("role").ShouldBe("status");
+        cut.Find(".autonogrammer-panel-notice[data-kind='degraded']").GetAttribute("role").ShouldBe("group");
+        cut.Find($"[role='status'][aria-label='{AgentPanelViewText.PanelNoticeName}']").TextContent.ShouldContain(AgentPanelCopy.DegradedNotice(1), Case.Sensitive);
         await cut.Find(".autonogrammer-panel-notice button").ClickAsync().ConfigureAwait(true);
         await cut.WaitForAssertionAsync(() => cut.FindAll(".autonogrammer-panel-notice").ShouldBeEmpty()).ConfigureAwait(true);
     }

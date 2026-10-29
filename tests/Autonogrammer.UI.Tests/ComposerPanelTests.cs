@@ -83,10 +83,12 @@ public sealed class ComposerPanelTests : UiTestContext
         chip.GetAttribute("aria-label").ShouldBe("Mode: Default");
         chip.GetAttribute("aria-haspopup").ShouldBe("listbox");
         chip.GetAttribute("aria-expanded").ShouldBe("false");
+        chip.GetAttribute("aria-controls").ShouldBeNull();
 
         await chip.ClickAsync().ConfigureAwait(true);
 
         cut.Find("button.autonogrammer-chip-btn").GetAttribute("aria-expanded").ShouldBe("true");
+        cut.Find("button.autonogrammer-chip-btn").GetAttribute("aria-controls").ShouldBe(cut.Find("ul[role='listbox']").Id);
         var options = cut.FindAll("ul[role='listbox'] li[role='option']");
         options.Select(static option => option.GetAttribute("aria-selected")).ShouldBe(["true", "false"]);
         cut.Find("ul[role='listbox']").GetAttribute("aria-label").ShouldBe("Mode");
@@ -197,7 +199,8 @@ public sealed class ComposerPanelTests : UiTestContext
 
         await cut.Find("input[role='combobox']").InputAsync(new ChangeEventArgs { Value = "zzz" }).ConfigureAwait(true);
 
-        cut.Find(".autonogrammer-model-state[role='status']").TextContent.ShouldContain("No model matches", Case.Sensitive);
+        cut.Find(".autonogrammer-model-state").GetAttribute("role").ShouldBeNull();
+        cut.Find(".autonogrammer-chip-menu > [role='status']").TextContent.ShouldContain("No model matches", Case.Sensitive);
     }
 
     // Slash palette ---------------------------------------------------------------------------------------------------------------------------------
@@ -224,6 +227,7 @@ public sealed class ComposerPanelTests : UiTestContext
         var textarea = cut.Find("textarea");
         textarea.GetAttribute("aria-controls").ShouldBe(list.Id);
         textarea.GetAttribute("aria-autocomplete").ShouldBe("list");
+        textarea.GetAttribute("aria-haspopup").ShouldBe("listbox");
         textarea.GetAttribute("data-slash-open").ShouldBe("true");
         var options = cut.FindAll("li[role='option']");
         options.Count.ShouldBe(palette.Entries.Count);
@@ -237,6 +241,34 @@ public sealed class ComposerPanelTests : UiTestContext
         var status = cut.Find(".autonogrammer-slash-host > [role='status']");
         status.GetAttribute("aria-live").ShouldBe("polite");
         status.TextContent.ShouldBe(palette.Announcement);
+    }
+
+    /// <summary>A search with no match is announced through the palette's one polite region; the visible message carries no role of its own.</summary>
+    [Fact]
+    public async Task ANoMatchMessageIsAnnouncedByThePalettesPersistentRegion()
+    {
+        var (model, palette) = PaletteModel();
+        var cut = RenderComposer(model);
+
+        await cut.Find("textarea").InputAsync(new ChangeEventArgs { Value = "/zzzz" }).ConfigureAwait(true);
+
+        palette.NoMatchMessage.ShouldNotBeNullOrWhiteSpace();
+        cut.Find(".autonogrammer-slash-message").GetAttribute("role").ShouldBeNull();
+        cut.Find(".autonogrammer-slash-host > [role='status']").TextContent.ShouldBe(palette.NoMatchMessage);
+    }
+
+    /// <summary>The composer keeps its status regions in the page while they are empty, so a later text is a change inside a region the screen reader already knows.</summary>
+    [Fact]
+    public void TheComposerStatusRegionsStayInThePageWhileEmpty()
+    {
+        var cut = RenderComposer(NewModel());
+
+        var count = cut.Find(".autonogrammer-composer-count");
+        count.GetAttribute("role").ShouldBe("status");
+        count.GetAttribute("aria-live").ShouldBe("polite");
+        count.GetAttribute("data-empty").ShouldBe("true");
+        count.TextContent.ShouldBeEmpty();
+        cut.Find(".autonogrammer-composer-pending").GetAttribute("role").ShouldBe("status");
     }
 
     /// <summary>Arrow keys move the selection, and Enter puts the command in the draft without sending it and closes the list.</summary>
