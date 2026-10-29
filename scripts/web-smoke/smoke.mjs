@@ -4,9 +4,14 @@
 // that the runbook does not name, and it never navigates away from the app origin.
 //
 // Stdout: one JSON document. Stderr: progress lines. Exit 0 only when every assertion holds.
+//
+// After the runbook steps the accessibility checks of scripts/web-smoke/a11y run on their own page: the connect screen of an owner-token deployment, in-app
+// routes, keyboard walk, dialog, axe on every state (WCAG 2.2 tags), forced colours, contrast, reduced motion and dark scheme, reflow, target size and text
+// spacing. Each check group is one assertion named a11y<Group>. Optional: --a11y-report DIR (or A11Y_REPORT_DIR); AUTONOGRAMMER_SMOKE_A11Y=0 skips them.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { reportDirFromArgs, runA11yChecks } from "./a11y/index.mjs";
 
 function need(name) {
   const value = process.env[name];
@@ -499,6 +504,13 @@ try {
     banner.tabReachesDismiss.outlineWidth > 0 &&
     banner.clicksAfterEnterAndSpace === 2 &&
     banner.axeShown.violations.length === 0;
+
+  if (process.env.AUTONOGRAMMER_SMOKE_A11Y !== "0") {
+    note("accessibility checks");
+    const a11y = await runA11yChecks({ cdpPort: CDP_PORT, baseUrl: APP_URL, kind: "api", axeJs: AXE_JS, reportDir: reportDirFromArgs(), log: note, meta: { commit: COMMIT, runDate: RUN_DATE } });
+    result.a11y = { summary: a11y.report.summary(), counters: Object.fromEntries(a11y.report.counters), skipped: a11y.report.skipped, failures: a11y.failures };
+    Object.assign(assertions, a11y.assertions);
+  }
 } catch (error) {
   result.error = error instanceof Error ? error.message : String(error);
   note(`smoke failed: ${result.error}`);
