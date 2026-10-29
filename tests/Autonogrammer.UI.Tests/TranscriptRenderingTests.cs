@@ -83,7 +83,7 @@ public sealed class TranscriptRenderingTests : UiTestContext
         var cut = RenderSession(Turns(SessionView.InitialVisibleTurns + 3), SessionViewState.Success);
 
         cut.FindComponents<UserMessageView>().Count.ShouldBe(SessionView.InitialVisibleTurns);
-        cut.FindComponents<UserMessageView>().First().Instance.Block.Text.ShouldBe("question 3");
+        cut.FindComponents<UserMessageView>()[0].Instance.Block.Text.ShouldBe("question 3");
         cut.Find(ShowEarlier).TextContent.ShouldContain("3 hidden");
         cut.Find(ShowEarlier).GetAttribute("type").ShouldBe("button");
     }

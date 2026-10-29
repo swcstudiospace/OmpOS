@@ -25,7 +25,7 @@ public sealed class ConnectViewTests : UiTestContext
 
     private NavigationManager Navigation => Services.GetRequiredService<NavigationManager>();
 
-    private async Task TypeAndSubmitAsync(IRenderedComponent<ConnectView> cut, string token)
+    private static async Task TypeAndSubmitAsync(IRenderedComponent<ConnectView> cut, string token)
     {
         await cut.Find(TokenSelector).InputAsync(new ChangeEventArgs { Value = token }).ConfigureAwait(true);
         await cut.Find("form").SubmitAsync().ConfigureAwait(true);
@@ -119,7 +119,7 @@ public sealed class ConnectViewTests : UiTestContext
         var field = cut.Find(TokenSelector);
         (field.GetAttribute("value") ?? string.Empty).ShouldBeEmpty();
         field.GetAttribute("aria-invalid").ShouldBe("true");
-        field.GetAttribute("aria-describedby").ShouldNotBeNull().ShouldContain(alert.Id);
+        field.GetAttribute("aria-describedby").ShouldNotBeNull().ShouldContain(alert.Id.ShouldNotBeNull());
         cut.Markup.ShouldNotContain(Token);
         JSInterop.FocusCalls()[^1].ReferenceIdOf().ShouldBe(fieldId);
         Navigation.ToBaseRelativePath(Navigation.Uri).ShouldBeEmpty();
@@ -170,7 +170,7 @@ public sealed class ConnectViewTests : UiTestContext
 
         var first = cut.Find("form").SubmitAsync();
 
-        cut.WaitForAssertion(() => cut.Find("[role='status']").TextContent.ShouldBe(AuthCopy.Checking));
+        await cut.WaitForAssertionAsync(() => cut.Find("[role='status']").TextContent.ShouldBe(AuthCopy.Checking)).ConfigureAwait(true);
         cut.Find(TokenSelector).HasAttribute("readonly").ShouldBeTrue();
         await cut.Find("form").SubmitAsync().ConfigureAwait(true);
         _connector.Tokens.Count.ShouldBe(1);

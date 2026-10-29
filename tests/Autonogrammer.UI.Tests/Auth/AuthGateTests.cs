@@ -135,14 +135,14 @@ public sealed class AuthGateTests : UiTestContext
 
         var cut = RenderGate();
 
-        cut.WaitForAssertion(() => cut.Find("[role='alert']").TextContent.ShouldBe(AuthCopy.UnavailableBody));
+        await cut.WaitForAssertionAsync(() => cut.Find("[role='alert']").TextContent.ShouldBe(AuthCopy.UnavailableBody)).ConfigureAwait(true);
         cut.Find("h1").TextContent.ShouldBe(AuthCopy.UnavailableHeading);
         var retry = cut.Find("button");
         retry.TextContent.ShouldBe(AuthCopy.Retry);
 
         await retry.ClickAsync().ConfigureAwait(true);
 
-        cut.WaitForAssertion(() => cut.Find("#content").ShouldNotBeNull());
+        await cut.WaitForAssertionAsync(() => cut.Find("#content").ShouldNotBeNull()).ConfigureAwait(true);
         _config.Loads.ShouldBe(2);
     }
 

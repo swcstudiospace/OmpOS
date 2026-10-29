@@ -10,8 +10,10 @@ public sealed class BearerTokenUnauthorizedTests
 {
     private const string Token = "owner-token-value-123";
 
-    private static HttpClient ClientOver(OwnerTokenSession session, RoutedHandler routes) =>
-        new(new BearerTokenHandler(session, routes, session.Expire), disposeHandler: false) { BaseAddress = new Uri("http://api.invalid/", UriKind.Absolute) };
+    private static BearerTokenHandler HandlerOver(OwnerTokenSession session, RoutedHandler routes) => new(session, routes, session.Expire);
+
+    private static HttpClient HttpOver(BearerTokenHandler handler) =>
+        new(handler, disposeHandler: false) { BaseAddress = new Uri("http://api.invalid/", UriKind.Absolute) };
 
     private static async Task SendAsync(HttpClient http, CancellationToken cancellationToken)
     {
@@ -27,7 +29,8 @@ public sealed class BearerTokenUnauthorizedTests
         var session = new OwnerTokenSession();
         using var routes = new RoutedHandler();
         routes.OnJson(HttpMethod.Get, "/workspace", """{"name":"w","pluginCheck":{}}""");
-        using var http = ClientOver(session, routes);
+        using var handler = HandlerOver(session, routes);
+        using var http = HttpOver(handler);
 
         await SendAsync(http, ct).ConfigureAwait(true);
 
@@ -52,7 +55,8 @@ public sealed class BearerTokenUnauthorizedTests
         session.SetToken(Token);
         using var routes = new RoutedHandler();
         routes.OnProblem(HttpMethod.Get, "/board", HttpStatusCode.Unauthorized, null, "Unauthorized.", "Sign in.");
-        using var http = ClientOver(session, routes);
+        using var handler = HandlerOver(session, routes);
+        using var http = HttpOver(handler);
 
         var failure = await Should.ThrowAsync<ApiProblemException>(() => new OmpApiClient(http).GetBoardAsync(ct)).ConfigureAwait(true);
 
@@ -75,7 +79,8 @@ public sealed class BearerTokenUnauthorizedTests
         session.Changed += (_, _) => changes++;
         using var routes = new RoutedHandler();
         routes.OnProblem(HttpMethod.Get, "/board", HttpStatusCode.Unauthorized, null, "Unauthorized.", "Sign in.");
-        using var http = ClientOver(session, routes);
+        using var handler = HandlerOver(session, routes);
+        using var http = HttpOver(handler);
         var api = new OmpApiClient(http);
 
         var calls = Enumerable.Range(0, 5).Select(_ => Should.ThrowAsync<ApiProblemException>(() => api.GetBoardAsync(ct))).ToList();
@@ -96,7 +101,8 @@ public sealed class BearerTokenUnauthorizedTests
         session.Changed += (_, _) => changes++;
         using var routes = new RoutedHandler();
         routes.OnProblem(HttpMethod.Get, "/board", HttpStatusCode.Unauthorized, null, "Unauthorized.", "Sign in.");
-        using var http = ClientOver(session, routes);
+        using var handler = HandlerOver(session, routes);
+        using var http = HttpOver(handler);
 
         _ = await Should.ThrowAsync<ApiProblemException>(() => new OmpApiClient(http).GetBoardAsync(TestContext.Current.CancellationToken)).ConfigureAwait(true);
 
@@ -117,7 +123,8 @@ public sealed class BearerTokenUnauthorizedTests
         session.SetToken(Token);
         using var routes = new RoutedHandler();
         routes.OnProblem(HttpMethod.Get, "/board", status, null, "Failed.", "Try later.");
-        using var http = ClientOver(session, routes);
+        using var handler = HandlerOver(session, routes);
+        using var http = HttpOver(handler);
 
         _ = await Should.ThrowAsync<ApiProblemException>(() => new OmpApiClient(http).GetBoardAsync(TestContext.Current.CancellationToken)).ConfigureAwait(true);
 

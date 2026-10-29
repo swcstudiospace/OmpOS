@@ -16,13 +16,15 @@ public sealed class OwnerTokenConnectorTests : IDisposable
     private readonly DemoTestHost _host = new();
     private readonly OwnerTokenSession _session = new();
     private readonly RoutedHandler _routes = new();
+    private readonly BearerTokenHandler _handler;
     private readonly HttpClient _http;
     private readonly OwnerTokenConnector _connector;
 
     /// <summary>Initializes a new instance of the <see cref="OwnerTokenConnectorTests"/> class.</summary>
     public OwnerTokenConnectorTests()
     {
-        _http = new HttpClient(new BearerTokenHandler(_session, _routes, _session.Expire), disposeHandler: false) { BaseAddress = new Uri("http://api.invalid/", UriKind.Absolute) };
+        _handler = new BearerTokenHandler(_session, _routes, _session.Expire);
+        _http = new HttpClient(_handler, disposeHandler: false) { BaseAddress = new Uri("http://api.invalid/", UriKind.Absolute) };
         _connector = new OwnerTokenConnector(_session, new OmpApiClient(_http));
     }
 
@@ -105,6 +107,7 @@ public sealed class OwnerTokenConnectorTests : IDisposable
     public void Dispose()
     {
         _http.Dispose();
+        _handler.Dispose();
         _routes.Dispose();
         _host.Dispose();
     }

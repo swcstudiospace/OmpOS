@@ -23,7 +23,7 @@ public sealed class OwnerTokenSessionTests : BunitContext
         session.Offer(Token);
 
         session.HasToken.ShouldBeFalse();
-        (await session.GetTokenAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(Token);
+        (await session.GetTokenAsync(Xunit.TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(Token);
         changes.ShouldBe(0);
 
         session.Confirm().ShouldBeTrue();
@@ -60,7 +60,7 @@ public sealed class OwnerTokenSessionTests : BunitContext
 
         session.HasToken.ShouldBeFalse();
         session.SessionEnded.ShouldBeFalse("signing out is not an ended session");
-        (await session.GetTokenAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeNull();
+        (await session.GetTokenAsync(Xunit.TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeNull();
         changes.ShouldBe(1);
     }
 
@@ -81,7 +81,7 @@ public sealed class OwnerTokenSessionTests : BunitContext
 
         session.HasToken.ShouldBeFalse();
         session.SessionEnded.ShouldBeTrue();
-        (await session.GetTokenAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeNull();
+        (await session.GetTokenAsync(Xunit.TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeNull();
         changes.ShouldBe(1);
     }
 

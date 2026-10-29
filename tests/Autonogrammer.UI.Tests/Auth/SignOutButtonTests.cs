@@ -52,6 +52,6 @@ public sealed class SignOutButtonTests : UiTestContext
         session.ClearCount.ShouldBe(1);
         session.HasToken.ShouldBeFalse();
         navigation.ToBaseRelativePath(navigation.Uri).ShouldBe(AuthRoutes.ConnectPath);
-        cut.WaitForAssertion(() => cut.FindAll("button").ShouldBeEmpty());
+        await cut.WaitForAssertionAsync(() => cut.FindAll("button").ShouldBeEmpty()).ConfigureAwait(true);
     }
 }

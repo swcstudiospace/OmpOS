@@ -8,11 +8,8 @@ namespace Autonogrammer.Web.Tests;
 /// <summary>The anonymous read of <c>GET /auth/config</c>: each mode, a body that is not the documented shape, a failing API and an unreachable one.</summary>
 public sealed class AuthConfigClientTests
 {
-    private static AuthConfigClient ClientOver(RoutedHandler routes)
-    {
-        var http = new HttpClient(routes, disposeHandler: false) { BaseAddress = new Uri("http://api.invalid/", UriKind.Absolute) };
-        return new AuthConfigClient(http);
-    }
+    private static HttpClient HttpOver(RoutedHandler routes) =>
+        new(routes, disposeHandler: false) { BaseAddress = new Uri("http://api.invalid/", UriKind.Absolute) };
 
     /// <summary>Each of the three modes is read with its authority and audience, camel-cased as the contract says.</summary>
     /// <param name="json">The body.</param>
@@ -30,7 +27,8 @@ public sealed class AuthConfigClientTests
         using var routes = new RoutedHandler();
         routes.OnJson(HttpMethod.Get, "/auth/config", json);
 
-        var config = await ClientOver(routes).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        using var http = HttpOver(routes);
+        var config = await new AuthConfigClient(http).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         config.ShouldNotBeNull();
         config.Mode.ShouldBe(mode);
@@ -49,7 +47,8 @@ public sealed class AuthConfigClientTests
         using var routes = new RoutedHandler();
         routes.OnJson(HttpMethod.Get, "/auth/config", """{"mode":"saml"}""");
 
-        var config = await ClientOver(routes).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        using var http = HttpOver(routes);
+        var config = await new AuthConfigClient(http).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         config.ShouldNotBeNull();
         config.IsKnownMode().ShouldBeFalse();
@@ -70,7 +69,8 @@ public sealed class AuthConfigClientTests
         using var routes = new RoutedHandler();
         routes.OnJson(HttpMethod.Get, "/auth/config", body);
 
-        var config = await ClientOver(routes).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        using var http = HttpOver(routes);
+        var config = await new AuthConfigClient(http).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         config.ShouldBeNull();
     }
@@ -87,7 +87,8 @@ public sealed class AuthConfigClientTests
         using var routes = new RoutedHandler();
         routes.OnJson(HttpMethod.Get, "/auth/config", """{"mode":"development"}""", status);
 
-        var config = await ClientOver(routes).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        using var http = HttpOver(routes);
+        var config = await new AuthConfigClient(http).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         config.ShouldBeNull();
     }
@@ -100,7 +101,8 @@ public sealed class AuthConfigClientTests
         using var routes = new RoutedHandler();
         routes.On(HttpMethod.Get, "/auth/config", _ => throw new HttpRequestException("offline"));
 
-        var config = await ClientOver(routes).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+        using var http = HttpOver(routes);
+        var config = await new AuthConfigClient(http).LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         config.ShouldBeNull();
     }
@@ -115,6 +117,7 @@ public sealed class AuthConfigClientTests
         using var cancelled = new CancellationTokenSource();
         await cancelled.CancelAsync().ConfigureAwait(true);
 
-        await Should.ThrowAsync<OperationCanceledException>(() => ClientOver(routes).LoadAsync(cancelled.Token)).ConfigureAwait(true);
+        using var http = HttpOver(routes);
+        await Should.ThrowAsync<OperationCanceledException>(() => new AuthConfigClient(http).LoadAsync(cancelled.Token)).ConfigureAwait(true);
     }
 }
