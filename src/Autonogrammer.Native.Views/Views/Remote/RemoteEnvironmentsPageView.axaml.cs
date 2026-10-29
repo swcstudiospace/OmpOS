@@ -1,11 +1,11 @@
 using System.ComponentModel;
+using Autonogrammer.Native.Views.AgentPanel;
+using Autonogrammer.Presentation.Remote;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views.AgentPanel;
-using Autonogrammer.Presentation.Remote;
 
 namespace Autonogrammer.Native.Views.Remote;
 

@@ -1,11 +1,11 @@
-using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Native.Views.Workspace;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Workspaces;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace Autonogrammer.Native.Views.Settings;
 

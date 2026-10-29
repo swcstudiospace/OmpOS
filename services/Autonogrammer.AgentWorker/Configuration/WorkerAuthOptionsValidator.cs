@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Options;
 using Autonogrammer.AgentWorker.Security;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.AgentWorker.Configuration;
 

@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using System.Globalization;
+using Autonogrammer.Contracts.Streaming;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
-using Autonogrammer.Contracts.Streaming;
 using Shouldly;
 using Xunit;
 using static Autonogrammer.Sessions.Postgres.Tests.SessionSamples;

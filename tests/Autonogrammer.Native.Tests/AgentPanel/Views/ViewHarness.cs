@@ -1,3 +1,4 @@
+using Autonogrammer.Native.Views.AgentPanel;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -5,7 +6,6 @@ using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views.AgentPanel;
 
 namespace Autonogrammer.Native.Tests.AgentPanel.Views;
 

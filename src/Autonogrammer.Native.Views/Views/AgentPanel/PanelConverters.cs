@@ -1,6 +1,6 @@
+using Autonogrammer.Presentation.AgentPanel;
 using Avalonia;
 using Avalonia.Data.Converters;
-using Autonogrammer.Presentation.AgentPanel;
 
 namespace Autonogrammer.Native.Views.AgentPanel;
 

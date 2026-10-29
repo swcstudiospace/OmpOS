@@ -1,9 +1,9 @@
 using System.Net;
 using System.Text.Json;
+using Autonogrammer.Native.Views.Completion;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Autonogrammer.Native.Views.Completion;
 using Shouldly;
 using Xunit;
 

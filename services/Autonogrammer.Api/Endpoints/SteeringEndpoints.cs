@@ -1,6 +1,4 @@
 using System.Text.Json;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Options;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Services;
@@ -11,6 +9,8 @@ using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Sessions;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Endpoints;
 

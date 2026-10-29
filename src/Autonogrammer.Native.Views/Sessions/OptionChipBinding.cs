@@ -1,6 +1,6 @@
-using Avalonia.Threading;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Presentation.Composer;
+using Avalonia.Threading;
 
 namespace Autonogrammer.Native.Views.Sessions;
 

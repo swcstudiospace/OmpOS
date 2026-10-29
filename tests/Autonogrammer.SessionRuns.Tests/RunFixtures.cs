@@ -1,9 +1,9 @@
-using Microsoft.Extensions.Logging.Abstractions;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Sandbox.Abstractions;
 using Autonogrammer.Sessions;
 using Autonogrammer.Workflows;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Autonogrammer.SessionRuns.Tests;
 

@@ -1,9 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
+using Autonogrammer.AgentWorker.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
-using Autonogrammer.AgentWorker.Configuration;
 
 namespace Autonogrammer.AgentWorker.Security;
 

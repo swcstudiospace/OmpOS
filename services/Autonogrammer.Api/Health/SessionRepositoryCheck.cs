@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Autonogrammer.Sessions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Autonogrammer.Api.Health;
 

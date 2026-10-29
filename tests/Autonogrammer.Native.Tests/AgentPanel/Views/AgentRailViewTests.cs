@@ -1,13 +1,13 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.VisualTree;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Cloud;
 using Autonogrammer.Presentation.Kanban;
 using Autonogrammer.Presentation.Remote;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

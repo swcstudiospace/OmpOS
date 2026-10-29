@@ -1,12 +1,12 @@
+using Autonogrammer.Native.Views.Settings;
+using Autonogrammer.Presentation.Settings;
+using Autonogrammer.Presentation.Settings.Models;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views.Settings;
-using Autonogrammer.Presentation.Settings;
-using Autonogrammer.Presentation.Settings.Models;
 using Shouldly;
 using Xunit;
 

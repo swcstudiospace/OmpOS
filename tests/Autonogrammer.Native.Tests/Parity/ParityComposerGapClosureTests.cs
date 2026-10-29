@@ -1,5 +1,3 @@
-using Avalonia.Controls;
-using Avalonia.Input;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Tests.AgentPanel.Shell;
@@ -8,6 +6,8 @@ using Autonogrammer.Native.Tests.Send;
 using Autonogrammer.Native.Tests.Workspace;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.State;
+using Avalonia.Controls;
+using Avalonia.Input;
 using Shouldly;
 using Xunit;
 

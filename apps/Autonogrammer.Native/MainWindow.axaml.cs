@@ -1,4 +1,3 @@
-using Avalonia.Controls;
 using Autonogrammer.Native.Composition;
 using Autonogrammer.Native.Settings;
 using Autonogrammer.Native.Views.Branding;
@@ -6,6 +5,7 @@ using Autonogrammer.Native.Views.Shell;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Kanban;
+using Avalonia.Controls;
 
 namespace Autonogrammer.Native;
 

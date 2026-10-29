@@ -1,7 +1,7 @@
 using System.ComponentModel;
+using Autonogrammer.Presentation.Chats;
 using Avalonia.Controls;
 using Avalonia.Threading;
-using Autonogrammer.Presentation.Chats;
 
 namespace Autonogrammer.Native.Views.Chats;
 

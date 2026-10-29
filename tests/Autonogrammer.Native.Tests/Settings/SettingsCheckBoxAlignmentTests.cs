@@ -1,8 +1,8 @@
+using Autonogrammer.Presentation.Settings;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.VisualTree;
-using Autonogrammer.Presentation.Settings;
 using Shouldly;
 using Xunit;
 

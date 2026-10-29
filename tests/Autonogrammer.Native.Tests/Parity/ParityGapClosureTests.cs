@@ -1,11 +1,11 @@
-using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.VisualTree;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Presentation.State;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

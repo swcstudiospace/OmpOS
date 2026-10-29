@@ -1,5 +1,5 @@
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Contracts.Intents;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

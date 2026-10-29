@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
+using Autonogrammer.Contracts.Agents;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Autonogrammer.Contracts.Agents;
 
 namespace Autonogrammer.Harness.AgentLoop.Sessions;
 

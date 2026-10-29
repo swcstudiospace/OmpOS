@@ -1,7 +1,7 @@
 using System.ComponentModel;
+using Autonogrammer.Presentation.Commands.Handlers;
 using Avalonia;
 using Avalonia.Controls;
-using Autonogrammer.Presentation.Commands.Handlers;
 
 namespace Autonogrammer.Native.Views.Display;
 

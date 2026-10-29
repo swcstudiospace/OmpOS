@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Autonogrammer.EngineHost;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
@@ -6,6 +5,7 @@ using Autonogrammer.Harness.AgentLoop.Launch;
 using Autonogrammer.Harness.AgentLoop.Safety;
 using Autonogrammer.Harness.Remote;
 using Autonogrammer.Presentation.Approvals;
+using Microsoft.Extensions.Logging;
 
 namespace Autonogrammer.Native.Engine;
 

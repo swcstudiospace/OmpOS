@@ -1,12 +1,12 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using Autonogrammer.Api.Coordination;
 using Autonogrammer.Api.Workflows;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Coordination;
 using Autonogrammer.Sessions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Shouldly;
 using StackExchange.Redis;
 using Xunit;

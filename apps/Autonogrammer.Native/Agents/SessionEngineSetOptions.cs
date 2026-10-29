@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Steering;
@@ -6,6 +5,7 @@ using Autonogrammer.Harness.OmpLauncher;
 using Autonogrammer.Harness.Terminal;
 using Autonogrammer.Native.Settings.Models;
 using Autonogrammer.Presentation;
+using Microsoft.Extensions.Logging;
 
 namespace Autonogrammer.Native.Agents;
 

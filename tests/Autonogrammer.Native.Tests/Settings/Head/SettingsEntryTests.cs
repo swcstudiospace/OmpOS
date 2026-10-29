@@ -1,12 +1,12 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Input;
 using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Settings;
 using Autonogrammer.Native.Tests.AgentLoop;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Settings;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Shouldly;
 using Xunit;
 

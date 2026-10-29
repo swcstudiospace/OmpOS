@@ -1,9 +1,9 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.VisualTree;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Presentation.AgentPanel;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 using Path = Avalonia.Controls.Shapes.Path;

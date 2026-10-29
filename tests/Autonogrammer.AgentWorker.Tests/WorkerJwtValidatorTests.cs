@@ -1,10 +1,10 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
+using Autonogrammer.AgentWorker.Configuration;
+using Autonogrammer.AgentWorker.Security;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
-using Autonogrammer.AgentWorker.Configuration;
-using Autonogrammer.AgentWorker.Security;
 using Shouldly;
 using Xunit;
 

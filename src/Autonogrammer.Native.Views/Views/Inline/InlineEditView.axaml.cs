@@ -1,6 +1,6 @@
 using System.ComponentModel;
-using Avalonia.Controls;
 using Autonogrammer.Presentation.Editor;
+using Avalonia.Controls;
 
 namespace Autonogrammer.Native.Views.InlineEditing;
 

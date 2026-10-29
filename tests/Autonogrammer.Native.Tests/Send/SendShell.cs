@@ -1,4 +1,3 @@
-using Avalonia.Threading;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Native.Agents;
@@ -10,6 +9,7 @@ using Autonogrammer.Presentation.Approvals;
 using Autonogrammer.Presentation.Composer;
 using Autonogrammer.Presentation.Runs;
 using Autonogrammer.Presentation.State;
+using Avalonia.Threading;
 
 namespace Autonogrammer.Native.Tests.Send;
 

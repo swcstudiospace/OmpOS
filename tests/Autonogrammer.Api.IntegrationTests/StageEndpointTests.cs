@@ -1,9 +1,9 @@
 using System.Net;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Contracts.Controls;
 using Autonogrammer.Sessions;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

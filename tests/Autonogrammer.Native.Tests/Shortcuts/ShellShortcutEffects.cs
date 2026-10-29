@@ -1,12 +1,12 @@
+using Autonogrammer.Harness.Abstractions;
+using Autonogrammer.Native.Tests.AgentPanel.Shell;
+using Autonogrammer.Native.Tests.Parity;
+using Autonogrammer.Presentation.AgentPanel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using Autonogrammer.Harness.Abstractions;
-using Autonogrammer.Native.Tests.AgentPanel.Shell;
-using Autonogrammer.Native.Tests.Parity;
-using Autonogrammer.Presentation.AgentPanel;
 using Shouldly;
 
 namespace Autonogrammer.Native.Tests.Shortcuts;

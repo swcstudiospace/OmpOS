@@ -1,3 +1,5 @@
+using Autonogrammer.Native.Views.AgentPanel;
+using Autonogrammer.Presentation.Checkpoints;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -5,8 +7,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views.AgentPanel;
-using Autonogrammer.Presentation.Checkpoints;
 
 namespace Autonogrammer.Native.Views.Checkpoints;
 

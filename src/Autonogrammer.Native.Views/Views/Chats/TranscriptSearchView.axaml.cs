@@ -1,9 +1,9 @@
 using System.ComponentModel;
+using Autonogrammer.Presentation.Chats;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
-using Autonogrammer.Presentation.Chats;
 
 namespace Autonogrammer.Native.Views.Chats;
 

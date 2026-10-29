@@ -1,9 +1,9 @@
 using System.Globalization;
+using Autonogrammer.Contracts.Ui;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Media;
-using Autonogrammer.Contracts.Ui;
 
 namespace Autonogrammer.Native.Views.Blocks;
 

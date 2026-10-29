@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Options;
 using Autonogrammer.Api.Metrics;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Api.Security;
@@ -15,6 +13,8 @@ using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Coordination;
 using Autonogrammer.Parser;
 using Autonogrammer.Sessions;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Endpoints;
 

@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Sandbox.Abstractions.Exceptions;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit;
 

@@ -1,9 +1,9 @@
 using System.Diagnostics;
+using Autonogrammer.Native.Views.Editor;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
 using AvaloniaEdit;
-using Autonogrammer.Native.Views.Editor;
 using Shouldly;
 using Xunit;
 

@@ -1,7 +1,7 @@
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Coordination;
 using Autonogrammer.Coordination.Dragonfly;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Autonogrammer.Api.Coordination;
 

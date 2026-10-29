@@ -1,6 +1,6 @@
-using Avalonia.Data.Converters;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Models;
+using Avalonia.Data.Converters;
 
 namespace Autonogrammer.Native.Views.Settings;
 

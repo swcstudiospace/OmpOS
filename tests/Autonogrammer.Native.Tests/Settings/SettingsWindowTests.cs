@@ -1,5 +1,3 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
 using Autonogrammer.Native.Views.Automations;
 using Autonogrammer.Native.Views.Cloud;
 using Autonogrammer.Native.Views.Hooks;
@@ -21,6 +19,8 @@ using Autonogrammer.Presentation.Settings.Models;
 using Autonogrammer.Presentation.Settings.Privacy;
 using Autonogrammer.Presentation.Settings.Workspaces;
 using Autonogrammer.Presentation.Settings.Worktrees;
+using Avalonia.Automation;
+using Avalonia.Controls;
 using Shouldly;
 using Xunit;
 

@@ -1,5 +1,4 @@
 using System.Collections;
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Harness.AgentLoop.Hooks;
 using Autonogrammer.Harness.AgentLoop.Safety;
 using Autonogrammer.Harness.Mcp.Catalog;
@@ -24,6 +23,7 @@ using Autonogrammer.Workspace;
 using Autonogrammer.Workspace.Checkpoints;
 using Autonogrammer.Workspace.Sets;
 using Autonogrammer.Worktrees;
+using Microsoft.Extensions.Logging;
 using IAboutLauncher = Autonogrammer.Native.Views.IAboutLauncher;
 using IUrlLauncher = Autonogrammer.Native.Views.IUrlLauncher;
 

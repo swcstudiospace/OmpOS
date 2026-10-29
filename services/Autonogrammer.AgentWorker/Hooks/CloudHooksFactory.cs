@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Options;
 using Autonogrammer.AgentWorker.Configuration;
 using Autonogrammer.Harness.Plugins.Hooks;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.AgentWorker.Hooks;
 

@@ -1,9 +1,9 @@
 using System.Net;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Sessions;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

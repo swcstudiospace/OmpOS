@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Contracts.Intents;
 using Autonogrammer.Parser.Recognizers;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

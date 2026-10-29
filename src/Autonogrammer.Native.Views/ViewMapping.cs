@@ -1,4 +1,3 @@
-using Avalonia.Controls;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Native.Views.AgentPanel;
@@ -22,6 +21,7 @@ using Autonogrammer.Presentation.Composer;
 using Autonogrammer.Presentation.Editor;
 using Autonogrammer.Presentation.Kanban;
 using Autonogrammer.Presentation.State;
+using Avalonia.Controls;
 
 namespace Autonogrammer.Native;
 

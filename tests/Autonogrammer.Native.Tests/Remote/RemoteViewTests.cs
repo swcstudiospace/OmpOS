@@ -1,12 +1,12 @@
 using System.ComponentModel;
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.VisualTree;
 using Autonogrammer.Contracts.Environments;
 using Autonogrammer.Native.Tests.Workspace;
 using Autonogrammer.Native.Views.Remote;
 using Autonogrammer.Presentation.Remote;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

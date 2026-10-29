@@ -1,6 +1,6 @@
-using Avalonia.Controls;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Customize;
+using Avalonia.Controls;
 
 namespace Autonogrammer.Native.Views.Settings;
 

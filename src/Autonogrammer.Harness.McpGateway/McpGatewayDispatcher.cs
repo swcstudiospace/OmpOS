@@ -1,7 +1,7 @@
 using System.Text.Json;
+using Autonogrammer.Harness.Mcp;
 using ModelContextProtocol;
 using ModelContextProtocol.Protocol;
-using Autonogrammer.Harness.Mcp;
 
 namespace Autonogrammer.Harness.McpGateway;
 

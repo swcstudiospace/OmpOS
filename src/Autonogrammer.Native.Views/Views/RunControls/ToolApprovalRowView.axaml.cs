@@ -1,9 +1,9 @@
 using System.Diagnostics;
+using Autonogrammer.Presentation.Approvals;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
-using Autonogrammer.Presentation.Approvals;
 
 namespace Autonogrammer.Native.Views.RunControls;
 

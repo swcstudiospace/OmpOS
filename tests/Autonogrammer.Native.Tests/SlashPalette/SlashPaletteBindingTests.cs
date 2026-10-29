@@ -1,7 +1,7 @@
-using Avalonia.Threading;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Presentation.Commands;
+using Avalonia.Threading;
 using Shouldly;
 using Xunit;
 

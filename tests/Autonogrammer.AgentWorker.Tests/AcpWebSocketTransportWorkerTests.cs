@@ -1,9 +1,9 @@
 using System.Runtime.Versioning;
 using System.Text;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.AgentWorker.Bridge;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

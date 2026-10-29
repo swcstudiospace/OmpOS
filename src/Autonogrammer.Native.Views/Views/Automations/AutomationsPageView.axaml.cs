@@ -1,8 +1,8 @@
+using Autonogrammer.Native.Views.AgentPanel;
+using Autonogrammer.Presentation.Automations;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Autonogrammer.Native.Views.AgentPanel;
-using Autonogrammer.Presentation.Automations;
 
 namespace Autonogrammer.Native.Views.Automations;
 

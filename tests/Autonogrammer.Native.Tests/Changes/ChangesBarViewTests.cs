@@ -1,11 +1,11 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Media;
 using Autonogrammer.Native.Tests.Diff;
 using Autonogrammer.Native.Views.Diff;
 using Autonogrammer.Presentation.Changes;
 using Autonogrammer.Presentation.Editor;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Media;
 using Shouldly;
 using Xunit;
 

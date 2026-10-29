@@ -1,4 +1,10 @@
 using System.ComponentModel;
+using Autonogrammer.Harness.Completion;
+using Autonogrammer.Native.Views.AgentPanel;
+using Autonogrammer.Presentation.AgentPanel;
+using Autonogrammer.Presentation.Composer;
+using Autonogrammer.Presentation.Mentions;
+using Autonogrammer.Presentation.Runs;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -6,12 +12,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Autonogrammer.Harness.Completion;
-using Autonogrammer.Native.Views.AgentPanel;
-using Autonogrammer.Presentation.AgentPanel;
-using Autonogrammer.Presentation.Composer;
-using Autonogrammer.Presentation.Mentions;
-using Autonogrammer.Presentation.Runs;
 
 namespace Autonogrammer.Native.Views;
 

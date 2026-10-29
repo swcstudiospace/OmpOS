@@ -1,9 +1,9 @@
 using System.Globalization;
+using Autonogrammer.Workspace;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
-using Autonogrammer.Workspace;
 
 namespace Autonogrammer.Native.Views.Search;
 

@@ -1,8 +1,8 @@
+using Autonogrammer.Native.Views.Workspace;
+using Autonogrammer.Workspace;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views.Workspace;
-using Autonogrammer.Workspace;
 using Shouldly;
 using Xunit;
 

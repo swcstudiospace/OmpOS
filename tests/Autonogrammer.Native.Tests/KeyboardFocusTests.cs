@@ -1,10 +1,10 @@
+using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Media;
-using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Shouldly;
 using Xunit;
 

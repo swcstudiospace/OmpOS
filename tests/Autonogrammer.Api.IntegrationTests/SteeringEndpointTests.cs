@@ -1,11 +1,11 @@
 using System.Net;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.InMemory;
 using Autonogrammer.Sessions;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

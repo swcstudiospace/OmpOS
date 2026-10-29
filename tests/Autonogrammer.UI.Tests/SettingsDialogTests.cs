@@ -1,7 +1,7 @@
-using Bunit;
-using Microsoft.AspNetCore.Components.Web;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.UI.Components.Settings;
+using Bunit;
+using Microsoft.AspNetCore.Components.Web;
 using Shouldly;
 using Xunit;
 

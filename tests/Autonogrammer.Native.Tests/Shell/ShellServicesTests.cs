@@ -1,8 +1,3 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Headless;
-using Avalonia.Input;
 using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Autonogrammer.Native.Tests.Parity;
 using Autonogrammer.Native.Tests.SlashPalette;
@@ -12,6 +7,11 @@ using Autonogrammer.Presentation.Editor;
 using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Workspace.Sets;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Headless;
+using Avalonia.Input;
 using Shouldly;
 using Xunit;
 

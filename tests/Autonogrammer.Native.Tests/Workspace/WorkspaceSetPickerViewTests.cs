@@ -1,10 +1,10 @@
+using Autonogrammer.Native.Tests.Settings;
+using Autonogrammer.Native.Views.Workspace;
+using Autonogrammer.Presentation.Editor;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Tests.Settings;
-using Autonogrammer.Native.Views.Workspace;
-using Autonogrammer.Presentation.Editor;
 using Shouldly;
 using Xunit;
 

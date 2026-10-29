@@ -1,7 +1,5 @@
 using System.Diagnostics;
 using System.Text.Json;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Options;
 using Autonogrammer.Api.Idempotency;
 using Autonogrammer.Api.Metrics;
 using Autonogrammer.Api.Options;
@@ -17,6 +15,8 @@ using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Coordination;
 using Autonogrammer.Parser;
 using Autonogrammer.Sessions;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Endpoints;
 

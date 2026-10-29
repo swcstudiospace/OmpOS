@@ -1,12 +1,12 @@
 using System.Diagnostics;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Styling;
 using Autonogrammer.Native.Agents;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Cloud;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Workspace;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Styling;
 
 namespace Autonogrammer.Native.Settings;
 

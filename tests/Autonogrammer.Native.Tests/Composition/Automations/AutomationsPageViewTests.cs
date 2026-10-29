@@ -1,13 +1,13 @@
 using System.ComponentModel;
-using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.VisualTree;
 using Autonogrammer.Harness.Automations.Tests;
 using Autonogrammer.Native.Composition.Automations;
 using Autonogrammer.Native.Tests.AgentLoop;
 using Autonogrammer.Native.Tests.Workspace;
 using Autonogrammer.Native.Views.Automations;
 using Autonogrammer.Presentation.Automations;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

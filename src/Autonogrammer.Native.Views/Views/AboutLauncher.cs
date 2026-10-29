@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
-using Avalonia.Controls;
 using Autonogrammer.Presentation.About;
+using Avalonia.Controls;
 
 namespace Autonogrammer.Native.Views;
 

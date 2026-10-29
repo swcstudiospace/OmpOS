@@ -1,10 +1,10 @@
+using Autonogrammer.Native.Views.Hooks;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views.Hooks;
 
 namespace Autonogrammer.Native.Tests.Hooks;
 

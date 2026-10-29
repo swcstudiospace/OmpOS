@@ -1,8 +1,8 @@
 using System.Globalization;
+using Autonogrammer.Contracts.Streaming;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
-using Autonogrammer.Contracts.Streaming;
 
 namespace Autonogrammer.Sessions.Postgres.Probe;
 

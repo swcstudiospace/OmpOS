@@ -1,6 +1,6 @@
+using Autonogrammer.Contracts.Ui;
 using Avalonia.Automation;
 using Avalonia.Controls;
-using Autonogrammer.Contracts.Ui;
 
 namespace Autonogrammer.Native.Views.Blocks;
 

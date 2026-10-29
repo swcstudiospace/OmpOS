@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Net;
-using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Sessions.Postgres;
+using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Shouldly;
 using Xunit;
 

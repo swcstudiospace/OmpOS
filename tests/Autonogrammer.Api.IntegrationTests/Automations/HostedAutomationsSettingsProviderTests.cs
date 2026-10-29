@@ -1,9 +1,9 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Automations;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Harness.Automations.Hosted;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

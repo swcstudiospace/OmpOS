@@ -1,8 +1,8 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
-using Microsoft.Extensions.Options;
 using Autonogrammer.Contracts.Providers;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Services.Providers;
 

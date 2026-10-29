@@ -1,7 +1,7 @@
-using Microsoft.Extensions.Options;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.InMemory;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Harness;
 

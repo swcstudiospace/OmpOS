@@ -1,4 +1,3 @@
-using Avalonia.Controls;
 using Autonogrammer.Presentation.Hooks;
 using Autonogrammer.Presentation.Safety;
 using Autonogrammer.Presentation.Settings;
@@ -8,6 +7,7 @@ using Autonogrammer.Presentation.Settings.Models;
 using Autonogrammer.Presentation.Settings.Privacy;
 using Autonogrammer.Presentation.Settings.Workspaces;
 using Autonogrammer.Presentation.Settings.Worktrees;
+using Avalonia.Controls;
 
 namespace Autonogrammer.Native.Views.Settings;
 

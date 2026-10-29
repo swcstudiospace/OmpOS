@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Harness.Plugins;
 using Autonogrammer.Harness.Plugins.Hooks;
+using Microsoft.Extensions.Logging;
 
 namespace Autonogrammer.Harness.AgentLoop.Hooks;
 

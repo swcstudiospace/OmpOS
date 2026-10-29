@@ -1,11 +1,11 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.VisualTree;
 using Autonogrammer.Harness.Mcp.Catalog;
 using Autonogrammer.Harness.Mcp.Config;
 using Autonogrammer.Native.Tests.Workspace;
 using Autonogrammer.Native.Views.Mcp;
 using Autonogrammer.Presentation.Mcp;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

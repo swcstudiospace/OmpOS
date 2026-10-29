@@ -1,9 +1,9 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
 using Autonogrammer.Native.Tests.Workspace;
 using Autonogrammer.Native.Views.Settings;
 using Autonogrammer.Native.Views.Workspace;
 using Autonogrammer.Presentation.Settings.Workspaces;
+using Avalonia.Automation;
+using Avalonia.Controls;
 using Shouldly;
 using Xunit;
 

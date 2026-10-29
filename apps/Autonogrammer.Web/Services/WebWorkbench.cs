@@ -1,4 +1,3 @@
-using Microsoft.JSInterop;
 using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Changes;
@@ -6,6 +5,7 @@ using Autonogrammer.Presentation.Kanban;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Terminal;
 using Autonogrammer.Web.Services.Settings;
+using Microsoft.JSInterop;
 
 namespace Autonogrammer.Web.Services;
 

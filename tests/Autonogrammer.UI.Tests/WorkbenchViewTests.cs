@@ -1,4 +1,3 @@
-using Bunit;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Presentation.AgentPanel;
@@ -7,6 +6,7 @@ using Autonogrammer.UI.Components.Settings;
 using Autonogrammer.UI.Components.Shell;
 using Autonogrammer.UI.Components.Thread;
 using Autonogrammer.UI.Tests.Fakes;
+using Bunit;
 using Shouldly;
 using Xunit;
 

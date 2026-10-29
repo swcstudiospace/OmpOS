@@ -1,7 +1,7 @@
+using Autonogrammer.Api.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Autonogrammer.Api.Options;
 using Shouldly;
 using Xunit;
 

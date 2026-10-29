@@ -2,7 +2,6 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using Avalonia.Threading;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Contracts.Environments;
 using Autonogrammer.Contracts.Streaming;
@@ -26,6 +25,7 @@ using Autonogrammer.Presentation.Runs;
 using Autonogrammer.Presentation.SideChats;
 using Autonogrammer.Presentation.State;
 using Autonogrammer.Sessions;
+using Avalonia.Threading;
 
 namespace Autonogrammer.Native.Views.Sessions;
 

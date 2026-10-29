@@ -1,11 +1,11 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using Autonogrammer.Presentation.Editor;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
-using Autonogrammer.Presentation.Editor;
 
 namespace Autonogrammer.Native.Views.Explorer;
 

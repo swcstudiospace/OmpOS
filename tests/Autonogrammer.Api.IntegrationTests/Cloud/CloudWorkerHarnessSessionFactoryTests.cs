@@ -1,7 +1,7 @@
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Cloud;
 using Autonogrammer.Api.Cloud.Options;
 using Autonogrammer.Harness.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

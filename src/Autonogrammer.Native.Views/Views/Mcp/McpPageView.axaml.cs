@@ -1,9 +1,9 @@
+using Autonogrammer.Presentation.Mcp;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Autonogrammer.Presentation.Mcp;
 
 namespace Autonogrammer.Native.Views.Mcp;
 

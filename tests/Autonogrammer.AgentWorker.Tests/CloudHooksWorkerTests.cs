@@ -3,9 +3,9 @@ using System.Net.WebSockets;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.AgentWorker.Bridge;
 using Autonogrammer.Harness.Acp;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

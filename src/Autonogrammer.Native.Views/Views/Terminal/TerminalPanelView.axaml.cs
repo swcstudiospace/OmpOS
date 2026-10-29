@@ -1,7 +1,7 @@
+using Autonogrammer.Harness.Terminal;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
-using Autonogrammer.Harness.Terminal;
 
 namespace Autonogrammer.Native.Views.Terminal;
 

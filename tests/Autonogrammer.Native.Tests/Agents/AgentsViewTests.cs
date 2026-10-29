@@ -1,9 +1,9 @@
+using Autonogrammer.Native.Views.Agents;
+using Autonogrammer.Presentation.Agents;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views.Agents;
-using Autonogrammer.Presentation.Agents;
 using Shouldly;
 using Xunit;
 using Status = Autonogrammer.Presentation.Agents.AgentRunStatus;

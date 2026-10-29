@@ -1,8 +1,8 @@
-using Microsoft.Extensions.Options;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Services.WorkspaceSettings;
 using Autonogrammer.Contracts.WorkspaceSettings;
 using Autonogrammer.Harness.Automations.Hosted;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Automations;
 

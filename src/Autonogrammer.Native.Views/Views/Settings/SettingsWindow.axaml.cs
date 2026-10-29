@@ -1,12 +1,12 @@
 using System.ComponentModel;
+using Autonogrammer.Native.Views.AgentPanel;
+using Autonogrammer.Presentation.Settings;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Threading;
-using Autonogrammer.Native.Views.AgentPanel;
-using Autonogrammer.Presentation.Settings;
 
 namespace Autonogrammer.Native.Views.Settings;
 

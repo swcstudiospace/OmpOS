@@ -1,7 +1,4 @@
 using System.Text.Json;
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.VisualTree;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Native.Engine;
@@ -10,6 +7,9 @@ using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.State;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.VisualTree;
 
 namespace Autonogrammer.Native.Tests.Changes;
 

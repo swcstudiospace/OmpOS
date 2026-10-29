@@ -1,9 +1,9 @@
 using System.Text.Json;
 using System.Threading.Channels;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.Plugins.Hooks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Autonogrammer.Harness.AgentLoop.Hooks;
 

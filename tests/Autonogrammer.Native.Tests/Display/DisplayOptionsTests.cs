@@ -1,9 +1,3 @@
-using Avalonia;
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Input.Platform;
-using Avalonia.Interactivity;
-using Avalonia.VisualTree;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Native.Tests.AgentPanel.Views;
@@ -12,6 +6,12 @@ using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Native.Views.Blocks;
 using Autonogrammer.Native.Views.Display;
 using Autonogrammer.Presentation.Commands.Handlers;
+using Avalonia;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

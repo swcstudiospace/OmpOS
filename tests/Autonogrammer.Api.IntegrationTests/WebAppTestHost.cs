@@ -2,12 +2,12 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.InMemory;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 
 namespace Autonogrammer.Api.IntegrationTests;

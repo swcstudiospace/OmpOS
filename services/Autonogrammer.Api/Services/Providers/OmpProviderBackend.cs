@@ -1,8 +1,8 @@
-using Microsoft.Extensions.Options;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Harness.OmpConfig;
 using Autonogrammer.Harness.OmpLauncher;
 using Autonogrammer.Harness.Secrets;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Services.Providers;
 

@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using System.Runtime.Versioning;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.AgentWorker.Bridge;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

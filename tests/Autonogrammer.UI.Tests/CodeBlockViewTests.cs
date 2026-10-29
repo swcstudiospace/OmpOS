@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
+using Autonogrammer.Contracts.Ui;
+using Autonogrammer.UI.Components.Blocks;
 using Bunit;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
-using Autonogrammer.Contracts.Ui;
-using Autonogrammer.UI.Components.Blocks;
 using Shouldly;
 using Xunit;
 

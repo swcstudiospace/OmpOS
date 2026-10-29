@@ -1,11 +1,11 @@
 using System.Diagnostics;
+using Autonogrammer.Native.Agents;
+using Autonogrammer.Native.Settings;
+using Autonogrammer.Native.Views.Branding;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Autonogrammer.Native.Agents;
-using Autonogrammer.Native.Settings;
-using Autonogrammer.Native.Views.Branding;
 
 namespace Autonogrammer.Native;
 

@@ -1,10 +1,10 @@
 using System.Net;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Controls;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.InMemory;
 using Autonogrammer.Sessions;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

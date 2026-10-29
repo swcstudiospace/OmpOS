@@ -1,6 +1,6 @@
+using Autonogrammer.UI.Components;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
-using Autonogrammer.UI.Components;
 
 namespace Autonogrammer.UI.Tests;
 

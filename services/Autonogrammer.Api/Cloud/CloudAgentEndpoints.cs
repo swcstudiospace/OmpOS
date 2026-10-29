@@ -3,8 +3,6 @@ using System.Globalization;
 using System.Net.ServerSentEvents;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Options;
 using Autonogrammer.Api.Cloud.Options;
 using Autonogrammer.Api.Endpoints;
 using Autonogrammer.Api.Idempotency;
@@ -15,6 +13,8 @@ using Autonogrammer.Api.Sse;
 using Autonogrammer.Api.Telemetry;
 using Autonogrammer.Contracts.Cloud;
 using Autonogrammer.Contracts.Serialization;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Cloud;
 

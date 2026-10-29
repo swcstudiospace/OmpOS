@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Mvc;
 using Autonogrammer.Api.Endpoints;
 using Autonogrammer.Contracts.Sessions;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Autonogrammer.Api.Serialization;
 

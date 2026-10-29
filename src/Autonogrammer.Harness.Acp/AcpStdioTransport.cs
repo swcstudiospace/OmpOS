@@ -4,9 +4,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
+using Autonogrammer.Harness.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Autonogrammer.Harness.Abstractions;
 
 namespace Autonogrammer.Harness.Acp;
 

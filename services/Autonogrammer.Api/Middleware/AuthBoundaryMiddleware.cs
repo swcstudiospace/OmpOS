@@ -1,6 +1,6 @@
 using System.Security.Claims;
-using Microsoft.Net.Http.Headers;
 using Autonogrammer.Api.Security;
+using Microsoft.Net.Http.Headers;
 
 namespace Autonogrammer.Api.Middleware;
 

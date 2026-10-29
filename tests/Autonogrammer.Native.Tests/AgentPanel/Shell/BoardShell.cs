@@ -1,10 +1,10 @@
+using Autonogrammer.Native.Tests.AgentPanel.Views;
+using Autonogrammer.Native.Views.Kanban;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Tests.AgentPanel.Views;
-using Autonogrammer.Native.Views.Kanban;
 
 namespace Autonogrammer.Native.Tests.AgentPanel.Shell;
 

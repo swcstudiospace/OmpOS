@@ -1,8 +1,8 @@
 using System.Xml.Linq;
-using Avalonia.Styling;
 using Autonogrammer.Native.Settings;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Settings;
+using Avalonia.Styling;
 using Shouldly;
 using Xunit;
 

@@ -1,6 +1,6 @@
-using Avalonia.Input;
 using Autonogrammer.Native.Views.Shortcuts;
 using Autonogrammer.Presentation.Settings;
+using Avalonia.Input;
 
 namespace Autonogrammer.Native.Settings;
 

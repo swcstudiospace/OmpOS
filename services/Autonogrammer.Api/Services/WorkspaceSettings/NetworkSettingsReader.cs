@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Options;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Contracts.WorkspaceSettings;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Services.WorkspaceSettings;
 

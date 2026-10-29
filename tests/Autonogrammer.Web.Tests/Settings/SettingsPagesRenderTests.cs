@@ -1,7 +1,7 @@
+using Autonogrammer.UI.Components.Settings;
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
-using Autonogrammer.UI.Components.Settings;
 using Shouldly;
 using Xunit;
 

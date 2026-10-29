@@ -1,5 +1,4 @@
 using System.Globalization;
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Contracts.Environments;
 using Autonogrammer.Harness.Acp;
@@ -31,6 +30,7 @@ using Autonogrammer.Presentation.Mentions;
 using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.SideChats;
+using Microsoft.Extensions.Logging;
 
 namespace Autonogrammer.Native.Agents;
 

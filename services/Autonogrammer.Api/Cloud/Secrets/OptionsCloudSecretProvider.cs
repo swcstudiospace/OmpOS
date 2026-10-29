@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Options;
 using Autonogrammer.Api.Cloud.Options;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Cloud;
 

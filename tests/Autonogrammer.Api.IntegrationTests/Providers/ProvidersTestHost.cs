@@ -1,6 +1,6 @@
+using Autonogrammer.Api.Services.Providers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Autonogrammer.Api.Services.Providers;
 
 namespace Autonogrammer.Api.IntegrationTests.Providers;
 

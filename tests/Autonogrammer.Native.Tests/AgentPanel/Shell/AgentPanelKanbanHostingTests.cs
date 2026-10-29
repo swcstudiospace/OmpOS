@@ -1,9 +1,9 @@
-using Avalonia.Controls;
-using Avalonia.Input;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Tests.AgentPanel.Views;
 using Autonogrammer.Native.Tests.Terminal;
 using Autonogrammer.Native.Views;
+using Avalonia.Controls;
+using Avalonia.Input;
 using Shouldly;
 using Xunit;
 

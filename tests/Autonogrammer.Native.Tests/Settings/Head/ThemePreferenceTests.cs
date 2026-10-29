@@ -1,8 +1,3 @@
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Media;
-using Avalonia.Styling;
-using Avalonia.VisualTree;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Settings;
@@ -10,6 +5,11 @@ using Autonogrammer.Native.Tests.AgentLoop;
 using Autonogrammer.Native.Views.Blocks;
 using Autonogrammer.Native.Views.Terminal;
 using Autonogrammer.Presentation;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Media;
+using Avalonia.Styling;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

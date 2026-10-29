@@ -1,4 +1,3 @@
-using Avalonia.Input;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.AgentLoop.Steering;
@@ -6,6 +5,7 @@ using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Tests.Parity;
 using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Presentation.AgentPanel;
+using Avalonia.Input;
 using Shouldly;
 using Xunit;
 

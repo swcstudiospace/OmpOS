@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
-using Microsoft.Extensions.Options;
 using Autonogrammer.AgentWorker.Configuration;
 using Autonogrammer.AgentWorker.Hooks;
 using Autonogrammer.AgentWorker.Security;
 using Autonogrammer.Harness.Acp;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.AgentWorker.Bridge;
 

@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Coordination.Dragonfly;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 using StackExchange.Redis;
 using Xunit;

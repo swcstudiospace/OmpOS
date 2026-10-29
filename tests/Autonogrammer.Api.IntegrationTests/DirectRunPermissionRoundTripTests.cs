@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Channels;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Harness;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Contracts.Errors;
@@ -15,6 +14,7 @@ using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Sessions;
 using Autonogrammer.Workflows;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

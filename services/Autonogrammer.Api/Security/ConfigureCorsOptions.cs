@@ -1,6 +1,6 @@
+using Autonogrammer.Api.Options;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.Options;
-using Autonogrammer.Api.Options;
 
 namespace Autonogrammer.Api.Security;
 

@@ -1,5 +1,5 @@
-using Npgsql;
 using Autonogrammer.Contracts.Cloud;
+using Npgsql;
 using Shouldly;
 using Xunit;
 

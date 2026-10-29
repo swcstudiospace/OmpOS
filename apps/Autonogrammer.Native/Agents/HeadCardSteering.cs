@@ -1,11 +1,11 @@
 using System.Globalization;
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.AgentLoop.Steering;
 using Autonogrammer.Native.Views.Kanban;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Kanban;
+using Microsoft.Extensions.Logging;
 
 namespace Autonogrammer.Native.Agents;
 

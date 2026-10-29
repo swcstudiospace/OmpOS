@@ -1,9 +1,9 @@
 using System.Net.Http.Headers;
-using Microsoft.Extensions.Options;
 using Autonogrammer.AgentWorker.Configuration;
 using Autonogrammer.AgentWorker.Hooks;
 using Autonogrammer.AgentWorker.Security;
 using Autonogrammer.Harness.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.AgentWorker.Bridge;
 

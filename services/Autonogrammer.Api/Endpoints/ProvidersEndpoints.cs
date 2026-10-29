@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Options;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Services;
@@ -7,6 +5,8 @@ using Autonogrammer.Api.Services.Providers;
 using Autonogrammer.Contracts.Providers;
 using Autonogrammer.Harness.OmpConfig;
 using Autonogrammer.Harness.Providers;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Options;
 using ProviderKind = Autonogrammer.Contracts.Providers.ProviderKind;
 
 namespace Autonogrammer.Api.Endpoints;

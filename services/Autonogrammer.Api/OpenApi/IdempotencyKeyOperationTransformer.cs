@@ -1,6 +1,6 @@
+using Autonogrammer.Api.Idempotency;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
-using Autonogrammer.Api.Idempotency;
 
 namespace Autonogrammer.Api.OpenApi;
 

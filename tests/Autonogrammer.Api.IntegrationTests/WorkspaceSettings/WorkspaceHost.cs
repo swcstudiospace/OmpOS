@@ -1,9 +1,9 @@
 using System.Net;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Services;
 using Autonogrammer.Api.Services.WorkspaceSettings;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Plugins.Hooks;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace Autonogrammer.Api.IntegrationTests.WorkspaceSettings;

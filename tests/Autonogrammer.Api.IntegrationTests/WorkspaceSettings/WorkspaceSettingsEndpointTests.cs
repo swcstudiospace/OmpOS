@@ -1,9 +1,9 @@
 using System.Net;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Services;
 using Autonogrammer.Api.Services.WorkspaceSettings;
 using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Contracts.WorkspaceSettings;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

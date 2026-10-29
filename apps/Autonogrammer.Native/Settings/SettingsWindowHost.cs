@@ -1,5 +1,5 @@
-using Avalonia.Controls;
 using Autonogrammer.Presentation.Settings;
+using Avalonia.Controls;
 
 namespace Autonogrammer.Native.Settings;
 

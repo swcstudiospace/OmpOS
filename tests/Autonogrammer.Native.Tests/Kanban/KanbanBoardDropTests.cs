@@ -1,6 +1,6 @@
+using Autonogrammer.Presentation.Kanban;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using Autonogrammer.Presentation.Kanban;
 using Shouldly;
 using Xunit;
 

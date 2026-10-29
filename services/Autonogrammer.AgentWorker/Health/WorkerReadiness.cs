@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Options;
 using Autonogrammer.AgentWorker.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.AgentWorker.Health;
 

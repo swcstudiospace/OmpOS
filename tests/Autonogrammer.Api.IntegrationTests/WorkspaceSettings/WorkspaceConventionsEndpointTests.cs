@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Services.WorkspaceSettings;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

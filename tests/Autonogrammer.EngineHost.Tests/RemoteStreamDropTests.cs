@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text;
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Harness.Abstractions;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit;
 

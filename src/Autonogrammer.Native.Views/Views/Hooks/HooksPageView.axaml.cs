@@ -1,11 +1,11 @@
 using System.ComponentModel;
+using Autonogrammer.Native.Views.Settings;
+using Autonogrammer.Presentation.Hooks;
+using Autonogrammer.Presentation.Settings;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
-using Autonogrammer.Native.Views.Settings;
-using Autonogrammer.Presentation.Hooks;
-using Autonogrammer.Presentation.Settings;
 
 namespace Autonogrammer.Native.Views.Hooks;
 

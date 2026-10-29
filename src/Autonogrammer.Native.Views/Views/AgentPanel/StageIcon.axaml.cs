@@ -1,6 +1,6 @@
+using Autonogrammer.Presentation.AgentPanel;
 using Avalonia;
 using Avalonia.Controls;
-using Autonogrammer.Presentation.AgentPanel;
 
 namespace Autonogrammer.Native.Views.AgentPanel;
 

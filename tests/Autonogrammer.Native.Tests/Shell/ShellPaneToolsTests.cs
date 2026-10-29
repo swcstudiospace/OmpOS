@@ -1,8 +1,4 @@
 using System.Text.Json;
-using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Headless;
-using Avalonia.Input;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Autonogrammer.Native.Tests.Checkpoints;
@@ -16,6 +12,10 @@ using Autonogrammer.Presentation.Hooks;
 using Autonogrammer.Presentation.Queue;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.State;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Headless;
+using Avalonia.Input;
 using Shouldly;
 using Xunit;
 

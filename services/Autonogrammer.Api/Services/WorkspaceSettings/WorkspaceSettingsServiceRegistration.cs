@@ -1,6 +1,6 @@
+using Autonogrammer.Contracts.WorkspaceSettings;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Autonogrammer.Contracts.WorkspaceSettings;
 
 namespace Autonogrammer.Api.Services.WorkspaceSettings;
 

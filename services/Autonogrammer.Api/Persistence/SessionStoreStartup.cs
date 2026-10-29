@@ -1,7 +1,7 @@
-using Microsoft.Extensions.Options;
-using Npgsql;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Sessions.Postgres;
+using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace Autonogrammer.Api.Persistence;
 

@@ -1,11 +1,11 @@
 using System.Text;
 using System.Text.Json;
-using Avalonia.Automation;
-using Avalonia.Input;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.GenUi;
 using Autonogrammer.Native.Views.Export;
 using Autonogrammer.Presentation.Export;
+using Avalonia.Automation;
+using Avalonia.Input;
 using Shouldly;
 using Xunit;
 

@@ -1,3 +1,4 @@
+using Autonogrammer.Native.Views.Export;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -5,7 +6,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views.Export;
 using Xunit;
 
 namespace Autonogrammer.Native.Tests.Export;

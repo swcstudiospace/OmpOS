@@ -1,8 +1,8 @@
-using Bunit;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Presentation.Kanban;
 using Autonogrammer.Presentation.Terminal;
 using Autonogrammer.UI.Components.Terminal;
+using Bunit;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

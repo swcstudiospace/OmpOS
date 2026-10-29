@@ -1,6 +1,6 @@
-using Avalonia.Input;
 using Autonogrammer.Native.Tests.Settings;
 using Autonogrammer.Presentation.Settings;
+using Avalonia.Input;
 using Shouldly;
 
 namespace Autonogrammer.Native.Tests.Shortcuts;

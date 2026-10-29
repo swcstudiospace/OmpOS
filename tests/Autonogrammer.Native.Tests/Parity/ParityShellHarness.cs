@@ -1,4 +1,3 @@
-using Avalonia.Controls;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Tests.RunControls;
@@ -6,6 +5,7 @@ using Autonogrammer.Native.Views;
 using Autonogrammer.Parity.Support;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.State;
+using Avalonia.Controls;
 
 namespace Autonogrammer.Native.Tests.Parity;
 

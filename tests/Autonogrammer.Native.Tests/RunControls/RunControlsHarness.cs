@@ -1,12 +1,12 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
 using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Autonogrammer.Native.Views.RunControls;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Approvals;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace Autonogrammer.Native.Tests.RunControls;
 

@@ -1,11 +1,11 @@
+using Autonogrammer.Native.Views.AgentPanel;
+using Autonogrammer.Presentation.Kanban;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views.AgentPanel;
-using Autonogrammer.Presentation.Kanban;
 
 namespace Autonogrammer.Native.Views.Kanban;
 

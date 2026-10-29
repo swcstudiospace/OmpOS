@@ -1,7 +1,7 @@
-using Avalonia.Controls;
-using Avalonia.VisualTree;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Presentation.State;
+using Avalonia.Controls;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

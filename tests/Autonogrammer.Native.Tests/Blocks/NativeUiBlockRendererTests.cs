@@ -1,4 +1,8 @@
 using System.Text.Json;
+using Autonogrammer.Contracts.Streaming;
+using Autonogrammer.Contracts.Ui;
+using Autonogrammer.Native.Views;
+using Autonogrammer.Presentation.State;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -7,10 +11,6 @@ using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.VisualTree;
-using Autonogrammer.Contracts.Streaming;
-using Autonogrammer.Contracts.Ui;
-using Autonogrammer.Native.Views;
-using Autonogrammer.Presentation.State;
 using Shouldly;
 using Xunit;
 

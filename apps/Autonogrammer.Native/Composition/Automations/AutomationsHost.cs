@@ -1,8 +1,8 @@
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Harness.Automations.Hosted;
 using Autonogrammer.Presentation.Automations;
 using Autonogrammer.Presentation.Cloud;
 using Autonogrammer.Workspace;
+using Microsoft.Extensions.Logging;
 
 namespace Autonogrammer.Native.Composition.Automations;
 

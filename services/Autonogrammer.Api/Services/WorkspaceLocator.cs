@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Options;
 using Autonogrammer.Worktrees;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Services;
 

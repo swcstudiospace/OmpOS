@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Contracts.Sandboxes;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Streaming;
@@ -8,6 +7,7 @@ using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Sandbox.Abstractions;
 using Autonogrammer.Sessions;
 using Autonogrammer.Workflows;
+using Microsoft.Extensions.Logging;
 
 namespace Autonogrammer.SessionRuns;
 

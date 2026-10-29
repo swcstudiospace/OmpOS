@@ -1,9 +1,9 @@
 using System.Net;
 using System.Threading.RateLimiting;
+using Autonogrammer.Api.Endpoints;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
-using Autonogrammer.Api.Endpoints;
 using Shouldly;
 using Xunit;
 

@@ -1,7 +1,7 @@
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Contracts.Controls;
 using Autonogrammer.Harness.Abstractions;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Autonogrammer.Api.Services;
 

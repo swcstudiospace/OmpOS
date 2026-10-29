@@ -1,4 +1,3 @@
-using Avalonia.Threading;
 using Autonogrammer.Native.Composition.Automations;
 using Autonogrammer.Native.Logging;
 using Autonogrammer.Native.Settings;
@@ -6,6 +5,7 @@ using Autonogrammer.Native.Settings.Models;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Kanban;
 using Autonogrammer.Presentation.Settings.Models;
+using Avalonia.Threading;
 
 namespace Autonogrammer.Native.Agents;
 

@@ -1,9 +1,9 @@
+using Autonogrammer.Native.Tests.AgentPanel.Views;
+using Autonogrammer.Presentation;
 using Avalonia.Animation;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Autonogrammer.Native.Tests.AgentPanel.Views;
-using Autonogrammer.Presentation;
 using Shouldly;
 using Xunit;
 

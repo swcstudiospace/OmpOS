@@ -1,7 +1,7 @@
+using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Shouldly;
 using Xunit;
 

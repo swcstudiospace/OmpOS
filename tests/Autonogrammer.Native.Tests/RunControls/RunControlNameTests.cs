@@ -1,8 +1,8 @@
+using Autonogrammer.Presentation.Approvals;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using Autonogrammer.Presentation.Approvals;
 using Shouldly;
 using Xunit;
 

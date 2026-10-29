@@ -1,3 +1,5 @@
+using Autonogrammer.Harness.Terminal;
+using Autonogrammer.Native.Views.Terminal;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -6,8 +8,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Iciclecreek.Terminal;
-using Autonogrammer.Harness.Terminal;
-using Autonogrammer.Native.Views.Terminal;
 using Shouldly;
 using Xunit;
 

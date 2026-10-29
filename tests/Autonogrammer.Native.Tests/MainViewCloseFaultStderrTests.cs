@@ -1,9 +1,9 @@
 using System.Diagnostics;
-using Avalonia.Controls;
 using Autonogrammer.Harness.Mcp;
 using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Autonogrammer.Native.Views.Mcp;
 using Autonogrammer.Presentation;
+using Avalonia.Controls;
 using Shouldly;
 using Xunit;
 

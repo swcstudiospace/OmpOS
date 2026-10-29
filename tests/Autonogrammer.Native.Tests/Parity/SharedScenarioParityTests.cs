@@ -1,14 +1,14 @@
 using System.Text;
+using Autonogrammer.Native.Views;
+using Autonogrammer.Native.Views.Blocks;
+using Autonogrammer.Parity.Support;
+using Autonogrammer.Presentation.State;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Headless;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views;
-using Autonogrammer.Native.Views.Blocks;
-using Autonogrammer.Parity.Support;
-using Autonogrammer.Presentation.State;
 using Shouldly;
 using Xunit;
 

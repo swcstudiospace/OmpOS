@@ -1,10 +1,10 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
 using Autonogrammer.Native.Views.Settings;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Customize;
 using Autonogrammer.Presentation.Settings.Models;
+using Avalonia.Automation;
+using Avalonia.Controls;
 using Shouldly;
 using Xunit;
 

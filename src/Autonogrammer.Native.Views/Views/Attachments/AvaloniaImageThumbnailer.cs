@@ -1,5 +1,5 @@
-using Avalonia.Media.Imaging;
 using Autonogrammer.Presentation.Composer.Attachments;
+using Avalonia.Media.Imaging;
 
 namespace Autonogrammer.Native.Views.Attachments;
 

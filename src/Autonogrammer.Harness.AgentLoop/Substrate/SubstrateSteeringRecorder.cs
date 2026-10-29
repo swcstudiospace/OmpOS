@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Autonogrammer.Contracts.Agents;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Autonogrammer.Contracts.Agents;
 
 namespace Autonogrammer.Harness.AgentLoop.Substrate;
 

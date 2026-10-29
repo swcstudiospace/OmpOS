@@ -1,9 +1,9 @@
-using Bunit;
-using Microsoft.AspNetCore.Components.Web;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Presentation.Changes;
 using Autonogrammer.UI.Components.Changes;
 using Autonogrammer.UI.Tests.Fakes;
+using Bunit;
+using Microsoft.AspNetCore.Components.Web;
 using Shouldly;
 using Xunit;
 

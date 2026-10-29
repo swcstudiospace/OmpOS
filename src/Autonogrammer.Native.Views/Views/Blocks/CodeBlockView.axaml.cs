@@ -1,10 +1,10 @@
 using System.Globalization;
-using Avalonia.Controls;
-using Avalonia.Input.Platform;
-using Avalonia.Interactivity;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Native.Views.Display;
 using Autonogrammer.Presentation.Commands.Handlers;
+using Avalonia.Controls;
+using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
 
 namespace Autonogrammer.Native.Views.Blocks;
 

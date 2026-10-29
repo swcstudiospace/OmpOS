@@ -1,6 +1,6 @@
-using Avalonia.Controls;
 using Autonogrammer.Native.Tests.Settings;
 using Autonogrammer.Native.Views.Branding;
+using Avalonia.Controls;
 using Shouldly;
 using Xunit;
 

@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Http.HttpResults;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Services.WorkspaceSettings;
 using Autonogrammer.Contracts.WorkspaceSettings;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Autonogrammer.Api.Endpoints;
 

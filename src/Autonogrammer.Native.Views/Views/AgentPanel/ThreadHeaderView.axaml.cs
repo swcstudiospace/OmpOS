@@ -1,9 +1,9 @@
-using Avalonia;
-using Avalonia.Automation;
-using Avalonia.Controls;
 using Autonogrammer.Native.Views.Display;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Commands.Handlers;
+using Avalonia;
+using Avalonia.Automation;
+using Avalonia.Controls;
 
 namespace Autonogrammer.Native.Views.AgentPanel;
 

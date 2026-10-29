@@ -2,9 +2,9 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.InMemory;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

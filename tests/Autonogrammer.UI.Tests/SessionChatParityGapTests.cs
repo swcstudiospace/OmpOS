@@ -1,5 +1,3 @@
-using Bunit;
-using Microsoft.AspNetCore.Components;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.GenUi;
@@ -7,6 +5,8 @@ using Autonogrammer.Parity.Support;
 using Autonogrammer.Presentation.State;
 using Autonogrammer.UI.Components;
 using Autonogrammer.UI.Components.Blocks;
+using Bunit;
+using Microsoft.AspNetCore.Components;
 using Shouldly;
 using Xunit;
 

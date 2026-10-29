@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using Autonogrammer.Native.Views.AgentPanel;
+using Autonogrammer.Presentation.SideChats;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -7,8 +9,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views.AgentPanel;
-using Autonogrammer.Presentation.SideChats;
 
 namespace Autonogrammer.Native.Views.SideChats;
 

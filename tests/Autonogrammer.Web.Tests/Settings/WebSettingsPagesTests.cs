@@ -1,11 +1,11 @@
-using Bunit;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.JSInterop;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Customize;
 using Autonogrammer.Presentation.Settings.Models;
 using Autonogrammer.UI.Components.Settings;
 using Autonogrammer.Web.Services.Settings;
+using Bunit;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.JSInterop;
 using Shouldly;
 using Xunit;
 

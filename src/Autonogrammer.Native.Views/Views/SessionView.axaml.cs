@@ -1,8 +1,4 @@
 using System.ComponentModel;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.Threading;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.GenUi;
 using Autonogrammer.Native.Views.AgentPanel;
@@ -10,6 +6,10 @@ using Autonogrammer.Native.Views.Blocks;
 using Autonogrammer.Native.Views.Hooks;
 using Autonogrammer.Presentation.Hooks;
 using Autonogrammer.Presentation.State;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.Threading;
 
 namespace Autonogrammer.Native.Views;
 

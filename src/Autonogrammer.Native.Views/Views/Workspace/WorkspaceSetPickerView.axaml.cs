@@ -1,11 +1,11 @@
 using System.Text;
+using Autonogrammer.Presentation.Editor;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Autonogrammer.Presentation.Editor;
 
 namespace Autonogrammer.Native.Views.Workspace;
 

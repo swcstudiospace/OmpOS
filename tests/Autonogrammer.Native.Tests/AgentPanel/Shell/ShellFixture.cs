@@ -1,4 +1,3 @@
-using Avalonia.Controls;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Tests.Terminal;
 using Autonogrammer.Native.Views.Sessions;
@@ -6,6 +5,7 @@ using Autonogrammer.Native.Views.Shell;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Kanban;
+using Avalonia.Controls;
 
 namespace Autonogrammer.Native.Tests.AgentPanel.Shell;
 

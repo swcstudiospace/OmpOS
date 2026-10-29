@@ -1,6 +1,6 @@
+using Autonogrammer.Presentation.Commands.Handlers;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
-using Autonogrammer.Presentation.Commands.Handlers;
 
 namespace Autonogrammer.Native.Views.Shell;
 

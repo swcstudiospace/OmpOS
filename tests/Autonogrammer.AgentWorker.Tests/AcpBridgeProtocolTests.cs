@@ -4,8 +4,8 @@ using System.Net.WebSockets;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.AgentWorker.Bridge;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

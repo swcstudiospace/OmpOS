@@ -1,11 +1,11 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Interactivity;
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Native.Views.Settings;
 using Autonogrammer.Presentation.Safety;
 using Autonogrammer.Presentation.Settings;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 
 namespace Autonogrammer.Native.Views.Safety;
 

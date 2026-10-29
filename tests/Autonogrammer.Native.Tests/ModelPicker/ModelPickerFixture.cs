@@ -1,10 +1,10 @@
-using Avalonia.Controls;
-using Avalonia.Layout;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Native.Tests.AgentPanel.Views;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Presentation.Composer;
+using Avalonia.Controls;
+using Avalonia.Layout;
 
 namespace Autonogrammer.Native.Tests.ModelPicker;
 

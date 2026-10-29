@@ -1,12 +1,12 @@
 using System.Text.Json;
+using Autonogrammer.Contracts.Streaming;
+using Autonogrammer.Presentation.Chats;
+using Autonogrammer.Presentation.State;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Autonogrammer.Contracts.Streaming;
-using Autonogrammer.Presentation.Chats;
-using Autonogrammer.Presentation.State;
 using Shouldly;
 using Xunit;
 

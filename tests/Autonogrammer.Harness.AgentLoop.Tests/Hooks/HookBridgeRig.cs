@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Harness.AgentLoop.Hooks;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Autonogrammer.Harness.AgentLoop.Tests.Hooks;

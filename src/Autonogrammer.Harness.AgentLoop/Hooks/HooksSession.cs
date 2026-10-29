@@ -1,8 +1,8 @@
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Launch;
 using Autonogrammer.Harness.Plugins.Hooks;
+using Microsoft.Extensions.Logging;
 
 namespace Autonogrammer.Harness.AgentLoop.Hooks;
 

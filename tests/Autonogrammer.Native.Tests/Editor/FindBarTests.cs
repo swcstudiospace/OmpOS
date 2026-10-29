@@ -1,8 +1,8 @@
 using System.Diagnostics;
+using Autonogrammer.Native.Views.Editor;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Autonogrammer.Native.Views.Editor;
 using Shouldly;
 using Xunit;
 

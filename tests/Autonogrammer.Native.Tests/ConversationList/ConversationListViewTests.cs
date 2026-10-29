@@ -1,9 +1,9 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.VisualTree;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Presentation.Components;
 using Autonogrammer.Presentation.State;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

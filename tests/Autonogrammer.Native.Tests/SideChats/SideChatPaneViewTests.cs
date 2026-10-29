@@ -1,10 +1,10 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Input;
 using Autonogrammer.Native.Tests.Settings;
 using Autonogrammer.Native.Views.SideChats;
 using Autonogrammer.Presentation.Chats;
 using Autonogrammer.Presentation.SideChats;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Input;
 using Shouldly;
 using Xunit;
 

@@ -1,6 +1,6 @@
+using Autonogrammer.Native.Views.Sessions;
 using Avalonia.Controls;
 using Avalonia.Threading;
-using Autonogrammer.Native.Views.Sessions;
 
 namespace Autonogrammer.Native.Tests.AgentPanel.Shell;
 

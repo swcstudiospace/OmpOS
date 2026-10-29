@@ -1,8 +1,8 @@
 using System.Security.Cryptography;
-using Microsoft.IdentityModel.JsonWebTokens;
-using Microsoft.IdentityModel.Tokens;
 using Autonogrammer.Api.Cloud;
 using Autonogrammer.Api.Cloud.Options;
+using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Tokens;
 using Shouldly;
 using Xunit;
 

@@ -1,10 +1,3 @@
-using Avalonia;
-using Avalonia.Animation;
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Media;
-using Avalonia.VisualTree;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Harness.AgentLoop.Steering;
 using Autonogrammer.Native.Tests.AgentPanel.Views;
@@ -13,6 +6,13 @@ using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Native.Views.Terminal;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.AgentPanel;
+using Avalonia;
+using Avalonia.Animation;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Media;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

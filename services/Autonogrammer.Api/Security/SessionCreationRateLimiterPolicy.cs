@@ -1,7 +1,7 @@
 using System.Threading.RateLimiting;
+using Autonogrammer.Api.Options;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
-using Autonogrammer.Api.Options;
 
 namespace Autonogrammer.Api.Security;
 

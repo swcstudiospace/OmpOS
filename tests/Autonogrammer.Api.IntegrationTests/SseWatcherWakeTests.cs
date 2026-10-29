@@ -1,7 +1,7 @@
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Sse;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Sessions;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Autonogrammer.Api.Endpoints;
 using Autonogrammer.Contracts.Providers;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Autonogrammer.Api.Services.Providers;
 

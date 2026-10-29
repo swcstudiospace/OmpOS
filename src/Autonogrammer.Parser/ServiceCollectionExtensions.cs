@@ -1,6 +1,6 @@
+using Autonogrammer.Parser.Recognizers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Autonogrammer.Parser.Recognizers;
 
 namespace Autonogrammer.Parser;
 

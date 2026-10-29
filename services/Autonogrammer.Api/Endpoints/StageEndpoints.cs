@@ -1,11 +1,11 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Options;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Sessions;
 using Autonogrammer.Worktrees;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Endpoints;
 

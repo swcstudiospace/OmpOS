@@ -1,7 +1,4 @@
 using System.Diagnostics;
-using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Threading;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Native.Views.Cloud;
@@ -21,6 +18,9 @@ using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Worktrees;
 using Autonogrammer.Workspace.Sets;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Threading;
 
 namespace Autonogrammer.Native;
 

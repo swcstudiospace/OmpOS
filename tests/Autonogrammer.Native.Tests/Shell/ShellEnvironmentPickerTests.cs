@@ -1,10 +1,10 @@
-using Avalonia.Controls;
 using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Autonogrammer.Native.Tests.Remote;
 using Autonogrammer.Native.Views.Remote;
 using Autonogrammer.Native.Views.Shell;
 using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Settings;
+using Avalonia.Controls;
 using Shouldly;
 using Xunit;
 

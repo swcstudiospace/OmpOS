@@ -1,8 +1,8 @@
 using System.Net.ServerSentEvents;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Services;
 using Autonogrammer.Contracts.Sessions;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

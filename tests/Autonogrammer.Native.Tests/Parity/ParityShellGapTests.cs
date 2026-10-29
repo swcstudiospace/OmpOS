@@ -1,12 +1,12 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.VisualTree;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Autonogrammer.Native.Tests.RunControls;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.State;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

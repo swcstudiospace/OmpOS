@@ -1,9 +1,9 @@
-using Avalonia.Animation;
-using Avalonia.Automation;
-using Avalonia.Controls;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Presentation.AgentPanel;
+using Avalonia.Animation;
+using Avalonia.Automation;
+using Avalonia.Controls;
 using Shouldly;
 using Xunit;
 

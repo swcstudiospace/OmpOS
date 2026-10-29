@@ -1,10 +1,10 @@
+using Autonogrammer.Harness.Completion;
+using Autonogrammer.Native.Views.Completion;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Autonogrammer.Harness.Completion;
-using Autonogrammer.Native.Views.Completion;
 using Xunit;
 
 namespace Autonogrammer.Native.Tests.Completion;

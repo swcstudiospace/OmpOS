@@ -1,12 +1,12 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
 using Autonogrammer.Native.Tests.Settings;
 using Autonogrammer.Native.Views.Hooks;
 using Autonogrammer.Presentation.Hooks;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Tests.Hooks;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

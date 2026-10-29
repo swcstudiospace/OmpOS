@@ -1,8 +1,8 @@
 using System.Collections.Frozen;
-using Avalonia.Data.Converters;
-using Avalonia.Media;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Presentation.AgentPanel;
+using Avalonia.Data.Converters;
+using Avalonia.Media;
 
 namespace Autonogrammer.Native.Views.AgentPanel;
 

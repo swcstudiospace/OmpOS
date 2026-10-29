@@ -1,11 +1,11 @@
-using Avalonia;
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.VisualTree;
 using Autonogrammer.Native.Tests.RunControls;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Parity.Support;
 using Autonogrammer.Presentation.State;
+using Avalonia;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

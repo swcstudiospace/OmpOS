@@ -1,9 +1,9 @@
+using Autonogrammer.Native.Views.Settings;
+using Autonogrammer.Presentation.Settings;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Media;
-using Autonogrammer.Native.Views.Settings;
-using Autonogrammer.Presentation.Settings;
 using Shouldly;
 using Xunit;
 

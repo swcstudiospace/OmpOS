@@ -1,8 +1,8 @@
+using Autonogrammer.Native.Tests.Kanban;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Tests.Kanban;
 using Shouldly;
 using Xunit;
 

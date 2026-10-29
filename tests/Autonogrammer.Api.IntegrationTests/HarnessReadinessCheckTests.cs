@@ -1,7 +1,7 @@
 using System.Net;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Autonogrammer.Api.Health;
 using Autonogrammer.Api.Options;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Shouldly;
 using Xunit;
 

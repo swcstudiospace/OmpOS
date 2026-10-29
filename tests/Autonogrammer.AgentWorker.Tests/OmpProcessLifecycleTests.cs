@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Runtime.Versioning;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.AgentWorker.Bridge;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

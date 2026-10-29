@@ -1,13 +1,13 @@
 using System.Buffers.Binary;
+using Autonogrammer.Native.Tests.Settings;
+using Autonogrammer.Native.Views;
+using Autonogrammer.Native.Views.Branding;
+using Autonogrammer.Presentation.About;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
-using Autonogrammer.Native.Tests.Settings;
-using Autonogrammer.Native.Views;
-using Autonogrammer.Native.Views.Branding;
-using Autonogrammer.Presentation.About;
 using Shouldly;
 using Xunit;
 

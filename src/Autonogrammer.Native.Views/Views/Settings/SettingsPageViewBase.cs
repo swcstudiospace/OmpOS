@@ -1,8 +1,8 @@
 using System.ComponentModel;
-using Avalonia;
-using Avalonia.Controls;
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Presentation.Settings;
+using Avalonia;
+using Avalonia.Controls;
 
 namespace Autonogrammer.Native.Views.Settings;
 

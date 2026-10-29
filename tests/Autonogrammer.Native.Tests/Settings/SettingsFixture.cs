@@ -1,5 +1,3 @@
-using Avalonia.Controls;
-using Avalonia.Threading;
 using Autonogrammer.Native.Tests.AgentPanel.Views;
 using Autonogrammer.Native.Tests.Mcp;
 using Autonogrammer.Native.Tests.Remote;
@@ -20,6 +18,8 @@ using Autonogrammer.Presentation.Settings.Privacy;
 using Autonogrammer.Presentation.Settings.Workspaces;
 using Autonogrammer.Presentation.Settings.Worktrees;
 using Autonogrammer.Presentation.Tests.Hooks;
+using Avalonia.Controls;
+using Avalonia.Threading;
 
 namespace Autonogrammer.Native.Tests.Settings;
 

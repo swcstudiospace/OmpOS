@@ -1,6 +1,6 @@
 using System.Net;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Cloud;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

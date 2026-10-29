@@ -1,8 +1,8 @@
+using Autonogrammer.Native.Tests.Settings;
+using Autonogrammer.Presentation.Cloud;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Autonogrammer.Native.Tests.Settings;
-using Autonogrammer.Presentation.Cloud;
 using Shouldly;
 using Xunit;
 

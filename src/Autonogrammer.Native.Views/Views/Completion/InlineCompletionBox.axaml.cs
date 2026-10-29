@@ -1,5 +1,6 @@
 using System.Runtime.ExceptionServices;
 using System.Text.Json;
+using Autonogrammer.Harness.Completion;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -8,7 +9,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
-using Autonogrammer.Harness.Completion;
 
 namespace Autonogrammer.Native.Views.Completion;
 

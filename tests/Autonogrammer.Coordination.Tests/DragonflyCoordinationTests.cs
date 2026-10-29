@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Coordination.Dragonfly;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using StackExchange.Redis;
 using Xunit;

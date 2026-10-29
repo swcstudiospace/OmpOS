@@ -1,7 +1,7 @@
+using Autonogrammer.Presentation.Editor;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Autonogrammer.Presentation.Editor;
 using Shouldly;
 using Xunit;
 

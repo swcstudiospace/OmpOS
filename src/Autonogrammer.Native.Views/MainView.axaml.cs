@@ -1,12 +1,5 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using Avalonia;
-using Avalonia.Animation;
-using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Input;
-using Avalonia.Interactivity;
-using Avalonia.VisualTree;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Harness.Mcp;
 using Autonogrammer.Harness.Terminal;
@@ -45,6 +38,13 @@ using Autonogrammer.Presentation.Queue;
 using Autonogrammer.Presentation.SideChats;
 using Autonogrammer.Presentation.State;
 using Autonogrammer.Workspace;
+using Avalonia;
+using Avalonia.Animation;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 
 namespace Autonogrammer.Native;
 

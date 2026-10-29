@@ -1,6 +1,6 @@
+using Autonogrammer.Harness.Mcp;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
-using Autonogrammer.Harness.Mcp;
 using Shouldly;
 using Xunit;
 

@@ -2,8 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Harness.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Harness.AgentLoop.Hooks;
+using Microsoft.Extensions.Logging;
 
 namespace Autonogrammer.Harness.AgentLoop.Tests.Hooks;
 

@@ -1,11 +1,11 @@
 using System.Text.Json;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Options;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Api.Security;
 using Autonogrammer.Api.Sse;
 using Autonogrammer.Contracts.Errors;
 using Autonogrammer.Sessions;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Endpoints;
 

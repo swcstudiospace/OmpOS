@@ -1,5 +1,3 @@
-using Avalonia.Controls;
-using Avalonia.Input;
 using Autonogrammer.Contracts.Ui;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Native.Tests.Parity;
@@ -8,6 +6,8 @@ using Autonogrammer.Native.Views.RunControls;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Approvals;
 using Autonogrammer.Presentation.State;
+using Avalonia.Controls;
+using Avalonia.Input;
 using Shouldly;
 using Xunit;
 

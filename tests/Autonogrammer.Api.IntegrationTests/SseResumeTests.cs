@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Net;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Sse;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Sessions;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

@@ -1,11 +1,11 @@
-using Avalonia.Animation;
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Input;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Composer;
 using Autonogrammer.Presentation.Runs;
+using Avalonia.Animation;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Input;
 using Shouldly;
 using Xunit;
 

@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
-using Microsoft.Extensions.Logging;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Logging;
 using Autonogrammer.Native.Tests.Send;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit;
 

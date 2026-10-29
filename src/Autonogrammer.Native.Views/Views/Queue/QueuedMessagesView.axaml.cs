@@ -1,10 +1,10 @@
+using Autonogrammer.Presentation.Queue;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Autonogrammer.Presentation.Queue;
 
 namespace Autonogrammer.Native.Views.Queue;
 

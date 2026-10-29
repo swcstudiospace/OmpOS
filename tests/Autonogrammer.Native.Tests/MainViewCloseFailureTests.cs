@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Avalonia.Controls;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Mcp;
@@ -10,6 +9,7 @@ using Autonogrammer.Native.Tests.Parity;
 using Autonogrammer.Native.Views.Mcp;
 using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Presentation;
+using Avalonia.Controls;
 using Shouldly;
 using Xunit;
 

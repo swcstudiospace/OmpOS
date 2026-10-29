@@ -1,12 +1,12 @@
+using Autonogrammer.Harness.Mcp;
+using Autonogrammer.Native.Tests.Workspace;
+using Autonogrammer.Native.Views.Mcp;
 using Avalonia.Automation;
 using Avalonia.Automation.Peers;
 using Avalonia.Automation.Provider;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using Autonogrammer.Harness.Mcp;
-using Autonogrammer.Native.Tests.Workspace;
-using Autonogrammer.Native.Views.Mcp;
 using Shouldly;
 using Xunit;
 

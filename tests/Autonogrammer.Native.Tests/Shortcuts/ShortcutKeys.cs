@@ -1,6 +1,6 @@
+using Autonogrammer.Native.Tests.Settings;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Autonogrammer.Native.Tests.Settings;
 
 namespace Autonogrammer.Native.Tests.Shortcuts;
 

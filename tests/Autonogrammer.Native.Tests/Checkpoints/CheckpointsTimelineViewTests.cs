@@ -1,11 +1,11 @@
 using System.Globalization;
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Input;
 using Autonogrammer.Native.Tests.Settings;
 using Autonogrammer.Native.Tests.Workspace;
 using Autonogrammer.Native.Views.Checkpoints;
 using Autonogrammer.Presentation.Checkpoints;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Input;
 using Shouldly;
 using Xunit;
 

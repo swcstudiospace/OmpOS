@@ -1,11 +1,11 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Options;
 using Autonogrammer.AgentWorker.Bridge;
 using Autonogrammer.AgentWorker.Configuration;
 using Autonogrammer.AgentWorker.Health;
 using Autonogrammer.AgentWorker.Hooks;
 using Autonogrammer.AgentWorker.Security;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.AgentWorker;
 

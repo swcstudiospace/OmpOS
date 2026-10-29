@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Net;
 using System.Text;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Sse;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

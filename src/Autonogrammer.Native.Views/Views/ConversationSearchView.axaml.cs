@@ -1,10 +1,10 @@
+using Autonogrammer.Native.Views.AgentPanel;
+using Autonogrammer.Presentation.AgentPanel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views.AgentPanel;
-using Autonogrammer.Presentation.AgentPanel;
 
 namespace Autonogrammer.Native.Views;
 

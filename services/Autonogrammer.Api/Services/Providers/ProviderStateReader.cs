@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Options;
 using Autonogrammer.Contracts.Providers;
 using Autonogrammer.Harness.Providers;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Services.Providers;
 

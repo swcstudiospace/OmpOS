@@ -1,10 +1,10 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Input;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Runs;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Input;
 using Shouldly;
 using Xunit;
 

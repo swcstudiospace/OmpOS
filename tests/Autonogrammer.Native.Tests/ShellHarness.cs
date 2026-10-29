@@ -1,16 +1,16 @@
 using System.Runtime.CompilerServices;
-using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Headless;
-using Avalonia.Input;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
 using Autonogrammer.Native.Tests.AgentPanel.Shell;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Native.Views.Sessions;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Composer;
 using Autonogrammer.Presentation.State;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Headless;
+using Avalonia.Input;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace Autonogrammer.Native.Tests;
 

@@ -1,11 +1,11 @@
 using System.ComponentModel;
+using Autonogrammer.Presentation.AgentPanel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Autonogrammer.Presentation.AgentPanel;
 
 namespace Autonogrammer.Native.Views.Terminal;
 

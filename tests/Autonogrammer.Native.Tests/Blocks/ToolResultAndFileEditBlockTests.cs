@@ -1,8 +1,8 @@
+using Autonogrammer.Contracts.Ui;
+using Autonogrammer.Native.Views.Blocks;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
-using Autonogrammer.Contracts.Ui;
-using Autonogrammer.Native.Views.Blocks;
 using Shouldly;
 using Xunit;
 

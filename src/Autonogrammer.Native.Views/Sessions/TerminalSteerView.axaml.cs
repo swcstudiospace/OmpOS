@@ -1,9 +1,9 @@
-using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Interactivity;
 using Autonogrammer.Native.Views.AgentPanel;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Runs;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 
 namespace Autonogrammer.Native.Views.Sessions;
 

@@ -1,12 +1,12 @@
 using System.ComponentModel;
+using Autonogrammer.Native.Views.Attachments;
+using Autonogrammer.Presentation.Composer.Attachments;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views.Attachments;
-using Autonogrammer.Presentation.Composer.Attachments;
 
 namespace Autonogrammer.Native.Views;
 

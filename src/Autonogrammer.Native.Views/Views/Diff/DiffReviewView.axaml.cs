@@ -1,7 +1,7 @@
 using System.ComponentModel;
-using Avalonia.Controls;
 using Autonogrammer.Presentation.Changes;
 using Autonogrammer.Presentation.Editor;
+using Avalonia.Controls;
 
 namespace Autonogrammer.Native.Views.Diff;
 

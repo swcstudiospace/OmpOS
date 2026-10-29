@@ -1,12 +1,12 @@
-using Avalonia.Automation;
-using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.VisualTree;
 using Autonogrammer.Native.Tests.AgentPanel.Views;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Native.Views.Attachments;
 using Autonogrammer.Presentation.Composer;
 using Autonogrammer.Presentation.Composer.Attachments;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.VisualTree;
 using Shouldly;
 using Xunit;
 

@@ -1,8 +1,8 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.JSInterop;
 using Autonogrammer.Presentation.Terminal;
 using Autonogrammer.Web.Demo;
 using Autonogrammer.Web.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.JSInterop;
 
 namespace Autonogrammer.Web.Tests;
 

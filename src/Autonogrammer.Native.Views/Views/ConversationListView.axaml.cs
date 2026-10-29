@@ -1,10 +1,10 @@
 using System.ComponentModel;
+using Autonogrammer.Presentation.Components;
+using Autonogrammer.Presentation.State;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Threading;
-using Autonogrammer.Presentation.Components;
-using Autonogrammer.Presentation.State;
 
 namespace Autonogrammer.Native.Views;
 

@@ -1,11 +1,11 @@
 using System.Net;
 using System.Text;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.InMemory;
 using Autonogrammer.Sessions;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

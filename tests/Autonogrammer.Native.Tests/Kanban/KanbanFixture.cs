@@ -1,9 +1,9 @@
-using Avalonia.Controls;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Tests.AgentPanel.Views;
 using Autonogrammer.Native.Views.Kanban;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Kanban;
+using Avalonia.Controls;
 
 namespace Autonogrammer.Native.Tests.Kanban;
 

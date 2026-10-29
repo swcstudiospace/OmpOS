@@ -1,9 +1,9 @@
-using Avalonia.Controls;
-using Avalonia.Input;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Native.Tests.AgentPanel.Views;
 using Autonogrammer.Native.Tests.Kanban;
 using Autonogrammer.Native.Views.Kanban;
+using Avalonia.Controls;
+using Avalonia.Input;
 using Shouldly;
 
 namespace Autonogrammer.Native.Tests.Shortcuts;

@@ -1,7 +1,7 @@
-using Avalonia.Input;
 using Autonogrammer.Native.Views.Settings;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Settings;
+using Avalonia.Input;
 using Shouldly;
 using Xunit;
 

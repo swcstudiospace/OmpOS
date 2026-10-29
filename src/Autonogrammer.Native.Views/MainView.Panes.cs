@@ -1,7 +1,5 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using Avalonia.Controls;
-using Avalonia.Threading;
 using Autonogrammer.Native.Views.Checkpoints;
 using Autonogrammer.Native.Views.Modes;
 using Autonogrammer.Native.Views.Queue;
@@ -14,6 +12,8 @@ using Autonogrammer.Presentation.Modes;
 using Autonogrammer.Presentation.Queue;
 using Autonogrammer.Presentation.SideChats;
 using Autonogrammer.Workspace;
+using Avalonia.Controls;
+using Avalonia.Threading;
 
 namespace Autonogrammer.Native;
 

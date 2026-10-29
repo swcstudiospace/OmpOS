@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Microsoft.Extensions.Options;
 using Autonogrammer.Api.Options;
 using Autonogrammer.Api.Sse;
 using Autonogrammer.Api.Telemetry;
@@ -9,6 +8,7 @@ using Autonogrammer.Contracts.Workflows;
 using Autonogrammer.Coordination;
 using Autonogrammer.Sessions;
 using Autonogrammer.Workflows;
+using Microsoft.Extensions.Options;
 
 namespace Autonogrammer.Api.Services;
 

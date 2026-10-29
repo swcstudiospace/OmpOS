@@ -1,10 +1,10 @@
 using System.Globalization;
+using Autonogrammer.Harness.OmpLauncher;
+using Autonogrammer.Native.Views.Terminal;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Iciclecreek.Terminal;
-using Autonogrammer.Harness.OmpLauncher;
-using Autonogrammer.Native.Views.Terminal;
 using Shouldly;
 using Xunit;
 

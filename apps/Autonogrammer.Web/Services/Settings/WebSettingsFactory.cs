@@ -1,5 +1,5 @@
-using Microsoft.JSInterop;
 using Autonogrammer.Presentation.Settings;
+using Microsoft.JSInterop;
 
 namespace Autonogrammer.Web.Services.Settings;
 

@@ -1,8 +1,8 @@
 using System.Net;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Harness.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

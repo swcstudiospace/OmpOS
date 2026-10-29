@@ -1,8 +1,8 @@
+using Autonogrammer.Native.Views.AgentPanel;
+using Autonogrammer.Presentation;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
-using Autonogrammer.Native.Views.AgentPanel;
-using Autonogrammer.Presentation;
 using Shouldly;
 using Xunit;
 

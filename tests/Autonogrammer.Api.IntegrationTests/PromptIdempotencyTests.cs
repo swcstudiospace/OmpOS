@@ -1,12 +1,12 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Microsoft.Extensions.DependencyInjection;
 using Autonogrammer.Api.Endpoints;
 using Autonogrammer.Api.Idempotency;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Coordination;
 using Autonogrammer.Harness.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 

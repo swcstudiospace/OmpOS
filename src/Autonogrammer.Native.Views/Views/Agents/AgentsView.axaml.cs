@@ -1,8 +1,8 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using Autonogrammer.Presentation.Agents;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Autonogrammer.Presentation.Agents;
 
 namespace Autonogrammer.Native.Views.Agents;
 

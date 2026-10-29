@@ -1,11 +1,11 @@
 using System.Data;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
-using Npgsql;
 using Autonogrammer.Contracts.Serialization;
 using Autonogrammer.Contracts.Sessions;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Harness.Abstractions;
+using Npgsql;
 
 namespace Autonogrammer.Sessions.Postgres;
 
