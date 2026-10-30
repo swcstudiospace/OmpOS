@@ -70,8 +70,8 @@ public sealed class LegacyConventionsNoticeTests
             ViewHost.Show(view);
             view.NoticeRows.ItemCount.ShouldBe(1);
             var button = view.NoticeRows.Items.Cast<object>().ShouldHaveSingleItem();
-            button.ShouldBeOfType<WorkspaceConventionsView.LegacyConventionNoticeRow>().Name.ShouldContain("Warning");
-            button.ShouldBeOfType<WorkspaceConventionsView.LegacyConventionNoticeRow>().Name.ShouldContain(LegacyBrandNames.ConventionDirectory);
+            button.ShouldBeOfType<LegacyConventionNoticeRow>().Name.ShouldContain("Warning");
+            button.ShouldBeOfType<LegacyConventionNoticeRow>().Name.ShouldContain(LegacyBrandNames.ConventionDirectory);
             _ = view.CopyRepoCommandAsync(model.RepoMoveCommand);
             view.LastCopiedCommand.ShouldBe(model.RepoMoveCommand);
         }, ct).ConfigureAwait(true);
