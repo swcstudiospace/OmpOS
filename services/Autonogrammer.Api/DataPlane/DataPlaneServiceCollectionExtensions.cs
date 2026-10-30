@@ -51,6 +51,7 @@ internal static class DataPlaneServiceCollectionExtensions
         services.AddSingleton<DataPlaneProblemMapper>();
         services.AddRateLimiter(static options => options.AddPolicy<string, DataPlaneStatusRateLimiterPolicy>(DataPlaneEndpoints.PolicyName));
         services.AddHealthChecks().AddCheck<DataPlaneReadinessCheck>("data-plane", tags: ["ready"]);
+        Autonogrammer.Api.Audit.LedgerSinkServiceCollectionExtensions.AddLedgerSink(services);
         return services;
     }
 }
