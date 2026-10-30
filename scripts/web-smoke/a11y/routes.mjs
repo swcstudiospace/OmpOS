@@ -13,8 +13,8 @@ import { analyzeRoute, analyzeTitleSet } from "./logic.mjs";
 import { DEMO_SESSION, LOAD_TIMEOUT_MS, loadApp } from "./states.mjs";
 
 // A loaded host can leave the page on the boot shell after an in-app navigation: the address changes but the render has not caught up, so the title is still
-// the boot title and the shell controls are absent (gate run 6 at load 68, and two re-runs). The wait is long enough for a render, and a step that still sees
-// the boot shell reloads the app and tries once more. Reaching it on the second attempt is a warning, the same as a load that needs a second try.
+// the boot title and the shell controls are absent (gate run 6 at load 68, and two re-runs). When any step lands there, the whole sequence restarts once after
+// a reload. Restarting one step would lose the history the later steps depend on, so Back and Forward would pass without being checked.
 const STEP_WAIT_MS = Math.max(30000, Math.round(LOAD_TIMEOUT_MS / 3));
 const BOOT_TITLE = "Autonogrammer";
 
@@ -86,30 +86,36 @@ function inAppSteps(kind) {
 async function checkInAppNavigation(page, report, { baseUrl, kind }) {
   await page.setViewport(1440, 900);
   if (!(await loadApp(page, baseUrl, report, { group: "routes", viewport: "inapp" }))) return;
+  let entries = await runSequence(page, report, kind);
+  if (entries === null) {
+    // A step landed on the boot shell. Retrying that one step would lose the history the later steps depend on (Back and Forward
+    // would have nothing to go to, and a wordmark retry would start and end at the same address). The whole sequence restarts once.
+    report.add({ check: "routes", id: "sequence-retried", severity: "warning", message: "a step landed on the boot shell; the whole in-app sequence restarted once after a reload", state: "in-app", viewport: "inapp" });
+    if (!(await loadApp(page, baseUrl, report, { group: "routes", viewport: "inapp" }))) return;
+    entries = await runSequence(page, report, kind);
+  }
+  for (const entry of entries ?? []) {
+    for (const f of analyzeRoute(entry)) report.add({ ...f, state: `in-app ${entry.stepName} -> ${entry.route}` });
+  }
+}
+
+/**
+ * Runs every in-app step in order, building the history the Back and Forward steps read. Returns the entries, or null when a step
+ * landed on the boot shell (the address moved but the render had not finished), so the caller can restart the whole sequence.
+ */
+async function runSequence(page, report, kind) {
   const entries = [];
-  // The browser's session history as the steps build it. Back and Forward lead to the address the history holds, and that differs between the bundles: the
-  // in-memory API has no agent, so the agent row step adds no entry and Back leads to the page before it.
   const history = [await page.evalValue("location.pathname")];
   let position = 0;
   for (const step of inAppSteps(kind)) {
-    let snap = await runStep(page, report, step, history, position);
-    if (snap && snap.title.trim() === BOOT_TITLE) {
-      // The address moved but the page is still the boot shell: the render did not finish. Reload and try the step once more.
-      report.add({ check: "routes", id: "step-retried", severity: "warning", message: `${step.name}: the page was still the boot shell after the navigation; retried once after a reload`, state: `in-app ${step.name}`, viewport: "inapp" });
-      if (!(await loadApp(page, baseUrl, report, { group: "routes", viewport: "inapp" }))) return;
-      history.length = 0;
-      history.push(await page.evalValue("location.pathname"));
-      position = 0;
-      snap = await runStep(page, report, step, history, position);
-    }
+    const snap = await runStep(page, report, step, history, position);
+    if (snap && snap.title.trim() === BOOT_TITLE) return null;
     if (!snap) continue;
     position = snap.position;
     entries.push({ route: snap.path, mode: "inapp", layout: "shell", snap, previousTitle: snap.previousTitle, expectFocus: step.expectFocus, stepName: step.name });
     report.count("routes:inapp");
   }
-  for (const entry of entries) {
-    for (const f of analyzeRoute(entry)) report.add({ ...f, state: `in-app ${entry.stepName} -> ${entry.route}` });
-  }
+  return entries;
 }
 
 /** Runs one in-app step. Returns the page snapshot with the history position, or null when the step could not be acted on. */
