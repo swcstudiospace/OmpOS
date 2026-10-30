@@ -35,7 +35,7 @@ public sealed class UserDataDirectoryMigrationTests : IDisposable
         var dataHome = Path.Combine(Home, ".local", "share");
         SeedLegacy(dataHome);
         var configured = Path.Combine(_root, "configured-state");
-        Func<string, string?> variables = name => name == AgentLoopEnvironment.StateDirectoryVariable ? configured : null;
+        Func<string, string?> variables = name => string.Equals(name, AgentLoopEnvironment.StateDirectoryVariable, StringComparison.Ordinal) ? configured : null;
         var legacyBefore = Directory.GetFileSystemEntries(dataHome);
 
         var migration = AgentLoopEnvironment.EnsureStateRootMigrated(variables, Home);
@@ -53,7 +53,7 @@ public sealed class UserDataDirectoryMigrationTests : IDisposable
     {
         var xdg = Path.Combine(_root, "xdg");
         SeedLegacy(xdg);
-        Func<string, string?> variables = name => name == "XDG_DATA_HOME" ? xdg : null;
+        Func<string, string?> variables = name => string.Equals(name, "XDG_DATA_HOME", StringComparison.Ordinal) ? xdg : null;
 
         var first = AgentLoopEnvironment.EnsureStateRootMigrated(variables, Home);
         var second = AgentLoopEnvironment.EnsureStateRootMigrated(variables, Home);

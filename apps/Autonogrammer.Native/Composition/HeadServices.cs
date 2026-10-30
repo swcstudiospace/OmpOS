@@ -342,10 +342,9 @@ internal sealed class HeadServices : IAsyncDisposable
 #pragma warning disable CA2000 // The host is returned to HeadServices, which disposes it; DisposeAsync is the release path.
             account = CreateAccount(options, clock, client, address);
 #pragma warning restore CA2000
-            await account.StartAsync(cancellationToken).ConfigureAwait(false);
-            var readToken = new Func<CancellationToken, ValueTask<string?>>(token => ResolveTokenAsync(account.Session, variable, token));
-            var cloud = CreateCloudHost(options, clock, urlLauncher, client, address, readToken);
             DesktopAccountHost owned = account;
+            var readToken = new Func<CancellationToken, ValueTask<string?>>(token => ResolveTokenAsync(owned.Session, variable, token));
+            var cloud = CreateCloudHost(options, clock, urlLauncher, client, address, readToken);
             account = null;
             return (cloud, client, owned, readToken);
         }

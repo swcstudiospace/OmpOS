@@ -33,7 +33,7 @@ public sealed class AccountStateTests
             window.Show();
             SettingsTree.SettleSafe(window);
             view.SendCode.IsVisible.ShouldBeTrue();
-            view.CodeField.IsVisible.ShouldBeFalse();
+            view.CodeField.IsEffectivelyVisible.ShouldBeFalse();
 
             host.Set(AccountHostState.SignedOut with
             {
