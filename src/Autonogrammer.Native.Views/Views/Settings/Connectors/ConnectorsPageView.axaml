@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conn="clr-namespace:Autonogrammer.Presentation.Settings.Connectors;assembly=Autonogrammer.Presentation"
+             xmlns:local="clr-namespace:Autonogrammer.Native.Views.Settings"
+             x:Class="Autonogrammer.Native.Views.Settings.ConnectorsPageView"
+             x:Name="Root"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- Connectors: one card per server. A check runs only from the Check connection button. Auto does not trust readOnlyHint. -->
+  <ScrollViewer Focusable="False"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Classes="settings-column">
+      <TextBlock Classes="settings-heading"
+                 Text="Connectors" />
+      <TextBlock x:Name="Notice"
+                 Classes="settings-help"
+                 AutomationProperties.Name="Connector notice"
+                 Text="{x:Static conn:ConnectorMatrixModel.ReadOnlyHintNotice}" />
+      <ItemsControl x:Name="Cards">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="conn:ConnectorCardModel">
+            <Border Classes="settings-row"
+                    AutomationProperties.Name="{CompiledBinding CardName}">
+              <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+                <Grid ColumnDefinitions="*,Auto"
+                      ColumnSpacing="8">
+                  <TextBlock Grid.Column="0"
+                             Classes="settings-label"
+                             Text="{CompiledBinding DisplayName}" />
+                  <Border Grid.Column="1"
+                          Classes="chip"
+                          AutomationProperties.Name="{CompiledBinding ChipName}">
+                    <TextBlock Classes="settings-chip-text"
+                               Text="{CompiledBinding ConnectionState}" />
+                  </Border>
+                </Grid>
+                <ComboBox AutomationProperties.Name="{CompiledBinding ServerPermissionName}"
+                          ItemsSource="{x:Static conn:ConnectorStateLabels.All}"
+                          SelectedItem="{CompiledBinding ServerPermissionLabel}"
+                          Tag="{CompiledBinding ServerId}"
+                          SelectionChanged="OnServerStateChanged" />
+                <Button Content="Check connection"
+                        AutomationProperties.Name="{CompiledBinding CheckName}"
+                        Tag="{CompiledBinding ServerId}"
+                        Click="OnCheckClick" />
+                <ItemsControl ItemsSource="{CompiledBinding Tools}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="conn:ConnectorToolRow">
+                      <ComboBox AutomationProperties.Name="{CompiledBinding AccessibleName}"
+                                ItemsSource="{x:Static conn:ConnectorStateLabels.All}"
+                                SelectedItem="{CompiledBinding SelectedLabel, Mode=TwoWay}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

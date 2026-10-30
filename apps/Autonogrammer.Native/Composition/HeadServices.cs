@@ -16,6 +16,7 @@ using Autonogrammer.Presentation.Accounts;
 using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Cloud;
 using Autonogrammer.Native.Composition.Automations;
+using Autonogrammer.Native.Composition.Connectors;
 using Autonogrammer.Native.Composition.Checkpoints;
 using Autonogrammer.Native.Views;
 using Autonogrammer.Native.Views.Safety;
@@ -272,7 +273,7 @@ internal sealed class HeadServices : IAsyncDisposable
             var holder = new TrustTerminalHolder();
             var sshOptions = new SshClientOptions { ControlPathDirectory = PrivateSshControlDirectory() };
             var remoteEnvironments = new RemoteEnvironmentsHost(stores.RemoteProfiles, sshOptions, openTrustTerminal: holder.OpenAsync, clock: clock);
-            var mcp = new McpServerCatalog(new LocalMcpFileStore(), new FileMcpStateStore(Path.Combine(config, "mcp-state.json")));
+            var mcp = new McpServerCatalog(new LocalMcpFileStore(), new FileMcpStateStore(Path.Combine(config, "mcp-state.json")), new RecordingConnectionChecker(new McpConnectionChecker()));
             var setupConsent = new ForwardingSetupConsentPrompt();
             var worktrees = CreateWorktrees(options, stores.ConsentStore, setupConsent);
             var urlLauncher = new SystemUrlLauncher(options.TopLevel ?? (static () => null));
