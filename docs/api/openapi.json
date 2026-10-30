@@ -2687,6 +2687,482 @@
         }
       }
     },
+    "/cowork/artifacts": {
+      "get": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Lists the caller's artifacts.",
+        "operationId": "ListCoworkArtifacts",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/cowork/artifacts/{id}": {
+      "get": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Reads one artifact header the caller owns.",
+        "operationId": "GetCoworkArtifact",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Deletes an artifact the caller owns. Another owner's id is the same 404 as an absent id.",
+        "operationId": "DeleteCoworkArtifact",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/cowork/artifacts/{id}/versions/{n}": {
+      "get": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Reads one owned version header.",
+        "operationId": "GetCoworkArtifactVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Stores a version idempotently by hash. Same bytes answer 200; different bytes answer 409.",
+        "operationId": "PutCoworkArtifactVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/cowork/artifacts/{id}/versions/{n}/content": {
+      "get": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Downloads owned version bytes as an attachment. The API origin never renders them.",
+        "operationId": "GetCoworkArtifactContent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/cowork/artifacts/{id}/versions/{n}/render-tickets": {
+      "post": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Issues a 60-second HMAC render ticket for an owned version.",
+        "operationId": "CreateCoworkArtifactRenderTicket",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderTicketDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/cowork/artifacts/{id}/versions/{n}/grants": {
+      "get": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Lists grants bound to an owned version.",
+        "operationId": "GetCoworkArtifactGrants",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ArtifactGrantDocument"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Binds or revokes a grant for an owned version hash.",
+        "operationId": "PutCoworkArtifactGrant",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactGrantDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/cowork/artifact-render/{ticket}": {
+      "get": {
+        "tags": [
+          "Cowork artifacts"
+        ],
+        "summary": "Renders a version from a 60-second ticket. Anonymous. Limiter partition artifact-render.",
+        "operationId": "GetCoworkArtifactRender",
+        "parameters": [
+          {
+            "name": "ticket",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [ ]
+      }
+    },
     "/providers": {
       "get": {
         "tags": [
@@ -4787,6 +5263,58 @@
           }
         },
         "description": "The caller's own sessions across surfaces, answered by `GET /account/sessions`, newest first."
+      },
+      "ArtifactGrantDocument": {
+        "required": [
+          "artifactId",
+          "number",
+          "contentSha256",
+          "origins",
+          "scope",
+          "device",
+          "grantedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "artifactId": {
+            "type": "string",
+            "description": "The artifact identifier."
+          },
+          "number": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The version number.",
+            "format": "int32"
+          },
+          "contentSha256": {
+            "type": "string",
+            "description": "The version hash."
+          },
+          "origins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The origins."
+          },
+          "scope": {
+            "type": "string",
+            "description": "The scope."
+          },
+          "device": {
+            "type": "string",
+            "description": "The device."
+          },
+          "grantedAt": {
+            "type": "string",
+            "description": "When the grant was bound.",
+            "format": "date-time"
+          }
+        },
+        "description": "A version-bound grant. No account id."
       },
       "AuthConfigResponse": {
         "required": [
@@ -7816,6 +8344,19 @@
         ],
         "description": "How far the research verified a catalogue provider."
       },
+      "RenderTicketDocument": {
+        "required": [
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The host-relative render URL."
+          }
+        },
+        "description": "The render URL returned to the owner."
+      },
       "Run": {
         "required": [
           "id",
@@ -9485,6 +10026,9 @@
     },
     {
       "name": "Cowork"
+    },
+    {
+      "name": "Cowork artifacts"
     },
     {
       "name": "Providers"

@@ -80,6 +80,12 @@ public sealed class HostileCorpusTests
                 text.Contains('\u202E', StringComparison.Ordinal).ShouldBeTrue();
                 ArtifactService.IsTitleValid(text.TrimEnd('\r', '\n')).ShouldBeFalse();
                 break;
+            case "path-escape.txt":
+                text.ShouldContain('/');
+                break;
+            case "double-match.txt":
+                text.Trim().Length.ShouldBeGreaterThan(0);
+                break;
             default:
                 AssertDocument(name, text);
                 break;
