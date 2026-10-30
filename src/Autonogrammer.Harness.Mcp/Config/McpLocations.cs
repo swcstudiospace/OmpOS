@@ -1,3 +1,5 @@
+using Autonogrammer.Harness.Abstractions;
+
 namespace Autonogrammer.Harness.Mcp.Config;
 
 /// <summary>
@@ -37,17 +39,31 @@ public static class McpLocations
 
             var prefix = context.WorkspaceRoots.Count == 1 ? string.Empty : RootName(root) + "/";
             var step = index * RootPriorityStep;
+            var legacyRelative = LegacyConventionDiscovery.LegacyDirectoryName + "/mcp.json";
+            var legacyShift = File.Exists(Path.Combine(root, legacyRelative)) ? 1 : 0;
             locations.Add(Project(root, prefix, ".autonogrammer/mcp.json", McpConfigFormat.Autonogrammer, step));
-            locations.Add(Project(root, prefix, ".cursor/mcp.json", McpConfigFormat.Cursor, step + 1));
-            locations.Add(Project(root, prefix, ".mcp.json", McpConfigFormat.ClaudeProject, step + 2));
-            locations.Add(Project(root, prefix, ".vscode/mcp.json", McpConfigFormat.ServersObject, step + 3));
+            if (legacyShift == 1)
+            {
+                locations.Add(Project(root, prefix, legacyRelative, McpConfigFormat.Autonogrammer, step + 1));
+            }
+
+            locations.Add(Project(root, prefix, ".cursor/mcp.json", McpConfigFormat.Cursor, step + 1 + legacyShift));
+            locations.Add(Project(root, prefix, ".mcp.json", McpConfigFormat.ClaudeProject, step + 2 + legacyShift));
+            locations.Add(Project(root, prefix, ".vscode/mcp.json", McpConfigFormat.ServersObject, step + 3 + legacyShift));
         }
 
         if (!string.IsNullOrWhiteSpace(context.UserHome))
         {
+            var userLegacy = LegacyConventionDiscovery.LegacyDirectoryName + "/mcp.json";
+            var userShift = File.Exists(Path.Combine(context.UserHome, userLegacy)) ? 1 : 0;
             locations.Add(User(context.UserHome, ".autonogrammer/mcp.json", McpConfigFormat.Autonogrammer, UserPriorityBase));
-            locations.Add(User(context.UserHome, ".cursor/mcp.json", McpConfigFormat.Cursor, UserPriorityBase + 1));
-            locations.Add(User(context.UserHome, ".claude.json", McpConfigFormat.ClaudeUser, UserPriorityBase + 2));
+            if (userShift == 1)
+            {
+                locations.Add(User(context.UserHome, userLegacy, McpConfigFormat.Autonogrammer, UserPriorityBase + 1));
+            }
+
+            locations.Add(User(context.UserHome, ".cursor/mcp.json", McpConfigFormat.Cursor, UserPriorityBase + 1 + userShift));
+            locations.Add(User(context.UserHome, ".claude.json", McpConfigFormat.ClaudeUser, UserPriorityBase + 2 + userShift));
         }
 
         return locations;

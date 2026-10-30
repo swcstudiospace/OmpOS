@@ -1,3 +1,5 @@
+using Autonogrammer.Harness.Abstractions;
+
 using System.Globalization;
 using System.Text.Json;
 
@@ -113,19 +115,41 @@ internal static class EnvironmentConfigFile
     public static EnvironmentConfigParseResult? ReadFromDirectory(string repositoryRoot)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(repositoryRoot);
-        foreach (var relative in new[] { AutonogrammerPath, CursorPath })
+        var legacyRelative = LegacyConventionDiscovery.LegacyDirectoryName + "/environment.json";
+        var legacyPath = Path.Combine(repositoryRoot, legacyRelative.Replace('/', Path.DirectorySeparatorChar));
+        var legacyExists = File.Exists(legacyPath);
+        EnvironmentConfigParseResult? chosen = null;
+        string? chosenRelative = null;
+        foreach (var relative in new[] { AutonogrammerPath, legacyRelative, CursorPath })
         {
             var path = Path.Combine(repositoryRoot, relative.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(path))
+            if (!File.Exists(path))
             {
-                var info = new FileInfo(path);
-                return info.Length > MaximumFileLength
-                    ? new EnvironmentConfigParseResult(null, ["The file is longer than 65536 characters."], [])
-                    : Parse(File.ReadAllText(path), relative);
+                continue;
             }
+
+            var info = new FileInfo(path);
+            chosen = info.Length > MaximumFileLength
+                ? new EnvironmentConfigParseResult(null, ["The file is longer than 65536 characters."], [])
+                : Parse(File.ReadAllText(path), relative);
+            chosenRelative = relative;
+            break;
         }
 
-        return null;
+        if (chosen is null)
+        {
+            return null;
+        }
+
+        if (!legacyExists)
+        {
+            return chosen;
+        }
+
+        var warning = string.Equals(chosenRelative, legacyRelative, StringComparison.Ordinal)
+            ? "A deprecated environment file was read. Move it; it is not ignored."
+            : "Conflict: a deprecated environment file was not merged because the current file won.";
+        return chosen with { Warnings = [.. chosen.Warnings, warning] };
     }
 
     private static string? ReadString(JsonProperty member, List<string> errors)

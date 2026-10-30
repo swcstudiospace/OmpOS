@@ -8,4 +8,7 @@ internal static class LegacyBrandNames
 {
     /// <summary>The name of the per-user data directory the previous product name used.</summary>
     public const string UserDataDirectory = "Om" + "pOS";
+
+    /// <summary>The convention directory the previous product name used, including the leading dot.</summary>
+    public const string ConventionDirectory = "." + "om" + "pos";
 }

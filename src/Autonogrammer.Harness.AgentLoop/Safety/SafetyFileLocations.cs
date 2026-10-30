@@ -1,3 +1,5 @@
+using Autonogrammer.Harness.Abstractions;
+
 namespace Autonogrammer.Harness.AgentLoop.Safety;
 
 /// <summary>The files Autonogrammer reads, from the lowest precedence to the highest: the user's Cursor file, the user's Autonogrammer file, the project's Cursor file, the project's Autonogrammer file.</summary>
@@ -29,19 +31,26 @@ public static class SafetyFileLocations
 
     private static List<SafetyFileLocation> For(string fileName, string? homeDirectory, string? projectRoot)
     {
-        var locations = new List<SafetyFileLocation>(4);
-        if (!string.IsNullOrWhiteSpace(homeDirectory))
-        {
-            locations.Add(new SafetyFileLocation(Path.Combine(homeDirectory, CursorFolder, fileName), PermissionScope.User, PermissionFileOrigin.Cursor));
-            locations.Add(new SafetyFileLocation(Path.Combine(homeDirectory, AutonogrammerFolder, fileName), PermissionScope.User, PermissionFileOrigin.Autonogrammer));
-        }
-
-        if (!string.IsNullOrWhiteSpace(projectRoot))
-        {
-            locations.Add(new SafetyFileLocation(Path.Combine(projectRoot, CursorFolder, fileName), PermissionScope.Project, PermissionFileOrigin.Cursor));
-            locations.Add(new SafetyFileLocation(Path.Combine(projectRoot, AutonogrammerFolder, fileName), PermissionScope.Project, PermissionFileOrigin.Autonogrammer));
-        }
-
+        var locations = new List<SafetyFileLocation>(6);
+        AddScope(locations, homeDirectory, PermissionScope.User, fileName);
+        AddScope(locations, projectRoot, PermissionScope.Project, fileName);
         return locations;
+    }
+
+    private static void AddScope(List<SafetyFileLocation> locations, string? root, PermissionScope scope, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(root))
+        {
+            return;
+        }
+
+        locations.Add(new SafetyFileLocation(Path.Combine(root, CursorFolder, fileName), scope, PermissionFileOrigin.Cursor));
+        var legacy = Path.Combine(root, LegacyConventionDiscovery.LegacyDirectoryName, fileName);
+        if (File.Exists(legacy))
+        {
+            locations.Add(new SafetyFileLocation(legacy, scope, PermissionFileOrigin.Autonogrammer));
+        }
+
+        locations.Add(new SafetyFileLocation(Path.Combine(root, AutonogrammerFolder, fileName), scope, PermissionFileOrigin.Autonogrammer));
     }
 }

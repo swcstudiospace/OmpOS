@@ -1,3 +1,5 @@
+using Autonogrammer.Harness.Abstractions;
+
 using System.Collections.Frozen;
 
 namespace Autonogrammer.Workspace.Conventions;
@@ -78,11 +80,14 @@ internal sealed class ConventionScanner
     /// <summary>Scans one scope folder: the root (empty relative path) or a nested folder.</summary>
     private async Task ScanScopeAsync(string scopeDirectory, IReadOnlyList<ConventionEntry> entries, CancellationToken cancellationToken)
     {
-        foreach (var name in ConventionDirectories.Names)
+        var order = new[] { ConventionDirectories.Autonogrammer, LegacyConventionDiscovery.LegacyDirectoryName }
+            .Concat(ConventionDirectories.Names.Where(name => !string.Equals(name, ConventionDirectories.Autonogrammer, StringComparison.Ordinal)));
+        var newDirectoryPresent = entries.Any(entry => IsFolder(entry, ConventionDirectories.Autonogrammer));
+        foreach (var name in order)
         {
             if (entries.Any(entry => IsFolder(entry, name)))
             {
-                await ScanConventionDirectoryAsync(scopeDirectory, name, cancellationToken).ConfigureAwait(false);
+                await ScanConventionDirectoryAsync(scopeDirectory, name, newDirectoryPresent && string.Equals(name, LegacyConventionDiscovery.LegacyDirectoryName, StringComparison.Ordinal), cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -105,7 +110,7 @@ internal sealed class ConventionScanner
         }
     }
 
-    private async Task ScanConventionDirectoryAsync(string scopeDirectory, string directory, CancellationToken cancellationToken)
+    private async Task ScanConventionDirectoryAsync(string scopeDirectory, string directory, bool shadowedByNew, CancellationToken cancellationToken)
     {
         var relative = ConventionPath.JoinRelative(scopeDirectory, directory);
         var list = await _context.Source.ListAsync(ConventionPath.Join(_context.BasePath, relative), _context.Options.MaxEntriesPerDirectory, cancellationToken).ConfigureAwait(false);
@@ -118,9 +123,24 @@ internal sealed class ConventionScanner
         var nested = scopeDirectory.Length > 0;
         foreach (var entry in list.Entries)
         {
+            if (shadowedByNew && !entry.IsDirectory && IsShadowedFile(entry.Name))
+            {
+                continue;
+            }
+
             await ScanEntryAsync(scopeDirectory, directory, nested, entry, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    private static bool IsShadowedFile(string name) =>
+        string.Equals(name, "hooks.json", StringComparison.Ordinal)
+        || string.Equals(name, "mcp.json", StringComparison.Ordinal)
+        || string.Equals(name, "setup.json", StringComparison.Ordinal)
+        || string.Equals(name, "ignore", StringComparison.Ordinal)
+        || string.Equals(name, "run-mode.json", StringComparison.Ordinal)
+        || string.Equals(name, "environment.json", StringComparison.Ordinal)
+        || string.Equals(name, "permissions.json", StringComparison.Ordinal)
+        || string.Equals(name, "sandbox.json", StringComparison.Ordinal);
 
     private async Task ScanEntryAsync(string scopeDirectory, string directory, bool nested, ConventionEntry entry, CancellationToken cancellationToken)
     {
