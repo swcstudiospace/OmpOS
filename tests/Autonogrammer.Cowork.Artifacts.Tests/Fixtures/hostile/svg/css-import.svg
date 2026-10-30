@@ -1,0 +1,1 @@
+<svg xmlns="http://www.w3.org/2000/svg"><style>@import url(https://evil.example/x.css);</style><rect style="fill:red; url(https://evil.example/x.png)" fill="black" width="1" height="1"/></svg>
