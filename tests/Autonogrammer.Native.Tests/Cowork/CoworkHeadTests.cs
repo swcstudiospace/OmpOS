@@ -1,4 +1,10 @@
+using Autonogrammer.Contracts.Cowork;
+using Autonogrammer.Native.Agents;
+using Autonogrammer.Native.Cowork;
+using Autonogrammer.Native.Tests.AgentLoop;
 using Autonogrammer.Native.Views.Cowork;
+using Autonogrammer.Native.Views.Shell;
+using Autonogrammer.Presentation.Cowork;
 using Autonogrammer.Presentation.Cowork.Instructions;
 using Autonogrammer.Presentation.Cowork.Memory;
 using Autonogrammer.Presentation.Cowork.Projects;
@@ -34,7 +40,7 @@ public sealed class CoworkHeadTests
             AssertNamedInOrder(instructions.KeyboardOrder, ["Global instructions editor", "Load instructions", "Save instructions"]);
             AutomationProperties.GetName(instructions).ShouldBe("Global instructions");
             instructions.FindControl<TextBlock>("LimitText")!.Text.ShouldBe(GlobalInstructionsModel.LimitMessage);
-        });
+        }, TestContext.Current.CancellationToken);
 
         var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../src/Autonogrammer.Native.Views/Views/Cowork"));
         foreach (var name in new[] { "ProjectsView.axaml", "MemoryView.axaml", "InstructionsView.axaml" })
@@ -63,7 +69,82 @@ public sealed class CoworkHeadTests
             var rail = new CoworkRailView();
             rail.ProjectsSection.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
             rail.ProjectEditor.Content.ShouldBeOfType<ProjectsView>();
-        });
+        }, TestContext.Current.CancellationToken);
+    }
+
+
+    /// <summary>Disposing the agent head disposes the Cowork head first: engines stopped and the gateway closed.</summary>
+    [Fact]
+    public async Task DisposeStopsCoworkBeforeTheCodeHost()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "cowork-head-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var head = AgentHead.Create(new AgentHeadOptions
+            {
+                PluginsRoot = root,
+                StateRoot = root,
+                WorkspaceRoot = root,
+                TransportFactory = new ScriptedOmp().TransportFactory,
+                SelectMostRecentSession = false,
+                DetailsRefreshInterval = Timeout.InfiniteTimeSpan,
+            });
+            head.Cowork.ShouldNotBeNull();
+            await head.DisposeAsync();
+            head.Cowork.IsDisposed.ShouldBeTrue();
+            head.Cowork.EnginesStopped.ShouldBeTrue();
+            head.Cowork.GatewayClosed.ShouldBeTrue();
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    /// <summary>With the OpenConversation delegate supplied, the selected row shows ViewMapping.Create(model), and null shows the empty state.</summary>
+    [Fact]
+    public async Task OpenConversationDelegateShowsTheSelectedSessionsConversation()
+    {
+        await using var headless = TestAppBuilder.StartSession();
+        await headless.RunAsync(() =>
+        {
+            var catalog = new OneSessionCatalog("task-1");
+            var shell = new CoworkShellModel(catalog);
+            var model = new CoworkDockContent("conversation");
+            var services = new CoworkSurfaceServices
+            {
+                Catalog = catalog,
+                Shell = shell,
+                OpenConversation = id => id == "task-1" ? model : null,
+            };
+            var view = new CoworkView();
+            view.Attach(shell);
+            view.BindConversation(shell, services);
+            shell.Rail.Select("task-1");
+            view.Conversation.Content.ShouldBeOfType<TextBlock>().Text.ShouldBe("conversation");
+            services = services with { OpenConversation = _ => null };
+            view.BindConversation(shell, services);
+            view.Conversation.Content.ShouldBeNull();
+            return Task.CompletedTask;
+        }, TestContext.Current.CancellationToken);
+    }
+
+    private sealed class OneSessionCatalog(string id) : ICoworkSessionCatalog
+    {
+        public event EventHandler? Changed { add { } remove { } }
+
+        public IReadOnlyList<CoworkSessionSummary> Snapshot() =>
+        [
+            new()
+            {
+                Id = id,
+                Title = "task",
+                Status = CoworkSessionStatus.Created,
+                CreatedAt = DateTimeOffset.UnixEpoch,
+                UpdatedAt = DateTimeOffset.UnixEpoch,
+            },
+        ];
     }
 
     private static void AssertNamedInOrder(IReadOnlyList<Control> controls, IReadOnlyList<string> names)

@@ -1,4 +1,5 @@
 using Autonogrammer.Native.Composition.Automations;
+using Autonogrammer.Native.Cowork;
 using Autonogrammer.Native.Logging;
 using Autonogrammer.Native.Settings;
 using Autonogrammer.Native.Settings.Models;
@@ -76,6 +77,9 @@ internal sealed class AgentHead : IAsyncDisposable
 
     /// <summary>Gets the shared services (hooks, remote environments, MCP catalog, checkpoints, run mode, cloud) the shell and the Settings window read, or null for a head built without them. The head disposes them.</summary>
     public Autonogrammer.Native.Composition.HeadServices? Services { get; private init; }
+
+    /// <summary>Gets the Cowork head. Disposed before <see cref="Host"/>.</summary>
+    public CoworkHead? Cowork { get; private set; }
 
     /// <summary>Builds the head of the running process: the plugins, the state and the Substrate come from the environment, and the registry's changes reach the models on the UI thread.</summary>
     /// <returns>The head. It opens nothing until <see cref="InitializeAsync"/>.</returns>
@@ -277,6 +281,11 @@ internal sealed class AgentHead : IAsyncDisposable
 #pragma warning restore VSTHRD003
         await Settings.DisposeAsync().ConfigureAwait(true);
 
+        if (Cowork is { } cowork)
+        {
+            await cowork.DisposeAsync().ConfigureAwait(true);
+        }
+
         // A run in flight works in a session of the host, so the automations stop before the engines.
         if (Services is { } automationServices)
         {
@@ -324,6 +333,16 @@ internal sealed class AgentHead : IAsyncDisposable
             // A local automation starts its run in a session of this head, through the panel's own models.
             services?.Automations.Attach(new HeadAutomationSessions(host, dispatch));
             var head = new AgentHead(host, catalog, panel, board, panel.BeginInitialising(), selectMostRecent, dispatch, options.TimeProvider, detailsInterval, settings) { Services = services };
+            head.Cowork = CoworkHead.Create(
+                options.Loop.StateRoot,
+                options.Loop.WorkspaceRoot,
+                new SignedOutCoworkGate(),
+                options.TransportFactory,
+                options.LoggerFactory,
+                options.OmpPath,
+                options.TimeProvider,
+                options.ProviderKeys,
+                services?.Mcp);
 
             // The head owns the models from here on.
             catalog = null;
@@ -410,5 +429,12 @@ internal sealed class AgentHead : IAsyncDisposable
         {
             Volatile.Write(ref _refreshing, 0);
         }
+    }
+
+    private sealed class SignedOutCoworkGate : Autonogrammer.Cowork.ICoworkAccountGate
+    {
+        public bool IsSignedIn => false;
+
+        public string? AccountFolderKey => null;
     }
 }

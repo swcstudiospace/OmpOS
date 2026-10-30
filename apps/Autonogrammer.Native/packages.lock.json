@@ -417,6 +417,13 @@
           "ModelContextProtocol": "[2.3.0, )"
         }
       },
+      "autonogrammer.harness.mcpgateway": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.Mcp": "[0.15.0, )"
+        }
+      },
       "autonogrammer.harness.notifications": {
         "type": "Project",
         "dependencies": {

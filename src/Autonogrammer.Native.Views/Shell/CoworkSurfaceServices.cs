@@ -31,4 +31,7 @@ public sealed record CoworkSurfaceServices
 
     /// <summary>Gets the matching removal, or null when there is no signal.</summary>
     public Action<EventHandler>? UnsubscribeCode { get; init; }
+
+    /// <summary>Gets the conversation model for a selected session, or null for the empty state. The value is a presentation model.</summary>
+    public Func<string, object?>? OpenConversation { get; init; }
 }

@@ -575,6 +575,13 @@
           "ModelContextProtocol": "[2.3.0, )"
         }
       },
+      "autonogrammer.harness.mcpgateway": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.Mcp": "[0.15.0, )"
+        }
+      },
       "autonogrammer.harness.notifications": {
         "type": "Project",
         "dependencies": {
@@ -666,6 +673,7 @@
           "Autonogrammer.Harness.ComputerUse.X11": "[0.15.0, )",
           "Autonogrammer.Harness.Isolation": "[0.15.0, )",
           "Autonogrammer.Harness.Mcp": "[0.15.0, )",
+          "Autonogrammer.Harness.McpGateway": "[0.15.0, )",
           "Autonogrammer.Harness.Notifications": "[0.15.0, )",
           "Autonogrammer.Harness.OmpConfig": "[0.15.0, )",
           "Autonogrammer.Harness.PluginBundles": "[0.15.0, )",

@@ -29,6 +29,7 @@
     <ProjectReference Include="../../src/Autonogrammer.Harness.Providers/Autonogrammer.Harness.Providers.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Secrets/Autonogrammer.Harness.Secrets.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Mcp/Autonogrammer.Harness.Mcp.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.McpGateway/Autonogrammer.Harness.McpGateway.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Plugins/Autonogrammer.Harness.Plugins.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Remote/Autonogrammer.Harness.Remote.csproj" />
     <ProjectReference Include="../../src/Autonogrammer.Harness.Terminal/Autonogrammer.Harness.Terminal.csproj" />

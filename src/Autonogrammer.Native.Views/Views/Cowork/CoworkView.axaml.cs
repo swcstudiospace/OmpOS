@@ -1,3 +1,4 @@
+using Autonogrammer.Native.Views.Shell;
 using Autonogrammer.Presentation.Cowork;
 using Avalonia;
 using Avalonia.Controls;
@@ -50,6 +51,24 @@ public partial class CoworkView : UserControl
         Dock.Attach(shell);
         Dock.IsVisible = shell.IsDockOpen;
         shell.Changed += (_, _) => Dock.IsVisible = shell.IsDockOpen;
+    }
+
+    /// <summary>Shows <see cref="ViewMapping.Create"/> for the selected session, or the empty state when the delegate returns null.</summary>
+    /// <param name="shell">The shell whose rail selection drives the region.</param>
+    /// <param name="services">The services that supply <see cref="CoworkSurfaceServices.OpenConversation"/>.</param>
+    public void BindConversation(CoworkShellModel shell, CoworkSurfaceServices services)
+    {
+        ArgumentNullException.ThrowIfNull(shell);
+        ArgumentNullException.ThrowIfNull(services);
+        void Refresh()
+        {
+            var id = shell.Rail.SelectedId;
+            var model = id is null ? null : services.OpenConversation?.Invoke(id);
+            ConversationHost.Content = model is null ? null : ViewMapping.Create(model);
+        }
+
+        shell.Rail.Changed += (_, _) => Refresh();
+        Refresh();
     }
 
     /// <summary>Moves focus to the next or previous region. Rail, conversation, then dock.</summary>

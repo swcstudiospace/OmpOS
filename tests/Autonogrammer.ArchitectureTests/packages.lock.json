@@ -709,7 +709,9 @@
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )",
           "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
-          "DiffPlex": "[1.9.0, )"
+          "DiffPlex": "[1.9.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
+          "Microsoft.Extensions.Options.ConfigurationExtensions": "[10.0.13, )"
         }
       },
       "autonogrammer.cowork.artifacts.stores": {
@@ -976,6 +978,7 @@
           "Autonogrammer.Harness.ComputerUse.X11": "[0.15.0, )",
           "Autonogrammer.Harness.Isolation": "[0.15.0, )",
           "Autonogrammer.Harness.Mcp": "[0.15.0, )",
+          "Autonogrammer.Harness.McpGateway": "[0.15.0, )",
           "Autonogrammer.Harness.Notifications": "[0.15.0, )",
           "Autonogrammer.Harness.OmpConfig": "[0.15.0, )",
           "Autonogrammer.Harness.PluginBundles": "[0.15.0, )",
