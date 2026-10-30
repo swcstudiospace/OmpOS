@@ -104,6 +104,14 @@ jobs:
           out_dir="$RUNNER_TEMP/web-smoke"
           mkdir -p "$out_dir"
           OUT_DIR="$out_dir" bash scripts/web-smoke/run-smoke.sh
+      - name: Keep the web smoke evidence when the smoke fails (logs, JSON and screenshots of the failing half)
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: web-smoke-evidence-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/web-smoke
+          if-no-files-found: warn
+          retention-days: 7
       - name: Require podman (rootful wrapper from the setup step; scripts call podman, never docker)
         run: |
           command -v podman >/dev/null || { echo "::error::podman is not on PATH" >&2; exit 1; }
