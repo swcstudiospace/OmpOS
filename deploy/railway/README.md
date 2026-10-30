@@ -45,7 +45,7 @@ Source: this repository, build context at the repository root, `deploy/api.Conta
 
 The hosting topology uses the Railway template image `timescale-postgis-ssl:pg16-ts2.13` (PostgreSQL 16, TimescaleDB 2.13, TLS on), existing service `TimescaleDB` in the project `Ultrathink`. Local parity: `docker.io/timescale/timescaledb:2.13.1-pg16` (digest in `deploy/compose.yaml`). Notes:
 
-- The API creates its own schema `autonogrammer`, the `timescaledb` extension and the `session_events` hypertable at start (`IF NOT EXISTS`); it needs a role that may create them.
+- The schema, extension and tables are not created by the API at start. An operator runs `deploy/data-plane/bootstrap.sql`, then the one-shot `autonogrammer-migrate` service (`migrate`). See `docs/runbooks/data-plane.md`. Nothing here has been applied to Railway (OQ-73, OQ-100).
 - Use the private host `timescaledb.railway.internal` and the service's own `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD` through references. Do not copy values.
 - The connection uses TLS with `Trust Server Certificate=true`, because the template's certificate is self-signed.
 - Do not enable or keep a public TCP proxy on this service for the API's sake (threat model, T3.11).
@@ -54,11 +54,11 @@ The hosting topology uses the Railway template image `timescale-postgis-ssl:pg16
 
 ### Dragonfly
 
-Image `ghcr.io/dragonflydb/dragonfly:latest` on Railway (unpinned, open item Q-HOST-DFLY-PIN); local parity `docker.io/dragonflydb/dragonfly:v1.27.1`. Notes:
+Image `ghcr.io/dragonflydb/dragonfly:latest` on Railway (unpinned, open item Q-HOST-DFLY-PIN); local parity `docker.io/dragonflydb/dragonfly:v1.27.1`. A dedicated `autonogrammer-dragonfly` service is an operator step, not created by this tree. Notes:
 
 - Password in the variable `DFLY_requirepass` on the Dragonfly service. The API reads it through the reference in `Coordination__Dragonfly__ConnectionString`.
-- The API stores only leases (30 s), idempotency records (up to 24 h) and pub/sub wake-ups. Nothing needs a backup.
-- The connection string in the hosting runbook has no TLS option; the private network carries it in clear.
+- Keys use the prefix `autonogrammer:v1:` (leases, idempotency, presence, rate limits, nonces, signals). Nothing needs a backup.
+- The connection string in the hosting runbook has no TLS option; the private network carries it in clear. Do not add a TCP proxy or a public domain (OQ-347).
 
 ## Variables of `autonogrammer-api`
 
@@ -78,7 +78,12 @@ Config keys use `:` in code and `__` in the environment. Mark every variable mar
 | Variable | Secret | Example placeholder | Read in | Safe default |
 |----------|--------|---------------------|---------|--------------|
 | `Sessions__Store` | no | `Postgres` | `Options/SessionsOptions.cs`, `Persistence/SessionStoreStartup.cs` | `InMemory` in `appsettings.json`; Production refuses it at start. Set `Postgres` |
-| `Sessions__Postgres__ConnectionString` | yes | `Host=${{TimescaleDB.PGHOST}};Port=${{TimescaleDB.PGPORT}};Database=${{TimescaleDB.PGDATABASE}};Username=${{TimescaleDB.PGUSER}};Password=${{TimescaleDB.PGPASSWORD}};Ssl Mode=Require;Trust Server Certificate=true` | `src/Autonogrammer.Sessions.Postgres/ServiceCollectionExtensions.cs` | None; start fails naming the key |
+| `Sessions__Postgres__ConnectionString` | yes | `Host=${{TimescaleDB.PGHOST}};Port=${{TimescaleDB.PGPORT}};Database=${{TimescaleDB.PGDATABASE}};Username=${{TimescaleDB.PGUSER}};Password=${{TimescaleDB.PGPASSWORD}};Ssl Mode=Require;Trust Server Certificate=true` | `src/Autonogrammer.Sessions.Postgres/ServiceCollectionExtensions.cs` | None; start fails naming the key. Hosted, this is the `autonogrammer_app` password, in `autonogrammer-api` only |
+| `Sessions__Postgres__MigratorConnectionString` | yes | Unset on the API | `src/Autonogrammer.Sessions.Postgres/ServiceCollectionExtensions.cs` | Unset on `autonogrammer-api`. The `autonogrammer_migrator` secret belongs only to the operator one-shot `autonogrammer-migrate` |
+| `Sessions__Postgres__AutoMigrate` | no | `false` | `Persistence/SessionStoreStartup.cs` | `false`. Production refuses `true` |
+| `DataPlane__Postgres__SchemaWaitSeconds` | no | `120` | data-plane options | `120`, equal to `deploy.healthcheckTimeout` |
+| `DataPlane__TenantHashPepper` | yes | `<pepper>` | data-plane options | Unset. Required when `Coordination__Store=Dragonfly`. Value never committed |
+| `DataPlane__Ledger__Enabled` | no | `false` | data-plane options | `false` |
 | `Coordination__Store` | no | `Dragonfly` | `Options/CoordinationOptions.cs`, `Coordination/CoordinationStartup.cs` | `InMemory` in `appsettings.json`; allowed in Production with a warning (not shared between instances). Set `Dragonfly` |
 | `Coordination__Dragonfly__ConnectionString` | yes | `dragonfly.railway.internal:6379,password=${{Dragonfly.DFLY_requirepass}},abortConnect=false` | `Options/CoordinationDragonflyOptions.cs` | None; start fails naming the key |
 
@@ -136,7 +141,7 @@ The owner token itself is never a Railway variable. See `docs/runbooks/incident-
 | `Otel__Exporter` | no | `none` | `Options/OtelOptions.cs`, `Program.cs` line 204 | `none` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | no | `http://greptimedb.railway.internal:4000/v1/otlp` | .NET OpenTelemetry SDK | Unset; needed only for `otlp` |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | no | `http/protobuf` | .NET OpenTelemetry SDK | Unset; needed only for `otlp` |
-| `OTEL_EXPORTER_OTLP_HEADERS` | yes | `Authorization=<Basic credential>,X-Greptime-DB-Name=public,X-Greptime-Pipeline-Name=greptime_trace_v1` | .NET OpenTelemetry SDK; rule in `docs/runbooks/hosting.md` | Unset; needed only for `otlp` |
+| `OTEL_EXPORTER_OTLP_HEADERS` | yes | `Authorization=<Basic credential>,X-Greptime-DB-Name=autonogrammer,X-Greptime-Pipeline-Name=greptime_trace_v1` | .NET OpenTelemetry SDK; rule in `docs/runbooks/hosting.md` | Unset; needed only for `otlp`. Database name `autonogrammer`, not `public` |
 | `Autonogrammer__Debug__LogPrompts` | no | `false` | `Options/DebugOptions.cs` | `false`. `true` writes prompt text to logs |
 
 ### Leave unset

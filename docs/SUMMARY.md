@@ -76,6 +76,8 @@
 * [Publish the docs with GitBook](runbooks/gitbook-publish.md)
 * [GitHub setup](runbooks/github-setup.md)
 * [Hosting](runbooks/hosting.md)
+* [Data plane](runbooks/data-plane.md)
+* [Accounts](runbooks/accounts.md)
 * [Deploy and rollback](runbooks/deploy-and-rollback.md)
 * [SLOs, alerting and uptime monitoring](runbooks/slo-and-alerting.md)
 * [Incident response](runbooks/incident-response.md)

@@ -135,7 +135,7 @@ A prompt typed on any surface becomes an `IntentEnvelope` (parser), runs through
 
 Session runs execute inside the API process. No separate worker service exists.
 
-- **Admission is synchronous.** The API acquires the run lease `autonogrammer:lease:run:{sessionId}` (TTL 30 s, renewed every 10 s) before it answers. A conflicting lease returns 409 before any 202 is sent.
+- **Admission is synchronous.** The API acquires the run lease `autonogrammer:v1:lease:run:{sessionId}` (TTL 30 s, renewed every 10 s) before it answers. A conflicting lease returns 409 before any 202 is sent.
 - **Execution.** `DirectSessionRunner` provisions a sandbox through `ISandboxProvider`, runs the prompt through the harness, collects artifacts, and tears down the sandbox in `finally`. The hosted API runs the InMemory harness and `FakeSandboxProvider` (see [hosting runbook](runbooks/hosting.md)).
 - **Retry** lives in `DirectSessionRunner` and the run lease only.
 - **Reaper.** Every 15 s, a Running session older than 60 s whose lease is absent is settled as a terminal failure with detail `run owner lost`. A lost lease settles the run with detail `run lease lost`. Terminal failure detail is persisted in the terminal event text.
@@ -200,7 +200,7 @@ A session id must match `^[A-Za-z0-9_.-]{1,120}$` and must not be `.` or `..`. A
 ## Coordination
 
 - **Store**: `Coordination:Store` is `Dragonfly` or `InMemory`. It defaults to `InMemory` in `appsettings.json`; production must set it explicitly, and a warning is logged in Production when it is `InMemory`. The connection string is `Coordination:Dragonfly:ConnectionString` (StackExchange.Redis format; `abortConnect=false` is required).
-- Dragonfly holds three things: run leases (`autonogrammer:lease:run:{sessionId}`), idempotency records (`autonogrammer:idem:*`), and the SSE wake-up pub/sub channel `autonogrammer:signals`.
+- Dragonfly holds reconstructible state under `autonogrammer:v1:`: run leases (`autonogrammer:v1:lease:run:{sessionId}`), idempotency records (`autonogrammer:v1:idem:*`), presence, rate limits, nonces, and the SSE wake-up channels `autonogrammer:v1:sig:session` and `autonogrammer:v1:sig:dispatch`.
 - Signals are published after commit. Publishing is best-effort: failures are logged and swallowed. Because polling is the source of truth, a missed signal delays a stream until the next poll [INFERENCE: from the polling design; not measured].
 - The hosted Dragonfly image is `ghcr.io/dragonflydb/dragonfly:latest`, unpinned (open item Q-HOST-DFLY-PIN).
 

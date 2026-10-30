@@ -106,7 +106,7 @@ Reference variables use the shape `${{SERVICE.VARIABLE}}`, resolved by Railway a
 | `Otel__Exporter` | `otlp` | No | `none` (default), `console`, or `otlp`. |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://greptimedb.railway.internal:4000/v1/otlp` | Yes when `otlp` | Read by the .NET OpenTelemetry SDK. The private path is unverified (Q-HOST-PRIVNET). |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | Yes when `otlp` | |
-| `OTEL_EXPORTER_OTLP_HEADERS` | `Authorization=<Basic credential>,X-Greptime-DB-Name=public,X-Greptime-Pipeline-Name=greptime_trace_v1` | Yes, secret | The only OTLP header variable. Set it in the hosting environment; the Authorization value is never committed. Traces are rejected with `400 Pipeline is required for this API` without the pipeline header, so do not use `OTEL_EXPORTER_OTLP_TRACES_HEADERS` (it was not applied in the local smoke). See [smoke evidence, finding 1](evidence/smoke-backend-local-2026-10-21.md). `X-Greptime-DB-Name=public` comes from the 2026-10-21 orchestrator decision; the smoke file records only the pipeline header [INFERENCE]. |
+| `OTEL_EXPORTER_OTLP_HEADERS` | `Authorization=<Basic credential>,X-Greptime-DB-Name=autonogrammer,X-Greptime-Pipeline-Name=greptime_trace_v1` | Yes, secret | The only OTLP header variable. Set it in the hosting environment; the Authorization value is never committed. Traces are rejected with `400 Pipeline is required for this API` without the pipeline header, so do not use `OTEL_EXPORTER_OTLP_TRACES_HEADERS` (it was not applied in the local smoke). See [smoke evidence, finding 1](evidence/smoke-backend-local-2026-10-21.md). The database name is `autonogrammer`, not `public`. |
 | `Harness__Adapter` | `Acp` | Yes | Production refuses `InMemory` at startup (`HarnessAdapterSelectionTests`). The hosted value is `Acp`. The ACP adapter needs an omp runtime: the API image now contains one (`/usr/local/bin/omp`, see "Known blockers and gaps" item 2). No model credential is deployed (HOST-04 open). |
 | `Autonogrammer__Debug__LogPrompts` | `false` | No | `true` writes prompt bodies to logs. Keep `false` when hosted. |
 | `Api__Cors__Origins__0` (and `__1`, ...) | Unset | Owner decision | An empty list denies all cross-origin traffic. Set only after the Vercel origin mechanism is decided (Q-VERCEL-CSP). |
@@ -114,10 +114,21 @@ Reference variables use the shape `${{SERVICE.VARIABLE}}`, resolved by Railway a
 | `Api__MaxRequestBodyBytes` | Default `1048576` | No | |
 | `Api__RateLimit__PromptsPerMinute` | Default `60` | No | |
 | `Api__RateLimit__SessionsPerMinute` | Default `60` | No | |
+| `Sessions__Postgres__MigratorConnectionString` | Unset on the API | No on the API | Secret of the `autonogrammer-migrate` one-shot service only. Never set on `autonogrammer-api`. The value never goes in this file. |
+| `Sessions__Postgres__AutoMigrate` | `false` | No | Production refuses `true`. Development and tests may set `true`. |
+| `DataPlane__Postgres__SchemaWaitSeconds` | `120` | No | Must equal Railway `healthcheckTimeout` (120). See [Data plane](data-plane.md). |
+| `DataPlane__TenantHashPepper` | Unset in git | Yes, secret | Required when `Coordination__Store=Dragonfly`. Name only; the value never goes in this file. |
+| `DataPlane__Ledger__Enabled` | `false` | No | Default off. The API does not wait on the ledger. |
 
 Removed: every `Workflows__*` variable (`Workflows__Enabled`, `Workflows__Address`, `Workflows__Namespace`, `Workflows__TaskQueue`, `Workflows__ApiKey`, `Workflows__Tls`). The Temporal configuration is gone. Do not set any of them.
 
 The TimescaleDB, Dragonfly, and GreptimeDB variables belong to their own services. The Dragonfly password lives in the variable `DFLY_requirepass` on the Dragonfly service. Read it through the reference shown above; never copy it.
+
+## Data plane
+
+Names and operator steps are in [Data plane](data-plane.md). The `autonogrammer-dragonfly` service, the `autonogrammer` database, the roles `autonogrammer_app` and `autonogrammer_migrator`, and the `autonogrammer-migrate` one-shot service are operator steps. Nothing here has been applied to Railway (OQ-73, OQ-100). `deploy/railway/api.railway.json` is not edited by the data-plane docs: its `healthcheckTimeout` of 120 must stay equal to `DataPlane:Postgres:SchemaWaitSeconds`.
+
+The OTLP database header is `X-Greptime-DB-Name=autonogrammer`. Do not list a data-plane variable in `Harness:Acp:Environment:Allow`.
 
 ## Deploy steps
 

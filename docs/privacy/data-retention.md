@@ -34,15 +34,15 @@ The program is single-operator. There is one subject (the owner token's `Api:Aut
 | Session timestamps and status | `sessions`, `session_events.occurred_at` | Behavioural metadata | Forever | By SQL |
 | Owner token | Never stored. Only its SHA-256 digest is configured (`Api__Auth__OwnerToken__Sha256__0`) as a Railway variable | The digest is not personal data and cannot be reversed for a token of 32 or more random bytes | Until rotated | Rotate ([Incident response](../runbooks/incident-response.md)) |
 | Provider keys | Railway variables `AUTONOGRAMMER_PROVIDER_<ID>_KEY`, and the omp agent directory (`models.yml`, credentials), where omp keeps them unencrypted | Secret | Until revoked | Revoke at the provider; delete the variable; delete the directory |
-| Run leases | Dragonfly `autonogrammer:lease:run:<session>` | No | 30 seconds unless renewed | Expire by themselves |
-| Idempotency records | Dragonfly `autonogrammer:idem:<sha256 of scope and key>`; a completed record holds the response JSON | Low: session id, accepted prompt response | 60 seconds pending, 24 hours completed (`CoordinationDefaults`) | Expire by themselves; `DEL` by key |
+| Run leases | Dragonfly `autonogrammer:v1:lease:run:<session>` | No | 30 seconds unless renewed | Expire by themselves |
+| Idempotency records | Dragonfly `autonogrammer:v1:idem:<sha256 of scope and key>`; a completed record holds the response JSON | Low: session id, accepted prompt response | 60 seconds pending, 24 hours completed (`CoordinationDefaults`) | Expire by themselves; `DEL` by key |
 | Application logs | Railway deploy logs (stdout) | Low: request method and path, session ids, correlation ids, rate-limit warnings, error text. Prompts are logged as `<redacted len=N>` | The platform's retention for the plan [INFERENCE: not read] | Not by the operator |
 | Traces and metrics | GreptimeDB when `Otel:Exporter=otlp`; span tags include `autonogrammer.session.id` | Low | The GreptimeDB database's setting [INFERENCE: unknown] | By GreptimeDB, not by this repository |
 | Backups and dumps | Wherever the operator stores them ([Backup and restore](../runbooks/backup-and-restore.md)); Railway volume snapshots | All of the above | The operator's schedule | By deleting the copy |
 | Browser state | Nothing persisted: the web head keeps the token in memory, with no cookie, `localStorage`, `sessionStorage` or IndexedDB | n/a | Until the page closes | n/a |
 | Static host logs | Vercel access logs for the web head | IP address, user agent [INFERENCE] | Vercel's retention | Not by the operator |
 
-Evidence: `src/Autonogrammer.Sessions.Postgres/PostgresSessionSchema.cs`; `src/Autonogrammer.Contracts/Streaming/*` and `Ui/UiBlockConverter.cs` (payload shapes); `src/Autonogrammer.Coordination/CoordinationDefaults.cs`; `src/Autonogrammer.Coordination.Dragonfly/DragonflyKeys.cs`; `services/Autonogrammer.Api/Options/DebugOptions.cs`, `Services/PromptRedactor.cs`; `docs/decisions/ADR-0031-data-plane-namespaces-and-resilience.md` ("no retention exists"). The column names are from the schema; the JSON field names inside `payload` are inferred from the contract types and must be checked on real rows before a query depends on them.
+Evidence: `src/Autonogrammer.Sessions.Postgres/Migrations/M0001_SessionStore.cs` and `autonogrammer.schema_migrations`; `src/Autonogrammer.Contracts/Streaming/*` and `Ui/UiBlockConverter.cs` (payload shapes); `src/Autonogrammer.Coordination/CoordinationDefaults.cs`; `src/Autonogrammer.Coordination.Dragonfly/DragonflyKeyspace.cs`; `services/Autonogrammer.Api/Options/DebugOptions.cs`, `Services/PromptRedactor.cs`; `docs/decisions/ADR-0031-data-plane-namespaces-and-resilience.md`. The column names are from the migrations; the JSON field names inside `payload` are inferred from the contract types and must be checked on real rows before a query depends on them.
 
 ## Logging policy
 
@@ -129,6 +129,6 @@ These are proposals for the owner to accept or change before users are admitted.
 
 ## How verified
 
-- Read: the Postgres schema classes, the stream and UI contract converters, `CoordinationDefaults.cs`, `DragonflyKeys.cs`, `DebugOptions.cs`, `PromptRedactor.cs`, `appsettings.json`, [Cloud agents](../runbooks/cloud-agents.md) (session store has no delete), ADR-0031, [Web key threat model](../runbooks/web-key-threat-model.md) (memory-only key).
+- Read: the migration steps, the stream and UI contract converters, `CoordinationDefaults.cs`, `DragonflyKeyspace.cs`, `DebugOptions.cs`, `PromptRedactor.cs`, `appsettings.json`, [Cloud agents](../runbooks/cloud-agents.md) (session store has no delete), ADR-0031, [Web key threat model](../runbooks/web-key-threat-model.md) (memory-only key).
 - Searched the Postgres and Dragonfly projects for `retention`, `DELETE FROM`, `TRUNCATE` and TTL settings. The only `DELETE FROM` is the cloud agent row delete; the only expiry is in Dragonfly.
 - Not verified: no SQL above was executed; JSON field names inside payloads are inferred; Railway, GreptimeDB and Vercel retention are not read; nothing was run against a deployment.
