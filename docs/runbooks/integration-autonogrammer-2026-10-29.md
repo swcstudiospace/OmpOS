@@ -31,6 +31,19 @@ They become one line by replay, after that session commits:
 3. Phases 67 to 77 are that line's work. This branch has phases 66.2 to 66.4. Those later phases are not started here while the other tree is dirty, because rewriting them would fork the milestone.
 4. After the replay is on `main`, the second folder is only a checkout. The owner removes the worktree. Until then both checkouts stay.
 
+## Railway reuse (2026-10-30)
+
+No new Railway project or database was created. Names only:
+
+| System | Project | What exists | Use for the API |
+|--------|---------|-------------|-----------------|
+| Ultrathink | `Ultrathink` (`67a98752-ba0a-4ae2-a881-8d0e33a89328`), production | TimescaleDB, Dragonfly, GreptimeDB, tailscale | The API's session store and coordination store. References only: `Sessions__Postgres__ConnectionString` from `TimescaleDB.PG*`, `Coordination__Dragonfly__ConnectionString` from `Dragonfly.DFLY_requirepass`. The API creates schema `autonogrammer` (`IF NOT EXISTS`). Not applied in this pass: that write is the first production schema change. |
+| Substrate | `Agent Substrate` (`a3453be1-819a-4ac3-a787-c6cfa5550f18`), production | Postgres, lightrag-postgres, hindsight, tei, ragflow | Not the Autonogrammer API database. One staged change is already pending; it was not committed. |
+| Swarm | none | No project or service with this name | Unmapped. Not wired. |
+| Realm | none | No project or service with this name | Unmapped. Not wired. |
+| Staging worker | `ompos-staging` (`71340b1d-e56a-4f57-ac8c-a3160ce5f36d`), staging | `ompos-worker` and its volume | Left as it is (OQ-171). |
+
+
 ## Deployed interfaces that the rename changed (hard cutover, no alias)
 
 The rename is the owner's decision of 2026-10-28 and has no alias. This table says what each change touches today, from the repository and the recorded deployments; the steps that move existing state are in [Rebrand to Autonogrammer](rebrand-autonogrammer.md), section 5 (owner actions) and section 7 (runtime migrations).

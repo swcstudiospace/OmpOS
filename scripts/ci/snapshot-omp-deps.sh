@@ -35,14 +35,23 @@ case "$mode" in
     render > "$file"
     ;;
   check)
+    # Pending is decided before listing. `bun pm ls` exits 1 when the install wrote no lockfile,
+    # and that must not fail the first image build the snapshot is waiting on.
+    if grep -q '"pending":[[:space:]]*true' "$file"; then
+      echo "::warning::deploy/omp-deps.lock.json is pending: produce it with OMP_DEPS_MODE=write (OQ-176)." >&2
+      actual="$(mktemp)"
+      if render > "$actual"; then
+        echo "Resolved omp dependencies:" >&2
+        cat "$actual" >&2
+      else
+        echo "snapshot-omp-deps: bun pm ls could not list dependencies. The pending snapshot still passes." >&2
+      fi
+      rm -f "$actual"
+      exit 0
+    fi
     actual="$(mktemp)"
     trap 'rm -f "$actual"' EXIT
     render > "$actual"
-    if grep -q '"pending":[[:space:]]*true' "$file"; then
-      echo "::warning::deploy/omp-deps.lock.json is pending: it is produced by the first podman build. Resolved omp dependencies:" >&2
-      cat "$actual" >&2
-      exit 0
-    fi
     if ! diff -u "$file" "$actual"; then
       echo "snapshot-omp-deps: resolved omp dependencies differ from deploy/omp-deps.lock.json (above). Review, then regenerate the snapshot." >&2
       exit 1
