@@ -3,6 +3,7 @@ using Avalonia.Markup.Xaml;
 using Autonogrammer.Native;
 using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Views.Sessions;
+using Autonogrammer.Presentation.AgentPanel;
 
 namespace Autonogrammer.Android;
 
@@ -13,6 +14,10 @@ namespace Autonogrammer.Android;
 /// </summary>
 public sealed partial class AutonogrammerAndroidApp : Avalonia.Application
 {
+    // The unconnected panel is owned by the application for the activity's lifetime. The single-view lifetime has no shutdown
+    // hook, and the panel holds no engine, so the process releases it.
+    private AgentPanelViewModel? _panel;
+
     /// <summary>Loads the application XAML.</summary>
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
@@ -29,7 +34,8 @@ public sealed partial class AutonogrammerAndroidApp : Avalonia.Application
             var workspaceRoot = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
             Directory.CreateDirectory(workspaceRoot);
             var motion = AndroidMotion.Read();
-            singleView.MainView = new MainView(UnconnectedAgentPanel.Create(new UnconnectedToolApprovalBridge(), workspaceRoot, motion), workspaceRoot, motion);
+            _panel = UnconnectedAgentPanel.Create(new UnconnectedToolApprovalBridge(), workspaceRoot, motion);
+            singleView.MainView = new MainView(_panel, workspaceRoot, motion);
         }
 
         base.OnFrameworkInitializationCompleted();
