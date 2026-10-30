@@ -8,6 +8,7 @@
 #                       when set the scan runs with --skip-db-update --offline-scan, so no network is needed.
 #                       Fetch the DB once with: trivy image --download-db-only --cache-dir <dir>
 #   TRIVY_IGNOREFILE    optional .trivyignore path
+#   TRIVY_SECRET_CONFIG optional trivy secret config (allow rules); see scripts/ci/trivy-secret.yaml
 # Exit: 0 clean, 1 findings at or above the severity, 2 usage/trivy missing.
 set -euo pipefail
 [ "$#" -ge 1 ] || { echo "usage: scan-images.sh <image>..." >&2; exit 2; }
@@ -17,6 +18,7 @@ if [ -n "${TRIVY_OFFLINE_DB:-}" ]; then
   args+=(--cache-dir "$TRIVY_OFFLINE_DB" --skip-db-update --skip-java-db-update --offline-scan)
 fi
 [ -n "${TRIVY_IGNOREFILE:-}" ] && args+=(--ignorefile "$TRIVY_IGNOREFILE")
+[ -n "${TRIVY_SECRET_CONFIG:-}" ] && args+=(--secret-config "$TRIVY_SECRET_CONFIG")
 status=0
 for image in "$@"; do
   echo "scan-images: $image"

@@ -193,6 +193,9 @@ jobs:
           bash scripts/ci/install-podman-rootful.sh
           bash scripts/ci/install-trivy.sh
       - name: Build and scan
+        env:
+          # The omp debug key accepted by the owner on 2026-10-30; see scripts/ci/trivy-secret.yaml.
+          TRIVY_SECRET_CONFIG: scripts/ci/trivy-secret.yaml
         run: |
           podman build --format docker -f deploy/api.Containerfile -t autonogrammer-api:ci .
           podman build --format docker -f deploy/worker.Containerfile -t autonogrammer-agent-worker:ci .
