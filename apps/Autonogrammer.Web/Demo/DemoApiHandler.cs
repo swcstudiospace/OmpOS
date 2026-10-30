@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Contracts.Controls;
+using Autonogrammer.Contracts.DataPlane;
 using Autonogrammer.Contracts.Serialization;
 using Autonogrammer.Contracts.Streaming;
 using Autonogrammer.Web.Services;
@@ -281,6 +282,11 @@ internal sealed class DemoApiHandler : HttpMessageHandler
         if (Match(path, "board"))
         {
             return JsonResponse(request, _world.Board(), CatalogJsonContext.Default.BoardResponse);
+        }
+
+        if (Match(path, "status", "data-plane"))
+        {
+            return JsonResponse(request, DemoDataPlaneStatus.Rows, DataPlaneJsonContext.Default.DataPlaneStatusArray);
         }
 
         if (Match(path, "sessions"))

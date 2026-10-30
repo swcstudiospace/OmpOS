@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Contracts.Controls;
+using Autonogrammer.Contracts.DataPlane;
 using Autonogrammer.Contracts.Serialization;
 using Autonogrammer.Web.Demo;
 using Shouldly;
@@ -28,6 +29,7 @@ public sealed class DemoFixturesContractTests : IDisposable
         await RoundTripAsync("workspace", CatalogJsonContext.Default.WorkspaceInfo).ConfigureAwait(true);
         await RoundTripAsync("source", CatalogJsonContext.Default.SourceInfo).ConfigureAwait(true);
         await RoundTripAsync("board", CatalogJsonContext.Default.BoardResponse).ConfigureAwait(true);
+        await RoundTripAsync("status/data-plane", DataPlaneJsonContext.Default.DataPlaneStatusArray).ConfigureAwait(true);
     }
 
     /// <summary>Every session's stored form and every per-session body are strict contract shapes.</summary>

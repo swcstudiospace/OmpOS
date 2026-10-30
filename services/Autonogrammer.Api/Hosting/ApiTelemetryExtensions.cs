@@ -1,5 +1,6 @@
 using System.Reflection;
 using Autonogrammer.Api.Telemetry;
+using Autonogrammer.Resilience;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -49,7 +50,7 @@ internal static class ApiTelemetryExtensions
             })
             .WithMetrics(metrics =>
             {
-                metrics.AddAspNetCoreInstrumentation().AddMeter(ApiTelemetry.SourceName);
+                metrics.AddAspNetCoreInstrumentation().AddMeter(ApiTelemetry.SourceName).AddMeter(ResilienceTelemetry.MeterName);
                 if (otelExporter.Equals("console", StringComparison.OrdinalIgnoreCase))
                 {
                     metrics.AddConsoleExporter();

@@ -30,6 +30,18 @@ internal sealed class ManualTimeProvider : TimeProvider
         }
     }
 
+    /// <summary>Gets how many timers are armed right now: created, not disposed and with a due time.</summary>
+    internal int PendingTimers
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _timers.Count(static timer => timer.DueAt is not null);
+            }
+        }
+    }
+
     /// <inheritdoc />
     public override DateTimeOffset GetUtcNow()
     {

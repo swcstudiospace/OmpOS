@@ -106,13 +106,13 @@ public sealed partial class GateParityTests
         // bootstrap.sh stops them on every exit path: `down` sits inside the cleanup function that an EXIT trap runs,
         // and the trap is installed before `up`.
         var cleanupStart = bootstrap.FindIndex(static line => line.StartsWith("cleanup() {", StringComparison.Ordinal));
-        var trap = bootstrap.FindIndex(static line => line == "trap cleanup EXIT");
+        var trap = bootstrap.FindIndex(static line => string.Equals(line, "trap cleanup EXIT", StringComparison.Ordinal));
         var bootstrapDown = bootstrap.FindAll(line => RunsScript(line, callerScript) && line.EndsWith(" down", StringComparison.Ordinal));
         cleanupStart.ShouldBeGreaterThanOrEqualTo(0, "bootstrap.sh must define cleanup()");
         trap.ShouldBeGreaterThan(cleanupStart, "bootstrap.sh must install `trap cleanup EXIT` after defining cleanup()");
         trap.ShouldBeLessThan(bootstrap.IndexOf(bootstrapUp[0]), "the EXIT trap must be installed before the test services start");
         bootstrapDown.Count.ShouldBe(1, "bootstrap.sh must run `bash " + callerScript + " down` exactly once");
-        var cleanupEnd = bootstrap.FindIndex(cleanupStart, static line => line == "}");
+        var cleanupEnd = bootstrap.FindIndex(cleanupStart, static line => string.Equals(line, "}", StringComparison.Ordinal));
         var downIndex = bootstrap.IndexOf(bootstrapDown[0]);
         downIndex.ShouldBeGreaterThan(cleanupStart, "down must be inside cleanup()");
         downIndex.ShouldBeLessThan(cleanupEnd, "down must be inside cleanup()");
@@ -125,7 +125,8 @@ public sealed partial class GateParityTests
         workflowDownLine.ShouldBeGreaterThan(upLine, "the stop step must follow the start step");
         var stepStart = workflow.FindLastIndex(workflowDownLine, static line => line.StartsWith("- name:", StringComparison.Ordinal));
         stepStart.ShouldBeGreaterThan(upLine, "the stop step must be its own step after the start step");
-        workflow.GetRange(stepStart, workflowDownLine - stepStart).ShouldContain("if: always()", "the stop step must run `if: always()`");
+        workflow.GetRange(stepStart, workflowDownLine - stepStart)
+            .ShouldContain(static line => string.Equals(line, "if: always()", StringComparison.Ordinal), "the stop step must run `if: always()`");
 
         // Container names live only in the script, the compose file and the tests; the callers never name one.
         foreach (var path in new[] { "bootstrap.sh", ".github/workflows/ci.yml" })

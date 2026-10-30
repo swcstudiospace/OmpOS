@@ -1,6 +1,7 @@
 using Autonogrammer.Api.Automations;
 using Autonogrammer.Api.Cloud;
 using Autonogrammer.Api.Coordination;
+using Autonogrammer.Api.DataPlane;
 using Autonogrammer.Api.Endpoints;
 using Autonogrammer.Api.Harness;
 using Autonogrammer.Api.Health;
@@ -34,6 +35,12 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 
+// The migrate verb runs before the web host exists: it builds its own minimal configuration and registers no hosting, authentication or harness option.
+if (MigrateCommand.IsMigrate(args))
+{
+    return await MigrateCommand.RunAsync(args, Console.Out, Console.Error, CancellationToken.None).ConfigureAwait(false);
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Fail-fast options: every section binds with data-annotation validation on start,
@@ -57,6 +64,7 @@ builder.Services.AddOptions<SessionsOptions>()
     .ValidateDataAnnotations()
     .Validate(static options => string.IsNullOrEmpty(options.Store) || SessionsOptions.IsSupportedStore(options.Store), "Sessions:Store must be Postgres or InMemory.")
     .Validate(static options => !SessionsOptions.IsPostgresStore(options.Store) || !string.IsNullOrWhiteSpace(options.Postgres.ConnectionString), "Sessions:Postgres:ConnectionString is required when Sessions:Store is Postgres.")
+    .Validate(options => !(builder.Environment.IsProduction() && options.Postgres.AutoMigrate), "Sessions:Postgres:AutoMigrate must not be true in the Production environment; the migrate service applies the schema.")
     .ValidateOnStart();
 builder.Services.AddOptions<CoordinationOptions>()
     .BindConfiguration(CoordinationOptions.SectionName)
@@ -90,6 +98,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddApiSessionStore(builder.Configuration);
 builder.Services.AddApiCoordination(builder.Configuration);
+builder.Services.AddDataPlane();
 builder.Services.AddSingleton<SessionService>();
 builder.Services.AddOmpParser();
 builder.Services.AddSingleton<SessionRegistry>();
@@ -199,6 +208,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<DataPlaneProblemMiddleware>();
 app.UseCors(ConfigureCorsOptions.PolicyName);
 app.UseApiAuthentication();
 
@@ -231,6 +241,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 }).AllowAnonymous();
 app.MapHostingEndpoints();
 app.MapAuthConfigEndpoints();
+app.MapDataPlaneEndpoints();
 app.MapSessionEndpoints();
 app.MapToolApprovalEndpoints();
 app.MapEventStreamEndpoints();
@@ -258,7 +269,7 @@ try
 {
     app.Start();
     started = true;
-    app.WaitForShutdown();
+    await app.WaitForShutdownAsync().ConfigureAwait(false);
 }
 finally
 {
@@ -267,6 +278,9 @@ finally
         ((IDisposable)app).Dispose();
     }
 }
+
+// The schema wait asks for exit code 1 through Environment.ExitCode and stops the host; the normal end of the process keeps 0.
+return Environment.ExitCode;
 
 /// <summary>
 /// The API host entry point. Internal with InternalsVisibleTo for

@@ -233,12 +233,7 @@ internal sealed class HeadServices : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(options);
         var clock = options.TimeProvider ?? TimeProvider.System;
         var home = string.IsNullOrWhiteSpace(options.HomeDirectory) ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) : options.HomeDirectory;
-        var config = string.IsNullOrWhiteSpace(options.ConfigDirectory)
-            ? ResolveDefaultConfigDirectory(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify),
-                options.StateRoot,
-                options.LoggerFactory)
-            : options.ConfigDirectory;
+        var config = ResolveConfigDirectory(options);
         var hookApproval = new ForwardingHookApprovalPrompt();
         var hooks = await OpenHooksAsync(options, home, hookApproval, clock, cancellationToken).ConfigureAwait(false);
         // The stores and the API client are owned here until the services take them over; a failure part way disposes the ones that exist.
@@ -425,6 +420,15 @@ internal sealed class HeadServices : IAsyncDisposable
             }
         }
     }
+
+    /// <summary>Returns the configured configuration directory as it is, or resolves the default one (see <see cref="ResolveDefaultConfigDirectory"/>), which is the only one that is migrated.</summary>
+    private static string ResolveConfigDirectory(HeadServicesOptions options) =>
+        string.IsNullOrWhiteSpace(options.ConfigDirectory)
+            ? ResolveDefaultConfigDirectory(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify),
+                options.StateRoot,
+                options.LoggerFactory)
+            : options.ConfigDirectory;
 
     /// <summary>
     /// Resolves the directory the head keeps its configuration in when none was configured, and moves a legacy per-user data directory into it once.

@@ -42,6 +42,71 @@
         "security": [ ]
       }
     },
+    "/status/data-plane": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Reports the state of each data-plane component: PostgreSQL, Dragonfly, telemetry and the audit ledger.",
+        "description": "Each row has the component, its state and a closed reason, and no host, port, version or message. While a store is down every other endpoint that needs it answers 503 with the data_plane_unavailable problem (shown here) and a Retry-After header.",
+        "operationId": "GetDataPlaneStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DataPlaneStatus"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataPlaneProblem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sessions": {
       "post": {
         "tags": [
@@ -6231,6 +6296,115 @@
         },
         "description": "The body of `POST /providers/custom`: an OpenAI- or Anthropic-compatible endpoint. The base URL must be https, except for a host on\nthis machine; a link-local or metadata address, a name for one and a URL with user information are refused."
       },
+      "DataPlaneComponent": {
+        "enum": [
+          "Postgres",
+          "Dragonfly",
+          "Telemetry",
+          "Ledger"
+        ],
+        "description": "A store or exporter of the data plane that `GET /status/data-plane` reports on."
+      },
+      "DataPlaneProblem": {
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "component",
+          "reason",
+          "retryAfterSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The problem type, `/problems/data_plane_unavailable`."
+          },
+          "title": {
+            "type": "string",
+            "description": "The problem title."
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The HTTP status, 503.",
+            "format": "int32"
+          },
+          "detail": {
+            "type": "string",
+            "description": "A fixed sentence. It never quotes a host, a connection string or a provider message."
+          },
+          "component": {
+            "description": "The component that is not usable.",
+            "$ref": "#/components/schemas/DataPlaneComponent"
+          },
+          "reason": {
+            "description": "The closed reason.",
+            "$ref": "#/components/schemas/DataPlaneReason"
+          },
+          "retryAfterSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The seconds to wait before retrying; the same value is in the `Retry-After` header.",
+            "format": "int32"
+          }
+        },
+        "description": "The only 503 problem a store outage produces: RFC 9457 members plus the component, a closed reason and the seconds after which a client may retry.\nThe `type` is `/problems/data_plane_unavailable`."
+      },
+      "DataPlaneReason": {
+        "enum": [
+          "None",
+          "CircuitOpen",
+          "Timeout",
+          "AuthFailed",
+          "NotConfigured",
+          "SchemaBehind",
+          "SchemaAhead",
+          "RetentionUnsupported",
+          "ExporterFailing",
+          "LedgerBacklog"
+        ],
+        "description": "The closed set of reasons a component is not plainly healthy. A client keys its copy on this value, never on text."
+      },
+      "DataPlaneState": {
+        "enum": [
+          "Healthy",
+          "Degraded",
+          "Unavailable",
+          "Disabled"
+        ],
+        "description": "How a component is doing."
+      },
+      "DataPlaneStatus": {
+        "required": [
+          "component",
+          "state",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "component": {
+            "description": "The component.",
+            "$ref": "#/components/schemas/DataPlaneComponent"
+          },
+          "state": {
+            "description": "The state.",
+            "$ref": "#/components/schemas/DataPlaneState"
+          },
+          "reason": {
+            "description": "The closed reason; DataPlaneReason.None when the state is plainly healthy.",
+            "$ref": "#/components/schemas/DataPlaneReason"
+          }
+        },
+        "description": "One row of `GET /status/data-plane`. It carries the component, its state and a closed reason, and nothing else: no host, port, version or\nmessage, so the body can never quote a connection detail."
+      },
       "DefaultModelResponse": {
         "required": [
           "model"
@@ -8573,6 +8747,9 @@
   "tags": [
     {
       "name": "Auth"
+    },
+    {
+      "name": "Status"
     },
     {
       "name": "SessionEndpoints"
