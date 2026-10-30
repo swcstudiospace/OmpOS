@@ -118,4 +118,57 @@ public sealed class ToolBlockContractTests
         content.Output.ShouldBeEmpty();
         content.Edits.ShouldBeEmpty();
     }
+
+    /// <summary>D-27: an image entry is MimeType, DataBase64 and an optional Description, including the nested content shape.</summary>
+    [Fact]
+    public void D27_ReadParsesImageEntries()
+    {
+        const string payload = """
+            {"content":[
+              {"type":"image","mimeType":"image/png","data":"aGVsbG8=","description":"chart"},
+              {"type":"content","content":{"type":"image","mimeType":"image/jpeg","data":"d29ybGQ="}}
+            ]}
+            """;
+
+        var images = ToolUpdateContent.Read(payload).Images;
+
+        images.ShouldBe([
+            new ToolUpdateImage("image/png", "aGVsbG8=", "chart"),
+            new ToolUpdateImage("image/jpeg", "d29ybGQ=", null),
+        ]);
+    }
+
+    /// <summary>D-27: a malformed image entry is ignored and does not throw, and a well-formed sibling is kept.</summary>
+    [Fact]
+    public void D27_MalformedImageIsIgnored()
+    {
+        const string payload = """
+            {"content":[
+              {"type":"image"},
+              {"type":"image","mimeType":"image/png"},
+              {"type":"image","data":"aGVsbG8="},
+              {"type":"image","mimeType":"image/png","data":"not base64!!"},
+              {"type":"content","content":{"type":"image","data":1}},
+              {"type":"image","mimeType":"image/gif","data":"aGVsbG8=","description":"kept"}
+            ]}
+            """;
+
+        var content = ToolUpdateContent.Read(payload);
+
+        content.Images.ShouldBe([new ToolUpdateImage("image/gif", "aGVsbG8=", "kept")]);
+    }
+
+    /// <summary>D-27: a payload of 10 MiB or more is a placeholder entry. The bytes are not decoded.</summary>
+    [Fact]
+    public void D27_TenMegabytePayloadIsAPlaceholder()
+    {
+        var data = new string('A', (ToolUpdateContent.MaxImageBytes / 3) * 4 + 4);
+        var payload = "{\"content\":[{\"type\":\"image\",\"mimeType\":\"image/png\",\"data\":\"" + data + "\",\"description\":\"huge chart\"}]}";
+
+        var image = ToolUpdateContent.Read(payload).Images.ShouldHaveSingleItem();
+
+        image.MimeType.ShouldBe("image/png");
+        image.DataBase64.ShouldBeEmpty();
+        image.Description.ShouldBe("huge chart");
+    }
 }

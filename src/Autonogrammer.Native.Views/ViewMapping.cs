@@ -97,6 +97,7 @@ internal static class ViewMapping
             ToolCallBlock toolCall => new ToolCallBlockView(toolCall),
             ToolResultBlock result => new ToolResultBlockView(result),
             FileEditBlock edit => new FileEditBlockView(edit),
+            ImageBlock image => new ImageBlockView(image),
             PermissionBlock permission => new PermissionBlockView(permission),
             PlanBlock plan => new PlanBlockView(plan),
             DiffPlaceholderBlock diff => new DiffPlaceholderView(diff),

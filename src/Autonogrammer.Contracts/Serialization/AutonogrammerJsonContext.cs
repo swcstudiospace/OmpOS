@@ -36,6 +36,7 @@ namespace Autonogrammer.Contracts.Serialization;
 [JsonSerializable(typeof(DiffPlaceholderBlock))]
 [JsonSerializable(typeof(ToolResultBlock))]
 [JsonSerializable(typeof(FileEditBlock))]
+[JsonSerializable(typeof(ImageBlock))]
 [JsonSerializable(typeof(ErrorBlock))]
 [JsonSerializable(typeof(A2uiSurfaceBlock))]
 [JsonSerializable(typeof(UnknownBlock))]

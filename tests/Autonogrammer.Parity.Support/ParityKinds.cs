@@ -21,6 +21,9 @@ public static class ParityKinds
     /// <summary>A file change a tool call made, with the text before and after.</summary>
     public const string FileEdit = "file_edit";
 
+    /// <summary>An image a tool call returned, with alt text.</summary>
+    public const string Image = "image";
+
     /// <summary>A tool-call card with its name and status.</summary>
     public const string ToolCall = "tool_call";
 
