@@ -41,6 +41,7 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 ### Fixed
 
 - The API image build no longer fails while `deploy/omp-deps.lock.json` is still pending. `bun pm ls` exits when the install wrote no lockfile, and that happened before the pending check.
+- GitHub-hosted CI keeps roll-forward on inside the private SDK 10.0.402. Disabling it stopped the OpenAPI document tool, which targets runtime 10.0.0, from using the installed 10.0.13.
 - Direct-run tool approvals: the hosted adapter denied every request and no tool was ever grantable, so every `allow` answered 403; the new `Harness:Acp:Approval` options set the kinds that reach the endpoints and the tools an allow may grant.
 - First load moved focus to the heading and skipped the skip link (WCAG 2.4.1); focus now moves to the heading only when the page changes after the first render (`RouteFocus`).
 - Markdown from an agent could carry attributes and media links through the generic-attributes and media-link extensions; the renderer no longer enables them and judges every link it renders, with no limit on their number.

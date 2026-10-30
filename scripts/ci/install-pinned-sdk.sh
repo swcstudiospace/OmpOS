@@ -3,7 +3,7 @@
 # GitHub-hosted images already have runtime 10.0.14. actions/setup-dotnet installs
 # 10.0.402 beside that runtime, and locked restore then sees Microsoft.NET.Sdk.WebAssembly.Pack
 # [10.0.14, ) instead of the [10.0.13, ) written by SDK 10.0.402 (NU1004).
-# DOTNET_MULTILEVEL_LOOKUP=0 keeps the preinstalled runtime invisible.
+# DOTNET_MULTILEVEL_LOOKUP=0 keeps the preinstalled runtime invisible. Roll-forward stays on: the OpenAPI tool targets 10.0.0 and must roll onto 10.0.13.
 # The installer is the same script setup-dotnet downloads; the SDK version is pinned.
 set -euo pipefail
 
@@ -30,19 +30,14 @@ case "$(uname -s)" in
     ;;
 esac
 
-[ -x "$dotnet_bin" ] || { echo "error: $dotnet_bin was not installed" >&2; exit 1; }
-
-if [ -n "${GITHUB_PATH:-}" ]; then
-  echo "$root" >> "$GITHUB_PATH"
-fi
 if [ -n "${GITHUB_ENV:-}" ]; then
   {
     echo "DOTNET_ROOT=$root"
     echo "DOTNET_MULTILEVEL_LOOKUP=0"
-    echo "DOTNET_ROLL_FORWARD=Disable"
   } >> "$GITHUB_ENV"
 fi
-export PATH="$root:$PATH" DOTNET_ROOT="$root" DOTNET_MULTILEVEL_LOOKUP=0 DOTNET_ROLL_FORWARD=Disable
+export PATH="$root:$PATH" DOTNET_ROOT="$root" DOTNET_MULTILEVEL_LOOKUP=0
+unset DOTNET_ROLL_FORWARD || true
 
 got="$("$dotnet_bin" --version)"
 echo "pinned SDK $got"

@@ -174,7 +174,7 @@ jobs:
           wait_ready "autonogrammer-greptimedb" curl -fsS http://127.0.0.1:4000/health
       - name: Tear down backend profile
         if: always()
-        run: podman-compose --profile backend -f deploy/compose.yaml down -v
+        run: command -v podman-compose >/dev/null && podman-compose --profile backend -f deploy/compose.yaml down -v || true
 
   # Image scan on a push. The job installs rootful podman and the pinned trivy, builds both images
   # (--format docker keeps HEALTHCHECK; the builder is still podman) and scans them. Pull requests are excluded.
