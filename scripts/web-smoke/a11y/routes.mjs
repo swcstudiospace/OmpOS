@@ -12,6 +12,12 @@
 import { analyzeRoute, analyzeTitleSet } from "./logic.mjs";
 import { DEMO_SESSION, LOAD_TIMEOUT_MS, loadApp } from "./states.mjs";
 
+// A loaded host can leave the page on the boot shell after an in-app navigation: the address changes but the render has not caught up, so the title is still
+// the boot title and the shell controls are absent (gate run 6 at load 68, and two re-runs). The wait is long enough for a render, and a step that still sees
+// the boot shell reloads the app and tries once more. Reaching it on the second attempt is a warning, the same as a load that needs a second try.
+const STEP_WAIT_MS = Math.max(30000, Math.round(LOAD_TIMEOUT_MS / 3));
+const BOOT_TITLE = "Autonogrammer";
+
 const DIRECT_ROUTES = [
   { route: "/", layout: "shell", ready: "!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]')" },
   { route: "/kanban", layout: "shell", ready: "!!document.querySelector('.autonogrammer-kanban')" },
@@ -86,51 +92,72 @@ async function checkInAppNavigation(page, report, { baseUrl, kind }) {
   const history = [await page.evalValue("location.pathname")];
   let position = 0;
   for (const step of inAppSteps(kind)) {
-    const before = await page.lib("probeRouteState");
-    let expected = step.path;
-    let acted;
-    if (step.history) {
-      const target = position + (step.history === "back" ? -1 : 1);
-      if (target < 0 || target >= history.length) {
-        report.skip("routes", `${step.name}: the history has no entry to go ${step.history} to`);
-        continue;
-      }
-      position = target;
-      expected = history[target];
-      await page.evalValue(`history.${step.history}(); true`);
-      acted = true;
-    } else {
-      acted = await activateWithKeyboard(page, step.selector);
-    }
-    if (!acted) {
-      if (step.optional) report.skip("routes", `${step.name}: the control is not on the page (the in-memory API has no session yet)`);
-      else report.add({ check: "routes", id: "control-missing", severity: "error", message: `${step.name}: ${step.selector} was not found or could not take focus`, state: `in-app ${step.name}`, viewport: "inapp" });
-      continue;
-    }
-    const arrived = await page.waitFor(expected ? `location.pathname === ${JSON.stringify(expected)}` : `location.pathname.startsWith(${JSON.stringify(step.pathStart)})`, 10000);
-    if (!arrived) {
-      report.add({ check: "routes", id: "route-not-reached", severity: "error", message: `${step.name}: the address did not become ${expected ?? `${step.pathStart}…`}`, state: `in-app ${step.name}`, viewport: "inapp" });
-      continue;
-    }
-    if (!step.history) {
-      history.length = position + 1;
+    let snap = await runStep(page, report, step, history, position);
+    if (snap && snap.title.trim() === BOOT_TITLE) {
+      // The address moved but the page is still the boot shell: the render did not finish. Reload and try the step once more.
+      report.add({ check: "routes", id: "step-retried", severity: "warning", message: `${step.name}: the page was still the boot shell after the navigation; retried once after a reload`, state: `in-app ${step.name}`, viewport: "inapp" });
+      if (!(await loadApp(page, baseUrl, report, { group: "routes", viewport: "inapp" }))) return;
+      history.length = 0;
       history.push(await page.evalValue("location.pathname"));
-      position = history.length - 1;
+      position = 0;
+      snap = await runStep(page, report, step, history, position);
     }
-    // The title is set by a component after the render; the announcer follows it; focus is moved after both.
-    await page.waitFor(`document.title !== ${JSON.stringify(before.title)}${step.session || expected?.startsWith("/sessions/") ? " && !document.title.startsWith('Session - ')" : ""}`, 10000);
-    await page.waitFor("(document.querySelector('[data-route-announcer]')?.textContent ?? '').trim() === document.title", 5000);
-    const focusExpression = step.expectFocus.map((name) => (name === "trigger" ? `document.activeElement && document.activeElement.id === ${JSON.stringify(step.trigger ?? "")}` : FOCUS_CONDITIONS[name])).map((c) => `(${c})`).join(" || ");
-    await page.waitFor(focusExpression, 5000);
-    const snap = await page.lib("probeRouteState");
-    snap.activeIsTrigger = step.trigger ? await page.evalValue(`!!document.activeElement && document.activeElement.id === ${JSON.stringify(step.trigger)}`) : false;
-    entries.push({ route: snap.path, mode: "inapp", layout: "shell", snap, previousTitle: before.title, expectFocus: step.expectFocus, stepName: step.name });
+    if (!snap) continue;
+    position = snap.position;
+    entries.push({ route: snap.path, mode: "inapp", layout: "shell", snap, previousTitle: snap.previousTitle, expectFocus: step.expectFocus, stepName: step.name });
     report.count("routes:inapp");
   }
   for (const entry of entries) {
     for (const f of analyzeRoute(entry)) report.add({ ...f, state: `in-app ${entry.stepName} -> ${entry.route}` });
   }
 }
+
+/** Runs one in-app step. Returns the page snapshot with the history position, or null when the step could not be acted on. */
+async function runStep(page, report, step, history, position) {
+  const before = await page.lib("probeRouteState");
+  let expected = step.path;
+  let acted;
+  if (step.history) {
+    const target = position + (step.history === "back" ? -1 : 1);
+    if (target < 0 || target >= history.length) {
+      report.skip("routes", `${step.name}: the history has no entry to go ${step.history} to`);
+      return null;
+    }
+    position = target;
+    expected = history[target];
+    await page.evalValue(`history.${step.history}(); true`);
+    acted = true;
+  } else {
+    acted = await activateWithKeyboard(page, step.selector);
+  }
+  if (!acted) {
+    if (step.optional) report.skip("routes", `${step.name}: the control is not on the page (the in-memory API has no session yet)`);
+    else report.add({ check: "routes", id: "control-missing", severity: "error", message: `${step.name}: ${step.selector} was not found or could not take focus`, state: `in-app ${step.name}`, viewport: "inapp" });
+    return null;
+  }
+  const arrived = await page.waitFor(expected ? `location.pathname === ${JSON.stringify(expected)}` : `location.pathname.startsWith(${JSON.stringify(step.pathStart)})`, STEP_WAIT_MS);
+  if (!arrived) {
+    report.add({ check: "routes", id: "route-not-reached", severity: "error", message: `${step.name}: the address did not become ${expected ?? `${step.pathStart}…`}`, state: `in-app ${step.name}`, viewport: "inapp" });
+    return null;
+  }
+  if (!step.history) {
+    history.length = position + 1;
+    history.push(await page.evalValue("location.pathname"));
+    position = history.length - 1;
+  }
+  // The title is set by a component after the render; the announcer follows it; focus is moved after both.
+  await page.waitFor(`document.title !== ${JSON.stringify(before.title)}`, STEP_WAIT_MS);
+  await page.waitFor("(document.querySelector('[data-route-announcer]')?.textContent ?? '').trim() === document.title", STEP_WAIT_MS);
+  const focusExpression = step.expectFocus.map((name) => (name === "trigger" ? `document.activeElement && document.activeElement.id === ${JSON.stringify(step.trigger ?? "")}` : FOCUS_CONDITIONS[name])).map((c) => `(${c})`).join(" || ");
+  await page.waitFor(focusExpression, STEP_WAIT_MS);
+  const snap = await page.lib("probeRouteState");
+  snap.activeIsTrigger = step.trigger ? await page.evalValue(`!!document.activeElement && document.activeElement.id === ${JSON.stringify(step.trigger)}`) : false;
+  snap.previousTitle = before.title;
+  snap.position = position;
+  return snap;
+}
+
+
 
 /** All route checks of a smoke kind. */
 export async function checkRoutes(page, report, options) {
