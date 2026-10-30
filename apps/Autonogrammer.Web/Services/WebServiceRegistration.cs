@@ -3,6 +3,7 @@ using Autonogrammer.Presentation.Terminal;
 using Autonogrammer.UI.Components.Auth;
 using Autonogrammer.Web.Services.Settings;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
 namespace Autonogrammer.Web.Services;
@@ -32,24 +33,33 @@ internal static class WebServiceRegistration
         ArgumentNullException.ThrowIfNull(options);
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped(_ => new OwnerTokenSession());
-        services.AddScoped<IAuthSession>(sp => sp.GetRequiredService<OwnerTokenSession>());
+        services.AddScoped(sp => new WebAccountSession(sp.GetRequiredService<TimeProvider>(), sp));
+        services.AddScoped(sp => new WebAuthSessionRouter(sp.GetRequiredService<OwnerTokenSession>(), sp.GetRequiredService<WebAccountSession>()));
+        services.AddScoped<IAuthSession>(sp => sp.GetRequiredService<WebAuthSessionRouter>());
         services.TryAddScoped<IApiTokenProvider>(sp =>
-            sp.GetRequiredService<WebWorkbenchOptions>().IsDemo ? new NoApiTokenProvider() : sp.GetRequiredService<OwnerTokenSession>());
+            sp.GetRequiredService<WebWorkbenchOptions>().IsDemo
+                ? new NoApiTokenProvider()
+                : sp.GetRequiredService<WebAuthSessionRouter>());
         services.AddScoped(sp =>
         {
             var tokens = sp.GetRequiredService<IApiTokenProvider>();
-            Action? onUnauthorized = null;
-            if (tokens is OwnerTokenSession session)
+            Action? onUnauthorized = tokens switch
             {
-                onUnauthorized = session.Expire;
-            }
+                WebAuthSessionRouter router => router.Expire,
+                OwnerTokenSession session => session.Expire,
+                _ => null,
+            };
 
             return new ApiHttp(new HttpClient(new BearerTokenHandler(tokens, createInnerHandler(sp), onUnauthorized))
             {
                 BaseAddress = resolveBaseAddress(sp),
             });
         });
-        services.AddScoped<IAuthConfigSource>(sp => new AuthConfigClient(sp.GetRequiredService<ApiHttp>().Client));
+        services.AddScoped<IAuthConfigSource>(sp => new AuthConfigClient(
+            sp.GetRequiredService<ApiHttp>().Client,
+            sp.GetRequiredService<IConfiguration>()[WebAuthOrigin.ConfigKey],
+            sp.GetRequiredService<WebAuthSessionRouter>(),
+            sp.GetRequiredService<NavigationManager>().BaseUri));
         services.AddScoped<IOmpApiClient>(sp => new OmpApiClient(sp.GetRequiredService<ApiHttp>().Client));
         services.AddScoped<IOwnerTokenConnector>(sp => new OwnerTokenConnector(sp.GetRequiredService<OwnerTokenSession>(), sp.GetRequiredService<IOmpApiClient>()));
         services.AddScoped<IUserEventFeed>(sp => new UserEventFeed(sp.GetRequiredService<ApiHttp>().Client, null, sp.GetRequiredService<TimeProvider>()));

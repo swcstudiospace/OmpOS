@@ -39,6 +39,27 @@ public sealed class AuthConfigClientTests
         routes.Headers[0].ContainsKey("Authorization").ShouldBeFalse("the configuration is read anonymously");
     }
 
+    /// <summary>A client block whose project origin matches the built origin is kept, including the publishable key.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task AMatchingClientBlockIsRead()
+    {
+        using var routes = new RoutedHandler();
+        routes.OnJson(
+            HttpMethod.Get,
+            "/auth/config",
+            """{"mode":"oidc","authority":null,"audience":null,"projectUrl":"https://project.example","publishableKey":"sb_publishable_test","methods":{"emailCode":true,"magicLink":false}}""");
+        using var http = HttpOver(routes);
+
+        var config = await new AuthConfigClient(http, "https://project.example").LoadAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        config.ShouldNotBeNull();
+        config.HasClientBlock.ShouldBeTrue();
+        config.ProjectUrl.ShouldBe(new Uri("https://project.example"));
+        config.PublishableKey.ShouldBe("sb_publishable_test");
+    }
+
+
     /// <summary>A mode this client does not know is returned as it is, and flagged unknown for the gate to refuse.</summary>
     /// <returns>A task that completes when the assertions ran.</returns>
     [Fact]

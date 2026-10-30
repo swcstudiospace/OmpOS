@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Validates the one API origin the hosted web head may call and prints its CSP connect-src value.
+# Validates the API origin the hosted web head may call, and an optional auth origin, and prints the CSP connect-src value.
 #
-# Input:  AUTONOGRAMMER_DEMO=1                         Demo build (ADR-0017): the web head answers every API route in the browser, so it
-#                                              needs no API origin; prints connect-src 'self' and ignores AUTONOGRAMMER_API_ORIGIN
+# Input:  AUTONOGRAMMER_DEMO=1                         Demo build (ADR-0017): prints connect-src 'self' and ignores every other variable
 #         AUTONOGRAMMER_API_ORIGIN                     https://host[:port] only
-#         AUTONOGRAMMER_API_ORIGIN_ALLOW_LOOPBACK=1    local development only: also accepts http://127.0.0.1:<port>
-# Output: on success, exactly one line: connect-src 'self' <origin>
-# Exit:   0 on success; 1 on any invalid or missing origin. The origin value is never printed,
-#         because it may carry credentials in an invalid form.
+#         AUTONOGRAMMER_API_ORIGIN_ALLOW_LOOPBACK=1    local development only: also accepts http://127.0.0.1:<port> for the API origin
+#         AUTONOGRAMMER_AUTH_ORIGIN                    optional https://host[:port] auth origin (no loopback exception)
+#         AUTONOGRAMMER_SIGNIN=1                       only the literal 1: a missing or invalid auth origin fails closed
+# Output: on success, exactly one line: connect-src 'self' <api origin> [<auth origin>]
+# Exit:   0 on success; 1 on any invalid or missing required origin. Origin values are never printed.
 set -euo pipefail
 
 fail() {
@@ -59,4 +59,34 @@ if [[ "$authority" == *:* ]]; then
   fi
 fi
 
-printf "connect-src 'self' %s\n" "$origin"
+auth="${AUTONOGRAMMER_AUTH_ORIGIN-}"
+
+# Optional second origin. Unset and sign-in not enabled: the line above is the whole output (byte-identical to a build with neither variable).
+auth="${AUTONOGRAMMER_AUTH_ORIGIN-}"
+signin="${AUTONOGRAMMER_SIGNIN-}"
+if [[ -z "$auth" ]]; then
+  if [[ "$signin" == "1" ]]; then
+    fail "AUTONOGRAMMER_AUTH_ORIGIN is not set; expected https://host[:port]"
+  fi
+  printf "connect-src 'self' %s\n" "$origin"
+  exit 0
+fi
+
+if [[ ! "$auth" =~ $https_re ]]; then
+  fail "AUTONOGRAMMER_AUTH_ORIGIN must be https://host[:port] with no path, query, fragment, userinfo, wildcard or trailing slash"
+fi
+
+auth_authority="${auth#*://}"
+auth_host="${auth_authority%%:*}"
+if [[ "${#auth_host}" -gt 253 ]]; then
+  fail "AUTONOGRAMMER_AUTH_ORIGIN host exceeds 253 characters"
+fi
+
+if [[ "$auth_authority" == *:* ]]; then
+  auth_port="${auth_authority##*:}"
+  if (( 10#$auth_port < 1 || 10#$auth_port > 65535 )); then
+    fail "AUTONOGRAMMER_AUTH_ORIGIN port must be between 1 and 65535"
+  fi
+fi
+
+printf "connect-src 'self' %s %s\n" "$origin" "$auth"

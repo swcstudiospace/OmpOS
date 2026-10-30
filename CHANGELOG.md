@@ -9,6 +9,7 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 ## [Unreleased]
 
 ### Added
+- Passwordless sign-in on the hosted web head (Phase 67): a code or a link signs the tab in against the auth host, with the token and verifier held in memory only (a reload signs out). The returning tab hands the code over a same-origin channel and scrubs the query before the page renders. A mismatched auth origin is refused. The content security policy can name a second connect-src origin when sign-in is enabled; the Demo build does not.
 
 - Hosted web app (Phases 66.2 to 66.4; ADR-0021): the web head can be built as the real application with no Demo code (`scripts/vercel/build-web.sh`, asserted by `scripts/vercel/check-no-demo.sh`, which has an `--expect-demo` positive control for the Demo bundle) and used against a hosted API. Nothing is deployed by this change: the public URL still serves the Demo until the owner approves the switch (`docs/runbooks/deploy-and-rollback.md`).
 - Sign-in for one operator: `Api:Auth:Mode=OwnerToken` accepts a bearer token whose SHA-256 digest is listed in `Api:Auth:OwnerToken:Sha256` (constant-time comparison, a failure throttle that answers 429 with `Retry-After`, rotation by listing two digests); `Api:Auth:Mode=Oidc` stays the default. `GET /auth/config` (anonymous, `no-store`) gives a client the mode, authority and audience. The web head has a connect screen, an auth gate and a sign-out button; the token is held in memory only and a 401 ends the session.

@@ -1,5 +1,6 @@
 using System.Net;
 using Autonogrammer.Web.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 
@@ -131,4 +132,89 @@ public sealed class BearerTokenUnauthorizedTests
         session.HasToken.ShouldBeTrue();
         session.SessionEnded.ShouldBeFalse();
     }
+
+    /// <summary>With the owner-token session active, a 401 still calls OwnerTokenSession.Expire through the router.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task AnUnauthorizedAnswerStillExpiresTheOwnerTokenSession()
+    {
+        var owner = new OwnerTokenSession();
+        owner.SetToken(Token);
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection().BuildServiceProvider();
+        using var account = new WebAccountSession(TimeProvider.System, services);
+        var router = new WebAuthSessionRouter(owner, account);
+        using var routes = new RoutedHandler();
+        routes.OnProblem(HttpMethod.Get, "/account/board", HttpStatusCode.Unauthorized, null, "Unauthorized.", "Sign in.");
+        using var handler = new BearerTokenHandler(router, routes, router.Expire);
+        using var http = HttpOver(handler);
+
+        _ = await Should.ThrowAsync<ApiProblemException>(() => new OmpApiClient(http).GetBoardAsync(TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        owner.HasToken.ShouldBeFalse();
+        owner.SessionEnded.ShouldBeTrue();
+        router.SessionEnded.ShouldBeTrue();
+    }
+
+    /// <summary>A 401 to a request that carried the account token signs that tab out with AccountRejected.</summary>
+    /// <returns>A task that completes when the assertions ran.</returns>
+    [Fact]
+    public async Task AnUnauthorizedAnswerExpiresTheAccountSession()
+    {
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection().BuildServiceProvider();
+        using var authHandler = new AccountTokenHandler();
+        using var account = new WebAccountSession(TimeProvider.System, services, authHandler: authHandler);
+        account.Apply(
+            new Autonogrammer.UI.Components.Auth.AuthConfig(
+                Autonogrammer.UI.Components.Auth.AuthConfig.OidcMode,
+                null,
+                null,
+                new Uri("https://project.example"),
+                "sb_publishable_test",
+                new Autonogrammer.Contracts.Accounts.AuthMethods(true, false)),
+            "https://project.example",
+            "https://web.example/");
+        await account.SendCodeAsync("person@example.com", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await account.SubmitCodeAsync("123456", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        account.HasToken.ShouldBeTrue();
+
+        var owner = new OwnerTokenSession();
+        var router = new WebAuthSessionRouter(owner, account);
+        router.Apply(
+            new Autonogrammer.UI.Components.Auth.AuthConfig(
+                Autonogrammer.UI.Components.Auth.AuthConfig.OidcMode,
+                null,
+                null,
+                new Uri("https://project.example"),
+                "sb_publishable_test",
+                new Autonogrammer.Contracts.Accounts.AuthMethods(true, false)),
+            "https://project.example",
+            "https://web.example/");
+        using var routes = new RoutedHandler();
+        routes.OnProblem(HttpMethod.Get, "/account/board", HttpStatusCode.Unauthorized, null, "Unauthorized.", "Sign in.");
+        using var handler = new BearerTokenHandler(router, routes, router.Expire);
+        using var http = HttpOver(handler);
+
+        _ = await Should.ThrowAsync<ApiProblemException>(() => new OmpApiClient(http).GetBoardAsync(TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        account.HasToken.ShouldBeFalse();
+        account.SessionEnded.ShouldBeTrue();
+        account.State.Error.ShouldBe(Autonogrammer.Contracts.Accounts.AuthErrorKind.AccountRejected);
+        owner.SessionEnded.ShouldBeFalse();
+    }
+
+    private sealed class AccountTokenHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri?.AbsolutePath ?? string.Empty;
+            var body = path.Contains("verify", StringComparison.Ordinal)
+                ? """{"access_token":"access-token-value","refresh_token":"refresh-token-value","expires_in":3600,"user":{"id":"user-1","email":"person@example.com"}}"""
+                : "{}";
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json"),
+            });
+        }
+    }
+
 }

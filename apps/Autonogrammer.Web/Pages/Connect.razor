@@ -1,4 +1,58 @@
 @page "/connect"
+@using Autonogrammer.UI.Components.Account
 @using Autonogrammer.UI.Components.Auth
+@using Autonogrammer.Web.Services
+@using Microsoft.JSInterop
+@inject IAuthConfigSource ConfigSource
+@inject WebAuthSessionRouter Router
+@inject IJSRuntime JS
 
-<ConnectView />
+@if (!_ready)
+{
+    <p class="autonogrammer-auth-text" role="status">@AuthCopy.Loading</p>
+}
+else if (_oidc)
+{
+    <SignInPanel Host="Router.Account" CallbackSentence="@_callback" />
+}
+else
+{
+    <ConnectView />
+}
+
+@code {
+    private bool _ready;
+    private bool _oidc;
+    private string? _callback;
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        var loaded = await ConfigSource.LoadAsync(CancellationToken.None).ConfigureAwait(true);
+        _oidc = loaded is { Mode: AuthConfig.OidcMode, HasClientBlock: true } && Router.UsesAccount;
+        _callback = await ReadCallbackSentenceAsync().ConfigureAwait(true);
+        _ready = true;
+    }
+
+    private async Task<string?> ReadCallbackSentenceAsync()
+    {
+        try
+        {
+            var outcome = await JS.InvokeAsync<string>("autonogrammerAuth.outcome").ConfigureAwait(true);
+            if (string.Equals(outcome, "acknowledged", StringComparison.Ordinal)
+                || string.Equals(outcome, "unacknowledged", StringComparison.Ordinal)
+                || string.Equals(outcome, "error", StringComparison.Ordinal))
+            {
+                return await JS.InvokeAsync<string?>("autonogrammerAuth.message").ConfigureAwait(true);
+            }
+        }
+        catch (JSException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        return null;
+    }
+}

@@ -367,8 +367,10 @@ internal sealed class DemoWorld : IDisposable
 
     /// <summary>Gets the demo account (<c>GET /account</c>). The feature list is empty, so no Devices row is offered.</summary>
     /// <returns>The account.</returns>
+#pragma warning disable CA1822
     internal Autonogrammer.Contracts.Accounts.AccountResponse Account() =>
         new("demo", null, null, null, []);
+#pragma warning restore CA1822
 
     /// <summary>Gets the card details (<c>GET /sessions/{id}/card-details</c>).</summary>
     /// <param name="id">The session.</param>

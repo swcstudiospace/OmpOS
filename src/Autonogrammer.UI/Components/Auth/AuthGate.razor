@@ -87,6 +87,7 @@ else
             return _config.Mode switch
             {
                 AuthConfig.DevelopmentMode => GateView.Content,
+                AuthConfig.OidcMode when _config.HasClientBlock => Session.HasToken || AuthRoutes.IsConnectLocation(Navigation) ? GateView.Content : GateView.Redirecting,
                 AuthConfig.OidcMode => GateView.SignInUnsupported,
                 _ => Session.HasToken || AuthRoutes.IsConnectLocation(Navigation) ? GateView.Content : GateView.Redirecting,
             };
@@ -138,21 +139,27 @@ else
         await LoadAsync().ConfigureAwait(true);
     }
 
-    // An owner-token deployment needs a token for every page except the connect page. The path the user asked for is remembered in memory so the
-    // connect page can return to it; it replaces the history entry so Back does not return to a page that would only bounce again.
+    // An owner-token deployment, and an OIDC deployment that served a client block, need a session for every page except the connect page.
+    // The path the user asked for is remembered in memory so the connect page can return to it. A sign-in callback query is never remembered.
     private void SendToConnectIfNeeded()
     {
         if (_disposed
-            || _config is not { Mode: AuthConfig.OwnerTokenMode }
+            || _config is null
+            || !NeedsConnect
             || Session.HasToken
             || AuthRoutes.IsConnectLocation(Navigation))
         {
             return;
         }
 
-        Session.ReturnPath = AuthRoutes.CurrentRelativePath(Navigation);
+        Session.ReturnPath = Autonogrammer.UI.Components.Account.AuthCallbackHandOff.RememberedPath(AuthRoutes.CurrentRelativePath(Navigation));
         Navigation.NavigateTo(AuthRoutes.ConnectPath, replace: true);
     }
+
+    private bool NeedsConnect =>
+        _config is { Mode: AuthConfig.OwnerTokenMode }
+        || (_config is { Mode: AuthConfig.OidcMode } && _config.HasClientBlock);
+
 
     private void OnSessionChanged(object? sender, EventArgs e) => _ = InvokeAsync(Refresh);
 

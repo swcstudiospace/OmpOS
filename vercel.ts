@@ -5,7 +5,8 @@ import path from "node:path";
 // in the browser from scripted fixtures, so connect-src is 'self' and no API origin is needed. vercel.ts executes at build time,
 // so connect-src is generated from one validated API origin. scripts/vercel/render-csp.sh fails closed
 // on a missing or invalid AUTONOGRAMMER_API_ORIGIN; that aborts config evaluation, so the deploy fails rather
-// than shipping a wildcard or a stale origin.
+// than shipping a wildcard or a stale origin. Optional AUTONOGRAMMER_AUTH_ORIGIN (https://host[:port], no loopback) is a second
+// connect-src origin when set. AUTONOGRAMMER_SIGNIN=1 (only the literal 1) fails closed when that origin is missing. The Demo ignores both.
 const demo = process.env.AUTONOGRAMMER_DEMO === "1";
 const connectSrc = execFileSync("bash", [path.join(process.cwd(), "scripts/vercel/render-csp.sh")], {
   encoding: "utf8",

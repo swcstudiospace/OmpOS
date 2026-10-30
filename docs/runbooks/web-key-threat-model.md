@@ -24,6 +24,8 @@ The key lives in memory for one page session and nowhere else. The default recor
 - Cleared on dispose: `Clear()` and `Dispose()` overwrite the buffer with zeros; replacing the key overwrites the previous one. A reload creates a new holder, which starts empty.
 - Never rendered: `ToString()`, string interpolation, string formatting, the debugger display and exception messages show `[redacted]`. `Reveal()` is the single member that returns the key, so it is the one call to audit.
 
+The same no-storage rule covers the passwordless account session (Phase 67). `autonogrammer-auth.js` and `WebAccountSession` hold the callback code, the access token and the PKCE verifier in memory only. A reload signs the tab out. `NoWebHeadSourceUsesBrowserStorage` also scans that script and refuses `localStorage`, `sessionStorage`, `indexedDB` and `document.cookie` there. `AUTONOGRAMMER_AUTH_ORIGIN` is a build-time connect-src origin, not a stored credential; a project URL whose origin differs from the built `Auth:Origin` is refused before any sign-in call.
+
 ## What is protected
 
 | Threat | Protected | How |

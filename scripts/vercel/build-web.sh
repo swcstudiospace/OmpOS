@@ -4,8 +4,9 @@
 #
 # The head calls the Autonogrammer API at exactly one origin, AUTONOGRAMMER_API_ORIGIN (https://host[:port]; http://127.0.0.1:<port>
 # only with AUTONOGRAMMER_API_ORIGIN_ALLOW_LOOPBACK=1, for a local check). That origin is written into Api:BaseUrl of
-# wwwroot/appsettings.json and is the only origin the Content-Security-Policy adds to connect-src (scripts/vercel/render-csp.sh fails
-# closed on an invalid or missing origin). The API must allow the web origin in Api:Cors:Origins.
+# wwwroot/appsettings.json and is the only API origin the Content-Security-Policy adds to connect-src (scripts/vercel/render-csp.sh fails
+# closed on an invalid or missing origin). Optional AUTONOGRAMMER_AUTH_ORIGIN (https only) is a second connect-src origin and Auth:Origin;
+# AUTONOGRAMMER_SIGNIN=1 (only the literal 1) fails closed when that origin is missing. The API must allow the web origin in Api:Cors:Origins.
 #
 # Fail closed: the bundle must carry neither Demo code nor appsettings.demo.json (scripts/vercel/check-no-demo.sh). The output
 # directory holds the published wwwroot plus a static vercel.json with the same headers and SPA rewrite as vercel.ts.

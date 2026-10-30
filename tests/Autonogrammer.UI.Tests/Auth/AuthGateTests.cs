@@ -138,6 +138,31 @@ public sealed class AuthGateTests : UiTestContext
         cut.FindAll("#content").ShouldBeEmpty();
         cut.FindAll("h1").Count.ShouldBe(1);
     }
+    /// <summary>OIDC with a client block sends an unsigned tab to connect, and the remembered path has no callback query.</summary>
+    [Fact]
+    public void OidcWithAClientBlockSendsAnUnsignedTabToConnect()
+    {
+        Navigation.NavigateTo("sessions/abc?code=secret&error=access_denied");
+        _config.Enqueue(new AuthConfig(
+            AuthConfig.OidcMode,
+            "https://issuer.example",
+            "autonogrammer",
+            new Uri("https://project.example"),
+            "sb_publishable_test"));
+
+        var cut = RenderGate();
+
+        cut.WaitForAssertion(() => Navigation.ToBaseRelativePath(Navigation.Uri).ShouldBe(AuthRoutes.ConnectPath));
+        _session.ReturnPath.ShouldNotBeNull();
+        _session.ReturnPath.ShouldNotContain("code=");
+        _session.ReturnPath.ShouldNotContain("error=");
+        _session.ReturnPath.ShouldBe("sessions/abc");
+        RenderedOutsideConnect().ShouldBeEmpty();
+
+        _session.SetSignedIn(true);
+        cut.WaitForAssertion(() => cut.Find("#content").ShouldNotBeNull());
+    }
+
 
     /// <summary>An unreachable API shows an alert with a Retry button instead of a blank page, and Retry loads the configuration again.</summary>
     [Fact]

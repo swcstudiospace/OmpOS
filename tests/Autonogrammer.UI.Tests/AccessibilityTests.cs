@@ -62,6 +62,21 @@ public sealed partial class AccessibilityTests : UiTestContext
             button.GetAttribute("aria-label").ShouldNotBeNullOrWhiteSpace();
         }
     }
+    /// <summary>The account panel names its fields and puts the error in an alert. Enter submits; Escape cancels while signing in.</summary>
+    [Fact]
+    public void AccountPanelNamesControlsAndAlertsTheError()
+    {
+        var host = new AccountHostStub(Autonogrammer.Presentation.Accounts.AccountHostState.SignedOut with
+        {
+            Phase = Autonogrammer.Contracts.Accounts.AuthPhase.Error,
+            Error = Autonogrammer.Contracts.Accounts.AuthErrorKind.EmailInvalid,
+        });
+        var cut = Render<Autonogrammer.UI.Components.Account.SignInPanel>(parameters => parameters.Add(p => p.Host, host));
+
+        cut.Find("[role='alert']").TextContent.ShouldBe(Autonogrammer.Presentation.Accounts.AccountCopy.For(Autonogrammer.Contracts.Accounts.AuthErrorKind.EmailInvalid));
+        cut.Find("h1").GetAttribute("tabindex").ShouldBe("-1");
+    }
+
 
     /// <summary>The session view exposes a polite live region for throttled announcements.</summary>
     [Fact]
@@ -235,4 +250,31 @@ public sealed partial class AccessibilityTests : UiTestContext
 
     [GeneratedRegex("focus-visible[^{]*\\{[^}]*outline:[^;}]*var\\(--autonogrammer-focus\\)", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
     private static partial Regex FocusVisibleRingRule();
+
+    private sealed class AccountHostStub : Autonogrammer.Presentation.Accounts.IAccountHost
+    {
+        internal AccountHostStub(Autonogrammer.Presentation.Accounts.AccountHostState state) => State = state;
+
+        public event EventHandler? Changed;
+
+        public Autonogrammer.Presentation.Accounts.AccountHostState State { get; }
+
+        public Task SendCodeAsync(string email, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task ResendCodeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task SubmitCodeAsync(string code, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task CancelAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task SignOutAsync(bool everywhere, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task RememberWithoutSystemProtectionAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public void ChangeEmail()
+        {
+        }
+
+        public Task RefreshDevicesAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    }
 }
