@@ -1,0 +1,164 @@
+@namespace Autonogrammer.UI.Components.Cowork
+@using Autonogrammer.Presentation.Cowork
+@using Autonogrammer.Presentation.Cowork.Browser
+@using Autonogrammer.UI.Components.Auth
+@implements IDisposable
+@inject IServiceProvider Services
+
+<div class="autonogrammer-cowork" @onkeydown="OnKeyDown">
+    <div class="autonogrammer-cowork-rail" role="region" aria-label="Rail" tabindex="-1" @ref="_rail">
+        @if (!Available)
+        {
+            <p class="autonogrammer-rail-state-body">@CoworkCopy.SignInToUseCowork</p>
+            @if (OffersSignIn)
+            {
+                <a href="@AuthRoutes.ConnectPath">@CoworkCopy.SignInToUseCowork</a>
+            }
+        }
+        else if (Failed)
+        {
+            <p class="autonogrammer-rail-state-body" role="alert">@LoadFailedMessage</p>
+            <button type="button" class="autonogrammer-btn" @onclick="RetryAsync">Retry</button>
+        }
+        else if (Shell is not null)
+        {
+            <CoworkRail List="Shell.Rail" />
+        }
+        else
+        {
+            <div class="autonogrammer-rail-state" data-state="empty">
+                <p class="autonogrammer-rail-state-body">@EmptyTasks</p>
+            </div>
+        }
+    </div>
+    <div id="autonogrammer-conversation" class="autonogrammer-cowork-conversation" role="region" aria-label="Conversation" tabindex="-1" @ref="_conversation"></div>
+    <div class="autonogrammer-cowork-dock" role="region" aria-label="Dock" tabindex="-1" @ref="_dock">
+        @if (Shell is { Panels.Count: > 1 } && Shell.ShowTabStrip)
+        {
+            <div role="tablist" aria-label="Dock">
+                @foreach (var panel in Shell.Panels)
+                {
+                    <button type="button" role="tab" aria-selected="@(panel.Id == Shell.SelectedPanelId ? "true" : "false")" @onclick="() => Shell.SelectPanel(panel.Id)">@panel.Title</button>
+                }
+            </div>
+        }
+        @if (Shell?.SelectedPanel is { } selected)
+        {
+            @if (TemplateFor(selected.Id) is { } template)
+            {
+                @template(selected)
+            }
+            else if (selected.Content is BrowserPaneViewModel browserPane) { <BrowserPane Model="browserPane" /> }
+            else
+            {
+                <p>@selected.Title</p>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>The empty-list sentence. A new task is not started in the browser until ADR-0036 lands.</summary>
+    public const string EmptyTasks = "New task is started on the desktop until ADR-0036 lands";
+
+    /// <summary>The alert shown when the session list could not be loaded.</summary>
+    public const string LoadFailedMessage = "Cowork tasks could not be loaded.";
+
+    private readonly string[] _cycle = ["rail", "conversation", "dock"];
+    private ICoworkAccess? _access;
+    private ElementReference _rail;
+    private ElementReference _conversation;
+    private ElementReference _dock;
+
+    /// <summary>Gets the shell. Null until the head has built one.</summary>
+    [Parameter]
+    public CoworkShellModel? Shell { get; set; }
+
+    /// <summary>Gets templates keyed by panel id. One panel shows no tab strip.</summary>
+    [Parameter]
+    public IReadOnlyDictionary<string, RenderFragment<IDockPanel>>? PanelTemplates { get; set; }
+
+    /// <summary>Gets whether the host's session list failed to load.</summary>
+    [Parameter]
+    public bool LoadFailed { get; set; }
+
+    /// <summary>Gets the host's reload of the session list.</summary>
+    [Parameter]
+    public EventCallback OnRetry { get; set; }
+
+    private bool Available => _access?.IsAvailable ?? false;
+
+    private bool OffersSignIn => _access?.OffersSignIn ?? false;
+
+    private bool Failed => Available && (LoadFailed || _access?.LoadFailed == true);
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        _access = Services.GetService(typeof(ICoworkAccess)) as ICoworkAccess;
+        if (_access is not null)
+        {
+            _access.Changed += OnChanged;
+        }
+
+        if (Shell is not null)
+        {
+            Shell.Changed += OnChanged;
+            Shell.Rail.Changed += OnChanged;
+        }
+    }
+
+    private RenderFragment<IDockPanel>? TemplateFor(string id) =>
+        PanelTemplates is not null && PanelTemplates.TryGetValue(id, out var template) ? template : null;
+
+    private async Task RetryAsync()
+    {
+        if (OnRetry.HasDelegate)
+        {
+            await OnRetry.InvokeAsync().ConfigureAwait(true);
+            return;
+        }
+
+        if (_access is not null)
+        {
+            await _access.RetryAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs args)
+    {
+        if (!string.Equals(args.Key, "F6", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var step = args.ShiftKey ? 2 : 1;
+        var index = Array.IndexOf(_cycle, _cycle[0]);
+        _ = index;
+        var next = (_cycle.Length + step) % _cycle.Length;
+        var target = next switch
+        {
+            1 => _conversation,
+            2 => _dock,
+            _ => _rail,
+        };
+        await target.FocusAsync().ConfigureAwait(true);
+    }
+
+    private void OnChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (_access is not null)
+        {
+            _access.Changed -= OnChanged;
+        }
+
+        if (Shell is not null)
+        {
+            Shell.Changed -= OnChanged;
+            Shell.Rail.Changed -= OnChanged;
+        }
+    }
+}
