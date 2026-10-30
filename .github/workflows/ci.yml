@@ -65,6 +65,8 @@ jobs:
           global-json-file: global.json
           cache: true
           cache-dependency-path: '**/packages.lock.json'
+      - name: Use the pinned SDK only (the runner runtime must not change the lock file)
+        run: bash scripts/ci/install-pinned-sdk.sh
       - run: dotnet restore Autonogrammer.Linux.slnf --locked-mode
       - run: dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror
       # apps/Autonogrammer.App does not exist in this repository, and tools/gweb holds only the named/ and stock/ asset
@@ -210,6 +212,8 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
+      - name: Use the pinned SDK only (the runner runtime must not change the lock file)
+        run: bash scripts/ci/install-pinned-sdk.sh
       - name: Android SDK platform 36 and build-tools 36.0.0
         run: bash scripts/ci/install-android-sdk.sh
       - name: Android workload (installed when this runner does not already have it)
@@ -265,6 +269,9 @@ jobs:
           global-json-file: global.json
           cache: true
           cache-dependency-path: apps/Autonogrammer.Native/packages.lock.json
+      - name: Use the pinned SDK only (the runner runtime must not change the lock file)
+        shell: bash
+        run: bash scripts/ci/install-pinned-sdk.sh
       - name: Build and publish the Avalonia desktop head
         run: |
           dotnet restore apps/Autonogrammer.Native/Autonogrammer.Native.csproj --locked-mode
@@ -272,5 +279,5 @@ jobs:
           dotnet publish apps/Autonogrammer.Native/Autonogrammer.Native.csproj -c Release --no-restore --self-contained false -o publish
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: desktop-${{ matrix.name }}
+          name: desktop-${{ matrix.name }}-${{ github.sha }}
           path: publish

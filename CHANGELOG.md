@@ -36,6 +36,7 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 - `scripts/web-smoke/size-budget.json` is now measured on a real publish of the web head (2026-10-29: 12.4 MB raw, 4.8 MB gzip, 3.8 MB Brotli) with 10 percent headroom, instead of a provisional ceiling taken from the Avalonia spike; the budget check no longer reads a comment in a stylesheet as an import.
 - Breaking: outside Development the API stops at start when the non-dumpable setting (`Hosting:RestrictProcessInspection`, on by default) cannot be applied, instead of continuing; `Api:Cors:Origins` entries must be `scheme://host[:port]` and are checked at start.
 - CI runs on GitHub-hosted runners (`ubuntu-24.04`, `windows-2022`, `macos-14`) instead of the Omega self-hosted pool. The Linux job installs rootful podman and Chrome; desktop jobs publish the Avalonia head on Linux, Windows and macOS. Docker is still not used.
+- GitHub-hosted restore uses a private SDK 10.0.402. The runner image's runtime 10.0.14 otherwise changes `Microsoft.NET.Sdk.WebAssembly.Pack` from 10.0.13 to 10.0.14 and locked restore fails.
 
 ### Fixed
 

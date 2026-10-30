@@ -34,6 +34,8 @@ jobs:
         with:
           global-json-file: global.json
       # github/codeql-action v4.39.1 (tag object 8498dc4c resolved to this commit with gh api, 2026-10-29).
+      - name: Use the pinned SDK only (the runner runtime must not change the lock file)
+        run: bash scripts/ci/install-pinned-sdk.sh
       - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           languages: csharp

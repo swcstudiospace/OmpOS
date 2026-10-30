@@ -109,6 +109,8 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
+      - name: Use the pinned SDK only (the runner runtime must not change the lock file)
+        run: bash scripts/ci/install-pinned-sdk.sh
       - name: Restore (the SBOM reads licence data from the NuGet cache)
         run: dotnet restore Autonogrammer.Linux.slnf --locked-mode
       - name: SBOM (SPDX 2.3; the committed docs/legal/sbom.spdx.json must be fresh)
