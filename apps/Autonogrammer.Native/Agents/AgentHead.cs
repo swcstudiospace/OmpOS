@@ -81,6 +81,9 @@ internal sealed class AgentHead : IAsyncDisposable
     /// <summary>Gets the Cowork head. Disposed before <see cref="Host"/>.</summary>
     public CoworkHead? Cowork { get; private set; }
 
+    /// <summary>Gets the Cowork browser composition, or null before attach.</summary>
+    internal BrowserUseCompositionResult? BrowserUse { get; set; }
+
     /// <summary>Builds the head of the running process: the plugins, the state and the Substrate come from the environment, and the registry's changes reach the models on the UI thread.</summary>
     /// <returns>The head. It opens nothing until <see cref="InitializeAsync"/>.</returns>
     public static AgentHead CreateProduction() => CreateProduction(null);
@@ -116,6 +119,7 @@ internal sealed class AgentHead : IAsyncDisposable
                     SweepInterval = SessionLifecycleSweeper.DefaultInterval,
                     Services = services,
                     ComputerUse = static () => Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadComposition.SettingsFactory?.Invoke(),
+                    BrowserUse = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot }).Settings,
                 },
                 services);
         }
@@ -205,6 +209,7 @@ internal sealed class AgentHead : IAsyncDisposable
                 SweepInterval = options.RuntimeSweepInterval,
                 Services = options.Services,
                 ComputerUse = static () => Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadComposition.SettingsFactory?.Invoke(),
+                BrowserUse = BrowserUseComposition.Wire(new BrowserUseCompositionRequest { StateDirectory = loop.StateRoot }).Settings,
             },
             options.Services);
     }
@@ -280,6 +285,7 @@ internal sealed class AgentHead : IAsyncDisposable
         await Volatile.Read(ref _refreshTask).ConfigureAwait(true);
 #pragma warning restore VSTHRD003
         await Settings.DisposeAsync().ConfigureAwait(true);
+        BrowserUse?.Dispose();
 
         if (Cowork is { } cowork)
         {
@@ -343,6 +349,7 @@ internal sealed class AgentHead : IAsyncDisposable
                 options.TimeProvider,
                 options.ProviderKeys,
                 services?.Mcp);
+            BrowserUseComposition.Attach(head, settingsOptions.BrowserUse);
 
             // The head owns the models from here on.
             catalog = null;

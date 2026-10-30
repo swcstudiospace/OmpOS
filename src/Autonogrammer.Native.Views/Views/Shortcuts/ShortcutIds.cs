@@ -95,4 +95,7 @@ public static class ShortcutIds
 
     /// <summary>End in the Settings navigation selects the last section.</summary>
     public const string LastSection = "settings.section.last";
+
+    /// <summary>Ctrl+Shift+. stops browser control.</summary>
+    public const string StopBrowserControl = "application.browser.stop";
 }

@@ -46,5 +46,6 @@ public static class ShortcutCatalogue
         new(ShortcutIds.CloseSettingsWithControlW, ShortcutCopy.CloseSettingsWithControlW, new KeyGesture(Key.W, KeyModifiers.Control), KeyboardCopy.ScopeSettings),
         new(ShortcutIds.FirstSection, ShortcutCopy.FirstSection, new KeyGesture(Key.Home), KeyboardCopy.ScopeSettings),
         new(ShortcutIds.LastSection, ShortcutCopy.LastSection, new KeyGesture(Key.End), KeyboardCopy.ScopeSettings),
+        new(ShortcutIds.StopBrowserControl, ShortcutCopy.StopBrowserControl, new KeyGesture(Key.OemPeriod, KeyModifiers.Control | KeyModifiers.Shift), KeyboardCopy.ScopeApplication),
     ];
 }

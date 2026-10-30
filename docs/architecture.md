@@ -112,7 +112,7 @@ There is no Temporal worker: it was removed on 2026-10-21 and session runs execu
 | `Autonogrammer.Cowork` | Cowork project registry, resolver and tool host (Phases 69, 70) |
 | `Autonogrammer.Cowork.Artifacts` | Pure artifact shapes and diffing (Phase 71) |
 | `Autonogrammer.Cowork.Artifacts.Stores` | Artifact persistence over PostgreSQL (Phase 71) |
-| `Autonogrammer.Harness.BrowserUse` | Browser automation over PuppeteerSharp (Phase 72) |
+| `Autonogrammer.Harness.BrowserUse` | Desktop Cowork browser over a host-owned Chromium pipe and PuppeteerSharp. The hosted API, Web head and Android never launch it (Phase 72) |
 | `Autonogrammer.Harness.ComputerUse` | Computer-use engine over the L1 abstractions (Phase 73) |
 | `Autonogrammer.Harness.ComputerUse.X11` | X11 backend over libX11 and libXtst (Phase 73) |
 | `Autonogrammer.Harness.ComputerUse.Windows` | Windows backend over user32 and gdi32 (Phase 73) |

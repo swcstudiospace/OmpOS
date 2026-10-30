@@ -65,6 +65,7 @@ public sealed class ShortcutCatalogueTests
             ShortcutIds.CloseSettings or ShortcutIds.CloseSettingsWithControlW => SettingsShortcutEffects.CloseAsync(gesture, token),
             ShortcutIds.FirstSection => SettingsShortcutEffects.SectionEndAsync(gesture, first: true, token),
             ShortcutIds.LastSection => SettingsShortcutEffects.SectionEndAsync(gesture, first: false, token),
+            ShortcutIds.StopBrowserControl => BrowserShortcutEffects.StopAsync(gesture),
             _ => RunAsync(() => Assert.Fail($"The catalogue lists {id}, and no test observes its effect.")),
         };
     }

@@ -95,4 +95,7 @@ public static class ShortcutCopy
 
     /// <summary>The label of the shortcut that selects the last Settings section.</summary>
     public const string LastSection = "Select the last section";
+
+    /// <summary>The label of the shortcut that stops browser control.</summary>
+    public const string StopBrowserControl = "Stop browser control";
 }

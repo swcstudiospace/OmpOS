@@ -14,6 +14,7 @@
 * [Web app guide](guides/web-app-guide.md)
 * [Local terminal](runbooks/local-terminal.md)
 * [Cloud terminals on Railway](runbooks/cloud-terminals.md)
+* [Cowork browser use](runbooks/browser-use.md)
 * [Agent loop and the four plugins](runbooks/agent-loop.md)
 
 ## Concepts
