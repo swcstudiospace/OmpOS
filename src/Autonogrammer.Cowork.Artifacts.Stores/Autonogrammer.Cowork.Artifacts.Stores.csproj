@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Autonogrammer.Cowork.Artifacts.Stores.Tests" />
+    <InternalsVisibleTo Include="Autonogrammer.Api" />
   </ItemGroup>
 
 </Project>
