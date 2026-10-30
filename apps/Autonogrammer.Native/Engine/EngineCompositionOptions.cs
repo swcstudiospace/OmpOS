@@ -1,3 +1,4 @@
+using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Safety;
 using Autonogrammer.Harness.Remote;
@@ -36,4 +37,13 @@ internal sealed record EngineCompositionOptions
 
     /// <summary>Gets the clock behind the run mode audit and the reconnect delays, or null for the system clock.</summary>
     public TimeProvider? Clock { get; init; }
+
+    /// <summary>Gets how the child obtains the rest of its environment. Inherit leaves the Code engine unchanged.</summary>
+    public EngineEnvironmentMode EnvironmentMode { get; init; } = EngineEnvironmentMode.Inherit;
+
+    /// <summary>Gets extra inherited names kept in allow-list mode. Empty by default.</summary>
+    public IReadOnlyList<string> EnvironmentAllowList { get; init; } = [];
+
+    /// <summary>Gets a wrapper around the ask-the-user resolver, or null. It cannot be combined with <see cref="RunModePolicy"/>.</summary>
+    public Func<IPermissionResolver, IPermissionResolver>? PermissionResolverFactory { get; init; }
 }

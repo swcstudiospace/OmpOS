@@ -44,6 +44,7 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
     /// <remarks>
     /// With a run mode policy the permission requests the ACP session admits go to <see cref="RunModePermissionResolver"/> first: a call the policy denies or allows is settled there, and only a call it asks about
     /// reaches the resolver the user's decision settles. Hooks decide before either, inside omp and through the hook gate.
+    /// A <see cref="EngineCompositionOptions.PermissionResolverFactory"/> wraps the ask-the-user resolver instead. It cannot be combined with a run mode policy.
     /// </remarks>
     /// <param name="allowedKinds">The tool kinds the approval policy admits. Empty allows nothing.</param>
     /// <param name="plan">How omp is launched for the session.</param>
@@ -54,6 +55,7 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
     /// <param name="options">The hook gate, the run mode, the MCP servers of the user's own files and the remote resources, or null for none.</param>
     /// <returns>The composed engine.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="allowedKinds"/> or <paramref name="plan"/> is null.</exception>
+    /// <exception cref="ArgumentException"><see cref="EngineCompositionOptions.PermissionResolverFactory"/> is set together with <see cref="EngineCompositionOptions.RunModePolicy"/>, or the factory returns null.</exception>
     public static EngineComposition Compose(
         IReadOnlyCollection<string> allowedKinds,
         OmpLaunchPlan plan,
@@ -67,6 +69,11 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
         ArgumentNullException.ThrowIfNull(plan);
 
         options ??= new EngineCompositionOptions();
+        if (options.PermissionResolverFactory is not null && options.RunModePolicy is not null)
+        {
+            throw new ArgumentException("PermissionResolverFactory cannot be combined with RunModePolicy.", nameof(options));
+        }
+
         var kinds = options.RunModePolicy is { } current && current().Mode == RunMode.RunEverything ? RunModeLaunchMapper.AcpToolKinds : allowedKinds;
         var approvalPolicy = new AcpApprovalPolicy(kinds);
         var pending = new PendingPermissionResolver();
@@ -78,6 +85,10 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
                 audit: options.RunModeAudit,
                 clock: options.Clock)
             : pending;
+        if (options.PermissionResolverFactory is { } wrap)
+        {
+            resolver = wrap(pending) ?? throw new ArgumentException("PermissionResolverFactory returned null.", nameof(options));
+        }
 
         var clientOptions = new AcpClientOptions
         {
@@ -88,6 +99,8 @@ internal sealed record EngineComposition(InProcessEngineHost Host, IToolApproval
             WorkingDirectory = plan.WorkingDirectory,
             ExtraArguments = plan.ExtraArguments,
             EnvironmentVariables = plan.Environment,
+            EnvironmentMode = options.EnvironmentMode,
+            EnvironmentAllowList = options.EnvironmentAllowList,
             HookGate = options.HookGate,
             McpServers = MergeServers(plan, options.ExtraMcpServers),
         };
