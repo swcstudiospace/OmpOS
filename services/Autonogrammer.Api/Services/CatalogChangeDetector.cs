@@ -8,9 +8,9 @@ namespace Autonogrammer.Api.Services;
 
 /// <summary>
 /// Finds what changed in the Code catalog and publishes it on the user-level stream. The session store has no change feed for a whole catalog, so
-/// this reads each Code session through <c>ListByOwnerAsync</c>, compares it with what it saw before and publishes the difference: a new session, a closed or reopened one, a
+/// this reads each Code session through <see cref="CodeBoardSource"/>, compares it with what it saw before and publishes the difference: a new session, a closed or reopened one, a
 /// new status, a new engine stage. Cowork sessions are never published. It scans on a timer while a stream is connected, and on demand after an operation that changes the
-/// catalog. Phase 69 unit 5 later routes this call site through <c>CodeBoardSource</c>.
+/// catalog.
 /// </summary>
 internal sealed class CatalogChangeDetector : BackgroundService
 {
@@ -23,22 +23,26 @@ internal sealed class CatalogChangeDetector : BackgroundService
     private readonly SemaphoreSlim _scanGate = new(1, 1);
     private readonly Dictionary<string, Seen> _seen = new(StringComparer.Ordinal);
     private readonly ISessionRepository _repository;
+    private readonly CodeBoardSource _source;
     private readonly CatalogEventHub _hub;
     private readonly TimeProvider _time;
     private readonly ILogger<CatalogChangeDetector> _logger;
 
     /// <summary>Initializes a new instance of the <see cref="CatalogChangeDetector"/> class.</summary>
-    /// <param name="repository">The session store.</param>
+    /// <param name="repository">The session store, used to find owners. Listings go through <paramref name="source"/>.</param>
+    /// <param name="source">The Code-only listing.</param>
     /// <param name="hub">The user-level event history.</param>
     /// <param name="time">The clock.</param>
     /// <param name="logger">The logger.</param>
     public CatalogChangeDetector(
         ISessionRepository repository,
+        CodeBoardSource source,
         CatalogEventHub hub,
         TimeProvider time,
         ILogger<CatalogChangeDetector> logger)
     {
         _repository = repository;
+        _source = source;
         _hub = hub;
         _time = time;
         _logger = logger;
@@ -166,11 +170,7 @@ internal sealed class CatalogChangeDetector : BackgroundService
         var found = new List<Session>();
         foreach (var owner in owners)
         {
-            var page = await _repository.ListByOwnerAsync(owner, SessionSurface.Code, includeClosed: true, limit: 200, cursor: null, cancellationToken).ConfigureAwait(false);
-            foreach (var header in page)
-            {
-                found.Add(await _repository.GetAsync(header.Id, cancellationToken).ConfigureAwait(false) ?? header);
-            }
+            found.AddRange(await _source.ListAsync(owner, cancellationToken).ConfigureAwait(false));
         }
 
         return found;

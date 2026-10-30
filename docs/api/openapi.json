@@ -2532,6 +2532,161 @@
         }
       }
     },
+    "/cowork/sessions/{id}": {
+      "put": {
+        "tags": [
+          "Cowork"
+        ],
+        "summary": "Stores a Cowork summary. The owner is the token and the surface is this route.",
+        "operationId": "PutCoworkSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoworkSessionSummary"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoworkSessionSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Cowork"
+        ],
+        "summary": "Removes a Cowork summary. Another owner's row reads as absent.",
+        "operationId": "DeleteCoworkSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          },
+          "403": {
+            "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
     "/providers": {
       "get": {
         "tags": [
@@ -6449,6 +6604,67 @@
         },
         "description": "A subagent definition the workspace holds."
       },
+      "CoworkSessionStatus": {
+        "enum": [
+          "Created",
+          "Running",
+          "WaitingForDecision",
+          "Paused",
+          "Completed",
+          "Failed",
+          "Lost"
+        ],
+        "description": "The lifecycle a Cowork task reports. It is not a Code session lifecycle and is never stored as one."
+      },
+      "CoworkSessionSummary": {
+        "required": [
+          "id",
+          "title",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "title": {
+            "type": "string",
+            "description": "Gets the title, capped at int CoworkSessionSummary.MaxTitleLength characters."
+          },
+          "status": {
+            "description": "Gets the Cowork lifecycle.",
+            "$ref": "#/components/schemas/CoworkSessionStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Gets when the task was created.",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "Gets when the task was last updated.",
+            "format": "date-time"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the project identifier, or null when the task is not in a project."
+          },
+          "deviceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the device identifier that owns the transcript, or null when it is unknown."
+          }
+        },
+        "description": "The summary a desktop sends with `PUT /cowork/sessions/{id}`. It holds only what a server may store:\ntitle, status, times, project id and device id. It never carries messages, paths or trusted folders."
+      },
       "CreateCloudAgentRequest": {
         "type": "object",
         "properties": {
@@ -9266,6 +9482,9 @@
     },
     {
       "name": "Automations"
+    },
+    {
+      "name": "Cowork"
     },
     {
       "name": "Providers"

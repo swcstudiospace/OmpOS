@@ -20,8 +20,6 @@ internal static class CatalogEndpoints
 {
     private const string Tag = "Catalog";
 
-    private const int PageSize = 200;
-
     /// <summary>Maps the catalog endpoints. <c>GET /sessions</c> is mapped here and nowhere else.</summary>
     /// <param name="endpoints">The route builder.</param>
     /// <returns>The route builder.</returns>
@@ -57,9 +55,9 @@ internal static class CatalogEndpoints
     }
 
     /// <summary>
-    /// Builds the Kanban board of the caller's Code sessions. Phase 69 unit 5 later routes this call site through <c>CodeBoardSource</c>.
+    /// Builds the Kanban board of the caller's Code sessions. The listing goes through <see cref="CodeBoardSource"/>.
     /// </summary>
-    /// <param name="repository">The session store.</param>
+    /// <param name="repository">The session store. The board reads it only through <see cref="CodeBoardSource"/>.</param>
     /// <param name="user">The caller.</param>
     /// <param name="time">The clock.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
@@ -70,7 +68,7 @@ internal static class CatalogEndpoints
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var sessions = await LoadCodeAsync(repository, user.Name, cancellationToken).ConfigureAwait(false);
+        var sessions = await new CodeBoardSource(repository).ListAsync(user.Name, cancellationToken).ConfigureAwait(false);
         var now = time.GetUtcNow();
         var cards = sessions.Select(session =>
         {
@@ -99,14 +97,14 @@ internal static class CatalogEndpoints
     }
 
     private static async Task<Ok<SessionCatalogEntry[]>> ListAsync(
-        ISessionRepository repository,
+        CodeBoardSource source,
         StageHub stages,
         WorkspaceLocator workspace,
         TimeProvider time,
         IUserContext user,
         CancellationToken cancellationToken)
     {
-        var sessions = await LoadCodeAsync(repository, user.Name, cancellationToken).ConfigureAwait(false);
+        var sessions = await source.ListAsync(user.Name, cancellationToken).ConfigureAwait(false);
         var now = time.GetUtcNow();
         var label = workspace.FolderLabel;
         var entries = sessions
@@ -270,16 +268,4 @@ internal static class CatalogEndpoints
         return new SessionLifecycleResponse { Id = session.Id, Closed = closed, RowStatus = row, Group = group };
     }
 
-    private static async Task<List<Session>> LoadCodeAsync(ISessionRepository repository, string ownerId, CancellationToken cancellationToken)
-    {
-        var page = await repository.ListByOwnerAsync(ownerId, SessionSurface.Code, includeClosed: true, PageSize, cursor: null, cancellationToken).ConfigureAwait(false);
-        var found = new List<Session>(page.Count);
-        foreach (var header in page)
-        {
-            found.Add(await repository.GetAsync(header.Id, cancellationToken).ConfigureAwait(false) ?? header);
-        }
-
-        found.Sort(static (a, b) => a.CreatedAt.CompareTo(b.CreatedAt));
-        return found;
-    }
 }

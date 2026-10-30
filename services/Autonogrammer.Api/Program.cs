@@ -2,6 +2,7 @@ using Autonogrammer.Api.Accounts;
 using Autonogrammer.Api.Automations;
 using Autonogrammer.Api.Cloud;
 using Autonogrammer.Api.Coordination;
+using Autonogrammer.Api.Cowork;
 using Autonogrammer.Api.DataPlane;
 using Autonogrammer.Api.Endpoints;
 using Autonogrammer.Api.Harness;
@@ -125,6 +126,7 @@ builder.Services.AddProviderServices();
 builder.Services.AddWorkspaceSettingsServices();
 builder.Services.AddAutomationServices();
 builder.Services.AddAccountsServices();
+builder.Services.AddCoworkServices();
 
 // The API is the composition root for session runs. Each prompt runs in this process through DirectSessionRunner, which holds
 // the session's run lease from the coordination store for the whole run. The sandbox is the in-memory fake provider.
@@ -260,6 +262,7 @@ app.MapWorkspaceSettingsEndpoints();
 app.MapProviderEndpoints();
 app.MapCloudAgentEndpoints();
 app.MapAutomationEndpoints();
+app.MapCoworkSessionEndpoints();
 
 // Start without RunAsync's dispose-on-failure: RunAsync disposes the host when startup
 // validation throws, which races WebApplicationFactory's in-memory-host observation
