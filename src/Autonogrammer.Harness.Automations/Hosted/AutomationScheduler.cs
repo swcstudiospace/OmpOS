@@ -1,3 +1,5 @@
+using Autonogrammer.Harness.Automations.Scheduling;
+
 using System.Globalization;
 using Autonogrammer.Harness.Automations.Cron;
 
@@ -5,11 +7,13 @@ namespace Autonogrammer.Harness.Automations.Hosted;
 
 /// <summary>
 /// Starts runs for cron triggers. Each pass looks, for every enabled automation, at the cron occurrences that came due since the
-/// automation's stored cursor and applies the misfire policy: the most recent due occurrence runs once when it is at most
-/// <see cref="AutomationLimits.MisfireWindow"/> late, older ones are folded into it, and an occurrence that is later than the window is
-/// skipped and recorded as <see cref="AutomationRunStatus.Skipped"/>. A run never starts before its occurrence. The cursor then moves
-/// to the current time, so a disabled automation does not catch up when it is enabled. The scheduler holds no timer of its own beyond
-/// <see cref="RunAsync"/>: a test calls <see cref="TickAsync"/> after moving its clock.
+/// automation's stored cursor. A non-session target, and a session target whose missed-run policy is <see cref="MissedRunPolicy.Skip"/>,
+/// keeps today's rule: the most recent due occurrence runs once when it is at most <see cref="AutomationLimits.MisfireWindow"/> late, and a
+/// later one is skipped. A session target whose policy is <see cref="MissedRunPolicy.RunOnce"/> folds every missed occurrence into one run
+/// when the newest is inside <see cref="AutomationOptions.CatchUpWindow"/>, marks that run late when it is past the misfire window, and
+/// records a skip when the newest is older than the window. A run never starts before its occurrence. The cursor then moves to the current
+/// time, so a disabled automation does not catch up when it is enabled. The scheduler holds no timer of its own beyond <see cref="RunAsync"/>:
+/// a test calls <see cref="TickAsync"/> after moving its clock.
 /// </summary>
 public sealed class AutomationScheduler
 {
@@ -19,12 +23,14 @@ public sealed class AutomationScheduler
     private readonly IAutomationStore _store;
     private readonly AutomationRunner _runner;
     private readonly TimeProvider _clock;
+    private readonly AutomationOptions _options;
 
     /// <summary>Initializes a new instance of the <see cref="AutomationScheduler"/> class.</summary>
     /// <param name="store">The automation store.</param>
     /// <param name="runner">The runner that starts the runs.</param>
     /// <param name="clock">The clock.</param>
-    public AutomationScheduler(IAutomationStore store, AutomationRunner runner, TimeProvider clock)
+    /// <param name="options">The catch-up window. Null uses the defaults.</param>
+    public AutomationScheduler(IAutomationStore store, AutomationRunner runner, TimeProvider clock, AutomationOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(runner);
@@ -32,6 +38,7 @@ public sealed class AutomationScheduler
         _store = store;
         _runner = runner;
         _clock = clock;
+        _options = options ?? new AutomationOptions();
     }
 
     /// <summary>Looks at every automation once and starts the runs that are due.</summary>
@@ -114,23 +121,49 @@ public sealed class AutomationScheduler
 
     private async Task<int> FireAsync(UserAutomation automation, DateTimeOffset due, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        if (now - due > AutomationLimits.MisfireWindow)
+        var late = now - due;
+        var fold = automation.Target.Kind == AutomationTargetKind.Session && automation.Target.MissedRunPolicy == MissedRunPolicy.RunOnce;
+        if (fold)
         {
-            var missed = new AutomationRunEntry
+            if (late > _options.CatchUpWindow)
             {
-                RunId = Guid.NewGuid().ToString("N"),
-                Source = AutomationRunSource.Cron,
-                Summary = "Scheduled run",
-                Status = AutomationRunStatus.Skipped,
-                StartedAt = now,
-                FinishedAt = now,
-                Error = $"Skipped: the occurrence due at {due.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)} UTC was more than 5 minutes late.",
-            };
-            await _store.UpsertRunAsync(automation.Id, missed, cancellationToken).ConfigureAwait(false);
+                await RecordSkippedAsync(
+                    automation,
+                    due,
+                    now,
+                    "was older than the 24 hour catch-up window.",
+                    cancellationToken).ConfigureAwait(false);
+                return 0;
+            }
+        }
+        else if (late > AutomationLimits.MisfireWindow)
+        {
+            await RecordSkippedAsync(
+                automation,
+                due,
+                now,
+                "was more than 5 minutes late.",
+                cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
-        var start = await _runner.StartAsync(automation, AutomationTriggerContext.Cron(due), cancellationToken).ConfigureAwait(false);
+        var summary = fold && late > AutomationLimits.MisfireWindow ? "Scheduled run (late)" : "Scheduled run";
+        var start = await _runner.StartAsync(automation, AutomationTriggerContext.Cron(due) with { Summary = summary }, cancellationToken).ConfigureAwait(false);
         return start.Admitted ? 1 : 0;
+    }
+
+    private async Task RecordSkippedAsync(UserAutomation automation, DateTimeOffset due, DateTimeOffset now, string reason, CancellationToken cancellationToken)
+    {
+        var missed = new AutomationRunEntry
+        {
+            RunId = Guid.NewGuid().ToString("N"),
+            Source = AutomationRunSource.Cron,
+            Summary = "Scheduled run",
+            Status = AutomationRunStatus.Skipped,
+            StartedAt = now,
+            FinishedAt = now,
+            Error = $"Skipped: the occurrence due at {due.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)} UTC {reason}",
+        };
+        await _store.UpsertRunAsync(automation.Id, missed, cancellationToken).ConfigureAwait(false);
     }
 }

@@ -1,3 +1,5 @@
+using Autonogrammer.Harness.Automations.Scheduling;
+
 using Autonogrammer.Harness.Automations.Cron;
 
 namespace Autonogrammer.Harness.Automations.Hosted;
@@ -11,14 +13,19 @@ public static class AutomationValidator
 
     /// <summary>Validates a definition.</summary>
     /// <param name="automation">The definition.</param>
+    /// <param name="apiHost">True on the API host, which has no local target and no session target.</param>
+    /// <param name="isolation">The isolation level. Null means not isolated, which is the level until phase 76.</param>
     /// <returns>The problems; empty when the definition is acceptable.</returns>
-    public static IReadOnlyList<AutomationValidationIssue> Validate(UserAutomation automation)
+    public static IReadOnlyList<AutomationValidationIssue> Validate(
+        UserAutomation automation,
+        bool apiHost = false,
+        ISessionIsolationLevel? isolation = null)
     {
         ArgumentNullException.ThrowIfNull(automation);
         var issues = new List<AutomationValidationIssue>();
         ValidateText(automation, issues);
         ValidateTriggers(automation, issues);
-        ValidateTarget(automation, issues);
+        ValidateTarget(automation, issues, apiHost, isolation ?? DefaultSessionIsolation.Instance);
         ValidateTools(automation, issues);
         ValidateLimits(automation, issues);
         return issues;
@@ -105,9 +112,15 @@ public static class AutomationValidator
         }
     }
 
-    private static void ValidateTarget(UserAutomation automation, List<AutomationValidationIssue> issues)
+    private static void ValidateTarget(UserAutomation automation, List<AutomationValidationIssue> issues, bool apiHost, ISessionIsolationLevel isolation)
     {
         var target = automation.Target;
+        if (target.Kind == AutomationTargetKind.Session)
+        {
+            ValidateSession(target, issues, apiHost, isolation);
+            return;
+        }
+
         if (target.Kind == AutomationTargetKind.Local)
         {
             if (target.Repositories.Count > 0 || target.SecretRefs.Count > 0 || target.EnvironmentId is not null)
@@ -146,6 +159,38 @@ public static class AutomationValidator
             || (target.Mode is not null && !AutomationNames.IsHint(target.Mode)))
         {
             issues.Add(new AutomationValidationIssue("target", "The environment, model and mode are at most 100 printable characters."));
+        }
+    }
+
+    private static void ValidateSession(AutomationTargetSpec target, List<AutomationValidationIssue> issues, bool apiHost, ISessionIsolationLevel isolation)
+    {
+        if (apiHost)
+        {
+            issues.Add(new AutomationValidationIssue("target", "This API cannot run session automations. Use a cloud target, or run the automation from the desktop app."));
+        }
+
+        if (target.Repositories.Count > 0 || target.SecretRefs.Count > 0 || target.EnvironmentId is not null)
+        {
+            issues.Add(new AutomationValidationIssue("target", "A session target runs in a desktop session: it takes no repositories, secrets or environment."));
+        }
+
+        if (target.TrustedFolders.Count > AutomationLimits.MaxListEntries
+            || target.TrustedFolders.Any(static folder => string.IsNullOrWhiteSpace(folder) || folder.Length > AutomationLimits.MaxEntryLength || folder.Any(char.IsControl)))
+        {
+            issues.Add(new AutomationValidationIssue("target", "Trusted folders are at most 16 paths, each at most 200 characters, with no control characters."));
+        }
+
+        if ((target.ProjectId is not null && !AutomationNames.IsHint(target.ProjectId))
+            || (target.Model is not null && !AutomationNames.IsHint(target.Model))
+            || (target.Mode is not null && !AutomationNames.IsHint(target.Mode)))
+        {
+            issues.Add(new AutomationValidationIssue("target", "The project, model and mode are at most 100 printable characters."));
+        }
+
+        var isolated = isolation.Level == SessionIsolationLevel.FilesystemIsolated;
+        if (target.ApprovalMode == SessionApprovalMode.Skip && !isolated && !target.SkipAcknowledged)
+        {
+            issues.Add(new AutomationValidationIssue("target", "Skip was refused because the session is not filesystem-isolated."));
         }
     }
 

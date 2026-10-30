@@ -1,3 +1,6 @@
+using System.Globalization;
+using Autonogrammer.Harness.Automations.Scheduling;
+
 using System.Collections.Concurrent;
 
 namespace Autonogrammer.Harness.Automations.Hosted;
@@ -12,6 +15,9 @@ public sealed class AutomationRunner : IAsyncDisposable
 {
     private readonly IAutomationStore _store;
     private readonly Dictionary<AutomationTargetKind, IAutomationTarget> _targets;
+    private readonly Dictionary<ScheduledSessionSurface, IScheduledSessionStarter> _starters;
+    private readonly ISessionIsolationLevel _isolation;
+    private readonly AutomationOptions _options;
     private readonly TimeProvider _clock;
     private readonly SemaphoreSlim _admission = new(1, 1);
     private readonly Lock _gate = new();
@@ -24,20 +30,40 @@ public sealed class AutomationRunner : IAsyncDisposable
     /// <param name="store">The automation store that holds the run history.</param>
     /// <param name="targets">The targets, at most one per kind.</param>
     /// <param name="clock">The clock that stamps runs, counts the hour and times the maximum runtime.</param>
-    /// <exception cref="ArgumentException">Two targets have the same kind.</exception>
-    public AutomationRunner(IAutomationStore store, IEnumerable<IAutomationTarget> targets, TimeProvider clock)
+    /// <param name="sessionStarters">The session starters, at most one per surface. Null registers none.</param>
+    /// <param name="isolation">The isolation level consulted again when a run starts. Null means not isolated.</param>
+    /// <param name="options">The unattended approval wait. Null uses the defaults.</param>
+    /// <exception cref="ArgumentException">Two targets have the same kind, or two starters have the same surface.</exception>
+    public AutomationRunner(
+        IAutomationStore store,
+        IEnumerable<IAutomationTarget> targets,
+        TimeProvider clock,
+        IEnumerable<IScheduledSessionStarter>? sessionStarters = null,
+        ISessionIsolationLevel? isolation = null,
+        AutomationOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(targets);
         ArgumentNullException.ThrowIfNull(clock);
         _store = store;
         _clock = clock;
+        _isolation = isolation ?? DefaultSessionIsolation.Instance;
+        _options = options ?? new AutomationOptions();
         _targets = [];
         foreach (var target in targets)
         {
             if (!_targets.TryAdd(target.Kind, target))
             {
                 throw new ArgumentException($"More than one automation target has the kind '{target.Kind}'.", nameof(targets));
+            }
+        }
+
+        _starters = [];
+        foreach (var starter in sessionStarters ?? [])
+        {
+            if (!_starters.TryAdd(starter.Surface, starter))
+            {
+                throw new ArgumentException($"More than one session starter has the surface '{starter.Surface}'.", nameof(sessionStarters));
             }
         }
     }
@@ -244,6 +270,11 @@ public sealed class AutomationRunner : IAsyncDisposable
 
     private async Task<AutomationRunEntry> RunTargetAsync(UserAutomation automation, AutomationRunEntry started, AutomationTriggerContext trigger)
     {
+        if (automation.Target.Kind == AutomationTargetKind.Session)
+        {
+            return await RunSessionAsync(automation, started, trigger).ConfigureAwait(false);
+        }
+
         if (!_targets.TryGetValue(automation.Target.Kind, out var target))
         {
             return Finish(started, AutomationRunStatus.Failed, null, $"No {automation.Target.Kind} target is available on this host.");
@@ -260,7 +291,7 @@ public sealed class AutomationRunner : IAsyncDisposable
         }
         catch (OperationCanceledException) when (timeout.IsCancellationRequested)
         {
-            return Finish(started, AutomationRunStatus.TimedOut, null, $"The run exceeded its maximum runtime of {automation.MaxRuntimeMinutes.ToString(System.Globalization.CultureInfo.InvariantCulture)} minutes.");
+            return Finish(started, AutomationRunStatus.TimedOut, null, $"The run exceeded its maximum runtime of {automation.MaxRuntimeMinutes.ToString(CultureInfo.InvariantCulture)} minutes.");
         }
         catch (OperationCanceledException) when (_shutdown.IsCancellationRequested)
         {
@@ -274,6 +305,119 @@ public sealed class AutomationRunner : IAsyncDisposable
         {
             return Finish(started, AutomationRunStatus.Failed, null, Describe(exception));
         }
+    }
+
+    private async Task<AutomationRunEntry> RunSessionAsync(UserAutomation automation, AutomationRunEntry started, AutomationTriggerContext trigger)
+    {
+        var now = _clock.GetUtcNow();
+        var prompt = SessionPrompt(started, automation, trigger, now, out var noted);
+        if (automation.Target.ApprovalMode == SessionApprovalMode.Skip && _isolation.Level != SessionIsolationLevel.FilesystemIsolated)
+        {
+            return Finish(noted, AutomationRunStatus.Skipped, null, "SkipRefusedNoIsolation: Skip was refused because the session is not filesystem-isolated.");
+        }
+
+        if (await WaitForUnattendedApprovalAsync(automation, trigger, noted).ConfigureAwait(false) is { } cancelled)
+        {
+            return cancelled;
+        }
+
+        if (!_starters.TryGetValue(automation.Target.Surface, out var starter))
+        {
+            return Finish(noted, AutomationRunStatus.Failed, null, "No session starter is registered for this surface.");
+        }
+
+        return await InvokeStarterAsync(automation, noted, prompt, starter).ConfigureAwait(false);
+    }
+
+    private static string SessionPrompt(AutomationRunEntry started, UserAutomation automation, AutomationTriggerContext trigger, DateTimeOffset now, out AutomationRunEntry noted)
+    {
+        var prompt = AutomationPromptBuilder.Build(automation, trigger);
+        var kinds = new List<string> { "schedule.run" };
+        if (trigger.ScheduledFor is { } due)
+        {
+            prompt += "\nScheduled time (host): " + due.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC";
+            prompt += "\nActual time (host): " + now.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC";
+            if (now - due > AutomationLimits.MisfireWindow)
+            {
+                kinds.Add("schedule.late");
+            }
+        }
+
+        noted = started with { Summary = Note(started.Summary, trigger.ScheduledFor, now, kinds) };
+        return prompt;
+    }
+
+    private async Task<AutomationRunEntry?> WaitForUnattendedApprovalAsync(UserAutomation automation, AutomationTriggerContext trigger, AutomationRunEntry noted)
+    {
+        if (trigger.Source == AutomationRunSource.Manual || automation.Target.ApprovalMode is not (SessionApprovalMode.Manual or SessionApprovalMode.Auto))
+        {
+            return null;
+        }
+
+        using var wait = new CancellationTokenSource(_options.UnattendedApprovalTimeout, _clock);
+        var waiting = noted with
+        {
+            Status = AutomationRunStatus.WaitingForApproval,
+            Summary = noted.Summary + " schedule.waiting_for_approval",
+        };
+        await _store.UpsertRunAsync(automation.Id, waiting, CancellationToken.None).ConfigureAwait(false);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(wait.Token, _shutdown.Token);
+        try
+        {
+            await Task.Delay(Timeout.Infinite, linked.Token).ConfigureAwait(false);
+            return null;
+        }
+        catch (OperationCanceledException) when (wait.IsCancellationRequested && !_shutdown.IsCancellationRequested)
+        {
+            return Finish(waiting, AutomationRunStatus.Cancelled, null, "The unattended approval wait ended in cancellation. Nothing was approved.");
+        }
+        catch (OperationCanceledException) when (_shutdown.IsCancellationRequested)
+        {
+            return Finish(waiting, AutomationRunStatus.Cancelled, null, "The run was cancelled because the host stopped.");
+        }
+    }
+
+    private async Task<AutomationRunEntry> InvokeStarterAsync(UserAutomation automation, AutomationRunEntry noted, string prompt, IScheduledSessionStarter starter)
+    {
+        try
+        {
+            var result = await starter.StartAsync(
+                automation.Target.Surface,
+                automation.Target.ProjectId,
+                automation.Target.TrustedFolders,
+                automation.Target.ApprovalMode,
+                automation.Target.Model,
+                prompt,
+                _shutdown.Token).ConfigureAwait(false);
+            return result.Started
+                ? Finish(noted, AutomationRunStatus.Launched, result.SessionId, null)
+                : Finish(noted, AutomationRunStatus.Failed, null, result.Error ?? "The session starter refused the run.");
+        }
+        catch (OperationCanceledException) when (_shutdown.IsCancellationRequested)
+        {
+            return Finish(noted, AutomationRunStatus.Cancelled, null, "The run was cancelled because the host stopped.");
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            return Finish(noted, AutomationRunStatus.Failed, null, Describe(exception));
+        }
+    }
+
+    private static string Note(string summary, DateTimeOffset? scheduled, DateTimeOffset actual, IReadOnlyList<string> kinds)
+    {
+        var text = summary;
+        if (scheduled is { } due)
+        {
+            text += " scheduled=" + due.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+            text += " actual=" + actual.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+        }
+
+        foreach (var kind in kinds)
+        {
+            text += " " + kind;
+        }
+
+        return text;
     }
 
     private AutomationRunEntry Finish(AutomationRunEntry started, AutomationRunStatus status, string? externalId, string? error) =>
