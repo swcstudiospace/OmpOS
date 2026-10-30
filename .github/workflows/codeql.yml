@@ -40,8 +40,8 @@ jobs:
         with:
           languages: csharp
           build-mode: manual
-      - run: dotnet restore Autonogrammer.Linux.slnf --locked-mode
-      - run: dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror
+      - run: dotnet restore Autonogrammer.Linux.slnf --locked-mode -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13
+      - run: dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13
       - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           category: /language:csharp

@@ -67,8 +67,8 @@ jobs:
           cache-dependency-path: '**/packages.lock.json'
       - name: Use the pinned SDK only (the runner runtime must not change the lock file)
         run: bash scripts/ci/install-pinned-sdk.sh
-      - run: dotnet restore Autonogrammer.Linux.slnf --locked-mode
-      - run: dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror
+      - run: dotnet restore Autonogrammer.Linux.slnf --locked-mode -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13
+      - run: dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13
       # apps/Autonogrammer.App does not exist in this repository, and tools/gweb holds only the named/ and stock/ asset
       # folders (no project), so neither can join Autonogrammer.Linux.slnf or this build step. Add them here when they gain projects.
       # Script checks run before the container steps so a later podman failure still reports them.
