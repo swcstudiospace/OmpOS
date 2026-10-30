@@ -13,6 +13,7 @@ using Autonogrammer.Native.Views.Mcp;
 using Autonogrammer.Native.Views.Search;
 using Autonogrammer.Native.Views.Terminal;
 using Autonogrammer.Native.Views.Workspace;
+using Autonogrammer.Native.Views.Cowork;
 using Autonogrammer.Presentation.AgentPanel;
 using Autonogrammer.Presentation.Agents;
 using Autonogrammer.Presentation.Changes;
@@ -58,6 +59,7 @@ internal static class ViewMapping
             AgentSessionViewModel agentSession => new ThreadHeaderView { DataContext = agentSession },
             StageTimelineModel timeline => new PipelineStripView { DataContext = timeline },
             KanbanBoardModel board => new KanbanBoardView { DataContext = board },
+            CoworkDockContent dock => new TextBlock { Text = dock.Label, Name = "DockPanelBody" },
             OmpTerminalViewModel terminal => new OmpTerminalView { DataContext = terminal },
             _ => throw new ArgumentOutOfRangeException(
                 nameof(viewModel),

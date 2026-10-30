@@ -37,6 +37,10 @@ internal sealed class SettingsDocument
     /// <summary>Gets or sets whether the person consented to the owner-only file store. The name is <see cref="AccountSettingsKeys.AllowFileSecretStore"/>.</summary>
     [JsonPropertyName(AccountSettingsKeys.AllowFileSecretStore)]
     public bool? AllowFileSecretStore { get; set; }
+
+    /// <summary>Gets or sets the selected surface. The name is <see cref="SettingsShellSection.SurfaceMember"/>.</summary>
+    [JsonPropertyName(SettingsShellSection.SurfaceMember)]
+    public string? Surface { get; set; }
     /// <summary>Gets or sets the members of a newer schema that this build does not read.</summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? Extra { get; set; }

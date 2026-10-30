@@ -13,16 +13,14 @@ internal partial class MainWindow : Window
 {
     private const string ReducedMotionClass = MainView.ReducedMotionClass;
 
-    private readonly MainView _main;
-
-    public MainWindow(AgentPanelViewModel panel, MotionPreference motion, string? workspaceRoot = null, KanbanBoardModel? board = null, HeadServices? services = null)
+    public MainWindow(AgentPanelViewModel panel, MotionPreference motion, string? workspaceRoot = null, KanbanBoardModel? board = null, HeadServices? services = null, CoworkSurfaceServices? cowork = null)
     {
         ArgumentNullException.ThrowIfNull(panel);
 
         InitializeComponent();
         AppIcon.Apply(this);
-        _main = new MainView(panel, workspaceRoot, motion, mcpHost: null, board, ShellServicesOf(services));
-        Content = _main;
+        var main = new MainView(panel, workspaceRoot, motion, mcpHost: null, board, ShellServicesOf(services));
+        Content = new SurfaceHost(main, cowork);
         Classes.Set(ReducedMotionClass, IsReducedMotion(motion));
     }
 
@@ -50,7 +48,7 @@ internal partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
-        _main.Close();
+        (Content as SurfaceHost)?.Close();
         base.OnClosed(e);
     }
 }

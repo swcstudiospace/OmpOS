@@ -1,0 +1,9 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Cowork host. No new colour role: the class only selects the existing surface fill. -->
+  <Style Selector="UserControl.surface-cowork">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Surface}" />
+  </Style>
+
+</Styles>

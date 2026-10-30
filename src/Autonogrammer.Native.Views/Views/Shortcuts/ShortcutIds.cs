@@ -18,6 +18,12 @@ public static class ShortcutIds
     /// <summary>Ctrl+2 moves focus to the prompt.</summary>
     public const string FocusPrompt = "application.prompt";
 
+    /// <summary>Ctrl+Shift+1 shows the Code workspace. Meta+Shift+1 does the same on macOS.</summary>
+    public const string ShowCodeSurface = "application.surface.code";
+
+    /// <summary>Ctrl+Shift+2 shows the Cowork workspace. Meta+Shift+2 does the same on macOS.</summary>
+    public const string ShowCoworkSurface = "application.surface.cowork";
+
     /// <summary>Ctrl+F opens the transcript search.</summary>
     public const string SearchTranscript = "application.search";
 

@@ -1528,6 +1528,10 @@ public partial class MainView : UserControl
         _ = target?.Focus();
     }
 
+    /// <summary>Places the surface switch in the top-bar slot. Null clears it.</summary>
+    /// <param name="view">The switch, or null.</param>
+    internal void SetSurfaceSwitch(Control? view) => SurfaceSwitchSlot.Content = view;
+
     /// <summary>
     /// Releases the view's subscriptions, its transcript searches and the workspace models. The host calls this when its window closes.
     /// It does not stop the sessions: the head owns the panel and the runtimes, and disposes them.

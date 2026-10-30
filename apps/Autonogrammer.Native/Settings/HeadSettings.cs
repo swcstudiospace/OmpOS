@@ -3,6 +3,8 @@ using Autonogrammer.Native.Agents;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Cloud;
 using Autonogrammer.Presentation.Settings;
+
+using Autonogrammer.Native.Views.Shell;
 using Autonogrammer.Workspace;
 using Avalonia;
 using Avalonia.Controls;
@@ -170,7 +172,7 @@ internal sealed class HeadSettings : IAsyncDisposable
     public void Attach(Window owner)
     {
         ArgumentNullException.ThrowIfNull(owner);
-        if (owner.Content is not MainView main)
+        if (MainOf(owner) is not { } main)
         {
             throw new ArgumentException("The window does not show a main view.", nameof(owner));
         }
@@ -189,6 +191,13 @@ internal sealed class HeadSettings : IAsyncDisposable
         owner.Closing += OnOwnerClosing;
         owner.Closed += OnOwnerClosed;
     }
+
+    private static MainView? MainOf(Window owner) => owner.Content switch
+    {
+        MainView view => view,
+        SurfaceHost host => host.Code,
+        _ => null,
+    };
 
     /// <summary>Opens the Settings window over the main window, or brings the open one forward.</summary>
     /// <param name="section">The page to show, or null for the window's own choice. A section the window has no page for is ignored.</param>

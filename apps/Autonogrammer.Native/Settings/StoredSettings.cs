@@ -12,4 +12,7 @@ internal sealed record StoredSettings(MotionPreference Motion, ThemePreference T
 {
     /// <summary>Gets the defaults: motion follows the system, the theme is light, every terminal command waits for an approval, 24 hours idle stop and 7 days retention.</summary>
     public static StoredSettings Defaults { get; } = new(MotionPreference.System, ThemePreference.Light, TerminalAutoRun: false, RuntimeSettingsValues.Defaults);
+
+    /// <summary>Gets the stored surface text, or null when the file has no surface member.</summary>
+    public string? Surface { get; init; }
 }
