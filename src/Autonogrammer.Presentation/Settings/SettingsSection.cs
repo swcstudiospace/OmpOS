@@ -68,4 +68,7 @@ public enum SettingsSection
 
     /// <summary>The automations: prompts that start an agent on a schedule.</summary>
     Automations = 21,
+
+    /// <summary>Computer Use: disclosure, grants, denylist additions, kill chord, security phrase and audit.</summary>
+    ComputerUse = 22,
 }

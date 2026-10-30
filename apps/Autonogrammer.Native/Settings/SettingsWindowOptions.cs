@@ -99,4 +99,7 @@ internal sealed class SettingsWindowOptions
     /// not leave subscriptions on the host behind; the head disposes it.
     /// </summary>
     internal CloudAgentsViewModel? CloudAgentsModel { get; set; }
+
+    /// <summary>Gets the Computer Use page, evaluated each time the window is built, or null for no page.</summary>
+    public Func<Autonogrammer.Presentation.Computer.ComputerUseSettingsPage?>? ComputerUse { get; init; }
 }

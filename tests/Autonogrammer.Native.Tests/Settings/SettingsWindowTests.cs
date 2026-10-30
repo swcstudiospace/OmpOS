@@ -1,5 +1,6 @@
 using Autonogrammer.Native.Views.Automations;
 using Autonogrammer.Native.Views.Cloud;
+using Autonogrammer.Native.Views.Computer;
 using Autonogrammer.Native.Views.Hooks;
 using Autonogrammer.Native.Views.Mcp;
 using Autonogrammer.Native.Views.Remote;
@@ -8,6 +9,7 @@ using Autonogrammer.Native.Views.Settings;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Automations;
 using Autonogrammer.Presentation.Cloud;
+using Autonogrammer.Presentation.Computer;
 using Autonogrammer.Presentation.Hooks;
 using Autonogrammer.Presentation.Mcp;
 using Autonogrammer.Presentation.Remote;
@@ -53,6 +55,7 @@ public sealed class SettingsWindowTests
         (SettingsSection.Privacy, PrivacyCopy.Title, typeof(PrivacyPageView)),
         (SettingsSection.Network, NetworkCopy.Title, typeof(NetworkPageView)),
         (SettingsSection.Keyboard, KeyboardCopy.Title, typeof(KeyboardPageView)),
+        (SettingsSection.ComputerUse, ComputerUseCopy.Title, typeof(ComputerSettingsPage)),
     ];
 
     // The MCP and Cloud views draw the model their page holds; every other view draws the page.

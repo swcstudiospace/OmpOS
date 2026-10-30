@@ -1,3 +1,5 @@
+using Autonogrammer.Native.Views.Computer;
+using Autonogrammer.Presentation.Computer;
 using Autonogrammer.Presentation.Hooks;
 using Autonogrammer.Presentation.Safety;
 using Autonogrammer.Presentation.Settings;
@@ -45,6 +47,7 @@ internal static class SettingsPageViews
             IgnoreSettingsPage => new IgnorePageView(),
             PrivacySettingsPage => new PrivacyPageView(),
             AutomationsSettingsPage => new Autonogrammer.Native.Views.Automations.AutomationsPageView(),
+            ComputerUseSettingsPage => new ComputerSettingsPage(),
             _ => throw new ArgumentException("No view draws this kind of settings page.", nameof(page)),
         };
         view.DataContext = ContextOf(page);
@@ -67,7 +70,7 @@ internal static class SettingsPageViews
     public static bool IsEditable(ISettingsPage page)
     {
         ArgumentNullException.ThrowIfNull(page);
-        return page is RuntimePage or GeneralPage or AgentsPage or ModelsSettingsPage or DisplaySettingsPage or RunModeSettingsPage or IgnoreSettingsPage or WorkspacesSettingsPage;
+        return page is RuntimePage or GeneralPage or AgentsPage or ModelsSettingsPage or DisplaySettingsPage or RunModeSettingsPage or IgnoreSettingsPage or WorkspacesSettingsPage or ComputerUseSettingsPage;
     }
 
     /// <summary>Returns whether the page has defaults the footer's Reset returns its draft to. The Models page has none: its draft is a form to close.</summary>
@@ -77,7 +80,7 @@ internal static class SettingsPageViews
     public static bool HasDefaults(ISettingsPage page)
     {
         ArgumentNullException.ThrowIfNull(page);
-        return page is RuntimePage or GeneralPage or AgentsPage or DisplaySettingsPage or RunModeSettingsPage or IgnoreSettingsPage or WorkspacesSettingsPage;
+        return page is RuntimePage or GeneralPage or AgentsPage or DisplaySettingsPage or RunModeSettingsPage or IgnoreSettingsPage or WorkspacesSettingsPage or ComputerUseSettingsPage;
     }
 
     /// <summary>Returns whether the page is still loading its values.</summary>

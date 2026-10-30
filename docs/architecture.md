@@ -126,6 +126,8 @@ There is no Temporal worker: it was removed on 2026-10-21 and session runs execu
 | `Autonogrammer.Dispatch.Client` | Dispatch HTTP and SSE client for native and Android heads (Phase 74) |
 | `Autonogrammer.Dispatch.Desktop` | Desktop dispatch connector, verifier and policy store (Phase 74) |
 
+Computer Use is desktop-only. The Native head registers the OS backend for its own session (X11, Windows or macOS) and `NullComputerUseBackend` elsewhere, with message id `computer.unavailable.platform`. `Autonogrammer.Web` does not reference a Computer Use backend or any process-spawning Computer Use assembly. Presentation references `Autonogrammer.Harness.ComputerUse.Abstractions` only. Approvals stay on the local desktop; a Dispatch origin is a label, not a remote approval.
+
 ## Data flow
 
 A prompt typed on any surface becomes an `IntentEnvelope` (parser), runs through a harness session against omp, lands as sequence-numbered `StreamEvent`s in the session log, streams out over SSE with `id:` = `Seq`, and folds into `UiBlock`s rendered by the web head's Razor surface (`Autonogrammer.UI`). The Avalonia native head (`Autonogrammer.Native`, Phase 20) binds the shared presentation layer that ADR-0004 specifies; the other platform heads are not yet in the repo. Unknown JSON kinds never throw: they deserialize to `UnknownBlock`/`UnknownPayload` with the raw payload preserved, so future protocol additions render through the unknown fallback instead of breaking clients.

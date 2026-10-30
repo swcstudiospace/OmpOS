@@ -35,6 +35,9 @@
       "autonogrammer.contracts": {
         "type": "Project"
       },
+      "autonogrammer.harness.computeruse.abstractions": {
+        "type": "Project"
+      },
       "autonogrammer.genui": {
         "type": "Project",
         "dependencies": {

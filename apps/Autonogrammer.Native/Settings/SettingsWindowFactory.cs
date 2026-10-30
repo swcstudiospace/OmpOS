@@ -91,6 +91,11 @@ internal static class SettingsWindowFactory
         pages.Add(new PrivacySettingsPage());
         pages.Add(new NetworkSettingsPage(options.NetworkSource ?? new NetworkDiagnosticsSource()));
         pages.Add(new KeyboardSettingsPage(new KeyboardSettingsSource()));
+        if (options.ComputerUse?.Invoke() is { } computerUse)
+        {
+            pages.Add(computerUse);
+        }
+
         return pages;
     }
 

@@ -111,6 +111,7 @@ internal sealed class AgentHead : IAsyncDisposable
                     Owned = models,
                     SweepInterval = SessionLifecycleSweeper.DefaultInterval,
                     Services = services,
+                    ComputerUse = static () => Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadComposition.SettingsFactory?.Invoke(),
                 },
                 services);
         }
@@ -199,6 +200,7 @@ internal sealed class AgentHead : IAsyncDisposable
                 GetVariable = variables,
                 SweepInterval = options.RuntimeSweepInterval,
                 Services = options.Services,
+                ComputerUse = static () => Autonogrammer.Native.Composition.ComputerUse.ComputerUseHeadComposition.SettingsFactory?.Invoke(),
             },
             options.Services);
     }
