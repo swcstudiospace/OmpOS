@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Autonogrammer.Cowork.Memory.Postgres/Autonogrammer.Cowork.Memory.Postgres.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Sessions.Postgres/Autonogrammer.Sessions.Postgres.csproj" />
+    <ProjectReference Include="../../tests/Autonogrammer.Cowork.Memory.Tests/Autonogrammer.Cowork.Memory.Tests.csproj" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="coverlet.MTP" />
