@@ -1,9 +1,9 @@
 @namespace Autonogrammer.UI.Components.Shell
-@using Autonogrammer.UI.Components.Auth
+@using Autonogrammer.Presentation.Cowork
 <header class="autonogrammer-topbar">
     <button type="button"
             class="autonogrammer-icon-btn autonogrammer-topbar-menu"
-            aria-label="Agents panel"
+            aria-label="@DrawerLabel"
             aria-controls="autonogrammer-rail"
             aria-expanded="@(DrawerOpen ? "true" : "false")"
             @ref="_drawerButton"
@@ -14,6 +14,10 @@
     {
         <span class="autonogrammer-workspace-label">@WorkspaceLabel</span>
     }
+    @if (Surface is not null)
+    {
+        <div class="autonogrammer-topbar-surface">@Surface</div>
+    }
     @if (Tabs is not null)
     {
         <div class="autonogrammer-topbar-tabs">@Tabs</div>
@@ -21,7 +25,7 @@
 
     <div class="autonogrammer-topbar-spacer"></div>
     <a class="autonogrammer-topbar-link" href="@ShellInfo.SourceRepositoryUrl">Source</a>
-    <SignOutButton />
+    <HeaderEndSlot Chrome="Chrome" />
     <ThemeSwitch />
 </header>
 
@@ -35,6 +39,18 @@
     /// <summary>Gets the content shown between the workspace name and the controls, such as the view tabs.</summary>
     [Parameter]
     public RenderFragment? Tabs { get; set; }
+
+    /// <summary>Gets the surface switch, rendered before the view tabs.</summary>
+    [Parameter]
+    public RenderFragment? Surface { get; set; }
+
+    /// <summary>Gets the header-end entries drawn on every surface.</summary>
+    [Parameter]
+    public SurfaceChromeModel? Chrome { get; set; }
+
+    /// <summary>Gets the accessible name of the drawer button.</summary>
+    [Parameter]
+    public string DrawerLabel { get; set; } = "Agents panel";
 
     /// <summary>Gets whether the agent drawer is open; it sets <c>aria-expanded</c> on the drawer button.</summary>
     [Parameter]
