@@ -159,19 +159,13 @@ internal static class ArtifactEndpoints
         var kindText = context.Request.Headers[ArtifactWireContract.KindHeader].ToString();
         var image = string.Equals(kindText, nameof(ArtifactKind.Image), StringComparison.Ordinal);
         var ceiling = image ? ImageBodyCeiling : TextBodyCeiling;
-        var feature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
-        if (feature is { IsReadOnly: false })
+        var read = await ReadVersionBodyAsync(context, ceiling, kindText, metrics, audit, user.Name, id, cancellationToken).ConfigureAwait(false);
+        if (read.Error is not null)
         {
-            feature.MaxRequestBodySize = ceiling;
+            return read.Error;
         }
 
-        var read = await ReadCappedAsync(context.Request.Body, ceiling, cancellationToken).ConfigureAwait(false);
-        if (read.TooLarge)
-        {
-            metrics.Add(string.IsNullOrEmpty(kindText) ? "unknown" : kindText, "rejected");
-            await audit.WriteAsync("artifact.updated", user.Name, id, null, [], cancellationToken).ConfigureAwait(false);
-            return TooLarge();
-        }
+
 
         var metadata = context.Request.ContentType is not null && context.Request.ContentType.StartsWith(ArtifactWireContract.MetadataMediaType, StringComparison.OrdinalIgnoreCase);
         if (metadata)
@@ -194,7 +188,17 @@ internal static class ArtifactEndpoints
             kindText = nameof(ArtifactKind.Markdown);
         }
 
-        var outcome = await directory.PutAsync(user.Name, id, n, kind, metadata ? [] : read.Bytes, hash, limits.Value, cancellationToken).ConfigureAwait(false);
+        ArtifactPutOutcome outcome;
+        try
+        {
+            outcome = await directory.PutAsync(user.Name, id, n, kind, metadata ? [] : read.Bytes, hash, limits.Value, cancellationToken).ConfigureAwait(false);
+        }
+        catch (ArtifactQuotaException)
+        {
+            metrics.Add(kindText, "rejected");
+            return QuotaExceeded();
+        }
+
         return await FinishPutAsync(context, user, metrics, audit, id, kindText, hash, outcome, cancellationToken).ConfigureAwait(false);
     }
 
@@ -342,6 +346,54 @@ internal static class ArtifactEndpoints
         context.Response.ContentType = "text/html; charset=utf-8";
         return Results.Text(html, "text/html; charset=utf-8", Encoding.UTF8);
     }
+
+    private readonly record struct VersionBody(byte[] Bytes, IResult? Error);
+
+    private static async Task<VersionBody> ReadVersionBodyAsync(HttpContext context, int ceiling, string kindText, ArtifactMetrics metrics, ArtifactAudit audit, string owner, string id, CancellationToken cancellationToken)
+    {
+        var feature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
+        if (feature is { IsReadOnly: false })
+        {
+            feature.MaxRequestBodySize = ceiling;
+        }
+
+        if (context.Request.ContentLength is long declaredLength && declaredLength > ArtifactWireContract.MaxContentBytes)
+        {
+            metrics.Add(string.IsNullOrEmpty(kindText) ? "unknown" : kindText, "rejected");
+            return new VersionBody([], declaredLength > ceiling ? TooLarge() : QuotaExceeded());
+        }
+
+        CappedRead read;
+        try
+        {
+            read = await ReadCappedAsync(context.Request.Body, ceiling, cancellationToken).ConfigureAwait(false);
+        }
+        catch (BadHttpRequestException)
+        {
+            metrics.Add(string.IsNullOrEmpty(kindText) ? "unknown" : kindText, "rejected");
+            return new VersionBody([], TooLarge());
+        }
+
+        if (read.TooLarge)
+        {
+            metrics.Add(string.IsNullOrEmpty(kindText) ? "unknown" : kindText, "rejected");
+            await audit.WriteAsync("artifact.updated", owner, id, null, [], cancellationToken).ConfigureAwait(false);
+            return new VersionBody([], TooLarge());
+        }
+
+        if (read.Bytes.Length > ArtifactWireContract.MaxContentBytes)
+        {
+            metrics.Add(string.IsNullOrEmpty(kindText) ? "unknown" : kindText, "rejected");
+            return new VersionBody([], QuotaExceeded());
+        }
+
+        return new VersionBody(read.Bytes, null);
+    }
+
+
+    private static Microsoft.AspNetCore.Http.HttpResults.ProblemHttpResult QuotaExceeded() =>
+        WebProblems.Of(StatusCodes.Status413RequestEntityTooLarge, "quota_exceeded", "Quota exceeded.", "The account artifact quota was exceeded.");
+
 
     private static Microsoft.AspNetCore.Http.HttpResults.ProblemHttpResult Missing(string id) =>
         WebProblems.Of(StatusCodes.Status404NotFound, "not_found", "Artifact not found.", "No artifact has id '" + id + "'.");

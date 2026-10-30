@@ -4,6 +4,7 @@ using Autonogrammer.Contracts.Artifacts;
 using Autonogrammer.Cowork.Artifacts;
 using Autonogrammer.Cowork.Artifacts.Stores;
 using Autonogrammer.Cowork.Artifacts.Model;
+
 using Microsoft.Extensions.Options;
 using Npgsql;
 
@@ -19,12 +20,13 @@ internal sealed class ArtifactAccountDirectory
 
     /// <summary>Initializes a new instance of the <see cref="ArtifactAccountDirectory"/> class.</summary>
     /// <param name="sessions">The session store selection.</param>
-    /// <param name="dataSource">The optional PostgreSQL data source.</param>
-    public ArtifactAccountDirectory(IOptions<SessionsOptions> sessions, NpgsqlDataSource? dataSource = null)
+    /// <param name="services">The provider used to open PostgreSQL only when that store is selected.</param>
+    public ArtifactAccountDirectory(IOptions<SessionsOptions> sessions, IServiceProvider services)
     {
         ArgumentNullException.ThrowIfNull(sessions);
-        _dataSource = dataSource;
-        _postgres = SessionsOptions.IsPostgresStore(sessions.Value.Store) && dataSource is not null;
+        ArgumentNullException.ThrowIfNull(services);
+        _postgres = SessionsOptions.IsPostgresStore(sessions.Value.Store);
+        _dataSource = _postgres ? services.GetRequiredService<NpgsqlDataSource>() : null;
     }
 
     /// <summary>Lists headers for one account.</summary>

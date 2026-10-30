@@ -27,7 +27,11 @@ internal static class ArtifactsServiceRegistration
         services.TryAddSingleton<ArtifactGrants>();
         services.TryAddSingleton<ArtifactRenderTickets>();
         services.TryAddSingleton<ArtifactMetrics>();
-        services.TryAddSingleton<ArtifactAudit>(static provider => new ArtifactAudit(provider.GetRequiredService<ILogger<ArtifactAudit>>(), provider.GetService<NpgsqlDataSource>()));
+        services.TryAddSingleton<ArtifactAudit>(static provider => new ArtifactAudit(
+            provider.GetRequiredService<ILogger<ArtifactAudit>>(),
+            string.IsNullOrWhiteSpace(provider.GetRequiredService<IConfiguration>()["Sessions:Postgres:ConnectionString"])
+                ? null
+                : provider.GetService<NpgsqlDataSource>()));
         services.TryAddKeyedSingleton<IRateLimiterPolicy<string>, ArtifactOwnerRateLimiterPolicy>(ArtifactOwnerRateLimiterPolicy.PolicyName);
         services.TryAddKeyedSingleton<IRateLimiterPolicy<string>, ArtifactRenderRateLimiterPolicy>(ArtifactRenderRateLimiterPolicy.PolicyName);
         _ = services.AddOptions<RateLimiterOptions>().Configure<IServiceProvider>(static (options, provider) =>

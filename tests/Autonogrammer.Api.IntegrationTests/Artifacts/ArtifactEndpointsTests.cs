@@ -76,7 +76,11 @@ public sealed class ArtifactEndpointsTests
         var image = new byte[(int)(5.5 * 1024 * 1024)];
         image[0] = 1;
         using var acceptedBody = ArtifactRequests.Raw(image, "Image");
-        using var accepted = await client.PutAsync(Version("img-" + Guid.NewGuid().ToString("N"), 1), acceptedBody, token).ConfigureAwait(true);
+        using var overCap = await client.PutAsync(Version("img-" + Guid.NewGuid().ToString("N"), 1), acceptedBody, token).ConfigureAwait(true);
+        overCap.StatusCode.ShouldBe(HttpStatusCode.RequestEntityTooLarge);
+        (await overCap.Content.ReadAsStringAsync(token).ConfigureAwait(true)).Contains("quota_exceeded", StringComparison.Ordinal).ShouldBeTrue();
+        using var underCap = ArtifactRequests.Body("ok", "Markdown");
+        using var accepted = await client.PutAsync(Version("img-ok-" + Guid.NewGuid().ToString("N"), 1), underCap, token).ConfigureAwait(true);
         accepted.StatusCode.ShouldBe(HttpStatusCode.Created, await accepted.Content.ReadAsStringAsync(token).ConfigureAwait(true));
         using var overImage = ArtifactRequests.Raw(new byte[(6 * 1024 * 1024) + 1], "Image");
         using var imageRefusal = await client.PutAsync(Version("img2-" + Guid.NewGuid().ToString("N"), 1), overImage, token).ConfigureAwait(true);
