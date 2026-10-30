@@ -102,8 +102,8 @@ jobs:
       - name: Browser smoke with axe-core, the accessibility checks and the web payload budget (needs Node and Chrome on the runner; mirrors the bootstrap step)
         run: |
           out_dir="$RUNNER_TEMP/web-smoke"
-          mkdir -p "$out_dir"
-          OUT_DIR="$out_dir" bash scripts/web-smoke/run-smoke.sh
+          mkdir -p "$out_dir/shots" "$out_dir/a11y"
+          OUT_DIR="$out_dir" SHOT_DIR="$out_dir/shots" A11Y_REPORT_DIR="$out_dir/a11y" bash scripts/web-smoke/run-smoke.sh
       - name: Keep the web smoke evidence when the smoke fails (logs, JSON and screenshots of the failing half)
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
