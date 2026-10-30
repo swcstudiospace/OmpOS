@@ -4,6 +4,8 @@ using Autonogrammer.Api.Cloud;
 using Autonogrammer.Api.Coordination;
 using Autonogrammer.Api.Cowork;
 using Autonogrammer.Api.Cowork.Artifacts;
+using Autonogrammer.Api.Dispatch;
+using Autonogrammer.Api.Dispatch.Devices;
 using Autonogrammer.Api.DataPlane;
 using Autonogrammer.Api.Endpoints;
 using Autonogrammer.Api.Harness;
@@ -126,6 +128,7 @@ builder.Services.AddCloudAgentServices();
 builder.Services.AddProviderServices();
 builder.Services.AddWorkspaceSettingsServices();
 builder.Services.AddAutomationServices();
+builder.Services.AddDispatchServices(builder.Environment);
 builder.Services.AddAccountsServices();
 builder.Services.AddCoworkServices();
 builder.Services.AddCoworkArtifactServices(builder.Configuration);
@@ -222,6 +225,7 @@ app.UseAuthorization();
 app.UseMiddleware<AccountEnrollmentMiddleware>();
 app.UseMiddleware<CloudDisabledMiddleware>();
 app.UseMiddleware<AutomationDisabledMiddleware>();
+app.UseMiddleware<DispatchDisabledMiddleware>();
 app.UseMiddleware<ArtifactsDisabledMiddleware>();
 
 if (app.Environment.IsDevelopment())
@@ -265,6 +269,7 @@ app.MapWorkspaceSettingsEndpoints();
 app.MapProviderEndpoints();
 app.MapCloudAgentEndpoints();
 app.MapAutomationEndpoints();
+app.MapDispatchEndpoints();
 app.MapCoworkSessionEndpoints();
 app.MapCoworkArtifactEndpoints();
 

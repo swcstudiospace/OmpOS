@@ -18,6 +18,7 @@ internal static class OpenApiConfig
             options.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_1;
             options.AddDocumentTransformer<FixedServersTransformer>();
             options.AddOperationTransformer<IdempotencyKeyOperationTransformer>();
+            options.AddDocumentTransformer<Autonogrammer.Api.Dispatch.DispatchSecuritySchemeTransformer>();
             options.AddDocumentTransformer<SecuritySchemeTransformer>();
             options.AddOperationTransformer<SecuritySchemeTransformer>();
         });

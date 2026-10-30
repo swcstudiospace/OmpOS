@@ -119,6 +119,16 @@ Config keys use `:` in code and `__` in the environment. Mark every variable mar
 
 The owner token itself is never a Railway variable. See `docs/runbooks/incident-response.md` for generating the token and its digest.
 
+### Dispatch
+
+| Variable | Secret | Example placeholder | Read in | Safe default |
+|----------|--------|---------------------|---------|--------------|
+| `Dispatch__Enabled` | no | `false` | `Dispatch/Options/DispatchOptions.cs` | `false`. `true` requires `Api__Auth__Mode=Oidc` and `Hosting__ForwardedHeaders__Mode` so connect limits see the client address |
+| `Dispatch__Credentials__SigningKeyPem` | yes | `<PKCS#8 P-256 PEM>` | `Dispatch/Devices/DeviceCredentialIssuer.cs` | Unset while dispatch is off. Distinct from the command-signing key |
+| `Dispatch__CommandSigning__KeyPem` | yes | `<PKCS#8 P-256 PEM>` | `Dispatch/Devices/DeviceCredentialIssuer.cs` | Unset while dispatch is off |
+| `Dispatch__Credentials__Issuer` | no | `autonogrammer-dispatch` | `Dispatch/Options/DispatchOptions.cs` | `autonogrammer-dispatch` |
+| `Dispatch__ReplicaMode` | no | `Single` | `Dispatch/Options/DispatchOptionsValidator.cs` | `Single`. `Multi` also requires Dragonfly coordination and the Postgres session store |
+
 ### HTTP surface and hosting
 
 | Variable | Secret | Example placeholder | Read in | Safe default |

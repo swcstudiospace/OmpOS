@@ -5179,6 +5179,124 @@
         },
         "security": [ ]
       }
+    },
+    "/dispatch/devices": {
+      "post": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Pairs a desktop and returns a device credential.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairingBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request carries no valid bearer token."
+          }
+        }
+      }
+    },
+    "/dispatch/devices/{id}/connect": {
+      "get": {
+        "tags": [
+          "Dispatch"
+        ],
+        "summary": "Opens the device connection. The hub is not registered yet.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "DispatchDevice": [ ]
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -7561,6 +7679,85 @@
         },
         "description": "The answer of `PUT /models/default`."
       },
+      "DevicePublicKey": {
+        "type": "object",
+        "properties": {
+          "kty": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the key type."
+          },
+          "crv": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the curve."
+          },
+          "x": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the X coordinate."
+          },
+          "y": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the Y coordinate."
+          },
+          "canonical": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the canonical JWK stored on the device row."
+          }
+        },
+        "description": "An EC public JWK."
+      },
+      "DispatchCapability": {
+        "enum": [
+          "sessions",
+          "code",
+          "cowork",
+          "browser_use",
+          "computer_use"
+        ],
+        "description": "Closed capability identifiers. DispatchCapability.BrowserUse and DispatchCapability.ComputerUse describe tool classes on a desktop.\nThey are never a valid command capability."
+      },
+      "DispatchCapabilitySnapshot": {
+        "required": [
+          "id",
+          "version",
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The capability.",
+            "$ref": "#/components/schemas/DispatchCapability"
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The capability version the desktop implements.",
+            "format": "int32"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the desktop currently allows the capability."
+          }
+        },
+        "description": "One capability row the desktop reports at pairing and in every hello."
+      },
       "GsdPhaseInfo": {
         "required": [
           "number",
@@ -7651,6 +7848,54 @@
         },
         "description": "The answer of `GET /hooks`: the effective hooks, the files they came from, the loading problems and the consent state. The API never starts a hook."
       },
+      "LimitsReply": {
+        "required": [
+          "maxQueuedPerDevice",
+          "devicesPerAccount",
+          "maxPayloadBytes",
+          "queueTtlSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "maxQueuedPerDevice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the queued-command cap.",
+            "format": "int32"
+          },
+          "devicesPerAccount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the device cap.",
+            "format": "int32"
+          },
+          "maxPayloadBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the payload cap.",
+            "format": "int32"
+          },
+          "queueTtlSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the queue time, in seconds.",
+            "format": "int32"
+          }
+        },
+        "description": "Limits returned at pairing."
+      },
       "Message": {
         "required": [
           "role",
@@ -7718,6 +7963,118 @@
           }
         },
         "description": "The answer of `GET /settings/network`: the upstreams the API is configured for. The API makes no outbound call to answer, so every entry is unchecked."
+      },
+      "PairingBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the display name."
+          },
+          "platform": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the desktop platform."
+          },
+          "appVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the desktop application version."
+          },
+          "protocolVersions": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets or sets the relay protocol versions the desktop speaks."
+          },
+          "capabilities": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DispatchCapabilitySnapshot"
+            },
+            "description": "Gets or sets the capability snapshot."
+          },
+          "publicKey": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets or sets the device public key.",
+                "$ref": "#/components/schemas/DevicePublicKey"
+              }
+            ]
+          }
+        },
+        "description": "Body of `POST /dispatch/devices`."
+      },
+      "PairingReply": {
+        "required": [
+          "deviceId",
+          "credential",
+          "credentialExpiresAt",
+          "hubOrigin",
+          "verificationKeys",
+          "limits",
+          "capabilities"
+        ],
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "description": "Gets or sets the device identifier."
+          },
+          "credential": {
+            "type": "string",
+            "description": "Gets or sets the device credential. Shown once."
+          },
+          "credentialExpiresAt": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the credential expiry, Unix seconds.",
+            "format": "int64"
+          },
+          "hubOrigin": {
+            "type": "string",
+            "description": "Gets or sets the hub origin."
+          },
+          "verificationKeys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerificationKeyReply"
+            },
+            "description": "Gets or sets the hub verification keys."
+          },
+          "limits": {
+            "description": "Gets or sets the limits the device must honour.",
+            "$ref": "#/components/schemas/LimitsReply"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispatchCapabilitySnapshot"
+            },
+            "description": "Gets or sets the capability snapshot stored on the device."
+          }
+        },
+        "description": "201 body of a successful pairing."
       },
       "PendingToolApproval": {
         "required": [
@@ -9570,6 +9927,47 @@
         },
         "description": "The context of the task a session works on: its Kanban status, the workflow phase, and what the substrate shares with the\nsession. Every part is optional. A part that cannot be read is absent and the reason is listed in IReadOnlyList&lt;string&gt; TaskContext.Warnings."
       },
+      "VerificationKeyReply": {
+        "required": [
+          "kid",
+          "jwk",
+          "notBefore",
+          "expires"
+        ],
+        "type": "object",
+        "properties": {
+          "kid": {
+            "type": "string",
+            "description": "Gets or sets the key identifier."
+          },
+          "jwk": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Gets or sets the ES256 public JWK."
+          },
+          "notBefore": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the start of the validity window, Unix seconds.",
+            "format": "int64"
+          },
+          "expires": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the end of the validity window, Unix seconds.",
+            "format": "int64"
+          }
+        },
+        "description": "One hub verification key in the pairing reply."
+      },
       "WorkspaceAutomationInfo": {
         "required": [
           "id",
@@ -9960,16 +10358,16 @@
       }
     },
     "securitySchemes": {
+      "DispatchDevice": {
+        "type": "http",
+        "description": "The long-lived credential of a paired dispatch device. It is accepted only on the device connect route and never as an access token.",
+        "scheme": "bearer"
+      },
       "bearerAuth": {
         "type": "http",
         "description": "A bearer token issued by the identity provider the deployment trusts (or the owner token on a single-operator deployment).",
         "scheme": "bearer",
         "bearerFormat": "JWT"
-      },
-      "DispatchDevice": {
-        "type": "http",
-        "description": "The long-lived credential of a paired dispatch device. It is accepted only on the device connect route and never as an access token.",
-        "scheme": "bearer"
       }
     }
   },
@@ -10035,6 +10433,9 @@
     },
     {
       "name": "Cloud"
+    },
+    {
+      "name": "Dispatch"
     }
   ]
 }
