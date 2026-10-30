@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>c16 dialog loops</title></head>
+<body>
+  <p>Visible dialog page.</p>
+  <script>
+    var n = 0;
+    window.alert = function () { n += 1; };
+    window.confirm = function () { n += 1; return false; };
+    window.prompt = function () { n += 1; return ""; };
+    for (var i = 0; i < 8; i++) { alert("loop"); confirm("loop"); prompt("loop"); }
+  </script>
+</body>
+</html>

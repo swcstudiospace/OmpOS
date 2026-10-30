@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Granted local page</title>
+</head>
+<body>
+  <p>Granted origin. This page links to the site redirect endpoint.</p>
+  <a id="to-ungranted" href="/redirect?to=http://127.0.0.1:9/canary">Redirect toward the ungranted loopback port</a>
+  <a id="to-metadata" href="/redirect?to=http://169.254.169.254/latest/meta-data">Redirect toward the metadata address</a>
+  <a id="to-rfc1918" href="/redirect?to=http://10.1.2.3/canary">Redirect toward an RFC1918 literal</a>
+</body>
+</html>
