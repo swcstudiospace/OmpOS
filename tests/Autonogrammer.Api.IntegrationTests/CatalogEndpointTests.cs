@@ -77,8 +77,8 @@ public sealed class CatalogEndpointTests
         var id = await SessionClient.CreateSessionAsync(alice, ct).ConfigureAwait(true);
 
         using var bobList = await bob.GetAsync(new Uri("/sessions", UriKind.Relative), ct).ConfigureAwait(true);
-        using var bobBoard = await bob.GetAsync(new Uri("/board", UriKind.Relative), ct).ConfigureAwait(true);
-        using var aliceBoard = await alice.GetAsync(new Uri("/board", UriKind.Relative), ct).ConfigureAwait(true);
+        using var bobBoard = await bob.GetAsync(new Uri("/account/board", UriKind.Relative), ct).ConfigureAwait(true);
+        using var aliceBoard = await alice.GetAsync(new Uri("/account/board", UriKind.Relative), ct).ConfigureAwait(true);
 
         using (var list = await WebAppTestHost.ReadJsonAsync(bobList, ct).ConfigureAwait(true))
         {
@@ -107,7 +107,7 @@ public sealed class CatalogEndpointTests
         using var accepted = await SessionClient.PostPromptAsync(client, done, $"{{\"prompt\":\"{PromptCanary}\"}}", ct).ConfigureAwait(true);
         _ = await SessionClient.WaitForStatusAsync(client, done, SessionStatus.Completed, WebAppTestHost.SettleTimeout, ct).ConfigureAwait(true);
 
-        using var response = await client.GetAsync(new Uri("/board", UriKind.Relative), ct).ConfigureAwait(true);
+        using var response = await client.GetAsync(new Uri("/account/board", UriKind.Relative), ct).ConfigureAwait(true);
         var text = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(true);
         using var document = JsonDocument.Parse(text);
 
@@ -150,7 +150,7 @@ public sealed class CatalogEndpointTests
             body.RootElement.GetProperty("group").GetString().ShouldBe("idle");
         }
 
-        using (var board = await alice.GetAsync(new Uri("/board", UriKind.Relative), ct).ConfigureAwait(true))
+        using (var board = await alice.GetAsync(new Uri("/account/board", UriKind.Relative), ct).ConfigureAwait(true))
         {
             using var document = await WebAppTestHost.ReadJsonAsync(board, ct).ConfigureAwait(true);
             CardIds(Column(document.RootElement.GetProperty("columns").EnumerateArray().ToArray(), "archived")).ShouldBe([id]);

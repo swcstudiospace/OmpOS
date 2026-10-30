@@ -54,7 +54,7 @@ public sealed class BearerTokenUnauthorizedTests
         var session = new OwnerTokenSession();
         session.SetToken(Token);
         using var routes = new RoutedHandler();
-        routes.OnProblem(HttpMethod.Get, "/board", HttpStatusCode.Unauthorized, null, "Unauthorized.", "Sign in.");
+        routes.OnProblem(HttpMethod.Get, "/account/board", HttpStatusCode.Unauthorized, null, "Unauthorized.", "Sign in.");
         using var handler = HandlerOver(session, routes);
         using var http = HttpOver(handler);
 
@@ -78,7 +78,7 @@ public sealed class BearerTokenUnauthorizedTests
         var changes = 0;
         session.Changed += (_, _) => changes++;
         using var routes = new RoutedHandler();
-        routes.OnProblem(HttpMethod.Get, "/board", HttpStatusCode.Unauthorized, null, "Unauthorized.", "Sign in.");
+        routes.OnProblem(HttpMethod.Get, "/account/board", HttpStatusCode.Unauthorized, null, "Unauthorized.", "Sign in.");
         using var handler = HandlerOver(session, routes);
         using var http = HttpOver(handler);
         var api = new OmpApiClient(http);
@@ -100,7 +100,7 @@ public sealed class BearerTokenUnauthorizedTests
         var changes = 0;
         session.Changed += (_, _) => changes++;
         using var routes = new RoutedHandler();
-        routes.OnProblem(HttpMethod.Get, "/board", HttpStatusCode.Unauthorized, null, "Unauthorized.", "Sign in.");
+        routes.OnProblem(HttpMethod.Get, "/account/board", HttpStatusCode.Unauthorized, null, "Unauthorized.", "Sign in.");
         using var handler = HandlerOver(session, routes);
         using var http = HttpOver(handler);
 
@@ -122,7 +122,7 @@ public sealed class BearerTokenUnauthorizedTests
         var session = new OwnerTokenSession();
         session.SetToken(Token);
         using var routes = new RoutedHandler();
-        routes.OnProblem(HttpMethod.Get, "/board", status, null, "Failed.", "Try later.");
+        routes.OnProblem(HttpMethod.Get, "/account/board", status, null, "Failed.", "Try later.");
         using var handler = HandlerOver(session, routes);
         using var http = HttpOver(handler);
 

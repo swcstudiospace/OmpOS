@@ -7,10 +7,10 @@ using Autonogrammer.Sessions;
 namespace Autonogrammer.Api.Services;
 
 /// <summary>
-/// Finds what changed in the catalog and publishes it on the user-level stream. The session store has no change feed for a whole catalog, so
-/// this reads each session, compares it with what it saw before and publishes the difference: a new session, a closed or reopened one, a
-/// new status, a new engine stage. It scans on a timer while a stream is connected, and on demand after an operation that changes the
-/// catalog.
+/// Finds what changed in the Code catalog and publishes it on the user-level stream. The session store has no change feed for a whole catalog, so
+/// this reads each Code session through <c>ListByOwnerAsync</c>, compares it with what it saw before and publishes the difference: a new session, a closed or reopened one, a
+/// new status, a new engine stage. Cowork sessions are never published. It scans on a timer while a stream is connected, and on demand after an operation that changes the
+/// catalog. Phase 69 unit 5 later routes this call site through <c>CodeBoardSource</c>.
 /// </summary>
 internal sealed class CatalogChangeDetector : BackgroundService
 {
@@ -22,31 +22,23 @@ internal sealed class CatalogChangeDetector : BackgroundService
 
     private readonly SemaphoreSlim _scanGate = new(1, 1);
     private readonly Dictionary<string, Seen> _seen = new(StringComparer.Ordinal);
-    private readonly SessionRegistry _registry;
     private readonly ISessionRepository _repository;
-    private readonly SessionLifecycleStore _lifecycle;
     private readonly CatalogEventHub _hub;
     private readonly TimeProvider _time;
     private readonly ILogger<CatalogChangeDetector> _logger;
 
     /// <summary>Initializes a new instance of the <see cref="CatalogChangeDetector"/> class.</summary>
-    /// <param name="registry">The ids of the sessions created through this API.</param>
     /// <param name="repository">The session store.</param>
-    /// <param name="lifecycle">The closed flags.</param>
     /// <param name="hub">The user-level event history.</param>
     /// <param name="time">The clock.</param>
     /// <param name="logger">The logger.</param>
     public CatalogChangeDetector(
-        SessionRegistry registry,
         ISessionRepository repository,
-        SessionLifecycleStore lifecycle,
         CatalogEventHub hub,
         TimeProvider time,
         ILogger<CatalogChangeDetector> logger)
     {
-        _registry = registry;
         _repository = repository;
-        _lifecycle = lifecycle;
         _hub = hub;
         _time = time;
         _logger = logger;
@@ -68,15 +60,10 @@ internal sealed class CatalogChangeDetector : BackgroundService
         try
         {
             var now = _time.GetUtcNow();
-            foreach (var id in _registry.Ids)
+            foreach (var session in await LoadCodeAsync(cancellationToken).ConfigureAwait(false))
             {
-                var session = await _repository.GetAsync(id, cancellationToken).ConfigureAwait(false);
-                if (session is null)
-                {
-                    continue;
-                }
-
-                var closed = _lifecycle.IsClosed(id);
+                var id = session.Id;
+                var closed = session.ClosedAt is not null;
                 var (row, group) = CatalogProjector.RowOf(session, closed, now);
                 var stage = StageProjection.OmpTurn(session);
                 var current = new Seen(session.Status, row, group, closed, stage.Status);
@@ -159,6 +146,35 @@ internal sealed class CatalogChangeDetector : BackgroundService
 
     private void PublishStage(Session session, StageEvent stage) =>
         _ = _hub.Publish(session.OwnerId, CatalogEventKinds.Stage, JsonSerializer.Serialize(stage, CatalogJsonContext.Default.StageEvent));
+
+    private async Task<List<Session>> LoadCodeAsync(CancellationToken cancellationToken)
+    {
+        var owners = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var status in Enum.GetValues<SessionStatus>())
+        {
+            var ids = await _repository.ListSessionIdsByStatusAsync(status, DateTimeOffset.MaxValue, cancellationToken).ConfigureAwait(false);
+            foreach (var id in ids)
+            {
+                var header = await _repository.GetAsync(id, cancellationToken).ConfigureAwait(false);
+                if (header is { Surface: SessionSurface.Code })
+                {
+                    _ = owners.Add(header.OwnerId);
+                }
+            }
+        }
+
+        var found = new List<Session>();
+        foreach (var owner in owners)
+        {
+            var page = await _repository.ListByOwnerAsync(owner, SessionSurface.Code, includeClosed: true, limit: 200, cursor: null, cancellationToken).ConfigureAwait(false);
+            foreach (var header in page)
+            {
+                found.Add(await _repository.GetAsync(header.Id, cancellationToken).ConfigureAwait(false) ?? header);
+            }
+        }
+
+        return found;
+    }
 
     private sealed record Seen(SessionStatus Status, CatalogRowStatus Row, CatalogRowGroup Group, bool Closed, StageStatus Stage);
 }

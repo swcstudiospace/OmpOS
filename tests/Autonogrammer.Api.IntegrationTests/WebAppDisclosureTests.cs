@@ -53,7 +53,7 @@ public sealed class WebAppDisclosureTests
             bodies.Add(await response.Content.ReadAsStringAsync(ct).ConfigureAwait(true));
         }
 
-        foreach (var path in new[] { "/board", "/workspace", "/source" })
+        foreach (var path in new[] { "/account/board", "/workspace", "/source" })
         {
             bodies.Add(await client.GetStringAsync(new Uri(path, UriKind.Relative), ct).ConfigureAwait(true));
         }

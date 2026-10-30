@@ -19,6 +19,7 @@ internal static class ClientRouteSurface
         _ = await api.GetSourceAsync(cancellationToken).ConfigureAwait(true);
         _ = await api.IsReadyAsync(cancellationToken).ConfigureAwait(true);
         _ = await api.GetBoardAsync(cancellationToken).ConfigureAwait(true);
+        _ = await api.GetAccountAsync(cancellationToken).ConfigureAwait(true);
         _ = await api.GetSessionAsync(DemoFixtures.RunningId, cancellationToken).ConfigureAwait(true);
         _ = await api.GetStagesAsync(DemoFixtures.RunningId, cancellationToken).ConfigureAwait(true);
         _ = await api.GetContextAsync(DemoFixtures.RunningId, cancellationToken).ConfigureAwait(true);

@@ -1,3 +1,4 @@
+using Autonogrammer.Api.Accounts;
 using Autonogrammer.Api.Automations;
 using Autonogrammer.Api.Cloud;
 using Autonogrammer.Api.Coordination;
@@ -101,7 +102,6 @@ builder.Services.AddApiCoordination(builder.Configuration);
 builder.Services.AddDataPlane();
 builder.Services.AddSingleton<SessionService>();
 builder.Services.AddOmpParser();
-builder.Services.AddSingleton<SessionRegistry>();
 builder.Services.AddSingleton<RunRegistry>();
 // Harness:Adapter picks the factory. Acp runs omp over stdio through OmpAcpClient, which takes its permission resolver from DI;
 // InMemory is the development echo adapter.
@@ -124,6 +124,7 @@ builder.Services.AddCloudAgentServices();
 builder.Services.AddProviderServices();
 builder.Services.AddWorkspaceSettingsServices();
 builder.Services.AddAutomationServices();
+builder.Services.AddAccountsServices();
 
 // The API is the composition root for session runs. Each prompt runs in this process through DirectSessionRunner, which holds
 // the session's run lease from the coordination store for the whole run. The sandbox is the in-memory fake provider.
@@ -214,6 +215,7 @@ app.UseApiAuthentication();
 
 app.UseRateLimiter();
 app.UseAuthorization();
+app.UseMiddleware<AccountEnrollmentMiddleware>();
 app.UseMiddleware<CloudDisabledMiddleware>();
 app.UseMiddleware<AutomationDisabledMiddleware>();
 
@@ -247,6 +249,7 @@ app.MapToolApprovalEndpoints();
 app.MapEventStreamEndpoints();
 app.MapRunEndpoints();
 app.MapCatalogEndpoints();
+app.MapAccountEndpoints();
 app.MapCatalogEventEndpoints();
 app.MapStageEndpoints();
 app.MapSteeringEndpoints();

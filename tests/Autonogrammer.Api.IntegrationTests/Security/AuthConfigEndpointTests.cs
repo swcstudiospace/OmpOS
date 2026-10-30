@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 
@@ -60,6 +61,40 @@ public sealed class AuthConfigEndpointTests
             json.GetProperty("mode").GetString().ShouldBe("oidc");
             json.GetProperty("authority").GetString().ShouldBe(JwtTestHost.Issuer);
             json.GetProperty("audience").GetString().ShouldBe(JwtTestHost.Audience);
+            json.TryGetProperty("projectUrl", out _).ShouldBeFalse();
+        }
+    }
+
+    /// <summary>Verifies an OIDC host with a client block serves the public sign-in settings and caches them.</summary>
+    [Fact]
+    public async Task OidcMode_WithClientBlock_AnswersThePublicSettingsAndCachesThem()
+    {
+        var config = JwtTestHost.DevelopmentConfig();
+        config["Api:Auth:Authority"] = JwtTestHost.Issuer;
+        config["Api:Auth:Client:ProjectUrl"] = "https://project.example";
+        config["Api:Auth:Client:PublishableKey"] = "sb_publishable_test";
+        config["Api:Auth:Client:MagicLinkEnabled"] = "true";
+        config["Api:Auth:Client:EmailCodeEnabled"] = "true";
+        config["Api:Auth:Client:SignupEmailHasCode"] = "true";
+        using var factory = new ApiFactory(config, JwtTestHost.InjectStaticMetadata);
+        using var client = factory.CreateClient();
+
+        var (response, _, json) = await GetAsync(client).ConfigureAwait(true);
+        using (response)
+        {
+            response.StatusCode.ShouldBe(HttpStatusCode.OK);
+            response.Headers.CacheControl!.ToString().ShouldContain("public");
+            response.Headers.CacheControl.MaxAge.ShouldBe(TimeSpan.FromSeconds(300));
+            json.GetProperty("mode").GetString().ShouldBe("oidc");
+            json.GetProperty("authority").GetString().ShouldBe(JwtTestHost.Issuer);
+            json.GetProperty("audience").GetString().ShouldBe(JwtTestHost.Audience);
+            json.GetProperty("projectUrl").GetString().ShouldBe("https://project.example");
+            json.GetProperty("publishableKey").GetString().ShouldBe("sb_publishable_test");
+            json.GetProperty("methods").GetProperty("emailCode").GetBoolean().ShouldBeTrue();
+            json.GetProperty("methods").GetProperty("magicLink").GetBoolean().ShouldBeTrue();
+            json.GetProperty("emailCode").GetProperty("expirySeconds").GetInt32().ShouldBe(3600);
+            json.GetProperty("emailCode").GetProperty("resendCooldownSeconds").GetInt32().ShouldBe(60);
+            json.GetProperty("signupEmailHasCode").GetBoolean().ShouldBeTrue();
         }
     }
 

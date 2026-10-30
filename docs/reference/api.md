@@ -36,7 +36,9 @@ The machine-readable contract is [`docs/api/openapi.json`](https://github.com/sw
 
 | Route | What it does |
 |---|---|
-| `GET /board` | The Kanban board built from the caller's sessions. |
+| `GET /account` | The caller's account: id, email from the token (never stored), timestamps and feature keys. |
+| `GET /account/sessions`, `GET /account/sessions/{id}` | The caller's Code and Cowork sessions, each labelled with its surface. Another owner's session is the same 404 as an absent one. |
+| `GET /account/board` | The Kanban board built from the caller's Code sessions. Replaces `GET /board`; no alias remains. |
 | `GET /sessions/{id}/card-details` | What the Substrate knows about the session behind a card. |
 | `POST /sessions/{id}/close`, `.../reopen`, `.../resume` | Close, reopen, or settle the orphaned run of a lost session. |
 | `GET /workspace` | The workspace name, folder name and plugin check. |

@@ -28,7 +28,8 @@ public sealed class DemoFixturesContractTests : IDisposable
         await RoundTripAsync("sessions", CatalogJsonContext.Default.SessionCatalogEntryArray).ConfigureAwait(true);
         await RoundTripAsync("workspace", CatalogJsonContext.Default.WorkspaceInfo).ConfigureAwait(true);
         await RoundTripAsync("source", CatalogJsonContext.Default.SourceInfo).ConfigureAwait(true);
-        await RoundTripAsync("board", CatalogJsonContext.Default.BoardResponse).ConfigureAwait(true);
+        await RoundTripAsync("account/board", CatalogJsonContext.Default.BoardResponse).ConfigureAwait(true);
+        await RoundTripAsync("account", Autonogrammer.Contracts.Accounts.AccountsJsonContext.Default.AccountResponse).ConfigureAwait(true);
         await RoundTripAsync("status/data-plane", DataPlaneJsonContext.Default.DataPlaneStatusArray).ConfigureAwait(true);
     }
 

@@ -28,7 +28,7 @@ The JSON files in this folder are therefore the reviewed record of the intended 
 | `deploy.healthcheckTimeout` | `120` | Owner decision of 2026-10-21; the start-up schema step and the omp check run before the first answer | `healthcheckTimeout` | Worker: yes (120 s) |
 | `deploy.restartPolicyType` | `ON_FAILURE` | A crash restarts; a clean exit does not | `restartPolicyType` | Worker: yes |
 | `deploy.restartPolicyMaxRetries` | `3` | A configuration error exits at start (exit 134, see the 2026-10-21 smoke evidence), so more retries only repeat it | `restartPolicyMaxRetries` | Worker: yes (3) |
-| `deploy.numReplicas` | `1` | Run-time indexes (`SessionRegistry`, `RunRegistry`) live in process memory and are not shared between instances | `regions` (for example `{"<region>": {"numReplicas": 1}}`; it replaces the whole region map) | Not run |
+| `deploy.numReplicas` | `1` | Run-time indexes (`RunRegistry`) live in process memory and are not shared between instances; the session list is the repository | `regions` (for example `{"<region>": {"numReplicas": 1}}`; it replaces the whole region map) | Not run |
 | `deploy.drainingSeconds` | `35` | Five seconds above the host shutdown timeout of 30 s that unit api-hosting sets (`Hosting:ShutdownTimeoutSeconds`), so the host ends open streams first | `drainingSeconds` | Not run |
 
 If the service should read the file, the service setting "config file path" (`railwayConfigFile` in `update-service`) names it; the default file name Railway looks for is `railway.json` at the root of the service source, not `api.railway.json`.

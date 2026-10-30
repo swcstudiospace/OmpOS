@@ -184,7 +184,7 @@
         "tags": [
           "Catalog"
         ],
-        "summary": "Lists the caller's sessions with their catalog fields.",
+        "summary": "Lists the caller's Code sessions with their catalog fields.",
         "responses": {
           "200": {
             "description": "OK",
@@ -784,32 +784,6 @@
         }
       }
     },
-    "/board": {
-      "get": {
-        "tags": [
-          "Catalog"
-        ],
-        "summary": "Builds the Kanban board from the caller's sessions.",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BoardResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "The request carries no valid bearer token."
-          },
-          "403": {
-            "description": "The caller is authenticated but not permitted to use this deployment."
-          }
-        }
-      }
-    },
     "/sessions/{id}/card-details": {
       "get": {
         "tags": [
@@ -1036,6 +1010,260 @@
           },
           "403": {
             "description": "The caller is authenticated but not permitted to use this deployment."
+          }
+        }
+      }
+    },
+    "/account": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Reads the caller's account. Email comes from the token and is never stored.",
+        "operationId": "GetAccount",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/sessions": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Lists the caller's Code and Cowork sessions, each labelled with its surface.",
+        "operationId": "GetAccountSessions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSessionList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/sessions/{id}": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Reads one of the caller's sessions. Another owner's session reads as absent.",
+        "operationId": "GetAccountSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSessionItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/board": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Builds the Kanban board from the caller's Code sessions.",
+        "operationId": "GetAccountBoard",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -4324,6 +4552,87 @@
   },
   "components": {
     "schemas": {
+      "AccountResponse": {
+        "required": [
+          "id",
+          "email",
+          "createdAt",
+          "lastSeenAt",
+          "features"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The stable owner identifier: the token `sub` claim, or `owner` for the single operator of owner-token mode."
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The address from the validated token's `email` claim, or null when the token has none. It is never stored."
+          },
+          "createdAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When the account row was created, or null for callers without an account row (owner-token and development callers).",
+            "format": "date-time"
+          },
+          "lastSeenAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When the account was last seen, or null for callers without an account row.",
+            "format": "date-time"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The module keys that registered an account feature, such as `cowork` or `dispatch`, so a menu shows only what exists."
+          }
+        },
+        "description": "The caller's own account, answered by `GET /account`."
+      },
+      "AccountSessionItem": {
+        "required": [
+          "session",
+          "surface"
+        ],
+        "type": "object",
+        "properties": {
+          "session": {
+            "description": "The list-row view of the session.",
+            "$ref": "#/components/schemas/SessionSummary"
+          },
+          "surface": {
+            "type": "string",
+            "description": "The label of the surface the session belongs to, `code` or `cowork`. A string because the session surface type arrives with the data plane phase."
+          }
+        },
+        "description": "One row of the account's session list."
+      },
+      "AccountSessionList": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountSessionItem"
+            },
+            "description": "The rows."
+          }
+        },
+        "description": "The caller's own sessions across surfaces, answered by `GET /account/sessions`, newest first."
+      },
       "AuthConfigResponse": {
         "required": [
           "mode",
@@ -4341,17 +4650,107 @@
               "null",
               "string"
             ],
-            "description": "The OIDC authority in `oidc` mode, otherwise null."
+            "description": "The OIDC authority in `oidc` mode, otherwise null (written as JSON null)."
           },
           "audience": {
             "type": [
               "null",
               "string"
             ],
-            "description": "The OIDC audience in `oidc` mode, otherwise null."
+            "description": "The OIDC audience in `oidc` mode, otherwise null (written as JSON null)."
+          },
+          "projectUrl": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The https project URL of the auth host, or null when no client block is configured.",
+            "format": "uri"
+          },
+          "publishableKey": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The publishable key sent as `apikey`, or null when no client block is configured."
+          },
+          "methods": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "The offered sign-in methods, or null when no client block is configured.",
+                "$ref": "#/components/schemas/AuthMethods"
+              }
+            ]
+          },
+          "emailCode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "The email code timing, or null when no client block is configured.",
+                "$ref": "#/components/schemas/AuthEmailCode"
+              }
+            ]
+          },
+          "signupEmailHasCode": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "True when the first-time signup email already shows a code (owner action O4); null when no client block is configured."
           }
         },
-        "description": "Public sign-in configuration answered by `GET /auth/config`. It carries no secret."
+        "description": "Public sign-in configuration answered by `GET /auth/config`. It carries no secret: the publishable key is public by design. The first three\nmembers are the answer the endpoint has always given; the rest are null, and so omitted from the JSON, unless the OIDC client block is configured."
+      },
+      "AuthEmailCode": {
+        "required": [
+          "expirySeconds",
+          "resendCooldownSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "expirySeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "How long a code stays valid.",
+            "format": "int32"
+          },
+          "resendCooldownSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "How long a person waits before asking for a new code.",
+            "format": "int32"
+          }
+        },
+        "description": "Timing of the email code."
+      },
+      "AuthMethods": {
+        "required": [
+          "emailCode",
+          "magicLink"
+        ],
+        "type": "object",
+        "properties": {
+          "emailCode": {
+            "type": "boolean",
+            "description": "True when a one-time code sent by email can be entered."
+          },
+          "magicLink": {
+            "type": "boolean",
+            "description": "True when the PKCE magic link flow is on (needs owner action O1); false means code only."
+          }
+        },
+        "description": "Which sign-in methods the project offers."
       },
       "AutomationCronPreviewResponse": {
         "required": [
@@ -7912,6 +8311,24 @@
         },
         "description": "The answer of `GET /sessions/{id}/context`: the task context of the session."
       },
+      "SessionKind": {
+        "enum": [
+          "Chat",
+          "Terminal"
+        ],
+        "description": "What a session is: a chat with the engine behind the Agent Panel, or an omp terminal."
+      },
+      "SessionLifecycle": {
+        "enum": [
+          "Created",
+          "Running",
+          "Paused",
+          "Completed",
+          "Failed",
+          "Lost"
+        ],
+        "description": "The persisted lifecycle of an agent session. It is coarser than the live run state: it survives an application restart."
+      },
       "SessionLifecycleResponse": {
         "required": [
           "id",
@@ -7984,6 +8401,66 @@
           "Interrupted"
         ],
         "description": "Lifecycle states of an agent session."
+      },
+      "SessionSummary": {
+        "required": [
+          "id",
+          "title",
+          "lifecycle",
+          "createdAt",
+          "lastActivity"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Gets the session identifier."
+          },
+          "title": {
+            "type": "string",
+            "description": "Gets the session title."
+          },
+          "lifecycle": {
+            "description": "Gets the persisted lifecycle of the session.",
+            "$ref": "#/components/schemas/SessionLifecycle"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Gets the time the session was created.",
+            "format": "date-time"
+          },
+          "lastActivity": {
+            "type": "string",
+            "description": "Gets the time of the last observed activity of the session.",
+            "format": "date-time"
+          },
+          "graphId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the Graph identifier of the session's plan, or null when it has none."
+          },
+          "taskId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the identifier of the task the session works on, or null when it is not bound to a task."
+          },
+          "workspaceRoot": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the absolute path of the workspace the session runs in, or null when it is unknown."
+          },
+          "kind": {
+            "description": "Gets what the session is: a chat behind the Agent Panel or an omp terminal. Defaults to SessionKind.Chat.",
+            "$ref": "#/components/schemas/SessionKind"
+          }
+        },
+        "description": "The list-row view of one agent session: enough to show the session in a list of concurrent, possibly long-running sessions."
       },
       "SessionSurface": {
         "enum": [
@@ -8765,6 +9242,9 @@
     },
     {
       "name": "RunEndpoints"
+    },
+    {
+      "name": "Account"
     },
     {
       "name": "Stages"
