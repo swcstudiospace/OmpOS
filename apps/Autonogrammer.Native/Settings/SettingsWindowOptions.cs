@@ -102,4 +102,7 @@ internal sealed class SettingsWindowOptions
 
     /// <summary>Gets the Computer Use page, evaluated each time the window is built, or null for no page.</summary>
     public Func<Autonogrammer.Presentation.Computer.ComputerUseSettingsPage?>? ComputerUse { get; init; }
+
+    /// <summary>Gets the Browser page source, or null for a window without that page.</summary>
+    public Autonogrammer.Presentation.Settings.BrowserUse.IBrowserUseSettingsSource? BrowserUse { get; init; }
 }

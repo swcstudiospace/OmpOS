@@ -14,6 +14,7 @@ using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Customize;
 using Autonogrammer.Presentation.Settings.Ignore;
 using Autonogrammer.Presentation.Settings.Privacy;
+using Autonogrammer.Presentation.Settings.BrowserUse;
 using Autonogrammer.Presentation.Settings.Workspaces;
 using Autonogrammer.Presentation.Settings.Worktrees;
 
@@ -81,11 +82,22 @@ internal static class SettingsWindowFactory
             pages.Add(new RemoteEnvironmentsSettingsPage(new RemoteEnvironmentsViewModel(remote), runtimeModel));
         }
 
+        AddTailPages(pages, options);
+        return pages;
+    }
+
+    private static void AddTailPages(List<ISettingsPage> pages, SettingsWindowOptions options)
+    {
         var cloud = options.CloudAgentsModel ??= CreateCloudModel(options);
         pages.Add(new CloudSettingsPage(cloud));
         if (options.Automations is { } automations)
         {
             pages.Add(new AutomationsSettingsPage(new HostedAutomationsViewModel(automations)));
+        }
+
+        if (options.BrowserUse is { } browserUse)
+        {
+            pages.Add(new BrowserUseSettingsPage(browserUse));
         }
 
         pages.Add(new PrivacySettingsPage());
@@ -95,8 +107,6 @@ internal static class SettingsWindowFactory
         {
             pages.Add(computerUse);
         }
-
-        return pages;
     }
 
     // Tab, Rules, Skills, Commands, Hooks and MCP: the pages of what the user's files and the hooks service supply.

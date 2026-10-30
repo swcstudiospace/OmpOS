@@ -148,6 +148,7 @@ internal sealed class HeadSettings : IAsyncDisposable
             Dispatch = dispatch,
             OpenCloudAgent = links.RaiseCloudAgentOpen,
             ComputerUse = options.ComputerUse,
+            BrowserUse = options.BrowserUse,
         };
         var host = new SettingsWindowHost(
             () => SettingsWindowFactory.CreateModel(windowOptions),

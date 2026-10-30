@@ -5,6 +5,7 @@ using Autonogrammer.Presentation.Safety;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Customize;
 using Autonogrammer.Presentation.Settings.Ignore;
+using Autonogrammer.Presentation.Settings.BrowserUse;
 using Autonogrammer.Presentation.Settings.Models;
 using Autonogrammer.Presentation.Settings.Privacy;
 using Autonogrammer.Presentation.Settings.Workspaces;
@@ -48,6 +49,7 @@ internal static class SettingsPageViews
             PrivacySettingsPage => new PrivacyPageView(),
             AutomationsSettingsPage => new Autonogrammer.Native.Views.Automations.AutomationsPageView(),
             ComputerUseSettingsPage => new ComputerSettingsPage(),
+            BrowserUseSettingsPage => new BrowserUsePageView(),
             _ => throw new ArgumentException("No view draws this kind of settings page.", nameof(page)),
         };
         view.DataContext = ContextOf(page);
@@ -70,7 +72,7 @@ internal static class SettingsPageViews
     public static bool IsEditable(ISettingsPage page)
     {
         ArgumentNullException.ThrowIfNull(page);
-        return page is RuntimePage or GeneralPage or AgentsPage or ModelsSettingsPage or DisplaySettingsPage or RunModeSettingsPage or IgnoreSettingsPage or WorkspacesSettingsPage or ComputerUseSettingsPage;
+        return page is RuntimePage or GeneralPage or AgentsPage or ModelsSettingsPage or DisplaySettingsPage or RunModeSettingsPage or IgnoreSettingsPage or WorkspacesSettingsPage or ComputerUseSettingsPage or BrowserUseSettingsPage;
     }
 
     /// <summary>Returns whether the page has defaults the footer's Reset returns its draft to. The Models page has none: its draft is a form to close.</summary>
@@ -117,6 +119,12 @@ internal static class SettingsPageViews
             {
                 CustomizePageState.Loading => new PageStatus(PageStatusKind.Loading, string.Empty, CustomizeCopy.LoadingText),
                 CustomizePageState.Error => new PageStatus(PageStatusKind.Error, CustomizeCopy.ErrorTitle, catalog.LoadFailure ?? CustomizeCopy.LoadFailed),
+                _ => ReadyStatus,
+            },
+            BrowserUseSettingsPage browser => browser.State switch
+            {
+                SettingsPageState.Loading => new PageStatus(PageStatusKind.Loading, string.Empty, SettingsCopy.LoadingText),
+                SettingsPageState.Error => new PageStatus(PageStatusKind.Error, SettingsCopy.LoadFailedHeading, browser.LoadError),
                 _ => ReadyStatus,
             },
             SettingsPageBase basePage => basePage.State switch

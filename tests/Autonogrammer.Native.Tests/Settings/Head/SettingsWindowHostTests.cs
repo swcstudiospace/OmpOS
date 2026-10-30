@@ -6,6 +6,7 @@ using Autonogrammer.Native.Tests.Safety;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Customize;
+using Autonogrammer.Presentation.Settings.BrowserUse;
 using Shouldly;
 using Xunit;
 
@@ -254,6 +255,40 @@ public sealed class SettingsWindowHostTests : IDisposable
             SettingsSection.Keyboard,
         ]);
         model.Pages.OfType<RemoteEnvironmentsSettingsPage>().Single().Runtime.ShouldNotBeNull("the container and WSL section is there when the head supplies podman support");
+        options.CloudAgentsModel.ShouldNotBeNull().Dispose();
+    }
+
+    /// <summary>A supplied Browser source inserts the page after Automations and before Privacy.</summary>
+    [Fact]
+    public void SuppliedBrowserUseAppearsAfterAutomationsAndBeforePrivacy()
+    {
+        var clock = new ManualTimeProvider();
+        using var sets = new Autonogrammer.Workspace.Sets.WorkspaceSetStore(_tree.PathOf("browser-sets.json"));
+        var files = new MemoryMcpFiles();
+        var options = new SettingsWindowOptions
+        {
+            Store = new FileSettingsStore(_tree.PathOf("browser-state")),
+            WorkspaceRoot = Directory.CreateDirectory(_tree.PathOf("browser-workspace")).FullName,
+            PluginsRoot = _tree.PathOf("plugins"),
+            UserHome = Directory.CreateDirectory(_tree.PathOf("browser-home")).FullName,
+            GetVariable = static _ => null,
+            ModelsPageFactory = () => new StubSettingsPage(SettingsSection.Models),
+            Hooks = new Autonogrammer.Native.Tests.Hooks.FakeHooksService(),
+            Mcp = new Autonogrammer.Harness.Mcp.Catalog.McpServerCatalog(files, files),
+            RunModes = new FakeRunModeSource(),
+            Display = new Autonogrammer.Presentation.Commands.Handlers.DisplaySettings(new MemoryDisplayStore()),
+            WorkspaceSets = sets,
+            RemoteEnvironments = new ScriptedRemoteHost(),
+            Cloud = new Autonogrammer.Presentation.Cloud.FakeCloudAgentsHost(clock),
+            ContainerEnvironments = new ScriptedContainerHost(),
+            ContainerLister = new ScriptedContainerLister(),
+            Automations = new ScriptedAutomationsManager(),
+            BrowserUse = new HostBrowserUseSource(),
+        };
+
+        var sections = SettingsWindowFactory.CreateModel(options).Pages.Select(static page => page.Section).ToArray();
+        Array.IndexOf(sections, SettingsSection.BrowserUse).ShouldBe(Array.IndexOf(sections, SettingsSection.Automations) + 1);
+        Array.IndexOf(sections, SettingsSection.Privacy).ShouldBe(Array.IndexOf(sections, SettingsSection.BrowserUse) + 1);
         options.CloudAgentsModel.ShouldNotBeNull().Dispose();
     }
 

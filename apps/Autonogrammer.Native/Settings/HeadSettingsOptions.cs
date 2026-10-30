@@ -39,4 +39,7 @@ internal sealed class HeadSettingsOptions
     /// A null result shows no page. The order of Cowork and agent construction does not matter.
     /// </summary>
     public Func<Autonogrammer.Presentation.Computer.ComputerUseSettingsPage?>? ComputerUse { get; init; }
+
+    /// <summary>Gets the Browser page source, or null for a window without that page.</summary>
+    public Autonogrammer.Presentation.Settings.BrowserUse.IBrowserUseSettingsSource? BrowserUse { get; init; }
 }

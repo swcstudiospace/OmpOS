@@ -71,4 +71,7 @@ public enum SettingsSection
 
     /// <summary>Computer Use: disclosure, grants, denylist additions, kill chord, security phrase and audit.</summary>
     ComputerUse = 22,
+
+    /// <summary>Cowork Chromium: locate state, policy and a user-confirmed acquisition.</summary>
+    BrowserUse = 23,
 }

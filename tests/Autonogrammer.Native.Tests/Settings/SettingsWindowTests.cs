@@ -16,6 +16,7 @@ using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Safety;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Customize;
+using Autonogrammer.Presentation.Settings.BrowserUse;
 using Autonogrammer.Presentation.Settings.Ignore;
 using Autonogrammer.Presentation.Settings.Models;
 using Autonogrammer.Presentation.Settings.Privacy;
@@ -52,6 +53,7 @@ public sealed class SettingsWindowTests
         (SettingsSection.Remote, RemoteCopy.Title, typeof(RemoteEnvironmentsPageView)),
         (SettingsSection.Cloud, CloudCopy.Title, typeof(CloudAgentsPageView)),
         (SettingsSection.Automations, AutomationsCopy.Title, typeof(AutomationsPageView)),
+        (SettingsSection.BrowserUse, BrowserUseCopy.Title, typeof(BrowserUsePageView)),
         (SettingsSection.Privacy, PrivacyCopy.Title, typeof(PrivacyPageView)),
         (SettingsSection.Network, NetworkCopy.Title, typeof(NetworkPageView)),
         (SettingsSection.Keyboard, KeyboardCopy.Title, typeof(KeyboardPageView)),

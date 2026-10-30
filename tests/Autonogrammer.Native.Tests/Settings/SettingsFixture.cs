@@ -14,6 +14,7 @@ using Autonogrammer.Presentation.Remote;
 using Autonogrammer.Presentation.Safety;
 using Autonogrammer.Presentation.Settings;
 using Autonogrammer.Presentation.Settings.Customize;
+using Autonogrammer.Presentation.Settings.BrowserUse;
 using Autonogrammer.Presentation.Settings.Ignore;
 using Autonogrammer.Presentation.Settings.Models;
 using Autonogrammer.Presentation.Settings.Privacy;
@@ -26,7 +27,7 @@ using Avalonia.Threading;
 namespace Autonogrammer.Native.Tests.Settings;
 
 /// <summary>
-/// A real <see cref="SettingsWindow"/> over real page models whose sources are scripted. Only the sources are fake: the twenty-three pages, the
+/// A real <see cref="SettingsWindow"/> over real page models whose sources are scripted. Only the sources are fake: the twenty-four pages, the
 /// window model and the window are the product's. The pages are in the order the head's factory gives them when every service is supplied.
 /// The window is shown, and every page is loaded unless the test asks to keep them loading.
 /// </summary>
@@ -55,6 +56,7 @@ internal sealed class SettingsFixture : IDisposable
         CloudModel = new CloudAgentsViewModel(CloudHost, Clock);
         Cloud = new CloudSettingsPage(CloudModel);
         Automations = new AutomationsSettingsPage(new HostedAutomationsViewModel(AutomationsManager));
+        Browser = new BrowserUseSettingsPage(new FixtureBrowserUseSource());
         Privacy = new PrivacySettingsPage();
         Network = new NetworkSettingsPage(NetworkSource);
         Keyboard = new KeyboardSettingsPage(KeyboardSource);
@@ -62,7 +64,7 @@ internal sealed class SettingsFixture : IDisposable
         Model = new SettingsWindowModel(
         [
             Runtime, General, Display, Agents, RunMode, Models, Tab, Rules, Skills, Commands, Hooks, Mcp, Plugins,
-            Workspaces, Worktrees, Ignore, Remote, Cloud, Automations, Privacy, Network, Keyboard, Computer,
+            Workspaces, Worktrees, Ignore, Remote, Cloud, Automations, Browser, Privacy, Network, Keyboard, Computer,
         ]);
         Window = new SettingsWindow(Model);
         Runtime.Saved += (_, args) => RuntimeSaved.Add(args.Values);
@@ -196,6 +198,9 @@ internal sealed class SettingsFixture : IDisposable
 
     /// <summary>Gets the Automations page.</summary>
     internal AutomationsSettingsPage Automations { get; }
+
+    /// <summary>Gets the Browser page.</summary>
+    internal BrowserUseSettingsPage Browser { get; }
 
     /// <summary>Gets the Cloud page.</summary>
     internal CloudSettingsPage Cloud { get; }
@@ -342,4 +347,14 @@ internal sealed class FixtureComputerStatus : IComputerStatusSource
 
     public ValueTask<ComputerPermissionStatus> RequestPermissionAsync(ComputerPermissionKind kind, CancellationToken cancellationToken) =>
         ValueTask.FromResult(new ComputerPermissionStatus { Kind = kind, Granted = false, MessageId = "computer.permission.screen-recording" });
+}
+
+internal sealed class FixtureBrowserUseSource : IBrowserUseSettingsSource
+{
+    public Task<BrowserUseSnapshot> LoadAsync(CancellationToken cancellationToken) =>
+        Task.FromResult(new BrowserUseSnapshot(BrowserUseChromiumState.Ready, "149", BrowserUseSettingsValues.Defaults, null));
+
+    public Task SaveAsync(BrowserUseSettingsValues values, CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task AcquireAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
