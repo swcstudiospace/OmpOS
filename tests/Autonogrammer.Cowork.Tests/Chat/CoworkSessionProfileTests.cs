@@ -10,7 +10,8 @@ public sealed class CoworkSessionProfileTests
 {
     [Theory]
     [InlineData(Autonogrammer.Cowork.Tools.CoworkPermissionMode.Manual, "always-ask-cached")]
-    [InlineData(Autonogrammer.Cowork.Tools.CoworkPermissionMode.Auto, "always-ask")]
+    // D-12: Auto maps to always-ask-cached, the same cached ask as Manual. Skip stays always-ask.
+    [InlineData(Autonogrammer.Cowork.Tools.CoworkPermissionMode.Auto, "always-ask-cached")]
     [InlineData(Autonogrammer.Cowork.Tools.CoworkPermissionMode.Skip, "always-ask")]
     public void EachModeLaunchesWithoutExtensionsAndNeverYolo(Autonogrammer.Cowork.Tools.CoworkPermissionMode mode, string approval)
     {

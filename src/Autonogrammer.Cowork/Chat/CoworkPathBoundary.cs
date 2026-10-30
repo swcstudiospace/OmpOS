@@ -1,7 +1,7 @@
 namespace Autonogrammer.Cowork.Chat;
 
 /// <summary>
-/// Refuses <c>&lt;stateRoot&gt;/secrets</c>, <c>~/.omp</c>, <c>~/.ssh</c> and the account folders as trusted folders,
+/// Refuses secrets, <c>~/.omp</c>, <c>~/.ssh</c>, account folders, <c>/</c>, the home directory itself and system directories as trusted folders,
 /// and canonicalises symlinks and <c>..</c>. A UNC path or a drive root is never a trusted folder.
 /// </summary>
 public sealed class CoworkPathBoundary
@@ -81,18 +81,28 @@ public sealed class CoworkPathBoundary
         return ResolveLinks(full);
     }
 
+    /// <summary>The refusal for <c>/</c>, the home directory itself, a system directory, or a symlink that resolves into one.</summary>
+    public const string FolderRefusedProtected = "FolderRefused(protected)";
+
+    private static readonly string[] SystemDirectories =
+    [
+        "/bin", "/sbin", "/usr", "/etc", "/var", "/lib", "/lib64", "/boot", "/proc", "/sys", "/dev", "/opt", "/run",
+        "/System", "/Library", "/private",
+        "/Windows", "/Program Files", "/Program Files (x86)",
+    ];
+
     /// <summary>Whether this path cannot be a trusted folder.</summary>
     /// <param name="path">The candidate folder.</param>
     /// <returns>True when the path is refused.</returns>
     public bool IsForbiddenTrustedFolder(string path)
     {
-        if (string.IsNullOrWhiteSpace(path) || IsUncPath(path) || IsDriveRoot(path))
+        if (string.IsNullOrWhiteSpace(path) || IsUncPath(path) || IsDriveRoot(path) || IsProtectedTrustedFolder(path))
         {
             return true;
         }
 
         var canonical = Canonicalize(path);
-        if (IsUncPath(canonical) || IsDriveRoot(canonical))
+        if (IsUncPath(canonical) || IsDriveRoot(canonical) || IsProtectedTrustedFolder(canonical))
         {
             return true;
         }
@@ -101,6 +111,80 @@ public sealed class CoworkPathBoundary
             || IsUnder(canonical, OmpDirectory)
             || IsUnder(canonical, SshDirectory)
             || IsUnder(canonical, AccountRoot);
+    }
+
+    /// <summary>Whether the path is <c>/</c>, the home directory itself, or a system directory after canonicalisation.</summary>
+    /// <param name="path">The candidate folder.</param>
+    /// <returns>True when the path is protected.</returns>
+    public bool IsProtectedTrustedFolder(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || IsUncPath(path) || IsDriveRoot(path))
+        {
+            return true;
+        }
+
+        var canonical = Canonicalize(path);
+        if (IsUnixRoot(canonical) || IsDriveRoot(canonical))
+        {
+            return true;
+        }
+
+        if (string.Equals(Trim(canonical), Trim(_home), StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        foreach (var system in SystemDirectories)
+        {
+            if (IsUnder(canonical, system))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>The refusal token for a trusted-folder candidate, or null when it is accepted.</summary>
+    /// <param name="path">The candidate folder.</param>
+    /// <returns><see cref="FolderRefusedProtected"/> for a protected path, <c>FolderRefused</c> for the other refusals, or null.</returns>
+    public string? TrustedFolderRefusal(string path) =>
+        IsProtectedTrustedFolder(path) ? FolderRefusedProtected : IsForbiddenTrustedFolder(path) ? "FolderRefused" : null;
+
+    /// <summary>Whether a write is inside a read-write grant or the session scratch directory.</summary>
+    /// <param name="path">The path.</param>
+    /// <param name="readWriteGrants">The read-write grant folders.</param>
+    /// <param name="scratchDirectory">The session scratch directory, or null.</param>
+    /// <param name="workingDirectory">The directory a relative path is resolved against.</param>
+    /// <returns>True when the write is inside a read-write grant or the scratch directory.</returns>
+    public bool IsWriteAllowed(string path, IReadOnlyList<string> readWriteGrants, string? scratchDirectory, string workingDirectory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(readWriteGrants);
+        ArgumentException.ThrowIfNullOrWhiteSpace(workingDirectory);
+        var absolute = Path.IsPathRooted(path) || path.StartsWith('~') || IsUncPath(path)
+            ? path
+            : Path.Combine(workingDirectory, path);
+        var canonical = Canonicalize(absolute);
+        if (scratchDirectory is not null && !IsForbiddenTrustedFolder(scratchDirectory) && IsUnder(canonical, Canonicalize(scratchDirectory)))
+        {
+            return true;
+        }
+
+        foreach (var grant in readWriteGrants)
+        {
+            if (IsForbiddenTrustedFolder(grant))
+            {
+                continue;
+            }
+
+            if (IsUnder(canonical, Canonicalize(grant)))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Whether every candidate is an allowed trusted folder.</summary>
@@ -247,6 +331,14 @@ public sealed class CoworkPathBoundary
 
         return info.ResolveLinkTarget(returnFinalTarget: true)?.FullName;
     }
+
+    private static bool IsUnixRoot(string canonical)
+    {
+        var trimmed = Trim(canonical);
+        return trimmed.Length == 0 || trimmed is "/" or "\\";
+    }
+
+    private static string Trim(string path) => path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
     private static bool IsUnder(string canonical, string root)
     {

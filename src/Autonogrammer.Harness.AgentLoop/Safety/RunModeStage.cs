@@ -32,4 +32,19 @@ public enum RunModeStage
 
     /// <summary>The existing approval policy forbids the call, so no run mode can allow it.</summary>
     PolicyCeiling = 9,
+
+    /// <summary>Cowork Auto settled the call from an allow rule, a deny rule, or the known-safe list.</summary>
+    CoworkAutoRule = 10,
+
+    /// <summary>Cowork asked because the call deletes, in every permission mode.</summary>
+    CoworkDeleteProtection = 11,
+
+    /// <summary>A tainted Cowork session was treated as Manual.</summary>
+    CoworkTaintDemotion = 12,
+
+    /// <summary>Skip was not available, so the call was treated as Manual.</summary>
+    CoworkSkipGate = 13,
+
+    /// <summary>The Cowork folder boundary refused the path.</summary>
+    CoworkFolderBoundary = 14,
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 
 namespace Autonogrammer.Cowork.Sessions;
 
@@ -78,5 +79,60 @@ public sealed class CoworkSessionMetaStore
             MemoryOff = entry.MemoryOff,
             PinnedArtifactIds = entry.PinnedArtifactIds ?? [],
         };
-}
 
+    /// <summary>The sentence shown when a session grant change applies to the next session.</summary>
+    public const string FolderChangeAppliesNextSession = CoworkFolderGrantStore.FolderChangeAppliesNextSession;
+
+    /// <summary>Returns session-scope folder grants. Unknown members stay in the file.</summary>
+    /// <param name="sessionId">The task identifier.</param>
+    /// <returns>The grants.</returns>
+    public IReadOnlyList<CoworkFolderGrant> ListFolderGrants(string sessionId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
+        var document = _file.Read();
+        if (document.Sessions is null || !document.Sessions.TryGetValue(sessionId, out var entry) || entry.Extra is null || !entry.Extra.TryGetValue("folderGrants", out var element) || element.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var grants = new List<CoworkFolderGrant>();
+        foreach (var item in element.EnumerateArray())
+        {
+            var path = item.TryGetProperty("path", out var pathElement) ? pathElement.GetString() : null;
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                continue;
+            }
+
+            var access = item.TryGetProperty("access", out var accessElement) && Enum.TryParse<CoworkFolderAccess>(accessElement.GetString(), out var parsed)
+                ? parsed
+                : CoworkFolderAccess.ReadOnly;
+            grants.Add(new CoworkFolderGrant(path, access, CoworkFolderScope.Session));
+        }
+
+        return grants;
+    }
+
+    /// <summary>Saves session-scope folder grants. Other members and unknown keys are kept.</summary>
+    /// <param name="sessionId">The task identifier.</param>
+    /// <param name="grants">The grants.</param>
+    /// <returns><see cref="FolderChangeAppliesNextSession"/>.</returns>
+    public string SetFolderGrants(string sessionId, IReadOnlyList<CoworkFolderGrant> grants)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionId);
+        ArgumentNullException.ThrowIfNull(grants);
+        _file.Update(document =>
+        {
+            document.Sessions ??= new Dictionary<string, CoworkSessionMetaEntry>(StringComparer.Ordinal);
+            if (!document.Sessions.TryGetValue(sessionId, out var entry))
+            {
+                entry = new CoworkSessionMetaEntry();
+                document.Sessions[sessionId] = entry;
+            }
+
+            entry.Extra ??= new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+            entry.Extra["folderGrants"] = CoworkFolderGrantJson.Element(grants, CoworkFolderScope.Session);
+        });
+        return FolderChangeAppliesNextSession;
+    }
+}

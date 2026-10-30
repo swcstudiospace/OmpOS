@@ -76,6 +76,35 @@ public sealed class CoworkPathBoundaryTests
         boundary.IsAllowed(fixture.At("elsewhere", "out.txt"), [fixture.At("work")], storage, fixture.At("work")).ShouldBeFalse();
     }
 
+
+    [Fact]
+    public void RootHomeAndSystemDirectoriesAreRefusedAsProtected()
+    {
+        using var fixture = new Tree();
+        var boundary = fixture.Boundary();
+        boundary.TrustedFolderRefusal("/").ShouldBe(CoworkPathBoundary.FolderRefusedProtected);
+        boundary.TrustedFolderRefusal(fixture.Home).ShouldBe(CoworkPathBoundary.FolderRefusedProtected);
+        boundary.IsForbiddenTrustedFolder("/etc").ShouldBeTrue();
+        boundary.TrustedFolderRefusal("/etc").ShouldBe(CoworkPathBoundary.FolderRefusedProtected);
+        boundary.IsForbiddenTrustedFolder(fixture.At("work")).ShouldBeFalse();
+        if (OperatingSystem.IsLinux())
+        {
+            Directory.CreateDirectory(fixture.At("work"));
+            var link = Path.Combine(fixture.At("work"), "into-etc");
+            Directory.CreateSymbolicLink(link, "/etc");
+            boundary.IsForbiddenTrustedFolder(link).ShouldBeTrue();
+            boundary.TrustedFolderRefusal(link).ShouldBe(CoworkPathBoundary.FolderRefusedProtected);
+        }
+
+        var readOnly = fixture.At("work");
+        var scratch = fixture.At("scratch");
+        Directory.CreateDirectory(readOnly);
+        Directory.CreateDirectory(scratch);
+        boundary.IsWriteAllowed(Path.Combine(readOnly, "note.txt"), [], scratch, readOnly).ShouldBeFalse();
+        boundary.IsWriteAllowed(Path.Combine(scratch, "note.txt"), [], scratch, readOnly).ShouldBeTrue();
+        boundary.IsWriteAllowed(Path.Combine(readOnly, "note.txt"), [readOnly], scratch, readOnly).ShouldBeTrue();
+    }
+
     private sealed class Tree : IDisposable
     {
         public Tree()

@@ -1,3 +1,4 @@
+using System.Text.Json;
 
 namespace Autonogrammer.Cowork.Sessions;
 
@@ -71,6 +72,65 @@ public sealed class CoworkProjectStore
                 document.Projects.Add(entry);
             }
         });
+    }
+
+    /// <summary>The sentence shown when a project grant change applies to the next session.</summary>
+    public const string FolderChangeAppliesNextSession = CoworkFolderGrantStore.FolderChangeAppliesNextSession;
+
+    /// <summary>Returns the project-scope folder grants stored on the project. Unknown members are not required to read them.</summary>
+    /// <param name="projectId">The project identifier.</param>
+    /// <returns>The grants, or an empty list.</returns>
+    public IReadOnlyList<CoworkFolderGrant> ListFolderGrants(string projectId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(projectId);
+        var document = _file.Read();
+        var entry = document.Projects?.Find(candidate => string.Equals(candidate.Id, projectId, StringComparison.Ordinal));
+        if (entry?.Extra is null || !entry.Extra.TryGetValue("folderGrants", out var element) || element.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var grants = new List<CoworkFolderGrant>();
+        foreach (var item in element.EnumerateArray())
+        {
+            var path = item.TryGetProperty("path", out var pathElement) ? pathElement.GetString() : null;
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                continue;
+            }
+
+            var access = item.TryGetProperty("access", out var accessElement) && Enum.TryParse<CoworkFolderAccess>(accessElement.GetString(), out var parsed)
+                ? parsed
+                : CoworkFolderAccess.ReadOnly;
+            grants.Add(new CoworkFolderGrant(path, access, CoworkFolderScope.Project));
+        }
+
+        return grants;
+    }
+
+    /// <summary>Saves project-scope folder grants. Other project members and unknown keys are kept. The change applies to the next session.</summary>
+    /// <param name="projectId">The project identifier.</param>
+    /// <param name="grants">The grants.</param>
+    /// <returns><see cref="FolderChangeAppliesNextSession"/>.</returns>
+    public string SetFolderGrants(string projectId, IReadOnlyList<CoworkFolderGrant> grants)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(projectId);
+        ArgumentNullException.ThrowIfNull(grants);
+        _file.Update(document =>
+        {
+            document.Projects ??= [];
+            var index = document.Projects.FindIndex(entry => string.Equals(entry.Id, projectId, StringComparison.Ordinal));
+            if (index < 0)
+            {
+                throw new InvalidDataException("The project is not in the store: " + projectId);
+            }
+
+            var entry = document.Projects[index];
+            entry.Extra ??= new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+            entry.Extra["folderGrants"] = CoworkFolderGrantJson.Element(grants, CoworkFolderScope.Project);
+            document.Projects[index] = entry;
+        });
+        return FolderChangeAppliesNextSession;
     }
 
     private static CoworkProject ToProject(CoworkProjectEntry entry) =>

@@ -12,16 +12,19 @@ public static class CoworkPermissionMode
     /// <summary>The mode used when the setting is absent.</summary>
     public static Tools.CoworkPermissionMode Default => Tools.CoworkPermissionMode.Manual;
 
+    /// <summary>The named reason Skip is not available until the folder is isolated or the session is acknowledged.</summary>
+    public const string SkipNeedsAcknowledgement = "SkipNeedsAcknowledgement";
+
     /// <summary>Why Skip is not available, or null when the requested mode is not Skip or Skip is available.</summary>
-    public const string SkipUnavailableReason = "Skip needs a FilesystemIsolated folder boundary or a per-session acknowledgement.";
+    public const string SkipUnavailableReason = "SkipNeedsAcknowledgement: Skip needs a FilesystemIsolated folder boundary or a per-session acknowledgement.";
 
     /// <summary>The <c>--approval-mode</c> value. Never <c>yolo</c>.</summary>
     /// <param name="mode">The stored mode.</param>
-    /// <returns><c>always-ask-cached</c> for Manual, <c>always-ask</c> for Auto and Skip.</returns>
+    /// <returns><c>always-ask-cached</c> for Manual and Auto, <c>always-ask</c> for Skip.</returns>
     public static string ApprovalModeArgument(Tools.CoworkPermissionMode mode) => mode switch
     {
         Tools.CoworkPermissionMode.Manual => "always-ask-cached",
-        Tools.CoworkPermissionMode.Auto => "always-ask",
+        Tools.CoworkPermissionMode.Auto => "always-ask-cached",
         Tools.CoworkPermissionMode.Skip => "always-ask",
         _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "The Cowork permission mode is not known."),
     };
