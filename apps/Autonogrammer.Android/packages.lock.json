@@ -806,85 +806,111 @@
           "Xamarin.Kotlin.StdLib": "2.3.10.1"
         }
       },
-      "ompos.contracts": {
+      "autonogrammer.contracts": {
         "type": "Project"
       },
-      "ompos.genui": {
+      "autonogrammer.genui": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
-      "ompos.harness.abstractions": {
+      "autonogrammer.harness.abstractions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
-      "ompos.harness.completion": {
+      "autonogrammer.harness.acp": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
+        }
+      },
+      "autonogrammer.harness.agentloop": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.Acp": "[0.15.0, )",
+          "Autonogrammer.Harness.Plugins": "[0.15.0, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
+        }
+      },
+      "autonogrammer.harness.completion": {
         "type": "Project"
       },
-      "ompos.harness.mcp": {
+      "autonogrammer.harness.mcp": {
         "type": "Project",
         "dependencies": {
-          "ModelContextProtocol": "[2.3.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.Acp": "[0.15.0, )",
+          "ModelContextProtocol": "[2.3.0, )"
         }
       },
-      "ompos.harness.plugins": {
+      "autonogrammer.harness.omplauncher": {
+        "type": "Project",
+        "dependencies": {
+          "Autonogrammer.Harness.Terminal": "[0.15.0, )"
+        }
+      },
+      "autonogrammer.harness.plugins": {
         "type": "Project"
       },
-      "ompos.harness.terminal": {
+      "autonogrammer.harness.terminal": {
         "type": "Project",
         "dependencies": {
           "Porta.Pty": "[2.2.3, )"
         }
       },
-      "ompos.harness.workspace": {
+      "autonogrammer.harness.workspace": {
         "type": "Project"
       },
-      "ompos.native.views": {
+      "autonogrammer.native.views": {
         "type": "Project",
         "dependencies": {
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.GenUi": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )",
+          "Autonogrammer.Harness.AgentLoop": "[0.15.0, )",
+          "Autonogrammer.Harness.Completion": "[0.15.0, )",
+          "Autonogrammer.Harness.Mcp": "[0.15.0, )",
+          "Autonogrammer.Harness.OmpLauncher": "[0.15.0, )",
+          "Autonogrammer.Harness.Plugins": "[0.15.0, )",
+          "Autonogrammer.Harness.Terminal": "[0.15.0, )",
+          "Autonogrammer.Harness.Workspace": "[0.15.0, )",
+          "Autonogrammer.Presentation": "[0.15.0, )",
+          "Autonogrammer.Sessions": "[0.15.0, )",
           "Avalonia": "[12.1.4, )",
           "Avalonia.AvaloniaEdit": "[12.0.0, )",
           "AvaloniaEdit.TextMate": "[12.0.0, )",
           "Iciclecreek.Avalonia.Terminal": "[4.1.0, )",
           "Markdig": "[1.4.2, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.GenUi": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )",
-          "OmpOS.Harness.Completion": "[1.0.0, )",
-          "OmpOS.Harness.Mcp": "[1.0.0, )",
-          "OmpOS.Harness.Plugins": "[1.0.0, )",
-          "OmpOS.Harness.Terminal": "[1.0.0, )",
-          "OmpOS.Harness.Workspace": "[1.0.0, )",
-          "OmpOS.Presentation": "[1.0.0, )",
-          "OmpOS.Sessions": "[1.0.0, )",
           "TextMateSharp.Grammars": "[2.0.3, )"
         }
       },
-      "ompos.parser": {
+      "autonogrammer.parser": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
-          "OmpOS.Contracts": "[1.0.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )"
         }
       },
-      "ompos.presentation": {
+      "autonogrammer.presentation": {
         "type": "Project",
         "dependencies": {
-          "Markdig": "[1.4.2, )",
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.GenUi": "[1.0.0, )",
-          "OmpOS.Parser": "[1.0.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.GenUi": "[0.15.0, )",
+          "Autonogrammer.Parser": "[0.15.0, )",
+          "Markdig": "[1.4.2, )"
         }
       },
-      "ompos.sessions": {
+      "autonogrammer.sessions": {
         "type": "Project",
         "dependencies": {
-          "OmpOS.Contracts": "[1.0.0, )",
-          "OmpOS.Harness.Abstractions": "[1.0.0, )"
+          "Autonogrammer.Contracts": "[0.15.0, )",
+          "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
       },
       "Avalonia": {
