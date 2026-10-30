@@ -3,6 +3,7 @@
                             xmlns:comp="clr-namespace:Autonogrammer.Presentation.Computer;assembly=Autonogrammer.Presentation"
                             xmlns:local="clr-namespace:Autonogrammer.Native.Views.Settings"
                             x:Class="Autonogrammer.Native.Views.Computer.ComputerSettingsPage"
+                            x:DataType="comp:ComputerUseSettingsPage"
                             Focusable="False">
   <local:SettingsPageViewBase.Styles>
     <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
