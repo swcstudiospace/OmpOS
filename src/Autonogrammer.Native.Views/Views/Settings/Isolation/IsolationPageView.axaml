@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:isolation="clr-namespace:Autonogrammer.Presentation.Isolation;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Settings.IsolationPageView"
+             x:DataType="isolation:IsolationChipModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <ScrollViewer Focusable="False"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Classes="settings-column">
+      <TextBlock Classes="settings-heading"
+                 Text="Isolation"
+                 AutomationProperties.Name="Isolation" />
+      <TextBlock Classes="settings-label"
+                 Text="{CompiledBinding LevelText}"
+                 AutomationProperties.Name="Isolation level" />
+      <TextBlock Classes="settings-help"
+                 Text="{CompiledBinding NetworkNotice}"
+                 AutomationProperties.Name="Network unrestricted notice" />
+      <TextBlock Classes="settings-help"
+                 Text="{CompiledBinding NotConfinedText}"
+                 AutomationProperties.Name="Unconfined launches" />
+      <TextBlock Classes="settings-help"
+                 Text="{CompiledBinding OmpReadableText}"
+                 AutomationProperties.Name="Omp readable risk" />
+      <TextBlock Classes="settings-help"
+                 IsVisible="{CompiledBinding DegradedSentence, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding DegradedSentence}"
+                 AutomationProperties.Name="Isolation degraded state" />
+      <TextBlock Classes="settings-label"
+                 IsVisible="{CompiledBinding NeedsConsent}"
+                 Text="{CompiledBinding ContinueQuestion}"
+                 AutomationProperties.Name="Continue without isolation question" />
+      <Button Content="Continue without isolation"
+              Command="{CompiledBinding ContinueCommand}"
+              IsVisible="{CompiledBinding NeedsConsent}"
+              AutomationProperties.Name="Continue without isolation" />
+      <Button Content="Stop"
+              Command="{CompiledBinding StopCommand}"
+              IsVisible="{CompiledBinding NeedsConsent}"
+              AutomationProperties.Name="Stop" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

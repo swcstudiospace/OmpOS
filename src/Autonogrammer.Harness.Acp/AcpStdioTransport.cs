@@ -34,6 +34,7 @@ public sealed class AcpStdioTransport : IAcpTransport
     private readonly string[] _arguments;
     private readonly KeyValuePair<string, string>[] _environment;
     private readonly EngineEnvironmentPolicy _environmentPolicy;
+    private readonly IProcessLaunchWrapper? _processWrapper;
     private readonly ILogger<AcpStdioTransport> _logger;
     private readonly SemaphoreSlim _writeGate = new(1, 1);
     private readonly System.Threading.Lock _gate = new();
@@ -89,6 +90,30 @@ public sealed class AcpStdioTransport : IAcpTransport
         IReadOnlyDictionary<string, string> environment,
         EngineEnvironmentPolicy environmentPolicy,
         ILogger<AcpStdioTransport>? logger)
+        : this(ompPath, workingDirectory, arguments, environment, environmentPolicy, processWrapper: null, logger)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AcpStdioTransport"/> class that optionally wraps the child after the environment policy.
+    /// A null wrapper starts the same process the other constructors start.
+    /// </summary>
+    /// <param name="ompPath">The omp executable. A bare name is resolved from <c>PATH</c>.</param>
+    /// <param name="workingDirectory">The child's working directory, or <see langword="null"/> to inherit the current one.</param>
+    /// <param name="arguments">The arguments appended after <c>acp</c>, one argv element each and in order.</param>
+    /// <param name="environment">The explicit environment variables of the child. They are set after the policy has removed what it does not allow, so they always reach the child and override an inherited variable of the same name. Values may be secrets and are never logged.</param>
+    /// <param name="environmentPolicy">Which parent environment variables the child inherits.</param>
+    /// <param name="processWrapper">The optional launch wrapper. Null leaves the start info unchanged after the policy and working directory are applied.</param>
+    /// <param name="logger">Receives stderr drain failures at Debug. Null discards them.</param>
+    /// <exception cref="ArgumentException">An argument is null or an environment variable name is blank or contains <c>=</c> or NUL.</exception>
+    public AcpStdioTransport(
+        string ompPath,
+        string? workingDirectory,
+        IReadOnlyList<string> arguments,
+        IReadOnlyDictionary<string, string> environment,
+        EngineEnvironmentPolicy environmentPolicy,
+        IProcessLaunchWrapper? processWrapper,
+        ILogger<AcpStdioTransport>? logger)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ompPath);
         ArgumentNullException.ThrowIfNull(environmentPolicy);
@@ -115,6 +140,7 @@ public sealed class AcpStdioTransport : IAcpTransport
         _arguments = arguments.ToArray();
         _environment = environment.ToArray();
         _environmentPolicy = environmentPolicy;
+        _processWrapper = processWrapper;
     }
 
     /// <summary>Gets the most recent stderr lines written by the child process.</summary>
@@ -263,6 +289,11 @@ public sealed class AcpStdioTransport : IAcpTransport
             startInfo.WorkingDirectory = _workingDirectory;
         }
 
+        if (_processWrapper is not null)
+        {
+            ApplyWrappedLaunch(startInfo, _processWrapper.Wrap(IntendedLaunch(startInfo)));
+        }
+
         try
         {
             return Process.Start(startInfo) ?? throw new ProcessStartHarnessException("The omp acp process did not start.", _ompPath);
@@ -270,6 +301,65 @@ public sealed class AcpStdioTransport : IAcpTransport
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or UnauthorizedAccessException)
         {
             throw new ProcessStartHarnessException($"Could not start '{_ompPath} acp'.", _ompPath, ex);
+        }
+    }
+
+    private ProcessLaunch IntendedLaunch(ProcessStartInfo startInfo)
+    {
+        var arguments = new List<string>(_arguments.Length + 1) { "acp" };
+        arguments.AddRange(_arguments);
+        var environment = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var key in startInfo.Environment.Keys.Cast<string>().ToArray())
+        {
+            environment[key] = startInfo.Environment[key];
+        }
+
+        var workingDirectory = string.IsNullOrEmpty(startInfo.WorkingDirectory) ? null : startInfo.WorkingDirectory;
+        return new ProcessLaunch(_ompPath, arguments, workingDirectory, environment);
+    }
+
+    private static void ApplyWrappedLaunch(ProcessStartInfo startInfo, ProcessLaunch launch)
+    {
+        ArgumentNullException.ThrowIfNull(launch);
+        if (string.IsNullOrWhiteSpace(launch.FileName) || launch.Arguments is null || launch.Environment is null)
+        {
+            throw new ArgumentException("A wrapped launch is incomplete.", nameof(launch));
+        }
+
+        foreach (var argument in launch.Arguments)
+        {
+            if (argument is null)
+            {
+                throw new ArgumentException("A wrapped launch is incomplete.", nameof(launch));
+            }
+        }
+        startInfo.FileName = launch.FileName;
+        startInfo.ArgumentList.Clear();
+        foreach (var argument in launch.Arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        startInfo.WorkingDirectory = launch.WorkingDirectory ?? string.Empty;
+        var keep = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var (name, value) in launch.Environment)
+        {
+            if (value is null)
+            {
+                startInfo.Environment.Remove(name);
+                continue;
+            }
+
+            keep.Add(name);
+            startInfo.Environment[name] = value;
+        }
+
+        foreach (var key in startInfo.Environment.Keys.Cast<string>().ToArray())
+        {
+            if (!keep.Contains(key))
+            {
+                startInfo.Environment.Remove(key);
+            }
         }
     }
 
