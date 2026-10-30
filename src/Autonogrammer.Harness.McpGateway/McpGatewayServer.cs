@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
+using Autonogrammer.Cowork.Abstractions;
 using Autonogrammer.Harness.Mcp;
 
 namespace Autonogrammer.Harness.McpGateway;
@@ -47,10 +48,10 @@ public sealed class McpGatewayServer : IAsyncDisposable
     private long _nextRequest;
     private int _disposed;
 
-    private McpGatewayServer(McpToolRegistry registry, McpToolInvoker invoker)
+    private McpGatewayServer(McpToolRegistry registry, McpToolInvoker invoker, ICoworkToolHost? coworkTools)
     {
         _bearerToken = McpGatewayBearerToken.Generate();
-        _dispatcher = new McpGatewayDispatcher(registry, invoker, _sessions);
+        _dispatcher = new McpGatewayDispatcher(registry, invoker, _sessions, coworkTools);
         (_listener, var port) = ListenOnFreeLoopbackPort();
         LocalEndPoint = new IPEndPoint(IPAddress.Loopback, port);
         _expectedHost = "127.0.0.1:" + port.ToString(CultureInfo.InvariantCulture);
@@ -71,11 +72,20 @@ public sealed class McpGatewayServer : IAsyncDisposable
     /// <param name="invoker">The only route from a granted call to an upstream server.</param>
     /// <returns>A running gateway; dispose it to stop listening. The registry and invoker stay owned by the caller.</returns>
     /// <exception cref="InvalidOperationException">No loopback port could be bound.</exception>
-    public static McpGatewayServer Start(McpToolRegistry registry, McpToolInvoker invoker)
+    public static McpGatewayServer Start(McpToolRegistry registry, McpToolInvoker invoker) =>
+        Start(registry, invoker, null);
+
+    /// <summary>Starts a gateway on an ephemeral loopback port, optionally also serving Cowork tools.</summary>
+    /// <param name="registry">The registry whose per-session enablement defines the grants. It must be the registry <paramref name="invoker"/> uses.</param>
+    /// <param name="invoker">The only route from a granted registry call to an upstream server.</param>
+    /// <param name="coworkTools">The Cowork host, or <c>null</c> when this gateway serves registry tools only.</param>
+    /// <returns>A running gateway; dispose it to stop listening. The registry, invoker and host stay owned by the caller.</returns>
+    /// <exception cref="InvalidOperationException">No loopback port could be bound.</exception>
+    public static McpGatewayServer Start(McpToolRegistry registry, McpToolInvoker invoker, ICoworkToolHost? coworkTools)
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(invoker);
-        return new McpGatewayServer(registry, invoker);
+        return new McpGatewayServer(registry, invoker, coworkTools);
     }
 
     /// <summary>Makes a registry session reachable through the gateway. Opening an open session returns the same URL.</summary>
