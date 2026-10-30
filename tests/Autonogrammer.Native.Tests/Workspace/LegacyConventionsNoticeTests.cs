@@ -1,4 +1,5 @@
 using Autonogrammer.Native.Views.Workspace;
+using Autonogrammer.Workspace;
 using Shouldly;
 using Xunit;
 
@@ -67,10 +68,10 @@ public sealed class LegacyConventionsNoticeTests
         {
             var view = new WorkspaceConventionsView { DataContext = model };
             ViewHost.Show(view);
-            view.NoticeRows.Items.Count.ShouldBe(1);
             view.NoticeRows.ItemCount.ShouldBe(1);
             var button = view.NoticeRows.Items.Cast<object>().ShouldHaveSingleItem();
-            button.ShouldBeOfType<LegacyConventionNoticeRow>().Name.ShouldContain(LegacyBrandNames.ConventionDirectory);
+            button.ShouldBeOfType<WorkspaceConventionsView.LegacyConventionNoticeRow>().Name.ShouldContain("Warning");
+            button.ShouldBeOfType<WorkspaceConventionsView.LegacyConventionNoticeRow>().Name.ShouldContain(LegacyBrandNames.ConventionDirectory);
             _ = view.CopyRepoCommandAsync(model.RepoMoveCommand);
             view.LastCopiedCommand.ShouldBe(model.RepoMoveCommand);
         }, ct).ConfigureAwait(true);
