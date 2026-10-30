@@ -59,7 +59,7 @@ It leaves the merge methods (squash, merge commit, rebase) as they are, and it c
 - **Discussion categories.** The script turns Discussions on; GitHub seeds default categories, and categories can only be created in the UI: **Discussions**, pencil beside **Categories**, **New category** (an emoji, a title, a description and a format: open-ended, Q&A or announcement). Proposal: Announcements (announcement), Q&A (Q&A, the target of the "Questions and ideas" link), Ideas, Show and tell, Providers and plans, Cloud agents and remote environments.
 - **About "Include in the home page".** Gear beside **About**: Releases on once the first release exists; Packages and Deployments off. These toggles have no API.
 - **Homepage.** It is the web Demo URL since 2026-10-28. Once the GitBook site or a custom domain exists, run the script again with `--homepage <url>`, or edit the field in the About gear; keep the Demo link in the README.
-- **Optional: CodeQL default setup.** Not configured by the script. `gh api repos/swcstudiospace/OmpOS/code-scanning/default-setup` shows `runner_type: "standard"`, a GitHub-hosted runner, which conflicts with the repository policy that every job runs on the labelled self-hosted pool (`[self-hosted, linux, x64, omega-ci]`, see `ci.yml`). Enable code scanning only if the default setup can be given that runner label, or write an advanced `codeql.yml` that uses exactly those labels. UNVERIFIED: whether the pool can run the CodeQL bundle (`gh api -X PATCH repos/swcstudiospace/OmpOS/code-scanning/default-setup -f state=configured ...` with a runner label is the command that would resolve it).
+- **Optional: CodeQL default setup.** Not configured by the script. `codeql.yml` is the advanced setup and runs on `ubuntu-24.04`. A GitHub default setup (`runner_type: "standard"`) no longer conflicts with the runner policy. Do not point it back at `[self-hosted, linux, x64, omega-ci]`.
 - **Optional: a minimal ruleset.** Only if the owner wants a floor. This ruleset blocks branch deletion and force pushes on `main` and still allows fast-forward pushes. It is not in the script on purpose:
 
   ```sh
@@ -74,7 +74,7 @@ It leaves the merge methods (squash, merge commit, rebase) as they are, and it c
   JSON
   ```
 
-  Add the GitBook app and the owner as bypass actors if GitBook Git Sync is connected. Do not add required pull requests, required status checks, linear history or push restrictions: they reject direct fast-forward pushes and the runner pool has been offline.
+  Add the GitBook app and the owner as bypass actors if GitBook Git Sync is connected. Do not add required pull requests, required status checks, linear history or push restrictions: they reject direct fast-forward pushes.
 - **Secrets.** The release workflow needs no secret beyond the job's `GITHUB_TOKEN`. The CI secret `SUBMODULE_TOKEN` (read access to the private `swcstudiospace/substrate`) is separate and is documented in `docs/plugins.md`.
 
 ## Dependabot and the lock files

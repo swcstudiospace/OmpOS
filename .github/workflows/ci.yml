@@ -1,9 +1,9 @@
 # Autonogrammer CI (Phase 1, decision D-05).
 # Mirrors bootstrap.sh, then adds the audit, scan, and compose gates.
 # Podman is the only container runtime referenced here; Docker is not used.
-# Every job runs on the Omega CI runner pool ([self-hosted, linux, x64, omega-ci],
-# swcstudiospace/Omega-Prime docs/ci-runners.md), never on GitHub-hosted runners. Pull requests
-# from forks are skipped: fork code never reaches the pool.
+# Jobs run on GitHub-hosted runners (ubuntu-24.04, windows-2022, macos-14).
+# The Omega pool cannot start rootless podman or Chrome (OQ-168), so it is not used.
+# Pull requests from forks are skipped: fork code never receives this repository's secrets.
 name: ci
 
 on:
@@ -22,12 +22,9 @@ env:
   CI: true
   DOTNET_NOLOGO: 1
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
-  # Each omega-ci runner is budgeted 2 vCPU but sees every host CPU, and the
-  # pool's process limit is shared across concurrent jobs. Without this, MSBuild
-  # starts one node per host CPU (23 seen) and fails with "Cannot acquire
-  # required number of nodes" / OutOfMemoryException. The .NET runtime reports
-  # this as Environment.ProcessorCount, which sizes MSBuild's default -m.
-  DOTNET_PROCESSOR_COUNT: 2
+  # GitHub-hosted runners are dedicated 4-vCPU VMs. Cap MSBuild at that so a
+  # runner image that reports more CPUs cannot oversubscribe the VM.
+  DOTNET_PROCESSOR_COUNT: 4
   MSBUILDDISABLENODEREUSE: 1
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
   AUTONOGRAMMER_POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
@@ -39,7 +36,7 @@ jobs:
     permissions:
       contents: read
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, linux, x64, omega-ci]
+    runs-on: ubuntu-24.04
     steps:
       # Action tags verified 2026-10-20 against the GitHub releases API:
       # checkout v7.0.1, setup-dotnet v6.0.0, upload-artifact v7.0.2.
@@ -59,6 +56,10 @@ jobs:
           else
             echo "::warning::SUBMODULE_TOKEN is not set: plugins/agent-substrate is not checked out and the substrate plugin reports Unavailable. Add a read-only token for swcstudiospace/substrate as the SUBMODULE_TOKEN secret."
           fi
+      - name: Install rootful podman and Chrome
+        run: |
+          bash scripts/ci/install-podman-rootful.sh
+          bash scripts/ci/install-chrome.sh
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
@@ -68,8 +69,8 @@ jobs:
       - run: dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror
       # apps/Autonogrammer.App does not exist in this repository, and tools/gweb holds only the named/ and stock/ asset
       # folders (no project), so neither can join Autonogrammer.Linux.slnf or this build step. Add them here when they gain projects.
-      # The next steps need no podman: they run before the test services so that CI reports them even when the runner cannot start containers
-      # (OQ-168: rootless podman cannot create a user namespace inside the runner container, and the image has no Chrome, so the browser smoke comes last).
+      # Script checks run before the container steps so a later podman failure still reports them.
+      # Podman is installed rootful above; Chrome is installed for the browser smoke.
       - run: dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore
       - name: Vulnerable packages (list exits 0 even on findings, so the parse is the gate)
         run: |
@@ -101,11 +102,11 @@ jobs:
           out_dir="$RUNNER_TEMP/web-smoke"
           mkdir -p "$out_dir"
           OUT_DIR="$out_dir" bash scripts/web-smoke/run-smoke.sh
-      - name: Require podman (for the test services and compose validation)
-        # The Omega CI runner image ships podman; jobs have no sudo to install it.
+      - name: Require podman (rootful wrapper from the setup step; scripts call podman, never docker)
         run: |
-          command -v podman >/dev/null || { echo "::error::podman is not on PATH; add it to the Omega CI runner image" >&2; exit 1; }
+          command -v podman >/dev/null || { echo "::error::podman is not on PATH" >&2; exit 1; }
           podman --version
+          podman info >/dev/null
       - name: Start test services (throwaway TimescaleDB and Dragonfly)
         run: |
           env_file="$(bash scripts/test-services.sh up)"
@@ -173,37 +174,35 @@ jobs:
         if: always()
         run: podman-compose --profile backend -f deploy/compose.yaml down -v
 
-  # Optional image scan: runs only on a runner that has trivy AND podman (OQ-168: the pool lacks rootless podman today), so it
-  # skips gracefully. Pull requests are excluded; it builds both images (--format docker keeps HEALTHCHECK) and scans them.
+  # Image scan on a push. The job installs rootful podman and the pinned trivy, builds both images
+  # (--format docker keeps HEALTHCHECK; the builder is still podman) and scans them. Pull requests are excluded.
   image-scan:
     if: github.event_name == 'push'
-    runs-on: [self-hosted, linux, x64, omega-ci]
+    runs-on: ubuntu-24.04
     needs: build-test
     timeout-minutes: 60
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Build and scan (skips without trivy or podman)
+      - name: Install rootful podman and the pinned trivy
         run: |
-          if ! command -v trivy >/dev/null || ! command -v podman >/dev/null; then
-            echo "::notice::trivy or podman is not on this runner; image scan skipped."
-            exit 0
-          fi
+          bash scripts/ci/install-podman-rootful.sh
+          bash scripts/ci/install-trivy.sh
+      - name: Build and scan
+        run: |
           podman build --format docker -f deploy/api.Containerfile -t autonogrammer-api:ci .
           podman build --format docker -f deploy/worker.Containerfile -t autonogrammer-agent-worker:ci .
           bash scripts/ci/scan-images.sh localhost/autonogrammer-api:ci localhost/autonogrammer-agent-worker:ci
 
-  # Builds the Android head (apps/Autonogrammer.Android) on the Omega CI pool (Phase 24 criterion 4). No device or emulator is needed.
-  # The workflow runs on push and pull_request, so the first green run of this job needs the branch pushed.
+  # Builds the Android head on ubuntu-24.04 (Phase 24 criterion 4). No device or emulator is needed.
+  # The SDK and the android workload are installed in the job. iOS and Mac Catalyst need macOS and Xcode.
   android:
-    timeout-minutes: 60
+    timeout-minutes: 90
     permissions:
       contents: read
-    # The runner image pre-installs the Android workloads, JDK 17 and Android SDK 36; its SDK directory is read-only.
-    # iOS and MacCatalyst need macOS and Xcode, which the Linux pool does not have.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, linux, x64, omega-ci]
+    runs-on: ubuntu-24.04
     needs: build-test
     steps:
       # Action tags as pinned by build-test above.
@@ -211,7 +210,9 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
-      - name: Android workload (the Omega CI runner image pre-installs it, and its SDK directory is read-only)
+      - name: Android SDK platform 36 and build-tools 36.0.0
+        run: bash scripts/ci/install-android-sdk.sh
+      - name: Android workload (installed when this runner does not already have it)
         run: |
           dotnet workload list
           dotnet workload list | grep -qi android || dotnet workload install android
@@ -236,3 +237,40 @@ jobs:
           set -o pipefail
           "$sdkmanager" --install "platforms;android-36" "build-tools;36.0.0"
       - run: dotnet build apps/Autonogrammer.Android/Autonogrammer.Android.csproj -c Release --no-restore -warnaserror
+
+  # Publishes the Avalonia desktop head on each OS. Framework-dependent: the lock file has no RID
+  # graph, so this does not pass -r and does not unlock the restore. A self-contained RID publish
+  # needs a lock-file update first.
+  desktop:
+    name: desktop (${{ matrix.name }})
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            name: linux
+          - os: windows-2022
+            name: windows
+          - os: macos-14
+            name: macos
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: apps/Autonogrammer.Native/packages.lock.json
+      - name: Build and publish the Avalonia desktop head
+        run: |
+          dotnet restore apps/Autonogrammer.Native/Autonogrammer.Native.csproj --locked-mode
+          dotnet build apps/Autonogrammer.Native/Autonogrammer.Native.csproj -c Release --no-restore -warnaserror
+          dotnet publish apps/Autonogrammer.Native/Autonogrammer.Native.csproj -c Release --no-restore --self-contained false -o publish
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: desktop-${{ matrix.name }}
+          path: publish

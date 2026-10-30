@@ -35,6 +35,7 @@ Versions before 0.15.0 are milestones of the internal roadmap (`.planning/ROADMA
 - Outside Development the engine process starts with an allow-listed environment instead of the API's whole environment; `Harness:Acp:Environment:Mode=Inherit` there needs `Harness:Acp:AllowInheritedEnvironment=true`.
 - `scripts/web-smoke/size-budget.json` is now measured on a real publish of the web head (2026-10-29: 12.4 MB raw, 4.8 MB gzip, 3.8 MB Brotli) with 10 percent headroom, instead of a provisional ceiling taken from the Avalonia spike; the budget check no longer reads a comment in a stylesheet as an import.
 - Breaking: outside Development the API stops at start when the non-dumpable setting (`Hosting:RestrictProcessInspection`, on by default) cannot be applied, instead of continuing; `Api:Cors:Origins` entries must be `scheme://host[:port]` and are checked at start.
+- CI runs on GitHub-hosted runners (`ubuntu-24.04`, `windows-2022`, `macos-14`) instead of the Omega self-hosted pool. The Linux job installs rootful podman and Chrome; desktop jobs publish the Avalonia head on Linux, Windows and macOS. Docker is still not used.
 
 ### Fixed
 

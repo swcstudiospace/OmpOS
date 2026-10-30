@@ -1,11 +1,11 @@
 # Autonogrammer release (Phase 52). A pushed tag v* creates the GitHub Release.
-# Runs on the Omega CI runner pool ([self-hosted, linux, x64, omega-ci]) like ci.yml, never on GitHub-hosted runners.
+# Runs on ubuntu-24.04, like ci.yml. The Omega pool is not used (OQ-168).
 # The only credential is the job's GITHUB_TOKEN; `contents: write` is granted to the release job alone.
 # The `artifacts` job builds both images reproducibly, generates the SBOM and attests provenance and the SBOM.
 # NOT EXECUTED: no tag has been pushed since these steps were added; the attestation path is untested. Attestations
 # need `id-token: write` and `attestations: write` (granted to the artifacts job only) and a repository that supports
-# artifact attestations; the self-hosted runners need podman (OQ-168: the pool lacks rootless podman today, so this job
-# fails there until the runner image gains it) and network access to the GitHub attestation services.
+# artifact attestations. The artifacts job installs rootful podman; Docker is not used.
+# The job needs network access to the GitHub attestation services.
 # Action pins resolved with gh api on 2026-10-29: attest-build-provenance v4.2.2 (4d101475), attest-sbom v4.1.0 (c6043329).
 # The notes are the matching CHANGELOG.md section. Plugin submodules are not checked out and not attached.
 name: release
@@ -28,7 +28,7 @@ env:
 
 jobs:
   release:
-    runs-on: [self-hosted, linux, x64, omega-ci]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: write
@@ -94,7 +94,7 @@ jobs:
 
   artifacts:
     needs: release
-    runs-on: [self-hosted, linux, x64, omega-ci]
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     permissions:
       contents: write
@@ -104,6 +104,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+      - name: Install rootful podman
+        run: bash scripts/ci/install-podman-rootful.sh
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json

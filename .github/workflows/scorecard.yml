@@ -1,5 +1,5 @@
-# OpenSSF Scorecard, weekly and on demand. UNVERIFIED: never run; the self-hosted pool must reach api.securityscorecards.dev
-# and the SARIF upload needs code scanning enabled on the repository. Action pins resolved with gh api on 2026-10-29:
+# OpenSSF Scorecard, weekly and on demand. Runs on ubuntu-24.04 so it can reach api.securityscorecards.dev.
+# The Omega pool never ran this workflow (OQ-175). Action pins resolved with gh api on 2026-10-29:
 #   ossf/scorecard-action v2.5.0 (annotated tag 46dc3187 -> commit fa7117db), github/codeql-action v4.39.1 (-> 9b325408).
 name: scorecard
 
@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   analysis:
-    runs-on: [self-hosted, linux, x64, omega-ci]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read

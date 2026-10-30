@@ -19,6 +19,18 @@ Last verified: 2026-10-29
 | Provenance | Read through git only, from the commits `5cd0ada1`, `50b7757d`, `9aa8aa8a`, `246448a0`, `3c41f10f` and `f7a93884` of `feat/autonogrammer`; its two rename commits were dropped and redone by the tool. No file was copied from its working tree, which was not written; the 47 uncommitted paths there are not part of the result. |
 | Reversibility | Before the pull request, deleting the branch restores `origin/main`. After the merge, reverting the squash commit does. |
 
+
+## One checkout (2026-10-30)
+
+The two folders are worktrees of `swcstudiospace/OmpOS`, not two repositories. `/root/src/repos/ompos` is `feat/autonogrammer-integration` (pull request 4). `/root/src/repos/ompos-autonogrammer` is `feat/autonogrammer-next`, and another session is writing it. That worktree is not merged, not formatted and not written from here.
+
+They become one line by replay, after that session commits:
+
+1. Commit on `feat/autonogrammer-next`. Do not copy the dirty tree.
+2. Cherry-pick those commits onto `feat/autonogrammer-integration`, using the overlap list in "What the other session does next". A merge is still rejected: the rename already conflicts on every file both lines touched.
+3. Phases 67 to 77 are that line's work. This branch has phases 66.2 to 66.4. Those later phases are not started here while the other tree is dirty, because rewriting them would fork the milestone.
+4. After the replay is on `main`, the second folder is only a checkout. The owner removes the worktree. Until then both checkouts stay.
+
 ## Deployed interfaces that the rename changed (hard cutover, no alias)
 
 The rename is the owner's decision of 2026-10-28 and has no alias. This table says what each change touches today, from the repository and the recorded deployments; the steps that move existing state are in [Rebrand to Autonogrammer](rebrand-autonogrammer.md), section 5 (owner actions) and section 7 (runtime migrations).

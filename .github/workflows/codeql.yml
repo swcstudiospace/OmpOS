@@ -1,7 +1,6 @@
 # CodeQL for C# (manual build mode: the repository's restore and build commands, as in ci.yml).
 # Manual runs and a weekly schedule only; it is not a required check.
-# UNVERIFIED: this workflow has never run. The self-hosted Omega runners must be able to download the CodeQL bundle
-# (github/codeql-action fetches it from github.com at run time); if the pool blocks that, the init step fails.
+# Runs on ubuntu-24.04. The CodeQL action downloads its bundle from github.com; the Omega pool never ran this workflow (OQ-175).
 name: codeql
 
 on:
@@ -19,12 +18,12 @@ concurrency:
 env:
   DOTNET_NOLOGO: 1
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
-  DOTNET_PROCESSOR_COUNT: 2
+  DOTNET_PROCESSOR_COUNT: 4
   MSBUILDDISABLENODEREUSE: 1
 
 jobs:
   analyze:
-    runs-on: [self-hosted, linux, x64, omega-ci]
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     permissions:
       contents: read
