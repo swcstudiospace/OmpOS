@@ -43,6 +43,7 @@ public sealed class BuiltinSkillManifestTests
         var set = await DiscoverBundleAsync().ConfigureAwait(true);
 
         set.Diagnostics.ShouldBeEmpty();
+        BuiltinSkillManifest.Shipped.Select(static entry => entry.Name).ShouldContain("create-plugin", StringComparer.Ordinal);
         set.Skills.Select(skill => skill.Name).Order(StringComparer.Ordinal).ShouldBe(BuiltinSkillManifest.Shipped.Select(entry => entry.Name).Order(StringComparer.Ordinal));
     }
 

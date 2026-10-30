@@ -1,10 +1,10 @@
 ---
-description: "Reference for the 10 skills Autonogrammer ships (create-hook, review, agent-review and more), how built-in skills are discovered, and the 13 MCP presets."
+description: "Reference for the 11 skills Autonogrammer ships (create-hook, create-plugin, review, agent-review and more), how built-in skills are discovered, and the 13 MCP presets."
 ---
 
 # Built-in skills and MCP presets
 
-Status: Partial (10 skills discovered by the desktop slash palette and Skills page; 13 MCP presets on the desktop MCP page; ssh, container, WSL, API-hosted and web sessions carry no built-in skills; no live omp session or model turn ran)
+Status: Partial (11 skills discovered by the desktop slash palette and Skills page; 13 MCP presets on the desktop MCP page; ssh, container, WSL, API-hosted and web sessions carry no built-in skills; no live omp session or model turn ran)
 
 Last verified: 2026-10-28
 
@@ -25,6 +25,7 @@ Each skill lives in `assets/skills/<name>/SKILL.md` in the repository and is cop
 | Slash command | What it does | Writes files? |
 | --- | --- | --- |
 | `/create-hook` | Writes a hook script and its entry in `.autonogrammer/hooks.json` (or `~/.autonogrammer/hooks.json`), using the schema in [Hooks](hooks.md). Adds to the file; never rewrites existing entries. | Yes: the script and the entry, after asking what the hook should do |
+| `/create-plugin` | Writes an Anthropic-layout plugin bundle (skills, commands, agents, optional MCP file, optional hooks file). States the size caps. Hooks are listed and never run. | Yes: the bundle folder, after asking what it should contain |
 | `/create-rule` | Chooses between an `AGENTS.md` section and a `.mdc` rule (always, intelligent, file scoped, manual) and writes it. | Yes: one rule file |
 | `/create-skill` | Creates `.autonogrammer/skills/<name>/SKILL.md` (or the folder the repository already uses) with a precise description and steps. | Yes: one skill folder |
 | `/create-subagent` | Writes `.autonogrammer/agents/<name>.md` with a focused role, read-only by default for reviewers. | Yes: one definition file |

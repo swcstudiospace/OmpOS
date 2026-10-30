@@ -11,6 +11,7 @@ public static class BuiltinSkillManifest
     [
         new("agent-review", ["agent-review"], "Reviews your changes against the base branch in Quick or Deep depth and reports severity-ranked findings without editing files."),
         new("create-hook", ["create-hook"], "Writes a hook script and its hooks.json entry for an agent lifecycle event."),
+        new("create-plugin", ["create-plugin"], "Writes an Anthropic-layout plugin bundle, states the size caps, and lists hooks without running them."),
         new("create-rule", ["create-rule"], "Writes a rule file or an AGENTS.md section with the right scope."),
         new("create-skill", ["create-skill"], "Creates an Agent Skill folder with a SKILL.md."),
         new("create-subagent", ["create-subagent"], "Writes a custom subagent definition with a focused role."),
