@@ -100,6 +100,10 @@ jobs:
       - name: Node tests of the web scripts (service-worker manifest refresh, the route check's boot-shell decision)
         run: node --test scripts/vercel/refresh-web-manifest.test.mjs scripts/web-smoke/a11y/routes.test.mjs
       - name: Browser smoke with axe-core, the accessibility checks and the web payload budget (needs Node and Chrome on the runner; mirrors the bootstrap step)
+        env:
+          # A shared runner loads the bundle more slowly than the 150 s default. The route check's boot-shell retry then ends on the boot
+          # shell on both attempts. scripts/web-smoke/a11y/states.mjs documents this variable for loaded hosts; no assertion changes.
+          AUTONOGRAMMER_A11Y_LOAD_TIMEOUT_MS: "240000"
         run: |
           out_dir="$RUNNER_TEMP/web-smoke"
           mkdir -p "$out_dir/shots" "$out_dir/a11y"
