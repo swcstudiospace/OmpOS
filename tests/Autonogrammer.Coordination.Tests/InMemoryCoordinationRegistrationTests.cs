@@ -16,6 +16,12 @@ public sealed class InMemoryCoordinationRegistrationTests
         provider.GetRequiredService<ISessionRunLeases>().ShouldBeOfType<InMemorySessionRunLeases>();
         provider.GetRequiredService<ISessionSignals>().ShouldBeOfType<InMemorySessionSignals>();
         provider.GetRequiredService<IIdempotencyStore>().ShouldBeOfType<InMemoryIdempotencyStore>();
+        provider.GetRequiredService<IDispatchSignals>().ShouldBeOfType<InMemoryDispatchSignals>();
+        provider.GetRequiredService<IDispatchPresence>().ShouldBeOfType<InMemoryDispatchPresence>();
+        provider.GetRequiredService<IDispatchAuthNonces>().ShouldBeOfType<InMemoryDispatchAuthNonces>();
+        provider.GetRequiredService<IDispatchSignals>().ShouldBeSameAs(provider.GetRequiredService<IDispatchSignals>());
+        provider.GetRequiredService<IDispatchPresence>().ShouldBeSameAs(provider.GetRequiredService<IDispatchPresence>());
+        provider.GetRequiredService<IDispatchAuthNonces>().ShouldBeSameAs(provider.GetRequiredService<IDispatchAuthNonces>());
         provider.GetRequiredService<ISessionSignals>().ShouldBeSameAs(provider.GetRequiredService<ISessionSignals>());
     }
 }

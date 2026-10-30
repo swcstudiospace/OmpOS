@@ -18,6 +18,9 @@ public static class InMemoryCoordinationServiceCollectionExtensions
         services.AddSingleton<ISessionRunLeases>(_ => new InMemorySessionRunLeases(TimeProvider.System));
         services.AddSingleton<ISessionSignals>(_ => new InMemorySessionSignals());
         services.AddSingleton<IIdempotencyStore>(_ => new InMemoryIdempotencyStore(TimeProvider.System));
+        services.AddSingleton<IDispatchSignals>(_ => new InMemoryDispatchSignals());
+        services.AddSingleton<IDispatchPresence>(_ => new InMemoryDispatchPresence(TimeProvider.System));
+        services.AddSingleton<IDispatchAuthNonces>(_ => new InMemoryDispatchAuthNonces(TimeProvider.System));
         return services;
     }
 }
