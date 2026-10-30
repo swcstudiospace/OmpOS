@@ -1,4 +1,3 @@
-using Autonogrammer.Contracts.Accounts;
 using Autonogrammer.Presentation.Accounts;
 
 namespace Autonogrammer.Native.Tests.Account;

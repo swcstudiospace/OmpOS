@@ -88,7 +88,7 @@ public sealed class HeadServicesWiringTests
         await using var signedOutScope = signedOutServices.ConfigureAwait(true);
         (await signedOutServices.ReadApiTokenAsync(Token).ConfigureAwait(true)).ShouldBe("env-token");
 
-        var bare = new Func<string, string?>(name => name == HeadServices.ApiBaseUrlVariable ? "https://api.example.test/" : null);
+        var bare = new Func<string, string?>(name => string.Equals(name, HeadServices.ApiBaseUrlVariable, StringComparison.Ordinal) ? "https://api.example.test/" : null);
         var bareServices = await HeadServices.CreateAsync(Options(tree, bare) with { AccountSession = signedOut }, Token).ConfigureAwait(true);
         await using var bareScope = bareServices.ConfigureAwait(true);
         (await bareServices.ReadApiTokenAsync(Token).ConfigureAwait(true)).ShouldBeNull();

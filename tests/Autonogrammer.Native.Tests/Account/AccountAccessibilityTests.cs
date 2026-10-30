@@ -123,11 +123,11 @@ public sealed class AccountAccessibilityTests
             clock.Advance(TimeSpan.FromSeconds(1));
             model.RefreshClock();
             Capture();
-            names.ShouldContain(AccountCopy.ExpiryIn30Seconds);
+            names.ShouldContain(AccountCopy.ExpiryIn30Seconds, StringComparer.Ordinal);
             clock.Advance(TimeSpan.FromSeconds(1));
             model.RefreshClock();
             Capture();
-            names.Count(name => name == AccountCopy.ExpiryIn30Seconds).ShouldBe(1);
+            names.Count(name => string.Equals(name, AccountCopy.ExpiryIn30Seconds, StringComparison.Ordinal)).ShouldBe(1);
 
             host.Set(host.State with { Phase = AuthPhase.SigningIn });
             SettingsTree.SettleSafe(window);

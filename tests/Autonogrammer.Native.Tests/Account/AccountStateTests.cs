@@ -159,7 +159,7 @@ public sealed class AccountStateTests
         WorkspaceRoot = tree.Workspace,
         HomeDirectory = Path.Combine(tree.Root, "home"),
         ConfigDirectory = Path.Combine(tree.Root, "config"),
-        GetVariable = name => name == HeadServices.ApiBaseUrlVariable ? address : null,
+        GetVariable = name => string.Equals(name, HeadServices.ApiBaseUrlVariable, StringComparison.Ordinal) ? address : null,
         ApiHandler = handler,
         OmpAvailable = static () => false,
         AccountSession = session,
