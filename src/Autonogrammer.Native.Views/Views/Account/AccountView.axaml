@@ -1,0 +1,182 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:acct="clr-namespace:Autonogrammer.Presentation.Accounts;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Account.AccountView"
+             x:DataType="acct:AccountViewModel"
+             Focusable="False"
+             AutomationProperties.Name="{x:Static acct:AccountCopy.PanelName}">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- Exactly one of the five panels is visible. The view is not placed in the window chrome; phase 69 owns that slot. -->
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+    <TextBlock Classes="settings-heading"
+               Text="{x:Static acct:AccountCopy.PanelName}"
+               AutomationProperties.Name="{x:Static acct:AccountCopy.PanelName}" />
+
+    <StackPanel x:Name="SignedOutPanel" Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+      <TextBlock x:Name="SignedOutSentence"
+                 Classes="settings-body"
+                 Text="{CompiledBinding PhaseSentence}"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.EmailFieldName}" />
+      <TextBlock x:Name="NotConfiguredText"
+                 Classes="settings-body"
+                 Text="{CompiledBinding NotConfiguredSentence}"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.NotConfigured}" />
+      <TextBox x:Name="EmailBox"
+               MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+               AutomationProperties.Name="{x:Static acct:AccountCopy.EmailFieldName}" />
+      <Button x:Name="SendCodeButton"
+              Classes="primary"
+              Content="{x:Static acct:AccountCopy.SendCodeLabel}"
+              AutomationProperties.Name="{x:Static acct:AccountCopy.SendCodeLabel}"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              Click="OnSendClick" />
+    </StackPanel>
+
+    <StackPanel x:Name="AwaitingLinkPanel" Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+      <TextBlock x:Name="AwaitingSentence"
+                 Classes="settings-body"
+                 Text="{CompiledBinding PhaseSentence}"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.CodeFieldName}" />
+      <TextBlock x:Name="AwaitingAddress"
+                 Classes="settings-body"
+                 Text="{CompiledBinding AwaitingEmail}"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.IdentityName}" />
+      <TextBlock x:Name="LoopbackText"
+                 Classes="settings-help"
+                 Text="{CompiledBinding LoopbackSentence}"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.LoopbackUnavailable}" />
+      <TextBox x:Name="CodeBox"
+               MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+               AutomationProperties.Name="{x:Static acct:AccountCopy.CodeFieldName}" />
+      <TextBlock x:Name="MustResendText"
+                 Classes="settings-body"
+                 Text="{CompiledBinding MustResendSentence}"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.MustResend}" />
+      <TextBlock x:Name="ExpiryText"
+                 Classes="settings-help"
+                 Text="{CompiledBinding ExpiryText}"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.ExpiryName}" />
+      <TextBlock x:Name="CooldownText"
+                 Classes="settings-help"
+                 Text="{CompiledBinding CooldownText}"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.CooldownName}" />
+      <TextBlock x:Name="LiveAnnouncement"
+                 Classes="settings-help"
+                 IsVisible="False"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.ResendAvailableAnnouncement}" />
+      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+        <Button x:Name="ResendButton"
+                Content="{x:Static acct:AccountCopy.ResendLabel}"
+                AutomationProperties.Name="{x:Static acct:AccountCopy.ResendLabel}"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                Click="OnResendClick" />
+        <Button x:Name="ChangeEmailButton"
+                Content="{x:Static acct:AccountCopy.ChangeEmailLabel}"
+                AutomationProperties.Name="{x:Static acct:AccountCopy.ChangeEmailLabel}"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                Click="OnChangeEmailClick" />
+      </StackPanel>
+    </StackPanel>
+
+    <StackPanel x:Name="SigningInPanel" Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+      <TextBlock x:Name="SigningInStatic"
+                 Classes="settings-body"
+                 Text="{x:Static acct:AccountCopy.SigningInLabel}"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.SigningInLabel}" />
+      <Border x:Name="SigningInSpinner"
+              Width="16"
+              Height="16"
+              Classes="spinner"
+              AutomationProperties.Name="{x:Static acct:AccountCopy.SigningInLabel}" />
+      <TextBlock x:Name="SigningInSentence"
+                 Classes="settings-body"
+                 Text="{CompiledBinding PhaseSentence}"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.CancelLabel}" />
+      <Button x:Name="CancelButton"
+              Content="{x:Static acct:AccountCopy.CancelLabel}"
+              AutomationProperties.Name="{x:Static acct:AccountCopy.CancelLabel}"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              Click="OnCancelClick" />
+    </StackPanel>
+
+    <StackPanel x:Name="SignedInPanel" Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+      <TextBlock x:Name="SignedInSentence"
+                 Classes="settings-body"
+                 Text="{CompiledBinding PhaseSentence}"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.IdentityName}" />
+      <TextBlock x:Name="IdentityText"
+                 Classes="settings-body"
+                 Text="{CompiledBinding AwaitingEmail}"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.IdentityName}" />
+      <TextBlock x:Name="OfflineNotice"
+                 Classes="settings-body"
+                 Text="{CompiledBinding OfflineSentence}"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.OfflineNotice}" />
+      <TextBlock x:Name="SessionNotRememberedNotice"
+                 Classes="settings-body"
+                 Text="{CompiledBinding SessionNotRememberedSentence}"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.SessionNotRememberedNotice}" />
+      <Button x:Name="RememberButton"
+              Content="{x:Static acct:AccountCopy.RememberWithoutProtectionLabel}"
+              AutomationProperties.Name="{x:Static acct:AccountCopy.RememberWithoutProtectionLabel}"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              Click="OnRememberClick" />
+      <TextBlock x:Name="SignOutNotConfirmedNotice"
+                 Classes="settings-body"
+                 Text="{CompiledBinding SignOutNotConfirmedSentence}"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.SignOutNotConfirmedNotice}" />
+      <TextBlock x:Name="ServiceChangedNotice"
+                 Classes="settings-body"
+                 Text="{CompiledBinding ServiceChangedSentence}"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.ServiceChangedNotice}" />
+      <Button x:Name="DevicesButton"
+              Content="{x:Static acct:AccountCopy.DevicesLabel}"
+              AutomationProperties.Name="{x:Static acct:AccountCopy.DevicesLabel}"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}" />
+      <Button x:Name="SignOutButton"
+              Content="{x:Static acct:AccountCopy.SignOutLabel}"
+              AutomationProperties.Name="{x:Static acct:AccountCopy.SignOutLabel}"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              Click="OnSignOutClick" />
+      <Button x:Name="SignOutEverywhereButton"
+              Content="{x:Static acct:AccountCopy.SignOutEverywhereLabel}"
+              AutomationProperties.Name="{x:Static acct:AccountCopy.SignOutEverywhereLabel}"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              Click="OnSignOutEverywhereClick" />
+    </StackPanel>
+
+    <StackPanel x:Name="ErrorPanel"
+                Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                AutomationProperties.LiveSetting="Assertive"
+                AutomationProperties.Name="{x:Static acct:AccountCopy.ErrorName}">
+      <TextBlock x:Name="ErrorMessage"
+                 Classes="tone-error settings-body"
+                 Focusable="True"
+                 Text="{CompiledBinding ErrorSentence}"
+                 AutomationProperties.Name="{x:Static acct:AccountCopy.ErrorName}" />
+      <Button x:Name="ErrorDismissButton"
+              Content="{x:Static acct:AccountCopy.ErrorDismissLabel}"
+              AutomationProperties.Name="{x:Static acct:AccountCopy.ErrorDismissLabel}"
+              MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+              MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+              Click="OnDismissErrorClick" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>

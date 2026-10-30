@@ -1,3 +1,6 @@
+using Autonogrammer.Accounts;
+using Autonogrammer.Contracts.Accounts;
+using Autonogrammer.Harness.Secrets;
 using System.Reflection;
 using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Composition;
@@ -41,7 +44,7 @@ public sealed class HeadServicesWiringTests
         head.Services.ShouldBeSameAs(services);
         services.BestOfN.ShouldNotBeNull();
         services.Cloud.ShouldBeNull("no AUTONOGRAMMER_API_BASE_URL is set");
-        MissingMembers(services, allowedNull: [nameof(HeadServices.Cloud), nameof(HeadServices.TrustTerminalOpener), nameof(HeadServices.PluginsRoot), nameof(HeadServices.LoggerFactory)]).ShouldBeEmpty();
+        MissingMembers(services, allowedNull: [nameof(HeadServices.Cloud), nameof(HeadServices.Account), nameof(HeadServices.TrustTerminalOpener), nameof(HeadServices.PluginsRoot), nameof(HeadServices.LoggerFactory)]).ShouldBeEmpty();
         services.McpContext([tree.Workspace]).WorkspaceRoots.ShouldBe([tree.Workspace]);
         services.CreateModeSkills(tree.Workspace).ShouldNotBeNull();
     }
@@ -61,7 +64,34 @@ public sealed class HeadServicesWiringTests
         await using var servicesScope = services.ConfigureAwait(true);
 
         services.Cloud.ShouldNotBeNull();
-        MissingMembers(services, allowedNull: [nameof(HeadServices.BestOfN), nameof(HeadServices.TrustTerminalOpener), nameof(HeadServices.PluginsRoot), nameof(HeadServices.LoggerFactory)]).ShouldBeEmpty();
+        MissingMembers(services, allowedNull: [nameof(HeadServices.Account), nameof(HeadServices.BestOfN), nameof(HeadServices.TrustTerminalOpener), nameof(HeadServices.PluginsRoot), nameof(HeadServices.LoggerFactory)]).ShouldBeEmpty();
+    }
+
+    /// <summary>A signed-in account token is sent; signed out, the environment token is the fallback; without either, the supplier returns null.</summary>
+    [Fact]
+    public async Task TheTokenSupplierPrefersTheAccountTokenAndFallsBackOnlyWhenSignedOut()
+    {
+        using var tree = new TempTree();
+        var signedIn = new ScriptedAccountSession(signedIn: true, "account-token");
+        var variables = new Func<string, string?>(name => name switch
+        {
+            HeadServices.ApiBaseUrlVariable => "https://api.example.test/",
+            HeadServices.ApiTokenVariable => "env-token",
+            _ => null,
+        });
+        var signedInServices = await HeadServices.CreateAsync(Options(tree, variables) with { AccountSession = signedIn }, Token).ConfigureAwait(true);
+        await using var signedInScope = signedInServices.ConfigureAwait(true);
+        (await signedInServices.ReadApiTokenAsync(Token).ConfigureAwait(true)).ShouldBe("account-token");
+
+        var signedOut = new ScriptedAccountSession(signedIn: false, "account-token");
+        var signedOutServices = await HeadServices.CreateAsync(Options(tree, variables) with { AccountSession = signedOut }, Token).ConfigureAwait(true);
+        await using var signedOutScope = signedOutServices.ConfigureAwait(true);
+        (await signedOutServices.ReadApiTokenAsync(Token).ConfigureAwait(true)).ShouldBe("env-token");
+
+        var bare = new Func<string, string?>(name => name == HeadServices.ApiBaseUrlVariable ? "https://api.example.test/" : null);
+        var bareServices = await HeadServices.CreateAsync(Options(tree, bare) with { AccountSession = signedOut }, Token).ConfigureAwait(true);
+        await using var bareScope = bareServices.ConfigureAwait(true);
+        (await bareServices.ReadApiTokenAsync(Token).ConfigureAwait(true)).ShouldBeNull();
     }
 
     /// <summary>The automations are created with the services, started only when the head opens, and report whether a local automation can run from whether omp is installed.</summary>
@@ -127,5 +157,30 @@ public sealed class HeadServicesWiringTests
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             throw new InvalidOperationException("Opening the head services made an API request.");
+    }
+
+    private sealed class ScriptedAccountSession(bool signedIn, string token) : IAccountSession
+    {
+        public event EventHandler<AccountStateChangedEventArgs>? StateChanged;
+
+        public AccountState State => signedIn
+            ? AccountState.SignedOut with { Phase = AuthPhase.SignedIn, Identity = new AccountIdentity("user", "a@example.test") }
+            : AccountState.SignedOut;
+
+        public ValueTask<AuthResult<SecretString>> GetAccessTokenAsync(CancellationToken cancellationToken)
+        {
+            _ = cancellationToken;
+            return ValueTask.FromResult(signedIn
+                ? AuthResult.Success(new SecretString(token))
+                : AuthResult.Fail<SecretString>(AuthErrorKind.SessionEnded));
+        }
+
+        public Task<AuthResult<AuthUnit>> SignOutAsync(SignOutScope scope, CancellationToken cancellationToken)
+        {
+            _ = scope;
+            _ = cancellationToken;
+            StateChanged?.Invoke(this, new AccountStateChangedEventArgs(AccountState.SignedOut));
+            return Task.FromResult(AuthResult.Success(AuthUnit.Value));
+        }
     }
 }

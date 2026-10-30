@@ -1,0 +1,12 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:acct="clr-namespace:Autonogrammer.Presentation.Accounts;assembly=Autonogrammer.Presentation"
+        xmlns:local="clr-namespace:Autonogrammer.Native.Views.Account"
+        x:Class="Autonogrammer.Native.Views.Account.SignInDialog"
+        Title="Sign in"
+        Width="420"
+        Height="520"
+        WindowStartupLocation="CenterOwner"
+        AutomationProperties.Name="{x:Static acct:AccountCopy.PanelName}">
+  <local:AccountView x:Name="Account" />
+</Window>

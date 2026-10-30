@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Autonogrammer.Presentation;
 using Autonogrammer.Presentation.Settings;
+using Autonogrammer.Accounts.Desktop;
 using Autonogrammer.Presentation.Settings.Ignore;
 
 namespace Autonogrammer.Native.Settings;
@@ -156,6 +157,34 @@ internal sealed class FileSettingsStore
             document.Ignore.Hierarchical = values.HierarchicalIgnoreFiles;
         });
     }
+
+    /// <summary>Reads <see cref="AccountSettingsKeys.HasStoredSession"/>. Absent means false.</summary>
+    /// <returns>True when a signed-in session is stored.</returns>
+    public bool ReadHasStoredSession()
+    {
+        lock (_gate)
+        {
+            return ReadDocument().HasStoredSession == true;
+        }
+    }
+
+    /// <summary>Reads <see cref="AccountSettingsKeys.AllowFileSecretStore"/>. Absent means false.</summary>
+    /// <returns>True when the person consented to the file store.</returns>
+    public bool ReadAllowFileSecretStore()
+    {
+        lock (_gate)
+        {
+            return ReadDocument().AllowFileSecretStore == true;
+        }
+    }
+
+    /// <summary>Saves <see cref="AccountSettingsKeys.HasStoredSession"/>.</summary>
+    /// <param name="value">The value.</param>
+    public void SetHasStoredSession(bool value) => Update(document => document.HasStoredSession = value);
+
+    /// <summary>Saves <see cref="AccountSettingsKeys.AllowFileSecretStore"/>.</summary>
+    /// <param name="value">The value.</param>
+    public void SetAllowFileSecretStore(bool value) => Update(document => document.AllowFileSecretStore = value);
 
     private static IgnoreSettingsValues IgnoreOf(SettingsDocument document, string path)
     {

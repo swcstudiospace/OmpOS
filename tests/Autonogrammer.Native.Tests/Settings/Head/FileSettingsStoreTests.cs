@@ -81,6 +81,25 @@ public sealed class FileSettingsStoreTests : IDisposable
         read.Runtime.ShouldBe(new RuntimeSettingsValues(12, 3));
     }
 
+    /// <summary>The two account keys round-trip and default to false.</summary>
+    [Fact]
+    public void AccountKeysRoundTrip()
+    {
+        var store = new FileSettingsStore(_state.Root);
+        store.ReadHasStoredSession().ShouldBeFalse();
+        store.ReadAllowFileSecretStore().ShouldBeFalse();
+
+        store.SetHasStoredSession(true);
+        store.SetAllowFileSecretStore(true);
+        var again = new FileSettingsStore(_state.Root);
+        again.ReadHasStoredSession().ShouldBeTrue();
+        again.ReadAllowFileSecretStore().ShouldBeTrue();
+
+        again.SetHasStoredSession(false);
+        new FileSettingsStore(_state.Root).ReadHasStoredSession().ShouldBeFalse();
+        File.ReadAllText(store.FilePath).ShouldContain(Autonogrammer.Accounts.Desktop.AccountSettingsKeys.HasStoredSession);
+    }
+
     /// <summary>Writing one value leaves the others as they were saved.</summary>
     [Fact]
     public void WritingOneValueKeepsTheOthers()

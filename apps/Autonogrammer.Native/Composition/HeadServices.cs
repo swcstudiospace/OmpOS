@@ -6,6 +6,13 @@ using Autonogrammer.Harness.Mcp.Config;
 using Autonogrammer.Harness.OmpLauncher;
 using Autonogrammer.Harness.Remote;
 using Autonogrammer.Harness.Remote.Containers;
+using Autonogrammer.Accounts;
+using Autonogrammer.Accounts.Desktop;
+using Autonogrammer.Contracts.Accounts;
+using Autonogrammer.Harness.Secrets;
+using Autonogrammer.Harness.Secrets.Os;
+using Autonogrammer.Native.Settings;
+using Autonogrammer.Presentation.Accounts;
 using Autonogrammer.Native.Agents;
 using Autonogrammer.Native.Cloud;
 using Autonogrammer.Native.Composition.Automations;
@@ -55,6 +62,8 @@ internal sealed class HeadServices : IAsyncDisposable
     private readonly HttpClient? _apiClient;
     private readonly FileSetupConsentStore _consentStore;
     private readonly IDisposable? _cloudDisposable;
+    private readonly DesktopAccountHost _account;
+    private readonly Func<CancellationToken, ValueTask<string?>> _readToken;
     private readonly ILogger? _logger;
     private int _disposed;
 
@@ -81,7 +90,9 @@ internal sealed class HeadServices : IAsyncDisposable
         HttpClient? apiClient,
         SshClientOptions sshOptions,
         ContainerHosts containers,
-        AutomationsHost automations)
+        AutomationsHost automations,
+        DesktopAccountHost account,
+        Func<CancellationToken, ValueTask<string?>> readToken)
     {
         SshOptions = sshOptions;
         PodmanOptions = containers.Podman;
@@ -116,6 +127,9 @@ internal sealed class HeadServices : IAsyncDisposable
         _cloudDisposable = cloud as IDisposable;
         _apiClient = apiClient;
         _logger = options.LoggerFactory?.CreateLogger("Autonogrammer.Native.Composition");
+        Account = account;
+        _account = account;
+        _readToken = readToken;
     }
 
     /// <summary>Gets the root of all session state.</summary>
@@ -208,6 +222,17 @@ internal sealed class HeadServices : IAsyncDisposable
     /// <summary>Gets the cloud agents host, or null when no API address is configured.</summary>
     public ICloudAgentsHost? Cloud { get; }
 
+    /// <summary>Gets the account panel host. Null only when construction was skipped; the head always builds one.</summary>
+    public IAccountHost? Account { get; }
+
+    /// <summary>Gets the desktop account host, including the secret-store selector a test reads.</summary>
+    internal DesktopAccountHost AccountHost => _account;
+
+    /// <summary>Returns the bearer the cloud host sends: the signed-in account token, or the environment token only when signed out.</summary>
+    /// <param name="cancellationToken">Cancels the account token read.</param>
+    /// <returns>The token, or null when neither is available.</returns>
+    public ValueTask<string?> ReadApiTokenAsync(CancellationToken cancellationToken) => _readToken(cancellationToken);
+
     /// <summary>
     /// Gets or sets the host that runs one <c>/best-of-n</c> candidate: it opens an agent session in the candidate's worktree, sends the task and returns the last assistant text. The engine set sets it
     /// once it exists; null makes the command unavailable with a reason.
@@ -254,14 +279,14 @@ internal sealed class HeadServices : IAsyncDisposable
             var display = new DisplaySettings(new FileDisplaySettingsStore(Path.Combine(options.StateRoot, "config", "display.json")));
             await display.LoadAsync(cancellationToken).ConfigureAwait(false);
             var (runModeHub, runModes) = CreateRunModes(options, string.IsNullOrWhiteSpace(home) ? config : home, hooks, clock);
-            var (cloud, client) = CreateCloud(options, clock, urlLauncher);
-            apiClient = client;
+            var opened = await OpenAccountAsync(options, clock, urlLauncher, cancellationToken).ConfigureAwait(false);
+            apiClient = opened.Client;
             var containers = CreateContainerHosts(options, clock);
-            automations = CreateAutomations(options, config, cloud, clock);
+            automations = CreateAutomations(options, config, opened.Cloud, clock);
 
             var services = new HeadServices(
                 options, runModeHub.HomeDirectory, config, hooks, hookApproval, stores.RemoteProfiles, remoteEnvironments, mcp, stores.Checkpoints, setupConsent, stores.ConsentStore,
-                worktrees, new AboutLauncher(), urlLauncher, display, runModeHub, runModes, stores.WorkspaceSets, cloud, apiClient, sshOptions, containers, automations);
+                worktrees, new AboutLauncher(), urlLauncher, display, runModeHub, runModes, stores.WorkspaceSets, opened.Cloud, apiClient, sshOptions, containers, automations, opened.Account, opened.Token);
             holder.Owner = services;
             created = true;
 
@@ -302,24 +327,99 @@ internal sealed class HeadServices : IAsyncDisposable
         return (hub, source);
     }
 
-    /// <summary>Creates the cloud agents host and its HTTP client when an API address is configured; otherwise both are null.</summary>
-    private static (ICloudAgentsHost? Host, HttpClient? Client) CreateCloud(HeadServicesOptions options, TimeProvider clock, IUrlLauncher urlLauncher)
+    private static async Task<(ICloudAgentsHost? Cloud, HttpClient? Client, DesktopAccountHost Account, Func<CancellationToken, ValueTask<string?>> Token)> OpenAccountAsync(
+        HeadServicesOptions options,
+        TimeProvider clock,
+        IUrlLauncher urlLauncher,
+        CancellationToken cancellationToken)
     {
         var variable = options.GetVariable ?? (static name => Environment.GetEnvironmentVariable(name));
-        if (ApiAddress(variable) is not { } address)
+        var address = ApiAddress(variable);
+        var client = address is null ? null : CreateApiClient(options.ApiHandler);
+        DesktopAccountHost? account = null;
+        try
         {
-            return (null, null);
+#pragma warning disable CA2000 // The host is returned to HeadServices, which disposes it; DisposeAsync is the release path.
+            account = CreateAccount(options, clock, client, address);
+#pragma warning restore CA2000
+            await account.StartAsync(cancellationToken).ConfigureAwait(false);
+            var readToken = new Func<CancellationToken, ValueTask<string?>>(token => ResolveTokenAsync(account.Session, variable, token));
+            var cloud = CreateCloudHost(options, clock, urlLauncher, client, address, readToken);
+            DesktopAccountHost owned = account;
+            account = null;
+            return (cloud, client, owned, readToken);
+        }
+        finally
+        {
+            if (account is not null)
+            {
+                await account.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>Creates the cloud agents host when an API address is configured. The token supplier prefers the signed-in account token.</summary>
+    private static ApiCloudAgentsHost? CreateCloudHost(
+        HeadServicesOptions options,
+        TimeProvider clock,
+        IUrlLauncher urlLauncher,
+        HttpClient? client,
+        Uri? address,
+        Func<CancellationToken, ValueTask<string?>> readToken)
+    {
+        if (address is null || client is null)
+        {
+            return null;
         }
 
-        var client = CreateApiClient(options.ApiHandler);
-        var host = new ApiCloudAgentsHost(
+        return new ApiCloudAgentsHost(
             client,
             address,
             clock,
-            _ => ValueTask.FromResult(Token(variable)),
+            readToken,
             urlLauncher: urlLauncher,
             logger: options.LoggerFactory?.CreateLogger("Autonogrammer.Native.Cloud"));
-        return (host, client);
+    }
+
+    private static async ValueTask<string?> ResolveTokenAsync(IAccountSession session, Func<string, string?> variable, CancellationToken cancellationToken)
+    {
+        if (session.State.Phase == AuthPhase.SignedIn)
+        {
+            AuthResult<SecretString> token = await session.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            return token.IsSuccess ? token.Value.Reveal() : null;
+        }
+
+        return Token(variable);
+    }
+
+    private static DesktopAccountHost CreateAccount(HeadServicesOptions options, TimeProvider clock, HttpClient? client, Uri? address)
+    {
+        var settings = new FileSettingsStore(options.StateRoot);
+        var clientLogger = options.LoggerFactory?.CreateLogger<GoTrueClient>();
+        if (options.AccountSession is { } injected)
+        {
+            return new DesktopAccountHost(injected, null, null, null, null, settings, client, address, clock, clientLogger);
+        }
+
+        ISecretStore os = options.AccountOsStore ?? new OsSecretStore(options.LoggerFactory?.CreateLogger<OsSecretStore>(), clock);
+        ISecretStore file = options.AccountFileStore ?? new OwnerOnlyFileSecretStore(Path.Combine(settings.ConfigDirectory, "account-secrets.json"));
+        var selector = new AccountSecretStoreSelector(
+            os,
+            file,
+            settings.ReadHasStoredSession(),
+            settings.ReadAllowFileSecretStore(),
+            options.LoggerFactory?.CreateLogger<AccountSecretStoreSelector>());
+        var guard = new CrossProcessFileLock(
+            Path.Combine(settings.ConfigDirectory, "account-refresh.lock"),
+            clock,
+            options.LoggerFactory?.CreateLogger<CrossProcessFileLock>());
+        DesktopAccountHost? host = null;
+        Func<CancellationToken, ValueTask<GoTrueClient?>> provider = token => host!.ProvideClientAsync(token);
+        var manager = new AccountSessionManager(selector, provider, clock, guard, options.LoggerFactory?.CreateLogger<AccountSessionManager>());
+        var coordinator = new SignInCoordinator(manager, provider, clock, options.LoggerFactory?.CreateLogger<SignInCoordinator>());
+        var flow = new PkceSignInFlow(coordinator, clock, options.LoggerFactory?.CreateLogger<PkceSignInFlow>());
+        host = new DesktopAccountHost(manager, manager, coordinator, flow, selector, settings, client, address, clock, clientLogger);
+        return host;
     }
 
     private static ContainerHosts CreateContainerHosts(HeadServicesOptions options, TimeProvider clock)
@@ -401,6 +501,7 @@ internal sealed class HeadServices : IAsyncDisposable
 
         // The automations stop first: a run in flight uses the cloud host and the sessions.
         await Automations.DisposeAsync().ConfigureAwait(false);
+        await _account.DisposeAsync().ConfigureAwait(false);
         _cloudDisposable?.Dispose();
         _apiClient?.Dispose();
         Checkpoints.Dispose();
