@@ -1,0 +1,49 @@
+@namespace Autonogrammer.UI.Components.Cowork
+@using Autonogrammer.Presentation.Cowork.Memory
+@inherits ObservableComponent
+
+<div class="autonogrammer-cowork-memory">
+    <h2>Memory</h2>
+    <div role="status" aria-live="polite" aria-atomic="true" class="autonogrammer-sr-only">@Announcement</div>
+    <p>@MemorySettingsModel.ResidualRiskSentence</p>
+    <p>@MemorySettingsModel.PoisoningLimitationNotice</p>
+    <ul aria-label="Memory entries">
+        @foreach (var row in List.Rows)
+        {
+            <li>
+                <span>@row.SourceSession</span>
+                <button type="button" aria-label="@("Delete memory " + row.Id)" @onclick="() => Delete(row.Id)">Delete</button>
+            </li>
+        }
+    </ul>
+</div>
+
+@code {
+    private string _announcement = string.Empty;
+
+    /// <summary>Gets the list.</summary>
+    [Parameter, EditorRequired]
+    public MemoryListModel List { get; set; } = default!;
+
+    /// <summary>Gets the live-region text.</summary>
+    public string Announcement => _announcement;
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        Observe(List);
+        _announcement = List.Sentence ?? MemorySettingsModel.ResidualRiskSentence;
+    }
+
+    private async Task Delete(string id)
+    {
+        var deleted = await List.DeleteAsync(id, CancellationToken.None).ConfigureAwait(true);
+        Announce(deleted ? "Memory entry deleted." : List.Sentence ?? "Delete failed.");
+    }
+
+    private void Announce(string text)
+    {
+        _announcement = text;
+        StateHasChanged();
+    }
+}

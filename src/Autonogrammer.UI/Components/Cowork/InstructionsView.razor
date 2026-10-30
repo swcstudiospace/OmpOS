@@ -1,0 +1,51 @@
+@namespace Autonogrammer.UI.Components.Cowork
+@using Autonogrammer.Presentation.Cowork.Instructions
+@inherits ObservableComponent
+
+<div class="autonogrammer-cowork-instructions">
+    <h2>Global instructions</h2>
+    <p>@GlobalInstructionsModel.LimitMessage</p>
+    <div role="status" aria-live="polite" aria-atomic="true" class="autonogrammer-sr-only">@Announcement</div>
+    <label for="global-instructions">Global instructions editor</label>
+    <textarea id="global-instructions" aria-label="Global instructions editor" value="@Model.Draft" @onchange="OnEdit"></textarea>
+    <button type="button" aria-label="Load instructions" @onclick="Load">Load</button>
+    <button type="button" aria-label="Save instructions" @onclick="Save">Save</button>
+</div>
+
+@code {
+    private string _announcement = string.Empty;
+
+    /// <summary>Gets the model.</summary>
+    [Parameter, EditorRequired]
+    public GlobalInstructionsModel Model { get; set; } = default!;
+
+    /// <summary>Gets the live-region text.</summary>
+    public string Announcement => _announcement;
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        Observe(Model);
+        _announcement = Model.Sentence ?? GlobalInstructionsModel.LimitMessage;
+    }
+
+    private void OnEdit(ChangeEventArgs args) => Model.Edit(args.Value?.ToString() ?? string.Empty);
+
+    private async Task Load()
+    {
+        await Model.LoadAsync(CancellationToken.None).ConfigureAwait(true);
+        Announce(Model.Sentence ?? "Instructions loaded.");
+    }
+
+    private async Task Save()
+    {
+        var saved = await Model.SaveAsync(CancellationToken.None).ConfigureAwait(true);
+        Announce(saved ? "Instructions saved." : Model.Sentence ?? "Instructions were not saved.");
+    }
+
+    private void Announce(string text)
+    {
+        _announcement = text;
+        StateHasChanged();
+    }
+}

@@ -20,6 +20,17 @@
               MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
               AutomationProperties.Name="New task" />
     </Grid>
+    <Button x:Name="ProjectsButton"
+            DockPanel.Dock="Top"
+            Content="Projects"
+            MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+            MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+            AutomationProperties.Name="Projects"
+            Click="OnProjectsClick" />
+    <ContentControl x:Name="ProjectEditorHost"
+                    DockPanel.Dock="Top"
+                    IsVisible="False"
+                    AutomationProperties.Name="Project editor" />
     <TextBlock x:Name="LimitText"
                DockPanel.Dock="Bottom"
                IsVisible="False"

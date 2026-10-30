@@ -28,6 +28,12 @@ public partial class CoworkRailView : UserControl
 
     /// <summary>Gets the new-task button.</summary>
     public Button NewTask => NewTaskButton;
+    /// <summary>Gets the Projects section button. It opens the project editor.</summary>
+    public Button ProjectsSection => ProjectsButton;
+
+    /// <summary>Gets the host the Projects section fills with the editor.</summary>
+    public ContentControl ProjectEditor => ProjectEditorHost;
+
 
     /// <summary>Binds the rail to the list model.</summary>
     /// <param name="list">The Cowork list.</param>
@@ -79,4 +85,11 @@ public partial class CoworkRailView : UserControl
             _list.Select(row.Id);
         }
     }
+    private void OnProjectsClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var editor = new ProjectsView();
+        ProjectEditorHost.Content = editor;
+        ProjectEditorHost.IsVisible = true;
+    }
+
 }

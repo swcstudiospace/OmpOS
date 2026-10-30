@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Cowork.InstructionsView"
+             Focusable="True"
+             IsTabStop="False"
+             AutomationProperties.Name="Global instructions">
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+    <TextBlock Text="Global instructions" AutomationProperties.Name="Global instructions" />
+    <TextBlock x:Name="LimitText"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Instruction limit" />
+    <TextBlock x:Name="StatusText"
+               TextWrapping="Wrap"
+               AutomationProperties.LiveSetting="Polite"
+               AutomationProperties.Name="Instruction status" />
+    <TextBox x:Name="Editor"
+             TabIndex="1"
+             AcceptsReturn="True"
+             MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+             AutomationProperties.Name="Global instructions editor" />
+    <Button x:Name="LoadButton"
+            TabIndex="2"
+            Content="Load"
+            MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+            MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+            AutomationProperties.Name="Load instructions" />
+    <Button x:Name="SaveButton"
+            TabIndex="3"
+            Content="Save"
+            MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+            MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+            AutomationProperties.Name="Save instructions" />
+  </StackPanel>
+</UserControl>
