@@ -30,6 +30,9 @@ case "$(uname -s)" in
     ;;
 esac
 
+if [ -n "${GITHUB_PATH:-}" ]; then
+  echo "$root" >> "$GITHUB_PATH"
+fi
 if [ -n "${GITHUB_ENV:-}" ]; then
   {
     echo "DOTNET_ROOT=$root"

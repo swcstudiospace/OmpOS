@@ -25,7 +25,7 @@ wrap_dir="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/autonogrammer-bin"
 mkdir -p "$wrap_dir"
 cat > "$wrap_dir/podman" << 'EOF'
 #!/bin/sh
-exec sudo -n /usr/bin/podman "$@"
+exec sudo -n --preserve-env=POSTGRES_PASSWORD,DFLY_requirepass /usr/bin/podman "$@"
 EOF
 chmod 755 "$wrap_dir/podman"
 

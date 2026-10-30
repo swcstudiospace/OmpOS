@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Vulnerability scan of a built image with trivy, gating on severity. NOT wired as required: ci.yml runs it only when
 # `command -v trivy` succeeds. Written without trivy installed on the authoring host; it has not been run.
-# Usage: bash scripts/ci/scan-images.sh <image> [more images]
+# Usage: bash scripts/ci/scan-images.sh <image-or-archive> [more]
 # Environment:
 #   TRIVY_SEVERITY      comma list that fails the scan (default HIGH,CRITICAL)
 #   TRIVY_OFFLINE_DB    directory holding a pre-fetched trivy DB (a cache dir with db/trivy.db, e.g. ~/.cache/trivy);
@@ -20,6 +20,10 @@ fi
 status=0
 for image in "$@"; do
   echo "scan-images: $image"
-  trivy "${args[@]}" "$image" || status=1
+  if [ -f "$image" ]; then
+    trivy "${args[@]}" --input "$image" || status=1
+  else
+    trivy "${args[@]}" "$image" || status=1
+  fi
 done
 exit "$status"
