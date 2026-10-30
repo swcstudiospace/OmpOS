@@ -48,7 +48,7 @@ Note on the mechanical tier seam: `gsd_run query classify-confidence --provider 
 | Library | Version | Purpose | Why this one |
 |---------|---------|---------|--------------|
 | `xunit.v3` | **4.0.2** (4.0.0 shipped 2026-08-14; Apache-2.0) + `xunit.runner.visualstudio` 4.0.1 + `xunit.analyzers` 2.2.0 | Unit/integration test framework | v3 projects are executables, run natively on Microsoft.Testing.Platform v2, support Native AOT and full test-case parallelism; `async void` tests fail fast; `IAsyncLifetime` is `IAsyncDisposable`. xunit 2.9.3 is maintenance-only. Sources: [v3 migration](https://xunit.net/docs/getting-started/v3/migration), [4.0.0 release notes](https://xunit.net/releases/v3/4.0.0). **[HIGH]** |
-| Microsoft.Testing.Platform (MTP) mode of `dotnet test` | MTP 2.5.1 via xunit.v3; enable with `global.json` → `"test": { "runner": "Microsoft.Testing.Platform" }` | Test runner mode for the .NET 10 SDK | xunit 4.0 dropped MTP v1 and expects MTP mode on the .NET 10 SDK ("Testing with VSTest target is no longer supported… on .NET 10 SDK and later"). Use `dotnet test --solution OmpOS.slnx`, `--report-trx` via `Microsoft.Testing.Extensions.TrxReport` 2.5.1. Source: [Testing with dotnet test](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-with-dotnet-test). **[HIGH]** |
+| Microsoft.Testing.Platform (MTP) mode of `dotnet test` | MTP 2.5.1 via xunit.v3; enable with `global.json` → `"test": { "runner": "Microsoft.Testing.Platform" }` | Test runner mode for the .NET 10 SDK | xunit 4.0 dropped MTP v1 and expects MTP mode on the .NET 10 SDK ("Testing with VSTest target is no longer supported… on .NET 10 SDK and later"). Use `dotnet test --solution Autonogrammer.slnx`, `--report-trx` via `Microsoft.Testing.Extensions.TrxReport` 2.5.1. Source: [Testing with dotnet test](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-with-dotnet-test). **[HIGH]** |
 | `Shouldly` | **4.3.0** (BSD-3-Clause) | Assertions | FluentAssertions 8.x moved to the **Xceed Community License** (non-commercial only; commercial use requires a paid licence) — see *What NOT to Use*. Shouldly is permissively licensed and feature-adequate. 5.0.0-preview.2 exists; stay on 4.3.0. Sources: [Shouldly LICENSE](https://github.com/shouldly/shouldly/blob/master/LICENSE.txt), [FluentAssertions LICENSE](https://github.com/fluentassertions/fluentassertions/blob/main/LICENSE). **[HIGH]** |
 | `NSubstitute` | 6.2.0 (BSD-3-Clause) | Mocking for provider/transport seams | Preferred over Moq (4.21.0) because of Moq's 2023 SponsorLink incident and NSubstitute's cleaner API; most seams should use the deterministic in-memory adapters the requirements mandate rather than mocks. **[HIGH]** on versions/licences, **[MEDIUM]** on preference |
 | `TngTech.ArchUnitNET` + `TngTech.ArchUnitNET.xUnitV3` | **0.13.4** (2026-08-19, Apache-2.0) | Architecture tests enforcing apps → services → libraries → contracts | Actively maintained with a dedicated xUnit v3 adapter. **NetArchTest.Rules 1.3.2 has had no release since 2021-05** — do not use. Sources: [ArchUnitNET releases](https://github.com/TNG/ArchUnitNET/releases), [NetArchTest releases](https://github.com/BenMorris/NetArchTest/releases). **[HIGH]** |
@@ -161,7 +161,7 @@ podman run --rm -p 7233:7233 -p 8233:8233 temporalio/temporal:1.9.1 server start
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 10.0 --install-dir ./.dotnet",
-  "buildCommand": "DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 ./.dotnet/dotnet publish src/OmpOS.Web.csproj -c Release -o publish -p:CompressionEnabled=false --locked-mode",
+  "buildCommand": "DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 ./.dotnet/dotnet publish src/Autonogrammer.Web.csproj -c Release -o publish -p:CompressionEnabled=false --locked-mode",
   "outputDirectory": "publish/wwwroot",
   "cleanUrls": false,
   "trailingSlash": false,
@@ -239,14 +239,14 @@ Run with `COMPOSE_PROFILES=workflows podman-compose up --wait`. **[HIGH]** on im
 
 **If `Workflows:Enabled=false` (default for the vertical slice):**
 - Use `DirectSessionRunner` in-process; no `Temporalio` worker is registered and the `workflows` compose profile is not started.
-- Because the Temporal packages still compile in, keep them in a separate `OmpOS.Workflows.Temporal` project so the contracts/services layers never reference `Temporalio`.
+- Because the Temporal packages still compile in, keep them in a separate `Autonogrammer.Workflows.Temporal` project so the contracts/services layers never reference `Temporalio`.
 
 **If `Workflows:Enabled=true`:**
-- `AddTemporalClient(...)` + `AddHostedTemporalWorker("ompos-sessions").AddWorkflow<SessionRunWorkflow>().AddScopedActivities<SessionRunActivities>()`; wire `Temporalio.Extensions.OpenTelemetry` into the shared `TracerProvider`.
+- `AddTemporalClient(...)` + `AddHostedTemporalWorker("autonogrammer-sessions").AddWorkflow<SessionRunWorkflow>().AddScopedActivities<SessionRunActivities>()`; wire `Temporalio.Extensions.OpenTelemetry` into the shared `TracerProvider`.
 - Local: `temporalio/temporal:1.9.1` via compose profile; CI: Testcontainers starts the same image under Podman.
 
 **If the sandbox provider is `podman-compose` (local):**
-- Shell out to `podman` with explicit `--format json` and parse with STJ source-gen types; never parse human output. Idempotency keys map to container labels (`io.ompos.session=<id>`) so the orphan reaper is a `podman ps --filter label=…` query.
+- Shell out to `podman` with explicit `--format json` and parse with STJ source-gen types; never parse human output. Idempotency keys map to container labels (`io.autonogrammer.session=<id>`) so the orphan reaper is a `podman ps --filter label=…` query.
 
 **If the sandbox provider is OpenShell / agentOS / dTEE (stubs this milestone):**
 - Interface-conforming stubs only; `Microsoft.Extensions.Http.Resilience` is added when a real HTTP boundary appears.
@@ -314,6 +314,6 @@ Run with `COMPOSE_PROFILES=workflows podman-compose up --wait`. **[HIGH]** on im
 - `omp://sdk.md` (bundled omp 18.12.3 docs) — SDK is Bun/TypeScript in-process; cross-language integration is RPC mode. HIGH
 
 ---
-*Stack research for: OmpOS — C#/.NET ACP harness for omp with Generative UI (Blazor WASM + MAUI Blazor Hybrid, ASP.NET Core on Railway, optional Temporal, podman sandboxes)*
+*Stack research for: Autonogrammer — C#/.NET ACP harness for omp with Generative UI (Blazor WASM + MAUI Blazor Hybrid, ASP.NET Core on Railway, optional Temporal, podman sandboxes)*
 *Researched: 2026-10-20*
 *Tracking: ultrathink node n3 "Compare surface technology and streaming options" — SPE-17751 (https://linear.app/swcstudio/issue/SPE-17751; Notion https://app.notion.com/p/3ffbc1a0c7ae8160bdbadce533321a2a)*

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.GenUi/Autonogrammer.GenUi.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Sessions/Autonogrammer.Sessions.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.UI/Autonogrammer.UI.csproj" />
+    <ProjectReference Include="../Autonogrammer.Parity.Support/Autonogrammer.Parity.Support.csproj" />
+    <PackageReference Include="bunit" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+</Project>

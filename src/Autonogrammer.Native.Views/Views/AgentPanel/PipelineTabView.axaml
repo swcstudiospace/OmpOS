@@ -1,0 +1,131 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:copy="clr-namespace:Autonogrammer.Presentation.AgentPanel;assembly=Autonogrammer.Presentation"
+             xmlns:local="clr-namespace:Autonogrammer.Native.Views.AgentPanel"
+             x:Class="Autonogrammer.Native.Views.AgentPanel.PipelineTabView"
+             x:DataType="copy:StageTimelineModel">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The Pipeline tab: an optional run summary, then one block per source in pipeline order. The scroller is the one tab stop; the retry
+       buttons inside it are tab stops of their own. -->
+  <ScrollViewer x:Name="PipelineDetails"
+                Focusable="True"
+                IsTabStop="True"
+                HorizontalScrollBarVisibility="Disabled"
+                AutomationProperties.Name="{x:Static local:AgentPanelViewText.PipelineDetailsName}">
+
+    <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                Margin="{DynamicResource Autonogrammer.Space.Xs}">
+
+      <StackPanel x:Name="RunSummaryBlock"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                  IsVisible="False">
+        <TextBlock Text="{x:Static local:AgentPanelViewText.RunSummaryHeading}"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+        <TextBlock x:Name="RunSummaryText"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+
+      <ItemsControl x:Name="SourceBlocks"
+                    ItemsSource="{CompiledBinding Blocks}"
+                    Focusable="False"
+                    IsTabStop="False">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="copy:StageSourceBlock">
+            <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                        Margin="0,0,0,8">
+
+              <Grid ColumnDefinitions="*,Auto"
+                    ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+                <TextBlock Grid.Column="0"
+                           Text="{CompiledBinding Name}"
+                           FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                           FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+                           VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            Spacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                            IsVisible="{CompiledBinding RollUpText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                  <local:StageIcon IconKey="{CompiledBinding RollUpIconKey}"
+                                   VerticalAlignment="Center" />
+                  <TextBlock Text="{CompiledBinding RollUpText}"
+                             FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Grid>
+
+              <TextBlock Text="{CompiledBinding EmptyText}"
+                         IsVisible="{CompiledBinding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                         Classes="muted small"
+                         TextWrapping="Wrap" />
+
+              <ItemsControl ItemsSource="{CompiledBinding Rows}"
+                            Focusable="False"
+                            IsTabStop="False">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="copy:StageRow">
+                    <Grid ColumnDefinitions="Auto,*,Auto"
+                          ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                          MinHeight="{DynamicResource Autonogrammer.Size.StageRowMinHeight}"
+                          Margin="{CompiledBinding Depth, Converter={x:Static local:PanelConverters.DepthIndent}}"
+                          AutomationProperties.Name="{CompiledBinding AccessibleName}">
+
+                      <local:StageIcon Grid.Column="0"
+                                       IconKey="{CompiledBinding IconKey}"
+                                       VerticalAlignment="Top"
+                                       Margin="0,4,0,0" />
+
+                      <StackPanel Grid.Column="1"
+                                  Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+                        <TextBlock Text="{CompiledBinding Title}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{CompiledBinding Detail}"
+                                   IsVisible="{CompiledBinding ., Converter={x:Static local:PanelConverters.IsPlainDetail}}"
+                                   Classes="muted small"
+                                   TextWrapping="Wrap" />
+                        <SelectableTextBlock Text="{CompiledBinding Detail}"
+                                             IsVisible="{CompiledBinding ., Converter={x:Static local:PanelConverters.IsFixLine}}"
+                                             IsTabStop="False"
+                                             Classes="muted mono"
+                                             TextWrapping="Wrap" />
+                        <SelectableTextBlock Text="{CompiledBinding GraphId}"
+                                             IsVisible="{CompiledBinding GraphId, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                             IsTabStop="False"
+                                             Classes="muted mono"
+                                             TextWrapping="Wrap" />
+                        <TextBlock Text="{CompiledBinding EffectText}"
+                                   IsVisible="{CompiledBinding EffectText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Classes="muted small"
+                                   TextWrapping="Wrap" />
+                        <Button Classes="sm"
+                                Content="{x:Static copy:AgentPanelCopy.RetryStage}"
+                                IsVisible="{CompiledBinding CanRetry}"
+                                HorizontalAlignment="Left"
+                                AutomationProperties.Name="{CompiledBinding RetryName}" />
+                      </StackPanel>
+
+                      <local:ToneTextBlock Grid.Column="2"
+                                           Text="{CompiledBinding StatusText}"
+                                           Tone="{CompiledBinding Status, Converter={x:Static local:StatusGlyphs.StageTone}}"
+                                           VerticalAlignment="Top"
+                                           FontSize="{DynamicResource Autonogrammer.Font.Size.Label}" />
+
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+    </StackPanel>
+
+  </ScrollViewer>
+
+</UserControl>

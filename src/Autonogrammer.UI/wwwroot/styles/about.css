@@ -1,0 +1,69 @@
+/* The About view: the version, the licence and the source offer, and the accessibility commitment. It sits in the main region of the workbench shell and
+   reads at the thread width. Tokens only. Imported by autonogrammer.css after connect.css. */
+
+.autonogrammer-about {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-12);
+  width: 100%;
+  max-width: var(--autonogrammer-thread-max);
+  min-width: 0;
+  margin: 0 auto;
+  padding: var(--autonogrammer-gap-12);
+}
+
+.autonogrammer-about p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-about-title {
+  margin: 0;
+  font-family: var(--autonogrammer-font-display);
+  font-size: var(--autonogrammer-font-size-display);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-display);
+}
+
+.autonogrammer-about-heading {
+  margin: var(--autonogrammer-gap-8) 0 0;
+  font-size: var(--autonogrammer-font-size-heading);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-heading);
+}
+
+.autonogrammer-about-facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  margin: 0;
+}
+
+.autonogrammer-about-fact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-about-fact dt {
+  min-width: 96px;
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-about-fact dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-about-link {
+  color: var(--autonogrammer-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.autonogrammer-about-copyright {
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}

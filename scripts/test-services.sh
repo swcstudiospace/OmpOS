@@ -4,14 +4,24 @@
 # ports, waits until each accepts authenticated connections, writes two export lines to a mode 600 file, and prints
 # only that file's path. `down` removes both containers and is idempotent. Podman only. No password is written to
 # the repository.
+#
+# Concurrent runs: `up` begins with `down`, so two runs on one host that use the same container names remove each other's
+# running containers in the middle of a test run (every test that needs a server then fails with a refused connection).
+# AUTONOGRAMMER_TEST_SERVICES_NAME gives a run a pair of its own (autonogrammer-test-postgres-<name> and
+# autonogrammer-test-dragonfly-<name>); `up` and `down` of that run touch only that pair. Unset, the names are the plain ones.
 set -euo pipefail
 
-POSTGRES_NAME=ompos-test-postgres
-DRAGONFLY_NAME=ompos-test-dragonfly
+NAME_SUFFIX="${AUTONOGRAMMER_TEST_SERVICES_NAME:-}"
+if [ -n "$NAME_SUFFIX" ] && ! [[ "$NAME_SUFFIX" =~ ^[a-z0-9][a-z0-9-]{0,31}$ ]]; then
+  echo "error: AUTONOGRAMMER_TEST_SERVICES_NAME must be 1 to 32 characters of a-z, 0-9 and -, starting with a letter or a digit" >&2
+  exit 2
+fi
+POSTGRES_NAME="autonogrammer-test-postgres${NAME_SUFFIX:+-$NAME_SUFFIX}"
+DRAGONFLY_NAME="autonogrammer-test-dragonfly${NAME_SUFFIX:+-$NAME_SUFFIX}"
 POSTGRES_IMAGE=docker.io/timescale/timescaledb:2.13.1-pg16@sha256:1b2b5508848bbbbd671e02aeafd75fefb57771168f0782b6842bfb2f66af444b
 DRAGONFLY_IMAGE=docker.io/dragonflydb/dragonfly:v1.27.1@sha256:385cb73078f4dabe43d536766842eab444f3d791b0fcf86951decdcbcda37917
-DB=ompos_test
-DB_USER=ompos
+DB=autonogrammer_test
+DB_USER=autonogrammer
 READY_BUDGET_SECONDS=90
 
 # Prints the host port that Podman published for container port $2 of container $1.
@@ -81,11 +91,11 @@ up() {
     exit 1
   fi
 
-  env_file="$(mktemp "${TMPDIR:-/tmp}/ompos-test-services.XXXXXX")"
+  env_file="$(mktemp "${TMPDIR:-/tmp}/autonogrammer-test-services.XXXXXX")"
   chmod 600 "$env_file"
-  printf "export OMPOS_TEST_POSTGRES_CONNECTION='Host=127.0.0.1;Port=%s;Database=%s;Username=%s;Password=%s'\n" \
+  printf "export AUTONOGRAMMER_TEST_POSTGRES_CONNECTION='Host=127.0.0.1;Port=%s;Database=%s;Username=%s;Password=%s'\n" \
     "$postgres_port" "$DB" "$DB_USER" "$postgres_password" >>"$env_file"
-  printf "export OMPOS_TEST_DRAGONFLY_CONNECTION='127.0.0.1:%s,password=%s,abortConnect=false'\n" \
+  printf "export AUTONOGRAMMER_TEST_DRAGONFLY_CONNECTION='127.0.0.1:%s,password=%s,abortConnect=false'\n" \
     "$dragonfly_port" "$dragonfly_password" >>"$env_file"
   echo "$env_file"
 }

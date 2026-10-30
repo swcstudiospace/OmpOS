@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 
-namespace OmpOS.Gweb.Named;
+namespace Autonogrammer.Gweb.Named;
 
 internal sealed partial class App : Application
 {

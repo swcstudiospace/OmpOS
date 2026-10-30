@@ -1,0 +1,17 @@
+@namespace Autonogrammer.UI.Components.Blocks
+@using Autonogrammer.Contracts.Ui
+@using Autonogrammer.UI.Components.Rail
+<div class="autonogrammer-block autonogrammer-tool-result" data-status="@Block.Status" role="group" aria-label="Tool result: @Block.ToolName">
+    <p class="autonogrammer-tool-result-heading">
+        <StatusGlyph IconKey="@ToolStatusIcon.Of(Block.Status)" />
+        <span class="autonogrammer-tool-name">@Block.ToolName</span>
+        <span class="autonogrammer-tool-status">@Block.Status</span>
+    </p>
+    <pre class="autonogrammer-tool-output" tabindex="0" role="group" aria-label="Output of @Block.ToolName">@Block.Output</pre>
+</div>
+
+@code {
+    /// <summary>Gets the tool-result block to render. The output is text, shown verbatim and never as markup.</summary>
+    [Parameter, EditorRequired]
+    public ToolResultBlock Block { get; set; } = null!;
+}

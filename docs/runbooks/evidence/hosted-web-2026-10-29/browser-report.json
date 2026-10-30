@@ -1,0 +1,102 @@
+{
+  "app": "http://127.0.0.1:5180/",
+  "startedAt": "2026-10-29T13:46:02.243Z",
+  "outDir": "/tmp/ag-scratch/hosted-run9/browser",
+  "mode": "owner-token",
+  "steps": [
+    {
+      "name": "load",
+      "status": "passed",
+      "ms": 46388,
+      "screen": "connect"
+    },
+    {
+      "name": "connect-screen",
+      "status": "passed",
+      "ms": 5289,
+      "axeVersion": "4.14.0",
+      "incomplete": 0
+    },
+    {
+      "name": "connect",
+      "status": "passed",
+      "ms": 3325
+    },
+    {
+      "name": "workbench",
+      "status": "passed",
+      "ms": 19483,
+      "axeVersion": "4.14.0",
+      "incomplete": 0
+    },
+    {
+      "name": "prompt-and-answer",
+      "status": "passed",
+      "ms": 30913,
+      "responseCompleteAnnounced": true,
+      "axeVersion": "4.14.0",
+      "incomplete": 1
+    },
+    {
+      "name": "second-prompt",
+      "status": "passed",
+      "ms": 23377
+    },
+    {
+      "name": "credential-storage",
+      "status": "passed",
+      "ms": 11
+    },
+    {
+      "name": "no-browser-problems",
+      "status": "passed",
+      "ms": 0
+    },
+    {
+      "name": "sign-out",
+      "status": "passed",
+      "ms": 5313
+    }
+  ],
+  "screenshots": [
+    "connect.png",
+    "workbench.png",
+    "answer.png",
+    "second-answer.png"
+  ],
+  "axe": {
+    "connect": {
+      "version": "4.14.0",
+      "violations": [],
+      "incomplete": []
+    },
+    "workbench": {
+      "version": "4.14.0",
+      "violations": [],
+      "incomplete": []
+    },
+    "answer": {
+      "version": "4.14.0",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "targets": [
+            ".is-selected > .autonogrammer-agent-main > .autonogrammer-agent-line > .autonogrammer-agent-time"
+          ]
+        }
+      ]
+    }
+  },
+  "problems": {
+    "before sign-out": {
+      "consoleErrors": [],
+      "exceptions": [],
+      "logErrors": [],
+      "failedRequests": []
+    }
+  },
+  "finishedAt": "2026-10-29T13:48:26.125Z",
+  "result": "passed"
+}

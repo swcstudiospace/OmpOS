@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <None Include="TestData/**/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- The Demo sources are compiled into the tests so the Demo handler is tested even though the production web head excludes them (AutonogrammerDemo=false). DemoRegistration needs the web head's implicit usings and is covered by the composition tests below instead. -->
+  <ItemGroup Condition="'$(AutonogrammerDemo)' != 'true'">
+    <Compile Include="../../apps/Autonogrammer.Web/Demo/**/*.cs" Exclude="../../apps/Autonogrammer.Web/Demo/DemoRegistration.cs" LinkBase="Demo" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../apps/Autonogrammer.Web/Autonogrammer.Web.csproj" />
+    <PackageReference Include="bunit" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+</Project>

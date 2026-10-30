@@ -21,8 +21,8 @@ Goal: the Linux, Windows and macOS desktop heads build from the shared project a
 
 ## Verified paths
 
-- apps/OmpOS.Native/Program.cs: the desktop entry, where the backend is chosen.
-- apps/OmpOS.Native/OmpOS.Native.csproj
+- apps/Autonogrammer.Native/Program.cs: the desktop entry, where the backend is chosen.
+- apps/Autonogrammer.Native/Autonogrammer.Native.csproj
 - Directory.Packages.props: Avalonia 12.1.4 pins at lines 21 to 25, Avalonia.Skia at line 79. Any Wayland package would be pinned here.
 - docs/runbooks/phase-22-desktop-heads.md
 - docs/runbooks/evidence/phase-22-wayland-2026-10-24/ (probe.sh, probe-output.txt)

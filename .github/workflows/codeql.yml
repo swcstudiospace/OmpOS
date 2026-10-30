@@ -1,0 +1,47 @@
+# CodeQL for C# (manual build mode: the repository's restore and build commands, as in ci.yml).
+# Manual runs and a weekly schedule only; it is not a required check.
+# Runs on ubuntu-24.04. The CodeQL action downloads its bundle from github.com; the Omega pool never ran this workflow (OQ-175).
+name: codeql
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_PROCESSOR_COUNT: 4
+  MSBUILDDISABLENODEREUSE: 1
+
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          global-json-file: global.json
+      # github/codeql-action v4.39.1 (tag object 8498dc4c resolved to this commit with gh api, 2026-10-29).
+      - name: Use the pinned SDK only (the runner runtime must not change the lock file)
+        run: bash scripts/ci/install-pinned-sdk.sh
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: csharp
+          build-mode: manual
+      - run: dotnet restore Autonogrammer.Linux.slnf --locked-mode -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13
+      - run: dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: /language:csharp

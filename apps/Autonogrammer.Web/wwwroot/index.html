@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#181818" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="Autonogrammer is an open agent workspace for the omp coding agent: start sessions, follow the agent's work and review its changes." />
+    <title>Autonogrammer</title>
+    <base href="/" />
+    <link rel="preload" id="webassembly" />
+    <!-- Applies the saved theme before the first paint. It is a file, not an inline script, because the CSP forbids inline script. -->
+    <script src="_content/Autonogrammer.UI/scripts/theme-boot.js"></script>
+    <link rel="preload" href="_content/Autonogrammer.UI/fonts/DMSans/DMSans-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="_content/Autonogrammer.UI/fonts/DMSans/DMSans-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="_content/Autonogrammer.UI/styles/autonogrammer.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" href="favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+</head>
+
+<body>
+    <noscript>
+        <p>Autonogrammer needs JavaScript and WebAssembly to run. Turn on JavaScript in your browser settings, then reload this page.</p>
+    </noscript>
+    <div id="app">
+        <svg class="loading-progress" aria-hidden="true" focusable="false">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text" aria-hidden="true"></div>
+        <p class="loading-status" role="status">Loading Autonogrammer...</p>
+    </div>
+
+    <div id="blazor-error-ui" role="alert">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <button type="button" class="dismiss" aria-label="Dismiss error"><span aria-hidden="true">🗙</span></button>
+    </div>
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+    <!-- Registers the offline-shell service worker. A file, not an inline script, because the CSP forbids inline script; the host's CSP must also allow the worker (worker-src 'self') and the manifest (manifest-src 'self'). -->
+    <script src="register-service-worker.js" defer></script>
+</body>
+
+</html>

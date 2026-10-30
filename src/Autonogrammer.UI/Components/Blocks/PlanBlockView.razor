@@ -1,0 +1,16 @@
+@namespace Autonogrammer.UI.Components.Blocks
+@using Autonogrammer.Contracts.Ui
+<div class="autonogrammer-block autonogrammer-plan">
+    <ol>
+        @foreach (var step in Block.Steps)
+        {
+            <li>@step</li>
+        }
+    </ol>
+</div>
+
+@code {
+    /// <summary>Gets the plan block to render.</summary>
+    [Parameter, EditorRequired]
+    public PlanBlock Block { get; set; } = null!;
+}

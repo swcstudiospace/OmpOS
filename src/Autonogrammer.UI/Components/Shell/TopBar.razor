@@ -1,0 +1,50 @@
+@namespace Autonogrammer.UI.Components.Shell
+@using Autonogrammer.UI.Components.Auth
+<header class="autonogrammer-topbar">
+    <button type="button"
+            class="autonogrammer-icon-btn autonogrammer-topbar-menu"
+            aria-label="Agents panel"
+            aria-controls="autonogrammer-rail"
+            aria-expanded="@(DrawerOpen ? "true" : "false")"
+            @ref="_drawerButton"
+            @onclick="() => OnDrawerToggle.InvokeAsync()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
+    <span class="autonogrammer-logo" aria-hidden="true"></span>
+    <a class="autonogrammer-wordmark" href="/">Autonogrammer</a>
+    @if (!string.IsNullOrWhiteSpace(WorkspaceLabel))
+    {
+        <span class="autonogrammer-workspace-label">@WorkspaceLabel</span>
+    }
+    @if (Tabs is not null)
+    {
+        <div class="autonogrammer-topbar-tabs">@Tabs</div>
+    }
+
+    <div class="autonogrammer-topbar-spacer"></div>
+    <a class="autonogrammer-topbar-link" href="@ShellInfo.SourceRepositoryUrl">Source</a>
+    <SignOutButton />
+    <ThemeSwitch />
+</header>
+
+@code {
+    private ElementReference _drawerButton;
+
+    /// <summary>Gets the workspace name shown beside the wordmark; nothing is shown when it is empty.</summary>
+    [Parameter]
+    public string? WorkspaceLabel { get; set; }
+
+    /// <summary>Gets the content shown between the workspace name and the controls, such as the view tabs.</summary>
+    [Parameter]
+    public RenderFragment? Tabs { get; set; }
+
+    /// <summary>Gets whether the agent drawer is open; it sets <c>aria-expanded</c> on the drawer button.</summary>
+    [Parameter]
+    public bool DrawerOpen { get; set; }
+
+    /// <summary>Gets the callback invoked when the drawer button is activated.</summary>
+    [Parameter]
+    public EventCallback OnDrawerToggle { get; set; }
+
+    /// <summary>Moves keyboard focus to the drawer button, which is where focus returns when the drawer closes.</summary>
+    /// <returns>A task that completes when the focus request has been sent.</returns>
+    public ValueTask FocusDrawerButtonAsync() => _drawerButton.FocusAsync();
+}

@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "provisional": false,
+  "basis": "Measured on a published wwwroot (80 boot files, raw 12434834, gzip 4779084, brotli 3784441 bytes) plus 10 percent.",
+  "limits": {
+    "rawBytes": 13678318,
+    "gzipBytes": 5256993,
+    "brotliBytes": 4162886
+  }
+}

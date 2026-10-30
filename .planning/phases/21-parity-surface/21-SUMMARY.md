@@ -6,22 +6,22 @@ Session chat renders natively, and parity is tested on both heads. The native he
 
 Mac channel: No. The parity tests run headless on the Linux host and the CI runners.
 
-**No live omp turn was exercised.** Every send, approval and steering test runs against a scripted ACP peer (`tests/OmpOS.Native.Tests/Send/`).
+**No live omp turn was exercised.** Every send, approval and steering test runs against a scripted ACP peer (`tests/Autonogrammer.Native.Tests/Send/`).
 
 ## Success criteria (ROADMAP Phase 21)
 
 | # | Criterion | Status | Evidence |
 |---|-----------|--------|----------|
-| 1 | One test per streamed generative UI block type | Met | tests/OmpOS.Native.Tests/Blocks/NativeUiBlockRendererTests.cs; 45 inventory rows in docs/parity/session-chat-parity.md |
-| 2 | Same case set runs against Razor and Avalonia | Met | 14 shared scenarios: tests/OmpOS.UI.Tests/SharedScenarioParityTests.cs and tests/OmpOS.Native.Tests/Parity/SharedScenarioParityTests.cs |
-| 3 | Inventory names a test for each row | Met | tests/OmpOS.Presentation.Tests/ParityInventoryTests.cs |
-| 4 | Tool approvals appear in the run UI; approve or deny reaches the ACP permission bridge and resolves the request | Met for the confirmed kinds | tests/OmpOS.Native.Tests/Send/EngineSendPathTests.cs: `AParkedHostPermissionRequestAppearsInTheApprovalUi`, `AnAdmittedKindRaisedByTheHostAppearsInTheApprovalUiAndApproveGrantsIt`, `AReadRequestRaisedByTheHostAppearsInTheApprovalUi`, `DenyingAParkedHostPermissionRequestSettlesItDenied`, `ApproveUnderDenyAllReportsRefusedAndLeavesTheParkedRequestPending`, `TheProductionPolicyDeniesAKindOutsideTheNamedSetBeforeItParks`. Production kinds: `Program.ProductionAllowedKinds` = edit, delete, move, execute, read, search |
-| 5 | Steering and follow-up sent during a run, delivered in send order | Met, with the F3 delivery rule | tests/OmpOS.Native.Tests/Send/EngineRunInputSendTests.cs: `ASteerDuringATurnDoesNotCancelItAndIsSentAfterTheTurnEnds`, `ASteerThenAFollowUpAreSentInTheOrderTheyWereSent`, `AMessageSentAfterAQueuedFollowUpWaitsBehindIt`, `StopSendsNothingFurtherAndSaysHowManyMessagesWereNotSent`, `TwoHeldSteersAreCountedUntilEachStartsItsTurn`. tests/OmpOS.Presentation.Tests/RunInputSchedulerTests.cs: `ASteerWhileFollowUpsWaitGoesBehindThem` |
+| 1 | One test per streamed generative UI block type | Met | tests/Autonogrammer.Native.Tests/Blocks/NativeUiBlockRendererTests.cs; 45 inventory rows in docs/parity/session-chat-parity.md |
+| 2 | Same case set runs against Razor and Avalonia | Met | 14 shared scenarios: tests/Autonogrammer.UI.Tests/SharedScenarioParityTests.cs and tests/Autonogrammer.Native.Tests/Parity/SharedScenarioParityTests.cs |
+| 3 | Inventory names a test for each row | Met | tests/Autonogrammer.Presentation.Tests/ParityInventoryTests.cs |
+| 4 | Tool approvals appear in the run UI; approve or deny reaches the ACP permission bridge and resolves the request | Met for the confirmed kinds | tests/Autonogrammer.Native.Tests/Send/EngineSendPathTests.cs: `AParkedHostPermissionRequestAppearsInTheApprovalUi`, `AnAdmittedKindRaisedByTheHostAppearsInTheApprovalUiAndApproveGrantsIt`, `AReadRequestRaisedByTheHostAppearsInTheApprovalUi`, `DenyingAParkedHostPermissionRequestSettlesItDenied`, `ApproveUnderDenyAllReportsRefusedAndLeavesTheParkedRequestPending`, `TheProductionPolicyDeniesAKindOutsideTheNamedSetBeforeItParks`. Production kinds: `Program.ProductionAllowedKinds` = edit, delete, move, execute, read, search |
+| 5 | Steering and follow-up sent during a run, delivered in send order | Met, with the F3 delivery rule | tests/Autonogrammer.Native.Tests/Send/EngineRunInputSendTests.cs: `ASteerDuringATurnDoesNotCancelItAndIsSentAfterTheTurnEnds`, `ASteerThenAFollowUpAreSentInTheOrderTheyWereSent`, `AMessageSentAfterAQueuedFollowUpWaitsBehindIt`, `StopSendsNothingFurtherAndSaysHowManyMessagesWereNotSent`, `TwoHeldSteersAreCountedUntilEachStartsItsTurn`. tests/Autonogrammer.Presentation.Tests/RunInputSchedulerTests.cs: `ASteerWhileFollowUpsWaitGoesBehindThem` |
 
 ## Owner decisions and their implementation
 
 - **F1, approval kinds (answered 2026-10-24).** The owner first answered "named kind set" without naming the kinds. The parent proposed edit, delete, move and execute, the ACP kinds that write files or run commands, from https://agentclientprotocol.com/protocol/v1/tool-calls. The owner then answered "also admit read and search", so the confirmed set is edit, delete, move, execute, read and search. fetch, think, switch_mode and other are denied automatically.
-- **F2, prompt echo (answered: contract payload).** `UserMessagePayload` (kind `user_message`) is added to the shared contracts, and the folds turn it into `UserMessageBlock`. The block moved to `OmpOS.Contracts.Ui` so the projection can fold it. The native head echoes each prompt when it is sent, and each queued message when its turn starts. The server's `prompt_accepted` path is unchanged.
+- **F2, prompt echo (answered: contract payload).** `UserMessagePayload` (kind `user_message`) is added to the shared contracts, and the folds turn it into `UserMessageBlock`. The block moved to `Autonogrammer.Contracts.Ui` so the projection can fold it. The native head echoes each prompt when it is sent, and each queued message when its turn starts. The server's `prompt_accepted` path is unchanged.
 - **F3, steering (answered: queue after the turn).** Steer and follow-up messages are held in send order and sent as their own turns after the active turn ends. Stop cancels the turn, sends nothing further, and shows "N queued messages were not sent."
 
 ## Known limits
@@ -42,13 +42,13 @@ Run first: `export DOTNET_ROOT=/root/.dotnet DOTNET_NOLOGO=1 DOTNET_CLI_TELEMETR
 
 - Repo gate after the last code change (the approval kinds): `./bootstrap.sh` printed `bootstrap: OK (SDK 10.0.402, locked restore, Release build, tests, format)`, total 2240, failed 0, skipped 0.
 - Native test project after the last code change: 334 passed, 0 failed, 0 skipped.
-- Lock files: the `OmpOS.Sessions` reference in `apps/OmpOS.Native/OmpOS.Native.csproj` broke the locked restore (NU1004). The lock files were regenerated with `dotnet restore OmpOS.Linux.slnf --force-evaluate`, and `dotnet restore OmpOS.Linux.slnf --locked-mode` then passes.
+- Lock files: the `Autonogrammer.Sessions` reference in `apps/Autonogrammer.Native/Autonogrammer.Native.csproj` broke the locked restore (NU1004). The lock files were regenerated with `dotnet restore Autonogrammer.Linux.slnf --force-evaluate`, and `dotnet restore Autonogrammer.Linux.slnf --locked-mode` then passes.
 
 ## Files changed
 
-- Production: `apps/OmpOS.Native/Program.cs`, `App.axaml.cs`, `MainWindow.axaml.cs`, `Engine/EngineComposition.cs`, `Engine/EnginePromptChannel.cs` (new), `Engine/EngineRunInput.cs` (new), `Engine/UnconnectedRunInput.cs`, `Views/ComposerView.axaml.cs`, `OmpOS.Native.csproj`, and the regenerated `packages.lock.json` files.
-- Shared: `src/OmpOS.Contracts` (user-message payload; `UserMessageBlock` moved to `Ui`), `src/OmpOS.Presentation/Runs/` (scheduler and `IRunInput`), `src/OmpOS.Sessions/HarnessEventProjection.cs`, `src/OmpOS.GenUi/UiFolder.cs`, `src/OmpOS.EngineHost/RemoteEngineHost.cs` (explicit arm), `services/OmpOS.Api/Sse/StreamEventKind.cs`.
-- Tests: `tests/OmpOS.Native.Tests/Send/`, `tests/OmpOS.Native.Tests/RunControls/`, `tests/OmpOS.Presentation.Tests/`, `tests/OmpOS.Contracts.Tests/`, `tests/OmpOS.Sessions.Tests/`, `tests/OmpOS.UI.Tests/`.
+- Production: `apps/Autonogrammer.Native/Program.cs`, `App.axaml.cs`, `MainWindow.axaml.cs`, `Engine/EngineComposition.cs`, `Engine/EnginePromptChannel.cs` (new), `Engine/EngineRunInput.cs` (new), `Engine/UnconnectedRunInput.cs`, `Views/ComposerView.axaml.cs`, `Autonogrammer.Native.csproj`, and the regenerated `packages.lock.json` files.
+- Shared: `src/Autonogrammer.Contracts` (user-message payload; `UserMessageBlock` moved to `Ui`), `src/Autonogrammer.Presentation/Runs/` (scheduler and `IRunInput`), `src/Autonogrammer.Sessions/HarnessEventProjection.cs`, `src/Autonogrammer.GenUi/UiFolder.cs`, `src/Autonogrammer.EngineHost/RemoteEngineHost.cs` (explicit arm), `services/Autonogrammer.Api/Sse/StreamEventKind.cs`.
+- Tests: `tests/Autonogrammer.Native.Tests/Send/`, `tests/Autonogrammer.Native.Tests/RunControls/`, `tests/Autonogrammer.Presentation.Tests/`, `tests/Autonogrammer.Contracts.Tests/`, `tests/Autonogrammer.Sessions.Tests/`, `tests/Autonogrammer.UI.Tests/`.
 - Parity: `docs/parity/session-chat-parity.md` (row 45).
 - Records: `21-CONTEXT.md`, `21-01-PLAN.md`, `21-VERIFICATION.md`, `21-SUMMARY.md`.
 

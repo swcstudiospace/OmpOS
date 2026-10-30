@@ -1,0 +1,15 @@
+@namespace Autonogrammer.UI.Components.Shell
+<PageTitle>@Text</PageTitle>
+
+@code {
+    /// <summary>Gets the document title, built with <see cref="ViewTitles.Compose"/>.</summary>
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+
+    /// <summary>Gets the announcer that reads the title out after a navigation; titles are not announced without one.</summary>
+    [CascadingParameter]
+    public RouteAnnouncer? Announcer { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet() => Announcer?.Report(Text);
+}

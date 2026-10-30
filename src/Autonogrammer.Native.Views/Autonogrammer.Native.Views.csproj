@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Autonogrammer.Native</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" />
+    <PackageReference Include="AvaloniaEdit.TextMate" />
+    <PackageReference Include="Iciclecreek.Avalonia.Terminal" />
+    <PackageReference Include="Markdig" />
+    <PackageReference Include="TextMateSharp.Grammars" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
+    <ProjectReference Include="../Autonogrammer.GenUi/Autonogrammer.GenUi.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.AgentLoop/Autonogrammer.Harness.AgentLoop.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Completion/Autonogrammer.Harness.Completion.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Mcp/Autonogrammer.Harness.Mcp.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.OmpLauncher/Autonogrammer.Harness.OmpLauncher.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Plugins/Autonogrammer.Harness.Plugins.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Terminal/Autonogrammer.Harness.Terminal.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Workspace/Autonogrammer.Harness.Workspace.csproj" />
+    <ProjectReference Include="../Autonogrammer.Presentation/Autonogrammer.Presentation.csproj" />
+    <ProjectReference Include="../Autonogrammer.Sessions/Autonogrammer.Sessions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Autonogrammer.Native" />
+    <InternalsVisibleTo Include="Autonogrammer.Native.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/Fonts/**/*.ttf" />
+    <AvaloniaResource Include="Assets/Fonts/**/OFL.txt" />
+    <AvaloniaResource Include="Assets/Brand/*.png" />
+  </ItemGroup>
+
+</Project>

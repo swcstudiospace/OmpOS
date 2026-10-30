@@ -1,0 +1,303 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:copy="clr-namespace:Autonogrammer.Presentation.AgentPanel;assembly=Autonogrammer.Presentation"
+             xmlns:local="clr-namespace:Autonogrammer.Native.Views.AgentPanel"
+             x:Class="Autonogrammer.Native.Views.AgentPanel.AgentRailView"
+             x:DataType="copy:SessionCatalogModel"
+             Padding="0">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+
+    <!-- The row (spec 4.3). Hover, selected, pressed and focus are drawn on Border.row-frame inside the row, not on the ListBoxItem, so the
+         group header above the first row of a group stays outside the selection pill. The item itself is a bare, transparent holder. -->
+    <Style Selector="ListBoxItem">
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="ListBoxItem:selected, ListBoxItem:focus-visible">
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:pressed /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    </Style>
+
+    <Style Selector="Border.row-frame">
+      <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.SessionRowMinHeight}" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Control}" />
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover Border.row-frame">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Hover}" />
+    </Style>
+    <Style Selector="ListBoxItem:pressed Border.row-frame">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceActive}" />
+    </Style>
+    <!-- Selected: the Selected fill, a 2 px AccentPurple bar on the left and a heavier title. The padding gives up the bar's 2 px. -->
+    <Style Selector="ListBoxItem:selected Border.row-frame, ListBoxItem:selected:pointerover Border.row-frame">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Selected}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="2,0,0,0" />
+      <Setter Property="Padding" Value="6,6,8,6" />
+      <Setter Property="CornerRadius" Value="0,6,6,0" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:pressed Border.row-frame">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceActive}" />
+    </Style>
+    <Style Selector="TextBlock.row-title">
+      <Setter Property="FontWeight" Value="{DynamicResource Autonogrammer.Font.Weight.Medium}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected TextBlock.row-title">
+      <Setter Property="FontWeight" Value="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+    </Style>
+    <!-- The Status indicators switch off: the glyph of every row hides. The status words and the row's accessible text stay, so assistive technology still gets the status. -->
+    <Style Selector="ListBox.no-status-indicators local|StageIcon">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <!-- Keyboard focus: a 2 px AccentPurple ring on the whole row, whose padding gives up 1 px a side as the border grows. -->
+    <Style Selector="ListBoxItem:focus-visible Border.row-frame">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+      <Setter Property="Padding" Value="6,4" />
+      <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Control}" />
+    </Style>
+
+    <!-- The labels of the rail buttons are text blocks of their own: the primary label sits on the accent, the ghost label rests muted and takes the body colour on hover. -->
+    <Style Selector="Button.primary TextBlock.btn-label">
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.AccentPurpleOn}" />
+    </Style>
+    <Style Selector="Button.ghost TextBlock.btn-label">
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+    </Style>
+    <Style Selector="Button.ghost:pointerover TextBlock.btn-label, Button.ghost:pressed TextBlock.btn-label">
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+    </Style>
+    <Style Selector="Button.ghost Path.btn-glyph">
+      <Setter Property="Stroke" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+    </Style>
+    <Style Selector="Button.ghost:pointerover Path.btn-glyph, Button.ghost:pressed Path.btn-glyph">
+      <Setter Property="Stroke" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- Keyboard order follows XAML order: New agent, New omp terminal, Filter, the agent list (one stop; Up and Down move the selection). -->
+  <DockPanel>
+
+    <StackPanel DockPanel.Dock="Top"
+                Spacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                Margin="0,0,0,8">
+
+      <!-- The primary action of the rail: the label on the left, its shortcut in a quiet keyboard chip on the right. The chip text is
+           built from the gesture in code, so it is never a literal. -->
+      <Button x:Name="NewAgentButton"
+              Classes="primary"
+              HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Stretch"
+              MinHeight="{DynamicResource Autonogrammer.Size.ControlHeight}"
+              AutomationProperties.Name="{x:Static copy:AgentPanelCopy.NewAgent}"
+              ToolTip.Tip="{x:Static local:AgentPanelViewText.NewAgentTooltip}">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Classes="btn-label"
+                     Text="{x:Static copy:AgentPanelCopy.NewAgent}"
+                     VerticalAlignment="Center"
+                     TextTrimming="CharacterEllipsis" />
+          <Border Grid.Column="1"
+                  Classes="kbd"
+                  VerticalAlignment="Center">
+            <TextBlock x:Name="NewAgentKeys" />
+          </Border>
+        </Grid>
+      </Button>
+
+      <Button x:Name="NewTerminalButton"
+              Classes="ghost sm"
+              HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Stretch"
+              AutomationProperties.Name="{x:Static copy:AgentPanelCopy.NewTerminal}"
+              ToolTip.Tip="{x:Static copy:AgentPanelCopy.NewTerminalTooltip}">
+        <Grid ColumnDefinitions="Auto,*,Auto"
+              ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+          <Path Classes="btn-glyph"
+                Data="M2.5 4l4 4-4 4M8 12.5h5.5"
+                Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                VerticalAlignment="Center"
+                Stretch="Uniform"
+                StrokeThickness="1.5"
+                StrokeLineCap="Round"
+                StrokeJoin="Round"
+                AutomationProperties.AccessibilityView="Raw" />
+          <TextBlock Grid.Column="1"
+                     Classes="btn-label"
+                     Text="{x:Static copy:AgentPanelCopy.NewTerminal}"
+                     VerticalAlignment="Center"
+                     TextTrimming="CharacterEllipsis" />
+          <Border Grid.Column="2"
+                  Classes="kbd"
+                  VerticalAlignment="Center">
+            <TextBlock x:Name="NewTerminalKeys" />
+          </Border>
+        </Grid>
+      </Button>
+
+      <!-- The filter: a 28 px search box with a magnifier glyph inside on the left. -->
+      <TextBox x:Name="AgentFilter"
+               Classes="search sm"
+               Margin="0,4,0,0"
+               Text="{CompiledBinding Filter, Mode=TwoWay}"
+               PlaceholderText="{x:Static copy:AgentPanelCopy.FilterPlaceholder}"
+               AutomationProperties.Name="{x:Static local:AgentPanelViewText.FilterName}">
+        <TextBox.InnerLeftContent>
+          <Path Classes="tone-secondary"
+                Data="M7 2.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9ZM10.5 10.5 14 14"
+                Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                Margin="8,0,0,0"
+                Stretch="Uniform"
+                StrokeThickness="1.5"
+                StrokeLineCap="Round"
+                StrokeJoin="Round"
+                AutomationProperties.AccessibilityView="Raw" />
+        </TextBox.InnerLeftContent>
+      </TextBox>
+
+    </StackPanel>
+
+    <!-- The state of the rail: loading, error, empty, or no match for the filter. It is plain text, not a tab stop. -->
+    <StackPanel x:Name="StatePanel"
+                DockPanel.Dock="Top"
+                Margin="8,12"
+                Spacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                IsVisible="False">
+      <TextBlock x:Name="StateHeading"
+                 Classes="strong"
+                 TextWrapping="Wrap" />
+      <TextBlock x:Name="StateBody"
+                 Classes="muted small"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+
+    <ListBox x:Name="AgentRows"
+             Focusable="True"
+             SelectionMode="Single"
+             AutomationProperties.Name="{x:Static local:AgentPanelViewText.AgentSessionsName}">
+
+      <ListBox.ContextMenu>
+        <ContextMenu x:Name="RowMenu"
+                     AutomationProperties.Name="{x:Static local:AgentPanelViewText.AgentActionsName}">
+          <MenuItem x:Name="ResumeItem"
+                    Header="{x:Static copy:AgentPanelCopy.ResumeAgent}"
+                    AutomationProperties.Name="{x:Static copy:AgentPanelCopy.ResumeAgent}" />
+          <MenuItem x:Name="ReopenItem"
+                    Header="{x:Static copy:AgentPanelCopy.ReopenAgent}"
+                    AutomationProperties.Name="{x:Static copy:AgentPanelCopy.ReopenAgent}" />
+          <MenuItem x:Name="CloseItem"
+                    Header="{x:Static copy:AgentPanelCopy.CloseAgent}"
+                    AutomationProperties.Name="{x:Static copy:AgentPanelCopy.CloseAgent}" />
+        </ContextMenu>
+      </ListBox.ContextMenu>
+
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="copy:AgentRow">
+          <StackPanel>
+
+            <!-- The group label, on the first row of a group only: Small 12 weight 500 in sentence case. It has no hit area and is raw to
+                 assistive technology. -->
+            <TextBlock Text="{CompiledBinding GroupHeader}"
+                       IsVisible="{CompiledBinding IsGroupStart}"
+                       Classes="muted small strong"
+                       Height="24"
+                       Margin="8,8,0,0"
+                       VerticalAlignment="Center"
+                       IsHitTestVisible="False"
+                       AutomationProperties.AccessibilityView="Raw" />
+
+            <!-- The row: a status glyph, then two lines. Line 1 is the title and the time; line 2 is the status words in their tone, then
+                 the long-running flag, the task tag and the terminal tag. -->
+            <Border Classes="row-frame">
+              <Grid ColumnDefinitions="Auto,*"
+                    ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+                <local:StageIcon IconKey="{CompiledBinding IconKey}"
+                                 VerticalAlignment="Top"
+                                 Margin="0,1,0,0" />
+
+                <StackPanel Grid.Column="1">
+
+                  <Grid ColumnDefinitions="*,Auto"
+                        ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+                    <TextBlock Classes="row-title"
+                               Text="{CompiledBinding Title}"
+                               TextTrimming="CharacterEllipsis"
+                               MaxLines="1" />
+                    <StackPanel Grid.Column="1"
+                                VerticalAlignment="Center">
+                      <TextBlock Text="{CompiledBinding LastActivityText}"
+                                 IsVisible="{CompiledBinding !IsStale}"
+                                 Classes="muted small"
+                                 TextWrapping="NoWrap" />
+                      <TextBlock Text="{CompiledBinding QuietText}"
+                                 IsVisible="{CompiledBinding IsStale}"
+                                 Classes="tone-warning small"
+                                 TextWrapping="NoWrap" />
+                    </StackPanel>
+                  </Grid>
+
+                  <WrapPanel Orientation="Horizontal"
+                             ItemSpacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                             LineSpacing="{DynamicResource Autonogrammer.Gap.Xxs}">
+
+                    <local:ToneTextBlock Text="{CompiledBinding StatusText}"
+                                         Tone="{CompiledBinding Status, Converter={x:Static local:StatusGlyphs.RowTone}}"
+                                         FontSize="{DynamicResource Autonogrammer.Font.Size.Small}"
+                                         VerticalAlignment="Center"
+                                         TextWrapping="NoWrap" />
+
+                    <TextBlock Text="{x:Static local:AgentPanelViewText.LongRunning}"
+                               IsVisible="{CompiledBinding IsLongRunning}"
+                               Classes="muted small"
+                               VerticalAlignment="Center" />
+
+                    <TextBlock Text="{CompiledBinding TaskTag}"
+                               IsVisible="{CompiledBinding TaskTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               Classes="muted mono"
+                               VerticalAlignment="Center" />
+
+                    <Border Classes="chip-flat"
+                            IsVisible="{CompiledBinding IsTerminal}"
+                            Padding="0"
+                            VerticalAlignment="Center">
+                      <TextBlock Text="{x:Static copy:AgentPanelCopy.TerminalTag}"
+                                 Classes="muted mono"
+                                 VerticalAlignment="Center"
+                                 TextWrapping="NoWrap" />
+                    </Border>
+
+                  </WrapPanel>
+
+                </StackPanel>
+              </Grid>
+            </Border>
+
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+
+    </ListBox>
+
+  </DockPanel>
+
+</UserControl>

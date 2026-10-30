@@ -1,0 +1,28 @@
+@namespace Autonogrammer.UI.Components.Thread
+@using Autonogrammer.Presentation.AgentPanel
+<div class="autonogrammer-note-list">
+    <h4 class="autonogrammer-note-list-heading">@List.Header</h4>
+    @if (List.IsEmpty)
+    {
+        <p class="autonogrammer-note-empty">@List.EmptyText</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var note in List.Visible)
+            {
+                <li class="autonogrammer-note"><span class="autonogrammer-note-text">@note.DisplayText</span> <span class="autonogrammer-note-meta">@note.MetaText</span></li>
+            }
+        </ul>
+        @if (List.MoreText is { } more)
+        {
+            <p class="autonogrammer-note-more">@more</p>
+        }
+    }
+</div>
+
+@code {
+    /// <summary>Gets the notes to list.</summary>
+    [Parameter, EditorRequired]
+    public ContextNoteList List { get; set; } = null!;
+}

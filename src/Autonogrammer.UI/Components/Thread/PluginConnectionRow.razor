@@ -1,0 +1,15 @@
+@namespace Autonogrammer.UI.Components.Thread
+@using Autonogrammer.Presentation.AgentPanel
+@using Autonogrammer.UI.Components.Rail
+<span class="autonogrammer-pills">
+    @foreach (var pill in Pills)
+    {
+        <span class="autonogrammer-pill" data-source="@pill.Source.ToString().ToLowerInvariant()" data-tone="@StatusGlyphs.ToneOf(pill.IconKey)"><StatusGlyph IconKey="@pill.IconKey" /><span class="autonogrammer-pill-text">@pill.Text</span>@(" ")</span>
+    }
+</span>
+
+@code {
+    /// <summary>Gets the pills of the pipeline, one per plugin source in pipeline order. Each pill is a glyph and the plugin's status in words.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<PipelinePill> Pills { get; set; } = [];
+}

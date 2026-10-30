@@ -1,0 +1,96 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:hk="clr-namespace:Autonogrammer.Presentation.Hooks;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Hooks.HookRunLogView"
+             x:DataType="hk:HookRunLogModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The bounded hook run log: the newest runs first, a filter by outcome, and a button that copies the visible rows as JSON.
+       Every text of a row was redacted by the model; the view draws what the model gives it and nothing else. -->
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+    <TextBlock Classes="settings-section"
+               Text="{x:Static hk:HooksCopy.RunLogHeading}" />
+    <TextBlock Classes="settings-help"
+               Text="{x:Static hk:HooksCopy.RunLogDescription}" />
+
+    <Grid ColumnDefinitions="Auto,*,Auto"
+          ColumnSpacing="8">
+      <TextBlock Grid.Column="0"
+                 Classes="settings-label"
+                 VerticalAlignment="Center"
+                 Text="{x:Static hk:HooksCopy.RunLogFilterLabel}" />
+      <ComboBox x:Name="FilterBox"
+                Grid.Column="1"
+                HorizontalAlignment="Stretch"
+                ItemsSource="{CompiledBinding FilterChoices}"
+                SelectedIndex="{CompiledBinding SelectedFilterIndex, Mode=TwoWay}"
+                AutomationProperties.Name="{x:Static hk:HooksCopy.RunLogFilterLabel}" />
+      <Button x:Name="CopyButton"
+              Grid.Column="2"
+              Content="{x:Static hk:HooksCopy.CopyLogLabel}"
+              AutomationProperties.Name="{x:Static hk:HooksCopy.CopyLogLabel}"
+              Click="OnCopyClick" />
+    </Grid>
+
+    <TextBlock x:Name="EmptyText"
+               Classes="muted settings-body"
+               IsVisible="{CompiledBinding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               Text="{CompiledBinding EmptyText}" />
+
+    <ItemsControl x:Name="LogRows"
+                  ItemsSource="{CompiledBinding Rows}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="hk:HookLogRow">
+          <Border Classes="settings-row"
+                  AutomationProperties.Name="{CompiledBinding AutomationName}">
+            <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+              <Grid ColumnDefinitions="Auto,*,Auto"
+                    ColumnSpacing="8">
+                <TextBlock Grid.Column="0"
+                           Classes="settings-mono"
+                           Text="{CompiledBinding TimeText}" />
+                <TextBlock Grid.Column="1"
+                           Classes="settings-label"
+                           Text="{CompiledBinding HookName}" />
+                <Border Grid.Column="2"
+                        Classes="chip">
+                  <TextBlock Classes="settings-chip-text"
+                             Text="{CompiledBinding OutcomeText}" />
+                </Border>
+              </Grid>
+              <StackPanel Orientation="Horizontal"
+                          Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+                <TextBlock Classes="settings-help"
+                           Text="{CompiledBinding EventName}" />
+                <TextBlock Classes="settings-help"
+                           Text="{CompiledBinding DurationText}" />
+              </StackPanel>
+              <TextBlock Classes="tone-warning settings-body"
+                         IsVisible="{CompiledBinding UserMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                         Text="{CompiledBinding UserMessage}" />
+              <SelectableTextBlock Classes="settings-selectable settings-mono"
+                                   IsVisible="{CompiledBinding Output, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Text="{CompiledBinding Output}"
+                                   AutomationProperties.Name="{x:Static hk:HooksCopy.OutputLabel}" />
+              <SelectableTextBlock Classes="settings-selectable settings-mono"
+                                   IsVisible="{CompiledBinding ErrorOutput, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Text="{CompiledBinding ErrorOutput}"
+                                   AutomationProperties.Name="{x:Static hk:HooksCopy.ErrorOutputLabel}" />
+              <TextBlock Classes="settings-help"
+                         IsVisible="{CompiledBinding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                         Text="{CompiledBinding Note}" />
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+  </StackPanel>
+
+</UserControl>

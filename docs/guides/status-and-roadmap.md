@@ -1,5 +1,5 @@
 ---
-description: "What OmpOS has built, what is partial and what is blocked as of v0.15.0, the roadmap of the release, and what needs the owner."
+description: "What Autonogrammer has built, what is partial and what is blocked as of v0.15.0, the roadmap of the release, and what needs the owner."
 ---
 
 # Status and roadmap
@@ -19,12 +19,12 @@ The row-by-row truth is the [Cursor parity audit of 2026-10-28](../quality/curso
 | Web Demo deployed (Vercel production alias of project `ompos-web`) | <https://ompos-web.vercel.app>: a static bundle, simulated engine, no backend, no secret. Captured with headless Chrome from the live URL: no console error, no failed request ([evidence](../runbooks/evidence/web-app-2026-10-28/README.md)). |
 | Web smoke (`scripts/web-smoke/smoke-demo.mjs`, inside the gate) | 68 axe runs (Light and Dark at 1440, 1024 and 390 px, every screen), 0 violations, no console error or failed request, no horizontal scroll; the drawer traps focus and closes on Escape; the theme persists. |
 | Live ssh | A real `omp acp` 18.12.6 through a loopback `sshd` passed ([evidence](../runbooks/evidence/remote-ssh-live-2026-10-28/README.md)). No prompt turn. |
-| Live podman | `OMPOS_LIVE_PODMAN=1` against an alpine image passed in the Wave 4 tree after two defects were fixed. |
+| Live podman | `AUTONOGRAMMER_LIVE_PODMAN=1` against an alpine image passed in the Wave 4 tree after two defects were fixed. |
 | Services | Api.IntegrationTests 1027/1027, Coordination 32 and Sessions.Postgres 58 passed on the final tree against throwaway podman services. |
-| Release gate: `./bootstrap.sh` on a clean worktree of `e24e6851` | Exit 0: secret scan, plugin node tests (69 and 76), repository checks, licence check, warnings-as-errors build, `dotnet test OmpOS.Linux.slnf` 12215 tests, 0 failed, 2 skipped (two tests that need a non-root user), 25 minutes with throwaway TimescaleDB and Dragonfly under podman, `dotnet format` clean, web smoke ([log](../runbooks/evidence/bootstrap-gate-2026-10-28-e24e6851.log); its header records the two earlier runs of the branch that failed and why). |
+| Release gate: `./bootstrap.sh` on a clean worktree of `e24e6851` | Exit 0: secret scan, plugin node tests (69 and 76), repository checks, licence check, warnings-as-errors build, `dotnet test Autonogrammer.Linux.slnf` 12215 tests, 0 failed, 2 skipped (two tests that need a non-root user), 25 minutes with throwaway TimescaleDB and Dragonfly under podman, `dotnet format` clean, web smoke ([log](../runbooks/evidence/bootstrap-gate-2026-10-28-e24e6851.log); its header records the two earlier runs of the branch that failed and why). |
 | Push, tag and release | `main` fast-forwarded from `04e80d1` to `9d4e0075`; the annotated tag `v0.15.0` points at it; the `release` workflow (run 40758275112, 31 s) published the [GitHub Release v0.15.0](https://github.com/swcstudiospace/OmpOS/releases/tag/v0.15.0). |
 | Cloud worker image | The worker image under podman, 14 of 14 checks ([evidence](../runbooks/evidence/cloud-worker-container-2026-10-28/README.md)); see the next row for Railway. |
-| Staged worker on Railway | The `ompos-worker` service of the private Railway project `ompos-staging` (no domain, no TCP proxy) was built by Railway from the released tree, passed its `/healthz` check, and a real `omp acp` 18.12.5 answered `initialize` and `session/new` inside the container through the JWT-gated bridge ([evidence](../runbooks/evidence/railway-ompos-worker-2026-10-28.md)). No model turn, no clone, no API, no sleep and wake test. The deploy refusal of 2026-10-21 did not recur. |
+| Staged worker on Railway | The `ompos-worker` service of the private Railway project `ompos-staging` (no domain, no TCP proxy) was built by Railway from the released tree, passed its `/healthz` check, and a real `omp acp` 18.12.5 answered `initialize` and `session/new` inside the container through the JWT-gated bridge ([evidence](../runbooks/evidence/railway-autonogrammer-worker-2026-10-28.md)). No model turn, no clone, no API, no sleep and wake test. The deploy refusal of 2026-10-21 did not recur. |
 | Desktop on Linux | Xvfb run of the real app: 21 Settings pages render; two layout defects found and fixed ([evidence](../runbooks/evidence/desktop-app-2026-10-28/README.md)). |
 | GitHub settings | Applied with `scripts/github/apply-repo-settings.sh --apply` and read back after the push ([evidence](../runbooks/evidence/github-setup-2026-10-28/README.md)): description, homepage (the Demo URL), 15 topics, discussions on, wiki off, delete branch on merge, private vulnerability reporting, Dependabot security updates, secret scanning with push protection, 22 labels. GitHub detects the licence as AGPL-3.0; the community profile health is 100; no ruleset and no branch protection on `main`, on purpose. |
 
@@ -72,7 +72,7 @@ Milestone v0.15.0 ("Cursor completeness, brand and public launch") covers phases
 ## What needs the owner
 
 - **GitBook:** connect the space and publish the site ([steps](../runbooks/gitbook-publish.md), OQ-101).
-- **GitHub:** upload the social preview image (`assets/brand/ompos-social-preview.png`, OQ-170) and create the discussion categories (OQ-109); discussions are switched on, categories need the web UI. The settings are applied and read back ([evidence](../runbooks/evidence/github-setup-2026-10-28/README.md)).
+- **GitHub:** upload the social preview image (`assets/brand/autonogrammer-social-preview.png`, OQ-170) and create the discussion categories (OQ-109); discussions are switched on, categories need the web UI. The settings are applied and read back ([evidence](../runbooks/evidence/github-setup-2026-10-28/README.md)).
 - **Tags:** the older milestone tags `v0.9.1` to `v0.14.0` do not exist, so the `CHANGELOG.md` compare links of those milestones 404; tag them if wanted (OQ-108).
 - **CI runners:** make rootless podman work inside the `omega-ci` runner container so the `ci` workflow gets past 'Start test services' (OQ-168).
 - **Notion and Linear:** authorise the Notion connection (`ultrathink-mcp auth login notion`); the tracker rows of the Ultrathink graph `ut-mvrb4grd-ff38e1ff` stay incomplete (OQ-169).
@@ -81,7 +81,7 @@ Milestone v0.15.0 ("Cursor completeness, brand and public launch") covers phases
 - **Windows, macOS and Android runs:** the desktop on Windows and macOS, the Android head on a device or emulator (OQ-74).
 - **Sign-in authority for a public API** (OD-03), and the Railway deploy decisions: what else may be deployed beyond the staged worker (OQ-100), whether to keep the `ompos-staging` project, which bills usage (OQ-171) and whether Railway permits an agent-driven desktop (OQ-73).
 - **Licence of `agent-swarm` and `agent-substrate`** (OQ-102).
-- **Trademark clearance** of the name "OmpOS" (none has been made, see [Licensing](../licensing.md)) and sign-off of the logo.
+- **Trademark clearance** of the name "Autonogrammer" (none has been made, see [Licensing](../licensing.md)) and sign-off of the logo.
 - **Code of conduct:** a contact for conduct reports beyond GitHub's private reporting.
 
 Every unverified external fact and open decision is in the [open questions register](../open-questions.md).

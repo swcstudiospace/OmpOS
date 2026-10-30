@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mcp="clr-namespace:Autonogrammer.Native.Views.Mcp"
+             x:Class="Autonogrammer.Native.Views.Mcp.McpToolsView">
+
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="{DynamicResource Autonogrammer.Space.Sm}"
+                Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+      <TextBlock x:Name="SessionText"
+                 Classes="muted"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="MCP session" />
+
+      <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <TextBlock Text="Tools by server"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+        <TextBlock x:Name="NoToolsText"
+                   Classes="muted"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   Text="No MCP tools are registered." />
+        <ItemsControl x:Name="ServerGroups"
+                      x:FieldModifier="internal"
+                      AutomationProperties.Name="MCP tools by server">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="mcp:McpServerGroup">
+              <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                          Margin="{DynamicResource Autonogrammer.Space.Xs}">
+                <TextBlock Text="{CompiledBinding ServerName}"
+                           FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+                <ItemsControl ItemsSource="{CompiledBinding Tools}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="mcp:McpToolRow">
+                      <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+                        <ToggleSwitch Content="{CompiledBinding ToolName}"
+                                      IsChecked="{CompiledBinding Enabled, Mode=TwoWay}"
+                                      AutomationProperties.Name="{CompiledBinding Name}" />
+                        <TextBlock Classes="muted"
+                                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                                   TextWrapping="Wrap"
+                                   Text="{CompiledBinding Description}" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <TextBlock Text="Offered to the model"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+        <TextBlock x:Name="NoOfferedText"
+                   Classes="muted"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   Text="No tool is offered for this session." />
+        <ListBox x:Name="OfferedRows"
+                 x:FieldModifier="internal"
+                 MaxHeight="200"
+                 AutomationProperties.Name="Offered tools">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="AutomationProperties.Name" Value="{ReflectionBinding Label}" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="mcp:McpOfferedRow">
+              <TextBlock Text="{CompiledBinding Label}" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel>
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

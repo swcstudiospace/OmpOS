@@ -2,7 +2,7 @@
 
 - Status: Proposed. The PTY runner and the panel pass their Linux tests. The three-platform spike and the accessibility decision are open (see Blockers).
 - Date: 2026-10-22
-- Deciders: ompos-maintainers
+- Deciders: autonogrammer-maintainers
 - Scope: the embedded terminal control and the pseudo-terminal (PTY) library for ADE-14, gated by risk R-1 (`docs/plans/ade-harness-plan.md`) and open question OQ-49 (`docs/open-questions.md`). Does not cover MCP, rules or search (ADE-16 to ADE-19).
 
 ## Context
@@ -18,9 +18,9 @@ Two decisions are open and remain open until a spike passes:
 1. Which terminal control and which PTY library ADE-14 adopts (OQ-49).
 2. Whether the control exposes the terminal to the accessibility trees (AT-SPI2 on Linux, UI Automation on Windows, NSAccessibility on macOS).
 
-The pairing Iciclecreek.Avalonia.Terminal 4.1.0 with Porta.Pty 2.2.3 is implemented for the Linux spike. `OmpOS.Harness.Terminal` holds `PtyProcessRunner`, which uses Porta.Pty. `apps/OmpOS.Native/Views/Terminal` holds the panel, which uses the control. Neither decision is closed: the pairing is not adopted until the spike passes on all three platforms.
+The pairing Iciclecreek.Avalonia.Terminal 4.1.0 with Porta.Pty 2.2.3 is implemented for the Linux spike. `Autonogrammer.Harness.Terminal` holds `PtyProcessRunner`, which uses Porta.Pty. `apps/Autonogrammer.Native/Views/Terminal` holds the panel, which uses the control. Neither decision is closed: the pairing is not adopted until the spike passes on all three platforms.
 
-What is decided now is the approval boundary, which does not depend on the control. `src/OmpOS.Harness.Terminal` holds a `TerminalGate` that:
+What is decided now is the approval boundary, which does not depend on the control. `src/Autonogrammer.Harness.Terminal` holds a `TerminalGate` that:
 
 - records each proposal as Pending and spawns nothing until it is approved;
 - rejects a working directory that resolves outside the workspace root, following symbolic links, before anything is recorded;
@@ -30,7 +30,7 @@ What is decided now is the approval boundary, which does not depend on the contr
 - bounds the captured standard output and standard error.
 - when run by the pseudo-terminal runner, starts the executable with its argument list through Porta.Pty, with no shell, in the explicit working directory, and streams the bounded output to an `IProcessOutputSink`. The pseudo-terminal merges standard error into the output.
 
-Process spawning lives only in `OmpOS.Harness.*` projects, as `BannedSymbols.NoProcess.txt` requires.
+Process spawning lives only in `Autonogrammer.Harness.*` projects, as `BannedSymbols.NoProcess.txt` requires.
 
 ## Candidates
 
@@ -104,7 +104,7 @@ This ADR stays Proposed. The Linux tests above pass, but the decision rule in Sp
 - `docs/plans/ade-harness-plan.md`: ADE-14 row and R-1.
 - `docs/open-questions.md`: OQ-49.
 - NuGet package pages, read 2026-10-22: `https://www.nuget.org/packages/Iciclecreek.Avalonia.Terminal/4.1.0`, `https://www.nuget.org/packages/SvcSystems.UI.Terminal/2.3.0`, `https://www.nuget.org/packages/Porta.Pty/2.2.3`.
-- Implementation and tests on Linux, Debug: `src/OmpOS.Harness.Terminal/` with `PtyProcessRunner` and `IProcessOutputSink`; `tests/OmpOS.Harness.Terminal.Tests/` (40 tests passing, 0 skipped, 2026-10-22); `apps/OmpOS.Native/Views/Terminal/`; `tests/OmpOS.Native.Tests/Terminal/` (13 panel tests passing on two consecutive runs, 2026-10-22).
+- Implementation and tests on Linux, Debug: `src/Autonogrammer.Harness.Terminal/` with `PtyProcessRunner` and `IProcessOutputSink`; `tests/Autonogrammer.Harness.Terminal.Tests/` (40 tests passing, 0 skipped, 2026-10-22); `apps/Autonogrammer.Native/Views/Terminal/`; `tests/Autonogrammer.Native.Tests/Terminal/` (13 panel tests passing on two consecutive runs, 2026-10-22).
 - Full Native test project (`dotnet test`, Debug, 2026-10-22): 147 tests, 147 passing, 0 failing, 0 skipped. The in-run resize test (`ResizingTheWindowDuringARunResizesThePseudoTerminal`) waits, bounded at about 20 seconds, for the pseudo-terminal to report the grid size the test writes after the layout settles; it passed three times run alone.
 
 ## Update 2026-10-26
@@ -113,4 +113,4 @@ The Status line above is unchanged: the control and PTY choice stays open, and c
 
 - [ADR-0013](ADR-0013-plugin-isolation.md) records the isolation boundary for plugin hooks. It shares one residual risk with this record: a path or executable can change between the check and the spawn.
 - The omp terminals that the application starts load the plugins of [ADR-0012](ADR-0012-agent-loop-plugins.md) (DR-2). This record does not cover them: its gate governs commands the user proposes, not the omp process.
-- The decision-record structure check, `tests/OmpOS.ArchitectureTests/DecisionRecordTests.cs`, applies from ADR-0007 up. This record is checked only for being listed in [README.md](README.md) and for naming the terminal topic.
+- The decision-record structure check, `tests/Autonogrammer.ArchitectureTests/DecisionRecordTests.cs`, applies from ADR-0007 up. This record is checked only for being listed in [README.md](README.md) and for naming the terminal topic.

@@ -1,5 +1,5 @@
 ---
-description: "How to apply the GitHub presentation, community health and release settings of the OmpOS repository with the gh CLI."
+description: "How to apply the GitHub presentation, community health and release settings of the Autonogrammer repository with the gh CLI."
 ---
 
 # GitHub setup runbook (Phase 52)
@@ -32,10 +32,10 @@ Applies the GitHub presentation, community health and release settings of `swcst
 
 ## What the scripts do
 
-`scripts/github/apply-repo-settings.sh` prints every command and runs none unless `--apply` is given. Options: `--repo OWNER/NAME`, `--homepage URL`, `--description TEXT`; the environment variables `OMPOS_REPO` and `OMPOS_HOMEPAGE` do the same. With `--apply` it:
+`scripts/github/apply-repo-settings.sh` prints every command and runs none unless `--apply` is given. Options: `--repo OWNER/NAME`, `--homepage URL`, `--description TEXT`; the environment variables `AUTONOGRAMMER_REPO` and `AUTONOGRAMMER_HOMEPAGE` do the same. With `--apply` it:
 
 1. sets the description and homepage (the homepage defaults to the repository URL until the docs site exists), turns Discussions on, the wiki off, and delete-branch-on-merge on (`gh repo edit`);
-2. replaces the topic list with the 15 topics: `ompos`, `omp`, `ai-agents`, `coding-agent`, `agent-workspace`, `cursor-alternative`, `ai-ide`, `dotnet`, `csharp`, `avalonia`, `blazor-webassembly`, `aspnet-core`, `mcp`, `kanban`, `agpl-3` (`PUT repos/{repo}/topics`);
+2. replaces the topic list with the 15 topics: `autonogrammer`, `omp`, `ai-agents`, `coding-agent`, `agent-workspace`, `cursor-alternative`, `ai-ide`, `dotnet`, `csharp`, `avalonia`, `blazor-webassembly`, `aspnet-core`, `mcp`, `kanban`, `agpl-3` (`PUT repos/{repo}/topics`);
 3. turns on private vulnerability reporting, Dependabot alerts and Dependabot security updates;
 4. turns on secret scanning and push protection (`PATCH repos/{repo}` with `security_and_analysis`);
 5. creates or updates every label in `.github/labels.yml` (`gh label create --force`).
@@ -55,11 +55,11 @@ It leaves the merge methods (squash, merge commit, rebase) as they are, and it c
 
 ## Manual steps (GitHub offers no API)
 
-- **Social preview.** Repository **Settings**, section **Social preview**, **Edit**, **Upload an image**, choose `assets/brand/ompos-social-preview.png` (made by the brand work in Phase 51; use the file's actual name if it differs). PNG, under 1 MB, 1280 by 640 pixels is best, an opaque background is recommended. Confirm with `gh api graphql -f query='{repository(owner:"swcstudiospace",name:"OmpOS"){usesCustomOpenGraphImage}}'`, which must return `true`.
+- **Social preview.** Repository **Settings**, section **Social preview**, **Edit**, **Upload an image**, choose `assets/brand/autonogrammer-social-preview.png` (made by the brand work in Phase 51; use the file's actual name if it differs). PNG, under 1 MB, 1280 by 640 pixels is best, an opaque background is recommended. Confirm with `gh api graphql -f query='{repository(owner:"swcstudiospace",name:"Autonogrammer"){usesCustomOpenGraphImage}}'`, which must return `true`.
 - **Discussion categories.** The script turns Discussions on; GitHub seeds default categories, and categories can only be created in the UI: **Discussions**, pencil beside **Categories**, **New category** (an emoji, a title, a description and a format: open-ended, Q&A or announcement). Proposal: Announcements (announcement), Q&A (Q&A, the target of the "Questions and ideas" link), Ideas, Show and tell, Providers and plans, Cloud agents and remote environments.
 - **About "Include in the home page".** Gear beside **About**: Releases on once the first release exists; Packages and Deployments off. These toggles have no API.
 - **Homepage.** It is the web Demo URL since 2026-10-28. Once the GitBook site or a custom domain exists, run the script again with `--homepage <url>`, or edit the field in the About gear; keep the Demo link in the README.
-- **Optional: CodeQL default setup.** Not configured by the script. `gh api repos/swcstudiospace/OmpOS/code-scanning/default-setup` shows `runner_type: "standard"`, a GitHub-hosted runner, which conflicts with the repository policy that every job runs on the labelled self-hosted pool (`[self-hosted, linux, x64, omega-ci]`, see `ci.yml`). Enable code scanning only if the default setup can be given that runner label, or write an advanced `codeql.yml` that uses exactly those labels. UNVERIFIED: whether the pool can run the CodeQL bundle (`gh api -X PATCH repos/swcstudiospace/OmpOS/code-scanning/default-setup -f state=configured ...` with a runner label is the command that would resolve it).
+- **Optional: CodeQL default setup.** Not configured by the script. `codeql.yml` is the advanced setup and runs on `ubuntu-24.04`. A GitHub default setup (`runner_type: "standard"`) no longer conflicts with the runner policy. Do not point it back at `[self-hosted, linux, x64, omega-ci]`.
 - **Optional: a minimal ruleset.** Only if the owner wants a floor. This ruleset blocks branch deletion and force pushes on `main` and still allows fast-forward pushes. It is not in the script on purpose:
 
   ```sh
@@ -74,7 +74,7 @@ It leaves the merge methods (squash, merge commit, rebase) as they are, and it c
   JSON
   ```
 
-  Add the GitBook app and the owner as bypass actors if GitBook Git Sync is connected. Do not add required pull requests, required status checks, linear history or push restrictions: they reject direct fast-forward pushes and the runner pool has been offline.
+  Add the GitBook app and the owner as bypass actors if GitBook Git Sync is connected. Do not add required pull requests, required status checks, linear history or push restrictions: they reject direct fast-forward pushes.
 - **Secrets.** The release workflow needs no secret beyond the job's `GITHUB_TOKEN`. The CI secret `SUBMODULE_TOKEN` (read access to the private `swcstudiospace/substrate`) is separate and is documented in `docs/plugins.md`.
 
 ## Dependabot and the lock files
@@ -82,7 +82,7 @@ It leaves the merge methods (squash, merge commit, rebase) as they are, and it c
 Every project commits `packages.lock.json` and CI restores with `--locked-mode`. Dependabot's NuGet updater edits `Directory.Packages.props` and may not regenerate the lock files, so a Dependabot pull request can fail restore with `NU1004`. Relock it before merging (`CI=true` switches locked mode on, so it is switched off for this command):
 
 ```sh
-dotnet restore OmpOS.Linux.slnf --force-evaluate -p:RestoreLockedMode=false
+dotnet restore Autonogrammer.Linux.slnf --force-evaluate -p:RestoreLockedMode=false
 ```
 
 Commit the lock-file changes to the Dependabot branch (`git fetch`, `git checkout <branch>`, relock, commit with `-s`, push). Watch the first Dependabot pull request: if relocking by hand every week is too costly, add a relock job to a workflow or ask Dependabot to ignore the packages that cause trouble. UNVERIFIED: how Dependabot behaves with this repository's lock files; the first pull request resolves it.
@@ -97,11 +97,11 @@ Done 2026-10-28 (recorded): the steps below ran for v0.15.0 and the Release exis
 4. Fast-forward push `main` (`git merge-base --is-ancestor origin/main HEAD` must succeed), then tag and push the tag:
 
    ```sh
-   git tag -a v0.15.0 -m "OmpOS v0.15.0"
+   git tag -a v0.15.0 -m "Autonogrammer v0.15.0"
    git push origin v0.15.0
    ```
 
-5. The `release` workflow runs on the self-hosted pool: it checks the tag format, that the tag equals `VersionPrefix`, that the commit is reachable from `origin/main`, runs the changelog check, takes the `## [0.15.0]` section as the release notes and creates the GitHub Release (a tag with a `-suffix`, such as `v0.15.0-rc.1`, becomes a pre-release and uses the `0.15.0` notes). If the pool is offline, create the release by hand with the same notes: `gh release create v0.15.0 --verify-tag --title "OmpOS v0.15.0" --notes-file notes.md`.
+5. The `release` workflow runs on the self-hosted pool: it checks the tag format, that the tag equals `VersionPrefix`, that the commit is reachable from `origin/main`, runs the changelog check, takes the `## [0.15.0]` section as the release notes and creates the GitHub Release (a tag with a `-suffix`, such as `v0.15.0-rc.1`, becomes a pre-release and uses the `0.15.0` notes). If the pool is offline, create the release by hand with the same notes: `gh release create v0.15.0 --verify-tag --title "Autonogrammer v0.15.0" --notes-file notes.md`.
 6. Verify: `gh release view v0.15.0` and `gh run list --workflow release.yml --limit 1`.
 
 GitHub's automatic "Source code" archives never contain submodules, and `plugins/agent-swarm` and `plugins/agent-substrate` carry no licence file: do not attach an archive that bundles them to the public release without a licence decision (see OQ-93 and the licensing facts in the research file).

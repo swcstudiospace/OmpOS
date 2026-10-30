@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Blocks.UnknownBlockView">
+
+  <!-- Unsupported content stays one collapsed disclosure, inside a sunken card; the raw text opens in the mono face. -->
+  <Border Classes="card-sunken"
+          Padding="8,2">
+    <Expander x:Name="Disclosure"
+              IsExpanded="False"
+              AutomationProperties.Name="Unsupported content" />
+  </Border>
+
+</UserControl>

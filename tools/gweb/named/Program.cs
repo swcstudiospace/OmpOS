@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Browser;
 
-namespace OmpOS.Gweb.Named;
+namespace Autonogrammer.Gweb.Named;
 
 internal static class Program
 {

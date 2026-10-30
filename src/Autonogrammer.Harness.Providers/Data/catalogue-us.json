@@ -1,0 +1,1574 @@
+{
+  "rows": [
+    {
+      "id": "openai",
+      "displayName": "OpenAI API",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "openai",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "routes": [
+        {
+          "id": "responses",
+          "api": "openai-responses",
+          "baseUrl": "https://api.openai.com/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        },
+        {
+          "id": "chat",
+          "api": "openai-completions",
+          "baseUrl": "https://api.openai.com/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://developers.openai.com/api/reference/overview",
+      "keyPageUrl": null,
+      "sourceUrl": "https://developers.openai.com/api/reference/overview",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "Key page https://platform.openai.com/api-keys not verified (answered 403 on 2026-10-22).",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "openai-codex",
+      "displayName": "ChatGPT sign-in for Codex",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "codingPlan",
+      "ompProviderId": "openai-codex",
+      "apiKeyEnv": null,
+      "routes": [],
+      "urlVariables": [],
+      "docsUrl": "https://learn.chatgpt.com/docs/auth",
+      "keyPageUrl": null,
+      "sourceUrl": "https://learn.chatgpt.com/docs/auth",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Codex backend host not documented on the pages read; credential is the omp OAuth login, Autonogrammer never stores it. omp catalogue: https://chatgpt.com/backend-api (openai-codex-responses).",
+      "loginCommand": "/login openai-codex",
+      "plan": {
+        "ruleText": "No usage rule found in the pages read; check the vendor terms before use. Quota windows and third-party-tool policy not found on the pages opened.",
+        "ruleSourceUrl": null,
+        "interactiveOnly": false,
+        "cloudDefaultPayAsYouGo": true,
+        "separateKey": true,
+        "planUrl": "https://learn.chatgpt.com/docs/pricing",
+        "validityDays": null,
+        "tiers": [
+          {
+            "name": "Free",
+            "priceText": "$0, limited",
+            "priceVerified": true,
+            "quotaText": null
+          },
+          {
+            "name": "Go",
+            "priceText": "$8 per month",
+            "priceVerified": true,
+            "quotaText": null
+          },
+          {
+            "name": "Plus",
+            "priceText": "$20 per month",
+            "priceVerified": true,
+            "quotaText": null
+          },
+          {
+            "name": "Pro",
+            "priceText": "$100/$200/$500 per month",
+            "priceVerified": true,
+            "quotaText": null
+          }
+        ],
+        "listedTools": []
+      }
+    },
+    {
+      "id": "anthropic",
+      "displayName": "Anthropic API",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "anthropic",
+      "apiKeyEnv": "ANTHROPIC_API_KEY",
+      "routes": [
+        {
+          "id": "anthropic-messages",
+          "api": "anthropic-messages",
+          "baseUrl": "https://api.anthropic.com",
+          "auth": "xApiKey",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://platform.claude.com/docs/en/api/overview",
+      "keyPageUrl": "https://platform.claude.com/settings/keys",
+      "sourceUrl": "https://platform.claude.com/docs/en/api/overview",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "anthropic-version header required. omp's Anthropic OAuth login is a credential the user supplies in omp; Autonogrammer never stores it.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "anthropic-subscription",
+      "displayName": "Claude Pro / Max login",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "codingPlan",
+      "ompProviderId": null,
+      "apiKeyEnv": null,
+      "routes": [],
+      "urlVariables": [],
+      "docsUrl": "https://code.claude.com/docs/en/legal-and-compliance",
+      "keyPageUrl": null,
+      "sourceUrl": "https://code.claude.com/docs/en/legal-and-compliance.md",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Same host as the API; credentials are OAuth tokens from omp /login anthropic. Quota windows: usage-limit article not opened.",
+      "loginCommand": "/login anthropic",
+      "plan": {
+        "ruleText": "OAuth is intended exclusively for purchasers of Free/Pro/Max/Team/Enterprise plans for ordinary use of Claude Code and other native Anthropic applications. Anthropic does not permit third-party developers to offer Claude.ai login in their applications or route requests through Free/Pro/Max credentials on behalf of users, nor collect or store Claude.ai credentials; developers should use API keys via Claude Console or Bedrock/Google/Foundry. An end user may sign in to the UNMODIFIED Claude Code binary with their own plan even when a platform hosts it.",
+        "ruleSourceUrl": "https://code.claude.com/docs/en/legal-and-compliance",
+        "interactiveOnly": true,
+        "cloudDefaultPayAsYouGo": true,
+        "separateKey": true,
+        "planUrl": "https://claude.com/pricing",
+        "validityDays": null,
+        "tiers": [
+          {
+            "name": "Pro",
+            "priceText": "$17 per month billed annually ($200 up front) or $20 monthly",
+            "priceVerified": true,
+            "quotaText": null
+          },
+          {
+            "name": "Max",
+            "priceText": "from $100 per month",
+            "priceVerified": true,
+            "quotaText": "5x or 20x Pro usage; Claude Code included; includes $100-$200 per month API credits"
+          }
+        ],
+        "listedTools": [
+          "Claude Code"
+        ]
+      }
+    },
+    {
+      "id": "google",
+      "displayName": "Gemini API (AI Studio)",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "google",
+      "apiKeyEnv": "GEMINI_API_KEY",
+      "routes": [
+        {
+          "id": "native",
+          "api": "google-generative-ai",
+          "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": [
+            {
+              "id": "gemini-3.8-flash",
+              "name": "Gemini 3.8 Flash"
+            },
+            {
+              "id": "gemini-4-argon",
+              "name": "Gemini 4 Argon"
+            }
+          ]
+        },
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://ai.google.dev/gemini-api/docs/openai",
+      "keyPageUrl": "https://aistudio.google.com/apikey",
+      "sourceUrl": "https://ai.google.dev/gemini-api/docs/models",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Bearer GEMINI_API_KEY on the compat route; native route models route not opened; omp catalogue base https://generativelanguage.googleapis.com/v1beta.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "google-vertex",
+      "displayName": "Google Vertex AI",
+      "region": "global",
+      "country": null,
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "google-vertex",
+      "apiKeyEnv": "GOOGLE_CLOUD_API_KEY",
+      "routes": [
+        {
+          "id": "native",
+          "api": "google-vertex",
+          "baseUrl": "https://{location}-aiplatform.googleapis.com",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [
+        {
+          "name": "location",
+          "label": "Location",
+          "example": "global",
+          "help": "Vertex AI location, e.g. global (omp: GOOGLE_VERTEX_LOCATION or GOOGLE_CLOUD_LOCATION)"
+        }
+      ],
+      "docsUrl": "https://github.com/can1357/oh-my-pi",
+      "keyPageUrl": null,
+      "sourceUrl": "https://github.com/can1357/oh-my-pi",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "omp docs only; vendor page not opened. omp also accepts ADC plus project and location; base per omp catalogue. Models come from omp's catalogue.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "google-gemini-cli",
+      "displayName": "Gemini Code Assist / Gemini CLI login",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "codingPlan",
+      "ompProviderId": "google-gemini-cli",
+      "apiKeyEnv": null,
+      "routes": [],
+      "urlVariables": [],
+      "docsUrl": "https://codeassist.google/products/business",
+      "keyPageUrl": null,
+      "sourceUrl": "https://codeassist.google/products/business",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "Gemini CLI was superseded by Antigravity CLI on 2026-06-18 [INFERENCE]: check that the omp provider still works. omp catalogue: https://cloudcode-pa.googleapis.com.",
+      "loginCommand": "/login google-gemini-cli",
+      "plan": {
+        "ruleText": "No usage rule found in the pages read; check the vendor terms before use.",
+        "ruleSourceUrl": null,
+        "interactiveOnly": false,
+        "cloudDefaultPayAsYouGo": true,
+        "separateKey": true,
+        "planUrl": "https://codeassist.google/products/business",
+        "validityDays": null,
+        "tiers": [
+          {
+            "name": "Code Assist Standard",
+            "priceText": "$22.80 per user per month monthly ($19 annual)",
+            "priceVerified": true,
+            "quotaText": null
+          },
+          {
+            "name": "Code Assist Enterprise",
+            "priceText": "$54 per user per month monthly ($45 annual)",
+            "priceVerified": true,
+            "quotaText": null
+          }
+        ],
+        "listedTools": []
+      }
+    },
+    {
+      "id": "google-antigravity",
+      "displayName": "Google Antigravity",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "codingPlan",
+      "ompProviderId": "google-antigravity",
+      "apiKeyEnv": null,
+      "routes": [],
+      "urlVariables": [],
+      "docsUrl": "https://antigravity.google/pricing",
+      "keyPageUrl": null,
+      "sourceUrl": "https://antigravity.google/pricing",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Credential is the omp OAuth login. omp catalogue: https://daily-cloudcode-pa.googleapis.com (google-gemini-cli api).",
+      "loginCommand": "/login google-antigravity",
+      "plan": {
+        "ruleText": "No usage rule found in the pages read; check the vendor terms before use.",
+        "ruleSourceUrl": null,
+        "interactiveOnly": false,
+        "cloudDefaultPayAsYouGo": true,
+        "separateKey": true,
+        "planUrl": "https://antigravity.google/pricing",
+        "validityDays": null,
+        "tiers": [
+          {
+            "name": "Individual",
+            "priceText": "$0 per month",
+            "priceVerified": true,
+            "quotaText": "Basic weekly limits; unlimited Tab and Command"
+          },
+          {
+            "name": "Google AI Pro",
+            "priceText": "price unverified",
+            "priceVerified": false,
+            "quotaText": "More limits plus AI credit pool"
+          },
+          {
+            "name": "Google AI Ultra",
+            "priceText": "price unverified",
+            "priceVerified": false,
+            "quotaText": "Even more limits"
+          },
+          {
+            "name": "Business",
+            "priceText": "Gemini Enterprise Standard/Plus from $30 per seat per month",
+            "priceVerified": true,
+            "quotaText": "Via Google Cloud: API consumption"
+          }
+        ],
+        "listedTools": []
+      }
+    },
+    {
+      "id": "azure",
+      "displayName": "Azure OpenAI / Microsoft Foundry",
+      "region": "global",
+      "country": null,
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "azure",
+      "apiKeyEnv": "AZURE_OPENAI_API_KEY",
+      "routes": [
+        {
+          "id": "v1",
+          "api": "azure-openai-responses",
+          "baseUrl": "https://{resource}.openai.azure.com/openai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [
+        {
+          "name": "resource",
+          "label": "Resource name",
+          "example": "my-resource",
+          "help": "Your Azure OpenAI resource name (YOUR-RESOURCE-NAME in the docs)"
+        }
+      ],
+      "docsUrl": "https://learn.microsoft.com/en-us/azure/foundry/openai/api-version-lifecycle",
+      "keyPageUrl": null,
+      "sourceUrl": "https://learn.microsoft.com/en-us/azure/foundry/openai/api-version-lifecycle",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "v1 API, no api-version; deployment name goes in model. Auth is API key or Entra ID token; raw header name unverified. Models from omp catalogue.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "amazon-bedrock",
+      "displayName": "AWS Bedrock",
+      "region": "global",
+      "country": null,
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "amazon-bedrock",
+      "apiKeyEnv": "AWS_BEARER_TOKEN_BEDROCK",
+      "routes": [
+        {
+          "id": "converse",
+          "api": "bedrock-converse-stream",
+          "baseUrl": "https://bedrock-runtime.{region}.amazonaws.com",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [
+        {
+          "name": "region",
+          "label": "AWS region",
+          "example": "us-east-1",
+          "help": "AWS region of the Bedrock runtime endpoint"
+        }
+      ],
+      "docsUrl": "https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-completions.html",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-completions.html",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "No GET /models on bedrock-runtime; models from omp catalogue. Also SigV4, AWS profiles or credential chain. Research OpenAI route: /openai/v1; bedrock-mantle is a separate omp id.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "xai",
+      "displayName": "xAI Grok API",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "xai",
+      "apiKeyEnv": "XAI_API_KEY",
+      "routes": [
+        {
+          "id": "responses",
+          "api": "openai-responses",
+          "baseUrl": "https://api.x.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.x.ai/developers/rest-api-reference/inference/models",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.x.ai/developers/rest-api-reference/inference/models",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Responses API; Chat Completions not confirmed; /v1/messages deprecated. Key page https://console.x.ai only inferred, so not listed.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "xai-oauth",
+      "displayName": "SuperGrok login",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "codingPlan",
+      "ompProviderId": "xai-oauth",
+      "apiKeyEnv": null,
+      "routes": [],
+      "urlVariables": [],
+      "docsUrl": "https://docs.x.ai/x-subscription/overview",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.x.ai/x-subscription/overview",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Credential is the omp OAuth login (XAI_OAUTH_TOKEN, then XAI_API_KEY). Grok and Cursor share a weekly pool; API draw from pool unverified.",
+      "loginCommand": "/login xai-oauth",
+      "plan": {
+        "ruleText": "No usage rule found in the pages read; check the vendor terms before use.",
+        "ruleSourceUrl": null,
+        "interactiveOnly": false,
+        "cloudDefaultPayAsYouGo": true,
+        "separateKey": true,
+        "planUrl": "https://x.ai/pricing",
+        "validityDays": null,
+        "tiers": [
+          {
+            "name": "Plus",
+            "priceText": "$8 per month",
+            "priceVerified": true,
+            "quotaText": null
+          },
+          {
+            "name": "Premium",
+            "priceText": "$30 per month",
+            "priceVerified": true,
+            "quotaText": null
+          },
+          {
+            "name": "Super",
+            "priceText": "$100 per month",
+            "priceVerified": true,
+            "quotaText": null
+          },
+          {
+            "name": "Ultra",
+            "priceText": "$200 per month",
+            "priceVerified": true,
+            "quotaText": null
+          }
+        ],
+        "listedTools": []
+      }
+    },
+    {
+      "id": "meta-llama-api",
+      "displayName": "Meta Llama API",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "LLAMA_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.llama.com/compat/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /compat/v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://llama.developer.meta.com/docs/features/compatibility/",
+      "keyPageUrl": null,
+      "sourceUrl": "https://llama.developer.meta.com/docs/features/compatibility/",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Conflict: omp catalogue lists meta at https://api.meta.ai/v1 (openai-responses; MODEL_API_KEY, META_API_KEY); unsure it is the Llama API, so no omp id. Research page not opened.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "github-copilot",
+      "displayName": "GitHub Copilot",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "codingPlan",
+      "ompProviderId": "github-copilot",
+      "apiKeyEnv": null,
+      "routes": [],
+      "urlVariables": [],
+      "docsUrl": "https://docs.github.com/en/copilot/get-started/plans",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.github.com/en/copilot/get-started/plans",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Credential is the omp OAuth device login (or COPILOT_GITHUB_TOKEN). omp catalogue: https://api.githubcopilot.com. Credits cost $0.01 beyond the pool.",
+      "loginCommand": "/login github-copilot",
+      "plan": {
+        "ruleText": "No usage rule found in the pages read; check the vendor terms before use.",
+        "ruleSourceUrl": null,
+        "interactiveOnly": false,
+        "cloudDefaultPayAsYouGo": true,
+        "separateKey": true,
+        "planUrl": "https://docs.github.com/en/copilot/get-started/plans",
+        "validityDays": null,
+        "tiers": [
+          {
+            "name": "Free",
+            "priceText": "Free",
+            "priceVerified": true,
+            "quotaText": "Limited credits; Auto model only"
+          },
+          {
+            "name": "Student",
+            "priceText": "Free",
+            "priceVerified": true,
+            "quotaText": "Auto model only"
+          },
+          {
+            "name": "Pro",
+            "priceText": "$10 per month",
+            "priceVerified": true,
+            "quotaText": "1,000 credits"
+          },
+          {
+            "name": "Pro+",
+            "priceText": "$39 per month",
+            "priceVerified": true,
+            "quotaText": "3,900 credits"
+          },
+          {
+            "name": "Max",
+            "priceText": "$100 per month",
+            "priceVerified": true,
+            "quotaText": "10,000 credits"
+          },
+          {
+            "name": "Business",
+            "priceText": "$19 per seat per month",
+            "priceVerified": true,
+            "quotaText": "1,900 credits"
+          },
+          {
+            "name": "Enterprise",
+            "priceText": "$39 per seat per month",
+            "priceVerified": true,
+            "quotaText": "3,900 credits"
+          }
+        ],
+        "listedTools": []
+      }
+    },
+    {
+      "id": "openrouter",
+      "displayName": "OpenRouter",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "aggregator",
+      "ompProviderId": "openrouter",
+      "apiKeyEnv": "OPENROUTER_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /api/v1/models",
+          "models": []
+        },
+        {
+          "id": "anthropic",
+          "api": "anthropic-messages",
+          "baseUrl": "https://openrouter.ai/api",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET https://openrouter.ai/api/v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://openrouter.ai/docs/quickstart",
+      "keyPageUrl": "https://openrouter.ai/keys",
+      "sourceUrl": "https://openrouter.ai/docs/quickstart",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "No plan; fees: Free, Standard 5.5%, Business 8%, Enterprise (pricing page, 2026-10-22). Anthropic route is the Claude Code base.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "together",
+      "displayName": "Together AI",
+      "region": "us",
+      "country": "US",
+      "residencyNote": "US; serverless has no EU region; geo hosts us-api.together.ai and ca-api.together.ai (1.25x price); EU only via Dedicated Endpoints or VPC on Scale/Enterprise",
+      "kind": "api",
+      "ompProviderId": "together",
+      "apiKeyEnv": "TOGETHER_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.together.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.together.ai/docs/inference/openai-compatibility",
+      "keyPageUrl": "https://api.together.ai/settings/api-keys",
+      "sourceUrl": "https://docs.together.ai/reference/models-1",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "omp catalogue base is https://api.together.xyz/v1; research host is api.together.ai. Together Link is a beta launcher.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "fireworks",
+      "displayName": "Fireworks AI",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "fireworks",
+      "apiKeyEnv": "FIREWORKS_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.fireworks.ai/inference/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": [
+            {
+              "id": "accounts/fireworks/models/kimi-k3",
+              "name": "Kimi K3"
+            }
+          ]
+        },
+        {
+          "id": "anthropic",
+          "api": "anthropic-messages",
+          "baseUrl": "https://api.fireworks.ai/inference",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": [
+            {
+              "id": "accounts/fireworks/models/kimi-k3",
+              "name": "Kimi K3"
+            }
+          ]
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.fireworks.ai/api-reference/list-models",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "List route is account-scoped: GET /v1/accounts/{account_id}/models. Fire Pass (omp id firepass, FIREPASS_API_KEY, fpk_ key) is experimental and closed to new subscriptions.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "groq",
+      "displayName": "Groq",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "groq",
+      "apiKeyEnv": "GROQ_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.groq.com/openai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET https://api.groq.com/openai/v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://console.groq.com/docs/openai",
+      "keyPageUrl": "https://console.groq.com/keys",
+      "sourceUrl": "https://console.groq.com/docs/models",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "No subscription; pay per token (gpt-oss-120b $0.15/$0.60 per 1M).",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "cerebras",
+      "displayName": "Cerebras",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "cerebras",
+      "apiKeyEnv": "CEREBRAS_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.cerebras.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://inference-docs.cerebras.ai/resources/openai",
+      "keyPageUrl": "https://cloud.cerebras.ai/",
+      "sourceUrl": "https://www.cerebras.ai/code",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Cerebras Code: Pro $50 (24M tokens/day), Max $200 (120M tokens/day), GLM 4.7; both sold out; works with Cline, OpenCode, Crush.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "sambanova",
+      "displayName": "SambaNova SambaCloud",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "sambanova",
+      "apiKeyEnv": "SAMBANOVA_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.sambanova.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.sambanova.ai/docs/en/features/openai-compatibility.md",
+      "keyPageUrl": "https://cloud.sambanova.ai/apis",
+      "sourceUrl": "https://docs.sambanova.ai/docs/en/features/openai-compatibility.md",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Also POST /v1/responses; Anthropic Messages supported (page not opened). SambaStack uses a customer-specific base URL.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "perplexity",
+      "displayName": "Perplexity API",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "PERPLEXITY_API_KEY",
+      "routes": [
+        {
+          "id": "responses",
+          "api": "openai-responses",
+          "baseUrl": "https://api.perplexity.ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.perplexity.ai/docs/agent-api/openai-compatibility",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.perplexity.ai/docs/agent-api/openai-compatibility",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "Responses via /v1/responses (canonical /v1/agent). omp 18.12.6 has no perplexity row (needs models.yml). Models-list route not confirmed. Per-token plus tool fees.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "deepinfra",
+      "displayName": "DeepInfra",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "deepinfra",
+      "apiKeyEnv": "DEEPINFRA_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.deepinfra.com/v1/openai",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.deepinfra.com/chat/overview",
+      "keyPageUrl": "https://deepinfra.com/dash/api_keys",
+      "sourceUrl": "https://docs.deepinfra.com/chat/overview",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "Pay as you go.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "hyperbolic",
+      "displayName": "Hyperbolic",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "HYPERBOLIC_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.hyperbolic.ai/inference/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://hyperbolic.ai/docs/inference/overview.md",
+      "keyPageUrl": null,
+      "sourceUrl": "https://hyperbolic.ai/docs/inference/overview.md",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Old api.hyperbolic.xyz/v1 returns 404. sk_live_ keys; Pro ($5 one-time deposit) or Organization needed; text models only; 300 req/min per key.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "novita",
+      "displayName": "Novita AI",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "novita",
+      "apiKeyEnv": "NOVITA_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.novita.ai/openai",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.novita.ai/guides/llm-api.md",
+      "keyPageUrl": "https://novita.ai/settings/key-management",
+      "sourceUrl": "https://docs.novita.ai/guides/llm-api.md",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Models-list route not on the page read; models from omp catalogue.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "cloudflare-workers-ai-compat",
+      "displayName": "Cloudflare Workers AI (OpenAI-compatible)",
+      "region": "global",
+      "country": null,
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "CLOUDFLARE_API_TOKEN",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": [
+            {
+              "id": "@cf/openai/gpt-oss-120b",
+              "name": "gpt-oss-120b"
+            }
+          ]
+        }
+      ],
+      "urlVariables": [
+        {
+          "name": "account_id",
+          "label": "Account ID",
+          "example": "0123456789abcdef0123456789abcdef",
+          "help": "Cloudflare account ID (CLOUDFLARE_ACCOUNT_ID)"
+        }
+      ],
+      "docsUrl": "https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/",
+      "keyPageUrl": "https://dash.cloudflare.com/profile/api-tokens",
+      "sourceUrl": "https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "OpenAI-compatible route. omp also has a native cloudflare-workers-ai provider for its own judge models (api workers-ai-systemone); a block under that id would list as judge, so this row has its own id. Token: Workers AI Read and Edit.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "cloudflare-ai-gateway",
+      "displayName": "Cloudflare AI Gateway",
+      "region": "global",
+      "country": null,
+      "residencyNote": null,
+      "kind": "aggregator",
+      "ompProviderId": "cloudflare-ai-gateway",
+      "apiKeyEnv": "CLOUDFLARE_AI_GATEWAY_API_KEY",
+      "routes": [
+        {
+          "id": "compat",
+          "api": "openai-completions",
+          "baseUrl": "https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/compat",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [
+        {
+          "name": "account_id",
+          "label": "Account ID",
+          "example": "0123456789abcdef0123456789abcdef",
+          "help": "Cloudflare account ID"
+        },
+        {
+          "name": "gateway_id",
+          "label": "Gateway ID",
+          "example": "my-gateway",
+          "help": "AI Gateway name or ID"
+        }
+      ],
+      "docsUrl": "https://github.com/can1357/oh-my-pi",
+      "keyPageUrl": null,
+      "sourceUrl": "https://github.com/can1357/oh-my-pi",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "omp docs only; also CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_GATEWAY_ID. omp catalogue also has an /anthropic route. Models from omp catalogue.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "nvidia",
+      "displayName": "NVIDIA NIM",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "nvidia",
+      "apiKeyEnv": "NVIDIA_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://integrate.api.nvidia.com/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.api.nvidia.com/nim/reference/llm-apis",
+      "keyPageUrl": "https://build.nvidia.com/",
+      "sourceUrl": "https://docs.api.nvidia.com/nim/reference/llm-apis",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "nvapi key [INFERENCE]; self-hosted NIM needs an NVIDIA AI Enterprise entitlement.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "databricks",
+      "displayName": "Databricks Foundation Model APIs",
+      "region": "global",
+      "country": null,
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "DATABRICKS_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://{workspace_host}/serving-endpoints",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": [
+            {
+              "id": "databricks-claude-opus-5",
+              "name": "Claude Opus 5"
+            },
+            {
+              "id": "databricks-kimi-k3",
+              "name": "Kimi K3"
+            }
+          ]
+        }
+      ],
+      "urlVariables": [
+        {
+          "name": "workspace_host",
+          "label": "Workspace host",
+          "example": "adb-1234567890123456.7.azuredatabricks.net",
+          "help": "Your Databricks workspace hostname"
+        }
+      ],
+      "docsUrl": "https://docs.databricks.com/aws/en/machine-learning/model-serving/score-foundation-models",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.databricks.com/aws/en/machine-learning/model-serving/score-foundation-models",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Bearer personal access token (dapi...); model = endpoint name. Base URL source S, unverified. List route GET /api/2.0/serving-endpoints [INFERENCE].",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "snowflake",
+      "displayName": "Snowflake Cortex",
+      "region": "global",
+      "country": null,
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "snowflake",
+      "apiKeyEnv": "SNOWFLAKE_PAT",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://{account_identifier}.snowflakecomputing.com/api/v2/cortex/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [
+        {
+          "name": "account_identifier",
+          "label": "Account identifier",
+          "example": "myorg-myaccount",
+          "help": "Snowflake account identifier"
+        }
+      ],
+      "docsUrl": "https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-rest-api",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-rest-api",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Bearer PAT (also SNOWFLAKE_ACCOUNT); role needs SNOWFLAKE.CORTEX_USER. messages (Claude only) and responses (OpenAI models) also exist. Models from omp catalogue.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "cohere",
+      "displayName": "Cohere Compatibility API",
+      "region": "us",
+      "country": "CA",
+      "residencyNote": "Canada; Model Vault for private deployment",
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "COHERE_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.cohere.ai/compatibility/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.cohere.com/docs/compatibility-api",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.cohere.com/docs/compatibility-api",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Never use bare api.cohere.ai; stream_options is rejected. Models-list route not on the page. omp 18.12.6 has no cohere row. Audio on api.cohere.com.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "ai21",
+      "displayName": "AI21 Jamba",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": null,
+      "apiKeyEnv": "AI21_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://api.ai21.com/studio/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.ai21.com/reference/jamba-1-6-api-ref",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.ai21.com/reference/jamba-1-6-api-ref",
+      "status": "partial",
+      "statusDate": "2026-10-27",
+      "note": "Base URL from a third party; models route reported 410 and the OpenAI compatibility page 404. Enter a model id (family name Jamba).",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "huggingface",
+      "displayName": "Hugging Face Inference Providers",
+      "region": "global",
+      "country": null,
+      "residencyNote": "Router; EU-hosted partners: OVHcloud AI Endpoints (FR), Nscale (UK); no EU-only flag found; pin with the :<provider> suffix",
+      "kind": "aggregator",
+      "ompProviderId": "huggingface",
+      "apiKeyEnv": "HUGGINGFACE_HUB_TOKEN",
+      "routes": [
+        {
+          "id": "router",
+          "api": "openai-completions",
+          "baseUrl": "https://router.huggingface.co/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://huggingface.co/docs/inference-providers/index",
+      "keyPageUrl": "https://huggingface.co/settings/tokens",
+      "sourceUrl": "https://huggingface.co/docs/inference-providers/index",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "omp reads HUGGINGFACE_HUB_TOKEN, then HF_TOKEN. Model suffixes :fastest :cheapest :preferred :<provider>; X-HF-Bill-To header. PRO includes $2/mo credits.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "ollama",
+      "displayName": "Ollama",
+      "region": "local",
+      "country": null,
+      "residencyNote": null,
+      "kind": "local",
+      "ompProviderId": "ollama",
+      "apiKeyEnv": null,
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-responses",
+          "baseUrl": "http://localhost:11434/v1",
+          "auth": "none",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.ollama.com/api/openai-compatibility",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.ollama.com/api/openai-compatibility",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "omp default http://127.0.0.1:11434 (OLLAMA_BASE_URL, OLLAMA_HOST); implicit models use openai-responses; Anthropic /v1/messages also on :11434. OLLAMA_API_KEY optional.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "ollama-cloud",
+      "displayName": "Ollama Cloud",
+      "region": "us",
+      "country": "US",
+      "residencyNote": null,
+      "kind": "api",
+      "ompProviderId": "ollama-cloud",
+      "apiKeyEnv": "OLLAMA_CLOUD_API_KEY",
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "https://ollama.com/v1",
+          "auth": "bearer",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.ollama.com/api/openai-compatibility",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.ollama.com/api/openai-compatibility",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "Plans: Pro $20, Max $100, Team $500 (ollama.com/pricing). omp catalogue base https://ollama.com (ollama-chat api).",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "lm-studio",
+      "displayName": "LM Studio",
+      "region": "local",
+      "country": null,
+      "residencyNote": null,
+      "kind": "local",
+      "ompProviderId": "lm-studio",
+      "apiKeyEnv": null,
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "http://localhost:1234/v1",
+          "auth": "none",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://lmstudio.ai/docs/developer/openai-compat",
+      "keyPageUrl": null,
+      "sourceUrl": "https://lmstudio.ai/docs/developer/openai-compat",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "omp default http://127.0.0.1:1234/v1 (LM_STUDIO_BASE_URL). Authentication optional (x-api-key or Bearer when Require Authentication is on).",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "llama-cpp",
+      "displayName": "llama.cpp server",
+      "region": "local",
+      "country": null,
+      "residencyNote": null,
+      "kind": "local",
+      "ompProviderId": "llama.cpp",
+      "apiKeyEnv": null,
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-responses",
+          "baseUrl": "http://127.0.0.1:8080/v1",
+          "auth": "none",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://raw.githubusercontent.com/ggml-org/llama.cpp/master/tools/server/README.md",
+      "keyPageUrl": null,
+      "sourceUrl": "https://raw.githubusercontent.com/ggml-org/llama.cpp/master/tools/server/README.md",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "omp default port 8080 (LLAMA_CPP_BASE_URL); upstream README reportedly 9931: conflict, pass the port explicitly. Optional --api-key (LLAMA_CPP_API_KEY).",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "vllm",
+      "displayName": "vLLM",
+      "region": "local",
+      "country": null,
+      "residencyNote": null,
+      "kind": "local",
+      "ompProviderId": "vllm",
+      "apiKeyEnv": null,
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "http://localhost:8000/v1",
+          "auth": "none",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.vllm.ai/en/latest/serving/online_serving/",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.vllm.ai/en/latest/serving/online_serving/",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "Optional --api-key (VLLM_API_KEY), enforced on /v1 prefixes only.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "localai",
+      "displayName": "LocalAI",
+      "region": "local",
+      "country": null,
+      "residencyNote": null,
+      "kind": "local",
+      "ompProviderId": null,
+      "apiKeyEnv": null,
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "http://localhost:8080/v1",
+          "auth": "none",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://localai.io/docs/basics/getting_started/",
+      "keyPageUrl": null,
+      "sourceUrl": "https://localai.io/docs/basics/getting_started/",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "Server-side LOCALAI_API_KEY optional; needs a models.yml block (auth none, discovery openai-models-list).",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "jan",
+      "displayName": "Jan",
+      "region": "local",
+      "country": null,
+      "residencyNote": null,
+      "kind": "local",
+      "ompProviderId": null,
+      "apiKeyEnv": null,
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "http://127.0.0.1:1337/v1",
+          "auth": "none",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.jan.ai/desktop/api-server",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.jan.ai/desktop/api-server",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "Optional key set in Jan; needs a models.yml block.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "docker-model-runner",
+      "displayName": "Docker Model Runner",
+      "region": "local",
+      "country": null,
+      "residencyNote": null,
+      "kind": "local",
+      "ompProviderId": null,
+      "apiKeyEnv": null,
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "http://localhost:12434/engines/v1",
+          "auth": "none",
+          "authHeader": null,
+          "discovery": true,
+          "modelsEndpoint": "GET /engines/v1/models",
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.docker.com/ai/model-runner/api-reference/",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.docker.com/ai/model-runner/api-reference/",
+      "status": "partial",
+      "statusDate": "2026-10-22",
+      "note": "Anthropic and Ollama formats on http://localhost:12434; containers use http://model-runner.docker.internal. Auth not stated.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "sglang",
+      "displayName": "SGLang",
+      "region": "local",
+      "country": null,
+      "residencyNote": null,
+      "kind": "local",
+      "ompProviderId": null,
+      "apiKeyEnv": null,
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "http://127.0.0.1:30000/v1",
+          "auth": "none",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://docs.sglang.io/docs/basic_usage/openai_api_completions.md",
+      "keyPageUrl": null,
+      "sourceUrl": "https://docs.sglang.io/docs/basic_usage/openai_api_completions.md",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Port from docs examples (default port flag not read); docs use api_key EMPTY. Anthropic /v1/messages documented.",
+      "loginCommand": null,
+      "plan": null
+    },
+    {
+      "id": "tgi",
+      "displayName": "Hugging Face TGI",
+      "region": "local",
+      "country": null,
+      "residencyNote": null,
+      "kind": "local",
+      "ompProviderId": null,
+      "apiKeyEnv": null,
+      "routes": [
+        {
+          "id": "openai",
+          "api": "openai-completions",
+          "baseUrl": "http://localhost:3000/v1",
+          "auth": "none",
+          "authHeader": null,
+          "discovery": false,
+          "modelsEndpoint": null,
+          "models": []
+        }
+      ],
+      "urlVariables": [],
+      "docsUrl": "https://huggingface.co/docs/text-generation-inference/en/messages_api",
+      "keyPageUrl": null,
+      "sourceUrl": "https://huggingface.co/docs/text-generation-inference/en/messages_api",
+      "status": "verified",
+      "statusDate": "2026-10-27",
+      "note": "Messages API / Chat Completions; model name tgi. Inference Endpoints (https://<id>.endpoints.huggingface.cloud/v1/) need an HF token: separate row.",
+      "loginCommand": null,
+      "plan": null
+    }
+  ]
+}

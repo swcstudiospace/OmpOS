@@ -64,7 +64,7 @@ export function recordingFs() {
 }
 
 function world(options = {}) {
-  const root = mkdtempSync(join(tmpdir(), "ompos-steer-"));
+  const root = mkdtempSync(join(tmpdir(), "autonogrammer-steer-"));
   temps.push(root);
   const dir = join(root, "steer");
   const clock = fakeClock();
@@ -76,7 +76,7 @@ function world(options = {}) {
   });
   const inbox = createSteerInbox({ fs, clock, deliver, dir: "dir" in options ? options.dir : dir, getMode: () => "rpc" });
   const put = (name, body) => realFs.writeFileSync(join(dir, "inbox", name), typeof body === "string" ? body : JSON.stringify(body));
-  const directive = (id, extra = {}) => ({ v: 1, id, mode: "steer", text: `text ${id}`, createdAt: "2026-10-26T09:59:00Z", source: "ompos", ...extra });
+  const directive = (id, extra = {}) => ({ v: 1, id, mode: "steer", text: `text ${id}`, createdAt: "2026-10-26T09:59:00Z", source: "autonogrammer", ...extra });
   const ack = (id) => JSON.parse(realFs.readFileSync(join(dir, "acks", `${id}.json`), "utf8"));
   const exists = (...parts) => realFs.existsSync(join(dir, ...parts));
   return { root, dir, clock, fs, calls, delivered, inbox, put, directive, ack, exists };

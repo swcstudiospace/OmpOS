@@ -1,0 +1,76 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:copy="clr-namespace:Autonogrammer.Presentation.AgentPanel;assembly=Autonogrammer.Presentation"
+             xmlns:local="clr-namespace:Autonogrammer.Native.Views.AgentPanel"
+             x:Class="Autonogrammer.Native.Views.AgentPanel.PanelNoticeView"
+             x:DataType="copy:AgentSessionViewModel">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The panel notice (degraded stages, no plugins, Lost, Resumed). A polite live region: errors have their own assertive one. It is a
+       banner: a 3 px bar in the tone colour, a 14 px glyph, one wrapping sentence and the buttons right-aligned. -->
+  <Border x:Name="PanelNotice"
+          Classes="banner"
+          Margin="0,6,0,2"
+          Padding="0"
+          ClipToBounds="True"
+          IsVisible="{CompiledBinding HasNotice}"
+          AutomationProperties.Name="{x:Static local:AgentPanelViewText.PanelNoticeName}"
+          AutomationProperties.LiveSetting="Polite">
+
+    <Grid ColumnDefinitions="Auto,*">
+
+      <Border x:Name="NoticeBar"
+              Classes="banner-bar bar-warning" />
+
+      <DockPanel Grid.Column="1"
+                 LastChildFill="True"
+                 Margin="10,8">
+
+        <local:StageIcon x:Name="NoticeIcon"
+                         DockPanel.Dock="Left"
+                         Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                         Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                         VerticalAlignment="Top"
+                         Margin="0,2,8,0" />
+
+        <WrapPanel DockPanel.Dock="Right"
+                   Orientation="Horizontal"
+                   VerticalAlignment="Center"
+                   ItemSpacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                   LineSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+          <Button x:Name="ShowPipelineButton"
+                  Classes="sm"
+                  Content="{x:Static local:AgentPanelViewText.ShowPipeline}"
+                  AutomationProperties.Name="{x:Static local:AgentPanelViewText.ShowPipelineName}" />
+
+          <Button x:Name="ResumeButton"
+                  Classes="primary sm"
+                  Content="{x:Static copy:AgentPanelCopy.ResumeAgent}"
+                  Command="{CompiledBinding ResumeCommand}"
+                  AutomationProperties.Name="{x:Static copy:AgentPanelCopy.ResumeAgent}" />
+
+          <Button x:Name="DismissButton"
+                  Classes="ghost sm"
+                  Content="{x:Static local:AgentPanelViewText.DismissNotice}"
+                  Command="{CompiledBinding DismissNoticeCommand}"
+                  AutomationProperties.Name="{x:Static local:AgentPanelViewText.DismissNotice}" />
+
+        </WrapPanel>
+
+        <TextBlock x:Name="NoticeText"
+                   Text="{CompiledBinding NoticeText}"
+                   VerticalAlignment="Center"
+                   Margin="0,0,8,0"
+                   TextWrapping="Wrap" />
+
+      </DockPanel>
+
+    </Grid>
+
+  </Border>
+
+</UserControl>

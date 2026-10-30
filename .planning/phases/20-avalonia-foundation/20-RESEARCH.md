@@ -12,18 +12,18 @@ Locked decisions D-20-01 to D-20-14 in `20-CONTEXT.md` (Planning decisions) are 
 
 | ID | Locked decision (short title) |
 |---|---|
-| D-20-01 | Native project `apps/OmpOS.Native`, namespace `OmpOS.Native`, `net10.0`, layer L4 |
-| D-20-02 | Presentation layer `src/OmpOS.Presentation`, L2; references Contracts (L0) and GenUi (L2); no Avalonia, MAUI or AspNetCore.Components reference; Markdig only |
-| D-20-03 | Razor state moves to `OmpOS.Presentation`; `OmpOS.UI` references it (second same-layer allow-list entry) |
-| D-20-04 | Clean caller migration including `apps/OmpOS.App` usings; no shims or aliases |
-| D-20-05 | Plugin contracts in `src/OmpOS.Contracts/Plugins/` (no UI reference); host in `OmpOS.Presentation/Plugins/`; sample plugin is test code |
-| D-20-06 | Test project `tests/OmpOS.Native.Tests` with `Avalonia.Headless.XUnit` 12.1.4 and `Avalonia.Themes.Fluent` 12.1.4; `xunit.v3` 4.0.2 stays; fallback is `Avalonia.Headless` with plain `[Fact]` and an explicit dispatcher; `PerTest` isolation |
-| D-20-07 | One AXAML token dictionary in `apps/OmpOS.Native`; contrast test covers every foreground with every background at 4.5:1 |
+| D-20-01 | Native project `apps/Autonogrammer.Native`, namespace `Autonogrammer.Native`, `net10.0`, layer L4 |
+| D-20-02 | Presentation layer `src/Autonogrammer.Presentation`, L2; references Contracts (L0) and GenUi (L2); no Avalonia, MAUI or AspNetCore.Components reference; Markdig only |
+| D-20-03 | Razor state moves to `Autonogrammer.Presentation`; `Autonogrammer.UI` references it (second same-layer allow-list entry) |
+| D-20-04 | Clean caller migration including `apps/Autonogrammer.App` usings; no shims or aliases |
+| D-20-05 | Plugin contracts in `src/Autonogrammer.Contracts/Plugins/` (no UI reference); host in `Autonogrammer.Presentation/Plugins/`; sample plugin is test code |
+| D-20-06 | Test project `tests/Autonogrammer.Native.Tests` with `Avalonia.Headless.XUnit` 12.1.4 and `Avalonia.Themes.Fluent` 12.1.4; `xunit.v3` 4.0.2 stays; fallback is `Avalonia.Headless` with plain `[Fact]` and an explicit dispatcher; `PerTest` isolation |
+| D-20-07 | One AXAML token dictionary in `apps/Autonogrammer.Native`; contrast test covers every foreground with every background at 4.5:1 |
 | D-20-08 | `MotionPreference` (`System`, `Reduced`, `Full`) owned by presentation; `System` resolves to `Full` on Avalonia; `Reduced` removes `Transitions` from shared controls; default recorded as an open question |
 | D-20-09 | `AutomationProperties.Name` set explicitly on every control; defaults not relied on |
 | D-20-10 | Shared controls keep default `Focusable` and `IsTabStop`; `:focus-visible` style reads token colour; `FocusAdorner` null where a custom indicator replaces the default |
 | D-20-11 | Explicit view mapping; no reflection-based `ViewLocator` |
-| D-20-12 | Wiring: `OmpOS.slnx`, `OmpOS.Linux.slnf`, `LayerMap.cs`, `ProjectReference` in `tests/OmpOS.ArchitectureTests`; `packages.lock.json` committed (restore happens in execution, not planning) |
+| D-20-12 | Wiring: `Autonogrammer.slnx`, `Autonogrammer.Linux.slnf`, `LayerMap.cs`, `ProjectReference` in `tests/Autonogrammer.ArchitectureTests`; `packages.lock.json` committed (restore happens in execution, not planning) |
 | D-20-13 | Evidence under `docs/runbooks/evidence/` in a dated Phase 20 directory; spike directory referenced, not edited |
 | D-20-14 | No Avalonia.Browser build in this phase |
 
@@ -39,18 +39,18 @@ Locked decisions D-20-01 to D-20-14 in `20-CONTEXT.md` (Planning decisions) are 
 - **Reduced motion:** `IPlatformSettings` at 12.1.4 declares no motion or animation member. Issue #19405 ("Respect system animation settings", reported on Windows) shows no closed state on the fetched page. The D-20-08 default stands.
 - **Tier:** Ubuntu 24.x is Tier 2 on the supported-platforms page; Ubuntu 25.x is Tier 1 (verified).
 - **Contrast:** the WCAG 2.2 relative-luminance and contrast-ratio definitions are verified, including the constants and the 4.5:1 threshold for normal text (SC 1.4.3).
-- **Gate scope is confirmed.** `OmpOS.Linux.slnf` already includes `src/OmpOS.UI`, `tests/OmpOS.UI.Tests`, `apps/OmpOS.Web` and `tests/OmpOS.ArchitectureTests`, and excludes `apps/OmpOS.App` (consistent with D-20-04 and D-20-12).
+- **Gate scope is confirmed.** `Autonogrammer.Linux.slnf` already includes `src/Autonogrammer.UI`, `tests/Autonogrammer.UI.Tests`, `apps/Autonogrammer.Web` and `tests/Autonogrammer.ArchitectureTests`, and excludes `apps/Autonogrammer.App` (consistent with D-20-04 and D-20-12).
 
-**Primary recommendation:** Use `[AvaloniaFact]` on xUnit v3 4.0.2 with `[assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]` and `[assembly: AvaloniaTestIsolation(AvaloniaTestIsolationLevel.PerTest)]`. Do not add plain `[Fact]` tests that construct Avalonia objects to `OmpOS.Native.Tests` unless `DisableTestParallelization` is set in that assembly. Treat the xUnit binary-compatibility question (U-01) as a build-time check in the execution phase.
+**Primary recommendation:** Use `[AvaloniaFact]` on xUnit v3 4.0.2 with `[assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]` and `[assembly: AvaloniaTestIsolation(AvaloniaTestIsolationLevel.PerTest)]`. Do not add plain `[Fact]` tests that construct Avalonia objects to `Autonogrammer.Native.Tests` unless `DisableTestParallelization` is set in that assembly. Treat the xUnit binary-compatibility question (U-01) as a build-time check in the execution phase.
 
 ## Architectural Responsibility Map
 
 | Capability | Primary Tier | Secondary Tier | Rationale |
 |---|---|---|---|
-| View models, session state, motion preference, plugin host | `OmpOS.Presentation` (L2) | `OmpOS.UI` (Razor, L2) and `OmpOS.Native` (L4) consume it | D-20-02 and D-20-03: one framework-neutral state layer for both heads |
-| Rendering of controls, focus visuals, token resources | `apps/OmpOS.Native` (Avalonia, L4) | Web head uses its own Razor markup and CSS | Native head owns Avalonia visuals; the web head stays Blazor WebAssembly (ADR-0004) |
-| Accessible names and AT-SPI2 exposure | `apps/OmpOS.Native` controls (`AutomationProperties`) | OS AT-SPI2 bus (Linux) | D-20-09; Avalonia exposes the tree to AT-SPI2 when a D-Bus session bus and accessibility service are present |
-| Plugin contracts | `src/OmpOS.Contracts/Plugins` (L0) | Host in `OmpOS.Presentation/Plugins` | D-20-05; contracts must not reference a UI framework |
+| View models, session state, motion preference, plugin host | `Autonogrammer.Presentation` (L2) | `Autonogrammer.UI` (Razor, L2) and `Autonogrammer.Native` (L4) consume it | D-20-02 and D-20-03: one framework-neutral state layer for both heads |
+| Rendering of controls, focus visuals, token resources | `apps/Autonogrammer.Native` (Avalonia, L4) | Web head uses its own Razor markup and CSS | Native head owns Avalonia visuals; the web head stays Blazor WebAssembly (ADR-0004) |
+| Accessible names and AT-SPI2 exposure | `apps/Autonogrammer.Native` controls (`AutomationProperties`) | OS AT-SPI2 bus (Linux) | D-20-09; Avalonia exposes the tree to AT-SPI2 when a D-Bus session bus and accessibility service are present |
+| Plugin contracts | `src/Autonogrammer.Contracts/Plugins` (L0) | Host in `Autonogrammer.Presentation/Plugins` | D-20-05; contracts must not reference a UI framework |
 
 ## Standard Stack
 
@@ -74,7 +74,7 @@ Locked decisions D-20-01 to D-20-14 in `20-CONTEXT.md` (Planning decisions) are 
 | Avalonia.Fonts.Inter | 12.1.4 (transitive from Avalonia.Headless) | Font used by headless text measurement | https://www.nuget.org/packages/Avalonia.Headless | yes (dependency list) |
 | Avalonia.HarfBuzz | 12.1.4 (transitive from Avalonia.Headless and Avalonia.Desktop) | Text shaping | https://www.nuget.org/packages/Avalonia.Desktop | yes (dependency list) |
 | Avalonia.X11, Avalonia.Skia, Avalonia.Native, Avalonia.Win32 | 12.1.4 (transitive from Avalonia.Desktop) | Platform backends pulled by `UsePlatformDetect` | https://www.nuget.org/packages/Avalonia.Desktop | yes (dependency list) |
-| Markdig | 1.4.2 (repo pin) | Markdown in `OmpOS.Presentation` (already used by `OmpOS.UI`) | repo `Directory.Packages.props` | no (repo pin read; NuGet not re-fetched) |
+| Markdig | 1.4.2 (repo pin) | Markdown in `Autonogrammer.Presentation` (already used by `Autonogrammer.UI`) | repo `Directory.Packages.props` | no (repo pin read; NuGet not re-fetched) |
 | Meziantou.Analyzer | 3.0.315 (repo global analyzer) | Analyzer on every project | repo `Directory.Packages.props` | no (repo pin read; NuGet not re-fetched) |
 | Microsoft.Testing.Platform | 2.5.1 (repo pin) | MTP host already pinned | repo `Directory.Packages.props` | no (repo pin read) |
 
@@ -93,39 +93,39 @@ Locked decisions D-20-01 to D-20-14 in `20-CONTEXT.md` (Planning decisions) are 
 ### Dependency shape
 
 ```
-OmpOS.Contracts (L0)  <--  OmpOS.Presentation (L2)  <--  OmpOS.UI (L2, Razor)  <--  OmpOS.Web (L4)
+Autonogrammer.Contracts (L0)  <--  Autonogrammer.Presentation (L2)  <--  Autonogrammer.UI (L2, Razor)  <--  Autonogrammer.Web (L4)
   Plugins/ contracts        view models, state,            (Blazor WASM head)
                             plugin host, MotionPreference
                                     ^
                                     |
-                            OmpOS.Native (L4, Avalonia)   [new]
-OmpOS.GenUi (L2)  <--  OmpOS.Presentation   (new same-layer edge: add to SameLayerAllowed)
+                            Autonogrammer.Native (L4, Avalonia)   [new]
+Autonogrammer.GenUi (L2)  <--  Autonogrammer.Presentation   (new same-layer edge: add to SameLayerAllowed)
 ```
 
 ### Per new or changed project
 
 | Path | Layer | References | Why |
 |---|---|---|---|
-| `apps/OmpOS.Native` (new, namespace `OmpOS.Native`, `net10.0`) | L4 | `OmpOS.Presentation` (L2, downward); `Avalonia.Desktop`; `Avalonia.Themes.Fluent`. Ships `Themes/OmpOSTokens.axaml`. | D-20-01, D-20-07. The Avalonia packages are the only UI framework references in the native tree; L4 may depend downward. |
-| `src/OmpOS.Presentation` (new, namespace `OmpOS.Presentation`) | L2 | `OmpOS.Contracts` (L0); `OmpOS.GenUi` (L2, same-layer, needs `SameLayerAllowed` entry); `Markdig` 1.4.2 | D-20-02. Must not reference `Avalonia*`, `Microsoft.Maui*` or `Microsoft.AspNetCore.Components*`. Holds `MotionPreference`, plugin host (`Plugins/`), and VMs moved from `OmpOS.UI` (D-20-03). |
-| `tests/OmpOS.Native.Tests` (new) | test | `OmpOS.Native`; `OmpOS.Presentation`; `Avalonia.Headless.XUnit` 12.1.4; `Avalonia.Themes.Fluent` 12.1.4; `xunit.v3` (central) | D-20-06. `Directory.Build.props` already makes every `*Tests` project `Exe`, MTP runner, not trimmable. |
-| `tests/OmpOS.Presentation.Tests` (new) | test | `OmpOS.Presentation`; `OmpOS.Contracts`; `xunit.v3` | Plain xUnit with no UI framework (D-20-02). Hosts the in-process sample plugin (D-20-05). |
-| `src/OmpOS.UI` (changed) | L2 | adds `OmpOS.Presentation` (second same-layer edge) | D-20-03. Needs `("OmpOS.UI", "OmpOS.Presentation")` in `LayerMap.SameLayerAllowed`. `("OmpOS.UI", "OmpOS.GenUi")` already exists. |
-| `src/OmpOS.Contracts/Plugins/` (changed, not a new project) | L0 | none new | D-20-05. Must not reference any UI framework assembly. |
-| `apps/OmpOS.App` (changed, usings only) | L4 | unchanged (already references `OmpOS.UI`) | D-20-04. `Components/SessionHost.razor` moves to `OmpOS.Presentation` namespaces. Compile verification is blocked on this host (no MAUI workload). |
-| `tests/OmpOS.ArchitectureTests` (changed) | test | `ProjectReference` to each new product assembly | D-20-12. `LayerMap.Layers` must gain `OmpOS.Presentation = 2` and `OmpOS.Native = 4`. |
+| `apps/Autonogrammer.Native` (new, namespace `Autonogrammer.Native`, `net10.0`) | L4 | `Autonogrammer.Presentation` (L2, downward); `Avalonia.Desktop`; `Avalonia.Themes.Fluent`. Ships `Themes/AutonogrammerTokens.axaml`. | D-20-01, D-20-07. The Avalonia packages are the only UI framework references in the native tree; L4 may depend downward. |
+| `src/Autonogrammer.Presentation` (new, namespace `Autonogrammer.Presentation`) | L2 | `Autonogrammer.Contracts` (L0); `Autonogrammer.GenUi` (L2, same-layer, needs `SameLayerAllowed` entry); `Markdig` 1.4.2 | D-20-02. Must not reference `Avalonia*`, `Microsoft.Maui*` or `Microsoft.AspNetCore.Components*`. Holds `MotionPreference`, plugin host (`Plugins/`), and VMs moved from `Autonogrammer.UI` (D-20-03). |
+| `tests/Autonogrammer.Native.Tests` (new) | test | `Autonogrammer.Native`; `Autonogrammer.Presentation`; `Avalonia.Headless.XUnit` 12.1.4; `Avalonia.Themes.Fluent` 12.1.4; `xunit.v3` (central) | D-20-06. `Directory.Build.props` already makes every `*Tests` project `Exe`, MTP runner, not trimmable. |
+| `tests/Autonogrammer.Presentation.Tests` (new) | test | `Autonogrammer.Presentation`; `Autonogrammer.Contracts`; `xunit.v3` | Plain xUnit with no UI framework (D-20-02). Hosts the in-process sample plugin (D-20-05). |
+| `src/Autonogrammer.UI` (changed) | L2 | adds `Autonogrammer.Presentation` (second same-layer edge) | D-20-03. Needs `("Autonogrammer.UI", "Autonogrammer.Presentation")` in `LayerMap.SameLayerAllowed`. `("Autonogrammer.UI", "Autonogrammer.GenUi")` already exists. |
+| `src/Autonogrammer.Contracts/Plugins/` (changed, not a new project) | L0 | none new | D-20-05. Must not reference any UI framework assembly. |
+| `apps/Autonogrammer.App` (changed, usings only) | L4 | unchanged (already references `Autonogrammer.UI`) | D-20-04. `Components/SessionHost.razor` moves to `Autonogrammer.Presentation` namespaces. Compile verification is blocked on this host (no MAUI workload). |
+| `tests/Autonogrammer.ArchitectureTests` (changed) | test | `ProjectReference` to each new product assembly | D-20-12. `LayerMap.Layers` must gain `Autonogrammer.Presentation = 2` and `Autonogrammer.Native = 4`. |
 
-**Wiring not yet in the repo (execution phase):** `LayerMap.Layers` entries for `OmpOS.Presentation` (2) and `OmpOS.Native` (4); `SameLayerAllowed` entries `("OmpOS.Presentation", "OmpOS.GenUi")` and `("OmpOS.UI", "OmpOS.Presentation")`; `OmpOS.slnx` and `OmpOS.Linux.slnf` entries for the new projects, including both test projects.
+**Wiring not yet in the repo (execution phase):** `LayerMap.Layers` entries for `Autonogrammer.Presentation` (2) and `Autonogrammer.Native` (4); `SameLayerAllowed` entries `("Autonogrammer.Presentation", "Autonogrammer.GenUi")` and `("Autonogrammer.UI", "Autonogrammer.Presentation")`; `Autonogrammer.slnx` and `Autonogrammer.Linux.slnf` entries for the new projects, including both test projects.
 
-**Scope note on D-20-12:** `LayerMap.cs` is documented as mapping product assemblies only. Read literally, D-20-12 asks for a `ProjectReference` in `OmpOS.ArchitectureTests` for each new project. The planner should decide whether test projects also get that reference; this research does not decide it.
+**Scope note on D-20-12:** `LayerMap.cs` is documented as mapping product assemblies only. Read literally, D-20-12 asks for a `ProjectReference` in `Autonogrammer.ArchitectureTests` for each new project. The planner should decide whether test projects also get that reference; this research does not decide it.
 
 ### Pattern: explicit view mapping (D-20-11)
 
-Map each presentation VM to its Avalonia control in code (for example, a `switch` on the VM type in `OmpOS.Native`). Do not use the default `ViewLocator`; the spike recorded trim-analysis IL2026 under warnings-as-errors. This is a design rule from the locked decisions, not a verified Avalonia API claim.
+Map each presentation VM to its Avalonia control in code (for example, a `switch` on the VM type in `Autonogrammer.Native`). Do not use the default `ViewLocator`; the spike recorded trim-analysis IL2026 under warnings-as-errors. This is a design rule from the locked decisions, not a verified Avalonia API claim.
 
 ### Pattern: tokens in one dictionary (D-20-07)
 
-Keep colour, type and spacing tokens in `apps/OmpOS.Native/Themes/OmpOSTokens.axaml`. The contrast test parses that file as XML (see Validation Architecture row 6). Parsing as XML keeps the test free of any Avalonia runtime and free of reflection.
+Keep colour, type and spacing tokens in `apps/Autonogrammer.Native/Themes/AutonogrammerTokens.axaml`. The contrast test parses that file as XML (see Validation Architecture row 6). Parsing as XML keeps the test free of any Avalonia runtime and free of reflection.
 
 ### Anti-patterns to avoid
 
@@ -154,7 +154,7 @@ Keep colour, type and spacing tokens in `apps/OmpOS.Native/Themes/OmpOSTokens.ax
 ### Pitfall 1: Worker-thread `AvaloniaObject` construction crashes the headless session (issue #22021)
 - **What goes wrong:** An `[AvaloniaFact]` session fails with "The calling thread cannot access this object because a different thread owns it", or the process hangs.
 - **Why it happens:** `AvaloniaObject`'s `Dispatcher` property calls `Dispatcher.CurrentDispatcher`. The `Dispatcher` constructor sets `s_uiThread ??= this` (first dispatcher wins), and the session reset clears `s_uiThread` before the session thread reclaims it. A plain `[Fact]` constructing a brush in that window can take the UI thread. Source read: `src/Avalonia.Base/Threading/Dispatcher.cs` on master (not the 12.1.4 tag).
-- **How to avoid:** Put `[assembly: CollectionBehavior(DisableTestParallelization = true)]` in `OmpOS.Native.Tests` if any plain `[Fact]` there touches Avalonia types; keep `PerTest` isolation.
+- **How to avoid:** Put `[assembly: CollectionBehavior(DisableTestParallelization = true)]` in `Autonogrammer.Native.Tests` if any plain `[Fact]` there touches Avalonia types; keep `PerTest` isolation.
 - **Warning signs:** Intermittent `VerifyAccess` first-chance exceptions; hung test runs with `dotnet-stack` showing xUnit workers in `AvaloniaTestCase.Run`.
 
 ### Pitfall 2: Default accessible name is the control type
@@ -333,45 +333,45 @@ static double ContrastRatio(double luminanceA, double luminanceB)
 
 ```csharp
 // Uses Assembly.GetReferencedAssemblies() metadata only; no serializer involved.
-var refs = typeof(OmpOS.Contracts.Plugins.PluginDescriptor).Assembly
+var refs = typeof(Autonogrammer.Contracts.Plugins.PluginDescriptor).Assembly
     .GetReferencedAssemblies()
     .Select(a => a.Name ?? string.Empty);
 Assert.DoesNotContain(refs, n => n.StartsWith("Avalonia", StringComparison.Ordinal));
 ```
 
-Note: `OmpOS.Contracts.Plugins.PluginDescriptor` is a name chosen from D-20-05 (plugin descriptor type), not an existing type verified in this session.
+Note: `Autonogrammer.Contracts.Plugins.PluginDescriptor` is a name chosen from D-20-05 (plugin descriptor type), not an existing type verified in this session.
 
 ## Validation Architecture
 
-Gate command for every row: `./bootstrap.sh`, which builds and tests `OmpOS.Linux.slnf` and runs `dotnet format --verify-no-changes` (20-CONTEXT.md, Verification policy). The per-project narrowing command was not verified, so the planner should use the gate. Every new project must be added to `OmpOS.Linux.slnf` (D-20-12) for its tests to run in this gate.
+Gate command for every row: `./bootstrap.sh`, which builds and tests `Autonogrammer.Linux.slnf` and runs `dotnet format --verify-no-changes` (20-CONTEXT.md, Verification policy). The per-project narrowing command was not verified, so the planner should use the gate. Every new project must be added to `Autonogrammer.Linux.slnf` (D-20-12) for its tests to run in this gate.
 
 | # | Success criterion | Test kind | Planned test project and file path | Gate command | Linux-only |
 |---|---|---|---|---|---|
-| 1 | One Avalonia 12.1.4 native project is in the solution and builds with warnings as errors | Build gate (no test file of its own) | `apps/OmpOS.Native/OmpOS.Native.csproj` (new); added to `OmpOS.slnx` and `OmpOS.Linux.slnf`. Graph rules are covered by existing `ProjectGraphTests`. | `./bootstrap.sh` | No (the project is cross-platform; this phase's gate host is Linux) |
-| 2 | Presentation layer holds the VMs and state, with no UI-framework types, and references no Avalonia, MAUI or AspNetCore.Components assembly | Contract test (assembly metadata) | `tests/OmpOS.Presentation.Tests/PresentationIsolationTests.cs`: asserts no referenced assembly starts with `Avalonia`, `Microsoft.Maui` or `Microsoft.AspNetCore.Components`, and no public type in the assembly derives from or is declared in those namespaces | `./bootstrap.sh` | No |
-| 3 | Presentation is consumed by both the Avalonia head and the Blazor web head; both build against it and its tests pass | Build gate plus unit tests | `tests/OmpOS.Presentation.Tests/` (VM tests moved from `tests/OmpOS.UI.Tests`, logic only); `tests/OmpOS.Native.Tests/PresentationBindingTests.cs` (native head binds the same VM types); existing `tests/OmpOS.UI.Tests` (bUnit) and `apps/OmpOS.Web` build via `OmpOS.Linux.slnf` (confirmed listed) | `./bootstrap.sh` | No |
-| 4 | Every control in the Avalonia head has an explicit AutomationProperties name; prompt input, send control and transcript are exposed through AT-SPI2 on Linux | Headless UI test (names) plus runbook evidence (AT-SPI2 query, outside the gate) | Test: `tests/OmpOS.Native.Tests/AccessibilityNameTests.cs` (`[AvaloniaFact]`; walks the logical tree and asserts a non-empty `AutomationProperties.GetName` on every control and exact names for prompt, send and transcript). Evidence: a dated directory under `docs/runbooks/evidence/` (D-20-13) with the `xvfb-run` + `dbus-run-session` + AT-SPI2 query output. | Test: `./bootstrap.sh`. Evidence: manual run, recorded. | Test: No. AT-SPI2 query: Yes |
-| 5 | Shared controls are reachable by keyboard, have a visible focus style, and disable transitions when reduced motion is on | Headless UI test over every shared control | `tests/OmpOS.Native.Tests/KeyboardFocusTests.cs` (Tab and Shift+Tab via `KeyPress`; Enter and Escape on the composer; `:focus-visible` style present on each shared control). `tests/OmpOS.Native.Tests/ReducedMotionTests.cs` (`MotionPreference.Reduced` removes `Transitions` from each shared control; `reduced-motion` class on root). Shift+Tab depends on U-04. | `./bootstrap.sh` | No |
-| 6 | Theme tokens live in one resource dictionary; contract test asserts at least 4.5:1 text contrast for every foreground and background pair | Contract test (XML parse of AXAML, exhaustive pairs) | `tests/OmpOS.Native.Tests/ThemeContrastTests.cs`: loads `apps/OmpOS.Native/Themes/OmpOSTokens.axaml` with `System.Xml.Linq`, takes every foreground token and every background token, asserts ratio >= 4.5 for each pair | `./bootstrap.sh` | No |
-| 7 | Plugin host contracts define commands, panels, tools and agent modes with no UI reference; an in-process sample plugin registers one of each through the host | Contract test plus in-process registration test | `tests/OmpOS.Presentation.Tests/PluginContractTests.cs`: asserts `OmpOS.Contracts` referenced assemblies contain no UI framework; sample plugin (test code) registers one command, one panel, one tool and one agent mode through the presentation host and the test asserts each is listed | `./bootstrap.sh` | No |
+| 1 | One Avalonia 12.1.4 native project is in the solution and builds with warnings as errors | Build gate (no test file of its own) | `apps/Autonogrammer.Native/Autonogrammer.Native.csproj` (new); added to `Autonogrammer.slnx` and `Autonogrammer.Linux.slnf`. Graph rules are covered by existing `ProjectGraphTests`. | `./bootstrap.sh` | No (the project is cross-platform; this phase's gate host is Linux) |
+| 2 | Presentation layer holds the VMs and state, with no UI-framework types, and references no Avalonia, MAUI or AspNetCore.Components assembly | Contract test (assembly metadata) | `tests/Autonogrammer.Presentation.Tests/PresentationIsolationTests.cs`: asserts no referenced assembly starts with `Avalonia`, `Microsoft.Maui` or `Microsoft.AspNetCore.Components`, and no public type in the assembly derives from or is declared in those namespaces | `./bootstrap.sh` | No |
+| 3 | Presentation is consumed by both the Avalonia head and the Blazor web head; both build against it and its tests pass | Build gate plus unit tests | `tests/Autonogrammer.Presentation.Tests/` (VM tests moved from `tests/Autonogrammer.UI.Tests`, logic only); `tests/Autonogrammer.Native.Tests/PresentationBindingTests.cs` (native head binds the same VM types); existing `tests/Autonogrammer.UI.Tests` (bUnit) and `apps/Autonogrammer.Web` build via `Autonogrammer.Linux.slnf` (confirmed listed) | `./bootstrap.sh` | No |
+| 4 | Every control in the Avalonia head has an explicit AutomationProperties name; prompt input, send control and transcript are exposed through AT-SPI2 on Linux | Headless UI test (names) plus runbook evidence (AT-SPI2 query, outside the gate) | Test: `tests/Autonogrammer.Native.Tests/AccessibilityNameTests.cs` (`[AvaloniaFact]`; walks the logical tree and asserts a non-empty `AutomationProperties.GetName` on every control and exact names for prompt, send and transcript). Evidence: a dated directory under `docs/runbooks/evidence/` (D-20-13) with the `xvfb-run` + `dbus-run-session` + AT-SPI2 query output. | Test: `./bootstrap.sh`. Evidence: manual run, recorded. | Test: No. AT-SPI2 query: Yes |
+| 5 | Shared controls are reachable by keyboard, have a visible focus style, and disable transitions when reduced motion is on | Headless UI test over every shared control | `tests/Autonogrammer.Native.Tests/KeyboardFocusTests.cs` (Tab and Shift+Tab via `KeyPress`; Enter and Escape on the composer; `:focus-visible` style present on each shared control). `tests/Autonogrammer.Native.Tests/ReducedMotionTests.cs` (`MotionPreference.Reduced` removes `Transitions` from each shared control; `reduced-motion` class on root). Shift+Tab depends on U-04. | `./bootstrap.sh` | No |
+| 6 | Theme tokens live in one resource dictionary; contract test asserts at least 4.5:1 text contrast for every foreground and background pair | Contract test (XML parse of AXAML, exhaustive pairs) | `tests/Autonogrammer.Native.Tests/ThemeContrastTests.cs`: loads `apps/Autonogrammer.Native/Themes/AutonogrammerTokens.axaml` with `System.Xml.Linq`, takes every foreground token and every background token, asserts ratio >= 4.5 for each pair | `./bootstrap.sh` | No |
+| 7 | Plugin host contracts define commands, panels, tools and agent modes with no UI reference; an in-process sample plugin registers one of each through the host | Contract test plus in-process registration test | `tests/Autonogrammer.Presentation.Tests/PluginContractTests.cs`: asserts `Autonogrammer.Contracts` referenced assemblies contain no UI framework; sample plugin (test code) registers one command, one panel, one tool and one agent mode through the presentation host and the test asserts each is listed | `./bootstrap.sh` | No |
 
 ## UNVERIFIED
 
-Each item below is not verified. The proposed open-question row uses a placeholder ID (`OQ-NEW-nn`) to be assigned when inserted into `docs/open-questions.md`. Owner is `ompos-maintainers` and status is `open` for every row. The default taken is what the plan may assume until the question is closed.
+Each item below is not verified. The proposed open-question row uses a placeholder ID (`OQ-NEW-nn`) to be assigned when inserted into `docs/open-questions.md`. Owner is `autonogrammer-maintainers` and status is `open` for every row. The default taken is what the plan may assume until the question is closed.
 
 | ID placeholder | Item (not verified) | Question | Default taken | Owner | Status |
 |---|---|---|---|---|---|
-| OQ-NEW-01 (U-01) | Binary compatibility of Avalonia.Headless.XUnit 12.1.4 (compiled against the `xunit.v3.extensibility.core` `[3.2.2, )` range) with xunit.v3 4.0.2 | Does `Avalonia.Headless.XUnit` 12.1.4 compile and run unchanged against xunit.v3 4.0.2? | Yes; keep xunit.v3 4.0.2 (D-20-06). If the build fails in execution, record a blocker; do not silently downgrade. | ompos-maintainers | open |
-| OQ-NEW-02 (U-02) | `[AvaloniaFact]` under MTP v2 in this repo. Upstream Avalonia tests use this route at 12.1.4, but nothing was run here. The custom `AvaloniaTestFrameworkAttribute` (xunit `ITestFramework`) under MTP is also unverified; this plan does not use it. | Do `[AvaloniaFact]` tests run under `Microsoft.Testing.Platform` in `OmpOS.Native.Tests`? | Yes. Fallback per D-20-06: `Avalonia.Headless` with plain `[Fact]`, `HeadlessUnitTestSession.StartNew` and `Dispatch`. | ompos-maintainers | open |
-| OQ-NEW-03 (U-03) | Issue #22021 (worker-thread `AvaloniaObject` construction races the UI-thread claim). Reporter-run controlled result, not an Avalonia-verified fix status. The fetched page shows no close. | Is issue #22021 fixed in the pinned 12.1.4 package, and does `DisableTestParallelization` remove the hang in this suite? | Set `[assembly: CollectionBehavior(DisableTestParallelization = true)]` in `OmpOS.Native.Tests` if any plain `[Fact]` there touches Avalonia types. | ompos-maintainers | open |
-| OQ-NEW-04 (U-04) | `RawInputModifiers.Shift` member name. The namespace `Avalonia.Input.Raw` is verified, but the file declaring the enum was not located in the 12.1.4 tree listing. | Is `RawInputModifiers.Shift` the member name, and does Shift+Tab reverse focus in a headless window? | Use `RawInputModifiers.Shift`; confirm at compile time. | ompos-maintainers | open |
-| OQ-NEW-05 (U-05) | `FocusAdorner` property behaviour and `:focus-visible` rendering under the Fluent theme. Cited from the focus docs page only; the property and pseudoclass were not read in source. | Does `:focus-visible` apply in the Fluent theme under headless, and does setting `FocusAdorner` to `null` remove the default ring? | Follow the docs; the headless test asserts the style class is present and `FocusAdorner` is `null` on custom-indicator controls. | ompos-maintainers | open |
-| OQ-NEW-06 (U-06) | `StartWithClassicDesktopLifetime` extension name. The type `ClassicDesktopStyleApplicationLifetime` exists at 12.1.4 (`src/Avalonia.Controls/ApplicationLifetimes/`), but the extension method was not read. | Is `StartWithClassicDesktopLifetime(args)` the extension used by the native `Program.cs`? | Use it, the usual template convention; confirm at compile time. | ompos-maintainers | open |
-| OQ-NEW-07 (U-07) | OS reduced-motion reader. No such member on `IPlatformSettings` at 12.1.4 (verified absence in that interface only). Issue #19405 is about Windows and open on the fetched page. | Which platform reader resolves `MotionPreference.System` to `Reduced`, and on which OS? | `System` resolves to `Full` on Avalonia (D-20-08). | ompos-maintainers | open |
-| OQ-NEW-08 (U-08) | Analyzer interaction: `AnalysisLevel latest-all`, Meziantou.Analyzer 3.0.315, Microsoft.VisualStudio.Threading.Analyzers 18.12.1 and BannedApiAnalyzers 5.6.0 against Avalonia XAML-generated partial classes and the C# source generator for Avalonia properties (PR #21797). A GitHub search returned no issue specific to these analyzers. | Do any of these analyzers fire on generated Avalonia code under `TreatWarningsAsErrors`, and how is each handled? | Fix at source; no blanket suppression. Any suppression requires its own open-question row. | ompos-maintainers | open |
-| OQ-NEW-09 (U-09) | Avalonia XAML compiler `AVLN` diagnostics under `TreatWarningsAsErrors`. PR evidence exists for the family (PR #18132 "Warning AVLN2208"; PR #13447 "XAML warnings/diagnostics support"), but the full code list was not read. | Which `AVLN` codes can fire on the native AXAML, and do any fail the build? | Any `AVLN` warning blocks the build. | ompos-maintainers | open |
-| OQ-NEW-10 (U-10) | AT-SPI2 names for controls other than TextBox. The spike measured only a TextBox's default name. | Do all native-head controls expose explicit names through AT-SPI2 on this host? | Explicit names on every control (D-20-09); the runbook records the query output. | ompos-maintainers | open |
-| OQ-NEW-11 (U-11) | Live AT-SPI2 query and Orca behaviour for the native head on Ubuntu 24.04 (Tier 2). Not run in research. | Does the native head expose prompt input, send control and transcript names through AT-SPI2 on Ubuntu 24.04 under `xvfb-run` and `dbus-run-session`? | Assume yes until the runbook query shows otherwise; record the result either way. | ompos-maintainers | open |
+| OQ-NEW-01 (U-01) | Binary compatibility of Avalonia.Headless.XUnit 12.1.4 (compiled against the `xunit.v3.extensibility.core` `[3.2.2, )` range) with xunit.v3 4.0.2 | Does `Avalonia.Headless.XUnit` 12.1.4 compile and run unchanged against xunit.v3 4.0.2? | Yes; keep xunit.v3 4.0.2 (D-20-06). If the build fails in execution, record a blocker; do not silently downgrade. | autonogrammer-maintainers | open |
+| OQ-NEW-02 (U-02) | `[AvaloniaFact]` under MTP v2 in this repo. Upstream Avalonia tests use this route at 12.1.4, but nothing was run here. The custom `AvaloniaTestFrameworkAttribute` (xunit `ITestFramework`) under MTP is also unverified; this plan does not use it. | Do `[AvaloniaFact]` tests run under `Microsoft.Testing.Platform` in `Autonogrammer.Native.Tests`? | Yes. Fallback per D-20-06: `Avalonia.Headless` with plain `[Fact]`, `HeadlessUnitTestSession.StartNew` and `Dispatch`. | autonogrammer-maintainers | open |
+| OQ-NEW-03 (U-03) | Issue #22021 (worker-thread `AvaloniaObject` construction races the UI-thread claim). Reporter-run controlled result, not an Avalonia-verified fix status. The fetched page shows no close. | Is issue #22021 fixed in the pinned 12.1.4 package, and does `DisableTestParallelization` remove the hang in this suite? | Set `[assembly: CollectionBehavior(DisableTestParallelization = true)]` in `Autonogrammer.Native.Tests` if any plain `[Fact]` there touches Avalonia types. | autonogrammer-maintainers | open |
+| OQ-NEW-04 (U-04) | `RawInputModifiers.Shift` member name. The namespace `Avalonia.Input.Raw` is verified, but the file declaring the enum was not located in the 12.1.4 tree listing. | Is `RawInputModifiers.Shift` the member name, and does Shift+Tab reverse focus in a headless window? | Use `RawInputModifiers.Shift`; confirm at compile time. | autonogrammer-maintainers | open |
+| OQ-NEW-05 (U-05) | `FocusAdorner` property behaviour and `:focus-visible` rendering under the Fluent theme. Cited from the focus docs page only; the property and pseudoclass were not read in source. | Does `:focus-visible` apply in the Fluent theme under headless, and does setting `FocusAdorner` to `null` remove the default ring? | Follow the docs; the headless test asserts the style class is present and `FocusAdorner` is `null` on custom-indicator controls. | autonogrammer-maintainers | open |
+| OQ-NEW-06 (U-06) | `StartWithClassicDesktopLifetime` extension name. The type `ClassicDesktopStyleApplicationLifetime` exists at 12.1.4 (`src/Avalonia.Controls/ApplicationLifetimes/`), but the extension method was not read. | Is `StartWithClassicDesktopLifetime(args)` the extension used by the native `Program.cs`? | Use it, the usual template convention; confirm at compile time. | autonogrammer-maintainers | open |
+| OQ-NEW-07 (U-07) | OS reduced-motion reader. No such member on `IPlatformSettings` at 12.1.4 (verified absence in that interface only). Issue #19405 is about Windows and open on the fetched page. | Which platform reader resolves `MotionPreference.System` to `Reduced`, and on which OS? | `System` resolves to `Full` on Avalonia (D-20-08). | autonogrammer-maintainers | open |
+| OQ-NEW-08 (U-08) | Analyzer interaction: `AnalysisLevel latest-all`, Meziantou.Analyzer 3.0.315, Microsoft.VisualStudio.Threading.Analyzers 18.12.1 and BannedApiAnalyzers 5.6.0 against Avalonia XAML-generated partial classes and the C# source generator for Avalonia properties (PR #21797). A GitHub search returned no issue specific to these analyzers. | Do any of these analyzers fire on generated Avalonia code under `TreatWarningsAsErrors`, and how is each handled? | Fix at source; no blanket suppression. Any suppression requires its own open-question row. | autonogrammer-maintainers | open |
+| OQ-NEW-09 (U-09) | Avalonia XAML compiler `AVLN` diagnostics under `TreatWarningsAsErrors`. PR evidence exists for the family (PR #18132 "Warning AVLN2208"; PR #13447 "XAML warnings/diagnostics support"), but the full code list was not read. | Which `AVLN` codes can fire on the native AXAML, and do any fail the build? | Any `AVLN` warning blocks the build. | autonogrammer-maintainers | open |
+| OQ-NEW-10 (U-10) | AT-SPI2 names for controls other than TextBox. The spike measured only a TextBox's default name. | Do all native-head controls expose explicit names through AT-SPI2 on this host? | Explicit names on every control (D-20-09); the runbook records the query output. | autonogrammer-maintainers | open |
+| OQ-NEW-11 (U-11) | Live AT-SPI2 query and Orca behaviour for the native head on Ubuntu 24.04 (Tier 2). Not run in research. | Does the native head expose prompt input, send control and transcript names through AT-SPI2 on Ubuntu 24.04 under `xvfb-run` and `dbus-run-session`? | Assume yes until the runbook query shows otherwise; record the result either way. | autonogrammer-maintainers | open |
 
 ## Sources
 
@@ -432,7 +432,7 @@ Repo files read this session:
 - `docs/decisions/ADR-0004-cross-platform-ui.md`
 - `Directory.Packages.props` (xunit.v3 4.0.2; Meziantou.Analyzer 3.0.315; Microsoft.VisualStudio.Threading.Analyzers 18.12.1; Microsoft.CodeAnalysis.BannedApiAnalyzers 5.6.0; Microsoft.Testing.Platform 2.5.1; Markdig 1.4.2)
 - `Directory.Build.props` (net10.0; TreatWarningsAsErrors; AnalysisLevel latest-all; test projects get Exe and UseMicrosoftTestingPlatformRunner)
-- `tests/OmpOS.ArchitectureTests/LayerMap.cs` (layers; SameLayerAllowed)
-- `OmpOS.Linux.slnf` (projects included in the Linux gate)
+- `tests/Autonogrammer.ArchitectureTests/LayerMap.cs` (layers; SameLayerAllowed)
+- `Autonogrammer.Linux.slnf` (projects included in the Linux gate)
 
 Attempted and not usable: `https://api-docs.avaloniaui.net/...` (Docusaurus shell only, no member text); `https://docs.avaloniaui.net/docs/concepts/input/focus` (moved to `docs/input-interaction/focus`); `https://raw.githubusercontent.com/AvaloniaUI/Avalonia/12.1.4/src/Headless/...` paths guessed under `src/Avalonia.Headless` (404; correct path is `src/Headless/Avalonia.Headless`).

@@ -1,0 +1,74 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits SettingsPageView<NetworkSettingsPage>
+@using Autonogrammer.Presentation.Settings
+<SettingsPageFrame Page="Page" Title="@NetworkCopy.Heading" Description="@NetworkCopy.Description" Editable="false">
+    @if (Page.State != SettingsPageState.Ready)
+    {
+        <SettingsStateView Loading="@(Page.State == SettingsPageState.Loading)" Error="@(Page.State == SettingsPageState.Error ? Page.LoadError : null)" OnRetry="Retry" />
+    }
+    else
+    {
+        <p class="autonogrammer-settings-help">@NetworkCopy.Explanation</p>
+        <div class="autonogrammer-settings-actions">
+            <button type="button" class="autonogrammer-btn autonogrammer-btn--primary" disabled="@(!Page.CanRun)" @onclick="RunAsync">@NetworkCopy.RunLabel</button>
+            @if (Page.IsRunning)
+            {
+                <button type="button" class="autonogrammer-btn" @onclick="Cancel">@NetworkCopy.CancelLabel</button>
+            }
+        </div>
+        <p class="autonogrammer-settings-help" role="status" aria-live="polite">@Page.Announcement</p>
+        if (Page.IsNotRun)
+        {
+            <p class="autonogrammer-settings-state">@NetworkCopy.NotRun</p>
+        }
+
+        if (Page.IsEmpty)
+        {
+            <p class="autonogrammer-settings-state">@NetworkCopy.NoEndpoints</p>
+        }
+
+        if (Page.HasReport)
+        {
+            <p class="autonogrammer-settings-help">@Page.CheckedAtText</p>
+            <ul class="autonogrammer-settings-list" aria-label="@NetworkCopy.Heading">
+                @foreach (var row in Page.Rows)
+                {
+                    <li class="autonogrammer-settings-list-row" @key="row.Name" aria-label="@row.Summary">
+                        <div class="autonogrammer-settings-list-main">
+                            <span class="autonogrammer-settings-label">@row.Name</span>
+                            <span class="autonogrammer-settings-mono">@row.Host</span>
+                            <span class="autonogrammer-settings-help">@row.Detail</span>
+                        </div>
+                        <span class="autonogrammer-chip @ChipOf(row.Status)" data-status="@row.Status">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                @if (row.Status == EndpointStatus.Reachable)
+                                {
+                                    <path d="m5 12 5 5 9-10" />
+                                }
+                                else
+                                {
+                                    <path d="M6 6l12 12M18 6 6 18" />
+                                }
+                            </svg>@row.StatusLabel
+                        </span>
+                    </li>
+                }
+            </ul>
+        }
+    }
+</SettingsPageFrame>
+
+@code {
+    private static string ChipOf(EndpointStatus status) => status switch
+    {
+        EndpointStatus.Reachable => "autonogrammer-chip--success",
+        EndpointStatus.NotChecked => string.Empty,
+        _ => "autonogrammer-chip--error",
+    };
+
+    private Task Retry() => Page.LoadAsync(CancellationToken.None);
+
+    private Task RunAsync() => Page.RunDiagnosticsAsync(CancellationToken.None);
+
+    private void Cancel() => Page.CancelRun();
+}

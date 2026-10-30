@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 96" width="380" height="96">
-  <title>OmpOS</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 624 96" width="624" height="96">
+  <title>Autonogrammer</title>
   <defs>
     <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#7c3aed"/>
@@ -14,5 +14,5 @@
       <path d="M276 302H312" stroke-width="42"/>
     </g>
   </g>
-  <text x="122" y="73" font-family="Anybody" font-weight="600" font-size="72" fill="#1c1c1a">Omp<tspan fill="#6d28d9">OS</tspan></text>
+  <text x="120" y="68" font-family="Anybody" font-weight="600" font-size="56" fill="#1c1c1a">Auto<tspan fill="#6d28d9">nogrammer</tspan></text>
 </svg>

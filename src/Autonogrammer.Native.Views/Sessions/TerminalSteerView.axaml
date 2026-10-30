@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:copy="clr-namespace:Autonogrammer.Presentation.AgentPanel;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Sessions.TerminalSteerView"
+             Background="{DynamicResource Autonogrammer.Color.Surface}">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/ComposerStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The composer of an omp terminal (parity spec 4.7): the same rounded card as the chat composer, in the same content column. The
+       terminal itself takes the keys; this box only steers the running omp: Send now delivers the message into the running turn, Queue
+       runs it after the turn. The two actions sit in the card's footer at the right. Keyboard order follows XAML order: the message,
+       Send now, Queue. -->
+  <Border x:Name="SteerFrame"
+          MaxWidth="{DynamicResource Autonogrammer.Size.ThreadContentMaxWidth}"
+          Margin="16,8,16,16"
+          CornerRadius="{DynamicResource Autonogrammer.Radius.Lg}"
+          BoxShadow="{DynamicResource Autonogrammer.Shadow.Card}">
+    <Panel>
+
+      <TextBox x:Name="MessageInput"
+               Classes="composer"
+               AutomationProperties.Name="{x:Static copy:AgentPanelCopy.TerminalMessageName}"
+               PlaceholderText="{x:Static copy:AgentPanelCopy.ComposerPlaceholderTerminal}"
+               AcceptsReturn="True"
+               TextWrapping="Wrap" />
+
+      <StackPanel x:Name="SteerFooter"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  Margin="8,0,8,8"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+        <Button x:Name="SendNowButton"
+                Classes="primary sm"
+                Content="{x:Static copy:AgentPanelCopy.SendNow}"
+                AutomationProperties.Name="{x:Static copy:AgentPanelCopy.SendNowName}" />
+
+        <Button x:Name="QueueButton"
+                Classes="sm"
+                Content="{x:Static copy:AgentPanelCopy.QueueFollowUpLabel}"
+                AutomationProperties.Name="{x:Static copy:AgentPanelCopy.QueueFollowUpName}" />
+
+      </StackPanel>
+
+    </Panel>
+  </Border>
+
+</UserControl>

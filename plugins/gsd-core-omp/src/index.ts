@@ -8,11 +8,11 @@
  * The plugin never copies GSD-Core files. It symlinks the installed GSD agent profiles that omp's task tool
  * cannot see yet into its own gitignored `agents/` directory (see `src/gsd-home.mjs`).
  *
- * It also hosts two OmpOS host features, both inactive (no fs call) unless their environment variable is set, both
+ * It also hosts two Autonogrammer host features, both inactive (no fs call) unless their environment variable is set, both
  * started for the top-level session only (never a subagent) and both silent (the TUI owns the screen):
- * - the steering inbox (`OMPOS_STEER_DIR`, `src/steer-inbox.mjs`): delivers directive files into the running session
+ * - the steering inbox (`AUTONOGRAMMER_STEER_DIR`, `src/steer-inbox.mjs`): delivers directive files into the running session
  *   with `pi.sendUserMessage(text, { deliverAs })`, which omp's ACP `session/prompt` cannot do without cancelling the turn;
- * - the connection report (`OMPOS_CONNECTION_FILE`, `src/connection-report.mjs`): writes the raw tool and command names
+ * - the connection report (`AUTONOGRAMMER_CONNECTION_FILE`, `src/connection-report.mjs`): writes the raw tool and command names
  *   omp has loaded. omp emits `session_start` after every extension factory has run, so the first report is written
  *   there; `before_agent_start` and a 1 s one-shot timer re-check it because MCP tools can register later, and the
  *   reporter rewrites only when the lists changed (at most once per 2 s).
@@ -50,7 +50,7 @@ function notify(ctx: NotifyContext | undefined, message: string, level: "info" |
   }
 }
 
-/** Starts the OmpOS steering inbox and connection report for the top-level session; inert without their env vars. */
+/** Starts the Autonogrammer steering inbox and connection report for the top-level session; inert without their env vars. */
 function registerHostFeatures(pi: PluginApi): void {
   let ctxRef: NotifyContext | undefined;
   let inbox: { stop: () => void } | null = null;
@@ -77,11 +77,11 @@ function registerHostFeatures(pi: PluginApi): void {
       ctxRef = ctx;
       if (ctx?.agent?.kind === "sub") return;
       const env = process.env;
-      if (env.OMPOS_STEER_DIR) {
+      if (env.AUTONOGRAMMER_STEER_DIR) {
         const created = createSteerInbox({
           fs: nodeFs,
           clock: systemClock,
-          dir: env.OMPOS_STEER_DIR,
+          dir: env.AUTONOGRAMMER_STEER_DIR,
           getMode: mode,
           deliver: (text: string, deliverAs: "steer" | "followUp" | "aside") => {
             let idle: boolean | null = null;
@@ -97,11 +97,11 @@ function registerHostFeatures(pi: PluginApi): void {
         created.start();
         inbox = created;
       }
-      if (env.OMPOS_CONNECTION_FILE) {
+      if (env.AUTONOGRAMMER_CONNECTION_FILE) {
         const created = createConnectionReporter({
           fs: nodeFs,
           clock: systemClock,
-          file: env.OMPOS_CONNECTION_FILE,
+          file: env.AUTONOGRAMMER_CONNECTION_FILE,
           pi,
           getMode: mode,
           version: null, // omp exposes no version to extensions

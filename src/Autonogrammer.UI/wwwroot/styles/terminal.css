@@ -1,0 +1,103 @@
+/* omp terminal view: the xterm.js screen (vendored under lib/xterm, no CDN, its stylesheet is imported by autonogrammer.css), its status line and the steer-only composer below it.
+   The screen's colours are read from tokens.css by scripts/autonogrammer-terminal.js, so a theme switch reaches it. */
+
+/* The terminal column is wider than the 760 px reading column (terminal output is wide monospace text) and centred in the panel. */
+.autonogrammer-terminal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+  width: 100%;
+  max-width: 1000px;
+  min-width: 0;
+  margin-inline: auto;
+  padding: 16px;
+}
+
+.autonogrammer-terminal-frame {
+  overflow: hidden;
+  background: var(--autonogrammer-surface-sunken);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+}
+
+.autonogrammer-terminal-status {
+  display: flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+  min-height: var(--autonogrammer-footer-height);
+  padding: 0 10px;
+  background: var(--autonogrammer-surface-raised);
+  border-bottom: 1px solid var(--autonogrammer-border);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-terminal-status-text {
+  flex: 1;
+  margin: 0;
+}
+
+.autonogrammer-terminal-status[data-state='live'] .autonogrammer-terminal-status-text {
+  color: var(--autonogrammer-success);
+}
+
+.autonogrammer-terminal-status[data-state='reconnecting'] .autonogrammer-terminal-status-text,
+.autonogrammer-terminal-status[data-state='unavailable'] .autonogrammer-terminal-status-text {
+  color: var(--autonogrammer-warning);
+}
+
+.autonogrammer-terminal-screen {
+  height: min(60dvh, 520px);
+  min-height: 240px;
+  padding: var(--autonogrammer-gap-8);
+  background: var(--autonogrammer-surface-sunken);
+}
+
+.autonogrammer-terminal-screen .xterm {
+  height: 100%;
+}
+
+.autonogrammer-terminal-unavailable {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+  padding: 16px;
+}
+
+.autonogrammer-terminal-unavailable-heading {
+  font-size: var(--autonogrammer-font-size-label);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-label);
+}
+
+.autonogrammer-terminal-unavailable-reason {
+  margin: 0;
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+  line-height: var(--autonogrammer-line-height-mono);
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-terminal-steer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-terminal-steer-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-terminal-steer-result[data-failed='true'] {
+  color: var(--autonogrammer-error);
+}
+
+.autonogrammer-terminal-help {
+  margin: 0;
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}

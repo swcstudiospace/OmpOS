@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:set="clr-namespace:Autonogrammer.Presentation.Settings;assembly=Autonogrammer.Presentation"
+             xmlns:glyphs="clr-namespace:Autonogrammer.Presentation.AgentPanel;assembly=Autonogrammer.Presentation"
+             xmlns:agent="clr-namespace:Autonogrammer.Native.Views.AgentPanel"
+             x:Class="Autonogrammer.Native.Views.Settings.PageStatusView"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The state of a settings page that is not its controls: loading, or the load failed (with Try again).
+       At most one block shows at a time. Plain text and one button; the live regions say what changed. -->
+  <StackPanel Classes="settings-column">
+
+    <TextBlock x:Name="LoadingText"
+               Classes="muted settings-body"
+               IsVisible="False"
+               AutomationProperties.LiveSetting="Polite" />
+
+    <StackPanel x:Name="ErrorBlock"
+                IsVisible="False"
+                Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                AutomationProperties.LiveSetting="Assertive">
+      <TextBlock x:Name="ErrorHeading"
+                 Classes="settings-section" />
+      <Border Classes="banner"
+              Background="{DynamicResource Autonogrammer.Color.DiffRemoved}">
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+          <agent:StageIcon IconKey="{x:Static glyphs:StatusIcon.Cross}"
+                           VerticalAlignment="Top" />
+          <TextBlock x:Name="ErrorBody"
+                     Classes="tone-error settings-body" />
+        </StackPanel>
+      </Border>
+      <Button x:Name="RetryButton"
+              Content="{x:Static set:SettingsCopy.RetryLabel}"
+              Classes="sm"
+              HorizontalAlignment="Left"
+              AutomationProperties.Name="{x:Static set:SettingsCopy.RetryLabel}"
+              Click="OnRetryClick" />
+    </StackPanel>
+
+  </StackPanel>
+
+</UserControl>

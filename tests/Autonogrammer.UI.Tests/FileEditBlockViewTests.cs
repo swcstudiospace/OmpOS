@@ -1,0 +1,62 @@
+using Autonogrammer.Contracts.Ui;
+using Autonogrammer.UI.Components.Blocks;
+using Bunit;
+using Shouldly;
+using Xunit;
+
+namespace Autonogrammer.UI.Tests;
+
+/// <summary>The web head's rendering of <see cref="FileEditBlock"/> through <see cref="UiBlockRenderer"/>.</summary>
+public sealed class FileEditBlockViewTests : BunitContext
+{
+    /// <summary>An edit of an existing file shows its path, that it was edited, and the text before and after, each a focusable named group.</summary>
+    [Fact]
+    public void RendersPathAndBothTexts()
+    {
+        var cut = RenderEdit(new FileEditBlock { Id = "call-1-edit-0", CallId = "call-1", Path = "src/a.cs", OldText = "old", NewText = "new" });
+
+        var block = cut.Find(".autonogrammer-file-edit");
+        block.GetAttribute("role").ShouldBe("group");
+        block.GetAttribute("aria-label").ShouldBe("File edit: src/a.cs");
+        cut.Find(".autonogrammer-file-edit-path").TextContent.ShouldBe("src/a.cs");
+        cut.Find(".autonogrammer-file-edit-change").TextContent.ShouldBe("edited");
+        cut.Find(".autonogrammer-file-edit-before .autonogrammer-file-edit-text").TextContent.ShouldBe("old");
+        cut.Find(".autonogrammer-file-edit-after .autonogrammer-file-edit-text").TextContent.ShouldBe("new");
+        var before = cut.Find(".autonogrammer-file-edit-before .autonogrammer-file-edit-text");
+        before.GetAttribute("role").ShouldBe("group");
+        before.GetAttribute("aria-label").ShouldBe("Text of the file before the edit");
+        var after = cut.Find(".autonogrammer-file-edit-after .autonogrammer-file-edit-text");
+        after.GetAttribute("role").ShouldBe("group");
+        after.GetAttribute("aria-label").ShouldBe("Text of the file after the edit");
+    }
+
+    /// <summary>An edit with no text before it reads as a created file and shows no before section.</summary>
+    [Fact]
+    public void ACreatedFileShowsOnlyTheAfterText()
+    {
+        var cut = RenderEdit(new FileEditBlock { Id = "call-1-edit-0", CallId = "call-1", Path = "src/new.cs", OldText = null, NewText = "fresh" });
+
+        cut.Find(".autonogrammer-file-edit-change").TextContent.ShouldBe("created");
+        cut.FindAll(".autonogrammer-file-edit-before").ShouldBeEmpty();
+        var created = cut.Find(".autonogrammer-file-edit-after .autonogrammer-file-edit-text");
+        created.TextContent.ShouldBe("fresh");
+        created.GetAttribute("aria-label").ShouldBe("Text of the new file");
+    }
+
+    /// <summary>A path or file text that looks like markup is shown as text: no element is created from it.</summary>
+    [Fact]
+    public void PathAndTextsAreTextNeverMarkup()
+    {
+        const string Hostile = "<script>alert(1)</script>";
+        var cut = RenderEdit(new FileEditBlock { Id = "call-1-edit-0", CallId = "call-1", Path = "<b>x</b>.cs", OldText = Hostile, NewText = "<img src=x onerror=alert(2)>" });
+
+        cut.Find(".autonogrammer-file-edit-path").TextContent.ShouldBe("<b>x</b>.cs");
+        cut.Find(".autonogrammer-file-edit-before .autonogrammer-file-edit-text").TextContent.ShouldBe(Hostile);
+        cut.FindAll("script").ShouldBeEmpty();
+        cut.FindAll("img").ShouldBeEmpty();
+        cut.FindAll("b").ShouldBeEmpty();
+    }
+
+    private IRenderedComponent<UiBlockRenderer> RenderEdit(FileEditBlock block) =>
+        Render<UiBlockRenderer>(parameters => parameters.Add(p => p.Block, block));
+}

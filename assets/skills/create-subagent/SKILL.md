@@ -1,6 +1,6 @@
 ---
 name: create-subagent
-description: Create a custom subagent definition (.ompos/agents/<name>.md) with a focused role and delegation instructions.
+description: Create a custom subagent definition (.autonogrammer/agents/<name>.md) with a focused role and delegation instructions.
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -17,7 +17,7 @@ Ask in one message only for what you cannot infer:
 - **Read-only or not.** A reviewer, researcher or verifier should be read-only (`readonly: true`). Only a subagent that must change files gets write access.
 - **Background or foreground.** Set `is_background: true` only for a long job the user does not wait for.
 - **Model.** Default `inherit` (use the conversation's model). Set a specific model only when the user names one.
-- **Where.** Project (`.ompos/agents/<name>.md`, shared with the team) or user (`~/.ompos/agents/<name>.md`). Default to the project. If the repository already keeps agents in `.cursor/agents`, `.omp/agents`, `.claude/agents`, `.codex/agents` or `.agents/agents`, use that folder.
+- **Where.** Project (`.autonogrammer/agents/<name>.md`, shared with the team) or user (`~/.autonogrammer/agents/<name>.md`). Default to the project. If the repository already keeps agents in `.cursor/agents`, `.omp/agents`, `.claude/agents`, `.codex/agents` or `.agents/agents`, use that folder.
 
 ## 2. Name it
 

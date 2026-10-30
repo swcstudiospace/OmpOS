@@ -1,0 +1,266 @@
+{
+  "kind": "api",
+  "baseUrl": "http://127.0.0.1:5180/",
+  "axeCore": "4.14.0",
+  "findings": [
+    {
+      "check": "axe",
+      "id": "axe-incomplete-color-contrast",
+      "severity": "info",
+      "message": "axe could not decide color-contrast on 1 node(s)",
+      "state": "new-conversation",
+      "viewport": "1440x900",
+      "target": ".autonogrammer-agent-time"
+    },
+    {
+      "check": "axe",
+      "id": "axe-incomplete-color-contrast",
+      "severity": "info",
+      "message": "axe could not decide color-contrast on 1 node(s)",
+      "state": "kanban",
+      "viewport": "1440x900",
+      "target": ".autonogrammer-agent-time"
+    },
+    {
+      "check": "axe",
+      "id": "axe-incomplete-color-contrast",
+      "severity": "info",
+      "message": "axe could not decide color-contrast on 1 node(s)",
+      "state": "about",
+      "viewport": "1440x900",
+      "target": ".autonogrammer-agent-time"
+    },
+    {
+      "check": "axe",
+      "id": "axe-incomplete-color-contrast",
+      "severity": "info",
+      "message": "axe could not decide color-contrast on 1 node(s)",
+      "state": "settings-dialog",
+      "viewport": "1440x900",
+      "target": ".autonogrammer-agent-time"
+    },
+    {
+      "check": "axe",
+      "id": "axe-incomplete-color-contrast",
+      "severity": "info",
+      "message": "axe could not decide color-contrast on 1 node(s)",
+      "state": "settings-models",
+      "viewport": "1440x900",
+      "target": ".autonogrammer-agent-time"
+    },
+    {
+      "check": "axe",
+      "id": "axe-incomplete-color-contrast",
+      "severity": "info",
+      "message": "axe could not decide color-contrast on 1 node(s)",
+      "state": "session-not-found",
+      "viewport": "1440x900",
+      "target": ".autonogrammer-agent-time"
+    },
+    {
+      "check": "media",
+      "id": "icon-button-without-boundary",
+      "severity": "warning",
+      "message": "2 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "state": "prefers-contrast agents",
+      "viewport": "1440x900",
+      "wcag": "1.4.11",
+      "target": "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "detail": [
+        "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+        "button.autonogrammer-icon-btn.autonogrammer-thread-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-thread-close\" aria-label=\"Close this agent\" title=\"Close\"><!--!--><svg wid"
+      ]
+    },
+    {
+      "check": "media",
+      "id": "icon-button-without-boundary",
+      "severity": "warning",
+      "message": "1 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "state": "prefers-contrast kanban",
+      "viewport": "1440x900",
+      "wcag": "1.4.11",
+      "target": "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "detail": [
+        "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag"
+      ]
+    },
+    {
+      "check": "media",
+      "id": "icon-button-without-boundary",
+      "severity": "warning",
+      "message": "1 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "state": "prefers-contrast about",
+      "viewport": "1440x900",
+      "wcag": "1.4.11",
+      "target": "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "detail": [
+        "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag"
+      ]
+    },
+    {
+      "check": "media",
+      "id": "icon-button-without-boundary",
+      "severity": "warning",
+      "message": "3 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "state": "prefers-contrast settings-dialog",
+      "viewport": "1440x900",
+      "wcag": "1.4.11",
+      "target": "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+      "detail": [
+        "button.autonogrammer-icon-btn.autonogrammer-icon-btn--small.autonogrammer-agent-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-icon-btn--small autonogrammer-agent-close\" aria-label=\"Close this ag",
+        "button.autonogrammer-icon-btn.autonogrammer-thread-close <button type=\"button\" class=\"autonogrammer-icon-btn autonogrammer-thread-close\" aria-label=\"Close this agent\" title=\"Close\"><!--!--><svg wid",
+        "button.autonogrammer-icon-btn <button type=\"button\" class=\"autonogrammer-icon-btn\" aria-label=\"Close settings\"><!--!--><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fil"
+      ]
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 1440px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Awaiting input, 0 tasks\" data-column=\"awaiting-input\"><div class=\"autonogr"
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 1728px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Needs attention, 0 tasks\" data-column=\"needs-attention\"><div class=\"autono"
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 2016px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Paused, 0 tasks\" data-column=\"paused\"><div class=\"autonogrammer-kanban-col"
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 2304px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Completed, 0 tasks\" data-column=\"completed\"><div class=\"autonogrammer-kanb"
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 2592px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Failed, 0 tasks\" data-column=\"failed\"><div class=\"autonogrammer-kanban-col"
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 2880px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Unreachable, 0 tasks\" data-column=\"unreachable\"><div class=\"autonogrammer-"
+    },
+    {
+      "check": "reflow",
+      "id": "wide-content-in-undeclared-container",
+      "severity": "warning",
+      "message": "content reaches 3168px inside div.autonogrammer-kanban-columns <div class=\"autonogrammer-kanban-columns\" role=\"group\" aria-label=\"Kanban columns\"><div class=\"autonogrammer-kanban-column\" role=\"group\" ari (overflow-x auto) that is not a named, focusable scroll region",
+      "state": "kanban",
+      "viewport": "1280x1024@4x",
+      "wcag": "1.4.10",
+      "target": "div.autonogrammer-kanban-column <div class=\"autonogrammer-kanban-column\" role=\"group\" aria-label=\"Archived, 0 tasks\" data-column=\"archived\"><div class=\"autonogrammer-kanban"
+    },
+    {
+      "check": "target-size",
+      "id": "state-unreachable",
+      "severity": "error",
+      "message": "the state \"page-not-found\" was not reached (its screen did not render)",
+      "state": "page-not-found",
+      "viewport": "1440x900"
+    }
+  ],
+  "counters": {
+    "connect:views": 1,
+    "axe:runs": 18,
+    "reflow:views": 26,
+    "target-size:targets": 404,
+    "text-spacing:views": 18,
+    "routes:inapp": 6,
+    "first-load-focus:loads": 1,
+    "keyboard:states": 3,
+    "keyboard:stops": 57,
+    "dialog:tab-presses": 60,
+    "axe:states": 16,
+    "media:states": 16,
+    "media:forced-colors:controls": 94,
+    "media:forced-colors-stops": 21,
+    "media:prefers-contrast:controls": 94,
+    "media:reduced-motion:views": 4,
+    "media:dark:axe-runs": 4,
+    "reflow:states": 24,
+    "target-size:states": 15,
+    "text-spacing:states": 16
+  },
+  "skipped": [
+    {
+      "check": "routes",
+      "reason": "direct loads of /kanban, /sessions/<id>, /settings, /about and an unknown path: the static server of the real-bundle smoke has no SPA rewrite (covered by the Demo half)"
+    },
+    {
+      "check": "routes",
+      "reason": "agent row in the rail: the control is not on the page (the in-memory API has no session yet)"
+    }
+  ],
+  "summary": {
+    "axe": {
+      "errors": 0,
+      "warnings": 0,
+      "infos": 6
+    },
+    "media": {
+      "errors": 0,
+      "warnings": 4,
+      "infos": 0
+    },
+    "reflow": {
+      "errors": 0,
+      "warnings": 7,
+      "infos": 0
+    },
+    "target-size": {
+      "errors": 1,
+      "warnings": 0,
+      "infos": 0
+    }
+  },
+  "screenshotFiles": [
+    "screenshots/forced-colors-agents.png",
+    "screenshots/forced-colors-kanban.png",
+    "screenshots/forced-colors-about.png",
+    "screenshots/forced-colors-settings-dialog.png",
+    "screenshots/prefers-contrast-agents.png",
+    "screenshots/prefers-contrast-kanban.png",
+    "screenshots/prefers-contrast-about.png",
+    "screenshots/prefers-contrast-settings-dialog.png",
+    "screenshots/reduced-motion-agents.png",
+    "screenshots/reduced-motion-kanban.png",
+    "screenshots/reduced-motion-about.png",
+    "screenshots/reduced-motion-settings-dialog.png",
+    "screenshots/dark-agents.png",
+    "screenshots/dark-kanban.png",
+    "screenshots/dark-about.png",
+    "screenshots/dark-settings-dialog.png"
+  ]
+}

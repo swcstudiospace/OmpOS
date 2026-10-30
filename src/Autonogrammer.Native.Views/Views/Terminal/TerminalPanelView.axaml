@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:term="clr-namespace:Iciclecreek.Terminal;assembly=Iciclecreek.Avalonia.Terminal"
+             x:Class="Autonogrammer.Native.Views.Terminal.TerminalPanelView"
+             Padding="{DynamicResource Autonogrammer.Space.Sm}">
+  <!-- The output control's default theme is scoped to this panel, so its template does not depend on the application's style list.
+       Commands run only after Approve. The output control shows what approved runs print; it is not attached to any shell. -->
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Iciclecreek.Avalonia.Terminal/Themes/Generic.axaml" />
+  </UserControl.Styles>
+
+  <DockPanel>
+
+    <StackPanel DockPanel.Dock="Top"
+                Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+      <TextBlock Text="Terminal"
+                 FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Heading}" />
+
+      <TextBox x:Name="CommandInput"
+               Classes="mono"
+               PlaceholderText="Command, for example /bin/sh"
+               AutomationProperties.Name="Command" />
+
+      <TextBox x:Name="ArgumentsInput"
+               Classes="mono"
+               PlaceholderText="Arguments, one per line"
+               AcceptsReturn="True"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Arguments, one per line" />
+
+      <TextBox x:Name="DirectoryInput"
+               Classes="mono"
+               PlaceholderText="Working directory, relative to the workspace (empty for the workspace root)"
+               AutomationProperties.Name="Working directory" />
+
+      <Button x:Name="ProposeButton"
+              Classes="primary"
+              Content="Propose command"
+              HorizontalAlignment="Left"
+              AutomationProperties.Name="Propose command" />
+
+      <TextBlock x:Name="PendingText"
+                 Classes="muted small"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Pending command"
+                 AutomationProperties.LiveSetting="Polite" />
+
+      <StackPanel Orientation="Horizontal"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+        <Button x:Name="ApproveButton"
+                Classes="primary"
+                Content="Approve"
+                IsEnabled="False"
+                AutomationProperties.Name="Approve command" />
+
+        <Button x:Name="DeclineButton"
+                Content="Decline"
+                IsEnabled="False"
+                AutomationProperties.Name="Decline command" />
+
+        <Button x:Name="StopButton"
+                Content="Stop"
+                IsEnabled="False"
+                AutomationProperties.Name="Stop running command" />
+
+      </StackPanel>
+
+      <TextBlock x:Name="StatusText"
+                 Classes="small"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Terminal status"
+                 AutomationProperties.LiveSetting="Polite" />
+
+    </StackPanel>
+
+    <!-- The output sits in the same rounded frame as the omp terminal (parity spec 4.9): hairline, sunken body, mono face. -->
+    <Border CornerRadius="{DynamicResource Autonogrammer.Radius.Md}"
+            BorderBrush="{DynamicResource Autonogrammer.Color.Border}"
+            BorderThickness="{DynamicResource Autonogrammer.Border.Hairline}"
+            Background="{DynamicResource Autonogrammer.Color.SurfaceSunken}"
+            Margin="0,8,0,0"
+            ClipToBounds="True">
+      <term:TerminalControl x:Name="Output"
+                            FontFamily="{DynamicResource Autonogrammer.Font.Mono}"
+                            FontSize="{DynamicResource Autonogrammer.Font.Size.MonoTerminal}"
+                            Background="{DynamicResource Autonogrammer.Color.SurfaceSunken}"
+                            Foreground="{DynamicResource Autonogrammer.Color.TextPrimary}"
+                            SelectionBrush="{DynamicResource Autonogrammer.Color.Selected}"
+                            Margin="{DynamicResource Autonogrammer.Space.Sm}"
+                            AutomationProperties.Name="Terminal output" />
+    </Border>
+
+  </DockPanel>
+
+</UserControl>

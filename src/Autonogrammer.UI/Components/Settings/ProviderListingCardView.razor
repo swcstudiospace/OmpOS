@@ -1,0 +1,196 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits ObservableComponent
+@using Autonogrammer.Presentation.Settings.Models
+<li class="autonogrammer-provider-card autonogrammer-provider-listing" data-listing="@Model.Id" data-region="@Model.Region" data-kind="@Model.Kind">
+    <div class="autonogrammer-provider-card-head">
+        <h5 class="autonogrammer-provider-card-title">@Model.DisplayName</h5>
+        <span class="autonogrammer-chip">@Model.RegionText</span>
+        <span class="autonogrammer-chip">@Model.KindText</span>
+    </div>
+    @if (Model.CountryText is not null)
+    {
+        <p class="autonogrammer-settings-help">@CountryLine</p>
+    }
+    <p class="autonogrammer-settings-help autonogrammer-provider-status" data-verify="@(Model.VerifyBeforeUse ? "true" : "false")">
+        @Model.StatusText
+        @if (Model.VerifyMark is { } mark)
+        {
+            <span class="autonogrammer-chip autonogrammer-chip--warning">@mark</span>
+        }
+    </p>
+    @if (!string.IsNullOrWhiteSpace(Model.Note))
+    {
+        <p class="autonogrammer-settings-help">@Model.Note</p>
+    }
+    @if (Model.ConfiguredText is { } configured)
+    {
+        <p class="autonogrammer-settings-help" data-configured="true">@configured</p>
+    }
+    @if (Model.IsSignInOnly)
+    {
+        <p class="autonogrammer-settings-help">@Model.SignInText</p>
+    }
+    @if (Model.HasPlan)
+    {
+        <div class="autonogrammer-provider-plan" role="group" aria-label="@(Model.DisplayName + " plan")">
+            <p class="autonogrammer-settings-help autonogrammer-provider-rule">@Model.PlanRuleText</p>
+            <ul class="autonogrammer-provider-tags" aria-label="@(Model.DisplayName + " plan terms")">
+                @foreach (var tag in Model.PlanTags)
+                {
+                    <li><span class="autonogrammer-chip @(Model.IsInteractiveOnly && tag == ProviderListingCopy.InteractiveOnlyTag ? "autonogrammer-chip--warning" : string.Empty)">@tag</span></li>
+                }
+            </ul>
+            @if (Model.PlanTierLines.Count > 0)
+            {
+                <ul class="autonogrammer-settings-plain-list" aria-label="@(Model.DisplayName + " tiers")">
+                    @foreach (var line in Model.PlanTierLines)
+                    {
+                        <li class="autonogrammer-settings-help">@line</li>
+                    }
+                </ul>
+            }
+            @if (Model.PlanHostText is { } hostText)
+            {
+                <p class="autonogrammer-settings-help">@hostText</p>
+            }
+            <SettingsExternalLink Url="Model.PlanUrl" Label="@ProviderListingCopy.PlanPageActionLabel" Subject="@Model.DisplayName" />
+            <SettingsExternalLink Url="Model.PlanRuleSourceUrl" Label="@SettingsWebCopy.PlanRuleSource" Subject="@Model.DisplayName" />
+        </div>
+    }
+    @if (Model.Routes.Count > 0)
+    {
+        if (Model.HasRouteChoice)
+        {
+            <div class="autonogrammer-settings-field">
+                <label class="autonogrammer-settings-label" for="@RouteId">@ProviderListingCopy.RouteLabel</label>
+                <select id="@RouteId" class="autonogrammer-select" aria-label="@Model.RouteFieldName" @onchange="OnRouteChanged">
+                    @foreach (var route in Model.Routes)
+                    {
+                        <option value="@route.Id" selected="@(ReferenceEquals(route, Model.SelectedRoute))">@route.Label</option>
+                    }
+                </select>
+            </div>
+        }
+
+        <p class="autonogrammer-settings-mono autonogrammer-provider-endpoint">@Model.BaseAddressText</p>
+        <p class="autonogrammer-settings-help">@Model.AuthText</p>
+    }
+    @foreach (var input in Model.UrlInputs)
+    {
+        var inputId = UrlInputId(input);
+        <SettingsField For="@inputId" Label="@input.Label" Help="@input.Help" Error="@input.Error">
+            <input id="@inputId" class="autonogrammer-input autonogrammer-settings-mono" type="text" autocomplete="off" spellcheck="false" placeholder="@input.Hint"
+                   aria-label="@input.FieldName" value="@input.Value"
+                   aria-invalid="@(input.Error is null ? null : "true")"
+                   aria-describedby="@SettingsField.DescribedBy(inputId, !string.IsNullOrEmpty(input.Help))"
+                   @oninput="e => input.Value = e.Value?.ToString() ?? string.Empty" />
+        </SettingsField>
+    }
+    <div class="autonogrammer-settings-actions">
+        <SettingsExternalLink Url="Model.DocsUrl" Label="@ProviderListingCopy.DocsActionLabel" Subject="@Model.DisplayName" />
+        <SettingsExternalLink Url="Model.KeyPageUrl" Label="@ProviderListingCopy.KeyPageActionLabel" Subject="@Model.DisplayName" />
+    </div>
+    <p class="autonogrammer-settings-help">@Model.SourceText</p>
+    @if (Model.CanBeginSetup)
+    {
+        <div class="autonogrammer-settings-actions">
+            <button type="button" class="autonogrammer-btn autonogrammer-btn--small" disabled="@Model.IsBusy" aria-label="@Model.SetupActionName" @onclick="Model.BeginSetup">@ProviderListingCopy.SetupActionLabel</button>
+        </div>
+    }
+    @if (Model.IsSetupOpen)
+    {
+        <div class="autonogrammer-settings-confirm" role="group" aria-label="@Model.SetupActionName">
+            @if (Model.HasModelIdsField)
+            {
+                <SettingsField For="@ModelIdsId" Label="@ProviderListingCopy.ModelIdsLabel" Help="@Model.ModelIdsHelp">
+                    <input id="@ModelIdsId" class="autonogrammer-input autonogrammer-settings-mono" type="text" autocomplete="off" spellcheck="false"
+                           aria-label="@Model.ModelIdsFieldName" value="@Model.ModelIdsText"
+                           aria-describedby="@SettingsField.DescribedBy(ModelIdsId, true)"
+                           @oninput="e => Model.ModelIdsText = e.Value?.ToString() ?? string.Empty" />
+                </SettingsField>
+            }
+            @if (Model.TakesKey && Model.ApiKey is { } draft)
+            {
+                <ApiKeyField Draft="draft" InputId="@KeyId" ShowActions="false" DisabledReason="@Model.KeyDisabledReason" />
+            }
+            @if (Model.RequiresPlanRule)
+            {
+                <label class="autonogrammer-settings-check" for="@PlanRuleId">
+                    <input id="@PlanRuleId" type="checkbox" checked="@Model.PlanRuleAccepted" aria-label="@Model.PlanRuleAcceptName"
+                           @onchange="e => Model.PlanRuleAccepted = e.Value is true" />
+                    <span>@ProviderListingCopy.PlanRuleAcceptLabel</span>
+                </label>
+            }
+            <div class="autonogrammer-settings-actions">
+                <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--primary" disabled="@(Model.IsBusy || Model.IsKeyDisabled)" aria-label="@Model.AddActionName" @onclick="AddAsync">@ProviderListingCopy.AddActionLabel</button>
+                <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--ghost" @onclick="Model.CancelSetup">@ProviderListingCopy.CancelActionLabel</button>
+            </div>
+        </div>
+    }
+    <p class="autonogrammer-settings-help autonogrammer-provider-result" role="status" aria-live="polite">@Model.ActionText</p>
+    @if (!string.IsNullOrEmpty(Model.ErrorText))
+    {
+        <p class="autonogrammer-settings-error-text" role="alert">@Model.ErrorText</p>
+    }
+</li>
+
+@code {
+    private ProviderListingCardModel? _watched;
+
+    /// <summary>Gets the listing card model: one provider, aggregator, coding plan or local runtime of the directory.</summary>
+    [Parameter, EditorRequired]
+    public ProviderListingCardModel Model { get; set; } = default!;
+
+    private string CountryLine => Model.ResidencyText is { } residency ? Model.CountryText + " - " + residency : Model.CountryText ?? string.Empty;
+
+    private string RouteId => "autonogrammer-route-" + DomIdOf(Model.Id);
+
+    private string ModelIdsId => "autonogrammer-model-ids-" + DomIdOf(Model.Id);
+
+    private string KeyId => "autonogrammer-listing-key-" + DomIdOf(Model.Id);
+
+    private string PlanRuleId => "autonogrammer-plan-rule-" + DomIdOf(Model.Id);
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_watched, Model))
+        {
+            StopObserving(_watched);
+            _watched = Model;
+        }
+
+        Observe(Model);
+        foreach (var input in Model.UrlInputs)
+        {
+            Observe(input);
+        }
+    }
+
+    private string UrlInputId(ProviderListingUrlInput input) => "autonogrammer-url-" + DomIdOf(Model.Id) + "-" + DomIdOf(input.Name);
+
+    private static string DomIdOf(string id) => string.Concat(id.Select(static ch => char.IsAsciiLetterOrDigit(ch) || ch is '-' or '_' ? ch : '-'));
+
+    private void OnRouteChanged(ChangeEventArgs args)
+    {
+        var id = args.Value?.ToString();
+        var route = Model.Routes.FirstOrDefault(candidate => string.Equals(candidate.Id, id, StringComparison.Ordinal));
+        if (route is not null)
+        {
+            Model.SelectedRoute = route;
+        }
+    }
+
+    private Task AddAsync() => Model.SaveAsync();
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            StopObserving(_watched);
+        }
+
+        base.Dispose(disposing);
+    }
+}

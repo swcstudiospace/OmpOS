@@ -1,0 +1,9 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits SettingsPageView<TabPage>
+@using Autonogrammer.Presentation.Settings
+<SettingsPageFrame Page="Page" Title="@SettingsCopy.TabHeading" Description="@SettingsCopy.TabDescription" Editable="false">
+    <div class="autonogrammer-settings-state" data-availability="unavailable">
+        <h4 class="autonogrammer-settings-section-title">@SettingsWebCopy.TabUnavailableHeading</h4>
+        <p role="status">@SettingsWebCopy.TabUnavailableBody</p>
+    </div>
+</SettingsPageFrame>

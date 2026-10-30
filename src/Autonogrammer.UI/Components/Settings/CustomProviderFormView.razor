@@ -1,0 +1,125 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits ObservableComponent
+@using Autonogrammer.Presentation.Settings.Models
+<div class="autonogrammer-provider-form" role="group" aria-labelledby="autonogrammer-custom-provider-title">
+    <h4 class="autonogrammer-provider-card-title" id="autonogrammer-custom-provider-title">@Draft.Title</h4>
+    <p class="autonogrammer-settings-help">@ModelsCopy.CustomProviderWriteNotice</p>
+    @if (Draft.TemplateNote is { } templateNote)
+    {
+        <p class="autonogrammer-settings-help">@templateNote</p>
+    }
+    @if (Draft.TemplateRemark is { } remark)
+    {
+        <p class="autonogrammer-settings-help">@remark</p>
+    }
+    <SettingsField For="autonogrammer-custom-name" Label="@ModelsCopy.FieldDisplayName" Error="@Draft.DisplayNameError">
+        <input id="autonogrammer-custom-name" class="autonogrammer-input" type="text" autocomplete="off" value="@Draft.DisplayName"
+               aria-invalid="@(Draft.DisplayNameError is null ? null : "true")"
+               aria-describedby="@SettingsField.DescribedBy("autonogrammer-custom-name", false)"
+               @oninput="e => Draft.DisplayName = e.Value?.ToString() ?? string.Empty" />
+    </SettingsField>
+    <SettingsField For="autonogrammer-custom-id" Label="@ModelsCopy.FieldId" Error="@Draft.IdError">
+        <input id="autonogrammer-custom-id" class="autonogrammer-input autonogrammer-settings-mono" type="text" autocomplete="off" spellcheck="false" value="@Draft.Id" disabled="@Draft.IsEditing"
+               aria-invalid="@(Draft.IdError is null ? null : "true")"
+               aria-describedby="@SettingsField.DescribedBy("autonogrammer-custom-id", false)"
+               @oninput="e => Draft.Id = e.Value?.ToString() ?? string.Empty" />
+    </SettingsField>
+    <SettingsField For="autonogrammer-custom-protocol" Label="@ModelsCopy.FieldProtocol">
+        <select id="autonogrammer-custom-protocol" class="autonogrammer-select" @onchange="OnProtocolChanged">
+            @foreach (var protocol in Enum.GetValues<CustomProviderProtocol>())
+            {
+                <option value="@protocol" selected="@(Draft.Protocol == protocol)">@ModelsCopy.ProtocolLabel(protocol)</option>
+            }
+        </select>
+    </SettingsField>
+    <SettingsField For="autonogrammer-custom-endpoint" Label="@ModelsCopy.FieldEndpoint" Help="@Draft.EndpointHint" Error="@Draft.EndpointError">
+        <input id="autonogrammer-custom-endpoint" class="autonogrammer-input autonogrammer-settings-mono" type="text" autocomplete="off" spellcheck="false" value="@Draft.EndpointText"
+               aria-invalid="@(Draft.EndpointError is null ? null : "true")"
+               aria-describedby="@SettingsField.DescribedBy("autonogrammer-custom-endpoint", true)"
+               @oninput="e => Draft.EndpointText = e.Value?.ToString() ?? string.Empty" />
+    </SettingsField>
+    <SettingsField For="autonogrammer-custom-auth" Label="@ModelsCopy.FieldAuth" Help="@ModelsCopy.CustomKeyHint">
+        <select id="autonogrammer-custom-auth" class="autonogrammer-select" aria-describedby="@SettingsField.DescribedBy("autonogrammer-custom-auth", true)" @onchange="OnAuthChanged">
+            @foreach (var auth in Enum.GetValues<CustomProviderAuth>())
+            {
+                <option value="@auth" selected="@(Draft.Auth == auth)">@ModelsCopy.AuthChoiceLabel(auth)</option>
+            }
+        </select>
+    </SettingsField>
+    <SettingsField For="autonogrammer-custom-models" Label="@ModelsCopy.FieldModels" Error="@Draft.ModelsError">
+        <textarea id="autonogrammer-custom-models" class="autonogrammer-textarea autonogrammer-settings-mono" rows="4" spellcheck="false" value="@Draft.ModelsText"
+                  aria-invalid="@(Draft.ModelsError is null ? null : "true")"
+                  aria-describedby="@SettingsField.DescribedBy("autonogrammer-custom-models", false)"
+                  @oninput="e => Draft.ModelsText = e.Value?.ToString() ?? string.Empty"></textarea>
+    </SettingsField>
+    <fieldset class="autonogrammer-settings-fieldset">
+        <legend class="autonogrammer-settings-label">@ModelsCopy.FieldCapabilities</legend>
+        <label class="autonogrammer-settings-check"><input type="checkbox" checked="@Draft.SupportsChat" @onchange="e => Draft.SupportsChat = (bool)(e.Value ?? false)" />@ModelsCopy.CapabilityChat</label>
+        <label class="autonogrammer-settings-check"><input type="checkbox" checked="@Draft.SupportsResponses" @onchange="e => Draft.SupportsResponses = (bool)(e.Value ?? false)" />@ModelsCopy.CapabilityResponses</label>
+        <label class="autonogrammer-settings-check"><input type="checkbox" checked="@Draft.SupportsEmbeddings" @onchange="e => Draft.SupportsEmbeddings = (bool)(e.Value ?? false)" />@ModelsCopy.CapabilityEmbeddings</label>
+    </fieldset>
+    <label class="autonogrammer-settings-check"><input type="checkbox" checked="@Draft.AllowRemotePlainHttp" aria-describedby="autonogrammer-custom-plain-http-help" @onchange="e => Draft.AllowRemotePlainHttp = (bool)(e.Value ?? false)" />@ModelsCopy.FieldAllowPlainHttp</label>
+    <p class="autonogrammer-settings-help" id="autonogrammer-custom-plain-http-help">@ModelsCopy.AllowPlainHttpHint</p>
+    @if (!string.IsNullOrEmpty(Error))
+    {
+        <p class="autonogrammer-settings-error-text" role="alert">@Error</p>
+    }
+    <div class="autonogrammer-settings-actions">
+        <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--ghost" aria-label="@SettingsWebCopy.CancelProviderName" @onclick="OnCancel">@SettingsWebCopy.CancelProvider</button>
+    </div>
+</div>
+
+@code {
+    private CustomProviderDraft? _watched;
+
+    /// <summary>Gets the draft the form edits.</summary>
+    [Parameter, EditorRequired]
+    public CustomProviderDraft Draft { get; set; } = default!;
+
+    /// <summary>Gets the reason the last save was refused, or null.</summary>
+    [Parameter]
+    public string? Error { get; set; }
+
+    /// <summary>Gets the callback invoked when the user closes the form without saving.</summary>
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_watched, Draft))
+        {
+            StopObserving(_watched);
+            _watched = Draft;
+        }
+
+        Observe(Draft);
+    }
+
+    private void OnProtocolChanged(ChangeEventArgs args)
+    {
+        if (Enum.TryParse<CustomProviderProtocol>(args.Value?.ToString(), out var protocol))
+        {
+            Draft.Protocol = protocol;
+        }
+    }
+
+    private void OnAuthChanged(ChangeEventArgs args)
+    {
+        if (Enum.TryParse<CustomProviderAuth>(args.Value?.ToString(), out var auth))
+        {
+            Draft.Auth = auth;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            StopObserving(_watched);
+        }
+
+        base.Dispose(disposing);
+    }
+}

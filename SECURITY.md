@@ -10,7 +10,7 @@ Security fixes are made on the latest release line and on `main`.
 | 0.15.x | yes |
 | 0.14.x and earlier | no (upgrade to 0.15.x) |
 
-OmpOS is pre-1.0: a fix ships in the next 0.15.x patch release, not as a back-port to older lines.
+Autonogrammer is pre-1.0: a fix ships in the next 0.15.x patch release, not as a back-port to older lines.
 
 ## Reporting a vulnerability
 
@@ -25,7 +25,7 @@ GitHub's private vulnerability reporting is the only supported channel. If the *
 
 ### What to expect (targets, not promises)
 
-OmpOS is maintained by a small team without a service-level agreement. These are goals we aim for:
+Autonogrammer is maintained by a small team without a service-level agreement. These are goals we aim for:
 
 | Step | Target |
 | --- | --- |
@@ -41,7 +41,7 @@ We publish a GitHub security advisory for every confirmed vulnerability and note
 In scope (the code in this repository):
 
 - the provider-key store and the handling of API keys in the desktop and web heads (keys must never reach logs, exports, durable browser storage or URLs);
-- the hosted API (`services/OmpOS.Api`): authentication, session and run ownership, tool approvals, the cancel and steering paths;
+- the hosted API (`services/Autonogrammer.Api`): authentication, session and run ownership, tool approvals, the cancel and steering paths;
 - the sandbox and process boundaries: container sandboxes, the `omp` launch contract, terminal and remote (SSH) environments;
 - the plugin host, hooks and MCP gateway: consent, isolation, command execution;
 - the web head: content-security-policy, origin checks, stream handling;

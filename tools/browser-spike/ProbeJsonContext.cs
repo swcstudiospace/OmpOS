@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace OmpOS.BrowserSpike;
+namespace Autonogrammer.BrowserSpike;
 
 /// <summary>Source-generated JSON metadata for the probe; no reflection-based serialization.</summary>
 [JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]

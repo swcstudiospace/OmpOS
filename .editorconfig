@@ -389,7 +389,7 @@ dotnet_naming_style.s_camelcase.word_separator =
 dotnet_naming_style.s_camelcase.capitalization = camel_case
 
 
-# OmpOS overrides: single rule source for build and dotnet format (D-04)
+# Autonogrammer overrides: single rule source for build and dotnet format (D-04)
 [*.{cs,vb}]
 dotnet_diagnostic.IDE0005.severity = warning
 dotnet_diagnostic.CA1303.severity = none

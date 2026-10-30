@@ -2,9 +2,9 @@
 
 - Status: Accepted 2026-10-26
 - Date: 2026-10-26
-- Owner: ompos-maintainers
-- Deciders: ompos-maintainers
-- Scope: which diagnostic mechanism each layer uses to report failures: the services and harness layers, the native Avalonia head (`src/OmpOS.Native.Views`, `apps/OmpOS.Native`), and the Blazor web head (`apps/OmpOS.Web`, `src/OmpOS.UI`). Recorded for phase 25.5 (fix F-D, finding M-21, decision D1).
+- Owner: autonogrammer-maintainers
+- Deciders: autonogrammer-maintainers
+- Scope: which diagnostic mechanism each layer uses to report failures: the services and harness layers, the native Avalonia head (`src/Autonogrammer.Native.Views`, `apps/Autonogrammer.Native`), and the Blazor web head (`apps/Autonogrammer.Web`, `src/Autonogrammer.UI`). Recorded for phase 25.5 (fix F-D, finding M-21, decision D1).
 
 ## Context
 
@@ -15,8 +15,8 @@ Failures in the code were reported through two mechanisms. The services and harn
 Each layer uses one mechanism:
 
 1. **Services and harness layers** (`Harness.*`, `EngineHost`, `Coordination.*`, `Sessions`, `Workflows`, `Api`) log through `ILogger<T>`. A new logger is an optional constructor parameter `ILogger<T>? logger = null`, stored as `logger ?? NullLogger<T>.Instance`, so existing callers keep compiling and DI-constructed services receive the real logger.
-2. **Native Avalonia head** (`src/OmpOS.Native.Views`, `apps/OmpOS.Native`) reports through `Trace`. `App.Initialize` installs one `StderrTraceListener` that writes every trace line to the process's standard error, through `App.InstallStderrTraceListener`. Installing it again replaces the earlier listener, so at most one is present. The desktop composition root passes the services it composes an `ILoggerFactory` (`DesktopLogging.Factory`) whose only provider, `TraceLoggerProvider`, forwards each entry to `Trace`: Warning to `Trace.TraceWarning`, Error and Critical to `Trace.TraceError`, every other level to `Trace.WriteLine`. The factory passes Information and above.
-3. **Blazor web head** (`apps/OmpOS.Web` and the shared components in `src/OmpOS.UI`) injects `ILogger<T>` through DI. The browser's console logging provider receives the entries.
+2. **Native Avalonia head** (`src/Autonogrammer.Native.Views`, `apps/Autonogrammer.Native`) reports through `Trace`. `App.Initialize` installs one `StderrTraceListener` that writes every trace line to the process's standard error, through `App.InstallStderrTraceListener`. Installing it again replaces the earlier listener, so at most one is present. The desktop composition root passes the services it composes an `ILoggerFactory` (`DesktopLogging.Factory`) whose only provider, `TraceLoggerProvider`, forwards each entry to `Trace`: Warning to `Trace.TraceWarning`, Error and Critical to `Trace.TraceError`, every other level to `Trace.WriteLine`. The factory passes Information and above.
+3. **Blazor web head** (`apps/Autonogrammer.Web` and the shared components in `src/Autonogrammer.UI`) injects `ILogger<T>` through DI. The browser's console logging provider receives the entries.
 
 The split follows the code that already exists. The native head has no DI container for its windows and already used `Trace`; the web head has DI and a browser console provider; the services already take `ILogger<T>`.
 

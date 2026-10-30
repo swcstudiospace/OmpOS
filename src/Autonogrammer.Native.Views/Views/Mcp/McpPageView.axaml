@@ -1,0 +1,309 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pm="clr-namespace:Autonogrammer.Presentation.Mcp;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Mcp.McpPageView"
+             x:DataType="pm:McpSettingsViewModel">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The MCP page: servers by scope and file with their status, the configuration problems, the consent prompt, add-from-template and
+       an open-file button per file. Nothing starts a server except the Check connection button. Tokens only; every button names its server. -->
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Classes="settings-column">
+
+      <TextBlock Classes="settings-heading"
+                 Text="{x:Static pm:McpCopy.Heading}" />
+      <TextBlock Classes="settings-description"
+                 Text="{x:Static pm:McpCopy.Description}" />
+
+      <StackPanel Orientation="Horizontal"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+        <TextBlock x:Name="StateHeading"
+                   Classes="settings-section"
+                   VerticalAlignment="Center"
+                   Text="{CompiledBinding Heading}"
+                   AutomationProperties.Name="{x:Static pm:McpCopy.StateAnnouncementName}"
+                   AutomationProperties.LiveSetting="Polite" />
+        <Button x:Name="ReloadButton"
+                Content="{x:Static pm:McpCopy.ReloadLabel}"
+                Command="{CompiledBinding ReloadCommand}"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                AutomationProperties.Name="{x:Static pm:McpCopy.ReloadName}" />
+      </StackPanel>
+
+      <TextBlock x:Name="SummaryText"
+                 Classes="settings-body"
+                 Classes.tone-error="{CompiledBinding IsError}"
+                 Text="{CompiledBinding Summary}"
+                 AutomationProperties.Name="{CompiledBinding Summary}"
+                 AutomationProperties.LiveSetting="Polite" />
+
+      <StackPanel IsVisible="{CompiledBinding IsEmpty}"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <TextBlock Classes="settings-label"
+                   Text="{x:Static pm:McpCopy.ExampleLabel}" />
+        <SelectableTextBlock Classes="settings-selectable settings-mono"
+                             Text="{x:Static pm:McpCopy.ExampleJson}"
+                             AutomationProperties.Name="{x:Static pm:McpCopy.ExampleLabel}" />
+      </StackPanel>
+
+      <ItemsControl x:Name="GroupList"
+                    IsVisible="{CompiledBinding ShowList}"
+                    ItemsSource="{CompiledBinding Groups}"
+                    AutomationProperties.Name="MCP servers by file">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="pm:McpFileGroupModel">
+            <Border Classes="settings-card"
+                    Margin="0,0,0,8">
+              <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+                <StackPanel Orientation="Horizontal"
+                            Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+                  <TextBlock Classes="settings-label"
+                             VerticalAlignment="Center"
+                             Text="{CompiledBinding Heading}" />
+                  <TextBlock Classes="settings-help"
+                             VerticalAlignment="Center"
+                             Text="{CompiledBinding CountText}" />
+                  <Button Content="{x:Static pm:McpCopy.OpenLabel}"
+                          Command="{CompiledBinding OpenCommand}"
+                          MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          AutomationProperties.Name="{CompiledBinding OpenName}" />
+                </StackPanel>
+
+                <TextBlock Classes="settings-body tone-error"
+                           IsVisible="{CompiledBinding HasProblem}"
+                           Text="{CompiledBinding ProblemText}" />
+
+                <ItemsControl ItemsSource="{CompiledBinding Rows}"
+                              AutomationProperties.Name="{CompiledBinding Heading}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="pm:McpServerRowModel">
+                      <Border Classes="settings-row"
+                              Margin="0,0,0,4">
+                        <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+                          <StackPanel Orientation="Horizontal"
+                                      Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+                            <TextBlock Classes="settings-label"
+                                       Text="{CompiledBinding Name}" />
+                            <TextBlock Classes="settings-label"
+                                       Classes.tone-error="{CompiledBinding NeedsAttention}"
+                                       Text="{CompiledBinding StatusText}"
+                                       AutomationProperties.Name="{CompiledBinding StatusText}" />
+                            <TextBlock Classes="settings-help"
+                                       Text="{CompiledBinding ToolCountText}" />
+                          </StackPanel>
+
+                          <TextBlock Classes="settings-help"
+                                     Text="{CompiledBinding TransportText}" />
+                          <TextBlock Classes="settings-mono"
+                                     Text="{CompiledBinding CommandText}" />
+                          <TextBlock Classes="settings-help"
+                                     IsVisible="{CompiledBinding EnvironmentText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                     Text="{CompiledBinding EnvironmentText}" />
+                          <TextBlock Classes="settings-help"
+                                     IsVisible="{CompiledBinding HeadersText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                     Text="{CompiledBinding HeadersText}" />
+                          <TextBlock Classes="settings-body"
+                                     IsVisible="{CompiledBinding StatusDetail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                     Text="{CompiledBinding StatusDetail}" />
+                          <TextBlock Classes="settings-help"
+                                     IsVisible="{CompiledBinding OAuthText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                     Text="{CompiledBinding OAuthText}" />
+
+                          <WrapPanel>
+                            <Button Content="{CompiledBinding ToggleText}"
+                                    Command="{CompiledBinding ToggleCommand}"
+                                    Margin="0,0,4,4"
+                                    MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                                    MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                                    AutomationProperties.Name="{CompiledBinding ToggleName}" />
+                            <Button Content="{x:Static pm:McpCopy.ReviewLabel}"
+                                    Command="{CompiledBinding ReviewCommand}"
+                                    IsVisible="{CompiledBinding ShowReview}"
+                                    Margin="0,0,4,4"
+                                    MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                                    MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                                    AutomationProperties.Name="{CompiledBinding ReviewName}" />
+                            <Button Content="{x:Static pm:McpCopy.RevokeLabel}"
+                                    Command="{CompiledBinding RevokeCommand}"
+                                    IsVisible="{CompiledBinding ShowRevoke}"
+                                    Margin="0,0,4,4"
+                                    MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                                    MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                                    AutomationProperties.Name="{CompiledBinding RevokeName}" />
+                            <Button Content="{x:Static pm:McpCopy.CheckLabel}"
+                                    Command="{CompiledBinding CheckCommand}"
+                                    IsVisible="{CompiledBinding ShowCheck}"
+                                    Margin="0,0,4,4"
+                                    MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                                    MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                                    AutomationProperties.Name="{CompiledBinding CheckName}" />
+                          </WrapPanel>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Border x:Name="ConsentPanel"
+              Classes="settings-prompt"
+              IsVisible="{CompiledBinding HasPendingConsent}">
+        <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+          <TextBlock Classes="settings-section"
+                     Text="{x:Static pm:McpCopy.ConsentHeading}" />
+          <TextBlock Classes="settings-help"
+                     Text="{x:Static pm:McpCopy.ConsentExplanation}" />
+          <TextBlock Classes="settings-label"
+                     Text="{CompiledBinding PendingConsent.Summary}" />
+          <TextBlock Classes="settings-mono"
+                     Text="{CompiledBinding PendingConsent.CommandText}"
+                     AutomationProperties.Name="Command the approval covers" />
+          <TextBlock Classes="settings-help"
+                     Text="{CompiledBinding PendingConsent.EnvironmentText}" />
+          <TextBlock Classes="settings-help"
+                     Text="{CompiledBinding PendingConsent.HeadersText}" />
+          <StackPanel Orientation="Horizontal"
+                      Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+            <Button x:Name="ApproveButton"
+                    Classes="primary"
+                    Content="{x:Static pm:McpCopy.ApproveLabel}"
+                    Command="{CompiledBinding ApproveCommand}"
+                    MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                    MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                    AutomationProperties.Name="{CompiledBinding PendingConsent.ApproveName}" />
+            <Button x:Name="CancelButton"
+                    Content="{x:Static pm:McpCopy.CancelLabel}"
+                    Command="{CompiledBinding CancelConsentCommand}"
+                    MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                    MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                    AutomationProperties.Name="{x:Static pm:McpCopy.CancelName}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <StackPanel IsVisible="{CompiledBinding ShowNotices}"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <TextBlock Classes="settings-section"
+                   Text="{x:Static pm:McpCopy.ProblemsHeading}" />
+        <ItemsControl ItemsSource="{CompiledBinding Notices}"
+                      AutomationProperties.Name="{x:Static pm:McpCopy.ProblemsName}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="pm:McpNoticeRow">
+              <TextBlock Classes="settings-body"
+                         Margin="0,0,0,4"
+                         Text="{CompiledBinding Name}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <StackPanel IsVisible="{CompiledBinding ShowTemplates}"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <TextBlock Classes="settings-section"
+                   Text="{x:Static pm:McpCopy.TemplateHeading}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static pm:McpCopy.TemplateExplanation}" />
+        <TextBlock Classes="settings-help"
+                   IsVisible="{CompiledBinding TemplatesNeedWorkspace}"
+                   Text="{x:Static pm:McpCopy.TemplateNeedsWorkspace}" />
+        <TextBlock Classes="settings-label"
+                   Text="{x:Static pm:McpCopy.TemplateNameLabel}" />
+        <TextBox x:Name="TemplateNameBox"
+                 Text="{CompiledBinding TemplateName, Mode=TwoWay}"
+                 PlaceholderText="{x:Static pm:McpCopy.TemplateNameWatermark}"
+                 MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                 AutomationProperties.Name="{x:Static pm:McpCopy.TemplateNameLabel}" />
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+          <Button x:Name="AddStdioButton"
+                  Content="{x:Static pm:McpCopy.TemplateStdioLabel}"
+                  Command="{CompiledBinding AddStdioCommand}"
+                  IsEnabled="{CompiledBinding CanAddTemplate}"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  AutomationProperties.Name="{x:Static pm:McpCopy.TemplateStdioLabel}" />
+          <Button x:Name="AddHttpButton"
+                  Content="{x:Static pm:McpCopy.TemplateHttpLabel}"
+                  Command="{CompiledBinding AddHttpCommand}"
+                  IsEnabled="{CompiledBinding CanAddTemplate}"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  AutomationProperties.Name="{x:Static pm:McpCopy.TemplateHttpLabel}" />
+        </StackPanel>
+      </StackPanel>
+
+      <StackPanel x:Name="PresetSection"
+                  IsVisible="{CompiledBinding ShowPresets}"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <TextBlock Classes="settings-section"
+                   Text="{x:Static pm:McpCopy.PresetHeading}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static pm:McpCopy.PresetExplanation}" />
+        <ItemsControl x:Name="PresetList"
+                      ItemsSource="{CompiledBinding Presets}"
+                      AutomationProperties.Name="{x:Static pm:McpCopy.PresetListName}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="pm:McpPresetRowModel">
+              <Border Classes="settings-row"
+                      Margin="0,0,0,4">
+                <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+                  <StackPanel Orientation="Horizontal"
+                              Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+                    <TextBlock Classes="settings-label"
+                               VerticalAlignment="Center"
+                               Text="{CompiledBinding DisplayName}" />
+                    <TextBlock Classes="settings-help"
+                               VerticalAlignment="Center"
+                               Text="{CompiledBinding TransportLabel}" />
+                  </StackPanel>
+                  <TextBlock Classes="settings-body"
+                             Text="{CompiledBinding Description}" />
+                  <TextBlock Classes="settings-help"
+                             Text="{CompiledBinding AuthNote}" />
+                  <TextBlock Classes="settings-help"
+                             IsVisible="{CompiledBinding HasNote}"
+                             Text="{CompiledBinding NoteText}" />
+                  <SelectableTextBlock Classes="settings-selectable"
+                                       Text="{CompiledBinding DocumentationText}"
+                                       AutomationProperties.Name="{CompiledBinding DocumentationText}" />
+                  <Button Content="{CompiledBinding AddLabel}"
+                          Command="{CompiledBinding AddCommand}"
+                          IsEnabled="{CompiledBinding CanAdd}"
+                          HorizontalAlignment="Left"
+                          MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          AutomationProperties.Name="{CompiledBinding AddName}" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <TextBlock x:Name="ActionResultText"
+                 Classes="settings-body"
+                 IsVisible="{CompiledBinding HasActionResult}"
+                 Text="{CompiledBinding ActionResult}"
+                 AutomationProperties.LiveSetting="Polite" />
+      <TextBlock x:Name="ActionFailureText"
+                 Classes="settings-body tone-error"
+                 IsVisible="{CompiledBinding HasActionFailure}"
+                 Text="{CompiledBinding ActionFailure}"
+                 AutomationProperties.Name="{x:Static pm:McpCopy.ActionFailureName}"
+                 AutomationProperties.LiveSetting="Assertive" />
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

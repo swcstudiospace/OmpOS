@@ -4,7 +4,7 @@ Status (recorded 2026-10-28): both criteria are Partial. `docs/settings-parity.m
 
 The record was written after the work. Statuses use: Met, Met (recorded), Partial, Blocked, Not verified.
 
-Recorded totals (2026-10-28): the gate on commit e24e6851 passed `OmpOS.Native.Tests` (16 m), `OmpOS.Web.Tests` (4 m 16 s) and `OmpOS.UI.Tests` (37 s) inside `dotnet test OmpOS.Linux.slnf` (12215 total, 12213 succeeded, 0 failed, 2 skipped). Earlier per-project runs: Presentation 2303, Native 2012 (2 skipped), UI 595, Web 262 or more. No per-class result is claimed.
+Recorded totals (2026-10-28): the gate on commit e24e6851 passed `Autonogrammer.Native.Tests` (16 m), `Autonogrammer.Web.Tests` (4 m 16 s) and `Autonogrammer.UI.Tests` (37 s) inside `dotnet test Autonogrammer.Linux.slnf` (12215 total, 12213 succeeded, 0 failed, 2 skipped). Earlier per-project runs: Presentation 2303, Native 2012 (2 skipped), UI 595, Web 262 or more. No per-class result is claimed.
 
 ## Status counts (counted from `docs/settings-parity.md`, section "v0.15.0")
 
@@ -41,12 +41,12 @@ The older table of the same file (34 rows of 2026-10-22: 8 kept as a page, 4 sho
 
 ## Partial
 
-- Criterion 1: 20 rows Partial. Examples from the table: S02 and S09 flags are stored but no prompt box applies vim keys and thinking blocks and running time are stored flags only; S05 only the read boundary exists and it binds the tool calls omp asks OmpOS about; S10 Max Mode, update channel and status line are not built.
+- Criterion 1: 20 rows Partial. Examples from the table: S02 and S09 flags are stored but no prompt box applies vim keys and thinking blocks and running time are stored flags only; S05 only the read boundary exists and it binds the tool calls omp asks Autonogrammer about; S10 Max Mode, update channel and status line are not built.
 - Criterion 2: no Labs page; web pages for Run mode, Workspaces, Remote, Cloud agents and Privacy are information pages; no Worktrees or Ignore page in the web.
 
 ## Blocked (OQ/OD)
 
-- The Cloud page works against a hosted API only after the sign-in authority (OD-03) exists and a Railway deploy is within the granted authority (OQ-100); the API is not deployed on Railway (recorded 2026-10-28; a staged private worker is, see `docs/runbooks/evidence/railway-ompos-worker-2026-10-28.md`).
+- The Cloud page works against a hosted API only after the sign-in authority (OD-03) exists and a Railway deploy is within the granted authority (OQ-100); the API is not deployed on Railway (recorded 2026-10-28; a staged private worker is, see `docs/runbooks/evidence/railway-autonogrammer-worker-2026-10-28.md`).
 - Rows that need a live agent turn (applying display flags in the transcript, run mode effects) are OD-07.
 
 ## Known limits

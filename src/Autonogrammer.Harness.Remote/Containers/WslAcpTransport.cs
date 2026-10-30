@@ -1,0 +1,50 @@
+using Autonogrammer.Contracts.Environments;
+using Autonogrammer.Harness.Abstractions;
+using Microsoft.Extensions.Logging;
+
+namespace Autonogrammer.Harness.Remote.Containers;
+
+/// <summary>
+/// Carries the ACP stdio protocol of <c>omp acp</c> running in a WSL distribution, through <c>wsl.exe --exec</c>. It is the ssh transport with wsl.exe as the
+/// client: one JSON frame per line in each direction, text before the first frame tolerated as noise, the preamble (environment and files) written before the
+/// first frame, secrets removed from every diagnostic text. A failed run is explained by <see cref="LastDiagnosis"/> (distribution missing, user
+/// missing, omp missing). The process is started without a shell from an argument list and no secret is ever in it.
+/// </summary>
+public sealed class WslAcpTransport : IAcpTransport
+{
+    private readonly SshAcpTransport _inner;
+
+    /// <summary>Initializes a new instance of the <see cref="WslAcpTransport"/> class.</summary>
+    /// <param name="invocation">The wsl.exe process to start, from <see cref="WslCommandBuilder.BuildAcp"/>.</param>
+    /// <param name="redactions">Secret values that are removed from every diagnostic text. Values shorter than four characters are ignored.</param>
+    /// <param name="logger">Receives stderr drain failures at Debug. Null discards them.</param>
+    public WslAcpTransport(SshInvocation invocation, IEnumerable<string>? redactions = null, ILogger<SshAcpTransport>? logger = null)
+    {
+        ArgumentNullException.ThrowIfNull(invocation);
+        _inner = new SshAcpTransport(invocation, ExecTransportFlavor.Wsl, redactions, logger);
+    }
+
+    /// <summary>Gets the most recent stderr lines of the wsl.exe process (at most <see cref="SshAcpTransport.StderrCapacity"/>), with secrets removed.</summary>
+    public IReadOnlyList<string> StandardErrorTail => _inner.StandardErrorTail;
+
+    /// <summary>Gets the lines the shell printed on stdout before the first protocol frame, with secrets removed.</summary>
+    public IReadOnlyList<string> PreHandshakeNoise => _inner.PreHandshakeNoise;
+
+    /// <summary>Gets the explanation of the failure that ended the connection, or <see langword="null"/> while it is up or when the cause is not recognised.</summary>
+    public RemoteDiagnosis? LastDiagnosis => _inner.LastDiagnosis;
+
+    /// <inheritdoc />
+    public Task ConnectAsync(CancellationToken cancellationToken) => _inner.ConnectAsync(cancellationToken);
+
+    /// <inheritdoc />
+    public Task SendAsync(ReadOnlyMemory<byte> frame, CancellationToken cancellationToken) => _inner.SendAsync(frame, cancellationToken);
+
+    /// <inheritdoc />
+    public IAsyncEnumerable<ReadOnlyMemory<byte>> ReceiveAsync(CancellationToken cancellationToken) => _inner.ReceiveAsync(cancellationToken);
+
+    /// <inheritdoc />
+    public Task CloseAsync(CancellationToken cancellationToken) => _inner.CloseAsync(cancellationToken);
+
+    /// <inheritdoc />
+    public ValueTask DisposeAsync() => _inner.DisposeAsync();
+}

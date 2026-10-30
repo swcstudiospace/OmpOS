@@ -17,7 +17,7 @@
 │  │ backend-only          │  │ in-process harness +     │  │ Android)       │ │
 │  │                       │  │ spawns omp over stdio    │  │ backend-only   │ │
 │  └──────────┬────────────┘  └──────────┬───────────────┘  └───────┬────────┘ │
-│             └───────────── shared Razor Class Library (OmpOS.Ui) ─┘          │
+│             └───────────── shared Razor Class Library (Autonogrammer.Ui) ─┘          │
 │               conversation list · session view · composer · block renderer   │
 │               A2UI surface renderer · ISessionClient (HTTP+SSE | in-proc)    │
 ├──────────────────────────────────────────────────────────────────────────────┤
@@ -30,7 +30,7 @@
 │  └────────────┘  └────────┬─────────┘  └──────────────┘  └────────┬────────┘ │
 │                           │ IAgentHarness (ACP | omp-RPC | scripted)        │ │
 │  ┌────────────────────────┴──────────────────────────────────────┴────────┐ │
-│  │ Harness (src/OmpOS.Harness): transport → framing → correlation →       │ │
+│  │ Harness (src/Autonogrammer.Harness): transport → framing → correlation →       │ │
 │  │ session state machine → typed events → UiBlock/StreamEvent projection  │ │
 │  └────────────────────────┬───────────────────────────────────────────────┘ │
 │  ┌────────────────────────┴───────────┐  ┌────────────────────────────────┐ │
@@ -46,7 +46,7 @@
 │   podman/podman-compose · OpenShell gateway/supervisor/sandbox · agentOS VM   │
 │   dstack guest agent /var/run/dstack.sock (attestation boundary)             │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ CONTRACTS (src/OmpOS.Contracts) — Session · Message · IntentEnvelope ·       │
+│ CONTRACTS (src/Autonogrammer.Contracts) — Session · Message · IntentEnvelope ·       │
 │   UiBlock · StreamEvent(seq) · SandboxDescriptor · WorkflowRun · errors      │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -55,45 +55,45 @@
 
 | Component | Responsibility | Typical Implementation |
 |-----------|----------------|------------------------|
-| `OmpOS.Contracts` | Single source of truth for every wire/domain type; versioned, `System.Text.Json` source-generated, no behaviour | netstandard-free .NET 10 class library, `[JsonPolymorphic]` discriminated unions for `StreamEvent`/`UiBlock` |
-| `OmpOS.Parser` | Every input → exactly one `IntentEnvelope` via ordered recognizers ending in an unremovable fallback | Pure, allocation-light, no I/O; mirrors omp magic-keyword rules from `omp://magic-keywords.md` |
-| `OmpOS.Harness.Acp` | ACP v1 client: JSON-RPC 2.0 framing, id correlation, client-side method handlers (`session/request_permission`, `fs/*`, `terminal/*`), `session/update` demux | `Process` + newline-delimited `PipeReader`; `ConcurrentDictionary<id, TaskCompletionSource>`; `Channel<T>` outbound |
-| `OmpOS.Harness.Rpc` | omp native JSONL client: `ready` → `negotiate_protocol` v2 → `rpc_chunk` reassembly → command/response by `id` → event/side-channel demux (`prompt_result`, `session_settled`, host tools, host URIs, extension UI) | Same pipe skeleton; separate decoder (v2 chunk validator) |
-| `OmpOS.Harness.Abstractions` | `IAgentHarness`, `IHarnessSession`, explicit state machine, typed failures, scripted in-memory adapter | Contract-test fixture that every adapter must pass |
-| `OmpOS.Sessions` | Session aggregate, one-active-prompt rule, append-only sequence-numbered event log, `ISessionRepository` (in-memory), tool-approval policy hook | Single-writer per session (actor-style `Channel` loop) |
-| `OmpOS.GenUi` | Projection: ACP `session/update` kinds and omp RPC events → `StreamEvent` → `UiBlock` (markdown, code, tool-call, diff placeholder, error, a2ui, unknown) | Deterministic reducer; A2UI envelopes passed through with catalog validation |
-| `OmpOS.Sandbox` | `ISandboxProvider` (provision/attach/exec/stream logs/snapshot/teardown), idempotency keys, TTL, orphan reaper, composable layering | Fake, podman-compose, stubs for agentOS / OpenShell / enclave |
-| `OmpOS.Workflows` | `ISessionRunWorkflow` + activities; Temporal worker host behind `Workflows:Enabled`; `DirectSessionRunner` otherwise | `Temporalio` 1.20.0 + `Temporalio.Extensions.Hosting` |
-| `OmpOS.Api` | Minimal API: sessions, prompts, SSE stream, approvals, health, OpenAPI, CORS, rate limiter, correlation middleware | ASP.NET Core 10 `TypedResults.ServerSentEvents` |
-| `OmpOS.Ui` (RCL) | All Razor components + `ISessionClient` abstraction, render-mode-neutral | Consumed by WASM head and MAUI head |
+| `Autonogrammer.Contracts` | Single source of truth for every wire/domain type; versioned, `System.Text.Json` source-generated, no behaviour | netstandard-free .NET 10 class library, `[JsonPolymorphic]` discriminated unions for `StreamEvent`/`UiBlock` |
+| `Autonogrammer.Parser` | Every input → exactly one `IntentEnvelope` via ordered recognizers ending in an unremovable fallback | Pure, allocation-light, no I/O; mirrors omp magic-keyword rules from `omp://magic-keywords.md` |
+| `Autonogrammer.Harness.Acp` | ACP v1 client: JSON-RPC 2.0 framing, id correlation, client-side method handlers (`session/request_permission`, `fs/*`, `terminal/*`), `session/update` demux | `Process` + newline-delimited `PipeReader`; `ConcurrentDictionary<id, TaskCompletionSource>`; `Channel<T>` outbound |
+| `Autonogrammer.Harness.Rpc` | omp native JSONL client: `ready` → `negotiate_protocol` v2 → `rpc_chunk` reassembly → command/response by `id` → event/side-channel demux (`prompt_result`, `session_settled`, host tools, host URIs, extension UI) | Same pipe skeleton; separate decoder (v2 chunk validator) |
+| `Autonogrammer.Harness.Abstractions` | `IAgentHarness`, `IHarnessSession`, explicit state machine, typed failures, scripted in-memory adapter | Contract-test fixture that every adapter must pass |
+| `Autonogrammer.Sessions` | Session aggregate, one-active-prompt rule, append-only sequence-numbered event log, `ISessionRepository` (in-memory), tool-approval policy hook | Single-writer per session (actor-style `Channel` loop) |
+| `Autonogrammer.GenUi` | Projection: ACP `session/update` kinds and omp RPC events → `StreamEvent` → `UiBlock` (markdown, code, tool-call, diff placeholder, error, a2ui, unknown) | Deterministic reducer; A2UI envelopes passed through with catalog validation |
+| `Autonogrammer.Sandbox` | `ISandboxProvider` (provision/attach/exec/stream logs/snapshot/teardown), idempotency keys, TTL, orphan reaper, composable layering | Fake, podman-compose, stubs for agentOS / OpenShell / enclave |
+| `Autonogrammer.Workflows` | `ISessionRunWorkflow` + activities; Temporal worker host behind `Workflows:Enabled`; `DirectSessionRunner` otherwise | `Temporalio` 1.20.0 + `Temporalio.Extensions.Hosting` |
+| `Autonogrammer.Api` | Minimal API: sessions, prompts, SSE stream, approvals, health, OpenAPI, CORS, rate limiter, correlation middleware | ASP.NET Core 10 `TypedResults.ServerSentEvents` |
+| `Autonogrammer.Ui` (RCL) | All Razor components + `ISessionClient` abstraction, render-mode-neutral | Consumed by WASM head and MAUI head |
 | Heads (`apps/`) | DI composition per form factor; MAUI desktop registers in-process harness + `ProcessOmpLauncher`; WASM/mobile register HTTP+SSE client | `maui-blazor-web`-style split |
 
 ## Recommended Project Structure
 
 ```
-ompos/
+autonogrammer/
 ├── src/                                   # layer 1–3 libraries (no hosting)
-│   ├── OmpOS.Contracts/                   # L1: types only; referenced by everything
-│   ├── OmpOS.Parser/                      # L2: IntentEnvelope recognizers
-│   ├── OmpOS.Harness.Abstractions/        # L2: IAgentHarness, state machine, failures, scripted adapter
-│   ├── OmpOS.Harness.Acp/                 # L3: ACP v1 JSON-RPC client over stdio
-│   ├── OmpOS.Harness.Rpc/                 # L3: omp JSONL RPC client (v1/v2 framing)
-│   ├── OmpOS.GenUi/                       # L3: StreamEvent → UiBlock projection, A2UI envelope model
-│   ├── OmpOS.Sessions/                    # L3: session service, event log, repository, approval hook
-│   ├── OmpOS.Sandbox/                     # L3: ISandboxProvider + fake + podman-compose + vendor stubs
-│   ├── OmpOS.Workflows/                   # L3: ISessionRunWorkflow, activities, DirectSessionRunner
-│   └── OmpOS.Ui/                          # L3: Razor Class Library (shared UI + ISessionClient)
+│   ├── Autonogrammer.Contracts/                   # L1: types only; referenced by everything
+│   ├── Autonogrammer.Parser/                      # L2: IntentEnvelope recognizers
+│   ├── Autonogrammer.Harness.Abstractions/        # L2: IAgentHarness, state machine, failures, scripted adapter
+│   ├── Autonogrammer.Harness.Acp/                 # L3: ACP v1 JSON-RPC client over stdio
+│   ├── Autonogrammer.Harness.Rpc/                 # L3: omp JSONL RPC client (v1/v2 framing)
+│   ├── Autonogrammer.GenUi/                       # L3: StreamEvent → UiBlock projection, A2UI envelope model
+│   ├── Autonogrammer.Sessions/                    # L3: session service, event log, repository, approval hook
+│   ├── Autonogrammer.Sandbox/                     # L3: ISandboxProvider + fake + podman-compose + vendor stubs
+│   ├── Autonogrammer.Workflows/                   # L3: ISessionRunWorkflow, activities, DirectSessionRunner
+│   └── Autonogrammer.Ui/                          # L3: Razor Class Library (shared UI + ISessionClient)
 ├── services/
-│   ├── OmpOS.Api/                         # L4: ASP.NET Core host (Railway)
-│   └── OmpOS.Worker/                      # L4: Temporal worker host (same image, different entrypoint)
+│   ├── Autonogrammer.Api/                         # L4: ASP.NET Core host (Railway)
+│   └── Autonogrammer.Worker/                      # L4: Temporal worker host (same image, different entrypoint)
 ├── apps/
-│   ├── OmpOS.Web/                         # L5: Blazor WebAssembly standalone (Vercel static)
-│   └── OmpOS.Maui/                        # L5: MAUI Blazor Hybrid head (built in macOS CI job)
+│   ├── Autonogrammer.Web/                         # L5: Blazor WebAssembly standalone (Vercel static)
+│   └── Autonogrammer.Maui/                        # L5: MAUI Blazor Hybrid head (built in macOS CI job)
 ├── tests/
-│   ├── OmpOS.Contracts.Tests/ … one per project
-│   ├── OmpOS.ContractTests/               # abstract fixtures: harness / sandbox / workflow / repository
-│   ├── OmpOS.Architecture.Tests/          # dependency-direction assertions (L5→L4→L3→L2→L1)
-│   └── OmpOS.Integration.Tests/           # SSE resume/dedup, scripted vertical slice
+│   ├── Autonogrammer.Contracts.Tests/ … one per project
+│   ├── Autonogrammer.ContractTests/               # abstract fixtures: harness / sandbox / workflow / repository
+│   ├── Autonogrammer.Architecture.Tests/          # dependency-direction assertions (L5→L4→L3→L2→L1)
+│   └── Autonogrammer.Integration.Tests/           # SSE resume/dedup, scripted vertical slice
 ├── docs/                                  # architecture.md, decisions/ADRs, open-questions.md, runbooks/
 ├── deploy/                                # podman-compose.yml, Containerfile(s), railway.toml, vercel.json
 └── Directory.Packages.props / global.json / .editorconfig
@@ -101,9 +101,9 @@ ompos/
 
 ### Structure Rationale
 
-- **`src/` numbered layers:** the architecture test can assert "apps → services → libraries → contracts" mechanically because every project sits in one named layer; `OmpOS.Contracts` has zero project references so WASM, MAUI and the API deserialize identical shapes.
+- **`src/` numbered layers:** the architecture test can assert "apps → services → libraries → contracts" mechanically because every project sits in one named layer; `Autonogrammer.Contracts` has zero project references so WASM, MAUI and the API deserialize identical shapes.
 - **Harness split into `Abstractions` / `Acp` / `Rpc`:** the two engines share a process/pipe skeleton but *not* framing, correlation or event vocabularies (JSON-RPC 2.0 vs. omp's custom JSONL; see §Pattern 1–2). Keeping them in separate assemblies lets the vertical slice ship with only `Abstractions` + the scripted adapter and keeps `omp` binary dependencies out of WASM.
-- **`OmpOS.Ui` as an RCL with an `ISessionClient` seam:** this is the Microsoft `maui-blazor-web` pattern (shared RCL, per-head DI for device-specific services) — [learn.microsoft.com MAUI Blazor Web App tutorial](https://learn.microsoft.com/en-us/aspnet/core/blazor/hybrid/tutorials/maui-blazor-web-app?view=aspnetcore-10.0) (HIGH).
+- **`Autonogrammer.Ui` as an RCL with an `ISessionClient` seam:** this is the Microsoft `maui-blazor-web` pattern (shared RCL, per-head DI for device-specific services) — [learn.microsoft.com MAUI Blazor Web App tutorial](https://learn.microsoft.com/en-us/aspnet/core/blazor/hybrid/tutorials/maui-blazor-web-app?view=aspnetcore-10.0) (HIGH).
 - **`services/` vs `apps/`:** Vercel hosts only static output; everything long-lived runs on Railway (PROJECT.md constraint).
 
 ## Architectural Patterns
@@ -231,7 +231,7 @@ Client side keeps `lastSeq` and drops any event with `Seq <= lastSeq` (duplicate
 
 ### Pattern 4: Generative UI projection — protocol events → `StreamEvent` → `UiBlock`, with A2UI as a pass-through block
 
-**What:** The reducer in `OmpOS.GenUi` is the only place that understands both engines. It emits `StreamEvent`s (append-only, protocol-neutral) and the UI folds them into `UiBlock`s.
+**What:** The reducer in `Autonogrammer.GenUi` is the only place that understands both engines. It emits `StreamEvent`s (append-only, protocol-neutral) and the UI folds them into `UiBlock`s.
 
 | Source (ACP `sessionUpdate`) | Source (omp RPC event) | `StreamEvent.Kind` | `UiBlock` effect |
 |---|---|---|---|
@@ -259,14 +259,14 @@ Projection rule: any `agent_message_chunk` / `tool_call_update.content` whose co
 
 ### Pattern 5: Sandbox control plane as layered providers with idempotent provision/teardown and reapers
 
-**What:** `ISandboxProvider { ProvisionAsync(SandboxSpec, IdempotencyKey) → SandboxDescriptor; AttachAsync; ExecAsync; StreamLogsAsync; SnapshotAsync; TeardownAsync(retry) }` with uniform timeouts, TTL, an orphan reaper (lists provider resources tagged with `ompos.session=<id>` and tears down anything past TTL or without a live session), and a *composable* chain where an outer provider wraps an inner one.
+**What:** `ISandboxProvider { ProvisionAsync(SandboxSpec, IdempotencyKey) → SandboxDescriptor; AttachAsync; ExecAsync; StreamLogsAsync; SnapshotAsync; TeardownAsync(retry) }` with uniform timeouts, TTL, an orphan reaper (lists provider resources tagged with `autonogrammer.session=<id>` and tears down anything past TTL or without a live session), and a *composable* chain where an outer provider wraps an inner one.
 
 | Layer | What is verified | Integration shape | Confidence |
 |---|---|---|---|
 | **podman-compose (local)** | Required by PROJECT.md; `deploy/podman-compose.yml` validated in CI | shell out to `podman`/`podman-compose`, label resources, `podman ps --filter label=…` for reaper | HIGH (constraint) |
 | **Rivet agentOS** | `@rivet-dev/agentos-core` = library VM inside a trusted Node process (V8 isolates + Wasm, "not a microVM", no nested virt); hosted `@rivet-dev/agentos` controls a durable VM over RivetKit/HTTP (`POST /gateway/{vm_id}/action/v1.<group>.<action>`); API groups `vm, config, process, terminal, filesystem (mount/unmount/listMounts), javascript, python, network, software, cron`; mounts `host_dir`, `chunked_s3`, SQLite root; `permissions.network.default:"deny"` with allow rules ([README](https://github.com/rivet-dev/agentos), [architecture](https://rivet.dev/agentos/docs/architecture/)). `@rivet-dev/agentos-sandbox` 0.4.2 exists on npm depending on `dockerode` and `sandbox-agent` ([npm](https://www.npmjs.com/package/@rivet-dev/agentos-sandbox)) — this is the "external sandbox mount / ACP agents inside" bridge PROJECT.md refers to. | Because the runtime is a **Node library**, the .NET provider talks to it either via the hosted HTTP gateway (preferred for Railway) or via a small Node sidecar process the provider spawns; omp runs *inside* the VM as an ACP agent only if the agentOS image can host it — `[INFERENCE]`, unverified | MEDIUM (packages/API verified; ACP-in-VM path LOW) |
 | **NVIDIA OpenShell** | v0.1.4 docs: gateway (control plane, sandbox lifecycle, policy, credentials, logs) → compute driver provisions **workload + separate supervisor** → supervisor confirms isolation boundary, starts agent, connects back; per-run gateway JWT + sandbox JWT ("generation"); supervisor disconnect freezes the agent. Podman driver: Podman 5.x, cgroups v2, `systemctl --user start podman.socket`, gateway TOML `[openshell] version = 2` + `[openshell.gateway] compute_driver = "podman"`, options under `[openshell.drivers.podman]` (`socket_path, network_name, sandbox_runtime_image, supervisor_image, image_pull_policy, stop_timeout_secs, grpc_endpoint`). Policy YAML `version: 1` with `filesystem_policy{include_workdir, read_only, read_write}`, `landlock`, `process{run_as_user, run_as_group}`, `network_policies` (live-reloadable, per-binary endpoint rules with `allow`/`deny_rules`), `network_middlewares`; unknown fields rejected; ≤4 MiB. Lifecycle: `sandbox create [--from image] [--detach] [--restart-policy never|on-failure|always] [--no-keep] -- <main process>`; exit 0 → `Completed`, nonzero → `Error/MainProcessFailed`; `sandbox connect` replays ≤1 MiB output, auto-reattaches ≤60 s. ([architecture](https://docs.nvidia.com/openshell/latest/about/architecture), [runtimes](https://docs.nvidia.com/openshell/latest/how-it-works/sandboxes/runtimes.md), [policy schema](https://docs.nvidia.com/openshell/latest/how-it-works/policies/schema.md), [sandboxes](https://docs.nvidia.com/openshell/latest/how-it-works/sandboxes/overview)) | Provider shells out to the `openshell` CLI (sandbox create/exec/logs/stop/delete; policy set) against a gateway configured for podman; `SandboxDescriptor` records sandbox name + generation; the reaper lists sandboxes by name prefix. Programmatic gateway API exists (gRPC `grpc_endpoint`) but its contract is not documented in the pages read — keep CLI-shaped | MEDIUM (CLI/config verified; gRPC surface LOW) |
-| **Attested-enclave boundary (dstack-shaped)** | dstack ≥0.6 guest agent: internal Unix socket `/var/run/dstack.sock` (app-only) serving `dstack.guest.v1` at `/v1/{IssueCert,GetKey,Attest,AttestGpu,Info,Version}` (prpc: `POST` JSON or protobuf; `GET` query); external `Worker` service at `/prpc/v1/{Health,…}` never hands out keys; `/v1/Version` is the cheapest liveness probe; a pre-0.6 agent answers `/v1/...` with non-JSON 404 ([guest-api-v1.md](https://github.com/Dstack-TEE/dstack/blob/master/docs/guest-api-v1.md)). Apps are Docker-compose-shaped CVMs with RA reports binding image hash/args/env ([overview](https://docs.phala.com/dstack/overview)). PROJECT.md records an Oct 8–12 2026 guest-agent incident. | `IAttestationBoundary { GetQuoteAsync(nonce) ; VerifyAsync(report) }` over the v1 `Attest`/`Info` shapes, with a no-op implementation; **no provisioning code** — the enclave is where the inner provider's workload runs, not something OmpOS creates | MEDIUM (API verified; OmpOS integration LOW) |
+| **Attested-enclave boundary (dstack-shaped)** | dstack ≥0.6 guest agent: internal Unix socket `/var/run/dstack.sock` (app-only) serving `dstack.guest.v1` at `/v1/{IssueCert,GetKey,Attest,AttestGpu,Info,Version}` (prpc: `POST` JSON or protobuf; `GET` query); external `Worker` service at `/prpc/v1/{Health,…}` never hands out keys; `/v1/Version` is the cheapest liveness probe; a pre-0.6 agent answers `/v1/...` with non-JSON 404 ([guest-api-v1.md](https://github.com/Dstack-TEE/dstack/blob/master/docs/guest-api-v1.md)). Apps are Docker-compose-shaped CVMs with RA reports binding image hash/args/env ([overview](https://docs.phala.com/dstack/overview)). PROJECT.md records an Oct 8–12 2026 guest-agent incident. | `IAttestationBoundary { GetQuoteAsync(nonce) ; VerifyAsync(report) }` over the v1 `Attest`/`Info` shapes, with a no-op implementation; **no provisioning code** — the enclave is where the inner provider's workload runs, not something Autonogrammer creates | MEDIUM (API verified; Autonogrammer integration LOW) |
 
 Composition order (outer→inner): `EnclaveBoundary(OpenShell(podman)(agentOS(omp)))` as the target, but each layer is independently stubbable; the vertical slice uses `FakeSandboxProvider` only.
 
@@ -276,7 +276,7 @@ Composition order (outer→inner): `EnclaveBoundary(OpenShell(podman)(agentOS(om
 
 **What (HIGH, Temporal .NET docs):** workflows are `[Workflow]` classes with one `[WorkflowRun]` async method; workflow code must be deterministic — no I/O, no `Task.Run`/thread pool, no `DateTime.Now`/`Random` (use `Workflow.UtcNow`, `Workflow.Random`, `Workflow.DelayAsync`), `.editorconfig` relaxations for `*.workflow.cs` ([workflow basics](https://docs.temporal.io/develop/dotnet/workflows/basics)). Activities are `[Activity]` methods, should be idempotent (one instance shared across invocations), payload ≤2 MB per arg / 4 MB per gRPC message, and must set `StartToCloseTimeout` or `ScheduleToCloseTimeout`; long activities call `ActivityExecutionContext.Current.Heartbeat(details)` with `HeartbeatTimeout` set, because **cancellation is only delivered on heartbeat** ([activity basics](https://docs.temporal.io/develop/dotnet/activities/basics), [timeouts](https://docs.temporal.io/develop/dotnet/activities/timeouts)). Workers: `new TemporalWorker(client, new TemporalWorkerOptions("task-queue"){…}.AddWorkflow<T>().AddAllActivities(instance))`, `ExecuteAsync(ct)`, `GracefulShutdownTimeout`; all workers on a task queue must register the same types ([run a worker](https://docs.temporal.io/develop/dotnet/workers/run-worker-process)). `Temporalio` 1.20.0 + `Temporalio.Extensions.Hosting` for `IHostedService` registration (version per PROJECT.md).
 
-**Topology for OmpOS:**
+**Topology for Autonogrammer:**
 
 ```
 [Workflow] SessionRunWorkflow(RunInput{SessionId, SandboxSpec, PromptRef, CorrelationId})
@@ -284,7 +284,7 @@ Composition order (outer→inner): `EnclaveBoundary(OpenShell(podman)(agentOS(om
    ├─ activity RunPrompt(sessionId, promptRef)          StartToClose 2h, Heartbeat 15s  ← streams events into the session log; heartbeats carry lastSeq
    ├─ activity CollectArtifacts(sessionId)              StartToClose 10m
    └─ activity TeardownSandbox(descriptor)              StartToClose 10m, RetryPolicy max 5, in `finally` (CancellationType = WaitCancellationCompleted)
-task queue: "ompos-session-runs" (one queue; split "ompos-sandbox" later only if sandbox ops need different worker images)
+task queue: "autonogrammer-session-runs" (one queue; split "autonogrammer-sandbox" later only if sandbox ops need different worker images)
 signals: Cancel  |  queries: Status  |  updates: none
 ```
 **When a path must go through Temporal:** (1) anything that owns a sandbox lifetime (provision → run → teardown must survive API restarts and always tear down), (2) multi-step runs longer than an HTTP request/SSE connection where retries and timers matter, (3) scheduled/cron runs. **What must not:** the interactive chat turn on the desktop head (in-process harness, no server), approvals (human latency belongs in the session service; the workflow only waits on a signal if the run is durable), and the vertical slice (runs via `DirectSessionRunner`, same `ISessionRunWorkflow` interface, no server).
@@ -295,7 +295,7 @@ signals: Cancel  |  queries: Status  |  updates: none
 
 **What (HIGH, [MAUI Blazor Web App tutorial](https://learn.microsoft.com/en-us/aspnet/core/blazor/hybrid/tutorials/maui-blazor-web-app?view=aspnetcore-10.0)):** `dotnet new maui-blazor-web -I WebAssembly` yields MAUI head + Blazor Web App (+ `.Client`) + shared RCL. The RCL holds `Routes.razor` and all components; MAUI's `MainPage.xaml` points `BlazorWebView`'s `RootComponent ComponentType` at `shared:Components.Routes`. MAUI apps always run interactively and throw on explicit `@rendermode`; the tutorial's `InteractiveRenderSettings.ConfigureBlazorHybridRenderModes()` nulls render modes in the hybrid head. Device-specific behaviour goes behind interfaces declared in the RCL (`IFormFactor` example) with implementations registered per head: `AddSingleton<IFormFactor, FormFactor>()` in `MauiProgram`, `AddScoped<…>` in the web project, and a separate implementation in the `.Client` project when WASM is used.
 
-**OmpOS composition:** OmpOS ships a *standalone* Blazor WASM app (static on Vercel) rather than a Blazor Web App server, so the RCL must contain zero server-only dependencies. RCL seams: `ISessionClient` (HTTP+SSE → backend | in-process → `SessionService`), `IApprovalPresenter`, `IPlatformInfo`, `IFileAccess` (desktop only: backs ACP `fs/*`), `ITerminalHost` (desktop only: backs `terminal/*`). Heads:
+**Autonogrammer composition:** Autonogrammer ships a *standalone* Blazor WASM app (static on Vercel) rather than a Blazor Web App server, so the RCL must contain zero server-only dependencies. RCL seams: `ISessionClient` (HTTP+SSE → backend | in-process → `SessionService`), `IApprovalPresenter`, `IPlatformInfo`, `IFileAccess` (desktop only: backs ACP `fs/*`), `ITerminalHost` (desktop only: backs `terminal/*`). Heads:
 
 | Head | `ISessionClient` | Harness | Notes |
 |---|---|---|---|
@@ -312,7 +312,7 @@ signals: Cancel  |  queries: Status  |  updates: none
 ```
 [User types prompt in Composer (RCL)]
     ↓ POST /sessions/{id}/prompts { text, attachments }   (X-Correlation-ID minted by middleware)
-[OmpOS.Api] → [Parser: IntentEnvelope] → [SessionService.AcceptPrompt]
+[Autonogrammer.Api] → [Parser: IntentEnvelope] → [SessionService.AcceptPrompt]
     ↓ rejects with 409 SessionBusy if a prompt is active; else appends StreamEvent{prompt_accepted, Seq=n}
 [DirectSessionRunner | Temporal SessionRunWorkflow]
     ↓ (optional) ISandboxProvider.ProvisionAsync(idempotencyKey = sessionId+promptId)
@@ -347,7 +347,7 @@ UI state is derived, never authoritative: reloading a session = replaying the lo
 
 1. **Resume after disconnect:** client holds `lastSeq`; on reconnect sends `Last-Event-ID: lastSeq`; server replays `(lastSeq, now]` from the log then tails; duplicates filtered by `Seq`. Works through Vercel/Railway edges without sticky sessions because the log, not the connection, is the source of truth.
 2. **Cancellation chain:** UI → `DELETE /sessions/{id}/prompts/current` → SessionService sets `Cancelling` → harness sends `session/cancel` / `abort` → pending `session/request_permission` answered `cancelled` (ACP MUST) → harness waits for `stopReason:"cancelled"` / `prompt_result{status:"aborted"}` → `turn_ended`. Temporal: workflow `Cancel` signal → activity cancellation delivered on next heartbeat.
-3. **Host tool round-trip (omp RPC only):** backend registers `set_host_tools` for OmpOS-owned tools (e.g., `ompos_render_surface` producing A2UI); omp emits `host_tool_call` → `IHostToolRegistry` executes → `host_tool_update`/`host_tool_result`; cancellation via `host_tool_cancel{targetId}`.
+3. **Host tool round-trip (omp RPC only):** backend registers `set_host_tools` for Autonogrammer-owned tools (e.g., `autonogrammer_render_surface` producing A2UI); omp emits `host_tool_call` → `IHostToolRegistry` executes → `host_tool_update`/`host_tool_result`; cancellation via `host_tool_cancel{targetId}`.
 4. **Sandbox lifetime:** `ProvisionAsync` with idempotency key (safe to retry) → descriptor persisted on the session → run → `TeardownAsync` with retry; reaper sweeps provider-tagged resources every N minutes for TTL-expired or ownerless sandboxes.
 
 ## Scaling Considerations
@@ -414,11 +414,11 @@ UI state is derived, never authoritative: reloading a session = replaying the lo
 | Service | Integration Pattern | Notes |
 |---------|---------------------|-------|
 | `omp acp` | spawn per session, JSON-RPC 2.0 over stdio, `initialize` with `fs`/`terminal` caps reflecting the head (desktop: true; backend: false unless sandbox-backed) | approval mode via launch flags/`--config` overlay; `loadSession` capability gates `session/load` |
-| `omp --mode rpc` | spawn per session, JSONL v1 → negotiate v2, `--no-ui` for headless backend, `rpc-ui --no-ui` when the host answers tool dialogs | set `set_event_filter` to the known set; `set_host_tools` for OmpOS tools |
+| `omp --mode rpc` | spawn per session, JSONL v1 → negotiate v2, `--no-ui` for headless backend, `rpc-ui --no-ui` when the host answers tool dialogs | set `set_event_filter` to the known set; `set_host_tools` for Autonogrammer tools |
 | OpenShell gateway (podman driver) | `openshell` CLI from the provider; gateway TOML `[openshell] version=2`, `[openshell.gateway] compute_driver="podman"`; policy YAML v1 per sandbox | Podman 5.x + cgroups v2 + user socket on the host; sandbox JWT generations mean a restart invalidates attachments |
 | Rivet agentOS | hosted HTTP gateway (`/gateway/{vm_id}/action/v1.*`) or Node sidecar with `@rivet-dev/agentos-core`; `@rivet-dev/agentos-sandbox` for external sandbox mounts | Node runtime required; ACP-agent-inside-VM path unverified (open question) |
-| dstack (attested enclave) | `IAttestationBoundary` over `/v1/Attest`, `/v1/Info`, `/v1/Version` on `/var/run/dstack.sock` (inside CVM) and `/prpc/v1/Health` externally | OmpOS never provisions CVMs in this milestone; interface + no-op only |
-| Temporal server | `Temporalio` client + worker on task queue `ompos-session-runs`; behind `Workflows:Enabled` | local dev via `temporal server start-dev` in podman-compose profile |
+| dstack (attested enclave) | `IAttestationBoundary` over `/v1/Attest`, `/v1/Info`, `/v1/Version` on `/var/run/dstack.sock` (inside CVM) and `/prpc/v1/Health` externally | Autonogrammer never provisions CVMs in this milestone; interface + no-op only |
+| Temporal server | `Temporalio` client + worker on task queue `autonogrammer-session-runs`; behind `Workflows:Enabled` | local dev via `temporal server start-dev` in podman-compose profile |
 | Vercel | static Blazor WASM publish; `vercel.json` headers (CSP, CORS none) + env-driven API base URL | no server functions |
 | Railway | API + worker images built with `podman build`; health endpoints for readiness | config-as-code only this milestone |
 
@@ -458,7 +458,7 @@ Steps 1–5 form the required vertical slice (no omp/Temporal/cloud); 6–7 need
 - **agentOS as an ACP host for omp:** `@rivet-dev/agentos-sandbox` 0.4.2 depends on `sandbox-agent`, but the README/docs read today do not document running an ACP agent *inside* a VM nor an agentOS-native ACP transport. LOW — needs a spike against the hosted gateway.
 - **OpenShell programmatic API:** the gateway exposes `grpc_endpoint`; its proto/contract was not found in the pages read. Keep the provider CLI-shaped until verified. LOW.
 - **ACP `session/load` support in `omp acp`:** PROJECT.md lists `session/load|list|close|delete` as implemented by omp; the ACP spec gates `session/load` on `agentCapabilities.loadSession` — the harness must read the capability at runtime rather than assume it. MEDIUM.
-- **A2UI client→server `action` transport for OmpOS:** spec is transport-agnostic; the proposed "post action as a prompt turn" is `[INFERENCE]`, to be decided in the GenUi phase (v1.0 `actionResponse` may change this). MEDIUM.
+- **A2UI client→server `action` transport for Autonogrammer:** spec is transport-agnostic; the proposed "post action as a prompt turn" is `[INFERENCE]`, to be decided in the GenUi phase (v1.0 `actionResponse` may change this). MEDIUM.
 - **Railway multi-replica SSE:** single-writer-per-session needs session affinity or an external log before scaling past one instance. Design accepted; implementation deferred. MEDIUM.
 
 ## Sources
@@ -472,8 +472,8 @@ Steps 1–5 form the required vertical slice (no omp/Temporal/cloud); 6–7 need
 - Temporal .NET: [workflow basics](https://docs.temporal.io/develop/dotnet/workflows/basics), [activity basics](https://docs.temporal.io/develop/dotnet/activities/basics), [activity execution](https://docs.temporal.io/develop/dotnet/activities/execution), [timeouts & heartbeats](https://docs.temporal.io/develop/dotnet/activities/timeouts), [run a worker](https://docs.temporal.io/develop/dotnet/workers/run-worker-process) — HIGH
 - ASP.NET Core 10 SSE: [Minimal API responses — Server-Sent Events](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/minimal-apis/responses?view=aspnetcore-10.0); `Last-Event-ID`: [WHATWG HTML server-sent events](https://html.spec.whatwg.org/multipage/server-sent-events.html) — HIGH
 - MAUI Blazor Hybrid + Web App + RCL: [learn.microsoft.com tutorial](https://learn.microsoft.com/en-us/aspnet/core/blazor/hybrid/tutorials/maui-blazor-web-app?view=aspnetcore-10.0) — HIGH
-- Project context: `/root/src/repos/ompos/.planning/PROJECT.md` (verified facts, constraints, key decisions)
+- Project context: `/root/src/repos/autonogrammer/.planning/PROJECT.md` (verified facts, constraints, key decisions)
 
 ---
-*Architecture research for: OmpOS — C#/.NET ACP harness + agent workspace*
+*Architecture research for: Autonogrammer — C#/.NET ACP harness + agent workspace*
 *Researched: 2026-10-20 · Tracking: ultrathink n3 SPE-17751 (https://linear.app/swcstudio/issue/SPE-17751)*

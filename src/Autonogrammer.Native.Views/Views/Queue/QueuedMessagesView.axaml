@@ -1,0 +1,165 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:q="clr-namespace:Autonogrammer.Presentation.Queue;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Queue.QueuedMessagesView"
+             x:DataType="q:QueuedMessagesModel"
+             Focusable="False"
+             IsVisible="{CompiledBinding !IsEmpty}">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+
+    <!-- A row of the queue. Its 2 px border is transparent at rest and shows the focus ring while the row has keyboard focus, so a focused row never moves. -->
+    <Style Selector="Border.queue-row">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Control}" />
+      <Setter Property="Padding" Value="{DynamicResource Autonogrammer.Space.Xs}" />
+    </Style>
+    <Style Selector="Border.queue-row:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Hover}" />
+    </Style>
+    <Style Selector="Border.queue-row:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- The queued messages under the composer (Cursor's Queued pill). The view hides itself while the queue is empty. Each row is a stop of
+       its own, so Alt+Up and Alt+Down reorder it and Delete removes it from the keyboard; the four buttons of a row do the same with the pointer.
+       The row buttons are routed in code to the model's commands with the message id as the parameter. Tokens only. -->
+  <Border x:Name="QueueCard"
+          Classes="settings-card">
+    <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+      <Grid ColumnDefinitions="*,Auto"
+            ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+        <Border Grid.Column="0"
+                Classes="chip"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center">
+          <TextBlock x:Name="PillText"
+                     Classes="settings-chip-text"
+                     Text="{CompiledBinding PillText}" />
+        </Border>
+
+        <Button x:Name="ClearAllButton"
+                Grid.Column="1"
+                Classes="ghost sm"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                Command="{CompiledBinding ClearCommand}"
+                Content="{x:Static q:QueueCopy.ClearLabel}"
+                AutomationProperties.Name="{x:Static q:QueueCopy.ClearLabel}" />
+      </Grid>
+
+      <ScrollViewer x:Name="QueueScroll"
+                    MaxHeight="240"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+        <ItemsControl x:Name="QueueRows"
+                      ItemsSource="{CompiledBinding Messages}"
+                      AutomationProperties.Name="{x:Static q:QueueCopy.Title}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="q:QueuedMessage">
+              <Border Classes="queue-row"
+                      Focusable="True"
+                      IsTabStop="True"
+                      MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      AutomationProperties.Name="{CompiledBinding RowName}">
+                <Grid ColumnDefinitions="Auto,*,Auto"
+                      ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+                  <TextBlock Grid.Column="0"
+                             Classes="settings-chip-text"
+                             MinWidth="20"
+                             Text="{CompiledBinding Position}"
+                             AutomationProperties.AccessibilityView="Raw" />
+
+                  <TextBlock Grid.Column="1"
+                             Classes="settings-body"
+                             VerticalAlignment="Center"
+                             TextWrapping="NoWrap"
+                             TextTrimming="CharacterEllipsis"
+                             MaxLines="1"
+                             Text="{CompiledBinding PreviewText}"
+                             AutomationProperties.AccessibilityView="Raw" />
+
+                  <StackPanel Grid.Column="2"
+                              Orientation="Horizontal"
+                              Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+                    <Button Tag="MoveUp"
+                            Classes="icon ghost"
+                            MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            IsEnabled="{CompiledBinding CanMoveUp}"
+                            ToolTip.Tip="{CompiledBinding MoveUpName}"
+                            AutomationProperties.Name="{CompiledBinding MoveUpName}">
+                      <Path Data="M3 10l5-5 5 5"
+                            Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                            Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                            Stretch="Uniform"
+                            StrokeLineCap="Round"
+                            StrokeJoin="Round"
+                            AutomationProperties.AccessibilityView="Raw" />
+                    </Button>
+
+                    <Button Tag="MoveDown"
+                            Classes="icon ghost"
+                            MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            IsEnabled="{CompiledBinding CanMoveDown}"
+                            ToolTip.Tip="{CompiledBinding MoveDownName}"
+                            AutomationProperties.Name="{CompiledBinding MoveDownName}">
+                      <Path Data="M3 6l5 5 5-5"
+                            Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                            Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                            Stretch="Uniform"
+                            StrokeLineCap="Round"
+                            StrokeJoin="Round"
+                            AutomationProperties.AccessibilityView="Raw" />
+                    </Button>
+
+                    <Button Tag="SendNow"
+                            Classes="ghost sm"
+                            MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            Content="{x:Static q:QueueCopy.SendNowLabel}"
+                            AutomationProperties.Name="{CompiledBinding SendNowName}" />
+
+                    <Button Tag="Remove"
+                            Classes="icon ghost"
+                            MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            ToolTip.Tip="{CompiledBinding RemoveName}"
+                            AutomationProperties.Name="{CompiledBinding RemoveName}">
+                      <Path Data="M4 4l8 8M12 4l-8 8"
+                            Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                            Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                            Stretch="Uniform"
+                            StrokeLineCap="Round"
+                            StrokeJoin="Round"
+                            AutomationProperties.AccessibilityView="Raw" />
+                    </Button>
+
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <!-- The polite live region: what moved, what was sent now, what failed. -->
+      <TextBlock x:Name="AnnouncementText"
+                 Classes="settings-help"
+                 Text="{CompiledBinding Announcement}"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="{x:Static q:QueueCopy.Title}" />
+
+    </StackPanel>
+  </Border>
+
+</UserControl>

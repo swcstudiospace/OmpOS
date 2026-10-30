@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Validates CHANGELOG.md against Keep a Changelog 1.1.0 and Semantic Versioning (Phase 52).
 # Usage: bash scripts/ci/check-changelog.sh [path-to-CHANGELOG.md]
-# Environment: OMPOS_PROPS_FILE overrides the Directory.Build.props path (default: next to CHANGELOG.md).
+# Environment: AUTONOGRAMMER_PROPS_FILE overrides the Directory.Build.props path (default: next to CHANGELOG.md).
 # Checks:
 #   1. the "# Changelog" title and a Keep a Changelog reference in the header;
 #   2. a "## [Unreleased]" section;
@@ -15,7 +15,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 changelog="${1:-$root/CHANGELOG.md}"
-props="${OMPOS_PROPS_FILE:-$(dirname "$changelog")/Directory.Build.props}"
+props="${AUTONOGRAMMER_PROPS_FILE:-$(dirname "$changelog")/Directory.Build.props}"
 errors=0
 
 fail() {

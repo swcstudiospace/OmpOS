@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Acp/Autonogrammer.Harness.Acp.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.AgentLoop/Autonogrammer.Harness.AgentLoop.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Terminal/Autonogrammer.Harness.Terminal.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Workspace/Autonogrammer.Harness.Workspace.csproj" />
+    <ProjectReference Include="../Autonogrammer.Presentation/Autonogrammer.Presentation.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Autonogrammer.Harness.Remote.Tests" />
+  </ItemGroup>
+
+</Project>

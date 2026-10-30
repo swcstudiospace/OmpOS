@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.Blocks.DiffPlaceholderView"
+             AutomationProperties.Name="Diff placeholder">
+
+  <!-- A diff the view does not draw: the same card as a file edit, with the changed path and the reason. -->
+  <Border Classes="card"
+          Padding="10,8">
+    <Grid ColumnDefinitions="Auto,*"
+          ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+      <Path Grid.Column="0"
+            Data="M4 2h5.5L12.5 5v9h-8.5ZM9.5 2v3h3"
+            Stroke="{DynamicResource Autonogrammer.Color.TextSecondary}"
+            StrokeThickness="1.5"
+            StrokeLineCap="Round"
+            StrokeJoin="Round"
+            Stretch="Uniform"
+            Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+            Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+            VerticalAlignment="Top"
+            Margin="0,2,0,0"
+            AutomationProperties.AccessibilityView="Raw" />
+      <StackPanel Grid.Column="1"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Xxs}">
+        <TextBlock x:Name="PathText"
+                   Classes="strong"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="ReasonText"
+                   Classes="muted small"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </Grid>
+  </Border>
+
+</UserControl>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Mcp/Autonogrammer.Harness.Mcp.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Mcp.Fixtures/Autonogrammer.Harness.Mcp.Fixtures.csproj" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+</Project>

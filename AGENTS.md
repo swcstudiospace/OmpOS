@@ -2,9 +2,9 @@
 
 ## Project
 
-**OmpOS**
+**Autonogrammer**
 
-OmpOS is a chat-style agent workspace — a Grok Chat / Cursor Agent–class client whose engine is **omp** rather than Cursor. It orchestrates omp sessions and renders their streamed output as **Generative UI** (structured, interactive blocks, not plain text). It is a **Desktop ACP Harness built in C#** that grows into one full-stack product: a Blazor WebAssembly web head hosted on Vercel (Avalonia.Browser failed gate G-WEB on Avalonia 12.1.4; ADR-0004), Avalonia UI native shells for Windows, macOS, Linux, iOS and Android, and a unified ASP.NET Core backend on Railway, where agent runs execute in-process through the direct runner (`DirectSessionRunner`) and sandboxed agent execution follows the layering Rivet agentOS → NVIDIA OpenShell on podman → attested-enclave boundary.
+Autonogrammer is a chat-style agent workspace — a Grok Chat / Cursor Agent–class client whose engine is **omp** rather than Cursor. It orchestrates omp sessions and renders their streamed output as **Generative UI** (structured, interactive blocks, not plain text). It is a **Desktop ACP Harness built in C#** that grows into one full-stack product: a Blazor WebAssembly web head hosted on Vercel (Avalonia.Browser failed gate G-WEB on Avalonia 12.1.4; ADR-0004), Avalonia UI native shells for Windows, macOS, Linux, iOS and Android, and a unified ASP.NET Core backend on Railway, where agent runs execute in-process through the direct runner (`DirectSessionRunner`) and sandboxed agent execution follows the layering Rivet agentOS → NVIDIA OpenShell on podman → attested-enclave boundary.
 
 **Core Value:** A prompt typed on any surface becomes an omp session whose streamed events render as live Generative UI — reliably, resumably, and inside an isolation boundary the operator controls.
 
@@ -19,6 +19,20 @@ OmpOS is a chat-style agent workspace — a Grok Chat / Cursor Agent–class cli
 - **Dev box limits**: on this Linux host the Avalonia desktop head builds with warnings as errors and its AT-SPI2 accessibility tree is readable under Xvfb (spike 2026-10-21); the Blazor WebAssembly browser publish builds with the wasm-tools workload (installed on this host), while Avalonia.Browser fails G-WEB on Avalonia 12.1.4; Android builds need the Android SDK (not installed here); iOS and macOS packaging need the Mac channel; honest reporting of what was and was not built locally.
 - **Scope discipline**: structure, wiring, contracts, foundations and one vertical slice — not the full product.
 - **Protocol fidelity**: ACP v1 (stable) and omp RPC protocol v1/v2 framing as documented in the installed omp; v2 ACP draft is out of scope.
+
+### Product surfaces: Code and Cowork
+
+- **Code** is the Cursor-style workspace: agent rail, thread, composer, Changes bar and the Kanban tab.
+- **Cowork** is the chat-style surface with Artifacts, Browser Use, Computer Use and Dispatch.
+- Cowork sessions never create a Kanban card and never appear on the Kanban; the design enforces this in the data layer through `SessionSurface` (ADR-0032).
+- Status: milestone v0.16.0 is in progress and design only so far (ADR-0030 to ADR-0037 are Proposed). Cowork, Artifacts, Browser Use, Computer Use, Dispatch and `SessionSurface` are not built yet. Plan: `docs/plans/v0.16.0-research/briefs/00-index.md`; ADRs: `docs/decisions/ADR-0030` to `ADR-0037`.
+
+### Accounts
+
+- Sign-in is Supabase passwordless (email code and magic link) on the shared Spectrum Web Co project (ADR-0030).
+- Code works signed out; Cowork, Dispatch and the account view require sign-in.
+- Clients never hold Railway credentials; the API owns them.
+- Status: planned in ADR-0030, in progress; no sign-in client exists in the heads yet.
 
 <!-- GSD:project-end -->
 
@@ -66,7 +80,7 @@ OmpOS is a chat-style agent workspace — a Grok Chat / Cursor Agent–class cli
 | Library | Version | Purpose | Why this one |
 |---------|---------|---------|--------------|
 | `xunit.v3` | **4.0.2** (4.0.0 shipped 2026-08-14; Apache-2.0) + `xunit.runner.visualstudio` 4.0.1 + `xunit.analyzers` 2.2.0 | Unit/integration test framework | v3 projects are executables, run natively on Microsoft.Testing.Platform v2, support Native AOT and full test-case parallelism; `async void` tests fail fast; `IAsyncLifetime` is `IAsyncDisposable`. xunit 2.9.3 is maintenance-only. Sources: [v3 migration](https://xunit.net/docs/getting-started/v3/migration), [4.0.0 release notes](https://xunit.net/releases/v3/4.0.0). **[HIGH]** |
-| Microsoft.Testing.Platform (MTP) mode of `dotnet test` | MTP 2.5.1 via xunit.v3; enable with `global.json` → `"test": { "runner": "Microsoft.Testing.Platform" }` | Test runner mode for the .NET 10 SDK | xunit 4.0 dropped MTP v1 and expects MTP mode on the .NET 10 SDK ("Testing with VSTest target is no longer supported… on .NET 10 SDK and later"). Use `dotnet test --solution OmpOS.slnx`, `--report-trx` via `Microsoft.Testing.Extensions.TrxReport` 2.5.1. Source: [Testing with dotnet test](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-with-dotnet-test). **[HIGH]** |
+| Microsoft.Testing.Platform (MTP) mode of `dotnet test` | MTP 2.5.1 via xunit.v3; enable with `global.json` → `"test": { "runner": "Microsoft.Testing.Platform" }` | Test runner mode for the .NET 10 SDK | xunit 4.0 dropped MTP v1 and expects MTP mode on the .NET 10 SDK ("Testing with VSTest target is no longer supported… on .NET 10 SDK and later"). Use `dotnet test --solution Autonogrammer.slnx`, `--report-trx` via `Microsoft.Testing.Extensions.TrxReport` 2.5.1. Source: [Testing with dotnet test](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-with-dotnet-test). **[HIGH]** |
 | `Shouldly` | **4.3.0** (BSD-3-Clause) | Assertions | FluentAssertions 8.x moved to the **Xceed Community License** (non-commercial only; commercial use requires a paid licence) — see *What NOT to Use*. Shouldly is permissively licensed and feature-adequate. 5.0.0-preview.2 exists; stay on 4.3.0. Sources: [Shouldly LICENSE](https://github.com/shouldly/shouldly/blob/master/LICENSE.txt), [FluentAssertions LICENSE](https://github.com/fluentassertions/fluentassertions/blob/main/LICENSE). **[HIGH]** |
 | `NSubstitute` | 6.2.0 (BSD-3-Clause) | Mocking for provider/transport seams | Preferred over Moq (4.21.0) because of Moq's 2023 SponsorLink incident and NSubstitute's cleaner API; most seams should use the deterministic in-memory adapters the requirements mandate rather than mocks. **[HIGH]** on versions/licences, **[MEDIUM]** on preference |
 | `TngTech.ArchUnitNET` + `TngTech.ArchUnitNET.xUnitV3` | **0.13.4** (2026-08-19, Apache-2.0) | Architecture tests enforcing apps → services → libraries → contracts | Actively maintained with a dedicated xUnit v3 adapter. **NetArchTest.Rules 1.3.2 has had no release since 2021-05** — do not use. Sources: [ArchUnitNET releases](https://github.com/TNG/ArchUnitNET/releases), [NetArchTest releases](https://github.com/BenMorris/NetArchTest/releases). **[HIGH]** |
@@ -145,10 +159,10 @@ OmpOS is a chat-style agent workspace — a Grok Chat / Cursor Agent–class cli
 ## Stack Patterns by Variant
 
 - Use `DirectSessionRunner` in-process; no `Temporalio` worker is registered and the `workflows` compose profile is not started.
-- Because the Temporal packages still compile in, keep them in a separate `OmpOS.Workflows.Temporal` project so the contracts/services layers never reference `Temporalio`.
-- `AddTemporalClient(...)` + `AddHostedTemporalWorker("ompos-sessions").AddWorkflow<SessionRunWorkflow>().AddScopedActivities<SessionRunActivities>()`; wire `Temporalio.Extensions.OpenTelemetry` into the shared `TracerProvider`.
+- Temporal was removed after Phase 3 (`docs/architecture.md`); the in-process run path is `DirectSessionRunner` in `Autonogrammer.Workflows`, and no `Autonogrammer.Workflows.Temporal` project exists. The next bullet records the historical wiring.
+- `AddTemporalClient(...)` + `AddHostedTemporalWorker("autonogrammer-sessions").AddWorkflow<SessionRunWorkflow>().AddScopedActivities<SessionRunActivities>()`; wire `Temporalio.Extensions.OpenTelemetry` into the shared `TracerProvider`.
 - Local: `temporalio/temporal:1.9.1` via compose profile; CI: Testcontainers starts the same image under Podman.
-- Shell out to `podman` with explicit `--format json` and parse with STJ source-gen types; never parse human output. Idempotency keys map to container labels (`io.ompos.session=<id>`) so the orphan reaper is a `podman ps --filter label=…` query.
+- Shell out to `podman` with explicit `--format json` and parse with STJ source-gen types; never parse human output. Idempotency keys map to container labels (`io.autonogrammer.session=<id>`) so the orphan reaper is a `podman ps --filter label=…` query.
 - Interface-conforming stubs only; `Microsoft.Extensions.Http.Resilience` is added when a real HTTP boundary appears.
 - Route through `HtmlSanitizer` before `MarkupString`; everywhere else keep Markdig's `DisableHtml()`.
 - Keep `SseItem<T>.ReconnectionInterval` short, emit a `: keepalive` comment item every ~15 s, and rely on `Last-Event-ID` resume — the backend already has the sequence-numbered log.

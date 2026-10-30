@@ -6,7 +6,7 @@
 - Risk: R-4 (hosted-API contract for cloud runs), `docs/plans/ade-harness-plan.md`
 - Gate: Phase 26 success criteria 4 and 5 (`.planning/ROADMAP.md`)
 - Blocked by: OD-03 (identity provider for the deployed API, `docs/handoff.md` decision 4), and ADE-06 worktree wiring (section 4)
-- Scope: the hosted API contract in `services/OmpOS.Api` and `docs/api/openapi.json`. No endpoint is implemented by this document.
+- Scope: the hosted API contract in `services/Autonogrammer.Api` and `docs/api/openapi.json`. No endpoint is implemented by this document.
 
 ## 1. Request
 
@@ -25,13 +25,13 @@ The committed contract `docs/api/openapi.json` lists five paths and no others:
 | POST | `/sessions/{id}/tool-approvals/{requestId}` | Records `allow` or `deny`. 204 when recorded; 403 when an allow exceeds the ceiling; 409 when not pending. |
 | GET | `/sessions/{id}/events` | Server-sent event stream, resumable by `Last-Event-ID` or `?since=`. |
 
-Ownership, as implemented: the session owner is the subject claim of the validated bearer token. Every session route (`GET /sessions/{id}`, prompts, tool approvals and the event stream) resolves the session for the caller, and a session owned by another subject gets the same 404 as an unknown id (`services/OmpOS.Api/Endpoints/SessionEndpoints.cs`, `FindOwnedSessionAsync`).
+Ownership, as implemented: the session owner is the subject claim of the validated bearer token. Every session route (`GET /sessions/{id}`, prompts, tool approvals and the event stream) resolves the session for the caller, and a session owned by another subject gets the same 404 as an unknown id (`services/Autonogrammer.Api/Endpoints/SessionEndpoints.cs`, `FindOwnedSessionAsync`).
 
-There is no run resource, no run endpoint, no diff endpoint, no transcript endpoint and no cancel endpoint. This was checked against `docs/api/openapi.json` (`paths` keys) and the route map in `services/OmpOS.Api/Endpoints`.
+There is no run resource, no run endpoint, no diff endpoint, no transcript endpoint and no cancel endpoint. This was checked against `docs/api/openapi.json` (`paths` keys) and the route map in `services/Autonogrammer.Api/Endpoints`.
 
 What exists that a run contract would build on:
 
-- `SessionStatus` (`src/OmpOS.Contracts/Sessions/SessionStatus.cs`): `Idle`, `Running`, `AwaitingToolApproval`, `Completed`, `Failed`, `Cancelled`. There is no `Queued` value.
+- `SessionStatus` (`src/Autonogrammer.Contracts/Sessions/SessionStatus.cs`): `Idle`, `Running`, `AwaitingToolApproval`, `Completed`, `Failed`, `Cancelled`. There is no `Queued` value.
 - `Cancelled` is set internally by `PromptRunner` and `SessionRunActivities` on cancellation. No HTTP operation can request it.
 - Stream event kinds (`StreamEventPayloadConverter`): `text_delta`, `ui_block`, `error`, `diagnostic`, `completed`, `unknown`. No approval-request kind exists in the stream. An approval is visible as session status `AwaitingToolApproval`.
 - The event stream ends on the terminal `completed` or `error` event, which gives a remote client a completion signal.
@@ -63,8 +63,8 @@ Notes on the contract:
 
 ADE-07 diff retrieval and Phase 26 criterion 3 depend on runs executing in per-run git worktrees. That wiring does not exist:
 
-- `src/OmpOS.Harness.Worktrees` (`WorktreeManager`) is referenced only by `tests/OmpOS.Harness.Worktrees.Tests` and by the architecture test project (`tests/OmpOS.ArchitectureTests`).
-- `services/OmpOS.Api` does not reference it. `DirectSessionRunner` and `PromptRunner` do not create a worktree.
+- `src/Autonogrammer.Harness.Worktrees` (`WorktreeManager`) is referenced only by `tests/Autonogrammer.Harness.Worktrees.Tests` and by the architecture test project (`tests/Autonogrammer.ArchitectureTests`).
+- `services/Autonogrammer.Api` does not reference it. `DirectSessionRunner` and `PromptRunner` do not create a worktree.
 
 Consequences for this contract:
 
@@ -78,7 +78,7 @@ Phase 26 criterion 4 cannot pass until the wiring lands. The contract can be app
 
 ### 5.1 Authentication
 
-- Every run operation requires an authenticated user. Runs are not `AllowAnonymous`. The fallback policy (`services/OmpOS.Api/Program.cs`) applies to them by default, and the new operations must not opt out.
+- Every run operation requires an authenticated user. Runs are not `AllowAnonymous`. The fallback policy (`services/Autonogrammer.Api/Program.cs`) applies to them by default, and the new operations must not opt out.
 - Outside Development the development principal is refused at startup (`ApiAuthOptionsValidator`). Inside Development it is off unless `Api:Auth:AllowDevelopmentPrincipal` is set. A run operation must answer 401 without a bearer token in both environments.
 - OD-03 gate: the hosted run contract and remote control (ADE-08) MUST NOT be exposed publicly until an identity provider is configured for the deployed API (`docs/handoff.md` decision 4 and the deploy-blocker entry). Until OD-03 closes, the run endpoints are reachable only inside the private network.
 
@@ -105,7 +105,7 @@ Each test runs in the gate unless marked otherwise. Test names are proposed.
 | ID | Test | Layer | Assertion |
 |---|---|---|---|
 | AT-01 | `RunContractOpenApiTests` | Contract (`docs/api/openapi.json`) | Every path and method in section 3 is present; the status enum lists exactly the five values; no run path has `security: []` or `AllowAnonymous`. R-4 requires this check. |
-| AT-02 | `RunLifecycleTests` | Integration (`OmpOS.Api.IntegrationTests`) | POST creates a run in `queued`; the status moves to `running` and then `completed`, and each transition is observed through GET. |
+| AT-02 | `RunLifecycleTests` | Integration (`Autonogrammer.Api.IntegrationTests`) | POST creates a run in `queued`; the status moves to `running` and then `completed`, and each transition is observed through GET. |
 | AT-03 | `RunDiffTests` | Integration, temporary git repository | The diff of a completed run contains that run's file changes and no other run's changes. GET diff of a non-completed run returns 409. |
 | AT-04 | `RunTranscriptTests` | Integration | The transcript of a completed run lists its messages and events in order. A non-completed run returns 409. |
 | AT-05 | `RunCancelTests` | Integration | Cancel moves a running run to `cancelled`; a second cancel returns the same response; cancel on a completed run returns 409. |
@@ -137,7 +137,7 @@ Proposed on 2026-10-22, with no endpoint, schema, test or code implemented by th
 
 ## 9. Implementation note (2026-10-26)
 
-The run resource exists in `services/OmpOS.Api` (`Endpoints/RunEndpoints.cs`) and in `docs/api/openapi.json`, with contract types in `src/OmpOS.Contracts/Runs`. The API is not deployed (Railway refused deploys as paused on 2026-10-21 and the refusal did not recur on 2026-10-28, but the API still waits for an identity provider, OD-03; OQ-70), so no public run endpoint exists and OD-03 is not yet needed. Tests: `CloudRunTests`, `CloudRunOwnerScopeTests`, `CloudRunOpenApiTests`, `RunContractJsonTests`.
+The run resource exists in `services/Autonogrammer.Api` (`Endpoints/RunEndpoints.cs`) and in `docs/api/openapi.json`, with contract types in `src/Autonogrammer.Contracts/Runs`. The API is not deployed (Railway refused deploys as paused on 2026-10-21 and the refusal did not recur on 2026-10-28, but the API still waits for an identity provider, OD-03; OQ-70), so no public run endpoint exists and OD-03 is not yet needed. Tests: `CloudRunTests`, `CloudRunOwnerScopeTests`, `CloudRunOpenApiTests`, `RunContractJsonTests`.
 
 Differences from this request:
 

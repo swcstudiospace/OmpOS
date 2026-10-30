@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../Autonogrammer.Harness.OmpLauncher/Autonogrammer.Harness.OmpLauncher.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Providers/Autonogrammer.Harness.Providers.csproj" />
+    <ProjectReference Include="../Autonogrammer.Harness.Secrets/Autonogrammer.Harness.Secrets.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Autonogrammer.Harness.OmpConfig.Tests" />
+  </ItemGroup>
+
+</Project>

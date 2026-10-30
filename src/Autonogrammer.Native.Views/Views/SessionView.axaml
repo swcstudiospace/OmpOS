@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.SessionView">
+
+  <ScrollViewer x:Name="TranscriptScroll"
+                AutomationProperties.Name="Session transcript"
+                Focusable="True"
+                IsTabStop="True"
+                Padding="{DynamicResource Autonogrammer.Space.Md}"
+                Background="{DynamicResource Autonogrammer.Color.Surface}">
+    <StackPanel Margin="{DynamicResource Autonogrammer.Space.Lg}"
+                Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+      <TextBlock x:Name="AnnouncementText"
+                 Classes="muted"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Session announcements"
+                 AutomationProperties.LiveSetting="Polite" />
+
+      <TextBlock x:Name="StateHeading"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Heading}"
+                 FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+                 TextWrapping="Wrap" />
+      <TextBlock x:Name="StateBody"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Body}"
+                 TextWrapping="Wrap" />
+
+      <StackPanel x:Name="BlockHost"
+                  AutomationProperties.Name="Conversation"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}" />
+
+      <TextBlock x:Name="StreamingText"
+                 TextWrapping="Wrap"
+                 IsVisible="False" />
+
+      <!-- The hook notices that belong to no tool call of the transcript: they sit under the conversation. -->
+      <StackPanel x:Name="HookNoticeHost"
+                  AutomationProperties.Name="Hook notices"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+
+      <!-- The lifecycle notice and the affordances follow the transcript. The stop control shows while a turn streams, retry after a
+           recoverable failure, and jump to latest while auto-scroll is paused. -->
+      <TextBlock x:Name="StateNotice"
+                 Classes="muted"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 IsVisible="False"
+                 AutomationProperties.Name="Session notice"
+                 AutomationProperties.LiveSetting="Polite" />
+
+      <StackPanel Orientation="Horizontal"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+        <Button x:Name="SessionStopButton"
+                Content="■"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                IsVisible="False"
+                AutomationProperties.Name="Stop response" />
+        <Button x:Name="SessionRetryButton"
+                Content="Retry"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                IsVisible="False"
+                AutomationProperties.Name="Retry failed operation" />
+        <Button x:Name="JumpToLatestButton"
+                Content="↓"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                IsVisible="False"
+                AutomationProperties.Name="Jump to latest" />
+      </StackPanel>
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

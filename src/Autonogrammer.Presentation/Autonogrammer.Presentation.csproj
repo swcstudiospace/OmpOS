@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Markdig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
+    <ProjectReference Include="../Autonogrammer.GenUi/Autonogrammer.GenUi.csproj" />
+    <ProjectReference Include="../Autonogrammer.Parser/Autonogrammer.Parser.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.RunControls.RunControlsView"
+             Background="{DynamicResource Autonogrammer.Color.SurfaceRaised}"
+             Padding="{DynamicResource Autonogrammer.Space.Md}">
+
+  <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+    <TextBlock Text="Tool requests waiting for a decision"
+               FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+               FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+               TextWrapping="Wrap" />
+
+    <ItemsControl x:Name="ApprovalItems"
+                  AutomationProperties.Name="Pending tool requests" />
+
+  </StackPanel>
+
+</UserControl>

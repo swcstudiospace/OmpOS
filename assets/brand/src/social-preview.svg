@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
-  <title>OmpOS: the open agent workspace on the omp engine</title>
+  <title>Autonogrammer: the open agent workspace on the omp engine</title>
   <rect width="1280" height="640" fill="#ffffff"/>
   <g>
-  <g transform="translate(1110 190) scale(1.1) translate(-256 -256)" fill="none" stroke="#f5f1ff" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="translate(1150 560) scale(1.1) translate(-256 -256)" fill="none" stroke="#f5f1ff" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="256" cy="256" r="146" stroke-width="56"/>
     <path d="M204 212L254 256L204 300" stroke-width="42"/>
     <path d="M276 302H312" stroke-width="42"/>
   </g>
   </g>
   <defs><linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#5b21b6"/></linearGradient></defs>
-  <g transform="translate(96 128) scale(0.390625)">
+  <g transform="translate(96 112) scale(0.34375)">
     <rect width="512" height="512" rx="116" fill="url(#tile)"/>
     <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="256" cy="256" r="146" stroke-width="56"/>
@@ -17,7 +17,7 @@
       <path d="M276 302H312" stroke-width="42"/>
     </g>
   </g>
-  <text x="338" y="271" font-family="Anybody" font-weight="600" font-size="130" fill="#1c1c1a">Omp<tspan fill="#6d28d9">OS</tspan></text>
+  <text x="308" y="235" font-family="Anybody" font-weight="600" font-size="100" fill="#1c1c1a">Auto<tspan fill="#6d28d9">nogrammer</tspan></text>
   <text x="98" y="402" font-family="DM Sans" font-weight="400" font-size="42" fill="#44403c">The open agent workspace on the omp engine</text>
   <text x="98" y="460" font-family="DM Sans" font-weight="500" font-size="30" letter-spacing="0.8" fill="#6d28d9">Desktop  ·  Web  ·  Cloud  ·  Remote</text>
   <text x="98" y="568" font-family="Space Mono" font-weight="400" font-size="24" fill="#44403c">github.com/swcstudiospace/OmpOS</text>

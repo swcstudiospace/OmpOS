@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.RunControls.ToolApprovalRowView">
+
+  <!-- The request card: a card with a hairline in the accent, as a permission request is drawn in the transcript. -->
+  <Border Classes="card"
+          BorderBrush="{DynamicResource Autonogrammer.Color.AccentPurple}"
+          Padding="{DynamicResource Autonogrammer.Space.Sm}">
+
+    <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+
+      <TextBlock x:Name="ToolNameText"
+                 FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Body}"
+                 TextWrapping="Wrap" />
+
+      <TextBlock x:Name="ArgumentsText"
+                 Classes="muted mono"
+                 TextWrapping="Wrap" />
+
+      <TextBlock x:Name="StatusText"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                 TextWrapping="Wrap"
+                 IsVisible="False"
+                 AutomationProperties.Name="Approval status"
+                 AutomationProperties.LiveSetting="Polite" />
+
+      <StackPanel Orientation="Horizontal"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+        <Button x:Name="ApproveButton"
+                Classes="primary sm"
+                Content="Approve"
+                AutomationProperties.Name="Approve tool request" />
+
+        <Button x:Name="DenyButton"
+                Classes="sm"
+                Content="Deny"
+                AutomationProperties.Name="Deny tool request" />
+
+      </StackPanel>
+
+    </StackPanel>
+
+  </Border>
+
+</UserControl>

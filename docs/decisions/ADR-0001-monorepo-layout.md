@@ -2,22 +2,22 @@
 
 - Status: accepted (amended 2026-10-21: the Temporal volume note in D-05 is superseded)
 - Date: 2026-10-20
-- Deciders: ompos-maintainers
+- Deciders: autonogrammer-maintainers
 - Scope: Phase 1 (Foundation)
 
 ## Context
 
-OmpOS is one full-stack product (contracts, harness, backend, worker, web and native shells) built by a small team. Split repositories would let the shared contracts drift between surfaces; a monorepo with a mechanically enforced layer direction keeps one source of truth and one bootstrap command.
+Autonogrammer is one full-stack product (contracts, harness, backend, worker, web and native shells) built by a small team. Split repositories would let the shared contracts drift between surfaces; a monorepo with a mechanically enforced layer direction keeps one source of truth and one bootstrap command.
 
 ## Decision
 
-Layout (D-01): build governance at the root (`OmpOS.slnx`, `OmpOS.Linux.slnf`, `Directory.Build.props`, `Directory.Packages.props`, `global.json`, `.editorconfig`, `bootstrap.sh`, `.env.example`, `.github/workflows/ci.yml`); libraries under `src/`; hosts under `services/`; heads under `apps/` (`Web` now, MAUI `App` in Phase 4); tests under `tests/`; docs under `docs/`; podman-compose stack under `deploy/`. OCI build files and hosting configs are not created until a service exists (Phase 2/3).
+Layout (D-01): build governance at the root (`Autonogrammer.slnx`, `Autonogrammer.Linux.slnf`, `Directory.Build.props`, `Directory.Packages.props`, `global.json`, `.editorconfig`, `bootstrap.sh`, `.env.example`, `.github/workflows/ci.yml`); libraries under `src/`; hosts under `services/`; heads under `apps/` (`Web` now, MAUI `App` in Phase 4); tests under `tests/`; docs under `docs/`; podman-compose stack under `deploy/`. OCI build files and hosting configs are not created until a service exists (Phase 2/3).
 
-Layers (D-02): L0 `Contracts`; L1 `Parser`, `Harness.Abstractions`, `Sandbox.Abstractions` → Contracts only; L2 harness implementations, `Sessions`, `GenUi`, `Sandbox`, `Workflows`, `UI` → L0/L1 (`Sessions` may use `GenUi`; `UI` uses `Contracts` + `GenUi`); L3 `Api`, `Workflows.Worker` → L0–L2; L4 `Web` → Contracts + UI (+ GenUi), `App` → Contracts + UI + Harness (desktop in-process harness). Nothing references `OmpOS.Api` except tests; `OmpOS.Web` never references `Harness.Acp`/`Harness.Rpc`.
+Layers (D-02): L0 `Contracts`; L1 `Parser`, `Harness.Abstractions`, `Sandbox.Abstractions` → Contracts only; L2 harness implementations, `Sessions`, `GenUi`, `Sandbox`, `Workflows`, `UI` → L0/L1 (`Sessions` may use `GenUi`; `UI` uses `Contracts` + `GenUi`); L3 `Api`, `Workflows.Worker` → L0–L2; L4 `Web` → Contracts + UI (+ GenUi), `App` → Contracts + UI + Harness (desktop in-process harness). Nothing references `Autonogrammer.Api` except tests; `Autonogrammer.Web` never references `Harness.Acp`/`Harness.Rpc`.
 
-Ownership (D-03): `OmpOS.Contracts` owns Session, Message, SessionStatus, IntentEnvelope, IntentKind, Diagnostic, all UiBlock variants, sequence-numbered StreamEvent, SandboxDescriptor, SandboxStatus, WorkflowRun, WorkflowRunStatus, OmpOSError/ErrorCode, and ContractVersion. JSON uses source-generated `System.Text.Json` with reflection disabled.
+Ownership (D-03): `Autonogrammer.Contracts` owns Session, Message, SessionStatus, IntentEnvelope, IntentKind, Diagnostic, all UiBlock variants, sequence-numbered StreamEvent, SandboxDescriptor, SandboxStatus, WorkflowRun, WorkflowRunStatus, AutonogrammerError/ErrorCode, and ContractVersion. JSON uses source-generated `System.Text.Json` with reflection disabled.
 
-Enforcement: `tests/OmpOS.ArchitectureTests` encodes the map as data (one-line change per new project) and checks both the `.csproj` graph and the type-level references, with synthetic-violation tests proving the gates fire.
+Enforcement: `tests/Autonogrammer.ArchitectureTests` encodes the map as data (one-line change per new project) and checks both the `.csproj` graph and the type-level references, with synthetic-violation tests proving the gates fire.
 
 ## Volume deviation
 

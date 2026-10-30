@@ -1,0 +1,167 @@
+@namespace Autonogrammer.UI.Components.Thread
+@using Autonogrammer.Contracts.Ui
+@using Autonogrammer.Presentation.AgentPanel
+@using Autonogrammer.Presentation.Changes
+@using Autonogrammer.Presentation.State
+@using Autonogrammer.UI.Components.Approvals
+@using Autonogrammer.UI.Components.Changes
+@inherits ObservableComponent
+<div class="autonogrammer-thread" data-session="@Session.Id" data-state="@Transcript.State.ToString().ToLowerInvariant()">
+    <ThreadHeader Session="Session" WorkspaceLabel="@WorkspaceLabel" Branch="@Branch" />
+    <PipelineStrip Session="Session" />
+    @if (_confirmStop)
+    {
+        <ConfirmBar Kind="stop"
+                    AccessibleName="@AgentPanelViewText.ConfirmStopName"
+                    Message="@AgentPanelCopy.StopConfirmation"
+                    ConfirmLabel="@AgentPanelCopy.StopAgent"
+                    CancelLabel="@AgentPanelCopy.KeepRunning"
+                    OnConfirm="ConfirmStopAsync"
+                    OnCancel="CancelStop" />
+    }
+
+    <p class="autonogrammer-thread-notice autonogrammer-live" role="status" aria-live="polite" aria-atomic="true" data-empty="@(_notice is null ? "true" : null)">@_notice</p>
+
+    <SessionView Tree="Transcript.Tree"
+                 ShowStop="false"
+                 ViewState="Transcript.State"
+                 AutoScrollPaused="Transcript.AutoScrollPaused"
+                 Announcement="@Transcript.Announcement"
+                 OnStop="RequestStopAsync"
+                 OnRetry="RetryAsync"
+                 OnJumpToLatest="JumpToLatest"
+                 AutoScrollPausedChanged="OnAutoScrollPausedChanged" />
+    <p class="autonogrammer-run-summary autonogrammer-live" role="status" aria-live="polite" aria-atomic="true" data-empty="@(Session.RunSummaryText is null ? "true" : null)">
+        @if (Session.RunSummaryText is { } summary)
+        {
+            <strong>@AgentPanelCopy.AgentFinished</strong> @summary
+        }
+    </p>
+    <div class="autonogrammer-live-region" role="status" aria-live="polite" aria-atomic="true">@(Session.IsClosed ? AgentPanelCopy.ClosedHeading + " " + AgentPanelCopy.ClosedBody : null)</div>
+
+    <ToolApprovalList Session="Session" Time="Time" />
+    @if (Changes is not null)
+    {
+        <ChangesBar Model="Changes" />
+    }
+
+    @if (Session.IsClosed)
+    {
+        <div class="autonogrammer-closed-note">
+            <p><strong>@AgentPanelCopy.ClosedHeading</strong> @AgentPanelCopy.ClosedBody</p>
+        </div>
+    }
+    else
+    {
+        <div class="autonogrammer-composer-dock">
+            <Composer @key="Session.Id" Model="Session.Composer" Steering="Session.Steering" IsStreaming="Transcript.CanStop" OnStop="RequestStopAsync" />
+        </div>
+    }
+</div>
+
+@code {
+    private bool _confirmStop;
+    private string? _notice;
+
+    /// <summary>Gets the agent session the thread shows: its transcript, pipeline, approvals and composer.</summary>
+    [Parameter, EditorRequired]
+    public AgentSessionViewModel Session { get; set; } = null!;
+
+    /// <summary>Gets the changes of the session, or null when the head cannot read the workspace. The Changes bar shows while it lists a file.</summary>
+    [Parameter]
+    public ChangeSetModel? Changes { get; set; }
+
+    /// <summary>Gets the workspace label the header shows, or null.</summary>
+    [Parameter]
+    public string? WorkspaceLabel { get; set; }
+
+    /// <summary>Gets the branch the header shows, or null when it is not known.</summary>
+    [Parameter]
+    public string? Branch { get; set; }
+
+    /// <summary>Gets the clock the tool-approval timeout runs on.</summary>
+    [Parameter]
+    public TimeProvider Time { get; set; } = TimeProvider.System;
+
+    /// <summary>Gets the callback that retries the failed operation. When it has no handler the thread sends the last user message again.</summary>
+    [Parameter]
+    public EventCallback OnRetry { get; set; }
+
+    private SessionViewModel Transcript => Session.Session;
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        Observe(Session);
+        Observe(Session.Session);
+        Observe(Session.Steering);
+        if (Changes is not null)
+        {
+            Observe(Changes);
+        }
+    }
+
+    private Task RequestStopAsync()
+    {
+        _notice = null;
+        if (Session.Steering.IsRunActive || Transcript.CanStop || Session.Composer.IsStreaming)
+        {
+            _confirmStop = true;
+        }
+        else
+        {
+            _notice = AgentPanelCopy.NothingToStop;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void CancelStop() => _confirmStop = false;
+
+    private async Task ConfirmStopAsync()
+    {
+        _confirmStop = false;
+        await Session.Composer.StopAsync().ConfigureAwait(true);
+    }
+
+    private async Task RetryAsync()
+    {
+        if (OnRetry.HasDelegate)
+        {
+            await OnRetry.InvokeAsync().ConfigureAwait(true);
+            return;
+        }
+
+        var last = Transcript.Tree.Blocks.OfType<UserMessageBlock>().LastOrDefault();
+        if (last is null)
+        {
+            return;
+        }
+
+        // Resend the last user message through the composer; the draft the user is typing is put back afterwards.
+        var kept = Session.Composer.Draft;
+        Session.Composer.Draft = last.Text;
+        try
+        {
+            await Session.Composer.SendAsync().ConfigureAwait(true);
+        }
+        finally
+        {
+            Session.Composer.Draft = kept;
+        }
+    }
+
+    private void JumpToLatest() => Transcript.ResumeAutoScroll();
+
+    private void OnAutoScrollPausedChanged(bool scrolledUp)
+    {
+        if (scrolledUp)
+        {
+            Transcript.PauseAutoScroll();
+        }
+        else
+        {
+            Transcript.ResumeAutoScroll();
+        }
+    }
+}

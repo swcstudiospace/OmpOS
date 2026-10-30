@@ -1,0 +1,93 @@
+@namespace Autonogrammer.UI.Components.Composing
+@using Autonogrammer.Presentation.Commands
+@inherits ObservableComponent
+<div class="autonogrammer-slash-host">
+    <p class="autonogrammer-sr-only" role="status" aria-live="polite" aria-atomic="true" aria-label="@SlashPaletteCopy.CountName">@(Model.IsOpen ? (Model.NoMatchMessage ?? Model.Notice ?? Model.Announcement) : null)</p>
+@if (Model.IsOpen)
+{
+    <div class="autonogrammer-slash-palette" data-open="true">
+        @if (Model.Entries.Count > 0)
+        {
+            <ul class="autonogrammer-slash-list" id="@ListId" tabindex="0" role="listbox" aria-label="@SlashPaletteCopy.ListName" aria-describedby="@HelpId">
+                @for (var index = 0; index < Model.Entries.Count; index++)
+                {
+                    var position = index;
+                    var entry = Model.Entries[index];
+                    <li role="option"
+                        id="@OptionId(position)"
+                        class="@OptionClass(position == Model.SelectedIndex, entry.IsEnabled)"
+                        data-source="@entry.Source.ToString().ToLowerInvariant()"
+                        aria-selected="@(position == Model.SelectedIndex ? "true" : "false")"
+                        aria-disabled="@(entry.IsEnabled ? null : "true")"
+                        @onclick="() => OnPick.InvokeAsync(position)">
+                        <span class="autonogrammer-slash-head">
+                            <span class="autonogrammer-slash-name">@entry.DisplayName</span>
+                            @if (entry.HasInputHint)
+                            {
+                                <span class="autonogrammer-slash-hint">@entry.InputHint</span>
+                            }
+                        </span>
+                        @if (entry.HasDescription)
+                        {
+                            <span class="autonogrammer-slash-description" title="@entry.Description">@entry.Description</span>
+                        }
+
+                        @if (!entry.IsEnabled)
+                        {
+                            <span class="autonogrammer-slash-reason" title="@entry.DisabledReason">@entry.DisabledReason</span>
+                        }
+
+                        <span class="autonogrammer-slash-badges">
+                            <span class="autonogrammer-badge-source">@entry.SourceLabel</span>
+                            @if (entry.HasScope)
+                            {
+                                <span class="autonogrammer-badge-scope">@entry.ScopeLabel</span>
+                            }
+                        </span>
+                    </li>
+                }
+            </ul>
+            <p class="autonogrammer-sr-only" id="@HelpId">@SlashPaletteCopy.ListHelp</p>
+        }
+
+        @if (Model.NoMatchMessage is { } noMatch)
+        {
+            <p class="autonogrammer-slash-message">@noMatch</p>
+        }
+        else if (Model.Notice is { } notice)
+        {
+            <p class="autonogrammer-slash-message">@notice</p>
+        }
+    </div>
+}
+</div>
+
+@code {
+    /// <summary>Gets the palette model: whether it is open, the listed commands and the selected row.</summary>
+    [Parameter, EditorRequired]
+    public SlashPaletteModel Model { get; set; } = null!;
+
+    /// <summary>Gets the identifier of the listbox, which the composer's textarea names in <c>aria-controls</c>.</summary>
+    [Parameter, EditorRequired]
+    public string ListId { get; set; } = string.Empty;
+
+    /// <summary>Gets the callback invoked with the index of the row the user clicked. The composer selects and accepts it.</summary>
+    [Parameter]
+    public EventCallback<int> OnPick { get; set; }
+
+    private string HelpId => ListId + "-help";
+
+    /// <summary>Returns the identifier of an option, which the composer's textarea names in <c>aria-activedescendant</c>.</summary>
+    /// <param name="listId">The identifier of the listbox.</param>
+    /// <param name="index">The index in the listed entries.</param>
+    /// <returns>The option identifier.</returns>
+    public static string OptionIdOf(string listId, int index) => listId + "-option-" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    private static string OptionClass(bool active, bool enabled) =>
+        "autonogrammer-slash-option" + (active ? " is-active" : string.Empty) + (enabled ? string.Empty : " is-disabled");
+
+    private string OptionId(int index) => OptionIdOf(ListId, index);
+
+    /// <inheritdoc />
+    protected override void OnParametersSet() => Observe(Model);
+}

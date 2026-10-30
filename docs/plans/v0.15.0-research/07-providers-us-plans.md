@@ -1,6 +1,6 @@
 # R-PROV-US: US and global model providers, aggregators, coding plans, local runtimes, omp built-ins
 
-Research date 2026-10-27. Status legend: V27 = page opened in this task on 2026-10-27; P22 = opened 2026-10-22 by the earlier scout (docs/plans/vision-research/providers-local-us.md), not reopened; R26 = verified by the repo against omp 18.12.6 on 2026-10-26 (apps/OmpOS.Native/Settings/Models/OmpBuiltInProviders.cs); S = web_search answer only, official page named but not opened; U = unverified. Anything marked [INFERENCE] was not read on a page. No key page is listed unless a page or the repo verified it.
+Research date 2026-10-27. Status legend: V27 = page opened in this task on 2026-10-27; P22 = opened 2026-10-22 by the earlier scout (docs/plans/vision-research/providers-local-us.md), not reopened; R26 = verified by the repo against omp 18.12.6 on 2026-10-26 (apps/Autonogrammer.Native/Settings/Models/OmpBuiltInProviders.cs); S = web_search answer only, official page named but not opened; U = unverified. Anything marked [INFERENCE] was not read on a page. No key page is listed unless a page or the repo verified it.
 
 ## Corrections to the 2026-10-22 doc and to the catalogue
 
@@ -12,12 +12,12 @@ Research date 2026-10-27. Status legend: V27 = page opened in this task on 2026-
 | Copilot pricing | Copilot Pro $10, Pro+ $39, Max $100, Business $19/seat, Enterprise $39/seat; usage is metered in GitHub AI Credits ($0.01 per credit beyond allowance). | https://docs.github.com/en/copilot/get-started/plans (V27) |
 | Gemini CLI | Replaced by Antigravity CLI on 2026-06-18 per codeassist.google banner (P22). Antigravity plans: Individual $0, Google AI Pro, Google AI Ultra, Business via Google Cloud (Gemini Enterprise from $30/seat). | https://antigravity.google/pricing (V27) |
 | Cerebras Code | Pro $50 (24M tokens/day) and Max $200 (120M tokens/day) both show sold out; GLM 4.7; page modified 2026-09-18. | https://www.cerebras.ai/code (V27) |
-| omp ids vs catalogue | ProviderCatalogue.cs ids use suffixes (ollama-local, lm-studio-local, llama-cpp-local, vllm-local, localai-local, jan-local, docker-model-runner-local, ollama-cloud, perplexity, openrouter-anthropic, huggingface-router, deepseek-anthropic, minimax-m-plan-anthropic, iflytek-astron-coding-openai/-anthropic) and two patterns (openai-compatible-generic, anthropic-compatible-generic). omp ids differ: ollama, lm-studio, llama.cpp, vllm, huggingface. Map catalogue id to omp id explicitly. | src/OmpOS.Harness.Providers/ProviderCatalogue.cs |
-| omp custom api values | models.yml api accepts openai-completions, openai-responses, openai-codex-responses, azure-openai-responses, anthropic-messages, bedrock-converse-stream, google-generative-ai, google-gemini-cli, google-vertex, typesafe. OmpProviderApiNames.cs maps only the first three of these (openai-completions, openai-responses, anthropic-messages). | omp://models.md lines 135-144; src/OmpOS.Harness.OmpConfig/OmpProviderApiNames.cs |
+| omp ids vs catalogue | ProviderCatalogue.cs ids use suffixes (ollama-local, lm-studio-local, llama-cpp-local, vllm-local, localai-local, jan-local, docker-model-runner-local, ollama-cloud, perplexity, openrouter-anthropic, huggingface-router, deepseek-anthropic, minimax-m-plan-anthropic, iflytek-astron-coding-openai/-anthropic) and two patterns (openai-compatible-generic, anthropic-compatible-generic). omp ids differ: ollama, lm-studio, llama.cpp, vllm, huggingface. Map catalogue id to omp id explicitly. | src/Autonogrammer.Harness.Providers/ProviderCatalogue.cs |
+| omp custom api values | models.yml api accepts openai-completions, openai-responses, openai-codex-responses, azure-openai-responses, anthropic-messages, bedrock-converse-stream, google-generative-ai, google-gemini-cli, google-vertex, typesafe. OmpProviderApiNames.cs maps only the first three of these (openai-completions, openai-responses, anthropic-messages). | omp://models.md lines 135-144; src/Autonogrammer.Harness.OmpConfig/OmpProviderApiNames.cs |
 
 ## Provider table
 
-Columns: ID slug (proposed OmpOS slug; omp id in the omp column) | Display name | Kind | Base URL(s) and protocol | Auth scheme and header | Models-list endpoint | Docs URL | Key page | omp-native | Coding plan | Status and URL opened.
+Columns: ID slug (proposed Autonogrammer slug; omp id in the omp column) | Display name | Kind | Base URL(s) and protocol | Auth scheme and header | Models-list endpoint | Docs URL | Key page | omp-native | Coding plan | Status and URL opened.
 
 | ID | Name | Kind | Base URL(s) / protocol | Auth | Models list | Docs | Key page | omp-native | Coding plan | Status / opened |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -59,7 +59,7 @@ Columns: ID slug (proposed OmpOS slug; omp id in the omp column) | Display name 
 | huggingface | Hugging Face Inference Providers | aggregator | https://router.huggingface.co/v1 | Bearer HF_TOKEN | GET /v1/models | https://huggingface.co/docs/inference-providers/index | https://huggingface.co/settings/tokens (R26) | yes: huggingface, HUGGINGFACE_HUB_TOKEN then HF_TOKEN | none found | V27 models route; base P22 |
 | moonshot | Moonshot / Kimi (global) | API | https://api.moonshot.ai/v1 (Chat Completions, Responses); https://api.moonshot.ai/anthropic (Messages) | Authorization: Bearer MOONSHOT_API_KEY | GET /v1/models | https://platform.kimi.ai/docs/api/overview.md | https://platform.kimi.ai/console/api-keys | yes: moonshot, MOONSHOT_API_KEY then KIMI_API_KEY (also kimi-code OAuth) | omp kimi-code login [coding plan terms not read] | V27 |
 | moonshot-via-gateways | Kimi K3 through US hosts | aggregator route | Hyperbolic id kimi-k3 ($3.00 in/$15.00 out per 1M, V27); Fireworks accounts/fireworks/models/kimi-k3 (V27 spec); Databricks databricks-kimi-k3 (V27); OpenRouter via moonshotai slug [INFERENCE] | per host | per host | see hosts | n/a | via those omp providers | n/a | V27 for first three |
-| cursor | Cursor account | n/a | omp provider cursor exists; OmpOS must not resell Cursor inference | CURSOR_ACCESS_TOKEN or /login cursor | n/a | omp://providers.md | n/a | yes: cursor | out of scope (Cursor-free) | omp docs |
+| cursor | Cursor account | n/a | omp provider cursor exists; Autonogrammer must not resell Cursor inference | CURSOR_ACCESS_TOKEN or /login cursor | n/a | omp://providers.md | n/a | yes: cursor | out of scope (Cursor-free) | omp docs |
 
 ### Local runtimes
 
@@ -172,4 +172,4 @@ Source: omp://providers.md (read 2026-10-27) env tables. R26 marks ids the repo 
 | kimi-code, muse-code, google-gemini-cli, google-antigravity | OAuth via /login only (no env var listed) |
 | apple | keyless on-device bridge (macOS arm64 only) |
 
-Notes: OmpOS-facing rows without an omp id (replicate, hyperbolic, databricks, watsonx, ai21, perplexity, cohere, localai, jan, docker-model-runner, sglang, tgi) need a managed models.yml block. Discovery types accepted: ollama, llama.cpp, lm-studio, openai-models-list, proxy, litellm, apple-foundation-models.
+Notes: Autonogrammer-facing rows without an omp id (replicate, hyperbolic, databricks, watsonx, ai21, perplexity, cohere, localai, jan, docker-model-runner, sglang, tgi) need a managed models.yml block. Discovery types accepted: ollama, llama.cpp, lm-studio, openai-models-list, proxy, litellm, apple-foundation-models.

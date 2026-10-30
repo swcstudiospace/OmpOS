@@ -11,9 +11,14 @@
 //
 // Stdout: one JSON document. Stderr: progress. Exit 0 only when every assertion holds.
 // Env: CDP_PORT, DEMO_URL, OUT_DIR, COMMIT, RUN_DATE, AXE_JS; optional SHOT_DIR (a PNG per screen is written there, named theme-width-screen).
+//
+// After those assertions the accessibility checks of scripts/web-smoke/a11y run on their own page: routes, keyboard walk, dialog, axe on every state (WCAG 2.2 tags),
+// forced colours, contrast, reduced motion and dark scheme, reflow, target size and text spacing. Each check group is one assertion named a11y<Group> (a11yRoutes,
+// a11yKeyboard, ...). Optional: --a11y-report DIR (or A11Y_REPORT_DIR) writes a11y-report.json and the screenshots there; AUTONOGRAMMER_SMOKE_A11Y=0 skips them.
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { reportDirFromArgs, runA11yChecks } from "./a11y/index.mjs";
 
 function need(name) {
   const value = process.env[name];
@@ -157,7 +162,7 @@ function pageOpenRow(suffix) {
 }
 
 function pageSetComposer(text) {
-  const area = document.querySelector(".ompos-composer-input, textarea");
+  const area = document.querySelector(".autonogrammer-composer-input, textarea");
   if (!area) return false;
   area.focus();
   area.value = text;
@@ -186,11 +191,11 @@ function pageGeometry() {
 
 function pageState() {
   const root = document.documentElement;
-  const banner = document.querySelector(".ompos-demo-banner");
-  const skip = document.querySelector(".ompos-skip-link");
+  const banner = document.querySelector(".autonogrammer-demo-banner");
+  const skip = document.querySelector(".autonogrammer-skip-link");
   return {
     theme: root.getAttribute("data-theme"),
-    stored: localStorage.getItem("ompos.theme"),
+    stored: localStorage.getItem("autonogrammer.theme"),
     bannerText: banner ? banner.textContent.trim() : null,
     bannerDismissible: banner ? !!banner.querySelector("button") : null,
     skipLinkPresent: !!skip,
@@ -203,8 +208,8 @@ function pageFocusWhere() {
   const active = document.activeElement;
   const inside = (selector) => !!active && !!active.closest(selector);
   return {
-    inRail: inside("#ompos-rail"),
-    inTopbar: inside(".ompos-topbar"),
+    inRail: inside("#autonogrammer-rail"),
+    inTopbar: inside(".autonogrammer-topbar"),
     inMain: inside("main"),
     desc: active ? `${active.tagName.toLowerCase()}${active.id ? "#" + active.id : ""}.${String(active.className).slice(0, 40)}` : null,
   };
@@ -243,10 +248,10 @@ async function loadDemo(theme, viewport) {
   await sleep(200);
   await cdp("Page.navigate", { url: DEMO_URL });
   await waitFor("document.readyState === 'complete'", 30000);
-  await evalValue(`localStorage.setItem('ompos.theme', ${JSON.stringify(theme)})`);
+  await evalValue(`localStorage.setItem('autonogrammer.theme', ${JSON.stringify(theme)})`);
   drainProblems();
   await cdp("Page.navigate", { url: DEMO_URL });
-  const ready = await waitFor("document.querySelectorAll('.ompos-agent-row').length > 0", 180000);
+  const ready = await waitFor("document.querySelectorAll('.autonogrammer-agent-row').length > 0", 180000);
   await sleep(1500);
   if (!ready) throw new Error(`the Demo did not render at ${viewport.name} in ${theme}`);
   await injectAxe();
@@ -288,7 +293,7 @@ async function check(config, screen) {
 
 async function openDrawerIfNarrow(narrow) {
   if (!narrow) return;
-  await evalFn(pageClick, "button[aria-controls='ompos-rail']");
+  await evalFn(pageClick, "button[aria-controls='autonogrammer-rail']");
   await sleep(450);
 }
 
@@ -329,7 +334,7 @@ try {
 
       if (narrow) {
         // The drawer: open, axe, the focus stays inside the drawer and the top bar while Tab and Shift+Tab cycle, Escape closes it.
-        await evalFn(pageClick, "button[aria-controls='ompos-rail']");
+        await evalFn(pageClick, "button[aria-controls='autonogrammer-rail']");
         await sleep(450);
         await check(config, "drawer");
         let leaked = null;
@@ -347,46 +352,46 @@ try {
         hold("demoDrawerTrapsFocus");
         await pressKey("Escape");
         await sleep(450);
-        const closed = await evalValue("document.querySelector('.ompos-shell').getAttribute('data-drawer')");
+        const closed = await evalValue("document.querySelector('.autonogrammer-shell').getAttribute('data-drawer')");
         if (closed !== "closed") fail("demoDrawerEscapeCloses", `${theme} ${viewport.name}: data-drawer is ${closed} after Escape`);
         hold("demoDrawerEscapeCloses");
       }
 
-      await openAgent(narrow, "d001", ".ompos-thread[data-session$='d001']");
+      await openAgent(narrow, "d001", ".autonogrammer-thread[data-session$='d001']");
       await check(config, "running");
       await evalFn(pageSetComposer, "/");
-      await waitFor("!!document.querySelector('.ompos-slash-palette')", 8000);
+      await waitFor("!!document.querySelector('.autonogrammer-slash-palette')", 8000);
       await check(config, "slash-palette");
       await evalFn(pageSetComposer, "");
       await sleep(300);
       await pressKey("Escape");
-      const modelChip = await evalFn(pageClick, ".ompos-chip-menu .ompos-chip-btn, .ompos-composer-chips button");
+      const modelChip = await evalFn(pageClick, ".autonogrammer-chip-menu .autonogrammer-chip-btn, .autonogrammer-composer-chips button");
       if (modelChip) {
         await sleep(500);
         await check(config, "composer-menu");
         await pressKey("Escape");
       }
 
-      await openAgent(narrow, "d002", ".ompos-thread[data-session$='d002'] .ompos-approval");
+      await openAgent(narrow, "d002", ".autonogrammer-thread[data-session$='d002'] .autonogrammer-approval");
       await check(config, "approval");
-      await openAgent(narrow, "d004", ".ompos-thread[data-session$='d004'] .ompos-changes");
+      await openAgent(narrow, "d004", ".autonogrammer-thread[data-session$='d004'] .autonogrammer-changes");
       await check(config, "completed-changes");
-      await openAgent(narrow, "d005", ".ompos-thread[data-session$='d005']");
+      await openAgent(narrow, "d005", ".autonogrammer-thread[data-session$='d005']");
       await check(config, "failed");
-      await openAgent(narrow, "d006", ".ompos-thread[data-session$='d006'] .ompos-closed-note");
+      await openAgent(narrow, "d006", ".autonogrammer-thread[data-session$='d006'] .autonogrammer-closed-note");
       await check(config, "closed");
-      await openAgent(narrow, "d003", ".ompos-terminal");
+      await openAgent(narrow, "d003", ".autonogrammer-terminal");
       await check(config, "terminal");
 
-      await evalFn(pageClick, "#ompos-tab-kanban");
-      await waitFor("!!document.querySelector('.ompos-kanban-column')", 10000);
+      await evalFn(pageClick, "#autonogrammer-tab-kanban");
+      await waitFor("!!document.querySelector('.autonogrammer-kanban-column')", 10000);
       await check(config, "kanban");
-      await evalFn(pageClick, "#ompos-tab-agents");
+      await evalFn(pageClick, "#autonogrammer-tab-agents");
       await sleep(400);
 
       await openDrawerIfNarrow(narrow);
-      await evalFn(pageClick, ".ompos-rail-settings");
-      await waitFor("!!document.querySelector('.ompos-settings')", 10000);
+      await evalFn(pageClick, ".autonogrammer-rail-settings");
+      await waitFor("!!document.querySelector('.autonogrammer-settings')", 10000);
       await sleep(700);
       await check(config, "settings");
       await pressKey("Escape");
@@ -401,16 +406,27 @@ try {
   // The theme switch applies at once and survives a reload.
   note("theme switch persists");
   await loadDemo("light", VIEWPORTS[0]);
-  await evalValue(`[...document.querySelectorAll('.ompos-theme-switch button')].find((b) => b.textContent.trim() === 'Dark').click(); true`);
+  await evalValue(`[...document.querySelectorAll('.autonogrammer-theme-switch button')].find((b) => b.textContent.trim() === 'Dark').click(); true`);
   await sleep(500);
   const switched = await evalFn(pageState);
   await cdp("Page.navigate", { url: DEMO_URL });
-  await waitFor("document.querySelectorAll('.ompos-agent-row').length > 0", 180000);
+  await waitFor("document.querySelectorAll('.autonogrammer-agent-row').length > 0", 180000);
   await sleep(1000);
   const reloaded = await evalFn(pageState);
   result.themeSwitch = { switched: switched.theme, stored: switched.stored, afterReload: reloaded.theme };
   if (switched.theme !== "dark" || reloaded.theme !== "dark" || reloaded.stored !== "dark") fail("demoThemeSwitchPersists", JSON.stringify(result.themeSwitch));
   hold("demoThemeSwitchPersists");
+
+  if (process.env.AUTONOGRAMMER_SMOKE_A11Y !== "0") {
+    note("accessibility checks");
+    const a11y = await runA11yChecks({ cdpPort: CDP_PORT, baseUrl: DEMO_URL, kind: "demo", axeJs: AXE_JS, reportDir: reportDirFromArgs(), log: note, meta: { commit: COMMIT, runDate: RUN_DATE } });
+    result.a11y = { summary: a11y.report.summary(), counters: Object.fromEntries(a11y.report.counters), skipped: a11y.report.skipped, errors: a11y.report.errors().length };
+    for (const [name, ok] of Object.entries(a11y.assertions)) {
+      if (ok) hold(name);
+      else assertions[name] = false;
+    }
+    failures.push(...a11y.failures);
+  }
 } catch (error) {
   result.error = error instanceof Error ? error.message : String(error);
   note(`demo smoke failed: ${result.error}`);

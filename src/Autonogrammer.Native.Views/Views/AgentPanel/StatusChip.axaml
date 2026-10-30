@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Autonogrammer.Native.Views.AgentPanel"
+             x:Class="Autonogrammer.Native.Views.AgentPanel.StatusChip"
+             Focusable="False"
+             HorizontalAlignment="Left"
+             VerticalAlignment="Center">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The status chip (spec 3.9): a 20 px pill with a 1 px hairline, a 14 px glyph and the status words in Small 12 weight 500. The words
+       carry the meaning with the glyph; colour is never the only signal. -->
+  <Border x:Name="Frame"
+          Classes="chip">
+    <StackPanel Orientation="Horizontal"
+                VerticalAlignment="Center"
+                Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+      <local:StageIcon x:Name="Icon"
+                       Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                       Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                       VerticalAlignment="Center" />
+      <TextBlock x:Name="Label"
+                 Classes="small strong"
+                 VerticalAlignment="Center"
+                 TextWrapping="NoWrap" />
+    </StackPanel>
+  </Border>
+
+</UserControl>

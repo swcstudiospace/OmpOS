@@ -1,0 +1,432 @@
+/* The thread chrome above and below the transcript: the header, the notices, the pipeline strip and its details, the confirmation bars,
+   the run summary and the closed-agent note. Colours, sizes and fonts come from tokens.css only. */
+
+.autonogrammer-thread-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+}
+
+.autonogrammer-thread-heading,
+.autonogrammer-thread-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+  min-width: 0;
+}
+
+/* The conversation title is the page title: the display face, wrapping beside the status and the close control. It is never cut, so wider letter, word and
+   line spacing cannot hide any of it. */
+.autonogrammer-thread-title {
+  flex: 1 1 10rem;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--autonogrammer-font-display);
+  font-size: var(--autonogrammer-font-size-display-sm);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-display-sm);
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-thread-context .autonogrammer-steering-badge {
+  margin-left: auto;
+}
+
+.autonogrammer-thread-workspace {
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+.autonogrammer-status-chip .autonogrammer-glyph,
+.autonogrammer-steering-badge .autonogrammer-glyph {
+  width: 12px;
+  height: 12px;
+}
+
+.autonogrammer-panel-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+  margin: 0;
+  padding: var(--autonogrammer-gap-8) var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface-sunken);
+  border-left: 4px solid var(--autonogrammer-warning);
+  border-radius: var(--autonogrammer-radius-6);
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+.autonogrammer-panel-notice[data-kind='error'] {
+  border-left-color: var(--autonogrammer-error);
+}
+
+.autonogrammer-panel-notice[data-kind='resumed'] {
+  border-left-color: var(--autonogrammer-success);
+}
+
+.autonogrammer-panel-notice-text {
+  margin: 0;
+}
+
+.autonogrammer-thread-notice {
+  margin: 0;
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-12);
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+/* Confirmation bars (stop and close). */
+.autonogrammer-confirm-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+  padding: var(--autonogrammer-gap-8) var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface-sunken);
+  border: 1px solid var(--autonogrammer-border-strong);
+  border-radius: var(--autonogrammer-radius-8);
+}
+
+.autonogrammer-confirm-text {
+  flex: 1;
+  min-width: 12rem;
+  margin: 0;
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+.autonogrammer-confirm-actions {
+  display: flex;
+  gap: var(--autonogrammer-gap-8);
+}
+
+/* Pipeline strip: one line of plugin pills that opens the stage details. */
+.autonogrammer-pipeline {
+  position: relative;
+  border-bottom: 1px solid var(--autonogrammer-border);
+}
+
+.autonogrammer-pipeline-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--autonogrammer-gap-4) var(--autonogrammer-gap-12);
+  min-height: var(--autonogrammer-pipeline-height);
+}
+
+.autonogrammer-pipeline-strip {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--autonogrammer-control-height-small);
+  padding: 0 var(--autonogrammer-gap-4);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--autonogrammer-radius-6);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-pipeline-strip:hover {
+  background: var(--autonogrammer-hover);
+}
+
+.autonogrammer-pipeline-strip[aria-expanded='true'] {
+  background: var(--autonogrammer-selected);
+}
+
+.autonogrammer-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--autonogrammer-gap-2) var(--autonogrammer-gap-12);
+}
+
+.autonogrammer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-4);
+  font-size: var(--autonogrammer-font-size-small);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-small);
+  white-space: nowrap;
+}
+
+.autonogrammer-pill .autonogrammer-glyph {
+  width: 14px;
+  height: 14px;
+}
+
+.autonogrammer-pipeline-latest {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.autonogrammer-pipeline-latest:empty {
+  display: none;
+}
+
+.autonogrammer-pipeline-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-12);
+  max-height: 24rem;
+  margin: var(--autonogrammer-gap-4) 0 var(--autonogrammer-gap-8);
+  padding: var(--autonogrammer-gap-12);
+  overflow-y: auto;
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+  box-shadow: var(--autonogrammer-shadow-popup);
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+.autonogrammer-pipeline-heading {
+  margin: 0;
+  font-size: var(--autonogrammer-font-size-label);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+}
+
+.autonogrammer-stage-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+}
+
+.autonogrammer-stage-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-stage-rollup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-4);
+}
+
+.autonogrammer-stage-empty {
+  margin: 0;
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+}
+
+.autonogrammer-stage-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.autonogrammer-stage-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--autonogrammer-gap-8);
+  min-height: var(--autonogrammer-control-height-small);
+}
+
+.autonogrammer-stage-row[data-depth='1'] {
+  padding-left: 16px;
+}
+
+.autonogrammer-stage-row[data-depth='2'] {
+  padding-left: 32px;
+}
+
+.autonogrammer-stage-row[data-depth='3'] {
+  padding-left: 48px;
+}
+
+.autonogrammer-stage-row[data-depth='4'] {
+  padding-left: 64px;
+}
+
+.autonogrammer-stage-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--autonogrammer-gap-2);
+  min-width: 0;
+}
+
+.autonogrammer-stage-title {
+  font-weight: var(--autonogrammer-font-weight-medium);
+}
+
+.autonogrammer-stage-detail,
+.autonogrammer-stage-effect {
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+}
+
+.autonogrammer-stage-fix,
+.autonogrammer-stage-graph,
+.autonogrammer-task-card code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+}
+
+.autonogrammer-task-context {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+}
+
+.autonogrammer-task-context-heading {
+  margin: 0;
+  font-weight: var(--autonogrammer-font-weight-semibold);
+}
+
+.autonogrammer-task-context-body,
+.autonogrammer-note-empty,
+.autonogrammer-note-meta,
+.autonogrammer-note-more {
+  margin: 0;
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+}
+
+.autonogrammer-task-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--autonogrammer-gap-2) var(--autonogrammer-gap-12);
+  margin: 0;
+}
+
+.autonogrammer-task-card dt {
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-task-card dd {
+  margin: 0;
+}
+
+.autonogrammer-note-list ul,
+.autonogrammer-task-warnings {
+  margin: 0;
+  padding-left: var(--autonogrammer-gap-12);
+}
+
+.autonogrammer-note-list-heading {
+  margin: 0;
+  font-size: var(--autonogrammer-font-size-small);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+}
+
+.autonogrammer-run-summary {
+  margin: 0;
+  padding: var(--autonogrammer-gap-6) var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface);
+  border: 1px solid var(--autonogrammer-border);
+  border-left: 3px solid var(--autonogrammer-success);
+  border-radius: var(--autonogrammer-radius-6);
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+.autonogrammer-closed-note {
+  margin-top: auto;
+  padding: var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-tint);
+  border: 1px solid var(--autonogrammer-tint-border);
+  border-radius: var(--autonogrammer-radius-8);
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-closed-note p {
+  margin: 0;
+}
+
+/* Tool approvals ------------------------------------------------------------------------------------------------------------ */
+
+.autonogrammer-approvals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-approval {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-8);
+  padding: var(--autonogrammer-gap-8) var(--autonogrammer-gap-12) var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-tint);
+  border: 1px solid var(--autonogrammer-tint-border);
+  border-left: 3px solid var(--autonogrammer-accent);
+  border-radius: var(--autonogrammer-radius-8);
+}
+
+.autonogrammer-approval[data-status='allowed'],
+.autonogrammer-approval[data-status='denied'] {
+  background: var(--autonogrammer-surface);
+  border-color: var(--autonogrammer-border);
+}
+
+.autonogrammer-approval p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-approval-head {
+  display: flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-approval-icon {
+  flex: none;
+  color: var(--autonogrammer-warning);
+}
+
+.autonogrammer-approval-tool {
+  font-weight: var(--autonogrammer-font-weight-semibold);
+}
+
+.autonogrammer-approval code {
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+}
+
+/* The arguments are one truncated line of code; the full text is the tooltip. */
+.autonogrammer-approval-arguments code {
+  display: block;
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+  overflow: hidden;
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-tint-border);
+  border-radius: var(--autonogrammer-radius-6);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.autonogrammer-approval-label,
+.autonogrammer-approval-hint,
+.autonogrammer-approval-grant {
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-approval-message[data-fault='true'] {
+  color: var(--autonogrammer-error);
+}
+
+.autonogrammer-approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-approval-actions .autonogrammer-approval-hint {
+  flex: 1 1 14rem;
+  min-width: 0;
+}

@@ -1,0 +1,46 @@
+@namespace Autonogrammer.UI.Components.Blocks
+@using Autonogrammer.Contracts.Ui
+@using Microsoft.JSInterop
+@using Microsoft.Extensions.Logging
+@inject IJSRuntime JS
+@inject ILogger<CodeBlockView> Logger
+<div class="autonogrammer-block autonogrammer-code">
+    <div class="autonogrammer-code-header">
+        <span class="autonogrammer-code-language">@Block.Language</span>
+        <button type="button" class="autonogrammer-btn autonogrammer-icon-btn" aria-label="Copy code" @onclick="CopyAsync"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" /><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2" /></svg></button>
+    </div>
+    <pre tabindex="0" role="group" aria-label="@(string.IsNullOrWhiteSpace(Block.Language) ? "Code" : Block.Language + " code")"><code>@Block.Code</code></pre>
+</div>
+
+@code {
+    /// <summary>Gets the code block to render.</summary>
+    [Parameter, EditorRequired]
+    public CodeBlock Block { get; set; } = null!;
+
+    /// <summary>Gets the callback invoked with the code text when the copy control is activated.</summary>
+    [Parameter]
+    public EventCallback<string> OnCopy { get; set; }
+
+    private static readonly Action<ILogger, Exception?> ClipboardWriteFailed =
+        LoggerMessage.Define(
+            LogLevel.Warning,
+            new EventId(1, "ClipboardWriteFailed"),
+            "Writing a code block to the clipboard failed; the copy was not reported");
+
+    /// <summary>Copies the code through the clipboard. A refused write is logged and not reported as a copy.</summary>
+    private async Task CopyAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", Block.Code);
+        }
+        catch (JSException ex)
+        {
+            // Clipboard unavailable (permissions, non-secure context): the caller is not told the copy succeeded.
+            ClipboardWriteFailed(Logger, ex);
+            return;
+        }
+
+        await OnCopy.InvokeAsync(Block.Code);
+    }
+}

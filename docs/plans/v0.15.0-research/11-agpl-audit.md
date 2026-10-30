@@ -1,6 +1,6 @@
-# R-LEGAL: AGPL-3.0 licensing of OmpOS (research date 2026-10-27)
+# R-LEGAL: AGPL-3.0 licensing of Autonogrammer (research date 2026-10-27)
 
-Engineering analysis, not legal advice. Method: read-only. Repo facts come from files under /root/src/repos/ompos; licence facts come from the NuGet flat-container nuspec (`https://api.nuget.org/v3-flatcontainer/<id>/<version>/<id>.nuspec`, "nuspec" below) or the vendor repository; compatibility reasoning cites gnu.org. "[INFERENCE]" marks anything not read directly.
+Engineering analysis, not legal advice. Method: read-only. Repo facts come from files under /root/src/repos/autonogrammer; licence facts come from the NuGet flat-container nuspec (`https://api.nuget.org/v3-flatcontainer/<id>/<version>/<id>.nuspec`, "nuspec" below) or the vendor repository; compatibility reasoning cites gnu.org. "[INFERENCE]" marks anything not read directly.
 
 Compatibility scale: **C** = compatible (permissive); **C+N** = compatible, notice/attribution text must ship; **I** = incompatible; **U** = unknown.
 
@@ -10,15 +10,15 @@ Compatibility scale: **C** = compatible (permissive); **C+N** = compatible, noti
 |---|---|---|
 | Licence name | "AGL 3.0" is read as GNU Affero General Public License v3.0 (SPDX `AGPL-3.0-only` / `AGPL-3.0-or-later`). | owner direction in task |
 | Recommendation | **`AGPL-3.0-or-later`**. | below |
-| Reason 1 | The submodule `plugins/claude-ultrathink` is `AGPL-3.0-or-later` (package.json `"license": "AGPL-3.0-or-later"`; README line 229 "either version 3 of the License, or (at your option) any later version"; `docs/open-questions.md` OQ-62). Using the same identifier gives one licence family for OmpOS and its closest plugin and avoids a combined-work question if code ever moves between the repositories. | plugins/claude-ultrathink/{package.json,README.md,LICENSE} |
+| Reason 1 | The submodule `plugins/claude-ultrathink` is `AGPL-3.0-or-later` (package.json `"license": "AGPL-3.0-or-later"`; README line 229 "either version 3 of the License, or (at your option) any later version"; `docs/open-questions.md` OQ-62). Using the same identifier gives one licence family for Autonogrammer and its closest plugin and avoids a combined-work question if code ever moves between the repositories. | plugins/claude-ultrathink/{package.json,README.md,LICENSE} |
 | Reason 2 | `-or-later` lets the FSF successor licence apply without a relicence round; `-only` removes that option permanently. Cost of `-or-later`: a future FSF text you may dislike applies at users' option (AGPL section 14 lets the maintainer designate a proxy). | https://www.gnu.org/licenses/agpl-3.0.txt (sections 13, 14) |
 | Reason 3 | Every third-party licence in the shipped graph (MIT, BSD-2/3, Apache-2.0, PostgreSQL, OFL-1.1 fonts) is GPLv3-compatible and therefore AGPLv3-compatible, so no dependency constrains the choice between the two identifiers. Apache-2.0 is compatible with GPL version 3 only (not v2), so a v3 licence is required. | https://www.gnu.org/licenses/license-list.html (Expat, Modified BSD, FreeBSD, Apache2.0 "compatible with version 3 of the GNU GPL") |
 | When `-only` would be better | If the owner wants to freeze terms against future FSF revisions, or if a dependency were GPL-3.0-only. None in this audit is. | n/a |
-| Copyright holder | Plugin headers use `Copyright (C) 2026 SWC Studio`. Use the same for OmpOS. Whether SWC Studio owns all existing OmpOS code is **not verified**. | docs/plugins.md (ultrathink dossier) |
+| Copyright holder | Plugin headers use `Copyright (C) 2026 SWC Studio`. Use the same for Autonogrammer. Whether SWC Studio owns all existing Autonogrammer code is **not verified**. | docs/plugins.md (ultrathink dossier) |
 
 ## 1. Shipped NuGet packages
 
-Package set source: `packages.lock.json` of `apps/OmpOS.Native`, `apps/OmpOS.Web`, `apps/OmpOS.Android` (incl. RID sections `android-arm64`, `android-x64`), `services/OmpOS.Api`; src/* locks read for Harness.Mcp, GenUi, Coordination.Dragonfly, Sessions.Postgres, UI add no package absent from the head locks. Versions are lock `resolved`. `Verified` = `nuspec` (read) | `vendor repo` (read) | `family [INFERENCE]` (same publisher/version family as a read sibling, not read itself).
+Package set source: `packages.lock.json` of `apps/Autonogrammer.Native`, `apps/Autonogrammer.Web`, `apps/Autonogrammer.Android` (incl. RID sections `android-arm64`, `android-x64`), `services/Autonogrammer.Api`; src/* locks read for Harness.Mcp, GenUi, Coordination.Dragonfly, Sessions.Postgres, UI add no package absent from the head locks. Versions are lock `resolved`. `Verified` = `nuspec` (read) | `vendor repo` (read) | `family [INFERENCE]` (same publisher/version family as a read sibling, not read itself).
 
 ### 1.1 Avalonia, SkiaSharp, HarfBuzz
 
@@ -112,7 +112,7 @@ Package set source: `packages.lock.json` of `apps/OmpOS.Native`, `apps/OmpOS.Web
 | Microsoft.VisualStudio.Threading.Analyzers | 18.12.1 | MIT | C (build-only) | nuspec | |
 | Microsoft.CodeAnalysis.BannedApiAnalyzers | 5.6.0 | MIT | C (build-only) | nuspec | |
 
-### 1.5 Android binding packages (apps/OmpOS.Android only)
+### 1.5 Android binding packages (apps/Autonogrammer.Android only)
 
 | Package | Version | Licence (SPDX) | Compat | Verified | Note |
 |---|---|---|---|---|---|
@@ -160,14 +160,14 @@ Package set source: `packages.lock.json` of `apps/OmpOS.Native`, `apps/OmpOS.Web
 | System.Management | 6.0.1 | MIT | C | nuspec | System.CodeDom, System.Security.AccessControl, Microsoft.Win32.Registry, Microsoft.Bcl.AsyncInterfaces family [INFERENCE] |
 | Avalonia.Headless | 12.1.4 | MIT | C | nuspec | UI tests |
 
-Only `tests/OmpOS.Web.Tests` lock was parsed in full; the ~40 other test locks were not. The `Tests` item group in Directory.Packages.props is the declared superset [INFERENCE].
+Only `tests/Autonogrammer.Web.Tests` lock was parsed in full; the ~40 other test locks were not. The `Tests` item group in Directory.Packages.props is the declared superset [INFERENCE].
 
 ## 3. npm and JavaScript assets
 
 | Item | Version | Licence | Compat | Verified | Note |
 |---|---|---|---|---|---|
 | plugins/gsd-core-omp/package.json | 0.1.0, `"private": true` | no `license` field; no `dependencies`/`devDependencies` | n/a | file read | no npm dependency to audit. First-party code: add `"license": "AGPL-3.0-or-later"` and SPDX headers |
-| bootstrap (apps/OmpOS.Web/wwwroot/lib/bootstrap/dist/**) | 5.3.3 | MIT (banner in bootstrap.css and bootstrap.bundle.js: "Copyright 2011-2024 The Bootstrap Authors", "Licensed under MIT") | C+N | banner read | **no LICENSE file ships next to the library**; `.min.*` banners not read. Add `wwwroot/lib/bootstrap/LICENSE` or list in THIRD-PARTY-NOTICES, or delete the directory if the restyle drops Bootstrap (index.html links bootstrap.min.css) |
+| bootstrap (apps/Autonogrammer.Web/wwwroot/lib/bootstrap/dist/**) | 5.3.3 | MIT (banner in bootstrap.css and bootstrap.bundle.js: "Copyright 2011-2024 The Bootstrap Authors", "Licensed under MIT") | C+N | banner read | **no LICENSE file ships next to the library**; `.min.*` banners not read. Add `wwwroot/lib/bootstrap/LICENSE` or list in THIRD-PARTY-NOTICES, or delete the directory if the restyle drops Bootstrap (index.html links bootstrap.min.css) |
 | axe-core (scripts/web-smoke) | 4.14.0 (sha256 pinned in axe-core-4.14.0.sha256) | MPL-2.0 (LICENSE read from https://raw.githubusercontent.com/dequelabs/axe-core/develop/LICENSE); GNU list: MPL-2.0 is compatible with GPL/AGPL via section 3.3 unless marked "Incompatible With Secondary Licenses" | C (not shipped) | LICENSE read | downloaded at smoke time by `npm pack axe-core@4.14.0` (run-smoke.sh line 128), never committed nor shipped. Whether the "Incompatible" notice is absent was not checked beyond the matched lines |
 | xterm.js (web terminal) | not in repo | MIT upstream (not read) | C+N | not verified; no xterm.js/Monaco mention found in docs/ or ROADMAP.md | if planned: add MIT notices for xterm.js and each addon |
 | tools/browser-spike, tools/gweb | n/a | n/a | n/a | locks read | spikes, not shipped |
@@ -176,37 +176,37 @@ Only `tests/OmpOS.Web.Tests` lock was parsed in full; the ~40 other test locks w
 
 | Asset | Path | Licence | Compat | Verified | Note |
 |---|---|---|---|---|---|
-| DM Sans (Regular, Medium, SemiBold) | src/OmpOS.Native.Views/Assets/Fonts/DMSans/ | SIL OFL 1.1, "Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts)" | C | OFL.txt present, read | embedded as AvaloniaResource including OFL.txt (Native.Views csproj lines 38-39) |
+| DM Sans (Regular, Medium, SemiBold) | src/Autonogrammer.Native.Views/Assets/Fonts/DMSans/ | SIL OFL 1.1, "Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts)" | C | OFL.txt present, read | embedded as AvaloniaResource including OFL.txt (Native.Views csproj lines 38-39) |
 | Anybody (SemiBold only) | .../Fonts/Anybody/ | SIL OFL 1.1, "Copyright 2020 The Anybody Project Authors (https://github.com/Etcetera-Type-Co/Anybody)" | C | OFL.txt present | |
 | Space Mono (Regular, Bold) | .../Fonts/SpaceMono/ | SIL OFL 1.1, "Copyright 2016 The Space Mono Project Authors (https://github.com/googlefonts/spacemono)" | C | OFL.txt present | |
 | OFL bundling rule | - | OFL text may be omitted only "when a font is embedded in a document or bundled within a program"; the font stays under OFL and keeps authorship info. https://openfontlicense.org/ofl-faq/ | - | FAQ read | |
 | Reserved Font Names | - | none seen in the three copyright lines | - | read | WOFF2 conversion for the web head: whether conversion is a "Modified Version" was not settled by the FAQ section read. **Not verified.** Keep OFL.txt and name the source next to any WOFF2 |
-| Web fonts | apps/OmpOS.Web/wwwroot/css/app.css | system stack only | - | read | no font served on the web yet |
-| favicon.png, icon-192.png | apps/OmpOS.Web/wwwroot/ | provenance unknown; names match the stock Blazor WASM template [INFERENCE] | U | binaries not opened | replace with OmpOS-authored artwork before claiming REUSE-clean |
-| Android icons | apps/OmpOS.Android | none present (only Resources/values/styles.xml and Properties/AndroidManifest.xml found) | - | glob | add authored icon when created |
-| Brand logo/banner (to be added) | - | must be OmpOS-authored | - | - | the typefaces come from open repos; using them implies no right to Greptile or Cursor marks |
+| Web fonts | apps/Autonogrammer.Web/wwwroot/css/app.css | system stack only | - | read | no font served on the web yet |
+| favicon.png, icon-192.png | apps/Autonogrammer.Web/wwwroot/ | provenance unknown; names match the stock Blazor WASM template [INFERENCE] | U | binaries not opened | replace with Autonogrammer-authored artwork before claiming REUSE-clean |
+| Android icons | apps/Autonogrammer.Android | none present (only Resources/values/styles.xml and Properties/AndroidManifest.xml found) | - | glob | add authored icon when created |
+| Brand logo/banner (to be added) | - | must be Autonogrammer-authored | - | - | the typefaces come from open repos; using them implies no right to Greptile or Cursor marks |
 
 ## 5. Submodules, omp and the licence relationship
 
-| Item | Licence in repo | Evidence | Compatibility with distributing OmpOS under AGPL-3.0 | Action |
+| Item | Licence in repo | Evidence | Compatibility with distributing Autonogrammer under AGPL-3.0 | Action |
 |---|---|---|---|---|
-| plugins/claude-ultrathink (`https://github.com/swcstudiospace/ultrathink.git`, pin 71101ed0...) | AGPL-3.0-or-later: LICENSE present (661 lines, "GNU AFFERO GENERAL PUBLIC LICENSE Version 3"), package.json `"license"`, README grant "either version 3 ... or (at your option) any later version" | LICENSE head, package.json, README read | Compatible (same family). OmpOS pins it as a submodule and runs it as an omp extension; its source is never copied into OmpOS (ADR-0013 rule 6). Since omp (MIT) loads it in-process at the user's machine, an AGPL obligation falls on whoever conveys omp together with the plugin; OmpOS conveys only a submodule pointer | record in THIRD-PARTY-NOTICES |
-| plugins/agent-swarm (`.../swarm.git`, pin c900a510...) | **no LICENSE; no `license` in package.json (`"private": true`) or pyproject.toml; no LICENSE/COPYING/NOTICE in the tree** (glob empty) | read | no licence = all rights reserved by default. Same owner org (`swcstudiospace`), so the owner can add one. A public OmpOS with only a submodule pointer does not convey its files; the API image excludes `plugins/` (.containerignore last line) | add LICENSE (AGPL-3.0-or-later suggested) and `license` fields in the swarm repo, then bump the pin |
+| plugins/claude-ultrathink (`https://github.com/swcstudiospace/ultrathink.git`, pin 71101ed0...) | AGPL-3.0-or-later: LICENSE present (661 lines, "GNU AFFERO GENERAL PUBLIC LICENSE Version 3"), package.json `"license"`, README grant "either version 3 ... or (at your option) any later version" | LICENSE head, package.json, README read | Compatible (same family). Autonogrammer pins it as a submodule and runs it as an omp extension; its source is never copied into Autonogrammer (ADR-0013 rule 6). Since omp (MIT) loads it in-process at the user's machine, an AGPL obligation falls on whoever conveys omp together with the plugin; Autonogrammer conveys only a submodule pointer | record in THIRD-PARTY-NOTICES |
+| plugins/agent-swarm (`.../swarm.git`, pin c900a510...) | **no LICENSE; no `license` in package.json (`"private": true`) or pyproject.toml; no LICENSE/COPYING/NOTICE in the tree** (glob empty) | read | no licence = all rights reserved by default. Same owner org (`swcstudiospace`), so the owner can add one. A public Autonogrammer with only a submodule pointer does not convey its files; the API image excludes `plugins/` (.containerignore last line) | add LICENSE (AGPL-3.0-or-later suggested) and `license` fields in the swarm repo, then bump the pin |
 | plugins/agent-substrate (`.../substrate.git`, pin 754c51a1..., private) | **no LICENSE; no license field** (package.json private, 0.1.0) | read | as swarm; private, so nothing is conveyed publicly. Public AGPL users cannot obtain it: a product problem, not a licence conflict | decide publish-with-AGPL or keep private; document |
-| plugins/gsd-core-omp | OmpOS-owned, in-repo, no licence field | package.json read | becomes AGPL-3.0-or-later with the root LICENSE | add SPDX headers + `license` |
+| plugins/gsd-core-omp | Autonogrammer-owned, in-repo, no licence field | package.json read | becomes AGPL-3.0-or-later with the root LICENSE | add SPDX headers + `license` |
 | omp 18.12.5 | MIT | https://raw.githubusercontent.com/can1357/oh-my-pi/main/LICENSE read | Compatible. Invoked as a separate program over ACP/RPC stdio (`omp acp`, `omp --mode rpc`), not linked. Whether pipe communication counts as aggregation is a judgment call from the GNU FAQ (not read this session) | none; keep MIT notice in the published API image |
-| Third-party SaaS (Linear, Notion, Railway, vendor model APIs) | provider terms | not read | not distributed by OmpOS | none |
+| Third-party SaaS (Linear, Notion, Railway, vendor model APIs) | provider terms | not read | not distributed by Autonogrammer | none |
 
 ## 6. Obligations
 
 | # | Obligation | What it means here | Action |
 |---|---|---|---|
-| 6.1 | **Section 13**: if you modify the Program, the modified version "must prominently offer all users interacting with it remotely through a computer network ... an opportunity to receive the Corresponding Source ... from a network server at no charge, through some standard or customary means" (https://www.gnu.org/licenses/agpl-3.0.txt, section 13, line 540 ff.) | applies to `services/OmpOS.Api` (Railway) and the Blazor web head for any deployed modified build. Treat every deployment as modified | design in 6.A |
+| 6.1 | **Section 13**: if you modify the Program, the modified version "must prominently offer all users interacting with it remotely through a computer network ... an opportunity to receive the Corresponding Source ... from a network server at no charge, through some standard or customary means" (https://www.gnu.org/licenses/agpl-3.0.txt, section 13, line 540 ff.) | applies to `services/Autonogrammer.Api` (Railway) and the Blazor web head for any deployed modified build. Treat every deployment as modified | design in 6.A |
 | 6.2 | Conveying object code (desktop installers, APK, the Blazor WASM payload sent to browsers, container images) | Section 6 requires Corresponding Source to accompany them or be offered, including "access to copy the Corresponding Source from a network server at no charge" (lines 254-255). One tagged source URL per release serves both | tag each release; point links at the exact commit |
 | 6.3 | Corresponding Source scope | includes build scripts, Directory.Packages.props and lock files (in repo already); not system libraries or unmodified separate programs (omp, Bun) | submodules are separate works |
 | 6.4 | Keep notices | LICENSE, copyright lines, THIRD-PARTY-NOTICES and OFL texts ship in every installer, APK, image and the web About page | file list below |
 | 6.5 | App stores | AGPL section 10 forbids further restrictions; store terms that add restrictions conflict. Google Play: **not verified**. Apple: no iOS head exists; known friction with GPL-family licences is [INFERENCE] from general knowledge | ship Android via GitHub Releases/F-Droid first; decide before any store publish |
-| 6.6 | Trademark | AGPL section 7(e) lets the licensor decline trademark rights; the licence grants no right to the OmpOS name or logo | `TRADEMARKS.md`; clearance of "OmpOS" not searched |
+| 6.6 | Trademark | AGPL section 7(e) lets the licensor decline trademark rights; the licence grants no right to the Autonogrammer name or logo | `TRADEMARKS.md`; clearance of "Autonogrammer" not searched |
 | 6.7 | CLA vs DCO | with `AGPL-3.0-or-later` + DCO, SWC Studio cannot later sell a proprietary licence of contributed code. A CLA is only needed for dual licensing or later non-copyleft relicensing | **DCO, no CLA** unless a commercial dual licence is planned; owner decision |
 | 6.8 | Provenance | existing history written by humans and agents; ownership by SWC Studio unverified | review `git shortlog` and any third-party snippets before the first AGPL tag |
 | 6.9 | REUSE / SPDX | REUSE spec 3.3: licence texts in `LICENSES/<SPDX-id>.txt`; per-file `SPDX-FileCopyrightText` + `SPDX-License-Identifier` headers, or `REUSE.toml` `[[annotations]]` (`path`, `precedence`, `SPDX-FileCopyrightText`, `SPDX-License-Identifier`); REUSE.toml and DEP5 are mutually exclusive; no licence file for an unused licence; each submodule is a separate Project (https://reuse.software/spec-3.3/) | root REUSE.toml |
@@ -222,11 +222,11 @@ Only `tests/OmpOS.Web.Tests` lock was parsed in full; the ~40 other test locks w
 | Static host | publish `/LICENSE`, `/THIRD-PARTY-NOTICES.md`, `/source.json` in the web root | vercel.ts |
 | Desktop / Android | About dialog showing BuildInfo; installers bundle LICENSE and THIRD-PARTY-NOTICES | |
 | Container | OCI labels (6.10) | |
-| Wording | "This service runs OmpOS <ver> (<sha>), licensed AGPL-3.0-or-later. Source: <url>" | |
+| Wording | "This service runs Autonogrammer <ver> (<sha>), licensed AGPL-3.0-or-later. Source: <url>" | |
 
 ## 7. Exact file and edit set
 
-Paths relative to /root/src/repos/ompos. Nothing was created in the repo by this research.
+Paths relative to /root/src/repos/autonogrammer. Nothing was created in the repo by this research.
 
 | # | Path | Content / edit | Basis |
 |---|---|---|---|
@@ -240,13 +240,13 @@ Paths relative to /root/src/repos/ompos. Nothing was created in the repo by this
 | 8 | `CONTRIBUTING.md` | licence of contributions, DCO `Signed-off-by` rule (`git commit -s`), SPDX header rule, where notices are generated | file read |
 | 9 | `SECURITY.md` | absent at root; add supported versions, private reporting channel, response targets (pattern: plugins/claude-ultrathink/SECURITY.md) | glob |
 | 10 | `CODE_OF_CONDUCT.md`, `CHANGELOG.md` | absent at root (ultrathink has both as patterns) | glob |
-| 11 | `TRADEMARKS.md` | OmpOS name/logo/banner reserved by SWC Studio [owner decision]; no AGPL trademark grant; forks rename; no endorsement | |
+| 11 | `TRADEMARKS.md` | Autonogrammer name/logo/banner reserved by SWC Studio [owner decision]; no AGPL trademark grant; forks rename; no endorsement | |
 | 12 | SPDX headers in `src/**`, `apps/**`, `services/**`, `tests/**`, `plugins/gsd-core-omp/**`, `scripts/**` | either `// SPDX-License-Identifier: AGPL-3.0-or-later` + `// SPDX-FileCopyrightText: 2026 SWC Studio` per file, or rely on the REUSE.toml catch-all. If headers are enforced by an `.editorconfig` file-header rule under TreatWarningsAsErrors, apply to all files first | .editorconfig, props |
-| 13 | `apps/OmpOS.Web/wwwroot/lib/bootstrap/LICENSE` (or remove the library) | MIT text, Bootstrap copyright | section 3 |
+| 13 | `apps/Autonogrammer.Web/wwwroot/lib/bootstrap/LICENSE` (or remove the library) | MIT text, Bootstrap copyright | section 3 |
 | 14 | `plugins/gsd-core-omp/package.json` | add `"license": "AGPL-3.0-or-later"` | |
 | 15 | `deploy/api.Containerfile` | OCI labels; copy LICENSE, NOTICE, THIRD-PARTY-NOTICES.md and Bun/omp licence files into the final image | 6.10 |
 | 16 | Source-offer code | `/source` endpoint, `BuildInfo`, About page + footer link, desktop/Android About entry | 6.A |
-| 17 | `docs/open-questions.md` OQ-62; `docs/plugins.md` "Licence facts"; `docs/decisions/ADR-0013-plugin-isolation.md` Licence table (OmpOS row is NOASSERTION); `docs/runbooks/deferred-and-blocked-2026-10-26.md` line 35 | replace "no LICENSE file" with AGPL-3.0-or-later and close OQ-62; keep swarm/substrate NOASSERTION until their repos get a LICENSE | files read |
+| 17 | `docs/open-questions.md` OQ-62; `docs/plugins.md` "Licence facts"; `docs/decisions/ADR-0013-plugin-isolation.md` Licence table (Autonogrammer row is NOASSERTION); `docs/runbooks/deferred-and-blocked-2026-10-26.md` line 35 | replace "no LICENSE file" with AGPL-3.0-or-later and close OQ-62; keep swarm/substrate NOASSERTION until their repos get a LICENSE | files read |
 | 18 | New ADR | records `-or-later`, DCO/no CLA, source-offer design, plugin boundary | AGENTS.md ADR practice |
 | 19 | sibling repos swarm, substrate | add LICENSE (owner decision) | section 5 |
 | 20 | GitHub repo settings | root LICENSE makes GitHub show AGPL-3.0 | |
@@ -256,16 +256,16 @@ Paths relative to /root/src/repos/ompos. Nothing was created in the repo by this
 | Item | Reason |
 |---|---|
 | Legal conclusions (aggregate vs derivative for omp + plugin; app stores; relicensing existing code) | engineering analysis only; GNU FAQ aggregation/plugin entries not read this session |
-| Ownership of all existing OmpOS code; absence of third-party snippets | git history not examined |
+| Ownership of all existing Autonogrammer code; absence of third-party snippets | git history not examined |
 | favicon.png and icon-192.png provenance | binaries not opened |
 | TextMateSharp.Grammars bundled licences; SkiaSharp/HarfBuzz native upstream notices; Onigwrap/Oniguruma notice | .nupkg members could not be opened (HTTP 404 on member read); only nuspec metadata read |
 | ~65 packages marked "family [INFERENCE]" | not individually fetched; run a scripted nuspec sweep before release |
-| Test lock files other than OmpOS.Web.Tests | not parsed |
+| Test lock files other than Autonogrammer.Web.Tests | not parsed |
 | Android SDK/workload licences; Google Play policy | not read |
 | omp npm dependency tree inside the API image | tarball not inspected |
 | xterm.js plans | no mention found |
 | OFL WOFF2 conversion rule | FAQ section not read to a conclusion |
-| Trademark availability of "OmpOS" | no search |
+| Trademark availability of "Autonogrammer" | no search |
 | DiffPlex nuspec | not in any lock yet |
 | OCI label keys and shields.io badge URL | stated from convention, not fetched |
 

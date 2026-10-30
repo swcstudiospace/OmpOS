@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Autonogrammer.Contracts/Autonogrammer.Contracts.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Sessions/Autonogrammer.Sessions.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Sessions.Postgres/Autonogrammer.Sessions.Postgres.csproj" />
+    <ProjectReference Include="../Autonogrammer.Sessions.Tests/Autonogrammer.Sessions.Tests.csproj" />
+    <ProjectReference Include="../Autonogrammer.Sessions.Postgres.Probe/Autonogrammer.Sessions.Postgres.Probe.csproj" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+</Project>

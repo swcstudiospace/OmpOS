@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <!-- Compression of the static web assets stays off (reviewed with the payload budget): the publish output would gain a .br and a .gz copy of every file, and nothing serves them, because the host config (vercel.ts) has no rule that maps a request to a precompressed file. The size budget (scripts/web-smoke/size-budget.mjs) measures the gzip and Brotli size of the plain files, which is what a host that compresses on the fly sends. -->
+    <CompressionEnabled>false</CompressionEnabled>
+    <!-- Offline shell: the SDK lists every published static asset with its hash in service-worker-assets.js and appends that list's version to the published worker (wwwroot/service-worker.published.js), so a changed bundle is a changed worker. -->
+    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    <!-- No fingerprinted framework files and no import map. The SDK writes the import map into index.html as an inline script, which the CSP (script-src 'self') forbids, so a CSP-conformant host never booted the page; found by the Demo browser run. The framework files keep plain names, so hosts revalidate them (see vercel.ts) instead of caching them as immutable. blazor.webassembly.js is still referenced with its fingerprint placeholder. -->
+    <WasmFingerprintAssets>false</WasmFingerprintAssets>
+    <!-- The Blazor WASM SDK otherwise rolls Microsoft.NET.Sdk.WebAssembly.Pack to the latest patch on the feed. The lock file records 10.0.13; a later patch fails locked restore (NU1004). -->
+    <TargetLatestRuntimePatch>false</TargetLatestRuntimePatch>
+    <RuntimeFrameworkVersion>10.0.13</RuntimeFrameworkVersion>
+    <!-- Blazor's HeadOutlet interop deserializes through the reflection path. With the repo-wide switch off (Directory.Build.props), first render throws JsonSerializerIsReflectionDisabled. Re-verified 2026-10-21 by the browser smoke with this switch set to false: the first render still throws (evidence: docs/runbooks/evidence/web-reflection-off-2026-10-21.json). Tracked as Q-WEB-REFLECTION (scoped override). The Blazor WebAssembly SDK does not force this on, so this explicit true is the only source for this head. -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <!-- Demo build switch (ADR-0017). false (the default): Demo/** is not compiled and appsettings.demo.json is not published, so a production bundle holds no demo code. true: the head answers every API route from in-browser fixtures. -->
+    <AutonogrammerDemo Condition="'$(AutonogrammerDemo)' == ''">false</AutonogrammerDemo>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AutonogrammerDemo)' == 'true'">
+    <DefineConstants>$(DefineConstants);AUTONOGRAMMER_DEMO</DefineConstants>
+    <WasmApplicationEnvironmentName>demo</WasmApplicationEnvironmentName>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(AutonogrammerDemo)' != 'true'">
+    <Compile Remove="Demo\**" />
+    <Content Remove="wwwroot\appsettings.demo.json" />
+    <None Remove="wwwroot\appsettings.demo.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="AutonogrammerDemo" Value="$(AutonogrammerDemo)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Autonogrammer.Contracts\Autonogrammer.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Autonogrammer.UI\Autonogrammer.UI.csproj" />
+    <!-- Only the Demo reads the provider catalogue (the real head asks the API for it). -->
+    <ProjectReference Include="..\..\src\Autonogrammer.Harness.Providers\Autonogrammer.Harness.Providers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Autonogrammer.Web.Tests" />
+  </ItemGroup>
+
+  <!-- The offline shell. Include is the development worker (a no-op); PublishedContent is the worker that publish ships under the same name, service-worker.js. -->
+  <ItemGroup>
+    <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+  </ItemGroup>
+
+  <!-- Router discovers pages by reflection over AppAssembly, which the trimmer cannot see; without this root Pages/Index.razor is trimmed and "/" falls through to NotFound (found by the browser smoke). -->
+  <ItemGroup>
+    <TrimmerRootAssembly Include="Autonogrammer.Web" />
+  </ItemGroup>
+
+</Project>

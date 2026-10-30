@@ -1,6 +1,6 @@
 # Inference providers: local runtimes, custom endpoints, US cloud providers
 
-Research date: 2026-10-22. Every fact below was read on that date unless marked unverified. Target for OmpOS: a desktop client that talks to the omp engine and needs base URL, auth, and compatibility facts per provider.
+Research date: 2026-10-22. Every fact below was read on that date unless marked unverified. Target for Autonogrammer: a desktop client that talks to the omp engine and needs base URL, auth, and compatibility facts per provider.
 
 ## Verdict
 
@@ -45,7 +45,7 @@ Notes on the table:
 
 ## Owner decisions
 
-1. Coding-plan priority. Which subscriptions should OmpOS support first?
+1. Coding-plan priority. Which subscriptions should Autonogrammer support first?
    - Anthropic Claude Pro or Max (Claude Code included, verified on claude.com/pricing).
    - OpenAI ChatGPT Plus or Pro (Codex included, verified on learn.chatgpt.com/docs/pricing).
    - Ollama Pro or Max (cloud models via Anthropic-compatible route, verified).
@@ -57,7 +57,7 @@ Notes on the table:
    - Options: exclude; list as per-token alternatives; or include as first-class with a warning.
 3. Sold-out or closed plans. Cerebras Code (sold out on primary page) and Fireworks Fire Pass (not open to new subscriptions).
    - Options: exclude; keep as optional entries that show status; or re-check before implementation.
-4. Anthropic-compatible transport. How should OmpOS send requests to non-Anthropic backends?
+4. Anthropic-compatible transport. How should Autonogrammer send requests to non-Anthropic backends?
    - Option A: generic ANTHROPIC_BASE_URL and token setup for Ollama, LM Studio, llama.cpp, vLLM, LocalAI, OpenRouter, Fireworks.
    - Option B: OpenAI-compatible adapter only, for all cloud providers.
    - Option C: both, with per-provider capability flags.

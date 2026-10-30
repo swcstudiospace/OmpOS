@@ -1,0 +1,53 @@
+{
+  "api": "http://127.0.0.1:5187",
+  "startedAt": "2026-10-29T13:48:26.635Z",
+  "mode": "unknown",
+  "steps": [
+    {
+      "name": "auth-config",
+      "status": "skipped",
+      "detail": "skipped by --skip"
+    },
+    {
+      "name": "unauthenticated",
+      "status": "skipped",
+      "detail": "skipped by --skip"
+    },
+    {
+      "name": "bad-token",
+      "status": "skipped",
+      "detail": "skipped by --skip"
+    },
+    {
+      "name": "text-turn",
+      "status": "skipped",
+      "detail": "skipped by --skip"
+    },
+    {
+      "name": "session",
+      "status": "passed",
+      "ms": 201,
+      "sessionId": "3d6f673b94d2461c98c260fa841b7e5c"
+    },
+    {
+      "name": "tool-turn",
+      "status": "skipped",
+      "detail": "skipped by --skip"
+    },
+    {
+      "name": "resume",
+      "status": "skipped",
+      "detail": "skipped by --skip"
+    },
+    {
+      "name": "rate-limit",
+      "status": "passed",
+      "ms": 1586,
+      "requestsUntil429": 61,
+      "retryAfterSeconds": 60
+    }
+  ],
+  "finishedAt": "2026-10-29T13:48:28.425Z",
+  "sessionId": "3d6f673b94d2461c98c260fa841b7e5c",
+  "result": "passed"
+}

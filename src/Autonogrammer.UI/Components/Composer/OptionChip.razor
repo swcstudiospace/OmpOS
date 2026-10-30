@@ -1,0 +1,181 @@
+@namespace Autonogrammer.UI.Components.Composing
+@using Autonogrammer.Presentation.Composer
+@inherits PopupComponent
+@if (Model.IsVisible)
+{
+    <div class="autonogrammer-chip-menu" data-kind="@Kind" @ref="Root">
+        <button type="button"
+                class="autonogrammer-chip-btn"
+                id="@ButtonId"
+                aria-haspopup="listbox"
+                aria-expanded="@(IsOpen ? "true" : "false")"
+                aria-disabled="@(Model.IsEnabled ? null : "true")"
+                aria-describedby="@ReasonId"
+                aria-label="@(Name + ": " + Model.Label)"
+                title="@Model.ToolTipText"
+                @ref="_button"
+                @onclick="ToggleAsync">
+            <span class="autonogrammer-chip-value">@Model.Label</span>
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6l4 4 4-4" /></svg>
+        </button>
+        <span class="autonogrammer-sr-only" id="@ReasonId">@Model.ToolTipText</span>
+        @if (IsOpen)
+        {
+            <ul class="autonogrammer-chip-list"
+                id="@ListId"
+                role="listbox"
+                tabindex="-1"
+                aria-label="@Name"
+                aria-activedescendant="@ActiveId"
+                @ref="ListElement"
+                @onkeydown="OnKeyDownAsync">
+                @for (var index = 0; index < Model.Choices.Count; index++)
+                {
+                    var position = index;
+                    var choice = Model.Choices[index];
+                    <li role="option"
+                        id="@OptionId(position)"
+                        class="autonogrammer-chip-option@(position == _highlight ? " is-active" : null)"
+                        aria-selected="@(Equals(choice, Model.SelectedChoice) ? "true" : "false")"
+                        @onclick="() => ChooseAsync(choice)">
+                        <span class="autonogrammer-chip-option-name">@choice.Name</span>
+                        @if (!string.IsNullOrEmpty(choice.Description))
+                        {
+                            <span class="autonogrammer-chip-option-description">@choice.Description</span>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+
+        <p class="autonogrammer-chip-notice autonogrammer-live" role="status" aria-live="polite" aria-atomic="true" data-empty="@(Model.Notice is null ? "true" : null)">@Model.Notice</p>
+    </div>
+}
+
+@code {
+    private static int s_nextId;
+
+    private readonly string _id = "autonogrammer-option-chip-" + System.Threading.Interlocked.Increment(ref s_nextId).ToString(System.Globalization.CultureInfo.InvariantCulture);
+    private ElementReference _button;
+    private int _highlight;
+    private bool _focusList;
+    private bool _focusButton;
+    private string ButtonId => _id + "-button";
+    private string ListId => _id + "-list";
+    private string ReasonId => _id + "-reason";
+
+    /// <summary>Gets the chip model: the choices, the current choice and the command that changes it.</summary>
+    [Parameter, EditorRequired]
+    public OptionChipModel Model { get; set; } = null!;
+
+    /// <summary>Gets what the chip changes, for the accessible name: <c>Mode</c> or <c>Thinking level</c>.</summary>
+    [Parameter, EditorRequired]
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Gets the kind of the chip (<c>mode</c> or <c>thinking</c>), exposed as a data attribute for styling and tests.</summary>
+    [Parameter]
+    public string Kind { get; set; } = "option";
+
+    /// <summary>Gets the callback invoked after a choice was made or the popup was dismissed by the keyboard, so the composer can take the focus back.</summary>
+    [Parameter]
+    public EventCallback OnFocusReturn { get; set; }
+
+    private string ActiveId => OptionId(_highlight);
+
+    private string OptionId(int index) => _id + "-option-" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <inheritdoc />
+    protected override void OnParametersSet() => Observe(Model);
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender).ConfigureAwait(true);
+        if (_focusList && IsOpen)
+        {
+            _focusList = false;
+            await ListElement.FocusAsync().ConfigureAwait(true);
+        }
+
+        if (_focusButton)
+        {
+            _focusButton = false;
+            await _button.FocusAsync().ConfigureAwait(true);
+        }
+
+        if (IsOpen && Module is { } module)
+        {
+            await module.InvokeVoidAsync("ensureVisible", ActiveId).ConfigureAwait(true);
+        }
+    }
+
+    private Task ToggleAsync()
+    {
+        if (!Model.IsEnabled)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (IsOpen)
+        {
+            ClosePopup();
+            return Task.CompletedTask;
+        }
+
+        var selected = Model.SelectedChoice is { } current ? IndexOf(current) : -1;
+        _highlight = selected >= 0 ? selected : 0;
+        OpenPopup();
+        _focusList = true;
+        return Task.CompletedTask;
+    }
+
+    private int IndexOf(OptionChoice choice)
+    {
+        for (var index = 0; index < Model.Choices.Count; index++)
+        {
+            if (Equals(Model.Choices[index], choice))
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    private async Task ChooseAsync(OptionChoice choice)
+    {
+        ClosePopup();
+        _focusButton = true;
+        await Model.SelectAsync(choice).ConfigureAwait(true);
+        await OnFocusReturn.InvokeAsync().ConfigureAwait(true);
+    }
+
+    private async Task OnKeyDownAsync(KeyboardEventArgs args)
+    {
+        var count = Model.Choices.Count;
+        switch (args.Key)
+        {
+            case "ArrowDown":
+                _highlight = count == 0 ? 0 : Math.Min(_highlight + 1, count - 1);
+                break;
+            case "ArrowUp":
+                _highlight = Math.Max(_highlight - 1, 0);
+                break;
+            case "Home":
+                _highlight = 0;
+                break;
+            case "End":
+                _highlight = Math.Max(count - 1, 0);
+                break;
+            case "Enter" or " " when _highlight >= 0 && _highlight < count:
+                await ChooseAsync(Model.Choices[_highlight]).ConfigureAwait(true);
+                break;
+            case "Escape" or "Tab":
+                ClosePopup();
+                _focusButton = string.Equals(args.Key, "Escape", StringComparison.Ordinal);
+                break;
+            default:
+                break;
+        }
+    }
+}

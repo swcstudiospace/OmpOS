@@ -1,0 +1,654 @@
+/* Settings dialog: a centred two-pane dialog (navigation 220 px, page up to 720 px) that becomes full screen below 840 px. Colours, sizes and
+   fonts come from tokens.css only. Every control is at least --autonogrammer-control-height (32 px) high. */
+
+html[data-dialog-open] body {
+  overflow: hidden;
+}
+
+.autonogrammer-settings-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--autonogrammer-z-dialog);
+  background: var(--autonogrammer-scrim);
+}
+
+.autonogrammer-settings {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: var(--autonogrammer-z-dialog);
+  display: flex;
+  flex-direction: column;
+  width: min(960px, calc(100vw - 2 * var(--autonogrammer-gap-12)));
+  height: min(680px, calc(100dvh - 2 * var(--autonogrammer-gap-12)));
+  overflow: hidden;
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-12);
+  box-shadow: var(--autonogrammer-shadow-popup);
+  color: var(--autonogrammer-text);
+  transform: translate(-50%, -50%);
+}
+
+.autonogrammer-settings:focus {
+  outline: none;
+}
+
+.autonogrammer-settings-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+  padding: var(--autonogrammer-gap-8) var(--autonogrammer-gap-12) var(--autonogrammer-gap-8) 16px;
+  border-bottom: 1px solid var(--autonogrammer-border);
+}
+
+.autonogrammer-settings-title {
+  font-family: var(--autonogrammer-font-display);
+  font-size: var(--autonogrammer-font-size-display-sm);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-display-sm);
+}
+
+.autonogrammer-settings-body {
+  display: grid;
+  flex: 1;
+  grid-template-columns: var(--autonogrammer-settings-nav) minmax(0, 1fr);
+  min-height: 0;
+}
+
+.autonogrammer-settings-nav {
+  padding: var(--autonogrammer-gap-8);
+  overflow-y: auto;
+  background: var(--autonogrammer-surface-sunken);
+  border-right: 1px solid var(--autonogrammer-border);
+}
+
+.autonogrammer-settings-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.autonogrammer-settings-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+  width: 100%;
+  min-height: var(--autonogrammer-control-height);
+  padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+  background: transparent;
+  border: 0;
+  border-radius: var(--autonogrammer-radius-6);
+  color: var(--autonogrammer-text);
+  font-size: var(--autonogrammer-font-size-body);
+  line-height: var(--autonogrammer-line-height-body);
+  text-align: left;
+}
+
+.autonogrammer-settings-nav-item:hover {
+  background: var(--autonogrammer-hover);
+}
+
+.autonogrammer-settings-nav-item[aria-current='page'] {
+  background: var(--autonogrammer-selected);
+  font-weight: var(--autonogrammer-font-weight-medium);
+}
+
+.autonogrammer-settings-dirty-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--autonogrammer-accent);
+  border-radius: var(--autonogrammer-radius-pill);
+}
+
+.autonogrammer-settings-page {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--autonogrammer-surface-raised);
+}
+
+.autonogrammer-settings-page-frame {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.autonogrammer-settings-page-header {
+  max-width: var(--autonogrammer-content-max);
+  padding: 24px 32px 0;
+}
+
+.autonogrammer-settings-page-title {
+  font-family: var(--autonogrammer-font-display);
+  font-size: var(--autonogrammer-font-size-display-sm);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-display-sm);
+}
+
+.autonogrammer-settings-page-description {
+  margin-top: var(--autonogrammer-gap-4);
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-settings-page-content {
+  flex: 1;
+  width: 100%;
+  max-width: var(--autonogrammer-content-max);
+  padding: 16px 32px 24px;
+}
+
+.autonogrammer-settings-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+  padding: var(--autonogrammer-gap-8) 16px;
+  background: var(--autonogrammer-surface-raised);
+  border-top: 1px solid var(--autonogrammer-border);
+}
+
+.autonogrammer-settings-footer-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-settings-saveline {
+  flex: 1;
+  min-width: 200px;
+  margin: 0;
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-settings-saveline[data-state='error'] {
+  color: var(--autonogrammer-error);
+}
+
+.autonogrammer-settings-saveline[data-state='saved'] {
+  color: var(--autonogrammer-success);
+}
+
+/* Setting rows: label and help on the left, the control on the right, a hairline between rows. */
+.autonogrammer-settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--autonogrammer-gap-12);
+  min-height: 56px;
+  padding: var(--autonogrammer-gap-12) 0;
+  border-bottom: 1px solid var(--autonogrammer-border);
+}
+
+.autonogrammer-settings-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-2);
+  max-width: 480px;
+}
+
+.autonogrammer-settings-row-control {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--autonogrammer-gap-6);
+}
+
+.autonogrammer-settings-label {
+  font-size: var(--autonogrammer-font-size-label);
+  font-weight: var(--autonogrammer-font-weight-medium);
+  line-height: var(--autonogrammer-line-height-label);
+}
+
+.autonogrammer-settings-help {
+  margin: 0;
+  color: var(--autonogrammer-text-secondary);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-settings-error {
+  margin: 0;
+  color: var(--autonogrammer-error);
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+}
+
+.autonogrammer-settings-error-text {
+  margin: 0;
+  color: var(--autonogrammer-error);
+  font-size: var(--autonogrammer-font-size-label);
+  line-height: var(--autonogrammer-line-height-label);
+}
+
+.autonogrammer-settings-row[data-invalid='true'] .autonogrammer-input {
+  border-color: var(--autonogrammer-error);
+}
+
+.autonogrammer-settings-number {
+  width: 120px;
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+  text-align: right;
+}
+
+.autonogrammer-settings-mono {
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+  line-height: var(--autonogrammer-line-height-mono);
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-settings-kbd {
+  padding: var(--autonogrammer-gap-2) var(--autonogrammer-gap-6);
+  background: var(--autonogrammer-surface-sunken);
+  border: 1px solid var(--autonogrammer-border-strong);
+  border-radius: var(--autonogrammer-radius-4);
+  font-family: var(--autonogrammer-font-mono);
+  font-size: var(--autonogrammer-font-size-mono);
+  line-height: var(--autonogrammer-line-height-mono);
+  white-space: nowrap;
+}
+
+/* A 32 px switch: the shared toggle is 24 px high, so the settings version is taller and keeps its thumb centred. */
+.autonogrammer-settings-toggle {
+  width: 52px;
+  height: var(--autonogrammer-control-height);
+}
+
+.autonogrammer-settings-toggle::before {
+  top: 7px;
+  left: 7px;
+}
+
+.autonogrammer-settings-toggle[aria-checked='true']::before {
+  transform: translateX(20px);
+}
+
+.autonogrammer-settings .autonogrammer-segment {
+  min-height: var(--autonogrammer-control-height);
+}
+
+.autonogrammer-settings .autonogrammer-btn--small {
+  min-height: var(--autonogrammer-control-height);
+}
+
+.autonogrammer-settings-warning {
+  margin: var(--autonogrammer-gap-8) 0;
+  color: var(--autonogrammer-warning);
+  font-size: var(--autonogrammer-font-size-label);
+  line-height: var(--autonogrammer-line-height-label);
+}
+
+.autonogrammer-settings-section-title {
+  margin: 24px 0 var(--autonogrammer-gap-8);
+  font-size: var(--autonogrammer-font-size-heading);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-heading);
+}
+
+.autonogrammer-settings-subheading {
+  margin: var(--autonogrammer-gap-12) 0 var(--autonogrammer-gap-4);
+  font-size: var(--autonogrammer-font-size-label);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-label);
+}
+
+.autonogrammer-settings-privacy {
+  max-width: 480px;
+  margin: 0;
+}
+
+.autonogrammer-settings-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--autonogrammer-gap-8);
+  margin: var(--autonogrammer-gap-12) 0;
+  color: var(--autonogrammer-text-secondary);
+}
+
+.autonogrammer-settings-state--error {
+  color: var(--autonogrammer-text);
+}
+
+.autonogrammer-settings-banner {
+  margin: var(--autonogrammer-gap-8) 0;
+  padding: var(--autonogrammer-gap-8) var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface-sunken);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+  font-size: var(--autonogrammer-font-size-label);
+  line-height: var(--autonogrammer-line-height-label);
+}
+
+.autonogrammer-settings-banner[data-tone='warning'] {
+  color: var(--autonogrammer-warning);
+}
+
+.autonogrammer-settings-banner[data-tone='info'] {
+  border-left: 3px solid var(--autonogrammer-accent);
+}
+
+.autonogrammer-settings-fact {
+  margin: var(--autonogrammer-gap-4) 0 var(--autonogrammer-gap-12);
+}
+
+.autonogrammer-settings-fact .autonogrammer-settings-help {
+  max-width: 68ch;
+  font-size: var(--autonogrammer-font-size-body);
+  line-height: var(--autonogrammer-line-height-body);
+}
+
+.autonogrammer-settings-value {
+  flex: 0 0 auto;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.autonogrammer-hook-command {
+  overflow-wrap: anywhere;
+}
+
+.autonogrammer-hook-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--autonogrammer-gap-4);
+}
+
+.autonogrammer-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+  margin: var(--autonogrammer-gap-8) 0;
+}
+
+.autonogrammer-settings-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--autonogrammer-control-height);
+  font-size: var(--autonogrammer-font-size-label);
+}
+
+/* Lists and tables. */
+.autonogrammer-settings-plain-list,
+.autonogrammer-settings-problems,
+.autonogrammer-provider-list,
+.autonogrammer-provider-tags {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.autonogrammer-provider-tags {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.autonogrammer-settings-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.autonogrammer-settings-list-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+  min-height: 40px;
+  padding: var(--autonogrammer-gap-8) 0;
+  border-bottom: 1px solid var(--autonogrammer-border);
+}
+
+.autonogrammer-settings-list-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-2);
+  min-width: 0;
+}
+
+.autonogrammer-settings-table-wrap {
+  overflow-x: auto;
+}
+
+.autonogrammer-settings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--autonogrammer-font-size-small);
+  line-height: var(--autonogrammer-line-height-small);
+  text-align: left;
+}
+
+.autonogrammer-settings-table th,
+.autonogrammer-settings-table td {
+  padding: var(--autonogrammer-gap-8);
+  border-bottom: 1px solid var(--autonogrammer-border);
+  vertical-align: top;
+}
+
+.autonogrammer-settings-table th[scope='col'] {
+  color: var(--autonogrammer-text-secondary);
+  font-weight: var(--autonogrammer-font-weight-medium);
+}
+
+.autonogrammer-settings-table th[scope='row'] {
+  font-weight: var(--autonogrammer-font-weight-regular);
+  white-space: nowrap;
+}
+
+/* Toolbar and form controls. */
+.autonogrammer-settings-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--autonogrammer-gap-12);
+  margin: var(--autonogrammer-gap-8) 0;
+}
+
+.autonogrammer-settings-toolbar-search {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  min-width: 200px;
+}
+
+.autonogrammer-settings-toolbar-filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  min-width: 140px;
+}
+
+.autonogrammer-settings-field,
+.autonogrammer-settings-key {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  margin: var(--autonogrammer-gap-8) 0;
+}
+
+.autonogrammer-settings-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  margin: var(--autonogrammer-gap-8) 0;
+  padding: 0;
+  border: 0;
+}
+
+.autonogrammer-settings-check {
+  display: flex;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+  min-height: var(--autonogrammer-control-height);
+  font-size: var(--autonogrammer-font-size-body);
+}
+
+.autonogrammer-settings-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--autonogrammer-accent);
+}
+
+.autonogrammer-settings-confirm {
+  margin: var(--autonogrammer-gap-8) 0;
+  padding: var(--autonogrammer-gap-8) var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface-sunken);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-8);
+}
+
+/* Provider cards. */
+.autonogrammer-provider-group {
+  margin: var(--autonogrammer-gap-12) 0;
+}
+
+.autonogrammer-provider-card,
+.autonogrammer-provider-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  padding: var(--autonogrammer-gap-12);
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-10);
+}
+
+.autonogrammer-provider-form {
+  margin: var(--autonogrammer-gap-12) 0;
+}
+
+.autonogrammer-provider-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-provider-card-title {
+  margin-right: auto;
+  font-size: var(--autonogrammer-font-size-body);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-body);
+}
+
+.autonogrammer-provider-endpoint {
+  margin: 0;
+}
+
+.autonogrammer-provider-model {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--autonogrammer-gap-8);
+}
+
+.autonogrammer-provider-plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--autonogrammer-gap-4);
+  padding: var(--autonogrammer-gap-8);
+  background: var(--autonogrammer-surface-sunken);
+  border-radius: var(--autonogrammer-radius-8);
+}
+
+/* The unsaved-changes prompt sits over the dialog. */
+.autonogrammer-settings-prompt-scrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--autonogrammer-scrim);
+}
+
+.autonogrammer-settings-prompt {
+  width: min(400px, 100%);
+  padding: 16px;
+  background: var(--autonogrammer-surface-raised);
+  border: 1px solid var(--autonogrammer-border);
+  border-radius: var(--autonogrammer-radius-12);
+  box-shadow: var(--autonogrammer-shadow-popup);
+}
+
+.autonogrammer-settings-prompt-title {
+  margin-bottom: var(--autonogrammer-gap-8);
+  font-size: var(--autonogrammer-font-size-heading);
+  font-weight: var(--autonogrammer-font-weight-semibold);
+  line-height: var(--autonogrammer-line-height-heading);
+}
+
+/* Below 840 px the dialog fills the screen and the navigation becomes a row of entries above the page. */
+@media (max-width: 839.98px) {
+  .autonogrammer-settings {
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    transform: none;
+  }
+
+  .autonogrammer-settings-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .autonogrammer-settings-nav {
+    padding: var(--autonogrammer-gap-4) var(--autonogrammer-gap-8);
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: 0;
+    border-bottom: 1px solid var(--autonogrammer-border);
+  }
+
+  .autonogrammer-settings-nav-list {
+    flex-direction: row;
+  }
+
+  .autonogrammer-settings-nav-item {
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .autonogrammer-settings-page-header,
+  .autonogrammer-settings-page-content {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .autonogrammer-settings-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .autonogrammer-settings-row-control {
+    align-items: flex-start;
+  }
+}

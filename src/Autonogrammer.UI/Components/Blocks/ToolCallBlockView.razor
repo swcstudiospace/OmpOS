@@ -1,0 +1,14 @@
+@namespace Autonogrammer.UI.Components.Blocks
+@using Autonogrammer.Contracts.Ui
+@using Autonogrammer.UI.Components.Rail
+<div class="autonogrammer-block autonogrammer-tool-call" data-status="@Block.Status">
+    <StatusGlyph IconKey="@ToolStatusIcon.Of(Block.Status)" />
+    <span class="autonogrammer-tool-name">@Block.ToolName</span>
+    <span class="autonogrammer-tool-status">@Block.Status</span>
+</div>
+
+@code {
+    /// <summary>Gets the tool-call block to render.</summary>
+    [Parameter, EditorRequired]
+    public ToolCallBlock Block { get; set; } = null!;
+}

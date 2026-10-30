@@ -1,7 +1,7 @@
 # Lens 6: Compatibility and reproducibility
 
 QUALITY_BAR items: Compatibility and reproducibility; Lint, type-check, test, build (tool pins).
-Repository: /root/src/repos/ompos at commit 59e9dd1. Read-only audit. No build, restore, test, or package manager was run.
+Repository: /root/src/repos/autonogrammer at commit 59e9dd1. Read-only audit. No build, restore, test, or package manager was run.
 
 Severity rule applied. The lens brief classifies every unpinned item by whether CI executes it: executed by CI is High, documentation of a developer step is Low. Two items fall outside that split and are rated on the common definition, as noted in their evidence: `vercel.ts:28` (rated High, external script executed on every hosted build) and `deploy/api.Containerfile` (rated Low, documented developer build that CI does not run). See Method.
 
@@ -21,8 +21,8 @@ Total findings: 20 (High 10, Medium 1, Low 9). The table holds all 20; the 40-ro
 | scripts/test-services.sh:11,12 | Compatibility and reproducibility (images) | High | fix | "Test DB and Dragonfly images pinned by tag, not digest; CI (ci.yml:48) and bootstrap.sh:54 run this script" |
 | scripts/web-smoke/run-smoke.sh:128,129 | Compatibility and reproducibility (downloads) | High | fix | "npm pack axe-core@4.14.0 (pinned :35) with no hash; line 129 records sha256 after download, compares nothing" |
 | vercel.ts:28 | Compatibility and reproducibility (downloads) | High | fix | "Vercel installCommand curls dot.net dotnet-install.sh and runs it unverified each build; not GitHub CI, see Method" |
-| src/OmpOS.Sandbox/LocalPodmanComposeProvider.cs:730 | Compatibility and reproducibility (images) | Medium | defer | "Spec.Image copied to the compose service unchecked; no tag or digest rule for caller-supplied images" |
-| src/OmpOS.Sandbox/PodmanDriverSection.cs:20,24 | Compatibility and reproducibility (images) | Low | fix | "Defaults end in :latest; rendered only by GenerateGatewayToml, called from GoldenPolicyTests.cs:26, no prod caller" |
+| src/Autonogrammer.Sandbox/LocalPodmanComposeProvider.cs:730 | Compatibility and reproducibility (images) | Medium | defer | "Spec.Image copied to the compose service unchecked; no tag or digest rule for caller-supplied images" |
+| src/Autonogrammer.Sandbox/PodmanDriverSection.cs:20,24 | Compatibility and reproducibility (images) | Low | fix | "Defaults end in :latest; rendered only by GenerateGatewayToml, called from GoldenPolicyTests.cs:26, no prod caller" |
 | deploy/api.Containerfile:10,11 | Compatibility and reproducibility (images) | Low | defer | "SDK and runtime base images pinned by tag (10.0.402-noble, 10.0.13-noble), not digest; CI never builds this file" |
 | deploy/api.Containerfile:47,48 | Compatibility and reproducibility (tool pins) | Low | accept | "apt-get install ca-certificates curl unzip with no versions; build stage only; CI never builds this file" |
 | deploy/api.Containerfile:63 | Compatibility and reproducibility (downloads) | Low | accept | "bun install --production resolves transitive ranges at build; documented as NOT FROZEN at :39-41" |
@@ -30,7 +30,7 @@ Total findings: 20 (High 10, Medium 1, Low 9). The table holds all 20; the 40-ro
 | .github/workflows/ci.yml:53 | Lint, type-check, test, build (test gate) | Low | fix | "CI runs dotnet test without the Category=Live filter bootstrap.sh:56 applies; ci.yml:2 says it mirrors bootstrap" |
 | .github/workflows/ci.yml:156 | Compatibility and reproducibility (tool pins) | Low | accept | "sdkmanager installs platforms;android-36 and build-tools;36.0.0 by identifier; no repo-side checksum" |
 | Directory.Build.props:25 | Compatibility and reproducibility (lock files) | Low | accept | "RestoreLockedMode only when CI=true; local restores rewrite packages.lock.json; CI and bootstrap pass --locked-mode" |
-| tests/OmpOS.Sandbox.Tests/SandboxLifecycleTests.cs:209 | Compatibility and reproducibility (images) | Low | accept | "alpine:latest in 13 test fixtures; grep found no podman pull command in tests/OmpOS.Sandbox.Tests" |
+| tests/Autonogrammer.Sandbox.Tests/SandboxLifecycleTests.cs:209 | Compatibility and reproducibility (images) | Low | accept | "alpine:latest in 13 test fixtures; grep found no podman pull command in tests/Autonogrammer.Sandbox.Tests" |
 
 Notes on the rows:
 - `ci.yml:29,129` and `ci.yml:33,...` each cover two or more sites on one row.
@@ -59,16 +59,16 @@ Every pattern run, with hit count. "Fine" entries give the reason a hit is not a
 | `:latest\b` in tracked `Dockerfile*` / `Containerfile*` | 0 | The only container build file is deploy/api.Containerfile, which has no `:latest`. |
 | `:latest\b` across tracked files, excluding docs/ and .planning/ | 17 | 13 `alpine:latest` in test fixtures (Low row R20); 2 defaults in PodmanDriverSection.cs (R12); 2 in test golden toml (rendered by the golden test). Fine: test data. |
 | `npm (install\|i)\b` and `npm ci` in `scripts`, `.github`, `bootstrap.sh` | 0 | No npm install or ci path in CI. |
-| `\bnpm\b\|\bnpx\b` outside docs/.planning/*.md | 8 | 1 `npm pack` (run-smoke.sh:128, Finding R9); 1 comment (deploy/api.Containerfile:36, a version string); 6 in tests/OmpOS.Harness.Rpc.Tests/TestData/frames, recorded RPC text (not invocations). |
+| `\bnpm\b\|\bnpx\b` outside docs/.planning/*.md | 8 | 1 `npm pack` (run-smoke.sh:128, Finding R9); 1 comment (deploy/api.Containerfile:36, a version string); 6 in tests/Autonogrammer.Harness.Rpc.Tests/TestData/frames, recorded RPC text (not invocations). |
 | `dotnet tool (install\|update)` in all code, scripts, and CI paths | 0 | No tool install. No `.config/dotnet-tools.json` tracked (`git ls-files` grep: 0). |
-| `Category=Live` / `Trait("Category"` in tests, src, services, apps | 1 (tests/OmpOS.Harness.Rpc.Tests/RpcLiveCaptureTests.cs:18) | Skipped unless OMPOS_RPC_LIVE_CAPTURE=1 and omp on PATH (:46). CI does not set either. Finding R17 concerns the filter, not the skip. |
+| `Category=Live` / `Trait("Category"` in tests, src, services, apps | 1 (tests/Autonogrammer.Harness.Rpc.Tests/RpcLiveCaptureTests.cs:18) | Skipped unless AUTONOGRAMMER_RPC_LIVE_CAPTURE=1 and omp on PATH (:46). CI does not set either. Finding R17 concerns the filter, not the skip. |
 | `--locked-mode` in ci.yml, bootstrap.sh, deploy/api.Containerfile (read directly) | 4 | ci.yml:41 and :136; bootstrap.sh:38; api.Containerfile:27. Locked restore enforced on every CI and build path. |
 | `sha256sum\|sha512sum` in scripts, .github, bootstrap.sh, deploy | 5 | ci.yml:77 (gitleaks, verified); bootstrap.sh:32 (SDK, verified); api.Containerfile:52 (bun, verified); :58 (omp tgz, verified); run-smoke.sh:129 (axe; records a stamp, does not compare: Finding R9). |
 | `wget\|Invoke-WebRequest\|urllib\|requests\.get\|git clone\|pip install\|apt-get` in scripts, .github, bootstrap.sh, deploy, tools, services, apps | 3 | ci.yml:45 (Finding R3); api.Containerfile:47 (apt-get update) and :48 (Finding R14). |
 | `podman-compose\|pipx` in .github and bootstrap.sh | 7 | ci.yml:80, :82 (pinned podman-compose==1.6.0, Finding R16), :83, :93, :95, :124; bootstrap.sh:65 (hint). |
 | `runs-on:` in .github | 2 | Both `ubuntu-latest` (Finding R2). |
 | Image references in deploy/compose.yaml and scripts/test-services.sh (`image:` and `*_IMAGE=`) | 5 | compose.yaml:9,27,38; test-services.sh:11,12 (Findings R7, R8). All tag pins, none digest-pinned. |
-| `Spec.Image` / `Image =` in src/OmpOS.Sandbox | 2 | LocalPodmanComposeProvider.cs:730 (Finding R11); AgentOsProvider.cs:335 rejects image selection (fine, explicit). |
+| `Spec.Image` / `Image =` in src/Autonogrammer.Sandbox | 2 | LocalPodmanComposeProvider.cs:730 (Finding R11); AgentOsProvider.cs:335 rejects image selection (fine, explicit). |
 | `GenerateGatewayToml` callers | 1 caller outside its definition | GoldenPolicyTests.cs:26 (test only). Supports R12 severity. |
 | `Containerfile\|podman build` in .github, scripts, bootstrap.sh | 0 | CI never builds deploy/api.Containerfile (basis for R13 to R15 Low). |
 | Lines 76-125 of ci.yml, bootstrap.sh, deploy/api.Containerfile, vercel.ts | read in full | Used for every item above. |

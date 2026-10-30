@@ -2,32 +2,32 @@
 
 - Status: Accepted 2026-10-28
 - Date: 2026-10-28
-- Owner: ompos-maintainers
+- Owner: autonogrammer-maintainers
 - Amends: [ADR-0020](ADR-0020-cloud-agents-on-railway.md) D3 (worker bridge protocol) and D4 (authentication); applies [ADR-0016](ADR-0016-hooks-execution-model.md) to the worker.
-- Scope: where hooks run for a cloud agent, how the user's consent reaches the worker, which hooks a worker runs, and the one extension frame the worker adds to the bridge (`_ompos/hook`). Requirements PX-14 (hooks) and PX-17 (cloud agents), milestone v0.15.0, phases 57 and 60. The research is [08-hooks-design.md](../plans/v0.15.0-research/08-hooks-design.md), sections 3.2 (where hooks run), 3.5 (failure policy) and unit U11.
+- Scope: where hooks run for a cloud agent, how the user's consent reaches the worker, which hooks a worker runs, and the one extension frame the worker adds to the bridge (`_autonogrammer/hook`). Requirements PX-14 (hooks) and PX-17 (cloud agents), milestone v0.15.0, phases 57 and 60. The research is [08-hooks-design.md](../plans/v0.15.0-research/08-hooks-design.md), sections 3.2 (where hooks run), 3.5 (failure policy) and unit U11.
 - File name: this record is not named `ADR-0020-…` on purpose. `DecisionRecordTests` require every `ADR-*.md` file to carry a unique number and a row in the index, and a second file with the number 0020 would fail both.
 
 ## Context
 
-A cloud agent's omp child runs in a Railway container, next to the `OmpOS.AgentWorker` that bridges its ACP stdio to a WebSocket (ADR-0020 D3). Hooks must run next to omp: the omp extension that blocks a tool call reaches its host over loopback HTTP, and a loopback address on the desktop is not reachable from the container (research risk R11). Cursor runs project hooks in cloud agents, not the user's own hooks, and only fourteen of its events. OmpOS adds one rule: the consent decision stays with the human on the desktop, so a worker never runs a hook the user did not approve.
+A cloud agent's omp child runs in a Railway container, next to the `Autonogrammer.AgentWorker` that bridges its ACP stdio to a WebSocket (ADR-0020 D3). Hooks must run next to omp: the omp extension that blocks a tool call reaches its host over loopback HTTP, and a loopback address on the desktop is not reachable from the container (research risk R11). Cursor runs project hooks in cloud agents, not the user's own hooks, and only fourteen of its events. Autonogrammer adds one rule: the consent decision stays with the human on the desktop, so a worker never runs a hook the user did not approve.
 
 ## Decision
 
 ### H1. Hooks run in the worker, once per connection, only when the operator turns them on
 
-`Worker:Hooks:Enabled` is false by default (environment `Worker__Hooks__Enabled`). When true, `Worker:Hooks:PluginsRoot` (absolute; the image's `plugins` directory holding `ompos-hooks-omp`) is required, and `Worker:Hooks:StateRoot` (default `<Worker:WorkspaceRoot>/.ompos-hooks`, a name no session subject can take) holds the per-session hook state. For each connection the worker:
+`Worker:Hooks:Enabled` is false by default (environment `Worker__Hooks__Enabled`). When true, `Worker:Hooks:PluginsRoot` (absolute; the image's `plugins` directory holding `autonogrammer-hooks-omp`) is required, and `Worker:Hooks:StateRoot` (default `<Worker:WorkspaceRoot>/.autonogrammer-hooks`, a name no session subject can take) holds the per-session hook state. For each connection the worker:
 
 1. checks that the session directory is writable (Cursor does not run hooks in the read-only early turns of a cloud agent); a read-only workspace reports `notWritable`;
 2. finds the checkouts: the session directory itself or its non-hidden child directories that hold a `.git`;
-3. loads the project hook files (`.ompos/hooks.json`, `.cursor/hooks.json`, `.claude/settings*.json`) of those checkouts with the shared loader of `OmpOS.Harness.Plugins`, with no home directory and as a remote session, so the user's own files are not even looked for, and the machine-wide managed file is dropped;
+3. loads the project hook files (`.autonogrammer/hooks.json`, `.cursor/hooks.json`, `.claude/settings*.json`) of those checkouts with the shared loader of `Autonogrammer.Harness.Plugins`, with no home directory and as a remote session, so the user's own files are not even looked for, and the machine-wide managed file is dropped;
 4. keeps only command hooks (no prompt hooks), no omp-section hooks, hooks whose `runsIn` includes `remote`, and the fourteen events Cursor runs in cloud agents: `beforeShellExecution`, `afterShellExecution`, `beforeReadFile`, `afterFileEdit`, `preToolUse`, `postToolUse`, `postToolUseFailure`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, `preCompact`, `afterAgentResponse`, `afterAgentThought`, `stop`. `sessionStart`, `sessionEnd`, `workspaceOpen`, both MCP events and both Tab events are not run (the bridge handler also refuses a request for them);
-5. applies the consent snapshot (H2), starts a loopback `HookBridgeServer` for this connection and gives the omp child `-e <plugins>/ompos-hooks-omp` plus `OMPOS_HOOKS_URL`, `OMPOS_HOOKS_TOKEN` and `OMPOS_HOOKS_STARTUP_FILE`. The bridge token is added to the redactor that scrubs the child's stderr, like the connection's own token.
+5. applies the consent snapshot (H2), starts a loopback `HookBridgeServer` for this connection and gives the omp child `-e <plugins>/autonogrammer-hooks-omp` plus `AUTONOGRAMMER_HOOKS_URL`, `AUTONOGRAMMER_HOOKS_TOKEN` and `AUTONOGRAMMER_HOOKS_STARTUP_FILE`. The bridge token is added to the redactor that scrubs the child's stderr, like the connection's own token.
 
 Hook commands are run by the shared `SystemHookCommandRunner` with the scrubbed environment of ADR-0016. The extension is the only producer: the ACP tap of the desktop does not run in the worker, because the worker does not parse the ACP traffic it carries.
 
 ### H2. Consent is a snapshot in the connection token
 
-The worker has no outbound channel (ADR-0020 D4: it makes no HTTP calls) and `GET /acp` has no body, so the snapshot travels in the signed bearer token the control plane mints for the connection, as the claim `ompos_hooks_consent`: a string holding one JSON object
+The worker has no outbound channel (ADR-0020 D4: it makes no HTTP calls) and `GET /acp` has no body, so the snapshot travels in the signed bearer token the control plane mints for the connection, as the claim `autonogrammer_hooks_consent`: a string holding one JSON object
 
 ```json
 {"version":2,"approver":"ada@example.test","approvedAt":"2026-10-28T09:00:00+00:00","hashes":["<64 lowercase hex>", "…"]}
@@ -43,35 +43,35 @@ The worker has no outbound channel (ADR-0020 D4: it makes no HTTP calls) and `GE
 
 Hooks that cannot be enforced are never silently dropped. If the extension is not installed or the bridge cannot start, the session reports `unavailable` and runs without hooks, unless one of the hooks is fail-closed: the worker then refuses the connection with HTTP 503 (the same status as an omp child that cannot start). Within a running bridge ADR-0016 section 3.5 applies as it is: a failing handler denies fail-closed events and lets the others through.
 
-### H4. `_ompos/hook`, the extension frame
+### H4. `_autonogrammer/hook`, the extension frame
 
 The worker sends hook information to the client as a JSON-RPC notification on the existing socket, one text frame, interleaved with the frames of the omp child (both writers take one send gate, because a WebSocket allows one outstanding send):
 
 ```json
-{"jsonrpc":"2.0","method":"_ompos/hook","params":{"version":1,"run":{ "<HookRunEvent, camelCase>": "…" }}}
-{"jsonrpc":"2.0","method":"_ompos/hook","params":{"version":1,"state":"active","hookCount":2,"reason":"1 of 2 hooks are approved by the consent snapshot."}}
+{"jsonrpc":"2.0","method":"_autonogrammer/hook","params":{"version":1,"run":{ "<HookRunEvent, camelCase>": "…" }}}
+{"jsonrpc":"2.0","method":"_autonogrammer/hook","params":{"version":1,"state":"active","hookCount":2,"reason":"1 of 2 hooks are approved by the consent snapshot."}}
 ```
 
-- `run` is the contract record `OmpOS.Contracts.Hooks.HookRunEvent` (output excerpts redacted, only a digest of the input), one per hook run.
+- `run` is the contract record `Autonogrammer.Contracts.Hooks.HookRunEvent` (output excerpts redacted, only a digest of the input), one per hook run.
 - `state` is `active`, `none`, `untrusted`, `notWritable` or `unavailable`; `hookCount` is how many project hooks the worker found; `reason` is a fixed sentence without paths or secrets. The state frame is sent first on every connection that has hooks enabled.
 - The underscore prefix marks an ACP extension method. A client that does not know the method ignores the notification (ACP requires it), so the frame is additive: no `initialize` capability, no version bump of ACP, and an older control plane keeps working. `version` allows a later incompatible shape without breaking a reader of this one.
 - Frames wait in a bounded in-memory queue (512, oldest dropped) until the socket is attached and are not replayed after a reconnect; the run log `<StateRoot>/<session>/hooks/runs.jsonl` (0600, 5 MiB bounded) keeps every record.
-- Client side: `AcpHookNotificationFrames` (`OmpOS.Harness.Acp`) writes and reads the frame; `AcpAgentSession.HookNotificationReceived` raises it with a `HookRunEvent` and its `hook` stream payload (`HookStreamPayload.Create`). A plain local `omp acp` never sends it.
+- Client side: `AcpHookNotificationFrames` (`Autonogrammer.Harness.Acp`) writes and reads the frame; `AcpAgentSession.HookNotificationReceived` raises it with a `HookRunEvent` and its `hook` stream payload (`HookStreamPayload.Create`). A plain local `omp acp` never sends it.
 
 ## Consequences
 
 - The control plane mints the claim; the desktop owns the approval. Until the API carries the snapshot from the desktop to the token minting (a field on the cloud agent create/prompt request and the token issuer), every cloud session reports `untrusted` and runs no project hook. This is the safe default and is recorded as an open item in the wave report.
-- The worker image must contain `plugins/ompos-hooks-omp` and set `Worker__Hooks__PluginsRoot`; hooks that need a toolchain (a linter, a formatter) run in the image the user's environment file builds.
+- The worker image must contain `plugins/autonogrammer-hooks-omp` and set `Worker__Hooks__PluginsRoot`; hooks that need a toolchain (a linter, a formatter) run in the image the user's environment file builds.
 - Prompt-type hooks stay off in the cloud (research O5).
 - Hooks run with the worker's rights, inside the session container. They can read the container's environment except what the hook environment scrub removes; the isolation of ADR-0020 D5 is the boundary, not the hook runner.
 
 ## Verification
 
-`tests/OmpOS.AgentWorker.Tests/Hooks/` runs the loopback worker with a fake omp: a denying project hook stops a tool call (the bridge answers `deny` and a `denied` run record arrives as `_ompos/hook`), a connection without a snapshot runs no hook and reports `untrusted`, a snapshot that lacks a hook's identity denies a guarding hook with `awaitingConsent`, and the filter drops user-scope, prompt-type, omp-section and unsupported-event hooks. Not run in this pass (no .NET build was allowed); a live omp with the extension is UNVERIFIED: `omp acp --no-extensions -e plugins/ompos-hooks-omp` with `OMPOS_HOOKS_URL` and `OMPOS_HOOKS_TOKEN` pointing at a stub.
+`tests/Autonogrammer.AgentWorker.Tests/Hooks/` runs the loopback worker with a fake omp: a denying project hook stops a tool call (the bridge answers `deny` and a `denied` run record arrives as `_autonogrammer/hook`), a connection without a snapshot runs no hook and reports `untrusted`, a snapshot that lacks a hook's identity denies a guarding hook with `awaitingConsent`, and the filter drops user-scope, prompt-type, omp-section and unsupported-event hooks. Not run in this pass (no .NET build was allowed); a live omp with the extension is UNVERIFIED: `omp acp --no-extensions -e plugins/autonogrammer-hooks-omp` with `AUTONOGRAMMER_HOOKS_URL` and `AUTONOGRAMMER_HOOKS_TOKEN` pointing at a stub.
 
 ## Candidate chosen
 
-Reuse the hooks library (`OmpOS.Harness.Plugins.Hooks`), the loopback bridge (`OmpOS.Harness.AgentLoop.Hooks.HookBridgeServer`) and the omp extension (`plugins/ompos-hooks-omp`) of ADR-0016 inside the worker, instead of a worker-specific hook runner. Consent travels in the signed token instead of a new endpoint or an unsigned header, because the worker accepts no unsigned input about trust.
+Reuse the hooks library (`Autonogrammer.Harness.Plugins.Hooks`), the loopback bridge (`Autonogrammer.Harness.AgentLoop.Hooks.HookBridgeServer`) and the omp extension (`plugins/autonogrammer-hooks-omp`) of ADR-0016 inside the worker, instead of a worker-specific hook runner. Consent travels in the signed token instead of a new endpoint or an unsigned header, because the worker accepts no unsigned input about trust.
 
 ## Licence
 

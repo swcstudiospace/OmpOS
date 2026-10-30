@@ -1,0 +1,11 @@
+@namespace Autonogrammer.UI.Components.Blocks
+@using Autonogrammer.Contracts.Ui
+<div class="autonogrammer-block autonogrammer-user" data-role="user">
+    <span class="autonogrammer-user-text">@Block.Text</span>
+</div>
+
+@code {
+    /// <summary>Gets the user turn to render verbatim as plain text, ahead of the assistant output.</summary>
+    [Parameter, EditorRequired]
+    public UserMessageBlock Block { get; set; } = null!;
+}

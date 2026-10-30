@@ -1,0 +1,276 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:auto="clr-namespace:Autonogrammer.Presentation.Automations;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.Automations.AutomationsPageView"
+             x:DataType="auto:HostedAutomationsViewModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The Automations page. Exactly one state shows at a time: loading, unavailable (how to switch automations on), failed load, empty, or
+       the list with its details and run history. The editor replaces the list while it is open. Keyboard order follows XAML order. -->
+  <ScrollViewer x:Name="PageScroll"
+                Focusable="False"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Classes="settings-column">
+
+      <TextBlock x:Name="PageHeading"
+                 Classes="settings-heading"
+                 Text="{x:Static auto:AutomationsCopy.Heading}" />
+      <TextBlock Classes="settings-description"
+                 Text="{x:Static auto:AutomationsCopy.Description}" />
+      <TextBlock x:Name="PageNoteText"
+                 Classes="settings-help"
+                 IsVisible="{CompiledBinding PageNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding PageNote}" />
+
+      <StackPanel x:Name="Toolbar"
+                  Orientation="Horizontal"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+        <Button x:Name="NewButton"
+                Classes="primary"
+                Content="{x:Static auto:AutomationsCopy.NewAutomationLabel}"
+                AutomationProperties.Name="{x:Static auto:AutomationsCopy.NewAutomationLabel}"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                Click="OnNewClick" />
+        <Button x:Name="RefreshButton"
+                Content="{x:Static auto:AutomationsCopy.RefreshLabel}"
+                AutomationProperties.Name="{x:Static auto:AutomationsCopy.RefreshLabel}"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                Click="OnRefreshClick" />
+      </StackPanel>
+
+      <TextBlock x:Name="LoadingText"
+                 Classes="muted settings-body"
+                 Text="{x:Static auto:AutomationsCopy.Loading}"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="{x:Static auto:AutomationsCopy.Loading}" />
+
+      <!-- The service has automations switched off: what that means and how to switch them on. No control acts on an automation. -->
+      <StackPanel x:Name="UnavailablePanel"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+        <TextBlock Classes="settings-section"
+                   Text="{x:Static auto:AutomationsCopy.UnavailableHeading}" />
+        <TextBlock Classes="settings-body"
+                   Text="{x:Static auto:AutomationsCopy.UnavailableBody}" />
+      </StackPanel>
+
+      <!-- The load failed. -->
+      <StackPanel x:Name="ErrorPanel"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                  AutomationProperties.LiveSetting="Assertive"
+                  AutomationProperties.Name="{x:Static auto:AutomationsCopy.LoadFailedHeading}">
+        <TextBlock Classes="settings-section"
+                   Text="{x:Static auto:AutomationsCopy.LoadFailedHeading}" />
+        <Border Classes="banner"
+                Background="{DynamicResource Autonogrammer.Color.DiffRemoved}">
+          <TextBlock x:Name="LoadErrorText"
+                     Classes="tone-error settings-body"
+                     Text="{CompiledBinding LoadFailure}" />
+        </Border>
+        <Button x:Name="TryAgainButton"
+                HorizontalAlignment="Left"
+                Content="{x:Static auto:AutomationsCopy.TryAgainLabel}"
+                AutomationProperties.Name="{x:Static auto:AutomationsCopy.TryAgainLabel}"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                Click="OnRefreshClick" />
+      </StackPanel>
+
+      <!-- Loaded, and no automation exists. -->
+      <StackPanel x:Name="EmptyPanel"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+        <TextBlock Classes="settings-section"
+                   Text="{x:Static auto:AutomationsCopy.EmptyHeading}" />
+        <TextBlock Classes="settings-body"
+                   Text="{x:Static auto:AutomationsCopy.EmptyBody}" />
+        <Button x:Name="EmptyNewButton"
+                Classes="primary"
+                HorizontalAlignment="Left"
+                Content="{x:Static auto:AutomationsCopy.NewAutomationLabel}"
+                AutomationProperties.Name="{x:Static auto:AutomationsCopy.NewAutomationLabel}"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                Click="OnNewClick" />
+      </StackPanel>
+
+      <!-- The editor, shown in place of the list while it is open. -->
+      <ContentControl x:Name="EditorHost"
+                      Focusable="False" />
+
+      <StackPanel x:Name="ReadyPanel"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+        <ListBox x:Name="AutomationList"
+                 AutomationProperties.Name="{x:Static auto:AutomationsCopy.ListName}"
+                 SelectionChanged="OnAutomationSelected">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="auto:HostedAutomationRowModel">
+              <StackPanel MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal"
+                            Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+                  <TextBlock Text="{CompiledBinding Name}"
+                             FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Classes="settings-help"
+                             VerticalAlignment="Center"
+                             Text="{CompiledBinding EnabledText}" />
+                </StackPanel>
+                <TextBlock Classes="settings-help"
+                           Text="{CompiledBinding TriggerText}"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Classes="settings-help"
+                           Text="{CompiledBinding TargetText}"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Classes="settings-help"
+                           Text="{CompiledBinding NextRunText}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <TextBlock x:Name="NoSelectionText"
+                   Classes="muted settings-body"
+                   Text="{x:Static auto:AutomationsCopy.NoSelection}" />
+
+        <!-- The details of the selected automation. The actions follow the facts in XAML order. -->
+        <Border x:Name="DetailsCard"
+                Classes="settings-card">
+          <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+            <TextBlock x:Name="DetailName"
+                       Classes="settings-section"
+                       AutomationProperties.Name="{x:Static auto:AutomationsCopy.DetailsHeading}" />
+            <TextBlock x:Name="DetailEnabled"
+                       Classes="settings-body" />
+            <TextBlock x:Name="DetailTrigger"
+                       Classes="settings-body" />
+            <TextBlock x:Name="DetailTarget"
+                       Classes="settings-body" />
+            <TextBlock x:Name="DetailNextRun"
+                       Classes="settings-body" />
+            <TextBlock x:Name="DetailLastResult"
+                       Classes="settings-body" />
+            <TextBlock x:Name="DetailWebhook"
+                       Classes="settings-mono" />
+
+            <WrapPanel x:Name="ActionsPanel"
+                       Orientation="Horizontal"
+                       AutomationProperties.Name="{x:Static auto:AutomationsCopy.ActionsName}">
+              <Button x:Name="RunNowButton"
+                      AutomationProperties.Name="{x:Static auto:AutomationsCopy.RunNowLabel}"
+                      Margin="0,0,8,8"
+                      Content="{x:Static auto:AutomationsCopy.RunNowLabel}"
+                      MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      Click="OnRunNowClick" />
+              <Button x:Name="ToggleEnabledButton"
+                      AutomationProperties.Name="{x:Static auto:AutomationsCopy.TurnOffLabel}"
+                      Margin="0,0,8,8"
+                      MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      Click="OnToggleClick" />
+              <Button x:Name="EditButton"
+                      AutomationProperties.Name="{x:Static auto:AutomationsCopy.EditLabel}"
+                      Margin="0,0,8,8"
+                      Content="{x:Static auto:AutomationsCopy.EditLabel}"
+                      MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      Click="OnEditClick" />
+              <Button x:Name="DeleteButton"
+                      AutomationProperties.Name="{x:Static auto:AutomationsCopy.DeleteLabel}"
+                      Margin="0,0,8,8"
+                      Content="{x:Static auto:AutomationsCopy.DeleteLabel}"
+                      MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      Click="OnDeleteClick" />
+            </WrapPanel>
+
+            <!-- The delete confirmation: what is removed, then Delete automation or Cancel. Focus lands on Cancel. -->
+            <Border x:Name="DeleteConfirmBar"
+                    Classes="banner"
+                    AutomationProperties.LiveSetting="Assertive"
+                    AutomationProperties.Name="{x:Static auto:AutomationsCopy.DeleteConfirmationName}">
+              <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+                <TextBlock x:Name="DeleteWarningText"
+                           Classes="settings-body" />
+                <WrapPanel Orientation="Horizontal">
+                  <Button x:Name="CancelDeleteButton"
+                          Margin="0,0,8,0"
+                          Content="{x:Static auto:AutomationsCopy.CancelLabel}"
+                          AutomationProperties.Name="{x:Static auto:AutomationsCopy.CancelLabel}"
+                          MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          Click="OnCancelDeleteClick" />
+                  <Button x:Name="ConfirmDeleteButton"
+                          AutomationProperties.Name="{x:Static auto:AutomationsCopy.ConfirmDeleteLabel}"
+                          Content="{x:Static auto:AutomationsCopy.ConfirmDeleteLabel}"
+                          MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          Click="OnConfirmDeleteClick" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Classes="settings-label"
+                       Text="{x:Static auto:AutomationsCopy.HistoryLabel}" />
+            <TextBlock x:Name="NoHistoryText"
+                       Classes="settings-help"
+                       Text="{x:Static auto:AutomationsCopy.NoHistory}" />
+            <ItemsControl x:Name="HistoryList"
+                          AutomationProperties.Name="{x:Static auto:AutomationsCopy.HistoryLabel}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="auto:HostedRunRowModel">
+                  <StackPanel Margin="0,0,0,8"
+                              AutomationProperties.Name="{CompiledBinding AccessibleName}">
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+                      <TextBlock Classes="settings-body"
+                                 FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+                                 Text="{CompiledBinding StatusText}" />
+                      <TextBlock Classes="settings-help"
+                                 VerticalAlignment="Center"
+                                 Text="{CompiledBinding WhenText}" />
+                      <TextBlock Classes="settings-help"
+                                 VerticalAlignment="Center"
+                                 Text="{CompiledBinding DurationText}"
+                                 IsVisible="{CompiledBinding DurationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+                    <TextBlock Classes="settings-help"
+                               Text="{CompiledBinding TriggerText}" />
+                    <TextBlock Classes="settings-body"
+                               Text="{CompiledBinding SummaryText}" />
+                    <TextBlock Classes="tone-error settings-body"
+                               Text="{CompiledBinding ErrorText}"
+                               IsVisible="{CompiledBinding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <TextBlock Classes="settings-mono"
+                               Text="{CompiledBinding AgentText}"
+                               IsVisible="{CompiledBinding AgentText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <TextBlock x:Name="NoticeText"
+                 Classes="settings-body"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="{x:Static auto:AutomationsCopy.NoticeName}" />
+      <TextBlock x:Name="ActionErrorText"
+                 Classes="tone-error settings-body"
+                 AutomationProperties.LiveSetting="Assertive"
+                 AutomationProperties.Name="{x:Static auto:AutomationsCopy.ActionErrorName}" />
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

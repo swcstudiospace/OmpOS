@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../apps/Autonogrammer.Native/Autonogrammer.Native.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Native.Views/Autonogrammer.Native.Views.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Presentation/Autonogrammer.Presentation.csproj" />
+    <ProjectReference Include="../Autonogrammer.Parity.Support/Autonogrammer.Parity.Support.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Plugins/Autonogrammer.Harness.Plugins.csproj" />
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Autonogrammer.Presentation.Tests/Hooks/ScriptedHooksPageSource.cs" Link="Hooks/Shared/ScriptedHooksPageSource.cs" />
+    <Compile Include="../Autonogrammer.Presentation.Tests/Hooks/HookItems.cs" Link="Hooks/Shared/HookItems.cs" />
+
+    <!-- The stand-in for podman and its container, shared with the remote tests so the script exists once. -->
+    <Compile Include="../Autonogrammer.Harness.Remote.Tests/Support/FakeContainerHost.cs" Link="Remote/Shared/FakeContainerHost.cs" />
+    <Compile Include="../Autonogrammer.Harness.Remote.Tests/Support/FakeContainerHostOptions.cs" Link="Remote/Shared/FakeContainerHostOptions.cs" />
+    <Compile Include="../Autonogrammer.Harness.Remote.Tests/Support/FakeGuestFiles.cs" Link="Remote/Shared/FakeGuestFiles.cs" />
+
+    <!-- The clock whose timers fire when a test advances it, shared with the automation tests. -->
+    <Compile Include="../Autonogrammer.Harness.Automations.Tests/FakeTimeProvider.cs" Link="Composition/Automations/Shared/FakeTimeProvider.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../Autonogrammer.Harness.Remote.Tests/Fixtures/**/*" LinkBase="Fixtures" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

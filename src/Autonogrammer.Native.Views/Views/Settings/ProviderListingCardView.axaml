@@ -1,0 +1,300 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:Autonogrammer.Presentation.Settings.Models;assembly=Autonogrammer.Presentation"
+             xmlns:glyphs="clr-namespace:Autonogrammer.Presentation.AgentPanel;assembly=Autonogrammer.Presentation"
+             xmlns:agent="clr-namespace:Autonogrammer.Native.Views.AgentPanel"
+             xmlns:local="clr-namespace:Autonogrammer.Native.Views.Settings"
+             x:Class="Autonogrammer.Native.Views.Settings.ProviderListingCardView"
+             x:DataType="models:ProviderListingCardModel"
+             Focusable="False"
+             Margin="0,0,0,8"
+             AutomationProperties.Name="{CompiledBinding DisplayName}">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- One provider listing card: the provider, where it is and what the vendor states about residency, its status, the plan terms of a coding plan,
+       and the setup form. Keyboard order follows XAML order: Set up, then the form (route, placeholders, model ids, key, Add provider, Cancel).
+       The key field is masked and write-only; the card never shows a key. -->
+  <Border Classes="settings-card">
+    <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Cozy}">
+
+      <Grid ColumnDefinitions="*,Auto"
+            ColumnSpacing="8">
+        <TextBlock x:Name="ListingNameLine"
+                   Grid.Column="0"
+                   Classes="settings-section"
+                   Text="{CompiledBinding DisplayName}" />
+        <WrapPanel Grid.Column="1"
+                   Orientation="Horizontal"
+                   ItemSpacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                   LineSpacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                   VerticalAlignment="Top">
+          <Border x:Name="VerifyChip"
+                  Classes="chip"
+                  IsVisible="{CompiledBinding VerifyMark, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <StackPanel Orientation="Horizontal"
+                        Spacing="{DynamicResource Autonogrammer.Gap.Compact}">
+              <agent:StageIcon IconKey="{x:Static glyphs:StatusIcon.Alert}"
+                               VerticalAlignment="Center" />
+              <TextBlock x:Name="VerifyText"
+                         Classes="settings-chip-text"
+                         Text="{CompiledBinding VerifyMark}" />
+            </StackPanel>
+          </Border>
+          <Border Classes="chip">
+            <TextBlock x:Name="StatusChipLine"
+                       Classes="settings-chip-text"
+                       Text="{CompiledBinding StatusText}" />
+          </Border>
+        </WrapPanel>
+      </Grid>
+
+      <WrapPanel Orientation="Horizontal"
+                 ItemSpacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                 LineSpacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <Border Classes="chip">
+          <TextBlock x:Name="RegionChipLine"
+                     Classes="settings-chip-text"
+                     Text="{CompiledBinding RegionText}" />
+        </Border>
+        <Border Classes="chip">
+          <TextBlock x:Name="KindChipLine"
+                     Classes="settings-chip-text"
+                     Text="{CompiledBinding KindText}" />
+        </Border>
+        <Border Classes="chip"
+                IsVisible="{CompiledBinding CountryText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+          <TextBlock x:Name="CountryChipLine"
+                     Classes="settings-chip-text"
+                     Text="{CompiledBinding CountryText}" />
+        </Border>
+      </WrapPanel>
+
+      <TextBlock x:Name="ResidencyLine"
+                 Classes="settings-help"
+                 IsVisible="{CompiledBinding ResidencyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding ResidencyText}" />
+      <TextBlock x:Name="ListingNoteLine"
+                 Classes="settings-help"
+                 IsVisible="{CompiledBinding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding Note}" />
+      <TextBlock x:Name="ConfiguredLine"
+                 Classes="tone-success settings-help"
+                 IsVisible="{CompiledBinding ConfiguredText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding ConfiguredText}" />
+      <TextBlock x:Name="BaseUrlLine"
+                 Classes="muted settings-mono"
+                 IsVisible="{CompiledBinding BaseAddressText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding BaseAddressText}" />
+      <TextBlock x:Name="ListingSignInLine"
+                 Classes="settings-help"
+                 IsVisible="{CompiledBinding SignInText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding SignInText}" />
+
+      <!-- The coding plan: the vendor's rule text, its tags, the tiers and the plan address, as text that can be selected. -->
+      <StackPanel x:Name="ListingPlanBlock"
+                  IsVisible="{CompiledBinding HasPlan}"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <SelectableTextBlock x:Name="PlanRuleLine"
+                             Classes="settings-selectable settings-body"
+                             Text="{CompiledBinding PlanRuleText}"
+                             AutomationProperties.Name="{CompiledBinding PlanRuleText}" />
+        <ItemsControl x:Name="PlanTagRows"
+                      ItemsSource="{CompiledBinding PlanTags}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <Border Classes="chip"
+                      Margin="0,0,8,4">
+                <TextBlock Classes="settings-chip-text"
+                           Text="{CompiledBinding .}" />
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <ItemsControl x:Name="PlanTierRows"
+                      ItemsSource="{CompiledBinding PlanTierLines}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <SelectableTextBlock Classes="settings-selectable"
+                                   Text="{CompiledBinding .}"
+                                   AutomationProperties.Name="{CompiledBinding .}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock x:Name="PlanHostLine"
+                   Classes="settings-help"
+                   Text="{CompiledBinding PlanHostText}" />
+      </StackPanel>
+
+      <Button x:Name="SetupButton"
+              Classes="sm"
+              HorizontalAlignment="Left"
+              Content="{x:Static models:ProviderListingCopy.SetupActionLabel}"
+              IsVisible="{CompiledBinding CanBeginSetup}"
+              AutomationProperties.Name="{CompiledBinding SetupActionName}"
+              Click="OnSetupClick" />
+
+      <!-- The setup form: route, base URL placeholders, model ids and the masked key. -->
+      <Border x:Name="SetupForm"
+              IsVisible="{CompiledBinding IsSetupOpen}"
+              BorderBrush="{DynamicResource Autonogrammer.Color.Border}"
+              BorderThickness="0,1,0,0"
+              Padding="0,12,0,0">
+        <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+          <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                      IsVisible="{CompiledBinding HasRouteChoice}">
+            <TextBlock Classes="settings-label"
+                       Text="{x:Static models:ProviderListingCopy.RouteLabel}" />
+            <ComboBox x:Name="RouteBox"
+                      HorizontalAlignment="Stretch"
+                      ItemsSource="{CompiledBinding Routes}"
+                      SelectedItem="{CompiledBinding SelectedRoute, Mode=TwoWay}"
+                      AutomationProperties.Name="{CompiledBinding RouteFieldName}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="models:ProviderListingRoute">
+                  <TextBlock Classes="settings-mono"
+                             Text="{CompiledBinding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+
+          <TextBlock x:Name="AuthLine"
+                     Classes="settings-help"
+                     Text="{CompiledBinding AuthText}" />
+
+          <ItemsControl x:Name="UrlInputRows"
+                        ItemsSource="{CompiledBinding UrlInputs}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="models:ProviderListingUrlInput">
+                <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                            Margin="0,0,0,8">
+                  <TextBlock Classes="settings-label"
+                             Text="{CompiledBinding Label}" />
+                  <TextBox Classes="settings-mono"
+                           Classes.invalid="{CompiledBinding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           Text="{CompiledBinding Value, Mode=TwoWay}"
+                           PlaceholderText="{CompiledBinding Hint}"
+                           AutomationProperties.Name="{CompiledBinding FieldName}" />
+                  <TextBlock Classes="settings-help"
+                             IsVisible="{CompiledBinding Help, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                             Text="{CompiledBinding Help}" />
+                  <TextBlock Classes="tone-error small"
+                             IsVisible="{CompiledBinding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                             Text="{CompiledBinding Error}" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <StackPanel x:Name="ModelIdsBlock"
+                      Spacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                      IsVisible="{CompiledBinding HasModelIdsField}">
+            <TextBlock Classes="settings-label"
+                       Text="{x:Static models:ProviderListingCopy.ModelIdsLabel}" />
+            <TextBox x:Name="ModelIdsBox"
+                     Classes="settings-mono"
+                     Text="{CompiledBinding ModelIdsText, Mode=TwoWay}"
+                     AutomationProperties.Name="{CompiledBinding ModelIdsFieldName}" />
+            <TextBlock x:Name="ModelIdsHelpLine"
+                       Classes="settings-help"
+                       Text="{CompiledBinding ModelIdsHelp}" />
+          </StackPanel>
+
+          <!-- The key: a masked entry that lives only in the draft. It is empty again as soon as a save attempt ends. The operator can turn key entry off: the field is then disabled and its reason shows. -->
+          <TextBlock x:Name="KeyDisabledLine"
+                     Classes="tone-warning settings-body"
+                     IsVisible="{CompiledBinding IsKeyDisabled}"
+                     Text="{CompiledBinding KeyDisabledReason}"
+                     AutomationProperties.LiveSetting="Polite"
+                     AutomationProperties.Name="{CompiledBinding KeyDisabledReason}" />
+          <ContentControl x:Name="KeyHost"
+                          IsEnabled="{CompiledBinding IsKeyEnabled}"
+                          Content="{CompiledBinding ApiKey}">
+            <ContentControl.ContentTemplate>
+              <DataTemplate x:DataType="models:ApiKeyDraft">
+                <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+                  <TextBlock Classes="settings-label"
+                             Text="{CompiledBinding FieldLabel}" />
+                  <TextBox x:Name="ListingKeyBox"
+                           Classes="mono"
+                           PasswordChar="&#8226;"
+                           Text="{CompiledBinding Entry, Mode=TwoWay}"
+                           IsReadOnly="{CompiledBinding IsSaving}"
+                           AutomationProperties.Name="{CompiledBinding FieldLabel}" />
+                  <TextBlock Classes="tone-error small"
+                             IsVisible="{CompiledBinding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                             Text="{CompiledBinding Error}" />
+                  <TextBlock Classes="settings-help"
+                             Text="{CompiledBinding KeyStorageNote}" />
+                </StackPanel>
+              </DataTemplate>
+            </ContentControl.ContentTemplate>
+          </ContentControl>
+
+          <!-- A coding plan asks for a tick that the vendor's rule text was read. Adding is refused until it is ticked. -->
+          <CheckBox x:Name="PlanRuleBox"
+                    IsVisible="{CompiledBinding RequiresPlanRule}"
+                    IsChecked="{CompiledBinding PlanRuleAccepted, Mode=TwoWay}"
+                    Content="{x:Static models:ProviderListingCopy.PlanRuleAcceptLabel}"
+                    AutomationProperties.Name="{CompiledBinding PlanRuleAcceptName}" />
+
+          <StackPanel Orientation="Horizontal"
+                      Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+            <Button x:Name="AddButton"
+                    Classes="primary sm"
+                    Content="{x:Static models:ProviderListingCopy.AddActionLabel}"
+                    IsEnabled="{CompiledBinding !IsBusy}"
+                    AutomationProperties.Name="{CompiledBinding AddActionName}"
+                    Click="OnAddClick" />
+            <Button x:Name="CancelSetupButton"
+                    Classes="ghost sm"
+                    Content="{x:Static models:ProviderListingCopy.CancelActionLabel}"
+                    AutomationProperties.Name="{x:Static models:ProviderListingCopy.CancelActionLabel}"
+                    Click="OnCancelClick" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <TextBlock x:Name="ListingActionLine"
+                 Classes="muted small"
+                 IsVisible="{CompiledBinding ActionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding ActionText}"
+                 AutomationProperties.LiveSetting="Polite"
+                 AutomationProperties.Name="{CompiledBinding ActionText}" />
+      <TextBlock x:Name="ListingErrorLine"
+                 Classes="tone-error small"
+                 IsVisible="{CompiledBinding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Text="{CompiledBinding ErrorText}"
+                 AutomationProperties.LiveSetting="Assertive"
+                 AutomationProperties.Name="{CompiledBinding ErrorText}" />
+
+      <!-- Where the facts come from, as text that can be selected: the source page, the documentation and the page where a key is created. -->
+      <SelectableTextBlock x:Name="ListingSourceLine"
+                           Classes="settings-selectable settings-mono"
+                           Text="{CompiledBinding SourceText}"
+                           AutomationProperties.Name="{CompiledBinding SourceText}" />
+      <SelectableTextBlock x:Name="ListingDocsLine"
+                           Classes="settings-selectable settings-mono"
+                           IsVisible="{CompiledBinding DocsText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           Text="{CompiledBinding DocsText}"
+                           AutomationProperties.Name="{CompiledBinding DocsText}" />
+      <SelectableTextBlock x:Name="ListingKeyPageLine"
+                           Classes="settings-selectable settings-mono"
+                           IsVisible="{CompiledBinding KeyPageText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           Text="{CompiledBinding KeyPageText}"
+                           AutomationProperties.Name="{CompiledBinding KeyPageText}" />
+
+    </StackPanel>
+  </Border>
+
+</UserControl>

@@ -11,14 +11,14 @@ Custom commands are single markdown files that run when you type their name. Ski
 
 ## 1. Inventory
 
-1. List the command files: `commands/*.md` in `.ompos`, `.omp`, `.cursor`, `.claude`, `.codex` and `.agents`, in the workspace root and (only if the user asks) in the home directory.
+1. List the command files: `commands/*.md` in `.autonogrammer`, `.omp`, `.cursor`, `.claude`, `.codex` and `.agents`, in the workspace root and (only if the user asks) in the home directory.
 2. Read each one. Record its name (the file name without `.md`), its `description` and `argument-hint` frontmatter if present, and its body.
 3. If the user asked to include rules, list `.mdc` rules that have a `description` and neither `alwaysApply: true` nor `globs`: these are the "agent decides" rules, and they map naturally to skills. Leave always-applied and file-scoped rules alone and say why.
 4. Show the user a table: source file, proposed skill name, what will change. If there is nothing to convert, say so and stop.
 
 ## 2. Confirm
 
-Ask which items to convert (default: all listed) and the destination folder (default `.ompos/skills`, or the folder the repository already uses for skills). Do not write anything before the user answers.
+Ask which items to convert (default: all listed) and the destination folder (default `.autonogrammer/skills`, or the folder the repository already uses for skills). Do not write anything before the user answers.
 
 ## 3. Convert each item
 
@@ -33,7 +33,7 @@ For a confirmed rule, create the same kind of folder from its description and bo
 ## 4. Check
 
 1. Re-read every new file: frontmatter closed with `---`, name equals the folder, body present.
-2. Confirm the skill shows up where the slash menu looks (the destination must be one of the skills folders OmpOS reads).
+2. Confirm the skill shows up where the slash menu looks (the destination must be one of the skills folders Autonogrammer reads).
 3. Report what was created, what was skipped and why.
 
 ## 5. The originals

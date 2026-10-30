@@ -2,12 +2,12 @@
 
 - Status: Accepted
 - Date: 2026-10-22
-- Deciders: ompos-maintainers
+- Deciders: autonogrammer-maintainers
 - Scope: the code editor for ADE-09 (`docs/plans/ade-harness-plan.md`): tabs over open files, syntax highlighting for C#, TypeScript, JSON, YAML and Markdown, and find with a match count and moves between matches. Covers the NuGet pins for the editor. Does not cover the workspace tree (ADE-10), diff review (ADE-11), inline edit (ADE-12), saving to disk, or the shell wiring, which the orchestrator does.
 
 ## Context
 
-ADE-09 needs an editor the native head can show. The presentation models already exist in `src/OmpOS.Presentation/Editor`: `TextDocument`, `EditorTabs`, `EditorTab`, `DocumentFindModel` and `TextMatch`. The native head binds them and holds no copy. Central package management is on with transitive pinning (`CentralPackageTransitivePinningEnabled`), so every package in the editor's graph needs a pin in `Directory.Packages.props`.
+ADE-09 needs an editor the native head can show. The presentation models already exist in `src/Autonogrammer.Presentation/Editor`: `TextDocument`, `EditorTabs`, `EditorTab`, `DocumentFindModel` and `TextMatch`. The native head binds them and holds no copy. Central package management is on with transitive pinning (`CentralPackageTransitivePinningEnabled`), so every package in the editor's graph needs a pin in `Directory.Packages.props`.
 
 The plan names "AvaloniaEdit 12.0.0". On NuGet the 12.x line is published as `Avalonia.AvaloniaEdit`. The id `AvaloniaEdit` stops at 0.10.12, so the pin uses `Avalonia.AvaloniaEdit` at 12.0.0.
 
@@ -15,7 +15,7 @@ The plan names "AvaloniaEdit 12.0.0". On NuGet the 12.x line is published as `Av
 
 1. The editor control is `Avalonia.AvaloniaEdit` 12.0.0. Highlighting uses `AvaloniaEdit.TextMate` 12.0.0 on top of TextMate grammars.
 2. The grammars come from `TextMateSharp.Grammars` 2.0.3, which runs on `TextMateSharp` 2.0.3. One package supplies all five languages (table below).
-3. The view lives in `apps/OmpOS.Native/Views/Editor`:
+3. The view lives in `apps/Autonogrammer.Native/Views/Editor`:
    - `EditorView` (XAML and code-behind) draws the tab strip, the find bar and the editor.
    - `EditorViewModel` wraps `EditorTabs` and the selected tab's `DocumentFindModel`. It copies neither.
    - `EditorTabItem` is the strip item for one tab; `EditorCommand` is the command it uses; `EditorLanguages` maps a file extension to its grammar scope.
@@ -52,15 +52,15 @@ Compatibility: `AvaloniaEdit.TextMate` 12.0.0 declares `TextMateSharp` 2.0.3 and
 
 ## Pins
 
-`Directory.Packages.props` gains a `Code editor and TextMate highlighting (ADE-09, ADR-0007)` group with `Avalonia.AvaloniaEdit` 12.0.0, `AvaloniaEdit.TextMate` 12.0.0, `TextMateSharp` 2.0.3, `TextMateSharp.Grammars` 2.0.3 and `Onigwrap` 1.0.10. The last three are transitive and are pinned because of central transitive pinning. `apps/OmpOS.Native/OmpOS.Native.csproj` adds `Avalonia.AvaloniaEdit`, `AvaloniaEdit.TextMate` and `TextMateSharp.Grammars` references without versions. The test project needed no change.
+`Directory.Packages.props` gains a `Code editor and TextMate highlighting (ADE-09, ADR-0007)` group with `Avalonia.AvaloniaEdit` 12.0.0, `AvaloniaEdit.TextMate` 12.0.0, `TextMateSharp` 2.0.3, `TextMateSharp.Grammars` 2.0.3 and `Onigwrap` 1.0.10. The last three are transitive and are pinned because of central transitive pinning. `apps/Autonogrammer.Native/Autonogrammer.Native.csproj` adds `Avalonia.AvaloniaEdit`, `AvaloniaEdit.TextMate` and `TextMateSharp.Grammars` references without versions. The test project needed no change.
 
 ## Evidence
 
-- Restore: `dotnet restore apps/OmpOS.Native/OmpOS.Native.csproj --force-evaluate` succeeded, and the lock file resolves the pinned versions.
-- Native build: `dotnet build apps/OmpOS.Native/OmpOS.Native.csproj --no-restore`, warnings as errors, reported 0 warnings and 0 errors.
-- Editor tests: `dotnet test tests/OmpOS.Native.Tests/OmpOS.Native.Tests.csproj --no-restore -- --filter-namespace "OmpOS.Native.Tests.Editor*"` reported 31 total, 31 passed, 0 failed, 0 skipped.
-- Full native test project: `dotnet test tests/OmpOS.Native.Tests/OmpOS.Native.Tests.csproj --no-restore`, the same day, reported 147 total, 147 passed, 0 failed, 0 skipped.
-- Coverage of the editor tests, in `tests/OmpOS.Native.Tests/Editor`:
+- Restore: `dotnet restore apps/Autonogrammer.Native/Autonogrammer.Native.csproj --force-evaluate` succeeded, and the lock file resolves the pinned versions.
+- Native build: `dotnet build apps/Autonogrammer.Native/Autonogrammer.Native.csproj --no-restore`, warnings as errors, reported 0 warnings and 0 errors.
+- Editor tests: `dotnet test tests/Autonogrammer.Native.Tests/Autonogrammer.Native.Tests.csproj --no-restore -- --filter-namespace "Autonogrammer.Native.Tests.Editor*"` reported 31 total, 31 passed, 0 failed, 0 skipped.
+- Full native test project: `dotnet test tests/Autonogrammer.Native.Tests/Autonogrammer.Native.Tests.csproj --no-restore`, the same day, reported 147 total, 147 passed, 0 failed, 0 skipped.
+- Coverage of the editor tests, in `tests/Autonogrammer.Native.Tests/Editor`:
   - `EditorTabsTests` (8): two files open as two tabs with the second selected; a tab opened while shown; clicking a tab selects it; clicking the selected tab keeps it checked; closing the selected tab selects its successor; closing the last tab empties the editor; Enter on a focused tab selects it; edits reach the tab's buffer and survive a switch.
   - `FindBarTests` (6): on a 10000-line fixture the count is 2000 case-insensitive and 1000 with match case; Enter and Shift+Enter move and wrap; F3 and Shift+F3 move, and the Next and Previous buttons move; match case visits only lowercase matches; a query with no matches shows "No matches" and disables the buttons; timing.
   - `FindBarKeyboardTests` (3): Tab reaches the find bar in order and then the editor; Escape returns focus to the editor; every editor control has its accessible name.
@@ -81,4 +81,4 @@ Compatibility: `AvaloniaEdit.TextMate` 12.0.0 declares `TextMateSharp` 2.0.3 and
 - The view does not dispose `EditorViewModel`. Whoever creates the view model owns it and disposes it.
 - Opening a file is the caller's job: `EditorViewModel.Open(relativePath, text)` takes the text, and the workspace layer reads it.
 - The token colours are DarkPlus colours, which are designed for a dark background. A development probe found the `TextEditor` background still unset after the TextMate installation, so the editor takes its surface from the Fluent theme. Contrast of the token colours on that surface is not measured. WCAG contrast for code tokens is an open item.
-- `apps/OmpOS.Native/packages.lock.json` and `tests/OmpOS.Native.Tests/packages.lock.json` change because of the restore. Both lock files are required for the new packages.
+- `apps/Autonogrammer.Native/packages.lock.json` and `tests/Autonogrammer.Native.Tests/packages.lock.json` change because of the restore. Both lock files are required for the new packages.

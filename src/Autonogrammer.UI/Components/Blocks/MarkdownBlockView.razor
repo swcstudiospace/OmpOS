@@ -1,0 +1,10 @@
+@namespace Autonogrammer.UI.Components.Blocks
+@using Autonogrammer.Contracts.Ui
+@using Autonogrammer.Presentation.Services
+<div class="autonogrammer-block autonogrammer-markdown">@((MarkupString)MarkdownRenderer.ToHtml(Block.Markdown))</div>
+
+@code {
+    /// <summary>Gets the markdown block to render as sanitized HTML.</summary>
+    [Parameter, EditorRequired]
+    public MarkdownBlock Block { get; set; } = null!;
+}

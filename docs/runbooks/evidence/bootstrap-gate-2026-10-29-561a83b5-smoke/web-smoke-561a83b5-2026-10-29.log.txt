@@ -1,0 +1,40 @@
+2026-10-29T16:24:42.636Z step 1: load app
+2026-10-29T16:25:29.434Z screenshot web-first-render-561a83b5-2026-10-29.png
+2026-10-29T16:25:29.434Z step 2: axe, empty state
+2026-10-29T16:25:33.924Z screenshot web-axe-empty-561a83b5-2026-10-29.png
+2026-10-29T16:25:33.924Z step 3: send probe prompt
+2026-10-29T16:25:57.740Z step 4: axe, after response
+2026-10-29T16:26:04.019Z screenshot web-axe-after-response-561a83b5-2026-10-29.png
+2026-10-29T16:26:04.825Z screenshot web-vertical-slice-561a83b5-2026-10-29.webp
+2026-10-29T16:26:04.825Z step 5: reload and reopen conversation
+2026-10-29T16:26:27.022Z step 6: skip link on fresh load
+2026-10-29T16:26:43.542Z screenshot web-skip-link-focused-561a83b5-2026-10-29.png
+2026-10-29T16:26:43.542Z step 7: error banner, keyboard and axe
+2026-10-29T16:26:53.437Z screenshot web-error-banner-561a83b5-2026-10-29.png
+2026-10-29T16:26:53.445Z accessibility checks
+2026-10-29T16:26:53.446Z a11y step connect
+2026-10-29T16:27:20.227Z a11y step routes
+2026-10-29T16:27:54.026Z a11y step keyboard
+2026-10-29T16:29:31.822Z a11y step axe
+2026-10-29T16:31:54.331Z a11y step media
+2026-10-29T16:33:53.522Z a11y step reflow
+2026-10-29T16:37:12.527Z a11y step target-size
+2026-10-29T16:40:16.817Z a11y step text-spacing
+2026-10-29T16:44:45.836Z a11y findings:
+severity | check            | where                        | id                         | message
+-------- | ---------------- | ------------------------     | ------------------------   | ------------------------
+warning  | keyboard         | agents view @ 320x568        | backward-path-set-differs  | 1 stop(s) are met by one direction of the walk only (an element that appears or goes away as focus moves): body:2>div:2…
+warning  | media            | prefers-contrast agents @ 1… | icon-button-without-bound… | 2 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autono…
+warning  | media            | prefers-contrast kanban @ 1… | icon-button-without-bound… | 1 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autono…
+warning  | media            | prefers-contrast about @ 14… | icon-button-without-bound… | 1 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autono…
+warning  | media            | prefers-contrast settings-d… | icon-button-without-bound… | 3 icon-only button(s) have no border under prefers-contrast; they rely on the icon and the focus outline: button.autono…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 1440px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 1728px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 2016px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 2304px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 2592px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 2880px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+warning  | reflow           | kanban @ 1280x1024@4x        | wide-content-in-undeclare… | content reaches 3168px inside div.autonogrammer-kanban-columns <div class="autonogrammer-kanban-columns" role="group" a…
+error    | text-spacing     | 1440x900                     | app-not-rendered           | the app did not render at http://127.0.0.1:5180/ within 150 s
+2026-10-29T16:44:45.838Z a11y counters: {"connect:views":1,"axe:runs":18,"reflow:views":26,"target-size:targets":420,"text-spacing:views":10,"routes:inapp":7,"first-load-focus:loads":1,"keyboard:states":3,"keyboard:stops":100,"dialog:tab-presses":60,"axe:states":16,"media:states":16,"media:forced-colors:controls":102,"media:forced-colors-stops":21,"media:prefers-contrast:controls":102,"media:reduced-motion:views":4,"media:dark:axe-runs":4,"reflow:states":24,"target-size:states":16,"text-spacing:states":8}
+2026-10-29T16:44:45.838Z a11y skipped (routes): direct loads of /kanban, /sessions/<id>, /settings, /about and an unknown path: the static server of the real-bundle smoke has no SPA rewrite (covered by the Demo half)

@@ -1,6 +1,6 @@
 # Lens 4: Pattern fidelity
 
-Repository `/root/src/repos/ompos` at commit `59e9dd1` (branch `feat/v0.9.2-hardening`). Read-only. Scope: tracked files under `src/` and `apps/`, excluding `apps/OmpOS.Web/wwwroot/lib`. `tests/` and `services/` appear only where a scan says so.
+Repository `/root/src/repos/autonogrammer` at commit `59e9dd1` (branch `feat/v0.9.2-hardening`). Read-only. Scope: tracked files under `src/` and `apps/`, excluding `apps/Autonogrammer.Web/wwwroot/lib`. `tests/` and `services/` appear only where a scan says so.
 
 QUALITY_BAR item: **Pattern fidelity** (plan text: mixed conventions for logging, time, HTTP clients, sync and async style, duplicated helpers). `docs/quality/quality-bar.md` defines no pattern rule, and `AGENTS.md:216-218` says "Conventions not yet established". So "drift" below means an undocumented split, judged from uniformity within a project and from the absence of any written rule. It does not mean a breach of a stated rule.
 
@@ -10,24 +10,24 @@ Total: 14 rows, under the cap of 40. High 0, Medium 1, Low 13. Disposition count
 
 | file:line | QUALITY_BAR item | severity | disposition | evidence (120 characters or fewer) |
 |---|---|---|---|---|
-| `src/OmpOS.Native.Views/MainView.axaml.cs:704,715` | Pattern fidelity: logging mechanism | Medium | fix | `Trace.TraceError` is the only report of close faults; no Trace listener in shipped code, tests only |
-| `src/OmpOS.Workflows/IWorkflowContext.cs:13` | Pattern fidelity: time source | Low | fix | Second clock seam beside TimeProvider; `UtcNow` has no reader in src or tests; its ADR-0003 reason is superseded |
-| `src/OmpOS.Native.Views/MainView.axaml.cs:376,419` | Pattern fidelity: time source | Low | defer | `DateTimeOffset.UtcNow` in head code-behind; session services take an injected TimeProvider (SessionService.cs:85) |
-| `apps/OmpOS.Web/Services/SseEventStream.cs:313` | Pattern fidelity: time source | Low | accept | Receive-time stamp in static ConvertFrame; wire data is parsed as payload only (:293, :327), so no server time |
-| `src/OmpOS.Harness.Workspace/WorkspaceSearch.cs:50` | Pattern fidelity: sync and async style | Low | fix | Task.Run offloads a synchronous Search with no stated reason; HookRunner, PluginHost, HerdrSessionStore comment theirs |
-| `src/OmpOS.EngineHost/RemoteEngineHost.cs:61` | Pattern fidelity: HTTP clients | Low | defer | Four HttpClient-taking types (also CompletionClient:27, AgentOsProvider:53, RailwaySwarmProvider:67) never constructed |
-| `src/OmpOS.SessionRuns/SessionRunActivities.cs:59` | Pattern fidelity: convention naming | Low | fix | One TimeProvider field, three names: `_time` here, `_clock` in 3 files, `_timeProvider` in 4 files |
-| `tests/OmpOS.Api.IntegrationTests/FixedTimeProvider.cs:6` | Pattern fidelity: duplicated helpers | Low | fix | Same one-instant clock as tests/OmpOS.Sessions.Tests/FixedTimeProvider.cs:4; bodies match |
-| `tests/OmpOS.Coordination.Tests/ManualTimeProvider.cs:4` | Pattern fidelity: duplicated helpers | Low | fix | Same Advance clock as tests/OmpOS.Sandbox.Tests/FakeTimeProvider.cs:6; class name also in Herdr.Tests:7 |
-| `src/OmpOS.Harness.Workspace/WorkspaceConventions.cs:1` | Pattern fidelity: namespace matches folder | Low | defer | `namespace OmpOS.Workspace;` under folder OmpOS.Harness.Workspace; 26 of 26 files drop the Harness prefix |
-| `src/OmpOS.Harness.Worktrees/WorktreeRunId.cs:3` | Pattern fidelity: namespace matches folder | Low | defer | `namespace OmpOS.Worktrees;` under OmpOS.Harness.Worktrees; 11 of 11 files drop the Harness prefix |
-| `src/OmpOS.Native.Views/Views/Blocks/ToolCallBlockView.axaml.cs:5` | Pattern fidelity: namespace matches folder | Low | accept | `Views/` absent from the namespace in all 60 files under Views/; uniform, so accept only if documented |
-| `src/OmpOS.Harness.Rpc/RpcProtocol/RpcPromptError.cs:1` | Pattern fidelity: namespace matches folder | Low | accept | `RpcProtocol/` absent from the namespace; all 18 files in the folder declare OmpOS.Harness.Rpc |
-| `src/OmpOS.Sandbox.Abstractions/Models/SandboxCapability.cs:3` | Pattern fidelity: namespace matches folder | Low | accept | `Models/` absent from the namespace; all 17 files in the folder declare OmpOS.Sandbox.Abstractions |
+| `src/Autonogrammer.Native.Views/MainView.axaml.cs:704,715` | Pattern fidelity: logging mechanism | Medium | fix | `Trace.TraceError` is the only report of close faults; no Trace listener in shipped code, tests only |
+| `src/Autonogrammer.Workflows/IWorkflowContext.cs:13` | Pattern fidelity: time source | Low | fix | Second clock seam beside TimeProvider; `UtcNow` has no reader in src or tests; its ADR-0003 reason is superseded |
+| `src/Autonogrammer.Native.Views/MainView.axaml.cs:376,419` | Pattern fidelity: time source | Low | defer | `DateTimeOffset.UtcNow` in head code-behind; session services take an injected TimeProvider (SessionService.cs:85) |
+| `apps/Autonogrammer.Web/Services/SseEventStream.cs:313` | Pattern fidelity: time source | Low | accept | Receive-time stamp in static ConvertFrame; wire data is parsed as payload only (:293, :327), so no server time |
+| `src/Autonogrammer.Harness.Workspace/WorkspaceSearch.cs:50` | Pattern fidelity: sync and async style | Low | fix | Task.Run offloads a synchronous Search with no stated reason; HookRunner, PluginHost, HerdrSessionStore comment theirs |
+| `src/Autonogrammer.EngineHost/RemoteEngineHost.cs:61` | Pattern fidelity: HTTP clients | Low | defer | Four HttpClient-taking types (also CompletionClient:27, AgentOsProvider:53, RailwaySwarmProvider:67) never constructed |
+| `src/Autonogrammer.SessionRuns/SessionRunActivities.cs:59` | Pattern fidelity: convention naming | Low | fix | One TimeProvider field, three names: `_time` here, `_clock` in 3 files, `_timeProvider` in 4 files |
+| `tests/Autonogrammer.Api.IntegrationTests/FixedTimeProvider.cs:6` | Pattern fidelity: duplicated helpers | Low | fix | Same one-instant clock as tests/Autonogrammer.Sessions.Tests/FixedTimeProvider.cs:4; bodies match |
+| `tests/Autonogrammer.Coordination.Tests/ManualTimeProvider.cs:4` | Pattern fidelity: duplicated helpers | Low | fix | Same Advance clock as tests/Autonogrammer.Sandbox.Tests/FakeTimeProvider.cs:6; class name also in Herdr.Tests:7 |
+| `src/Autonogrammer.Harness.Workspace/WorkspaceConventions.cs:1` | Pattern fidelity: namespace matches folder | Low | defer | `namespace Autonogrammer.Workspace;` under folder Autonogrammer.Harness.Workspace; 26 of 26 files drop the Harness prefix |
+| `src/Autonogrammer.Harness.Worktrees/WorktreeRunId.cs:3` | Pattern fidelity: namespace matches folder | Low | defer | `namespace Autonogrammer.Worktrees;` under Autonogrammer.Harness.Worktrees; 11 of 11 files drop the Harness prefix |
+| `src/Autonogrammer.Native.Views/Views/Blocks/ToolCallBlockView.axaml.cs:5` | Pattern fidelity: namespace matches folder | Low | accept | `Views/` absent from the namespace in all 60 files under Views/; uniform, so accept only if documented |
+| `src/Autonogrammer.Harness.Rpc/RpcProtocol/RpcPromptError.cs:1` | Pattern fidelity: namespace matches folder | Low | accept | `RpcProtocol/` absent from the namespace; all 18 files in the folder declare Autonogrammer.Harness.Rpc |
+| `src/Autonogrammer.Sandbox.Abstractions/Models/SandboxCapability.cs:3` | Pattern fidelity: namespace matches folder | Low | accept | `Models/` absent from the namespace; all 17 files in the folder declare Autonogrammer.Sandbox.Abstractions |
 
 ## 2. Scans
 
-All counts come from `git grep -c` or `git grep -n` over the scope named (`-- src apps ':!apps/OmpOS.Web/wwwroot/lib'` unless stated). The grep tool read the 30-file namespace sample and the code around each hit.
+All counts come from `git grep -c` or `git grep -n` over the scope named (`-- src apps ':!apps/Autonogrammer.Web/wwwroot/lib'` unless stated). The grep tool read the 30-file namespace sample and the code around each hit.
 
 ### 2.1 Time
 
@@ -44,9 +44,9 @@ All counts come from `git grep -c` or `git grep -n` over the scope named (`-- sr
 | Pattern | Scope | Hits | Classification |
 |---|---|---|---|
 | `new HttpClient\(` | src, apps | 0 | none |
-| `new HttpClient\b` (object-initializer form, extension) | src, apps | 2 | apps/OmpOS.Web/Program.cs:17, :24. Fine: standalone Blazor WebAssembly host; one `BaseAddress` per scoped consumer inside `AddScoped`. |
+| `new HttpClient\b` (object-initializer form, extension) | src, apps | 2 | apps/Autonogrammer.Web/Program.cs:17, :24. Fine: standalone Blazor WebAssembly host; one `BaseAddress` per scoped consumer inside `AddScoped`. |
 | `IHttpClientFactory\|AddHttpClient` | src, apps, whole tracked repo | 0 | none. No factory is used anywhere. |
-| `\bHttpClient\b` | src, apps | 7 files | apps/OmpOS.Web 3 (ApiSessionClient, SseEventStream, Program); src/OmpOS.EngineHost 1; src/OmpOS.Harness.Completion 1; src/OmpOS.Sandbox 2. The four library types take the client by constructor; no construction site exists (row 6). |
+| `\bHttpClient\b` | src, apps | 7 files | apps/Autonogrammer.Web 3 (ApiSessionClient, SseEventStream, Program); src/Autonogrammer.EngineHost 1; src/Autonogrammer.Harness.Completion 1; src/Autonogrammer.Sandbox 2. The four library types take the client by constructor; no construction site exists (row 6). |
 
 ### 2.3 Task.Run
 
@@ -61,16 +61,16 @@ Out of scope, for context: services/ and tests/ hold 8 more `Task.Run(` hits.
 
 | Folder | `\bTrace\.` | `ILogger` | `\bConsole\.` call sites | `LoggerMessage` |
 |---|---|---|---|---|
-| src/OmpOS.Native.Views | 2 | 0 | 0 | 0 |
-| src/OmpOS.Sandbox | 0 | 14 | 0 | 7 |
-| src/OmpOS.SessionRuns | 0 | 5 | 0 | 2 |
-| apps/OmpOS.Web | 0 | 2 | 0 | 1 |
+| src/Autonogrammer.Native.Views | 2 | 0 | 0 | 0 |
+| src/Autonogrammer.Sandbox | 0 | 14 | 0 | 7 |
+| src/Autonogrammer.SessionRuns | 0 | 5 | 0 | 2 |
+| apps/Autonogrammer.Web | 0 | 2 | 0 | 1 |
 | every other src/ and apps/ folder | 0 | 0 | 0 | 0 |
 
-- `\bConsole\.` has 12 raw hits, all `Microsoft.Windows.Console.ConPTY` in `packages.lock.json` (apps/OmpOS.Android 6, apps/OmpOS.Native 2, src/OmpOS.Harness.Terminal 2, src/OmpOS.Native.Views 2). False positives. Zero console calls in source.
+- `\bConsole\.` has 12 raw hits, all `Microsoft.Windows.Console.ConPTY` in `packages.lock.json` (apps/Autonogrammer.Android 6, apps/Autonogrammer.Native 2, src/Autonogrammer.Harness.Terminal 2, src/Autonogrammer.Native.Views 2). False positives. Zero console calls in source.
 - `LoggerMessage\|ILoggerFactory\|Debug\.Write\|Serilog\|ActivitySource\|Activity\.Current\|\bActivity\b`: 14 hits, of which 10 are logging (Sandbox 7, SessionRuns 2, Web 1). The other 4 are Android (MainActivity.cs:10 `[Activity(` attribute and 3 AndroidX lock lines), not logging.
-- `Trace\.Listeners` in src, apps: 0. The only listener is `tests/OmpOS.Native.Tests/MainViewCloseFailureTests.cs:34` and `:61`.
-- Native.Views does not reference `Microsoft.Extensions.Logging`. Its csproj lists Avalonia, AvaloniaEdit, TextMate, Terminal, Markdig and TextMateSharp (`src/OmpOS.Native.Views/OmpOS.Native.Views.csproj:9-14`). Only Sandbox and SessionRuns reference `Logging.Abstractions`.
+- `Trace\.Listeners` in src, apps: 0. The only listener is `tests/Autonogrammer.Native.Tests/MainViewCloseFailureTests.cs:34` and `:61`.
+- Native.Views does not reference `Microsoft.Extensions.Logging`. Its csproj lists Avalonia, AvaloniaEdit, TextMate, Terminal, Markdig and TextMateSharp (`src/Autonogrammer.Native.Views/Autonogrammer.Native.Views.csproj:9-14`). Only Sandbox and SessionRuns reference `Logging.Abstractions`.
 
 ### 2.5 Duplicated test helpers (tests/)
 
@@ -78,31 +78,31 @@ Out of scope, for context: services/ and tests/ hold 8 more `Task.Run(` hits.
 |---|---|---|
 | `class (ShellHarness\|TestAppBuilder\|FakeClock\|ManualTimeProvider\|FakeMcpToolRegistry\|RecordingSink)\b` | 6 | `ManualTimeProvider` in 2 projects: Coordination.Tests:4 and Herdr.Tests:7 (row 9; the Herdr body adds monotonic timestamps). `FakeClock`: 0. `ShellHarness` (Native.Tests/ShellHarness.cs:14), `TestAppBuilder` (Native.Tests/TestAppBuilder.cs:16), `FakeMcpToolRegistry` (Native.Tests/Mcp/FakeMcpToolRegistry.cs:12), `RecordingSink` (Harness.Terminal.Tests/RecordingSink.cs:8): one definition each. Fine. |
 | `class [A-Za-z]*(CapturingLogger\|CapturingLoggerProvider\|RecordingLogger)\b` (extension) | 3 | Sandbox.Tests/CapturingLogger.cs:10 (`CapturingLogger<T>`) and Api.IntegrationTests/CapturingLoggerProvider.cs:12 with nested `CapturingLogger` at :37. Different shapes, not duplicates. Fine. |
-| shared test support | n/a | `tests/OmpOS.Parity.Support` exists as a shared project, but no time fake uses it. |
+| shared test support | n/a | `tests/Autonogrammer.Parity.Support` exists as a shared project, but no time fake uses it. |
 
 ### 2.6 Namespace versus folder
 
-Sample: `git ls-files 'src/*.cs'` returned 638 files. Taking every 21st line (`sed -n '1~21p'`) gave 31; the last one (`src/OmpOS.Workflows/AssemblyMarker.cs`) was dropped to hold 30. The grep tool read `^namespace ` in each.
+Sample: `git ls-files 'src/*.cs'` returned 638 files. Taking every 21st line (`sed -n '1~21p'`) gave 31; the last one (`src/Autonogrammer.Workflows/AssemblyMarker.cs`) was dropped to hold 30. The grep tool read `^namespace ` in each.
 
 Result: 23 match, 7 mismatch.
 
 | File | Namespace | Folder or project | Kind |
 |---|---|---|---|
-| `src/OmpOS.Harness.Rpc/RpcProtocol/RpcPromptError.cs:1` | OmpOS.Harness.Rpc | Rpc/RpcProtocol | subfolder dropped (row 13) |
-| `src/OmpOS.Harness.Workspace/WorkspaceConventions.cs:1` | OmpOS.Workspace | OmpOS.Harness.Workspace | project prefix dropped (row 10) |
-| `src/OmpOS.Harness.Worktrees/WorktreeRunId.cs:3` | OmpOS.Worktrees | OmpOS.Harness.Worktrees | project prefix dropped (row 11) |
-| `src/OmpOS.Native.Views/Views/Blocks/ToolCallBlockView.axaml.cs:5` | OmpOS.Native.Views.Blocks | Views/Blocks | `Views/` dropped (row 12) |
-| `src/OmpOS.Native.Views/Views/Export/TranscriptExportView.axaml.cs:8` | OmpOS.Native.Views.Export | Views/Export | `Views/` dropped (row 12) |
-| `src/OmpOS.Native.Views/Views/Search/WorkspaceSearchModel.cs:3` | OmpOS.Native.Views.Search | Views/Search | `Views/` dropped (row 12) |
-| `src/OmpOS.Sandbox.Abstractions/Models/SandboxCapability.cs:3` | OmpOS.Sandbox.Abstractions | Models | subfolder dropped (row 14) |
+| `src/Autonogrammer.Harness.Rpc/RpcProtocol/RpcPromptError.cs:1` | Autonogrammer.Harness.Rpc | Rpc/RpcProtocol | subfolder dropped (row 13) |
+| `src/Autonogrammer.Harness.Workspace/WorkspaceConventions.cs:1` | Autonogrammer.Workspace | Autonogrammer.Harness.Workspace | project prefix dropped (row 10) |
+| `src/Autonogrammer.Harness.Worktrees/WorktreeRunId.cs:3` | Autonogrammer.Worktrees | Autonogrammer.Harness.Worktrees | project prefix dropped (row 11) |
+| `src/Autonogrammer.Native.Views/Views/Blocks/ToolCallBlockView.axaml.cs:5` | Autonogrammer.Native.Views.Blocks | Views/Blocks | `Views/` dropped (row 12) |
+| `src/Autonogrammer.Native.Views/Views/Export/TranscriptExportView.axaml.cs:8` | Autonogrammer.Native.Views.Export | Views/Export | `Views/` dropped (row 12) |
+| `src/Autonogrammer.Native.Views/Views/Search/WorkspaceSearchModel.cs:3` | Autonogrammer.Native.Views.Search | Views/Search | `Views/` dropped (row 12) |
+| `src/Autonogrammer.Sandbox.Abstractions/Models/SandboxCapability.cs:3` | Autonogrammer.Sandbox.Abstractions | Models | subfolder dropped (row 14) |
 
 Whole-folder counts, confirming the pattern is uniform within each folder:
 
-- `src/OmpOS.Native.Views/Views/`: 60 files. 55 declare `OmpOS.Native.Views.<sub>`, 5 declare `OmpOS.Native.Views` (the root of Views/), 0 declare `OmpOS.Native.Views.Views`.
-- `src/OmpOS.Harness.Rpc/RpcProtocol/`: 18 files, 18 declare `OmpOS.Harness.Rpc`.
-- `src/OmpOS.Sandbox.Abstractions/Models/`: 17 files, 17 declare `OmpOS.Sandbox.Abstractions`.
-- `src/OmpOS.Harness.Workspace/`: 26 files, 26 declare `OmpOS.Workspace`.
-- `src/OmpOS.Harness.Worktrees/`: 11 files, 11 declare `OmpOS.Worktrees`.
+- `src/Autonogrammer.Native.Views/Views/`: 60 files. 55 declare `Autonogrammer.Native.Views.<sub>`, 5 declare `Autonogrammer.Native.Views` (the root of Views/), 0 declare `Autonogrammer.Native.Views.Views`.
+- `src/Autonogrammer.Harness.Rpc/RpcProtocol/`: 18 files, 18 declare `Autonogrammer.Harness.Rpc`.
+- `src/Autonogrammer.Sandbox.Abstractions/Models/`: 17 files, 17 declare `Autonogrammer.Sandbox.Abstractions`.
+- `src/Autonogrammer.Harness.Workspace/`: 26 files, 26 declare `Autonogrammer.Workspace`.
+- `src/Autonogrammer.Harness.Worktrees/`: 11 files, 11 declare `Autonogrammer.Worktrees`.
 
 Rule on record: `.editorconfig:66` `dotnet_style_namespace_match_folder = true:suggestion`. Suggestion severity; not enforced by the build.
 

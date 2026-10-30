@@ -1,6 +1,6 @@
-# Contributing to OmpOS
+# Contributing to Autonogrammer
 
-Thank you for helping. OmpOS is licensed under the GNU Affero General Public License v3.0 or later (`AGPL-3.0-or-later`). Everything below applies to every contribution.
+Thank you for helping. Autonogrammer is licensed under the GNU Affero General Public License v3.0 or later (`AGPL-3.0-or-later`). Everything below applies to every contribution.
 
 Community files: [Code of Conduct](CODE_OF_CONDUCT.md) · [Security policy](SECURITY.md) · [Support](SUPPORT.md) · [Pull request template](.github/PULL_REQUEST_TEMPLATE.md) · [Changelog](CHANGELOG.md).
 
@@ -14,7 +14,7 @@ Community files: [Code of Conduct](CODE_OF_CONDUCT.md) · [Security policy](SECU
 
 ## Licence of your contribution and the DCO sign-off
 
-OmpOS is distributed under `AGPL-3.0-or-later`. By submitting a contribution you state that you wrote it or have the right to submit it, and you agree that it is licensed to the project and its users under `AGPL-3.0-or-later`, the same licence as the rest of the repository.
+Autonogrammer is distributed under `AGPL-3.0-or-later`. By submitting a contribution you state that you wrote it or have the right to submit it, and you agree that it is licensed to the project and its users under `AGPL-3.0-or-later`, the same licence as the rest of the repository.
 
 Every commit must carry a `Signed-off-by` line, the [Developer Certificate of Origin 1.1](https://developercertificate.org/) sign-off. It certifies the statements in that text for the commit. Add it with `-s`:
 
@@ -35,10 +35,10 @@ Prerequisites: the .NET SDK pinned in `global.json` (`./bootstrap.sh` installs i
 | Goal | Command |
 | --- | --- |
 | The whole gate: secret scan, plugin tests, locked restore, warnings-as-errors build, tests, format check, web smoke with axe | `./bootstrap.sh` |
-| Locked restore | `dotnet restore OmpOS.Linux.slnf --locked-mode` |
-| Build | `dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror` |
-| Tests (needs the test services of `scripts/test-services.sh`, which the gate starts) | `dotnet test OmpOS.Linux.slnf -c Release --no-build` |
-| Format (the single rule source is `.editorconfig`) | `dotnet format OmpOS.Linux.slnf` |
+| Locked restore | `dotnet restore Autonogrammer.Linux.slnf --locked-mode` |
+| Build | `dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror` |
+| Tests (needs the test services of `scripts/test-services.sh`, which the gate starts on a pair of containers of its own; set `AUTONOGRAMMER_TEST_SERVICES_NAME` to give any other run its own pair when sessions share a host) | `dotnet test Autonogrammer.Linux.slnf -c Release --no-build` |
+| Format (the single rule source is `.editorconfig`) | `dotnet format Autonogrammer.Linux.slnf` |
 | Changelog check | `bash scripts/ci/check-changelog.sh` |
 
 A pull request is ready when `./bootstrap.sh` exits 0 on your branch. CI (`.github/workflows/ci.yml`) runs the same steps plus the vulnerable-package audit and the compose validation. The CI runs on the project's self-hosted runner pool; pull requests from forks are not run there, so a maintainer runs the gate for you.
@@ -49,8 +49,8 @@ A pull request is ready when `./bootstrap.sh` exits 0 on your branch. CI (`.gith
 - **One type per file** (Meziantou MA0048), sealed classes by default, file-scoped namespaces, XML documentation on public and internal members, `ArgumentNullException.ThrowIfNull` on parameters.
 - Library code uses `ConfigureAwait(false)`; tests use `.ConfigureAwait(true)` and `TestContext.Current.CancellationToken`. Explicit culture and ordinal comparers on strings. JSON uses source-generated contexts.
 - Tests are deterministic: inject `TimeProvider`, no sleeps, no network, no real `omp` in normal tests. A test that needs a real `omp` or `ssh` is a `[Fact]` with `Trait("Category", "Live")` behind an environment variable.
-- Desktop AXAML: compiled bindings with `x:DataType`, tokens through `{DynamicResource OmpOS.*}`, no literal colours or font families, an `AutomationProperties.Name` on every interactive control. Web: no inline script or style, WCAG 2.2 AA, a visible focus ring, reduced motion honoured.
-- Layering is enforced by `tests/OmpOS.ArchitectureTests`: apps, then services, then libraries, then contracts.
+- Desktop AXAML: compiled bindings with `x:DataType`, tokens through `{DynamicResource Autonogrammer.*}`, no literal colours or font families, an `AutomationProperties.Name` on every interactive control. Web: no inline script or style, WCAG 2.2 AA, a visible focus ring, reduced motion honoured.
+- Layering is enforced by `tests/Autonogrammer.ArchitectureTests`: apps, then services, then libraries, then contracts.
 - Add or update tests for behaviour you change, and never weaken an existing test.
 
 ## Pull request checklist
@@ -77,10 +77,10 @@ The [pull request template](.github/PULL_REQUEST_TEMPLATE.md) carries this list:
 - `.editorconfig` is the single rule source. Format before committing:
 
 ```sh
-dotnet format OmpOS.Linux.slnf
+dotnet format Autonogrammer.Linux.slnf
 ```
 
-- CI runs `dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore` and fails on drift.
+- CI runs `dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore` and fails on drift.
 
 ## Lock files
 
@@ -88,7 +88,7 @@ dotnet format OmpOS.Linux.slnf
 - `CI=true` in the environment enables locked restore locally, so any dependency change must relock. The command below relocks even when `CI=true` is set:
 
 ```sh
-dotnet restore OmpOS.Linux.slnf --force-evaluate -p:RestoreLockedMode=false
+dotnet restore Autonogrammer.Linux.slnf --force-evaluate -p:RestoreLockedMode=false
 ```
 
 - Never commit with an inconsistent lock file: locked restore fails with `NU1004`.
@@ -97,19 +97,19 @@ dotnet restore OmpOS.Linux.slnf --force-evaluate -p:RestoreLockedMode=false
 ## Adding a project
 
 1. Create the project under `src/`, `services/`, `apps/`, or `tests/` with the matching SDK and TFM (`net10.0`).
-2. Register it: `dotnet sln OmpOS.slnx add <path>` and append the path to `OmpOS.Linux.slnf` (skip the Android head there: the Linux filter excludes it).
-3. Add a one-line entry to the layer map in `tests/OmpOS.ArchitectureTests/LayerMap.cs`.
-4. Add a `ProjectReference` from `tests/OmpOS.ArchitectureTests` so the assembly lands in the test output.
+2. Register it: `dotnet sln Autonogrammer.slnx add <path>` and append the path to `Autonogrammer.Linux.slnf` (skip the Android head there: the Linux filter excludes it).
+3. Add a one-line entry to the layer map in `tests/Autonogrammer.ArchitectureTests/LayerMap.cs`.
+4. Add a `ProjectReference` from `tests/Autonogrammer.ArchitectureTests` so the assembly lands in the test output.
 5. Restore with `--force-evaluate` (and `-p:RestoreLockedMode=false` when `CI=true`) and keep the whole suite green.
 
 ## Plugin submodules
 
 - `plugins/claude-ultrathink`, `plugins/agent-swarm` and `plugins/agent-substrate` are git submodules pinned to commits on the sibling repositories. Clone with `--recurse-submodules` or run `git submodule update --init --recursive`.
 - `plugins/agent-substrate` is a private repository: without read access it stays empty, the gate treats that as a warning, and the substrate plugin reports Unavailable. Outside contributors do not need it.
-- Never edit sibling source inside OmpOS. Change it in the sibling repository, push it, then bump the pointer here.
+- Never edit sibling source inside Autonogrammer. Change it in the sibling repository, push it, then bump the pointer here.
 - Never pin a commit that is not on the sibling's remote: check `git ls-remote <url> <sha>` before committing the bump.
 - `.gitmodules` uses remote URLs, never local paths.
-- `plugins/gsd-core-omp` is tracked OmpOS code, not a submodule.
+- `plugins/gsd-core-omp` is tracked Autonogrammer code, not a submodule.
 - Full procedure, private-repository access and the CI secret: [docs/plugins.md](docs/plugins.md).
 
 ## TODO policy

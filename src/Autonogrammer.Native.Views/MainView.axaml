@@ -1,0 +1,476 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Autonogrammer.Native"
+             xmlns:copy="clr-namespace:Autonogrammer.Presentation.AgentPanel;assembly=Autonogrammer.Presentation"
+             xmlns:panel="clr-namespace:Autonogrammer.Native.Views.AgentPanel"
+             xmlns:set="clr-namespace:Autonogrammer.Presentation.Settings;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.MainView">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <!-- The rail is 240 px wide below the wide layout and 280 px from 1200 px up. MainView.axaml.cs sets the wide class. -->
+    <Style Selector="Border.rail">
+      <Setter Property="Width" Value="{DynamicResource Autonogrammer.Size.SessionListWidth}" />
+    </Style>
+    <Style Selector="Border.rail.wide">
+      <Setter Property="Width" Value="{DynamicResource Autonogrammer.Size.AgentRailWidth}" />
+    </Style>
+    <!-- The narrow rail has no room for the key chip beside "New omp terminal": the label would be cut to "New omp ...". The shortcut stays in the
+         tooltip and on the Keyboard page of Settings. -->
+    <Style Selector="Border.rail:not(.wide) Button#NewTerminalButton Border.kbd">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="TextBlock.tool-group">
+      <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Small}" />
+      <Setter Property="FontWeight" Value="{DynamicResource Autonogrammer.Font.Weight.Medium}" />
+      <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+      <Setter Property="Margin" Value="8,12,8,4" />
+    </Style>
+    <!-- The tabs of the top bar: a 28 px item with 12 px side padding and a medium label (spec 3.7). -->
+    <Style Selector="TabStrip.top-tabs TabStripItem">
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="FontSize" Value="{DynamicResource Autonogrammer.Font.Size.Label}" />
+      <Setter Property="FontWeight" Value="{DynamicResource Autonogrammer.Font.Weight.Medium}" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- Logical and keyboard order follows XAML order: skip link, the Agents and Kanban tabs (only when the head supplies a board), the rail
+       (view toggles, then the session list or the tool toggles) and the thread (header, pipeline strip, panel state, transcript or the omp
+       terminal, or the Agents or tool view that opens in its place, transcript search, run controls, confirmation bars, prompt or the
+       steer-only terminal composer, send, stop, side chats). The Kanban tab stands in for the rail and the thread while it is selected.
+       There is no region beside the rail and the thread. -->
+  <Panel>
+
+    <!-- The skip link is the first stop of the tab order. It leaves the layout flow and is transparent until it has focus (spec 4.2), so
+         assistive technology still lists it and pressing it still moves focus to the conversation. -->
+    <Button x:Name="SkipLink"
+            Classes="skip-link"
+            Content="Skip to conversation"
+            AutomationProperties.Name="Skip to conversation"
+            Click="OnSkipLinkClick" />
+
+    <DockPanel>
+
+      <!-- The top bar: the workspace folder name on the left, the Agents and Kanban tabs in the middle. The window keeps its native frame,
+           so the two inset columns stay at 8 px. The tabs exist only when the head supplied a Kanban board; arrow keys move between them
+           and Ctrl+Shift+A and Ctrl+Shift+K select them from anywhere. -->
+      <Border x:Name="TopBar"
+              DockPanel.Dock="Top"
+              Height="{DynamicResource Autonogrammer.Size.TitleBarHeight}"
+              Background="{DynamicResource Autonogrammer.Color.SurfaceSunken}"
+              BorderBrush="{DynamicResource Autonogrammer.Color.Border}"
+              BorderThickness="0,0,0,1">
+        <Grid ColumnDefinitions="Auto,Auto,*,Auto,*,Auto">
+
+          <Border x:Name="TopBarInsetLeft"
+                  Grid.Column="0"
+                  Width="8" />
+
+          <DockPanel x:Name="WorkspaceLabelHost"
+                     Grid.Column="1"
+                     MaxWidth="220"
+                     VerticalAlignment="Center">
+            <Path DockPanel.Dock="Left"
+                  Classes="tone-secondary"
+                  Data="M2 4.5a1 1 0 0 1 1-1h3l1.5 1.5H13a1 1 0 0 1 1 1v5.5a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1Z"
+                  Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                  Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                  Margin="0,0,6,0"
+                  Stretch="Uniform"
+                  StrokeThickness="1.5"
+                  StrokeLineCap="Round"
+                  StrokeJoin="Round"
+                  AutomationProperties.AccessibilityView="Raw" />
+            <TextBlock x:Name="WorkspaceLabel"
+                       FontWeight="{DynamicResource Autonogrammer.Font.Weight.Medium}"
+                       TextTrimming="CharacterEllipsis"
+                       MaxLines="1" />
+          </DockPanel>
+
+          <TabStrip x:Name="TopTabs"
+                    Grid.Column="3"
+                    Classes="top-tabs"
+                    VerticalAlignment="Center"
+                    IsVisible="False"
+                    SelectedIndex="0"
+                    AutomationProperties.Name="Main views">
+            <TabStripItem x:Name="AgentsTab"
+                          Content="Agents"
+                          AutomationProperties.Name="Agents" />
+            <TabStripItem x:Name="KanbanTab"
+                          Content="Kanban"
+                          AutomationProperties.Name="Kanban" />
+          </TabStrip>
+
+          <Border x:Name="TopBarInsetRight"
+                  Grid.Column="5"
+                  Width="8" />
+
+        </Grid>
+      </Border>
+
+      <Grid x:Name="RegionGrid" ColumnDefinitions="Auto,*">
+
+        <Border x:Name="RailRegion"
+                Grid.Column="0"
+                Classes="rail"
+                Background="{DynamicResource Autonogrammer.Color.SurfaceSunken}"
+                BorderBrush="{DynamicResource Autonogrammer.Color.Border}"
+                BorderThickness="0,0,1,0"
+                Padding="8,8,8,0"
+                AutomationProperties.Name="Agents rail">
+          <DockPanel>
+
+            <!-- The rail header: the two views of the rail as one segmented pair (two equal halves in a track), and the workspace sets button. -->
+            <Grid DockPanel.Dock="Top"
+                  ColumnDefinitions="*,Auto"
+                  ColumnSpacing="{DynamicResource Autonogrammer.Gap.Xs}"
+                  Margin="0,0,0,8">
+              <Border Grid.Column="0"
+                      Classes="segment-track">
+                <Grid ColumnDefinitions="*,*"
+                      ColumnSpacing="{DynamicResource Autonogrammer.Gap.Xxs}">
+                  <ToggleButton x:Name="SessionsViewToggle"
+                                Grid.Column="0"
+                                Classes="segment"
+                                Content="Sessions"
+                                IsChecked="True"
+                                AutomationProperties.Name="Sessions view" />
+                  <ToggleButton x:Name="ToolsViewToggle"
+                                Grid.Column="1"
+                                Classes="segment"
+                                Content="Tools"
+                                AutomationProperties.Name="Tools view" />
+                </Grid>
+              </Border>
+              <Button x:Name="WorkspacesButton"
+                      Grid.Column="1"
+                      Classes="ghost"
+                      Content="Folders"
+                      MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      ToolTip.Tip="Workspace sets: open several folders in one session"
+                      AutomationProperties.Name="Workspace sets" />
+            </Grid>
+
+            <!-- Where the next new session starts: this computer or a saved ssh environment. It exists only in a window that has a remote environments host. -->
+            <Expander x:Name="EnvironmentExpander"
+                      DockPanel.Dock="Top"
+                      IsVisible="False"
+                      Margin="0,0,0,8"
+                      AutomationProperties.Name="New session environment">
+              <Expander.HeaderTemplate>
+                <!-- The header names the current choice after the question; in the rail's narrow column it wraps instead of clipping the choice. -->
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                </DataTemplate>
+              </Expander.HeaderTemplate>
+              <ContentControl x:Name="EnvironmentHost" />
+            </Expander>
+
+            <Grid RowDefinitions="*,Auto">
+              <ContentControl x:Name="RailHost" />
+
+              <!-- The Tools view of the rail: every toggle that opens a tool or a panel. It stands in for the session list while Tools is checked. -->
+              <ScrollViewer x:Name="ToolsViewScroll"
+                            IsVisible="False"
+                            Focusable="False"
+                            IsTabStop="False"
+                            HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="ToolsViewHost">
+                  <TextBlock Classes="tool-group"
+                             Text="Panels" />
+                  <ToggleButton x:Name="AgentsToggle"
+                                Classes="nav"
+                                Content="Agents window"
+                                AutomationProperties.Name="Agents" />
+                  <ToggleButton x:Name="SideChatsToggle"
+                                Classes="nav"
+                                Content="Side chats"
+                                AutomationProperties.Name="Show side chats" />
+                  <ToggleButton x:Name="SuggestionsToggle"
+                                Classes="nav"
+                                Content="Inline suggestions"
+                                AutomationProperties.Name="Inline suggestions" />
+
+                  <TextBlock Classes="tool-group"
+                             Text="Workspace" />
+                  <ToggleButton x:Name="EditorToggle"
+                                Classes="nav"
+                                Content="Editor"
+                                AutomationProperties.Name="Editor" />
+                  <ToggleButton x:Name="ExplorerToggle"
+                                Classes="nav"
+                                Content="Explorer"
+                                AutomationProperties.Name="Explorer" />
+                  <ToggleButton x:Name="TerminalToggle"
+                                Classes="nav"
+                                Content="Terminal"
+                                AutomationProperties.Name="Terminal" />
+                  <ToggleButton x:Name="DiffToggle"
+                                Classes="nav"
+                                Content="Diff review"
+                                AutomationProperties.Name="Diff review" />
+                  <ToggleButton x:Name="InlineEditToggle"
+                                Classes="nav"
+                                Content="Inline edit"
+                                AutomationProperties.Name="Inline edit" />
+                  <ToggleButton x:Name="ConventionsToggle"
+                                Classes="nav"
+                                Content="Conventions"
+                                AutomationProperties.Name="Workspace conventions" />
+                  <ToggleButton x:Name="WorkspaceSearchToggle"
+                                Classes="nav"
+                                Content="Workspace search"
+                                AutomationProperties.Name="Workspace search" />
+
+                  <TextBlock Classes="tool-group"
+                             Text="Session" />
+                  <ToggleButton x:Name="McpToggle"
+                                Classes="nav"
+                                Content="MCP tools"
+                                AutomationProperties.Name="MCP tools" />
+                  <ToggleButton x:Name="ExportToggle"
+                                Classes="nav"
+                                Content="Export"
+                                AutomationProperties.Name="Transcript export" />
+                  <ToggleButton x:Name="CheckpointsToggle"
+                                Classes="nav"
+                                Content="Checkpoints"
+                                AutomationProperties.Name="Checkpoints" />
+                  <ToggleButton x:Name="WorktreesToggle"
+                                Classes="nav"
+                                Content="Worktrees"
+                                AutomationProperties.Name="Worktrees" />
+                  <ToggleButton x:Name="HookLogToggle"
+                                Classes="nav"
+                                Content="Hook run log"
+                                AutomationProperties.Name="Hook run log" />
+                </StackPanel>
+              </ScrollViewer>
+
+              <!-- The rail footer: a 40 px row under a hairline with the Settings gear on the right. It opens the Settings window and is the
+                   last stop of the rail, after the session list or the tool toggles. Ctrl+, does the same from anywhere. -->
+              <Border x:Name="RailFooter"
+                      Grid.Row="1"
+                      Margin="-8,0"
+                      Padding="8,0"
+                      MinHeight="{DynamicResource Autonogrammer.Size.TitleBarHeight}"
+                      BorderBrush="{DynamicResource Autonogrammer.Color.Border}"
+                      BorderThickness="0,1,0,0">
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+                  <Button x:Name="SettingsButton"
+                          Classes="icon ghost"
+                          MinWidth="{DynamicResource Autonogrammer.Size.IconButtonSm}"
+                          ToolTip.Tip="{x:Static local:MainView.SettingsTooltip}"
+                          AutomationProperties.Name="{x:Static set:SettingsCopy.WindowTitle}">
+                    <Path Data="M8 4.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8ZM8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1"
+                          Width="{DynamicResource Autonogrammer.Size.IconSize}"
+                          Height="{DynamicResource Autonogrammer.Size.IconSize}"
+                          Stretch="Uniform"
+                          StrokeLineCap="Round"
+                          StrokeJoin="Round"
+                          AutomationProperties.AccessibilityView="Raw" />
+                  </Button>
+                  <!-- About Autonogrammer: version, revision, licence and the source. It comes after Settings in the tab order. -->
+                  <Button x:Name="AboutButton"
+                          Classes="ghost"
+                          Content="About"
+                          MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          AutomationProperties.Name="About Autonogrammer" />
+                </StackPanel>
+              </Border>
+            </Grid>
+
+          </DockPanel>
+        </Border>
+
+        <Border x:Name="ThreadRegion"
+                Grid.Column="1"
+                MinWidth="{DynamicResource Autonogrammer.Size.ThreadMinWidth}"
+                Background="{DynamicResource Autonogrammer.Color.Surface}"
+                AutomationProperties.Name="Agent thread">
+          <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+
+            <!-- The thread header. Its own close and resume controls come first, then the plugin connection row (the pipeline strip). -->
+            <ContentControl x:Name="ThreadHeaderHost"
+                            Grid.Row="0" />
+
+            <ContentControl x:Name="PipelineHost"
+                            Grid.Row="1" />
+
+            <!-- The panel state: the empty, loading and error blocks of the whole panel. The view hides itself while the panel is ready. -->
+            <ContentControl x:Name="PanelStateHost"
+                            Grid.Row="2"
+                            Grid.RowSpan="13" />
+
+            <!-- The closed-agent notice. A lost agent shows its notice in the thread header. -->
+            <Border x:Name="ClosedNotice"
+                    Grid.Row="3"
+                    Classes="banner"
+                    Margin="16,8"
+                    Padding="0"
+                    ClipToBounds="True"
+                    IsVisible="False"
+                    AutomationProperties.Name="Agent closed notice">
+              <Grid ColumnDefinitions="Auto,*">
+                <Border Classes="banner-bar bar-secondary" />
+                <StackPanel Grid.Column="1"
+                            Margin="10,8"
+                            Spacing="{DynamicResource Autonogrammer.Gap.Xxs}">
+                  <TextBlock x:Name="ClosedHeading"
+                             FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+                             TextWrapping="Wrap" />
+                  <TextBlock x:Name="ClosedBody"
+                             Classes="muted"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Border>
+
+            <!-- The header of an open tool: its name and the control that closes it and returns focus to the toggle that opened it. -->
+            <Border x:Name="ToolHeader"
+                    Grid.Row="4"
+                    MinHeight="36"
+                    Background="{DynamicResource Autonogrammer.Color.SurfaceSunken}"
+                    BorderBrush="{DynamicResource Autonogrammer.Color.Border}"
+                    BorderThickness="0,0,0,1"
+                    Padding="16,0"
+                    IsVisible="False"
+                    AutomationProperties.Name="Tool header">
+              <DockPanel>
+                <Button x:Name="CloseToolButton"
+                        DockPanel.Dock="Right"
+                        Classes="ghost sm"
+                        Content="Close tool"
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="Close tool"
+                        Click="OnCloseToolClick" />
+                <TextBlock x:Name="ToolTitle"
+                           VerticalAlignment="Center"
+                           FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+              </DockPanel>
+            </Border>
+
+            <Grid Grid.Row="5">
+              <DockPanel x:Name="TranscriptRegion">
+
+                <Border x:Name="ErrorFrame"
+                        DockPanel.Dock="Top"
+                        Classes="banner"
+                        Margin="16,8"
+                        Padding="0"
+                        ClipToBounds="True"
+                        Background="{DynamicResource Autonogrammer.Color.DiffRemoved}"
+                        IsVisible="{ReflectionBinding #ErrorBanner.IsVisible}">
+                  <Grid ColumnDefinitions="Auto,Auto,*">
+                    <Border Classes="banner-bar bar-error" />
+                    <panel:StageIcon Grid.Column="1"
+                                     IconKey="{x:Static copy:StatusIcon.Cross}"
+                                     Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                                     Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                                     VerticalAlignment="Top"
+                                     Margin="10,10,0,0" />
+                    <!-- An engine failure that ends a turn. It is an alert: assistive technology announces it at once, and the next send clears it. -->
+                    <TextBlock x:Name="ErrorBanner"
+                               Grid.Column="2"
+                               Margin="8,8,10,8"
+                               TextWrapping="Wrap"
+                               IsVisible="False"
+                               AutomationProperties.Name="Engine error"
+                               AutomationProperties.LiveSetting="Assertive" />
+                  </Grid>
+                </Border>
+
+                <!-- The Changes bar: the files the agent changed, docked under the transcript. It stands in for nothing: it hides with the transcript
+                     while a tool or the Agents view is open, and hides itself while the session changed no file. -->
+                <ContentControl x:Name="ChangesHost"
+                                DockPanel.Dock="Bottom"
+                                HorizontalContentAlignment="Stretch"
+                                IsVisible="{ReflectionBinding #TranscriptHost.IsVisible}" />
+
+                <ContentControl x:Name="TranscriptHost"
+                                HorizontalContentAlignment="Stretch"
+                                VerticalContentAlignment="Stretch" />
+              </DockPanel>
+              <ContentControl x:Name="AgentsHost"
+                              IsVisible="False" />
+              <ContentControl x:Name="ToolHost"
+                              IsVisible="False" />
+            </Grid>
+
+            <ContentControl x:Name="SearchHost"
+                            Grid.Row="6"
+                            IsVisible="False" />
+
+            <TextBlock x:Name="StatusLine"
+                       Grid.Row="7"
+                       Classes="muted small"
+                       Padding="16,4"
+                       TextWrapping="Wrap"
+                       IsVisible="False"
+                       AutomationProperties.Name="Session status"
+                       AutomationProperties.LiveSetting="Polite" />
+
+            <ContentControl x:Name="RunControlsHost"
+                            Grid.Row="8" />
+
+            <ContentControl x:Name="ConfirmBarHost"
+                            Grid.Row="9" />
+
+            <!-- The Checkpoints timeline of the session: the turns the agent changed files in, with Rewind behind a confirmation. It hides itself until it is opened. -->
+            <ContentControl x:Name="CheckpointsHost"
+                            Grid.Row="10"
+                            HorizontalContentAlignment="Stretch" />
+
+            <!-- The custom mode chip sits above the composer; the queued messages hang under it. Both hide themselves while they have nothing to show. -->
+            <ContentControl x:Name="CustomModeHost"
+                            Grid.Row="11"
+                            HorizontalContentAlignment="Stretch" />
+
+            <ContentControl x:Name="ComposerHost"
+                            Grid.Row="12" />
+
+            <ContentControl x:Name="QueueHost"
+                            Grid.Row="13"
+                            HorizontalContentAlignment="Stretch" />
+
+            <ScrollViewer Grid.Row="14"
+                          MaxHeight="160"
+                          Focusable="False"
+                          IsTabStop="False"
+                          HorizontalScrollBarVisibility="Disabled">
+              <ContentControl x:Name="SideChatHost"
+                              IsVisible="False" />
+            </ScrollViewer>
+
+          </Grid>
+        </Border>
+
+        <!-- The Kanban tab. It covers both columns while it is selected, and the rail and the thread are hidden then, so neither is a tab stop. -->
+        <ContentControl x:Name="KanbanHost"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        IsVisible="False"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch" />
+
+      </Grid>
+
+    </DockPanel>
+
+    <!-- The conversation search: a palette over the window, top aligned, 560 px wide. Ctrl or Cmd+K opens it; the view hides itself while its model is closed. -->
+    <ContentControl x:Name="ConversationSearchHost"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Width="560"
+                    Margin="0,48,0,0"
+                    ZIndex="10" />
+
+  </Panel>
+
+</UserControl>

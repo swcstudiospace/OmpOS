@@ -2,15 +2,15 @@
 
 - Status: Accepted 2026-10-22
 - Date: 2026-10-22
-- Owner: ompos-maintainers
-- Deciders: ompos-maintainers
-- Scope: the version rules for presentation plugin contracts and harness plugin contracts in `src/OmpOS.Contracts/Plugins` and the plugin host. Gated by risk R-11 (`docs/plans/ade-harness-plan.md`, section 4 "Contract versioning"). Does not cover the HTTP API contract, MCP protocol versions or out-of-process tools (see Consequences).
+- Owner: autonogrammer-maintainers
+- Deciders: autonogrammer-maintainers
+- Scope: the version rules for presentation plugin contracts and harness plugin contracts in `src/Autonogrammer.Contracts/Plugins` and the plugin host. Gated by risk R-11 (`docs/plans/ade-harness-plan.md`, section 4 "Contract versioning"). Does not cover the HTTP API contract, MCP protocol versions or out-of-process tools (see Consequences).
 
 ## Context
 
 In-process plugins are loaded into the host process as .NET assemblies (plan section 4, "In-process first"). They are compiled against a contract assembly. If a contract changes shape and nothing records the change, a plugin built against the old shape fails at run time, or worse, silently binds to a different member. R-11 records this risk and requires a written policy before Phase 21 starts. Phase 21 is the parity surface, and the host must be able to reject a plugin it cannot run.
 
-The repository already has contract types for plugins: `PluginDescriptor` (identifier, name and the plugin's own `Version`), `CommandContribution`, `PanelContribution`, `ToolContribution` and `AgentModeContribution`, all in `src/OmpOS.Contracts/Plugins`. None of them declares the contract version range a plugin needs, and the host does not yet check one. `ContractVersion` (`src/OmpOS.Contracts/ContractVersion.cs`, value `1.0.0`) is the version of the HTTP contract header, not of the plugin contracts, and is outside this ADR.
+The repository already has contract types for plugins: `PluginDescriptor` (identifier, name and the plugin's own `Version`), `CommandContribution`, `PanelContribution`, `ToolContribution` and `AgentModeContribution`, all in `src/Autonogrammer.Contracts/Plugins`. None of them declares the contract version range a plugin needs, and the host does not yet check one. `ContractVersion` (`src/Autonogrammer.Contracts/ContractVersion.cs`, value `1.0.0`) is the version of the HTTP contract header, not of the plugin contracts, and is outside this ADR.
 
 The plan's lifecycle has three steps this policy governs: discovery (a manifest declares the contract version range), load (the host checks the range; a plugin outside it is not loaded and the reason is logged), and activation.
 
@@ -77,7 +77,7 @@ A new contribution point is classified into one of these two families when it is
 - The host can reject a plugin it cannot run, with a logged reason, instead of failing at run time.
 - Plugins built against the current `1.0` shape stay loadable while the host range includes `1.0`.
 - The policy does not cover:
-  - the HTTP contract (`docs/api/openapi.json` and the `X-Ompos-Contract-Version` header, which is `ContractVersion.Current`). Whether the same rules apply to it is an open decision for the owner (`docs/api/ADE-07-run-contract-change-request.md`, section 7, item 8);
+  - the HTTP contract (`docs/api/openapi.json` and the `X-Autonogrammer-Contract-Version` header, which is `ContractVersion.Current`). Whether the same rules apply to it is an open decision for the owner (`docs/api/ADE-07-run-contract-change-request.md`, section 7, item 8);
   - MCP protocol versions, which ADE-16 negotiates with each MCP server;
   - process isolation. Plugins are trusted in-process code under the permission model in the plan.
 - Implementation is not part of this ADR. The manifest range, the load check, the warning log and the gate test are later work. Until they exist, R-11 remains open in the plan and this ADR records only the policy.

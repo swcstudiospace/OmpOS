@@ -1,0 +1,23 @@
+@namespace Autonogrammer.UI.Components.Shell
+@inject NavigationManager Navigation
+<main id="main" class="autonogrammer-panel-state autonogrammer-error-fallback">
+    <span class="autonogrammer-state-mark" aria-hidden="true"></span>
+    <div role="alert">
+        <h1 class="autonogrammer-panel-state-heading" tabindex="-1">@Heading</h1>
+        <p>@Body</p>
+    </div>
+    <button type="button" class="autonogrammer-btn autonogrammer-btn--primary" @onclick="Reload">@ReloadText</button>
+</main>
+
+@code {
+    /// <summary>The heading of the fallback.</summary>
+    public const string Heading = "Something went wrong";
+
+    /// <summary>The plain-language message. It never names the exception: details go to the log.</summary>
+    public const string Body = "Autonogrammer hit a problem and cannot show this page. Reloading usually fixes it. Your work on the server is not lost.";
+
+    /// <summary>The label of the button that reloads the page.</summary>
+    public const string ReloadText = "Reload";
+
+    private void Reload() => Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+}

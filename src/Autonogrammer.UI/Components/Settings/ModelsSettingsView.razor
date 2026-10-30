@@ -1,0 +1,188 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits SettingsPageView<ModelsSettingsPage>
+@using Autonogrammer.Presentation.Settings
+@using Autonogrammer.Presentation.Settings.Models
+<SettingsPageFrame Page="Page" Title="@ModelsCopy.PageTitle" Description="@ModelsCopy.PageDescription" Editable="@Page.IsDraftOpen">
+    @switch (Page.State)
+    {
+        case ModelsPageState.Loading:
+            <p class="autonogrammer-settings-state" role="status" aria-busy="true">@ModelsCopy.LoadingText</p>
+            break;
+        case ModelsPageState.Error:
+            <div class="autonogrammer-settings-state autonogrammer-settings-state--error">
+                <h4 class="autonogrammer-settings-section-title">@ModelsCopy.ErrorTitle</h4>
+                <p role="alert">@(Page.LoadFailure ?? ModelsCopy.LoadFailed)</p>
+                <button type="button" class="autonogrammer-btn" @onclick="Retry">@SettingsCopy.RetryLabel</button>
+            </div>
+            break;
+        default:
+            if (Page.IncompleteNote is { } incomplete)
+            {
+                <p class="autonogrammer-settings-banner" data-tone="warning">@incomplete</p>
+            }
+
+            if (!string.IsNullOrEmpty(Page.Warning))
+            {
+                <p class="autonogrammer-settings-banner" data-tone="warning">@Page.Warning</p>
+            }
+
+            if (!string.IsNullOrEmpty(Page.Notice))
+            {
+                <p class="autonogrammer-settings-banner" data-tone="warning">@Page.Notice</p>
+            }
+
+            if (!string.IsNullOrEmpty(Page.KeyWritesDisabledReason))
+            {
+                <p class="autonogrammer-settings-banner" data-tone="warning" data-key-writes="disabled">@Page.KeyWritesDisabledReason</p>
+            }
+
+            <div class="autonogrammer-settings-toolbar">
+                <div class="autonogrammer-settings-toolbar-search">
+                    <label class="autonogrammer-settings-label" for="autonogrammer-models-search">@ModelsCopy.SearchLabel</label>
+                    <input id="autonogrammer-models-search" class="autonogrammer-input" type="search" autocomplete="off" placeholder="@ModelsCopy.SearchHint"
+                           value="@Page.SearchText" @oninput="e => Page.SearchText = e.Value?.ToString() ?? string.Empty" />
+                </div>
+                <button type="button" class="autonogrammer-btn" disabled="@Page.IsDraftOpen" @onclick="Page.BeginAddCustom">@ModelsCopy.AddCustomProviderLabel</button>
+            </div>
+            if (Page.HasTemplates && !Page.IsDraftOpen)
+            {
+                <div class="autonogrammer-settings-templates" role="group" aria-label="@ModelsCopy.TemplatesHeading">
+                    <h4 class="autonogrammer-settings-subheading">@ModelsCopy.TemplatesHeading</h4>
+                    <p class="autonogrammer-settings-help">@ModelsCopy.TemplatesExplanation</p>
+                    <ul class="autonogrammer-settings-plain-list autonogrammer-settings-template-list">
+                        @foreach (var template in Page.Templates)
+                        {
+                            var templateId = template.Id;
+                            <li @key="templateId">
+                                <button type="button" class="autonogrammer-btn autonogrammer-btn--small" aria-label="@ModelsCopy.UseTemplateName(template.DisplayName)"
+                                        @onclick="() => Page.BeginAddCustomFromTemplate(templateId)">@template.DisplayName</button>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            if (Page.Draft is { } draft)
+            {
+                <CustomProviderFormView Draft="draft" Error="@Page.DraftError" OnCancel="DiscardDraft" />
+            }
+
+            if (!string.IsNullOrEmpty(Page.DefaultModel))
+            {
+                <p class="autonogrammer-settings-help" data-default-model="true">@ModelsCopy.DefaultModelLabel: <span class="autonogrammer-settings-mono">@Page.DefaultModel</span></p>
+            }
+
+            <h4 class="autonogrammer-settings-section-title">@SettingsWebCopy.ProvidersHeading</h4>
+            if (Page.State == ModelsPageState.Empty)
+            {
+                <div class="autonogrammer-settings-state">
+                    <h5 class="autonogrammer-settings-subheading">@ModelsCopy.EmptyTitle</h5>
+                    <p>@ModelsCopy.EmptyText</p>
+                </div>
+            }
+            else if (Page.HasNoMatches)
+            {
+                <p class="autonogrammer-settings-state">@ModelsCopy.NoMatchesText</p>
+            }
+            else
+            {
+                foreach (var group in Page.Groups)
+                {
+                    <div class="autonogrammer-provider-group" role="group" aria-label="@group.Title" @key="group.Group">
+                        <h5 class="autonogrammer-settings-subheading">@group.Title</h5>
+                        <p class="autonogrammer-settings-help">@group.Description</p>
+                        <ul class="autonogrammer-provider-list">
+                            @foreach (var card in group.Cards)
+                            {
+                                <ProviderCardView @key="card.Id" Model="card" />
+                            }
+                        </ul>
+                    </div>
+                }
+            }
+
+            var directory = Page.Directory;
+            if (directory.HasListings)
+            {
+                <h4 class="autonogrammer-settings-section-title">@SettingsWebCopy.DirectoryHeading</h4>
+                <p class="autonogrammer-settings-help">@ProviderListingCopy.SectionDescription</p>
+                <div class="autonogrammer-settings-toolbar">
+                    <div class="autonogrammer-settings-toolbar-search">
+                        <label class="autonogrammer-settings-label" for="autonogrammer-directory-search">@SettingsWebCopy.DirectorySearchLabel</label>
+                        <input id="autonogrammer-directory-search" class="autonogrammer-input" type="search" autocomplete="off"
+                               value="@directory.SearchText" @oninput="e => directory.SearchText = e.Value?.ToString() ?? string.Empty" />
+                    </div>
+                    <div class="autonogrammer-settings-toolbar-filter">
+                        <label class="autonogrammer-settings-label" for="autonogrammer-directory-region">@ProviderListingCopy.RegionFilterLabel</label>
+                        <select id="autonogrammer-directory-region" class="autonogrammer-select" @onchange="OnRegionChanged">
+                            @for (var index = 0; index < directory.RegionChoices.Count; index++)
+                            {
+                                <option value="@index" selected="@(directory.SelectedRegionIndex == index)">@directory.RegionChoices[index]</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="autonogrammer-settings-toolbar-filter">
+                        <label class="autonogrammer-settings-label" for="autonogrammer-directory-kind">@ProviderListingCopy.KindFilterLabel</label>
+                        <select id="autonogrammer-directory-kind" class="autonogrammer-select" @onchange="OnKindChanged">
+                            @for (var index = 0; index < directory.KindChoices.Count; index++)
+                            {
+                                <option value="@index" selected="@(directory.SelectedKindIndex == index)">@directory.KindChoices[index]</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <p class="autonogrammer-settings-help" role="status" aria-live="polite">@directory.Announcement</p>
+                if (directory.HasNoMatches)
+                {
+                    <p class="autonogrammer-settings-state">@ProviderListingCopy.NoMatchesText</p>
+                }
+                else
+                {
+                    foreach (var listingSection in directory.Sections)
+                    {
+                        <div class="autonogrammer-provider-group" role="group" aria-label="@listingSection.Heading" @key="listingSection.Heading">
+                            <h5 class="autonogrammer-settings-subheading">@listingSection.Heading</h5>
+                            <ul class="autonogrammer-provider-list">
+                                @foreach (var listing in listingSection.Cards)
+                                {
+                                    <ProviderListingCardView @key="listing.Id" Model="listing" />
+                                }
+                            </ul>
+                        </div>
+                    }
+                }
+            }
+
+            <p class="autonogrammer-settings-help" role="status" aria-live="polite">@Page.Announcement</p>
+            break;
+    }
+</SettingsPageFrame>
+
+@code {
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        Observe(Page.Directory);
+    }
+
+    private Task Retry() => Page.LoadAsync(CancellationToken.None);
+
+    private void DiscardDraft() => Page.Discard();
+
+    private void OnRegionChanged(ChangeEventArgs args)
+    {
+        if (int.TryParse(args.Value?.ToString(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var index))
+        {
+            Page.Directory.SelectedRegionIndex = index;
+        }
+    }
+
+    private void OnKindChanged(ChangeEventArgs args)
+    {
+        if (int.TryParse(args.Value?.ToString(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var index))
+        {
+            Page.Directory.SelectedKindIndex = index;
+        }
+    }
+}

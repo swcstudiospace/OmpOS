@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Abstractions/Autonogrammer.Harness.Abstractions.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Agent/Autonogrammer.Harness.Agent.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Acp/Autonogrammer.Harness.Acp.csproj" />
+    <ProjectReference Include="../../src/Autonogrammer.Harness.Rpc/Autonogrammer.Harness.Rpc.csproj" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+  <!-- The recorded RPC and ACP transcripts are linked from their own test projects, never copied. -->
+  <ItemGroup>
+    <Content Include="../Autonogrammer.Harness.Rpc.Tests/TestData/frames/*.ndjson" Link="TestData/frames/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../Autonogrammer.Harness.Rpc.Tests/TestData/frames/*.turns.json" Link="TestData/frames/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../Autonogrammer.Harness.Acp.Tests/TestData/frames/*.ndjson" Link="TestData/frames/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

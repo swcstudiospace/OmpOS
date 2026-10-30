@@ -1,0 +1,21 @@
+@namespace Autonogrammer.UI.Components.Settings
+@if (IsWeb)
+{
+    <a class="autonogrammer-settings-link" href="@Url!.AbsoluteUri" target="_blank" rel="noopener noreferrer" aria-label="@SettingsWebCopy.ExternalLinkName(Label, Subject)">@Label</a>
+}
+
+@code {
+    /// <summary>Gets the page the link opens. Only an absolute http or https address is drawn; anything else renders nothing.</summary>
+    [Parameter]
+    public Uri? Url { get; set; }
+
+    /// <summary>Gets the visible label of the link.</summary>
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>Gets what the link is about (the provider name), which makes the accessible name unique among many links.</summary>
+    [Parameter, EditorRequired]
+    public string Subject { get; set; } = string.Empty;
+
+    private bool IsWeb => Url is { IsAbsoluteUri: true } url && (url.Scheme == Uri.UriSchemeHttps || url.Scheme == Uri.UriSchemeHttp);
+}

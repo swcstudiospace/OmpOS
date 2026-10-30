@@ -1,0 +1,150 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ws="clr-namespace:Autonogrammer.Workspace;assembly=Autonogrammer.Harness.Workspace"
+             x:Class="Autonogrammer.Native.Views.Workspace.WorkspaceConventionsView">
+
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="{DynamicResource Autonogrammer.Space.Sm}"
+                Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+      <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <TextBlock Text="Rules"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+        <TextBlock x:Name="RulesEmptyText"
+                   Classes="muted"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   Text="No rules are loaded." />
+        <ListBox x:Name="RuleRows"
+                 x:FieldModifier="internal"
+                 MaxHeight="200"
+                 AutomationProperties.Name="Rules">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="AutomationProperties.Name" Value="{ReflectionBinding Id}" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="ws:WorkspaceDocument">
+              <StackPanel>
+                <TextBlock Text="{CompiledBinding Id}" />
+                <TextBlock Classes="muted"
+                           FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                           Text="{CompiledBinding RelativePath}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel>
+
+      <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <TextBlock Text="Diagnostics"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+        <TextBlock x:Name="DiagnosticsEmptyText"
+                   Classes="muted"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   Text="No convention file is malformed." />
+        <ListBox x:Name="DiagnosticRows"
+                 x:FieldModifier="internal"
+                 MaxHeight="160"
+                 AutomationProperties.Name="Diagnostics">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="AutomationProperties.Name" Value="{ReflectionBinding RelativePath}" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="ws:WorkspaceDiagnostic">
+              <StackPanel>
+                <TextBlock Text="{CompiledBinding RelativePath}"
+                           FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+                <TextBlock Classes="error"
+                           FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                           TextWrapping="Wrap"
+                           Text="{CompiledBinding Reason}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel>
+
+      <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <TextBlock Text="Skills"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+        <TextBlock x:Name="SkillsEmptyText"
+                   Classes="muted"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   Text="No skills are loaded." />
+        <ListBox x:Name="SkillRows"
+                 MaxHeight="200"
+                 AutomationProperties.Name="Skills">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="AutomationProperties.Name" Value="{ReflectionBinding Id}" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="ws:WorkspaceDocument">
+              <StackPanel>
+                <TextBlock Text="{CompiledBinding Id}" />
+                <TextBlock Classes="muted"
+                           FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                           Text="{CompiledBinding RelativePath}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel>
+
+      <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+        <TextBlock Text="Modes"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}" />
+        <TextBlock x:Name="ModesEmptyText"
+                   Classes="muted"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   Text="No modes are loaded." />
+        <ComboBox x:Name="ModePicker"
+                  x:FieldModifier="internal"
+                  HorizontalAlignment="Stretch"
+                  AutomationProperties.Name="Mode picker">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="ws:WorkspaceMode">
+              <TextBlock Text="{CompiledBinding DisplayName}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <ListBox x:Name="ModeRows"
+                 x:FieldModifier="internal"
+                 MaxHeight="200"
+                 AutomationProperties.Name="Modes">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="AutomationProperties.Name" Value="{ReflectionBinding DisplayName}" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="ws:WorkspaceMode">
+              <StackPanel>
+                <TextBlock Text="{CompiledBinding DisplayName}" />
+                <TextBlock Classes="muted"
+                           FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                           Text="{CompiledBinding RelativePath}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock x:Name="SelectedModeDetail"
+                   x:FieldModifier="internal"
+                   FontSize="{DynamicResource Autonogrammer.Font.Size.Label}"
+                   TextWrapping="Wrap"
+                   AutomationProperties.Name="Selected mode contents"
+                   AutomationProperties.LiveSetting="Polite" />
+      </StackPanel>
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

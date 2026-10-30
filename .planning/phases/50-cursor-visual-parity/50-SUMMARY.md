@@ -4,7 +4,7 @@ Status (recorded 2026-10-27): criteria 1 to 7 met. Criteria 1 to 6 are met by na
 
 The record was written after the work. Statuses use: Met, Met (recorded), Not verified.
 
-Recorded test results (2026-10-27): whole-solution test runs at `d75fd88` passed (F10, as reported by the main agent: Native 1450, Presentation 1133, Acp 132, EngineHost 46, Architecture 46, Api.IntegrationTests 210, Coordination 32; every other project 0 failures). No log of that run is committed. The screenshots were captured from the Debug build of `apps/OmpOS.Native` under Xvfb with the real omp 18.12.6 as engine (no prompt sent); the Changes bar images are headless renders.
+Recorded test results (2026-10-27): whole-solution test runs at `d75fd88` passed (F10, as reported by the main agent: Native 1450, Presentation 1133, Acp 132, EngineHost 46, Architecture 46, Api.IntegrationTests 210, Coordination 32; every other project 0 failures). No log of that run is committed. The screenshots were captured from the Debug build of `apps/Autonogrammer.Native` under Xvfb with the real omp 18.12.6 as engine (no prompt sent); the Changes bar images are headless renders.
 
 ## Criteria
 
@@ -12,7 +12,7 @@ Recorded test results (2026-10-27): whole-solution test runs at `d75fd88` passed
 |---|-----------|--------|----------|
 | 1 | Static Greptile faces with licences; Anybody only at 20 px and above and never thin; `FontResourceTests` and a typography markup test | Met | Six static TTFs (DM Sans Regular, Medium, SemiBold; Anybody SemiBold; Space Mono Regular, Bold) with OFL notices; `FontResourceTests`, `FontFaceResolutionTests`, `TypographyMarkupTests` (`EveryUseOfTheDisplayFaceIsAtLeast20PxAndSemiBold`, `CodeThatNamesTheDisplayFaceSetsALargeSemiBoldSize`, `NoViewOrHeadNamesAFontFamilyByLiteral`). The scan is textual. |
 | 2 | Dark default, System, Light and Dark persisted, colours re-read, `ThemeContrastTests` in both variants | Met | `ThemePreferenceTests` (`TheApplicationStartsDark`, `EachPreferenceMapsToItsVariant`, `ASavedThemeChangesTheRunningWindow`, `AMarkdownBlockRecoloursWhenTheVariantChanges`, `TheTerminalPaletteHasSixteenColoursPerVariant`), `ThemeContrastTests` (Light and Dark), `FileSettingsStoreTests`; `after-dark/settings-2-general.png` |
-| 3 | Controls styled from OmpOS tokens through the Fluent aliases, tested in both variants | Met | `ControlStyleTests`, `ButtonLabelColourTests`, `ColourLiteralTests` (allowlist baseline 0); `OmpOSControls.axaml`; the screenshot set |
+| 3 | Controls styled from Autonogrammer tokens through the Fluent aliases, tested in both variants | Met | `ControlStyleTests`, `ButtonLabelColourTests`, `ColourLiteralTests` (allowlist baseline 0); `AutonogrammerControls.axaml`; the screenshot set |
 | 4 | 32 px desktop targets, 24 px floor, skip link hidden until focus and first in the tab order | Met | `DensityTests`, `SettingsAccessibilityTests`, `AgentPanelTabsTests.TheTabsAreNamedAndComeAfterTheSkipLink`, `SkipLinkVisibilityTests` (`AtRestTheSkipLinkIsTransparentButStillThereForAssistiveTechnology`, `FocusMakesTheSkipLinkOpaqueAndLeavingMakesItTransparentAgain`, `TheSkipLinkIsTheFirstStopOfTheTabOrder`, `EnterOnTheFocusedSkipLinkMovesFocusToTheTranscript`); Android `TargetMin` 44 |
 | 5 | Layouts of section 4; screenshots 01 to 05 at 1280x800 in Dark and Light and at 960x640 | Met | `after-dark/` and `after-light/` each hold 27 images: 01 to 05, `01-empty-panel-960x640` and `02-chat-session-960x640` (the 14-image set), every Settings page, three slash palette states and the Changes bar render. Judged by eye against the specification. The defects below stay |
 | 6 | Accessibility contract unchanged | Met | `KeyboardFocusTests`, `AccessibilityNameTests`, `ReducedMotionTests`, `PanelMarkupTests` present and green in the recorded runs |
@@ -48,7 +48,7 @@ Still open (evidence README, "What still looks off"):
 - A real desktop run: Wayland native, Windows, macOS, Android, and any window manager (the captures have no title bar).
 - A model turn: streaming, error with a real model, a real agent edit through the Changes bar, running a palette command.
 - `./bootstrap.sh`, `dotnet format` and the web smoke at `d75fd88`.
-- The look of the web head (it uses `OmpOS.UI`, not these styles).
+- The look of the web head (it uses `Autonogrammer.UI`, not these styles).
 
 ## Open items
 

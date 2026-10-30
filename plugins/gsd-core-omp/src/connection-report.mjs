@@ -1,8 +1,8 @@
 /**
- * OmpOS connection report: a raw snapshot of what omp actually has loaded, so the host (C#) can tell which plugins
+ * Autonogrammer connection report: a raw snapshot of what omp actually has loaded, so the host (C#) can tell which plugins
  * are connected. The report lists names only; the host owns the expected-name table per plugin.
  *
- * Environment: `OMPOS_CONNECTION_FILE` (absolute file path; unset = inactive, no fs call at all).
+ * Environment: `AUTONOGRAMMER_CONNECTION_FILE` (absolute file path; unset = inactive, no fs call at all).
  *
  * The parent directory is created (recursive, mode 0700) when it is missing.
  *

@@ -22,13 +22,13 @@ This record states status only. Nothing in it is built, run or deployed by this 
 
 ## Linux: PASS in the gate
 
-- Backend: `src/OmpOS.Harness.Terminal/LinuxLocalPtyBackend.cs`.
+- Backend: `src/Autonogrammer.Harness.Terminal/LinuxLocalPtyBackend.cs`.
 - Test: `LinuxLocalPtyBackendTests.EchoesTypedInputAndDeliversTheMarkerAndTheExitCode` spawns `/bin/sh`, writes `typed`, reads `MARK<typed>` and checks exit code 7. Related tests in the same class: `ASizeSetBeforeTheInputIsTheSizeTheCommandSees`, `StartsTheCommandInTheExplicitWorkingDirectory`, `DoesNotPassHostVariablesOutsideTheAllowlistToTheCommand`.
 - Run:
 
 ```sh
 export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH DOTNET_NOLOGO=1 DOTNET_CLI_TELEMETRY_OPTOUT=1
-dotnet test tests/OmpOS.Harness.Terminal.Tests --filter-not-trait "Category=Live"
+dotnet test tests/Autonogrammer.Harness.Terminal.Tests --filter-not-trait "Category=Live"
 ```
 
 - Recorded result for the current HEAD: to be recorded by the orchestrator gate run.
@@ -50,8 +50,8 @@ dotnet test tests/OmpOS.Harness.Terminal.Tests --filter-not-trait "Category=Live
 
 ## What is and is not wired
 
-- The terminal panel the native head ships (`src/OmpOS.Native.Views/Views/Terminal/TerminalPanelView`) runs commands through `PtyProcessRunner` and `TerminalGate` proposals. It does not use `LinuxLocalPtyBackend`, which is unit-tested only (status of the 2026-10-26 roadmap scout).
-- No class other than the test fake `tests/OmpOS.Harness.Herdr.Tests/FakeHerdrSessionClient.cs` implements `IHerdrSessionClient`. Session restart semantics for a real herdr endpoint wait for an owner decision (OQ-76).
+- The terminal panel the native head ships (`src/Autonogrammer.Native.Views/Views/Terminal/TerminalPanelView`) runs commands through `PtyProcessRunner` and `TerminalGate` proposals. It does not use `LinuxLocalPtyBackend`, which is unit-tested only (status of the 2026-10-26 roadmap scout).
+- No class other than the test fake `tests/Autonogrammer.Harness.Herdr.Tests/FakeHerdrSessionClient.cs` implements `IHerdrSessionClient`. Session restart semantics for a real herdr endpoint wait for an owner decision (OQ-76).
 
 ## Open items
 

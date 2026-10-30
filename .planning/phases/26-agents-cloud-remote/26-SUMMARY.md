@@ -10,9 +10,9 @@ Mac channel: No. Worktree, transcript and Agents tests run on the Linux gate. Th
 
 | # | Criterion | Status | Evidence |
 |---|-----------|--------|----------|
-| 1 | Side chat opens as its own chat; transcript search across chats | Met | ADE-04 done: src/OmpOS.Presentation/Chats, views composed in MainWindow; tests/OmpOS.Native.Tests/Chats/SideChatAndSearchViewTests.cs; tests/OmpOS.Presentation.Tests/Chats/ |
-| 2 | Agents window lists runs, filters by status, opens and closes runs | Partial | ADE-05 done: src/OmpOS.Presentation/Agents, composed; tests/OmpOS.Native.Tests/Agents/AgentsViewTests.cs. Open and close and the three-run transition test: not confirmed |
-| 3 | Each run in its own git worktree; removed when the run closes | Partial | ADE-06 manager done: src/OmpOS.Harness.Worktrees; tests/OmpOS.Harness.Worktrees.Tests/WorktreeManagerTests.cs (19 real-git tests). NOT wired into agent runs |
+| 1 | Side chat opens as its own chat; transcript search across chats | Met | ADE-04 done: src/Autonogrammer.Presentation/Chats, views composed in MainWindow; tests/Autonogrammer.Native.Tests/Chats/SideChatAndSearchViewTests.cs; tests/Autonogrammer.Presentation.Tests/Chats/ |
+| 2 | Agents window lists runs, filters by status, opens and closes runs | Partial | ADE-05 done: src/Autonogrammer.Presentation/Agents, composed; tests/Autonogrammer.Native.Tests/Agents/AgentsViewTests.cs. Open and close and the three-run transition test: not confirmed |
+| 3 | Each run in its own git worktree; removed when the run closes | Partial | ADE-06 manager done: src/Autonogrammer.Harness.Worktrees; tests/Autonogrammer.Harness.Worktrees.Tests/WorktreeManagerTests.cs (19 real-git tests). NOT wired into agent runs |
 | 4 | Cloud run shows status and reviewable output on completion | Not started | ADE-07 NOT STARTED. Needs a contract change request for run status and diff. Live run BLOCKED: Railway deploys paused |
 | 5 | Second device sends a prompt to a local run and gets status; run stays local | Not started | ADE-08 NOT STARTED. OD-03 gated; authority not configured |
 

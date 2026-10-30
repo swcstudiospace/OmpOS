@@ -1,5 +1,5 @@
 ---
-description: "Install, build and run OmpOS: the desktop app on Linux, the web head against a local API, and the Demo with a simulated engine."
+description: "Install, build and run Autonogrammer: the desktop app on Linux, the web head against a local API, and the Demo with a simulated engine."
 ---
 
 # Getting started
@@ -10,7 +10,7 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-OmpOS is a workspace for coding agents whose engine is [omp](https://github.com/can1357/oh-my-pi). You open the **desktop app** or the **web app**, start agents, watch them work, steer them and review their file changes. This page gets you to a running app. Pick the path that fits.
+Autonogrammer is a workspace for coding agents whose engine is [omp](https://github.com/can1357/oh-my-pi). You open the **desktop app** or the **web app**, start agents, watch them work, steer them and review their file changes. This page gets you to a running app. Pick the path that fits.
 
 | I want to | Go to |
 |---|---|
@@ -39,7 +39,7 @@ You also need access to at least one model provider for real work: see [Choose a
 ```sh
 export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH DOTNET_NOLOGO=1 DOTNET_CLI_TELEMETRY_OPTOUT=1
 git submodule update --init --recursive
-dotnet run --project apps/OmpOS.Native
+dotnet run --project apps/Autonogrammer.Native
 ```
 
 The workspace root is the current directory. The app opens on the Agents window; the default theme is Light (System and Dark are in Settings, General). Press Ctrl+, for Settings. The full tour is the [Desktop app guide](desktop-app-guide.md); state, environment variables and shortcuts are in [Run the desktop app](../runbooks/running-the-desktop-app.md).
@@ -48,10 +48,10 @@ The main environment variables:
 
 | Variable | What it does |
 |---|---|
-| `OMPOS_STATE_DIR` | Root of all application state: session catalogue, per-session directories, settings, provider key store. Default `$XDG_DATA_HOME/OmpOS`, else `~/.local/share/OmpOS`. |
-| `OMPOS_PLUGINS_ROOT` | The plugins directory. Default: `plugins/` next to the repository root. |
-| `OMPOS_SUBSTRATE_URL` | Address of the Substrate server (https, or http on a loopback host). Unset means the Substrate is not used. |
-| `OMPOS_SUBSTRATE_TOKEN_ENV` | The name of the variable the Substrate token is read from (default `SUBSTRATE_TOKEN_OMP`). |
+| `AUTONOGRAMMER_STATE_DIR` | Root of all application state: session catalogue, per-session directories, settings, provider key store. Default `$XDG_DATA_HOME/Autonogrammer`, else `~/.local/share/Autonogrammer`. |
+| `AUTONOGRAMMER_PLUGINS_ROOT` | The plugins directory. Default: `plugins/` next to the repository root. |
+| `AUTONOGRAMMER_SUBSTRATE_URL` | Address of the Substrate server (https, or http on a loopback host). Unset means the Substrate is not used. |
+| `AUTONOGRAMMER_SUBSTRATE_TOKEN_ENV` | The name of the variable the Substrate token is read from (default `SUBSTRATE_TOKEN_OMP`). |
 
 ## The Demo (no backend)
 
@@ -60,13 +60,13 @@ The quickest look: open <https://ompos-web.vercel.app>. It is the web head with 
 To build and serve the same bundle yourself:
 
 ```sh
-scripts/vercel/build-demo.sh        # publishes with -p:OmpOSDemo=true into output/demo
+scripts/vercel/build-demo.sh        # publishes with -p:AutonogrammerDemo=true into output/demo
 scripts/web-demo/serve-demo.sh      # http://127.0.0.1:5190/ (loopback only)
 ```
 
 It shows a workspace named `acme-shop` and six scripted agents in different states. Sending a prompt gets a reply labelled "Demo". Details and limits: [Web head runbook](../runbooks/web-demo.md) and [Web app guide](web-app-guide.md).
 
-![The OmpOS web app in the Demo build: the agent rail, a streaming thread and the composer, in the Light theme.](../assets/screens/web-agents-light.png)
+![The Autonogrammer web app in the Demo build: the agent rail, a streaming thread and the composer, in the Light theme.](../assets/screens/web-agents-light.png)
 
 *Screenshot of the Demo build: a simulated engine produces the thread.*
 
@@ -77,9 +77,9 @@ The API refuses the development principal and the in-memory harness outside Deve
 ```sh
 ASPNETCORE_ENVIRONMENT=Development Harness__Adapter=InMemory Sessions__Store=InMemory Coordination__Store=InMemory \
   Api__Auth__AllowDevelopmentPrincipal=true Api__Cors__Origins__0=http://127.0.0.1:5180 \
-  dotnet run --project services/OmpOS.Api --urls http://127.0.0.1:5187
-dotnet publish apps/OmpOS.Web -c Release -o /tmp/ompos-web
-python3 -m http.server 5180 --bind 127.0.0.1 --directory /tmp/ompos-web/wwwroot
+  dotnet run --project services/Autonogrammer.Api --urls http://127.0.0.1:5187
+dotnet publish apps/Autonogrammer.Web -c Release -o /tmp/autonogrammer-web
+python3 -m http.server 5180 --bind 127.0.0.1 --directory /tmp/autonogrammer-web/wwwroot
 ```
 
 Open `http://127.0.0.1:5180/`. The page reads its API origin from `wwwroot/appsettings.json` (`Api:BaseUrl`, default `http://127.0.0.1:5187`).
@@ -94,7 +94,7 @@ One command installs the pinned SDK when missing, runs the secret scan, the plug
 
 ## Android
 
-The Android head (`apps/OmpOS.Android`) builds in CI with warnings as errors. It has not been run on a device or emulator: see [Android and iOS terminals](../runbooks/android-ios-terminals.md).
+The Android head (`apps/Autonogrammer.Android`) builds in CI with warnings as errors. It has not been run on a device or emulator: see [Android and iOS terminals](../runbooks/android-ios-terminals.md).
 
 ## Where next
 

@@ -1,4 +1,4 @@
-# 3D anime-style pet (VRM) feasibility per OmpOS head
+# 3D anime-style pet (VRM) feasibility per Autonogrammer head
 
 Research date: 2026-10-22 (all sources below were opened on this date unless marked otherwise).
 Scope: rendering path, licences and sample assets only. No code, builds, tests or runs were performed.
@@ -69,7 +69,7 @@ A rigged, animated VRM avatar is feasible on the Blazor WebAssembly head at API 
 
 ### C. Asset licence findings
 
-| Asset | Licence | Permissions (from file meta, which is the licence settings) | Obligations | Style check | Use for OmpOS pet |
+| Asset | Licence | Permissions (from file meta, which is the licence settings) | Obligations | Style check | Use for Autonogrammer pet |
 |---|---|---|---|---|---|
 | Seed-san (VirtualCast, Inc.) | VRM Public License 1.0 (licenseUrl https://vrm.dev/licenses/1.0/) | avatarPermission everyone; commercialUsage corporation; allowRedistribution true; modification and redistribution allowed | creditNotation required: credit must be displayed | Repo describes it as a practical sample avatar with PBR, MToon, spring bones and expressions; anime look not visually confirmed (screenshot could not be opened in this run) | Candidate. Licence fits a shipped desktop or web app if credit is shown. |
 | VRM1_Constraint_Twist_Sample (pixiv Inc.) | VRM Public License 1.0 | Same permissions as Seed-san; creditNotation unnecessary | none beyond licence text | Feature-test oriented sample; anime look not visually confirmed | Candidate for testing; less suitable as a product asset. |

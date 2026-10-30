@@ -1,0 +1,128 @@
+@namespace Autonogrammer.UI.Components.Approvals
+@using Autonogrammer.Presentation.Approvals
+@inherits ObservableComponent
+<div class="autonogrammer-approval" role="group" aria-label="@("Tool approval: " + Approval.ToolName)" data-status="@Approval.Status.ToString().ToLowerInvariant()">
+    <div class="autonogrammer-approval-head">
+        <svg class="autonogrammer-approval-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 2.5 14 13H2ZM8 6.5v3M8 11.2v.1" /></svg>
+        <p class="autonogrammer-approval-tool"><span class="autonogrammer-approval-label">Allow the agent to run</span> <code>@Approval.ToolName</code><span class="autonogrammer-sr-only">?</span></p>
+    </div>
+    @if (Approval.ArgumentsSummary.Length > 0)
+    {
+        @if (IsGrantNote)
+        {
+            <p class="autonogrammer-approval-grant">@Approval.ArgumentsSummary</p>
+        }
+        else
+        {
+            <p class="autonogrammer-approval-arguments"><span class="autonogrammer-sr-only">Arguments: </span><code title="@Approval.ArgumentsSummary">@Approval.ArgumentsSummary</code></p>
+        }
+    }
+
+    <p class="autonogrammer-approval-message autonogrammer-live" role="@(IsFault ? "alert" : "status")" data-fault="@(IsFault ? "true" : null)" data-empty="@(Message.Length > 0 ? null : "true")">@Message</p>
+
+    @if (CanDecide)
+    {
+        <div class="autonogrammer-approval-actions">
+            <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--primary" disabled="@_inFlight" aria-label="@("Allow once: " + Approval.ToolName)" @onclick="() => DecideAsync(ToolApprovalDecision.Allow)">Allow once</button>
+            <button type="button" class="autonogrammer-btn autonogrammer-btn--small" disabled="@_inFlight" aria-label="@("Deny: " + Approval.ToolName)" @onclick="() => DecideAsync(ToolApprovalDecision.Deny)">Deny</button>
+            <p class="autonogrammer-approval-hint">@PolicyHint</p>
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>The policy hint under the buttons: the choice goes to the server, and the server applies policy.</summary>
+    public const string PolicyHint = "Your choice goes to the server, which applies policy. A tool that policy does not grant stays pending.";
+
+    /// <summary>The message of a decision that got no answer in time.</summary>
+    public const string TimedOutMessage = "The server did not answer in time. The request is still pending. Try again.";
+
+    private bool _inFlight;
+    private bool _timedOut;
+    private string? _fault;
+
+    /// <summary>Gets the pending request.</summary>
+    [Parameter, EditorRequired]
+    public PendingToolApproval Approval { get; set; } = null!;
+
+    /// <summary>Gets the coordinator that sends the decision, or null when the session cannot decide approvals: the row is then a read-only notice.</summary>
+    [Parameter]
+    public ToolApprovalCoordinator? Coordinator { get; set; }
+
+    /// <summary>Gets how long a decision may wait for the server before the row shows the timeout state and offers the buttons again.</summary>
+    [Parameter]
+    public TimeSpan DecisionTimeout { get; set; } = TimeSpan.FromSeconds(15);
+
+    /// <summary>Gets the clock the decision timeout runs on.</summary>
+    [Parameter]
+    public TimeProvider Time { get; set; } = TimeProvider.System;
+
+    // The web runtime puts the tools the server can also grant into the summary; that is a note about the grant, not the call's arguments.
+    private bool IsGrantNote => Approval.ArgumentsSummary.StartsWith("Can also grant:", StringComparison.Ordinal);
+
+    private bool IsPendingLike => Approval.Status is ToolApprovalStatus.Pending or ToolApprovalStatus.Refused or ToolApprovalStatus.Failed;
+
+    private bool CanDecide => Coordinator is not null && IsPendingLike;
+
+    private bool IsFault => _fault is not null || _timedOut || Approval.Status is ToolApprovalStatus.Failed or ToolApprovalStatus.NotFound or ToolApprovalStatus.Refused;
+
+    private string Message
+    {
+        get
+        {
+            if (_fault is not null)
+            {
+                return _fault;
+            }
+
+            if (_timedOut)
+            {
+                return TimedOutMessage;
+            }
+
+            if (_inFlight)
+            {
+                return "Sending the decision…";
+            }
+
+            if (Coordinator is null && IsPendingLike)
+            {
+                return "Approval needed. The decision is made by policy.";
+            }
+
+            return Approval.StatusMessage;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet() => Observe(Approval);
+
+    private async Task DecideAsync(ToolApprovalDecision decision)
+    {
+        if (Coordinator is null || _inFlight)
+        {
+            return;
+        }
+
+        _inFlight = true;
+        _timedOut = false;
+        _fault = null;
+        using var timeout = new CancellationTokenSource(DecisionTimeout, Time);
+        try
+        {
+            await Coordinator.DecideAsync(Approval, decision, timeout.Token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            _timedOut = true;
+        }
+        catch (Exception fault) when (fault is not OutOfMemoryException)
+        {
+            _fault = "The decision was not recorded. " + fault.Message;
+        }
+        finally
+        {
+            _inFlight = false;
+        }
+    }
+}

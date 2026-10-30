@@ -1,0 +1,150 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:about="clr-namespace:Autonogrammer.Presentation.About;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.AboutView"
+             x:DataType="about:AboutModel"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- The About view: the brand mark and name, the version, the revision and the licence of the running build, the source offer (AGPL-3.0 section 13),
+       the links to the source, the licence and the notice files, then Copy version info and Close. Keyboard order follows XAML order: the links, then the
+       two buttons. Esc is handled by the window. -->
+  <Grid RowDefinitions="*,Auto">
+
+
+    <ScrollViewer Grid.Row="0"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Classes="settings-column">
+
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Cozy}">
+          <Image x:Name="MarkImage"
+                 Width="64"
+                 Height="64"
+                 Source="avares://Autonogrammer.Native.Views/Assets/Brand/autonogrammer-mark-256.png"
+                 AutomationProperties.Name="{x:Static about:AboutCopy.MarkName}" />
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock x:Name="ProductText"
+                       Classes="settings-heading"
+                       Text="{CompiledBinding ProductName}" />
+            <TextBlock Classes="settings-description"
+                       Margin="0"
+                       Text="{x:Static about:AboutCopy.Tagline}" />
+          </StackPanel>
+        </StackPanel>
+
+        <Border Classes="settings-card"
+                Margin="0,8,0,0">
+          <Grid ColumnDefinitions="Auto,*"
+                RowDefinitions="Auto,Auto,Auto,Auto"
+                ColumnSpacing="16"
+                RowSpacing="{DynamicResource Autonogrammer.Gap.Sm}">
+            <TextBlock Grid.Row="0"
+                       Grid.Column="0"
+                       Classes="settings-label"
+                       Text="{x:Static about:AboutCopy.VersionLabel}" />
+            <TextBlock x:Name="VersionText"
+                       Grid.Row="0"
+                       Grid.Column="1"
+                       Classes="settings-mono"
+                       Text="{CompiledBinding Version}" />
+            <TextBlock Grid.Row="1"
+                       Grid.Column="0"
+                       Classes="settings-label"
+                       Text="{x:Static about:AboutCopy.RevisionLabel}" />
+            <TextBlock x:Name="RevisionText"
+                       Grid.Row="1"
+                       Grid.Column="1"
+                       Classes="settings-mono"
+                       Text="{CompiledBinding Revision}" />
+            <TextBlock Grid.Row="2"
+                       Grid.Column="0"
+                       Classes="settings-label"
+                       Text="{x:Static about:AboutCopy.LicenceLabel}" />
+            <TextBlock x:Name="LicenceText"
+                       Grid.Row="2"
+                       Grid.Column="1"
+                       Classes="settings-mono"
+                       Text="{CompiledBinding Licence}" />
+            <TextBlock Grid.Row="3"
+                       Grid.Column="0"
+                       Classes="settings-label"
+                       Text="{x:Static about:AboutCopy.SourceLabel}" />
+            <TextBlock x:Name="SourceText"
+                       Grid.Row="3"
+                       Grid.Column="1"
+                       Classes="settings-mono"
+                       Text="{CompiledBinding SourceLocation}" />
+          </Grid>
+        </Border>
+
+        <TextBlock x:Name="SourceOfferText"
+                   Classes="settings-body"
+                   Margin="0,8,0,0"
+                   Text="{CompiledBinding SourceOffer}" />
+
+        <TextBlock Classes="settings-section"
+                   Margin="0,8,0,0"
+                   Text="{x:Static about:AboutCopy.LinksLabel}" />
+        <ItemsControl x:Name="LinkList"
+                      ItemsSource="{CompiledBinding Links}"
+                      AutomationProperties.Name="{x:Static about:AboutCopy.LinksName}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="about:AboutLink">
+              <Button Classes="ghost"
+                      HorizontalAlignment="Left"
+                      MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                      Content="{CompiledBinding Label}"
+                      AutomationProperties.Name="{CompiledBinding AccessibleName}"
+                      Click="OnLinkClick" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <TextBlock x:Name="CopyrightText"
+                   Classes="settings-help"
+                   Margin="0,8,0,0"
+                   Text="{x:Static about:AboutCopy.Copyright}" />
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Row="1"
+            Classes="settings-footer">
+      <Grid ColumnDefinitions="*,Auto"
+            ColumnSpacing="12"
+            VerticalAlignment="Center">
+
+        <!-- The polite live region: that the version information was copied, or that an address could not be opened. -->
+        <TextBlock x:Name="StatusText"
+                   Grid.Column="0"
+                   Classes="muted small"
+                   VerticalAlignment="Center"
+                   Text="{CompiledBinding Status}"
+                   AutomationProperties.LiveSetting="Polite"
+                   AutomationProperties.Name="{x:Static about:AboutCopy.StatusName}" />
+
+        <StackPanel Grid.Column="1"
+                    Orientation="Horizontal"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+          <Button x:Name="CopyButton"
+                  Classes="primary"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Content="{x:Static about:AboutCopy.CopyLabel}"
+                  AutomationProperties.Name="{x:Static about:AboutCopy.CopyLabel}"
+                  Click="OnCopyClick" />
+          <Button x:Name="CloseButton"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Content="{x:Static about:AboutCopy.CloseLabel}"
+                  AutomationProperties.Name="{x:Static about:AboutCopy.CloseLabel}"
+                  Click="OnCloseClick" />
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

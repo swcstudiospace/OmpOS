@@ -9,7 +9,7 @@
 # Save the result under docs/runbooks/evidence/ (the orchestrator owns that folder).
 set -euo pipefail
 
-repo="${OMPOS_REPO:-swcstudiospace/OmpOS}"
+repo="${AUTONOGRAMMER_REPO:-swcstudiospace/OmpOS}"
 out=""
 
 while [ "$#" -gt 0 ]; do

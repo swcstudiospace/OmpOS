@@ -26,7 +26,7 @@ Until the owner confirms the final names, the board uses these defaults. They ar
 Provenance of each default:
 
 - Backlog and Archived as the user-settable defaults: ROADMAP.md Phase 39 criterion 2 ("default Backlog and Archived").
-- The eight runtime status names and the signal that sets each: `src/OmpOS.Presentation/Kanban/RuntimeStatus.cs`, `RuntimeStatusMap.cs` and the mapping table in `.planning/phases/36-contracts-theme-foundation/36-CONTEXT.md` (D36-6).
+- The eight runtime status names and the signal that sets each: `src/Autonogrammer.Presentation/Kanban/RuntimeStatus.cs`, `RuntimeStatusMap.cs` and the mapping table in `.planning/phases/36-contracts-theme-foundation/36-CONTEXT.md` (D36-6).
 - The spaced labels "Awaiting input" and "Needs attention" are the enum names `AwaitingInput` and `NeedsAttention` written as words. The column order is a default of this record. Neither is stated in the ROADMAP or the requirements.
 
 Stale is not a column and not a status. A card with a stale heartbeat keeps its status and shows the stale indicator with a screen-reader label (criterion 3; D36-7 in 36-CONTEXT.md: stale after 45 seconds, three missed beats of 15 seconds).
@@ -54,14 +54,14 @@ Stale is not a column and not a status. A card with a stale heartbeat keeps its 
 | 3 | Stale indicator with a screen-reader label; unreachable shows the error state | PARTIAL: `KanbanCardState.IsStale`, `WithStale` and `RuntimeStatus.Unreachable` exist. No view, no label and no UI test exist. |
 | 4 | Column names are the defaults recorded in CONTEXT until the owner confirms | This file records them. The owner confirmation is open: OQ-77. |
 
-Update 2026-10-26: the status text of rows 1 and 2 predates the untracked Presentation files `KanbanBoardModel.cs`, `KanbanCard.cs`, `KanbanColumn.cs`, `UserSettableStatus.cs` and `KanbanMoveOutcome.cs` (under `src/OmpOS.Presentation/Kanban/`) and `tests/OmpOS.Presentation.Tests/Kanban/KanbanBoardModelTests.cs`. Those files are in the working tree; they have not been run or reviewed by this task, so rows 1 and 2 are left as written until a run records their status.
+Update 2026-10-26: the status text of rows 1 and 2 predates the untracked Presentation files `KanbanBoardModel.cs`, `KanbanCard.cs`, `KanbanColumn.cs`, `UserSettableStatus.cs` and `KanbanMoveOutcome.cs` (under `src/Autonogrammer.Presentation/Kanban/`) and `tests/Autonogrammer.Presentation.Tests/Kanban/KanbanBoardModelTests.cs`. Those files are in the working tree; they have not been run or reviewed by this task, so rows 1 and 2 are left as written until a run records their status.
 
 Update 2026-10-26 (criteria added by the Kanban tab direction, DR-3 and DR-5; the numbering follows this table, and the rewritten Phase 39 in `.planning/ROADMAP.md` carries its own). Status words below describe the repository on that date and were not verified by a run of this documentation task.
 
 | # | Criterion | Status |
 | --- | --- | --- |
-| G6-1 | The Kanban tab exists and is reachable from the application navigation (D39-5) | NOT STARTED: no Kanban view, tab or navigation entry exists under `src/OmpOS.Native.Views`. |
-| G6-2 | Each opened session, chat or omp terminal, is exactly one card; opening creates it; closing or ending moves it to its terminal column (D39-6, D39-7) | NOT STARTED for terminals. `src/OmpOS.Presentation/Kanban/KanbanBoardModel.cs` builds cards from `SessionCatalogModel`; the file and its tests are untracked in the working tree and unrun here. Terminal sessions and the terminal-column move are not covered. |
+| G6-1 | The Kanban tab exists and is reachable from the application navigation (D39-5) | NOT STARTED: no Kanban view, tab or navigation entry exists under `src/Autonogrammer.Native.Views`. |
+| G6-2 | Each opened session, chat or omp terminal, is exactly one card; opening creates it; closing or ending moves it to its terminal column (D39-6, D39-7) | NOT STARTED for terminals. `src/Autonogrammer.Presentation/Kanban/KanbanBoardModel.cs` builds cards from `SessionCatalogModel`; the file and its tests are untracked in the working tree and unrun here. Terminal sessions and the terminal-column move are not covered. |
 | G6-3 | Status mirrors the lifecycle status, selecting a card opens or focuses its session, updates are live (D39-6) | PARTIAL at most: `KanbanBoardModel.Apply` and `KanbanCard` exist as untracked files; no session-focus command and no view exist. |
 | G6-4 | A card shows title, model, provider, last activity, status, stale indicator, and with Substrate task, graph, lessons count, lease holder; unavailable otherwise (D39-8) | PARTIAL at most: `KanbanCard` has the first set (title, model, provider, last activity, state, stale). No Substrate fields exist on it. |
 | G6-5 | States: loading skeleton, empty with start-a-session, error with retry, populated, disconnected distinct from failed (D39-8) | NOT STARTED: no view exists. |

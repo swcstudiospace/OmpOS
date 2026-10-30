@@ -1,0 +1,146 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits ObservableComponent
+@using Autonogrammer.Presentation.Settings.Models
+<li class="autonogrammer-provider-card" data-provider="@Model.Id" data-group="@Model.Group">
+    <div class="autonogrammer-provider-card-head">
+        <h5 class="autonogrammer-provider-card-title">@Model.DisplayName</h5>
+        <span class="autonogrammer-chip">@ModelsCopy.GroupTitle(Model.Group)</span>
+    </div>
+    <p class="autonogrammer-settings-mono autonogrammer-provider-endpoint">@Model.EndpointText</p>
+    <p class="autonogrammer-settings-help" data-credential="@Model.Info.Credential">@Model.StatusLine</p>
+    @if (!string.IsNullOrWhiteSpace(Model.Note))
+    {
+        <p class="autonogrammer-settings-help">@Model.Note</p>
+    }
+    @if (Model.SignInHint is { } signIn)
+    {
+        <p class="autonogrammer-settings-help">@signIn</p>
+    }
+    @if (Model.HasPlan)
+    {
+        <ul class="autonogrammer-settings-plain-list" aria-label="@Model.DisplayName plan">
+            @foreach (var line in Model.PlanLines)
+            {
+                <li class="autonogrammer-settings-help">@line</li>
+            }
+            @if (Model.PlanValidityText is { } validity)
+            {
+                <li class="autonogrammer-settings-help">@validity</li>
+            }
+        </ul>
+        <SettingsExternalLink Url="Model.PlanUrl" Label="@ProviderListingCopy.PlanPageActionLabel" Subject="@Model.DisplayName" />
+    }
+    <h6 class="autonogrammer-settings-subheading">@ModelsCopy.ModelsHeading</h6>
+    @if (Model.Models.Count == 0)
+    {
+        <p class="autonogrammer-settings-help">@ModelsCopy.NoModelsText</p>
+    }
+    else
+    {
+        <ul class="autonogrammer-settings-plain-list" aria-label="@Model.DisplayName models">
+            @foreach (var row in Model.Models)
+            {
+                var selector = row.Selector;
+                <li class="autonogrammer-provider-model" @key="selector">
+                    <span class="autonogrammer-settings-mono">@selector</span>
+                    @if (row.IsDefault)
+                    {
+                        <span class="autonogrammer-chip autonogrammer-chip--accent">@ModelsCopy.DefaultModelLabel</span>
+                    }
+                    else
+                    {
+                        <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--ghost" disabled="@Model.IsBusy"
+                                aria-label="@row.UseAsDefaultName" @onclick="() => UseAsDefaultAsync(selector)">@ModelsCopy.UseAsDefaultLabel</button>
+                    }
+                </li>
+            }
+        </ul>
+    }
+    @if (Model.SourceText is { } source)
+    {
+        <p class="autonogrammer-settings-help">@source</p>
+    }
+    <div class="autonogrammer-settings-actions">
+        @if (Model.CanSetApiKey && !Model.IsApiKeyEditorOpen)
+        {
+            <button type="button" class="autonogrammer-btn autonogrammer-btn--small" disabled="@Model.IsBusy"
+                    aria-label="@(Model.ApiKeyActionLabel + ", " + Model.DisplayName)" @onclick="Model.BeginApiKey">@Model.ApiKeyActionLabel</button>
+        }
+        <button type="button" class="autonogrammer-btn autonogrammer-btn--small" disabled="@(Model.IsTesting || Model.IsBusy)"
+                aria-label="@((Model.IsTesting ? ModelsCopy.TestingText : ModelsCopy.TestLabel) + ", " + Model.DisplayName)" @onclick="TestAsync">@(Model.IsTesting ? ModelsCopy.TestingText : ModelsCopy.TestLabel)</button>
+        @if (Model.CanEdit)
+        {
+            <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--ghost" disabled="@Model.IsBusy"
+                    aria-label="@(ModelsCopy.EditLabel + ", " + Model.DisplayName)" @onclick="Model.BeginEdit">@ModelsCopy.EditLabel</button>
+        }
+        @if (Model.CanRemove && !Model.IsConfirmingRemove)
+        {
+            <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--ghost" disabled="@Model.IsBusy"
+                    aria-label="@(ModelsCopy.RemoveLabel + ", " + Model.DisplayName)" @onclick="Model.BeginRemove">@ModelsCopy.RemoveLabel</button>
+        }
+    </div>
+    @if (Model.IsApiKeyEditorOpen && Model.ApiKey is { } draft)
+    {
+        <ApiKeyField Draft="draft" InputId="@KeyInputId" ShowActions="true" DisabledReason="@Model.KeyDisabledReason" OnSave="SaveKeyAsync" OnCancel="CancelKey" />
+    }
+    @if (Model.IsConfirmingRemove)
+    {
+        <div class="autonogrammer-settings-confirm" role="group" aria-label="@(ModelsCopy.RemoveLabel + ", " + Model.DisplayName)">
+            <p>@Model.RemoveQuestion</p>
+            <div class="autonogrammer-settings-actions">
+                <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--primary" disabled="@Model.IsBusy" @onclick="ConfirmRemoveAsync">@ModelsCopy.ConfirmRemoveLabel</button>
+                <button type="button" class="autonogrammer-btn autonogrammer-btn--small" @onclick="Model.CancelRemove">@ModelsCopy.KeepLabel</button>
+            </div>
+        </div>
+    }
+    <p class="autonogrammer-settings-help autonogrammer-provider-result" role="status" aria-live="polite">@(Model.TestText ?? Model.ActionText)</p>
+    @if (!string.IsNullOrEmpty(Model.ErrorText))
+    {
+        <p class="autonogrammer-settings-error-text" role="alert">@Model.ErrorText</p>
+    }
+</li>
+
+@code {
+    private ProviderCardModel? _watched;
+
+    /// <summary>Gets the card model: the provider, its models and its actions.</summary>
+    [Parameter, EditorRequired]
+    public ProviderCardModel Model { get; set; } = default!;
+
+    private string KeyInputId => "autonogrammer-key-" + DomIdOf(Model.Id);
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_watched, Model))
+        {
+            StopObserving(_watched);
+            _watched = Model;
+        }
+
+        Observe(Model);
+    }
+
+    private static string DomIdOf(string id) => string.Concat(id.Select(static ch => char.IsAsciiLetterOrDigit(ch) || ch is '-' or '_' ? ch : '-'));
+
+    private Task UseAsDefaultAsync(string selector) => Model.UseAsDefaultAsync(selector);
+
+    private Task TestAsync() => Model.TestAsync();
+
+    private Task SaveKeyAsync() => Model.SaveApiKeyAsync();
+
+    private void CancelKey() => Model.CancelApiKey();
+
+    private Task ConfirmRemoveAsync() => Model.ConfirmRemoveAsync();
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            StopObserving(_watched);
+        }
+
+        base.Dispose(disposing);
+    }
+}

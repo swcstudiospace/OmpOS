@@ -1,0 +1,58 @@
+@namespace Autonogrammer.UI.Components.Thread
+@using Autonogrammer.Presentation.AgentPanel
+<section class="autonogrammer-task-context" aria-label="Task context details">
+    <h3 class="autonogrammer-pipeline-heading">Task context</h3>
+    @if (Context.Heading is { } heading)
+    {
+        <p class="autonogrammer-task-context-heading">@heading</p>
+    }
+
+    @if (Context.Body is { } body)
+    {
+        <p class="autonogrammer-task-context-body">@body</p>
+    }
+
+    @if (Context.HasCard)
+    {
+        <dl class="autonogrammer-task-card">
+            <dt>Task</dt>
+            <dd>@Context.Title</dd>
+            @if (Context.KanbanStatus is { Length: > 0 } kanban)
+            {
+                <dt>@AgentPanelViewText.KanbanLabel</dt>
+                <dd>@kanban</dd>
+            }
+
+            @if (Context.GraphId is { Length: > 0 } graph)
+            {
+                <dt>@AgentPanelViewText.GraphLabel</dt>
+                <dd><code>@graph</code></dd>
+            }
+
+            @if (Context.WorkflowText.Length > 0)
+            {
+                <dt>@AgentPanelViewText.WorkflowLabel</dt>
+                <dd>@Context.WorkflowText</dd>
+            }
+        </dl>
+        <NoteList List="Context.SharedMemory" />
+        <NoteList List="Context.Lessons" />
+    }
+
+    @if (Context.WarningsHeader is { } warningsHeader)
+    {
+        <p class="autonogrammer-task-context-warnings">@warningsHeader</p>
+        <ul class="autonogrammer-task-warnings">
+            @foreach (var warning in Context.Warnings)
+            {
+                <li>@warning</li>
+            }
+        </ul>
+    }
+</section>
+
+@code {
+    /// <summary>Gets the task context of the session.</summary>
+    [Parameter, EditorRequired]
+    public TaskContextModel Context { get; set; } = null!;
+}

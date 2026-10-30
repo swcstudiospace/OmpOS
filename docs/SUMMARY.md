@@ -8,7 +8,7 @@
 * [Web head: real API, Demo and static deployment](runbooks/web-demo.md)
 * [Android and iOS terminals](runbooks/android-ios-terminals.md)
 
-## Use OmpOS
+## Use Autonogrammer
 
 * [Desktop app guide](guides/desktop-app-guide.md)
 * [Web app guide](guides/web-app-guide.md)
@@ -61,11 +61,29 @@
 * [Contributing, security and support](guides/community.md)
 * [Changelog](https://github.com/swcstudiospace/OmpOS/blob/main/CHANGELOG.md)
 
+## Accessibility
+
+* [Accessibility evidence](accessibility/README.md)
+  * [Conformance statement](accessibility/statement.md)
+  * [WCAG 2.2 conformance table](accessibility/wcag-2.2-conformance.md)
+  * [Manual keyboard test script](accessibility/manual-keyboard-test.md)
+  * [Screen reader test plan](accessibility/screen-reader-test-plan.md)
+  * [Reduced motion and forced colors](accessibility/reduced-motion-and-forced-colors.md)
+  * [Accessibility known issues](accessibility/known-issues.md)
+
 ## Operate and publish
 
 * [Publish the docs with GitBook](runbooks/gitbook-publish.md)
 * [GitHub setup](runbooks/github-setup.md)
 * [Hosting](runbooks/hosting.md)
+* [Deploy and rollback](runbooks/deploy-and-rollback.md)
+* [SLOs, alerting and uptime monitoring](runbooks/slo-and-alerting.md)
+* [Incident response](runbooks/incident-response.md)
+* [Backup, restore and migrations](runbooks/backup-and-restore.md)
+* [Hosted threat model](security/hosted-threat-model.md)
+* [Data inventory and retention](privacy/data-retention.md)
+* [Rebrand to Autonogrammer](runbooks/rebrand-autonogrammer.md)
+* [Integration of the rename line (2026-10-29)](runbooks/integration-autonogrammer-2026-10-29.md)
 
 ## Decisions and records
 
@@ -92,6 +110,15 @@
   * [ADR-0019 Provider catalogue](decisions/ADR-0019-provider-catalogue.md)
   * [ADR-0020 Cloud agents on Railway](decisions/ADR-0020-cloud-agents-on-railway.md)
   * [Addendum to ADR-0020 Hooks in cloud workers](decisions/addendum-ADR-0020-hooks.md)
+  * [ADR-0021 Hosted single-operator deployment](decisions/ADR-0021-hosted-single-operator-deployment.md)
+  * [ADR-0030 Accounts: Supabase passwordless sign-in](decisions/ADR-0030-accounts-supabase-passwordless.md)
+  * [ADR-0031 Data plane namespaces and resilience](decisions/ADR-0031-data-plane-namespaces-and-resilience.md)
+  * [ADR-0032 Cowork shell, sessions, chat and tool host](decisions/ADR-0032-cowork-shell-sessions-chat-and-tool-host.md)
+  * [ADR-0033 Cowork Artifacts](decisions/ADR-0033-cowork-artifacts.md)
+  * [ADR-0034 Cowork Browser Use](decisions/ADR-0034-cowork-browser-use.md)
+  * [ADR-0035 Cowork Computer Use](decisions/ADR-0035-cowork-computer-use.md)
+  * [ADR-0036 Dispatch relay](decisions/ADR-0036-dispatch-relay.md)
+  * [ADR-0037 Cowork parity remainder](decisions/ADR-0037-cowork-parity-remainder.md)
 * [Open questions register](open-questions.md)
 * [Deferred and blocked items, 2026-10-26](runbooks/deferred-and-blocked-2026-10-26.md)
 * [Quality bar, 2026-10-22](quality/quality-bar.md)

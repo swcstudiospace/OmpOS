@@ -1,0 +1,124 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:ws="clr-namespace:Autonogrammer.Presentation.Settings.Workspaces;assembly=Autonogrammer.Presentation"
+                            xmlns:local="clr-namespace:Autonogrammer.Native.Views.Settings"
+                            xmlns:wsp="clr-namespace:Autonogrammer.Native.Views.Workspace"
+                            x:Class="Autonogrammer.Native.Views.Settings.WorkspacesPageView"
+                            x:DataType="ws:WorkspacesSettingsPage"
+                            Focusable="False">
+
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+
+  <!-- The Workspaces page: the folder editor of the current set (the shared picker, without its Start and Done buttons), the inline
+       save error, a polite live region for what Save, Load into editor and Forget did, and the recent sets the slash commands share.
+       Keyboard order is the order below: the editor, then the recent sets, each with Load into editor before Forget. -->
+  <Panel>
+
+    <local:PageStatusView x:Name="StateView" />
+
+    <ScrollViewer x:Name="ReadyPanel"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Classes="settings-column">
+
+        <TextBlock Classes="settings-heading"
+                   Text="{x:Static ws:WorkspacesCopy.Heading}" />
+        <TextBlock Classes="settings-description"
+                   Text="{x:Static ws:WorkspacesCopy.Description}" />
+
+        <TextBlock Classes="settings-section"
+                   Text="{x:Static ws:WorkspacesCopy.EditorHeading}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static ws:WorkspacesCopy.EditorHelp}" />
+
+        <wsp:WorkspaceSetPickerView x:Name="PickerHost"
+                                    DataContext="{CompiledBinding Picker}"
+                                    AutomationProperties.Name="{x:Static ws:WorkspacesCopy.EditorName}" />
+
+        <!-- The inline save error. The heading says it in words, so it is not carried by colour alone. -->
+        <TextBlock x:Name="SaveFailedHeading"
+                   Classes="tone-error settings-body"
+                   IsVisible="{CompiledBinding HasError}"
+                   Text="{x:Static ws:WorkspacesCopy.SaveFailedHeading}"
+                   AutomationProperties.LiveSetting="Assertive"
+                   AutomationProperties.Name="{x:Static ws:WorkspacesCopy.SaveFailedHeading}" />
+        <TextBlock x:Name="SaveFailedBody"
+                   Classes="tone-error settings-body"
+                   IsVisible="{CompiledBinding HasError}"
+                   Text="{CompiledBinding SaveError}" />
+
+        <!-- The polite live region: what Save, Load into editor or Forget just did. -->
+        <TextBlock x:Name="AnnouncementText"
+                   Classes="settings-body"
+                   IsVisible="{CompiledBinding Announcement, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Text="{CompiledBinding Announcement}"
+                   AutomationProperties.LiveSetting="Polite"
+                   AutomationProperties.Name="{x:Static ws:WorkspacesCopy.AnnouncementName}" />
+
+        <TextBlock Classes="settings-section"
+                   Margin="0,16,0,0"
+                   Text="{x:Static ws:WorkspacesCopy.RecentsHeading}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static ws:WorkspacesCopy.RecentsHelp}" />
+
+        <TextBlock x:Name="NoRecentsText"
+                   Classes="muted settings-body"
+                   IsVisible="{CompiledBinding HasNoRecents}"
+                   Text="{x:Static ws:WorkspacesCopy.NoRecents}" />
+
+        <ItemsControl x:Name="RecentRows"
+                      ItemsSource="{CompiledBinding Recents}"
+                      AutomationProperties.Name="{x:Static ws:WorkspacesCopy.RecentsListName}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="ws:WorkspaceRecentRow">
+              <Border Classes="settings-row"
+                      AutomationProperties.Name="{CompiledBinding Summary}">
+                <Grid ColumnDefinitions="*,Auto"
+                      ColumnSpacing="12">
+                  <StackPanel Grid.Column="0"
+                              Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+                    <TextBlock Classes="settings-label"
+                               Text="{CompiledBinding Name}" />
+                    <TextBlock Classes="settings-mono"
+                               Text="{CompiledBinding PrimaryPath}" />
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+                      <TextBlock Classes="settings-help"
+                                 Text="{CompiledBinding FoldersText}" />
+                      <TextBlock Classes="settings-help"
+                                 Text="{CompiledBinding LastUsedLine}" />
+                    </StackPanel>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1"
+                              Orientation="Horizontal"
+                              Spacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                              VerticalAlignment="Center">
+                    <Button Classes="recent-load"
+                            MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            Content="{x:Static ws:WorkspacesCopy.LoadLabel}"
+                            AutomationProperties.Name="{CompiledBinding LoadName}"
+                            Click="OnLoadRecentClick" />
+                    <Button Classes="recent-forget"
+                            MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                            Content="{x:Static ws:WorkspacesCopy.ForgetLabel}"
+                            AutomationProperties.Name="{CompiledBinding ForgetName}"
+                            Click="OnForgetRecentClick" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Panel>
+
+</local:SettingsPageViewBase>

@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <ItemGroup>
-    <ProjectReference Include="../OmpOS.Harness.Terminal/OmpOS.Harness.Terminal.csproj" />
-  </ItemGroup>
-
-</Project>

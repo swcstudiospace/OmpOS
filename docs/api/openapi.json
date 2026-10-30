@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.1",
   "info": {
-    "title": "OmpOS.Api | v1",
+    "title": "Autonogrammer.Api | v1",
     "version": "1.0.0"
   },
   "servers": [
@@ -10,6 +10,37 @@
     }
   ],
   "paths": {
+    "/auth/config": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Describes how clients authenticate to this deployment. Anonymous; carries no secret.",
+        "operationId": "GetAuthConfig",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthConfigResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sessions": {
       "post": {
         "tags": [
@@ -3838,6 +3869,35 @@
   },
   "components": {
     "schemas": {
+      "AuthConfigResponse": {
+        "required": [
+          "mode",
+          "authority",
+          "audience"
+        ],
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "description": "How the client authenticates: `owner-token`, `oidc` or `development`."
+          },
+          "authority": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The OIDC authority in `oidc` mode, otherwise null."
+          },
+          "audience": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The OIDC audience in `oidc` mode, otherwise null."
+          }
+        },
+        "description": "Public sign-in configuration answered by `GET /auth/config`. It carries no secret."
+      },
       "AutomationCronPreviewResponse": {
         "required": [
           "nextRuns"
@@ -4099,7 +4159,7 @@
           },
           "summary": {
             "type": "string",
-            "description": "Gets one line that says what happened, for example `push to main by octocat (3 commits)`. Taken from outside OmpOS for webhook runs: show it as text."
+            "description": "Gets one line that says what happened, for example `push to main by octocat (3 commits)`. Taken from outside Autonogrammer for webhook runs: show it as text."
           },
           "status": {
             "type": "string",
@@ -4915,7 +4975,7 @@
           },
           "branch": {
             "type": "string",
-            "description": "Gets the branch the agent pushed (always `ompos/cloud/&lt;agent id&gt;`)."
+            "description": "Gets the branch the agent pushed (always `autonogrammer/cloud/&lt;agent id&gt;`)."
           },
           "baseBranch": {
             "type": "string",
@@ -5149,7 +5209,7 @@
               "integer",
               "string"
             ],
-            "description": "Gets the position of string ConventionCommandInfo.SourceDirectory in the precedence order (`.ompos` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
+            "description": "Gets the position of string ConventionCommandInfo.SourceDirectory in the precedence order (`.autonogrammer` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
             "format": "int32"
           },
           "origin": {
@@ -5182,7 +5242,7 @@
               "integer",
               "string"
             ],
-            "description": "Gets the position of string ConventionConfigFileInfo.SourceDirectory in the precedence order (`.ompos` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
+            "description": "Gets the position of string ConventionConfigFileInfo.SourceDirectory in the precedence order (`.autonogrammer` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
             "format": "int32"
           },
           "origin": {
@@ -5296,7 +5356,7 @@
               "integer",
               "string"
             ],
-            "description": "Gets the position of string ConventionRuleInfo.SourceDirectory in the precedence order (`.ompos` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
+            "description": "Gets the position of string ConventionRuleInfo.SourceDirectory in the precedence order (`.autonogrammer` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
             "format": "int32"
           },
           "origin": {
@@ -5379,7 +5439,7 @@
               "integer",
               "string"
             ],
-            "description": "Gets the position of string ConventionSkillInfo.SourceDirectory in the precedence order (`.ompos` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
+            "description": "Gets the position of string ConventionSkillInfo.SourceDirectory in the precedence order (`.autonogrammer` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
             "format": "int32"
           },
           "origin": {
@@ -5525,7 +5585,7 @@
               "integer",
               "string"
             ],
-            "description": "Gets the position of string ConventionSubagentInfo.SourceDirectory in the precedence order (`.ompos` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
+            "description": "Gets the position of string ConventionSubagentInfo.SourceDirectory in the precedence order (`.autonogrammer` 0, `.omp` 1, `.cursor` 2, `.claude` 3, `.codex` 4, `.agents` 5; lower wins), or null for a file at the root itself.",
             "format": "int32"
           },
           "origin": {
@@ -6398,7 +6458,7 @@
               "null",
               "string"
             ],
-            "description": "Gets what the vendor states about where data is processed, or null. OmpOS does not verify it."
+            "description": "Gets what the vendor states about where data is processed, or null. Autonogrammer does not verify it."
           },
           "kind": {
             "description": "Gets what the provider sells or runs.",
@@ -8084,6 +8144,9 @@
     }
   },
   "tags": [
+    {
+      "name": "Auth"
+    },
     {
       "name": "SessionEndpoints"
     },

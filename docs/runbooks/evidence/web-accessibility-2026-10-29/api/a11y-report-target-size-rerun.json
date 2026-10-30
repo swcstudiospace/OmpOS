@@ -1,0 +1,13 @@
+{
+  "kind": "api",
+  "baseUrl": "http://127.0.0.1:5180/",
+  "axeCore": "4.14.0",
+  "findings": [],
+  "counters": {
+    "target-size:states": 16,
+    "target-size:targets": 321
+  },
+  "skipped": [],
+  "summary": {},
+  "screenshotFiles": []
+}

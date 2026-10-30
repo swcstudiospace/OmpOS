@@ -1,0 +1,105 @@
+{
+  "_doc": "Data for scripts/rebrand/rebrand.py. Regexes are Python 're' syntax. Globs are root-relative; '*' stays inside a segment, '**' crosses segments, a pattern without '/' matches the repo root only (use '**/name' for any depth). Globs MUST NOT name a brand segment (they are evaluated on both the old and the already-renamed path, which is what makes a re-run idempotent).",
+  "version": 1,
+
+  "tokenMap": {
+    "OmpOS": "Autonogrammer",
+    "OmpOs": "Autonogrammer",
+    "Ompos": "Autonogrammer",
+    "ompOs": "autonogrammer",
+    "ompos": "autonogrammer",
+    "OMPOS": "AUTONOGRAMMER"
+  },
+  "fallbackCase": {
+    "_doc": "Used (and reported as unmapped casing) when the regex matches a casing that tokenMap lacks, e.g. OmpoS.",
+    "upper": "AUTONOGRAMMER",
+    "pascal": "Autonogrammer",
+    "lower": "autonogrammer"
+  },
+  "brandRegex": "(?:(?:(?<![A-Za-z])|(?<=\\\\[nrtfv]))(?:ompos|ompOs|OMPOS)|(?<![A-Z])Omp[Oo][Ss])(?![a-z])",
+  "brandRegexNotes": "Report 01 section 1.1 plus the ompOs alternative (its tokenMap entry had no regex branch). Left edge: lowercase 'ompos' and 'OMPOS' may not follow a letter (compose, decompose, COMPOSE); 'Omp[Oo][Ss]' may follow a lowercase letter or digit (theOmpOS) but not an uppercase one. Right edge: never a lowercase letter (ompost, Omposs). The report-01 alternative (?<=[a-z])Omp[Oo][Ss] is subsumed by (?<![A-Z]) and dropped.",
+
+  "engineAdapters": {
+    "_doc": "Two lists, both data. keepPatterns = external omp engine tokens that are NEVER renamed and that veto any rename overlapping them (counted in the report as proof; leftNot is a character class the character before a match must NOT be; censusKey = counted by the omp census scan instead of a regex). productAbbreviations = first-party identifiers where Omp abbreviates the product, not the engine: always renamed (exact identifier match, in contents and in path segments). engineAdapterRules = first-party identifiers that name the engine integration (OmpLauncher, OmpAcpClient, FakeOmp): kept by default, renamed only with --engine-adapters rename. Even then bare omp, Omp as a stand-alone word, OMP_* and every keepPattern stay.",
+    "default": "keep",
+    "keepPatterns": [
+      {"name": "bare omp token", "censusKey": "bare omp (engine)"},
+      {"name": "omp acp", "pattern": "omp acp\\b", "leftNot": "[A-Za-z0-9_]"},
+      {"name": "omp --mode rpc", "pattern": "omp\\s+--mode\\b", "leftNot": "[A-Za-z0-9_]"},
+      {"name": "~/.omp and $HOME/.omp", "pattern": "(?:~|\\$HOME|\\$\\{HOME\\})/\\.omp(?![A-Za-z0-9_])"},
+      {"name": ".omp/ convention dir", "pattern": "\\.omp/", "leftNot": "[A-Za-z0-9_.]"},
+      {"name": "OMP_* variables", "pattern": "OMP_[A-Z0-9_]+", "leftNot": "[A-Za-z0-9_]"},
+      {"name": "PI_CODING_AGENT_DIR", "pattern": "PI_CODING_AGENT_DIR"},
+      {"name": "omp:// URLs", "pattern": "omp://", "leftNot": "[A-Za-z0-9_]"},
+      {"name": "@oh-my-pi packages", "pattern": "@oh-my-pi/[A-Za-z0-9._/-]+"},
+      {"name": "oh-my-pi", "pattern": "oh-my-pi"},
+      {"name": "models.yml", "pattern": "models\\.yml"},
+      {"name": "agent.db", "pattern": "agent\\.db"},
+      {"name": "omp_result wire field", "pattern": "omp_result", "leftNot": "[A-Za-z0-9_]"},
+      {"name": "SUBSTRATE_*OMP* (submodule env)", "pattern": "SUBSTRATE_[A-Z0-9_]*OMP[A-Z0-9_]*"},
+      {"name": "FAKE_OMP_*", "pattern": "FAKE_OMP_[A-Z0-9_]+"},
+      {"name": "gsd-core-omp plugin", "pattern": "gsd-core-omp"},
+      {"name": "-hooks-omp plugin suffix", "pattern": "-hooks-omp(?![A-Za-z0-9_])"}
+    ],
+    "productAbbreviations": {
+      "OmpApiFactory": "ApiFactory",
+      "OmpTelemetry": "ApiTelemetry",
+      "AddOmpOpenApi": "AddAutonogrammerOpenApi",
+      "AddOmpWebServices": "AddAutonogrammerWebServices",
+      "AddOmpWebDemoServices": "AddAutonogrammerWebDemoServices"
+    },
+    "engineAdapterRules": [
+      {"name": "Pascal Omp segment inside an identifier", "pattern": "(?:(?<![A-Za-z])Omp(?=[A-Z])|(?<=[a-z])Omp(?![a-z]))", "replacement": "Autonogrammer"},
+      {"name": "camel omp prefix inside an identifier", "pattern": "(?<![A-Za-z])omp(?=[A-Z])", "replacement": "autonogrammer"}
+    ]
+  },
+
+  "protectedUrlPatterns": [
+    {"name": "github repo slug swcstudiospace/OmpOS", "owner": "rename the GitHub repository first", "pattern": "(?i)swcstudiospace/ompos(?![A-Za-z0-9_-])"},
+    {"name": "vercel.app host of the OmpOS project", "owner": "rename the Vercel project first", "pattern": "(?i)(?<![A-Za-z0-9-])ompos-[A-Za-z0-9-]+\\.vercel\\.app"},
+    {"name": "railway host of the ompos-web/ompos-api project", "owner": "rename the Railway service first", "pattern": "(?i)(?<![A-Za-z0-9-])ompos-(?:web|api)[A-Za-z0-9-]*\\.(?:up\\.railway\\.app|railway\\.app|railway\\.internal)"},
+    {"name": "Vercel/Railway project or service name on a line that mentions Vercel or Railway", "owner": "rename the Vercel project / Railway service first", "pattern": "(?i)(?<![A-Za-z0-9_-])ompos-(?:web|api)(?![A-Za-z0-9_-])", "lineMustMatch": "(?i)vercel|railway"},
+    {"name": "Railway project, service and volume names of the staged worker (ompos-staging, ompos-worker, ompos-worker-data) on a line that mentions Railway", "owner": "rename the Railway project ompos-staging, the service ompos-worker and the volume ompos-worker-data first", "pattern": "(?i)(?<![A-Za-z0-9_-])ompos-(?:staging|worker-data|worker(?![A-Za-z0-9_-]))", "lineMustMatch": "(?i)railway"},
+    {"name": "owned domain ompos.dev", "owner": "register the new domain first", "pattern": "(?i)(?<![A-Za-z0-9-])ompos\\.dev(?![A-Za-z0-9-])"},
+    {"name": "working directory recorded in the ACP fixture frames (tests/*/TestData/frames/acp-in.ndjson); AcpFixtures.CapturedCwd must equal it byte for byte", "owner": "re-record the captured frames under the new checkout path, then change both together", "pattern": "(?<![A-Za-z0-9_-])/root/src/repos/ompos(?![A-Za-z0-9_-])"}
+  ],
+
+  "excludedGlobs": [
+    {"glob": ".gitleaksignore", "class": "gitleaksignore", "content": true, "path": true, "reason": "fingerprints name commit:path pairs from history; rewriting breaks them"},
+    {"glob": "LICENSE", "class": "licence", "content": true, "path": true, "reason": "licence text"},
+    {"glob": "LICENSES/**", "class": "licence", "content": true, "path": true, "reason": "licence texts"},
+    {"glob": "docs/runbooks/evidence/**", "class": "evidence", "content": true, "path": true, "reason": "recorded evidence of past runs"},
+    {"glob": ".planning/milestones/**", "class": "milestones-archive", "content": true, "path": true, "reason": "closed milestone archive with recorded protocol frames"},
+    {"glob": "tests/*/TestData/frames/**", "class": "recorded-frames", "content": true, "path": false, "reason": "recorded engine protocol frames replayed byte for byte (the directory above them is still renamed)"},
+    {"glob": "THIRD-PARTY-NOTICES.md", "class": "generated", "content": true, "path": true, "reason": "regenerated by scripts/legal/generate-third-party-notices.py"},
+    {"glob": "docs/api/openapi.json", "class": "generated", "content": true, "path": true, "reason": "regenerated by the API build"},
+    {"glob": "**/packages.lock.json", "class": "generated", "content": true, "path": false, "reason": "regenerated by dotnet restore --force-evaluate"},
+    {"glob": "**/LegacyBrandNames.cs", "class": "legacy-names", "content": true, "path": false, "reason": "the one file that holds the pre-rename literals (data directory name, .ompos, marker text) the C# runtime migration needs; it must survive every re-run"},
+    {"glob": "scripts/rebrand/**", "class": "rename-docs", "content": true, "path": true, "reason": "the rename tool itself"},
+    {"glob": "docs/runbooks/rebrand-autonogrammer.md", "class": "rename-docs", "content": true, "path": true, "reason": "the rename runbook"},
+    {"glob": "docs/plans/v0.16.0-research/01-rename-inventory.md", "class": "rename-docs", "content": true, "path": true, "reason": "the rename inventory"},
+    {"glob": ".planning/phases/66-*/**", "class": "post-rename-planning", "content": true, "path": false, "reason": "written after the rename; they name old-name literals and absolute worktree paths on purpose"},
+    {"glob": ".planning/phases/66.1-*/**", "class": "post-rename-planning", "content": true, "path": false, "reason": "written after the rename; they name old-name literals and absolute worktree paths on purpose"},
+    {"glob": ".planning/phases/6[7-9]-*/**", "class": "post-rename-planning", "content": true, "path": false, "reason": "written after the rename; they name old-name literals and absolute worktree paths on purpose"},
+    {"glob": ".planning/phases/7[0-7]-*/**", "class": "post-rename-planning", "content": true, "path": false, "reason": "written after the rename; they name old-name literals and absolute worktree paths on purpose"}
+  ],
+  "binaryExtensions": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".icns", ".bmp", ".ttf", ".otf", ".woff", ".woff2", ".eot", ".pdf", ".zip", ".gz", ".tgz", ".7z", ".dll", ".exe", ".so", ".dylib", ".a", ".nupkg", ".jar", ".wasm", ".mp3", ".mp4", ".mov", ".webm", ".keystore", ".jks"],
+  "binaryNote": "Binary files (extension list above, or a NUL byte in the file) are never rewritten; only their path is renamed (brand-named launcher icons and brand rasters keep the old pixels).",
+
+  "partialFiles": {
+    "CHANGELOG.md": {
+      "class": "changelog-released",
+      "frozenFromRegex": "^## \\[[0-9]",
+      "processLinesRegex": "^\\[[^\\]\\n]+\\]:[^\\n]*",
+      "reason": "released sections are history; everything before the first '## [x.y.z]' heading (title, [Unreleased]) is rewritten; link reference definitions stay eligible so --urls can fix the compare links"
+    }
+  },
+
+  "pathRules": {
+    "applyTokenMapToEverySegment": true,
+    "applyProductAbbreviationsToSegments": true,
+    "order": "deepest first (inner files, then directories by depth); every move is git mv for tracked paths and os.rename for untracked ones",
+    "refuse": ["two sources mapping to one target (case-insensitive)", "target exists in the tree or on disk", "file/directory clash", "mixed directory (siblings disagree about the new name of a shared directory, e.g. a path-excluded file inside a renamed directory)"],
+    "skipSymlinks": true
+  }
+}

@@ -1,0 +1,23 @@
+/* Autonogrammer web stylesheet: the single entry the web head links (index.html). The order matters: tokens first, then fonts and the
+   base, then the layout and the shared controls, then the chat surface, then the rail, the thread chrome, the composer, the review panel and the workbench regions. A new screen adds its own file here, after chat.css.
+   The @import urls are relative to this file, so they resolve inside _content/Autonogrammer.UI/styles/. A vendored stylesheet (lib/xterm/xterm.css) is imported here, never from inside
+   another imported file: a nested import loads one request later, and axe-core re-fetches the imports of an imported sheet relative to the page, which asks for /lib/xterm/xterm.css (a 404). */
+
+@import url('tokens.css');
+@import url('fonts.css');
+@import url('base.css');
+@import url('layout.css');
+@import url('components.css');
+@import url('chat.css');
+@import url('rail.css');
+@import url('thread.css');
+@import url('composer.css');
+@import url('review.css');
+@import url('workbench.css');
+@import url('kanban.css');
+@import url('settings.css');
+@import url('../lib/xterm/xterm.css');
+@import url('terminal.css');
+@import url('connect.css');
+@import url('about.css');
+@import url('a11y.css');

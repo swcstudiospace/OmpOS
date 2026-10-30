@@ -8,12 +8,12 @@ Verification (`36-CONTEXT.md` holds the decisions and the criteria table): `36-0
 
 | # | Criterion | Status | Evidence (file; test) |
 |---|-----------|--------|-----------------------|
-| 1 | Token dictionary with White and Purple roles in Light and Dark; Greptile families as OFL resources with notice; one spacing and one radius scale; no view hard-codes a colour; 4.5:1 text and 3:1 non-text in both themes | Met (owner look sign-off open) | `apps/OmpOS.Native/Themes/OmpOSTokens.axaml`; `apps/OmpOS.Native/Assets/Fonts/{DMSans,Anybody,SpaceMono}/OFL.txt` (SIL OFL 1.1 verified on disk); `tests/OmpOS.Native.Tests/Theme/FontManifest.txt`. Tests: `ThemeContrastTests.EveryTextPairMeetsTheTextMinimum`, `ThemeContrastTests.EveryNonTextPairMeetsTheNonTextMinimum`, `ThemeContrastTests.EachVariantDefinesExactlyTheClassifiedRoles`, `ColourLiteralTests` (views hold no colour literal), `FontResourceTests.EachFontFileHashesToItsManifestRow`, `FontResourceTests.EachFamilyCarriesItsOflNotice` |
-| 2 | Command record and registry with an empty catalogue; no name without a verified reference; empty query, unknown command and disabled reason tested | Met | `src/OmpOS.Presentation/Commands/*`; catalogue `SlashCommandCatalogue.Shipped` (empty). Tests: `SlashCommandRegistryTests.ShippedCatalogueIsEmpty` (empty query, unknown name), `SlashCommandRegistryTests.MatchByPrefixOrdersByNameAndIsCaseSensitive` (empty prefix lists all), `SlashCommandRegistryTests.UnknownNameSuggestsTheCloseRegisteredName`, `SlashCommandRegistryTests.DisabledCommandReportsItsStoredReason`. Reference record (G1, below): `SlashCommandReferenceTests.ShippedCatalogueRecordsTheCursorReferenceAndItsReadDate` |
-| 3 | Kanban runtime status enumeration with independent stale flag; mapping recorded in CONTEXT; each value mapped; stale flag changes without changing status | Met | `src/OmpOS.Presentation/Kanban/*` (`RuntimeStatus`, `RuntimeSignalKind`, `RuntimeStatusMap`, `KanbanCardState`). Mapping: `36-CONTEXT.md` ("Kanban runtime status mapping"). Tests: `RuntimeStatusMapTests` (each signal kind to its row, table complete, undefined kind refused), `KanbanCardStateTests.StatusChangesWithoutChangingTheStaleFlag`, `KanbanCardStateTests.AnUnmappedSignalIsRefusedAndTheCardIsUnchanged`, `KanbanCardStateTests.AnUnmappedSignalNamesTheSignalParameter` |
-| 4 | Provider record and URL validator: https accepted; http only to localhost; remote plain http refused unless explicitly allowed | Met | `src/OmpOS.Harness.Providers/*` (`ProviderEntry`, `ProviderEndpointValidator`, `ProviderEntryValidator`, `ProviderKind` with separate `CodingPlan`). Tests: `ProviderEndpointValidatorTests.HttpsEndpointIsAccepted`, `LocalhostHttpIsAccepted`, `IPv4LoopbackHttpIsAccepted`, `IPv6LoopbackHttpIsAccepted`, `RemotePlainHttpIsRefusedByDefault`, `RemotePlainHttpIsAcceptedOnlyWithExplicitAllow`; `ProviderEntryValidatorTests` |
-| 5 | `SecretString` never renders its value in ToString or serialisation; canary harness fails when a registered secret reaches a stub log, transcript, crash or telemetry sink | Met | `src/OmpOS.Harness.Secrets/*`. Tests: `SecretStringRedactionTests.ToStringReturnsTheRedactionMarkerAndNeverTheValue`, `SecretStringJsonTests.SerialisesAsTheRedactionMarkerNeverTheValue`, `CanaryHarnessTests` (each of `Log`, `Transcript`, `CrashReport`, `Telemetry` detects a registered canary on its channel), `CanaryHarnessTests.CanaryWrittenToEachOfTheFourSinksIsDetectedOnEachChannel` |
-| 6 | herdr session client and omp adapter contracts, versioned, with recorded-transcript fakes; fixture replayed twice yields the same typed events; detach leaves the fake session alive | Met (real endpoints open) | `src/OmpOS.Harness.Herdr/IHerdrSessionClient.cs` (`HerdrContract.ContractVersion = 1`); `src/OmpOS.Harness.Agent/IOmpAgentAdapter.cs` (`Version = 1`). Fakes: `tests/OmpOS.Harness.Herdr.Tests/FakeHerdrSessionClient.cs` (records every call in `Transcript`), `tests/OmpOS.Harness.Agent.Tests/FakeOmpAgentAdapter.cs`. Fixtures: `tests/OmpOS.Harness.Rpc.Tests/TestData/frames/` (linked into the Agent tests). Tests: `FakeHerdrSessionClientTests.DetachLeavesTheSessionAliveAndFindable`, `FakeHerdrSessionClientTests.LostSessionResumesFromItsNativeReference`, `HerdrContractTests.ContractVersionIsOne`, `RecordedTranscriptReplayTests.ReplayingTheLiveCaptureTwiceYieldsIdenticalEventSequences`, `RecordedTranscriptReplayTests.CancelTurnLeavesTheSessionRunningAndAcceptsTheNextTurn`, `OmpAgentContractTests.EnvelopeRefusesAnotherContractVersion`, `HerdrHeartbeatMonitorTests.TheStaleWindowIsThreeMissedBeatsOfFifteenSeconds` |
+| 1 | Token dictionary with White and Purple roles in Light and Dark; Greptile families as OFL resources with notice; one spacing and one radius scale; no view hard-codes a colour; 4.5:1 text and 3:1 non-text in both themes | Met (owner look sign-off open) | `apps/Autonogrammer.Native/Themes/AutonogrammerTokens.axaml`; `apps/Autonogrammer.Native/Assets/Fonts/{DMSans,Anybody,SpaceMono}/OFL.txt` (SIL OFL 1.1 verified on disk); `tests/Autonogrammer.Native.Tests/Theme/FontManifest.txt`. Tests: `ThemeContrastTests.EveryTextPairMeetsTheTextMinimum`, `ThemeContrastTests.EveryNonTextPairMeetsTheNonTextMinimum`, `ThemeContrastTests.EachVariantDefinesExactlyTheClassifiedRoles`, `ColourLiteralTests` (views hold no colour literal), `FontResourceTests.EachFontFileHashesToItsManifestRow`, `FontResourceTests.EachFamilyCarriesItsOflNotice` |
+| 2 | Command record and registry with an empty catalogue; no name without a verified reference; empty query, unknown command and disabled reason tested | Met | `src/Autonogrammer.Presentation/Commands/*`; catalogue `SlashCommandCatalogue.Shipped` (empty). Tests: `SlashCommandRegistryTests.ShippedCatalogueIsEmpty` (empty query, unknown name), `SlashCommandRegistryTests.MatchByPrefixOrdersByNameAndIsCaseSensitive` (empty prefix lists all), `SlashCommandRegistryTests.UnknownNameSuggestsTheCloseRegisteredName`, `SlashCommandRegistryTests.DisabledCommandReportsItsStoredReason`. Reference record (G1, below): `SlashCommandReferenceTests.ShippedCatalogueRecordsTheCursorReferenceAndItsReadDate` |
+| 3 | Kanban runtime status enumeration with independent stale flag; mapping recorded in CONTEXT; each value mapped; stale flag changes without changing status | Met | `src/Autonogrammer.Presentation/Kanban/*` (`RuntimeStatus`, `RuntimeSignalKind`, `RuntimeStatusMap`, `KanbanCardState`). Mapping: `36-CONTEXT.md` ("Kanban runtime status mapping"). Tests: `RuntimeStatusMapTests` (each signal kind to its row, table complete, undefined kind refused), `KanbanCardStateTests.StatusChangesWithoutChangingTheStaleFlag`, `KanbanCardStateTests.AnUnmappedSignalIsRefusedAndTheCardIsUnchanged`, `KanbanCardStateTests.AnUnmappedSignalNamesTheSignalParameter` |
+| 4 | Provider record and URL validator: https accepted; http only to localhost; remote plain http refused unless explicitly allowed | Met | `src/Autonogrammer.Harness.Providers/*` (`ProviderEntry`, `ProviderEndpointValidator`, `ProviderEntryValidator`, `ProviderKind` with separate `CodingPlan`). Tests: `ProviderEndpointValidatorTests.HttpsEndpointIsAccepted`, `LocalhostHttpIsAccepted`, `IPv4LoopbackHttpIsAccepted`, `IPv6LoopbackHttpIsAccepted`, `RemotePlainHttpIsRefusedByDefault`, `RemotePlainHttpIsAcceptedOnlyWithExplicitAllow`; `ProviderEntryValidatorTests` |
+| 5 | `SecretString` never renders its value in ToString or serialisation; canary harness fails when a registered secret reaches a stub log, transcript, crash or telemetry sink | Met | `src/Autonogrammer.Harness.Secrets/*`. Tests: `SecretStringRedactionTests.ToStringReturnsTheRedactionMarkerAndNeverTheValue`, `SecretStringJsonTests.SerialisesAsTheRedactionMarkerNeverTheValue`, `CanaryHarnessTests` (each of `Log`, `Transcript`, `CrashReport`, `Telemetry` detects a registered canary on its channel), `CanaryHarnessTests.CanaryWrittenToEachOfTheFourSinksIsDetectedOnEachChannel` |
+| 6 | herdr session client and omp adapter contracts, versioned, with recorded-transcript fakes; fixture replayed twice yields the same typed events; detach leaves the fake session alive | Met (real endpoints open) | `src/Autonogrammer.Harness.Herdr/IHerdrSessionClient.cs` (`HerdrContract.ContractVersion = 1`); `src/Autonogrammer.Harness.Agent/IOmpAgentAdapter.cs` (`Version = 1`). Fakes: `tests/Autonogrammer.Harness.Herdr.Tests/FakeHerdrSessionClient.cs` (records every call in `Transcript`), `tests/Autonogrammer.Harness.Agent.Tests/FakeOmpAgentAdapter.cs`. Fixtures: `tests/Autonogrammer.Harness.Rpc.Tests/TestData/frames/` (linked into the Agent tests). Tests: `FakeHerdrSessionClientTests.DetachLeavesTheSessionAliveAndFindable`, `FakeHerdrSessionClientTests.LostSessionResumesFromItsNativeReference`, `HerdrContractTests.ContractVersionIsOne`, `RecordedTranscriptReplayTests.ReplayingTheLiveCaptureTwiceYieldsIdenticalEventSequences`, `RecordedTranscriptReplayTests.CancelTurnLeavesTheSessionRunningAndAcceptsTheNextTurn`, `OmpAgentContractTests.EnvelopeRefusesAnotherContractVersion`, `HerdrHeartbeatMonitorTests.TheStaleWindowIsThreeMissedBeatsOfFifteenSeconds` |
 
 Requirement-level notes for the VX items that the criteria do not restate:
 - VX-04 (runtime statuses read-only, drag, stale indicator, live updates): the status and stale model exists (criterion 3). Views and drag are Phase 39.
@@ -26,7 +26,7 @@ Requirement-level notes for the VX items that the criteria do not restate:
 
 | Gap | Change | Test |
 |-----|--------|------|
-| G1: VX-02 requires the catalogue to record the Cursor reference version and date; `SlashCommandCatalogue` recorded neither. Cursor publishes no single version; the research record carries per-row versions and a read date of 2026-10-22. | New record `SlashCommandReference(string Source, DateOnly ReadOn)` in `src/OmpOS.Presentation/Commands/SlashCommandReference.cs`. New property `SlashCommandCatalogue.Reference` (`docs/plans/vision-research/cursor-slash-commands.md`, 2026-10-22). Catalogue remains empty. | `SlashCommandReferenceTests.ShippedCatalogueRecordsTheCursorReferenceAndItsReadDate` (new) |
+| G1: VX-02 requires the catalogue to record the Cursor reference version and date; `SlashCommandCatalogue` recorded neither. Cursor publishes no single version; the research record carries per-row versions and a read date of 2026-10-22. | New record `SlashCommandReference(string Source, DateOnly ReadOn)` in `src/Autonogrammer.Presentation/Commands/SlashCommandReference.cs`. New property `SlashCommandCatalogue.Reference` (`docs/plans/vision-research/cursor-slash-commands.md`, 2026-10-22). Catalogue remains empty. | `SlashCommandReferenceTests.ShippedCatalogueRecordsTheCursorReferenceAndItsReadDate` (new) |
 
 No other code changed. No command added. No stub or shim added. The Greptile OFL notices were already on disk, so none was added. Every test named in this summary is pre-existing except `SlashCommandReferenceTests.ShippedCatalogueRecordsTheCursorReferenceAndItsReadDate`. No existing test was changed.
 
@@ -40,19 +40,19 @@ Pre-gap-closure runs (commit-free working tree, before G1):
 
 | Project | Build (exit, warnings, errors) | Test (exit; total, failed, succeeded, skipped) |
 |---------|--------------------------------|-----------------------------------------------|
-| `tests/OmpOS.Harness.Secrets.Tests` | 0; 0 W; 0 E | 0; 29, 0, 29, 0 |
-| `tests/OmpOS.Harness.Providers.Tests` | 0; 0 W; 0 E | 0; 51, 0, 51, 0 |
-| `tests/OmpOS.Harness.Herdr.Tests` | 0; 0 W; 0 E | 0; 78, 0, 78, 0 |
-| `tests/OmpOS.Harness.Agent.Tests` | 0; 0 W; 0 E | 0; 23, 0, 23, 0 |
-| `tests/OmpOS.Presentation.Tests` | 0; 0 W; 0 E | 0; 287, 0, 287, 0 |
-| `tests/OmpOS.Native.Tests` | 0; 0 W; 0 E | 0; 334, 0, 334, 0 |
+| `tests/Autonogrammer.Harness.Secrets.Tests` | 0; 0 W; 0 E | 0; 29, 0, 29, 0 |
+| `tests/Autonogrammer.Harness.Providers.Tests` | 0; 0 W; 0 E | 0; 51, 0, 51, 0 |
+| `tests/Autonogrammer.Harness.Herdr.Tests` | 0; 0 W; 0 E | 0; 78, 0, 78, 0 |
+| `tests/Autonogrammer.Harness.Agent.Tests` | 0; 0 W; 0 E | 0; 23, 0, 23, 0 |
+| `tests/Autonogrammer.Presentation.Tests` | 0; 0 W; 0 E | 0; 287, 0, 287, 0 |
+| `tests/Autonogrammer.Native.Tests` | 0; 0 W; 0 E | 0; 334, 0, 334, 0 |
 
 Final runs (after G1, Presentation and Native rebuilt and re-run, since Presentation changed):
 
 | Project | Build (exit, warnings, errors) | Test (exit; total, failed, succeeded, skipped) |
 |---------|--------------------------------|-----------------------------------------------|
-| `tests/OmpOS.Presentation.Tests` | 0; 0 W; 0 E | 0; 288, 0, 288, 0 |
-| `tests/OmpOS.Native.Tests` | 0; 0 W; 0 E | 0; 334, 0, 334, 0 |
+| `tests/Autonogrammer.Presentation.Tests` | 0; 0 W; 0 E | 0; 288, 0, 288, 0 |
+| `tests/Autonogrammer.Native.Tests` | 0; 0 W; 0 E | 0; 334, 0, 334, 0 |
 
 The four harness projects (Secrets, Providers, Herdr, Agent) were not changed after their runs, so their pre-gap results stand.
 
@@ -61,14 +61,14 @@ Commands: `dotnet build <project> -nologo -v q`, then `dotnet test <project> --n
 ## Files
 
 Created:
-- `src/OmpOS.Presentation/Commands/SlashCommandReference.cs`
-- `tests/OmpOS.Presentation.Tests/Commands/SlashCommandReferenceTests.cs`
+- `src/Autonogrammer.Presentation/Commands/SlashCommandReference.cs`
+- `tests/Autonogrammer.Presentation.Tests/Commands/SlashCommandReferenceTests.cs`
 - `.planning/phases/36-contracts-theme-foundation/36-CONTEXT.md`
 - `.planning/phases/36-contracts-theme-foundation/36-01-PLAN.md`
 - `.planning/phases/36-contracts-theme-foundation/36-SUMMARY.md`
 
 Changed:
-- `src/OmpOS.Presentation/Commands/SlashCommandCatalogue.cs` (added `Reference`)
+- `src/Autonogrammer.Presentation/Commands/SlashCommandCatalogue.cs` (added `Reference`)
 
 ## Open items
 

@@ -6,12 +6,12 @@ Superseded (2026-10-21; was Accepted 2026-10-20). Temporal is removed; see [hand
 
 ## Context
 
-OmpOS needs to execute session runs (provision sandbox → run prompt → collect artifacts → teardown) with two execution modes:
+Autonogrammer needs to execute session runs (provision sandbox → run prompt → collect artifacts → teardown) with two execution modes:
 
 1. **Direct (in-process)** — default, no external dependencies, fast, suitable for short-lived runs.
 2. **Durable (Temporal)** — survives process restarts, provides durable retries/timers, observability, replay.
 
-The Phase 3 platform delivers both: `DirectSessionRunner` in `OmpOS.Workflows` (L2, no Temporal dependency) and a Temporal worker in `services/OmpOS.Workflows.Worker` (L3, Temporalio 1.20.0 + Hosting 1.20.0) behind the `Workflows:Enabled` flag.
+The Phase 3 platform delivers both: `DirectSessionRunner` in `Autonogrammer.Workflows` (L2, no Temporal dependency) and a Temporal worker in `services/Autonogrammer.Workflows.Worker` (L3, Temporalio 1.20.0 + Hosting 1.20.0) behind the `Workflows:Enabled` flag.
 
 ## Decision
 
@@ -31,7 +31,7 @@ The Phase 3 platform delivers both: `DirectSessionRunner` in `OmpOS.Workflows` (
 
 - **When**: `Workflows:Enabled=true` with valid `Workflows:Address`, `Namespace`, `TaskQueue`.
 - **Characteristics**:
-  - Runs in separate process (`services/OmpOS.Workflows.Worker`).
+  - Runs in separate process (`services/Autonogrammer.Workflows.Worker`).
   - Same state machine as `DirectSessionRunner` (provision → prompt → collect, teardown in
     `finally` once provisioned) behind its own `[WorkflowRun]` entry point
     (`TemporalSessionRunWorkflow`), over the shared `ISessionRunActivities` contract.
@@ -53,7 +53,7 @@ The Phase 3 platform delivers both: `DirectSessionRunner` in `OmpOS.Workflows` (
     "Enabled": false,
     "Address": "localhost:7233",
     "Namespace": "default",
-    "TaskQueue": "ompos-session-runs"
+    "TaskQueue": "autonogrammer-session-runs"
   }
 }
 ```
@@ -63,7 +63,7 @@ The Phase 3 platform delivers both: `DirectSessionRunner` in `OmpOS.Workflows` (
 | `Enabled` | No | `false` | Master switch. When `false`, worker host exits 0 immediately. |
 | `Address` | When Enabled | `localhost:7233` | Temporal server gRPC endpoint. |
 | `Namespace` | No | `default` | Temporal namespace. |
-| `TaskQueue` | No | `ompos-session-runs` | Task queue for workflow/activity tasks. |
+| `TaskQueue` | No | `autonogrammer-session-runs` | Task queue for workflow/activity tasks. |
 
 ### Validation
 
@@ -88,9 +88,9 @@ The worker connects to `localhost:7233` by default. The dev server uses an in-me
 
 ## Architecture Constraints
 
-- **No Temporal types in L2 (`OmpOS.Workflows`)** — only `IWorkflowContext` abstraction.
-- **Temporal types only in L3 (`services/OmpOS.Workflows.Worker`)** — `[Workflow]`, `[Activity]`, `WorkflowReplayer`, `AddHostedTemporalWorker`.
-- **Architecture test** enforces: API/UI projects must not reference Temporal; `OmpOS.Workflows` must not reference Temporal.
+- **No Temporal types in L2 (`Autonogrammer.Workflows`)** — only `IWorkflowContext` abstraction.
+- **Temporal types only in L3 (`services/Autonogrammer.Workflows.Worker`)** — `[Workflow]`, `[Activity]`, `WorkflowReplayer`, `AddHostedTemporalWorker`.
+- **Architecture test** enforces: API/UI projects must not reference Temporal; `Autonogrammer.Workflows` must not reference Temporal.
 - **Directory.Packages.props** pins `Temporalio` 1.20.0 + `Temporalio.Extensions.Hosting` 1.20.0 (same version).
 
 ## Replay Testing
@@ -108,20 +108,20 @@ await replayer.ReplayWorkflowAsync(history, cancellationToken: TestContext.Curre
 
 The fixture `session-run.json` (29 events) is a real dev-server export produced 2026-10-20
 with image `docker.io/temporalio/temporal:1.9.1`. The server was started with
-`podman run -d --name ompos-temporal -p 127.0.0.1:7233:7233 docker.io/temporalio/temporal:1.9.1 server start-dev --ip 0.0.0.0 --db-filename /home/temporal/temporal.db`
-and the worker with `Workflows__Enabled=true Workflows__Address=127.0.0.1:7233 Workflows__Namespace=default Workflows__TaskQueue=ompos-session-runs /root/.dotnet/dotnet run --project services/OmpOS.Workflows.Worker`
-(task queue `ompos-session-runs`, namespace `default`). One run was started with the
-container's own CLI `podman exec ompos-temporal temporal workflow start --type TemporalSessionRunWorkflow --task-queue ompos-session-runs --workflow-id session-run-001 --input '{"RunId":"run-1","SessionId":"session-1","SandboxId":"sandbox-1","CorrelationId":"corr-1","Prompt":"test prompt","ResumeFromSeq":0,"IdempotencyKey":"idem-1"}'`,
+`podman run -d --name autonogrammer-temporal -p 127.0.0.1:7233:7233 docker.io/temporalio/temporal:1.9.1 server start-dev --ip 0.0.0.0 --db-filename /home/temporal/temporal.db`
+and the worker with `Workflows__Enabled=true Workflows__Address=127.0.0.1:7233 Workflows__Namespace=default Workflows__TaskQueue=autonogrammer-session-runs /root/.dotnet/dotnet run --project services/Autonogrammer.Workflows.Worker`
+(task queue `autonogrammer-session-runs`, namespace `default`). One run was started with the
+container's own CLI `podman exec autonogrammer-temporal temporal workflow start --type TemporalSessionRunWorkflow --task-queue autonogrammer-session-runs --workflow-id session-run-001 --input '{"RunId":"run-1","SessionId":"session-1","SandboxId":"sandbox-1","CorrelationId":"corr-1","Prompt":"test prompt","ResumeFromSeq":0,"IdempotencyKey":"idem-1"}'`,
 waited to `COMPLETED`, then exported with
-`podman exec ompos-temporal temporal workflow show --workflow-id session-run-001 --output json`
-saved directly to `tests/OmpOS.Workflows.Tests/TestData/histories/session-run.json` with no
+`podman exec autonogrammer-temporal temporal workflow show --workflow-id session-run-001 --output json`
+saved directly to `tests/Autonogrammer.Workflows.Tests/TestData/histories/session-run.json` with no
 hand-editing of history events. Notes:
 
 - The history JSON is parsed with the protobuf parser, not STJ, so fixture loading is
   unaffected by the repo-wide reflection-serialization switch.
 - Replay deserializes payloads with `SessionRunDataConverter` (source-generated), the same
   converter the worker uses — replay therefore also covers the payload serialization path.
-- CI runs `dotnet test` on `OmpOS.Workflows.Tests` which includes `TemporalReplayTests`.
+- CI runs `dotnet test` on `Autonogrammer.Workflows.Tests` which includes `TemporalReplayTests`.
   Q-WF-HISTORY (verify the hand-built fixture against a real export) is resolved: no
   hand-built fixture remains.
 

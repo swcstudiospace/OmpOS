@@ -1,0 +1,93 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:commands="clr-namespace:Autonogrammer.Presentation.Commands;assembly=Autonogrammer.Presentation"
+             x:Class="Autonogrammer.Native.Views.SlashPaletteView"
+             IsVisible="False">
+
+  <UserControl.Styles>
+    <!-- Focus stays in the prompt: the arrow keys move the highlight of this list from there, so no row is a tab stop. A row is exactly one
+         control height tall (no margin), which the view uses to cap the list at the palette's visible-row count. -->
+    <Style Selector="ListBox.slash-list ListBoxItem">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Margin" Value="0" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- The slash palette of the composer: a card above the prompt that lists the commands omp advertises (a chat session registers no Autonogrammer entry: none has a handler). Each row is
+       the command in the mono face, its input hint, its description in muted small text and a small tag for the source. The count line is
+       the palette's live region. The popup has no animation, so reduced motion needs no class here. -->
+  <Border x:Name="PaletteFrame"
+          Classes="card"
+          Padding="4">
+    <Grid RowDefinitions="Auto,Auto,Auto">
+
+      <TextBlock x:Name="CountText"
+                 Grid.Row="0"
+                 Classes="muted small"
+                 Margin="8,4"
+                 AutomationProperties.Name="{x:Static commands:SlashPaletteCopy.CountName}"
+                 AutomationProperties.LiveSetting="Polite" />
+
+      <ListBox x:Name="CommandList"
+               Grid.Row="1"
+               Classes="slash-list"
+               Focusable="False"
+               IsTabStop="False"
+               AutomationProperties.Name="{x:Static commands:SlashPaletteCopy.ListName}"
+               AutomationProperties.HelpText="{x:Static commands:SlashPaletteCopy.ListHelp}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="commands:SlashPaletteEntry">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto"
+                  ColumnSpacing="{DynamicResource Autonogrammer.Gap.Sm}"
+                  AutomationProperties.Name="{CompiledBinding AutomationName}">
+              <TextBlock Grid.Column="0"
+                         Classes="mono"
+                         Text="{CompiledBinding DisplayName}"
+                         MaxLines="1"
+                         VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1"
+                         Classes="muted small mono"
+                         Text="{CompiledBinding InputHint}"
+                         IsVisible="{CompiledBinding HasInputHint}"
+                         MaxLines="1"
+                         VerticalAlignment="Center" />
+              <TextBlock Grid.Column="2"
+                         Classes="muted small"
+                         Text="{CompiledBinding Description}"
+                         IsVisible="{CompiledBinding HasDescription}"
+                         TextTrimming="CharacterEllipsis"
+                         MaxLines="1"
+                         VerticalAlignment="Center" />
+              <Border Grid.Column="3"
+                      Classes="chip"
+                      VerticalAlignment="Center">
+                <TextBlock Classes="muted small"
+                           Text="{CompiledBinding SourceLabel}"
+                           VerticalAlignment="Center" />
+              </Border>
+              <Border Grid.Column="4"
+                      Classes="chip"
+                      IsVisible="{CompiledBinding HasScope}"
+                      VerticalAlignment="Center">
+                <TextBlock Classes="muted small"
+                           Text="{CompiledBinding ScopeLabel}"
+                           VerticalAlignment="Center" />
+              </Border>
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+
+      <!-- No command matches the typed name, or the highlighted command is disabled: the reason, in one live region. -->
+      <TextBlock x:Name="MessageText"
+                 Grid.Row="2"
+                 Classes="muted small"
+                 Margin="8,4"
+                 TextWrapping="Wrap"
+                 IsVisible="False"
+                 AutomationProperties.Name="{x:Static commands:SlashPaletteCopy.MessageName}"
+                 AutomationProperties.LiveSetting="Polite" />
+    </Grid>
+  </Border>
+
+</UserControl>

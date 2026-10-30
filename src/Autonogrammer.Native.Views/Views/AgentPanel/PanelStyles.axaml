@@ -1,0 +1,101 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Styles the Agent Panel views share (46-UI-SPEC): the status tones, glyph strokes and the running pulse. Tokens only: no colour literal. Each view includes this file. -->
+
+  <!-- Text roles of the status chips and stage rows. A class wins over the application's TextBlock style. -->
+  <Style Selector="TextBlock.tone-primary">
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+  </Style>
+  <Style Selector="TextBlock.tone-secondary">
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+  </Style>
+  <Style Selector="TextBlock.tone-success">
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.StatusSuccess}" />
+  </Style>
+  <Style Selector="TextBlock.tone-warning">
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.StatusWarning}" />
+  </Style>
+  <Style Selector="TextBlock.tone-error">
+    <Setter Property="Foreground" Value="{DynamicResource Autonogrammer.Color.StatusError}" />
+  </Style>
+
+  <!-- Stroke roles of the glyphs. -->
+  <Style Selector="Path.tone-primary">
+    <Setter Property="Stroke" Value="{DynamicResource Autonogrammer.Color.TextPrimary}" />
+  </Style>
+  <Style Selector="Path.tone-secondary">
+    <Setter Property="Stroke" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+  </Style>
+  <Style Selector="Path.tone-success">
+    <Setter Property="Stroke" Value="{DynamicResource Autonogrammer.Color.StatusSuccess}" />
+  </Style>
+  <Style Selector="Path.tone-warning">
+    <Setter Property="Stroke" Value="{DynamicResource Autonogrammer.Color.StatusWarning}" />
+  </Style>
+  <Style Selector="Path.tone-error">
+    <Setter Property="Stroke" Value="{DynamicResource Autonogrammer.Color.StatusError}" />
+  </Style>
+  <Style Selector="Path.tone-accent">
+    <Setter Property="Stroke" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+  </Style>
+
+  <!-- The Running glyph pulses only while motion is full: the view adds the class in code and never adds it under reduced motion. -->
+  <Style Selector="Path.running-pulse">
+    <Style.Animations>
+      <Animation Duration="0:0:1.2" IterationCount="INFINITE">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+        <KeyFrame Cue="50%">
+          <Setter Property="Opacity" Value="0.5" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- The banner (notice, error, closed): a 3 px bar in the tone colour on the left of a Border.banner. The bar and the content sit in a
+       Grid inside the banner, which clips to its rounded corners. Colour is never the only signal: a glyph or the words carry the meaning. -->
+  <Style Selector="Border.banner-bar">
+    <Setter Property="Width" Value="3" />
+  </Style>
+  <Style Selector="Border.bar-warning">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.StatusWarning}" />
+  </Style>
+  <Style Selector="Border.bar-error">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.StatusError}" />
+  </Style>
+  <Style Selector="Border.bar-secondary">
+    <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.TextSecondary}" />
+  </Style>
+
+  <!-- The pipeline strip button as one compact line (spec 4.5): no fill at rest, 24 px high, 6 px of padding inside its transparent 2 px
+       border, hover Hover. It is declared here, after the library, so it wins over the library's taller strip. -->
+  <Style Selector="Button.strip">
+    <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.IconButtonSm}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Padding" Value="4,0" />
+    <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    </Style>
+    <Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.Hover}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Brush.Transparent}" />
+    </Style>
+    <Style Selector="^:focus-visible">
+      <Setter Property="Padding" Value="4,0" />
+    </Style>
+    <Style Selector="^:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+    </Style>
+  </Style>
+
+  <!-- The chip shape, the buttons (primary, destructive, chip-button), the focus rule and the reduced-motion overrides live in
+       Themes/AutonogrammerControls.axaml, which the application includes once. -->
+
+</Styles>

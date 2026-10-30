@@ -45,7 +45,7 @@ Directory.Packages.props (including Dependabot pull requests) needs the lock fil
 restore fails with NU1004. CI=true turns locked mode on locally as well, so relock with locked
 mode switched off:
 
-    dotnet restore OmpOS.Linux.slnf --force-evaluate -p:RestoreLockedMode=false
+    dotnet restore Autonogrammer.Linux.slnf --force-evaluate -p:RestoreLockedMode=false
 
 Commit the resulting packages.lock.json changes in the same pull request.
 -->

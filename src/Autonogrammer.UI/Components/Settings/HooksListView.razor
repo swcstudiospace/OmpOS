@@ -1,0 +1,83 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits SettingsPageView<HooksListPage>
+@using Autonogrammer.Presentation.Settings
+<SettingsPageFrame Page="Page" Title="@SettingsWebCopy.HooksTitle" Description="@SettingsWebCopy.HooksDescription" Editable="false">
+    @if (Page.State != SettingsPageState.Ready)
+    {
+        <SettingsStateView Loading="@(Page.State == SettingsPageState.Loading)" Error="@(Page.State == SettingsPageState.Error ? Page.LoadError : null)" OnRetry="Retry" />
+    }
+    else
+    {
+        <p class="autonogrammer-settings-banner" data-tone="info">@SettingsWebCopy.HooksReadOnly</p>
+        if (Page.IsEmpty)
+        {
+            <p class="autonogrammer-settings-state">@SettingsWebCopy.HooksEmpty</p>
+        }
+        else
+        {
+            <ul class="autonogrammer-settings-list" aria-label="@SettingsWebCopy.HooksTitle">
+                @foreach (var hook in Page.Hooks)
+                {
+                    <li class="autonogrammer-settings-list-row autonogrammer-hook-row" @key="hook.Id" data-event="@hook.EventName">
+                        <div class="autonogrammer-settings-list-main">
+                            <span class="autonogrammer-settings-label">@hook.EventName</span>
+                            <span class="autonogrammer-settings-mono autonogrammer-hook-command">@HooksListPage.CommandText(hook)</span>
+                            @if (!string.IsNullOrEmpty(hook.Description))
+                            {
+                                <span class="autonogrammer-settings-help">@hook.Description</span>
+                            }
+                            @if (!string.IsNullOrEmpty(hook.Matcher))
+                            {
+                                <span class="autonogrammer-settings-help">@SettingsWebCopy.HookMatcherLabel <span class="autonogrammer-settings-mono">@hook.Matcher</span></span>
+                            }
+                            @if (!string.IsNullOrEmpty(hook.MatcherProblem))
+                            {
+                                <span class="autonogrammer-settings-error-text">@hook.MatcherProblem</span>
+                            }
+                            <span class="autonogrammer-settings-help">@SettingsWebCopy.HookDetail(hook)</span>
+                        </div>
+                        <div class="autonogrammer-hook-chips">
+                            <span class="autonogrammer-chip @(hook.Enabled ? "autonogrammer-chip--success" : "autonogrammer-chip--warning")" data-enabled="@(hook.Enabled ? "true" : "false")">@(hook.Enabled ? SettingsWebCopy.HookEnabled : SettingsWebCopy.HookDisabled)</span>
+                            <span class="autonogrammer-chip">@hook.Scope</span>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+
+        <h4 class="autonogrammer-settings-section-title">@SettingsWebCopy.HookFilesHeading</h4>
+        @if (Page.Sources.Count == 0)
+        {
+            <p class="autonogrammer-settings-help">@SettingsWebCopy.HookFilesEmpty</p>
+        }
+        else
+        {
+            <ul class="autonogrammer-settings-list" aria-label="@SettingsWebCopy.HookFilesHeading">
+                @foreach (var source in Page.Sources)
+                {
+                    <li class="autonogrammer-settings-list-row" @key="source.File">
+                        <div class="autonogrammer-settings-list-main">
+                            <span class="autonogrammer-settings-mono">@source.File</span>
+                            <span class="autonogrammer-settings-help">@SettingsWebCopy.HookSourceLine(source)</span>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+
+        @if (Page.Diagnostics.Count > 0)
+        {
+            <h4 class="autonogrammer-settings-section-title">@SettingsWebCopy.ProblemsHeading</h4>
+            <ul class="autonogrammer-settings-problems">
+                @foreach (var problem in Page.Diagnostics)
+                {
+                    <li class="autonogrammer-settings-mono" data-severity="@problem.Severity">@SettingsWebCopy.HookProblemLine(problem)</li>
+                }
+            </ul>
+        }
+    }
+</SettingsPageFrame>
+
+@code {
+    private Task Retry() => Page.LoadAsync(CancellationToken.None);
+}

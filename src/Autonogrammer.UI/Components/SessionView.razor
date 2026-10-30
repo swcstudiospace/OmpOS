@@ -1,0 +1,297 @@
+@namespace Autonogrammer.UI.Components
+@using Autonogrammer.Contracts.Ui
+@using Autonogrammer.GenUi
+@using Autonogrammer.Presentation.AgentPanel
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<section class="autonogrammer-session" id="autonogrammer-conversation" aria-label="Session" tabindex="-1" data-state="@ViewState.ToString().ToLowerInvariant()" @ref="_sectionRef">
+    <div class="autonogrammer-announcement" aria-live="polite" aria-atomic="true">@_status</div>
+    @if (ViewState == SessionViewState.LoadingHistory)
+    {
+        <p class="autonogrammer-loading">Loading conversation history…</p>
+    }
+    else if (ViewState == SessionViewState.Empty)
+    {
+        <span class="autonogrammer-state-mark" aria-hidden="true"></span>
+        <p class="autonogrammer-empty"><strong class="autonogrammer-empty-heading">@AgentPanelCopy.EmptySessionHeading</strong> <span class="autonogrammer-empty-body">@AgentPanelCopy.EmptySessionBody</span></p>
+    }
+    else
+    {
+        @if (_hiddenTurns > 0)
+        {
+            <button type="button" class="autonogrammer-btn autonogrammer-show-earlier" @onclick="ShowEarlierAsync">Show earlier messages (@_hiddenTurns hidden)</button>
+        }
+        <div class="autonogrammer-blocks" @ref="_blocksRef" aria-busy="@(ViewState == SessionViewState.Streaming ? "true" : null)">
+            @for (var i = 0; i < _keys.Length; i++)
+            {
+                <Autonogrammer.UI.Components.Blocks.UiBlockRenderer @key="_keys[i]" Block="Tree.Blocks[_startIndex + i]" Alert="IsLiveError(i)" OnRetry="OnRetry" OnCopy="OnCodeCopied" />
+            }
+            @if (Tree.StreamingText.Length > 0)
+            {
+                <div class="autonogrammer-block autonogrammer-streaming" aria-live="off">@Tree.StreamingText</div>
+            }
+        </div>
+        @if (ViewState == SessionViewState.AwaitingApproval)
+        {
+            // Read-only notice: the server session status is the only authority for this state. The decision itself
+            // is made in the pending approvals under the transcript (ToolApprovalList), never in this view.
+            <p class="autonogrammer-approval-notice" role="status">Approval needed to continue. The decision is made by policy.</p>
+        }
+        else if (ViewState == SessionViewState.Reconnecting)
+        {
+            <p class="autonogrammer-transport-notice" role="status">Reconnecting…</p>
+        }
+        else if (ViewState == SessionViewState.Offline)
+        {
+            <p class="autonogrammer-transport-notice" role="status">You are offline. Showing the last known output.</p>
+        }
+        @if (ViewState == SessionViewState.Streaming && ShowStop)
+        {
+            <button type="button" class="autonogrammer-btn autonogrammer-icon-btn" aria-label="Stop response" @onclick="() => OnStop.InvokeAsync()"><svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true" focusable="false"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5" /></svg></button>
+        }
+        @if (ViewState == SessionViewState.RecoverableError)
+        {
+            <button type="button" class="autonogrammer-btn" aria-label="Retry failed operation" @onclick="() => OnRetry.InvokeAsync()">Retry</button>
+        }
+        @if (ShowJumpToLatest)
+        {
+            <button type="button" class="autonogrammer-btn autonogrammer-icon-btn" aria-label="Jump to latest" @onclick="JumpToLatestAsync" @onfocus="OnJumpFocused" @onblur="OnJumpBlurred"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M6 13l6 6 6-6" /></svg></button>
+        }
+    }
+</section>
+
+@code {
+    /// <summary>Gets the folded UI tree to render.</summary>
+    [Parameter, EditorRequired]
+    public UiTree Tree { get; set; } = null!;
+
+    /// <summary>Gets the lifecycle state driving announcements and affordances.</summary>
+    [Parameter, EditorRequired]
+    public SessionViewState ViewState { get; set; }
+
+    /// <summary>Gets whether auto-scroll is paused because the user scrolled up.</summary>
+    [Parameter]
+    public bool AutoScrollPaused { get; set; }
+
+    /// <summary>Gets the throttled aria-live announcement text.</summary>
+    [Parameter]
+    public string? Announcement { get; set; }
+
+    /// <summary>Gets whether the transcript draws its own stop control while streaming. A host that has a stop control elsewhere (the composer) turns it off.</summary>
+    [Parameter]
+    public bool ShowStop { get; set; } = true;
+
+    /// <summary>Gets the callback invoked when the stop control is activated.</summary>
+    [Parameter]
+    public EventCallback OnStop { get; set; }
+
+    /// <summary>Gets the callback invoked when the retry affordance is activated.</summary>
+    [Parameter]
+    public EventCallback OnRetry { get; set; }
+
+    /// <summary>Gets the callback invoked when the jump-to-latest control is activated.</summary>
+    [Parameter]
+    public EventCallback OnJumpToLatest { get; set; }
+
+    /// <summary>Gets the callback invoked when the viewport crosses the bottom edge: true when the user scrolled up, false when they returned to the latest output.</summary>
+    [Parameter]
+    public EventCallback<bool> AutoScrollPausedChanged { get; set; }
+
+    /// <summary>The number of most recent turns (a user message with the output that answers it) in the DOM before the user asks for earlier ones; each "Show earlier messages" reveals this many more.</summary>
+    public const int InitialVisibleTurns = 50;
+
+    private const string ScrollModulePath = "./_content/Autonogrammer.UI/scripts/autonogrammer-scroll.js";
+    private const string TranscriptModulePath = "./_content/Autonogrammer.UI/scripts/autonogrammer-transcript.js";
+    private const char KeySeparator = '\u001f';
+
+    private IJSObjectReference? _scrollModule;
+    private IJSObjectReference? _transcriptModule;
+    private DotNetObjectReference<SessionView>? _self;
+    private ElementReference _blocksRef;
+    private ElementReference _sectionRef;
+    private int _observerToken;
+    private bool _scrolledUp;
+    private bool _jumpFocused;
+    private bool _focusFirstBlock;
+    private string? _status;
+
+    // The previous parameters, kept to find the events that completed between two renders.
+    private UiTree? _seenTree;
+    private SessionViewState? _seenState;
+    private string? _seenAnnouncement;
+
+    // The window of the transcript in the DOM: the blocks from _startIndex on, one stable key each.
+    private readonly List<int> _turnStarts = [];
+    private IReadOnlyList<UiBlock>? _windowBlocks;
+    private int? _pinnedFirstTurn;
+    private int _startIndex;
+    private int _hiddenTurns;
+    private string[] _keys = [];
+
+    // The control also stays while it has the focus: reaching it with Tab scrolls the view to the end, which would remove it from under the keyboard and drop the focus to the page.
+    private bool ShowJumpToLatest => AutoScrollPaused || _scrolledUp || _jumpFocused;
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        var completed = TranscriptAnnouncements.Completed(_seenTree, _seenState, Tree, ViewState);
+        if (completed is not null)
+        {
+            _status = completed;
+        }
+        else if (_seenTree is null || !string.Equals(Announcement, _seenAnnouncement, StringComparison.Ordinal))
+        {
+            _status = Announcement;
+        }
+
+        if (_seenTree is not null && Tree.Blocks.Count < _seenTree.Blocks.Count)
+        {
+            // A different, shorter transcript replaced this one: the earlier choice to show more does not carry over.
+            _pinnedFirstTurn = null;
+        }
+
+        _seenTree = Tree;
+        _seenState = ViewState;
+        _seenAnnouncement = Announcement;
+        UpdateWindow();
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _scrollModule = await JS.InvokeAsync<IJSObjectReference>("import", ScrollModulePath);
+            _self = DotNetObjectReference.Create(this);
+            _observerToken = await _scrollModule.InvokeAsync<int>("observe", _self);
+        }
+
+        if (_focusFirstBlock)
+        {
+            // The user asked for earlier messages: focus stays with the first one that appeared, and the view does not jump to the end.
+            _focusFirstBlock = false;
+            _transcriptModule ??= await JS.InvokeAsync<IJSObjectReference>("import", TranscriptModulePath);
+            await _transcriptModule.InvokeVoidAsync("focusFirstBlock", _blocksRef);
+            return;
+        }
+
+        if (_scrollModule is not null && !ShowJumpToLatest)
+        {
+            await _scrollModule.InvokeVoidAsync("scrollToEnd");
+        }
+    }
+
+    /// <summary>Works out which blocks are in the DOM: the last <see cref="InitialVisibleTurns"/> turns, or more once the user has asked for earlier ones.</summary>
+    private void UpdateWindow()
+    {
+        var blocks = Tree.Blocks;
+        var sameBlocks = ReferenceEquals(blocks, _windowBlocks);
+        if (!sameBlocks)
+        {
+            _turnStarts.Clear();
+            for (var i = 0; i < blocks.Count; i++)
+            {
+                if (blocks[i] is UserMessageBlock)
+                {
+                    _turnStarts.Add(i);
+                }
+            }
+        }
+
+        var first = Math.Clamp(_pinnedFirstTurn ?? Math.Max(0, _turnStarts.Count - InitialVisibleTurns), 0, Math.Max(0, _turnStarts.Count - 1));
+        var startIndex = first == 0 ? 0 : _turnStarts[first];
+        if (sameBlocks && startIndex == _startIndex)
+        {
+            return;
+        }
+
+        _windowBlocks = blocks;
+        _startIndex = startIndex;
+        _hiddenTurns = first;
+        var keys = new string[blocks.Count - startIndex];
+        var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (var i = 0; i < keys.Length; i++)
+        {
+            var id = blocks[startIndex + i].Id;
+            seen.TryGetValue(id, out var count);
+            seen[id] = count + 1;
+            keys[i] = count == 0 ? id : $"{id}{KeySeparator}{count}";
+        }
+
+        _keys = keys;
+    }
+
+    /// <summary>Whether the block at a window position is the failure the view is showing right now, so it alone is an assertive alert.</summary>
+    /// <param name="position">The position in the window.</param>
+    private bool IsLiveError(int position) =>
+        position == _keys.Length - 1 && ViewState is SessionViewState.RecoverableError or SessionViewState.FatalError;
+
+    private Task ShowEarlierAsync()
+    {
+        var before = _hiddenTurns;
+        var after = Math.Max(0, before - InitialVisibleTurns);
+        _pinnedFirstTurn = after;
+        _windowBlocks = null;
+        UpdateWindow();
+        _status = TranscriptAnnouncements.EarlierShown(before - after);
+        _focusFirstBlock = true;
+        return Task.CompletedTask;
+    }
+
+    private void OnCodeCopied() => _status = TranscriptAnnouncements.CopiedToClipboard;
+
+    /// <summary>Called by autonogrammer-scroll.js when the viewport crosses the bottom edge.</summary>
+    /// <param name="scrolledUp">True when the user scrolled away from the latest output.</param>
+    [JSInvokable("ReportScrollPosition")]
+    public async Task ReportScrollPositionAsync(bool scrolledUp)
+    {
+        if (_scrolledUp == scrolledUp)
+        {
+            return;
+        }
+
+        _scrolledUp = scrolledUp;
+        await InvokeAsync(StateHasChanged);
+        await AutoScrollPausedChanged.InvokeAsync(scrolledUp);
+    }
+
+    private void OnJumpFocused() => _jumpFocused = true;
+
+    private void OnJumpBlurred() => _jumpFocused = false;
+
+    // The control goes away once the view follows the output again; the focus moves to the transcript first, so a keyboard user keeps their place.
+    private async Task JumpToLatestAsync()
+    {
+        _scrolledUp = false;
+        _jumpFocused = false;
+        await OnJumpToLatest.InvokeAsync();
+        await _sectionRef.FocusAsync(preventScroll: true);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_scrollModule is not null)
+            {
+                await _scrollModule.InvokeVoidAsync("unobserve", _observerToken);
+                await _scrollModule.DisposeAsync();
+            }
+
+            if (_transcriptModule is not null)
+            {
+                await _transcriptModule.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, and the scroll listener went with it.
+        }
+        finally
+        {
+            _self?.Dispose();
+        }
+    }
+}

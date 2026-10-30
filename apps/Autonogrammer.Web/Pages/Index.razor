@@ -1,0 +1,110 @@
+@page "/"
+@page "/kanban"
+@page "/about"
+@page "/sessions/{SessionId}"
+@page "/settings"
+@page "/settings/{SettingsPage}"
+@using Microsoft.Extensions.Logging
+@using Autonogrammer.Presentation.AgentPanel
+@using Autonogrammer.Presentation.Changes
+@using Autonogrammer.UI.Components.Shell
+@using Autonogrammer.Web.Services
+@implements IDisposable
+@inject WebWorkbench Workbench
+@inject ILogger<Index> Logger
+
+@if (_startFailure is not null)
+{
+    <p class="autonogrammer-error" role="alert">@_startFailure</p>
+}
+
+<WorkbenchView Panel="Workbench.Panel"
+               Board="Workbench.Board"
+               Settings="Workbench.Settings"
+               IsDemo="Workbench.IsDemo"
+               Source="Workbench.Source"
+               Workspace="Workbench.Workspace"
+               ChangesFactory="ChangesFor"
+               RetryAsync="Workbench.RetryAsync" />
+
+@code {
+    private static readonly Action<ILogger, Exception?> StartFailed =
+        LoggerMessage.Define(
+            LogLevel.Error,
+            new EventId(1, "WorkbenchStartFailed"),
+            "Starting the workbench failed");
+
+    private static readonly Action<ILogger, Exception?> StopFailed =
+        LoggerMessage.Define(
+            LogLevel.Warning,
+            new EventId(2, "WorkbenchStopFailed"),
+            "Stopping the workbench failed");
+
+    private readonly CancellationTokenSource _lifetime = new();
+    private string? _startFailure;
+    private bool _disposed;
+
+    // Every workbench address is this one page, so moving between the Agents view, the Kanban view, a session, the Settings dialog and About keeps the
+    // workbench and its event streams. WorkbenchView reads the address itself; the route parameters only let the router match the templates above.
+
+    /// <summary>Gets the session of a <c>/sessions/{SessionId}</c> address. The shell reads the address itself, so the page does not use it.</summary>
+    [Parameter]
+    public string? SessionId { get; set; }
+
+    /// <summary>Gets the page of a <c>/settings/{SettingsPage}</c> address. The shell reads the address itself, so the page does not use it.</summary>
+    [Parameter]
+    public string? SettingsPage { get; set; }
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        Workbench.Changed += OnWorkbenchChanged;
+        try
+        {
+            await Workbench.StartAsync(_lifetime.Token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
+        {
+            // The page went away while the workbench started; nothing is left to show.
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            StartFailed(Logger, ex);
+            _startFailure = "Autonogrammer could not start. Reload the page to try again.";
+        }
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        Workbench.Changed -= OnWorkbenchChanged;
+        _lifetime.Cancel();
+        _lifetime.Dispose();
+
+        // Leaving the page (sign-out, a refused token) ends the workbench's event streams. The page cannot wait for them, so the stop runs on its own.
+        _ = StopWorkbenchAsync();
+    }
+
+    private async Task StopWorkbenchAsync()
+    {
+        try
+        {
+            await Workbench.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            StopFailed(Logger, ex);
+        }
+    }
+
+    // The workbench owns one change set per opened session, fed from the API; null until the session is opened.
+    private ChangeSetModel? ChangesFor(AgentSessionViewModel session) => Workbench.ChangesOf(session.Id);
+
+    private void OnWorkbenchChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
+}

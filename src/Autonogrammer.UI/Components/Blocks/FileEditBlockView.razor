@@ -1,0 +1,43 @@
+@namespace Autonogrammer.UI.Components.Blocks
+@using Autonogrammer.Contracts.Ui
+@using Autonogrammer.Presentation.Changes
+<div class="autonogrammer-block autonogrammer-file-edit" data-change="@ChangeText" role="group" aria-label="File edit: @Block.Path">
+    <p class="autonogrammer-file-edit-heading">
+        <span class="autonogrammer-file-edit-path">@Block.Path</span>
+        <span class="autonogrammer-file-edit-change">@ChangeText</span>
+    </p>
+    @if (Block.OldText is not null)
+    {
+        <div class="autonogrammer-file-edit-before">
+            <p class="autonogrammer-file-edit-label">Before</p>
+            <pre class="autonogrammer-file-edit-text" tabindex="0" role="group" aria-label="Text of the file before the edit">@Block.OldText</pre>
+        </div>
+    }
+    <div class="autonogrammer-file-edit-after">
+        <p class="autonogrammer-file-edit-label">After</p>
+        <pre class="autonogrammer-file-edit-text" tabindex="0" role="group" aria-label="@(Block.OldText is null ? "Text of the new file" : "Text of the file after the edit")">@Block.NewText</pre>
+    </div>
+    @if (CanDiff)
+    {
+        <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-file-edit-diff-toggle" aria-label="@((_showDiff ? "Hide diff for " : "Show diff for ") + Block.Path)" aria-expanded="@(_showDiff ? "true" : "false")" @onclick="ToggleDiff">@(_showDiff ? "Hide diff" : "Show diff")</button>
+        @if (_showDiff)
+        {
+            <DiffView Diff="ChangeDiff.Create(Block.OldText ?? string.Empty, Block.NewText)" Path="@Block.Path" />
+        }
+    }
+</div>
+
+@code {
+    /// <summary>Gets the file-edit block to render. Both texts are shown verbatim and never as markup.</summary>
+    [Parameter, EditorRequired]
+    public FileEditBlock Block { get; set; } = null!;
+
+    private bool _showDiff;
+
+    private bool CanDiff => !string.Equals(Block.OldText ?? string.Empty, Block.NewText, StringComparison.Ordinal);
+
+    private void ToggleDiff() => _showDiff = !_showDiff;
+
+    /// <summary>"created" when the edit has no text before it, else "edited".</summary>
+    private string ChangeText => Block.OldText is null ? "created" : "edited";
+}

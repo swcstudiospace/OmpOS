@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in OmpOS is broken or behaves differently from the documentation.
+description: Something in Autonogrammer is broken or behaves differently from the documentation.
 title: "[Bug]: "
 labels: ["bug", "needs-triage"]
 body:
@@ -17,7 +17,7 @@ body:
         - Desktop head (Avalonia)
         - Web head (Blazor WebAssembly)
         - Android head
-        - API service (services/OmpOS.Api)
+        - API service (services/Autonogrammer.Api)
         - Hooks
         - Remote environments (SSH)
         - Cloud agents
@@ -48,7 +48,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: OmpOS version or commit
+      label: Autonogrammer version or commit
       description: A release tag such as v0.15.0, or the commit hash (`git rev-parse --short HEAD`).
     validations:
       required: true

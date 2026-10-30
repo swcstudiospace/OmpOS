@@ -8,12 +8,12 @@ Wave 4 records the AT-SPI2 X11 evidence, the architecture rows and the open-ques
 
 | # | Criterion | Status | Evidence |
 |---|-----------|--------|----------|
-| 1 | Native Avalonia 12.1.4 project builds with warnings as errors | Met | Gate at 9e5913d; apps/OmpOS.Native |
-| 2 | Presentation layer has no UI-framework reference | Met | Gate contract tests in tests/OmpOS.ArchitectureTests |
-| 3 | Avalonia and Blazor heads both consume the presentation layer | Met | tests/OmpOS.Native.Tests/PresentationBindingTests.cs; gate at 9e5913d |
+| 1 | Native Avalonia 12.1.4 project builds with warnings as errors | Met | Gate at 9e5913d; apps/Autonogrammer.Native |
+| 2 | Presentation layer has no UI-framework reference | Met | Gate contract tests in tests/Autonogrammer.ArchitectureTests |
+| 3 | Avalonia and Blazor heads both consume the presentation layer | Met | tests/Autonogrammer.Native.Tests/PresentationBindingTests.cs; gate at 9e5913d |
 | 4 | Named controls; prompt, send and transcript exposed through AT-SPI2 | Met | docs/runbooks/evidence/phase-20-avalonia-foundation-2026-10-21/atspi-query.txt (prompt "Message", send "Send message", transcript "Session transcript") |
-| 5 | Keyboard reachable, focus style, reduced motion | Met | tests/OmpOS.Native.Tests/KeyboardFocusTests.cs; tests/OmpOS.Native.Tests/ReducedMotionTests.cs |
-| 6 | One token dictionary; at least 4.5:1 contrast | Met | tests/OmpOS.Native.Tests/ThemeContrastTests.cs |
+| 5 | Keyboard reachable, focus style, reduced motion | Met | tests/Autonogrammer.Native.Tests/KeyboardFocusTests.cs; tests/Autonogrammer.Native.Tests/ReducedMotionTests.cs |
+| 6 | One token dictionary; at least 4.5:1 contrast | Met | tests/Autonogrammer.Native.Tests/ThemeContrastTests.cs |
 | 7 | Plugin host contracts; in-process sample plugin | Met | Gate at 9e5913d; plan record .planning/phases/20-avalonia-foundation/20-01-SUMMARY.md |
 
 ## Open items

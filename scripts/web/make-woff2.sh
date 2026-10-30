@@ -5,15 +5,15 @@
 #
 #   scripts/web/make-woff2.sh
 #
-# Source: src/OmpOS.Native.Views/Assets/Fonts/<Family>/*.ttf   Output: src/OmpOS.UI/wwwroot/fonts/<Family>/*.woff2 + OFL.txt
+# Source: src/Autonogrammer.Native.Views/Assets/Fonts/<Family>/*.ttf   Output: src/Autonogrammer.UI/wwwroot/fonts/<Family>/*.woff2 + OFL.txt
 # Needs python3 with the venv module and network access to PyPI on the first run only (the venv is reused afterwards).
-# The venv lives outside the repository; override its location with OMPOS_WOFF2_VENV.
+# The venv lives outside the repository; override its location with AUTONOGRAMMER_WOFF2_VENV.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-src="$root/src/OmpOS.Native.Views/Assets/Fonts"
-dst="$root/src/OmpOS.UI/wwwroot/fonts"
-venv="${OMPOS_WOFF2_VENV:-/tmp/ompos-woff2-venv}"
+src="$root/src/Autonogrammer.Native.Views/Assets/Fonts"
+dst="$root/src/Autonogrammer.UI/wwwroot/fonts"
+venv="${AUTONOGRAMMER_WOFF2_VENV:-/tmp/autonogrammer-woff2-venv}"
 
 if [[ ! -x "$venv/bin/python" ]] || ! "$venv/bin/python" -c 'import fontTools, brotli' 2>/dev/null; then
   python3 -m venv "$venv"

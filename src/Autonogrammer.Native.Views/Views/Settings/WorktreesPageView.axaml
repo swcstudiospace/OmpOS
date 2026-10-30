@@ -1,0 +1,145 @@
+<local:SettingsPageViewBase xmlns="https://github.com/avaloniaui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                            xmlns:wt="clr-namespace:Autonogrammer.Presentation.Settings.Worktrees;assembly=Autonogrammer.Presentation"
+                            xmlns:local="clr-namespace:Autonogrammer.Native.Views.Settings"
+                            x:Class="Autonogrammer.Native.Views.Settings.WorktreesPageView"
+                            x:DataType="wt:WorktreesSettingsPage"
+                            Focusable="False">
+
+  <local:SettingsPageViewBase.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+  </local:SettingsPageViewBase.Styles>
+
+  <!-- The Worktrees page: read-only facts (workspace, where worktrees are created, the fixed cap, clean-up) and the setup commands with whether they are approved.
+       The one button reads the facts again. -->
+  <Panel>
+
+    <local:PageStatusView x:Name="StateView" />
+
+    <ScrollViewer x:Name="ReadyPanel"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Classes="settings-column">
+
+        <TextBlock Classes="settings-heading"
+                   Text="{x:Static wt:WorktreesCopy.Heading}" />
+        <TextBlock Classes="settings-description"
+                   Text="{x:Static wt:WorktreesCopy.Description}" />
+
+        <Border Classes="settings-row"
+                AutomationProperties.Name="{x:Static wt:WorktreesCopy.WorkspaceLabel}">
+          <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+            <TextBlock Classes="settings-label"
+                       Text="{x:Static wt:WorktreesCopy.WorkspaceLabel}" />
+            <TextBlock x:Name="WorkspaceText"
+                       Classes="settings-mono"
+                       Text="{CompiledBinding WorkspaceRoot}" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="settings-row"
+                AutomationProperties.Name="{x:Static wt:WorktreesCopy.StorageLabel}">
+          <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+            <TextBlock Classes="settings-label"
+                       Text="{x:Static wt:WorktreesCopy.StorageLabel}" />
+            <TextBlock Classes="settings-body"
+                       Text="{x:Static wt:WorktreesCopy.StorageText}" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="settings-row"
+                AutomationProperties.Name="{x:Static wt:WorktreesCopy.CapLabel}">
+          <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+            <TextBlock Classes="settings-label"
+                       Text="{x:Static wt:WorktreesCopy.CapLabel}" />
+            <TextBlock x:Name="CapLine"
+                       Classes="settings-body"
+                       Text="{CompiledBinding CapText}" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="settings-row"
+                AutomationProperties.Name="{x:Static wt:WorktreesCopy.CleanupLabel}">
+          <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+            <TextBlock Classes="settings-label"
+                       Text="{x:Static wt:WorktreesCopy.CleanupLabel}" />
+            <TextBlock Classes="settings-body"
+                       Text="{x:Static wt:WorktreesCopy.CleanupText}" />
+          </StackPanel>
+        </Border>
+
+        <TextBlock Classes="settings-section"
+                   Margin="0,16,0,0"
+                   Text="{x:Static wt:WorktreesCopy.SetupHeading}" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static wt:WorktreesCopy.SetupDescription}" />
+
+        <TextBlock x:Name="SetupStateLine"
+                   Classes="settings-body"
+                   Text="{CompiledBinding SetupStateText}"
+                   AutomationProperties.LiveSetting="Polite"
+                   AutomationProperties.Name="{CompiledBinding SetupStateText}" />
+
+        <TextBlock x:Name="SetupErrorHeading"
+                   Classes="tone-error settings-body"
+                   IsVisible="{CompiledBinding HasSetupError}"
+                   Text="{CompiledBinding SetupError}"
+                   AutomationProperties.Name="{CompiledBinding SetupError}" />
+
+        <StackPanel x:Name="SetupFileBlock"
+                    IsVisible="{CompiledBinding HasSetupFile}"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static wt:WorktreesCopy.SetupFileLabel}" />
+          <TextBlock Classes="settings-mono"
+                     Text="{CompiledBinding SetupFile}" />
+        </StackPanel>
+
+        <StackPanel x:Name="ScriptBlock"
+                    IsVisible="{CompiledBinding HasScript}"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static wt:WorktreesCopy.ScriptLabel}" />
+          <TextBlock Classes="settings-mono"
+                     Text="{CompiledBinding ScriptPath}" />
+        </StackPanel>
+
+        <StackPanel x:Name="CommandsBlock"
+                    IsVisible="{CompiledBinding HasCommands}"
+                    Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+          <TextBlock Classes="settings-label"
+                     Text="{x:Static wt:WorktreesCopy.CommandsLabel}" />
+          <ItemsControl x:Name="CommandRows"
+                        ItemsSource="{CompiledBinding Commands}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <Border Classes="settings-row"
+                        AutomationProperties.Name="{CompiledBinding .}">
+                  <TextBlock Classes="settings-mono"
+                             Text="{CompiledBinding .}" />
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <Button x:Name="RefreshButton"
+                Margin="0,8"
+                HorizontalAlignment="Left"
+                MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                Content="{x:Static wt:WorktreesCopy.RefreshLabel}"
+                AutomationProperties.Name="{x:Static wt:WorktreesCopy.RefreshLabel}"
+                AutomationProperties.HelpText="{x:Static wt:WorktreesCopy.RefreshHelp}"
+                Click="OnRefreshClick" />
+        <TextBlock Classes="settings-help"
+                   Text="{x:Static wt:WorktreesCopy.RefreshHelp}" />
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Panel>
+
+</local:SettingsPageViewBase>

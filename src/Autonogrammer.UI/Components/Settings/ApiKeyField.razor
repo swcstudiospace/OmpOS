@@ -1,0 +1,102 @@
+@namespace Autonogrammer.UI.Components.Settings
+@inherits ObservableComponent
+@using Autonogrammer.Presentation.Settings.Models
+@* The key field is write-only: it is never given a value, so neither the markup nor the browser's saved state ever holds a key. The typed
+   text goes straight into the draft; when the draft empties itself after a save attempt, the input is replaced by a fresh empty one (the @key changes). *@
+<div class="autonogrammer-settings-key">
+    <label class="autonogrammer-settings-label" for="@InputId">@Draft.FieldLabel</label>
+    <input @key="_epoch" id="@InputId" class="autonogrammer-input autonogrammer-settings-mono" type="password" autocomplete="off" autocapitalize="none" spellcheck="false"
+           disabled="@(DisabledReason is not null)"
+           aria-invalid="@(Draft.Error is null ? null : "true")"
+           aria-describedby="@(InputId + "-note " + InputId + "-error")"
+           @oninput="OnInput" />
+    <p class="autonogrammer-settings-help" id="@(InputId + "-note")">@(DisabledReason ?? Draft.KeyStorageNote)</p>
+    <p class="autonogrammer-settings-error" id="@(InputId + "-error")" aria-live="polite">@Draft.Error</p>
+    @if (ShowActions)
+    {
+        <div class="autonogrammer-settings-actions">
+            <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--primary" disabled="@(DisabledReason is not null || !Draft.IsValid || Draft.IsSaving)" @onclick="SaveAsync">@ModelsCopy.SaveKeyLabel</button>
+            <button type="button" class="autonogrammer-btn autonogrammer-btn--small autonogrammer-btn--ghost" @onclick="CancelAsync">@ModelsCopy.CancelLabel</button>
+        </div>
+    }
+</div>
+
+@code {
+    private ApiKeyDraft? _watched;
+    private int _epoch;
+    private bool _hadEntry;
+    private bool _typing;
+
+    /// <summary>Gets the draft the field types into: the only place the typed key lives.</summary>
+    [Parameter, EditorRequired]
+    public ApiKeyDraft Draft { get; set; } = default!;
+
+    /// <summary>Gets the id of the input; the note and error ids derive from it.</summary>
+    [Parameter, EditorRequired]
+    public string InputId { get; set; } = string.Empty;
+
+    /// <summary>Gets whether the field shows its own Save key and Cancel buttons (a provider card) or leaves saving to its form (a listing card).</summary>
+    [Parameter]
+    public bool ShowActions { get; set; }
+
+    /// <summary>Gets the sentence that says the operator disabled key entry, or null when keys can be entered. While it is set the input and the Save key button are disabled and the sentence replaces the storage note.</summary>
+    [Parameter]
+    public string? DisabledReason { get; set; }
+
+    /// <summary>Gets the callback invoked when the user presses Save key.</summary>
+    [Parameter]
+    public EventCallback OnSave { get; set; }
+
+    /// <summary>Gets the callback invoked when the user presses Cancel.</summary>
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_watched, Draft))
+        {
+            StopObserving(_watched);
+            _watched = Draft;
+        }
+
+        Observe(Draft);
+    }
+
+    // The draft empties itself after every save attempt, whether the save worked or not. When that happens without the user deleting the
+    // text, the input is replaced by a new empty one, so the browser does not keep showing a key the draft no longer holds.
+    /// <inheritdoc />
+    protected override bool ShouldRender()
+    {
+        var hasEntry = Draft.HasEntry;
+        if (_hadEntry && !hasEntry && !_typing)
+        {
+            _epoch++;
+        }
+
+        _typing = false;
+        _hadEntry = hasEntry;
+        return true;
+    }
+
+    private void OnInput(ChangeEventArgs args)
+    {
+        _typing = true;
+        Draft.Entry = args.Value?.ToString() ?? string.Empty;
+    }
+
+    private Task SaveAsync() => OnSave.InvokeAsync();
+
+    private Task CancelAsync() => OnCancel.InvokeAsync();
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            StopObserving(_watched);
+        }
+
+        base.Dispose(disposing);
+    }
+}

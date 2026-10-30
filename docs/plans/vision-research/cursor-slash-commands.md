@@ -1,18 +1,18 @@
-# Cursor slash commands and their OmpOS mapping
+# Cursor slash commands and their Autonogrammer mapping
 
 Read date for every row: 2026-10-22. Source codes (S1 to S16) resolve to full URLs with the open result in the Sources section. "Opened yes" means the page was fetched and its text read, either in full or by search of the fetched text.
 
 ## Verdict
 
-Cursor documents 86 distinct slash tokens across three sources: 44 in the CLI reference table (36 commands plus 8 aliases), 21 in Agent chat and the Agents Window (`/side`, `/btw` and `/in-cloud`, plus 18 built-in skills; the nineteenth built-in, `/shell`, is counted in the CLI group), and 21 that appear only in the CLI changelog (16 commands plus 5 aliases). Inline edit and Tab document no slash commands. Against the OmpOS roadmap (v0.11.0 and v0.12.0) and the ADE harness plan, 20 tokens map to a planned phase (Phases 26, 27, 28, 29, 31 and 32), 66 have no mapping and are new, and none is existing as a Cursor-compatible command. The repository has a generic slash-command recogniser that tags any leading `/name` prompt as a slash-command intent; a search found no handler for any Cursor command, and a side-chat presentation model exists with no `/side` entry point. Many mappings are partial: the roadmap names a feature, not the command that invokes it. Sixteen CLI changelog commands are absent from the current reference table, so their current availability is unverified.
+Cursor documents 86 distinct slash tokens across three sources: 44 in the CLI reference table (36 commands plus 8 aliases), 21 in Agent chat and the Agents Window (`/side`, `/btw` and `/in-cloud`, plus 18 built-in skills; the nineteenth built-in, `/shell`, is counted in the CLI group), and 21 that appear only in the CLI changelog (16 commands plus 5 aliases). Inline edit and Tab document no slash commands. Against the Autonogrammer roadmap (v0.11.0 and v0.12.0) and the ADE harness plan, 20 tokens map to a planned phase (Phases 26, 27, 28, 29, 31 and 32), 66 have no mapping and are new, and none is existing as a Cursor-compatible command. The repository has a generic slash-command recogniser that tags any leading `/name` prompt as a slash-command intent; a search found no handler for any Cursor command, and a side-chat presentation model exists with no `/side` entry point. Many mappings are partial: the roadmap names a feature, not the command that invokes it. Sixteen CLI changelog commands are absent from the current reference table, so their current availability is unverified.
 
 ## Table
 
-Columns: ID; syntax as documented; what it does (paraphrased); surface; source code(s); opened; OmpOS status (existing, planned or new); mapping basis (phase and requirement, or none).
+Columns: ID; syntax as documented; what it does (paraphrased); surface; source code(s); opened; Autonogrammer status (existing, planned or new); mapping basis (phase and requirement, or none).
 
 ### A. CLI reference table (surface: CLI, the terminal agent)
 
-| ID | Syntax | What it does | Surface | Source | Opened | OmpOS status | OmpOS mapping |
+| ID | Syntax | What it does | Surface | Source | Opened | Autonogrammer status | Autonogrammer mapping |
 |---|---|---|---|---|---|---|---|
 | A01 | `/model [filter]` | Opens the model picker; Tab edits the filter | CLI | S1 | yes | new | No model picker in ROADMAP v0.11.0 or v0.12.0 or ADE plan |
 | A02 | `/run-everything [on\|off\|status]` | Toggles Run Everything or shows its state | CLI | S1 | yes | planned | P28, ADE-14: auto-run off by default, opt-in only |
@@ -53,7 +53,7 @@ Columns: ID; syntax as documented; what it does (paraphrased); surface; source c
 
 Aliases from the same table:
 
-| ID | Alias | Of | Surface | Source | Opened | OmpOS status | OmpOS mapping |
+| ID | Alias | Of | Surface | Source | Opened | Autonogrammer status | Autonogrammer mapping |
 |---|---|---|---|---|---|---|---|
 | A37 | `/auto-run` | A02 | CLI | S1 | yes | planned | P28, ADE-14 |
 | A38 | `/new` | A11 | CLI | S1 | yes | new | None |
@@ -66,7 +66,7 @@ Aliases from the same table:
 
 ### B. Agent chat and Agents Window (IDE and cloud), not in the CLI table
 
-| ID | Syntax | What it does | Surface | Source | Opened | OmpOS status | OmpOS mapping |
+| ID | Syntax | What it does | Surface | Source | Opened | Autonogrammer status | Autonogrammer mapping |
 |---|---|---|---|---|---|---|---|
 | B01 | `/side` or `/side <question>` | Opens a side chat with its own transcript; the parent thread is hidden reference context | Agent chat (local and cloud) | S2, S9, S14 | yes | planned | P26, ADE-04. Repository has `SideChat.cs` and `SideChatPanel.cs` (presentation model) but no `/side` entry point |
 | B02 | `/btw` | IDE: alias for a side chat. CLI: a read-only side question whose answer streams to an overlay and does not enter history | Agent chat, CLI | S2, S13 | yes | planned | P26, ADE-04. Semantics differ between IDE and CLI; see owner decision OD-b |
@@ -92,7 +92,7 @@ Aliases from the same table:
 
 ### C. CLI changelog only (not in the current reference table)
 
-| ID | Syntax | What it does (changelog wording, paraphrased) | Surface | Source | Opened | OmpOS status | OmpOS mapping |
+| ID | Syntax | What it does (changelog wording, paraphrased) | Surface | Source | Opened | Autonogrammer status | Autonogrammer mapping |
 |---|---|---|---|---|---|---|---|
 | C01 | `/add-dir <path>` | Adds a directory mid-session; refreshes skills and custom commands (v2026.06.29) | CLI | S13 | yes | new | Adjacent: ADE-10 (P27) single workspace root |
 | C02 | `/auto-review` | Named in the Auto-review run-mode entry (v2026.06.22); the command's behaviour is not stated | CLI | S13 | yes | new | Not in ADE-14 or ADE-02 |
@@ -113,7 +113,7 @@ Aliases from the same table:
 
 Aliases from the changelog:
 
-| ID | Alias | Of | Surface | Source | Opened | OmpOS status | OmpOS mapping |
+| ID | Alias | Of | Surface | Source | Opened | Autonogrammer status | Autonogrammer mapping |
 |---|---|---|---|---|---|---|---|
 | C17 | `/branch` | A13 | CLI | S13 | yes | new | None |
 | C18 | `/duplicate` | A13 | CLI | S13 | yes | new | None |
@@ -129,7 +129,7 @@ Surface results: inline edit (S10) documents Cmd or Ctrl+K, an Opt or Alt+Return
 
 ### User-defined command mechanisms (as the docs state them)
 
-| ID | Mechanism | Location (as documented) | Format (as documented) | Source | Opened | OmpOS status | OmpOS mapping |
+| ID | Mechanism | Location (as documented) | Format (as documented) | Source | Opened | Autonogrammer status | Autonogrammer mapping |
 |---|---|---|---|---|---|---|---|
 | U01 | Agent Skills | Project: `.agents/skills/`, `.cursor/skills/`, and nested project folders. User: `~/.agents/skills/`, `~/.cursor/skills/`. Compatibility: `.claude/skills/`, `.codex/skills/`, `~/.claude/skills/`, `~/.codex/skills/` | A folder containing `SKILL.md` with YAML frontmatter: `name` (required; lowercase, digits, hyphens; must match the folder), `description` (required), optional `paths`, `disable-model-invocation`, `icon`, `color`, `metadata`. `user-invocable: false` hides a skill from `/` autocomplete (release notes, v2026.07.06) | S4, S3, S14 | yes | planned | P28, ADE-17: rule, skill and mode files load from the project and reload on change |
 | U02 | Commands (Agent chat `/` commands) | Plugin: `commands/` folder inside a plugin. User and workspace command files: location not stated in any page opened | Plugin: `.md`, `.mdc`, `.markdown` or `.txt` with YAML frontmatter `name` (kebab-case) and `description`. Plugin manifest field `commands` takes a path or list of paths | S5, S6 | yes | new | Not in plan. Owner decision OD-e |
@@ -139,13 +139,13 @@ Surface results: inline edit (S10) documents Cmd or Ctrl+K, an Opt or Alt+Return
 
 ## Owner decisions
 
-OD-a. Command naming. Should OmpOS mirror Cursor's `/` names, pass through omp's own command list, or do both? Options: (1) Cursor-compatible names; (2) omp's native commands unchanged (a recorded RPC frame fixture in the repository shows omp advertising its commands through `available_commands_update`, for example `/security`); (3) both, with a namespace prefix for one of the two.
+OD-a. Command naming. Should Autonogrammer mirror Cursor's `/` names, pass through omp's own command list, or do both? Options: (1) Cursor-compatible names; (2) omp's native commands unchanged (a recorded RPC frame fixture in the repository shows omp advertising its commands through `available_commands_update`, for example `/security`); (3) both, with a namespace prefix for one of the two.
 
 OD-b. `/btw` meaning. Options: (1) side chat as in the IDE, under ADE-04; (2) an ephemeral read-only overlay as in the CLI; (3) both, under two names.
 
 OD-c. Run mode naming and scope. `/run-everything` and `/auto-run` map to ADE-14. `/auto-review` is not in the plan. Options: (1) add Auto-review to ADE-14; (2) defer it; (3) exclude it.
 
-OD-d. Cursor-hosted built-in skills (`/in-cloud`, `/autopilot`, `/automate`, `/review-bugbot`, `/review-security`) depend on Cursor services. Options: (1) build OmpOS equivalents on the hosted API (P26 or P32); (2) exclude them; (3) defer until the OD-03 sign-in decision is made.
+OD-d. Cursor-hosted built-in skills (`/in-cloud`, `/autopilot`, `/automate`, `/review-bugbot`, `/review-security`) depend on Cursor services. Options: (1) build Autonogrammer equivalents on the hosted API (P26 or P32); (2) exclude them; (3) defer until the OD-03 sign-in decision is made.
 
 OD-e. Custom command files. Cursor documents commands only inside plugins (`commands/`), and the user and workspace locations are not stated in the pages read. Options: (1) adopt the skill format only; (2) also adopt the `commands/` format; (3) defer until Cursor documents the user and workspace locations.
 
@@ -198,9 +198,9 @@ Opened on 2026-10-22 unless noted.
 | S20 | https://cursor.com/docs/agent/chat/commands.md | no, HTTP 404 | Dedicated chat-commands page not found |
 | S21 | https://cursor.com/docs/inline-edit/overview.md | no, HTTP 404 | Used the help page (S10) instead |
 | S22 | https://cursor.com/docs/cli/reference/commands.md | no, HTTP 404 | Not found |
-| OmpOS-1 | /root/src/repos/ompos/.planning/ROADMAP.md, lines 480-554 (v0.11.0) and 556-619 (v0.12.0) | read | Phases 26 to 35 |
-| OmpOS-2 | /root/src/repos/ompos/docs/plans/ade-harness-plan.md | read | ADE-01 to ADE-22; sections 2 to 6 |
-| OmpOS-3 | /root/src/repos/ompos/src/OmpOS.Parser/Recognizers/SlashCommandRecognizer.cs | read | Tags any leading `/name args` as SlashCommand; a search found no handler for Cursor commands |
-| OmpOS-4 | /root/src/repos/ompos/src/OmpOS.Presentation/Chats/SideChat.cs and SideChatPanel.cs | read | Side-chat model; no `/side` parser |
-| OmpOS-5 | /root/src/repos/ompos/docs/decisions/ADR-0006-terminal-control.md | read | Status Proposed, 2026-10-22 |
-| OmpOS-6 | /root/src/repos/ompos/tests/OmpOS.Harness.Rpc.Tests/RpcPromptStreamTests.cs:53 | grep | omp answers its own local `/help` (agentInvoked false) |
+| Autonogrammer-1 | /root/src/repos/autonogrammer/.planning/ROADMAP.md, lines 480-554 (v0.11.0) and 556-619 (v0.12.0) | read | Phases 26 to 35 |
+| Autonogrammer-2 | /root/src/repos/autonogrammer/docs/plans/ade-harness-plan.md | read | ADE-01 to ADE-22; sections 2 to 6 |
+| Autonogrammer-3 | /root/src/repos/autonogrammer/src/Autonogrammer.Parser/Recognizers/SlashCommandRecognizer.cs | read | Tags any leading `/name args` as SlashCommand; a search found no handler for Cursor commands |
+| Autonogrammer-4 | /root/src/repos/autonogrammer/src/Autonogrammer.Presentation/Chats/SideChat.cs and SideChatPanel.cs | read | Side-chat model; no `/side` parser |
+| Autonogrammer-5 | /root/src/repos/autonogrammer/docs/decisions/ADR-0006-terminal-control.md | read | Status Proposed, 2026-10-22 |
+| Autonogrammer-6 | /root/src/repos/autonogrammer/tests/Autonogrammer.Harness.Rpc.Tests/RpcPromptStreamTests.cs:53 | grep | omp answers its own local `/help` (agentInvoked false) |

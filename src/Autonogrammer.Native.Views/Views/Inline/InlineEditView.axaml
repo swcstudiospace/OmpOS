@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Autonogrammer.Native.Views.InlineEditing.InlineEditView">
+
+  <StackPanel Margin="{DynamicResource Autonogrammer.Space.Sm}"
+              Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+    <TextBlock x:Name="InstructionText"
+               FontWeight="{DynamicResource Autonogrammer.Font.Weight.Semibold}"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Edit instruction" />
+
+    <TextBlock x:Name="SelectionText"
+               FontFamily="{DynamicResource Autonogrammer.Font.Mono}"
+               FontSize="{DynamicResource Autonogrammer.Font.Size.Mono}"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Selected text" />
+
+    <TextBox x:Name="ProposalInput"
+             Classes="mono"
+             AcceptsReturn="True"
+             TextWrapping="Wrap"
+             MinHeight="60"
+             AutomationProperties.Name="Proposed replacement" />
+
+    <Button x:Name="ProposeButton"
+            Classes="primary sm"
+            Content="Propose"
+            HorizontalAlignment="Left"
+            AutomationProperties.Name="Propose replacement" />
+
+    <StackPanel x:Name="ChangePanel"
+                IsVisible="False"
+                Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+      <TextBlock x:Name="RemovedText"
+                 Background="{DynamicResource Autonogrammer.Color.DiffRemoved}"
+                 Padding="8,4"
+                 FontFamily="{DynamicResource Autonogrammer.Font.Mono}"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Mono}"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Removed text" />
+      <TextBlock x:Name="AddedText"
+                 Background="{DynamicResource Autonogrammer.Color.DiffAdded}"
+                 Padding="8,4"
+                 FontFamily="{DynamicResource Autonogrammer.Font.Mono}"
+                 FontSize="{DynamicResource Autonogrammer.Font.Size.Mono}"
+                 TextWrapping="Wrap"
+                 AutomationProperties.Name="Added text" />
+    </StackPanel>
+
+    <StackPanel Orientation="Horizontal"
+                Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+      <Button x:Name="AcceptButton"
+              Classes="primary sm"
+              Content="Accept"
+              IsEnabled="False"
+              AutomationProperties.Name="Accept edit" />
+      <Button x:Name="RejectButton"
+              Classes="sm"
+              Content="Reject"
+              IsEnabled="False"
+              AutomationProperties.Name="Reject edit" />
+      <Button x:Name="UndoButton"
+              Classes="ghost sm"
+              Content="Undo"
+              IsEnabled="False"
+              AutomationProperties.Name="Undo edit" />
+    </StackPanel>
+
+    <TextBlock x:Name="StatusText"
+               TextWrapping="Wrap"
+               AutomationProperties.Name="Edit status"
+               AutomationProperties.LiveSetting="Polite" />
+
+  </StackPanel>
+
+</UserControl>

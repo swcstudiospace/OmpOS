@@ -1,9 +1,9 @@
-# OmpOS CI (Phase 1, decision D-05).
+# Autonogrammer CI (Phase 1, decision D-05).
 # Mirrors bootstrap.sh, then adds the audit, scan, and compose gates.
 # Podman is the only container runtime referenced here; Docker is not used.
-# Every job runs on the Omega CI runner pool ([self-hosted, linux, x64, omega-ci],
-# swcstudiospace/Omega-Prime docs/ci-runners.md), never on GitHub-hosted runners. Pull requests
-# from forks are skipped: fork code never reaches the pool.
+# Jobs run on GitHub-hosted runners (ubuntu-24.04, windows-2022, macos-14).
+# The Omega pool cannot start rootless podman or Chrome (OQ-168), so it is not used.
+# Pull requests from forks are skipped: fork code never receives this repository's secrets.
 name: ci
 
 on:
@@ -15,27 +15,28 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded pull-request runs only; a push to main (or any branch) always runs to completion.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CI: true
   DOTNET_NOLOGO: 1
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
-  # Each omega-ci runner is budgeted 2 vCPU but sees every host CPU, and the
-  # pool's process limit is shared across concurrent jobs. Without this, MSBuild
-  # starts one node per host CPU (23 seen) and fails with "Cannot acquire
-  # required number of nodes" / OutOfMemoryException. The .NET runtime reports
-  # this as Environment.ProcessorCount, which sizes MSBuild's default -m.
-  DOTNET_PROCESSOR_COUNT: 2
+  # GitHub-hosted runners are dedicated 4-vCPU VMs. Cap MSBuild at that so a
+  # runner image that reports more CPUs cannot oversubscribe the VM.
+  DOTNET_PROCESSOR_COUNT: 4
   MSBUILDDISABLENODEREUSE: 1
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
-  OMPOS_POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
-  OMPOS_DRAGONFLY_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+  AUTONOGRAMMER_POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+  AUTONOGRAMMER_DRAGONFLY_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
   build-test:
+    timeout-minutes: 90
+    permissions:
+      contents: read
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, linux, x64, omega-ci]
+    runs-on: ubuntu-24.04
     steps:
       # Action tags verified 2026-10-20 against the GitHub releases API:
       # checkout v7.0.1, setup-dotnet v6.0.0, upload-artifact v7.0.2.
@@ -55,19 +56,27 @@ jobs:
           else
             echo "::warning::SUBMODULE_TOKEN is not set: plugins/agent-substrate is not checked out and the substrate plugin reports Unavailable. Add a read-only token for swcstudiospace/substrate as the SUBMODULE_TOKEN secret."
           fi
+      - name: Install rootful podman and Chrome
+        run: |
+          bash scripts/ci/install-podman-rootful.sh
+          bash scripts/ci/install-chrome.sh
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
           cache: true
           cache-dependency-path: '**/packages.lock.json'
-      - run: dotnet restore OmpOS.Linux.slnf --locked-mode
-      - run: dotnet build OmpOS.Linux.slnf -c Release --no-restore -warnaserror
-      # The next steps need no podman: they run before the test services so that CI reports them even when the runner cannot start containers
-      # (OQ-168: rootless podman cannot create a user namespace inside the runner container, and the image has no Chrome, so the browser smoke comes last).
-      - run: dotnet format OmpOS.Linux.slnf --verify-no-changes --no-restore
+      - name: Use the pinned SDK only (the runner runtime must not change the lock file)
+        run: bash scripts/ci/install-pinned-sdk.sh
+      - run: dotnet restore Autonogrammer.Linux.slnf --locked-mode -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13
+      - run: dotnet build Autonogrammer.Linux.slnf -c Release --no-restore -warnaserror -p:TargetLatestRuntimePatch=false -p:RuntimeFrameworkVersion=10.0.13
+      # apps/Autonogrammer.App does not exist in this repository, and tools/gweb holds only the named/ and stock/ asset
+      # folders (no project), so neither can join Autonogrammer.Linux.slnf or this build step. Add them here when they gain projects.
+      # Script checks run before the container steps so a later podman failure still reports them.
+      # Podman is installed rootful above; Chrome is installed for the browser smoke.
+      - run: dotnet format Autonogrammer.Linux.slnf --verify-no-changes --no-restore
       - name: Vulnerable packages (list exits 0 even on findings, so the parse is the gate)
         run: |
-          dotnet list OmpOS.Linux.slnf package --vulnerable --include-transitive --format json > vuln.json
+          dotnet list Autonogrammer.Linux.slnf package --vulnerable --include-transitive --format json > vuln.json
           python3 scripts/ci/check-vulnerable-packages.py vuln.json
       - name: Secret scan (gitleaks CLI, pinned in scripts/ci/gitleaks.env; the same script bootstrap.sh runs)
         run: bash scripts/ci/secret-scan.sh
@@ -77,16 +86,41 @@ jobs:
         run: bash scripts/ci/repo-checks.sh
       - name: Licence checks (NOTICE and THIRD-PARTY-NOTICES.md against the restored NuGet cache; the same script bootstrap.sh runs)
         run: bash scripts/ci/check-licences.sh
-      - name: Browser smoke with axe-core (needs Node and Chrome on the runner; mirrors the bootstrap step)
+      - name: SBOM freshness (docs/legal/sbom.spdx.json against the lock files and container pins; licences the restored NuGet cache lacks come from the committed file)
+        run: bash scripts/ci/check-sbom.sh
+      - name: OpenAPI breaking changes (pull requests only; ALLOW_BREAKING_API or a BREAKING-API commit line permits them)
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          python3 scripts/ci/test_check_openapi_breaking.py
+          python3 scripts/ci/check-openapi-breaking.py --base "origin/${{ github.base_ref }}"
+      # The web payload budget is not a step of its own: scripts/web-smoke/run-smoke.sh ends its real-bundle half with it (size-budget.mjs, limits in size-budget.json), so it runs in the browser smoke step below.
+      - name: Python unit tests of the CI and legal scripts
+        run: python3 -m unittest scripts/ci/test_check_skip_markers.py scripts/legal/test_generate_sbom.py
+      - name: Node tests of the web scripts (service-worker manifest refresh, the route check's boot-shell decision)
+        run: node --test scripts/vercel/refresh-web-manifest.test.mjs scripts/web-smoke/a11y/routes.test.mjs
+      - name: Browser smoke with axe-core, the accessibility checks and the web payload budget (needs Node and Chrome on the runner; mirrors the bootstrap step)
+        env:
+          # A shared runner loads the bundle more slowly than the 150 s default. The route check's boot-shell retry then ends on the boot
+          # shell on both attempts. scripts/web-smoke/a11y/states.mjs documents this variable for loaded hosts; no assertion changes.
+          AUTONOGRAMMER_A11Y_LOAD_TIMEOUT_MS: "240000"
         run: |
           out_dir="$RUNNER_TEMP/web-smoke"
-          mkdir -p "$out_dir"
-          OUT_DIR="$out_dir" bash scripts/web-smoke/run-smoke.sh
-      - name: Require podman (for the test services and compose validation)
-        # The Omega CI runner image ships podman; jobs have no sudo to install it.
+          mkdir -p "$out_dir/shots" "$out_dir/a11y"
+          OUT_DIR="$out_dir" SHOT_DIR="$out_dir/shots" A11Y_REPORT_DIR="$out_dir/a11y" bash scripts/web-smoke/run-smoke.sh
+      - name: Keep the web smoke evidence when the smoke fails (logs, JSON and screenshots of the failing half)
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: web-smoke-evidence-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/web-smoke
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Require podman (rootful wrapper from the setup step; scripts call podman, never docker)
         run: |
-          command -v podman >/dev/null || { echo "::error::podman is not on PATH; add it to the Omega CI runner image" >&2; exit 1; }
+          command -v podman >/dev/null || { echo "::error::podman is not on PATH" >&2; exit 1; }
           podman --version
+          podman info >/dev/null
       - name: Start test services (throwaway TimescaleDB and Dragonfly)
         run: |
           env_file="$(bash scripts/test-services.sh up)"
@@ -97,7 +131,7 @@ jobs:
       - name: Test (throwaway TimescaleDB and Dragonfly for the API, session-store and coordination tests)
         run: |
           source "$TEST_SERVICES_ENV"
-          dotnet test OmpOS.Linux.slnf -c Release --no-build --max-parallel-test-modules 2 --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
+          dotnet test Autonogrammer.Linux.slnf -c Release --no-build --max-parallel-test-modules 2 --report-trx --coverlet --coverlet-output-format cobertura --results-directory TestResults
       - name: Stop test services
         if: always()
         run: |
@@ -140,27 +174,55 @@ jobs:
           }
           dragonfly_ping() {
             { exec 3<>/dev/tcp/127.0.0.1/6379; } 2>/dev/null || return 1
-            printf 'AUTH %s\r\nPING\r\n' "$OMPOS_DRAGONFLY_PASSWORD" >&3
+            printf 'AUTH %s\r\nPING\r\n' "$AUTONOGRAMMER_DRAGONFLY_PASSWORD" >&3
             local auth="" pong=""
             IFS= read -r -t 5 auth <&3 || true
             IFS= read -r -t 5 pong <&3 || true
             exec 3>&-
             [ "$auth" = $'+OK\r' ] && [ "$pong" = $'+PONG\r' ]
           }
-          wait_ready "ompos-postgres" podman exec ompos-postgres pg_isready -h 127.0.0.1 -p 5432
-          wait_ready "ompos-dragonfly" dragonfly_ping
-          wait_ready "ompos-greptimedb" curl -fsS http://127.0.0.1:4000/health
+          wait_ready "autonogrammer-postgres" podman exec autonogrammer-postgres pg_isready -h 127.0.0.1 -p 5432
+          wait_ready "autonogrammer-dragonfly" dragonfly_ping
+          wait_ready "autonogrammer-greptimedb" curl -fsS http://127.0.0.1:4000/health
       - name: Tear down backend profile
         if: always()
-        run: podman-compose --profile backend -f deploy/compose.yaml down -v
+        run: command -v podman-compose >/dev/null && podman-compose --profile backend -f deploy/compose.yaml down -v || true
 
-  # Builds the Android head (apps/OmpOS.Android) on the Omega CI pool (Phase 24 criterion 4). No device or emulator is needed.
-  # The workflow runs on push and pull_request, so the first green run of this job needs the branch pushed.
+  # Image scan on a push. The job installs rootful podman and the pinned trivy, builds both images
+  # (--format docker keeps HEALTHCHECK; the builder is still podman), saves them as archives the
+  # runner can read, and scans those archives. Pull requests are excluded.
+  image-scan:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    needs: build-test
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install rootful podman and the pinned trivy
+        run: |
+          bash scripts/ci/install-podman-rootful.sh
+          bash scripts/ci/install-trivy.sh
+      - name: Build and scan
+        env:
+          # The omp debug key accepted by the owner on 2026-10-30; see scripts/ci/trivy-secret.yaml.
+          TRIVY_SECRET_CONFIG: scripts/ci/trivy-secret.yaml
+        run: |
+          podman build --format docker -f deploy/api.Containerfile -t autonogrammer-api:ci .
+          podman build --format docker -f deploy/worker.Containerfile -t autonogrammer-agent-worker:ci .
+          podman save autonogrammer-api:ci > "$RUNNER_TEMP/autonogrammer-api.tar"
+          podman save autonogrammer-agent-worker:ci > "$RUNNER_TEMP/autonogrammer-agent-worker.tar"
+          bash scripts/ci/scan-images.sh "$RUNNER_TEMP/autonogrammer-api.tar" "$RUNNER_TEMP/autonogrammer-agent-worker.tar"
+
+  # Builds the Android head on ubuntu-24.04 (Phase 24 criterion 4). No device or emulator is needed.
+  # The SDK and the android workload are installed in the job. iOS and Mac Catalyst need macOS and Xcode.
   android:
-    # The runner image pre-installs the Android workloads, JDK 17 and Android SDK 36; its SDK directory is read-only.
-    # iOS and MacCatalyst need macOS and Xcode, which the Linux pool does not have.
+    timeout-minutes: 90
+    permissions:
+      contents: read
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, linux, x64, omega-ci]
+    runs-on: ubuntu-24.04
     needs: build-test
     steps:
       # Action tags as pinned by build-test above.
@@ -168,14 +230,18 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
-      - name: Android workload (the Omega CI runner image pre-installs it, and its SDK directory is read-only)
+      - name: Use the pinned SDK only (the runner runtime must not change the lock file)
+        run: bash scripts/ci/install-pinned-sdk.sh
+      - name: Android SDK platform 36 and build-tools 36.0.0
+        run: bash scripts/ci/install-android-sdk.sh
+      - name: Android workload (installed when this runner does not already have it)
         run: |
           dotnet workload list
           dotnet workload list | grep -qi android || dotnet workload install android
-      - run: dotnet restore apps/OmpOS.Android/OmpOS.Android.csproj --locked-mode
+      - run: dotnet restore apps/Autonogrammer.Android/Autonogrammer.Android.csproj --locked-mode
       - name: Vulnerable packages of the Android head (same gate as build-test)
         run: |
-          dotnet list apps/OmpOS.Android/OmpOS.Android.csproj package --vulnerable --include-transitive --format json > vuln-android.json
+          dotnet list apps/Autonogrammer.Android/Autonogrammer.Android.csproj package --vulnerable --include-transitive --format json > vuln-android.json
           python3 scripts/ci/check-vulnerable-packages.py vuln-android.json
       - name: Android platform 36 and build-tools 36.0.0 (installed only when the runner lacks them)
         run: |
@@ -192,4 +258,44 @@ jobs:
           yes | "$sdkmanager" --licenses >/dev/null
           set -o pipefail
           "$sdkmanager" --install "platforms;android-36" "build-tools;36.0.0"
-      - run: dotnet build apps/OmpOS.Android/OmpOS.Android.csproj -c Release --no-restore -warnaserror
+      - run: dotnet build apps/Autonogrammer.Android/Autonogrammer.Android.csproj -c Release --no-restore -warnaserror
+
+  # Publishes the Avalonia desktop head on each OS. Framework-dependent: the lock file has no RID
+  # graph, so this does not pass -r and does not unlock the restore. A self-contained RID publish
+  # needs a lock-file update first.
+  desktop:
+    name: desktop (${{ matrix.name }})
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            name: linux
+          - os: windows-2022
+            name: windows
+          - os: macos-14
+            name: macos
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: apps/Autonogrammer.Native/packages.lock.json
+      - name: Use the pinned SDK only (the runner runtime must not change the lock file)
+        shell: bash
+        run: bash scripts/ci/install-pinned-sdk.sh
+      - name: Build and publish the Avalonia desktop head
+        run: |
+          dotnet restore apps/Autonogrammer.Native/Autonogrammer.Native.csproj --locked-mode
+          dotnet build apps/Autonogrammer.Native/Autonogrammer.Native.csproj -c Release --no-restore -warnaserror
+          dotnet publish apps/Autonogrammer.Native/Autonogrammer.Native.csproj -c Release --no-restore --self-contained false -o publish
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: desktop-${{ matrix.name }}-${{ github.sha }}
+          path: publish

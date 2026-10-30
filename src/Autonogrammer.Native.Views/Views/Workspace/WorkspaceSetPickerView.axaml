@@ -1,0 +1,230 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ed="clr-namespace:Autonogrammer.Presentation.Editor;assembly=Autonogrammer.Presentation"
+             xmlns:local="clr-namespace:Autonogrammer.Native.Views.Workspace"
+             x:Class="Autonogrammer.Native.Views.Workspace.WorkspaceSetPickerView"
+             x:DataType="ed:WorkspaceSetPicker"
+             Focusable="False">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/Settings/SettingsStyles.axaml" />
+    <!-- A folder row is one keyboard stop (Delete removes it) followed by its own buttons. Tokens only. -->
+    <Style Selector="Border.folder-row">
+      <Setter Property="Background" Value="{DynamicResource Autonogrammer.Color.SurfaceRaised}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.Border}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Border.Hairline}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource Autonogrammer.Radius.Md}" />
+      <Setter Property="Padding" Value="{DynamicResource Autonogrammer.Space.Sm}" />
+      <Setter Property="MinHeight" Value="{DynamicResource Autonogrammer.Size.TargetMin}" />
+    </Style>
+    <Style Selector="Border.folder-row:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Autonogrammer.Color.AccentPurple}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Autonogrammer.Size.FocusBorder}" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- The workspace set picker: the name of the set, its folders (the first is the primary), the findings the rules make about them, the
+       buttons that add, import and export, and the Start and Done buttons of the footer. The tab order is the order of this file. -->
+  <Grid RowDefinitions="Auto,*,Auto">
+
+    <StackPanel Grid.Row="0"
+                Margin="{DynamicResource Autonogrammer.Space.Md}"
+                Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+      <TextBlock Classes="settings-label"
+                 Text="{x:Static local:WorkspaceSetPickerCopy.NameLabel}" />
+      <TextBox x:Name="NameBox"
+               Text="{CompiledBinding Name, Mode=TwoWay}"
+               MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+               MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+               AutomationProperties.Name="{x:Static local:WorkspaceSetPickerCopy.NameLabel}"
+               LostFocus="OnNameLostFocus" />
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1"
+                  Focusable="False"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="{DynamicResource Autonogrammer.Space.Md}"
+                  Spacing="{DynamicResource Autonogrammer.Gap.Sm}">
+
+        <TextBlock Classes="settings-section"
+                   Text="{x:Static local:WorkspaceSetPickerCopy.FoldersHeading}" />
+
+        <TextBlock x:Name="EmptyText"
+                   Classes="settings-help"
+                   IsVisible="{CompiledBinding Rows.Count, Converter={x:Static local:WorkspaceSetPickerNameConverters.IsZero}}"
+                   Text="{x:Static local:WorkspaceSetPickerCopy.EmptyText}" />
+
+        <ItemsControl x:Name="FolderRows"
+                      ItemsSource="{CompiledBinding Rows}"
+                      AutomationProperties.Name="{x:Static local:WorkspaceSetPickerCopy.FolderListName}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Spacing="{DynamicResource Autonogrammer.Gap.Xs}" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="ed:WorkspacePickerRow">
+              <Border Classes="folder-row"
+                      Focusable="True"
+                      IsTabStop="True"
+                      AutomationProperties.Name="{CompiledBinding DisplayName}">
+                <Grid ColumnDefinitions="*,Auto,Auto"
+                      ColumnSpacing="8">
+                  <StackPanel Grid.Column="0"
+                              Spacing="2">
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="8">
+                      <TextBlock Classes="settings-label"
+                                 Text="{CompiledBinding DisplayName}" />
+                      <TextBlock Classes="settings-chip-text"
+                                 IsVisible="{CompiledBinding IsPrimary}"
+                                 Text="{x:Static local:WorkspaceSetPickerCopy.PrimaryLabel}" />
+                    </StackPanel>
+                    <TextBlock Classes="settings-mono"
+                               Text="{CompiledBinding Path}" />
+                    <Grid ColumnDefinitions="Auto,*"
+                          ColumnSpacing="6"
+                          IsVisible="{CompiledBinding IssueText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                      <TextBlock Grid.Column="0"
+                                 Classes="settings-chip-text"
+                                 Classes.tone-error="{CompiledBinding HasError}"
+                                 Classes.tone-warning="{CompiledBinding HasWarning}"
+                                 Text="{CompiledBinding HasError, Converter={x:Static local:WorkspaceSetPickerNameConverters.Severity}}" />
+                      <TextBlock Grid.Column="1"
+                                 Classes="settings-help"
+                                 Text="{CompiledBinding IssueText}" />
+                    </Grid>
+                  </StackPanel>
+                  <Button Grid.Column="1"
+                          VerticalAlignment="Center"
+                          MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          IsVisible="{CompiledBinding !IsPrimary}"
+                          Content="{x:Static local:WorkspaceSetPickerCopy.MakePrimaryLabel}"
+                          AutomationProperties.Name="{CompiledBinding DisplayName, Converter={x:Static local:WorkspaceSetPickerNameConverters.MakePrimary}}"
+                          Click="OnMakePrimaryClick" />
+                  <Button Grid.Column="2"
+                          VerticalAlignment="Center"
+                          MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                          Content="{x:Static local:WorkspaceSetPickerCopy.RemoveLabel}"
+                          AutomationProperties.Name="{CompiledBinding DisplayName, Converter={x:Static local:WorkspaceSetPickerNameConverters.Remove}}"
+                          Click="OnRemoveClick" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <WrapPanel Orientation="Horizontal"
+                   ItemSpacing="8"
+                   LineSpacing="8">
+          <Button x:Name="AddFolderButton"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Content="{x:Static local:WorkspaceSetPickerCopy.AddFolderLabel}"
+                  AutomationProperties.Name="{x:Static local:WorkspaceSetPickerCopy.AddFolderLabel}"
+                  Click="OnAddFolderClick" />
+          <Button x:Name="ImportButton"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Content="{x:Static local:WorkspaceSetPickerCopy.ImportLabel}"
+                  AutomationProperties.Name="{x:Static local:WorkspaceSetPickerCopy.ImportLabel}"
+                  Click="OnImportClick" />
+          <Button x:Name="ExportButton"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Content="{x:Static local:WorkspaceSetPickerCopy.ExportLabel}"
+                  AutomationProperties.Name="{x:Static local:WorkspaceSetPickerCopy.ExportLabel}"
+                  Click="OnExportClick" />
+        </WrapPanel>
+
+        <!-- The assertive live region: why an import or export did not happen. -->
+        <TextBlock x:Name="LastErrorText"
+                   Classes="settings-body tone-error"
+                   IsVisible="{CompiledBinding LastError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Text="{CompiledBinding LastError}"
+                   AutomationProperties.LiveSetting="Assertive"
+                   AutomationProperties.Name="{x:Static local:WorkspaceSetPickerCopy.LastErrorName}" />
+
+        <!-- The polite live regions: the entries an import skipped, and the findings of the rules. -->
+        <ItemsControl x:Name="ImportWarningList"
+                      ItemsSource="{CompiledBinding ImportWarnings}"
+                      AutomationProperties.LiveSetting="Polite"
+                      AutomationProperties.Name="{x:Static local:WorkspaceSetPickerCopy.ImportWarningsName}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <Grid ColumnDefinitions="Auto,*"
+                    ColumnSpacing="6">
+                <TextBlock Grid.Column="0"
+                           Classes="settings-chip-text tone-warning"
+                           Text="{x:Static local:WorkspaceSetPickerCopy.WarningPrefix}" />
+                <TextBlock Grid.Column="1"
+                           Classes="settings-help"
+                           Text="{CompiledBinding .}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <ItemsControl x:Name="FindingList"
+                      ItemsSource="{CompiledBinding Issues}"
+                      AutomationProperties.LiveSetting="Polite"
+                      AutomationProperties.Name="{x:Static local:WorkspaceSetPickerCopy.FindingsListName}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="ed:WorkspacePickerIssue">
+              <Grid ColumnDefinitions="Auto,*"
+                    ColumnSpacing="6">
+                <TextBlock Grid.Column="0"
+                           Classes="settings-chip-text"
+                           Classes.tone-error="{CompiledBinding IsError}"
+                           Classes.tone-warning="{CompiledBinding !IsError}"
+                           Text="{CompiledBinding IsError, Converter={x:Static local:WorkspaceSetPickerNameConverters.Severity}}" />
+                <TextBlock Grid.Column="1"
+                           Classes="settings-help"
+                           Text="{CompiledBinding Message}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border x:Name="FooterBar"
+            Grid.Row="2"
+            Classes="settings-footer">
+      <Grid ColumnDefinitions="*,Auto"
+            ColumnSpacing="8">
+        <TextBlock Grid.Column="0"
+                   Classes="settings-help"
+                   VerticalAlignment="Center"
+                   IsVisible="{CompiledBinding !CanStart}"
+                   Text="{x:Static local:WorkspaceSetPickerCopy.CannotStartHint}" />
+        <StackPanel Grid.Column="1"
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    VerticalAlignment="Center">
+          <Button x:Name="DoneButton"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  Content="{x:Static local:WorkspaceSetPickerCopy.DoneLabel}"
+                  AutomationProperties.Name="{x:Static local:WorkspaceSetPickerCopy.DoneLabel}"
+                  Click="OnDoneClick" />
+          <Button x:Name="StartButton"
+                  Classes="primary"
+                  MinHeight="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  MinWidth="{DynamicResource Autonogrammer.Size.TargetMin}"
+                  IsEnabled="{CompiledBinding CanStart}"
+                  Content="{x:Static local:WorkspaceSetPickerCopy.StartLabel}"
+                  AutomationProperties.Name="{x:Static local:WorkspaceSetPickerCopy.StartLabel}"
+                  Click="OnStartClick" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+  </Grid>
+
+</UserControl>

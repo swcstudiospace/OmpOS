@@ -6,7 +6,7 @@
 
 **Key accomplishments:**
 - Governed 15-project .NET 10 monorepo that restores locked, builds warning-free, formats clean, and bootstraps with one command
-- OmpOS.Contracts owns the full D-03 surface with two kind converters and a source-generated JSON context; 26 of 26 tests pass with zero warnings.
+- Autonogrammer.Contracts owns the full D-03 surface with two kind converters and a source-generated JSON context; 26 of 26 tests pass with zero warnings.
 - Layer-direction tests with live-gate proofs, a CI pipeline mirroring bootstrap plus audit/scan/compose gates, a validated Temporal compose stack, and the eight-file docs skeleton — bootstrap green over the finished tree.
 - 2026-10-20 · **Agent:** sonic `P2Parser` · **Verified:** orchestrator
 - 2026-10-20 · **Agent:** sonic `P2Harness` · **Verified:** orchestrator

@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:copy="clr-namespace:Autonogrammer.Presentation.AgentPanel;assembly=Autonogrammer.Presentation"
+             xmlns:local="clr-namespace:Autonogrammer.Native.Views.AgentPanel"
+             x:Class="Autonogrammer.Native.Views.AgentPanel.PipelineStripView"
+             x:DataType="copy:StageTimelineModel">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://Autonogrammer.Native.Views/Views/AgentPanel/PanelStyles.axaml" />
+  </UserControl.Styles>
+
+  <!-- One compact 28 px line under the thread header: the strip button on the left, the throttled "Latest:" announcement to its right.
+       The button is docked first so it gets the full width to wrap its pills at narrow widths; the announcement takes what is left. -->
+  <Border x:Name="StripFrame"
+          MinHeight="{DynamicResource Autonogrammer.Size.PipelineStripHeight}"
+          Background="{DynamicResource Autonogrammer.Color.Surface}"
+          BorderBrush="{DynamicResource Autonogrammer.Color.Border}"
+          BorderThickness="0,0,0,1"
+          Padding="16,0">
+    <DockPanel VerticalAlignment="Center">
+
+      <!-- One button of pills, one pill per plugin source in pipeline order. The pills wrap onto a second line at narrow widths.
+           Pressing it opens a flyout with the stage rows of every source: the detail text, Retry stage and the fix text. -->
+      <Button x:Name="PipelineStrip"
+              DockPanel.Dock="Left"
+              Classes="strip"
+              AutomationProperties.Name="{CompiledBinding PipelineAccessibleName}">
+        <Button.Flyout>
+          <Flyout Placement="TopEdgeAlignedLeft">
+            <local:PipelineTabView x:Name="Details"
+                                   Width="{DynamicResource Autonogrammer.Size.StageFlyoutWidth}"
+                                   MaxHeight="{DynamicResource Autonogrammer.Size.StageFlyoutMaxHeight}" />
+          </Flyout>
+        </Button.Flyout>
+        <ItemsControl x:Name="Pills"
+                      ItemsSource="{CompiledBinding Pills}"
+                      Focusable="False"
+                      IsTabStop="False">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal"
+                         ItemSpacing="{DynamicResource Autonogrammer.Gap.Cozy}"
+                         LineSpacing="{DynamicResource Autonogrammer.Gap.Xxs}" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="copy:PipelinePill">
+              <StackPanel Orientation="Horizontal"
+                          Spacing="{DynamicResource Autonogrammer.Gap.Xs}">
+                <local:StageIcon IconKey="{CompiledBinding IconKey}"
+                                 Width="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                                 Height="{DynamicResource Autonogrammer.Size.IconSizeSm}"
+                                 VerticalAlignment="Center" />
+                <TextBlock Classes="small strong"
+                           Text="{CompiledBinding Text}"
+                           VerticalAlignment="Center"
+                           TextWrapping="NoWrap" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Button>
+
+      <!-- The throttled announcement of the timeline, bound as it is: this view never builds announcement text. -->
+      <TextBlock x:Name="Announcement"
+                 Classes="muted small"
+                 Margin="12,0,0,0"
+                 VerticalAlignment="Center"
+                 TextAlignment="Right"
+                 TextWrapping="NoWrap"
+                 TextTrimming="CharacterEllipsis"
+                 IsVisible="False"
+                 AutomationProperties.Name="{x:Static local:AgentPanelViewText.PipelineAnnouncementsName}"
+                 AutomationProperties.LiveSetting="Polite" />
+
+    </DockPanel>
+  </Border>
+
+</UserControl>

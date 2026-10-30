@@ -1,9 +1,9 @@
-# OmpOS agent worker image (OmpOS.AgentWorker). Build with podman from the repository root:
-#   podman build -f deploy/worker.Containerfile -t ompos-agent-worker:local .
+# Autonogrammer agent worker image (Autonogrammer.AgentWorker). Build with podman from the repository root:
+#   podman build -f deploy/worker.Containerfile -t autonogrammer-agent-worker:local .
 # Run it locally (loopback only; the public key is the PEM of the control plane's token signing key):
-#   podman run --rm -p 127.0.0.1:8088:8080 -v ompos-worker-data:/data \
-#     -e Worker__Auth__PublicKeysPem__0="$OMPOS_WORKER_JWT_PUBLIC_KEY_PEM" -e Worker__Auth__Issuer=ompos-api \
-#     -e Worker__WorkspaceRoot=/data/work -e PORT=8080 localhost/ompos-agent-worker:local
+#   podman run --rm -p 127.0.0.1:8088:8080 -v autonogrammer-worker-data:/data \
+#     -e Worker__Auth__PublicKeysPem__0="$AUTONOGRAMMER_WORKER_JWT_PUBLIC_KEY_PEM" -e Worker__Auth__Issuer=autonogrammer-api \
+#     -e Worker__WorkspaceRoot=/data/work -e PORT=8080 localhost/autonogrammer-agent-worker:local
 #
 # Base image tags (identical to deploy/api.Containerfile):
 #   SDK:     mcr.microsoft.com/dotnet/sdk:10.0.402-noble     (global.json pins SDK 10.0.402 exactly)
@@ -11,8 +11,9 @@
 # The noble (Ubuntu 24.04) variant is used rather than chiseled because the entrypoint is a /bin/sh script and
 # the worker needs git, openssh-client and curl. Chiseled images contain no shell and no package manager.
 
-ARG SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:10.0.402-noble
-ARG RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0.13-noble
+# Digests resolved 2026-10-29 from mcr.microsoft.com (manifest-list digest, HTTP Docker-Content-Digest header). Refresh with the tag bump.
+ARG SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:10.0.402-noble@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2
+ARG RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0.13-noble@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca
 
 FROM ${SDK_IMAGE} AS build
 WORKDIR /src
@@ -22,13 +23,13 @@ ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
 # Repository-wide build inputs: SDK pin, central package versions, analyzer and style inputs
 # (.editorconfig and the banned-symbol AdditionalFiles are read by the warnings-as-errors build).
 COPY global.json Directory.Build.props Directory.Packages.props .editorconfig BannedSymbols.txt BannedSymbols.NoProcess.txt ./
-# Project graph of OmpOS.AgentWorker (it references src/OmpOS.Harness.Acp and src/OmpOS.Harness.Abstractions).
+# Project graph of Autonogrammer.AgentWorker (it references src/Autonogrammer.Harness.Acp and src/Autonogrammer.Harness.Abstractions).
 COPY src/ src/
-COPY services/OmpOS.AgentWorker/ services/OmpOS.AgentWorker/
+COPY services/Autonogrammer.AgentWorker/ services/Autonogrammer.AgentWorker/
 
 # Locked restore: every project in the graph has a committed packages.lock.json.
-RUN dotnet restore services/OmpOS.AgentWorker/OmpOS.AgentWorker.csproj --locked-mode
-RUN dotnet publish services/OmpOS.AgentWorker/OmpOS.AgentWorker.csproj -c Release -o /app --no-restore
+RUN dotnet restore services/Autonogrammer.AgentWorker/Autonogrammer.AgentWorker.csproj --locked-mode
+RUN dotnet publish services/Autonogrammer.AgentWorker/Autonogrammer.AgentWorker.csproj -c Release -o /app --no-restore
 
 # omp runtime for the worker: the worker launches the `omp` CLI (`omp acp`), which this stage supplies.
 #
@@ -67,6 +68,19 @@ RUN cd /opt/omp \
  && chmod 0755 /opt/omp/dist/cli.js \
  && rm -rf /tmp/bun-cache /tmp/omp-build
 
+# Dependency drift gate: the resolved top-level omp dependencies must equal deploy/omp-deps.lock.json
+# (scripts/ci/snapshot-omp-deps.sh). With OMP_DEPS_MODE=write the build writes /tmp/omp-deps.lock.json instead, to
+# produce the committed snapshot. While the committed file says "pending": true the check only warns (first podman build).
+ARG OMP_DEPS_MODE=check
+COPY scripts/ci/snapshot-omp-deps.sh /opt/snapshot-omp-deps.sh
+COPY deploy/omp-deps.lock.json /opt/omp-deps.committed.json
+RUN if [ "${OMP_DEPS_MODE}" = "write" ]; then \
+      bash /opt/snapshot-omp-deps.sh write /opt/omp /tmp/omp-deps.lock.json; \
+    else \
+      bash /opt/snapshot-omp-deps.sh check /opt/omp /opt/omp-deps.committed.json; \
+    fi \
+ && rm -f /opt/snapshot-omp-deps.sh /opt/omp-deps.committed.json
+
 FROM ${RUNTIME_IMAGE} AS final
 WORKDIR /app
 
@@ -80,8 +94,8 @@ RUN apt-get update \
 # Service account with fixed numeric IDs, so the platform can enforce the user without name lookup. Its home lives on
 # the volume (/data/home) so omp state (HOME/.omp), git config and ssh state survive a sleep; the volume is mounted at
 # /data. /data is created owned by the account so a fresh local named volume inherits that ownership.
-RUN groupadd --system --gid 10001 ompos \
- && useradd --system --uid 10001 --gid ompos --home-dir /data/home --no-create-home --shell /usr/sbin/nologin ompos \
+RUN groupadd --system --gid 10001 autonogrammer \
+ && useradd --system --uid 10001 --gid autonogrammer --home-dir /data/home --no-create-home --shell /usr/sbin/nologin autonogrammer \
  && install -d -m 0755 -o 10001 -g 10001 /data
 # The app is root-owned and read-only to uid 10001.
 COPY --from=build /app ./
@@ -96,7 +110,7 @@ ENV ASPNETCORE_ENVIRONMENT=Production \
     DOTNET_NOLOGO=1 \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     HOME=/data/home \
-    OMPOS_VOLUME_PATH=/data
+    AUTONOGRAMMER_VOLUME_PATH=/data
 
 # Deliberately NO `USER` instruction: the image starts as root ONLY so the entrypoint can chown the volume mount
 # point and then drop to uid/gid 10001 with setpriv before the worker starts. Railway mounts volumes root-owned
@@ -106,12 +120,18 @@ ENV ASPNETCORE_ENVIRONMENT=Production \
 # Documents the default port only; the entrypoint binds to PORT (set by the platform) or 8080.
 EXPOSE 8080
 
-LABEL org.opencontainers.image.title="ompos-agent-worker" \
-      org.opencontainers.image.description="OmpOS cloud agent worker: serves GET /healthz and the ACP WebSocket GET /acp, runs omp against a workspace on the volume" \
+# Liveness probe without curl or wget (the aspnet base has neither): bash /dev/tcp sends a bare HTTP request and
+# the status line must be 200. NOT RUN here: written without a podman build; verify with `podman healthcheck run`.
+# HEALTHCHECK exists only in the docker image format: build with `podman build --format docker` (the OCI format drops it).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD ["/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/${PORT:-8080} && printf 'GET %s HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' \"/healthz\" >&3 && head -n 1 <&3 | grep -q ' 200 '"]
+
+LABEL org.opencontainers.image.title="autonogrammer-agent-worker" \
+      org.opencontainers.image.description="Autonogrammer cloud agent worker: serves GET /healthz and the ACP WebSocket GET /acp, runs omp against a workspace on the volume" \
       org.opencontainers.image.source="https://github.com/swcstudiospace/OmpOS" \
       org.opencontainers.image.licenses="AGPL-3.0-or-later"
 
 # The entrypoint maps PORT onto ASPNETCORE_URLS (dual-stack http://[::]:PORT; Railway private networking needs IPv6),
 # repairs volume ownership, then drops privileges and execs the worker, so the .NET process is PID 1 and receives
-# termination signals. With no arguments it runs `dotnet /app/OmpOS.AgentWorker.dll`.
+# termination signals. With no arguments it runs `dotnet /app/Autonogrammer.AgentWorker.dll`.
 ENTRYPOINT ["/usr/local/bin/worker-entrypoint.sh"]

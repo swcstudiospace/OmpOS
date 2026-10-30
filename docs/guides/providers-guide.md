@@ -1,5 +1,5 @@
 ---
-description: "How to choose and configure a model provider in OmpOS: region and kind filters, coding plans and their rules, bring-your-own-key, and where keys are stored."
+description: "How to choose and configure a model provider in Autonogrammer: region and kind filters, coding plans and their rules, bring-your-own-key, and where keys are stored."
 ---
 
 # Choose a model provider
@@ -10,7 +10,7 @@ Last verified: 2026-10-28
 
 Applies to: v0.15.0
 
-OmpOS has no model of its own. The engine, omp, talks to the provider you configure; OmpOS helps you pick one, writes omp's configuration and keeps the key out of logs. The full list is generated from the catalogue data and lives in [Model providers and coding plans](../reference/providers.md).
+Autonogrammer has no model of its own. The engine, omp, talks to the provider you configure; Autonogrammer helps you pick one, writes omp's configuration and keeps the key out of logs. The full list is generated from the catalogue data and lives in [Model providers and coding plans](../reference/providers.md).
 
 ## What the catalogue holds
 
@@ -28,7 +28,7 @@ Each row names the vendor page it was read on, the base URL, the protocol (`open
 
 ## Pick by region and kind
 
-The Models page groups rows by region and kind and has filters for both. Use the **region** filter when residency matters. A row's residency note is what the vendor states (for example "Data processed in Germany", or "customer-installed, residency is your deployment"); OmpOS does not verify it. Use the **kind** filter to separate:
+The Models page groups rows by region and kind and has filters for both. Use the **region** filter when residency matters. A row's residency note is what the vendor states (for example "Data processed in Germany", or "customer-installed, residency is your deployment"); Autonogrammer does not verify it. Use the **kind** filter to separate:
 
 - **Model APIs**: pay-as-you-go keys from the vendor (Mistral, Scaleway, OVHcloud, IONOS, STACKIT, OpenAI, Anthropic, DeepSeek, and more: see the reference page).
 - **Aggregators and gateways**: one key for several vendors' models.
@@ -37,26 +37,26 @@ The Models page groups rows by region and kind and has filters for both. Use the
 
 ## Coding plans and their rules
 
-A coding plan is a row of its own with the plan's own host. Do not mix the plan host with the vendor's pay-as-you-go host: on several vendors that silently bills pay-as-you-go instead of the plan. Plans carry usage rules (which tools may use the key, limits, what counts as abuse). The card shows the vendor's rule text beside the key field and the add action asks you to acknowledge it (`planRuleAccepted`). Read the vendor's current terms before you subscribe; OmpOS reproduces what it read on the date shown and cannot promise a plan accepts third-party tools.
+A coding plan is a row of its own with the plan's own host. Do not mix the plan host with the vendor's pay-as-you-go host: on several vendors that silently bills pay-as-you-go instead of the plan. Plans carry usage rules (which tools may use the key, limits, what counts as abuse). The card shows the vendor's rule text beside the key field and the add action asks you to acknowledge it (`planRuleAccepted`). Read the vendor's current terms before you subscribe; Autonogrammer reproduces what it read on the date shown and cannot promise a plan accepts third-party tools.
 
 ## Bring your own key
 
 1. Open Settings (Ctrl+,) > Models, choose a row and enter the key. The key is never shown again.
-2. OmpOS saves it in one of two places, depending on the row:
+2. Autonogrammer saves it in one of two places, depending on the row:
    - A provider omp supports natively: the key is imported with `omp auth import -` over standard input and kept by omp in its own credential database (`agent.db`, owner-only file, unencrypted).
-   - A custom or catalogue-only provider: OmpOS writes its own marked block into omp's `models.yml` (comments kept, a timestamped backup, atomic write, validated by omp) and keeps the key in `secrets/secrets.json` under the state directory, owner-only. It reaches omp as an environment variable at launch.
+   - A custom or catalogue-only provider: Autonogrammer writes its own marked block into omp's `models.yml` (comments kept, a timestamped backup, atomic write, validated by omp) and keeps the key in `secrets/secrets.json` under the state directory, owner-only. It reaches omp as an environment variable at launch.
 3. Pick the default model on the same page or with the composer's model chip.
 4. **Test connection** checks the provider's endpoint only when you press it. The Network page's diagnostics send one unauthenticated GET per known endpoint, again only on request.
 
-OmpOS never logs a key, never puts one on a command line and never sends one anywhere itself.
+Autonogrammer never logs a key, never puts one on a command line and never sends one anywhere itself.
 
 ### Where keys live
 
 | Head | Where the key goes |
 |---|---|
-| Desktop | omp's `agent.db`, or `secrets/secrets.json` under `OMPOS_STATE_DIR` (owner-only). See [Run the desktop app](../runbooks/running-the-desktop-app.md). |
+| Desktop | omp's `agent.db`, or `secrets/secrets.json` under `AUTONOGRAMMER_STATE_DIR` (owner-only). See [Run the desktop app](../runbooks/running-the-desktop-app.md). |
 | Web | A write-only field on the Models page. In the Demo it is disabled and nothing is stored or sent. Against a real API the key is sent to the API only when the operator enabled `Providers:AllowCredentialWrite`, and only for providers omp supports natively; the page keeps no copy. See the [Web key threat model](../runbooks/web-key-threat-model.md). |
-| API (operator) | Writes are off by default. `Providers:AllowCredentialWrite`, `Providers:AllowConfigWrite` and `Providers:AllowLiveTest` each switch one capability on for a single-owner host. A provider that omp does not manage natively takes its key from the environment variable `OMPOS_PROVIDER_<ID>_KEY` that the operator sets. |
+| API (operator) | Writes are off by default. `Providers:AllowCredentialWrite`, `Providers:AllowConfigWrite` and `Providers:AllowLiveTest` each switch one capability on for a single-owner host. A provider that omp does not manage natively takes its key from the environment variable `AUTONOGRAMMER_PROVIDER_<ID>_KEY` that the operator sets. |
 
 ## What is verified and what is not
 
@@ -68,6 +68,6 @@ OmpOS never logs a key, never puts one on a command line and never sends one any
 
 - Rows with account placeholders in their URL (Azure, Bedrock, Vertex and similar) need values you supply.
 - Nothing here proves a provider answers: no catalogue row was called with a real credential.
-- Cursor's own models, billing and teams are not part of OmpOS (no accounts: see the [parity audit](../quality/cursor-parity-audit-2026-10-28.md)).
+- Cursor's own models, billing and teams are not part of Autonogrammer (no accounts: see the [parity audit](../quality/cursor-parity-audit-2026-10-28.md)).
 
 See also: [Settings guide](settings-guide.md), [Model providers and coding plans](../reference/providers.md).
