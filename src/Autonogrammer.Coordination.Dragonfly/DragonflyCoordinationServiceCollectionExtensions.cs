@@ -43,6 +43,9 @@ public static class DragonflyCoordinationServiceCollectionExtensions
         services.AddSingleton<ISessionSignals, DragonflySessionSignals>();
         services.AddSingleton<IIdempotencyStore, DragonflyIdempotencyStore>();
         services.AddSingleton<ITenantKeyEraser, DragonflyTenantErasure>();
+        services.AddSingleton<IDispatchSignals, DragonflyDispatchSignals>();
+        services.AddSingleton<IDispatchPresence, DragonflyDispatchPresence>();
+        services.AddSingleton<IDispatchAuthNonces, DragonflyDispatchAuthNonces>();
         return services;
     }
 }
