@@ -18,6 +18,15 @@ import { DEMO_SESSION, LOAD_TIMEOUT_MS, loadApp } from "./states.mjs";
 const STEP_WAIT_MS = Math.max(30000, Math.round(LOAD_TIMEOUT_MS / 3));
 const BOOT_TITLE = "Autonogrammer";
 
+/**
+ * The finding for a sequence whose second attempt also landed on the boot shell, or null when the attempt produced entries.
+ * A null second attempt must be an error: treating it as no entries would let the check pass without testing Back, Forward or Settings.
+ */
+export function bootShellOutcome(secondAttempt) {
+  if (secondAttempt !== null) return null;
+  return { check: "routes", id: "sequence-boot-shell", severity: "error", message: "the in-app sequence landed on the boot shell on both attempts, so the route steps were not checked", state: "in-app", viewport: "inapp" };
+}
+
 const DIRECT_ROUTES = [
   { route: "/", layout: "shell", ready: "!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]')" },
   { route: "/kanban", layout: "shell", ready: "!!document.querySelector('.autonogrammer-kanban')" },
@@ -93,6 +102,8 @@ async function checkInAppNavigation(page, report, { baseUrl, kind }) {
     report.add({ check: "routes", id: "sequence-retried", severity: "warning", message: "a step landed on the boot shell; the whole in-app sequence restarted once after a reload", state: "in-app", viewport: "inapp" });
     if (!(await loadApp(page, baseUrl, report, { group: "routes", viewport: "inapp" }))) return;
     entries = await runSequence(page, report, kind);
+    const outcome = bootShellOutcome(entries);
+    if (outcome) report.add(outcome);
   }
   for (const entry of entries ?? []) {
     for (const f of analyzeRoute(entry)) report.add({ ...f, state: `in-app ${entry.stepName} -> ${entry.route}` });

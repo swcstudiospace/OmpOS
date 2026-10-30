@@ -94,8 +94,8 @@ jobs:
       # The web payload budget is not a step of its own: scripts/web-smoke/run-smoke.sh ends its real-bundle half with it (size-budget.mjs, limits in size-budget.json), so it runs in the browser smoke step below.
       - name: Python unit tests of the CI and legal scripts
         run: python3 -m unittest scripts/ci/test_check_skip_markers.py scripts/legal/test_generate_sbom.py
-      - name: Node tests of the web build scripts (service-worker manifest refresh, finishing step of the real bundle)
-        run: node --test scripts/vercel/refresh-web-manifest.test.mjs
+      - name: Node tests of the web scripts (service-worker manifest refresh, the route check's boot-shell decision)
+        run: node --test scripts/vercel/refresh-web-manifest.test.mjs scripts/web-smoke/a11y/routes.test.mjs
       - name: Browser smoke with axe-core, the accessibility checks and the web payload budget (needs Node and Chrome on the runner; mirrors the bootstrap step)
         run: |
           out_dir="$RUNNER_TEMP/web-smoke"
