@@ -4,9 +4,13 @@ using System.Text;
 using Autonogrammer.Api.Audit;
 using Autonogrammer.Api.DataPlane;
 using Autonogrammer.Api.IntegrationTests.Hosting;
+using Autonogrammer.Api.Options;
 using Autonogrammer.Resilience;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Shouldly;
 using Xunit;
 
@@ -112,7 +116,24 @@ public sealed class LedgerSinkTests
         var stop = pump.StopAsync(TestContext.Current.CancellationToken);
         var finished = await Task.WhenAny(stop, Task.Delay(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
         finished.ShouldBe(stop, "the pump returns when the stopping token cancels the in-flight emit");
-        await stop.ConfigureAwait(false);
+        await stop.ConfigureAwait(true);
+    }
+
+    /// <summary>Verifies a host with the ledger sink left at its production default can start and be disposed twice.</summary>
+    [Fact]
+    public async Task HostDispose_Twice_DoesNotThrow_WhenLedgerDisabled()
+    {
+        var builder = Host.CreateApplicationBuilder();
+        builder.Logging.ClearProviders();
+        builder.Services.AddOptions<DataPlaneOptions>();
+        builder.Services.AddOptions<LedgerResilienceOptions>();
+        builder.Services.AddOptions<SessionsOptions>();
+        _ = LedgerSinkServiceCollectionExtensions.AddLedgerSink(builder.Services);
+        var host = builder.Build();
+        await host.StartAsync(TestContext.Current.CancellationToken);
+        host.Services.GetRequiredService<IOptions<DataPlaneOptions>>().Value.Ledger.Enabled.ShouldBeFalse();
+        host.Dispose();
+        host.Dispose();
     }
 
     private static AuditLedgerEvent Sample() => new()

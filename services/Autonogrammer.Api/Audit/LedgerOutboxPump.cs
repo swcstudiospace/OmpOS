@@ -21,8 +21,12 @@ internal sealed class LedgerOutboxPump : IHostedService, ILedgerStatusSource, ID
     private readonly TimeProvider _time;
     private readonly ResiliencePipeline _pipeline;
     private readonly Meter _meter;
+    private readonly System.Threading.Lock _lifetime = new();
     private CancellationTokenSource? _stopping;
     private Task? _loop;
+    private int _disposeState;
+    private int _cancelInFlight;
+    private bool _resourcesDisposed;
 
     /// <summary>Initializes a new instance of the <see cref="LedgerOutboxPump"/> class.</summary>
     /// <param name="options">Whether the sink is enabled.</param>
@@ -64,24 +68,21 @@ internal sealed class LedgerOutboxPump : IHostedService, ILedgerStatusSource, ID
     /// <inheritdoc />
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _stopping = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _loop = RunAsync(_stopping.Token);
-        return Task.CompletedTask;
+        lock (_lifetime)
+        {
+            if (Volatile.Read(ref _disposeState) != 0 || _resourcesDisposed || _loop is not null)
+            {
+                return Task.CompletedTask;
+            }
+
+            _stopping = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            _loop = RunAsync(_stopping.Token);
+            return Task.CompletedTask;
+        }
     }
 
     /// <inheritdoc />
-    public async Task StopAsync(CancellationToken cancellationToken)
-    {
-        if (_stopping is not null)
-        {
-            await _stopping.CancelAsync().ConfigureAwait(false);
-        }
-
-        if (_loop is not null)
-        {
-            await _loop.WaitAsync(cancellationToken).ConfigureAwait(false);
-        }
-    }
+    public Task StopAsync(CancellationToken cancellationToken) => StopCoreAsync(cancellationToken);
 
     /// <summary>Sends every due row once. Tests call this instead of waiting on the loop.</summary>
     /// <param name="cancellationToken">Cancels the drain. An in-flight emit observes it.</param>
@@ -91,8 +92,116 @@ internal sealed class LedgerOutboxPump : IHostedService, ILedgerStatusSource, ID
     /// <inheritdoc />
     public void Dispose()
     {
-        _stopping?.Dispose();
-        _meter.Dispose();
+        var state = Interlocked.CompareExchange(ref _disposeState, 1, 0);
+        if (state == 2)
+        {
+            return;
+        }
+
+        if (state == 1)
+        {
+            var spin = new SpinWait();
+            while (Volatile.Read(ref _disposeState) != 2)
+            {
+                spin.SpinOnce();
+            }
+
+            return;
+        }
+
+        try
+        {
+#pragma warning disable VSTHRD002 // Dispose is synchronous; the loop is observed before the token source is released.
+            StopCoreAsync(CancellationToken.None).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        finally
+        {
+            ReleaseResources();
+            Volatile.Write(ref _disposeState, 2);
+        }
+    }
+
+    private async Task StopCoreAsync(CancellationToken cancellationToken)
+    {
+        Task? loop;
+        CancellationTokenSource? stopping;
+        lock (_lifetime)
+        {
+            loop = _loop;
+            stopping = _resourcesDisposed ? null : _stopping;
+            if (stopping is not null)
+            {
+                _cancelInFlight++;
+            }
+        }
+
+        if (stopping is not null)
+        {
+            try
+            {
+                await stopping.CancelAsync().ConfigureAwait(false);
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            finally
+            {
+                lock (_lifetime)
+                {
+                    _cancelInFlight--;
+                }
+            }
+        }
+
+        if (loop is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await loop.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private void ReleaseResources()
+    {
+        var spin = new SpinWait();
+        while (true)
+        {
+            lock (_lifetime)
+            {
+                if (_resourcesDisposed)
+                {
+                    return;
+                }
+
+                if (Volatile.Read(ref _cancelInFlight) == 0)
+                {
+                    _resourcesDisposed = true;
+                    try
+                    {
+                        _stopping?.Dispose();
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                    }
+
+                    _stopping = null;
+                    _meter.Dispose();
+                    return;
+                }
+            }
+
+            spin.SpinOnce();
+        }
     }
 
     /// <summary>The delay before the next try after <paramref name="attempts"/> failures. The first failure waits <c>FirstDelaySeconds</c>; each later failure doubles, capped at <c>MaxDelaySeconds</c>.</summary>
