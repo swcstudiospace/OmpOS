@@ -42,6 +42,9 @@
 * [Run modes, permissions.json and sandbox.json](reference/run-modes.md)
 * [MCP servers](reference/mcp.md)
 * [Built-in skills](reference/builtin-skills.md)
+* [Cowork extensions](reference/cowork-extensions.md)
+* [Cowork safety](reference/cowork-safety.md)
+* [Cowork isolation](runbooks/cowork-isolation.md)
 * [Automations](reference/automations.md)
 * [Checkpoints, worktrees, queue, modes, side chats and fork](reference/checkpoints-and-worktrees.md)
 

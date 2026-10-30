@@ -360,7 +360,9 @@
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )",
           "Autonogrammer.Cowork.Abstractions": "[0.15.0, )",
-          "DiffPlex": "[1.9.0, )"
+          "DiffPlex": "[1.9.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.13, )",
+          "Microsoft.Extensions.Options.ConfigurationExtensions": "[10.0.13, )"
         }
       },
       "autonogrammer.genui": {
@@ -369,13 +371,13 @@
           "Autonogrammer.Contracts": "[0.15.0, )"
         }
       },
+      "autonogrammer.harness.computeruse.abstractions": {
+        "type": "Project"
+      },
       "autonogrammer.harness.providers": {
         "type": "Project"
       },
       "autonogrammer.harness.secrets": {
-        "type": "Project"
-      },
-      "autonogrammer.harness.computeruse.abstractions": {
         "type": "Project"
       },
       "autonogrammer.parser": {

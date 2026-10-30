@@ -94,4 +94,68 @@ internal static class WebInfoPages
             ],
             null);
     }
+
+    /// <summary>Creates the Bundles page. The full surface lives in the desktop head.</summary>
+    /// <returns>The page.</returns>
+    internal static InfoSettingsPage Bundles() => new(
+        SettingsSection.Bundles,
+        SettingsCopy.BundlesTitle,
+        SettingsCopy.BundleProjectLabel,
+        [new InfoSettingsFact("Limit", SettingsCopy.BundlesLimit)],
+        DesktopNotice);
+
+    /// <summary>Creates the Connectors page. The full surface lives in the desktop head.</summary>
+    /// <returns>The page.</returns>
+    internal static InfoSettingsPage Connectors() => new(
+        SettingsSection.Connectors,
+        SettingsCopy.ConnectorsTitle,
+        SettingsCopy.ConnectorsLimit,
+        [new InfoSettingsFact("Limit", SettingsCopy.ConnectorsLimit)],
+        DesktopNotice);
+
+    /// <summary>Creates the Cowork permissions page. The full surface lives in the desktop head.</summary>
+    /// <returns>The page.</returns>
+    internal static InfoSettingsPage CoworkPermissions() => new(
+        SettingsSection.CoworkPermissions,
+        SettingsCopy.CoworkPermissionsTitle,
+        SettingsCopy.CoworkPermissionsLimit,
+        [new InfoSettingsFact("Limit", SettingsCopy.CoworkPermissionsLimit)],
+        DesktopNotice);
+
+    /// <summary>Creates the Isolation page. The full surface lives in the desktop head.</summary>
+    /// <returns>The page.</returns>
+    internal static InfoSettingsPage Isolation() => new(
+        SettingsSection.Isolation,
+        SettingsCopy.IsolationTitle,
+        SettingsCopy.IsolationLimit,
+        [new InfoSettingsFact("Limit", SettingsCopy.IsolationLimit)],
+        DesktopNotice);
+
+    /// <summary>Creates the Usage page. The full surface lives in the desktop head.</summary>
+    /// <returns>The page.</returns>
+    internal static InfoSettingsPage Usage() => new(
+        SettingsSection.Usage,
+        SettingsCopy.UsageTitle,
+        "Local usage from the desktop ledger. This head shows the description only.",
+        [new InfoSettingsFact("Desktop", DesktopNotice)],
+        DesktopNotice);
+
+    /// <summary>Creates the Notifications page. The full surface lives in the desktop head.</summary>
+    /// <returns>The page.</returns>
+    internal static InfoSettingsPage Notifications() => new(
+        SettingsSection.Notifications,
+        SettingsCopy.NotificationsTitle,
+        SettingsCopy.NotificationsLimit,
+        [new InfoSettingsFact("Limit", SettingsCopy.NotificationsLimit)],
+        DesktopNotice);
+
+    /// <summary>Creates the sub-agent information page. The panel is limited to ACP and lives in the desktop head.</summary>
+    /// <returns>The page.</returns>
+    internal static InfoSettingsPage Subagents() => new(
+        SettingsSection.Notifications,
+        "Sub-agents",
+        SettingsCopy.SubagentLimit,
+        [new InfoSettingsFact("Limit", SettingsCopy.SubagentLimit)],
+        DesktopNotice);
+
 }

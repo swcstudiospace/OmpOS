@@ -81,6 +81,9 @@ internal sealed class AgentHead : IAsyncDisposable
     /// <summary>Gets the Cowork head. Disposed before <see cref="Host"/>.</summary>
     public CoworkHead? Cowork { get; private set; }
 
+    /// <summary>Gets the bundle composition registered for this head. Remote sessions load no bundles.</summary>
+    internal Autonogrammer.Native.Composition.Plugins.BundleComposition? Bundles { get; private set; }
+
     /// <summary>Gets the Cowork browser composition, or null before attach.</summary>
     internal BrowserUseCompositionResult? BrowserUse { get; set; }
 
@@ -349,6 +352,19 @@ internal sealed class AgentHead : IAsyncDisposable
                 options.TimeProvider,
                 options.ProviderKeys,
                 services?.Mcp);
+            var bundles = new Autonogrammer.Native.Composition.Plugins.BundleComposition(
+                Path.Combine(options.Loop.StateRoot, "plugins"),
+                options.Loop.StateRoot);
+            Autonogrammer.Native.Composition.Plugins.BundleComposition.PluginRootsFor = remote => bundles.PluginRoots(remote);
+            head.Bundles = bundles;
+            host.RegisterLaunchContributor(bundles.Contributor);
+            host.RegisterLaunchContributor(new Autonogrammer.Harness.Isolation.IsolationContributor(
+                new Autonogrammer.Harness.Isolation.IsolationDecision(Autonogrammer.Harness.Isolation.IsolationLevel.None, null, null, false)));
+            host.Activity = new Autonogrammer.Native.Composition.Activity.ActivityComposition(options.Loop.StateRoot);
+            if (services is not null)
+            {
+                services.UsageHistory = host.Activity.UsageHistory;
+            }
             BrowserUseComposition.Attach(head, settingsOptions.BrowserUse);
 
             // The head owns the models from here on.

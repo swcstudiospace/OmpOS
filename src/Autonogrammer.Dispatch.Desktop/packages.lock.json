@@ -81,13 +81,13 @@
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
+      "autonogrammer.harness.computeruse.abstractions": {
+        "type": "Project"
+      },
       "autonogrammer.harness.plugins": {
         "type": "Project"
       },
       "autonogrammer.harness.secrets": {
-        "type": "Project"
-      },
-      "autonogrammer.harness.computeruse.abstractions": {
         "type": "Project"
       },
       "autonogrammer.parser": {

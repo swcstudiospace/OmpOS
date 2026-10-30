@@ -38,6 +38,46 @@ public static class SettingsCopy
     /// <summary>The navigation label of the Plugins page.</summary>
     public const string PluginsTitle = "Plugins";
 
+    /// <summary>The navigation label of the Bundles page.</summary>
+    public const string BundlesTitle = "Bundles";
+
+    /// <summary>The navigation label of the Connectors page.</summary>
+    public const string ConnectorsTitle = "Connectors";
+
+    /// <summary>The navigation label of the Cowork permissions page.</summary>
+    public const string CoworkPermissionsTitle = "Cowork permissions";
+
+    /// <summary>The navigation label of the Isolation page.</summary>
+    public const string IsolationTitle = "Isolation";
+
+    /// <summary>The navigation label of the Usage page.</summary>
+    public const string UsageTitle = "Usage";
+
+    /// <summary>The navigation label of the Notifications page.</summary>
+    public const string NotificationsTitle = "Notifications";
+
+    /// <summary>The limit on the Bundles screen. Hooks are listed and never run.</summary>
+    public const string BundlesLimit = "hooks listed, not run";
+
+    /// <summary>The limit on the Connectors screen.</summary>
+    public const string ConnectorsLimit = "Auto does not trust readOnlyHint";
+
+    /// <summary>The limit on the permissions screen.</summary>
+    public const string CoworkPermissionsLimit = "Auto (rules)";
+
+    /// <summary>The limit on the Isolation screen.</summary>
+    public const string IsolationLimit = "network: unrestricted";
+
+    /// <summary>The limit on the sub-agent pane.</summary>
+    public const string SubagentLimit = "sub-agent view limited to ACP";
+
+    /// <summary>The limit on the Notifications screen.</summary>
+    public const string NotificationsLimit = "OS text is title-only by default";
+
+    /// <summary>Shown on Plugins and Skills. Bundle items show under the project label. Remote sessions load no bundles.</summary>
+    public const string BundleProjectLabel = "Bundle items show under the project label. Remote sessions load no bundles.";
+
+
     /// <summary>The words appended to a navigation entry's accessible name while its page has unsaved edits.</summary>
     public const string UnsavedNavigationSuffix = "unsaved changes";
 

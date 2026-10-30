@@ -61,10 +61,17 @@ internal sealed class SettingsFixture : IDisposable
         Network = new NetworkSettingsPage(NetworkSource);
         Keyboard = new KeyboardSettingsPage(KeyboardSource);
         Computer = new ComputerUseSettingsPage(Grants, Denylist, Audit, ComputerSettings, KillSwitch, ComputerStatus);
+        Bundles = new Autonogrammer.Presentation.Settings.Cowork.BundlesSettingsPage(new FixtureBundles());
+        Connectors = new Autonogrammer.Presentation.Settings.Cowork.ConnectorsSettingsPage(new Autonogrammer.Native.Composition.Connectors.ConnectorPermissionStore(Path.GetTempPath()));
+        Permissions = new Autonogrammer.Presentation.Settings.Cowork.CoworkPermissionsSettingsPage(new FixtureFolderGrants());
+        Isolation = new Autonogrammer.Presentation.Settings.Cowork.IsolationSettingsPage();
+        Usage = new Autonogrammer.Presentation.Settings.Cowork.UsageSettingsPage();
+        Notifications = new Autonogrammer.Presentation.Settings.Cowork.NotificationsSettingsPage();
         Model = new SettingsWindowModel(
         [
             Runtime, General, Display, Agents, RunMode, Models, Tab, Rules, Skills, Commands, Hooks, Mcp, Plugins,
             Workspaces, Worktrees, Ignore, Remote, Cloud, Automations, Browser, Privacy, Network, Keyboard, Computer,
+            Bundles, Connectors, Permissions, Isolation, Usage, Notifications,
         ]);
         Window = new SettingsWindow(Model);
         Runtime.Saved += (_, args) => RuntimeSaved.Add(args.Values);
@@ -220,6 +227,24 @@ internal sealed class SettingsFixture : IDisposable
     /// <summary>Gets the Computer Use page.</summary>
     internal ComputerUseSettingsPage Computer { get; }
 
+    /// <summary>Gets the Bundles page.</summary>
+    internal Autonogrammer.Presentation.Settings.Cowork.BundlesSettingsPage Bundles { get; }
+
+    /// <summary>Gets the Connectors page.</summary>
+    internal Autonogrammer.Presentation.Settings.Cowork.ConnectorsSettingsPage Connectors { get; }
+
+    /// <summary>Gets the Cowork permissions page.</summary>
+    internal Autonogrammer.Presentation.Settings.Cowork.CoworkPermissionsSettingsPage Permissions { get; }
+
+    /// <summary>Gets the Isolation page.</summary>
+    internal Autonogrammer.Presentation.Settings.Cowork.IsolationSettingsPage Isolation { get; }
+
+    /// <summary>Gets the Usage page.</summary>
+    internal Autonogrammer.Presentation.Settings.Cowork.UsageSettingsPage Usage { get; }
+
+    /// <summary>Gets the Notifications page.</summary>
+    internal Autonogrammer.Presentation.Settings.Cowork.NotificationsSettingsPage Notifications { get; }
+
     /// <summary>Gets the grant registry of the Computer Use page.</summary>
     internal FixtureGrantRegistry Grants { get; } = new();
 
@@ -358,3 +383,30 @@ internal sealed class FixtureBrowserUseSource : IBrowserUseSettingsSource
 
     public Task AcquireAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
+
+internal sealed class FixtureBundles : Autonogrammer.Presentation.Settings.Plugins.IBundleManagementSource
+{
+    public Task<IReadOnlyList<Autonogrammer.Presentation.Settings.Plugins.BundleSnapshot>> ListAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Autonogrammer.Presentation.Settings.Plugins.BundleSnapshot>>([]);
+
+    public Task<Autonogrammer.Presentation.Settings.Plugins.BundleSnapshot> InstallAsync(string path, CancellationToken cancellationToken) =>
+        Task.FromResult(new Autonogrammer.Presentation.Settings.Plugins.BundleSnapshot("demo", true, true, ["hooks listed, not run"], [], null));
+
+    public Task SetBundleEnabledAsync(string bundleId, bool enabled, CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task SetSkillEnabledAsync(string bundleId, string skillId, bool enabled, CancellationToken cancellationToken) => Task.CompletedTask;
+}
+
+internal sealed class FixtureFolderGrants : Autonogrammer.Presentation.Settings.Permissions.IFolderGrantSource
+{
+    public IReadOnlyList<Autonogrammer.Presentation.Settings.Permissions.FolderGrantDraft> List() => [];
+
+    public void Grant(Autonogrammer.Presentation.Settings.Permissions.FolderGrantDraft grant)
+    {
+    }
+
+    public void Revoke(string path)
+    {
+    }
+}
+

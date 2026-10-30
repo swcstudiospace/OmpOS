@@ -18,12 +18,18 @@ public sealed class ConventionSlashDiscoverySource : ISlashDiscoverySource
     /// <param name="userHome">The user's home directory, or <see langword="null"/> to skip user conventions.</param>
     /// <param name="sources">The file trees to read, or <see langword="null"/> for the local disk plus the built-in skills.</param>
     /// <exception cref="ArgumentNullException"><paramref name="roots"/> is null.</exception>
-    public ConventionSlashDiscoverySource(IReadOnlyList<string> roots, string? userHome, ConventionSources? sources = null)
+    public ConventionSlashDiscoverySource(IReadOnlyList<string> roots, string? userHome, ConventionSources? sources = null, IReadOnlyList<string>? pluginRoots = null)
     {
         ArgumentNullException.ThrowIfNull(roots);
         _roots = roots;
         _userHome = userHome;
-        _sources = sources ?? ConventionSources.Local(roots, userHome).WithBuiltin();
+        var local = ConventionSources.Local(roots, userHome).WithBuiltin();
+        if (pluginRoots is { Count: > 0 })
+        {
+            local = local.WithPluginRoots(pluginRoots);
+        }
+
+        _sources = sources ?? local;
     }
 
     /// <inheritdoc/>

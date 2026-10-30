@@ -89,7 +89,7 @@ public sealed partial class SessionKeyHolderTests
         }
     }
 
-    private static readonly string[] DisplayPreferenceScripts = ["autonogrammer-theme.js", "theme-boot.js"];
+    private static readonly string[] DisplayPreferenceScripts = ["autonogrammer-theme.js", "theme-boot.js", "surface-boot.js"];
 
     private static bool IsDisplayPreferenceScript(string path) =>
         string.Equals(Path.GetFileName(Path.GetDirectoryName(path)), "scripts", StringComparison.Ordinal)

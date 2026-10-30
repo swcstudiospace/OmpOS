@@ -119,9 +119,9 @@ There is no Temporal worker: it was removed on 2026-10-21 and session runs execu
 | `Autonogrammer.Harness.ComputerUse.MacOS` | macOS backend over CoreGraphics and screencapture (Phase 73) |
 | `Autonogrammer.Cowork.Memory` | Memory store contracts and policy (Phase 75) |
 | `Autonogrammer.Cowork.Memory.Postgres` | Memory persistence over PostgreSQL (Phase 75) |
-| `Autonogrammer.Harness.PluginBundles` | Plugin bundle install over launch contributors (Phase 76) |
-| `Autonogrammer.Harness.Isolation` | Process isolation over the launch wrapper (Phase 76) |
-| `Autonogrammer.Harness.Notifications` | Desktop notification sinks over OS commands run by argument vector (Phase 76) |
+| `Autonogrammer.Harness.PluginBundles` | Plugin bundle install, skill overlays and switched-off MCP descriptors composed by the desktop head (Phase 76) |
+| `Autonogrammer.Harness.Isolation` | Probe, planner and process wrapper for the local ACP omp child. Code is off. Network is not fenced (Phase 76) |
+| `Autonogrammer.Harness.Notifications` | Notification request and sink contract. The in-app bridge sits in Native, not Presentation (Phase 76) |
 | `Autonogrammer.Accounts.Desktop` | Desktop account session selector and loopback reader (Phase 67) |
 | `Autonogrammer.Dispatch.Client` | Dispatch HTTP and SSE client for native and Android heads (Phase 74) |
 | `Autonogrammer.Dispatch.Desktop` | Desktop dispatch connector, verifier and policy store (Phase 74) |

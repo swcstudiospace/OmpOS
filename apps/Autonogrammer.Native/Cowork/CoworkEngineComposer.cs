@@ -47,6 +47,7 @@ internal static class CoworkEngineComposer
             ExtraMcpServers = extra,
             EnvironmentMode = EngineEnvironmentMode.Allowlist,
             EnvironmentAllowList = OperatingSystem.IsWindows() ? WindowsExtras : [],
+            ProcessWrapper = request.ProcessWrapper,
             PermissionResolverFactory = pending => new CoworkPermissionResolver(
                 pending,
                 request.Boundary,
@@ -154,6 +155,10 @@ internal sealed record CoworkEngineRequest(
 
     /// <summary>Gets whether Skip was acknowledged.</summary>
     public bool SkipAcknowledged { get; init; }
+
+    /// <summary>Gets the isolation wrapper for this Cowork session, or null when isolation is off or not yet consented.</summary>
+    public IProcessLaunchWrapper? ProcessWrapper { get; init; }
+
 
     /// <summary>Gets catalog servers supplied by a test, or null to read <see cref="Catalog"/>.</summary>
     public IReadOnlyList<AcpMcpServer>? OfferedServers { get; init; }

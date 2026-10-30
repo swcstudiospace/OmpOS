@@ -284,6 +284,11 @@ internal sealed class DemoApiHandler : HttpMessageHandler
             return JsonResponse(request, _world.Board(), CatalogJsonContext.Default.BoardResponse);
         }
 
+        if (Match(path, "account", "sessions"))
+        {
+            return JsonResponse(request, new Autonogrammer.Contracts.Accounts.AccountSessionList([]), Autonogrammer.Contracts.Accounts.AccountsJsonContext.Default.AccountSessionList);
+        }
+
         if (Match(path, "account"))
         {
             return JsonResponse(request, _world.Account(), Autonogrammer.Contracts.Accounts.AccountsJsonContext.Default.AccountResponse);

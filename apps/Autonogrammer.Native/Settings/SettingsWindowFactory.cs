@@ -107,6 +107,21 @@ internal static class SettingsWindowFactory
         {
             pages.Add(computerUse);
         }
+
+        AddOptional(pages, options.Bundles);
+        AddOptional(pages, options.Connectors);
+        AddOptional(pages, options.CoworkPermissions);
+        AddOptional(pages, options.Isolation);
+        AddOptional(pages, options.Usage);
+        AddOptional(pages, options.Notifications);
+    }
+
+    private static void AddOptional(List<ISettingsPage> pages, ISettingsPage? page)
+    {
+        if (page is not null)
+        {
+            pages.Add(page);
+        }
     }
 
     // Tab, Rules, Skills, Commands, Hooks and MCP: the pages of what the user's files and the hooks service supply.

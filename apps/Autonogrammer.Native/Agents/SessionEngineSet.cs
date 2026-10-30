@@ -1,6 +1,7 @@
 using System.Globalization;
 using Autonogrammer.Contracts.Agents;
 using Autonogrammer.Contracts.Environments;
+using Autonogrammer.Harness.Abstractions;
 using Autonogrammer.Harness.Acp;
 using Autonogrammer.Harness.AgentLoop.Connection;
 using Autonogrammer.Harness.AgentLoop.Gsd;
@@ -17,9 +18,9 @@ using Autonogrammer.Harness.Remote;
 using Autonogrammer.Harness.Remote.Containers;
 using Autonogrammer.Harness.Terminal;
 using Autonogrammer.Native.Composition;
+using Autonogrammer.Native.Composition.Activity;
 using Autonogrammer.Native.Composition.Checkpoints;
 using Autonogrammer.Native.Composition.Mentions;
-using Autonogrammer.Native.Engine;
 using Autonogrammer.Native.Settings;
 using Autonogrammer.Native.Views.Conventions;
 using Autonogrammer.Native.Views.Sessions;
@@ -88,6 +89,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
     private readonly SessionExtrasStore _extras;
     private readonly OmpSideChatEngine _sideChats;
     private readonly SessionForker _forker;
+    private readonly List<ILaunchContributor> _launchContributors = [];
 
     /// <summary>Creates the set. It opens nothing until <see cref="ReloadAsync"/> or the first <see cref="CreateSessionAsync"/>.</summary>
     /// <param name="options">Where things are, and the seams a test replaces.</param>
@@ -268,7 +270,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
         Row = row,
 
         // A terminal session has no engine behind a prompt channel: its omp is the terminal, and the composer only steers.
-        Prompts = isTerminal ? new UnconnectedPromptChannel() : slot.Prompts,
+        Prompts = isTerminal ? new UnconnectedPromptChannel() : Activity?.Wrap(slot.Prompts) ?? slot.Prompts,
         Approvals = slot.Approvals,
         Scope = slot.Scope.Current,
         Stages = slot.Stages,
@@ -607,6 +609,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
 
         try
         {
+            launch = ApplyContributors(launch, plan.SessionId);
             var holder = plan.RunModes;
             var composition = new EngineCompositionOptions
             {
@@ -616,6 +619,7 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
                 RunModeAudit = _services?.RunModeHub.Audit,
                 Remote = remote,
                 Clock = _options.TimeProvider,
+                ProcessWrapper = ProcessWrapper,
             };
             return EngineComposition.Compose(_options.AllowedKinds, launch, _options.TransportFactory, _options.LoggerFactory, _options.OmpPath, resumeSessionId, composition);
         }
@@ -625,6 +629,63 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             throw;
         }
     }
+
+    /// <summary>Gets or sets the activity tee. When set, RuntimeOptions wraps slot.Prompts and leaves AgentSessionRuntime unedited.</summary>
+    internal ActivityComposition? Activity { get; set; }
+
+    /// <summary>Gets or sets the isolation wrapper for the next local engine. Code leaves it null.</summary>
+    internal IProcessLaunchWrapper? ProcessWrapper { get; set; }
+
+    /// <summary>Gets the registered launch contributors. The composer applies their arguments, environment and wrapper generically.</summary>
+    internal IReadOnlyList<ILaunchContributor> LaunchContributors => _launchContributors;
+
+    /// <summary>Registers one contributor. Registration only: no per-contributor branch.</summary>
+    /// <param name="contributor">The contributor.</param>
+    internal void RegisterLaunchContributor(ILaunchContributor contributor)
+    {
+        ArgumentNullException.ThrowIfNull(contributor);
+        _launchContributors.Add(contributor);
+    }
+
+    private OmpLaunchPlan ApplyContributors(OmpLaunchPlan launch, string? sessionId)
+    {
+        if (_launchContributors.Count == 0)
+        {
+            return launch;
+        }
+
+        var request = new LaunchRequest
+        {
+            Surface = "desktop",
+            SessionId = sessionId ?? string.Empty,
+            WorkingDirectory = launch.WorkingDirectory,
+            TrustedFolders = [],
+        };
+        var arguments = launch.ExtraArguments.ToList();
+        var environment = new Dictionary<string, string>(launch.Environment, StringComparer.Ordinal);
+        foreach (var contributor in _launchContributors)
+        {
+            var contribution = contributor.Contribute(request, CancellationToken.None);
+            arguments.AddRange(contribution.Arguments);
+            foreach (var pair in contribution.Environment)
+            {
+                if (pair.Value is null)
+                {
+                    _ = environment.Remove(pair.Key);
+                }
+                else
+                {
+                    environment[pair.Key] = pair.Value;
+                }
+            }
+
+            ProcessWrapper ??= contribution.ProcessWrapper;
+        }
+
+        return launch with { ExtraArguments = arguments, Environment = environment };
+    }
+
+
 
     /// <summary>Gets or sets the rail model over this set's registry. The head sets it once it has built the model; the @-mention of another chat lists the chats through it.</summary>
     internal Autonogrammer.Presentation.AgentPanel.SessionCatalogModel? CatalogModel { get; set; }
@@ -856,7 +917,8 @@ internal sealed class SessionEngineSet : IAgentPanelHost, IAsyncDisposable
             ? new RemoteSlashDiscoverySource(slot)
             : new ConventionSlashDiscoverySource(
                 [row.Summary.WorkspaceRoot ?? _options.Loop.WorkspaceRoot],
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                pluginRoots: Autonogrammer.Native.Composition.Plugins.BundleComposition.PluginRootsFor?.Invoke(false));
 
     private Func<IReadOnlyList<IMentionSource>>? MentionSourcesFor(AgentRow row)
     {

@@ -1,3 +1,4 @@
+using Autonogrammer.Web.Services;
 using Autonogrammer.Contracts.Catalog;
 using Autonogrammer.Web.Demo;
 using Shouldly;
@@ -16,6 +17,7 @@ public sealed class OmpApiClientRouteTests : IDisposable
         "GET /health/ready",
         "GET /account/board",
         "GET /account",
+        "GET /account/sessions",
         "GET /sessions/{}",
         "GET /sessions/{}/stages",
         "GET /sessions/{}/context",
@@ -102,6 +104,22 @@ public sealed class OmpApiClientRouteTests : IDisposable
         board.Columns.Single(static column => string.Equals(column.Key, "archived", StringComparison.Ordinal)).Cards.Single().Id.ShouldBe(DemoFixtures.ClosedId);
     }
 
+    /// <summary>GET account/sessions goes through the same bearer handler as the board.</summary>
+    /// <returns>A task that completes when the header was checked.</returns>
+    [Fact]
+    public async Task GetAccountSessionsKeepsTheBearerHandler()
+    {
+        using var inner = new HeaderHandler();
+        using var bearer = new BearerTokenHandler(new StaticToken("session-token"), inner);
+        using var http = new HttpClient(bearer) { BaseAddress = new Uri("http://api.invalid/") };
+
+        var list = await new OmpApiClient(http).GetAccountSessionsAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        list.Items.ShouldBeEmpty();
+        inner.Authorization.ShouldBe("Bearer session-token");
+        inner.Path.ShouldBe("/account/sessions");
+    }
+
     /// <summary>The Demo offers 20 engine commands and a model list led by the default model.</summary>
     /// <returns>A task that completes when the assertions ran.</returns>
     [Fact]
@@ -119,4 +137,26 @@ public sealed class OmpApiClientRouteTests : IDisposable
 
     /// <inheritdoc />
     public void Dispose() => _host.Dispose();
+
+    private sealed class StaticToken(string token) : IApiTokenProvider
+    {
+        public ValueTask<string?> GetTokenAsync(CancellationToken cancellationToken) => ValueTask.FromResult<string?>(token);
+    }
+
+    private sealed class HeaderHandler : HttpMessageHandler
+    {
+        public string? Authorization { get; private set; }
+
+        public string? Path { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Authorization = request.Headers.Authorization?.ToString();
+            Path = request.RequestUri?.AbsolutePath;
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new System.Net.Http.StringContent("{\"items\":[]}", System.Text.Encoding.UTF8, "application/json"),
+            });
+        }
+    }
 }

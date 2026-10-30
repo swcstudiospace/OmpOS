@@ -20,6 +20,7 @@ internal partial class MainWindow : Window
         InitializeComponent();
         AppIcon.Apply(this);
         var main = new MainView(panel, workspaceRoot, motion, mcpHost: null, board, ShellServicesOf(services));
+        main.UsageHistorySource = services?.UsageHistory;
         Content = new SurfaceHost(main, cowork);
         Classes.Set(ReducedMotionClass, IsReducedMotion(motion));
     }

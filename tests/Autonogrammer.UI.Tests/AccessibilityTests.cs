@@ -255,7 +255,7 @@ public sealed partial class AccessibilityTests : UiTestContext
     {
         internal AccountHostStub(Autonogrammer.Presentation.Accounts.AccountHostState state) => State = state;
 
-        public event EventHandler? Changed;
+        public event EventHandler? Changed { add { } remove { } }
 
         public Autonogrammer.Presentation.Accounts.AccountHostState State { get; }
 

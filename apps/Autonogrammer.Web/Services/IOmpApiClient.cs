@@ -120,6 +120,11 @@ internal interface IOmpApiClient
     /// <returns>The account. The Demo fixture has an empty feature list.</returns>
     Task<Autonogrammer.Contracts.Accounts.AccountResponse> GetAccountAsync(CancellationToken cancellationToken);
 
+    /// <summary>Lists the caller's sessions across surfaces (<c>GET /account/sessions</c>).</summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The rows, each labelled with its surface. The rail keeps the Cowork rows and never asks for a transcript.</returns>
+    Task<Autonogrammer.Contracts.Accounts.AccountSessionList> GetAccountSessionsAsync(CancellationToken cancellationToken);
+
     /// <summary>Gets the card details of a session (<c>GET /sessions/{id}/card-details</c>).</summary>
     /// <param name="sessionId">The session.</param>
     /// <param name="cancellationToken">Cancels the call.</param>

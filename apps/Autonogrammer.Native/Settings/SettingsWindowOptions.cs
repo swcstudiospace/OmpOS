@@ -105,4 +105,23 @@ internal sealed class SettingsWindowOptions
 
     /// <summary>Gets the Browser page source, or null for a window without that page.</summary>
     public Autonogrammer.Presentation.Settings.BrowserUse.IBrowserUseSettingsSource? BrowserUse { get; init; }
+
+    /// <summary>Gets the Bundles page, or null for a window without one.</summary>
+    public Autonogrammer.Presentation.Settings.Cowork.BundlesSettingsPage? Bundles { get; init; }
+
+    /// <summary>Gets the Connectors page, or null for a window without one.</summary>
+    public Autonogrammer.Presentation.Settings.Cowork.ConnectorsSettingsPage? Connectors { get; init; }
+
+    /// <summary>Gets the Cowork permissions page, or null for a window without one.</summary>
+    public Autonogrammer.Presentation.Settings.Cowork.CoworkPermissionsSettingsPage? CoworkPermissions { get; init; }
+
+    /// <summary>Gets the Isolation page, or null for a window without one.</summary>
+    public Autonogrammer.Presentation.Settings.Cowork.IsolationSettingsPage? Isolation { get; init; }
+
+    /// <summary>Gets the Usage page, or null for a window without one.</summary>
+    public Autonogrammer.Presentation.Settings.Cowork.UsageSettingsPage? Usage { get; init; }
+
+    /// <summary>Gets the Notifications page, or null for a window without one.</summary>
+    public Autonogrammer.Presentation.Settings.Cowork.NotificationsSettingsPage? Notifications { get; init; }
+
 }

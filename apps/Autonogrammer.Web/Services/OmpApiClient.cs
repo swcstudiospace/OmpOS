@@ -152,6 +152,10 @@ internal sealed class OmpApiClient : IOmpApiClient
         GetAsync("account", AccountsJsonContext.Default.AccountResponse, cancellationToken);
 
     /// <inheritdoc />
+    public Task<AccountSessionList> GetAccountSessionsAsync(CancellationToken cancellationToken) =>
+        GetAsync("account/sessions", AccountsJsonContext.Default.AccountSessionList, cancellationToken);
+
+    /// <inheritdoc />
     public Task<CardDetailsResponse> GetCardDetailsAsync(string sessionId, CancellationToken cancellationToken) =>
         GetAsync(SessionPath(sessionId, "card-details"), CatalogJsonContext.Default.CardDetailsResponse, cancellationToken);
 

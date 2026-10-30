@@ -58,6 +58,12 @@ public sealed class SettingsWindowTests
         (SettingsSection.Network, NetworkCopy.Title, typeof(NetworkPageView)),
         (SettingsSection.Keyboard, KeyboardCopy.Title, typeof(KeyboardPageView)),
         (SettingsSection.ComputerUse, ComputerUseCopy.Title, typeof(ComputerSettingsPage)),
+        (SettingsSection.Bundles, SettingsCopy.BundlesTitle, typeof(BundlesPageView)),
+        (SettingsSection.Connectors, SettingsCopy.ConnectorsTitle, typeof(ConnectorsPageView)),
+        (SettingsSection.CoworkPermissions, SettingsCopy.CoworkPermissionsTitle, typeof(PermissionsPageView)),
+        (SettingsSection.Isolation, SettingsCopy.IsolationTitle, typeof(IsolationPageView)),
+        (SettingsSection.Usage, SettingsCopy.UsageTitle, typeof(Autonogrammer.Native.Views.Usage.UsageMeterView)),
+        (SettingsSection.Notifications, SettingsCopy.NotificationsTitle, typeof(TextBlock)),
     ];
 
     // The MCP and Cloud views draw the model their page holds; every other view draws the page.

@@ -1,5 +1,8 @@
 using Autonogrammer.Native.Views.Computer;
 using Autonogrammer.Presentation.Computer;
+using Autonogrammer.Presentation.Settings.Cowork;
+using Avalonia.Automation;
+using Avalonia.Controls;
 using Autonogrammer.Presentation.Hooks;
 using Autonogrammer.Presentation.Safety;
 using Autonogrammer.Presentation.Settings;
@@ -50,6 +53,12 @@ internal static class SettingsPageViews
             AutomationsSettingsPage => new Autonogrammer.Native.Views.Automations.AutomationsPageView(),
             ComputerUseSettingsPage => new ComputerSettingsPage(),
             BrowserUseSettingsPage => new BrowserUsePageView(),
+            BundlesSettingsPage => new BundlesPageView(),
+            ConnectorsSettingsPage => new ConnectorsPageView(),
+            CoworkPermissionsSettingsPage permissions => new PermissionsPageView(permissions.Modes, permissions.Grants, permissions.Statements),
+            IsolationSettingsPage => new IsolationPageView(),
+            UsageSettingsPage => new Autonogrammer.Native.Views.Usage.UsageMeterView(),
+            NotificationsSettingsPage notifications => NamedNotice(notifications.Title, notifications.Limit),
             _ => throw new ArgumentException("No view draws this kind of settings page.", nameof(page)),
         };
         view.DataContext = ContextOf(page);
@@ -62,6 +71,10 @@ internal static class SettingsPageViews
         McpSettingsPage mcp => mcp.Model,
         CloudSettingsPage cloud => cloud.Agents,
         AutomationsSettingsPage automations => automations.Model,
+        BundlesSettingsPage bundles => bundles.Model,
+        IsolationSettingsPage isolation => isolation.Model,
+        UsageSettingsPage usage => usage.Model,
+        CoworkPermissionsSettingsPage permissions => new PermissionsPageState(permissions.Modes, permissions.Grants, permissions.Statements),
         _ => page,
     };
 
@@ -138,4 +151,12 @@ internal static class SettingsPageViews
     }
 
     private static PageStatus ReadyStatus => new(PageStatusKind.Ready, string.Empty, string.Empty);
+
+    private static Control NamedNotice(string title, string limit)
+    {
+        var block = new TextBlock { Text = limit };
+        AutomationProperties.SetName(block, title);
+        return block;
+    }
+
 }

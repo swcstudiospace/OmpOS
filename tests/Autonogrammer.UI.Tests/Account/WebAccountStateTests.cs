@@ -29,7 +29,7 @@ public sealed class WebAccountStateTests : UiTestContext
             "sessions/abc?code=link-code&x=1",
             returning,
             TimeProvider.System,
-            TestContext.Current.CancellationToken).ConfigureAwait(true);
+            Xunit.TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         result.Status.ShouldBe(AuthCallbackStatus.Acknowledged);
         result.ScrubbedBeforePost.ShouldBeTrue();
@@ -123,7 +123,7 @@ public sealed class WebAccountStateTests : UiTestContext
     {
         internal ScriptedHost(AccountHostState state) => State = state;
 
-        public event EventHandler? Changed;
+        public event EventHandler? Changed { add { } remove { } }
 
         public AccountHostState State { get; }
 

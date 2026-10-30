@@ -67,6 +67,9 @@
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.13, )"
         }
       },
+      "autonogrammer.harness.computeruse.abstractions": {
+        "type": "Project"
+      },
       "autonogrammer.harness.plugins": {
         "type": "Project"
       },
@@ -81,9 +84,6 @@
         "dependencies": {
           "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
-      },
-      "autonogrammer.harness.computeruse.abstractions": {
-        "type": "Project"
       },
       "autonogrammer.parser": {
         "type": "Project",

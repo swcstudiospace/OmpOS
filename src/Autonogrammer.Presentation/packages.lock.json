@@ -35,14 +35,14 @@
       "autonogrammer.contracts": {
         "type": "Project"
       },
-      "autonogrammer.harness.computeruse.abstractions": {
-        "type": "Project"
-      },
       "autonogrammer.genui": {
         "type": "Project",
         "dependencies": {
           "Autonogrammer.Contracts": "[0.15.0, )"
         }
+      },
+      "autonogrammer.harness.computeruse.abstractions": {
+        "type": "Project"
       },
       "autonogrammer.parser": {
         "type": "Project",

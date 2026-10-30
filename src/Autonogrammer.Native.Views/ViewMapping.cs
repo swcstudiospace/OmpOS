@@ -65,6 +65,7 @@ internal static class ViewMapping
             CoworkComposerModel composerSurface => new CoworkComposerView { DataContext = composerSurface },
             CoworkApprovalCardModel approval => new CoworkApprovalCard { DataContext = approval },
             OmpTerminalViewModel terminal => new OmpTerminalView { DataContext = terminal },
+            Autonogrammer.Presentation.Subagents.SubagentPanelModel subagents => new Autonogrammer.Native.Views.Subagents.SubagentsPanelView { DataContext = subagents },
             _ => throw new ArgumentOutOfRangeException(
                 nameof(viewModel),
                 viewModel.GetType(),

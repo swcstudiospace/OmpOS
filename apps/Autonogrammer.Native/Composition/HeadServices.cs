@@ -240,6 +240,9 @@ internal sealed class HeadServices : IAsyncDisposable
     /// </summary>
     public IBestOfNHost? BestOfN { get; set; }
 
+    /// <summary>Gets or sets the usage history MainView.CreateExport reads. The activity composition sets it.</summary>
+    public Autonogrammer.Presentation.Usage.IUsageHistorySource? UsageHistory { get; set; }
+
     /// <summary>
     /// Gets the environment and the roots the next new session starts on. The shell sets it from the environment picker and the workspace dialog right before it asks the panel for a new session;
     /// the engine set takes it when it creates that session. One instance is shared by the shell and the engine set.
@@ -273,7 +276,7 @@ internal sealed class HeadServices : IAsyncDisposable
             var holder = new TrustTerminalHolder();
             var sshOptions = new SshClientOptions { ControlPathDirectory = PrivateSshControlDirectory() };
             var remoteEnvironments = new RemoteEnvironmentsHost(stores.RemoteProfiles, sshOptions, openTrustTerminal: holder.OpenAsync, clock: clock);
-            var mcp = new McpServerCatalog(new LocalMcpFileStore(), new FileMcpStateStore(Path.Combine(config, "mcp-state.json")), new RecordingConnectionChecker(new McpConnectionChecker()));
+            var mcp = new McpServerCatalog(new LocalMcpFileStore(), new FileMcpStateStore(Path.Combine(config, "mcp-state.json")), new RecordingConnectionChecker(new McpConnectionChecker()), extra: options.McpExtra);
             var setupConsent = new ForwardingSetupConsentPrompt();
             var worktrees = CreateWorktrees(options, stores.ConsentStore, setupConsent);
             var urlLauncher = new SystemUrlLauncher(options.TopLevel ?? (static () => null));

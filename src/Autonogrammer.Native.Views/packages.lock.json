@@ -248,6 +248,9 @@
       "autonogrammer.harness.completion": {
         "type": "Project"
       },
+      "autonogrammer.harness.computeruse.abstractions": {
+        "type": "Project"
+      },
       "autonogrammer.harness.mcp": {
         "type": "Project",
         "dependencies": {
@@ -276,9 +279,6 @@
         "dependencies": {
           "Autonogrammer.Harness.Abstractions": "[0.15.0, )"
         }
-      },
-      "autonogrammer.harness.computeruse.abstractions": {
-        "type": "Project"
       },
       "autonogrammer.parser": {
         "type": "Project",

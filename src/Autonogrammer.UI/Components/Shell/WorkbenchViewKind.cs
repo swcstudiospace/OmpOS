@@ -17,4 +17,7 @@ public enum WorkbenchViewKind
 
     /// <summary>The About view, <c>/about</c>.</summary>
     About = 4,
+
+    /// <summary>The Cowork surface, <c>/cowork</c>.</summary>
+    Cowork = 5,
 }

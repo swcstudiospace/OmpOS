@@ -15,6 +15,7 @@ import { DEMO_SESSION, loadApp } from "./states.mjs";
 const DIRECT_ROUTES = [
   { route: "/", layout: "shell", ready: "!!document.querySelector('main h1') && !document.querySelector('[data-state=\"loading\"]')" },
   { route: "/kanban", layout: "shell", ready: "!!document.querySelector('.autonogrammer-kanban')" },
+  { route: "/cowork", layout: "shell", ready: "!!document.querySelector('.autonogrammer-cowork')" },
   { route: `/sessions/${DEMO_SESSION.running}`, layout: "shell", ready: `!!document.querySelector('.autonogrammer-thread[data-session="${DEMO_SESSION.running}"]') && !document.title.startsWith('Session - ')` },
   { route: "/settings", layout: "shell", ready: "!!document.querySelector('.autonogrammer-settings[role=dialog]')" },
   { route: "/about", layout: "shell", ready: "!!document.querySelector('.autonogrammer-about')" },
@@ -65,6 +66,8 @@ async function checkDirectLoads(page, report, baseUrl) {
 function inAppSteps(kind) {
   const steps = [
     { name: "Kanban tab", selector: "#autonogrammer-tab-kanban", path: "/kanban", expectFocus: ["trigger"], trigger: "autonogrammer-tab-kanban" },
+    { name: "Cowork tab", selector: "#autonogrammer-tab-cowork", path: "/cowork", expectFocus: ["trigger"], trigger: "autonogrammer-tab-cowork" },
+    { name: "Code tab", selector: "#autonogrammer-tab-code", path: "/", expectFocus: ["trigger"], trigger: "autonogrammer-tab-code" },
     { name: "About link in the footer", selector: ".autonogrammer-footer-about", path: "/about", expectFocus: ["h1"] },
     { name: "wordmark link", selector: ".autonogrammer-wordmark", path: "/", expectFocus: ["h1"] },
   ];

@@ -36,6 +36,7 @@ internal static class WebServiceRegistration
         services.AddScoped(sp => new WebAccountSession(sp.GetRequiredService<TimeProvider>(), sp));
         services.AddScoped(sp => new WebAuthSessionRouter(sp.GetRequiredService<OwnerTokenSession>(), sp.GetRequiredService<WebAccountSession>()));
         services.AddScoped<IAuthSession>(sp => sp.GetRequiredService<WebAuthSessionRouter>());
+        services.AddScoped<Autonogrammer.UI.Components.Cowork.ICoworkAccess>(sp => new WebCoworkAccess(sp.GetRequiredService<WebWorkbenchOptions>(), sp.GetService<IAuthSession>(), sp.GetService<IAuthConfigSource>()));
         services.TryAddScoped<IApiTokenProvider>(sp =>
             sp.GetRequiredService<WebWorkbenchOptions>().IsDemo
                 ? new NoApiTokenProvider()
