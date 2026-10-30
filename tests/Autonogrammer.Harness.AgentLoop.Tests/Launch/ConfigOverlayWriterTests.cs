@@ -97,4 +97,52 @@ public sealed class ConfigOverlayWriterTests
         File.Exists(writer.Path).ShouldBeFalse();
         Directory.Exists(sessionDirectory).ShouldBeTrue();
     }
+
+    [Fact]
+    public void WriteYamlWritesExactlyTheCallersYamlAndDeletesItOnDispose()
+    {
+        using var fixture = new PluginFixtureDirectory();
+        var sessionDirectory = fixture.PathOf("state/sessions/s1");
+        const string yaml = "browser:\n  enabled: false\ncomputer:\n  enabled: false\n";
+
+        var writer = ConfigOverlayWriter.WriteYaml(sessionDirectory, yaml);
+
+        writer.Path.ShouldBe(SessionStateLayout.ConfigOverlayFile(sessionDirectory));
+        File.ReadAllText(writer.Path).ShouldBe(yaml);
+        File.ReadAllText(writer.Path).ShouldNotContain("mcp:");
+        File.ReadAllText(writer.Path).ShouldNotContain("workspace:");
+
+        writer.Dispose();
+        writer.Dispose();
+        File.Exists(writer.Path).ShouldBeFalse();
+        Directory.Exists(sessionDirectory).ShouldBeTrue();
+    }
+
+    [Fact]
+    [SupportedOSPlatform("linux")]
+    public void WriteYamlIsOwnerOnly()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("Unix file modes do not exist on Windows.");
+        }
+
+        using var fixture = new PluginFixtureDirectory();
+        var sessionDirectory = fixture.PathOf("state/sessions/yaml");
+
+        using var writer = ConfigOverlayWriter.WriteYaml(sessionDirectory, "browser:\n  enabled: false\n");
+
+        File.GetUnixFileMode(writer.Path).ShouldBe(UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        File.GetUnixFileMode(sessionDirectory).ShouldBe(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+    }
+
+    [Fact]
+    public void WriteYamlRefusesEmptyYaml()
+    {
+        using var fixture = new PluginFixtureDirectory();
+        var sessionDirectory = fixture.PathOf("state/sessions/empty");
+
+        Should.Throw<ArgumentException>(() => ConfigOverlayWriter.WriteYaml(sessionDirectory, "  "));
+        Directory.Exists(sessionDirectory).ShouldBeFalse();
+    }
 }

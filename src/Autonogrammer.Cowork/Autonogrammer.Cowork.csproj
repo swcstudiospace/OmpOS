@@ -11,4 +11,10 @@
     <InternalsVisibleTo Include="Autonogrammer.Cowork.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Chat/cowork-system-prompt.md">
+      <LogicalName>Autonogrammer.Cowork.Chat.cowork-system-prompt.md</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>
