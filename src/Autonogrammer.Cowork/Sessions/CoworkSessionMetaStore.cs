@@ -2,14 +2,18 @@
 namespace Autonogrammer.Cowork.Sessions;
 
 /// <summary>
-/// Metadata the session record has no field for: project, trusted folders, the memory-off flag and pinned artifact ids.
+/// Metadata the session record has no field for: the session-to-project link, trusted folders, the memory-off flag and pinned artifact ids.
 /// The file is <c>&lt;stateRoot&gt;/cowork/&lt;account&gt;/session-meta.json</c>. Writes are atomic and owner-only.
 /// Unknown JSON members are kept. A file over the size cap is an error and is not overwritten.
+/// Code sessions never gain standing context: this store has no standing-context path.
 /// </summary>
 public sealed class CoworkSessionMetaStore
 {
     /// <summary>The file name inside the account folder.</summary>
     public const string FileName = "session-meta.json";
+
+    /// <summary>Code sessions do not receive standing context. There is no path for it on this store.</summary>
+    public const bool CodeSessionsReceiveStandingContext = false;
 
     /// <summary>The largest file that is read or written, in bytes.</summary>
     public const int MaxFileBytes = 256 * 1024;
